@@ -44,7 +44,7 @@ export const proposalListCommand: Command = {
   maxPositionals: 0,
   needsBrain: true,
   async run({ args, brain }) {
-    const statuses = typeof args.options.status === "string" ? args.options.status.split(",").map((status) => status.trim()) : [];
+    const statuses = typeof args.options.status === "string" ? args.options.status.split(",").map((status) => status.trim()).filter((status) => status !== "") : [];
     const unknown = statuses.filter((status) => !(PROPOSAL_STATUSES as readonly string[]).includes(status));
     if (unknown.length > 0) throw new BrainError("USAGE", `Unknown status ${unknown.join(", ")}; use ${PROPOSAL_STATUSES.join(", ")}`);
     const workspace = await Workspace.open(brain!);
