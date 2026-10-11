@@ -4,7 +4,11 @@
 **Status values:** `todo` · `in progress` · `review` · `done` · `blocked`.
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
-> **2026-10-11 — Codex out of tokens.** Claude Code has taken over every open CX task, on `claude/<task-id>-<slug>` branches. Until Codex is back, each PR is reviewed by a fresh-context Claude reviewer that posts its findings on the PR; the author fixes them and the user merges. Build order: CX-09 → CX-04 → CX-05 → CX-06 → CX-03 → CX-07 → CX-08, then CC-05/CC-06.
+> **2026-10-11 — Codex is back; open CLI work is split again.**
+> - **Codex:** CX-03 → CX-07 → CX-08 → CX-11, then CX-12 once every command exists. Reuse `src/lib/workspace.ts` (validated, atomic, logged writes), `ids.ts`, `paths.ts` and `input.ts`.
+> - **Claude Code:** finishes CX-06 (PR 1 #13 merged, PR 2 #14 in review, PR 3 `apply` next), then CX-10 (its `sync apply` builds on `note new` and `apply`), then CC-05/CC-06.
+> - **Reviews:** cross-review is back: each agent reviews the other's PRs. The user merges.
+> - **Earlier, while Codex was out of tokens:** Claude took over CX-09, CX-04, CX-05 and CX-06.
 
 ## Why this split
 
@@ -80,7 +84,7 @@ Also `brain status`, `brain config get/set`, `brain id new` (spec/cli.md §5.2�
 ### CX-05 · Lint · `done` (PR #11; `view-stale` lands with CX-07)
 `brain lint`: validate frontmatter against the JSON schemas; IDs present, well-formed, unique; links resolve (relative Markdown links and relation targets); no `[[wikilinks]]`; provenance markers well-formed; freshness warnings (0011, warnings only in v1); derived views not cited as sources. JSON output with severity, file, line. **Acceptance:** one fixture per rule, passing and failing.
 
-### CX-06 · Notes, proposals and apply · `in progress` (PR 1 of 3: `note new`)
+### CX-06 · Notes, proposals and apply · `in progress` (Claude Code; #13 `note new` merged, #14 proposals in review, `apply` next)
 `brain note new` (spec/cli.md §5.5) and `brain proposal list`. `brain proposal new` writes a proposal file from JSON input. `brain apply --input <file.json>` applies decisions (`approve`, `reject`, `edit` with value) to target notes: append `timeline:` entries, change assessment, set supersedes/superseded_by on both notes, mark proposals applied/closed. Also applies user corrections from Notion edits (0023, 0027). Pure and deterministic; each proposal writes only its kind's write set (spec/schema.md §11.2). Also brings `src/lib/frontmatter.ts` in line with spec/cli.md §3.6.5 (flow-style scalar lists, key positions). **Acceptance:** golden-file tests for each proposal kind; re-applying the same decisions is a no-op.
 
 ### CX-07 · Derived views · `todo` (needs CC-01, CC-03)
@@ -109,7 +113,7 @@ Five synthetic meetings with expected extractions (decisions, fact changes, cont
 - **CC-09 · apply skill:** read Review decisions via MCP → `brain apply` → update Review rows and pages.
 - **CC-10 · query skill:** retrieval ladder, cited answers separating accepted / contested / superseded facts.
 - **CC-11 · notion-change skill:** spec diff → Notion AI prompts → drift check via MCP (0022).
-- **CX-10 · sync helpers:** CLI functions the sync skill calls (diff Notion snapshot JSON vs notes, produce correction and creation plans).
+- **CX-10 · sync helpers (Claude Code):** CLI functions the sync skill calls (diff Notion snapshot JSON vs notes, produce correction and creation plans).
 - **CX-11 · query helpers:** `brain query --candidates "<q>"` returning ranked notes from index + grep with snippets.
 - **CX-12 · packaging:** publishable npm package so `npx ultimate-brain init` works; plugin bundle includes skills. Publish **compiled JavaScript** (Node won't strip types inside `node_modules`); development in the repo stays build-free. Until then, run the CLI with `node src/cli.ts` (answers CX-01's spec questions).
 
