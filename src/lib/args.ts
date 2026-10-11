@@ -36,10 +36,11 @@ export function parseArgs(argv: readonly string[], spec: OptionSpec): ParsedArgs
       positionals.push(...argv.slice(index + 1));
       break;
     }
-    if (!arg.startsWith("--") || arg === "-") {
+    if (arg === "-" || !arg.startsWith("-")) {
       positionals.push(arg);
       continue;
     }
+    if (!arg.startsWith("--")) throw new BrainError("USAGE", `Unknown option: ${arg}`);
 
     const equals = arg.indexOf("=");
     const name = arg.slice(2, equals === -1 ? undefined : equals);
@@ -59,7 +60,7 @@ export function parseArgs(argv: readonly string[], spec: OptionSpec): ParsedArgs
       value = argv[index + 1];
       index += 1;
     }
-    if (value === undefined) throw new BrainError("USAGE", `Option --${name} needs a value`);
+    if (value === undefined || value === "") throw new BrainError("USAGE", `Option --${name} needs a value`);
 
     if (kind === "list") {
       const existing = options[name];

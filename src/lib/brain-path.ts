@@ -70,8 +70,9 @@ async function readConfiguredBrain(
     }
 
     const config = parsed as GlobalConfig;
-    if (config.brain === undefined) {
-      return undefined;
+    const extra = Object.keys(parsed).filter((key) => key !== "brain");
+    if (extra.length > 0) {
+      throw new Error(`unknown key "${extra[0]}"; the only key is "brain"`);
     }
     if (typeof config.brain !== "string" || config.brain.trim() === "") {
       throw new Error('the "brain" value must be a non-empty string');

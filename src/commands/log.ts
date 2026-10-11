@@ -4,7 +4,7 @@ import { appendLog, formatLogLine } from "../lib/log.ts";
 import { scanNotes } from "../lib/notes.ts";
 
 const OP = /^[a-z][a-z0-9-]*$/;
-const PAIR = /^([a-z][a-z0-9_]*)=(.*)$/s;
+const KEY = /^[a-z][a-z0-9_]*$/;
 
 /** `brain log <op> [<id>] [--title <title>] [<key>=<value>…]` (spec/cli.md §5.11). */
 export const logCommand: Command = {
@@ -22,10 +22,16 @@ export const logCommand: Command = {
     let id = "-";
     const pairs: Array<[string, string]> = [];
     for (const [index, value] of rest.entries()) {
-      const pair = PAIR.exec(value);
-      if (pair !== null) pairs.push([pair[1]!, pair[2]!]);
-      else if (index === 0) id = value;
-      else throw new BrainError("USAGE", `Expected <key>=<value>, got "${value}"`);
+      const equals = value.indexOf("=");
+      if (equals !== -1) {
+        const key = value.slice(0, equals);
+        if (!KEY.test(key)) throw new BrainError("USAGE", `Invalid key "${key}": keys match [a-z][a-z0-9_]*`);
+        pairs.push([key, value.slice(equals + 1)]);
+      } else if (index === 0) {
+        id = value;
+      } else {
+        throw new BrainError("USAGE", `Expected <key>=<value>, got "${value}"`);
+      }
     }
 
     let title = args.options.title as string | undefined;

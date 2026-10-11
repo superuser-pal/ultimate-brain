@@ -110,16 +110,14 @@ function sortKey(note: Note): string {
 
 function renderLine(note: Note, byId: ReadonlyMap<string, Note>): string {
   const a = note.attributes;
-  const title = text(a.title).replaceAll("[", "\\[").replaceAll("]", "\\]");
+  const title = oneLine(text(a.title)).replaceAll("\\", "\\\\").replaceAll("[", "\\[").replaceAll("]", "\\]");
   const segments = [`- [${title}](${note.path}) — ${note.id}`];
 
   for (const [label, value] of typeFields(note, byId)) {
-    if (value !== undefined && value !== "") segments.push(`${label}: ${value}`);
+    if (value !== undefined && value !== "") segments.push(`${label}: ${oneLine(value)}`);
   }
-  if (a.summary !== undefined && a.summary !== null) {
-    segments.push(text(a.summary).replace(/\r?\n/g, " "));
-  }
-  const aliases = list(a.aliases).map(text);
+  if (typeof a.summary === "string") segments.push(oneLine(a.summary));
+  const aliases = list(a.aliases).filter(isScalar).map((alias) => oneLine(String(alias)));
   if (aliases.length > 0) segments.push(`aliases: ${aliases.join(", ")}`);
   if (a.lifecycle === "disputed" || a.lifecycle === "archived") segments.push(String(a.lifecycle));
 
@@ -129,12 +127,12 @@ function renderLine(note: Note, byId: ReadonlyMap<string, Note>): string {
 /** Per-type index fields, rendered (references as titles). */
 function typeFields(note: Note, byId: ReadonlyMap<string, Note>): Array<[string, string | undefined]> {
   const a = note.attributes;
-  const ref = (value: unknown) => (value === undefined || value === null ? undefined : titleOf(value, byId));
+  const ref = (value: unknown) => (typeof value === "string" ? titleOf(value, byId) : undefined);
   const refs = (value: unknown) => {
-    const items = list(value).map((item) => titleOf(item, byId));
+    const items = list(value).filter((item): item is string => typeof item === "string").map((item) => titleOf(item, byId));
     return items.length === 0 ? undefined : items.join(", ");
   };
-  const scalar = (value: unknown) => (value === undefined || value === null ? undefined : String(value));
+  const scalar = (value: unknown) => (isScalar(value) ? String(value) : undefined);
   const notionField = (key: string) => scalar(record(a.notion_fields)[key]);
   const fact = (key: string) => scalar(record(a.facts)[key]);
 
@@ -238,6 +236,15 @@ function titleOf(value: unknown, byId: ReadonlyMap<string, Note>): string {
   const id = String(value);
   const title = byId.get(id)?.attributes.title;
   return typeof title === "string" ? title : id;
+}
+
+/** Collapse every line break (and the spaces around it) into one space, then trim. */
+function oneLine(value: string): string {
+  return value.replace(/[ \t]*(?:\r\n|\r|\n)[ \t]*/g, " ").trim();
+}
+
+function isScalar(value: unknown): value is string | number | boolean {
+  return typeof value === "string" || typeof value === "number" || typeof value === "boolean";
 }
 
 function text(value: unknown): string {

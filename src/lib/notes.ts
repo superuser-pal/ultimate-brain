@@ -26,7 +26,7 @@ export interface Note {
 
 export interface ScanProblem {
   path: string;
-  code: "UNPARSEABLE" | "NOT_A_NOTE";
+  code: "UNPARSEABLE" | "NOT_A_NOTE" | "UNREADABLE" | "SKIPPED_SYMLINK";
   message: string;
 }
 
@@ -39,15 +39,26 @@ export interface ScanResult {
 /** Read every note in the brain. Never throws on content problems; reports them instead. */
 export async function scanNotes(root: string): Promise<ScanResult> {
   const paths: string[] = [];
+  const problems: ScanProblem[] = [];
   for (const folder of NOTE_FOLDERS) {
-    await collectMarkdown(root, folder, paths);
+    await collectMarkdown(root, folder, paths, problems);
   }
   paths.sort(compareCodePoints);
 
   const notes: Note[] = [];
-  const problems: ScanProblem[] = [];
   for (const path of paths) {
-    const source = await readFile(join(root, path), "utf8");
+    let source: string;
+    try {
+      source = await readFile(join(root, path), "utf8");
+    } catch (error) {
+      problems.push({ path, code: "UNREADABLE", message: error instanceof Error ? error.message : String(error) });
+      continue;
+    }
+    if (source.startsWith("\uFEFF")) source = source.slice(1);
+    if (!/^---\r?\n/.test(source)) {
+      problems.push({ path, code: "NOT_A_NOTE", message: "no frontmatter" });
+      continue;
+    }
     let attributes: Frontmatter;
     let body: string;
     try {
@@ -63,10 +74,16 @@ export async function scanNotes(root: string): Promise<ScanResult> {
     }
     notes.push({ path, id, type: typeof type === "string" ? type : "", attributes, body });
   }
+  problems.sort((a, b) => compareCodePoints(a.path, b.path));
   return { notes, problems };
 }
 
-async function collectMarkdown(root: string, relative: string, out: string[]): Promise<void> {
+async function collectMarkdown(
+  root: string,
+  relative: string,
+  out: string[],
+  problems: ScanProblem[],
+): Promise<void> {
   let entries;
   try {
     entries = await readdir(join(root, relative), { withFileTypes: true });
@@ -76,7 +93,9 @@ async function collectMarkdown(root: string, relative: string, out: string[]): P
   for (const entry of entries) {
     if (entry.name.startsWith(".")) continue;
     const child = `${relative}/${entry.name}`;
-    if (entry.isDirectory()) await collectMarkdown(root, child, out);
+    if (entry.isSymbolicLink()) {
+      problems.push({ path: child, code: "SKIPPED_SYMLINK", message: "symbolic links are not followed" });
+    } else if (entry.isDirectory()) await collectMarkdown(root, child, out, problems);
     else if (entry.isFile() && entry.name.endsWith(".md")) out.push(child);
   }
 }
