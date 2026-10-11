@@ -76,7 +76,7 @@ export function stageProposals(
       if (fields.before !== undefined) result.before = fields.before;
       created.push(result);
     });
-    assertStagedValid(workspace, pointers);
+    assertStagedValid(workspace, pointers, "/proposals");
   } catch (error) {
     workspace.restore(start);
     throw error;
@@ -164,7 +164,7 @@ function checkNewItem(workspace: Workspace, note: NoteInput, pointer: string, to
   const before = workspace.checkpoint();
   try {
     const staged = stageNewItem(workspace, note, pointer, new Date(`${today}T00:00:00Z`));
-    assertStagedValid(workspace, staged.pointers);
+    assertStagedValid(workspace, staged.pointers, pointer);
   } finally {
     workspace.restore(before);
   }
