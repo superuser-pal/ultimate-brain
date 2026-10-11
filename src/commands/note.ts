@@ -1,6 +1,5 @@
 import type { Command } from "../lib/command.ts";
 import { assertNoProblems, isRecord, readJsonInput, unknownKeys } from "../lib/input.ts";
-import { appendLog } from "../lib/log.ts";
 import { assertStagedValid, checkNoteInput, stageNotes, type NoteInput } from "../lib/note-new.ts";
 import { Workspace } from "../lib/workspace.ts";
 
@@ -24,13 +23,10 @@ export const noteNewCommand: Command = {
     const dryRun = args.options["dry-run"] === true;
     const workspace = await Workspace.open(brain!);
     const staged = stageNotes(workspace, record.notes as NoteInput[], (index) => `/notes/${index}`, { now });
-    assertStagedValid(workspace, staged.pointers);
+    assertStagedValid(workspace, staged.pointers, "/notes");
 
     if (!dryRun) {
-      await workspace.commit();
-      if (staged.created.length > 0) {
-        await appendLog(workspace.root, now, staged.created.map((note) => ({ op: "note-new", id: note.id, title: note.title })));
-      }
+      await workspace.commit(staged.created.map((note) => ({ op: "note-new", id: note.id, title: note.title })), now);
     }
     const human = staged.created.map((note) => `${dryRun ? "would create" : "created"} ${note.path}\n`).join("")
       + staged.skipped.map((skip) => `skipped notes[${skip.input_index}]: same content as ${skip.existing}\n`).join("");

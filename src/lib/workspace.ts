@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { unlink } from "node:fs/promises";
+import { rmdir, unlink } from "node:fs/promises";
 import { join, posix } from "node:path";
 
 import type { Brain } from "./brain.ts";
@@ -7,6 +7,7 @@ import { BrainError } from "./errors.ts";
 import { parseFrontmatter, serializeFrontmatter, type FrontmatterDocument } from "./frontmatter.ts";
 import { atomicWriteFile, ensureDirectory } from "./fs-safe.ts";
 import { lintBrain, type Issue } from "./lint.ts";
+import { appendLog, type LogEntry } from "./log.ts";
 import { compareCodePoints, parseNote, scanNotes, type Note, type ScanProblem } from "./notes.ts";
 
 interface Staged {
@@ -110,32 +111,41 @@ export class Workspace {
   }
 
   /**
-   * Lint errors in `paths` that the staged writes introduce: errors those files already had
-   * before the command are not counted, so an old problem never blocks an unrelated change.
+   * Lint errors that the staged writes introduce, anywhere in the brain (or only in `paths`):
+   * errors that were there before the command are not counted, so an old problem never blocks
+   * an unrelated change.
    */
-  newErrors(paths: Iterable<string>): Issue[] {
+  newErrors(paths?: Iterable<string>): Issue[] {
     this.baseline ??= new Set(this.lint(this.initialNotes(), new Set()).map(issueKey));
-    const wanted = new Set(paths);
+    const wanted = paths === undefined ? undefined : new Set(paths);
     return this.lint(this.notes, new Set(this.staged.keys()))
-      .filter((issue) => wanted.has(issue.path) && !this.baseline!.has(issueKey(issue)));
+      .filter((issue) => (wanted === undefined || wanted.has(issue.path)) && !this.baseline!.has(issueKey(issue)));
   }
 
-  /** Write every staged file. On failure, restore what was written and rethrow as INTERNAL. */
-  async commit(): Promise<CommitResult> {
+  /**
+   * Write every staged file, then append `log` lines (spec/cli.md §3.9). If anything fails,
+   * restore the files and remove the folders this commit created, then rethrow as INTERNAL, so
+   * exit 10 always means nothing was kept (§3.4).
+   */
+  async commit(log: readonly LogEntry[] = [], now: Date = new Date()): Promise<CommitResult> {
     const done: Array<[string, Staged]> = [];
+    const folders: string[] = [];
     try {
       for (const path of this.changedPaths) {
         const staged = this.staged.get(path)!;
+        folders.push(...missingFolders(this.root, posix.dirname(path)));
         await ensureDirectory(this.root, posix.dirname(path));
         await atomicWriteFile(this.root, path, staged.content);
         done.push([path, staged]);
       }
+      if (log.length > 0) await appendLog(this.root, now, log);
     } catch (error) {
       for (const [path, staged] of done.reverse()) {
         if (staged.original === null) await unlink(join(this.root, path)).catch(() => undefined);
         else await atomicWriteFile(this.root, path, staged.original).catch(() => undefined);
       }
-      if (error instanceof BrainError) throw error;
+      for (const folder of folders.reverse()) await rmdir(join(this.root, folder)).catch(() => undefined);
+      if (error instanceof BrainError && error.code !== "INTERNAL") throw error;
       throw new BrainError("INTERNAL", `Write failed; restored the files already written: ${error instanceof Error ? error.message : String(error)}`);
     }
     const created = done.filter(([, staged]) => staged.original === null).map(([path]) => path);
@@ -164,6 +174,15 @@ export class Workspace {
       pendingPaths,
     }).filter((issue) => issue.severity === "error");
   }
+}
+
+/** Folders on the way to `folder` that do not exist yet, outermost first. */
+function missingFolders(root: string, folder: string): string[] {
+  const missing: string[] = [];
+  for (let current = folder; current !== "." && current !== "" && !existsSync(join(root, current)); current = posix.dirname(current)) {
+    missing.unshift(current);
+  }
+  return missing;
 }
 
 function issueKey(issue: Issue): string {
