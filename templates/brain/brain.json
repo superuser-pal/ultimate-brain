@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "owner": { "name": "Owner" },
+  "budgets": { "ingest_max_notes": 8 },
+  "notion": {
+    "databases": {
+      "areas": "",
+      "goals": "",
+      "key_results": "",
+      "projects": "",
+      "meetings": "",
+      "people": "",
+      "orgs": "",
+      "decisions": "",
+      "questions": "",
+      "review": "",
+      "capture_inbox": ""
+    },
+    "tasks": {
+      "database": "",
+      "properties": {
+        "title": "Name",
+        "status": "Status",
+        "due": "Due",
+        "project": "Project",
+        "area": "Area",
+        "owner": "",
+        "meeting": "Meeting",
+        "meeting_url": "",
+        "brain_id": "Brain ID"
+      },
+      "new_task_status": "To Do"
+    }
+  }
+}

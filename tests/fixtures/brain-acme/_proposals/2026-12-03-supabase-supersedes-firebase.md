@@ -7,7 +7,7 @@ updated: 2026-12-04
 kind: supersede
 target: dec-7k2m9q4x
 supersedes: dec-2p9f6h1r
-why: "Switch auth from Firebase to Supabase."
+why: Switch auth from Firebase to Supabase.
 source: mtg-8c4n2p7w
 status: applied
 decision:
