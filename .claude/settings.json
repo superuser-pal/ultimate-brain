@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(scripts/fetch-sources.sh:*)",
+      "Bash(git -C sources/* log:*)",
+      "Bash(git -C sources/* rev-parse:*)",
+      "Read(sources/**)"
+    ],
+    "deny": [
+      "Read(.env*)"
+    ]
+  }
+}
