@@ -22,6 +22,8 @@ export interface Note {
   type: string;
   attributes: Frontmatter;
   body: string;
+  /** The whole file as read (without a leading BOM). */
+  raw: string;
 }
 
 export interface ScanProblem {
@@ -72,7 +74,7 @@ export async function scanNotes(root: string): Promise<ScanResult> {
       problems.push({ path, code: "NOT_A_NOTE", message: "frontmatter has no id" });
       continue;
     }
-    notes.push({ path, id, type: typeof type === "string" ? type : "", attributes, body });
+    notes.push({ path, id, type: typeof type === "string" ? type : "", attributes, body, raw: source });
   }
   problems.sort((a, b) => compareCodePoints(a.path, b.path));
   return { notes, problems };
