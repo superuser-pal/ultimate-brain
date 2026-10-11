@@ -60,7 +60,7 @@ test("rejects an unknown subcommand", async () => {
 
   const exitCode = await runCli(["missing"], { io: output.io });
 
-  assert.equal(exitCode, 1);
+  assert.equal(exitCode, 2); // USAGE, spec/cli.md §3.4
   assert.deepEqual(output.stdout, []);
   assert.match(output.stderr.join(""), /Unknown command: missing/);
 });

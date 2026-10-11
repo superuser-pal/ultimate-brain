@@ -1,7 +1,9 @@
 import { constants } from "node:fs";
 import { access, readFile, realpath, stat } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+
+import { BrainError } from "./errors.ts";
 
 export interface ResolveBrainDirectoryOptions {
   brainFlag?: string;
@@ -20,33 +22,35 @@ export async function resolveBrainDirectory(
   const env = options.env ?? process.env;
   const homeDirectory = options.homeDirectory ?? homedir();
   const higherPriority = firstNonEmpty(options.brainFlag, env.BRAIN_DIR);
-  const candidate = higherPriority ?? await readConfiguredBrain(homeDirectory);
+  const configured = higherPriority === undefined ? await readConfiguredBrain(homeDirectory) : undefined;
+  const candidate = higherPriority ?? configured?.brain;
 
   if (candidate === undefined) {
-    throw new Error(
+    throw new BrainError(
+      "BRAIN_NOT_CONFIGURED",
       "Brain directory is not configured. Pass --brain, set BRAIN_DIR, or set brain in ~/.config/ultimate-brain/config.json.",
     );
   }
 
   const expanded = expandHome(candidate, homeDirectory);
-  const absolute = resolve(expanded);
+  // A relative path in the config file is relative to that file's folder (spec/cli.md §4).
+  const absolute = configured === undefined ? resolve(expanded) : resolve(configured.folder, expanded);
 
   let directory: string;
   try {
     const metadata = await stat(absolute);
     if (!metadata.isDirectory()) {
-      throw new Error(`Brain path is not a directory: ${absolute}`);
+      throw new BrainError("BRAIN_NOT_FOUND", `Brain path is not a directory: ${absolute}`);
     }
     directory = await realpath(absolute);
   } catch (error) {
-    if (error instanceof Error && error.message.startsWith("Brain path is not a directory:")) {
-      throw error;
-    }
-    throw new Error(`Brain directory does not exist or cannot be read: ${absolute}`, { cause: error });
+    if (error instanceof BrainError) throw error;
+    throw new BrainError("BRAIN_NOT_FOUND", `Brain directory does not exist or cannot be read: ${absolute}`);
   }
 
   if (await isProductRepository(directory)) {
-    throw new Error(
+    throw new BrainError(
+      "BRAIN_IS_PRODUCT_REPO",
       `Refusing to use the Ultimate Brain product repository as a brain: ${directory}`,
     );
   }
@@ -54,7 +58,9 @@ export async function resolveBrainDirectory(
   return directory;
 }
 
-async function readConfiguredBrain(homeDirectory: string): Promise<string | undefined> {
+async function readConfiguredBrain(
+  homeDirectory: string,
+): Promise<{ brain: string; folder: string } | undefined> {
   const configPath = join(homeDirectory, ".config", "ultimate-brain", "config.json");
   try {
     const raw = await readFile(configPath, "utf8");
@@ -64,23 +70,24 @@ async function readConfiguredBrain(homeDirectory: string): Promise<string | unde
     }
 
     const config = parsed as GlobalConfig;
-    if (config.brain === undefined) {
-      return undefined;
+    const extra = Object.keys(parsed).filter((key) => key !== "brain");
+    if (extra.length > 0) {
+      throw new Error(`unknown key "${extra[0]}"; the only key is "brain"`);
     }
     if (typeof config.brain !== "string" || config.brain.trim() === "") {
       throw new Error('the "brain" value must be a non-empty string');
     }
-    return config.brain;
+    return { brain: config.brain, folder: dirname(configPath) };
   } catch (error) {
     if (isNodeError(error) && error.code === "ENOENT") {
       return undefined;
     }
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Cannot read brain configuration at ${configPath}: ${detail}`, { cause: error });
+    throw new BrainError("BRAIN_CONFIG_INVALID", `Cannot read brain configuration at ${configPath}: ${detail}`);
   }
 }
 
-async function isProductRepository(directory: string): Promise<boolean> {
+export async function isProductRepository(directory: string): Promise<boolean> {
   const markers = [join(directory, "spec", "cli.md"), join(directory, "src", "cli.ts")];
   const found = await Promise.all(
     markers.map(async (marker) => {
