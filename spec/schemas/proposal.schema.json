@@ -4,47 +4,504 @@
   "title": "Proposal frontmatter (v1)",
   "description": "A pending change to existing knowledge, mirrored as a Notion Review row. See spec/schema.md §11 and decision 0003.",
   "type": "object",
-  "required": ["id", "type", "title", "created", "updated", "kind", "why", "source", "status"],
+  "required": [
+    "id",
+    "type",
+    "title",
+    "created",
+    "updated",
+    "kind",
+    "why",
+    "source",
+    "status"
+  ],
   "properties": {
-    "id": { "type": "string", "pattern": "^prp-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
-    "type": { "const": "proposal" },
-    "title": { "type": "string", "minLength": 1, "maxLength": 120 },
-    "created": { "$ref": "note.schema.json#/$defs/date" },
-    "updated": { "$ref": "note.schema.json#/$defs/date" },
-    "kind": { "enum": ["update_fact", "add_to_note", "supersede", "contradiction", "merge", "new_item"] },
-    "target": { "$ref": "note.schema.json#/$defs/id" },
-    "field": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-    "before": { "$ref": "note.schema.json#/$defs/factValue" },
-    "after": { "$ref": "note.schema.json#/$defs/factValue" },
-    "content": { "type": "string", "minLength": 1 },
-    "supersedes": { "$ref": "note.schema.json#/$defs/id" },
-    "merge_into": { "$ref": "note.schema.json#/$defs/id" },
-    "why": { "type": "string", "minLength": 1 },
-    "source": { "$ref": "note.schema.json#/$defs/sourceKey" },
-    "status": { "enum": ["pending", "approved", "rejected", "edited", "applied", "closed"] },
+    "id": {
+      "type": "string",
+      "pattern": "^prp-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+    },
+    "type": {
+      "const": "proposal"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "created": {
+      "$ref": "note.schema.json#/$defs/date"
+    },
+    "updated": {
+      "$ref": "note.schema.json#/$defs/date"
+    },
+    "kind": {
+      "enum": [
+        "update_fact",
+        "add_to_note",
+        "supersede",
+        "contradiction",
+        "merge",
+        "new_item"
+      ]
+    },
+    "target": {
+      "$ref": "note.schema.json#/$defs/id"
+    },
+    "field": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "before": {
+      "$ref": "note.schema.json#/$defs/factValue"
+    },
+    "after": {
+      "$ref": "note.schema.json#/$defs/factValue"
+    },
+    "content": {
+      "type": "string",
+      "minLength": 1
+    },
+    "supersedes": {
+      "$ref": "note.schema.json#/$defs/id"
+    },
+    "merge_into": {
+      "$ref": "note.schema.json#/$defs/id"
+    },
+    "why": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "$ref": "note.schema.json#/$defs/sourceKey"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "edited",
+        "applied",
+        "closed"
+      ]
+    },
     "decision": {
       "type": "object",
-      "required": ["action", "decided_at", "decided_by"],
+      "required": [
+        "action",
+        "decided_at",
+        "decided_by"
+      ],
       "additionalProperties": false,
       "properties": {
-        "action": { "enum": ["approve", "reject", "edit"] },
-        "value": { "$ref": "note.schema.json#/$defs/factValue" },
-        "decided_at": { "$ref": "note.schema.json#/$defs/timestamp" },
-        "decided_by": { "enum": ["notion", "chat"] }
+        "action": {
+          "enum": [
+            "approve",
+            "reject",
+            "edit"
+          ]
+        },
+        "value": {
+          "$ref": "note.schema.json#/$defs/factValue"
+        },
+        "decided_at": {
+          "$ref": "note.schema.json#/$defs/timestamp"
+        },
+        "decided_by": {
+          "enum": [
+            "notion",
+            "chat"
+          ]
+        }
       },
-      "if": { "properties": { "action": { "const": "edit" } } },
-      "then": { "required": ["value"] }
+      "if": {
+        "properties": {
+          "action": {
+            "const": "edit"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "value"
+        ]
+      }
     },
-    "notion": { "$ref": "note.schema.json#/$defs/notionPageId" }
+    "notion": {
+      "$ref": "note.schema.json#/$defs/notionPageId"
+    },
+    "from": {
+      "$ref": "note.schema.json#/$defs/dateOrMonth"
+    },
+    "note": {
+      "description": "For new_item: one `brain note new` input item without id (spec/cli.md §5.5).",
+      "type": "object",
+      "required": [
+        "type",
+        "title",
+        "frontmatter",
+        "body"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file_date": {
+          "$ref": "note.schema.json#/$defs/date"
+        },
+        "frontmatter": {
+          "type": "object"
+        },
+        "body": {
+          "type": "string"
+        }
+      }
+    },
+    "closed_reason": {
+      "enum": [
+        "stale"
+      ]
+    },
+    "notion_published": {
+      "description": "Review property name → value last published (spec/cli.md §5.14).",
+      "type": "object"
+    }
   },
   "additionalProperties": false,
   "allOf": [
-    { "if": { "properties": { "kind": { "const": "update_fact" } } }, "then": { "required": ["target", "field", "after"] } },
-    { "if": { "properties": { "kind": { "const": "contradiction" } } }, "then": { "required": ["target", "field", "before", "after"] } },
-    { "if": { "properties": { "kind": { "const": "add_to_note" } } }, "then": { "required": ["target", "content"] } },
-    { "if": { "properties": { "kind": { "const": "supersede" } } }, "then": { "required": ["target", "supersedes"] } },
-    { "if": { "properties": { "kind": { "const": "merge" } } }, "then": { "required": ["target", "merge_into"] } },
-    { "if": { "properties": { "kind": { "const": "new_item" } } }, "then": { "required": ["content"] } },
-    { "if": { "properties": { "status": { "enum": ["approved", "rejected", "edited", "applied"] } } }, "then": { "required": ["decision"] } }
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "update_fact"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "target",
+          "field",
+          "after"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "contradiction"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "target",
+          "field",
+          "before",
+          "after"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "add_to_note"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "target",
+          "content"
+        ],
+        "not": {
+          "required": [
+            "note"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "supersede"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "target",
+          "supersedes"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "merge"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "target",
+          "merge_into"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "new_item"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "note"
+        ],
+        "not": {
+          "required": [
+            "content"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "pending"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "decision"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "approved"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "decision"
+        ],
+        "properties": {
+          "decision": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "approve"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "edited"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "decision"
+        ],
+        "properties": {
+          "decision": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "edit"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "rejected"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "decision"
+        ],
+        "properties": {
+          "decision": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "reject"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "applied"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "decision"
+        ],
+        "properties": {
+          "decision": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "approve",
+                  "edit"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "closed"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "decision"
+        ],
+        "anyOf": [
+          {
+            "properties": {
+              "decision": {
+                "properties": {
+                  "action": {
+                    "const": "reject"
+                  }
+                }
+              }
+            },
+            "not": {
+              "required": [
+                "closed_reason"
+              ]
+            }
+          },
+          {
+            "required": [
+              "closed_reason"
+            ],
+            "properties": {
+              "decision": {
+                "properties": {
+                  "action": {
+                    "enum": [
+                      "approve",
+                      "edit"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "properties": {
+              "action": {
+                "const": "edit"
+              }
+            },
+            "required": [
+              "action"
+            ]
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "update_fact",
+              "contradiction",
+              "add_to_note"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "closed_reason"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "closed"
+          }
+        }
+      }
+    }
   ]
 }
