@@ -26,7 +26,7 @@
 
 ## Wave 1 — Foundations
 
-### CC-01 · Schema spec · `done` (follow-up fixes from Codex's review: CC-01b)
+### CC-01 · Schema spec · `review` (merged in PR #1; follow-up fixes CC-01b in PR #2)
 **Output:** `spec/schema.md` and `spec/schemas/*.schema.json` (JSON Schema, draft 2020-12).
 **Covers:** common frontmatter; v1 note types (area, goal, project, person, org, meeting, decision, question, concept, source, view, memory); `timeline:` entries (0010); assessment and lifecycle (0005); relations vocabulary; proposal file (synthesis §4.6); `brain.json` including the Notion section and Tasks mapping (0018); ID format (0017); provenance markers (0004); freshness forms (0011); folder layout (synthesis §4.1).
 **Decisions:** 0001–0005, 0008–0011, 0017, 0018, 0020, 0021, 0023.
@@ -81,7 +81,7 @@ Also `brain status`, `brain config get/set`, `brain id new` (spec/cli.md §5.2�
 `brain lint`: validate frontmatter against the JSON schemas; IDs present, well-formed, unique; links resolve (relative Markdown links and relation targets); no `[[wikilinks]]`; provenance markers well-formed; freshness warnings (0011, warnings only in v1); derived views not cited as sources. JSON output with severity, file, line. **Acceptance:** one fixture per rule, passing and failing.
 
 ### CX-06 · Notes, proposals and apply · `todo` (needs CC-01, CC-03)
-`brain note new` (spec/cli.md §5.5) and `brain proposal list`. `brain proposal new` writes a proposal file from JSON input. `brain apply --decisions <file.json>` applies decisions (`approve`, `reject`, `edit` with value) to target notes: append `timeline:` entries, change assessment, set supersedes/superseded_by on both notes, mark proposals applied/closed. Also applies user corrections from Notion edits (0023). Pure and deterministic; never touches notes outside the decision list. **Acceptance:** golden-file tests for each proposal kind; re-applying the same decisions is a no-op.
+`brain note new` (spec/cli.md §5.5) and `brain proposal list`. `brain proposal new` writes a proposal file from JSON input. `brain apply --input <file.json>` applies decisions (`approve`, `reject`, `edit` with value) to target notes: append `timeline:` entries, change assessment, set supersedes/superseded_by on both notes, mark proposals applied/closed. Also applies user corrections from Notion edits (0023, 0027). Pure and deterministic; each proposal writes only its kind's write set (spec/schema.md §11.2). **Acceptance:** golden-file tests for each proposal kind; re-applying the same decisions is a no-op.
 
 ### CX-07 · Derived views · `todo` (needs CC-01, CC-03)
 `brain views` regenerates `projects/<slug>/brief.md` and `decision-log.md` from canonical notes inside `@generated` markers, preserving `@user` blocks (synthesis §4.5). **Acceptance:** user block survives regeneration; every generated line links to its source note.
