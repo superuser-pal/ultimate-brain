@@ -34,7 +34,7 @@ The consuming-repo block written by `brain link` uses different markers (`<!-- u
 
 ## Names the rules depend on
 
-The rules in `AGENTS.md` name the skills `brain-ingest`, `brain-apply`, `brain-sync`, `brain-query` and `brain-notion-change`, and the CLI commands of spec/cli.md. Renaming any of them means changing `AGENTS.md` and bumping its version (CC-05 packages the skills under these names).
+The rules in `AGENTS.md` name the skills `brain-connect-notion`, `brain-ingest`, `brain-apply`, `brain-sync`, `brain-query` and `brain-notion-change`, and the CLI commands of spec/cli.md. Renaming any of them means changing `AGENTS.md` and bumping its version (CC-05 packages the skills under these names).
 
 ## Acceptance checks (for CX-03 tests)
 

@@ -4,7 +4,7 @@
 
 This repo is a second brain: Markdown notes in Git, operated by agents through the `brain` CLI, with Notion as the human view. Its value is trust: every claim traces to a source, and history is kept, never overwritten.
 
-`brain` is the Ultimate Brain CLI (`npx ultimate-brain`). From this repo run it as `brain <command> --brain . --json` and read the JSON it prints; `brain --help` lists the commands. Exit code 1 means findings to act on; 3, 4 or 5 means stop and report the error to the user.
+`brain` is the Ultimate Brain CLI (`npx ultimate-brain`). From this repo run it as `brain <command> --brain . --json` and read the JSON it prints; `brain --help` lists the commands. Exit codes: 1 means findings to act on; 2 or 4 means your command or input was wrong, so fix it and retry; 3 or 5 means the brain or a write was refused, so stop and report to the user; 10 is a bug, so report it.
 
 ## Operations
 
@@ -12,18 +12,21 @@ Each operation has a skill; follow it end to end:
 
 | The user wants to… | Skill |
 |---|---|
+| connect the brain to Notion (after building the space) | `brain-connect-notion` |
 | ingest reviewed meeting minutes | `brain-ingest` |
 | apply decisions from the Notion Review queue | `brain-apply` |
 | pull Notion edits and new rows, republish notes | `brain-sync` |
 | answer a question from the brain | `brain-query` |
-| change the Notion structure (databases, properties, views) | `brain-notion-change` |
+| change the Notion structure (databases, properties, views) | `brain-notion-change`; structure is changed in the product repo first, never edited directly in Notion (0022) |
 
 ## Write path
 
 - **New knowledge** (meeting summary, person, decision, question) → `brain note new`. It lands as `draft`; the user reviews it in Notion.
 - **A change to an existing note** (fact update, addition, supersession, contradiction, merge) → `brain proposal new`. The user approves it in the Notion Review queue or in chat; `brain apply` makes the change.
+- **A new note that replaces an old one** (a decision reversing an earlier one): write the new note with `brain note new`, then a `supersede` proposal; the old note changes only when the user approves.
+- **A new decision or question for a meeting that already exists**: a `new_item` proposal, because the meeting note must change too.
 - **Generated files** (`index.md`, `log/`, the `@generated` blocks of `brief.md` and `decision-log.md`) and **source snapshots** in `sources/` are written by the CLI only. To change what a view shows, change the canonical note and regenerate.
-- **After every write:** `brain index`, `brain views`, `brain lint`. Commit when lint shows no errors you introduced: one commit per operation, e.g. `ingest: Acme sync 2026-12-03 (4 new, 3 proposals)`.
+- **After every write:** `brain index`, `brain views`, `brain lint`. Commit when lint shows no errors you introduced, e.g. `ingest: Acme sync 2026-12-03 (4 new, 3 proposals)`. A run that publishes to Notion commits again after `brain sync record`, so the stored page ids are in Git too.
 
 ## Trust rules
 
@@ -35,7 +38,7 @@ Each operation has a skill; follow it end to end:
 6. **Decision gate.** A decision note is for a choice that is hard to reverse, surprising without context, or a real trade-off. Anything smaller becomes a dated line in the project, through a proposal.
 7. **Dated, not "current".** Write facts as timeless, dated ("as of 2026-12-03"), or as pointers ("status: see Notion"). Volatile status (task state, project status, priority) lives in Notion.
 8. **Cite canonical notes.** `index.md` and the views are navigation; cite the note or source they point to.
-9. **Questions are read-only.** Answering does not write; save an answer to the brain only when the user asks.
+9. **Answering is read-only.** Answering the user's questions from the brain writes nothing; save an answer to the brain only when the user asks.
 10. **Unattended runs add, never apply.** With no user present, an agent may add drafts and proposals; applying proposals waits for the user.
 
 ## Reading notes
