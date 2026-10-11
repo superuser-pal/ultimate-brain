@@ -138,7 +138,54 @@
             "new_task_status": {
               "type": "string"
             }
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "database": {
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "database"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "properties": {
+                    "properties": {
+                      "title": {
+                        "minLength": 1
+                      }
+                    },
+                    "anyOf": [
+                      {
+                        "properties": {
+                          "meeting": {
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "meeting"
+                        ]
+                      },
+                      {
+                        "properties": {
+                          "meeting_url": {
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "meeting_url"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
         }
       }
     }
