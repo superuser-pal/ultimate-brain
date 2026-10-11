@@ -56,30 +56,30 @@ export async function scanNotes(root: string): Promise<ScanResult> {
       problems.push({ path, code: "UNREADABLE", message: error instanceof Error ? error.message : String(error) });
       continue;
     }
-    if (source.startsWith("\uFEFF")) source = source.slice(1);
-    if (!/^---\r?\n/.test(source)) {
-      problems.push({ path, code: "NOT_A_NOTE", message: "no frontmatter" });
-      continue;
-    }
-    let attributes: Frontmatter;
-    let body: string;
-    try {
-      ({ attributes, body } = parseFrontmatter(source));
-    } catch (error) {
-      problems.push({ path, code: "UNPARSEABLE", message: error instanceof Error ? error.message : String(error) });
-      continue;
-    }
-    const { type } = attributes;
-    // A number or other scalar id is kept (as text) so lint reports id-format rather than "no id".
-    const id = typeof attributes.id === "number" ? String(attributes.id) : attributes.id;
-    if (typeof id !== "string" || id === "") {
-      problems.push({ path, code: "NOT_A_NOTE", message: "frontmatter has no id" });
-      continue;
-    }
-    notes.push({ path, id, type: typeof type === "string" ? type : "", attributes, body, raw: source });
+    const parsed = parseNote(path, source);
+    if ("code" in parsed) problems.push(parsed);
+    else notes.push(parsed);
   }
   problems.sort((a, b) => compareCodePoints(a.path, b.path));
   return { notes, problems };
+}
+
+/** Parse one note file; a file that is not a readable note is reported as a problem. */
+export function parseNote(path: string, source: string): Note | ScanProblem {
+  if (source.startsWith("\uFEFF")) source = source.slice(1);
+  if (!/^---\r?\n/.test(source)) return { path, code: "NOT_A_NOTE", message: "no frontmatter" };
+  let attributes: Frontmatter;
+  let body: string;
+  try {
+    ({ attributes, body } = parseFrontmatter(source));
+  } catch (error) {
+    return { path, code: "UNPARSEABLE", message: error instanceof Error ? error.message : String(error) };
+  }
+  const { type } = attributes;
+  // A number or other scalar id is kept (as text) so lint reports id-format rather than "no id".
+  const id = typeof attributes.id === "number" ? String(attributes.id) : attributes.id;
+  if (typeof id !== "string" || id === "") return { path, code: "NOT_A_NOTE", message: "frontmatter has no id" };
+  return { path, id, type: typeof type === "string" ? type : "", attributes, body, raw: source };
 }
 
 async function collectMarkdown(
