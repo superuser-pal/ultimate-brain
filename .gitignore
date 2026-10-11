@@ -4,4 +4,7 @@ sources/*
 .env
 .env.*
 node_modules/
+coverage/
+dist/
+*.pem
 .claude/settings.local.json

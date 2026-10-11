@@ -16,7 +16,7 @@ Decisions referenced: 0001–0005, 0008–0011, 0013, 0017, 0018, 0020, 0021, 00
 | Topic | Rule |
 |---|---|
 | Encoding | UTF-8, LF line endings, one trailing newline |
-| Frontmatter | YAML between `---` lines at the very top. Block style. Unknown keys are preserved by tools and flagged by lint as warnings |
+| Frontmatter | YAML between `---` lines at the very top. Exact serialization (flow style for scalar lists, key order, body separator) is in [cli.md](cli.md) §3.6.5. Unknown keys are preserved by tools and flagged by lint as warnings |
 | YAML parsing | Tools parse with the **YAML 1.2 core schema**, so dates stay strings (`2026-12-03`, not a date object). Writers quote values that would otherwise change type |
 | Dates | `YYYY-MM-DD`. Fact values that are months use `YYYY-MM`. Timestamps use ISO 8601 UTC: `2026-12-03T10:22:00Z` |
 | IDs | `<prefix>-<8 chars>`, chars from `0123456789abcdefghjkmnpqrstvwxyz` (0017). Permanent; never reused |
@@ -103,8 +103,9 @@ Each type must live in its folder (lint error otherwise). `archive/` may hold `p
 | `facts` | map | | brain | current key facts (§5) |
 | `timeline` | list of timeline entries | | brain | history of `facts` (§5) |
 | `notion` | string (Notion page id) | | system | set once published |
-| `last_synced` | timestamp | | system | |
+| `last_synced` | timestamp | | system | time of the last publish to Notion (written only by `sync record`) |
 | `notion_fields` | map | | system (snapshot of you-owned fields) | §7 |
+| `notion_published` | map | | system | Notion property name → value the brain last published or imported, in the normalized form of [cli.md](cli.md) §5.14.1, plus `@content` (hash of the published page content). Baseline for the three-way comparison of cli.md §5.14 |
 
 ---
 
@@ -334,13 +335,15 @@ notion: 7c6b…
 | `field` | string | for `update_fact`, `contradiction` | fact key |
 | `before` / `after` | string, number or date | `after` for `update_fact`; both for `contradiction` | `before` = current value at proposal time (absent if the fact is new) |
 | `from` | date or month | for `update_fact`, `contradiction` | event time of the new value; defaults to the source meeting's `date`, else `created` |
-| `content` | string | for `add_to_note`, `new_item` | Markdown to append, or the full draft note (frontmatter + body) |
+| `content` | string | for `add_to_note` | Markdown to append |
+| `note` | object | for `new_item` | one `brain note new` input item without `id`: `{type, title, frontmatter, body, file_date?}` ([cli.md](cli.md) §5.5) |
 | `supersedes` | ID | for `supersede` | the older note |
 | `merge_into` | ID | for `merge` | survivor |
 | `why` | string | ✔ | the source sentence that triggered it |
 | `source` | ID or source key | ✔ | |
 | `status` | `pending`·`approved`·`rejected`·`edited`·`applied`·`closed` | ✔ | |
 | `decision` | `{action: approve·reject·edit, value?, decided_at, decided_by: notion·chat}` | when decided | |
+| `closed_reason` | `stale` | only with `status: closed` and a non-reject decision | the target changed before apply (§11.1) |
 | `notion` | Review row page id | | |
 
 ### 11.1 Status and decision (normative)
@@ -353,23 +356,24 @@ notion: 7c6b…
 | `rejected` | `action: reject` | decided, not yet closed |
 | `applied` | `approve` or `edit` | applied to the target; terminal |
 | `closed` | `reject` | rejected and closed; terminal |
+| `closed` + `closed_reason: stale` | `approve` or `edit` | the target's value changed after the proposal was written, so it was not applied; terminal. A new proposal may be written against the current value |
 
 `brain apply` moves `approved`/`edited` → `applied` and `rejected` → `closed`. Applying a proposal already in a terminal state is a **no-op** (exit 0, reported as skipped). `edit` is allowed only for `update_fact`, `contradiction` and `add_to_note`; an `edit` on any other kind is an error (exit non-zero, proposal left unchanged).
 
 ### 11.2 How each kind is applied (normative)
 
-Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edit`, else the proposal's own value.
+Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edit`, else the proposal's own value. Every note changed below also gets `updated` = today ([cli.md](cli.md) §3.6.6).
 
 | Kind | `target` is | On approve / edit | On reject |
 |---|---|---|---|
-| `update_fact` | the note owning the fact | In `timeline`, each entry for `field` with `assessment: accepted` gets `until: <from>` and `assessment: superseded`. Append `{field, value: V(after), from, learned: D, source, assessment: accepted}`. Set `facts.<field> = V`. Set `updated: D` | nothing changes |
-| `contradiction` | the note owning the fact | **approve:** keep both claims. Existing accepted entries for `field` become `contested`; append `{field, value: after, from, learned: D, source, assessment: contested}`; remove `facts.<field>`. **edit:** V is the accepted truth: every entry for `field` becomes `superseded` with `until: <from>` unless its value equals V; append `{… value: V, assessment: accepted}` if no entry has value V, else set that entry to `accepted`; `facts.<field> = V` | nothing changes |
-| `add_to_note` | the note to extend | Append V(content) to the end of the body, separated by exactly one blank line, followed by a line `Source: <source>`. Add `source` to `sources` if missing. `updated: D` | nothing changes |
+| `update_fact` | the note owning the fact | In `timeline`, each entry for `field` with `assessment: accepted` gets `until: <from>` and `assessment: superseded`. Append `{field, value: V(after), from, learned: D, source, assessment: accepted}`. Set `facts.<field> = V` | nothing changes |
+| `contradiction` | the note owning the fact | **approve:** keep both claims. Existing accepted entries for `field` become `contested`; append `{field, value: after, from, learned: D, source, assessment: contested}`; remove `facts.<field>`. **edit:** V is the accepted truth. Only entries for `field` whose assessment is `accepted` or `contested` change: if one or more of them has value V, the latest of those (by `learned`, then position) becomes `accepted`; every other one becomes `superseded` with `until: <from>`. If none has value V, every one of them becomes `superseded` with `until: <from>`, and `{field, value: V, from, learned: D, source, assessment: accepted}` is appended. Already-superseded entries are left as they are. Set `facts.<field> = V` | nothing changes |
+| `add_to_note` | the note to extend | Append V(content) to the end of the body, separated by exactly one blank line, followed by a line `Source: <source>`. Add `source` to `sources` if missing | nothing changes |
 | `supersede` | the **newer** note (already written as `draft` by the ingest, 0003) | `target.relations` += `{supersedes: <supersedes>}`; `<supersedes>.relations` += `{superseded_by: target}`; older note `lifecycle: archived`; if both are decisions, older gets `assessment: superseded` and `valid_until: <target.valid_from or target.date>` | the newer note stays, without the relation |
-| `merge` | the **duplicate** to retire | Into `merge_into`: union `aliases` (plus the duplicate's `title`), `sources`, `projects`, `relations`, `timeline` (dedupe exact entries); append the duplicate's body under `## Merged from <title>`. Duplicate: `lifecycle: archived`, `relations` += `{superseded_by: merge_into}`, survivor += `{supersedes: duplicate}`. Every frontmatter reference to the duplicate's id elsewhere in the brain is rewritten to the survivor's id; relative links to the duplicate's file are rewritten to the survivor's file | nothing changes |
-| `new_item` | — | Write `content` as a new note at its folder (§2), lifecycle `draft` | discard |
+| `merge` | the **duplicate** X to retire, merged into the survivor Y = `merge_into` | Steps, in order: **1. References.** In every note except X, Y and sources, rewrite frontmatter references to X's id into Y's id (then dedupe each list, keeping the first occurrence) and relative links to X's file into links to Y's file. **Persisted pairs are left alone**: a meeting's `decisions`/`questions` entries and other notes' `supersedes`/`superseded_by` relations keep pointing at X, whose side of those pairs stays in place (X is archived, not deleted). **2. Into Y:** union `aliases` (plus X's `title`), `tags`, `sources`, `projects`; add X's `relations` except `supersedes`/`superseded_by` and any whose target is X or Y (dedupe); append X's `timeline` entries (dedupe exact entries); a `facts` key only X has is copied to Y; for a key both have, Y's value stays and X's `accepted` entries with a different value become `superseded` with `until: <today>`; append X's body under `## Merged from <X title>`. **3. Pair:** X gets `lifecycle: archived` and `relations` += `{superseded_by: Y}`; Y gets `{supersedes: X}`. If X is a decision, it also gets `assessment: superseded` and `valid_until` = Y's `valid_from` or `date` | nothing changes |
+| `new_item` | — | Write `note` as a new note with the `brain note new` rules (lifecycle `draft`). If it has `decided_in` or `raised_in`, add its id to that meeting's `decisions` or `questions` | discard |
 
-All writes for one proposal happen in one operation; if any write fails, none are kept.
+**Write sets.** Besides the proposal file itself, applying a proposal writes only: `update_fact`, `contradiction`, `add_to_note` → the target; `supersede` → the target and the older note; `merge` → X, Y and the notes whose references step 1 rewrites; `new_item` → the new note and its meeting. All writes for one proposal happen in one operation; if any write fails, none are kept.
 
 ## 12. `brain.json` · see [schemas/brain.schema.json](schemas/brain.schema.json)
 
@@ -394,19 +398,19 @@ All writes for one proposal happen in one operation; if any write fails, none ar
 **Tasks mapping (0018):** each value is the name of a property in your Tasks database; an empty string means "this database has no such property", and the field is skipped.
 - `title` is required.
 - `owner`: a person or text property for the action item's owner.
-- **Backlink to the meeting** (required by 0018, at least one should be set): `meeting` = a relation property to the Meetings database (preferred); `meeting_url` = a URL property, used when your Tasks database has no relation to Meetings. If both are empty, the ingest writes the meeting link as the first line of the task page body.
+- **Backlink to the meeting** (required by 0018): `meeting` = a relation property to the Meetings database (preferred), or `meeting_url` = a URL property when your Tasks database has no relation to Meetings. Once `tasks.database` is set, `title` and at least one of the two must be non-empty (the JSON Schema enforces it).
 - `brain_id`: a text property holding the brain's id for the task's source meeting, so a re-run never duplicates tasks.
 
 ## 13. Generated files
 
 - **`index.md`** (0013), normative format:
   1. First line `<!-- GENERATED by brain index. Do not edit. -->`, a blank line, then `# Index`.
-  2. One section per type, in this order, headed `## Areas`, `## Goals`, `## Projects`, `## People`, `## Orgs`, `## Decisions`, `## Questions`, `## Meetings`, `## Concepts`. Sections with no notes are omitted. Sources, views, proposals and memories are not listed.
+  2. One section per type, in this order, headed `## Areas`, `## Goals`, `## Projects`, `## People`, `## Orgs`, `## Decisions`, `## Questions`, `## Meetings`, `## Concepts`. Each heading is preceded by one blank line; the note lines follow it directly. Sections with no notes are omitted. Sources, views, proposals and memories are not listed.
   3. Within a section, notes are sorted by `title` compared as lowercase Unicode NFC code points, then by `id`.
   4. Each note is one line:
      `- [<title>](<path>) — <id>[ · <field>: <value>]… · <summary>[ · aliases: <a>, <b>][ · <lifecycle>]`
      - `<path>`: relative to the brain root, forward slashes.
-     - `<title>`: `[` and `]` escaped as `\[` `\]`. `<summary>`: newlines replaced by a single space.
+     - `<title>`: `\`, `[` and `]` escaped as `\\`, `\[`, `\]`. In every interpolated value (title, summary, field values, referenced titles, aliases), each line break (`\r\n`, `\r` or `\n`) together with the spaces and tabs around it becomes a single space, and the value is trimmed. A value that is not a string or number is left out. Nothing else is escaped: the line is for reading, not parsing back, so a ` · ` or `, ` inside a value is kept as is. Agents that need structure use `brain index --json`.
      - Per-type fields, in this order. References render the **title** of the referenced note (its id if it does not exist); lists join titles with `, ` in listed order; a missing value omits that `<field>: <value>` segment entirely:
 
        | Type | Fields |
@@ -441,29 +445,29 @@ All writes for one proposal happen in one operation; if any write fails, none ar
 | Projects · Status, Priority, Dates, Archived | `notion_fields.*` |
 | Projects · Area, Goal, Client, People | `area`, `goal`, `client`, `people` |
 | Projects · Meetings, Decisions, Questions | inverses of `projects` on those notes |
-| Meetings · Date, Attendees, Project, Area | `date`, `attendees`, `projects[0]`, `area` |
+| Meetings · Date, Attendees, Project, Area | `date`, `attendees`, `projects`, `area` (the brain only adds to these; cli.md §5.14.4) |
 | Meetings · Decisions, Questions | `decisions`, `questions` |
 | Meetings · Brain Status, Ingested At | set by ingest (`Ingested`, timestamp); not stored in the note |
 | People · Role, Org, Email | `facts.role`, `org`, `notion_fields.email` |
 | Orgs · Relationship, Website | `notion_fields.relationship`, `.website` |
-| Decisions · Date, Assessment, Project, Decided In, Supersedes | `date`, `assessment`, `projects[0]`, `decided_in`, `relations[supersedes]` |
-| Questions · Kind, Status, Project, Raised In | `kind`, `notion_fields.status`, `projects[0]`, `raised_in` |
+| Decisions · Date, Assessment, Project, Decided In, Supersedes | `date`, `assessment`, `projects`, `decided_in`, `relations[supersedes]` |
+| Questions · Kind, Status, Project, Raised In | `kind`, `notion_fields.status`, `projects`, `raised_in` |
 | Review · all | proposal fields (§11): Name=`title`, Kind, Target=`target` title + id, Before, After, Why, Source Meeting=`source`, Decision/Edited Value → `decision`, State from `status` |
 
 ## 15. Lint rules derived from this spec
 
-Errors: `.md` file in a note folder without frontmatter `id`; unparseable frontmatter; invalid frontmatter vs schema; missing required field; malformed or duplicate ID; type in wrong folder; frontmatter reference to a missing ID; broken relative link; `[[wikilink]]` present; unknown `^[...]` marker; source body hash mismatch (§4 source); a view cited as a source; `facts` key without a matching accepted timeline entry (unless contested); one side of a `supersedes`/`superseded_by` pair missing (§6); `decided_in`/`raised_in` disagreeing with the meeting's lists; superseded decision without `valid_until`; memory reach lists not matching `scope`; proposal `status` and `decision` not matching §11.1.
-Warnings: unknown frontmatter key; freshness (§10); summary longer than 200 chars; note with no `sources` (except area, goal, project created in Notion); generated block of a view out of date (re-run `brain views`); `index.md` out of date (re-run `brain index`).
+Errors: `.md` file in a note folder without frontmatter `id`; unparseable frontmatter; invalid frontmatter vs schema; missing required field; malformed or duplicate ID; type in wrong folder; frontmatter reference to a missing ID; broken relative link; `[[wikilink]]` present; unknown `^[...]` marker; source body hash mismatch (§4 source); a view cited as a source; `facts` key without a matching accepted timeline entry (unless contested); one side of a `supersedes`/`superseded_by` pair missing (§6); `decided_in`/`raised_in` disagreeing with the meeting's lists; superseded decision without `valid_until`; superseded decision without a `superseded_by` relation (0005); decision without `sources` (0005); memory reach lists not matching `scope`; proposal `status` and `decision` not matching §11.1.
+Warnings: unknown frontmatter key; freshness (§10); summary longer than 200 chars; knowledge note with no `sources` (except area, goal, project; decisions are an error above); generated block of a view out of date (re-run `brain views`); `index.md` out of date (re-run `brain index`).
 Rule codes, output format and the folders scanned are in [cli.md](cli.md) §5.10 and §3.7.
 
 ## 16. Derived view contract (normative)
 
-Views are rebuilt by `brain views` for every project (CX-07). Inputs are canonical notes only. All links are relative to the view file. Dates render as stored. Every generated line ends with a link to the note it came from.
+Views are rebuilt by `brain views` for every project (CX-07). Inputs are canonical notes only. All links are relative to the view file. Dates render as stored. Every item line links to the note it came from (headings and `- None` lines have no link). The view's frontmatter `title` is `<project title> — brief` or `<project title> — decision log`; the body has no heading of its own. Its layout is: one blank line, the generated block, one blank line, the user block. Inside the generated block, sections are separated by one blank line.
 
-**Idempotence:** if the new generated block and `generated_from` equal the current ones, the file is not rewritten (so `generated_at` only changes when content changes). `generated_from` is the sorted list of every note id read to build the block.
+**Idempotence:** if the new generated block and `generated_from` equal the current ones, the file is not rewritten (so `generated_at` only changes when content changes). `generated_from` is the project's id plus the id of every note that produced an item line, sorted.
 
 ### 16.1 `brief.md` (`view_kind: brief`)
-Title `<project title> — brief`. The generated block contains these sections in this order; a section with no items renders a single line `- None`.
+The generated block contains these sections in this order; a section with no items renders a single line `- None`.
 
 1. `## Status`
    - `- Status: <notion_fields.status> · Priority: <notion_fields.priority> (as of <notion_fields.as_of date>) ([project](project.md))`, omitting absent parts; omitted entirely if `notion_fields` is absent.
@@ -475,9 +479,9 @@ Title `<project title> — brief`. The generated block contains these sections i
 6. `## Recent meetings` — meetings whose `projects` contains the project; sorted by `date` descending, then id; at most 5: `- <date> — [<title>](<path>)`.
 
 ### 16.2 `decision-log.md` (`view_kind: decision_log`)
-Title `<project title> — decision log`. Two sections, each sorted by `date` descending (`valid_until` descending for superseded), then id; empty section renders `- None`:
+Two sections, each sorted by `date` descending (`valid_until` descending for superseded), then id; empty section renders `- None`:
 
 1. `## Current` — decisions for the project with `assessment` `accepted`, `provisional` or `contested`:
    `- <date> — [<title>](<path>) — <assessment>[ — supersedes [<old title>](<old path>)]`
-2. `## Superseded` — decisions with `assessment: superseded`:
+2. `## Superseded` — decisions for the project with `assessment: superseded`:
    `- <valid_from or date> → <valid_until> — [<title>](<path>) — superseded by [<new title>](<new path>)`
