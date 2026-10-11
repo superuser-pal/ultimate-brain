@@ -75,7 +75,7 @@
 
 ## Wave 2 — Core
 
-### CX-03 · `brain init`, `status`, `config`, `id new` · `todo` (needs CC-01, CC-02, CC-03)
+### CX-03 · `brain init`, `status`, `config`, `id new` · `review` (needs CC-01, CC-02, CC-03)
 Also `brain status`, `brain config get/set`, `brain id new` (spec/cli.md §5.2–5.4), and the CX-02 alignment items from the #4 review (error codes, `BRAIN_NOT_FOUND`, contained mkdir, non-brain roots). Create a new brain from `templates/brain/` at a given path; initialize git; write `schema_version` into `brain.json`; never overwrite an existing non-empty folder without `--force`. **Acceptance:** per CC-03; test creates a brain in a temp dir and lint passes on it.
 
 ### CX-04 · Index builder · `done` (PR #10)
