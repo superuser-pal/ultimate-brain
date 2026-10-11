@@ -1,0 +1,7 @@
+.DS_Store
+sources/*
+!sources/.gitkeep
+.env
+.env.*
+node_modules/
+.claude/settings.local.json
