@@ -5,6 +5,7 @@ import { posix } from "node:path";
 import { buildIndex } from "./index-builder.ts";
 import { compareCodePoints, type Note, type ScanProblem } from "./notes.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
+import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
 
 export type Severity = "error" | "warning";
 
@@ -141,6 +142,17 @@ export function lintBrain(input: LintInput): Issue[] {
     }
     for (const source of list(a.sources)) {
       if (typeof source === "string" && byId.get(source)?.type === "view") err("view-cited", lineOfKey(note, "sources"), `${source} is a derived view and can't be evidence`);
+    }
+    if (note.type === "view" && (a.view_kind === "brief" || a.view_kind === "decision_log")) {
+      const project = byId.get(String(a.project));
+      const range = generatedBlockRange(note.body);
+      if (project?.type === "project" && range !== undefined) {
+        const derived = deriveView(project, a.view_kind as ViewKind, input.notes);
+        const generatedFrom = Array.isArray(a.generated_from) ? a.generated_from : [];
+        if (note.body.slice(range.start, range.end) !== derived.generatedBlock || !sameStringList(generatedFrom, derived.generatedFrom)) {
+          warn("view-stale", 1, "generated block is out of date; run brain views");
+        }
+      }
     }
     const facts = record(a.facts);
     for (const [key, value] of Object.entries(facts)) {
@@ -328,4 +340,8 @@ function list(value: unknown): unknown[] {
 
 function record(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function sameStringList(left: unknown[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
