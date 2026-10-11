@@ -1,0 +1,21 @@
+---
+id: prp-7m2k5w9d
+type: proposal
+title: "Maria López role: Designer → PM"
+created: 2026-12-03
+updated: 2026-12-05
+kind: update_fact
+target: per-3h8w2n6c
+field: role
+before: Designer
+after: PM
+from: 2026-12-03
+why: "Maria López (Acme, PM)"
+source: mtg-8c4n2p7w
+status: closed
+closed_reason: stale
+decision:
+  action: approve
+  decided_at: 2026-12-05T08:30:00Z
+  decided_by: notion
+---

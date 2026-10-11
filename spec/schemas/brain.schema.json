@@ -4,65 +4,188 @@
   "title": "brain.json (v1)",
   "description": "Per-brain configuration. See spec/schema.md §12 and decisions 0014, 0018.",
   "type": "object",
-  "required": ["schema_version", "owner", "budgets", "notion"],
+  "required": [
+    "schema_version",
+    "owner",
+    "budgets",
+    "notion"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": 1 },
+    "schema_version": {
+      "const": 1
+    },
     "owner": {
       "type": "object",
-      "required": ["name"],
+      "required": [
+        "name"
+      ],
       "additionalProperties": false,
-      "properties": { "name": { "type": "string", "minLength": 1 } }
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     },
     "budgets": {
       "type": "object",
       "additionalProperties": false,
-      "properties": { "ingest_max_notes": { "type": "integer", "minimum": 1, "maximum": 20, "default": 8 } }
+      "properties": {
+        "ingest_max_notes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "default": 8
+        }
+      }
     },
     "notion": {
       "type": "object",
-      "required": ["databases", "tasks"],
+      "required": [
+        "databases",
+        "tasks"
+      ],
       "additionalProperties": false,
       "properties": {
         "databases": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "areas": { "$ref": "#/$defs/dbId" },
-            "goals": { "$ref": "#/$defs/dbId" },
-            "key_results": { "$ref": "#/$defs/dbId" },
-            "projects": { "$ref": "#/$defs/dbId" },
-            "meetings": { "$ref": "#/$defs/dbId" },
-            "people": { "$ref": "#/$defs/dbId" },
-            "orgs": { "$ref": "#/$defs/dbId" },
-            "decisions": { "$ref": "#/$defs/dbId" },
-            "questions": { "$ref": "#/$defs/dbId" },
-            "review": { "$ref": "#/$defs/dbId" },
-            "capture_inbox": { "$ref": "#/$defs/dbId" }
+            "areas": {
+              "$ref": "#/$defs/dbId"
+            },
+            "goals": {
+              "$ref": "#/$defs/dbId"
+            },
+            "key_results": {
+              "$ref": "#/$defs/dbId"
+            },
+            "projects": {
+              "$ref": "#/$defs/dbId"
+            },
+            "meetings": {
+              "$ref": "#/$defs/dbId"
+            },
+            "people": {
+              "$ref": "#/$defs/dbId"
+            },
+            "orgs": {
+              "$ref": "#/$defs/dbId"
+            },
+            "decisions": {
+              "$ref": "#/$defs/dbId"
+            },
+            "questions": {
+              "$ref": "#/$defs/dbId"
+            },
+            "review": {
+              "$ref": "#/$defs/dbId"
+            },
+            "capture_inbox": {
+              "$ref": "#/$defs/dbId"
+            }
           }
         },
         "tasks": {
           "type": "object",
-          "required": ["database", "properties", "new_task_status"],
+          "required": [
+            "database",
+            "properties",
+            "new_task_status"
+          ],
           "additionalProperties": false,
           "properties": {
-            "database": { "$ref": "#/$defs/dbId" },
+            "database": {
+              "$ref": "#/$defs/dbId"
+            },
             "properties": {
               "type": "object",
-              "required": ["title"],
+              "required": [
+                "title"
+              ],
               "additionalProperties": false,
               "properties": {
-                "title": { "type": "string" },
-                "status": { "type": "string" },
-                "due": { "type": "string" },
-                "project": { "type": "string" },
-                "area": { "type": "string" },
-                "meeting": { "type": "string" },
-                "brain_id": { "type": "string" }
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "due": {
+                  "type": "string"
+                },
+                "project": {
+                  "type": "string"
+                },
+                "area": {
+                  "type": "string"
+                },
+                "owner": {
+                  "type": "string"
+                },
+                "meeting": {
+                  "type": "string"
+                },
+                "meeting_url": {
+                  "type": "string"
+                },
+                "brain_id": {
+                  "type": "string"
+                }
               }
             },
-            "new_task_status": { "type": "string" }
-          }
+            "new_task_status": {
+              "type": "string"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "database": {
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "database"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "properties": {
+                    "properties": {
+                      "title": {
+                        "minLength": 1
+                      }
+                    },
+                    "anyOf": [
+                      {
+                        "properties": {
+                          "meeting": {
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "meeting"
+                        ]
+                      },
+                      {
+                        "properties": {
+                          "meeting_url": {
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "meeting_url"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
         }
       }
     }
