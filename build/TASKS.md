@@ -24,7 +24,7 @@
 
 ## Wave 1 — Foundations
 
-### CC-01 · Schema spec · `todo`
+### CC-01 · Schema spec · `review` (reviewer: Codex)
 **Output:** `spec/schema.md` and `spec/schemas/*.schema.json` (JSON Schema, draft 2020-12).
 **Covers:** common frontmatter; v1 note types (area, goal, project, person, org, meeting, decision, question, concept, source, view, memory); `timeline:` entries (0010); assessment and lifecycle (0005); relations vocabulary; proposal file (synthesis §4.6); `brain.json` including the Notion section and Tasks mapping (0018); ID format (0017); provenance markers (0004); freshness forms (0011); folder layout (synthesis §4.1).
 **Decisions:** 0001–0005, 0008–0011, 0017, 0018, 0020, 0021, 0023.
