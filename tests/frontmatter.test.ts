@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { parseFrontmatter, serializeFrontmatter } from "../src/lib/frontmatter.ts";
+import { parseFrontmatter, serializeFrontmatter, serializeNewFile } from "../src/lib/frontmatter.ts";
 
 const samples = [
   `---\nid: dec-7k2m9q4x\ntype: decision\ntitle: Use Supabase\naliases: [auth choice, backend]\n---\n## Decision\nUse Supabase.\n`,
@@ -35,14 +35,48 @@ test("frontmatter parses unicode, block scalars, sequences, and unknown keys", (
   assert.equal(unknown.attributes.custom_field, "unknown value");
 });
 
-test("serialization preserves key order and unknown fields after an edit", () => {
-  const document = parseFrontmatter(samples[0]);
+test("an added key goes before the first present key ranked after it; existing and unknown keys stay put", () => {
+  const document = parseFrontmatter(
+    "---\nid: dec-7k2m9q4x\ntype: decision\ntitle: Use Supabase\ncustom: kept\naliases: [auth choice]\ncreated: 2026-12-03\n---\nBody\n",
+  );
   document.attributes.summary = "A newly added summary";
+  document.attributes.sources = ["mtg-8c4n2p7w"];
+  document.attributes.notion_published = { Name: "Use Supabase" };
   const serialized = serializeFrontmatter(document);
-  const keys = serialized.match(/^(id|type|title|aliases|summary):/gm);
 
-  assert.deepEqual(keys, ["id:", "type:", "title:", "aliases:", "summary:"]);
-  assert.equal(parseFrontmatter(serialized).attributes.summary, "A newly added summary");
+  assert.equal(
+    serialized,
+    "---\nid: dec-7k2m9q4x\ntype: decision\ntitle: Use Supabase\ncustom: kept\nsummary: A newly added summary\n" +
+      "aliases: [auth choice]\nsources: [mtg-8c4n2p7w]\ncreated: 2026-12-03\nnotion_published:\n  Name: Use Supabase\n---\nBody\n",
+  );
+});
+
+test("edited values use flow style for scalar lists and block style for mappings", () => {
+  const document = parseFrontmatter("---\nid: prj-7k2m9q4x\ntype: project\ntitle: Site\npeople:\n  - per-11111111\n---\n");
+  document.attributes.people = ["per-11111111", "per-22222222"];
+  document.attributes.tags = [];
+  document.attributes.timeline = [{ field: "budget", value: "80000", from: "2026-10", learned: "2026-10-01", source: "mtg-5r2k8v3a", assessment: "accepted" }];
+  assert.equal(
+    serializeFrontmatter(document),
+    "---\nid: prj-7k2m9q4x\ntype: project\ntitle: Site\npeople: [per-11111111, per-22222222]\ntags: []\ntimeline:\n" +
+      "  - field: budget\n    value: \"80000\"\n    from: 2026-10\n    learned: 2026-10-01\n    source: mtg-5r2k8v3a\n    assessment: accepted\n---\n",
+  );
+});
+
+test("new files follow the canonical key order and body separator", () => {
+  const decision = serializeNewFile(
+    { updated: "2026-12-03", created: "2026-12-03", projects: ["prj-9x4t1b7e"], extra: 1, assessment: "provisional", date: "2026-12-03", lifecycle: "draft", summary: "S", title: "T", type: "decision", id: "dec-3f7k9m2q" },
+    "## Decision\n",
+  );
+  assert.equal(
+    decision,
+    "---\nid: dec-3f7k9m2q\ntype: decision\ntitle: T\nsummary: S\nlifecycle: draft\ndate: 2026-12-03\nassessment: provisional\n" +
+      "projects: [prj-9x4t1b7e]\ncreated: 2026-12-03\nupdated: 2026-12-03\nextra: 1\n---\n\n## Decision\n",
+  );
+  const source = serializeNewFile({ id: "src-4m9q2x7c", type: "source", title: "Minutes" }, "Body\n");
+  assert.equal(source, "---\nid: src-4m9q2x7c\ntype: source\ntitle: Minutes\n---\nBody\n");
+  const proposal = serializeNewFile({ status: "pending", kind: "add_to_note", created: "2026-12-03", title: "P", type: "proposal", id: "prp-3c8v1n5x" }, "");
+  assert.equal(proposal, "---\nid: prp-3c8v1n5x\ntype: proposal\ntitle: P\ncreated: 2026-12-03\nkind: add_to_note\nstatus: pending\n---\n");
 });
 
 test("serialization emits YAML-safe strings under the core schema", () => {
