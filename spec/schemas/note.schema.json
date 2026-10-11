@@ -443,6 +443,10 @@
         },
         "notion_fields": {
           "$ref": "#/$defs/notionFieldsBase"
+        },
+        "notion_published": {
+          "description": "Notion property name → value last published or imported (spec/cli.md §5.14).",
+          "type": "object"
         }
       }
     },
@@ -855,6 +859,25 @@
         "generated_at": {
           "$ref": "#/$defs/timestamp"
         }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "lifecycle"
+            ]
+          },
+          {
+            "required": [
+              "facts"
+            ]
+          },
+          {
+            "required": [
+              "timeline"
+            ]
+          }
+        ]
       }
     },
     "memory": {
