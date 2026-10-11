@@ -45,6 +45,49 @@ test("serialization preserves key order and unknown fields after an edit", () =>
   assert.equal(parseFrontmatter(serialized).attributes.summary, "A newly added summary");
 });
 
+test("serialization emits YAML-safe strings under the core schema", () => {
+  const values = [
+    "Acme: kickoff",
+    "Ends with colon:",
+    "- not a list",
+    "@handle",
+    "1e3",
+    ".5",
+    "0x1F",
+  ];
+
+  for (const value of values) {
+    const serialized = serializeFrontmatter({ attributes: { title: value }, body: "" });
+    assert.equal(parseFrontmatter(serialized).attributes.title, value);
+  }
+});
+
+test("frontmatter uses YAML 1.2 core parsing semantics", () => {
+  const continued = parseFrontmatter(
+    "---\nsummary: long text\n  continued here\nbudget: 1e3\n---\n",
+  );
+
+  assert.equal(continued.attributes.summary, "long text continued here");
+  assert.equal(continued.attributes.budget, 1000);
+});
+
+test("frontmatter accepts an empty mapping", () => {
+  const document = parseFrontmatter("---\n---\nBody\n");
+
+  assert.deepEqual(document.attributes, {});
+  assert.equal(document.body, "Body\n");
+  assert.equal(serializeFrontmatter(document), "---\n---\nBody\n");
+});
+
+test("serialization retains comments on unchanged keys after an edit", () => {
+  const document = parseFrontmatter("---\nid: dec-7k2m9q4x # permanent\ntitle: Old\n---\n");
+  document.attributes.title = "Acme: kickoff";
+
+  const serialized = serializeFrontmatter(document);
+  assert.match(serialized, /id: dec-7k2m9q4x # permanent/);
+  assert.equal(parseFrontmatter(serialized).attributes.title, "Acme: kickoff");
+});
+
 test("frontmatter rejects missing delimiters", () => {
   assert.throws(() => parseFrontmatter("# No frontmatter\n"), /must start/);
   assert.throws(() => parseFrontmatter("---\nid: dec-7k2m9q4x\n"), /closing delimiter/);
