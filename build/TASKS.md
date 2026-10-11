@@ -31,7 +31,7 @@
 **Acceptance:** every field named in synthesis §4 and docs/notion-space-design.md §3 has a type and owner; one valid and one invalid example per note type in `spec/examples/`; names match the Notion property names exactly.
 **Blocks:** CX-03 to CX-09.
 
-### CC-02 · Brain template · `todo`
+### CC-02 · Brain template · `review` (branch `claude/CC-02-brain-template`)
 **Output:** `templates/brain/`: folder skeleton, brain `AGENTS.md` (+ `CLAUDE.md` importing it) with the operating rules (synthesis §3.1), default `brain.json`, `.gitignore`, empty generated files.
 **Decisions:** 0006, 0014, 0022.
 **Acceptance:** product-owned sections in the brain AGENTS.md are fenced so upgrades can replace them without touching user content.
