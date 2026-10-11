@@ -8,7 +8,7 @@ scope: project
 projects: [prj-9x4t1b7e]
 confidence: verified
 origin: acme-api
-sources: ["agent:claude-code/2026-12-04-session"]
+sources: [agent:claude-code/2026-12-04-session]
 created: 2026-12-04
 updated: 2026-12-04
 ---

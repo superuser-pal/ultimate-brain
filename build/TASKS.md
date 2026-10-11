@@ -33,7 +33,7 @@
 **Acceptance:** every field named in synthesis §4 and docs/notion-space-design.md §3 has a type and owner; one valid and one invalid example per note type in `spec/examples/`; names match the Notion property names exactly.
 **Blocks:** CX-03 to CX-09.
 
-### CC-02 · Brain template · `todo`
+### CC-02 · Brain template · `review` (branch `claude/CC-02-brain-template`)
 **Output:** `templates/brain/`: folder skeleton, brain `AGENTS.md` (+ `CLAUDE.md` importing it) with the operating rules (synthesis §3.1), default `brain.json`, `.gitignore`, empty generated files.
 **Decisions:** 0006, 0014, 0022.
 **Acceptance:** product-owned sections in the brain AGENTS.md are fenced so upgrades can replace them without touching user content.
@@ -44,7 +44,7 @@
 **Acceptance:** each command has an example invocation and example JSON output; error cases listed.
 **Blocks:** CX-03 to CX-11.
 
-### CC-04 · Notion AI prompts · `todo`
+### CC-04 · Notion AI prompts · `review` (branch `claude/CC-04-notion-prompts`)
 **Output:** `notion/prompts/01-pages.md` … `08-navigation.md` and `notion/minutes-format.md`, extracted from docs/notion-space-design.md §6 and §9, plus `notion/CHECKLIST.md`.
 **Acceptance:** names identical to CC-01; each prompt has its Verify list.
 **Unblocks:** U-01.

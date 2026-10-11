@@ -6,14 +6,14 @@ summary: Kickoff of the Acme website rebuild; Firebase chosen for auth, launch p
 lifecycle: reviewed
 date: 2026-10-01
 attendees: [per-3h8w2n6c, per-9t2c6m4a]
-area: area-2m7c4h8n
-projects: [prj-9x4t1b7e]
 source: src-2k6m9p3t
 decisions: [dec-2p9f6h1r]
+area: area-2m7c4h8n
+projects: [prj-9x4t1b7e]
 sources: [src-2k6m9p3t]
-notion: 4d5e6f7a-8b9c-4d0e-9f1a-2b3c4d5e6f70
 created: 2026-10-01
 updated: 2026-10-01
+notion: 4d5e6f7a-8b9c-4d0e-9f1a-2b3c4d5e6f70
 ---
 
 ## Summary

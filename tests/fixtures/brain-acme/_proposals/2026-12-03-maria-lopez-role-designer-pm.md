@@ -10,7 +10,7 @@ field: role
 before: Designer
 after: PM
 from: 2026-12-03
-why: "Maria López (Acme, PM)"
+why: Maria López (Acme, PM)
 source: mtg-8c4n2p7w
 status: applied
 decision:
