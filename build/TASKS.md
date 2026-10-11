@@ -4,6 +4,8 @@
 **Status values:** `todo` · `in progress` · `review` · `done` · `blocked`.
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
+> **2026-10-11 — Codex out of tokens.** Claude Code has taken over every open CX task, on `claude/<task-id>-<slug>` branches. Until Codex is back, each PR is reviewed by a fresh-context Claude reviewer that posts its findings on the PR; the author fixes them and the user merges. Build order: CX-09 → CX-04 → CX-05 → CX-06 → CX-03 → CX-07 → CX-08, then CC-05/CC-06.
+
 ## Why this split
 
 - **Claude Code** has the full design context from the research and grilling sessions, so it owns the things that encode judgment: the schema and CLI contracts, the agent skills and prompts (ingest, apply, sync, query), the Notion design, and the evaluation of meeting extraction.
@@ -24,7 +26,7 @@
 
 ## Wave 1 — Foundations
 
-### CC-01 · Schema spec · `review` (reviewer: Codex)
+### CC-01 · Schema spec · `done` (follow-up fixes from Codex's review: CC-01b)
 **Output:** `spec/schema.md` and `spec/schemas/*.schema.json` (JSON Schema, draft 2020-12).
 **Covers:** common frontmatter; v1 note types (area, goal, project, person, org, meeting, decision, question, concept, source, view, memory); `timeline:` entries (0010); assessment and lifecycle (0005); relations vocabulary; proposal file (synthesis §4.6); `brain.json` including the Notion section and Tasks mapping (0018); ID format (0017); provenance markers (0004); freshness forms (0011); folder layout (synthesis §4.1).
 **Decisions:** 0001–0005, 0008–0011, 0017, 0018, 0020, 0021, 0023.
@@ -37,7 +39,7 @@
 **Acceptance:** product-owned sections in the brain AGENTS.md are fenced so upgrades can replace them without touching user content.
 **Blocks:** CX-03.
 
-### CC-03 · CLI contract · `todo`
+### CC-03 · CLI contract · `review` (branch `claude/CC-03-cli-contract`, stacked on CC-01b)
 **Output:** `spec/cli.md`: every command (`init`, `index`, `lint`, `proposal new`, `apply`, `views`, `link`, `sync` helpers, `query` helpers), flags, inputs/outputs (JSON on stdout for agent use), exit codes, brain resolution order.
 **Acceptance:** each command has an example invocation and example JSON output; error cases listed.
 **Blocks:** CX-03 to CX-11.
@@ -69,17 +71,17 @@
 
 ## Wave 2 — Core
 
-### CX-03 · `brain init` · `todo` (needs CC-01, CC-02, CC-03)
-Create a new brain from `templates/brain/` at a given path; initialize git; write `schema_version` into `brain.json`; never overwrite an existing non-empty folder without `--force`. **Acceptance:** per CC-03; test creates a brain in a temp dir and lint passes on it.
+### CX-03 · `brain init`, `status`, `config`, `id new` · `todo` (needs CC-01, CC-02, CC-03)
+Also `brain status`, `brain config get/set`, `brain id new` (spec/cli.md §5.2–5.4), and the CX-02 alignment items from the #4 review (error codes, `BRAIN_NOT_FOUND`, contained mkdir, non-brain roots). Create a new brain from `templates/brain/` at a given path; initialize git; write `schema_version` into `brain.json`; never overwrite an existing non-empty folder without `--force`. **Acceptance:** per CC-03; test creates a brain in a temp dir and lint passes on it.
 
 ### CX-04 · Index builder · `todo` (needs CC-01, CC-03)
-`brain index` regenerates `index.md` from frontmatter (0013): one line per note with id, title, summary, type, area/project, status, aliases, grouped by type; deterministic ordering; computes relation inverses. Also `log` append helper (`log/YYYY-MM.md`). **Acceptance:** identical output on repeated runs; fixture test against an expected file.
+`brain index` regenerates `index.md` from frontmatter (0013): one line per note with id, title, summary, type, area/project, status, aliases, grouped by type; deterministic ordering; computes relation inverses. Also `brain log` and the shared log append helper (`log/YYYY-MM.md`, spec/cli.md §3.9, §5.11). **Acceptance:** identical output on repeated runs; fixture test against an expected file.
 
 ### CX-05 · Lint · `todo` (needs CC-01, CC-03)
 `brain lint`: validate frontmatter against the JSON schemas; IDs present, well-formed, unique; links resolve (relative Markdown links and relation targets); no `[[wikilinks]]`; provenance markers well-formed; freshness warnings (0011, warnings only in v1); derived views not cited as sources. JSON output with severity, file, line. **Acceptance:** one fixture per rule, passing and failing.
 
-### CX-06 · Proposals and apply · `todo` (needs CC-01, CC-03)
-`brain proposal new` writes a proposal file from JSON input. `brain apply --decisions <file.json>` applies decisions (`approve`, `reject`, `edit` with value) to target notes: append `timeline:` entries, change assessment, set supersedes/superseded_by on both notes, mark proposals applied/closed. Also applies user corrections from Notion edits (0023). Pure and deterministic; never touches notes outside the decision list. **Acceptance:** golden-file tests for each proposal kind; re-applying the same decisions is a no-op.
+### CX-06 · Notes, proposals and apply · `todo` (needs CC-01, CC-03)
+`brain note new` (spec/cli.md §5.5) and `brain proposal list`. `brain proposal new` writes a proposal file from JSON input. `brain apply --decisions <file.json>` applies decisions (`approve`, `reject`, `edit` with value) to target notes: append `timeline:` entries, change assessment, set supersedes/superseded_by on both notes, mark proposals applied/closed. Also applies user corrections from Notion edits (0023). Pure and deterministic; never touches notes outside the decision list. **Acceptance:** golden-file tests for each proposal kind; re-applying the same decisions is a no-op.
 
 ### CX-07 · Derived views · `todo` (needs CC-01, CC-03)
 `brain views` regenerates `projects/<slug>/brief.md` and `decision-log.md` from canonical notes inside `@generated` markers, preserving `@user` blocks (synthesis §4.5). **Acceptance:** user block survives regeneration; every generated line links to its source note.
@@ -87,7 +89,7 @@ Create a new brain from `templates/brain/` at a given path; initialize git; writ
 ### CX-08 · `brain link` · `todo` (needs CC-03)
 Write `.brain` (project, area, stacks) in a target repo and insert or update a fenced "consult the brain" block in its `CLAUDE.md` / `AGENTS.md` (0006, 0009). Idempotent. **Acceptance:** running twice yields the same files; existing content outside the fence untouched.
 
-### CX-09 · Fixture brain · `todo` (needs CC-01)
+### CX-09 · Fixture brain · `review` (Claude, branch `claude/CX-09-fixture-brain`) (needs CC-01)
 `tests/fixtures/brain-acme/`: a small synthetic brain (fictional client Acme, people, a project with key-fact timelines, decisions incl. one superseded, open questions, one goal) that passes lint. Used by all tests and by CC-07. **Acceptance:** fictional data only; covers every v1 note type.
 
 ### CC-05 · Skill packaging · `todo`
@@ -109,7 +111,7 @@ Five synthetic meetings with expected extractions (decisions, fact changes, cont
 - **CC-11 · notion-change skill:** spec diff → Notion AI prompts → drift check via MCP (0022).
 - **CX-10 · sync helpers:** CLI functions the sync skill calls (diff Notion snapshot JSON vs notes, produce correction and creation plans).
 - **CX-11 · query helpers:** `brain query --candidates "<q>"` returning ranked notes from index + grep with snippets.
-- **CX-12 · packaging:** publishable npm package so `npx ultimate-brain init` works; plugin bundle includes skills.
+- **CX-12 · packaging:** publishable npm package so `npx ultimate-brain init` works; plugin bundle includes skills. Publish **compiled JavaScript** (Node won't strip types inside `node_modules`); development in the repo stays build-free. Until then, run the CLI with `node src/cli.ts` (answers CX-01's spec questions).
 
 ## Wave 4 — Dogfood
 - **CC-12 · end-to-end run with you;** **CX-13 · fixes;** **U-05 · two weeks of real use** against the v1 success criterion in vision.md.
