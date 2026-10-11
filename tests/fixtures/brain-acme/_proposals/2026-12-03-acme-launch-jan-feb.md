@@ -10,7 +10,7 @@ field: launch_date
 before: 2027-01
 after: 2027-02
 from: 2026-12-03
-why: "Launch moves to February 2027."
+why: Launch moves to February 2027.
 source: mtg-8c4n2p7w
 status: applied
 decision:
