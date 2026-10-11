@@ -44,7 +44,7 @@ Every database that mirrors a brain note has three kinds of properties. Each pro
 
 | Owner | Meaning | Examples | Flows |
 |---|---|---|---|
-| **Brain** | Knowledge the brain maintains | Summary, Role, Client, Deadline, Assessment, Supersedes | Brain → Notion. Edits in Notion are not silently synced (see §8, open question 1) |
+| **Brain** | Knowledge the brain maintains | Summary, Role, Client, Deadline, Assessment, Supersedes | Brain → Notion. Your edits in Notion are applied as your corrections on the next sync (0023, 0027; §8) |
 | **You** | Operational fields | Status, Priority, Progress, Lifecycle, Archived, Brain status | Notion → brain as pointers; the brain never writes them |
 | **System** | Bridge plumbing | Brain ID, Last synced | Brain → Notion only. Never edit |
 
@@ -228,7 +228,7 @@ Minimal, so the brain can send action items (0018). If you already have a tasks 
 
 ## 4. Templates (contextual workspaces, Easlo pattern)
 
-Each template is the default for its database. Linked views filter to "this page".
+Each template is the default for its database. Linked views filter to "this page". The table is the intent; [Prompt 6](../notion/prompts/06-templates.md) is the exact definition, and wins where they differ.
 
 | Database | Template body |
 |---|---|
@@ -317,7 +317,7 @@ See "After building" in [notion/CHECKLIST.md](../notion/CHECKLIST.md): connect t
 
 ## 8. Resolved questions
 
-1. **Editing a brain-owned property in Notion:** applied as your correction, recorded in the note's timeline (0023).
+1. **Editing a brain-owned property in Notion:** applied as your correction on the next sync (0023). Key facts get a timeline entry; Name, Summary, Why and relations are replaced in place; Assessment, Supersedes and similar judgments go through a Review proposal instead (0027).
 2. **Meeting notes location:** they were loose pages. The Meetings database is their home from now on; move only recent meetings you still care about (last 1–2 months) and mark them Reviewed (0024).
 3. **Plan tier:** nothing here needs Notion Business. Revisit only for external sharing.
 

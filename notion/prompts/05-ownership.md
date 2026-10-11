@@ -6,8 +6,8 @@ Each description starts with who owns the property, so you can see on hover what
 
 ```text
 In every database on "Brain Data", set each property's description to start with its owner. Use the first rule that matches:
-1. "Owner: system. Do not edit." for: Brain ID, Last Synced, Ingested At, State.
-2. "Owner: you." for: every property of "Key Results", "Capture Inbox" and "Tasks"; in "Meetings": Name, Date, Attendees, Project, Area, Brain Status; in "Areas": Goals, Projects; in "Goals": Key Results, Projects; and everywhere: Status, Priority, Dates, Lifecycle, Archived, Email, Website, Relationship, Type, Decision, Edited Value, Progress.
+1. "Owner: system. Do not edit." for: Brain ID, Last Synced, Ingested At, State, and Created in "Capture Inbox".
+2. "Owner: you." for: every other property of "Key Results", "Capture Inbox" and "Tasks", and the "Tasks" relation in Projects, Areas and Meetings; in "Meetings": Name, Date, Attendees, Project, Area, Brain Status; in "Areas": Goals, Projects; in "Goals": Key Results, Projects; and everywhere: Status, Priority, Dates, Lifecycle, Archived, Email, Website, Relationship, Type, Decision, Edited Value, Progress.
 3. "Owner: you when creating, then brain." for: Name in Areas, Goals, Projects, People and Orgs; Area in Goals and Projects; Goal in Projects.
 4. "Owner: brain." for every other property.
 Do not rename or change any property.
