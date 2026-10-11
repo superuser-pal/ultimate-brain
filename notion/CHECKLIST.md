@@ -22,9 +22,9 @@ The prompts are generated from [docs/notion-space-design.md](../docs/notion-spac
 - [ ] Using your own Tasks database? Tell the agent which one. It maps its property names into `brain.json` `notion.tasks` (decision 0018). The title property is required; a relation to Meetings is preferred for the backlink.
 - [ ] Ask the agent to verify the live space against the design. It reports any property, option or relation that differs (decision 0022).
 
-## Changes for spaces built before 2026-10-11
+## Changes for spaces built with the earlier prompts
 
-If you built the space with the earlier prompts in docs/notion-space-design.md, make these two fixes by hand:
+If you built the space from the prompts that used to live in docs/notion-space-design.md (before `notion/prompts/` existed), make these two fixes by hand:
 
 - [ ] **Projects template (decision 0026):** open the Projects default template, and turn the "Brief" and "Decision log" headings into toggle headings (block menu → **Turn into** → **Toggle heading 2**). Without this, the brain can't publish the brief and decision log.
 - [ ] **Ownership descriptions:** re-run [Prompt 5](prompts/05-ownership.md). It now marks Meetings Name, Date, Attendees, Project and Area, plus Areas Goals/Projects and Goals Key Results/Projects, as yours, and Name/Area/Goal as "you when creating, then brain".

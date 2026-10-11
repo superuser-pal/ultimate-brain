@@ -2,7 +2,7 @@
 
 Paste into Notion AI. Before: [Prompt 1](01-pages.md). Next: [Prompt 3](03-relations.md).
 
-Using your own Tasks database? Delete line 12 before pasting, and map yours later (decision 0018).
+Using your own Tasks database? Before pasting, delete the line that starts with `12. "Tasks"`, and map yours later (decision 0018).
 
 ```text
 On the page "Brain Data", create these full-page databases with exactly these properties and options. Do not add any other properties. Do not create relations yet.
