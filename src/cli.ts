@@ -2,29 +2,34 @@
 
 import { pathToFileURL } from "node:url";
 
-export const HELP_TEXT = `Usage: brain <command> [options]
+import { indexCommand } from "./commands/index.ts";
+import { logCommand } from "./commands/log.ts";
+import { runCommand, type CliIo, type Command, type RunEnvironment } from "./lib/command.ts";
+import { exitCodeFor } from "./lib/errors.ts";
 
-Operate an Ultimate Brain repository.
-
-Options:
-  -h, --help  Show this help message
-
-Commands:
-  help        Show this help message
-`;
-
-export interface OutputWriter {
-  write(value: string): unknown;
-}
-
-export interface CliIo {
-  stdout: OutputWriter;
-  stderr: OutputWriter;
-}
+export type { CliIo, OutputWriter } from "./lib/command.ts";
 
 export type CommandHandler = (args: readonly string[], io: CliIo) => number | Promise<number>;
 
-export interface CliOptions {
+/** Registered commands, in help order. */
+export const COMMANDS: readonly Command[] = [indexCommand, logCommand];
+
+export const HELP_TEXT = `Usage: brain <command> [options]
+
+Operate an Ultimate Brain repository. Contract: spec/cli.md.
+
+Global options:
+  --brain <path>    Brain directory (else BRAIN_DIR, else ~/.config/ultimate-brain/config.json)
+  --json            Print one JSON document on stdout
+  --now <time>      Use this ISO 8601 UTC time as "now"
+  -h, --help        Show help
+
+Commands:
+${COMMANDS.map((command) => `  ${command.name.padEnd(16)}${command.summary.split(". ")[0]!.replace(/\.$/, "")}`).join("\n")}
+`;
+
+export interface CliOptions extends RunEnvironment {
+  /** Extra or replacement handlers, keyed by command path (tests). */
   commands?: ReadonlyMap<string, CommandHandler>;
   io?: CliIo;
 }
@@ -34,25 +39,35 @@ const defaultIo: CliIo = {
   stderr: process.stderr,
 };
 
-export async function runCli(
-  args: readonly string[],
-  options: CliOptions = {},
-): Promise<number> {
+export async function runCli(args: readonly string[], options: CliOptions = {}): Promise<number> {
   const io = options.io ?? defaultIo;
-  const [command, ...commandArgs] = args;
+  const [first] = args;
 
-  if (command === undefined || command === "help" || command === "--help" || command === "-h") {
+  if (first === undefined || first === "help" || first === "--help" || first === "-h") {
     io.stdout.write(HELP_TEXT);
     return 0;
   }
 
-  const handler = options.commands?.get(command);
-  if (handler === undefined) {
-    io.stderr.write(`Unknown command: ${command}\nRun "brain --help" for usage.\n`);
-    return 1;
+  const handlers = new Map<string, CommandHandler>();
+  for (const command of COMMANDS) {
+    handlers.set(command.name, (rest, commandIo) => runCommand(command, rest, commandIo, options));
+  }
+  for (const [name, handler] of options.commands ?? []) handlers.set(name, handler);
+
+  // Longest command path first, so "note new" wins over "note".
+  for (const words of [2, 1]) {
+    const name = args.slice(0, words).join(" ");
+    const handler = args.length >= words ? handlers.get(name) : undefined;
+    if (handler !== undefined) return handler(args.slice(words), io);
   }
 
-  return handler(commandArgs, io);
+  const message = `Unknown command: ${first}`;
+  if (args.includes("--json")) {
+    io.stdout.write(`${JSON.stringify({ ok: false, command: first, brain: null, error: { code: "USAGE", message } })}\n`);
+  } else {
+    io.stderr.write(`${message}\nRun "brain --help" for usage.\n`);
+  }
+  return exitCodeFor("USAGE");
 }
 
 const entryPoint = process.argv[1];

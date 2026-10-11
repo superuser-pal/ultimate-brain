@@ -74,7 +74,7 @@
 ### CX-03 · `brain init`, `status`, `config`, `id new` · `todo` (needs CC-01, CC-02, CC-03)
 Also `brain status`, `brain config get/set`, `brain id new` (spec/cli.md §5.2–5.4), and the CX-02 alignment items from the #4 review (error codes, `BRAIN_NOT_FOUND`, contained mkdir, non-brain roots). Create a new brain from `templates/brain/` at a given path; initialize git; write `schema_version` into `brain.json`; never overwrite an existing non-empty folder without `--force`. **Acceptance:** per CC-03; test creates a brain in a temp dir and lint passes on it.
 
-### CX-04 · Index builder · `todo` (needs CC-01, CC-03)
+### CX-04 · Index builder · `review` (Claude, branch `claude/CX-04-index`) (needs CC-01, CC-03)
 `brain index` regenerates `index.md` from frontmatter (0013): one line per note with id, title, summary, type, area/project, status, aliases, grouped by type; deterministic ordering; computes relation inverses. Also `brain log` and the shared log append helper (`log/YYYY-MM.md`, spec/cli.md §3.9, §5.11). **Acceptance:** identical output on repeated runs; fixture test against an expected file.
 
 ### CX-05 · Lint · `todo` (needs CC-01, CC-03)
