@@ -100,6 +100,14 @@ export class Workspace {
     this.notesByPath = new Map(checkpoint.notes);
   }
 
+  /** Paths whose content changed since the checkpoint, sorted. */
+  changedSince(checkpoint: Checkpoint): string[] {
+    return [...this.notesByPath.entries()]
+      .filter(([path, note]) => checkpoint.notes.get(path)?.raw !== note.raw)
+      .map(([path]) => path)
+      .sort(compareCodePoints);
+  }
+
   /** Paths with staged writes, sorted. */
   get changedPaths(): string[] {
     return [...this.staged.keys()].sort(compareCodePoints);
