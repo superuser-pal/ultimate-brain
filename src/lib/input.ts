@@ -18,7 +18,7 @@ export async function readJsonInput(path: string | undefined, command: string): 
     throw new BrainError("INPUT_UNREADABLE", `Cannot read input ${path}: ${error instanceof Error ? error.message : String(error)}`);
   }
   try {
-    return JSON.parse(text.startsWith("﻿") ? text.slice(1) : text);
+    return JSON.parse(text.startsWith("\uFEFF") ? text.slice(1) : text);
   } catch (error) {
     throw new BrainError("INPUT_UNREADABLE", `Input is not JSON: ${error instanceof Error ? error.message : String(error)}`);
   }

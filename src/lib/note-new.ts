@@ -43,6 +43,14 @@ const KNOWLEDGE_TYPES = new Set(["area", "goal", "project", "person", "org", "me
 const NEW_NOTE_TYPES = new Set([...KNOWLEDGE_TYPES, "source"]);
 const FORBIDDEN_KEYS = ["id", "type", "title", "created", "updated", "lifecycle"];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+/** Types whose path uses the note's own `date` (spec/cli.md §3.8). */
+const DATED_BY_FIELD = new Set(["meeting", "decision"]);
+
+function isDate(value: unknown): boolean {
+  if (typeof value !== "string" || !DATE.test(value)) return false;
+  const time = Date.parse(`${value}T00:00:00Z`);
+  return !Number.isNaN(time) && new Date(time).toISOString().startsWith(value);
+}
 
 /** Shape problems of one input item; `withId: false` for a proposal's `note`, which has no id. */
 export function checkNoteInput(value: unknown, pointer: string, withId = true): InputProblem[] {
@@ -60,10 +68,9 @@ export function checkNoteInput(value: unknown, pointer: string, withId = true): 
       at("id", `must be a ${prefix ?? "<prefix>"}- id from brain id new`);
     }
   }
-  if (value.file_date !== undefined && (typeof value.file_date !== "string" || !DATE.test(value.file_date))) {
-    at("file_date", "must match YYYY-MM-DD");
-  }
+  if (value.file_date !== undefined && !isDate(value.file_date)) at("file_date", "must be a real date, YYYY-MM-DD");
   if (typeof value.body !== "string") at("body", "must be a string");
+  else if (value.type === "source" && value.body.includes("\r")) at("body", "must use LF line endings (a source is hashed byte for byte)");
   if (!isRecord(value.frontmatter)) {
     at("frontmatter", "must be an object");
   } else {
@@ -107,7 +114,8 @@ export function stageNotes(
   const result: StagedNotes = { created: [], skipped: [], pointers: new Map() };
 
   items.forEach((item, index) => {
-    const body = item.body === "" || item.body.endsWith("\n") ? item.body : `${item.body}\n`;
+    const lf = item.body.replace(/\r\n?/g, "\n");
+    const body = lf === "" || lf.endsWith("\n") ? lf : `${lf}\n`;
     const attributes: Record<string, unknown> = { type: item.type, title: item.title, ...item.frontmatter };
     if (KNOWLEDGE_TYPES.has(item.type)) attributes.lifecycle = options.lifecycle ?? "draft";
     if (item.type === "source") {
@@ -126,7 +134,8 @@ export function stageNotes(
     attributes.created = today;
     attributes.updated = today;
 
-    const date = typeof item.frontmatter.date === "string" ? item.frontmatter.date : item.file_date ?? today;
+    const ownDate = DATED_BY_FIELD.has(item.type) && isDate(item.frontmatter.date) ? (item.frontmatter.date as string) : undefined;
+    const date = ownDate ?? item.file_date ?? today;
     const path = newNotePath(item.type, item.title, date, (candidate) => workspace.exists(candidate));
     workspace.write(path, serializeNewFile(attributes, body));
     result.created.push({ id, type: item.type, title: item.title, path });
@@ -135,11 +144,16 @@ export function stageNotes(
   return result;
 }
 
-/** Throw INPUT_INVALID if the staged files at these paths add lint errors (spec/cli.md §3.6.1). */
-export function assertStagedValid(workspace: Workspace, pointers: ReadonlyMap<string, string>): void {
-  const problems = workspace.newErrors(pointers.keys()).map((issue) => ({
-    pointer: pointers.get(issue.path)!,
-    message: `${issue.rule}: ${issue.message}`,
-  }));
+/**
+ * Throw INPUT_INVALID if the staged writes add lint errors anywhere in the brain (spec/cli.md
+ * §3.6.1). Errors in a staged file point at its input item; others name the file and point at `root`.
+ */
+export function assertStagedValid(workspace: Workspace, pointers: ReadonlyMap<string, string>, root = ""): void {
+  const problems = workspace.newErrors().map((issue) => {
+    const pointer = pointers.get(issue.path);
+    return pointer === undefined
+      ? { pointer: root, message: `${issue.path}: ${issue.rule}: ${issue.message}` }
+      : { pointer, message: `${issue.rule}: ${issue.message}` };
+  });
   assertNoProblems(problems);
 }
