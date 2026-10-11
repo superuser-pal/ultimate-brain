@@ -1,7 +1,6 @@
 import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { assertNoProblems, isRecord, readJsonInput, unknownKeys } from "../lib/input.ts";
-import { appendLog } from "../lib/log.ts";
 import { listProposals, PROPOSAL_STATUSES, stageProposals } from "../lib/proposals.ts";
 import { Workspace } from "../lib/workspace.ts";
 
@@ -23,15 +22,12 @@ export const proposalNewCommand: Command = {
     const workspace = await Workspace.open(brain!);
     const { created, skipped } = stageProposals(workspace, record.proposals, now);
     if (!dryRun) {
-      await workspace.commit();
-      if (created.length > 0) {
-        await appendLog(workspace.root, now, created.map((proposal) => ({
-          op: "proposal-new",
-          id: proposal.id,
-          title: proposal.title,
-          pairs: proposal.target === undefined ? [["kind", proposal.kind]] : [["kind", proposal.kind], ["target", proposal.target]],
-        })));
-      }
+      await workspace.commit(created.map((proposal) => ({
+        op: "proposal-new",
+        id: proposal.id,
+        title: proposal.title,
+        pairs: proposal.target === undefined ? [["kind", proposal.kind]] : [["kind", proposal.kind], ["target", proposal.target]],
+      })), now);
     }
     const human = created.map((proposal) => `${dryRun ? "would create" : "created"} ${proposal.path}\n`).join("")
       + skipped.map((skip) => `skipped proposals[${skip.input_index}]: same as pending ${skip.existing}\n`).join("");
