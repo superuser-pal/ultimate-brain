@@ -13,6 +13,7 @@ import { logCommand } from "./commands/log.ts";
 import { noteNewCommand } from "./commands/note.ts";
 import { linkCommand } from "./commands/link.ts";
 import { proposalListCommand, proposalNewCommand } from "./commands/proposal.ts";
+import { queryCommand } from "./commands/query.ts";
 import { syncApplyCommand, syncPlanCommand, syncRecordCommand, syncRenderCommand, syncTasksCommand } from "./commands/sync.ts";
 import { viewsCommand } from "./commands/views.ts";
 import { runCommand, type CliIo, type Command, type RunEnvironment } from "./lib/command.ts";
@@ -25,7 +26,7 @@ export type CommandHandler = (args: readonly string[], io: CliIo) => number | Pr
 /** Registered commands, in help order. */
 export const COMMANDS: readonly Command[] = [
   initCommand, statusCommand, configGetCommand, configSetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, applyCommand,
-  syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand, viewsCommand, linkCommand,
+  syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand, viewsCommand, linkCommand, queryCommand,
 ];
 
 export const HELP_TEXT = `Usage: brain <command> [options]
