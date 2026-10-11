@@ -131,6 +131,44 @@
     },
     "from": {
       "$ref": "note.schema.json#/$defs/dateOrMonth"
+    },
+    "note": {
+      "description": "For new_item: one `brain note new` input item without id (spec/cli.md §5.5).",
+      "type": "object",
+      "required": [
+        "type",
+        "title",
+        "frontmatter",
+        "body"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file_date": {
+          "$ref": "note.schema.json#/$defs/date"
+        },
+        "frontmatter": {
+          "type": "object"
+        },
+        "body": {
+          "type": "string"
+        }
+      }
+    },
+    "closed_reason": {
+      "enum": [
+        "stale"
+      ]
+    },
+    "notion_published": {
+      "description": "Review property name → value last published (spec/cli.md §5.14).",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -180,7 +218,12 @@
         "required": [
           "target",
           "content"
-        ]
+        ],
+        "not": {
+          "required": [
+            "note"
+          ]
+        }
       }
     },
     {
@@ -223,8 +266,13 @@
       },
       "then": {
         "required": [
-          "content"
-        ]
+          "note"
+        ],
+        "not": {
+          "required": [
+            "content"
+          ]
+        }
       }
     },
     {
@@ -374,17 +422,41 @@
         "required": [
           "decision"
         ],
-        "properties": {
-          "decision": {
+        "anyOf": [
+          {
             "properties": {
-              "action": {
-                "enum": [
-                  "reject"
-                ]
+              "decision": {
+                "properties": {
+                  "action": {
+                    "const": "reject"
+                  }
+                }
+              }
+            },
+            "not": {
+              "required": [
+                "closed_reason"
+              ]
+            }
+          },
+          {
+            "required": [
+              "closed_reason"
+            ],
+            "properties": {
+              "decision": {
+                "properties": {
+                  "action": {
+                    "enum": [
+                      "approve",
+                      "edit"
+                    ]
+                  }
+                }
               }
             }
           }
-        }
+        ]
       }
     },
     {
@@ -413,6 +485,20 @@
               "contradiction",
               "add_to_note"
             ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "closed_reason"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "closed"
           }
         }
       }
