@@ -42,7 +42,7 @@
 **Acceptance:** each command has an example invocation and example JSON output; error cases listed.
 **Blocks:** CX-03 to CX-11.
 
-### CC-04 · Notion AI prompts · `todo`
+### CC-04 · Notion AI prompts · `review` (branch `claude/CC-04-notion-prompts`)
 **Output:** `notion/prompts/01-pages.md` … `08-navigation.md` and `notion/minutes-format.md`, extracted from docs/notion-space-design.md §6 and §9, plus `notion/CHECKLIST.md`.
 **Acceptance:** names identical to CC-01; each prompt has its Verify list.
 **Unblocks:** U-01.

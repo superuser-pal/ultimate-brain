@@ -801,7 +801,8 @@ Each item:
     "Brain ID": { "type": "rich_text", "value": "per-3h8w2n6c" },
     "Last Synced": { "type": "date", "value": { "start": "2026-12-05T09:00:00Z", "end": null } }
   },
-  "body": "## Role history\n- 2026-12-03: Product lead …\n",
+  "body": null,
+  "sections": null,
   "pending_relations": []
 }
 ```
@@ -809,7 +810,11 @@ Each item:
 - `action`: `create` when the note has no `notion`, else `update`. Meetings are always `update` (the meeting page exists, 0007); a meeting without `notion` → item error in `errors`.
 - **Properties rendered:** Name, Summary, Brain ID, Last Synced (= `--now`) and the brain-owned properties in the correctable table above, plus Decisions: Date, Assessment, Project, Decided In, Supersedes; Questions: Kind, Project, Raised In; Goals: Area; Meetings: Attendees, Project (`projects[0]`), Area, Decisions, Questions, Brain Status = `Ingested`, Brain ID (Name, Date and body are **never** rendered for meetings). Notion-owned properties are never rendered. **Lifecycle** is rendered only on `create` (`Draft`) or when the brain set it to `archived`.
 - **Values:** select labels capitalize each word (`provisional` → `Provisional`, `update_fact` → `Update Fact`); dates as `{start, end}`; relations as Notion page ids of published notes. References to notes not yet published go to `pending_relations` (`[{ "property": "Org", "ids": ["org-…"] }]`); the skill publishes those first, records them, and renders again.
-- **Body** (the brain-owned part of the page; the skill keeps the "My notes" toggle, notion-space-design §2): the note body with `^[inferred]` → ` (AI inference)` and `^[ambiguous]` → ` (ambiguous)`, and relative links to published notes rewritten to `https://www.notion.so/<page id without dashes>` (unpublished → plain title text). Projects: `## Brief` + the brief's generated block, then `## Decision log` + the decision log's generated block. Meetings and proposals: `null`.
+- **Page content** (decision 0026): the brain writes only what it owns.
+  - `body` (decisions, questions): replaces the whole page body.
+  - `sections` (projects): `{ "Brief": <the brief's generated block>, "Decision log": <the decision log's generated block> }`. The skill replaces only the children of the toggle heading with that exact name. If the toggle is missing, it reports `SECTION_NOT_FOUND` for that page and leaves the page as it is.
+  - Areas, goals, people, orgs, meetings and proposals: `body` and `sections` are both `null`.
+  - Rendering: `^[inferred]` → ` (AI inference)`, `^[ambiguous]` → ` (ambiguous)`, and relative links to published notes become `https://www.notion.so/<page id without dashes>` (unpublished → plain title text).
 - **Proposals** → the Review database: Name = `title`; Kind; Target = `<target title> (<target id>)`; Target Page = the target's Notion URL if published; Before / After (for `supersede`: old / new note title; `merge`: duplicate / survivor title; `add_to_note` and `new_item`: After = `content`, cut to 2000 characters); Why; Source Meeting = relation when `source` is a published meeting; State = `Pending`; Brain ID.
 
 `data` = `{ "items": […], "errors": [ { "id": "…", "reason": "MEETING_NOT_PUBLISHED" } ] }`. Exit 1 if `errors` is non-empty (the other items are still returned); `UNKNOWN_ID` for `--ids` is a whole-command error.
