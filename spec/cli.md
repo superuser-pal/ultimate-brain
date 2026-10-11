@@ -457,7 +457,7 @@ Each applied or closed proposal logs `apply <prp-id> "<title>" result=<applied|c
 | `area`, `goal`, `client`, `org` | Set to the given ID (right prefix, must exist), or remove when `value` is `null` |
 | `people` | Replace with the given list of `per-` IDs |
 
-A value equal to the current one → `skipped`, `NO_CHANGE`. Any other field → `failed`, `FIELD_NOT_CORRECTABLE`. Logs `correct <id> "<title>" field=<field>`.
+Corrections apply to knowledge notes only (not sources, views or proposals). `--record-only` still applies corrections: they are your edits, not agent decisions (0003). A value equal to the current one → `skipped`, `NO_CHANGE`. Any other field → `failed`, `FIELD_NOT_CORRECTABLE`. Logs `correct <id> "<title>" field=<field>`.
 
 ```json
 { "data": {
