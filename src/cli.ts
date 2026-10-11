@@ -4,6 +4,10 @@ import { pathToFileURL } from "node:url";
 
 import { applyCommand } from "./commands/apply.ts";
 import { indexCommand } from "./commands/index.ts";
+import { initCommand } from "./commands/init.ts";
+import { statusCommand } from "./commands/status.ts";
+import { configGetCommand, configSetCommand } from "./commands/config.ts";
+import { idNewCommand } from "./commands/id.ts";
 import { lintCommand } from "./commands/lint.ts";
 import { logCommand } from "./commands/log.ts";
 import { noteNewCommand } from "./commands/note.ts";
@@ -18,8 +22,23 @@ export type CommandHandler = (args: readonly string[], io: CliIo) => number | Pr
 
 /** Registered commands, in help order. */
 export const COMMANDS: readonly Command[] = [
-  indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, applyCommand,
-  syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand,
+  initCommand,
+  statusCommand,
+  configGetCommand,
+  configSetCommand,
+  idNewCommand,
+  indexCommand,
+  lintCommand,
+  logCommand,
+  noteNewCommand,
+  proposalNewCommand,
+  proposalListCommand,
+  applyCommand,
+  syncPlanCommand,
+  syncApplyCommand,
+  syncRenderCommand,
+  syncTasksCommand,
+  syncRecordCommand,
 ];
 
 export const HELP_TEXT = `Usage: brain <command> [options]
