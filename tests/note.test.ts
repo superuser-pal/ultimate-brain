@@ -221,3 +221,44 @@ test("note new restores what it wrote when a later write fails", async (context)
   assert.deepEqual(await readdir(join(dir, "knowledge/meetings")), ["2026-10-01-acme-kickoff.md", "2026-12-03-acme-sync.md"]);
   assert.deepEqual(await readdir(join(dir, "knowledge/decisions")), ["2026-10-01-use-firebase-for-auth.md", "2026-12-03-use-supabase-for-auth.md"]);
 });
+
+test("note new keeps nothing when the log append fails, folders included", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { mkdir, rm } = await import("node:fs/promises");
+  await rm(join(dir, "log/2026-12.md"));
+  await mkdir(join(dir, "log/2026-12.md"));
+  const run = await noteNew(dir, { notes: [{ type: "project", title: "Zeta site", frontmatter: { summary: "S.", area: "area-2m7c4h8n" }, body: "" }] });
+  assert.equal(run.code, 10, run.stdout);
+  assert.deepEqual(await readdir(join(dir, "projects")), ["acme-website"]);
+});
+
+test("note new normalizes CRLF bodies, refuses them in sources, and checks file_date and dated paths", async (context) => {
+  const dir = await fixtureCopy(context);
+  const crlf = await noteNew(dir, { notes: [{ type: "concept", title: "Edge caching", frontmatter: { summary: "S.", sources: ["mtg-8c4n2p7w"] }, body: "Line one\r\nLine two" }] });
+  assert.equal(crlf.code, 0, crlf.stdout);
+  assert.ok((await readFile(join(dir, "knowledge/concepts/edge-caching.md"), "utf8")).endsWith("\n\nLine one\nLine two\n"));
+
+  const bad = await noteNew(dir, {
+    notes: [
+      { type: "source", title: "s", frontmatter: { source_key: "notion:x" }, body: "a\r\nb\r\n" },
+      { type: "memory", title: "m", file_date: "2026-99-99", frontmatter: {}, body: "" },
+    ],
+  });
+  assert.deepEqual(bad.json.error.details.map((detail: { pointer: string }) => detail.pointer), ["/notes/0/body", "/notes/1/file_date"]);
+
+  // A source's path comes from file_date, never from a stray `date` key.
+  const source = await noteNew(dir, { notes: [{ type: "source", title: "Minutes", file_date: "2026-12-08", frontmatter: { source_key: "notion:11111111-2222-4333-8444-555555555555", date: "2020-01-01" }, body: "x\n" }] });
+  assert.equal(source.code, 0, source.stdout);
+  assert.equal(source.json.data.created[0].path, "sources/notion/2026-12-08-minutes.md");
+});
+
+test("note new refuses a batch that breaks an existing note", async (context) => {
+  const dir = await fixtureCopy(context);
+  // The fixture question was raised in mtg-8c4n2p7w; point it at a meeting that does not exist yet.
+  const path = join(dir, "knowledge/questions/who-owns-the-acme-mobile-app.md");
+  await writeFile(path, (await readFile(path, "utf8")).replace("raised_in: mtg-8c4n2p7w", "raised_in: mtg-6b2d8f4h"));
+  const run = await noteNew(dir, meetingBatch());
+  assert.equal(run.code, 4, run.stdout);
+  assert.ok(run.json.error.details.some((detail: { pointer: string; message: string }) =>
+    detail.pointer === "/notes" && detail.message.startsWith("knowledge/questions/who-owns-the-acme-mobile-app.md: meeting-backref")));
+});
