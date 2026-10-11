@@ -24,10 +24,14 @@ export interface CommandContext {
   /** Resolved brain; null for commands with `needsBrain: false`. */
   brain: Brain | null;
   now: Date;
+  /** Process context used for filesystem locations such as the global brain config. */
+  environment: RunEnvironment;
 }
 
 export interface CommandResult {
   data: unknown;
+  /** Override the envelope brain for commands such as `init`, which create a brain. */
+  resolvedBrain?: string | null;
   warnings?: Warning[];
   /** 1 when the command completed with findings (spec/cli.md §3.4). */
   exitCode?: 0 | 1;
@@ -83,10 +87,10 @@ export async function runCommand(
       brainRoot = brain.root;
     }
 
-    const result = await command.run({ args, brain, now });
+    const result = await command.run({ args, brain, now, environment });
     const warnings = result.warnings ?? [];
     if (json) {
-      writeJson(io, { ok: true, command: command.name, brain: brainRoot, data: result.data, warnings });
+      writeJson(io, { ok: true, command: command.name, brain: result.resolvedBrain ?? brainRoot, data: result.data, warnings });
     } else {
       io.stdout.write(result.human ?? `${JSON.stringify(result.data, null, 2)}\n`);
       for (const warning of warnings) io.stderr.write(`warning: ${warning.message}\n`);
