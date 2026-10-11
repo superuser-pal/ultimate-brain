@@ -77,7 +77,7 @@ Also `brain status`, `brain config get/set`, `brain id new` (spec/cli.md §5.2�
 ### CX-04 · Index builder · `review` (Claude, branch `claude/CX-04-index`) (needs CC-01, CC-03)
 `brain index` regenerates `index.md` from frontmatter (0013): one line per note with id, title, summary, type, area/project, status, aliases, grouped by type; deterministic ordering; computes relation inverses. Also `brain log` and the shared log append helper (`log/YYYY-MM.md`, spec/cli.md §3.9, §5.11). **Acceptance:** identical output on repeated runs; fixture test against an expected file.
 
-### CX-05 · Lint · `todo` (needs CC-01, CC-03)
+### CX-05 · Lint · `review` (Claude, branch `claude/CX-05-lint`; `view-stale` lands with CX-07) (needs CC-01, CC-03)
 `brain lint`: validate frontmatter against the JSON schemas; IDs present, well-formed, unique; links resolve (relative Markdown links and relation targets); no `[[wikilinks]]`; provenance markers well-formed; freshness warnings (0011, warnings only in v1); derived views not cited as sources. JSON output with severity, file, line. **Acceptance:** one fixture per rule, passing and failing.
 
 ### CX-06 · Notes, proposals and apply · `todo` (needs CC-01, CC-03)

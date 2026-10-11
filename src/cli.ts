@@ -3,6 +3,7 @@
 import { pathToFileURL } from "node:url";
 
 import { indexCommand } from "./commands/index.ts";
+import { lintCommand } from "./commands/lint.ts";
 import { logCommand } from "./commands/log.ts";
 import { runCommand, type CliIo, type Command, type RunEnvironment } from "./lib/command.ts";
 import { exitCodeFor } from "./lib/errors.ts";
@@ -12,7 +13,7 @@ export type { CliIo, OutputWriter } from "./lib/command.ts";
 export type CommandHandler = (args: readonly string[], io: CliIo) => number | Promise<number>;
 
 /** Registered commands, in help order. */
-export const COMMANDS: readonly Command[] = [indexCommand, logCommand];
+export const COMMANDS: readonly Command[] = [indexCommand, lintCommand, logCommand];
 
 export const HELP_TEXT = `Usage: brain <command> [options]
 
