@@ -52,7 +52,7 @@
 **Constraints:** run TypeScript directly with Node type stripping where possible (0016); dependencies limited to a YAML parser and, if needed, a JSON Schema validator. Justify any other dependency in the PR.
 **Acceptance:** `npx brain --help` works from the repo; `npm test` passes with a smoke test; no build step needed to run.
 
-### CX-02 · Core library · `in progress`
+### CX-02 · Core library · `review`
 **Output:** `src/lib/`:
 - `ids.ts`: generate `<prefix>-<8 chars>` from Crockford base32 lowercase (`0123456789abcdefghjkmnpqrstvwxyz`), with collision check against a provided set and re-roll (0017).
 - `frontmatter.ts`: parse and serialize YAML frontmatter + body; preserve key order and unknown keys; round-trip a file without changes when nothing was edited.
