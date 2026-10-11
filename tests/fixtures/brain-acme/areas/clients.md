@@ -4,7 +4,7 @@ type: area
 title: Clients
 summary: Paid client work for the consulting business.
 lifecycle: reviewed
-sources: ["notion:1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"]
+sources: [notion:1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d]
 created: 2026-09-15
 updated: 2026-09-15
 notion: 1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d
