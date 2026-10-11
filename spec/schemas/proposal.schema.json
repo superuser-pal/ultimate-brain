@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ultimate-brain.dev/schemas/v1/proposal.schema.json",
+  "title": "Proposal frontmatter (v1)",
+  "description": "A pending change to existing knowledge, mirrored as a Notion Review row. See spec/schema.md §11 and decision 0003.",
+  "type": "object",
+  "required": ["id", "type", "title", "created", "updated", "kind", "why", "source", "status"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^prp-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
+    "type": { "const": "proposal" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "created": { "$ref": "note.schema.json#/$defs/date" },
+    "updated": { "$ref": "note.schema.json#/$defs/date" },
+    "kind": { "enum": ["update_fact", "add_to_note", "supersede", "contradiction", "merge", "new_item"] },
+    "target": { "$ref": "note.schema.json#/$defs/id" },
+    "field": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "before": { "$ref": "note.schema.json#/$defs/factValue" },
+    "after": { "$ref": "note.schema.json#/$defs/factValue" },
+    "content": { "type": "string", "minLength": 1 },
+    "supersedes": { "$ref": "note.schema.json#/$defs/id" },
+    "merge_into": { "$ref": "note.schema.json#/$defs/id" },
+    "why": { "type": "string", "minLength": 1 },
+    "source": { "$ref": "note.schema.json#/$defs/sourceKey" },
+    "status": { "enum": ["pending", "approved", "rejected", "edited", "applied", "closed"] },
+    "decision": {
+      "type": "object",
+      "required": ["action", "decided_at", "decided_by"],
+      "additionalProperties": false,
+      "properties": {
+        "action": { "enum": ["approve", "reject", "edit"] },
+        "value": { "$ref": "note.schema.json#/$defs/factValue" },
+        "decided_at": { "$ref": "note.schema.json#/$defs/timestamp" },
+        "decided_by": { "enum": ["notion", "chat"] }
+      },
+      "if": { "properties": { "action": { "const": "edit" } } },
+      "then": { "required": ["value"] }
+    },
+    "notion": { "$ref": "note.schema.json#/$defs/notionPageId" }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    { "if": { "properties": { "kind": { "const": "update_fact" } } }, "then": { "required": ["target", "field", "after"] } },
+    { "if": { "properties": { "kind": { "const": "contradiction" } } }, "then": { "required": ["target", "field", "before", "after"] } },
+    { "if": { "properties": { "kind": { "const": "add_to_note" } } }, "then": { "required": ["target", "content"] } },
+    { "if": { "properties": { "kind": { "const": "supersede" } } }, "then": { "required": ["target", "supersedes"] } },
+    { "if": { "properties": { "kind": { "const": "merge" } } }, "then": { "required": ["target", "merge_into"] } },
+    { "if": { "properties": { "kind": { "const": "new_item" } } }, "then": { "required": ["content"] } },
+    { "if": { "properties": { "status": { "enum": ["approved", "rejected", "edited", "applied"] } } }, "then": { "required": ["decision"] } }
+  ]
+}
