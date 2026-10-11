@@ -37,7 +37,7 @@
 **Acceptance:** product-owned sections in the brain AGENTS.md are fenced so upgrades can replace them without touching user content.
 **Blocks:** CX-03.
 
-### CC-03 · CLI contract · `todo`
+### CC-03 · CLI contract · `review` (branch `claude/CC-03-cli-contract`, stacked on CC-01b)
 **Output:** `spec/cli.md`: every command (`init`, `index`, `lint`, `proposal new`, `apply`, `views`, `link`, `sync` helpers, `query` helpers), flags, inputs/outputs (JSON on stdout for agent use), exit codes, brain resolution order.
 **Acceptance:** each command has an example invocation and example JSON output; error cases listed.
 **Blocks:** CX-03 to CX-11.
