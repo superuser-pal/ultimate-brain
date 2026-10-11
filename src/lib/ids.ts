@@ -46,3 +46,20 @@ export function generateId(
     }
   }
 }
+
+/** ID prefix of each note type (spec/schema.md §1). */
+export const TYPE_PREFIX: Readonly<Record<string, IdPrefix>> = {
+  area: "area",
+  goal: "gol",
+  project: "prj",
+  person: "per",
+  org: "org",
+  meeting: "mtg",
+  decision: "dec",
+  question: "que",
+  concept: "con",
+  source: "src",
+  memory: "mem",
+  proposal: "prp",
+  view: "vw",
+};
