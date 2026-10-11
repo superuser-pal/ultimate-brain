@@ -6,10 +6,10 @@ summary: Original auth choice for the Acme website, replaced by Supabase on 3 De
 lifecycle: archived
 date: 2026-10-01
 assessment: superseded
-valid_from: 2026-10-01
-valid_until: 2026-12-03
 decided_in: mtg-5r2k8v3a
 deciders: [per-9t2c6m4a]
+valid_from: 2026-10-01
+valid_until: 2026-12-03
 area: area-2m7c4h8n
 projects: [prj-9x4t1b7e]
 sources: [mtg-5r2k8v3a]
