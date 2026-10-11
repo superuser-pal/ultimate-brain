@@ -22,6 +22,8 @@ export interface Note {
   type: string;
   attributes: Frontmatter;
   body: string;
+  /** The whole file as read (without a leading BOM). */
+  raw: string;
 }
 
 export interface ScanProblem {
@@ -67,12 +69,14 @@ export async function scanNotes(root: string): Promise<ScanResult> {
       problems.push({ path, code: "UNPARSEABLE", message: error instanceof Error ? error.message : String(error) });
       continue;
     }
-    const { id, type } = attributes;
+    const { type } = attributes;
+    // A number or other scalar id is kept (as text) so lint reports id-format rather than "no id".
+    const id = typeof attributes.id === "number" ? String(attributes.id) : attributes.id;
     if (typeof id !== "string" || id === "") {
       problems.push({ path, code: "NOT_A_NOTE", message: "frontmatter has no id" });
       continue;
     }
-    notes.push({ path, id, type: typeof type === "string" ? type : "", attributes, body });
+    notes.push({ path, id, type: typeof type === "string" ? type : "", attributes, body, raw: source });
   }
   problems.sort((a, b) => compareCodePoints(a.path, b.path));
   return { notes, problems };
