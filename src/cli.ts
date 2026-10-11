@@ -8,6 +8,7 @@ import { lintCommand } from "./commands/lint.ts";
 import { logCommand } from "./commands/log.ts";
 import { noteNewCommand } from "./commands/note.ts";
 import { proposalListCommand, proposalNewCommand } from "./commands/proposal.ts";
+import { syncApplyCommand, syncPlanCommand, syncRecordCommand, syncRenderCommand, syncTasksCommand } from "./commands/sync.ts";
 import { runCommand, type CliIo, type Command, type RunEnvironment } from "./lib/command.ts";
 import { exitCodeFor } from "./lib/errors.ts";
 
@@ -16,7 +17,10 @@ export type { CliIo, OutputWriter } from "./lib/command.ts";
 export type CommandHandler = (args: readonly string[], io: CliIo) => number | Promise<number>;
 
 /** Registered commands, in help order. */
-export const COMMANDS: readonly Command[] = [indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, applyCommand];
+export const COMMANDS: readonly Command[] = [
+  indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, applyCommand,
+  syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand,
+];
 
 export const HELP_TEXT = `Usage: brain <command> [options]
 
