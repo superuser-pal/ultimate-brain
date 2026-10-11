@@ -90,7 +90,7 @@ Also `brain status`, `brain config get/set`, `brain id new` (spec/cli.md §5.2�
 ### CX-07 · Derived views · `review` (needs CC-01, CC-03)
 `brain views` regenerates `projects/<slug>/brief.md` and `decision-log.md` from canonical notes inside `@generated` markers, preserving `@user` blocks (synthesis §4.5). Also adds the `view-stale` lint warning (spec/cli.md §5.10). **Acceptance:** user block survives regeneration; every item line links to its source note (spec/schema.md §16).
 
-### CX-08 · `brain link` · `todo` (needs CC-03)
+### CX-08 · `brain link` · `review` (needs CC-03)
 Write `.brain` (project, area, stacks) in a target repo and insert or update a fenced "consult the brain" block in its `CLAUDE.md` / `AGENTS.md` (0006, 0009). Idempotent. **Acceptance:** running twice yields the same files; existing content outside the fence untouched.
 
 ### CX-09 · Fixture brain · `done` (PR #9)
