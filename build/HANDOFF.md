@@ -20,7 +20,7 @@ For the next Claude Code session. Read this, then `AGENTS.md`, `build/TASKS.md`,
 | **CC-03 CLI contract** | **Next for Claude.** Blocks CX-03 to CX-11 | Write `spec/cli.md`; must define `brain index --json` including `backlinks` (spec/schema.md §6), JSON outputs, exit codes, brain resolution order (CX-02), `node src/cli.ts` usage |
 | CC-02 brain template | Todo | After CC-03 |
 | CC-04 Notion prompt files | Todo | Extract from docs/notion-space-design.md §6/§9 into `notion/prompts/`. **Change:** in Prompt 6 the Meetings "Minutes format" callout is created empty, then a manual step 6b pastes the minutes text (Notion AI can't read our docs). The user already received this version in chat |
-| U-01 Notion space | User is building it with the 8 prompts | When done: map their Tasks database (default or existing, 0018) |
+| U-01 Notion space | Prompts 1–6 done (pages, databases, relations, progress formula, ownership labels, templates incl. step 6b). **Pending: Prompt 7 (Spaces and views) and Prompt 8 (navigation)** | Help with 7–8 if Notion AI deviates; then confirm which Tasks database to map (default or existing, 0018) and verify the live space against the design via Notion MCP (0022) |
 
 ## How the user likes to work
 
