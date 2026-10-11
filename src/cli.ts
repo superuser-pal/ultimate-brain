@@ -2,6 +2,7 @@
 
 import { pathToFileURL } from "node:url";
 
+import { applyCommand } from "./commands/apply.ts";
 import { indexCommand } from "./commands/index.ts";
 import { lintCommand } from "./commands/lint.ts";
 import { logCommand } from "./commands/log.ts";
@@ -15,7 +16,7 @@ export type { CliIo, OutputWriter } from "./lib/command.ts";
 export type CommandHandler = (args: readonly string[], io: CliIo) => number | Promise<number>;
 
 /** Registered commands, in help order. */
-export const COMMANDS: readonly Command[] = [indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand];
+export const COMMANDS: readonly Command[] = [indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, applyCommand];
 
 export const HELP_TEXT = `Usage: brain <command> [options]
 
