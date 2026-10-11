@@ -233,6 +233,8 @@ brain init ~/brain --owner "Rodrigo" --set-default --json
   } }
 ```
 
+`created` lists every file written, sorted by path, including the `.gitkeep` placeholders of the empty note folders; the example above is shortened.
+
 Errors: `TARGET_NOT_EMPTY`, `ALREADY_A_BRAIN`, `BRAIN_IS_PRODUCT_REPO`, `OUTSIDE_ROOT` (template path escapes, defensive).
 
 ### 5.2 `brain status`
