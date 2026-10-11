@@ -1,7 +1,7 @@
 import { constants } from "node:fs";
 import { access, readFile, realpath, stat } from "node:fs/promises";
 import { homedir } from "node:os";
-import { isAbsolute, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 
 export interface ResolveBrainDirectoryOptions {
   brainFlag?: string;
@@ -29,7 +29,7 @@ export async function resolveBrainDirectory(
   }
 
   const expanded = expandHome(candidate, homeDirectory);
-  const absolute = isAbsolute(expanded) ? resolve(expanded) : resolve(expanded);
+  const absolute = resolve(expanded);
 
   let directory: string;
   try {
