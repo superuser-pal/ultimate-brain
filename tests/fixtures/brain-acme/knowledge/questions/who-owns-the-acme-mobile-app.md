@@ -14,6 +14,7 @@ relations:
     target: per-9t2c6m4a
 created: 2026-12-03
 updated: 2026-12-03
+notion: 4e5f6a7b-8c9d-4e0f-9a1b-2c3d4e5f6a7b
 notion_fields:
   as_of: 2026-12-05T08:31:00Z
   status: Open

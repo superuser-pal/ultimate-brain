@@ -1,0 +1,19 @@
+# Prompt 5 — Property descriptions (ownership)
+
+Paste into Notion AI. Before: [Prompt 4](04-formula-rollup.md). Next: [Prompt 6](06-templates.md).
+
+Each description starts with who owns the property, so you can see on hover what the brain writes and what is yours (docs/notion-space-design.md §2).
+
+```text
+In every database on "Brain Data", set each property's description to start with its owner. Use the first rule that matches:
+1. "Owner: system. Do not edit." for: Brain ID, Last Synced, Ingested At, State, and Created in "Capture Inbox".
+2. "Owner: you." for: every other property of "Key Results", "Capture Inbox" and "Tasks", and the "Tasks" relation in Projects, Areas and Meetings; in "Meetings": Name, Date, Attendees, Project, Area, Brain Status; in "Areas": Goals, Projects; in "Goals": Key Results, Projects; and everywhere: Status, Priority, Dates, Lifecycle, Archived, Email, Website, Relationship, Type, Decision, Edited Value, Progress.
+3. "Owner: you when creating, then brain." for: Name in Areas, Goals, Projects, People and Orgs; Area in Goals and Projects; Goal in Projects.
+4. "Owner: brain." for every other property.
+Do not rename or change any property.
+```
+
+## Verify
+- [ ] In Projects, hover: Status says "you", Key Facts says "brain", Brain ID says "system", Area says "you when creating, then brain".
+- [ ] In Meetings, hover: Name and Attendees say "you", Decisions says "brain".
+- [ ] In Review, hover: Decision says "you", After says "brain", State says "system".

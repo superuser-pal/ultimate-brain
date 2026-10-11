@@ -4,8 +4,8 @@ type: person
 title: Carlos Ruiz
 summary: Developer at Acme working on the website rebuild.
 lifecycle: draft
-aliases: [Carlos]
 org: org-6d1f9z3k
+aliases: [Carlos]
 projects: [prj-9x4t1b7e]
 sources: [mtg-5r2k8v3a]
 facts:
