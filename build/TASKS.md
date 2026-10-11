@@ -26,30 +26,30 @@
 
 ## Wave 1 — Foundations
 
-### CC-01 · Schema spec · `review` (merged in PR #1; follow-up fixes CC-01b in PR #2)
+### CC-01 · Schema spec · `done` (PRs #1, #2)
 **Output:** `spec/schema.md` and `spec/schemas/*.schema.json` (JSON Schema, draft 2020-12).
 **Covers:** common frontmatter; v1 note types (area, goal, project, person, org, meeting, decision, question, concept, source, view, memory); `timeline:` entries (0010); assessment and lifecycle (0005); relations vocabulary; proposal file (synthesis §4.6); `brain.json` including the Notion section and Tasks mapping (0018); ID format (0017); provenance markers (0004); freshness forms (0011); folder layout (synthesis §4.1).
 **Decisions:** 0001–0005, 0008–0011, 0017, 0018, 0020, 0021, 0023.
 **Acceptance:** every field named in synthesis §4 and docs/notion-space-design.md §3 has a type and owner; one valid and one invalid example per note type in `spec/examples/`; names match the Notion property names exactly.
 **Blocks:** CX-03 to CX-09.
 
-### CC-02 · Brain template · `review` (branch `claude/CC-02-brain-template`)
+### CC-02 · Brain template · `done` (PR #6)
 **Output:** `templates/brain/`: folder skeleton, brain `AGENTS.md` (+ `CLAUDE.md` importing it) with the operating rules (synthesis §3.1), default `brain.json`, `.gitignore`, empty generated files.
 **Decisions:** 0006, 0014, 0022.
 **Acceptance:** product-owned sections in the brain AGENTS.md are fenced so upgrades can replace them without touching user content.
 **Blocks:** CX-03.
 
-### CC-03 · CLI contract · `review` (branch `claude/CC-03-cli-contract`, stacked on CC-01b)
+### CC-03 · CLI contract · `done` (PRs #5, #2)
 **Output:** `spec/cli.md`: every command (`init`, `index`, `lint`, `proposal new`, `apply`, `views`, `link`, `sync` helpers, `query` helpers), flags, inputs/outputs (JSON on stdout for agent use), exit codes, brain resolution order.
 **Acceptance:** each command has an example invocation and example JSON output; error cases listed.
 **Blocks:** CX-03 to CX-11.
 
-### CC-04 · Notion AI prompts · `review` (branch `claude/CC-04-notion-prompts`)
+### CC-04 · Notion AI prompts · `done` (PR #7)
 **Output:** `notion/prompts/01-pages.md` … `08-navigation.md` and `notion/minutes-format.md`, extracted from docs/notion-space-design.md §6 and §9, plus `notion/CHECKLIST.md`.
 **Acceptance:** names identical to CC-01; each prompt has its Verify list.
 **Unblocks:** U-01.
 
-### CX-01 · Project scaffold · `review`
+### CX-01 · Project scaffold · `done` (PR #3)
 **Output:** `package.json` (name `ultimate-brain`, `bin: { "brain": … }`, `type: module`, Node ≥ 22), `tsconfig.json`, `src/cli.ts` entry with subcommand routing and `--help`, tests with `node:test`, `npm test` and `npm run typecheck`, a GitHub Actions workflow running both.
 **Constraints:** run TypeScript directly with Node type stripping where possible (0016); dependencies limited to a YAML parser and, if needed, a JSON Schema validator. Justify any other dependency in the PR.
 **Acceptance:** `npx brain --help` works from the repo; `npm test` passes with a smoke test; no build step needed to run.
@@ -58,7 +58,7 @@
 - `npx brain --help` resolves the unrelated npm package named `brain`; npm does not expose the current root package's `brain` bin to `npx`. Should this acceptance command be `node src/cli.ts --help` for CX-01, with `npx ultimate-brain --help` deferred to CX-12 packaging as decision 0016 specifies?
 - Node refuses native TypeScript type stripping for installed files under `node_modules`. Should CX-12 compile a JavaScript distribution while keeping repository development build-free?
 
-### CX-02 · Core library · `review`
+### CX-02 · Core library · `done` (PR #8)
 **Output:** `src/lib/`:
 - `ids.ts`: generate `<prefix>-<8 chars>` from Crockford base32 lowercase (`0123456789abcdefghjkmnpqrstvwxyz`), with collision check against a provided set and re-roll (0017).
 - `frontmatter.ts`: parse and serialize YAML frontmatter + body; preserve key order and unknown keys; round-trip a file without changes when nothing was edited.
@@ -74,10 +74,10 @@
 ### CX-03 · `brain init`, `status`, `config`, `id new` · `todo` (needs CC-01, CC-02, CC-03)
 Also `brain status`, `brain config get/set`, `brain id new` (spec/cli.md §5.2–5.4), and the CX-02 alignment items from the #4 review (error codes, `BRAIN_NOT_FOUND`, contained mkdir, non-brain roots). Create a new brain from `templates/brain/` at a given path; initialize git; write `schema_version` into `brain.json`; never overwrite an existing non-empty folder without `--force`. **Acceptance:** per CC-03; test creates a brain in a temp dir and lint passes on it.
 
-### CX-04 · Index builder · `review` (Claude, branch `claude/CX-04-index`) (needs CC-01, CC-03)
+### CX-04 · Index builder · `done` (PR #10)
 `brain index` regenerates `index.md` from frontmatter (0013): one line per note with id, title, summary, type, area/project, status, aliases, grouped by type; deterministic ordering; computes relation inverses. Also `brain log` and the shared log append helper (`log/YYYY-MM.md`, spec/cli.md §3.9, §5.11). **Acceptance:** identical output on repeated runs; fixture test against an expected file.
 
-### CX-05 · Lint · `review` (Claude, branch `claude/CX-05-lint`; `view-stale` lands with CX-07) (needs CC-01, CC-03)
+### CX-05 · Lint · `done` (PR #11; `view-stale` lands with CX-07)
 `brain lint`: validate frontmatter against the JSON schemas; IDs present, well-formed, unique; links resolve (relative Markdown links and relation targets); no `[[wikilinks]]`; provenance markers well-formed; freshness warnings (0011, warnings only in v1); derived views not cited as sources. JSON output with severity, file, line. **Acceptance:** one fixture per rule, passing and failing.
 
 ### CX-06 · Notes, proposals and apply · `todo` (needs CC-01, CC-03)
@@ -89,7 +89,7 @@ Also `brain status`, `brain config get/set`, `brain id new` (spec/cli.md §5.2�
 ### CX-08 · `brain link` · `todo` (needs CC-03)
 Write `.brain` (project, area, stacks) in a target repo and insert or update a fenced "consult the brain" block in its `CLAUDE.md` / `AGENTS.md` (0006, 0009). Idempotent. **Acceptance:** running twice yields the same files; existing content outside the fence untouched.
 
-### CX-09 · Fixture brain · `review` (Claude, branch `claude/CX-09-fixture-brain`) (needs CC-01)
+### CX-09 · Fixture brain · `done` (PR #9)
 `tests/fixtures/brain-acme/`: a small synthetic brain (fictional client Acme, people, a project with key-fact timelines, decisions incl. one superseded, open questions, one goal) that passes lint. Used by all tests and by CC-07. **Acceptance:** fictional data only; covers every v1 note type.
 
 ### CC-05 · Skill packaging · `todo`
