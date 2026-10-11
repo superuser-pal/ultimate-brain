@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { posix } from "node:path";
 
 import { buildIndex } from "./index-builder.ts";
@@ -27,7 +27,12 @@ export interface LintInput {
 }
 
 const ID = /^(area|gol|prj|per|org|mtg|dec|que|con|src|mem|prp|vw)-[0-9abcdefghjkmnpqrstvwxyz]{8}$/;
-const ID_SHAPE = /^[a-z]+-[0-9a-z]{8}$/;
+/** Frontmatter keys whose values are references (spec/schema.md §3–§11); `relations` and `timeline` are handled by shape. */
+const REFERENCE_KEYS = new Set([
+  "area", "goal", "client", "org", "projects", "people", "attendees", "decided_in", "raised_in", "deciders",
+  "source", "sources", "decisions", "questions", "answer", "target", "supersedes", "merge_into", "project",
+  "generated_from", "facts",
+]);
 
 /** Where each type must live (spec/schema.md §2). */
 const FOLDERS: Readonly<Record<string, RegExp>> = {
@@ -69,13 +74,16 @@ export function lintBrain(input: LintInput): Issue[] {
   }
 
   const byId = new Map<string, Note>();
+  const pathsById = new Map<string, string[]>();
   for (const note of input.notes) {
-    if (byId.has(note.id)) {
-      add("error", "id-duplicate", note.path, lineOfKey(note, "id"), note.id, `${note.id} is also used by ${byId.get(note.id)!.path}`);
-    } else {
-      byId.set(note.id, note);
-    }
+    if (!byId.has(note.id)) byId.set(note.id, note);
+    pathsById.set(note.id, [...(pathsById.get(note.id) ?? []), note.path]);
   }
+  for (const note of input.notes) {
+    const others = pathsById.get(note.id)!.filter((path) => path !== note.path);
+    if (others.length > 0) add("error", "id-duplicate", note.path, lineOfKey(note, "id"), note.id, `${note.id} is also used by ${others.join(", ")}`);
+  }
+  const exists = caseSensitiveExists(input.root);
 
   for (const note of input.notes) {
     const a = note.attributes;
@@ -84,7 +92,10 @@ export function lintBrain(input: LintInput): Issue[] {
 
     // Shape
     const validate = note.type === "proposal" ? schemas.proposal : schemas.note;
-    if (!validate(a)) err("schema", 1, describeErrors(validate.errors).join("; "));
+    if (!validate(a)) {
+      const firstKey = validate.errors?.find((error) => error.instancePath !== "")?.instancePath.split("/")[1];
+      err("schema", firstKey === undefined ? 1 : lineOfKey(note, firstKey), describeErrors(validate.errors).join("; "));
+    }
     if (!ID.test(note.id)) err("id-format", lineOfKey(note, "id"), `"${note.id}" is not <prefix>-<8 chars> with a schema prefix`);
     const folder = FOLDERS[note.type];
     if (folder !== undefined && !folder.test(note.path)) err("wrong-folder", 1, `a ${note.type} must live in its folder (spec/schema.md §2)`);
@@ -94,30 +105,31 @@ export function lintBrain(input: LintInput): Issue[] {
     }
 
     // References and links
-    for (const [key, value] of Object.entries(a)) {
-      if (key === "id" || key === "notion_published") continue;
+    const references: Array<[string, unknown]> = Object.entries(a).filter(([key]) => REFERENCE_KEYS.has(key));
+    for (const relation of list(a.relations)) references.push(["relations", record(relation).target]);
+    for (const entry of list(a.timeline)) references.push(["timeline", record(entry).source]);
+    for (const [key, value] of references) {
       for (const ref of collectIds(value)) {
         if (!byId.has(ref)) err("missing-ref", lineOfKey(note, key), `${key} references ${ref}, which does not exist`);
       }
     }
     const bodyStart = bodyLineOffset(note);
-    note.body.split("\n").forEach((text, index) => {
+    for (const [index, raw] of proseLines(note.body)) {
       const line = bodyStart + index;
-      if (text.includes("[[")) err("wikilink", line, "use a relative Markdown link, not [[wikilinks]] (0002)");
-      for (const match of text.matchAll(/\^\[([^\]]*)\]/g)) {
+      if (raw.includes("[[")) err("wikilink", line, "use a relative Markdown link, not [[wikilinks]] (0002)");
+      for (const match of raw.matchAll(/\^\[([^\]]*)\]/g)) {
         if (match[1] !== "inferred" && match[1] !== "ambiguous") err("unknown-marker", line, `^[${match[1]}] is not a provenance marker (0004)`);
       }
-      for (const match of text.matchAll(/\]\(([^)\s]+)\)/g)) {
-        const target = match[1]!;
+      for (const target of linkTargets(raw)) {
         if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) continue;
-        const file = decodeURI(target.split("#")[0]!);
-        const resolved = posix.normalize(posix.join(posix.dirname(note.path), file));
-        if (resolved.startsWith("../") || !existsSync(`${input.root}/${resolved}`)) err("broken-link", line, `link target ${target} does not exist`);
+        const resolved = posix.normalize(posix.join(posix.dirname(note.path), decodePath(target.split("#")[0]!)));
+        if (resolved.startsWith("../") || !exists(resolved)) err("broken-link", line, `link target ${target} does not exist`);
       }
-      if (UNDATED.has(note.type) && FRESHNESS_WORDS.test(text) && !HAS_DATE.test(text)) {
-        warn("freshness", line, `"${text.match(FRESHNESS_WORDS)![0]}" in an undated note without a date; write (as of YYYY-MM-DD) (0011)`);
+      const prose = raw.replace(/\]\([^)]*\)/g, "]");
+      if (UNDATED.has(note.type) && FRESHNESS_WORDS.test(prose) && !HAS_DATE.test(prose)) {
+        warn("freshness", line, `"${prose.match(FRESHNESS_WORDS)![0]}" in an undated note without a date; write (as of YYYY-MM-DD) (0011)`);
       }
-    });
+    }
 
     // Type rules
     if (note.type === "source") {
@@ -129,8 +141,11 @@ export function lintBrain(input: LintInput): Issue[] {
     }
     const facts = record(a.facts);
     for (const [key, value] of Object.entries(facts)) {
-      const ok = list(a.timeline).some((entry) => record(entry).field === key && record(entry).assessment === "accepted" && record(entry).value === value);
-      if (!ok) err("fact-timeline", lineOfKey(note, "facts"), `facts.${key} has no accepted timeline entry with value ${JSON.stringify(value)}`);
+      const entries = list(a.timeline).map(record).filter((entry) => entry.field === key);
+      const accepted = entries.some((entry) => entry.assessment === "accepted" && entry.value === value);
+      // Unless contested (schema §5): when the latest entry is contested, facts may keep the earlier value.
+      const contested = entries.at(-1)?.assessment === "contested" && entries.some((entry) => entry.value === value);
+      if (!accepted && !contested) err("fact-timeline", lineOfKey(note, "facts"), `facts.${key} has no accepted timeline entry with value ${JSON.stringify(value)}`);
     }
     for (const relation of list(a.relations)) {
       const { type, target } = record(relation);
@@ -165,8 +180,11 @@ export function lintBrain(input: LintInput): Issue[] {
     if (note.type === "memory") {
       const reach = MEMORY_REACH[String(a.scope)];
       const present = ["areas", "projects", "stacks"].filter((key) => a[key] !== undefined);
-      const valid = reach === null ? present.length === 0 : reach !== undefined && present.length === 1 && present[0] === reach && list(a[reach]).length > 0;
-      if (!valid) err("memory-scope", lineOfKey(note, "scope"), `scope ${String(a.scope)} must have ${reach === null ? "no reach lists" : `only a non-empty ${reach}`} (0009)`);
+      if (reach === undefined) {
+        err("memory-scope", lineOfKey(note, "scope"), `scope ${String(a.scope)} is not general, area, project or stack (0009)`);
+      } else if (reach === null ? present.length > 0 : present.length !== 1 || present[0] !== reach || list(a[reach]).length === 0) {
+        err("memory-scope", lineOfKey(note, "scope"), `scope ${String(a.scope)} must have ${reach === null ? "no reach lists" : `only a non-empty ${reach}`} (0009)`);
+      }
     }
     if (note.type === "proposal") {
       const problem = proposalStatusProblem(a);
@@ -214,13 +232,74 @@ function proposalStatusProblem(a: Record<string, unknown>): string | null {
 
 function collectIds(value: unknown, out: string[] = []): string[] {
   if (typeof value === "string") {
-    if (ID_SHAPE.test(value) && ID.test(value)) out.push(value);
+    if (ID.test(value)) out.push(value);
   } else if (Array.isArray(value)) {
     for (const item of value) collectIds(item, out);
   } else if (value !== null && typeof value === "object") {
     for (const item of Object.values(value)) collectIds(item, out);
   }
   return out;
+}
+
+/** Body lines outside fenced code blocks, with inline code removed: [index, text]. */
+function proseLines(body: string): Array<[number, string]> {
+  const out: Array<[number, string]> = [];
+  let fence: string | null = null;
+  body.split("\n").forEach((line, index) => {
+    const marker = /^\s*(```|~~~)/.exec(line)?.[1];
+    if (marker !== undefined) {
+      fence = fence === null ? marker : fence === marker ? null : fence;
+      return;
+    }
+    if (fence === null) out.push([index, line.replace(/`[^`]*`/g, "")]);
+  });
+  return out;
+}
+
+/** Targets of inline links (`[x](t)`, `[x](t "title")`, `[x](<t>)`) and reference definitions (`[x]: t`). */
+function linkTargets(line: string): string[] {
+  const targets: string[] = [];
+  for (const match of line.matchAll(/\]\(\s*(?:<([^>]*)>|([^)\s]+))(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*\)/g)) {
+    targets.push(match[1] ?? match[2]!);
+  }
+  const definition = /^\s{0,3}\[[^\]]+\]:\s*(?:<([^>]*)>|(\S+))/.exec(line);
+  if (definition !== null) targets.push(definition[1] ?? definition[2]!);
+  return targets;
+}
+
+/** Percent-decode each path segment; a segment that is not valid encoding is kept as written. */
+function decodePath(path: string): string {
+  return path.split("/").map((segment) => {
+    try {
+      return decodeURIComponent(segment);
+    } catch {
+      return segment;
+    }
+  }).join("/");
+}
+
+/** File existence with exact case on every segment, so macOS and Linux agree. */
+function caseSensitiveExists(root: string): (relative: string) => boolean {
+  const listings = new Map<string, Set<string> | null>();
+  const entries = (dir: string): Set<string> | null => {
+    if (!listings.has(dir)) {
+      try {
+        listings.set(dir, new Set(readdirSync(`${root}/${dir}`)));
+      } catch {
+        listings.set(dir, null);
+      }
+    }
+    return listings.get(dir)!;
+  };
+  return (relative) => {
+    const parts = relative.split("/").filter((part) => part !== "" && part !== ".");
+    let dir = "";
+    for (const part of parts) {
+      if (!entries(dir === "" ? "." : dir)?.has(part)) return false;
+      dir = dir === "" ? part : `${dir}/${part}`;
+    }
+    return parts.length > 0;
+  };
 }
 
 /** 1-based line of a top-level frontmatter key, or 1. */

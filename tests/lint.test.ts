@@ -81,9 +81,9 @@ for (const [rule, severity, file, mutate] of CASES) {
     await mutate(dir);
     const run = await brain(["lint", "--brain", dir, "--json"]);
     const hits = run.json.data.issues.filter((issue: { rule: string }) => issue.rule === rule);
-    assert.ok(hits.length > 0, `expected ${rule}; got ${JSON.stringify(run.json.data.issues, null, 1)}`);
-    assert.equal(hits[0].severity, severity);
-    assert.equal(hits[0].path, file);
+    const hit = hits.find((issue: { path: string }) => issue.path === file);
+    assert.ok(hit !== undefined, `expected ${rule} in ${file}; got ${JSON.stringify(run.json.data.issues, null, 1)}`);
+    assert.equal(hit.severity, severity);
     assert.equal(run.code, severity === "error" ? 1 : 0);
   });
 }
@@ -114,4 +114,86 @@ test("every spec example passes or fails the JSON Schemas as labelled", async ()
       assert.equal(validate(attributes), kind === "valid", `${kind}/${file}`);
     }
   }
+});
+
+const issuesFor = async (dir: string, extra: string[] = []) =>
+  (await brain(["lint", ...extra, "--brain", dir, "--json"])).json.data.issues as Array<{ rule: string; path: string; line: number }>;
+
+test("links: stray % never crashes; encoded names, titles, <angle> and reference links are checked", async (context) => {
+  const dir = await fixtureCopy(context);
+  await writeFile(join(dir, "knowledge/orgs/c#.md"), "x");
+  await writeFile(join(dir, "knowledge/orgs/q&a notes.md"), "x");
+  await replace(ACME, "Retail client since October 2026.", [
+    "Growth [100%](growth-100%.md).",
+    "[ok](c%23.md) [ok2](<q&a notes.md>) [ok3](q%26a%20notes.md \"title\")",
+    "[bad](<missing file.md>) [bad2](missing2.md \"t\")",
+    "[ref]: missing3.md",
+    "[case](../People/maria-lopez.md)",
+  ].join("\n"))(dir);
+  const run = await brain(["lint", "--brain", dir, "--json"]);
+  assert.equal(run.code, 1, run.stdout);
+  const broken = run.json.data.issues.filter((issue: { rule: string }) => issue.rule === "broken-link").map((issue: { message: string }) => issue.message);
+  assert.deepEqual(broken.sort(), [
+    "link target ../People/maria-lopez.md does not exist",
+    "link target growth-100%.md does not exist",
+    "link target missing file.md does not exist",
+    "link target missing2.md does not exist",
+    "link target missing3.md does not exist",
+  ]);
+});
+
+test("code blocks and inline code are not linted as prose", async (context) => {
+  const dir = await fixtureCopy(context);
+  await replace(ACME, "Retail client since October 2026.", "Run `[[ -f x ]]` and `^[a-z]`.\n\n```sh\n[[ -f x ]] && echo [x](missing.md) ^[a-z0-9]\n```\n")(dir);
+  const rules = (await issuesFor(dir)).map((issue) => issue.rule);
+  assert.deepEqual(rules, []);
+});
+
+test("only reference fields are checked for ids: tags and proposal values are free text", async (context) => {
+  const dir = await fixtureCopy(context);
+  await replace("knowledge/concepts/row-level-security.md", "tags: [security, supabase]", "tags: [security, org-partners]")(dir);
+  assert.deepEqual((await issuesFor(dir)).map((issue) => issue.rule), []);
+});
+
+test("fact-timeline accepts a contested fact that keeps its earlier value", async (context) => {
+  const dir = await fixtureCopy(context);
+  await replace(CARLOS, "    assessment: accepted\n", "    assessment: contested\n  - field: role\n    value: Lead\n    from: 2026-12-03\n    learned: 2026-12-03\n    source: mtg-8c4n2p7w\n    assessment: contested\n")(dir);
+  assert.deepEqual((await issuesFor(dir)).map((issue) => issue.rule), []);
+});
+
+test("id-duplicate is reported on every file that shares the id", async (context) => {
+  const dir = await fixtureCopy(context);
+  await writeFile(join(dir, "knowledge/concepts/zz-copy.md"), await readFile(join(dir, "knowledge/concepts/row-level-security.md"), "utf8"));
+  const run = await brain(["lint", "knowledge/concepts/row-level-security.md", "--brain", dir, "--json"]);
+  assert.equal(run.code, 1);
+  assert.deepEqual(run.json.data.issues.map((issue: { rule: string }) => issue.rule), ["id-duplicate"]);
+});
+
+test("path filters keep brain.json issues, accept folders, and reject unknown paths", async (context) => {
+  const dir = await fixtureCopy(context);
+  await replace("brain.json", '"owner": { "name": "Alex Example" },', '"owner": {},')(dir);
+  const filtered = await brain(["lint", ACME, "--brain", dir, "--json"]);
+  assert.equal(filtered.code, 1);
+  assert.deepEqual(filtered.json.data.issues.map((issue: { rule: string }) => issue.rule), ["brain-config"]);
+
+  assert.equal((await brain(["lint", "knowledge/orgs/", "--brain", FIXTURE_BRAIN, "--json"])).code, 0);
+  const typo = await brain(["lint", "knowledge/orgz/acme.md", "--brain", FIXTURE_BRAIN, "--json"]);
+  assert.equal(typo.code, 2);
+});
+
+test("schema issues point at the offending key; a numeric id is an id-format error", async (context) => {
+  const dir = await fixtureCopy(context);
+  await replace(CARLOS, "org: org-6d1f9z3k", "org: 42")(dir);
+  await replace("knowledge/concepts/row-level-security.md", "id: con-1s6t8e2b", "id: 12345678")(dir);
+  const issues = await issuesFor(dir);
+  const schema = issues.find((issue) => issue.rule === "schema" && issue.path === CARLOS)!;
+  const lines = (await readFile(join(dir, CARLOS), "utf8")).split("\n");
+  assert.equal(lines[schema.line - 1], "org: 42");
+  assert.ok(issues.some((issue) => issue.rule === "id-format" && issue.path === "knowledge/concepts/row-level-security.md"));
+});
+
+test("freshness ignores words inside link targets", async (context) => {
+  const dir = await fixtureCopy(context);
+  await replace(ACME, "Retail client since October 2026.", "See [the deck](https://example.com/latest-now).")(dir);
+  assert.deepEqual((await issuesFor(dir)).map((issue) => issue.rule), []);
 });
