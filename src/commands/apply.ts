@@ -1,7 +1,6 @@
 import { applyAll, parseApplyInput } from "../lib/apply.ts";
 import type { Command } from "../lib/command.ts";
 import { readJsonInput } from "../lib/input.ts";
-import { appendLog } from "../lib/log.ts";
 import { Workspace } from "../lib/workspace.ts";
 
 /** `brain apply [--input <file|->] [--record-only] [--dry-run]` (spec/cli.md §5.7). */
@@ -20,8 +19,7 @@ export const applyCommand: Command = {
     const result = applyAll(workspace, input, { now, recordOnly: args.options["record-only"] === true });
 
     if (!dryRun) {
-      await workspace.commit();
-      if (result.log.length > 0) await appendLog(workspace.root, now, result.log);
+      await workspace.commit(result.log, now);
     }
     const lines = [
       ...result.corrections.map((item) => `${item.result} correction ${item.target} ${item.field}${item.reason === undefined ? "" : ` (${item.reason})`}`),

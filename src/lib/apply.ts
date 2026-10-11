@@ -165,7 +165,7 @@ function runItem(workspace: Workspace, run: () => Outcome): { outcome: ItemResul
     return { outcome: { result: "failed", reason: error.reason, message: error.message, changed: [] } };
   }
   const changed = workspace.changedSince(start);
-  const errors = workspace.newErrors(workspace.notes.map((note) => note.path));
+  const errors = workspace.newErrors();
   if (errors.length > 0) {
     workspace.restore(start);
     const message = errors.map((issue) => `${issue.path}: ${issue.rule}: ${issue.message}`).join("; ");
