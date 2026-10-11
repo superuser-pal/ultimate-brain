@@ -6,6 +6,38 @@ import { BrainError } from "./errors.ts";
 
 export type AtomicWriteData = string | Uint8Array;
 
+export interface WritableTarget {
+  root: string;
+  target: string;
+  parent: string;
+}
+
+/**
+ * Resolve a write target inside a root: the target and its real parent must be contained,
+ * the parent must exist, and an existing target must not be a symbolic link.
+ * Every refusal is an OUTSIDE_ROOT BrainError (spec/cli.md §3.6.4).
+ */
+export async function resolveWritableTarget(rootDirectory: string, targetPath: string): Promise<WritableTarget> {
+  const root = await realpath(resolve(rootDirectory));
+  const target = isAbsolute(targetPath) ? resolve(targetPath) : resolve(root, targetPath);
+  assertContained(root, target);
+
+  const parent = await realpath(dirname(target));
+  assertContained(root, parent);
+
+  try {
+    const targetMetadata = await lstat(target);
+    if (targetMetadata.isSymbolicLink()) {
+      throw new BrainError("OUTSIDE_ROOT", `Refusing to replace a symbolic link: ${target}`);
+    }
+  } catch (error) {
+    if (!isNodeError(error) || error.code !== "ENOENT") {
+      throw error;
+    }
+  }
+  return { root, target, parent };
+}
+
 /**
  * Atomically replace a file inside a brain directory.
  *
@@ -17,26 +49,7 @@ export async function atomicWriteFile(
   targetPath: string,
   data: AtomicWriteData,
 ): Promise<void> {
-  const brainRoot = await realpath(resolve(brainDirectory));
-  const target = isAbsolute(targetPath)
-    ? resolve(targetPath)
-    : resolve(brainRoot, targetPath);
-
-  assertContained(brainRoot, target);
-
-  const parent = await realpath(dirname(target));
-  assertContained(brainRoot, parent);
-
-  try {
-    const targetMetadata = await lstat(target);
-    if (targetMetadata.isSymbolicLink()) {
-      throw new Error(`Refusing to replace a symbolic link: ${target}`);
-    }
-  } catch (error) {
-    if (!isNodeError(error) || error.code !== "ENOENT") {
-      throw error;
-    }
-  }
+  const { root: brainRoot, target, parent } = await resolveWritableTarget(brainDirectory, targetPath);
 
   const temporary = resolve(
     parent,

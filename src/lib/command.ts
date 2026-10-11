@@ -41,6 +41,8 @@ export interface Command {
   usage: string;
   summary: string;
   options: OptionSpec;
+  /** Most positional arguments accepted (default: unlimited). */
+  maxPositionals?: number;
   needsBrain: boolean;
   run(context: CommandContext): Promise<CommandResult>;
 }
@@ -57,11 +59,15 @@ export async function runCommand(
   io: CliIo,
   environment: RunEnvironment = {},
 ): Promise<number> {
-  const json = argv.includes("--json");
+  const separator = argv.indexOf("--");
+  const json = (separator === -1 ? argv : argv.slice(0, separator)).includes("--json");
   let brainRoot: string | null = null;
 
   try {
     const args = parseArgs(argv, command.options);
+    if (command.maxPositionals !== undefined && args.positionals.length > command.maxPositionals) {
+      throw new BrainError("USAGE", `Unexpected argument: ${args.positionals[command.maxPositionals]}`);
+    }
     if (args.options.help === true) {
       io.stdout.write(`Usage: ${command.usage}\n\n${command.summary}\n`);
       return 0;
@@ -93,7 +99,7 @@ export async function runCommand(
     if (json) {
       const body: Record<string, unknown> = { code, message };
       if (known && error.details !== undefined) body.details = error.details;
-      writeJson(io, { ok: false, command: command.name, brain: brainRoot, error: body });
+      writeJson(io, { ok: false, command: command.name, brain: brainRoot, error: body, warnings: [] });
     } else {
       io.stderr.write(`error: ${message}\n`);
     }
