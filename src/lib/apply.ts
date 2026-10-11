@@ -54,8 +54,10 @@ const ACTIONS = ["approve", "reject", "edit"];
 const EDITABLE = new Set(["update_fact", "contradiction", "add_to_note"]);
 /** Reference fields a merge leaves alone: the meeting side of a persisted pair (spec/schema.md §11.2). */
 const PAIR_FIELDS = new Set(["decisions", "questions", "decided_in", "raised_in"]);
+/** Corrections change knowledge notes only: sources are immutable and proposals are records. */
+const KNOWLEDGE_TYPES = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "memory"]);
 const REFERENCE_FIELDS = [
-  "area", "goal", "client", "org", "projects", "people", "attendees", "deciders", "source", "sources",
+  "area", "areas", "goal", "client", "org", "projects", "people", "attendees", "deciders", "source", "sources",
   "answer", "project", "generated_from", "facts",
 ];
 
@@ -88,7 +90,7 @@ export function parseApplyInput(input: unknown): ApplyInput {
     problems.push(...unknownKeys(item, ["proposal", "action", "value", "decided_at", "decided_by"], pointer));
     if (typeof item.proposal !== "string") problems.push({ pointer: `${pointer}/proposal`, message: "must be a proposal id" });
     if (!ACTIONS.includes(item.action as string)) problems.push({ pointer: `${pointer}/action`, message: "must be approve, reject or edit" });
-    if (item.action === "edit" && item.value === undefined) problems.push({ pointer: `${pointer}/value`, message: "is required for edit" });
+    if (item.action === "edit" && (item.value === undefined || item.value === null)) problems.push({ pointer: `${pointer}/value`, message: "is required for edit" });
     if (item.action !== "edit" && item.value !== undefined) problems.push({ pointer: `${pointer}/value`, message: "is only allowed for edit" });
     if (!isTimestamp(item.decided_at)) problems.push({ pointer: `${pointer}/decided_at`, message: "must be an ISO 8601 UTC timestamp" });
     if (item.decided_by !== "notion" && item.decided_by !== "chat") problems.push({ pointer: `${pointer}/decided_by`, message: "must be notion or chat" });
@@ -160,9 +162,11 @@ function runItem(workspace: Workspace, run: () => Outcome): { outcome: ItemResul
   try {
     outcome = run();
   } catch (error) {
-    if (!(error instanceof ItemFailure)) throw error;
     workspace.restore(start);
-    return { outcome: { result: "failed", reason: error.reason, message: error.message, changed: [] } };
+    if (error instanceof ItemFailure) return { outcome: { result: "failed", reason: error.reason, message: error.message, changed: [] } };
+    // Anything else (a new_item whose note cannot be written, say) fails this item only (spec/cli.md §3.6.3).
+    const message = error instanceof Error ? error.message : String(error);
+    return { outcome: { result: "failed", reason: "INVALID_RESULT", message, changed: [] } };
   }
   const changed = workspace.changedSince(start);
   const errors = workspace.newErrors();
@@ -181,9 +185,9 @@ function applyCorrection(workspace: Workspace, correction: Correction, today: st
   const attributes = document.attributes;
   const factKey = /^facts\.([a-z][a-z0-9_]*)$/.exec(correction.field)?.[1];
   const known = loadSchemas().knownKeys(note.type);
-  const correctable = factKey !== undefined
+  const correctable = KNOWLEDGE_TYPES.has(note.type) && factKey !== undefined
     ? known?.has("facts") === true
-    : ["title", "summary", "why", "area", "goal", "client", "org", "people"].includes(correction.field) && known?.has(correction.field) === true;
+    : KNOWLEDGE_TYPES.has(note.type) && ["title", "summary", "why", "area", "goal", "client", "org", "people"].includes(correction.field) && known?.has(correction.field) === true;
   if (!correctable) throw new ItemFailure("FIELD_NOT_CORRECTABLE", `${correction.field} cannot be corrected on a ${note.type}`);
 
   const current = factKey === undefined ? attributes[correction.field] : record(attributes.facts)[factKey];
@@ -455,7 +459,7 @@ function rewriteLinks(body: string, notePath: string, xPath: string, yPath: stri
     }
     if (posix.normalize(posix.join(dir, decoded)) !== xPath) return match;
     const replaced = [posix.relative(dir, yPath), ...fragment].join("#");
-    return match.replace(raw, raw.startsWith("<") ? `<${replaced}>` : replaced);
+    return match.replace(raw, () => (raw.startsWith("<") ? `<${replaced}>` : replaced));
   });
 }
 

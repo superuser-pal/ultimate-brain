@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 
@@ -311,4 +311,35 @@ test("apply --dry-run reports without writing", async (context) => {
   assert.equal(run.json.data.dry_run, true);
   assert.equal(run.json.data.decisions[0].result, "applied");
   assert.equal(await readFile(join(dir, PROJECT), "utf8"), before);
+});
+
+test("a new_item that cannot be written fails only that item", async (context) => {
+  const dir = await fixtureCopy(context);
+  await proposal(dir, "prp-0a1b2c3d", { kind: "new_item", note: { type: "banana", title: "x", frontmatter: {}, body: "" } });
+  await proposal(dir, "prp-1a1b2c3d", kinds[0]!.fields);
+  const run = await apply(dir, { decisions: [decide("prp-1a1b2c3d"), decide("prp-0a1b2c3d")] });
+  assert.equal(run.code, 1, run.stdout);
+  assert.deepEqual(run.json.data.decisions.map((item: { result: string; reason?: string }) => [item.result, item.reason ?? null]), [["applied", null], ["failed", "INVALID_RESULT"]]);
+});
+
+test("corrections refuse sources and proposals; a merge rewrites memory areas", async (context) => {
+  const dir = await fixtureCopy(context);
+  const run = await apply(dir, {
+    corrections: [
+      { target: "src-7w3c9k5m", field: "title", value: "Edited", observed_at: "2026-12-07T09:00:00Z" },
+      { target: "prp-9d3f7h2k", field: "title", value: "Edited", observed_at: "2026-12-07T09:00:00Z" },
+    ],
+  });
+  assert.deepEqual(run.json.data.corrections.map((item: { reason: string }) => item.reason), ["FIELD_NOT_CORRECTABLE", "FIELD_NOT_CORRECTABLE"]);
+
+  const second = (await readFile(join(dir, "areas/clients.md"), "utf8")).replace("id: area-2m7c4h8n", "id: area-3n8d5j9p").replace("title: Clients", "title: Clients old");
+  await writeFile(join(dir, "areas/clients-old.md"), second);
+  const [memoryFile] = await readdir(join(dir, "memories/2026/12"));
+  const memoryPath = join(dir, "memories/2026/12", memoryFile!);
+  const original = await readFile(memoryPath, "utf8");
+  await writeFile(memoryPath, original.replace(/^scope: .*$/m, "scope: area").replace(/^(projects|stacks): .*\n/m, "").replace(/^origin:/m, "areas: [area-3n8d5j9p]\norigin:"));
+  await proposal(dir, "prp-0a1b2c3d", { kind: "merge", target: "area-3n8d5j9p", merge_into: "area-2m7c4h8n" });
+  const merged = await apply(dir, { decisions: [decide("prp-0a1b2c3d")] });
+  assert.equal(merged.json.data.decisions[0].result, "applied", JSON.stringify(merged.json.data.decisions[0]));
+  assert.match(await readFile(memoryPath, "utf8"), /areas: \[area-2m7c4h8n\]/);
 });
