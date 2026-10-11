@@ -47,10 +47,14 @@
 **Acceptance:** names identical to CC-01; each prompt has its Verify list.
 **Unblocks:** U-01.
 
-### CX-01 · Project scaffold · `todo`
+### CX-01 · Project scaffold · `review`
 **Output:** `package.json` (name `ultimate-brain`, `bin: { "brain": … }`, `type: module`, Node ≥ 22), `tsconfig.json`, `src/cli.ts` entry with subcommand routing and `--help`, tests with `node:test`, `npm test` and `npm run typecheck`, a GitHub Actions workflow running both.
 **Constraints:** run TypeScript directly with Node type stripping where possible (0016); dependencies limited to a YAML parser and, if needed, a JSON Schema validator. Justify any other dependency in the PR.
 **Acceptance:** `npx brain --help` works from the repo; `npm test` passes with a smoke test; no build step needed to run.
+
+**Spec questions:**
+- `npx brain --help` resolves the unrelated npm package named `brain`; npm does not expose the current root package's `brain` bin to `npx`. Should this acceptance command be `node src/cli.ts --help` for CX-01, with `npx ultimate-brain --help` deferred to CX-12 packaging as decision 0016 specifies?
+- Node refuses native TypeScript type stripping for installed files under `node_modules`. Should CX-12 compile a JavaScript distribution while keeping repository development build-free?
 
 ### CX-02 · Core library · `todo`
 **Output:** `src/lib/`:
