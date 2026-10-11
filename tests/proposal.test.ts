@@ -170,3 +170,38 @@ test("proposal list filters by status and target and sorts by created then id", 
   const bad = await brain(["proposal", "list", "--status", "open", "--brain", dir, "--json"]);
   assert.equal(bad.code, 2);
 });
+
+test("proposal new handles review edge cases from #14", async (context) => {
+  const dir = await fixtureCopy(context);
+  // A field named like an Object prototype key is just a new fact.
+  const proto = await proposalNew(dir, [{ ...budget, field: "constructor" }], "--dry-run");
+  assert.equal(proto.code, 0, proto.stdout);
+  assert.equal(proto.json.data.created[0].before, undefined);
+  assert.deepEqual(Object.keys(proto.json.data.created[0]), ["id", "kind", "title", "target", "path"]);
+
+  // A new_item whose note is an already-captured source is refused, not silently accepted.
+  const source = await readFile(join(dir, "sources/notion/2026-12-03-acme-sync-notion-minutes.md"), "utf8");
+  const body = source.slice(source.indexOf("---\n", 4) + 4);
+  const dup = await proposalNew(dir, [{ kind: "new_item", title: "Again", why: "w", source: "mtg-8c4n2p7w", note: { type: "source", title: "Again", frontmatter: { source_key: "notion:x" }, body } }]);
+  assert.equal(dup.json.error.code, "INPUT_INVALID");
+  assert.equal(dup.json.error.details[0].pointer, "/proposals/0/note");
+
+  // An error in an earlier item is reported against that item, not a later new_item.
+  const note = { type: "concept", title: "Edge caching", frontmatter: { summary: "S.", sources: ["mtg-8c4n2p7w"] }, body: "" };
+  const blame = await proposalNew(dir, [{ ...budget, after: undefined }, { kind: "new_item", title: "New concept", why: "w", source: "mtg-8c4n2p7w", note }]);
+  assert.equal(blame.json.error.code, "INPUT_INVALID");
+  assert.deepEqual(blame.json.error.details.map((detail: { pointer: string }) => detail.pointer), ["/proposals/0"]);
+
+  // A source naming a note that does not exist is UNKNOWN_ID; sources, views and proposals are not targets.
+  const unknownSource = await proposalNew(dir, [{ ...budget, source: "mtg-22222222" }]);
+  assert.equal(unknownSource.json.error.code, "UNKNOWN_ID");
+  assert.equal(unknownSource.json.error.details[0].pointer, "/proposals/0/source");
+  const sourceTarget = await proposalNew(dir, [{ kind: "add_to_note", title: "x", target: "src-7w3c9k5m", content: "c", why: "w", source: "mtg-8c4n2p7w" }]);
+  assert.equal(sourceTarget.json.error.code, "INPUT_INVALID");
+  assert.equal(sourceTarget.json.error.details[0].pointer, "/proposals/0/target");
+  const badId = await proposalNew(dir, [{ kind: "merge", title: "x", target: "per-9t2c6m4a", merge_into: 5, why: "w", source: "mtg-8c4n2p7w" }]);
+  assert.equal(badId.json.error.code, "INPUT_INVALID");
+
+  const trailing = await brain(["proposal", "list", "--status", "pending,", "--brain", dir, "--json"]);
+  assert.equal(trailing.code, 0, trailing.stdout);
+});

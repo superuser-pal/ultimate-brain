@@ -15,6 +15,8 @@ export const PROPOSAL_STATUSES = ["pending", "approved", "rejected", "edited", "
 
 /** Input keys of `proposal new`: the schema §11 fields the CLI does not set (spec/cli.md §5.6). */
 const INPUT_KEYS = ["title", "kind", "target", "field", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source"];
+const ID = /^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{8}$/;
+const KNOWLEDGE_TYPES = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "memory"]);
 /** Fields that make two pending proposals the same change (dedupe, spec/cli.md §5.6). */
 const DEDUPE_KEYS = ["kind", "target", "field", "after", "content", "note", "supersedes", "merge_into"];
 
@@ -52,6 +54,10 @@ export function stageProposals(
   const created: CreatedProposal[] = [];
   const skipped: SkippedProposal[] = [];
   const pointers = new Map<string, string>();
+  // A new_item's note is checked alone first, so errors in other items are never blamed on it.
+  (list as Array<Record<string, unknown>>).forEach((item, index) => {
+    if (item.kind === "new_item") checkNewItem(workspace, item.note as NoteInput, `/proposals/${index}/note`, today);
+  });
   const start = workspace.checkpoint();
   try {
     (list as Array<Record<string, unknown>>).forEach((item, index) => {
@@ -71,9 +77,14 @@ export function stageProposals(
       const path = newNotePath("proposal", String(item.title), today, (candidate) => workspace.exists(candidate));
       workspace.write(path, serializeNewFile(attributes, ""));
       pointers.set(path, pointer);
-      const result: CreatedProposal = { id, kind: String(fields.kind), title: String(fields.title), path };
-      if (fields.target !== undefined) result.target = String(fields.target);
-      if (fields.before !== undefined) result.before = fields.before;
+      const result: CreatedProposal = {
+        id,
+        kind: String(fields.kind),
+        title: String(fields.title),
+        ...(fields.target === undefined ? {} : { target: String(fields.target) }),
+        path,
+        ...(fields.before === undefined ? {} : { before: fields.before }),
+      };
       created.push(result);
     });
     assertStagedValid(workspace, pointers, "/proposals");
@@ -98,6 +109,9 @@ function checkShape(item: unknown, pointer: string): InputProblem[] {
   } else if (typeof item.target !== "string") {
     at("target", "must be the id of an existing note");
   }
+  for (const key of ["supersedes", "merge_into"]) {
+    if (item[key] !== undefined && typeof item[key] !== "string") at(key, "must be a note id");
+  }
   // Everything else (field names, value shapes, required keys per kind) is checked by the proposal schema.
   return problems;
 }
@@ -119,16 +133,15 @@ function resolveFields(workspace: Workspace, item: Record<string, unknown>, poin
     return note;
   };
 
-  if (kind === "new_item") {
-    checkNewItem(workspace, item.note as NoteInput, `${pointer}/note`, today);
-    return fields;
-  }
+  if (typeof item.source === "string" && ID.test(item.source)) existing("source");
+  if (kind === "new_item") return fields;
   const target = existing("target");
+  if (!KNOWLEDGE_TYPES.has(target.type)) invalid("target", `is a ${target.type}; proposals change knowledge notes only`);
 
   if (kind === "update_fact" || kind === "contradiction") {
     if (typeof item.field !== "string") invalid("field", "is required for this kind");
     const facts = isRecord(target.attributes.facts) ? target.attributes.facts : {};
-    const current = facts[item.field as string];
+    const current = Object.hasOwn(facts, item.field as string) ? facts[item.field as string] : undefined;
     if (kind === "contradiction" && current === undefined) invalid("field", `${target.id} has no current facts.${String(item.field)} to contradict`);
     if (item.before !== undefined && !isDeepStrictEqual(item.before, current)) {
       throw new BrainError(
@@ -181,7 +194,11 @@ export function stageNewItem(
   now: Date,
 ): { note: CreatedNote; meetingPath?: string; pointers: Map<string, string> } {
   const staged = stageNotes(workspace, [note], () => pointer, { now });
-  const created = staged.created[0]!;
+  const created = staged.created[0];
+  if (created === undefined) {
+    const existingId = staged.skipped[0]?.existing;
+    throw new BrainError("INPUT_INVALID", `${pointer} duplicates source ${String(existingId)}`, [{ pointer, message: `same content as existing source ${String(existingId)}` }]);
+  }
   const pointers = new Map(staged.pointers);
   const link = note.type === "decision" ? ["decided_in", "decisions"] : note.type === "question" ? ["raised_in", "questions"] : undefined;
   const meetingId = link === undefined ? undefined : note.frontmatter[link[0]!];
