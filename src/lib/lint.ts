@@ -22,8 +22,10 @@ export interface LintInput {
   notes: readonly Note[];
   problems: readonly ScanProblem[];
   brainConfig: unknown;
-  /** Current index.md bytes, or null when missing. */
-  indexMarkdown: string | null;
+  /** Current index.md bytes, or null when missing. Undefined skips the index-stale check. */
+  indexMarkdown: string | null | undefined;
+  /** Files that exist in memory but not yet on disk (a write being validated, spec/cli.md §3.6.1). */
+  pendingPaths?: ReadonlySet<string>;
 }
 
 const ID = /^(area|gol|prj|per|org|mtg|dec|que|con|src|mem|prp|vw)-[0-9abcdefghjkmnpqrstvwxyz]{8}$/;
@@ -83,7 +85,8 @@ export function lintBrain(input: LintInput): Issue[] {
     const others = pathsById.get(note.id)!.filter((path) => path !== note.path);
     if (others.length > 0) add("error", "id-duplicate", note.path, lineOfKey(note, "id"), note.id, `${note.id} is also used by ${others.join(", ")}`);
   }
-  const exists = caseSensitiveExists(input.root);
+  const onDisk = caseSensitiveExists(input.root);
+  const exists = (path: string) => input.pendingPaths?.has(path) === true || onDisk(path);
 
   for (const note of input.notes) {
     const a = note.attributes;
@@ -200,7 +203,7 @@ export function lintBrain(input: LintInput): Issue[] {
     }
   }
 
-  if (input.indexMarkdown !== buildIndex(input.notes).markdown) {
+  if (input.indexMarkdown !== undefined && input.indexMarkdown !== buildIndex(input.notes).markdown) {
     add("warning", "index-stale", "index.md", 1, null, "index.md is out of date; run brain index");
   }
 
