@@ -150,7 +150,7 @@ test("failure envelopes include an empty warnings list", async () => {
 });
 
 function note(id: string, type: string, attributes: Record<string, unknown>): Note {
-  return { id, type, path: `knowledge/x/${id}.md`, body: "", attributes: { id, type, ...attributes } };
+  return { id, type, path: `knowledge/x/${id}.md`, body: "", raw: "", attributes: { id, type, ...attributes } };
 }
 
 test("index values never break lines; titles escape backslashes; odd types are left out", () => {

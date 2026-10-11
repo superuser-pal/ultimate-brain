@@ -73,7 +73,7 @@ test("brain index --json lists every note and computed backlinks", async () => {
 });
 
 function note(id: string, type: string, attributes: Record<string, unknown>, path = `knowledge/x/${id}.md`): Note {
-  return { id, type, path, body: "", attributes: { id, type, ...attributes } };
+  return { id, type, path, body: "", raw: "", attributes: { id, type, ...attributes } };
 }
 
 test("index lines sort by NFC-lowercased code points, escape brackets and flag lifecycle", () => {
