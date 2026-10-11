@@ -1,6 +1,8 @@
-import { lstat, open, realpath, rename, unlink } from "node:fs/promises";
+import { lstat, mkdir, open, realpath, rename, unlink } from "node:fs/promises";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { randomBytes } from "node:crypto";
+
+import { BrainError } from "./errors.ts";
 
 export type AtomicWriteData = string | Uint8Array;
 
@@ -57,6 +59,28 @@ export async function atomicWriteFile(
   }
 }
 
+/**
+ * Create a directory (and parents) inside a root, refusing anything that resolves outside it.
+ * The nearest existing ancestor is checked with realpath so a symlinked folder cannot escape.
+ */
+export async function ensureDirectory(rootDirectory: string, targetPath: string): Promise<void> {
+  const root = await realpath(resolve(rootDirectory));
+  const target = isAbsolute(targetPath) ? resolve(targetPath) : resolve(root, targetPath);
+  assertContained(root, target);
+
+  let existing = target;
+  while (true) {
+    try {
+      assertContained(root, await realpath(existing));
+      break;
+    } catch (error) {
+      if (!isNodeError(error) || error.code !== "ENOENT") throw error;
+      existing = dirname(existing);
+    }
+  }
+  await mkdir(target, { recursive: true });
+}
+
 /** Throw unless target is the brain root or one of its descendants. */
 export function assertPathInsideBrain(brainRoot: string, target: string): void {
   assertContained(resolve(brainRoot), resolve(target));
@@ -66,7 +90,7 @@ function assertContained(root: string, target: string): void {
   const pathFromRoot = relative(root, target);
   if (pathFromRoot === "") return;
   if (pathFromRoot === ".." || pathFromRoot.startsWith(`..${sep}`) || isAbsolute(pathFromRoot)) {
-    throw new Error(`Refusing to write outside the brain directory: ${target}`);
+    throw new BrainError("OUTSIDE_ROOT", `Refusing to write outside the brain directory: ${target}`);
   }
 }
 
