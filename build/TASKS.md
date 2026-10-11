@@ -24,7 +24,7 @@
 
 ## Wave 1 — Foundations
 
-### CC-01 · Schema spec · `review` (reviewer: Codex)
+### CC-01 · Schema spec · `done` (follow-up fixes from Codex's review: CC-01b)
 **Output:** `spec/schema.md` and `spec/schemas/*.schema.json` (JSON Schema, draft 2020-12).
 **Covers:** common frontmatter; v1 note types (area, goal, project, person, org, meeting, decision, question, concept, source, view, memory); `timeline:` entries (0010); assessment and lifecycle (0005); relations vocabulary; proposal file (synthesis §4.6); `brain.json` including the Notion section and Tasks mapping (0018); ID format (0017); provenance markers (0004); freshness forms (0011); folder layout (synthesis §4.1).
 **Decisions:** 0001–0005, 0008–0011, 0017, 0018, 0020, 0021, 0023.
@@ -105,7 +105,7 @@ Five synthetic meetings with expected extractions (decisions, fact changes, cont
 - **CC-11 · notion-change skill:** spec diff → Notion AI prompts → drift check via MCP (0022).
 - **CX-10 · sync helpers:** CLI functions the sync skill calls (diff Notion snapshot JSON vs notes, produce correction and creation plans).
 - **CX-11 · query helpers:** `brain query --candidates "<q>"` returning ranked notes from index + grep with snippets.
-- **CX-12 · packaging:** publishable npm package so `npx ultimate-brain init` works; plugin bundle includes skills.
+- **CX-12 · packaging:** publishable npm package so `npx ultimate-brain init` works; plugin bundle includes skills. Publish **compiled JavaScript** (Node won't strip types inside `node_modules`); development in the repo stays build-free. Until then, run the CLI with `node src/cli.ts` (answers CX-01's spec questions).
 
 ## Wave 4 — Dogfood
 - **CC-12 · end-to-end run with you;** **CX-13 · fixes;** **U-05 · two weeks of real use** against the v1 success criterion in vision.md.
