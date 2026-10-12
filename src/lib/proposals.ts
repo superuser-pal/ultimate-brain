@@ -18,6 +18,7 @@ export const PROPOSAL_STATUSES = ["pending", "approved", "rejected", "edited", "
 const INPUT_KEYS = ["title", "kind", "target", "field", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source"];
 const ID = /^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{8}$/;
 const KNOWLEDGE_TYPES = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "memory"]);
+const ADD_LINK_FIELDS = new Set(["aliases", "tags", "projects", "people", "attendees", "deciders"]);
 /** Fields that make two pending proposals the same change (dedupe, spec/cli.md §5.6). */
 const DEDUPE_KEYS = ["kind", "target", "field", "after", "content", "note", "supersedes", "merge_into"];
 
@@ -165,6 +166,7 @@ function resolveFields(workspace: Workspace, item: Record<string, unknown>, poin
   }
   if (kind === "add_link") {
     const field = typeof item.field === "string" ? item.field : "";
+    if (!ADD_LINK_FIELDS.has(field)) invalid("field", "must be aliases, tags, projects, people, attendees or deciders");
     if (!loadSchemas().knownKeys(target.type)?.has(field)) invalid("field", `is not declared by ${target.type}`);
     if (["projects", "people", "attendees", "deciders"].includes(field)) {
       const linked = existing("after");

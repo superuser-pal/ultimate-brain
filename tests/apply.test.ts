@@ -89,7 +89,7 @@ const kinds: Array<{ name: string; fields: Record<string, unknown>; action?: str
   },
   {
     name: "add_link-approve",
-    fields: { kind: "add_link", target: "per-3h8w2n6c", field: "projects", after: "prj-9x4t1b7e" },
+    fields: { kind: "add_link", target: "per-3h8w2n6c", field: "aliases", after: "Mari" },
     changed: [MARIA],
   },
   {
@@ -230,12 +230,14 @@ test("record-only stores decisions; apply without input then applies them, later
 
 test("apply reports item failures and keeps going", async (context) => {
   const dir = await fixtureCopy(context);
-  await proposal(dir, "prp-0a1b2c3d", { kind: "add_link", target: "per-3h8w2n6c", field: "projects", after: "prj-9x4t1b7e" });
+  await proposal(dir, "prp-0a1b2c3d", { kind: "supersede", target: "dec-7k2m9q4x", supersedes: "dec-2p9f6h1r" });
+  await proposal(dir, "prp-3a1b2c3d", { kind: "add_link", target: "per-3h8w2n6c", field: "aliases", after: "Mari" });
   await proposal(dir, "prp-1a1b2c3d", { ...kinds[0]!.fields });
   await proposal(dir, "prp-2a1b2c3d", { kind: "update_fact", target: "prj-9x4t1b7e", field: "owner", after: "per-00000000", from: "2026-12-08" });
   const run = await apply(dir, {
     decisions: [
       decide("prp-0a1b2c3d", "edit", "x"),
+      decide("prp-3a1b2c3d", "edit", "x"),
       decide("prp-00000000"),
       decide("prp-2a1b2c3d"),
       decide("prp-1a1b2c3d"),
@@ -244,13 +246,14 @@ test("apply reports item failures and keeps going", async (context) => {
   assert.equal(run.code, 1, run.stdout);
   assert.deepEqual(run.json.data.decisions.map((item: { result: string; reason?: string }) => [item.result, item.reason ?? null]), [
     ["failed", "EDIT_NOT_ALLOWED"],
+    ["failed", "EDIT_NOT_ALLOWED"],
     ["failed", "UNKNOWN_ID"],
     ["failed", "INVALID_RESULT"],
     ["applied", null],
   ]);
-  assert.match(run.json.data.decisions[2].message, /missing-ref/);
+  assert.match(run.json.data.decisions[3].message, /missing-ref/);
   assert.equal(parseFrontmatter(await readFile(join(dir, "_proposals/2026-12-08-prp-2a1b2c3d.md"), "utf8")).attributes.status, "pending", "a failed item is left unchanged");
-  assert.deepEqual(run.json.data.summary, { applied: 1, closed: 0, recorded: 0, corrected: 0, skipped: 0, failed: 3 });
+  assert.deepEqual(run.json.data.summary, { applied: 1, closed: 0, recorded: 0, corrected: 0, skipped: 0, failed: 4 });
 });
 
 test("corrections from Notion edits run first and later decisions see them", async (context) => {
