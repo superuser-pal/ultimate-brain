@@ -21,6 +21,12 @@ export const proposalNewCommand: Command = {
     const dryRun = args.options["dry-run"] === true;
     const workspace = await Workspace.open(brain!);
     const { created, skipped } = stageProposals(workspace, record.proposals, now);
+    const warnings = workspace.warnings().map((issue) => ({
+      code: issue.rule.toUpperCase().replaceAll("-", "_"),
+      message: `${issue.path}:${issue.line} ${issue.message}`,
+      path: issue.path,
+      ...(issue.id === null ? {} : { id: issue.id }),
+    }));
     if (!dryRun) {
       await workspace.commit(created.map((proposal) => ({
         op: "proposal-new",
@@ -31,7 +37,7 @@ export const proposalNewCommand: Command = {
     }
     const human = created.map((proposal) => `${dryRun ? "would create" : "created"} ${proposal.path}\n`).join("")
       + skipped.map((skip) => `skipped proposals[${skip.input_index}]: same as pending ${skip.existing}\n`).join("");
-    return { data: { created, skipped, dry_run: dryRun }, human: human || "Nothing to write.\n" };
+    return { data: { created, skipped, dry_run: dryRun }, warnings, human: human || "Nothing to write.\n" };
   },
 };
 
