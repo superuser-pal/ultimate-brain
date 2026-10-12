@@ -663,7 +663,7 @@ The brain is read-only from this repo. Never edit its files from here.
 <!-- ultimate-brain:end -->
 ```
 
-3. **Skill** (0029): `.agents/skills/brain-query/` is written from the skills the package ships. It is product-owned: files whose bytes differ are replaced, and files no longer shipped in that folder are removed. Nothing else under `.agents/` is touched. Each written file is listed in `files`.
+3. **Skill** (0029): `.agents/skills/brain-query/` is written from the skills the package ships. It is product-owned: files whose bytes differ are replaced, and files no longer shipped in that folder are removed. Nothing else under `.agents/` is touched. Every skill file appears in `files` with its `action` (`created`, `updated` or `unchanged`), and a removed stale file appears with `action: "removed"`, e.g. `{ "path": ".agents/skills/brain-query/SKILL.md", "action": "created" }`.
 
 Idempotent: a second run with the same options changes no bytes.
 
@@ -674,7 +674,7 @@ Idempotent: a second run with the same options changes no bytes.
     "files": [ { "path": "AGENTS.md", "action": "created" }, { "path": "CLAUDE.md", "action": "created" } ]
 } }
 ```
-`action` is one of `created`, `updated`, `unchanged`. Paths here are relative to the repo.
+`action` is one of `created`, `updated`, `unchanged`, and `removed` for a stale skill file. Paths here are relative to the repo.
 
 Errors: `UNKNOWN_ID`, `OUTSIDE_ROOT`, `USAGE` (path missing or not a directory).
 
