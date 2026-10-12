@@ -114,7 +114,7 @@ Five synthetic meetings with expected extractions (decisions, fact changes, cont
 
 - **CC-08 · connect-notion + sync skills:** find databases via MCP and write `brain.json`; import new rows (0021), read Notion-owned fields, detect your edits to brain-owned values (0023), publish brain records.
 - **CC-09 · apply skill:** read Review decisions via MCP → `brain apply` → update Review rows and pages.
-- **CC-10 · query skill:** retrieval ladder, cited answers separating accepted / contested / superseded facts.
+- **CC-10 · query skill · `review` (Claude Code):** retrieval ladder, cited answers separating accepted / contested / superseded facts.
 - **CC-11 · notion-change skill:** spec diff → Notion AI prompts → drift check via MCP (0022).
 - **CX-10 · sync helpers (Codex):** `review` — CLI functions the sync skill calls (diff Notion snapshot JSON vs notes, produce correction and creation plans).
 - **CX-11 · query helpers:** `brain query --candidates "<q>"` returning ranked notes from index + grep with snippets.
