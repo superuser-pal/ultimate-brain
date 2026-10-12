@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { pathToFileURL } from "node:url";
+import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 import { applyCommand } from "./commands/apply.ts";
 import { indexCommand } from "./commands/index.ts";
@@ -87,6 +88,14 @@ export async function runCli(args: readonly string[], options: CliOptions = {}):
 
 const entryPoint = process.argv[1];
 
-if (entryPoint !== undefined && pathToFileURL(entryPoint).href === import.meta.url) {
+if (entryPoint !== undefined && isEntryPoint(entryPoint)) {
   process.exitCode = await runCli(process.argv.slice(2));
+}
+
+function isEntryPoint(entryPoint: string): boolean {
+  try {
+    return realpathSync(entryPoint) === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
 }
