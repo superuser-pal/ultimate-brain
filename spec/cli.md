@@ -92,7 +92,7 @@ Failure:
 - `ok` is `true` when the command **completed**, even if it found problems (lint errors, a drifted `--check`, some apply items failed). Findings are in `data` and the exit code is 1.
 - `command` is the command path joined by a space (`"sync plan"`).
 - `brain` is the absolute resolved brain path, or `null` when not resolved (e.g. `init`, resolution failed).
-- `warnings` is always present (may be empty). Each has `code`, `message`, optional `path` and `id`.
+- `warnings` is always present (may be empty). Each has `code`, `message`, optional `path` and `id`. Commands that write notes (`note new`, `proposal new`, `apply`, `sync apply`) also list every lint warning in the files they wrote, including warnings those files already had, so the agent sees each written file's full state.
 - Paths inside `data` are **relative to the brain root** with forward slashes, unless named `*_abs`.
 - Diagnostics for humans go to stderr; nothing but the JSON document goes to stdout.
 
@@ -126,6 +126,7 @@ Failure:
 | `TARGET_NOT_EMPTY` | 5 | `init` target is non-empty and `--force` not given |
 | `ALREADY_A_BRAIN` | 5 | `init` target already has `brain.json` |
 | `OUTSIDE_ROOT` | 5 | a write would land outside its allowed root |
+| `WRITE_CONFLICT` | 5 | a file appeared at a path the command was creating, after it read the brain (another writer). Nothing is kept (§3.6); re-run the command |
 | `INTERNAL` | 10 | unexpected failure |
 
 Batch commands (`note new`, `proposal new`, `apply`, `sync apply`) also report **per-item** results with their own `reason` codes, listed under each command.
