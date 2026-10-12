@@ -5,7 +5,7 @@ title: Maria López
 summary: Product manager at Acme since December 2026, previously designer.
 lifecycle: reviewed
 org: org-6d1f9z3k
-aliases: [Maria, María López]
+aliases: [Maria, María López, Mari]
 projects: [prj-9x4t1b7e]
 sources: [mtg-5r2k8v3a, mtg-8c4n2p7w]
 facts:
