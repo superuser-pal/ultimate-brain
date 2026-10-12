@@ -468,7 +468,7 @@ function rewriteLinks(body: string, notePath: string, xPath: string, yPath: stri
   };
   const rewriteProse = (prose: string): string => {
     const spans: string[] = [];
-    const masked = prose.replace(/(`+)([\s\S]*?)\1/g, (span) => {
+    const masked = prose.replace(/(`+)((?:(?!\n[ \t]*\n)[\s\S])*?)\1/g, (span) => {
       const marker = `\u0000${spans.length}\u0000`;
       spans.push(span);
       return marker;

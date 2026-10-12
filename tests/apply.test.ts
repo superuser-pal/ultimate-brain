@@ -357,6 +357,7 @@ test("a merge rewrites inline, reference and autolinks while retaining query fra
   const project = join(dir, PROJECT);
   const original = await readFile(project, "utf8");
   await writeFile(project, `${original}\n[inline](../../knowledge/people/carlos-ruiz.md?source=merge#bio)\n[ref]: ../../knowledge/people/carlos-ruiz.md?source=merge#bio\n<../../knowledge/people/carlos-ruiz.md?source=merge#bio>\n\`[inline](../../knowledge/people/carlos-ruiz.md?source=merge#bio)\`\n\`\`\`md\n[fenced](../../knowledge/people/carlos-ruiz.md?source=merge#bio)\n[code-ref]: ../../knowledge/people/carlos-ruiz.md?source=merge#bio\n<../../knowledge/people/carlos-ruiz.md?source=merge#bio>\n\`\`\`\n`);
+  await writeFile(project, `${await readFile(project, "utf8")}\` stray\n\n[paragraph](../../knowledge/people/carlos-ruiz.md?source=merge#bio)\n\nstray \`\n`);
   await proposal(dir, "prp-0a1b2c3d", { kind: "merge", target: "per-9t2c6m4a", merge_into: "per-3h8w2n6c" });
 
   const run = await apply(dir, { decisions: [decide("prp-0a1b2c3d")] });
@@ -366,6 +367,7 @@ test("a merge rewrites inline, reference and autolinks while retaining query fra
   assert.match(updated, /^\[ref\]: \.\.\/\.\.\/knowledge\/people\/maria-lopez\.md\?source=merge#bio$/m);
   assert.match(updated, /<\.\.\/\.\.\/knowledge\/people\/maria-lopez\.md\?source=merge#bio>/);
   assert.match(updated, /`\[inline\]\(\.\.\/\.\.\/knowledge\/people\/carlos-ruiz\.md\?source=merge#bio\)`/);
+  assert.match(updated, /\[paragraph\]\(\.\.\/\.\.\/knowledge\/people\/maria-lopez\.md\?source=merge#bio\)/);
   assert.match(updated, /\[fenced\]\(\.\.\/\.\.\/knowledge\/people\/carlos-ruiz\.md\?source=merge#bio\)/);
   assert.match(updated, /^\[code-ref\]: \.\.\/\.\.\/knowledge\/people\/carlos-ruiz\.md\?source=merge#bio$/m);
 });

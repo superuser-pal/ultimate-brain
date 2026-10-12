@@ -140,8 +140,8 @@ export class Workspace {
 
   /**
    * Write every staged file, then append `log` lines (spec/cli.md §3.9). If anything fails,
-   * restore the files and remove the folders this commit created, then rethrow as INTERNAL, so
-   * exit 10 always means nothing was kept (§3.4).
+   * restore the files and remove the folders this commit created. Refusal BrainErrors such as
+   * WRITE_CONFLICT pass through after rollback; unexpected failures become INTERNAL.
    */
   async commit(log: readonly LogEntry[] = [], now: Date = new Date()): Promise<CommitResult> {
     const done: Array<[string, Staged]> = [];
