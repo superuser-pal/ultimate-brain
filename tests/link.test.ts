@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -30,6 +30,7 @@ test("link writes a canonical marker and agent instructions, then is byte-idempo
   assert.deepEqual(first.json.data.files, [
     { path: "AGENTS.md", action: "created" },
     { path: "CLAUDE.md", action: "created" },
+    { path: ".agents/skills/brain-query/SKILL.md", action: "created" },
   ]);
   assert.deepEqual(JSON.parse(await readFile(join(target, ".brain"), "utf8")), first.json.data.marker.value);
   const agents = await readFile(join(target, "AGENTS.md"), "utf8");
@@ -45,6 +46,7 @@ test("link writes a canonical marker and agent instructions, then is byte-idempo
   assert.deepEqual(second.json.data.files, [
     { path: "AGENTS.md", action: "unchanged" },
     { path: "CLAUDE.md", action: "unchanged" },
+    { path: ".agents/skills/brain-query/SKILL.md", action: "unchanged" },
   ]);
   const after = await Promise.all([".brain", "AGENTS.md", "CLAUDE.md"].map((path) => readFile(join(target, path), "utf8")));
   assert.deepEqual(after, before);
@@ -71,6 +73,7 @@ test("link updates fenced instructions in place and retains content outside them
   assert.deepEqual(run.json.data.files, [
     { path: "AGENTS.md", action: "updated" },
     { path: "CLAUDE.md", action: "updated" },
+    { path: ".agents/skills/brain-query/SKILL.md", action: "created" },
   ]);
   const agents = await readFile(join(target, "AGENTS.md"), "utf8");
   assert.equal(agents.startsWith("# Local rules\nKeep this intro.\n\n"), true);
@@ -112,4 +115,31 @@ test("link refuses malformed instruction markers without touching the repository
   assert.equal(run.code, 4);
   assert.equal(run.json.error.code, "INPUT_INVALID");
   assert.equal(await readFile(join(target, "AGENTS.md"), "utf8"), bad);
+});
+
+test("link installs brain-query only, refreshes it, removes stale files and leaves other .agents content", async (context) => {
+  const target = await repo(context);
+  const skill = join(target, ".agents", "skills", "brain-query");
+  const shipped = await readFile(join(import.meta.dirname, "..", ".agents", "skills", "brain-query", "SKILL.md"), "utf8");
+  await mkdir(skill, { recursive: true });
+  await mkdir(join(target, ".agents", "skills", "mine"), { recursive: true });
+  await writeFile(join(skill, "SKILL.md"), "old\n");
+  await writeFile(join(skill, "stale.md"), "stale\n");
+  await writeFile(join(target, ".agents", "skills", "mine", "SKILL.md"), "keep\n");
+
+  const first = await brain(["link", target, ...BRAIN]);
+  assert.equal(first.code, 0, first.stdout);
+  assert.deepEqual(first.json.data.files.filter((file: any) => file.path.startsWith(".agents/")), [
+    { path: ".agents/skills/brain-query/SKILL.md", action: "updated" },
+    { path: ".agents/skills/brain-query/stale.md", action: "removed" },
+  ]);
+  assert.equal(await readFile(join(skill, "SKILL.md"), "utf8"), shipped);
+  await assert.rejects(readFile(join(skill, "stale.md")));
+  assert.equal(await readFile(join(target, ".agents", "skills", "mine", "SKILL.md"), "utf8"), "keep\n");
+  await assert.rejects(readFile(join(target, ".agents", "skills", "brain-ingest", "SKILL.md")));
+
+  const second = await brain(["link", target, ...BRAIN]);
+  assert.deepEqual(second.json.data.files.filter((file: any) => file.path.startsWith(".agents/")), [
+    { path: ".agents/skills/brain-query/SKILL.md", action: "unchanged" },
+  ]);
 });

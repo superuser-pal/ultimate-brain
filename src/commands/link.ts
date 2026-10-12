@@ -1,12 +1,13 @@
-import { lstat, readFile, realpath, stat, unlink } from "node:fs/promises";
-import { basename, resolve } from "node:path";
+import { lstat, readdir, readFile, realpath, stat, unlink } from "node:fs/promises";
+import { basename, join, resolve } from "node:path";
 
 import type { Command } from "../lib/command.ts";
 import { isProductRepository } from "../lib/brain-path.ts";
 import { BrainError } from "../lib/errors.ts";
-import { atomicWriteFile } from "../lib/fs-safe.ts";
+import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
 import type { Note } from "../lib/notes.ts";
 import { scanNotes } from "../lib/notes.ts";
+import { listShippedSkillFiles } from "../lib/skills.ts";
 
 const START = "<!-- ultimate-brain:start -->";
 const END = "<!-- ultimate-brain:end -->";
@@ -20,9 +21,9 @@ interface RepoMarker {
 }
 
 interface PlannedFile {
-  path: ".brain" | "AGENTS.md" | "CLAUDE.md";
+  path: string;
   before: string | null;
-  after: string;
+  after: string | null;
 }
 
 /** `brain link <repo-path>` (spec/cli.md §5.12). */
@@ -59,11 +60,12 @@ export const linkCommand: Command = {
       { path: ".brain", before: existingMarker.raw, after: `${JSON.stringify(marker, null, 2)}\n` },
       { path: "AGENTS.md", before: agents, after: agentText },
       { path: "CLAUDE.md", before: claude, after: claudeText },
+      ...await planSkill(root),
     ];
     await writePlan(root, planned);
 
-    const action = (file: PlannedFile): "created" | "updated" | "unchanged" =>
-      file.before === null ? "created" : file.before === file.after ? "unchanged" : "updated";
+    const action = (file: PlannedFile): "created" | "updated" | "unchanged" | "removed" =>
+      file.before === null ? "created" : file.after === null ? "removed" : file.before === file.after ? "unchanged" : "updated";
     return {
       data: {
         repo_abs: root,
@@ -216,7 +218,7 @@ function hasAgentImport(content: string): boolean {
   return content.split(/\r?\n/).some((line) => line === "@AGENTS.md");
 }
 
-async function readOptional(root: string, path: ".brain" | "AGENTS.md" | "CLAUDE.md"): Promise<string | null> {
+async function readOptional(root: string, path: string): Promise<string | null> {
   try {
     const target = `${root}/${path}`;
     if ((await lstat(target)).isSymbolicLink()) throw new BrainError("OUTSIDE_ROOT", `Refusing to replace a symbolic link: ${target}`);
@@ -228,12 +230,50 @@ async function readOptional(root: string, path: ".brain" | "AGENTS.md" | "CLAUDE
   }
 }
 
+/** Product-owned `.agents/skills/brain-query/` (decision 0029): replace changed files, remove stale ones. */
+async function planSkill(root: string): Promise<PlannedFile[]> {
+  const shipped = await listShippedSkillFiles("brain-query");
+  const planned: PlannedFile[] = [];
+  const keep = new Set<string>();
+  for (const file of shipped) {
+    const path = `.agents/skills/${file.relative}`;
+    keep.add(path);
+    planned.push({ path, before: await readOptional(root, path), after: file.content.toString("utf8") });
+  }
+  const folder = ".agents/skills/brain-query";
+  for (const path of await listFiles(root, folder)) {
+    if (!keep.has(path)) planned.push({ path, before: await readOptional(root, path), after: null });
+  }
+  return planned.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+}
+
+async function listFiles(root: string, folder: string): Promise<string[]> {
+  let entries;
+  try {
+    entries = await readdir(join(root, folder), { withFileTypes: true });
+  } catch (error) {
+    if (isNodeError(error) && (error.code === "ENOENT" || error.code === "ENOTDIR")) return [];
+    throw error;
+  }
+  const paths: string[] = [];
+  for (const entry of entries) {
+    const path = `${folder}/${entry.name}`;
+    if (entry.isDirectory()) paths.push(...await listFiles(root, path));
+    else paths.push(path);
+  }
+  return paths;
+}
+
 async function writePlan(root: string, files: readonly PlannedFile[]): Promise<void> {
   const changed = files.filter((file) => file.before !== file.after);
   const done: PlannedFile[] = [];
   try {
     for (const file of changed) {
-      await atomicWriteFile(root, file.path, file.after);
+      if (file.after === null) await unlink(`${root}/${file.path}`);
+      else {
+        await ensureDirectory(root, file.path.split("/").slice(0, -1).join("/") || ".");
+        await atomicWriteFile(root, file.path, file.after);
+      }
       done.push(file);
     }
   } catch (error) {
