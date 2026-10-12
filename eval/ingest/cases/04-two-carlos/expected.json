@@ -1,0 +1,14 @@
+{
+  "case": "04-two-carlos",
+  "minutes": "eval/ingest/cases/04-two-carlos/minutes.md",
+  "run": {
+    "title": "Northwind intro",
+    "date": "2026-12-15",
+    "project": null
+  },
+  "expect": {
+    "stop": true,
+    "stop_reason": "'Carlos Ruiz (Northwind, CTO)' has the same name as Carlos Ruiz at Acme (per-9t2c6m4a) but a different organization, and the meeting has no project: ask the user before writing anything."
+  },
+  "optional": []
+}
