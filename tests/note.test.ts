@@ -126,6 +126,15 @@ test("note new generates ids and suffixes taken paths", async (context) => {
   assert.ok((await readFile(join(dir, person.path), "utf8")).endsWith("updated: 2026-12-10\n---\n"), "an empty body ends after ---");
 });
 
+test("note new returns lint warnings for the note it writes", async (context) => {
+  const dir = await fixtureCopy(context);
+  const run = await noteNew(dir, {
+    notes: [{ type: "person", title: "Warning example", frontmatter: { summary: "A synthetic person." }, body: "Currently available." }],
+  });
+  assert.equal(run.code, 0, run.stdout);
+  assert.ok(run.json.warnings.some((warning: { code: string; path: string }) => warning.code === "FRESHNESS" && warning.path === "knowledge/people/warning-example.md"));
+});
+
 test("note new refuses a decision whose existing meeting does not list it, and writes nothing", async (context) => {
   const dir = await fixtureCopy(context);
   const before = await readdir(join(dir, "knowledge/decisions"));

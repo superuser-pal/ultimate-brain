@@ -1,4 +1,4 @@
-import { lstat, mkdir, open, realpath, rename, unlink } from "node:fs/promises";
+import { link, lstat, mkdir, open, realpath, rename, unlink } from "node:fs/promises";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { randomBytes } from "node:crypto";
 
@@ -65,6 +65,39 @@ export async function atomicWriteFile(
     await handle.close();
     handle = undefined;
     await rename(temporary, target);
+  } catch (error) {
+    await handle?.close().catch(() => undefined);
+    await unlink(temporary).catch(() => undefined);
+    throw error;
+  }
+}
+
+/**
+ * Atomically create a file, refusing to replace anything that appeared after the caller scanned
+ * the directory. Linking the completed temporary file is exclusive: unlike rename, it fails with
+ * EEXIST rather than overwriting a concurrent writer's file.
+ */
+export async function atomicCreateFile(
+  brainDirectory: string,
+  targetPath: string,
+  data: AtomicWriteData,
+): Promise<void> {
+  const { root: brainRoot, target, parent } = await resolveWritableTarget(brainDirectory, targetPath);
+  const temporary = resolve(
+    parent,
+    `.${basename(target)}.${process.pid}.${randomBytes(6).toString("hex")}.tmp`,
+  );
+  assertContained(brainRoot, temporary);
+
+  let handle;
+  try {
+    handle = await open(temporary, "wx", 0o600);
+    await handle.writeFile(data);
+    await handle.sync();
+    await handle.close();
+    handle = undefined;
+    await link(temporary, target);
+    await unlink(temporary);
   } catch (error) {
     await handle?.close().catch(() => undefined);
     await unlink(temporary).catch(() => undefined);

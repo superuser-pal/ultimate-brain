@@ -343,3 +343,31 @@ test("corrections refuse sources and proposals; a merge rewrites memory areas", 
   assert.equal(merged.json.data.decisions[0].result, "applied", JSON.stringify(merged.json.data.decisions[0]));
   assert.match(await readFile(memoryPath, "utf8"), /areas: \[area-2m7c4h8n\]/);
 });
+
+test("a merge rewrites inline, reference and autolinks while retaining query fragments and fenced code", async (context) => {
+  const dir = await fixtureCopy(context);
+  const project = join(dir, PROJECT);
+  const original = await readFile(project, "utf8");
+  await writeFile(project, `${original}\n[inline](../../knowledge/people/carlos-ruiz.md?source=merge#bio)\n[ref]: ../../knowledge/people/carlos-ruiz.md?source=merge#bio\n<../../knowledge/people/carlos-ruiz.md?source=merge#bio>\n\`\`\`md\n[fenced](../../knowledge/people/carlos-ruiz.md?source=merge#bio)\n[code-ref]: ../../knowledge/people/carlos-ruiz.md?source=merge#bio\n<../../knowledge/people/carlos-ruiz.md?source=merge#bio>\n\`\`\`\n`);
+  await proposal(dir, "prp-0a1b2c3d", { kind: "merge", target: "per-9t2c6m4a", merge_into: "per-3h8w2n6c" });
+
+  const run = await apply(dir, { decisions: [decide("prp-0a1b2c3d")] });
+  assert.equal(run.code, 0, run.stdout);
+  const updated = await readFile(project, "utf8");
+  assert.match(updated, /\[inline\]\(\.\.\/\.\.\/knowledge\/people\/maria-lopez\.md\?source=merge#bio\)/);
+  assert.match(updated, /^\[ref\]: \.\.\/\.\.\/knowledge\/people\/maria-lopez\.md\?source=merge#bio$/m);
+  assert.match(updated, /<\.\.\/\.\.\/knowledge\/people\/maria-lopez\.md\?source=merge#bio>/);
+  assert.match(updated, /\[fenced\]\(\.\.\/\.\.\/knowledge\/people\/carlos-ruiz\.md\?source=merge#bio\)/);
+  assert.match(updated, /^\[code-ref\]: \.\.\/\.\.\/knowledge\/people\/carlos-ruiz\.md\?source=merge#bio$/m);
+});
+
+test("apply returns lint warnings for notes it writes", async (context) => {
+  const dir = await fixtureCopy(context);
+  const org = join(dir, "knowledge/orgs/acme.md");
+  await writeFile(org, `${await readFile(org, "utf8")}\nCurrently expanding.\n`);
+  await proposal(dir, "prp-0a1b2c3d", { kind: "add_to_note", target: "org-6d1f9z3k", content: "More context.", source: "mtg-8c4n2p7w" });
+
+  const run = await apply(dir, { decisions: [decide("prp-0a1b2c3d")] });
+  assert.equal(run.code, 0, run.stdout);
+  assert.ok(run.json.warnings.some((warning: { code: string; path: string }) => warning.code === "FRESHNESS" && warning.path === "knowledge/orgs/acme.md"));
+});

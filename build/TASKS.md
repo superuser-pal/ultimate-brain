@@ -118,7 +118,7 @@ Five synthetic meetings with expected extractions (decisions, fact changes, cont
 - **CX-12 · packaging:** publishable npm package so `npx ultimate-brain init` works; plugin bundle includes skills. Publish **compiled JavaScript** (Node won't strip types inside `node_modules`); development in the repo stays build-free. Until then, run the CLI with `node src/cli.ts` (answers CX-01's spec questions).
 
 ## Wave 4 — Dogfood
-- **CC-12 · end-to-end run with you;** **CX-13 · fixes;** **U-05 · two weeks of real use** against the v1 success criterion in vision.md.
+- **CC-12 · end-to-end run with you;** **CX-13 · hardening · `review`;** **U-05 · two weeks of real use** against the v1 success criterion in vision.md.
 
 ---
 
