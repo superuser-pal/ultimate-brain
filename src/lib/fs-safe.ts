@@ -101,11 +101,11 @@ export async function atomicCreateFile(
       await linkFile(temporary, target);
     } catch (error) {
       if (!isNodeError(error) || !["ENOTSUP", "EPERM", "ENOSYS", "EXDEV"].includes(error.code ?? "")) {
-        if (isNodeError(error) && error.code === "EEXIST") throw new BrainError("WRITE_CONFLICT", `A file appeared while creating ${target}`);
+        if (isNodeError(error) && error.code === "EEXIST") throw new BrainError("WRITE_CONFLICT", `A file appeared while creating ${targetPath}`);
         throw error;
       }
       const direct = await open(target, "wx", 0o600).catch((openError: unknown) => {
-        if (isNodeError(openError) && openError.code === "EEXIST") throw new BrainError("WRITE_CONFLICT", `A file appeared while creating ${target}`);
+        if (isNodeError(openError) && openError.code === "EEXIST") throw new BrainError("WRITE_CONFLICT", `A file appeared while creating ${targetPath}`);
         throw openError;
       });
       try {
