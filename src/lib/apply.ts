@@ -463,10 +463,19 @@ function rewriteLinks(body: string, notePath: string, xPath: string, yPath: stri
     const replaced = `${posix.relative(dir, yPath)}${suffix}`;
     return raw.startsWith("<") ? `<${replaced}>` : replaced;
   };
-  const rewriteProse = (prose: string): string => prose
+  const rewriteProse = (prose: string): string => {
+    const spans: string[] = [];
+    const masked = prose.replace(/(`+)([\s\S]*?)\1/g, (span) => {
+      const marker = `\u0000${spans.length}\u0000`;
+      spans.push(span);
+      return marker;
+    });
+    return masked
     .replace(/\]\(\s*(<[^>]*>|[^)\s]+)/g, (match, raw: string) => match.replace(raw, () => rewriteTarget(raw)))
-    .replace(/^(\s{0,3}\[[^\]\n]+\]:\s*)(<[^>]*>|[^\s]+)/gm, (match, prefix: string, raw: string) => `${prefix}${rewriteTarget(raw)}`)
-    .replace(/<([^<>\n]+)>/g, (match, target: string) => rewriteTarget(`<${target}>`));
+    .replace(/^(\s{0,3}\[(?!\^)[^\]\n]+\]:\s*)(<[^>]*>|[^\s]+)/gm, (match, prefix: string, raw: string) => `${prefix}${rewriteTarget(raw)}`)
+    .replace(/<([^<>\n]+)>/g, (match, target: string) => rewriteTarget(`<${target}>`))
+    .replace(/\u0000(\d+)\u0000/g, (_marker, index: string) => spans[Number(index)]!);
+  };
 
   const lines = body.split(/(?<=\n)/);
   const output: string[] = [];
