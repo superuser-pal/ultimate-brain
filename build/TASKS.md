@@ -93,7 +93,7 @@ Also `brain status`, `brain config get/set`, `brain id new` (spec/cli.md §5.2�
 ### CX-08 · `brain link` · `review` (needs CC-03)
 Write `.brain` (project, area, stacks) in a target repo and insert or update a fenced "consult the brain" block in its `CLAUDE.md` / `AGENTS.md` (0006, 0009). Idempotent. **Acceptance:** running twice yields the same files; existing content outside the fence untouched.
 
-### CX-14 · `add_link` proposals · `todo` (Codex; needs decision 0028)
+### CX-14 · `add_link` proposals · `review` (Codex; needs decision 0028)
 Implement the `add_link` kind (spec/schema.md §11, §11.2; spec/cli.md §5.6, §5.14.4): `proposal new` checks (field allowed for the target's type, id prefix, `ALREADY_LINKED` skip), `apply` (append if absent, no edit, write set = target), and the Review render (Kind "Add Link", After = `<Field>: <title>`). **Acceptance:** golden file for an approved `add_link`; a re-run after approval skips with `ALREADY_LINKED`; the spec examples pass.
 
 ### CX-15 · Ingest scorer · `todo` (Codex; needs CC-07 cases)

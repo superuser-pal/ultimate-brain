@@ -7,10 +7,11 @@ import { assertNoProblems, isRecord, unknownKeys, type InputProblem } from "./in
 import { assertStagedValid, checkNoteInput, stageNotes, type CreatedNote, type NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 import { newNotePath } from "./paths.ts";
+import { loadSchemas } from "./schemas.ts";
 import { formatDate } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 
-export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "supersede", "contradiction", "merge", "new_item"] as const;
+export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "add_link", "supersede", "contradiction", "merge", "new_item"] as const;
 export const PROPOSAL_STATUSES = ["pending", "approved", "rejected", "edited", "applied", "closed"] as const;
 
 /** Input keys of `proposal new`: the schema §11 fields the CLI does not set (spec/cli.md §5.6). */
@@ -31,8 +32,8 @@ export interface CreatedProposal {
 
 export interface SkippedProposal {
   input_index: number;
-  reason: "DUPLICATE_PENDING";
-  existing: string;
+  reason: "DUPLICATE_PENDING" | "ALREADY_LINKED";
+  existing?: string;
 }
 
 /**
@@ -63,6 +64,11 @@ export function stageProposals(
     (list as Array<Record<string, unknown>>).forEach((item, index) => {
       const pointer = `/proposals/${index}`;
       const fields = resolveFields(workspace, item, pointer, today);
+
+      if (item.kind === "add_link" && listField(workspace.get(String(fields.target))!, String(fields.field)).some((value) => isDeepStrictEqual(value, fields.after))) {
+        skipped.push({ input_index: index, reason: "ALREADY_LINKED" });
+        return;
+      }
 
       const duplicate = workspace.notes.find((note) =>
         note.type === "proposal" && note.attributes.status === "pending" &&
@@ -157,6 +163,15 @@ function resolveFields(workspace: Workspace, item: Record<string, unknown>, poin
       fields.from = typeof meeting?.attributes.date === "string" ? meeting.attributes.date : today;
     }
   }
+  if (kind === "add_link") {
+    const field = typeof item.field === "string" ? item.field : "";
+    if (!loadSchemas().knownKeys(target.type)?.has(field)) invalid("field", `is not declared by ${target.type}`);
+    if (["projects", "people", "attendees", "deciders"].includes(field)) {
+      const linked = existing("after");
+      const prefix = field === "projects" ? "prj-" : "per-";
+      if (!linked.id.startsWith(prefix)) invalid("after", `must be an existing ${prefix} id for ${field}`);
+    }
+  }
   if (kind === "supersede") {
     const older = existing("supersedes");
     if (older.id === target.id) invalid("supersedes", "must differ from target");
@@ -170,6 +185,10 @@ function resolveFields(workspace: Workspace, item: Record<string, unknown>, poin
     if (survivor.type !== target.type) invalid("merge_into", `is a ${survivor.type}, target is a ${target.type}`);
   }
   return fields;
+}
+
+function listField(note: Note, field: string): unknown[] {
+  return Array.isArray(note.attributes[field]) ? note.attributes[field] : [];
 }
 
 /** A new_item's note must pass `note new` validation as apply would write it (spec/cli.md §5.6). */

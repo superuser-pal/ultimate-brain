@@ -88,6 +88,11 @@ const kinds: Array<{ name: string; fields: Record<string, unknown>; action?: str
     changed: ["knowledge/orgs/acme.md"],
   },
   {
+    name: "add_link-approve",
+    fields: { kind: "add_link", target: "per-3h8w2n6c", field: "projects", after: "prj-9x4t1b7e" },
+    changed: [MARIA],
+  },
+  {
     name: "merge-approve",
     fields: { kind: "merge", target: "per-9t2c6m4a", merge_into: "per-3h8w2n6c" },
     changed: [
@@ -225,7 +230,7 @@ test("record-only stores decisions; apply without input then applies them, later
 
 test("apply reports item failures and keeps going", async (context) => {
   const dir = await fixtureCopy(context);
-  await proposal(dir, "prp-0a1b2c3d", { kind: "supersede", target: "dec-7k2m9q4x", supersedes: "dec-2p9f6h1r" });
+  await proposal(dir, "prp-0a1b2c3d", { kind: "add_link", target: "per-3h8w2n6c", field: "projects", after: "prj-9x4t1b7e" });
   await proposal(dir, "prp-1a1b2c3d", { ...kinds[0]!.fields });
   await proposal(dir, "prp-2a1b2c3d", { kind: "update_fact", target: "prj-9x4t1b7e", field: "owner", after: "per-00000000", from: "2026-12-08" });
   const run = await apply(dir, {
