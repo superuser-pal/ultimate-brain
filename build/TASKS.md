@@ -96,7 +96,7 @@ Write `.brain` (project, area, stacks) in a target repo and insert or update a f
 ### CX-09 · Fixture brain · `done` (PR #9)
 `tests/fixtures/brain-acme/`: a small synthetic brain (fictional client Acme, people, a project with key-fact timelines, decisions incl. one superseded, open questions, one goal) that passes lint. Used by all tests and by CC-07. **Acceptance:** fictional data only; covers every v1 note type.
 
-### CC-05 · Skill packaging · `todo`
+### CC-05 · Skill packaging · `review`
 One source per skill in `skills/<name>/SKILL.md` (frontmatter: `name`, `description` only), packaged as a Claude Code plugin and mirrored to `.agents/skills/` for Codex. Document the build step.
 
 ### CC-06 · Ingest skill · `todo` (needs CC-01, CC-03)

@@ -1,0 +1,8 @@
+{
+  "name": "ultimate-brain",
+  "version": "0.0.0",
+  "description": "Skills to operate an Ultimate Brain: a Markdown + Git second brain with Notion as the human view. Ingest reviewed meetings, apply your Review decisions, sync with Notion, and answer questions from the brain.",
+  "author": { "name": "Ultimate Brain" },
+  "repository": "https://github.com/superuser-pal/ultimate-brain",
+  "keywords": ["second-brain", "knowledge", "notion", "markdown"]
+}
