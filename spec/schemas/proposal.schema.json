@@ -38,6 +38,7 @@
       "enum": [
         "update_fact",
         "add_to_note",
+        "add_link",
         "supersede",
         "contradiction",
         "merge",
@@ -222,6 +223,57 @@
         "not": {
           "required": [
             "note"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "add_link"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "target",
+          "field",
+          "after"
+        ],
+        "properties": {
+          "field": {
+            "enum": [
+              "aliases",
+              "tags",
+              "projects",
+              "people",
+              "attendees",
+              "deciders"
+            ]
+          },
+          "after": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "content"
+              ]
+            },
+            {
+              "required": [
+                "note"
+              ]
+            },
+            {
+              "required": [
+                "before"
+              ]
+            }
           ]
         }
       }
