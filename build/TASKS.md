@@ -96,7 +96,7 @@ Write `.brain` (project, area, stacks) in a target repo and insert or update a f
 ### CX-14 · `add_link` proposals · `review` (Codex; needs decision 0028)
 Implement the `add_link` kind (spec/schema.md §11, §11.2; spec/cli.md §5.6, §5.14.4): `proposal new` checks (field allowed for the target's type, id prefix, `ALREADY_LINKED` skip), `apply` (append if absent, no edit, write set = target), and the Review render (Kind "Add Link", After = `<Field>: <title>`). **Acceptance:** golden file for an approved `add_link`; a re-run after approval skips with `ALREADY_LINKED`; the spec examples pass.
 
-### CX-15 · Ingest scorer · `todo` (Codex; needs CC-07 cases)
+### CX-15 · Ingest scorer · `review` (Codex; needs CC-07 cases)
 Implement the scorer specified in `eval/ingest/README.md` ("Scoring spec"): compare a run folder with the base fixture against a case's `expected.json`, report per-category recall and precision, `must_not` failures and a verdict; support `--skip-kinds add_link` until CX-14. **Acceptance:** unit tests with a hand-made run folder per verdict path (pass, low recall, `must_not` hit, stop case modified).
 
 ### CX-09 · Fixture brain · `done` (PR #9)
