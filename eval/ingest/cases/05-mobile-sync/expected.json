@@ -49,8 +49,7 @@
       {
         "kind": "add_link",
         "target": "per-3h8w2n6c",
-        "field": "aliases",
-        "after": "Mari"
+        "field": "aliases"
       }
     ],
     "tasks": [
