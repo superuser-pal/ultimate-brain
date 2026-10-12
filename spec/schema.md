@@ -330,10 +330,10 @@ notion: 7c6b…
 
 | Field | Type | Req | Notes |
 |---|---|---|---|
-| `kind` | `update_fact`·`add_to_note`·`supersede`·`contradiction`·`merge`·`new_item` | ✔ | `new_item`: a new note the agent is unsure about (e.g. possible duplicate person) |
+| `kind` | `update_fact`·`add_to_note`·`add_link`·`supersede`·`contradiction`·`merge`·`new_item` | ✔ | `new_item`: a new note the agent is unsure about (e.g. possible duplicate person). `add_link`: add one value to a list field (0028) |
 | `target` | ID | ✔ (except `new_item`) | see per-kind rules below |
-| `field` | string | for `update_fact`, `contradiction` | fact key |
-| `before` / `after` | string, number or date | `after` for `update_fact`; both for `contradiction` | `before` = current value at proposal time (absent if the fact is new) |
+| `field` | string | for `update_fact`, `contradiction`, `add_link` | fact key; for `add_link`, the list field: `aliases`, `tags`, `projects`, `people`, `attendees` or `deciders`, declared by the target's type |
+| `before` / `after` | string, number or date | `after` for `update_fact` and `add_link`; both for `contradiction` | `before` = current value at proposal time (absent if the fact is new) |
 | `from` | date or month | for `update_fact`, `contradiction` | event time of the new value; defaults to the source meeting's `date`, else `created` |
 | `content` | string | for `add_to_note` | Markdown to append |
 | `note` | object | for `new_item` | one `brain note new` input item without `id`: `{type, title, frontmatter, body, file_date?}` ([cli.md](cli.md) §5.5) |
@@ -368,6 +368,7 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
 |---|---|---|---|
 | `update_fact` | the note owning the fact | In `timeline`, each entry for `field` with `assessment: accepted` gets `until: <from>` and `assessment: superseded`. Append `{field, value: V(after), from, learned: D, source, assessment: accepted}`. Set `facts.<field> = V` | nothing changes |
 | `contradiction` | the note owning the fact | **approve:** keep both claims. Existing accepted entries for `field` become `contested`; append `{field, value: after, from, learned: D, source, assessment: contested}`; remove `facts.<field>`. **edit:** V is the accepted truth. Only entries for `field` whose assessment is `accepted` or `contested` change: if one or more of them has value V, the latest of those (by `learned`, then position) becomes `accepted`; every other one becomes `superseded` with `until: <from>`. If none has value V, every one of them becomes `superseded` with `until: <from>`, and `{field, value: V, from, learned: D, source, assessment: accepted}` is appended. Already-superseded entries are left as they are. Set `facts.<field> = V` | nothing changes |
+| `add_link` | the note whose list grows | Append `after` to `target.<field>` if it is not already there (0028). No edit | nothing changes |
 | `add_to_note` | the note to extend | Append V(content) to the end of the body, separated by exactly one blank line, followed by a line `Source: <source>`. Add `source` to `sources` if missing | nothing changes |
 | `supersede` | the **newer** note (already written as `draft` by the ingest, 0003) | `target.relations` += `{supersedes: <supersedes>}`; `<supersedes>.relations` += `{superseded_by: target}`; older note `lifecycle: archived`; if both are decisions, older gets `assessment: superseded` and `valid_until: <target.valid_from or target.date>` | the newer note stays, without the relation |
 | `merge` | the **duplicate** X to retire, merged into the survivor Y = `merge_into` | Steps, in order: **1. References.** In every note except X, Y, sources and proposals (proposals are a record of what was decided about X), rewrite frontmatter references to X's id into Y's id (then dedupe each list, keeping the first occurrence) and relative links to X's file into links to Y's file. **Persisted pairs are left alone**: a meeting's `decisions`/`questions` entries, a decision's `decided_in`, a question's `raised_in`, and other notes' `supersedes`/`superseded_by` relations keep pointing at X, whose side of those pairs stays in place (X is archived, not deleted). **2. Into Y:** union `aliases` (plus X's `title`), `tags`, `sources`, `projects`; add X's `relations` except `supersedes`/`superseded_by` and any whose target is X or Y (dedupe); append X's `timeline` entries (dedupe exact entries); a `facts` key only X has is copied to Y; for a key both have, Y's value stays and X's `accepted` entries with a different value become `superseded` with `until: <today>`; append X's body under `## Merged from <X title>`. **3. Pair:** X gets `lifecycle: archived` and `relations` += `{superseded_by: Y}`; Y gets `{supersedes: X}`. If X is a decision, it also gets `assessment: superseded` and `valid_until` = Y's `valid_from` or `date` | nothing changes |
@@ -375,7 +376,7 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
 
 **Merge caveats.** A still-pending proposal that targets X keeps pointing at the archived X; apply it or reject it. If X is already a superseded decision, merging overwrites its `valid_until` with Y's `valid_from` or `date`.
 
-**Write sets.** Besides the proposal file itself, applying a proposal writes only: `update_fact`, `contradiction`, `add_to_note` → the target; `supersede` → the target and the older note; `merge` → X, Y and the notes whose references step 1 rewrites; `new_item` → the new note and its meeting. All writes for one proposal happen in one operation; if any write fails, none are kept.
+**Write sets.** Besides the proposal file itself, applying a proposal writes only: `update_fact`, `contradiction`, `add_to_note`, `add_link` → the target; `supersede` → the target and the older note; `merge` → X, Y and the notes whose references step 1 rewrites; `new_item` → the new note and its meeting. All writes for one proposal happen in one operation; if any write fails, none are kept.
 
 ## 12. `brain.json` · see [schemas/brain.schema.json](schemas/brain.schema.json)
 

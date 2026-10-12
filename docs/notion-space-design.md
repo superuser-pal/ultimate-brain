@@ -190,7 +190,7 @@ The approval queue (0003). Created by the brain; you decide.
 | Property | Type | Owner |
 |---|---|---|
 | Name | Title | Brain: e.g. "Acme launch: Jan → Feb" |
-| Kind | Select: Update Fact, Add To Note, Supersede, Contradiction, Merge, New Item | Brain |
+| Kind | Select: Update Fact, Add To Note, Add Link, Supersede, Contradiction, Merge, New Item | Brain |
 | Target | Text | Brain: note title + Brain ID |
 | Target Page | URL | Brain: link to the Notion page affected |
 | Before | Text | Brain |
