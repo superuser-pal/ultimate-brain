@@ -444,23 +444,54 @@ function rewriteReferences(a: Record<string, unknown>, from: string, to: string)
   }
 }
 
-/** Point relative Markdown links to X's file at Y's file instead. */
+/** Point relative Markdown links to X's file at Y's file instead, outside fenced code blocks. */
 function rewriteLinks(body: string, notePath: string, xPath: string, yPath: string): string {
   const dir = posix.dirname(notePath);
-  return body.replace(/\]\(\s*(<[^>]*>|[^)\s]+)/g, (match, raw: string) => {
+  const rewriteTarget = (raw: string): string => {
     const target = raw.startsWith("<") ? raw.slice(1, -1) : raw;
-    if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) return match;
-    const [path, ...fragment] = target.split("#");
+    if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) return raw;
+    const suffixAt = target.search(/[?#]/);
+    const path = suffixAt === -1 ? target : target.slice(0, suffixAt);
+    const suffix = suffixAt === -1 ? "" : target.slice(suffixAt);
     let decoded = path!;
     try {
       decoded = decodeURIComponent(path!);
     } catch {
       // keep as written
     }
-    if (posix.normalize(posix.join(dir, decoded)) !== xPath) return match;
-    const replaced = [posix.relative(dir, yPath), ...fragment].join("#");
-    return match.replace(raw, () => (raw.startsWith("<") ? `<${replaced}>` : replaced));
-  });
+    if (posix.normalize(posix.join(dir, decoded)) !== xPath) return raw;
+    const replaced = `${posix.relative(dir, yPath)}${suffix}`;
+    return raw.startsWith("<") ? `<${replaced}>` : replaced;
+  };
+  const rewriteProse = (prose: string): string => prose
+    .replace(/\]\(\s*(<[^>]*>|[^)\s]+)/g, (match, raw: string) => match.replace(raw, () => rewriteTarget(raw)))
+    .replace(/^(\s{0,3}\[[^\]\n]+\]:\s*)(<[^>]*>|[^\s]+)/gm, (match, prefix: string, raw: string) => `${prefix}${rewriteTarget(raw)}`)
+    .replace(/<([^<>\n]+)>/g, (match, target: string) => rewriteTarget(`<${target}>`));
+
+  const lines = body.split(/(?<=\n)/);
+  const output: string[] = [];
+  let prose: string[] = [];
+  let fence: { character: "`" | "~"; length: number } | undefined;
+  const flush = () => {
+    if (prose.length > 0) output.push(rewriteProse(prose.join("")));
+    prose = [];
+  };
+  for (const line of lines) {
+    if (fence === undefined) {
+      const open = /^\s{0,3}(`{3,}|~{3,})/.exec(line)?.[1];
+      if (open !== undefined) {
+        flush();
+        fence = { character: open[0]! as "`" | "~", length: open.length };
+        output.push(line);
+      } else prose.push(line);
+    } else {
+      output.push(line);
+      const close = new RegExp(`^\\s{0,3}${fence.character}{${fence.length},}\\s*(?:\\n)?$`);
+      if (close.test(line)) fence = undefined;
+    }
+  }
+  flush();
+  return output.join("");
 }
 
 /** Proposals holding a recorded decision that is not applied yet, oldest first. */
@@ -521,4 +552,3 @@ function record(value: unknown): Record<string, unknown> {
 function isTimestamp(value: unknown): value is string {
   return typeof value === "string" && TIMESTAMP.test(value) && !Number.isNaN(Date.parse(value));
 }
-

@@ -17,6 +17,12 @@ export const applyCommand: Command = {
     const dryRun = args.options["dry-run"] === true;
     const workspace = await Workspace.open(brain!);
     const result = applyAll(workspace, input, { now, recordOnly: args.options["record-only"] === true });
+    const warnings = workspace.warnings().map((issue) => ({
+      code: issue.rule.toUpperCase().replaceAll("-", "_"),
+      message: `${issue.path}:${issue.line} ${issue.message}`,
+      path: issue.path,
+      ...(issue.id === null ? {} : { id: issue.id }),
+    }));
 
     if (!dryRun) {
       await workspace.commit(result.log, now);
@@ -27,6 +33,7 @@ export const applyCommand: Command = {
     ];
     return {
       data: { dry_run: dryRun, corrections: result.corrections, decisions: result.decisions, summary: result.summary },
+      warnings,
       exitCode: result.summary.failed > 0 ? 1 : 0,
       human: lines.length === 0 ? "Nothing to apply.\n" : `${lines.join("\n")}\n`,
     };
