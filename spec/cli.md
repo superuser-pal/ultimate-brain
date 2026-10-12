@@ -215,6 +215,7 @@ Creates a brain from `templates/brain/` (CC-02, CX-03).
 1. Refuse if `<path>` is the product repo (`BRAIN_IS_PRODUCT_REPO`) or already has `brain.json` (`ALREADY_A_BRAIN`, even with `--force`).
 2. If `<path>` exists and is non-empty: refuse with `TARGET_NOT_EMPTY` unless `--force`. With `--force`, template files whose path already exists are **left untouched** and listed in `skipped`; nothing is ever overwritten.
 3. Copy the template. npm never packs files named `.gitignore`, so the template stores it as `templates/brain/gitignore` and `init` writes it to the new brain as `.gitignore` (reported in `created` under that name; a `--force` run skips it like any other existing file). Write `brain.json` from the template with `schema_version: 1` and `owner.name` = `--owner` (default: the `user.name` from `git config`, else `"Owner"`).
+   Copy the skills the package ships in `.agents/skills/` to `<path>/.agents/skills/` (0029). They are product-owned and listed in `created`; with `--force`, existing files are skipped like template files.
 4. Run `index` (an empty index).
 5. Log `- <timestamp> init - "<owner name>" schema=1` (no machine paths in the log).
 6. Unless `--no-git`: `git init`, add all, commit `init: ultimate brain (schema v1)`, so the new brain starts clean. If Git is missing or the commit fails (no identity), keep the files, skip the commit and add warning `GIT_COMMIT_SKIPPED`.
@@ -628,7 +629,7 @@ Errors: `USAGE` (bad op or key=value), `UNKNOWN_ID`.
 brain link <repo-path> [--project <id>] [--area <id>] [--stack <name>]… [--repo-name <name>]
 ```
 
-Connects a consuming repo to the brain (0006, 0009; CX-08). Allowed root: `<repo-path>`; writes only `.brain`, `AGENTS.md`, `CLAUDE.md` there. Refuses if `<repo-path>` is the brain or the product repo (`OUTSIDE_ROOT`).
+Connects a consuming repo to the brain (0006, 0009; CX-08). Allowed root: `<repo-path>`; writes only `.brain`, `AGENTS.md`, `CLAUDE.md` and `.agents/skills/brain-query/` there. Refuses if `<repo-path>` is the brain or the product repo (`OUTSIDE_ROOT`).
 
 1. **`.brain`** (JSON, committed with the repo; holds no machine paths):
    ```json
@@ -662,6 +663,8 @@ The brain is read-only from this repo. Never edit its files from here.
 <!-- ultimate-brain:end -->
 ```
 
+3. **Skill** (0029): `.agents/skills/brain-query/` is written from the skills the package ships. It is product-owned: files whose bytes differ are replaced, and files no longer shipped in that folder are removed. Nothing else under `.agents/` is touched. Every skill file appears in `files` with its `action` (`created`, `updated` or `unchanged`), and a removed stale file appears with `action: "removed"`, e.g. `{ "path": ".agents/skills/brain-query/SKILL.md", "action": "created" }`.
+
 Idempotent: a second run with the same options changes no bytes.
 
 ```json
@@ -671,7 +674,7 @@ Idempotent: a second run with the same options changes no bytes.
     "files": [ { "path": "AGENTS.md", "action": "created" }, { "path": "CLAUDE.md", "action": "created" } ]
 } }
 ```
-`action` is one of `created`, `updated`, `unchanged`. Paths here are relative to the repo.
+`action` is one of `created`, `updated`, `unchanged`, and `removed` for a stale skill file. Paths here are relative to the repo.
 
 Errors: `UNKNOWN_ID`, `OUTSIDE_ROOT`, `USAGE` (path missing or not a directory).
 
