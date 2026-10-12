@@ -126,7 +126,8 @@ async function listTemplateFiles(): Promise<TemplateFile[]> {
       else if (entry.isFile()) {
         const actual = await realpath(source);
         assertInside(root, actual);
-        files.push({ source: actual, relative: relative(root, actual).split(sep).join("/") });
+        const templatePath = relative(root, actual).split(sep).join("/");
+        files.push({ source: actual, relative: templatePath === "gitignore" ? ".gitignore" : templatePath });
       }
     }
   }

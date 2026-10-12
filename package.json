@@ -1,6 +1,7 @@
 {
   "name": "ultimate-brain",
   "version": "0.0.0",
+  "private": true,
   "files": [
     "dist",
     "spec/schemas",
@@ -14,7 +15,7 @@
     "brain": "./dist/cli.js"
   },
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc --project tsconfig.build.json",
     "prepack": "npm run build",
     "test:package": "node scripts/test-package.mjs",
     "test": "node --experimental-strip-types --test tests/*.test.ts",

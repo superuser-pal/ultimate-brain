@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { mkdtemp, rm, symlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 
 import { HELP_TEXT, runCli, type CliIo } from "../src/cli.ts";
@@ -34,6 +37,16 @@ test("prints help from the executable entry point", () => {
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout, HELP_TEXT);
   assert.equal(result.stderr, "");
+});
+
+test("prints help when invoked through a symlinked bin", async (context) => {
+  const directory = await mkdtemp(join(tmpdir(), "brain-cli-"));
+  context.after(() => rm(directory, { recursive: true, force: true }));
+  const bin = join(directory, "brain");
+  await symlink(join(process.cwd(), "src", "cli.ts"), bin);
+  const result = spawnSync(process.execPath, ["--experimental-strip-types", bin, "--help"], { encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, HELP_TEXT);
 });
 
 test("routes a subcommand and its arguments", async () => {
