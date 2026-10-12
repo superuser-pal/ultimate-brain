@@ -344,7 +344,19 @@ function databaseIdFor(workspace: Workspace, database: string): string { const n
 function renderedBrainValues(note: Note, workspace: Workspace): Record<string, unknown> {
   const a = note.attributes; const values: Record<string, unknown> = {};
   const common = () => Object.assign(values, { Name: a.title, Summary: a.summary ?? null, Lifecycle: select(a.lifecycle), "Brain ID": note.id });
-  if (note.type === "proposal") { const target = typeof a.target === "string" ? workspace.get(a.target) : undefined; Object.assign(values, { Name: a.title, Kind: select(a.kind), Target: target === undefined ? null : `${target.attributes.title} (${target.id})`, State: select(proposalState(a.status)), "Brain ID": note.id }); return values; }
+  if (note.type === "proposal") {
+    const target = typeof a.target === "string" ? workspace.get(a.target) : undefined;
+    const addLink = a.kind === "add_link";
+    const after = addLink && typeof a.field === "string"
+      ? `${fieldLabel(a.field)}: ${noteTitle(a.after, workspace)}`
+      : undefined;
+    Object.assign(values, {
+      Name: a.title, Kind: select(a.kind), Target: target === undefined ? null : `${target.attributes.title} (${target.id})`,
+      Before: addLink ? null : a.before ?? null, After: after ?? proposalAfter(a, workspace),
+      Why: a.why ?? null, State: select(proposalState(a.status)), "Brain ID": note.id,
+    });
+    return values;
+  }
   if (note.type === "meeting") { Object.assign(values, { Decisions: relationPages(a.decisions, workspace), Questions: relationPages(a.questions, workspace), Attendees: relationPages(a.attendees, workspace), Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Brain Status": "Ingested", "Ingested At": dateOutput(a.created), "Brain ID": note.id }); return values; }
   common();
   if (note.type === "goal") Object.assign(values, { Why: a.why ?? null, Deadline: dateOutput(isRecord(a.facts) ? a.facts.deadline : undefined), Area: relationPages(a.area === undefined ? [] : [a.area], workspace) });
@@ -379,6 +391,15 @@ function proposalState(value: unknown): unknown { return ["pending", "approved",
 function dateOutput(value: unknown): unknown { return typeof value === "string" && /^\d{4}-\d{2}$/.test(value) ? { start: `${value}-01`, end: null } : typeof value === "string" ? { start: value, end: null } : null; }
 function keyFactsText(value: unknown, workspace: Workspace): string { if (!isRecord(value)) return ""; return Object.keys(value).sort(compareCodePoints).map((key) => `${key[0]!.toUpperCase()}${key.slice(1).replaceAll("_", " ")}: ${personTitle(value[key], workspace)}`).join(" · "); }
 function personTitle(value: unknown, workspace: Workspace): unknown { return typeof value === "string" && workspace.get(value)?.type === "person" ? workspace.get(value)!.attributes.title : value; }
+function noteTitle(value: unknown, workspace: Workspace): unknown { return typeof value === "string" ? workspace.get(value)?.attributes.title ?? value : value ?? null; }
+function fieldLabel(field: string): string { return field[0]?.toUpperCase() + field.slice(1).replaceAll("_", " "); }
+function proposalAfter(attributes: Record<string, unknown>, workspace: Workspace): unknown {
+  if (attributes.kind === "add_to_note") return attributes.content ?? null;
+  if (attributes.kind === "new_item" && isRecord(attributes.note)) return `${attributes.note.title ?? ""} (${attributes.note.type ?? ""})`;
+  if (attributes.kind === "supersede") return noteTitle(attributes.target, workspace);
+  if (attributes.kind === "merge") return noteTitle(attributes.merge_into, workspace);
+  return attributes.after ?? null;
+}
 
 export function renderTasks(workspace: Workspace, meetingId: string, input: unknown): Record<string, unknown> {
   if (!isRecord(input) || !Array.isArray(input.items)) throw new BrainError("INPUT_INVALID", "tasks input needs an items list");
