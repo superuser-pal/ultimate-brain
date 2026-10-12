@@ -29,7 +29,7 @@ test("atomicCreateFile never replaces a file created concurrently", async (conte
   await mkdir(join(root, "knowledge"));
   await writeFile(join(root, "knowledge", "note.md"), "other writer\n");
 
-  await assert.rejects(atomicCreateFile(root, "knowledge/note.md", "ours\n"), { code: "EEXIST" });
+  await assert.rejects(atomicCreateFile(root, "knowledge/note.md", "ours\n"), { code: "WRITE_CONFLICT" });
   assert.equal(await readFile(join(root, "knowledge", "note.md"), "utf8"), "other writer\n");
 });
 
@@ -42,8 +42,17 @@ test("Workspace.commit uses an exclusive create for files that were new when sca
   }, ""));
   await writeFile(join(root, path), "other writer\n");
 
-  await assert.rejects(workspace.commit(), { code: "INTERNAL" });
+  await assert.rejects(workspace.commit(), { code: "WRITE_CONFLICT" });
   assert.equal(await readFile(join(root, path), "utf8"), "other writer\n");
+});
+
+test("atomicCreateFile falls back to exclusive direct creation when hard links are unavailable", async (context) => {
+  const root = await mkdtemp(join(tmpdir(), "fs-safe-"));
+  context.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(join(root, "knowledge"));
+  const unsupported = async () => { throw Object.assign(new Error("no hard links"), { code: "ENOTSUP" }); };
+  await atomicCreateFile(root, "knowledge/note.md", "created\n", unsupported);
+  assert.equal(await readFile(join(root, "knowledge", "note.md"), "utf8"), "created\n");
 });
 
 test("safe paths reject traversal and absolute paths outside the brain", async (context) => {

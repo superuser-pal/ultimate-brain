@@ -81,6 +81,7 @@ export async function atomicCreateFile(
   brainDirectory: string,
   targetPath: string,
   data: AtomicWriteData,
+  linkFile: typeof link = link,
 ): Promise<void> {
   const { root: brainRoot, target, parent } = await resolveWritableTarget(brainDirectory, targetPath);
   const temporary = resolve(
@@ -96,8 +97,28 @@ export async function atomicCreateFile(
     await handle.sync();
     await handle.close();
     handle = undefined;
-    await link(temporary, target);
-    await unlink(temporary);
+    try {
+      await linkFile(temporary, target);
+    } catch (error) {
+      if (!isNodeError(error) || !["ENOTSUP", "EPERM", "ENOSYS", "EXDEV"].includes(error.code ?? "")) {
+        if (isNodeError(error) && error.code === "EEXIST") throw new BrainError("WRITE_CONFLICT", `A file appeared while creating ${target}`);
+        throw error;
+      }
+      const direct = await open(target, "wx", 0o600).catch((openError: unknown) => {
+        if (isNodeError(openError) && openError.code === "EEXIST") throw new BrainError("WRITE_CONFLICT", `A file appeared while creating ${target}`);
+        throw openError;
+      });
+      try {
+        await direct.writeFile(data);
+        await direct.sync();
+      } catch (writeError) {
+        await unlink(target).catch(() => undefined);
+        throw writeError;
+      } finally {
+        await direct.close().catch(() => undefined);
+      }
+    }
+    await unlink(temporary).catch(() => undefined);
   } catch (error) {
     await handle?.close().catch(() => undefined);
     await unlink(temporary).catch(() => undefined);
