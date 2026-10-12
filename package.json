@@ -1,13 +1,22 @@
 {
   "name": "ultimate-brain",
   "version": "0.0.0",
-  "private": true,
+  "files": [
+    "dist",
+    "spec/schemas",
+    "templates/brain",
+    "README.md"
+  ],
   "description": "CLI for an AI-assisted Markdown and Git second brain",
   "type": "module",
   "bin": {
-    "brain": "./src/cli.ts"
+    "ultimate-brain": "./dist/cli.js",
+    "brain": "./dist/cli.js"
   },
   "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "npm run build",
+    "test:package": "node scripts/test-package.mjs",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
