@@ -31,6 +31,8 @@ test("sync plan detects a Notion fact correction from its published baseline", a
 
 test("sync apply creates a Notion-created note with its lifecycle and applies corrections", async (context) => {
   const dir = await fixtureCopy(context);
+  const mariaPath = join(dir, "knowledge/people/maria-lopez.md");
+  await writeFile(mariaPath, `${await readFile(mariaPath, "utf8")}\nCurrently coordinating launch work.\n`);
   const plan = {
     as_of: NOW,
     create: [{ type: "org", id: "org-1a2b3c4d", title: "Globex", lifecycle: "reviewed", frontmatter: { summary: "Globex", sources: ["notion:10000000-0000-4000-8000-000000000001"], notion: "10000000-0000-4000-8000-000000000001" }, body: "" }],
@@ -44,6 +46,7 @@ test("sync apply creates a Notion-created note with its lifecycle and applies co
   assert.equal(globex.lifecycle, "reviewed");
   const maria = parseFrontmatter(await readFile(join(dir, "knowledge/people/maria-lopez.md"), "utf8")).attributes;
   assert.equal((maria.facts as Record<string, unknown>).role, "Product lead");
+  assert.ok(run.json.warnings.some((warning: { code: string; path: string }) => warning.code === "FRESHNESS" && warning.path === "knowledge/people/maria-lopez.md"));
   const log = await readFile(join(dir, "log/2026-12.md"), "utf8");
   assert.match(log, /sync-create org-1a2b3c4d "Globex"/);
 });
@@ -74,4 +77,18 @@ test("sync render presents an add_link review with its target title", async (con
   assert.equal(properties.Kind.value, "Add Link");
   assert.equal(properties.Before.value, null);
   assert.equal(properties.After.value, "People: Carlos Ruiz");
+});
+
+test("sync render gives supersede and merge reviews titles and truncates text", async (context) => {
+  const dir = await fixtureCopy(context);
+  const common = { type: "proposal", created: "2026-12-10", updated: "2026-12-10", why: "w", source: "mtg-8c4n2p7w", status: "pending" };
+  await writeFile(join(dir, "_proposals/2026-12-10-supersede.md"), serializeNewFile({ ...common, id: "prp-0a1b2c3d", title: "Supersede auth", kind: "supersede", target: "dec-7k2m9q4x", supersedes: "dec-2p9f6h1r" }, ""));
+  await writeFile(join(dir, "_proposals/2026-12-10-merge.md"), serializeNewFile({ ...common, id: "prp-1a1b2c3d", title: "Merge people", kind: "merge", target: "per-9t2c6m4a", merge_into: "per-3h8w2n6c" }, ""));
+  await writeFile(join(dir, "_proposals/2026-12-10-long.md"), serializeNewFile({ ...common, id: "prp-2a1b2c3d", title: "Long note", kind: "add_to_note", target: "org-6d1f9z3k", content: "x".repeat(2001) }, ""));
+  const run = await brain(["sync", "render", "--brain", dir, "--ids", "prp-0a1b2c3d,prp-1a1b2c3d,prp-2a1b2c3d", "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  const byId = new Map<string, Record<string, { value: unknown }>>(run.json.data.items.map((item: { id: string; properties: Record<string, { value: unknown }> }) => [item.id, item.properties]));
+  assert.equal(byId.get("prp-0a1b2c3d")!.Before.value, "Use Firebase for auth");
+  assert.equal(byId.get("prp-1a1b2c3d")!.Before.value, "Carlos Ruiz");
+  assert.equal((byId.get("prp-2a1b2c3d")!.After.value as string).length, 2000);
 });

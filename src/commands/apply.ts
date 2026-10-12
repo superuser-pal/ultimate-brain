@@ -2,6 +2,7 @@ import { applyAll, parseApplyInput } from "../lib/apply.ts";
 import type { Command } from "../lib/command.ts";
 import { readJsonInput } from "../lib/input.ts";
 import { Workspace } from "../lib/workspace.ts";
+import { lintWarnings } from "../lib/warnings.ts";
 
 /** `brain apply [--input <file|->] [--record-only] [--dry-run]` (spec/cli.md §5.7). */
 export const applyCommand: Command = {
@@ -17,12 +18,7 @@ export const applyCommand: Command = {
     const dryRun = args.options["dry-run"] === true;
     const workspace = await Workspace.open(brain!);
     const result = applyAll(workspace, input, { now, recordOnly: args.options["record-only"] === true });
-    const warnings = workspace.warnings().map((issue) => ({
-      code: issue.rule.toUpperCase().replaceAll("-", "_"),
-      message: `${issue.path}:${issue.line} ${issue.message}`,
-      path: issue.path,
-      ...(issue.id === null ? {} : { id: issue.id }),
-    }));
+    const warnings = lintWarnings(workspace.warnings());
 
     if (!dryRun) {
       await workspace.commit(result.log, now);
