@@ -31,6 +31,8 @@ test("sync plan detects a Notion fact correction from its published baseline", a
 
 test("sync apply creates a Notion-created note with its lifecycle and applies corrections", async (context) => {
   const dir = await fixtureCopy(context);
+  const mariaPath = join(dir, "knowledge/people/maria-lopez.md");
+  await writeFile(mariaPath, `${await readFile(mariaPath, "utf8")}\nCurrently coordinating launch work.\n`);
   const plan = {
     as_of: NOW,
     create: [{ type: "org", id: "org-1a2b3c4d", title: "Globex", lifecycle: "reviewed", frontmatter: { summary: "Globex", sources: ["notion:10000000-0000-4000-8000-000000000001"], notion: "10000000-0000-4000-8000-000000000001" }, body: "" }],
@@ -44,6 +46,7 @@ test("sync apply creates a Notion-created note with its lifecycle and applies co
   assert.equal(globex.lifecycle, "reviewed");
   const maria = parseFrontmatter(await readFile(join(dir, "knowledge/people/maria-lopez.md"), "utf8")).attributes;
   assert.equal((maria.facts as Record<string, unknown>).role, "Product lead");
+  assert.ok(run.json.warnings.some((warning: { code: string; path: string }) => warning.code === "FRESHNESS" && warning.path === "knowledge/people/maria-lopez.md"));
   const log = await readFile(join(dir, "log/2026-12.md"), "utf8");
   assert.match(log, /sync-create org-1a2b3c4d "Globex"/);
 });
