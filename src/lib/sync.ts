@@ -352,7 +352,7 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
       : undefined;
     Object.assign(values, {
       Name: a.title, Kind: select(a.kind), Target: target === undefined ? null : `${target.attributes.title} (${target.id})`,
-      Before: addLink ? null : a.before ?? null, After: after ?? proposalAfter(a, workspace),
+      Before: proposalBefore(a, workspace), After: truncate(after ?? proposalAfter(a, workspace)),
       Why: a.why ?? null, State: select(proposalState(a.status)), "Brain ID": note.id,
     });
     return values;
@@ -393,6 +393,13 @@ function keyFactsText(value: unknown, workspace: Workspace): string { if (!isRec
 function personTitle(value: unknown, workspace: Workspace): unknown { return typeof value === "string" && workspace.get(value)?.type === "person" ? workspace.get(value)!.attributes.title : value; }
 function noteTitle(value: unknown, workspace: Workspace): unknown { return typeof value === "string" ? workspace.get(value)?.attributes.title ?? value : value ?? null; }
 function fieldLabel(field: string): string { return field[0]?.toUpperCase() + field.slice(1).replaceAll("_", " "); }
+function truncate(value: unknown): unknown { return typeof value === "string" ? value.slice(0, 2000) : value; }
+function proposalBefore(attributes: Record<string, unknown>, workspace: Workspace): unknown {
+  if (attributes.kind === "add_link") return null;
+  if (attributes.kind === "supersede") return truncate(noteTitle(attributes.supersedes, workspace));
+  if (attributes.kind === "merge") return truncate(noteTitle(attributes.target, workspace));
+  return truncate(attributes.before ?? null);
+}
 function proposalAfter(attributes: Record<string, unknown>, workspace: Workspace): unknown {
   if (attributes.kind === "add_to_note") return attributes.content ?? null;
   if (attributes.kind === "new_item" && isRecord(attributes.note)) return `${attributes.note.title ?? ""} (${attributes.note.type ?? ""})`;
