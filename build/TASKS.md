@@ -105,7 +105,7 @@ Implement the scorer specified in `eval/ingest/README.md` ("Scoring spec"): comp
 ### CC-05 · Skill packaging · `review`
 One source per skill in `skills/<name>/SKILL.md` (frontmatter: `name`, `description` only), packaged as a Claude Code plugin and mirrored to `.agents/skills/` for Codex. Document the build step.
 
-### CC-06 · Ingest skill · `todo` (needs CC-01, CC-03)
+### CC-06 · Ingest skill · `review` (needs CC-01, CC-03)
 `skills/brain-ingest/`: fetch Reviewed meetings (MCP), snapshot source, match via index, load ≤8 notes (0013), two-step analyse → generate, decision gate, subject-boundary and verbatim rules, output new notes + proposals + tasks through the CLI, fill Meeting relations, set Ingested (0007, 0012). **Acceptance:** runs end to end on the fixture brain with synthetic minutes, Markdown-only mode first.
 
 ### CC-07 · Ingest evaluation · `in progress` (cases and scoring spec in `eval/ingest/`; scorer → CX-15; then run the five cases, then U-03)
