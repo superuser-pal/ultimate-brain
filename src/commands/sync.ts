@@ -3,6 +3,7 @@ import { applyPlan, buildPlan, parsePlan, parseSnapshot, record, render, renderT
 import type { Command } from "../lib/command.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { BrainError } from "../lib/errors.ts";
+import { lintWarnings } from "../lib/warnings.ts";
 
 export const syncPlanCommand: Command = {
   name: "sync plan", usage: "brain sync plan --input <snapshot|-> [--json]", summary: "Compare a Notion snapshot with the brain without writing.", options: { input: "string" }, maxPositionals: 0, needsBrain: true,
@@ -11,7 +12,7 @@ export const syncPlanCommand: Command = {
 
 export const syncApplyCommand: Command = {
   name: "sync apply", usage: "brain sync apply --input <plan|-> [--record-only] [--dry-run] [--json]", summary: "Apply a sync plan using atomic per-item writes.", options: { input: "string", "record-only": "boolean", "dry-run": "boolean" }, maxPositionals: 0, needsBrain: true,
-  async run({ args, brain, now }) { const input = args.options.input as string | undefined; if (input === undefined) throw new BrainError("USAGE", "sync apply needs --input"); const workspace = await Workspace.open(brain!); const data = applyPlan(workspace, parsePlan(await readJsonInput(input, "sync apply")), now, args.options["record-only"] === true); const warnings = workspace.warnings().map((issue) => ({ code: issue.rule.toUpperCase().replaceAll("-", "_"), message: `${issue.path}:${issue.line} ${issue.message}`, path: issue.path, ...(issue.id === null ? {} : { id: issue.id }) })); const dryRun = args.options["dry-run"] === true; if (!dryRun) await workspace.commit(data.log as [], now); const { log: _log, ...output } = data; const failed = Number((data.summary as Record<string, unknown>).failed ?? 0); return { data: { dry_run: dryRun, ...output }, warnings, exitCode: failed > 0 ? 1 : 0, human: `${failed} failed items\n` }; },
+  async run({ args, brain, now }) { const input = args.options.input as string | undefined; if (input === undefined) throw new BrainError("USAGE", "sync apply needs --input"); const workspace = await Workspace.open(brain!); const data = applyPlan(workspace, parsePlan(await readJsonInput(input, "sync apply")), now, args.options["record-only"] === true); const warnings = lintWarnings(workspace.warnings()); const dryRun = args.options["dry-run"] === true; if (!dryRun) await workspace.commit(data.log as [], now); const { log: _log, ...output } = data; const failed = Number((data.summary as Record<string, unknown>).failed ?? 0); return { data: { dry_run: dryRun, ...output }, warnings, exitCode: failed > 0 ? 1 : 0, human: `${failed} failed items\n` }; },
 };
 
 export const syncRenderCommand: Command = {

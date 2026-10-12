@@ -3,6 +3,7 @@ import { BrainError } from "../lib/errors.ts";
 import { assertNoProblems, isRecord, readJsonInput, unknownKeys } from "../lib/input.ts";
 import { listProposals, PROPOSAL_STATUSES, stageProposals } from "../lib/proposals.ts";
 import { Workspace } from "../lib/workspace.ts";
+import { lintWarnings } from "../lib/warnings.ts";
 
 /** `brain proposal new --input <file|-> [--dry-run]` (spec/cli.md §5.6). */
 export const proposalNewCommand: Command = {
@@ -21,12 +22,7 @@ export const proposalNewCommand: Command = {
     const dryRun = args.options["dry-run"] === true;
     const workspace = await Workspace.open(brain!);
     const { created, skipped } = stageProposals(workspace, record.proposals, now);
-    const warnings = workspace.warnings().map((issue) => ({
-      code: issue.rule.toUpperCase().replaceAll("-", "_"),
-      message: `${issue.path}:${issue.line} ${issue.message}`,
-      path: issue.path,
-      ...(issue.id === null ? {} : { id: issue.id }),
-    }));
+    const warnings = lintWarnings(workspace.warnings());
     if (!dryRun) {
       await workspace.commit(created.map((proposal) => ({
         op: "proposal-new",
