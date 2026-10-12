@@ -1,0 +1,142 @@
+{
+  "case": "01-launch-review",
+  "minutes": "eval/ingest/cases/01-launch-review/minutes.md",
+  "run": {
+    "title": "Acme launch review",
+    "date": "2026-12-10",
+    "project": "prj-9x4t1b7e"
+  },
+  "expect": {
+    "stop": false,
+    "meeting": {
+      "attendees": [
+        "per-3h8w2n6c",
+        "per-9t2c6m4a",
+        "@new:Lucía Fernández"
+      ],
+      "projects": [
+        "prj-9x4t1b7e"
+      ]
+    },
+    "notes": [
+      {
+        "type": "person",
+        "title": [
+          "Lucía",
+          "Fernández"
+        ],
+        "fields": {
+          "org": "org-6d1f9z3k"
+        },
+        "facts": {
+          "role": "marketing lead"
+        }
+      },
+      {
+        "type": "decision",
+        "title": [
+          "15",
+          "February"
+        ],
+        "fields": {
+          "assessment": "accepted",
+          "decided_in": "@meeting"
+        }
+      },
+      {
+        "type": "decision",
+        "title": [
+          "Contentful"
+        ],
+        "fields": {
+          "assessment": "accepted",
+          "decided_in": "@meeting"
+        }
+      },
+      {
+        "type": "question",
+        "title": [
+          "blog",
+          "copy"
+        ],
+        "fields": {
+          "kind": "question",
+          "raised_in": "@meeting"
+        }
+      },
+      {
+        "type": "question",
+        "title": [
+          "migrat"
+        ],
+        "fields": {
+          "kind": "risk",
+          "raised_in": "@meeting"
+        }
+      }
+    ],
+    "proposals": [
+      {
+        "kind": "update_fact",
+        "target": "prj-9x4t1b7e",
+        "field": "budget",
+        "after": "95000 EUR"
+      },
+      {
+        "kind": "update_fact",
+        "target": "prj-9x4t1b7e",
+        "field": "launch_date",
+        "after": "2027-02-15"
+      },
+      {
+        "kind": "update_fact",
+        "target": "per-9t2c6m4a",
+        "field": "role",
+        "after": "tech lead"
+      },
+      {
+        "kind": "add_link",
+        "target": "prj-9x4t1b7e",
+        "field": "people",
+        "after": "@new:Lucía Fernández"
+      }
+    ],
+    "tasks": [
+      {
+        "title": [
+          "Contentful",
+          "space"
+        ],
+        "owner": "Carlos Ruiz",
+        "due": "2026-12-17"
+      },
+      {
+        "title": [
+          "launch",
+          "post"
+        ],
+        "owner": "Lucía Fernández",
+        "due": null
+      }
+    ],
+    "must_not": [
+      {
+        "note": {
+          "type": "decision",
+          "title": [
+            "Friday"
+          ]
+        },
+        "why": "tentative routine below the decision gate stays a line in the meeting"
+      }
+    ]
+  },
+  "optional": [
+    {
+      "proposal": {
+        "kind": "add_link",
+        "target": "org-6d1f9z3k"
+      }
+    }
+  ]
+}

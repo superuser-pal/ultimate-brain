@@ -1,0 +1,45 @@
+{
+  "case": "03-quiet-checkin",
+  "minutes": "eval/ingest/cases/03-quiet-checkin/minutes.md",
+  "run": {
+    "title": "Acme weekly check-in",
+    "date": "2026-12-12",
+    "project": "prj-9x4t1b7e"
+  },
+  "expect": {
+    "stop": false,
+    "meeting": {
+      "attendees": [
+        "per-3h8w2n6c"
+      ],
+      "projects": [
+        "prj-9x4t1b7e"
+      ]
+    },
+    "notes": [],
+    "proposals": [],
+    "tasks": [
+      {
+        "title": [
+          "footer",
+          "mockup"
+        ],
+        "owner": "Maria López",
+        "due": "2026-12-13"
+      }
+    ],
+    "must_not": [
+      {
+        "note": {
+          "type": "decision"
+        },
+        "why": "the logo colour is below the decision gate"
+      },
+      {
+        "proposal": {},
+        "why": "launch and budget are restated with unchanged values"
+      }
+    ]
+  },
+  "optional": []
+}
