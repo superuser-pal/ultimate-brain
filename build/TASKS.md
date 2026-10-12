@@ -115,7 +115,7 @@ Five synthetic meetings with expected extractions (decisions, fact changes, cont
 
 ## Wave 3 — Notion and query
 
-- **CC-08 · connect-notion + sync skills:** find databases via MCP and write `brain.json`; import new rows (0021), read Notion-owned fields, detect your edits to brain-owned values (0023), publish brain records.
+- **CC-08 · connect-notion + sync skills · `review` (Claude Code):** find databases via MCP and write `brain.json`; import new rows (0021), read Notion-owned fields, detect your edits to brain-owned values (0023), publish brain records.
 - **CC-09 · apply skill:** read Review decisions via MCP → `brain apply` → update Review rows and pages.
 - **CC-10 · query skill · `review` (Claude Code):** retrieval ladder, cited answers separating accepted / contested / superseded facts.
 - **CC-11 · notion-change skill:** spec diff → Notion AI prompts → drift check via MCP (0022).
