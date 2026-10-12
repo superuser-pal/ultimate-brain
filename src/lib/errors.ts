@@ -14,6 +14,7 @@ export const EXIT_CODES = {
   TARGET_NOT_EMPTY: 5,
   ALREADY_A_BRAIN: 5,
   OUTSIDE_ROOT: 5,
+  WRITE_CONFLICT: 5,
   INTERNAL: 10,
 } as const;
 

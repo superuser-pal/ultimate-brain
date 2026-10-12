@@ -5,7 +5,7 @@ import { join, posix } from "node:path";
 import type { Brain } from "./brain.ts";
 import { BrainError } from "./errors.ts";
 import { parseFrontmatter, serializeFrontmatter, type FrontmatterDocument } from "./frontmatter.ts";
-import { atomicWriteFile, ensureDirectory } from "./fs-safe.ts";
+import { atomicCreateFile, atomicWriteFile, ensureDirectory } from "./fs-safe.ts";
 import { lintBrain, type Issue } from "./lint.ts";
 import { appendLog, type LogEntry } from "./log.ts";
 import { compareCodePoints, parseNote, scanNotes, type Note, type ScanProblem } from "./notes.ts";
@@ -124,10 +124,18 @@ export class Workspace {
    * an unrelated change.
    */
   newErrors(paths?: Iterable<string>): Issue[] {
-    this.baseline ??= new Set(this.lint(this.initialNotes(), new Set()).map(issueKey));
+    this.baseline ??= new Set(this.issues(this.initialNotes(), new Set()).filter((issue) => issue.severity === "error").map(issueKey));
     const wanted = paths === undefined ? undefined : new Set(paths);
-    return this.lint(this.notes, new Set(this.staged.keys()))
+    return this.issues(this.notes, new Set(this.staged.keys()))
+      .filter((issue) => issue.severity === "error")
       .filter((issue) => (wanted === undefined || wanted.has(issue.path)) && !this.baseline!.has(issueKey(issue)));
+  }
+
+  /** Lint warnings for staged files, reported by commands that write those files. */
+  warnings(paths: Iterable<string> = this.staged.keys()): Issue[] {
+    const wanted = new Set(paths);
+    return this.issues(this.notes, new Set(this.staged.keys()))
+      .filter((issue) => issue.severity === "warning" && wanted.has(issue.path));
   }
 
   /**
@@ -143,7 +151,8 @@ export class Workspace {
         const staged = this.staged.get(path)!;
         folders.push(...missingFolders(this.root, posix.dirname(path)));
         await ensureDirectory(this.root, posix.dirname(path));
-        await atomicWriteFile(this.root, path, staged.content);
+        if (staged.original === null) await atomicCreateFile(this.root, path, staged.content);
+        else await atomicWriteFile(this.root, path, staged.content);
         done.push([path, staged]);
       }
       if (log.length > 0) await appendLog(this.root, now, log);
@@ -172,7 +181,7 @@ export class Workspace {
     return notes.sort((a, b) => compareCodePoints(a.path, b.path));
   }
 
-  private lint(notes: readonly Note[], pendingPaths: ReadonlySet<string>): Issue[] {
+  private issues(notes: readonly Note[], pendingPaths: ReadonlySet<string>): Issue[] {
     return lintBrain({
       root: this.root,
       notes,
@@ -180,7 +189,7 @@ export class Workspace {
       brainConfig: this.config,
       indexMarkdown: undefined,
       pendingPaths,
-    }).filter((issue) => issue.severity === "error");
+    });
   }
 }
 

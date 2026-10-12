@@ -126,7 +126,7 @@ export function lintBrain(input: LintInput): Issue[] {
       }
       for (const target of linkTargets(raw)) {
         if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) continue;
-        const resolved = posix.normalize(posix.join(posix.dirname(note.path), decodePath(target.split("#")[0]!)));
+        const resolved = posix.normalize(posix.join(posix.dirname(note.path), decodePath(target.split(/[?#]/)[0]!)));
         if (resolved.startsWith("../") || !exists(resolved)) err("broken-link", line, `link target ${target} does not exist`);
       }
       const prose = raw.replace(/\]\([^)]*\)/g, "]");
