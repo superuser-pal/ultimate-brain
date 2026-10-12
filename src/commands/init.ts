@@ -11,6 +11,7 @@ import { buildIndex } from "../lib/index-builder.ts";
 import { isProductRepository } from "../lib/brain-path.ts";
 import { appendLog } from "../lib/log.ts";
 import { scanNotes } from "../lib/notes.ts";
+import { listShippedSkillFiles } from "../lib/skills.ts";
 
 const exec = promisify(execFile);
 const TEMPLATE_ROOT = fileURLToPath(new URL("../../templates/brain/", import.meta.url));
@@ -63,6 +64,18 @@ export const initCommand: Command = {
       await ensureDirectory(root, dirname(file.relative));
       await atomicWriteFile(root, file.relative, content);
       created.push(file.relative);
+    }
+
+    // Product-owned Codex skills (decision 0029); like template files, existing ones are never overwritten.
+    for (const skill of await listShippedSkillFiles()) {
+      const path = `.agents/skills/${skill.relative}`;
+      if (await exists(join(root, path))) {
+        skipped.push(path);
+        continue;
+      }
+      await ensureDirectory(root, dirname(path));
+      await atomicWriteFile(root, path, skill.content);
+      created.push(path);
     }
 
     // The template includes an empty index, but build it rather than trusting that snapshot.

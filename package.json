@@ -6,6 +6,7 @@
     "dist",
     "spec/schemas",
     "templates/brain",
+    ".agents/skills",
     "README.md"
   ],
   "description": "CLI for an AI-assisted Markdown and Git second brain",

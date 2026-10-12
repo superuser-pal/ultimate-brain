@@ -22,6 +22,9 @@ try {
   assert.equal(JSON.parse(init.stdout).ok, true);
   await access(join(temp, "brain", "brain.json"));
   await access(join(temp, "brain", ".gitignore"));
+  for (const skill of ["brain-ingest", "brain-apply", "brain-query", "brain-connect-notion", "brain-sync", "brain-notion-change"]) {
+    await access(join(temp, "brain", ".agents", "skills", skill, "SKILL.md"));
+  }
   const lint = await exec("npx", ["--no-install", "ultimate-brain", "lint", "--brain", "brain", "--json"], { cwd: temp });
   assert.equal(JSON.parse(lint.stdout).ok, true);
   for (const command of ["status", "index"]) {
