@@ -96,6 +96,9 @@ Write `.brain` (project, area, stacks) in a target repo and insert or update a f
 ### CX-14 · `add_link` proposals · `todo` (Codex; needs decision 0028)
 Implement the `add_link` kind (spec/schema.md §11, §11.2; spec/cli.md §5.6, §5.14.4): `proposal new` checks (field allowed for the target's type, id prefix, `ALREADY_LINKED` skip), `apply` (append if absent, no edit, write set = target), and the Review render (Kind "Add Link", After = `<Field>: <title>`). **Acceptance:** golden file for an approved `add_link`; a re-run after approval skips with `ALREADY_LINKED`; the spec examples pass.
 
+### CX-15 · Ingest scorer · `todo` (Codex; needs CC-07 cases)
+Implement the scorer specified in `eval/ingest/README.md` ("Scoring spec"): compare a run folder with the base fixture against a case's `expected.json`, report per-category recall and precision, `must_not` failures and a verdict; support `--skip-kinds add_link` until CX-14. **Acceptance:** unit tests with a hand-made run folder per verdict path (pass, low recall, `must_not` hit, stop case modified).
+
 ### CX-09 · Fixture brain · `done` (PR #9)
 `tests/fixtures/brain-acme/`: a small synthetic brain (fictional client Acme, people, a project with key-fact timelines, decisions incl. one superseded, open questions, one goal) that passes lint. Used by all tests and by CC-07. **Acceptance:** fictional data only; covers every v1 note type.
 
@@ -105,7 +108,7 @@ One source per skill in `skills/<name>/SKILL.md` (frontmatter: `name`, `descript
 ### CC-06 · Ingest skill · `todo` (needs CC-01, CC-03)
 `skills/brain-ingest/`: fetch Reviewed meetings (MCP), snapshot source, match via index, load ≤8 notes (0013), two-step analyse → generate, decision gate, subject-boundary and verbatim rules, output new notes + proposals + tasks through the CLI, fill Meeting relations, set Ingested (0007, 0012). **Acceptance:** runs end to end on the fixture brain with synthetic minutes, Markdown-only mode first.
 
-### CC-07 · Ingest evaluation · `todo` (needs CX-09)
+### CC-07 · Ingest evaluation · `in progress` (cases and scoring spec in `eval/ingest/`; scorer → CX-15; then run the five cases, then U-03)
 Five synthetic meetings with expected extractions (decisions, fact changes, contradictions, people, questions, tasks), a scoring script spec for Codex to implement if useful, then the dry run on your real minutes (U-03) in Markdown-only mode.
 
 ---
