@@ -4,11 +4,11 @@
 **Status values:** `todo` · `in progress` · `review` · `done` · `blocked`.
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
-> **2026-10-11 — Codex is back; open CLI work is split again.**
-> - **Codex:** CX-03 → CX-07 → CX-08 → CX-11, then CX-12 once every command exists. Reuse `src/lib/workspace.ts` (validated, atomic, logged writes), `ids.ts`, `paths.ts` and `input.ts`.
-> - **Claude Code:** finishes CX-06 (PR 1 #13 merged, PR 2 #14 in review, PR 3 `apply` next), then CX-10 (its `sync apply` builds on `note new` and `apply`), then CC-05/CC-06.
-> - **Reviews:** cross-review is back: each agent reviews the other's PRs. The user merges.
-> - **Earlier, while Codex was out of tokens:** Claude took over CX-09, CX-04, CX-05 and CX-06.
+> **2026-10-12 — Status: v1 is built; wave 4 (dogfood) is next. Codex is out of tokens, so Claude Code takes the open CX work again (fresh-context Claude reviewer per PR; the user merges).**
+> - **Done:** every CLI command in spec/cli.md, all six skills (ingest, apply, query, connect-notion, sync, notion-change), the plugin and Codex mirror, the eval (passes blind, eval/ingest/RESULTS.md), and the Notion space (built, connected, and checked live with brain-notion-change).
+> - **Next, in order:** (1) CX-16, the Codex skills installed by `init`/`link` (decision 0029, not started); (2) CC-12, setting up the user's real brain together (choose its folder and a private GitHub repo, `brain init`, connect-notion, install the plugin, link 1–2 code repos, ingest the first reviewed meetings: this is U-03); (3) U-05, two weeks of real use; (4) CX-13 fixes from dogfooding.
+> - **Open with the user:** U-03 (pick 3–5 reviewed meetings) is deferred to CC-12. The live Notion write test (one "TEST · delete me" project page) has not been approved yet, so don't run it without a yes.
+> - **Earlier:** Claude took over CX-04 to CX-06 and CX-09 while Codex was out; Codex did CX-03, CX-07, CX-08 and CX-10 to CX-15.
 
 ## Why this split
 
@@ -75,7 +75,7 @@
 
 ## Wave 2 — Core
 
-### CX-03 · `brain init`, `status`, `config`, `id new` · `review` (needs CC-01, CC-02, CC-03)
+### CX-03 · `brain init`, `status`, `config`, `id new` · `done` (PR #19) (needs CC-01, CC-02, CC-03)
 Also `brain status`, `brain config get/set`, `brain id new` (spec/cli.md §5.2–5.4), and the CX-02 alignment items from the #4 review (error codes, `BRAIN_NOT_FOUND`, contained mkdir, non-brain roots). Create a new brain from `templates/brain/` at a given path; initialize git; write `schema_version` into `brain.json`; never overwrite an existing non-empty folder without `--force`. **Acceptance:** per CC-03; test creates a brain in a temp dir and lint passes on it.
 
 ### CX-04 · Index builder · `done` (PR #10)
@@ -87,46 +87,49 @@ Also `brain status`, `brain config get/set`, `brain id new` (spec/cli.md §5.2�
 ### CX-06 · Notes, proposals and apply · `done` (Claude Code; #13 `note new` and #14 proposals merged, #16 `apply` merged)
 `brain note new` (spec/cli.md §5.5) and `brain proposal list`. `brain proposal new` writes a proposal file from JSON input. `brain apply --input <file.json>` applies decisions (`approve`, `reject`, `edit` with value) to target notes: append `timeline:` entries, change assessment, set supersedes/superseded_by on both notes, mark proposals applied/closed. Also applies user corrections from Notion edits (0023, 0027). Pure and deterministic; each proposal writes only its kind's write set (spec/schema.md §11.2). Also brings `src/lib/frontmatter.ts` in line with spec/cli.md §3.6.5 (flow-style scalar lists, key positions). **Acceptance:** golden-file tests for each proposal kind; re-applying the same decisions is a no-op.
 
-### CX-07 · Derived views · `review` (needs CC-01, CC-03)
+### CX-07 · Derived views · `done` (PR #20) (needs CC-01, CC-03)
 `brain views` regenerates `projects/<slug>/brief.md` and `decision-log.md` from canonical notes inside `@generated` markers, preserving `@user` blocks (synthesis §4.5). Also adds the `view-stale` lint warning (spec/cli.md §5.10). **Acceptance:** user block survives regeneration; every item line links to its source note (spec/schema.md §16).
 
-### CX-08 · `brain link` · `review` (needs CC-03)
+### CX-08 · `brain link` · `done` (PR #21) (needs CC-03)
 Write `.brain` (project, area, stacks) in a target repo and insert or update a fenced "consult the brain" block in its `CLAUDE.md` / `AGENTS.md` (0006, 0009). Idempotent. **Acceptance:** running twice yields the same files; existing content outside the fence untouched.
 
-### CX-14 · `add_link` proposals · `review` (Codex; needs decision 0028)
+### CX-14 · `add_link` proposals · `done` (PRs #32, #36) (Codex; needs decision 0028)
 Implement the `add_link` kind (spec/schema.md §11, §11.2; spec/cli.md §5.6, §5.14.4): `proposal new` checks (field allowed for the target's type, id prefix, `ALREADY_LINKED` skip), `apply` (append if absent, no edit, write set = target), and the Review render (Kind "Add Link", After = `<Field>: <title>`). **Acceptance:** golden file for an approved `add_link`; a re-run after approval skips with `ALREADY_LINKED`; the spec examples pass.
 
-### CX-15 · Ingest scorer · `review` (Codex; needs CC-07 cases)
+### CX-15 · Ingest scorer · `done` (PR #38) (Codex; needs CC-07 cases)
 Implement the scorer specified in `eval/ingest/README.md` ("Scoring spec"): compare a run folder with the base fixture against a case's `expected.json`, report per-category recall and precision, `must_not` failures and a verdict; support `--skip-kinds add_link` until CX-14. **Acceptance:** unit tests with a hand-made run folder per verdict path (pass, low recall, `must_not` hit, stop case modified).
+
+### CX-16 · Ship and install the Codex skills · `todo` (Claude Code while Codex is out; decision 0029)
+Include `.agents/skills/` in the npm package. `brain init` copies every skill into the new brain (spec/cli.md §5.1 step 3), and `brain link` writes and refreshes `.agents/skills/brain-query/` in the linked repo (§5.12 step 3; every skill file listed in `files` with its action, stale files `removed`). **Acceptance:** from the packed tarball, `init` creates `.agents/skills/<name>/SKILL.md` for every skill in `skills/`; running `link` twice changes no bytes; a stale file in `.agents/skills/brain-query/` is removed; other `.agents/` content is untouched.
 
 ### CX-09 · Fixture brain · `done` (PR #9)
 `tests/fixtures/brain-acme/`: a small synthetic brain (fictional client Acme, people, a project with key-fact timelines, decisions incl. one superseded, open questions, one goal) that passes lint. Used by all tests and by CC-07. **Acceptance:** fictional data only; covers every v1 note type.
 
-### CC-05 · Skill packaging · `review`
+### CC-05 · Skill packaging · `done` (PR #25)
 One source per skill in `skills/<name>/SKILL.md` (frontmatter: `name`, `description` only), packaged as a Claude Code plugin and mirrored to `.agents/skills/` for Codex. Document the build step.
 
 ### CC-06 · Ingest skill · `done` (#29) (needs CC-01, CC-03)
 `skills/brain-ingest/`: fetch Reviewed meetings (MCP), snapshot source, match via index, load ≤8 notes (0013), two-step analyse → generate, decision gate, subject-boundary and verbatim rules, output new notes + proposals + tasks through the CLI, fill Meeting relations, set Ingested (0007, 0012). **Acceptance:** runs end to end on the fixture brain with synthetic minutes, Markdown-only mode first.
 
-### CC-07 · Ingest evaluation · `in progress` (synthetic cases pass blind, see eval/ingest/RESULTS.md; next: U-03 dry run on the user's real minutes)
+### CC-07 · Ingest evaluation · `done` for the synthetic cases (#31, #40; they pass blind, eval/ingest/RESULTS.md); the real-minutes dry run (U-03) happens in CC-12
 Five synthetic meetings with expected extractions (decisions, fact changes, contradictions, people, questions, tasks), a scoring script spec for Codex to implement if useful, then the dry run on your real minutes (U-03) in Markdown-only mode.
 
 ---
 
 ## Wave 3 — Notion and query
 
-- **CC-08 · connect-notion + sync skills · `review` (Claude Code):** find databases via MCP and write `brain.json`; import new rows (0021), read Notion-owned fields, detect your edits to brain-owned values (0023), publish brain records.
+- **CC-08 · connect-notion + sync skills · `done` (#39, Claude Code):** find databases via MCP and write `brain.json`; import new rows (0021), read Notion-owned fields, detect your edits to brain-owned values (0023), publish brain records.
 - **CC-09 · apply skill · `done` (#35, Claude Code):** read Review decisions via MCP → `brain apply` → update Review rows and pages.
 - **CC-10 · query skill · `done` (#33, Claude Code):** retrieval ladder, cited answers separating accepted / contested / superseded facts.
-- **CC-11 · notion-change skill · `review` (Claude Code):** spec diff → Notion AI prompts → drift check via MCP (0022).
-- **CX-10 · sync helpers (Codex):** CLI functions the sync skill calls (diff Notion snapshot JSON vs notes, produce correction and creation plans).
-- **CX-11 · query helpers:** `brain query --candidates "<q>"` returning ranked notes from index + grep with snippets.
-- **CX-12 · packaging · `review`:** publishable npm package so `npx ultimate-brain init` works. Publish **compiled JavaScript** (Node won't strip types inside `node_modules`); development in the repo stays build-free. The plugin/skills bundle remains out of the npm tarball until the product specifies how `.agents/skills/` reaches a user brain for Codex.
+- **CC-11 · notion-change skill · `done` (#41, Claude Code):** spec diff → Notion AI prompts → drift check via MCP (0022).
+- **CX-10 · sync helpers · `done` (#18, Codex):** CLI functions the sync skill calls (diff Notion snapshot JSON vs notes, produce correction and creation plans).
+- **CX-11 · query helpers · `done` (#22, Codex):** `brain query --candidates "<q>"` returning ranked notes from index + grep with snippets.
+- **CX-12 · packaging · `done` (#27; skills install is CX-16):** publishable npm package so `npx ultimate-brain init` works. Publish **compiled JavaScript** (Node won't strip types inside `node_modules`); development in the repo stays build-free. The plugin/skills bundle remains out of the npm tarball until the product specifies how `.agents/skills/` reaches a user brain for Codex.
 
 **Spec question:** Should `brain init` copy the generated `.agents/skills/` mirror into a user brain, should Codex install it globally, or should it stay in the product/plugin checkout? This determines whether those assets belong in the npm package.
 
 ## Wave 4 — Dogfood
-- **CC-12 · end-to-end run with you;** **CX-13 · hardening · `review`;** **U-05 · two weeks of real use** against the v1 success criterion in vision.md.
+- **CC-12 · end-to-end run with you;** **CX-13 · hardening · `done` for the review findings (#26, #37), open for dogfood fixes;** **U-05 · two weeks of real use** against the v1 success criterion in vision.md.
 
 ---
 
