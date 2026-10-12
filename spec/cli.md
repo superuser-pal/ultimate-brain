@@ -92,7 +92,7 @@ Failure:
 - `ok` is `true` when the command **completed**, even if it found problems (lint errors, a drifted `--check`, some apply items failed). Findings are in `data` and the exit code is 1.
 - `command` is the command path joined by a space (`"sync plan"`).
 - `brain` is the absolute resolved brain path, or `null` when not resolved (e.g. `init`, resolution failed).
-- `warnings` is always present (may be empty). Each has `code`, `message`, optional `path` and `id`.
+- `warnings` is always present (may be empty). Each has `code`, `message`, optional `path` and `id`. Commands that write notes (`note new`, `proposal new`, `apply`, `sync apply`) also list every lint warning in the files they wrote, including warnings those files already had, so the agent sees each written file's full state.
 - Paths inside `data` are **relative to the brain root** with forward slashes, unless named `*_abs`.
 - Diagnostics for humans go to stderr; nothing but the JSON document goes to stdout.
 
@@ -126,6 +126,7 @@ Failure:
 | `TARGET_NOT_EMPTY` | 5 | `init` target is non-empty and `--force` not given |
 | `ALREADY_A_BRAIN` | 5 | `init` target already has `brain.json` |
 | `OUTSIDE_ROOT` | 5 | a write would land outside its allowed root |
+| `WRITE_CONFLICT` | 5 | a file appeared at a path the command was creating, after it read the brain (another writer). Nothing is kept (§3.6); re-run the command |
 | `INTERNAL` | 10 | unexpected failure |
 
 Batch commands (`note new`, `proposal new`, `apply`, `sync apply`) also report **per-item** results with their own `reason` codes, listed under each command.
@@ -213,7 +214,7 @@ Creates a brain from `templates/brain/` (CC-02, CX-03).
 
 1. Refuse if `<path>` is the product repo (`BRAIN_IS_PRODUCT_REPO`) or already has `brain.json` (`ALREADY_A_BRAIN`, even with `--force`).
 2. If `<path>` exists and is non-empty: refuse with `TARGET_NOT_EMPTY` unless `--force`. With `--force`, template files whose path already exists are **left untouched** and listed in `skipped`; nothing is ever overwritten.
-3. Copy the template. Write `brain.json` from the template with `schema_version: 1` and `owner.name` = `--owner` (default: the `user.name` from `git config`, else `"Owner"`).
+3. Copy the template. npm never packs files named `.gitignore`, so the template stores it as `templates/brain/gitignore` and `init` writes it to the new brain as `.gitignore` (reported in `created` under that name; a `--force` run skips it like any other existing file). Write `brain.json` from the template with `schema_version: 1` and `owner.name` = `--owner` (default: the `user.name` from `git config`, else `"Owner"`).
 4. Run `index` (an empty index).
 5. Log `- <timestamp> init - "<owner name>" schema=1` (no machine paths in the log).
 6. Unless `--no-git`: `git init`, add all, commit `init: ultimate brain (schema v1)`, so the new brain starts clean. If Git is missing or the commit fails (no identity), keep the files, skip the commit and add warning `GIT_COMMIT_SKIPPED`.
