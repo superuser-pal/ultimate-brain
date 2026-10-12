@@ -41,4 +41,4 @@ Run the build after changing any skill and commit both folders together. `npm te
 | `brain-connect-notion`, `brain-sync` | CC-08 | review |
 | `brain-apply` | CC-09 | done (#35) |
 | `brain-query` | CC-10 | done (#33) |
-| `brain-notion-change` | CC-11 | planned |
+| `brain-notion-change` | CC-11 | review |

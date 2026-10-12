@@ -118,7 +118,7 @@ Five synthetic meetings with expected extractions (decisions, fact changes, cont
 - **CC-08 · connect-notion + sync skills · `review` (Claude Code):** find databases via MCP and write `brain.json`; import new rows (0021), read Notion-owned fields, detect your edits to brain-owned values (0023), publish brain records.
 - **CC-09 · apply skill · `done` (#35, Claude Code):** read Review decisions via MCP → `brain apply` → update Review rows and pages.
 - **CC-10 · query skill · `done` (#33, Claude Code):** retrieval ladder, cited answers separating accepted / contested / superseded facts.
-- **CC-11 · notion-change skill:** spec diff → Notion AI prompts → drift check via MCP (0022).
+- **CC-11 · notion-change skill · `review` (Claude Code):** spec diff → Notion AI prompts → drift check via MCP (0022).
 - **CX-10 · sync helpers (Codex):** CLI functions the sync skill calls (diff Notion snapshot JSON vs notes, produce correction and creation plans).
 - **CX-11 · query helpers:** `brain query --candidates "<q>"` returning ranked notes from index + grep with snippets.
 - **CX-12 · packaging · `review`:** publishable npm package so `npx ultimate-brain init` works. Publish **compiled JavaScript** (Node won't strip types inside `node_modules`); development in the repo stays build-free. The plugin/skills bundle remains out of the npm tarball until the product specifies how `.agents/skills/` reaches a user brain for Codex.
