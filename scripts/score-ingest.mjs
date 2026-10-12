@@ -12,7 +12,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export async function scoreIngest({ base, run, expected: expectedPath, skipKinds = [] }) {
   const expected = JSON.parse(await readFile(expectedPath, "utf8"));
   const skip = new Set(skipKinds);
-  const files = await diffFiles(base, run);
+  const files = await diffFiles(base, run, expected.expect.stop !== true);
   if (expected.expect.stop === true) {
     const pass = files.created.length === 0 && files.changed.length === 0 && files.deleted.length === 0;
     return { case: expected.case, files, verdict: pass ? "pass" : "fail", stop: { pass } };
@@ -23,16 +23,16 @@ export async function scoreIngest({ base, run, expected: expectedPath, skipKinds
   const meeting = created.find((file) => file.attributes?.type === "meeting");
   const proposals = created.filter((file) => file.path.startsWith("_proposals/") && file.attributes?.type === "proposal");
   const tasks = meeting === undefined ? [] : actionItems(meeting.body);
-  const matchedNotes = matchItems(expected.expect.notes ?? [], notes, noteMatches, { meeting, notes });
-  const matchedProposals = matchItems((expected.expect.proposals ?? []).filter((item) => !skip.has(item.kind)), proposals, proposalMatches, { meeting, notes: matchedNotes.items });
+  const matchedNotes = matchItems(expected.expect.notes ?? [], notes, noteMatches, { meeting, notes, noteByExpectation: [] });
+  const matchedProposals = matchItems((expected.expect.proposals ?? []).filter((item) => !skip.has(item.kind)), proposals, proposalMatches, { meeting, notes, noteByExpectation: matchedNotes.byExpectation });
   const matchedTasks = matchItems(expected.expect.tasks ?? [], tasks, taskMatches, {});
   const metrics = {
-    notes: metricsFor(matchedNotes, notes, expected.optional ?? [], noteMatches, { meeting, notes: matchedNotes.items }),
-    proposals: metricsFor(matchedProposals, proposals, expected.optional ?? [], proposalMatches, { meeting, notes: matchedNotes.items }),
-    tasks: metricsFor(matchedTasks, tasks, expected.optional ?? [], taskMatches, {}),
+    notes: metricsFor("note", matchedNotes, notes, expected.optional ?? [], noteMatches, { meeting, notes, noteByExpectation: matchedNotes.byExpectation }),
+    proposals: metricsFor("proposal", matchedProposals, proposals, expected.optional ?? [], proposalMatches, { meeting, notes, noteByExpectation: matchedNotes.byExpectation }),
+    tasks: metricsFor("task", matchedTasks, tasks, expected.optional ?? [], taskMatches, {}),
   };
-  const meetingCheck = meetingMatches(expected.expect.meeting, meeting, { meeting, notes: matchedNotes.items });
-  const mustNot = await mustNotFailures(expected.expect.must_not ?? [], { base, run, files, notes, proposals, meeting, matchedNotes });
+  const meetingCheck = meetingMatches(expected.expect.meeting, meeting, { meeting, notes, noteByExpectation: matchedNotes.byExpectation });
+  const mustNot = await mustNotFailures(expected.expect.must_not ?? [], { base, run, files, notes, proposals, meeting, noteByExpectation: matchedNotes.byExpectation });
   const lint = lintRun(run);
   const pass = meetingCheck.pass && Object.values(metrics).every((metric) => metric.recall >= 0.8 && metric.precision >= 0.8)
     && mustNot.length === 0 && lint.errors === 0;
@@ -44,12 +44,12 @@ export async function scoreIngest({ base, run, expected: expectedPath, skipKinds
   };
 }
 
-async function diffFiles(base, run) {
+async function diffFiles(base, run, ignoreDerived) {
   const [baseFiles, runFiles] = await Promise.all([allFiles(base), allFiles(run)]);
   const paths = new Set([...baseFiles.keys(), ...runFiles.keys()]);
   const created = []; const changed = []; const deleted = [];
   for (const path of [...paths].sort()) {
-    if (ignored(path)) continue;
+    if (ignoreDerived && ignored(path)) continue;
     if (!baseFiles.has(path)) created.push(path);
     else if (!runFiles.has(path)) deleted.push(path);
     else if (!baseFiles.get(path).equals(runFiles.get(path))) changed.push(path);
@@ -81,65 +81,91 @@ function normalize(value) {
   return String(value).normalize("NFKD").replace(/\p{M}/gu, "").trim().toLowerCase();
 }
 
-function equal(expected, actual) {
-  if (Array.isArray(expected) || Array.isArray(actual)) return JSON.stringify(expected) === JSON.stringify(actual);
-  return normalize(expected) === normalize(actual);
+function normalized(value, context) {
+  if (typeof value === "string") return normalize(resolveReference(value, context));
+  if (Array.isArray(value)) return value.map((item) => normalized(item, context)).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, normalized(value[key], context)]));
+  }
+  return value;
+}
+
+function equal(expected, actual, context) {
+  return JSON.stringify(normalized(expected, context)) === JSON.stringify(normalized(actual, context));
 }
 
 function resolveReference(value, context) {
   if (typeof value !== "string") return value;
   if (value === "@meeting") return context.meeting?.attributes.id;
   const named = /^@new:(.+)$/.exec(value);
-  if (named) return context.notes.find((note) => normalize(note.attributes.title) === normalize(named[1]))?.attributes.id;
+  if (named) return context.notes.find((note) => note.attributes.type === "person" && normalize(note.attributes.title) === normalize(named[1]))?.attributes.id;
   const indexed = /^@note:(\d+)$/.exec(value);
-  return indexed ? context.notes[Number(indexed[1])]?.attributes.id : value;
+  return indexed ? context.noteByExpectation?.[Number(indexed[1])]?.attributes.id : value;
 }
 
 function noteMatches(expectation, note, context) {
-  if (expectation.note) expectation = expectation.note;
-  if (!note || note.attributes.type !== expectation.type) return false;
-  if (!(expectation.title ?? []).every((word) => normalize(note.attributes.title).includes(normalize(word)))) return false;
-  return Object.entries(expectation.fields ?? {}).every(([key, value]) => equal(resolveReference(value, context), note.attributes[key]))
-    && Object.entries(expectation.facts ?? {}).every(([key, value]) => equal(resolveReference(value, context), note.attributes.facts?.[key]));
+  if (expectation.proposal || expectation.task) return false;
+  return noteAttributesMatch(expectation.note ?? expectation, note?.attributes, context);
+}
+
+function noteAttributesMatch(expectation, attributes, context) {
+  if (!attributes || attributes.type !== expectation.type) return false;
+  if (!(expectation.title ?? []).every((word) => normalize(attributes.title).includes(normalize(word)))) return false;
+  return Object.entries(expectation.fields ?? {}).every(([key, value]) => equal(value, attributes[key], context))
+    && Object.entries(expectation.facts ?? {}).every(([key, value]) => equal(value, attributes.facts?.[key], context));
 }
 
 function proposalMatches(expectation, proposal, context) {
+  if (expectation.note || expectation.task) return false;
   if (expectation.proposal) expectation = expectation.proposal;
   if (!proposal) return false;
-  return Object.entries(expectation).every(([key, value]) => key === "proposal" || equal(resolveReference(value, context), proposal.attributes[key]));
+  return Object.entries(expectation).every(([key, value]) => key === "proposal"
+    || (key === "note" ? noteAttributesMatch(value, proposal.attributes.note, context) : equal(value, proposal.attributes[key], context)));
 }
 
 function taskMatches(expectation, task) {
-  if (!task) return false;
+  if (!task || expectation.note || expectation.proposal) return false;
+  expectation = expectation.task ?? expectation;
   return (expectation.title ?? []).every((word) => normalize(task.action).includes(normalize(word)))
     && equal(expectation.owner, task.owner) && equal(expectation.due, task.due);
 }
 
 function matchItems(expectations, produced, matcher, context) {
-  const used = new Set(); const items = []; const unmatched = [];
-  for (const expectation of expectations) {
+  const used = new Set(); const items = []; const byExpectation = []; const unmatched = [];
+  expectations.forEach((expectation, expectationIndex) => {
     const index = produced.findIndex((item, i) => !used.has(i) && matcher(expectation, item, context));
-    if (index === -1) unmatched.push(expectation);
-    else { used.add(index); items.push(produced[index]); }
-  }
-  return { items, unmatched, used, expected: expectations.length };
+    if (index === -1) { unmatched.push(expectation); byExpectation[expectationIndex] = undefined; }
+    else { used.add(index); items.push(produced[index]); byExpectation[expectationIndex] = produced[index]; }
+  });
+  return { items, byExpectation, unmatched, used, expected: expectations.length };
 }
 
-function metricsFor(matches, produced, optional, matcher, context) {
-  const optionalCount = produced.filter((item) => optional.some((entry) => matcher(entry, item, context))).length;
+function optionalFor(category, entry) {
+  if (category === "note") return entry.note;
+  if (category === "proposal") return entry.proposal;
+  if (category === "task") return entry.task;
+  return undefined;
+}
+
+function metricsFor(category, matches, produced, optional, matcher, context) {
+  const optionalItems = produced.filter((item, index) => !matches.used.has(index) && optional.some((entry) => {
+    const value = optionalFor(category, entry);
+    return value !== undefined && matcher(value, item, context);
+  }));
+  const optionalCount = optionalItems.length;
   const denominator = produced.length - optionalCount;
   return {
     recall: matches.expected === 0 ? 1 : matches.items.length / matches.expected,
     precision: denominator === 0 ? 1 : matches.items.length / denominator,
-    unexpected: produced.filter((item, index) => !matches.used.has(index) && !optional.some((entry) => matcher(entry, item, context))),
+    unexpected: produced.filter((item, index) => !matches.used.has(index) && !optionalItems.includes(item)),
   };
 }
 
 function meetingMatches(expectation, meeting, context) {
   if (!meeting) return { pass: false, reason: "no created meeting" };
   for (const key of ["attendees", "projects"]) {
-    const expected = (expectation?.[key] ?? []).map((value) => resolveReference(value, context)).sort();
-    const actual = [...(meeting.attributes[key] ?? [])].sort();
+    const expected = (expectation?.[key] ?? []).map((value) => normalized(value, context)).sort();
+    const actual = [...(meeting.attributes[key] ?? [])].map((value) => normalized(value, context)).sort();
     if (JSON.stringify(expected) !== JSON.stringify(actual)) return { pass: false, reason: `${key} differ`, expected, actual };
   }
   return { pass: true };
@@ -153,9 +179,9 @@ function actionItems(body) {
 async function mustNotFailures(entries, context) {
   const failures = [];
   for (const entry of entries) {
-    if (entry.note && context.notes.some((note) => noteMatches(entry.note, note, { meeting: context.meeting, notes: context.matchedNotes.items }))) failures.push(entry);
-    if (entry.proposal && context.proposals.some((proposal) => proposalMatches(entry.proposal, proposal, { meeting: context.meeting, notes: context.matchedNotes.items }))) failures.push(entry);
-    if (entry.unchanged && !sameFile(join(context.base, entry.unchanged), join(context.run, entry.unchanged))) failures.push(entry);
+    if (entry.note && context.notes.some((note) => noteMatches(entry.note, note, context))) failures.push(entry);
+    if (entry.proposal && context.proposals.some((proposal) => proposalMatches(entry.proposal, proposal, context))) failures.push(entry);
+    if (entry.unchanged && !(await sameFile(join(context.base, entry.unchanged), join(context.run, entry.unchanged)))) failures.push(entry);
     if (entry.deleted && !(await exists(join(context.run, entry.deleted)))) failures.push(entry);
     if (entry.changed_status === "_proposals" && await proposalStatusChanged(context.base, context.run)) failures.push(entry);
   }
