@@ -137,6 +137,9 @@ test("add_link validates its target field and reference prefix, then skips after
   const badPrefix = await proposalNew(dir, [{ ...link, field: "people", after: "org-6d1f9z3k" }]);
   assert.equal(badPrefix.json.error.code, "INPUT_INVALID");
   assert.equal(badPrefix.json.error.details[0].pointer, "/proposals/0/after");
+  const linkedButForbidden = await proposalNew(dir, [{ ...link, target: "mtg-8c4n2p7w", field: "decisions", after: "dec-7k2m9q4x" }]);
+  assert.equal(linkedButForbidden.json.error.code, "INPUT_INVALID");
+  assert.equal(linkedButForbidden.json.error.details[0].pointer, "/proposals/0/field");
 });
 
 test("a new_item may name an existing meeting, which apply will update; its note must otherwise be valid", async (context) => {

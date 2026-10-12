@@ -2,15 +2,7 @@ import type { Command } from "../lib/command.ts";
 import { assertNoProblems, isRecord, readJsonInput, unknownKeys } from "../lib/input.ts";
 import { assertStagedValid, checkNoteInput, stageNotes, type NoteInput } from "../lib/note-new.ts";
 import { Workspace } from "../lib/workspace.ts";
-
-function lintWarnings(workspace: Workspace) {
-  return workspace.warnings().map((issue) => ({
-    code: issue.rule.toUpperCase().replaceAll("-", "_"),
-    message: `${issue.path}:${issue.line} ${issue.message}`,
-    path: issue.path,
-    ...(issue.id === null ? {} : { id: issue.id }),
-  }));
-}
+import { lintWarnings } from "../lib/warnings.ts";
 
 /** `brain note new --input <file|-> [--dry-run]` (spec/cli.md §5.5). */
 export const noteNewCommand: Command = {
@@ -33,7 +25,7 @@ export const noteNewCommand: Command = {
     const workspace = await Workspace.open(brain!);
     const staged = stageNotes(workspace, record.notes as NoteInput[], (index) => `/notes/${index}`, { now });
     assertStagedValid(workspace, staged.pointers, "/notes");
-    const warnings = lintWarnings(workspace);
+    const warnings = lintWarnings(workspace.warnings());
 
     if (!dryRun) {
       await workspace.commit(staged.created.map((note) => ({ op: "note-new", id: note.id, title: note.title })), now);
