@@ -16,10 +16,17 @@ How to read one meeting's minutes and decide what becomes a note, what becomes a
 | Risks | A **question** note with `kind: risk` | `note new` |
 | Summary | The meeting note's `summary` (≤200 characters) and its `## Summary` section | `note new` |
 | Something that contradicts a loaded note | `contradiction` (both claims kept until the user decides) | `proposal new` |
+| A standing requirement of the client ("Acme's legal team requires EU data residency") | `add_to_note` on the org, besides any decision that cites it | `proposal new` |
 | An answer to an existing open question | `add_to_note` on the question, with the answer and the meeting as source | `proposal new` |
 | A person working on an existing project they're not listed on (new or existing person) | `add_link` on the project, `field: people` | `proposal new` |
 
 ## The decision gate (AGENTS.md rule 6)
+
+- **"(tentative)" does not lower a decision below the gate.** It only sets `assessment: provisional`. A tentative launch date passes the gate; a tentative routine ("send drafts on Fridays") does not, because routines never do.
+- **A decision that changes a fact gets both:** the decision note and an `update_fact` for the fact ("launch on 15 Feb 2027" → `launch_date` 2027-02 → 2027-02-15).
+- **An assignment that answers an open question** ("Carlos owns the mobile app") is an `add_to_note` on the question. It gets a decision note only if it passes the gate on its own. The user marks the question Answered in Notion.
+- **`deciders`** only when the minutes say who decided; otherwise leave it out.
+
 
 A decision gets its own note only when at least one of these holds:
 - it is **hard to reverse** (a vendor, an architecture, a contract, a hire, a launch date commitment);
@@ -40,7 +47,7 @@ Fact keys are lowercase `snake_case` and stable: `launch_date`, `budget`, `deadl
 
 ## People
 
-- **Match by alias:** "Maria", "María López" and "Maria (Acme, PM)" are all `per-3h8w2n6c` if those aliases are on her note. When a person is matched under a spelling that is not yet an alias, propose `add_link` with `field: aliases` and the new spelling (decision 0028).
+- **Match by alias:** "Maria", "María López" and "Maria (Acme, PM)" are all `per-3h8w2n6c` if those aliases are on her note. When a person is matched under a spelling that is not yet an alias, propose `add_link` with `field: aliases` and the spelling **exactly as written** in the minutes, including the surname if given ("Mari López", not "Mari") (decision 0028). Do this only when organization and role leave no doubt it is the same person; otherwise stop and ask.
 - **New person:** create a person note with `title` = their full name as written, `aliases` = the short forms used, `org` if the minutes name their organization and it has a note, `facts.role` + a matching timeline entry only when the role is stated, and `sources` = the meeting. Their note lists the project in `projects`; also propose `add_link` to add them to the project's `people`, because the project note is an existing note.
 - **Same name, different person, or one name matching two people:** stop and ask (SKILL.md stop conditions).
 
