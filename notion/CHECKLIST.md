@@ -16,6 +16,8 @@ The prompts are generated from [docs/notion-space-design.md](../docs/notion-spac
 - [ ] [7 · Spaces and views](prompts/07-spaces-views.md)
 - [ ] [8 · Navigation](prompts/08-navigation.md)
 
+Prefer to build Spaces and views by hand? [views-guide.md](views-guide.md) spells out every view (filters, sorts, grouping, visible properties, use case), the database page layouts and the navigation. It replaces steps 7 and 8.
+
 ## After building
 
 - [ ] Tell your agent "connect the brain to Notion". The connect-notion skill finds the databases by name through the Notion MCP and writes their IDs into `brain.json` (decision 0015).
