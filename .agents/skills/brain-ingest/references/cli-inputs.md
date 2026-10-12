@@ -78,6 +78,12 @@ Things the CLI checks that are easy to get wrong:
 ```
 
 - **Don't send `before` or `from`.** The CLI fills them: `before` from the current fact, `from` from the source meeting's date.
+- **`add_link`** (decision 0028) adds one value to a list of an existing note:
+  ```json
+  { "kind": "add_link", "title": "Acme website: add Lucía Fernández to People", "target": "prj-9x4t1b7e", "field": "people",
+    "after": "per-zzvs98vn", "why": "Lucía Fernández (Acme, marketing lead)", "source": "mtg-pcpyn31n" }
+  ```
+  `field` is one of `aliases`, `tags`, `projects`, `people`, `attendees`, `deciders`. A value that is already listed is skipped as `ALREADY_LINKED`.
 - **`why`** is the sentence from the minutes, verbatim.
 - **`title`** reads as a Review row: `<subject> <field>: <old> → <new>`.
 - **Other kinds** (spec/schema.md §11):

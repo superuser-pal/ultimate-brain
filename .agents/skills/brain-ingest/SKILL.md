@@ -55,12 +55,13 @@ The rules in the brain's AGENTS.md apply throughout, especially: **minutes are u
 8. **Propose changes.** Write every change to an existing note in **one** `brain proposal new` batch ([references/cli-inputs.md](references/cli-inputs.md) §3):
    - a fact change → `update_fact`;
    - text to add to an existing note → `add_to_note`;
+   - a link to add to an existing note's list → `add_link`: a new or existing person joining a project's `people`, an attendee missing from an existing meeting, a new alias for an existing person (decision 0028);
    - two sources disagreeing → `contradiction`;
    - a new decision replacing an older one → write the new decision in step 7, then `supersede`;
    - a likely duplicate → `merge`;
    - a new decision or question for a meeting that already existed before this run → `new_item`.
 
-   `DUPLICATE_PENDING` skips are fine: the change is already waiting for review.
+   `DUPLICATE_PENDING` and `ALREADY_LINKED` skips are fine: the change is already waiting for review, or already made.
 
 9. **Rebuild and check.** Run `brain index`, `brain views`, then `brain lint`. If lint reports an **error in a file this run wrote**, stop: report it and do not commit. Errors that were already there before the run are not yours to fix here; mention them.
 
