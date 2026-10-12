@@ -3,7 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { parseFrontmatter, serializeFrontmatter } from "../src/lib/frontmatter.ts";
+import { parseFrontmatter, serializeFrontmatter, serializeNewFile } from "../src/lib/frontmatter.ts";
 import { brain, fixtureCopy } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
@@ -60,4 +60,18 @@ test("sync tasks renders mapped task fields and sync record never changes update
   const after = parseFrontmatter(await readFile(join(dir, "knowledge/people/maria-lopez.md"), "utf8")).attributes;
   assert.equal(after.updated, before);
   assert.equal((after.notion_published as Record<string, unknown>).Role, "Product Manager");
+});
+
+test("sync render presents an add_link review with its target title", async (context) => {
+  const dir = await fixtureCopy(context);
+  await writeFile(join(dir, "_proposals/2026-12-10-add-carlos.md"), serializeNewFile({
+    id: "prp-0a1b2c3d", type: "proposal", title: "Add Carlos to Acme website", created: "2026-12-10", updated: "2026-12-10",
+    kind: "add_link", target: "prj-9x4t1b7e", field: "people", after: "per-9t2c6m4a", why: "Carlos joins the project.", source: "mtg-8c4n2p7w", status: "pending",
+  }, ""));
+  const run = await brain(["sync", "render", "--brain", dir, "--ids", "prp-0a1b2c3d", "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  const properties = run.json.data.items[0].properties;
+  assert.equal(properties.Kind.value, "Add Link");
+  assert.equal(properties.Before.value, null);
+  assert.equal(properties.After.value, "People: Carlos Ruiz");
 });

@@ -112,6 +112,33 @@ test("proposal new skips duplicates of pending proposals, in the brain and in th
   ]);
 });
 
+test("add_link validates its target field and reference prefix, then skips after approval", async (context) => {
+  const dir = await fixtureCopy(context);
+  const link = {
+    kind: "add_link", title: "Add Acme Web alias", target: "prj-9x4t1b7e", field: "aliases", after: "Acme Web",
+    why: "The team uses this name.", source: "mtg-8c4n2p7w",
+  };
+  const created = await proposalNew(dir, [link]);
+  assert.equal(created.code, 0, created.stdout);
+  const id = created.json.data.created[0].id;
+  const decisions = join(dir, "..", "decisions.json");
+  await writeFile(decisions, JSON.stringify({ decisions: [{ proposal: id, action: "approve", decided_at: NOW, decided_by: "chat" }] }));
+  const applied = await brain(["apply", "--brain", dir, "--now", NOW, "--input", decisions, "--json"]);
+  assert.equal(applied.code, 0, applied.stdout);
+  assert.deepEqual(applied.json.data.decisions[0].changed, [created.json.data.created[0].path, "projects/acme-website/project.md"]);
+
+  const rerun = await proposalNew(dir, [link]);
+  assert.equal(rerun.code, 0, rerun.stdout);
+  assert.deepEqual(rerun.json.data, { created: [], skipped: [{ input_index: 0, reason: "ALREADY_LINKED" }], dry_run: false });
+
+  const badField = await proposalNew(dir, [{ ...link, field: "attendees" }]);
+  assert.equal(badField.json.error.code, "INPUT_INVALID");
+  assert.equal(badField.json.error.details[0].pointer, "/proposals/0/field");
+  const badPrefix = await proposalNew(dir, [{ ...link, field: "people", after: "org-6d1f9z3k" }]);
+  assert.equal(badPrefix.json.error.code, "INPUT_INVALID");
+  assert.equal(badPrefix.json.error.details[0].pointer, "/proposals/0/after");
+});
+
 test("a new_item may name an existing meeting, which apply will update; its note must otherwise be valid", async (context) => {
   const dir = await fixtureCopy(context);
   const meeting = await readFile(join(dir, "knowledge/meetings/2026-12-03-acme-sync.md"), "utf8");

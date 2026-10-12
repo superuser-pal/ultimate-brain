@@ -291,6 +291,9 @@ function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPat
       a.sources = union(list(a.sources), [p.source]);
       break;
     }
+    case "add_link":
+      if (!list(a[field]).some((value) => isDeepStrictEqual(value, p.after))) a[field] = [...list(a[field]), p.after];
+      break;
     case "supersede": {
       const older = existing(workspace, String(p.supersedes));
       const olderDocument = workspace.edit(older);
@@ -521,4 +524,3 @@ function record(value: unknown): Record<string, unknown> {
 function isTimestamp(value: unknown): value is string {
   return typeof value === "string" && TIMESTAMP.test(value) && !Number.isNaN(Date.parse(value));
 }
-
