@@ -38,7 +38,7 @@ Run the build after changing any skill and commit both folders together. `npm te
 | Skill | Task | Status |
 |---|---|---|
 | `brain-ingest` | CC-06 | review |
-| `brain-connect-notion`, `brain-sync` | CC-08 | planned |
+| `brain-connect-notion`, `brain-sync` | CC-08 | review |
 | `brain-apply` | CC-09 | planned |
 | `brain-query` | CC-10 | review |
 | `brain-notion-change` | CC-11 | planned |
