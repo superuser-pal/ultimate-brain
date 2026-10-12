@@ -67,5 +67,12 @@
       }
     ]
   },
-  "optional": []
+  "optional": [
+    {
+      "proposal": {
+        "kind": "add_to_note",
+        "target": "org-6d1f9z3k"
+      }
+    }
+  ]
 }

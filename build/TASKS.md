@@ -108,7 +108,7 @@ One source per skill in `skills/<name>/SKILL.md` (frontmatter: `name`, `descript
 ### CC-06 · Ingest skill · `done` (#29) (needs CC-01, CC-03)
 `skills/brain-ingest/`: fetch Reviewed meetings (MCP), snapshot source, match via index, load ≤8 notes (0013), two-step analyse → generate, decision gate, subject-boundary and verbatim rules, output new notes + proposals + tasks through the CLI, fill Meeting relations, set Ingested (0007, 0012). **Acceptance:** runs end to end on the fixture brain with synthetic minutes, Markdown-only mode first.
 
-### CC-07 · Ingest evaluation · `in progress` (cases and scoring spec in `eval/ingest/`; scorer → CX-15; then run the five cases, then U-03)
+### CC-07 · Ingest evaluation · `in progress` (synthetic cases pass blind, see eval/ingest/RESULTS.md; next: U-03 dry run on the user's real minutes)
 Five synthetic meetings with expected extractions (decisions, fact changes, contradictions, people, questions, tasks), a scoring script spec for Codex to implement if useful, then the dry run on your real minutes (U-03) in Markdown-only mode.
 
 ---
