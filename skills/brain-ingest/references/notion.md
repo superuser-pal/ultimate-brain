@@ -1,0 +1,41 @@
+# Notion steps (Notion mode only)
+
+The CLI never calls Notion (spec/cli.md §1). You read and write Notion through the Notion MCP (decision 0015), and the CLI builds and records the payloads. Database ids are in `brain.json` under `notion.databases` (see `brain config get notion`).
+
+## Fetch (SKILL.md step 2)
+
+1. Query the `meetings` database for pages where **Brain Status = Reviewed**, sorted by Date ascending.
+2. For each page, read:
+   - **page id:** becomes `notion:<id>` as the source key, and the meeting note's `notion`;
+   - **`last_edited_time`:** becomes the source's `origin_edited`;
+   - **Name and Date:** become the meeting's title and date;
+   - **Attendees, Project, Area:** relations to Notion pages. Map each page id back to a brain note through the `notion` field in `brain index --json` (`notes[].notion`);
+   - **the page body:** the minutes, verbatim.
+3. **Put the Notion page id on the meeting note:** add `"notion": "<meeting page id>"` to the meeting's `frontmatter` in the `note new` batch. Publishing (step 11) updates that existing page and never creates a meeting page, so without the id `sync render` reports `MEETING_NOT_PUBLISHED`.
+
+**Read-only rule:** never change the meeting page's title, date or body (decision 0007). The ingest only sets relations and Brain Status / Ingested At, through `sync render`.
+
+## Publish (SKILL.md step 11)
+
+Do these in order, after the ingest commit.
+
+1. **Tasks.** If `brain status` shows `tasks_database: true`:
+   1. Run `brain sync tasks --meeting <mtg-id> --input <items.json>`.
+   2. Create one Notion page per returned item, in its `database_id` with its `properties`. An `owner` of type `person_name` is written as text, or resolved to a Notion user if the mapped property is a people property.
+   3. Run `brain sync record` with `{ "records": [ { "id": "<mtg-id>", "tasks": ["<new task page id>", …] } ] }`.
+2. **Notes, meeting and proposals:**
+   1. Run `brain sync render --changed`.
+   2. For each item:
+      - **`action: create`:** create a page in `database_id` with `properties`.
+      - **`action: update`:** update `page_id` with `properties`.
+      - **Meeting relations with `"mode": "add"`:** add the listed pages and keep the existing ones.
+      - **`"mode": "if_empty"`:** write only if the property is empty in Notion.
+      - **`body` (decisions, questions):** replace the page body with it.
+      - **`sections` (projects):** replace only the children of the toggle heading with that exact name ("Brief", "Decision log"). If the toggle is missing, report `SECTION_NOT_FOUND` for that page and change nothing on it (decision 0026).
+   3. **Pending relations:** items that list `pending_relations` reference notes not yet published. Publish and record those first, then run `sync render --changed` again.
+   4. Run `brain sync record` with one record per page written: `{ "id", "notion": <page id>, "synced_at": <now>, "published": <the item's published> }`.
+3. **Commit:** `publish: <meeting title> <date>`. Then run `brain log publish <mtg-id> pages=<n>`, and commit it with the publish.
+
+## If Notion fails partway
+
+`sync record` stores only what you actually wrote. Re-running `sync render --changed` later produces exactly what's still missing. Report the failure and stop; don't retry in a loop. The brain-side ingest is already committed and stays valid.
