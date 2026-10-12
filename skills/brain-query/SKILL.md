@@ -1,6 +1,6 @@
 ---
 name: brain-query
-description: Answer a question from the user's second brain with citations: what was decided and why, who someone is, a date, budget, owner or other key fact, what changed and when. Works from the brain repo or any repo linked to it with `brain link`. Read-only. Use when the user asks "what did we decide about…", "why did we…", "who is…", "when is the launch…", "what do we know about…", or when the repo's "Ultimate Brain" block says to consult the brain before a decision.
+description: Answer a question from the user's second brain with citations, such as what was decided and why, who someone is, a date, budget, owner or other key fact, what changed and when. Works from the brain repo or any repo linked to it with `brain link`. Read-only. Use when the user asks "what did we decide about…", "why did we…", "who is…", "when is the launch…", "what do we know about…", or when the repo's "Ultimate Brain" block says to consult the brain before a decision.
 ---
 
 # Answer from the brain
