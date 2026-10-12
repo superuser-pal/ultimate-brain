@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
@@ -113,4 +113,30 @@ test("init can record the new default brain without inspecting the product repos
     { brain: await realpath(target) },
   );
   assert.equal(init.json.data.default_config.written, true);
+});
+
+test("init installs every shipped skill and --force leaves existing skill files alone", async (context) => {
+  const root = await scratch(context);
+  const target = join(root, "skills-brain");
+  const names = (await readdir(join(import.meta.dirname, "..", "skills"), { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+  assert.ok(names.length >= 6);
+
+  const init = await brain(["init", target, "--owner", "Test Owner", "--no-git", "--json"], root);
+  assert.equal(init.code, 0, init.stderr);
+  for (const name of names) {
+    assert.ok(init.json.data.created.includes(`.agents/skills/${name}/SKILL.md`), name);
+    assert.equal(
+      await readFile(join(target, ".agents", "skills", name, "SKILL.md"), "utf8"),
+      await readFile(join(import.meta.dirname, "..", ".agents", "skills", name, "SKILL.md"), "utf8"),
+    );
+  }
+
+  const other = join(root, "forced");
+  await mkdir(join(other, ".agents", "skills", "brain-query"), { recursive: true });
+  await writeFile(join(other, ".agents", "skills", "brain-query", "SKILL.md"), "mine\n");
+  const forced = await brain(["init", other, "--owner", "Test Owner", "--no-git", "--force", "--json"], root);
+  assert.equal(forced.code, 0, forced.stderr);
+  assert.ok(forced.json.data.skipped.includes(".agents/skills/brain-query/SKILL.md"));
+  assert.equal(await readFile(join(other, ".agents", "skills", "brain-query", "SKILL.md"), "utf8"), "mine\n");
 });
