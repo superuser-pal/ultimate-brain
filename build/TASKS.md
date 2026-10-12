@@ -6,7 +6,7 @@
 
 > **2026-10-12 — Status: v1 is built; wave 4 (dogfood) is next. Codex is out of tokens, so Claude Code takes the open CX work again (fresh-context Claude reviewer per PR; the user merges).**
 > - **Done:** every CLI command in spec/cli.md, all six skills (ingest, apply, query, connect-notion, sync, notion-change), the plugin and Codex mirror, the eval (passes blind, eval/ingest/RESULTS.md), and the Notion space (built, connected, and checked live with brain-notion-change).
-> - **Next, in order:** (1) CX-16, the Codex skills installed by `init`/`link` (decision 0029, not started); (2) CC-12, setting up the user's real brain together (choose its folder and a private GitHub repo, `brain init`, connect-notion, install the plugin, link 1–2 code repos, ingest the first reviewed meetings: this is U-03); (3) U-05, two weeks of real use; (4) CX-13 fixes from dogfooding.
+> - **Next, in order:** (1) CC-12, setting up the user's real brain together (choose its folder and a private GitHub repo, `brain init`, connect-notion, install the plugin, link 1–2 code repos, ingest the first reviewed meetings: this is U-03); (2) U-05, two weeks of real use; (3) CX-13 fixes from dogfooding.
 > - **Open with the user:** U-03 (pick 3–5 reviewed meetings) is deferred to CC-12. The live Notion write test (one "TEST · delete me" project page) has not been approved yet, so don't run it without a yes.
 > - **Earlier:** Claude took over CX-04 to CX-06 and CX-09 while Codex was out; Codex did CX-03, CX-07, CX-08 and CX-10 to CX-15.
 
@@ -99,7 +99,7 @@ Implement the `add_link` kind (spec/schema.md §11, §11.2; spec/cli.md §5.6, �
 ### CX-15 · Ingest scorer · `done` (PR #38) (Codex; needs CC-07 cases)
 Implement the scorer specified in `eval/ingest/README.md` ("Scoring spec"): compare a run folder with the base fixture against a case's `expected.json`, report per-category recall and precision, `must_not` failures and a verdict; support `--skip-kinds add_link` until CX-14. **Acceptance:** unit tests with a hand-made run folder per verdict path (pass, low recall, `must_not` hit, stop case modified).
 
-### CX-16 · Ship and install the Codex skills · `todo` (Claude Code while Codex is out; decision 0029)
+### CX-16 · Ship and install the Codex skills · `done` (PR #43) (Claude Code while Codex is out; decision 0029)
 Include `.agents/skills/` in the npm package. `brain init` copies every skill into the new brain (spec/cli.md §5.1 step 3), and `brain link` writes and refreshes `.agents/skills/brain-query/` in the linked repo (§5.12 step 3; every skill file listed in `files` with its action, stale files `removed`). **Acceptance:** from the packed tarball, `init` creates `.agents/skills/<name>/SKILL.md` for every skill in `skills/`; running `link` twice changes no bytes; a stale file in `.agents/skills/brain-query/` is removed; other `.agents/` content is untouched.
 
 ### CX-09 · Fixture brain · `done` (PR #9)
