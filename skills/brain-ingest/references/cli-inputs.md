@@ -21,41 +21,29 @@ The JSON the ingest passes to the CLI, taken from a real run on the synthetic Ac
 
 ## 2. The new-notes batch
 
-All new notes of one meeting in one call, with ids from `brain id new`. Shortened from the real run:
+All new notes of one meeting in one call, with ids from `brain id new`. **The complete batch from the real run is [example-batch.json](example-batch.json).** It is valid `note new` input for `tests/fixtures/brain-acme`: the source, meeting, person, two decisions, question and risk, all referencing each other. Only the source body is shortened.
+
+An **excerpt** (not runnable on its own): the meeting and one decision, showing how the pair references each other.
 
 ```json
-{ "notes": [
-  { "type": "source", "id": "src-vdcsmjex", "...": "as in §1" },
-  { "type": "meeting", "id": "mtg-pcpyn31n", "title": "Acme launch review",
-    "frontmatter": {
-      "summary": "Launch fixed for 15 Feb 2027, Contentful chosen as blog CMS, budget raised to 95000 EUR.",
-      "date": "2026-12-10",
-      "attendees": ["per-3h8w2n6c", "per-9t2c6m4a", "per-zzvs98vn"],
-      "source": "src-vdcsmjex",
-      "decisions": ["dec-axker49q", "dec-xe9x6apm"],
-      "questions": ["que-wtnyy4r6", "que-zv7ckbtk"],
-      "area": "area-2m7c4h8n", "projects": ["prj-9x4t1b7e"], "sources": ["src-vdcsmjex"] },
-    "body": "## Summary\n…\n\n## Decisions\n- [Use Contentful as the blog CMS](../decisions/2026-12-10-use-contentful-as-the-blog-cms.md)\n- Send the launch announcement draft on Fridays for review (tentative).\n\n## Action items\n- Set up the Contentful space — Carlos Ruiz — 2026-12-17\n…" },
-  { "type": "person", "id": "per-zzvs98vn", "title": "Lucía Fernández",
-    "frontmatter": {
-      "summary": "Marketing lead at Acme; writing the blog launch post for the website.",
-      "org": "org-6d1f9z3k", "aliases": ["Lucía", "Lucia Fernandez"], "projects": ["prj-9x4t1b7e"], "sources": ["mtg-pcpyn31n"],
-      "facts": { "role": "marketing lead" },
-      "timeline": [ { "field": "role", "value": "marketing lead", "from": "2026-12-10", "learned": "2026-12-10", "source": "mtg-pcpyn31n", "assessment": "accepted" } ] },
-    "body": "Marketing lead at [Acme](../orgs/acme.md), first seen at the [10 Dec launch review](../meetings/2026-12-10-acme-launch-review.md).\n" },
-  { "type": "decision", "id": "dec-xe9x6apm", "title": "Use Contentful as the blog CMS",
-    "frontmatter": {
-      "summary": "Acme's blog runs on Contentful rather than a custom CMS; chosen over Strapi for its editor.",
-      "date": "2026-12-10", "assessment": "accepted", "decided_in": "mtg-pcpyn31n", "deciders": ["per-9t2c6m4a"],
-      "area": "area-2m7c4h8n", "projects": ["prj-9x4t1b7e"], "sources": ["mtg-pcpyn31n"] },
-    "body": "## Decision\n…\n\n## Context\n…\n\n## Consequences\n…\n\n## Sources\n- [Acme launch review, 10 Dec](../meetings/2026-12-10-acme-launch-review.md)\n" },
-  { "type": "question", "id": "que-zv7ckbtk", "title": "Migrating old blog posts to Contentful could delay the launch",
-    "frontmatter": {
-      "summary": "Risk raised by Carlos: moving old blog posts into Contentful may push back the 15 Feb launch.",
-      "kind": "risk", "raised_in": "mtg-pcpyn31n", "area": "area-2m7c4h8n", "projects": ["prj-9x4t1b7e"], "sources": ["mtg-pcpyn31n"],
-      "relations": [ { "type": "about", "target": "dec-axker49q" } ] },
-    "body": "Raised by [Carlos Ruiz](../people/carlos-ruiz.md) at the [10 Dec launch review](../meetings/2026-12-10-acme-launch-review.md).\n" }
-] }
+{ "type": "meeting", "id": "mtg-pcpyn31n", "title": "Acme launch review",
+  "frontmatter": {
+    "summary": "Launch fixed for 15 Feb 2027, Contentful chosen as blog CMS, budget raised to 95000 EUR.",
+    "date": "2026-12-10",
+    "attendees": ["per-3h8w2n6c", "per-9t2c6m4a", "per-zzvs98vn"],
+    "source": "src-vdcsmjex",
+    "decisions": ["dec-axker49q", "dec-xe9x6apm"],
+    "questions": ["que-wtnyy4r6", "que-zv7ckbtk"],
+    "area": "area-2m7c4h8n", "projects": ["prj-9x4t1b7e"], "sources": ["src-vdcsmjex"] },
+  "body": "## Summary\n…" }
+```
+```json
+{ "type": "decision", "id": "dec-xe9x6apm", "title": "Use Contentful as the blog CMS",
+  "frontmatter": {
+    "summary": "Acme's blog runs on Contentful rather than a custom CMS; chosen over Strapi for its editor.",
+    "date": "2026-12-10", "assessment": "accepted", "decided_in": "mtg-pcpyn31n", "deciders": ["per-9t2c6m4a"],
+    "area": "area-2m7c4h8n", "projects": ["prj-9x4t1b7e"], "sources": ["mtg-pcpyn31n"] },
+  "body": "## Decision\n…\n\n## Context\n…\n\n## Consequences\n…\n\n## Sources\n- [Acme launch review, 10 Dec](../meetings/2026-12-10-acme-launch-review.md)\n" }
 ```
 
 Things the CLI checks that are easy to get wrong:
