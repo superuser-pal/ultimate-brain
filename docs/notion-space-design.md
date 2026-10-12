@@ -76,6 +76,8 @@ Ongoing responsibilities (clients, health, learning…).
 | Type | Select: Business, Personal | You |
 | Goals | Relation → Goals | You |
 | Projects | Relation → Projects | You |
+| Meetings | Relation → Meetings (two-way with Area) | Brain |
+| Tasks | Relation → Tasks (two-way with Area) | You |
 | Archived | Checkbox | You |
 
 ### 3.2 Goals
@@ -119,6 +121,7 @@ Notion-owned entirely (0020). Not mirrored as brain notes; the brain snapshots t
 | Meetings | Relation → Meetings | Brain |
 | Decisions | Relation → Decisions | Brain |
 | Questions | Relation → Questions | Brain |
+| Tasks | Relation → Tasks (two-way with Project) | You |
 | Key Facts | Text | Brain: current key facts, e.g. "Budget: 80000 EUR · Launch date: 2027-02" (format in spec/cli.md §5.14.4) |
 | Archived | Checkbox | You |
 
@@ -138,6 +141,8 @@ The inbound source. Your Notion AI meeting notes live here (0012, 0007).
 | Ingested At | Date | System |
 | Decisions | Relation → Decisions | Brain |
 | Questions | Relation → Questions | Brain |
+| Tasks | Relation → Tasks (two-way with Meeting) | You |
+| Review Items | Relation → Review (two-way with Source Meeting) | Brain |
 | Brain ID | Text | System (the meeting record's id, `mtg-…`) |
 
 The brain **never edits the meeting page body** (0007). Instead of publishing a second summary, it fills the relations (Decisions, Questions, People, Project) and links the created tasks. Your reviewed minutes stay the human summary; the brain's meeting note is for agents.
@@ -284,7 +289,7 @@ The prompts live in [notion/prompts/](../notion/prompts/), each with its **Verif
 | 7 | [Spaces and views](../notion/prompts/07-spaces-views.md) | the views of §5 |
 | 8 | [Navigation](../notion/prompts/08-navigation.md) | tier 1 and tier 2 synced navigation |
 
-When this design changes, update the matching prompt file in the same change (decision 0022).
+When this design changes, update the matching prompt file in the same change (decision 0022). Spaces that already exist get a migration in [notion/migrations/](../notion/migrations/), written by the `brain-notion-change` skill.
 
 ### After building
 See "After building" in [notion/CHECKLIST.md](../notion/CHECKLIST.md): connect the brain to Notion, map your Tasks database (0018), verify the live space (0022).
