@@ -99,9 +99,6 @@ Implement the `add_link` kind (spec/schema.md §11, §11.2; spec/cli.md §5.6, �
 ### CX-15 · Ingest scorer · `todo` (Codex; needs CC-07 cases)
 Implement the scorer specified in `eval/ingest/README.md` ("Scoring spec"): compare a run folder with the base fixture against a case's `expected.json`, report per-category recall and precision, `must_not` failures and a verdict; support `--skip-kinds add_link` until CX-14. **Acceptance:** unit tests with a hand-made run folder per verdict path (pass, low recall, `must_not` hit, stop case modified).
 
-### CX-16 · Ship and install the Codex skills · `todo` (Codex; needs decision 0029)
-Answers the CX-12 spec question. Include `.agents/skills/` in the npm package; `brain init` copies all skills into the new brain (spec/cli.md §5.1 step 3); `brain link` writes and refreshes `.agents/skills/brain-query/` in the linked repo (§5.12 step 3). **Acceptance:** from the packed tarball, `init` creates `.agents/skills/<name>/SKILL.md` for every skill in `skills/`; `link` twice changes no bytes; a stale file in `.agents/skills/brain-query/` is removed; other `.agents/` content is untouched.
-
 ### CX-09 · Fixture brain · `done` (PR #9)
 `tests/fixtures/brain-acme/`: a small synthetic brain (fictional client Acme, people, a project with key-fact timelines, decisions incl. one superseded, open questions, one goal) that passes lint. Used by all tests and by CC-07. **Acceptance:** fictional data only; covers every v1 note type.
 
