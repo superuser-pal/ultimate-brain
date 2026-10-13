@@ -1,6 +1,12 @@
 # Extraction rules (step 6)
 
-How to read one meeting's minutes and decide what becomes a note, what becomes a proposal and what is left out. The minutes follow notion/minutes-format.md: Attendees, Decisions, Action items, Facts & numbers, Open questions, Risks, Summary.
+How to read one meeting's minutes and decide what becomes a note, what becomes a proposal and what is left out. The minutes may follow notion/minutes-format.md (Attendees, Decisions, Action items, Facts & numbers, Open questions, Risks, Summary), or any other headings, such as Notion AI's. The format is a hint: classify each line by what it says, not by the heading it sits under.
+
+## Who is who
+
+- **The owner:** "I", "me" and descriptions of the owner's role in the minutes ("the new team member" when that is the owner) mean the owner in `brain.json`. Link them to the owner's person note. Keep the wording verbatim in quoted facts.
+- **Mentioned people** (named, not attendees) get a person note only when they own something, hold a stated role relevant to the work, or have an action item. Otherwise their name stays in the text, with no note.
+- **Projects are per item.** A meeting may touch several projects: set `projects` on each decision, question and task from what that item is about, and list every one on the meeting. Ask only when an item could belong to two.
 
 ## What each part of the minutes becomes
 

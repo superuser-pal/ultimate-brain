@@ -15,7 +15,8 @@ The JSON the ingest passes to the CLI, taken from a real run on the synthetic Ac
 ```
 
 - **`source_key`:** `notion:<page id>` in Notion mode. In Markdown-only mode, use `url:https://…` if the minutes have a URL, else `agent:<agent>/<id>`, where `<id>` is any stable string you choose (e.g. `agent:claude-code/2026-12-10-acme-launch-review`). It records where the text came from; duplicates are detected by `content_hash`, not by this key.
-- **Source id:** take it from the same `brain id new` call as the other notes (step 7); the step 3 dry-run runs without one. All sources live in `sources/notion/` in v1, whatever their key.
+- **Body:** the minutes as defined in [notion.md](notion.md) "What counts as minutes", in Notion mode: the AI summary and the user's notes, without the page template and footnote links. Keep them otherwise verbatim.
+- **Source id:** take it from the same `brain id new` call as the other notes (step 7); the step 3 dry-run runs without one. Steps 3 and 7 use the same item; step 7 only adds the `id`. All sources live in `sources/notion/` in v1, whatever their key.
 - **`origin_edited`:** the Notion page's `last_edited_time` (Notion mode only).
 - **Do not set `content_hash` or `captured`;** the CLI sets both. The body must use LF line endings.
 - **Title:** `<meeting title> (minutes)`. `file_date` is the meeting date.
