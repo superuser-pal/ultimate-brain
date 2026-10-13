@@ -12,7 +12,7 @@ On this page ("Review") add four linked views of "Review":
 3. List layout, named "What did I approve recently?": filter State is Applied and Last edited time is within the past month (relative date); sort Last edited time descending; show Name, Kind, Decision, After.
 4. List layout, named "What did I reject?": filter State is Closed; sort Last edited time descending; show Name, Kind, Decision, Why.
 
-Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included. In every view hide the properties "Brain ID" and "Last Synced". Show only the properties listed. Do not add other content.
+Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included. In every view hide the properties "Brain ID", "Last Synced", "Created time" and "Last edited time" unless the view lists them under show. Show only the properties listed. Do not add other content.
 ```
 
 ## Verify

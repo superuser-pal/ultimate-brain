@@ -12,7 +12,7 @@ On this page ("Projects") add four linked views of "Projects":
 3. Table layout, named "Which projects have gone quiet?": filter Status is Active and Last edited time is before one month ago (relative date); sort Last edited time ascending; show Name, Last edited time, Last Synced, Client. (Last Synced is the one exception to the hide rule: show it here.)
 4. Table layout, named "What's finished?": filter Status is Done or Archived is checked (use a filter group joined with Or); sort Dates (end) descending; show Name, Dates, Client, Status.
 
-Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included. In every view hide the properties "Brain ID" and "Last Synced". Show only the properties listed. Do not add other content.
+Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included. In every view hide the properties "Brain ID", "Last Synced", "Created time" and "Last edited time" unless the view lists them under show. Show only the properties listed. Do not add other content.
 ```
 
 ## Verify

@@ -14,7 +14,7 @@ On this page ("Knowledge") add six linked views:
 5. Orgs, Table layout, named "Which clients do I have?": filter Relationship is Client; sort Name; show Name, Website, People, Projects.
 6. Capture Inbox, List layout, named "What's in my inbox?": filter Brain Status is New; sort Created descending; show Name, Created.
 
-Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included. In every view hide the properties "Brain ID" and "Last Synced". Show only the properties listed. Do not add other content.
+Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included. In every view hide the properties "Brain ID", "Last Synced", "Created time" and "Last edited time" unless the view lists them under show. Show only the properties listed. Do not add other content.
 ```
 
 ## Verify
