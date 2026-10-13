@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import type { Command, Warning } from "../lib/command.ts";
 import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
 import { appendLog } from "../lib/log.ts";
-import { listShippedSkillFiles } from "../lib/skills.ts";
+import { assertPlainPath, listShippedSkillFiles } from "../lib/skills.ts";
 
 const TEMPLATE_ROOT = fileURLToPath(new URL("../../templates/brain/", import.meta.url));
 const PACKAGE_JSON = fileURLToPath(new URL("../../package.json", import.meta.url));
@@ -29,7 +29,9 @@ export const upgradeCommand: Command = {
     const changes: Change[] = [];
     let unchanged = 0;
 
+    // Every check runs before the first write, so a refusal leaves the brain untouched.
     const template = await readFile(join(TEMPLATE_ROOT, "AGENTS.md"), "utf8");
+    await assertPlainPath(root, "AGENTS.md");
     const current = await readOptional(join(root, "AGENTS.md"));
     if (current === null) changes.push({ path: "AGENTS.md", action: "created", content: template });
     else {
@@ -41,14 +43,16 @@ export const upgradeCommand: Command = {
       } else if (own === block) unchanged += 1;
       else changes.push({ path: "AGENTS.md", action: "updated", content: current.replace(own, () => block) });
     }
-    if (await readOptional(join(root, "CLAUDE.md")) === null) changes.push({ path: "CLAUDE.md", action: "created", content: "@AGENTS.md\n" });
+    if (!(await exists(join(root, "CLAUDE.md")))) changes.push({ path: "CLAUDE.md", action: "created", content: "@AGENTS.md\n" });
     else unchanged += 1;
 
     // Skills (decision 0029): shipped files are product-owned, inside the folders of shipped skills only.
     const shipped = await listShippedSkillFiles();
     const shippedPaths = new Set(shipped.map((file) => file.relative));
+    for (const name of new Set(shipped.map((file) => file.relative.split("/")[0]!))) await assertPlainPath(root, `.agents/skills/${name}`, "folder");
     for (const file of shipped) {
       const path = `.agents/skills/${file.relative}`;
+      await assertPlainPath(root, path);
       const existing = await readOptionalBuffer(join(root, path));
       if (existing === null) changes.push({ path, action: "created", content: file.content });
       else if (existing.equals(file.content)) unchanged += 1;
@@ -57,6 +61,7 @@ export const upgradeCommand: Command = {
     for (const name of new Set(shipped.map((file) => file.relative.split("/")[0]!))) {
       for (const file of await listFiles(join(root, ".agents/skills", name))) {
         const inSkills = `${name}/${file}`;
+        await assertPlainPath(root, `.agents/skills/${inSkills}`);
         if (!shippedPaths.has(inSkills)) changes.push({ path: `.agents/skills/${inSkills}`, action: "removed" });
       }
     }
@@ -96,11 +101,15 @@ async function listFiles(folder: string): Promise<string[]> {
     for (const entry of entries) {
       const path = join(current, entry.name);
       if (entry.isDirectory()) await visit(path);
-      else if (entry.isFile()) files.push(relative(folder, path).split(sep).join("/"));
+      else files.push(relative(folder, path).split(sep).join("/"));
     }
   }
   await visit(folder);
   return files;
+}
+
+async function exists(path: string): Promise<boolean> {
+  try { await lstat(path); return true; } catch { return false; }
 }
 
 async function readOptional(path: string): Promise<string | null> {

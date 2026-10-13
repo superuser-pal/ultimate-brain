@@ -31,6 +31,7 @@ Decision 0024 lists user-facing commands. Some are skills that call the CLI; som
 | `brain sync` | skill (CC-08) | `sync plan`, `sync apply`, `index`, `views`, `sync render`, `sync record` |
 | `brain query` | skill (CC-10) | `query --candidates`, `index` |
 | `brain link` | CLI | `link` |
+| `brain upgrade` | CLI | `upgrade` |
 | `brain lint` / index | CLI | `lint`, `index` |
 | `brain notion-change` | skill (CC-11) | none |
 
@@ -176,7 +177,7 @@ Write commands append to `log/<YYYY-MM>.md` (month of `--now`), creating it with
 - <timestamp> <op> <id> "<title>"[ <key>=<value>]…
 ```
 
-`"` and `\` in titles are escaped with `\`, and CR and LF become `\r` and `\n`, so every entry is exactly one line. Values with spaces, quotes, backslashes or line breaks are quoted and escaped the same way. The file is created exclusively with its header, then lines are appended; an unreadable log is an error, never a reason to start the file over. Ops written by the CLI: `init`, `note-new`, `proposal-new`, `apply`, `correct`, `sync-create`, `sync-update`. Skills add their own (`ingest`, `publish`) with `brain log` (§5.11). `index` and `views` do not log.
+`"` and `\` in titles are escaped with `\`, and CR and LF become `\r` and `\n`, so every entry is exactly one line. Values with spaces, quotes, backslashes or line breaks are quoted and escaped the same way. The file is created exclusively with its header, then lines are appended; an unreadable log is an error, never a reason to start the file over. Ops written by the CLI: `init`, `note-new`, `proposal-new`, `apply`, `correct`, `sync-create`, `sync-update`, `upgrade`. Skills add their own (`ingest`, `publish`) with `brain log` (§5.11). `index` and `views` do not log.
 
 ---
 
@@ -629,7 +630,7 @@ Errors: `USAGE` (bad op or key=value), `UNKNOWN_ID`.
 brain link <repo-path> [--project <id>] [--area <id>] [--stack <name>]… [--repo-name <name>]
 ```
 
-Connects a consuming repo to the brain (0006, 0009; CX-08). Allowed root: `<repo-path>`; writes only `.brain`, `AGENTS.md`, `CLAUDE.md` and `.agents/skills/brain-query/` there. Refuses if `<repo-path>` is the brain or the product repo (`OUTSIDE_ROOT`).
+Connects a consuming repo to the brain (0006, 0009; CX-08). Allowed root: `<repo-path>`; writes only `.brain`, `AGENTS.md`, `CLAUDE.md` and `.agents/skills/brain-query/` there. Refuses if `<repo-path>` is the brain or the product repo, or if any part of `.agents/skills/brain-query/` is a symbolic link or the wrong file type (`OUTSIDE_ROOT`, before any write).
 
 1. **`.brain`** (JSON, committed with the repo; holds no machine paths):
    ```json
@@ -978,7 +979,7 @@ Brings the product-owned files of an existing brain up to the installed version 
 1. **`AGENTS.md` rules block.** Replace everything from the line `<!-- ultimate-brain:rules:start … -->` through `<!-- ultimate-brain:rules:end -->` with the same block from `templates/brain/AGENTS.md`. Text outside the markers is kept byte for byte.
    - `AGENTS.md` missing → written from the template (`created`).
    - Markers missing, out of order or duplicated → the file is left alone (`skipped`) with warning `AGENTS_BLOCK_NOT_FOUND`; the user restores the markers or merges by hand.
-2. **`CLAUDE.md`:** written as `@AGENTS.md` only if missing. An existing file is left alone.
+2. **`CLAUDE.md`:** written as `@AGENTS.md` only if missing. One that exists in any form (a file, or a link to `AGENTS.md`) is left alone.
 3. **Skills (0029).** For each skill the package ships in `.agents/skills/<name>/`:
    - write every shipped file whose content differs (`created` or `updated`);
    - remove files inside that skill's folder that the package no longer ships (`removed`).
@@ -1006,7 +1007,9 @@ brain upgrade --json
 
 `files` lists only the files created, updated, removed or skipped, sorted by path; `unchanged` counts the rest. The caller commits: `upgrade: ultimate brain <version>`.
 
-Errors: none of its own (brain resolution errors, §4).
+**Safety:** all checks run before the first write. `AGENTS.md`, `.agents`, `.agents/skills`, a shipped skill's folder, or any file in it that is a symbolic link, or a file where a folder belongs → `OUTSIDE_ROOT`, and nothing is written or removed. `brain link` checks `.agents/skills/brain-query/` the same way (§5.12).
+
+Errors: `OUTSIDE_ROOT`, and the brain resolution errors (§4).
 ---
 
 ## 6. Standard sequences (for skills)
