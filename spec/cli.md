@@ -736,7 +736,7 @@ brain sync record --input results.json  → stores page ids and what was publish
 | N ≠ S, B ≠ S, N ≠ B | you and the brain both changed it | conflict `BOTH_CHANGED` with `property`, N and B; the skill asks you, and `render` holds that property back until then (§5.14.4) |
 | S unknown (never published) | no baseline | if N = B, `updates` sets S = N; otherwise nothing, and the next render publishes B |
 
-Values are compared after the conversion in §5.14.1; relations compare as sorted lists. Dates of edits play no part, so an edit to one property never affects another.
+N, S and B are compared in the normalized Notion form of §5.14.1 (B is the brain's value as `render` would publish it: page ids, `{start, end}` dates, select labels); relations compare as sorted lists, Lifecycle compares case-insensitively, and an empty text equals `null`. A relation that links a note with no Notion page yet counts as changed in the brain, so a Notion edit to it is `BOTH_CHANGED`, never a correction that drops the unpublished link. An emptied or unknown Lifecycle is reported before the three-way comparison. Only a correction converts N to the brain's form. Dates of edits play no part, so an edit to one property never affects another.
 
 #### 5.14.1 Snapshot (input to `sync plan`) and value conversion
 
