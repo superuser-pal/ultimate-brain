@@ -26,6 +26,15 @@ How to read one meeting's minutes and decide what becomes a note, what becomes a
 | An answer to an existing open question | `add_to_note` on the question, with the answer and the meeting as source | `proposal new` |
 | A person working on an existing project they're not listed on (new or existing person) | `add_link` on the project, `field: people` | `proposal new` |
 
+## Owner rulings (decision 0031)
+
+When the user answers a pre-check question with content (a ruling, a correction, or a fact the minutes lack), that answer is a source:
+- add a **source note** to the batch: `title` `<meeting title> (owner ruling)`, `file_date` today, `source_key` `agent:<agent>/<meeting date>-<meeting slug>-ruling`, body = your question and the user's answer, verbatim;
+- every claim resting on it lists this source in `sources`, next to the minutes source;
+- a ruling that settles a decision becomes a decision note (when it passes the gate) citing both sources; the meeting's `## Decisions` links it instead of marking the line `^[ambiguous]`.
+
+Answers that only fix the input (a date, attendees, which spellings are one person) are not rulings: use them directly, with no source note.
+
 ## The decision gate (AGENTS.md rule 6)
 
 - **"(tentative)" does not lower a decision below the gate.** It only sets `assessment: provisional`. A tentative launch date passes the gate; a tentative routine ("send drafts on Fridays") does not, because routines never do.
