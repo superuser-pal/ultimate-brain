@@ -1,4 +1,4 @@
-import { readdir, readFile, realpath } from "node:fs/promises";
+import { lstat, readdir, readFile, realpath } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -35,4 +35,27 @@ export async function listShippedSkillFiles(only?: string): Promise<SkillFile[]>
   const selected = files.filter((file) => file.relative.includes("/") && (only === undefined || file.relative.startsWith(`${only}/`)));
   if (only !== undefined && selected.length === 0) throw new BrainError("INTERNAL", `Skill ${only} is not shipped with this package`);
   return selected.sort((a, b) => (a.relative < b.relative ? -1 : a.relative > b.relative ? 1 : 0));
+}
+
+/**
+ * Refuses (OUTSIDE_ROOT) a product-owned path under `root` whose existing parts are a symbolic link, a non-folder
+ * where a folder is needed, or a non-file at the end, so a write or removal can't follow a link out of the repo.
+ * Call it while planning, before anything is written.
+ */
+export async function assertPlainPath(root: string, path: string, last: "file" | "folder" = "file"): Promise<void> {
+  const parts = path.split("/");
+  for (let index = 1; index <= parts.length; index += 1) {
+    const current = parts.slice(0, index).join("/");
+    let metadata;
+    try {
+      metadata = await lstat(join(root, current));
+    } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") return;
+      throw error;
+    }
+    if (metadata.isSymbolicLink()) throw new BrainError("OUTSIDE_ROOT", `Refusing to write through a symbolic link: ${current}`);
+    const wantFolder = index < parts.length || last === "folder";
+    if (wantFolder && !metadata.isDirectory()) throw new BrainError("OUTSIDE_ROOT", `Expected a folder: ${current}`);
+    if (!wantFolder && !metadata.isFile()) throw new BrainError("OUTSIDE_ROOT", `Expected a file: ${current}`);
+  }
 }

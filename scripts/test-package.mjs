@@ -27,11 +27,13 @@ try {
   }
   const lint = await exec("npx", ["--no-install", "ultimate-brain", "lint", "--brain", "brain", "--json"], { cwd: temp });
   assert.equal(JSON.parse(lint.stdout).ok, true);
+  const upgrade = await exec("npx", ["--no-install", "ultimate-brain", "upgrade", "--brain", "brain", "--json"], { cwd: temp });
+  assert.deepEqual(JSON.parse(upgrade.stdout).data.files, []);
   for (const command of ["status", "index"]) {
     const result = await exec("npx", ["--no-install", "ultimate-brain", command, "--brain", "brain", "--json"], { cwd: temp });
     assert.equal(JSON.parse(result.stdout).ok, true);
   }
-  process.stdout.write("Packed CLI initializes and lints a brain successfully.\n");
+  process.stdout.write("Packed CLI initializes, lints and upgrades a brain successfully.\n");
 } finally {
   if (tarball !== undefined) await rm(tarball, { force: true });
   await rm(temp, { recursive: true, force: true });
