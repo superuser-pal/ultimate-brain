@@ -58,6 +58,8 @@ The "wow" is that it maintains and synthesizes itself. Tasks and project managem
 
 ## v2 (deferred, not rejected)
 
+The full, current backlog is [v2-ideas.md](v2-ideas.md). Summary:
+
 Agent-memory proposal loop, optional long-term memory provider as an index over Markdown (evaluate GBrain; see decisions/0008), topic research dossiers, person/client profiles, weekly digest, contradiction and staleness reports, schedulers (n8n / Hermes), email/Slack/Teams ingestion, privacy tiers, MCP server, multi-user/teams, hosted product, embeddings / vector search.
 
 ## How to evaluate reference repos
