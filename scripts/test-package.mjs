@@ -12,6 +12,10 @@ const temp = await mkdtemp(join(tmpdir(), "ultimate-brain-package-"));
 let tarball;
 
 try {
+  // Pack as a clean checkout does: no dist/ until prepack builds it (npm checks bin paths before that).
+  await rm(join(root, "dist"), { recursive: true, force: true });
+  const dryRun = await exec("npm", ["publish", "--dry-run"], { cwd: root, env: { ...process.env, npm_config_loglevel: "warn" } });
+  assert.doesNotMatch(dryRun.stderr, /No bin file found|invalid and removed/);
   const { stdout } = await exec("npm", ["pack", "--json"], { cwd: root });
   const [packed] = JSON.parse(stdout);
   tarball = join(root, packed.filename);
