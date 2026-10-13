@@ -155,30 +155,32 @@ function planExisting(workspace: Workspace, asOf: string, row: SnapshotRow, note
   const fields = notionFields(row.database, row.properties, asOf);
   if (Object.keys(fields).length > 1 && !isDeepStrictEqual(withoutAsOf(note.attributes.notion_fields), withoutAsOf(fields))) updates.notion_fields = fields;
   const published = isRecord(note.attributes.notion_published) ? note.attributes.notion_published : undefined;
+  const rendered = renderedBrainValues(note, workspace);
+  const publish = (name: string, value: unknown) => { updates.published = { ...(isRecord(updates.published) ? updates.published : {}), [name]: value }; };
   for (const [name, brainField] of brainProperties(row.database)) {
     if (!Object.hasOwn(row.properties, name)) continue;
     if (name === "Key Facts") { planKeyFacts(row, note, published, updates, out); continue; }
-    const n = convertedValue(workspace, row, name, row.properties[name], out.conflicts);
-    if (n === undefined && row.properties[name] !== null) continue;
-    const b = readBrainField(note, brainField);
-    const s = published?.[name];
+    // N, S and B are compared in Notion's normalized form (cli §5.14.1): page ids, {start,end} dates, select labels.
+    const n = row.properties[name]; const s = published?.[name]; const b = rendered[name] ?? null;
+    if (s === undefined) { if (sameValue(n, b)) publish(name, n); continue; }
+    if (sameValue(n, s)) continue;
+    if (!sameValue(b, s)) { if (sameValue(n, b)) publish(name, n); else { const value = brainValue(workspace, row, name, brainField, out.conflicts); if (value !== undefined || n === null) out.conflicts.push(conflict(row, "BOTH_CHANGED", `${name} changed in both Notion and brain`, name, value ?? null, readBrainField(note, brainField))); } continue; }
+    // Only Notion changed: your edit.
+    const value = brainValue(workspace, row, name, brainField, out.conflicts);
+    if (value === undefined && n !== null) continue;
     if (name === "Lifecycle") {
-      // Published values are Notion's ("Draft"); compare them as brain values ("draft").
-      const stored = s === undefined ? undefined : normalizeLifecycle(s);
-      if (stored !== undefined && !isDeepStrictEqual(n, stored) && n === null) { out.conflicts.push(conflict(row, "REQUIRED_EMPTY", `${name} cannot be empty`, name, n, b)); continue; }
-      if (stored !== undefined && !isDeepStrictEqual(n, stored) && !LIFECYCLES.includes(String(n))) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: note.id, property: name, reason: "UNKNOWN_OPTION" }); continue; }
-      if (stored !== undefined && !isDeepStrictEqual(n, stored) && isDeepStrictEqual(b, stored)) updates.lifecycle = n; else if (stored !== undefined && !isDeepStrictEqual(n, stored) && !isDeepStrictEqual(b, stored) && isDeepStrictEqual(n, b)) updates.published = { ...(isRecord(updates.published) ? updates.published : {}), [name]: select(n) }; else if (stored !== undefined && !isDeepStrictEqual(n, stored) && !isDeepStrictEqual(b, stored)) out.conflicts.push(conflict(row, "BOTH_CHANGED", `${name} changed in both Notion and brain`, name, n, b));
+      if (n === null) out.conflicts.push(conflict(row, "REQUIRED_EMPTY", `${name} cannot be empty`, name, null, note.attributes.lifecycle));
+      else if (!LIFECYCLES.includes(String(value))) out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: note.id, property: name, reason: "UNKNOWN_OPTION" });
+      else updates.lifecycle = value;
       continue;
     }
-    if (s === undefined) { if (isDeepStrictEqual(n, b)) updates.published = { ...(isRecord(updates.published) ? updates.published : {}), [name]: n }; continue; }
-    if (isDeepStrictEqual(n, s)) continue;
-    if (isDeepStrictEqual(b, s)) {
-      if (n === null && !optionalReference(brainField)) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: note.id, property: name, reason: "FACT_REMOVAL_NOT_SUPPORTED" }); continue; }
-      if ((name === "Name" || name === "Summary") && n === null) { out.conflicts.push(conflict(row, "REQUIRED_EMPTY", `${name} cannot be empty`, name, n, b)); continue; }
-      if (correctable(brainField)) out.corrections.push({ target: note.id, field: brainField, value: n, observed_at: row.last_edited, property: name, notion_value: n } as Correction & Record<string, unknown>);
-      else out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: note.id, property: name, reason: "NOT_CORRECTABLE" });
-    } else if (isDeepStrictEqual(n, b)) updates.published = { ...(isRecord(updates.published) ? updates.published : {}), [name]: n };
-    else out.conflicts.push(conflict(row, "BOTH_CHANGED", `${name} changed in both Notion and brain`, name, n, b));
+    if (n === null && !optionalReference(brainField)) {
+      if (name === "Name" || name === "Summary") out.conflicts.push(conflict(row, "REQUIRED_EMPTY", `${name} cannot be empty`, name, null, readBrainField(note, brainField)));
+      else out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: note.id, property: name, reason: "FACT_REMOVAL_NOT_SUPPORTED" });
+      continue;
+    }
+    if (correctable(brainField)) out.corrections.push({ target: note.id, field: brainField, value: value ?? null, observed_at: row.last_edited, property: name, notion_value: value ?? null } as Correction & Record<string, unknown>);
+    else out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: note.id, property: name, reason: "NOT_CORRECTABLE" });
   }
   if (Object.keys(updates).length > 1) out.updates.push(updates);
   if (row.database === "review") planDecision(row, note, out);
@@ -201,7 +203,7 @@ function planKeyFacts(row: SnapshotRow, note: Note, published: Record<string, un
     out.conflicts.push(conflict(row, "BOTH_CHANGED", `Key Facts/${key} changed in both Notion and brain`, `Key Facts/${key}`, n, b)); converged = false;
   }
   for (const key of Object.keys(stored)) if (!Object.hasOwn(notion, key)) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: note.id, property: `Key Facts/${key}`, reason: "FACT_REMOVAL_NOT_SUPPORTED" }); converged = false; }
-  if (converged && !isDeepStrictEqual(text, published?.["Key Facts"])) updates.published = { ...(isRecord(updates.published) ? updates.published : {}), "Key Facts": text };
+  if (converged && !sameValue(text, published?.["Key Facts"])) updates.published = { ...(isRecord(updates.published) ? updates.published : {}), "Key Facts": text };
 }
 
 function planDecision(row: SnapshotRow, proposal: Note, out: SyncPlan): void {
@@ -243,7 +245,7 @@ function notionFields(database: string, p: Record<string, unknown>, asOf: string
 
 function brainProperties(database: string): Array<[string, string]> {
   const common: Array<[string, string]> = [["Name", "title"], ["Summary", "summary"], ["Lifecycle", "lifecycle"]];
-  const extras: Record<string, Array<[string, string]>> = { goals: [["Why", "why"], ["Deadline", "facts.deadline"], ["Area", "area"]], projects: [["Key Facts", "facts"], ["Area", "area"], ["Goal", "goal"], ["Client", "client"], ["People", "people"]], people: [["Role", "facts.role"], ["Org", "org"]] };
+  const extras: Record<string, Array<[string, string]>> = { goals: [["Why", "why"], ["Deadline", "facts.deadline"], ["Area", "area"]], projects: [["Key Facts", "facts"], ["Area", "area"], ["Goal", "goal"], ["Client", "client"], ["People", "people"]], people: [["Role", "facts.role"], ["Org", "org"]], decisions: [["Assessment", "assessment"]], questions: [["Kind", "kind"]] };
   return [...common, ...(extras[database] ?? [])];
 }
 
@@ -253,6 +255,18 @@ function convertedValue(workspace: Workspace, row: SnapshotRow, name: string, va
   if (["Area", "Goal", "Client", "Org", "People"].includes(name)) return relationIds(workspace, value, conflicts, row, name);
   if (name === "Key Facts") return parseKeyFacts(value);
   return value;
+}
+
+/** A Notion value in the brain's form: brain ids for relations (one id for single references), YYYY-MM-DD dates, lowercase lifecycle. */
+function brainValue(workspace: Workspace, row: SnapshotRow, name: string, brainField: string, conflicts: Array<Record<string, unknown>>): unknown {
+  const value = convertedValue(workspace, row, name, row.properties[name], conflicts);
+  return Array.isArray(value) && ["area", "goal", "client", "org"].includes(brainField) ? value[0] ?? null : value;
+}
+
+/** Equal in Notion's normalized form; relations compare as sets, and an empty text equals null. */
+function sameValue(a: unknown, b: unknown): boolean {
+  const norm = (value: unknown) => Array.isArray(value) ? [...value].map(String).sort(compareCodePoints) : value === "" || value === undefined ? null : value;
+  return isDeepStrictEqual(norm(a), norm(b));
 }
 
 function readBrainField(note: Note, field: string): unknown {
@@ -340,7 +354,7 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     if (note.type === "meeting" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "MEETING_NOT_PUBLISHED" }); continue; }
     const rendered = renderedBrainValues(note, workspace); const published = isRecord(note.attributes.notion_published) ? note.attributes.notion_published : {};
     const properties: Record<string, unknown> = {}; const pending: Array<Record<string, unknown>> = []; const heldProperties = held?.get(note.id) ?? new Set<string>();
-    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name)) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (note.attributes.notion === undefined || !isDeepStrictEqual(value, published[name]))) properties[name] = encoded; }
+    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name)) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (note.attributes.notion === undefined || !Object.hasOwn(published, name) || !sameValue(value, published[name]))) properties[name] = encoded; }
     const content = renderedContent(note, workspace); if (content.hash !== undefined) rendered["@content"] = content.hash;
     const contentChanged = content.hash !== undefined && !isDeepStrictEqual(content.hash, published["@content"]);
     const isCreate = note.attributes.notion === undefined;
