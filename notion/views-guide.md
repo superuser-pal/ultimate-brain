@@ -155,7 +155,7 @@ Notion lets you shape how each database page opens: which properties sit in the 
 | Capture Inbox | Brain Status | Created | — | — |
 | Tasks | Status, Due | Project, Area, Meeting | Brain ID | Only if you use the default Tasks database |
 
-**Hide system properties everywhere.** Brain ID and Last Synced are plumbing (owner "system"). Hide them in every view and layout. Don't delete them, because the brain matches records by Brain ID.
+**Hide system properties everywhere.** Brain ID, Last Synced, Created time and Last edited time are plumbing (owner "system"). Hide them in every view and layout, except where a view lists one to show (for example Last edited time in "Which projects have gone quiet?"). Don't delete them, because the brain matches records by Brain ID.
 
 ---
 
