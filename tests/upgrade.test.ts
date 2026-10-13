@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
@@ -64,4 +64,43 @@ test("upgrade leaves an AGENTS.md without its markers alone and warns", async (c
   assert.deepEqual(run.json.data.files, [{ path: "AGENTS.md", action: "skipped" }]);
   assert.ok(run.json.warnings.some((warning: { code: string }) => warning.code === "AGENTS_BLOCK_NOT_FOUND"));
   assert.equal(await readFile(join(target, "AGENTS.md"), "utf8"), "My own rules only.\n");
+});
+
+test("upgrade refuses symbolic links and wrong file types before writing anything", async (context) => {
+  const { root, target } = await freshBrain(context);
+  const outside = join(root, "outside");
+  await mkdir(outside, { recursive: true });
+  await writeFile(join(outside, "precious.md"), "keep me\n");
+  const stale = join(target, ".agents/skills/brain-ingest/SKILL.md");
+  await writeFile(stale, "old skill\n");
+  const refuse = async (label: string) => {
+    const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
+    assert.equal(run.code, 5, `${label}: ${run.stdout}`);
+    assert.equal(run.json.error.code, "OUTSIDE_ROOT", label);
+    assert.equal(await readFile(stale, "utf8"), "old skill\n", label);
+    assert.equal(await readFile(join(outside, "precious.md"), "utf8"), "keep me\n", label);
+  };
+
+  // A skill folder that is a link out of the brain.
+  await rm(join(target, ".agents/skills/brain-query"), { recursive: true });
+  await symlink(outside, join(target, ".agents/skills/brain-query"));
+  await refuse("skill folder link");
+  // A file where a skill folder should be.
+  await rm(join(target, ".agents/skills/brain-query"));
+  await writeFile(join(target, ".agents/skills/brain-query"), "not a folder\n");
+  await refuse("file instead of folder");
+  // The whole skills folder is a link.
+  await rm(join(target, ".agents/skills/brain-query"));
+  await rename(join(target, ".agents/skills"), join(root, "skills-copy"));
+  await symlink(join(root, "skills-copy"), join(target, ".agents/skills"));
+  await refuse("skills folder link");
+});
+
+test("upgrade leaves a CLAUDE.md that links to AGENTS.md alone", async (context) => {
+  const { root, target } = await freshBrain(context);
+  await rm(join(target, "CLAUDE.md"));
+  await symlink("AGENTS.md", join(target, "CLAUDE.md"));
+  const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
+  assert.equal(run.code, 0, run.stdout);
+  assert.deepEqual(run.json.data.files, []);
 });
