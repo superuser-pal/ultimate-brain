@@ -12,7 +12,7 @@ On this page ("Plan") add:
 3. A linked view of "Areas", List layout, named "Which areas do I own?": filter Archived is unchecked; sort Type then Name; show Name, Type, Summary.
 4. A linked view of "Projects", Board layout, named "Which projects serve each goal?": group by Goal (show the empty group as "No goal"); filter Archived is unchecked and Status is not Done; sort Priority high to low; show Name, Status, Priority.
 
-Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included. In every view hide the properties "Brain ID" and "Last Synced". Show only the properties listed. Do not add other content.
+Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included. In every view hide the properties "Brain ID", "Last Synced", "Created time" and "Last edited time" unless the view lists them under show. Show only the properties listed. Do not add other content.
 ```
 
 ## Verify

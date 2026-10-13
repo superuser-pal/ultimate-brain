@@ -12,7 +12,7 @@ On this page ("Meetings") add four linked views of "Meetings":
 3. Table layout, named "What did the brain take in this week?": filter Brain Status is Ingested and Ingested At is within the past week (relative date); sort Ingested At descending; show Name, Date, Ingested At, Decisions, Questions.
 4. Table layout, named "All meetings by project": no filter; group by Project (show the empty group as "No project"); sort Date descending; show Name, Date, Brain Status, Attendees.
 
-Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included. In every view hide the properties "Brain ID" and "Last Synced". Show only the properties listed. Do not add other content.
+Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included. In every view hide the properties "Brain ID", "Last Synced", "Created time" and "Last edited time" unless the view lists them under show. Show only the properties listed. Do not add other content.
 ```
 
 ## Verify
