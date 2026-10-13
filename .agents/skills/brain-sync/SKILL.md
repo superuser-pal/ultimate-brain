@@ -12,7 +12,7 @@ Notion is the user's view of the brain. The brain is canonical (Markdown + Git),
 
 Then it publishes what the brain changed. **Always pull before you push**, so the user's edits are read before the brain republishes over them (spec/cli.md §5.14).
 
-Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come from `brain config get notion.databases`. Query each through its data source (retrieve the database, then use its `data_sources[0].id`).
+Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come from `brain config get notion.databases`. Query each through its data source (retrieve the database, then use its `data_sources[0].id`). If `brain` is not found (`command not found`), install it with `npm install -g github:superuser-pal/ultimate-brain`, then retry. Don't build it from a plugin folder.
 
 ## Pull
 
