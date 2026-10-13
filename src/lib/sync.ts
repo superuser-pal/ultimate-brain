@@ -104,7 +104,9 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
       if (item !== undefined) result.create.push(item);
       continue;
     }
-    planExisting(workspace, snapshot.as_of, row, note, result);
+    // A create whose publish failed has no Brain ID in Notion yet; treat the row as if it had it (cli §5.14.2).
+    const known = typeof brainId === "string" && brainId !== "" ? row : { ...row, properties: { ...row.properties, "Brain ID": note.id } };
+    planExisting(workspace, snapshot.as_of, known, note, result);
   }
   sortPlan(result);
   return result;
@@ -142,9 +144,9 @@ function createFromRow(workspace: Workspace, asOf: string, row: SnapshotRow, cre
   return { type, id, title, lifecycle: normalizeLifecycle(property(row.properties, "Lifecycle")) as string ?? "draft", frontmatter, body: "" };
 }
 
-/** Only values Notion already shows count as published; the rest stay unpublished so render sends them (cli §5.14, "S unknown"). */
+/** The baseline is what Notion shows (cli §5.14.2), empty values included, so render publishes the brain's values over them. */
 function publishedBaseline(row: SnapshotRow, rendered: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(rendered).filter(([name, value]) => Object.hasOwn(row.properties, name) && isDeepStrictEqual(value, row.properties[name])));
+  return Object.fromEntries(Object.keys(rendered).filter((name) => Object.hasOwn(row.properties, name)).map((name) => [name, row.properties[name]]));
 }
 
 function planExisting(workspace: Workspace, asOf: string, row: SnapshotRow, note: Note, out: SyncPlan): void {
@@ -163,6 +165,8 @@ function planExisting(workspace: Workspace, asOf: string, row: SnapshotRow, note
     if (name === "Lifecycle") {
       // Published values are Notion's ("Draft"); compare them as brain values ("draft").
       const stored = s === undefined ? undefined : normalizeLifecycle(s);
+      if (stored !== undefined && !isDeepStrictEqual(n, stored) && n === null) { out.conflicts.push(conflict(row, "REQUIRED_EMPTY", `${name} cannot be empty`, name, n, b)); continue; }
+      if (stored !== undefined && !isDeepStrictEqual(n, stored) && !LIFECYCLES.includes(String(n))) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: note.id, property: name, reason: "UNKNOWN_OPTION" }); continue; }
       if (stored !== undefined && !isDeepStrictEqual(n, stored) && isDeepStrictEqual(b, stored)) updates.lifecycle = n; else if (stored !== undefined && !isDeepStrictEqual(n, stored) && !isDeepStrictEqual(b, stored) && isDeepStrictEqual(n, b)) updates.published = { ...(isRecord(updates.published) ? updates.published : {}), [name]: select(n) }; else if (stored !== undefined && !isDeepStrictEqual(n, stored) && !isDeepStrictEqual(b, stored)) out.conflicts.push(conflict(row, "BOTH_CHANGED", `${name} changed in both Notion and brain`, name, n, b));
       continue;
     }
@@ -258,6 +262,7 @@ function readBrainField(note: Note, field: string): unknown {
 }
 function correctable(field: string): boolean { return ["title", "summary", "why", "area", "goal", "client", "org", "people"].includes(field) || field.startsWith("facts."); }
 function optionalReference(field: string): boolean { return ["goal", "client", "org"].includes(field); }
+const LIFECYCLES = ["draft", "reviewed", "disputed", "archived"];
 function normalizeLifecycle(value: unknown): unknown { return typeof value === "string" ? value.toLowerCase() : value; }
 function dateValue(value: unknown): unknown { return isRecord(value) && typeof value.start === "string" ? value.start.slice(0, 10) : value; }
 function blank(value: unknown): boolean { return value === undefined || value === null || value === ""; }

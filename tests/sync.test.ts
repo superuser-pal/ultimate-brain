@@ -117,3 +117,26 @@ test("sync publishes the brain's values for a Notion-created row whose brain-own
   assert.deepEqual(edit.json.data.conflicts, []);
   assert.equal(edit.json.data.updates[0].lifecycle, "reviewed");
 });
+
+test("sync keeps a Notion edit made before the first publish and refuses an emptied Lifecycle", async (context) => {
+  const dir = await fixtureCopy(context);
+  const page = "10000000-0000-4000-8000-0000000000ab";
+  const row = { database: "areas", page_id: page, last_edited: "2026-12-10T08:00:00Z", properties: { Name: "Initech", Summary: null, Lifecycle: null, "Brain ID": null, Archived: false } };
+  const plan = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot.json", { as_of: NOW, rows: [row] }), "--json"]);
+  const apply = await brain(["sync", "apply", "--brain", dir, "--now", NOW, "--input", await input(dir, "plan.json", plan.json.data), "--json"]);
+  const id = apply.json.data.create[0].id;
+  const early = { ...row, properties: { ...row.properties, Summary: "Ops" } };
+  const replan = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot2.json", { as_of: NOW, rows: [early] }), "--json"]);
+  assert.deepEqual(replan.json.data.conflicts.map((item: { code: string; property: string }) => [item.code, item.property]), [["BOTH_CHANGED", "Summary"]]);
+  const render = await brain(["sync", "render", "--brain", dir, "--now", NOW, "--changed", "--plan", await input(dir, "plan2.json", replan.json.data), "--json"]);
+  const item = render.json.data.items.find((entry: { id: string }) => entry.id === id);
+  assert.equal(item.properties.Summary, undefined);
+  assert.equal(item.properties.Lifecycle.value, "Draft");
+  await brain(["sync", "record", "--brain", dir, "--now", NOW, "--input", await input(dir, "record.json", { records: [{ id, notion: page, synced_at: NOW, published: { Lifecycle: "Draft" } }] }), "--json"]);
+  const cleared = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot3.json", { as_of: NOW, rows: [{ ...row, properties: { ...row.properties, Summary: null, Lifecycle: null, Archived: true } }] }), "--json"]);
+  assert.deepEqual(cleared.json.data.conflicts.map((item: { code: string; property: string }) => [item.code, item.property]), [["REQUIRED_EMPTY", "Lifecycle"]]);
+  const applied = await brain(["sync", "apply", "--brain", dir, "--now", NOW, "--input", await input(dir, "plan3.json", cleared.json.data), "--json"]);
+  assert.equal(applied.code, 0, applied.stdout);
+  const unknown = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot4.json", { as_of: NOW, rows: [{ ...row, properties: { ...row.properties, Lifecycle: "Foo" } }] }), "--json"]);
+  assert.ok(unknown.json.data.ignored.some((entry: { reason: string; property: string }) => entry.reason === "UNKNOWN_OPTION" && entry.property === "Lifecycle"));
+});
