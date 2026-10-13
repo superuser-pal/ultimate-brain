@@ -7,7 +7,7 @@ description: Apply the user's decisions on proposed changes to the brain. Shows 
 
 Proposals are changes the brain wants to make to existing notes (decision 0003). The user decides each one: approve, reject, or edit (edit means approve, but with the user's own value). This skill records those decisions and applies them through the CLI. Only the user decides. Never approve, reject or edit on their behalf, and never infer a decision from the minutes or from earlier chat.
 
-Run every CLI command as `brain <command> --brain <brain> --json`. Exit 1 means some items need attention; read them. Exit 2 or 4 means your command or input was wrong: fix it. Exit 3 or 5 means stop and report. Exit 10: report a bug.
+Run every CLI command as `brain <command> --brain <brain> --json`. Exit 1 means some items need attention; read them. Exit 2 or 4 means your command or input was wrong: fix it. Exit 3 or 5 means stop and report. Exit 10: report a bug. If `brain` is not found (`command not found`), install it with `npm install -g github:superuser-pal/ultimate-brain`, then retry. Don't build it from a plugin folder.
 
 ## Pick the mode
 
