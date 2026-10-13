@@ -134,26 +134,29 @@ It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md)
 
 ## 7. Database page layouts
 
-Notion lets you shape how each database page opens: which properties sit in the header, which are grouped in the side panel, and which are hidden. Set it once per database: open any row → `•••` → **Customize layout** (or *Customize page*).
+Notion lets you shape how each database page opens. Set it once per database: open any row as a full page → `•••` → **Customize layout**. It applies to every page of that database.
 
-- **Pinned:** in the header, under the title.
-- **Panel:** in the side panel or the property list.
+- **Heading:** the title plus pinned properties, left to right. Pin what *you* change; keep it to 2–4 so nothing falls into the side scroller.
+- **Property group:** one per layout, placed in the **main** page area or the **details panel**. Pinned properties leave it.
 - **Hidden:** shown only on *Show all properties*.
+- **Backlinks:** *Show always*, *On hover* or *Off*.
 
-| Database | Pinned | Panel | Hidden | Why |
-|---|---|---|---|---|
-| Areas | Type, Lifecycle | Summary, Goals, Projects, Archived | Brain ID, Last Synced | An area is mostly its links to goals and projects |
-| Goals | Status, Progress, Deadline | Why, Area, Key Results, Projects, Summary, Lifecycle, Archived | Brain ID, Last Synced | Progress and status at a glance |
-| Key Results | Progress, Done | Goal, Kind, Start, Current, Target, Unit, Due | — | You edit Current here |
-| Projects | Status, Priority, Dates | Area, Goal, Client, People, Key Facts, Summary, Lifecycle, Archived, Meetings, Decisions, Questions | Brain ID, Last Synced | Body = Brief + Decision log toggles; the panel holds the context |
-| Meetings | Date, Brain Status, Project | Attendees, Area, Decisions, Questions, Ingested At | Brain ID | Brain Status is the one field you change per meeting |
-| People | Role, Org | Email, Projects, Meetings, Summary, Lifecycle | Brain ID, Last Synced | Who they are and where they work |
-| Orgs | Relationship, Website | People, Projects, Summary, Lifecycle | Brain ID, Last Synced | — |
-| Decisions | Assessment, Date | Project, Decided In, Supersedes, Superseded By, Summary, Lifecycle | Brain ID, Last Synced | The body is brain-written: context, decision, consequences, sources |
-| Questions | Status, Kind | Project, Raised In, Summary, Lifecycle | Brain ID, Last Synced | You set Status |
-| Review | Decision, State, Kind | Before, After, Edited Value, Why, Target, Target Page, Source Meeting | Brain ID | Decide without scrolling: Decision is in the header |
-| Capture Inbox | Brain Status | Created | — | — |
-| Tasks | Status, Due | Project, Area, Meeting | Brain ID | Only if you use the default Tasks database |
+Relations the template already shows as linked views (meetings, tasks, questions) stay in the panel, out of the way.
+
+| Database | Heading (in order) | Property group: where · order | Hidden | Backlinks | Why |
+|---|---|---|---|---|---|
+| Areas | Type, Lifecycle | Panel · Summary, Goals, Projects, Meetings, Tasks, Archived | Brain ID, Last Synced | Off | An area is mostly its links to goals and projects |
+| Goals | Status, Progress, Deadline | Panel · Why, Area, Key Results, Projects, Summary, Lifecycle, Archived | Brain ID, Last Synced | Off | Progress and status at a glance |
+| Key Results | Progress, Current, Target | Main · Goal, Kind, Start, Unit, Done, Due | — | Off | No body; you edit Current in the heading |
+| Projects | Status, Priority, Dates | Panel · Key Facts, Client, Area, Goal, People, Summary, Lifecycle, Archived, Meetings, Decisions, Questions, Tasks | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel |
+| Meetings | Brain Status, Date, Project | Panel · Attendees, Area, Decisions, Questions, Tasks, Review Items | Brain ID, Ingested At | Off | Brain Status is the one field you change per meeting |
+| People | Role, Org | Panel · Email, Projects, Meetings, Summary, Lifecycle | Brain ID, Last Synced | On hover | Who they are and where they work |
+| Orgs | Relationship, Website | Panel · People, Projects, Summary, Lifecycle | Brain ID, Last Synced | On hover | — |
+| Decisions | Assessment, Date, Project | Panel · Decided In, Supersedes, Superseded By, Summary, Lifecycle | Brain ID, Last Synced | Show always | The body is brain-written; backlinks show supersede chains and mentions |
+| Questions | Status, Kind, Project | Panel · Raised In, Summary, Lifecycle | Brain ID, Last Synced, Created time | Off | You set Status |
+| Review | Decision, Kind, State | Main · Before, After, Why, Edited Value, Target, Target Page, Source Meeting | Brain ID, Created time, Last edited time | Off | No body; read Before, After and Why, then decide in the heading |
+| Capture Inbox | Brain Status | Main · Created | — | Off | Created is the only context a capture has |
+| Tasks | Status, Due | Panel · Project, Area, Meeting | Brain ID | Off | Only if you use the default Tasks database |
 
 **Hide system properties everywhere.** Brain ID, Last Synced, Created time and Last edited time are plumbing (owner "system"). Hide them in every view and layout, except where a view lists one to show (for example Last edited time in "Which projects have gone quiet?"). Don't delete them, because the brain matches records by Brain ID.
 
