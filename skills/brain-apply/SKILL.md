@@ -67,7 +67,7 @@ Run every CLI command as `brain <command> --brain <brain> --json`. Exit 1 means 
    1. Run `brain sync render --changed`, write the pages through the MCP, then `brain sync record`. The steps are the same as in the brain-ingest skill's references/notion.md "Publish": Review rows move to State Applied or Closed, and the changed notes are updated.
    2. Log it with `brain log publish - pages=<n>`; `sync record` itself does not log (§3.9, §5.14.6).
    3. Commit: `publish: apply results`.
-5. **Report** in at most 6 lines:
+5. **Report** briefly:
    - what changed (in words: "Acme budget is now 95000 EUR"; past 3 changes, give the count);
    - what was closed and why;
    - what failed;

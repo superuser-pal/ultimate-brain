@@ -23,7 +23,16 @@ A copy of the inputs in spec/cli.md §5.14, so the skill works from inside a bra
 ```
 
 - `database`: the `brain.json` key: `areas`, `goals`, `key_results`, `projects`, `people`, `orgs`, `decisions`, `questions` or `review`.
-- `properties`: the Notion property names exactly, with normalized values (the table in SKILL.md step 3). Empty text, select and date → `null`. Relations are sorted page ids.
+- `properties`: the Notion property names exactly, with normalized values:
+
+  | Notion type | Normalized value |
+  |---|---|
+  | title, text, select, status, url, email | string; empty → `null` |
+  | number | number or `null` |
+  | checkbox | boolean |
+  | date | `{"start": "<date or timestamp>", "end": "<…>" or null}` or `null` |
+  | relation | array of page ids, sorted |
+  | formula, rollup | their scalar result |
 - A property you did not read is left out, and is then not compared.
 
 ## Plan (input to `brain sync apply` and `brain sync render --plan`)

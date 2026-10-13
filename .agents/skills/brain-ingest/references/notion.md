@@ -15,13 +15,23 @@ The CLI never calls Notion (spec/cli.md §1). You read and write Notion through 
 
 ### What counts as minutes
 
-A meeting page can hold several things. The minutes, which become the source body, are:
-- the **Notion AI meeting notes**: the `<summary>` of the `<meeting-notes>` block (the transcript stays out);
-- the **user's own notes** on the page, such as a "My notes" toggle.
+The minutes are the page body **without the template parts**. Leave out:
+- the "Minutes format" callout (it holds the prompt, not minutes);
+- the "Before marking Reviewed" checklist;
+- the linked or inline Decisions, Questions and Tasks views.
 
-Leave out the page template: the "Before marking Reviewed" checklist and the inline Decisions, Questions and Tasks databases. Strip Notion AI footnote links (`[^/p/…]`); they cite the transcript and are often half the text.
+What remains has two parts:
+- **Minutes:** the AI-written minutes in the body. When the page holds a Notion AI meeting-notes block (`<meeting-notes>`), take only its `<summary>`; the transcript and the empty `<notes>` stay out.
+- **The user's notes:** the "My notes" toggle, or any other text the user wrote on the page.
 
-When the user's notes and the AI summary disagree, the user's notes are the user's own words: extract both, mark the claim `^[ambiguous]`, and raise it in the step 2 pre-check.
+**Source body, built the same way every time,** so the duplicate check (`content_hash`) recognises a re-run:
+1. `## Minutes`, a blank line, then the minutes;
+2. if the user's notes are not empty: a blank line, `## My notes`, a blank line, then the notes;
+3. drop wrapper tags (`<meeting-notes>`, `<summary>`, `<details>`) and the indentation they add;
+4. remove Notion AI footnote links (` [^/p/…]`, with the space before them); they cite the transcript and can be half the text;
+5. trim trailing spaces on every line; LF line endings.
+
+When the user's notes and the minutes disagree on a fact, ask in the pre-check (SKILL.md step 3) and use the user's answer. Until the user answers, mark the claim `^[ambiguous]`.
 
 **Read-only rule:** never change the meeting page's title, date or body (decision 0007). The ingest only sets relations and Brain Status / Ingested At, through `sync render`.
 
