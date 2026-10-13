@@ -13,8 +13,8 @@ The prompts are generated from [docs/notion-space-design.md](../docs/notion-spac
 - [ ] [5 · Ownership descriptions](prompts/05-ownership.md)
 - [ ] [6 · Templates](prompts/06-templates.md)
 - [ ] 6b · Paste [minutes-format.md](minutes-format.md) into the Meetings template (by hand)
-- [ ] [7 · Spaces and views](prompts/07-spaces-views.md)
-- [ ] [8 · Navigation](prompts/08-navigation.md)
+- [ ] [7 · Spaces and views](prompts/07-spaces-views.md): one prompt per Space (Home, Review, Meetings, Plan, Projects, Knowledge)
+- [ ] (optional) [8 · Navigation](prompts/08-navigation.md)
 
 Prefer to build Spaces and views by hand? [views-guide.md](views-guide.md) spells out every view (filters, sorts, grouping, visible properties, use case), the database page layouts and the navigation. It replaces steps 7 and 8.
 
