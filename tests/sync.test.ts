@@ -92,3 +92,28 @@ test("sync render gives supersede and merge reviews titles and truncates text", 
   assert.equal(byId.get("prp-1a1b2c3d")!.Before.value, "Carlos Ruiz");
   assert.equal((byId.get("prp-2a1b2c3d")!.After.value as string).length, 2000);
 });
+
+test("sync publishes the brain's values for a Notion-created row whose brain-owned properties are empty", async (context) => {
+  const dir = await fixtureCopy(context);
+  const page = "10000000-0000-4000-8000-0000000000aa";
+  const row = { database: "areas", page_id: page, last_edited: "2026-12-10T08:00:00Z", properties: { Name: "Initech", Summary: null, Lifecycle: null, "Brain ID": null, Archived: false } };
+  const plan = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot.json", { as_of: NOW, rows: [row] }), "--json"]);
+  assert.equal(plan.code, 0, plan.stdout);
+  const planPath = await input(dir, "plan.json", plan.json.data);
+  const apply = await brain(["sync", "apply", "--brain", dir, "--now", NOW, "--input", planPath, "--json"]);
+  assert.equal(apply.code, 0, apply.stdout);
+  const id = apply.json.data.create[0].id;
+  const render = await brain(["sync", "render", "--brain", dir, "--now", NOW, "--changed", "--plan", planPath, "--json"]);
+  const item = render.json.data.items.find((entry: { id: string }) => entry.id === id);
+  assert.equal(item.properties.Summary.value, "Initech");
+  assert.equal(item.properties.Lifecycle.value, "Draft");
+  const record = await brain(["sync", "record", "--brain", dir, "--now", NOW, "--input", await input(dir, "record.json", { records: [{ id, notion: page, synced_at: NOW, published: item.published }] }), "--json"]);
+  assert.equal(record.code, 0, record.stdout);
+  const published = { ...row, properties: { ...row.properties, Summary: "Initech", Lifecycle: "Draft", "Brain ID": id } };
+  const replan = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot2.json", { as_of: NOW, rows: [published] }), "--json"]);
+  assert.deepEqual([replan.json.data.updates, replan.json.data.corrections, replan.json.data.conflicts], [[], [], []]);
+  const edited = { ...published, properties: { ...published.properties, Lifecycle: "Reviewed" } };
+  const edit = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot3.json", { as_of: NOW, rows: [edited] }), "--json"]);
+  assert.deepEqual(edit.json.data.conflicts, []);
+  assert.equal(edit.json.data.updates[0].lifecycle, "reviewed");
+});
