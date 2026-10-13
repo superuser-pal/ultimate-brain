@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -142,4 +142,16 @@ test("link installs brain-query only, refreshes it, removes stale files and leav
   assert.deepEqual(second.json.data.files.filter((file: any) => file.path.startsWith(".agents/")), [
     { path: ".agents/skills/brain-query/SKILL.md", action: "unchanged" },
   ]);
+});
+
+test("link refuses a brain-query skill folder that links out of the repo", async (context) => {
+  const target = await repo(context);
+  const outside = await repo(context);
+  await writeFile(join(outside, "A-precious.md"), "keep me\n");
+  await mkdir(join(target, ".agents/skills"), { recursive: true });
+  await symlink(outside, join(target, ".agents/skills/brain-query"));
+  const run = await brain(["link", target, "--project", "prj-9x4t1b7e", ...BRAIN]);
+  assert.equal(run.code, 5, run.stdout);
+  assert.equal(run.json.error.code, "OUTSIDE_ROOT");
+  assert.equal(await readFile(join(outside, "A-precious.md"), "utf8"), "keep me\n");
 });

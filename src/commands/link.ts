@@ -7,7 +7,7 @@ import { BrainError } from "../lib/errors.ts";
 import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
 import type { Note } from "../lib/notes.ts";
 import { scanNotes } from "../lib/notes.ts";
-import { listShippedSkillFiles } from "../lib/skills.ts";
+import { assertPlainPath, listShippedSkillFiles } from "../lib/skills.ts";
 
 const START = "<!-- ultimate-brain:start -->";
 const END = "<!-- ultimate-brain:end -->";
@@ -235,13 +235,16 @@ async function planSkill(root: string): Promise<PlannedFile[]> {
   const shipped = await listShippedSkillFiles("brain-query");
   const planned: PlannedFile[] = [];
   const keep = new Set<string>();
+  await assertPlainPath(root, ".agents/skills/brain-query", "folder");
   for (const file of shipped) {
     const path = `.agents/skills/${file.relative}`;
+    await assertPlainPath(root, path);
     keep.add(path);
     planned.push({ path, before: await readOptional(root, path), after: file.content.toString("utf8") });
   }
   const folder = ".agents/skills/brain-query";
   for (const path of await listFiles(root, folder)) {
+    await assertPlainPath(root, path);
     if (!keep.has(path)) planned.push({ path, before: await readOptional(root, path), after: null });
   }
   return planned.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
