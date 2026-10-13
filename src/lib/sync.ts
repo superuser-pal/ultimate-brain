@@ -161,26 +161,26 @@ function planExisting(workspace: Workspace, asOf: string, row: SnapshotRow, note
     if (!Object.hasOwn(row.properties, name)) continue;
     if (name === "Key Facts") { planKeyFacts(row, note, published, updates, out); continue; }
     // N, S and B are compared in Notion's normalized form (cli §5.14.1): page ids, {start,end} dates, select labels.
-    const n = row.properties[name]; const s = published?.[name]; const b = rendered[name] ?? null;
-    if (s === undefined) { if (sameValue(n, b)) publish(name, n); continue; }
+    // Lifecycle compares case-insensitively; a link to a note not yet in Notion counts as a brain change.
+    const fold = (value: unknown) => name === "Lifecycle" && typeof value === "string" ? value.toLowerCase() : value;
+    const n = fold(row.properties[name]); const s = fold(published?.[name]); const b = fold(rendered[name] ?? null);
+    const brainChanged = !sameValue(b, s) || linksUnpublished(workspace, note, brainField);
+    if (s === undefined) { if (sameValue(n, b) && !brainChanged) publish(name, row.properties[name]); continue; }
     if (sameValue(n, s)) continue;
-    if (!sameValue(b, s)) { if (sameValue(n, b)) publish(name, n); else { const value = brainValue(workspace, row, name, brainField, out.conflicts); if (value !== undefined || n === null) out.conflicts.push(conflict(row, "BOTH_CHANGED", `${name} changed in both Notion and brain`, name, value ?? null, readBrainField(note, brainField))); } continue; }
-    // Only Notion changed: your edit.
     const value = brainValue(workspace, row, name, brainField, out.conflicts);
-    if (value === undefined && n !== null) continue;
-    if (name === "Lifecycle") {
-      if (n === null) out.conflicts.push(conflict(row, "REQUIRED_EMPTY", `${name} cannot be empty`, name, null, note.attributes.lifecycle));
-      else if (!LIFECYCLES.includes(String(value))) out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: note.id, property: name, reason: "UNKNOWN_OPTION" });
-      else updates.lifecycle = value;
-      continue;
-    }
-    if (n === null && !optionalReference(brainField)) {
+    if (value === undefined && !blank(n)) continue;
+    if (name === "Lifecycle" && blank(n)) { out.conflicts.push(conflict(row, "REQUIRED_EMPTY", `${name} cannot be empty`, name, null, note.attributes.lifecycle)); continue; }
+    if (name === "Lifecycle" && !LIFECYCLES.includes(String(value))) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: note.id, property: name, reason: "UNKNOWN_OPTION" }); continue; }
+    if (brainChanged) { if (sameValue(n, b) && !linksUnpublished(workspace, note, brainField)) publish(name, row.properties[name]); else out.conflicts.push(conflict(row, "BOTH_CHANGED", `${name} changed in both Notion and brain`, name, value ?? null, readBrainField(note, brainField))); continue; }
+    // Only Notion changed: your edit.
+    if (name === "Lifecycle") { updates.lifecycle = value; continue; }
+    if (!correctable(brainField)) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: note.id, property: name, reason: "NOT_CORRECTABLE" }); continue; }
+    if (blank(n) && !optionalReference(brainField)) {
       if (name === "Name" || name === "Summary") out.conflicts.push(conflict(row, "REQUIRED_EMPTY", `${name} cannot be empty`, name, null, readBrainField(note, brainField)));
       else out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: note.id, property: name, reason: "FACT_REMOVAL_NOT_SUPPORTED" });
       continue;
     }
-    if (correctable(brainField)) out.corrections.push({ target: note.id, field: brainField, value: value ?? null, observed_at: row.last_edited, property: name, notion_value: value ?? null } as Correction & Record<string, unknown>);
-    else out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: note.id, property: name, reason: "NOT_CORRECTABLE" });
+    out.corrections.push({ target: note.id, field: brainField, value: value ?? null, observed_at: row.last_edited, property: name, notion_value: value ?? null } as Correction & Record<string, unknown>);
   }
   if (Object.keys(updates).length > 1) out.updates.push(updates);
   if (row.database === "review") planDecision(row, note, out);
@@ -261,6 +261,13 @@ function convertedValue(workspace: Workspace, row: SnapshotRow, name: string, va
 function brainValue(workspace: Workspace, row: SnapshotRow, name: string, brainField: string, conflicts: Array<Record<string, unknown>>): unknown {
   const value = convertedValue(workspace, row, name, row.properties[name], conflicts);
   return Array.isArray(value) && ["area", "goal", "client", "org"].includes(brainField) ? value[0] ?? null : value;
+}
+
+/** True when a relation field links a note that has no Notion page yet: render leaves it out, so B alone would hide it. */
+function linksUnpublished(workspace: Workspace, note: Note, brainField: string): boolean {
+  if (!["area", "goal", "client", "org", "people"].includes(brainField)) return false;
+  const raw = note.attributes[brainField]; const ids = Array.isArray(raw) ? raw : raw === undefined || raw === null ? [] : [raw];
+  return ids.some((id) => typeof workspace.get(String(id))?.attributes.notion !== "string");
 }
 
 /** Equal in Notion's normalized form; relations compare as sets, and an empty text equals null. */
