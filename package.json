@@ -1,6 +1,6 @@
 {
   "name": "ultimate-brain",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CLI for an AI-assisted Markdown and Git second brain",
   "license": "MIT",
   "keywords": [
@@ -14,10 +14,11 @@
   ],
   "type": "module",
   "bin": {
-    "ultimate-brain": "./dist/cli.js",
-    "brain": "./dist/cli.js"
+    "ultimate-brain": "bin/brain.js",
+    "brain": "bin/brain.js"
   },
   "files": [
+    "bin",
     "dist",
     "spec/schemas",
     "templates/brain",
