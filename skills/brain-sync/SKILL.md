@@ -18,17 +18,10 @@ Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come 
 
 1. **Check:** run `brain status`. Sync needs `notion.configured`; if it's empty, run `brain-connect-notion` first.
 2. **Read** every row of every configured database through the Notion MCP: Areas, Goals, Key Results, Projects, People, Orgs, Decisions, Questions and Review, with all pages (follow `next_cursor`). Meetings and Capture Inbox are not read here: meetings belong to the ingest, and the inbox to classification.
-3. **Snapshot.** Write `snapshot.json` in the format of spec/cli.md §5.14.1, converting each property to its normalized value (the table in §5.14.1):
-
-   | Notion type | Normalized value |
-   |---|---|
-   | title, text, select, status, url, email | the string, or `null` when empty |
-   | relation | the sorted page ids |
-   | date | `{start, end}` |
-   | number, checkbox, formula, rollup | the scalar |
+3. **Snapshot.** Write `snapshot.json` in the format of [references/formats.md](references/formats.md), converting each property to its normalized value (the table there).
 
    Each row also carries `database` (the brain.json key), `page_id`, `last_edited` (the page's `last_edited_time`), and `"as_of"` = now. Leave out a property you didn't read; never send a guessed value.
-4. **Plan.** Run `brain sync plan --input snapshot.json`. It writes nothing. Save the reply's **`data` object** as `plan.json`; `sync apply` rejects the whole reply.
+4. **Plan.** Run `brain sync plan --input snapshot.json` once. It writes nothing. Save the reply's **`data` object** as `plan.json`; `sync apply` rejects the whole reply. Each run of `sync plan` makes new ids, so show the user this `plan.json` and apply this same file; never re-run the plan between showing and applying.
 5. **Show the user what will happen,** grouped:
    - **New from Notion** (`create`): "Project *Website for Globex* will be added to the brain."
    - **Your edits** (`corrections`): "Maria's role: Product Manager → Product lead."
@@ -57,13 +50,11 @@ Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come 
     - **`sections` (projects):** replace only the children of the toggle heading with that exact name ("Brief", "Decision log"). If a toggle is missing, report `SECTION_NOT_FOUND` for that page and leave the page alone (0026).
     - **Meeting relations:** `"mode": "add"` adds pages and keeps the existing ones. `"mode": "if_empty"` writes only to an empty property. Never write a meeting's Name, Date or body (0007).
     - **`pending_relations`:** these point to notes not published yet. Publish those first, record them, then render again.
-11. **Record:** run `brain sync record` with one record per page written: `{ "id", "notion": <page id>, "synced_at": <now>, "published": <the item's published> }`. Record only what you actually wrote. If a write failed, leave it out; the next render produces it again.
+11. **Record:** run `brain sync record` with `{ "records": [ … ] }`, one record per page written: `{ "id", "notion": <page id>, "synced_at": <now>, "published": <the item's published> }` (references/formats.md). Record only what you actually wrote. If a write failed, leave it out; the next render produces it again.
 12. **Log** with `brain log publish - pages=<n>` (`sync record` does not log), then **commit:** `publish: <n> pages to Notion`.
-13. **Report:**
-    - imported, corrected and applied;
-    - published (counts per database);
-    - every conflict still waiting for the user;
-    - anything that failed.
+13. **Report** briefly; with nothing waiting it fits in 2 lines:
+    - one line of counts: imported, corrected, applied, published;
+    - only if any: each conflict still waiting for the user, one line each with what they can do, and anything that failed.
 
 ## Rules
 

@@ -68,7 +68,7 @@ Run every CLI command as `brain <command> --brain <brain> --json`. Exit 1 means 
    2. Log it with `brain log publish - pages=<n>`; `sync record` itself does not log (§3.9, §5.14.6).
    3. Commit: `publish: apply results`.
 5. **Report** briefly:
-   - what changed (in words: "Acme budget is now 95000 EUR");
+   - what changed (in words: "Acme budget is now 95000 EUR"; past 3 changes, give the count);
    - what was closed and why;
    - what failed;
    - what is still pending.
