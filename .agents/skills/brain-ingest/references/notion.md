@@ -31,7 +31,7 @@ What remains has two parts:
 4. remove Notion AI footnote links (` [^/p/…]`, with the space before them); they cite the transcript and can be half the text;
 5. trim trailing spaces on every line; LF line endings.
 
-When the user's notes and the minutes disagree on a fact, ask in the pre-check (SKILL.md step 3) and use the user's answer. Until the user answers, mark the claim `^[ambiguous]`.
+When the user's notes and the minutes disagree on a fact, ask in the pre-check (SKILL.md step 3). The answer is an owner ruling ([extraction.md](extraction.md), decision 0031). Without an answer, mark the claim `^[ambiguous]`.
 
 **Read-only rule:** never change the meeting page's title, date or body (decision 0007). The ingest only sets relations and Brain Status / Ingested At, through `sync render`.
 
