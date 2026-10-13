@@ -140,3 +140,46 @@ test("sync keeps a Notion edit made before the first publish and refuses an empt
   const unknown = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot4.json", { as_of: NOW, rows: [{ ...row, properties: { ...row.properties, Lifecycle: "Foo" } }] }), "--json"]);
   assert.ok(unknown.json.data.ignored.some((entry: { reason: string; property: string }) => entry.reason === "UNKNOWN_OPTION" && entry.property === "Lifecycle"));
 });
+
+test("sync settles after one round trip for goals, projects and people created in Notion", async (context) => {
+  const dir = await fixtureCopy(context);
+  const area = "1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d";
+  const acme = "6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b9c";
+  const goal = "10000000-0000-4000-8000-0000000000c1";
+  const project = "10000000-0000-4000-8000-0000000000c2";
+  const person = "10000000-0000-4000-8000-0000000000c3";
+  const rows: Array<{ database: string; page_id: string; last_edited: string; properties: Record<string, unknown> }> = [
+    { database: "goals", page_id: goal, last_edited: "2026-12-10T08:00:00Z", properties: { Name: "Grow Acme", Summary: null, Lifecycle: null, "Brain ID": null, Why: "Biggest client", Deadline: { start: "2027-03-31", end: null }, Area: [area] } },
+    { database: "projects", page_id: project, last_edited: "2026-12-10T08:00:00Z", properties: { Name: "Acme portal", Summary: null, Lifecycle: null, "Brain ID": null, "Key Facts": null, Area: [area], Goal: [goal], Client: [acme], People: [] } },
+    { database: "people", page_id: person, last_edited: "2026-12-10T08:00:00Z", properties: { Name: "Ines Ortega", Summary: null, Lifecycle: null, "Brain ID": null, Role: "Engineer", Org: [acme] } },
+  ];
+  // One sync: plan, apply, render, write to the simulated Notion, record. Returns the plan.
+  const cycle = async (n: number) => {
+    const plan = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, `snapshot${n}.json`, { as_of: NOW, rows }), "--json"]);
+    assert.equal(plan.code, 0, plan.stdout);
+    const planPath = await input(dir, `plan${n}.json`, plan.json.data);
+    const apply = await brain(["sync", "apply", "--brain", dir, "--now", NOW, "--input", planPath, "--json"]);
+    assert.equal(apply.code, 0, apply.stdout);
+    const render = await brain(["sync", "render", "--brain", dir, "--now", NOW, "--changed", "--plan", planPath, "--json"]);
+    const items = render.json.data.items.filter((item: { page_id: string }) => rows.some((row) => row.page_id === item.page_id));
+    for (const item of items) {
+      const row = rows.find((entry) => entry.page_id === item.page_id)!;
+      for (const [name, encoded] of Object.entries(item.properties as Record<string, { type: string; value: unknown }>)) {
+        if (name === "Last Synced") continue;
+        row.properties[name] = encoded.type === "relation" ? [...(encoded.value as string[])].sort() : encoded.value === "" ? null : encoded.value;
+      }
+    }
+    const records = items.map((item: { id: string; page_id: string; published: unknown }) => ({ id: item.id, notion: item.page_id, synced_at: NOW, published: item.published }));
+    await brain(["sync", "record", "--brain", dir, "--now", NOW, "--input", await input(dir, `record${n}.json`, { records }), "--json"]);
+    return { plan: plan.json.data, items };
+  };
+  await cycle(1);
+  const second = await cycle(2);
+  assert.deepEqual({ corrections: second.plan.corrections, conflicts: second.plan.conflicts, updates: second.plan.updates }, { corrections: [], conflicts: [], updates: [] });
+  assert.deepEqual(second.items.map((item: { id: string; properties: Record<string, unknown> }) => [item.id, Object.keys(item.properties)]), []);
+  rows[1]!.properties.Client = [];
+  rows[2]!.properties.Role = "Lead engineer";
+  const edits = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot-edits.json", { as_of: NOW, rows }), "--json"]);
+  assert.deepEqual(edits.json.data.conflicts, []);
+  assert.deepEqual(edits.json.data.corrections.map((item: { field: string; value: unknown }) => [item.field, item.value]), [["client", null], ["facts.role", "Lead engineer"]]);
+});
