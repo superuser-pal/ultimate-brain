@@ -4,7 +4,28 @@ An AI-assisted second brain for solo knowledge workers. Knowledge lives in Markd
 
 This repository is the **product**: CLI, agent skills, schema, templates and the Notion space design. Each user's brain lives in its own private repository.
 
-**Status:** building v1. Nothing is usable yet.
+**Status:** v1, in use by its author. Expect changes.
+
+## Install
+
+Needs Node 22.6 or later.
+
+```sh
+npm install -g ultimate-brain
+brain init ~/brain --set-default   # a new brain repository
+brain --help
+```
+
+The agent skills come with it: `brain init` copies them into the brain for Codex, and Claude Code gets them as the `ultimate-brain` plugin.
+
+## Update
+
+```sh
+npm install -g ultimate-brain@latest
+cd ~/brain && brain upgrade && git commit -am "upgrade: ultimate brain"
+```
+
+`brain upgrade` refreshes the brain's product-owned rules and skills. It never touches your notes.
 
 ## Start here
 

@@ -1,23 +1,32 @@
 {
   "name": "ultimate-brain",
-  "version": "0.0.0",
-  "private": true,
-  "files": [
-    "dist",
-    "spec/schemas",
-    "templates/brain",
-    ".agents/skills",
-    "README.md"
-  ],
+  "version": "0.1.0",
   "description": "CLI for an AI-assisted Markdown and Git second brain",
+  "license": "MIT",
+  "keywords": [
+    "second-brain",
+    "knowledge-management",
+    "markdown",
+    "notion",
+    "claude-code",
+    "codex",
+    "cli"
+  ],
   "type": "module",
   "bin": {
     "ultimate-brain": "./dist/cli.js",
     "brain": "./dist/cli.js"
   },
+  "files": [
+    "dist",
+    "spec/schemas",
+    "templates/brain",
+    ".agents/skills",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc --project tsconfig.build.json",
-    "prepare": "npm run build",
     "prepack": "npm run build",
     "test:package": "node scripts/test-package.mjs",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
@@ -26,12 +35,12 @@
   "engines": {
     "node": ">=22.6"
   },
-  "devDependencies": {
-    "@types/node": "^24.0.0",
-    "typescript": "^5.9.0"
-  },
   "dependencies": {
     "ajv": "^8.17.1",
     "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
   }
 }

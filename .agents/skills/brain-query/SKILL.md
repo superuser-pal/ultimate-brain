@@ -9,7 +9,7 @@ Find the notes that answer the question, read them, and answer briefly, citing t
 
 ## Where the brain is
 
-If `brain` is not found (`command not found`), install it with `npm install -g github:superuser-pal/ultimate-brain`, then retry. Don't build it from a plugin folder.
+If `brain` is not found (`command not found`), install it with `npm install -g ultimate-brain`, then retry. Don't build it from a plugin folder.
 
 - **In the brain repo:** run `brain <command> --brain . --json`.
 - **In a linked repo** (it has a `.brain` file and an "Ultimate Brain" block in AGENTS.md): run `brain <command> --json` without `--brain`. The CLI finds the brain through `BRAIN_DIR` or `~/.config/ultimate-brain/config.json`, and reads `.brain` in the current folder to favour that repo's project.
