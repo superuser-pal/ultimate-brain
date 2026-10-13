@@ -286,8 +286,8 @@ The prompts live in [notion/prompts/](../notion/prompts/), each with its **Verif
 | 4 | [Formula and rollup](../notion/prompts/04-formula-rollup.md) | Key Results and Goals Progress |
 | 5 | [Ownership](../notion/prompts/05-ownership.md) | owner prefix in each property description (§2) |
 | 6 | [Templates](../notion/prompts/06-templates.md) | the templates of §4, plus step 6b: paste the minutes format by hand |
-| 7 | [Spaces and views](../notion/prompts/07-spaces-views.md) | the views of §5 |
-| 8 | [Navigation](../notion/prompts/08-navigation.md) | tier 1 and tier 2 synced navigation |
+| 7 | [Spaces and views](../notion/prompts/07-spaces-views.md) | the views of §5, one prompt per Space |
+| 8 (optional) | [Navigation](../notion/prompts/08-navigation.md) | tier 1 and tier 2 synced navigation |
 
 When this design changes, update the matching prompt file in the same change (decision 0022). Spaces that already exist get a migration in [notion/migrations/](../notion/migrations/), written by the `brain-notion-change` skill.
 
