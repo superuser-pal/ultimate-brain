@@ -4,14 +4,34 @@ The CLI never calls Notion (spec/cli.md §1). You read and write Notion through 
 
 ## Fetch (SKILL.md step 2)
 
-1. Query the `meetings` database for pages where **Brain Status = Reviewed**, sorted by Date ascending.
+1. Query the `meetings` database for pages where **Brain Status = Reviewed**, sorted by Date ascending. `brain.json` holds database ids; Notion queries take the **data source id**: retrieve the database first and query its `data_sources[0].id`.
 2. For each page, read:
    - **page id:** becomes `notion:<id>` as the source key, and the meeting note's `notion`;
    - **`last_edited_time`:** becomes the source's `origin_edited`;
    - **Name and Date:** become the meeting's title and date;
    - **Attendees, Project, Area:** relations to Notion pages. Map each page id back to a brain note through the `notion` field in `brain index --json` (`notes[].notion`);
-   - **the page body:** the minutes, verbatim.
+   - **the minutes:** see "What counts as minutes" below.
 3. **Put the Notion page id on the meeting note:** add `"notion": "<meeting page id>"` to the meeting's `frontmatter` in the `note new` batch. Publishing (step 11) updates that existing page and never creates a meeting page, so without the id `sync render` reports `MEETING_NOT_PUBLISHED`.
+
+### What counts as minutes
+
+The minutes are the page body **without the template parts**. Leave out:
+- the "Minutes format" callout (it holds the prompt, not minutes);
+- the "Before marking Reviewed" checklist;
+- the linked or inline Decisions, Questions and Tasks views.
+
+What remains has two parts:
+- **Minutes:** the AI-written minutes in the body. When the page holds a Notion AI meeting-notes block (`<meeting-notes>`), take only its `<summary>`; the transcript and the empty `<notes>` stay out.
+- **The user's notes:** the "My notes" toggle, or any other text the user wrote on the page.
+
+**Source body, built the same way every time,** so the duplicate check (`content_hash`) recognises a re-run:
+1. `## Minutes`, a blank line, then the minutes;
+2. if the user's notes are not empty: a blank line, `## My notes`, a blank line, then the notes;
+3. drop wrapper tags (`<meeting-notes>`, `<summary>`, `<details>`) and the indentation they add;
+4. remove Notion AI footnote links (` [^/p/…]`, with the space before them); they cite the transcript and can be half the text;
+5. trim trailing spaces on every line; LF line endings.
+
+When the user's notes and the minutes disagree on a fact, ask in the pre-check (SKILL.md step 3). The answer is an owner ruling ([extraction.md](extraction.md), decision 0031). Without an answer, mark the claim `^[ambiguous]`.
 
 **Read-only rule:** never change the meeting page's title, date or body (decision 0007). The ingest only sets relations and Brain Status / Ingested At, through `sync render`.
 

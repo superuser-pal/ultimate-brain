@@ -1,6 +1,12 @@
 # Extraction rules (step 6)
 
-How to read one meeting's minutes and decide what becomes a note, what becomes a proposal and what is left out. The minutes follow notion/minutes-format.md: Attendees, Decisions, Action items, Facts & numbers, Open questions, Risks, Summary.
+How to read one meeting's minutes and decide what becomes a note, what becomes a proposal and what is left out. The minutes may follow notion/minutes-format.md (Attendees, Decisions, Action items, Facts & numbers, Open questions, Risks, Summary), or any other headings, such as Notion AI's. The format is a hint: classify each line by what it says, not by the heading it sits under.
+
+## Who is who
+
+- **The owner:** "I", "me" and descriptions of the owner's role in the minutes ("the new team member" when that is the owner) mean the owner in `brain.json`. Link them to the owner's person note; if there is none, create it in the batch with `title` = the owner name in `brain.json`. Keep the wording verbatim in quoted facts.
+- **Mentioned people** (named, not attendees) get a person note only when they own a system, deliverable or decision named in the minutes, or have an action item. Otherwise their name stays in the text, with no note.
+- **Projects are per item.** A meeting may touch several projects: set `projects` on each decision and question from what that item is about, and list every one on the meeting. Ask only when an item could belong to two. Tasks get the meeting's projects (`sync tasks` takes no per-task project).
 
 ## What each part of the minutes becomes
 
@@ -19,6 +25,15 @@ How to read one meeting's minutes and decide what becomes a note, what becomes a
 | A standing requirement of the client ("Acme's legal team requires EU data residency") | `add_to_note` on the org, besides any decision that cites it | `proposal new` |
 | An answer to an existing open question | `add_to_note` on the question, with the answer and the meeting as source | `proposal new` |
 | A person working on an existing project they're not listed on (new or existing person) | `add_link` on the project, `field: people` | `proposal new` |
+
+## Owner rulings (decision 0031)
+
+When the user answers a pre-check question with content (a ruling, a correction, or a fact the minutes lack), that answer is a source:
+- add a **source note** to the batch: `title` `<meeting title> (owner ruling)`, `file_date` today, `source_key` `agent:<agent>/<meeting date>-<meeting slug>-ruling`, body = your question and the user's answer, verbatim;
+- every claim resting on it lists this source in `sources`, next to the minutes source;
+- a ruling that settles a decision becomes a decision note (when it passes the gate) citing both sources; the meeting's `## Decisions` links it instead of marking the line `^[ambiguous]`.
+
+Answers that only fix the input (a date, attendees, which spellings are one person) are not rulings: use them directly, with no source note.
 
 ## The decision gate (AGENTS.md rule 6)
 
