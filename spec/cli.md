@@ -966,6 +966,47 @@ Stores what the skill published. Input: `{ "records": [ { "id": "per-3h8w2n6c", 
 
 `data` = `{ "records": [ { "id": "…", "result": "recorded"|"failed", "reason"?: "…", "changed": ["…"] } ] }`. Exit 1 if any failed.
 
+
+### 5.15 `brain upgrade`
+
+```text
+brain upgrade [--dry-run]
+```
+
+Brings the product-owned files of an existing brain up to the installed version of the package (dogfood finding 22). Run it after updating the CLI or the plugin. It never touches notes, `brain.json`, generated files, the log, or anything the user wrote.
+
+1. **`AGENTS.md` rules block.** Replace everything from the line `<!-- ultimate-brain:rules:start … -->` through `<!-- ultimate-brain:rules:end -->` with the same block from `templates/brain/AGENTS.md`. Text outside the markers is kept byte for byte.
+   - `AGENTS.md` missing → written from the template (`created`).
+   - Markers missing, out of order or duplicated → the file is left alone (`skipped`) with warning `AGENTS_BLOCK_NOT_FOUND`; the user restores the markers or merges by hand.
+2. **`CLAUDE.md`:** written as `@AGENTS.md` only if missing. An existing file is left alone.
+3. **Skills (0029).** For each skill the package ships in `.agents/skills/<name>/`:
+   - write every shipped file whose content differs (`created` or `updated`);
+   - remove files inside that skill's folder that the package no longer ships (`removed`).
+
+   Folders in `.agents/skills/` that the package does not ship are the user's own and are left alone.
+4. Log `- <timestamp> upgrade - "<package version>" files=<n>` when anything changed. `--dry-run` writes and logs nothing and reports the same `files`.
+
+The skill a linked repo carries (`brain-query`, §5.12) is refreshed by running `brain link` there again.
+
+```sh
+brain upgrade --json
+```
+```json
+{ "ok": true, "command": "upgrade", "brain": "/Users/me/brain", "warnings": [],
+  "data": {
+    "dry_run": false, "version": "0.1.0",
+    "files": [
+      { "path": ".agents/skills/brain-ingest/SKILL.md", "action": "updated" },
+      { "path": ".agents/skills/brain-sync/references/formats.md", "action": "created" },
+      { "path": "AGENTS.md", "action": "updated" }
+    ],
+    "unchanged": 14
+  } }
+```
+
+`files` lists only the files created, updated, removed or skipped, sorted by path; `unchanged` counts the rest. The caller commits: `upgrade: ultimate brain <version>`.
+
+Errors: none of its own (brain resolution errors, §4).
 ---
 
 ## 6. Standard sequences (for skills)
