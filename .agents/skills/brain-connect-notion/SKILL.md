@@ -7,7 +7,7 @@ description: Connect the brain to the user's Notion space after it was built fro
 
 Find the user's Notion databases and record their ids in `brain.json` (decision 0015). This skill **only reads Notion**. Its single write is `brain.json`, through `brain config set`.
 
-Run CLI commands as `brain <command> --brain <brain> --json`. If `brain` is not found (`command not found`), install it with `npm install -g github:superuser-pal/ultimate-brain`, then retry. Don't build it from a plugin folder.
+Run CLI commands as `brain <command> --brain <brain> --json`. If `brain` is not found (`command not found`), install it with `npm install -g ultimate-brain`, then retry. Don't build it from a plugin folder.
 
 ## Procedure
 

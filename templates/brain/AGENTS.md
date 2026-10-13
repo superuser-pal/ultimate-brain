@@ -4,7 +4,7 @@
 
 This repo is a second brain: Markdown notes in Git, operated by agents through the `brain` CLI, with Notion as the human view. Its value is trust: every claim traces to a source, and history is kept, never overwritten.
 
-`brain` is the Ultimate Brain CLI. If it is not installed (`command not found`), run `npm install -g github:superuser-pal/ultimate-brain` (until it is published on npm). To update, run the same command, then `brain upgrade` (it refreshes this block and `.agents/skills/`, never your notes or the text below the block) and commit `upgrade: ultimate brain <version>`. From this repo run it as `brain <command> --brain . --json` and read the JSON it prints; `brain --help` lists the commands. Exit codes: 1 means findings to act on; 2 or 4 means your command or input was wrong, so fix it and retry; 3 or 5 means the brain or a write was refused, so stop and report to the user; 10 is a bug, so report it.
+`brain` is the Ultimate Brain CLI. If it is not installed (`command not found`), run `npm install -g ultimate-brain`. To update, run `npm install -g ultimate-brain@latest`, then `brain upgrade` (it refreshes this block and `.agents/skills/`, never your notes or the text below the block) and commit `upgrade: ultimate brain <version>`. From this repo run it as `brain <command> --brain . --json` and read the JSON it prints; `brain --help` lists the commands. Exit codes: 1 means findings to act on; 2 or 4 means your command or input was wrong, so fix it and retry; 3 or 5 means the brain or a write was refused, so stop and report to the user; 10 is a bug, so report it.
 
 ## Operations
 
