@@ -46,7 +46,7 @@ Every database that mirrors a brain note has three kinds of properties. Each pro
 |---|---|---|---|
 | **Brain** | Knowledge the brain maintains | Summary, Role, Client, Deadline, Assessment, Supersedes | Brain → Notion. Your edits in Notion are applied as your corrections on the next sync (0023, 0027; §8) |
 | **You** | Operational fields | Status, Priority, Progress, Lifecycle, Archived, Brain status | Notion → brain as pointers; the brain never writes them |
-| **System** | Bridge plumbing | Brain ID, Last synced | Brain → Notion only. Never edit |
+| **System** | Bridge plumbing | Brain ID, Last synced, Created time, Last edited time | Brain → Notion only (the two timestamps are filled by Notion itself). Never edit |
 
 **Creation:** new rows you create in Areas, Goals, Projects, People, Orgs are imported by the next `brain sync` (0021). Rows in Decisions, Questions and Review are created by the brain only.
 
@@ -124,6 +124,7 @@ Notion-owned entirely (0020). Not mirrored as brain notes; the brain snapshots t
 | Tasks | Relation → Tasks (two-way with Project) | You |
 | Key Facts | Text | Brain: current key facts, e.g. "Budget: 80000 EUR · Launch date: 2027-02" (format in spec/cli.md §5.14.4) |
 | Archived | Checkbox | You |
+| Last edited time | Last edited time | System (Notion fills it; "gone quiet" view) |
 
 Page body: toggle headings **Brief** and **Decision log** (brain-written, 0026), then the template's linked views and "My notes".
 
@@ -188,6 +189,7 @@ Open questions and risks raised in meetings.
 | Status | Select: Open, Answered, Dropped | You (brain may propose "Answered") |
 | Project | Relation → Projects | Brain |
 | Raised In | Relation → Meetings | Brain |
+| Created time | Created time | System (Notion fills it; sorts open questions) |
 
 ### 3.10 Review
 The approval queue (0003). Created by the brain; you decide.
@@ -206,6 +208,8 @@ The approval queue (0003). Created by the brain; you decide.
 | Edited Value | Text | **You** (when Decision = Edit) |
 | State | Select: Pending, Applied, Closed | System |
 | Brain ID | Text | System (`prp-…`) |
+| Created time | Created time | System (Notion fills it; sorts the queue) |
+| Last edited time | Last edited time | System (Notion fills it; "approved recently" filter) |
 
 ### 3.11 Capture Inbox
 Quick capture. Classified later by the brain (Ultimate Brain's "classify later").
