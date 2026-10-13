@@ -8,6 +8,8 @@ How a change on `main` reaches users. The npm package `ultimate-brain` ships the
 npm login        # the npm account that owns `ultimate-brain`
 ```
 
+npm requires two-factor authentication to publish: turn it on at npmjs.com → Account → Two-Factor Authentication. `npm publish` then asks for the code (or pass `--otp=<code>`).
+
 ## Each release
 
 From an up-to-date `main` with a clean tree:
