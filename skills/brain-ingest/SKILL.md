@@ -18,11 +18,19 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
 
 ## Procedure (per meeting)
 
-1. **Check the brain.** Run `brain status`. If `index_stale` is true, run `brain index`. Note the owner name and which Notion databases are configured.
+1. **Check the brain.** Run `brain status`. If `index_stale` is true, run `brain index`. Note the owner name and which Notion databases are configured. If Notion is configured and the brain has no area, project or person notes, run the brain-sync skill first (or ask the user to): without the synced Areas, Projects and People there is nothing to match against, and the ingest would create duplicates.
 
-2. **Fetch** *(Notion)*. Query the Meetings database for pages with Brain Status = **Reviewed**, oldest Date first. Process them one at a time. Never take Not Reviewed or Skipped meetings (decision 0012). For each page, read its properties (Name, Date, Attendees, Project, Area) and the minutes text. The minutes are the page body, in the sections of notion/minutes-format.md.
+2. **Fetch** *(Notion)*. Query the Meetings database for pages with Brain Status = **Reviewed**, oldest Date first, through its data source ([references/notion.md](references/notion.md)). Process them one at a time. Never take Not Reviewed or Skipped meetings (decision 0012). For each page, read its properties (Name, Date, Attendees, Project, Area) and the minutes: which parts of the page count as minutes is in references/notion.md.
 
-3. **Snapshot the source.** Build the source note (see [references/cli-inputs.md](references/cli-inputs.md) §1). Its body is the minutes **verbatim**, exactly as fetched; don't tidy them. Run `brain note new --dry-run` with only the source:
+   **Pre-check, in one question to the user:** ask about everything that blocks a correct ingest before you write anything:
+   - Date is empty;
+   - Attendees are empty or not linked;
+   - one name spelled several ways in the minutes ("Pete Doucet", "Piete Doucet");
+   - the user's own notes and the AI summary disagree on a fact.
+
+   An empty Project is not a blocker: see the stop conditions.
+
+3. **Snapshot the source.** Build the source note (see [references/cli-inputs.md](references/cli-inputs.md) §1). Its body is the minutes **verbatim**, as references/notion.md defines them; beyond those exclusions, don't tidy them. Run `brain note new --dry-run` with only the source, without an `id` (the source gets its id in step 7):
    - **`skipped` with `DUPLICATE_SOURCE`:** this exact text was already ingested. Report it, and in Notion mode set nothing. Stop here for this meeting.
    - **Otherwise:** keep the source item for step 7.
 
@@ -74,23 +82,21 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
 
     Then commit again: `publish: <meeting title> <date>`.
 
-12. **Report** to the user in chat:
-    - what was created (titles);
-    - what awaits review, with each proposal's title;
-    - the action items created;
-    - names that had no note and became new people;
-    - anything skipped and why;
-    - any lint errors left from before.
+12. **Report** in at most 8 lines:
+    - one line of counts: notes created, proposals waiting, tasks created;
+    - where to review: the Review queue in Notion, or "approve in chat";
+    - anything skipped, failed or still blocking, one line each;
+    - the next action, as one question if the user must decide something.
 
-    Keep it short. In Markdown-only mode, list the action items in the report, since there is no task database to create them in.
+    List titles, aliases or action items only when the user asks, except in Markdown-only mode, where the action items are listed because there is no task database.
 
 ## Stop conditions
 
 Stop and ask the user instead of guessing when:
 - **an attendee matches two people;**
 - **an attendee has the same name as a known person but a different organization or role** ("Carlos Ruiz (Northwind, CTO)" when the brain's Carlos Ruiz is at Acme). It may be a new person or a job change; ask which;
-- **the project is ambiguous** and the meeting has no Project set;
+- **the project is ambiguous:** the minutes could belong to two known projects and the meeting has no Project set. When the meeting simply has no project, link it to its area only and go on. Never invent a project; if one seems missing, offer to create it in Notion and sync it;
 - **the minutes seem to belong to a different client than the Project property says;**
-- **the minutes are not in the expected sections** and you can't tell decisions from discussion.
+- **you can't tell decisions from discussion** in the minutes. Other headings than notion/minutes-format.md are fine (references/extraction.md).
 
 A meeting that yields nothing durable is a valid result: write the source and the meeting note, propose nothing, and say so.

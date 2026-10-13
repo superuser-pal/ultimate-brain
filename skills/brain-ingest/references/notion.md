@@ -4,14 +4,24 @@ The CLI never calls Notion (spec/cli.md §1). You read and write Notion through 
 
 ## Fetch (SKILL.md step 2)
 
-1. Query the `meetings` database for pages where **Brain Status = Reviewed**, sorted by Date ascending.
+1. Query the `meetings` database for pages where **Brain Status = Reviewed**, sorted by Date ascending. `brain.json` holds database ids; Notion queries take the **data source id**: retrieve the database first and query its `data_sources[0].id`.
 2. For each page, read:
    - **page id:** becomes `notion:<id>` as the source key, and the meeting note's `notion`;
    - **`last_edited_time`:** becomes the source's `origin_edited`;
    - **Name and Date:** become the meeting's title and date;
    - **Attendees, Project, Area:** relations to Notion pages. Map each page id back to a brain note through the `notion` field in `brain index --json` (`notes[].notion`);
-   - **the page body:** the minutes, verbatim.
+   - **the minutes:** see "What counts as minutes" below.
 3. **Put the Notion page id on the meeting note:** add `"notion": "<meeting page id>"` to the meeting's `frontmatter` in the `note new` batch. Publishing (step 11) updates that existing page and never creates a meeting page, so without the id `sync render` reports `MEETING_NOT_PUBLISHED`.
+
+### What counts as minutes
+
+A meeting page can hold several things. The minutes, which become the source body, are:
+- the **Notion AI meeting notes**: the `<summary>` of the `<meeting-notes>` block (the transcript stays out);
+- the **user's own notes** on the page, such as a "My notes" toggle.
+
+Leave out the page template: the "Before marking Reviewed" checklist and the inline Decisions, Questions and Tasks databases. Strip Notion AI footnote links (`[^/p/…]`); they cite the transcript and are often half the text.
+
+When the user's notes and the AI summary disagree, the user's notes are the user's own words: extract both, mark the claim `^[ambiguous]`, and raise it in the step 2 pre-check.
 
 **Read-only rule:** never change the meeting page's title, date or body (decision 0007). The ingest only sets relations and Brain Status / Ingested At, through `sync render`.
 
