@@ -230,7 +230,7 @@ The schema (note.schema.json) and examples are already in place from CC-13. **Ac
 ### CX-19 · Per-task project in `sync tasks` (finding 7) · `review` (after CC-13)
 **Output:** spec/cli.md §5.14.5: `sync tasks` items take optional `projects` (project ids; anything else is `INPUT_INVALID` with a pointer to the item); absent or empty falls back to the meeting's projects; an unpublished project goes to the item's `pending_relations`. **Acceptance:** tests for per-item projects, the fallback, an invalid id and an unpublished project.
 
-### CX-20 · View properties test (finding 1) · `review` (can start now)
+### CX-20 · View properties test (finding 1) · `in progress` (can start now)
 **Output:** a test that every property a view or page layout in docs/notion-space-design.md (§5, §6 and notion/prompts/) sorts, filters, groups or shows exists in §3. **Acceptance:** it fails on a deliberately broken copy and passes on main.
 
 ### CX-21 · ~~Missing project sections and Capture Inbox in the CLI~~ · `dropped` (CC-13)
