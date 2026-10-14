@@ -39,8 +39,14 @@ Candidate converters, to evaluate on the user's real files:
 
 **Revisit:** with the onboarding suite (seeding), or when the user wants to ingest contracts, briefs or reports.
 
-### Email, Slack and Teams ingestion
-Ingest threads the way meetings are ingested. **Source:** vision.
+Document ingestion from local files, pasted emails and chat, and the Capture Inbox is **planned for 0.2.0** (build/TASKS.md). Left here for later:
+- **Notion file uploads:** the agent fetches files attached to Notion pages.
+- **A Sources database in Notion** to browse everything ingested (title, kind, date, what came out of it). Structural, so it needs a decision.
+- **Docling or Marker** as a second converter, if the 0.2.0 bake-off shows MarkItDown and native reading aren't enough.
+- **Agent setup steps for Notion** (dogfood finding 3), before a second user.
+
+### Email, Slack and Teams ingestion (connected)
+Pulling threads directly instead of pasting them (pasting is in 0.2.0). **Source:** vision.
 
 ### Ingest from the meeting transcript
 When the Notion AI summary is thin, read the transcript too (today it is excluded). **Source:** dogfood 2026-10-13.
