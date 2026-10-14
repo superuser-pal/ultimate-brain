@@ -241,7 +241,7 @@ Both are skill-side: the toggles because the CLI can't see Notion page content (
 - **A grill session with the user** on the Easlo template: what to take, what to leave.
 - **The look pass, applied with brain-notion-change.** Notion-only structure (formulas, buttons, dashboards, Notion-only properties) is free to use. At most one brain-visible change, with its own decision; anything more goes to the 0.3.0 list.
 - **The 9 template improvements** on branch `claude/notion-page-layouts` (notion/templates.md): each decided in the same session; the branch is merged.
-- **Docs:** design doc §4–§6, the prompts and the snapshot updated.
+- **Docs:** design doc §4–§6, the prompts and the snapshot updated, plus the view list in `tests/notion-view-properties.test.ts` (CX-20), which is hand-written.
 
 ### CC-18 · Notion AI user prompts · `todo` (with CC-17)
 **Output:**
