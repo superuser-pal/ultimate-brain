@@ -281,7 +281,7 @@ Home                          ← hub: my day, quick capture, "needs you"
 ├── Knowledge                 ← Space
 └── (backend, never navigated)
     ├── Brain Data            ← all 12 databases
-    └── System                ← synced nav, Archive
+    └── System                ← synced nav, Archive, How it works
 ```
 
 Each Space: the synced Spaces navigation in a narrow left column, then one tabs block whose tabs hold the linked views (Knowledge: one tab per database, each holding one linked view with several views). Views are named by the question they answer; tab labels are short. Each view shows what you need to act on from that view, usually 2–4 properties; everything else is on the page.
@@ -298,6 +298,8 @@ Each Space: the synced Spaces navigation in a narrow left column, then one tabs 
 | **Archive** (under System) | Find what's finished | One tab per database: Projects (Done or Archived) · Goals (Achieved, Dropped or Archived) · Areas · Decisions · Questions · People · Orgs (Archived) |
 
 Every view, with its filters, sort and properties, is in [notion/views-guide.md](../notion/views-guide.md) and Prompts 7a–7h.
+
+**Notion AI prompts for daily use** sit next to the views that answer the same question, in an "Ask AI" toggle: [notion/user-prompts.md](../notion/user-prompts.md). They read and answer; only "Review minutes" and "Tidy a capture" may edit, and only the page text you own (0035). "Ask how-to" sits in the navigation and answers from the "How it works" page, a copy of the user guide.
 
 ---
 
