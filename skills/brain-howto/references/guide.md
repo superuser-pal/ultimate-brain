@@ -49,7 +49,7 @@ Every meeting moves through **Brain Status**:
    - action items become **Tasks** (status To Do).
 5. Set **Skipped** for a meeting the brain should never read.
 
-The brain only ingests meetings you marked **Reviewed**. It never edits the meeting page itself.
+The brain only ingests meetings you marked **Reviewed**, and only when you ask: nothing runs on its own. It never edits the meeting page itself.
 
 **Why isn't my meeting in "To review"?** Meetings dated in the future stay in Upcoming until their date has passed.
 
