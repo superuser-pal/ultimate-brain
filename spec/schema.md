@@ -23,7 +23,7 @@ Decisions referenced: 0001–0005, 0008–0011, 0013, 0017, 0018, 0020, 0021, 00
 | References in frontmatter | Always by **ID** (`projects: [prj-9x4t1b7e]`), never by path or title |
 | Links in bodies | Standard relative Markdown links: `[Maria López](../people/maria-lopez.md)` (0002). No `[[wikilinks]]` |
 | File names | Kebab-case slug of the title, ASCII only. Dated types prefix `YYYY-MM-DD-` (meeting, decision, source). Renaming a file never changes its `id` |
-| Source keys | External: `notion:<page-id>`, `url:<https-url>`, `agent:<agent>/<session-id>`. Internal: a note ID |
+| Source keys | External: `notion:<page-id>`, `url:<https-url>`, `agent:<agent>/<session-id>`, `file:sha256:<64 hex>` (the original file's bytes, 0032). Internal: a note ID |
 
 ### ID prefixes
 
@@ -65,7 +65,9 @@ The prefix is fixed at creation even if `type` later changes; `type` is the trut
 │   ├── decisions/YYYY-MM-DD-<slug>.md   type: decision
 │   ├── questions/<slug>.md      type: question
 │   └── concepts/<slug>.md       type: concept
-├── sources/notion/YYYY-MM-DD-<slug>.md  type: source (immutable)
+├── sources/notion/YYYY-MM-DD-<slug>.md  type: source (immutable), key notion:
+├── sources/files/YYYY-MM-DD-<slug>.md   type: source, key file: (0032)
+├── sources/text/YYYY-MM-DD-<slug>.md    type: source, key url: or agent: (0032)
 ├── memories/YYYY/MM/YYYY-MM-DD-<slug>.md type: memory (v2 loop)
 └── _proposals/YYYY-MM-DD-<slug>.md      type: proposal
 ```
@@ -181,14 +183,19 @@ An ongoing responsibility (e.g. "Clients", "Health").
 ### concept · `knowledge/concepts/` · not published in v1
 Ideas, methods, definitions.
 
-### source · `sources/notion/YYYY-MM-DD-<slug>.md` · not published
-Immutable snapshot of input. **Never edited after creation** (lint error if `content_hash` no longer matches the body).
+### source · `sources/<notion|files|text>/YYYY-MM-DD-<slug>.md` · not published
+Immutable snapshot of input. **Never edited after creation** (lint error if `content_hash` no longer matches the body). The folder follows the key: `notion:` → `sources/notion/`, `file:` → `sources/files/`, `url:` and `agent:` → `sources/text/` (0032).
 | Field | Type | Req |
 |---|---|---|
 | `source_key` | source key | ✔ |
 | `content_hash` | `sha256:<64 hex>` of the body, defined below | ✔ |
 | `captured` | timestamp | ✔ |
 | `origin_edited` | timestamp (Notion `last_edited_time`) | |
+| `kind` | `minutes`·`document`·`email`·`chat`·`note`·`capture`; absent means `minutes` | ✔ with a `file:` key |
+| `file_name` | the original file's name, without its folder (`acme-brief.pdf`) | ✔ with a `file:` key |
+| `converter` | what turned the file into text, with its version: `markitdown 0.1.8`, `claude-read` | ✔ with a `file:` key |
+
+**Kinds (0032):** `minutes` is a meeting (Notion or a minutes file); `document` a converted file; `email` and `chat` pasted threads; `note` text the user wrote or pasted; `capture` a Capture Inbox row (`notion:` key of the row). The body is the text verbatim, as the ingest skill defines it per kind; for a file, the converter's output.
 
 **Hash input (normative):** the body is every byte after the newline that ends the closing `---` frontmatter line, up to the end of the file, **including** the final trailing newline. No normalization is applied (files are LF and UTF-8 by §1, so writers write exactly the bytes they hashed). Hash = lowercase hex SHA-256 of those UTF-8 bytes, prefixed `sha256:`. Example: for a file `---\n<frontmatter>\n---\n## Attendees\n…\n`, the hash covers `## Attendees\n…\n`.
 
