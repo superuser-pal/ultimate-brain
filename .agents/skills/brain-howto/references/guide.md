@@ -1,0 +1,157 @@
+# How your brain works
+
+Your second brain has three parts:
+- **The brain itself:** Markdown notes in a private Git repo. It's the source of truth: every fact traces back to a meeting or document, and history is kept.
+- **Notion:** where you look at the brain, review what came in, and decide on changes.
+- **Your agent** (Claude Code or Codex): does the work. It reads your meetings and documents, writes notes, publishes them to Notion, and applies your decisions.
+
+You never edit the Markdown by hand. You work in Notion and talk to your agent.
+
+---
+
+## The Spaces
+
+The navigation on the left of every page lists the Spaces. Each one has tabs that run from *now*, to *later*, to *done*.
+
+| Space | Use it to | Tabs |
+|---|---|---|
+| **Home** | Start your day | Buttons (Quick capture, New meeting, New project) · "What's on today?" (Tasks, Meetings, Projects) · "Needs you": decisions waiting and minutes to review |
+| **Tasks** | Do the work | Today · Upcoming · No date · Waiting On · Someday · Done |
+| **Meetings** | Prepare meetings and get minutes into the brain | Upcoming · To review · Ready for the brain · Ingested this week · Calendar |
+| **Projects** | Keep projects moving | Active · By area · Deadlines · Gone quiet |
+| **Plan** | Check that your work serves your goals | Goals · Key results · Areas · Projects by goal |
+| **Review** | Decide on the changes the brain proposes | Needs my decision · Sources disagree · Approved recently · Rejected |
+| **Knowledge** | Find what the brain knows | Decisions · Questions · People · Orgs · Inbox |
+| **Archive** (under System) | Find finished and archived records | One tab per database |
+
+**Area pages** collect everything for one area: its goals, projects, tasks and meetings in views, and its decisions, questions, people and clients as lists at the top. Open one from Plan → Areas.
+
+**Project pages** show the Brief and Decision log (written by the brain), then the project's tasks, meetings, open questions and people, then your own "My notes".
+
+---
+
+## The meeting flow
+
+Every meeting moves through **Brain Status**:
+
+1. **Before the meeting (optional):** create it with **New meeting** on Home. It appears in Meetings → Upcoming. Ask Notion AI to prepare you for it.
+2. **During the meeting:** Notion AI takes the notes on the meeting page.
+3. **After the meeting:** the meeting appears in Meetings → To review (status **Not Reviewed**). Work through the "Before marking Reviewed" checklist on the page:
+   - attendees linked;
+   - project linked;
+   - minutes follow the format;
+   - minutes checked and corrected.
+
+   Then set Brain Status to **Reviewed**.
+4. **Ingest:** tell your agent "ingest my reviewed meetings". The brain reads the minutes and sets the meeting to **Ingested**. Then:
+   - new notes (decisions, questions, people) arrive as **Draft**;
+   - changes to things the brain already knew go to **Review**;
+   - action items become **Tasks** (status To Do).
+5. Set **Skipped** for a meeting the brain should never read.
+
+The brain only ingests meetings you marked **Reviewed**. It never edits the meeting page itself.
+
+**Why isn't my meeting in "To review"?** Meetings dated in the future stay in Upcoming until their date has passed.
+
+---
+
+## Deciding in Review
+
+The brain never changes what it already knows without your yes. Each proposed change is a row in **Review → Needs my decision**, showing what it was (**Before**) and what it would become (**After**).
+
+1. Set **Decision**:
+   - **Approve** applies the change;
+   - **Reject** drops it;
+   - **Edit** applies your own value. Open the row and type it in **Edited Value**.
+2. Tell your agent "apply my reviews". The change is made, and the row moves to Approved or Rejected.
+
+| Kind | Approve means | Can you Edit? |
+|---|---|---|
+| Update Fact | The new value replaces the old one; the old one stays in the history | Yes |
+| Add To Note | The text is added to the note | Yes |
+| Add Link | A link between two records is added | No |
+| Contradiction | Two sources disagree; both claims are kept as contested | Yes: your value becomes the truth |
+| Supersede | A newer note replaces an older one, which is archived | No |
+| Merge | A duplicate is folded into the record it duplicates | No |
+| New Item | A new note is created as Draft | No |
+
+To see why a change was proposed, open the row: **Why** quotes the sentence from the source, and **Source Meeting** links to the meeting.
+
+A rejected change can come back if a later meeting says the same thing again.
+
+---
+
+## What you can edit, and what the brain owns
+
+Hover over a property name to see its owner. Each description starts with "Owner: you", "Owner: brain" or "Owner: system".
+
+| Owner | Examples | What happens when you edit it |
+|---|---|---|
+| **You** | Status, Priority, Dates, Lifecycle, Archived, Decision, Brain Status on meetings | Your value stands. The brain reads it but never overwrites it |
+| **Brain** | Summary, Role, Client, Key Facts, Why, Assessment | The next sync reads your edit as a **correction**. Names, summaries and relations change in place; a key fact gets a dated history entry; judgments such as Assessment become a Review proposal |
+| **System** | Brain ID, Last Synced, Ingested At | Don't edit. The brain uses them to match records |
+
+**Page text:**
+- **Brief and Decision log** on project pages are rewritten by the brain on every sync. Anything you type inside them is lost.
+- **My notes**, and everything else on a page, is yours.
+- Decision and Question pages are written entirely by the brain.
+
+**Lifecycle** tells you how far to trust a record:
+- **Draft:** new, not reviewed by you yet;
+- **Reviewed:** you checked it;
+- **Disputed:** you think it's wrong;
+- **Archived:** no longer current.
+
+Set **Disputed** on anything wrong. The brain stops relying on it, and you can ask your agent to fix it.
+
+---
+
+## Adding things
+
+| You want to add | Do this |
+|---|---|
+| A quick thought, link or idea | **Quick capture** on Home. It lands in Knowledge → Inbox. Tell your agent "process my capture inbox" |
+| A meeting | **New meeting** on Home, or let Notion AI create it when it starts taking notes |
+| A project, area, goal, person or org | Create the row in Notion (**New project** on Home for projects). The next sync imports it into the brain |
+| A document (PDF, Word, PowerPoint, Excel, web page, image) | Give your agent the file: "ingest this PDF: ~/Documents/proposal.pdf". The original file stays where it is |
+| An email, chat thread or note | Paste it to your agent: "ingest this email" |
+| A task | Add it in Tasks. Tasks from meetings are created for you |
+
+**Tasks:**
+- New tasks from the brain start as **To Do**.
+- **Doing**, **Waiting On**, **Someday** and **Done** are for you; the brain never reads them.
+- A task without a due date shows in Tasks → No date.
+
+---
+
+## What to say to your agent
+
+Run these in Claude Code or Codex, from your brain's folder.
+
+| You want to | Say |
+|---|---|
+| Get reviewed meetings into the brain | "ingest my reviewed meetings" |
+| Ingest a file, email or chat | "ingest this PDF: <path>", "ingest this email" (then paste it) |
+| Process quick captures | "process my capture inbox" |
+| Apply your Review decisions | "apply my reviews" |
+| Bring Notion edits and new rows into the brain, and publish its changes | "sync with Notion" |
+| Ask what the brain knows | "what did we decide about …?", "who is …?", "when is the … launch?" |
+| Ask how the system works | "how do I …?", "why didn't … ?" |
+| Change the Notion structure (a property, an option, a view) | "add a property to Projects …". Structure is changed in the product first, then in Notion |
+| Check your Notion space | "check my Notion space" |
+| Update the brain software | `npm install -g ultimate-brain@latest`, then "run brain upgrade" |
+
+---
+
+## When something looks wrong
+
+| What you see | Why | What to do |
+|---|---|---|
+| A meeting wasn't ingested | It is still Not Reviewed or Skipped, or no ingest has run since you marked it | Set it to **Reviewed**, then "ingest my reviewed meetings" |
+| A meeting you created for next week sits in Upcoming | Future meetings stay out of the review queue | Nothing; it moves to To review after its date |
+| Text you typed in a project's Brief disappeared | The brain rewrites Brief and Decision log on every sync | Put your notes in **My notes** |
+| Your edit to a Summary or Role changed back | Brain-owned fields are read as corrections only on the next sync | "sync with Notion" before the next ingest |
+| A new project or person isn't in the brain | It is imported on the next sync | "sync with Notion" |
+| A rejected change came back | A later source said it again | Reject it again, or Edit it to the true value |
+| A record shows Draft | You haven't reviewed it yet | Read it; set **Reviewed**, or **Disputed** if it's wrong |
+| An Area page doesn't list a decision | Decisions reach an area through their project | Link the decision's project to the area |

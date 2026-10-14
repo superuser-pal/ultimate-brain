@@ -17,6 +17,7 @@ Each operation has a skill; follow it end to end:
 | apply decisions from the Notion Review queue | `brain-apply` |
 | pull Notion edits and new rows, republish notes | `brain-sync` |
 | answer a question from the brain | `brain-query` |
+| learn how the system works ("how do I…", "why didn't…") | `brain-howto` |
 | change the Notion structure (databases, properties, views) | `brain-notion-change`; structure is changed in the product repo first, never edited directly in Notion (0022) |
 
 ## Write path
