@@ -53,11 +53,21 @@ test("sync apply creates a Notion-created note with its lifecycle and applies co
 
 test("sync tasks renders per-item projects, falls back to the meeting, and reports unpublished relations", async (context) => {
   const dir = await fixtureCopy(context);
+  const configPath = join(dir, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  config.notion.tasks.properties.owner = "Owner";
+  await writeFile(configPath, JSON.stringify(config, null, 2));
   const meetingPath = join(dir, "knowledge/meetings/2026-12-03-acme-sync.md");
-  await writeFile(meetingPath, (await readFile(meetingPath, "utf8")).replace("projects: [prj-9x4t1b7e]", "projects: []"));
-  const override = await brain(["sync", "tasks", "--brain", dir, "--meeting", "mtg-8c4n2p7w", "--input", await input(dir, "tasks-override.json", { items: [{ title: "Send plan", projects: ["prj-9x4t1b7e"] }] }), "--json"]);
+  const meeting = await readFile(meetingPath, "utf8");
+  const withoutProjects = meeting.replace("projects: [prj-9x4t1b7e]", "projects: []");
+  assert.notEqual(withoutProjects, meeting, "fixture meeting must have a project to override");
+  await writeFile(meetingPath, withoutProjects);
+  const override = await brain(["sync", "tasks", "--brain", dir, "--meeting", "mtg-8c4n2p7w", "--input", await input(dir, "tasks-override.json", { items: [{ title: "Send plan", owner: "Carlos Ruiz", due: "2026-12-10", projects: ["prj-9x4t1b7e"] }] }), "--json"]);
   assert.equal(override.code, 0, override.stdout);
   assert.equal(override.json.data.items[0].database_id, "a1000000-0000-4000-8000-00000000000b");
+  assert.equal(override.json.data.items[0].properties.Name.value, "Send plan");
+  assert.deepEqual(override.json.data.items[0].properties.Owner, { type: "person_name", value: "Carlos Ruiz" });
+  assert.deepEqual(override.json.data.items[0].properties.Due, { type: "date", value: { start: "2026-12-10", end: null } });
   assert.deepEqual(override.json.data.items[0].properties.Project.value, ["2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e"]);
   assert.deepEqual(override.json.data.items[0].pending_relations, []);
 
