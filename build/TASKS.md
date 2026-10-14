@@ -197,7 +197,7 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 
 **Acceptance:** Codex can build CX-18 and CX-19 from the spec alone.
 
-### CC-14 · Ingest-text skill · `todo` (after CC-13)
+### CC-14 · Ingest-text skill · `review`
 **Output:** one ingest path for everything that isn't a Notion meeting. It is a new mode of `brain-ingest` or a sibling skill; decide in the PR, keeping one source of truth for extraction.
 - **Documents:** given as a file path; routed to native Read (Claude Code: PDF and images) or MarkItDown (Office, HTML, and everything in Codex).
 - **Pasted text:** emails, chat and notes.
