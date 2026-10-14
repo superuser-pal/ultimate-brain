@@ -6,7 +6,7 @@ How to read one meeting's minutes and decide what becomes a note, what becomes a
 
 - **The owner:** "I", "me" and descriptions of the owner's role in the minutes ("the new team member" when that is the owner) mean the owner in `brain.json`. Link them to the owner's person note; if there is none, create it in the batch with `title` = the owner name in `brain.json`. Keep the wording verbatim in quoted facts.
 - **Mentioned people** (named, not attendees) get a person note only when they own a system, deliverable or decision named in the minutes, or have an action item. Otherwise their name stays in the text, with no note.
-- **Projects are per item.** A meeting may touch several projects: set `projects` on each decision and question from what that item is about, and list every one on the meeting. Ask only when an item could belong to two. Tasks get the meeting's projects (`sync tasks` takes no per-task project).
+- **Projects are per item.** A meeting may touch several projects: set `projects` on each decision and question from what that item is about, and list every one on the meeting. Ask only when an item could belong to two. Action items too: give each its `projects` in the `sync tasks` input ([cli-inputs.md](cli-inputs.md) §4); left out, a task gets the meeting's projects.
 
 ## What each part of the minutes becomes
 
