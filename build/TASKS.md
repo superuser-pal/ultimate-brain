@@ -227,7 +227,7 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 
 The schema (note.schema.json) and examples are already in place from CC-13. **Acceptance:** tests for each bullet; the existing tests still pass.
 
-### CX-19 · Per-task project in `sync tasks` (finding 7) · `todo` (after CC-13)
+### CX-19 · Per-task project in `sync tasks` (finding 7) · `review` (after CC-13)
 **Output:** spec/cli.md §5.14.5: `sync tasks` items take optional `projects` (project ids; anything else is `INPUT_INVALID` with a pointer to the item); absent or empty falls back to the meeting's projects; an unpublished project goes to the item's `pending_relations`. **Acceptance:** tests for per-item projects, the fallback, an invalid id and an unpublished project.
 
 ### CX-20 · View properties test (finding 1) · `todo` (can start now)
