@@ -14,13 +14,13 @@ One input at a time. Each becomes one source with a `kind`.
 
    | File | Claude Code | Codex |
    |---|---|---|
-   | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp` | **Read** it yourself; converter `claude-read` | `.pdf`: MarkItDown. Images: say you can't read them, and stop |
+   | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp` | **Read** it yourself; converter `claude-read <model id>` | `.pdf`: MarkItDown. Images: view them with your image tool and transcribe; converter `codex-view-image <model id>` |
    | `.docx`, `.pptx`, `.xlsx`, `.xls`, `.html`, `.htm`, `.msg`, `.epub`, `.csv` | MarkItDown | MarkItDown |
 
    - **MarkItDown:** `markitdown "<file>"` prints Markdown. The converter is `markitdown <version>`, from `pip show markitdown` (or `pipx list`). If it isn't installed, tell the user to run `pipx install 'markitdown[all]'` and stop.
-   - **Reading it yourself:** a PDF of more than 10 pages is read in page ranges of at most 20 pages. Transcribe the text **verbatim** into Markdown: keep headings, lists and tables (as Markdown tables), and describe a figure in one line in brackets (`[Chart: revenue by quarter, 2025–2026]`). Never summarise or reword while transcribing; the summary comes later, in the notes.
+   - **Reading it yourself** (Claude Code's Read, Codex's image tool): the converter names the tool and your model id (`claude-read claude-opus-5-5`). A PDF of more than 10 pages is read in page ranges of at most 20 pages. Transcribe the text **verbatim** into Markdown: keep headings, lists and tables (as Markdown tables), and describe a figure in one line in brackets (`[Chart: revenue by quarter, 2025–2026]`). Never summarise or reword while transcribing; the summary comes later, in the notes.
    - **Repair conversion damage only:** broken character encoding (`LÃ³pez` → `López`, `Â·` → `·`) and words split by a line wrap (`wor`/`k` → `work`). Everything else stays as written, including typos.
-3. **Long documents:** past about 30 pages, ask the user which parts matter before ingesting. The source body is then those parts only, each under its original heading.
+3. **Long documents:** past about 30 pages, the source still holds the **whole** conversion, because its key stands for the whole file. Convert it with MarkItDown when it can (reading 30+ pages yourself costs a lot of tokens), and ask the user which parts matter. Analyse only those parts in step 5, and say in the report which parts were analysed.
 
 ### `email`, `chat`, `note`: text the user pastes
 The body is the pasted text, verbatim. The source key is `agent:<agent>/<date>-<slug>`, for example `agent:claude-code/2026-10-14-acme-budget-email`.

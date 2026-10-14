@@ -199,7 +199,7 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 
 ### CC-14 · Ingest-text skill · `review`
 **Output:** one ingest path for everything that isn't a Notion meeting. It is a new mode of `brain-ingest` or a sibling skill; decide in the PR, keeping one source of truth for extraction.
-- **Documents:** given as a file path; routed to native Read (Claude Code: PDF and images) or MarkItDown (Office, HTML, and everything in Codex).
+- **Documents:** given as a file path; routed to native reading (Claude Code: PDF and images; Codex: images with its image tool, since MarkItDown has no OCR) or MarkItDown (Office, HTML, and PDFs in Codex). Native reading records the model id as the converter version.
 - **Pasted text:** emails, chat and notes.
 - **Capture Inbox:** New rows are processed and set to Processed.
 - **Extraction rules per kind:** documents have no attendees or action items by default.
