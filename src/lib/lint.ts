@@ -4,6 +4,7 @@ import { posix } from "node:path";
 
 import { buildIndex } from "./index-builder.ts";
 import { compareCodePoints, type Note, type ScanProblem } from "./notes.ts";
+import { sourceFolder } from "./paths.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
 
@@ -49,7 +50,7 @@ const FOLDERS: Readonly<Record<string, RegExp>> = {
   decision: /^knowledge\/decisions\/\d{4}-\d{2}-\d{2}-[^/]+\.md$/,
   question: /^knowledge\/questions\/[^/]+\.md$/,
   concept: /^knowledge\/concepts\/[^/]+\.md$/,
-  source: /^sources\/notion\/\d{4}-\d{2}-\d{2}-[^/]+\.md$/,
+  source: /^sources\/(notion|files|text)\/\d{4}-\d{2}-\d{2}-[^/]+\.md$/,
   memory: /^memories\/\d{4}\/\d{2}\/\d{4}-\d{2}-\d{2}-[^/]+\.md$/,
   proposal: /^_proposals\/[^/]+\.md$/,
 };
@@ -102,7 +103,10 @@ export function lintBrain(input: LintInput): Issue[] {
     }
     if (!ID.test(note.id)) err("id-format", lineOfKey(note, "id"), `"${note.id}" is not <prefix>-<8 chars> with a schema prefix`);
     const folder = FOLDERS[note.type];
-    if (folder !== undefined && !folder.test(note.path)) err("wrong-folder", 1, `a ${note.type} must live in its folder (spec/schema.md §2)`);
+    const correctFolder = note.type === "source"
+      ? new RegExp(`^sources/${sourceFolder(a.source_key)}/\\d{4}-\\d{2}-\\d{2}-[^/]+\\.md$`)
+      : folder;
+    if (correctFolder !== undefined && !correctFolder.test(note.path)) err("wrong-folder", 1, `a ${note.type} must live in its folder (spec/schema.md §2)`);
     const known = schemas.knownKeys(note.type);
     if (known !== undefined) {
       for (const key of Object.keys(a)) if (!known.has(key)) warn("unknown-key", lineOfKey(note, key), `${note.type} does not declare "${key}"`);

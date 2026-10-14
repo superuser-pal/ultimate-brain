@@ -169,6 +169,53 @@ test("note new skips a source whose content was already captured", async (contex
   assert.deepEqual(run.json.data, { created: [], skipped: [{ input_index: 0, reason: "DUPLICATE_SOURCE", existing: "src-7w3c9k5m" }], dry_run: false });
 });
 
+test("note new routes file and text sources, orders file metadata, and dedupes files and captures by key", async (context) => {
+  const dir = await fixtureCopy(context);
+  const fileKey = `file:sha256:${"a".repeat(64)}`;
+  const captureKey = "notion:11111111-2222-4333-8444-555555555555";
+  const first = await noteNew(dir, {
+    notes: [
+      {
+        type: "source", title: "Acme brief", file_date: "2026-12-08",
+        frontmatter: { source_key: fileKey, kind: "document", file_name: "acme-brief.pdf", converter: "markitdown 0.1.8" },
+        body: "Converted file text.\n",
+      },
+      {
+        type: "source", title: "Capture", file_date: "2026-12-08",
+        frontmatter: { source_key: captureKey, kind: "capture" }, body: "First capture text.\n",
+      },
+      {
+        type: "source", title: "Pasted email", file_date: "2026-12-08",
+        frontmatter: { source_key: "agent:codex/session-1", kind: "email" }, body: "Pasted email text.\n",
+      },
+    ],
+  });
+  assert.equal(first.code, 0, first.stdout);
+  assert.deepEqual(first.json.data.created.map((note: { path: string }) => note.path), [
+    "sources/files/2026-12-08-acme-brief.md",
+    "sources/notion/2026-12-08-capture.md",
+    "sources/text/2026-12-08-pasted-email.md",
+  ]);
+  const file = await readFile(join(dir, "sources/files/2026-12-08-acme-brief.md"), "utf8");
+  assert.match(file, new RegExp(`^---\\nid: src-[0-9abcdefghjkmnpqrstvwxyz]{8}\\ntype: source\\ntitle: Acme brief\\nsource_key: ${fileKey}\\nkind: document\\nfile_name: acme-brief\\.pdf\\nconverter: markitdown 0\\.1\\.8\\ncontent_hash:`));
+
+  const retry = await noteNew(dir, {
+    notes: [
+      { type: "source", title: "Changed converter output", file_date: "2026-12-09", frontmatter: { source_key: fileKey, kind: "document", file_name: "acme-brief.pdf", converter: "markitdown 0.1.9" }, body: "Different text.\n" },
+      { type: "source", title: "Edited capture", file_date: "2026-12-09", frontmatter: { source_key: captureKey, kind: "capture" }, body: "Edited capture text.\n" },
+    ],
+  });
+  assert.equal(retry.code, 0, retry.stdout);
+  assert.deepEqual(retry.json.data, {
+    created: [],
+    skipped: [
+      { input_index: 0, reason: "DUPLICATE_SOURCE", existing: first.json.data.created[0].id },
+      { input_index: 1, reason: "DUPLICATE_SOURCE", existing: first.json.data.created[1].id },
+    ],
+    dry_run: false,
+  });
+});
+
 test("note new validates input shape with pointers", async (context) => {
   const dir = await fixtureCopy(context);
   const run = await noteNew(dir, {

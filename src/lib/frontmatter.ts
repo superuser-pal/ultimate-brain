@@ -31,7 +31,7 @@ const TYPE_FIELDS: Readonly<Record<string, readonly string[]>> = {
   meeting: ["date", "attendees", "source", "decisions", "questions", "tasks"],
   decision: ["date", "assessment", "decided_in", "deciders", "valid_from", "valid_until"],
   question: ["kind", "raised_in", "answer"],
-  source: ["source_key", "content_hash", "captured", "origin_edited"],
+  source: ["source_key", "kind", "file_name", "converter", "content_hash", "captured", "origin_edited"],
   view: ["view_kind", "project", "generated_from", "generated_at"],
   memory: ["scope", "areas", "projects", "stacks", "confidence", "origin"],
 };
