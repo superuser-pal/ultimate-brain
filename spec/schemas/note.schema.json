@@ -260,6 +260,9 @@
           "pattern": "^url:https://\\S+$"
         },
         {
+          "pattern": "^file:sha256:[0-9a-f]{64}$"
+        },
+        {
           "pattern": "^agent:[a-z0-9-]+/\\S+$"
         },
         {
@@ -811,6 +814,25 @@
         },
         "origin_edited": {
           "$ref": "#/$defs/timestamp"
+        },
+        "kind": {
+          "enum": [
+            "minutes",
+            "document",
+            "email",
+            "chat",
+            "note",
+            "capture"
+          ]
+        },
+        "file_name": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^/\\\\]+$"
+        },
+        "converter": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "not": {
@@ -831,7 +853,28 @@
             ]
           }
         ]
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "source_key"
+            ],
+            "properties": {
+              "source_key": {
+                "pattern": "^file:"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "kind",
+              "file_name",
+              "converter"
+            ]
+          }
+        }
+      ]
     },
     "view": {
       "required": [
