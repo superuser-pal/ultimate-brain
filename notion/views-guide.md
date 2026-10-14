@@ -159,7 +159,7 @@ All views use the Tasks database. Using your own Tasks database (0018)? Map the 
 | Decisions | What did we decide? | Table | Assessment is Accepted · Lifecycle is not Archived | Date, descending | — | Name, Project, Date, Summary | Current decisions. Answers "why did we choose X?" |
 | Decisions | What's provisional? | List | Assessment is Provisional | Date, descending | — | Name, Project, Date | Mentioned once, not yet confirmed. Confirm them in the next meeting |
 | Decisions | What changed our minds? | Table | Assessment is Superseded | Date, descending | — | Name, Superseded By, Date | Replaced decisions and what replaced them |
-| Decisions | What's disputed? | List | Lifecycle is Disputed | Last edited time, descending | — | Name, Summary | Records you marked as wrong. Fix them or ask the brain to |
+| Decisions | What's disputed? | List | Lifecycle is Disputed | Date, descending | — | Name, Summary | Records you marked as wrong. Fix them or ask the brain to |
 | Questions | What's still open? | List | Status is Open · Kind is Question | Created time, descending | — | Name, Project, Raised In | Open questions. Set Answered or Dropped when resolved |
 | Questions | Which risks are open? | List | Status is Open · Kind is Risk | Created time, descending | — | Name, Project, Raised In | Open risks |
 | Questions | What did we answer? | List | Status is Answered | Created time, descending | — | Name, Project, Summary | Resolved questions and their answer |

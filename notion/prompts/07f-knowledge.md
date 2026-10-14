@@ -12,7 +12,7 @@ On this page ("Knowledge") add five tabs. In each tab put one linked view of the
    - Table "What did we decide?": Assessment is Accepted and Lifecycle is not Archived; sort Date descending; show Name, Project, Date, Summary.
    - List "What's provisional?": Assessment is Provisional; sort Date descending; show Name, Project, Date.
    - Table "What changed our minds?": Assessment is Superseded; sort Date descending; show Name, Superseded By, Date.
-   - List "What's disputed?": Lifecycle is Disputed; sort Last edited time descending; show Name, Summary.
+   - List "What's disputed?": Lifecycle is Disputed; sort Date descending; show Name, Summary.
 2. Tab "Questions" (database "Questions"):
    - List "What's still open?": Status is Open and Kind is Question; sort Created time descending; show Name, Project, Raised In.
    - List "Which risks are open?": Status is Open and Kind is Risk; sort Created time descending; show Name, Project, Raised In.

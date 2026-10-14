@@ -95,16 +95,16 @@ No template. This is intended: the brain writes the whole body of Decisions and 
 
 ## Improvements
 
-Worked one at a time. Status: `open` · `agreed` · `done` (applied in Notion and the snapshot updated) · `dropped`.
+Worked one at a time. Status: `open` · `agreed` · `done` (applied in Notion and the snapshot updated) · `dropped`. Decided in the CC-17 grill session on 2026-10-14; `agreed` items are applied by [migration 0003](migrations/0003-look-pass.md), after which the snapshot above is pulled again.
 
 | # | Template | Problem | Proposal | Status |
 |---|---|---|---|---|
-| 1 | Meetings | The "Minutes format" callout (§9, Prompt 6b) isn't in the template. The checklist still says "Minutes follow the format", so the format has to live somewhere | Decide where the format lives now: in the AI meeting-notes block's instructions, or a callout again | open |
-| 2 | Areas, People | Placeholder callouts print literal "[Summary]", "[Role]" and "[Org]". A callout can't show a property, and the page layouts already show these fields | Remove both callouts | open |
-| 3 | Goals | The "Why" callout competes with the brain-owned Why property. Text typed in the callout never reaches the brain | Remove the callout, or replace it with a one-line hint pointing to the property | open |
-| 4 | Meetings | Tasks come last, but they're what you act on after a meeting | Order the toggles Tasks, Decisions, Questions | open |
-| 5 | Orgs | No Meetings view, although §4 lists "Meetings (through projects)". Notion can't filter through two relations | Add a direct Org relation on Meetings (a schema change, so a new decision), or drop it from §4 | open |
-| 6 | Projects | Nothing on the page says the Brief and Decision log are written by the brain, so your edits there are overwritten on the next sync | Add one muted line under Brief: "Written by the brain. Add your own notes in My notes." | open |
-| 7 | All | Linked views named after the database ("Meetings", "Projects", "People") are hard to scan on a long page | Name them by the question they answer, as the Spaces do | open |
-| 8 | Meetings | A stray empty paragraph with a nested empty block at the end of the page | Delete it | open |
-| 9 | Meetings | The design (§4) and Prompt 6 don't describe the reworked template (checklist callout, AI meeting-notes block, views in toggles) | Update §4 and Prompt 6 to match, once 1, 4 and 8 are settled | open |
+| 1 | Meetings | The "Minutes format" callout (§9, Prompt 6b) isn't in the template. The checklist still says "Minutes follow the format", so the format has to live somewhere | Decide where the format lives now: in the AI meeting-notes block's instructions, or a callout again | dropped (template kept as is, 2026-10-14; the format stays in minutes-format.md) |
+| 2 | Areas, People | Placeholder callouts print literal "[Summary]", "[Role]" and "[Org]". A callout can't show a property, and the page layouts already show these fields | Remove both callouts | agreed (migration 0003) |
+| 3 | Goals | The "Why" callout competes with the brain-owned Why property. Text typed in the callout never reaches the brain | Remove the callout, or replace it with a one-line hint pointing to the property | agreed: remove (migration 0003) |
+| 4 | Meetings | Tasks come last, but they're what you act on after a meeting | Order the toggles Tasks, Decisions, Questions | dropped (template kept as is) |
+| 5 | Orgs | No Meetings view, although §4 lists "Meetings (through projects)". Notion can't filter through two relations | Add a direct Org relation on Meetings (a schema change, so a new decision), or drop it from §4 | agreed: Notion-only rollup "Meetings via projects" on Orgs, no schema change |
+| 6 | Projects | Nothing on the page says the Brief and Decision log are written by the brain, so your edits there are overwritten on the next sync | Add one muted line under Brief: "Written by the brain. Add your own notes in My notes." | agreed: gray line above Brief (migration 0003) |
+| 7 | All | Linked views named after the database ("Meetings", "Projects", "People") are hard to scan on a long page | Name them by the question they answer, as the Spaces do | agreed: question-named H3 headings (Prompt 6) |
+| 8 | Meetings | A stray empty paragraph with a nested empty block at the end of the page | Delete it | dropped (template kept as is) |
+| 9 | Meetings | The design (§4) and Prompt 6 don't describe the reworked template (checklist callout, AI meeting-notes block, views in toggles) | Update §4 and Prompt 6 to match, once 1, 4 and 8 are settled | done (§4 and Prompt 6 describe the reworked template) |
