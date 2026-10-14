@@ -135,7 +135,7 @@ Found while setting up the first real brain. Fix them before the next new user; 
 
 | # | Finding | Fix | Status |
 |---|---|---|---|
-| 1 | Views sorted and filtered on Created/Last edited time, but §3 never listed those properties. Views were written from §5 without checking §3 | Properties added to the design, prompts 2 and 5, migration 0002 (#47). Add a test that every property a view uses exists in §3 | design `fixed` (#47); test: CX-20 |
+| 1 | Views sorted and filtered on Created/Last edited time, but §3 never listed those properties. Views were written from §5 without checking §3 | Properties added to the design, prompts 2 and 5, migration 0002 (#47). Add a test that every property a view uses exists in §3 | `fixed` (#47 design, #63 test) |
 | 2 | The plugin ships skills but nothing puts `brain` on PATH; npm package not published | `prepare` script and install hint in skills and AGENTS.md (#48). Publishing to npm is the user's call | `fixed` (#48) |
 | 3 | No setup steps to give the agent access to Notion (MCP or integration token) and to share Brain Data with it, for Claude Code and Codex | Checklist section "Connect your agent to Notion" per agent; `brain-connect-notion` stops with the exact fix when Notion is unreachable. Check the current Notion MCP steps first | `todo` (0.3.0) |
 | 4 | Ingest on an empty brain did not run or request `brain-sync` first, so Areas, Projects and People were unknown | `brain-ingest` step 1: if the brain has no notes and Notion is configured, run `brain-sync` first (or tell the user) | `fixed` (#51) |
@@ -178,7 +178,7 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 - U-06 blocks CC-15; U-07 blocks CC-17.
 - CX-20 has no blocker.
 
-### CC-13 · Contracts for 0.2.0 · `review` (#58; decisions 0032, 0033)
+### CC-13 · Contracts for 0.2.0 · `done` (#58; decisions 0032, 0033)
 **Output:** one spec PR covering everything Codex builds in this release:
 - **A decision "Sources beyond meetings":**
   - source kinds `document`, `email`, `chat`, `note`, `capture`;
@@ -197,7 +197,7 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 
 **Acceptance:** Codex can build CX-18 and CX-19 from the spec alone.
 
-### CC-14 · Ingest-text skill · `review`
+### CC-14 · Ingest-text skill · `done` (#61)
 **Output:** one ingest path for everything that isn't a Notion meeting. It is a new mode of `brain-ingest` or a sibling skill; decide in the PR, keeping one source of truth for extraction.
 - **Documents:** given as a file path; routed to native reading (Claude Code: PDF and images; Codex: images with its image tool, since MarkItDown has no OCR) or MarkItDown (Office, HTML, and PDFs in Codex). Native reading records the model id as the converter version.
 - **Pasted text:** emails, chat and notes.
@@ -213,12 +213,12 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 
 **Acceptance (with the user):** 1 PDF, 1 Word or PowerPoint file, 1 pasted email and 2 Capture Inbox rows ingest end to end in the real brain, with correct sources, drafts and proposals.
 
-### CC-16 · Skill updates for findings 7 and 12 · `review` (CX-19 merged)
+### CC-16 · Skill updates for findings 7 and 12 · `done` (#62)
 **Output:**
 - `brain-ingest` passes a project per task;
 - `brain-sync` creates a missing Brief or Decision log toggle (or asks), as the CC-13 contract says.
 
-### CX-18 · Sources beyond meetings in the CLI · `review` (after CC-13)
+### CX-18 · Sources beyond meetings in the CLI · `done` (#59)
 **Output:** the CLI side of decision 0032, as spec/cli.md now says:
 - `src/lib/paths.ts`: source folder by key (§3.6.5): `notion:` → `sources/notion/`, `file:` → `sources/files/`, `url:` and `agent:` → `sources/text/`;
 - `note new` source dedupe also by `file:` key and by `capture` key (§5.5);
@@ -227,10 +227,10 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 
 The schema (note.schema.json) and examples are already in place from CC-13. **Acceptance:** tests for each bullet; the existing tests still pass.
 
-### CX-19 · Per-task project in `sync tasks` (finding 7) · `review` (after CC-13)
+### CX-19 · Per-task project in `sync tasks` (finding 7) · `done` (#60, #64)
 **Output:** spec/cli.md §5.14.5: `sync tasks` items take optional `projects` (project ids; anything else is `INPUT_INVALID` with a pointer to the item); absent or empty falls back to the meeting's projects; an unpublished project goes to the item's `pending_relations`. **Acceptance:** tests for per-item projects, the fallback, an invalid id and an unpublished project.
 
-### CX-20 · View properties test (finding 1) · `review` (can start now)
+### CX-20 · View properties test (finding 1) · `done` (#63)
 **Output:** a test that every property a view or page layout in docs/notion-space-design.md (§5, §6 and notion/prompts/) sorts, filters, groups or shows exists in §3. **Acceptance:** it fails on a deliberately broken copy and passes on main.
 
 ### CX-21 · ~~Missing project sections and Capture Inbox in the CLI~~ · `dropped` (CC-13)
