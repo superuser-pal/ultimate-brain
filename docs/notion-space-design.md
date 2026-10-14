@@ -241,7 +241,7 @@ Minimal, so the brain can send action items (0018). If you already have a tasks 
 | Property | Type | Notes |
 |---|---|---|
 | Name | Title | |
-| Status | Status: To Do, Doing, Waiting On, Someday, Done | The brain sets `new_task_status` on create and never reads it back. Waiting On and Someday sit in the To-do group and are Notion-only |
+| Status | Status: To Do, Doing, Waiting On, Someday, Done | The brain sets `new_task_status` on create and never reads it back. Waiting On and Someday sit in any group except Complete and are Notion-only |
 | Due | Date | |
 | Project | Relation → Projects | |
 | Area | Relation → Areas | |
