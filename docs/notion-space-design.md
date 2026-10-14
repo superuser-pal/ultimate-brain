@@ -30,11 +30,18 @@ The Markdown brain stays canonical (vision). Notion shows curated knowledge, col
 | Ultimate Brain | Focused dashboards (My Day, Process, Project Hub) | Spaces with views named by the question they answer |
 | Ultimate Brain | Low-friction capture, classify later | Capture Inbox + quick-capture button on Home |
 | Ultimate Brain | Cold items leave active views for review | "Gone quiet" views for projects and open questions |
+| Easlo | Blocks whose tabs follow a record's life (now → later → done) | Every Space (§5) and template (§4) |
+| Easlo | Time-first views: today, upcoming, calendar, deadlines | Home, Tasks, Meetings, Projects |
+| Easlo | Each related database repeated on every parent page, filtered to it | Templates for Area, Project, Goal, Person, Org (§4) |
+| Easlo | Home led by your own work | Home "What's on today?" (§5) |
+| Easlo | Countdown and task progress formulas | Goals and Projects (§3.2, §3.4) |
+| Easlo | GTD task states (Waiting On, Someday) and a logbook | Tasks Space (Notion-only, §3.12) |
+| Easlo | One Archive page for every database | Archive, under System (§5) |
 | Your pattern | Hub-and-spoke, backend data page, synced two-tier nav | Whole layout (§5) |
 
 ### What we deliberately leave out
 
-Task engine features (recurrence, contexts, energy, snooze), Topics/Notebooks/Highlights, books/recipes/journal subsystems, a universal Notes database, formula-heavy logic. Tasks stay in your existing database (0018).
+Task engine features (recurrence, contexts, energy, snooze), Topics/Notebooks/Highlights, books/recipes/journal subsystems, a universal Notes database, formula-heavy logic. A Notes database would split your knowledge in two: notes typed there never reach the brain, so quick notes go to the Capture Inbox and page notes to "My notes". Tasks stay in your existing database (0018); the Waiting On and Someday states are Notion-only and the brain never reads them.
 
 ---
 
@@ -79,6 +86,10 @@ Ongoing responsibilities (clients, health, learning…).
 | Meetings | Relation → Meetings (two-way with Area) | Brain |
 | Tasks | Relation → Tasks (two-way with Area) | You |
 | Archived | Checkbox | You |
+| People via projects | Rollup: Projects → People, show original | You (derived, Notion-only) |
+| Clients via projects | Rollup: Projects → Client, show original | You (derived, Notion-only) |
+| Decisions via projects | Rollup: Projects → Decisions, show original | You (derived, Notion-only; until 0034 ships) |
+| Questions via projects | Rollup: Projects → Questions, show original | You (derived, Notion-only; until 0034 ships) |
 
 ### 3.2 Goals
 | Property | Type | Owner |
@@ -90,6 +101,7 @@ Ongoing responsibilities (clients, health, learning…).
 | Key Results | Relation → Key Results | You |
 | Projects | Relation → Projects | You |
 | Progress | Rollup: Key Results → Progress, average, shown as % | You (derived) |
+| Countdown | Formula: "12 days left", "Overdue", or empty when there is no Deadline or Status is Achieved or Dropped | You (derived, Notion-only) |
 | Archived | Checkbox | You |
 
 ### 3.3 Key Results
@@ -124,6 +136,8 @@ Notion-owned entirely (0020). Not mirrored as brain notes; the brain snapshots t
 | Tasks | Relation → Tasks (two-way with Project) | You |
 | Key Facts | Text | Brain: current key facts, e.g. "Budget: 80000 EUR · Launch date: 2027-02" (format in spec/cli.md §5.14.4) |
 | Archived | Checkbox | You |
+| Countdown | Formula: days to the end of Dates ("23 days left", "Overdue"); empty when Dates is empty or Status is Done | You (derived, Notion-only) |
+| Task Progress | Rollup: Tasks → Status, percent per group Complete, shown as % | You (derived, Notion-only) |
 | Last edited time | Last edited time | System (Notion fills it; "gone quiet" view) |
 
 Page body: toggle headings **Brief** and **Decision log** (brain-written, 0026), then the template's linked views and "My notes".
@@ -166,6 +180,7 @@ Clients, partners, suppliers. One canonical entity database (your pattern's rule
 | People | Relation → People (two-way with Org) | Brain |
 | Projects | Relation → Projects (two-way with Client) | Brain |
 | Website | URL | You |
+| Meetings via projects | Rollup: Projects → Meetings, show original | You (derived, Notion-only) |
 
 ### 3.8 Decisions
 Created by the brain only.
@@ -226,55 +241,63 @@ Minimal, so the brain can send action items (0018). If you already have a tasks 
 | Property | Type | Notes |
 |---|---|---|
 | Name | Title | |
-| Status | Status: To Do, Doing, Done | |
+| Status | Status: To Do, Doing, Waiting On, Someday, Done | The brain sets `new_task_status` on create and never reads it back. Waiting On and Someday sit in any group except Complete and are Notion-only |
 | Due | Date | |
 | Project | Relation → Projects | |
 | Area | Relation → Areas | |
 | Meeting | Relation → Meetings | The backlink for action items |
 | Brain ID | Text | Set when the brain created it |
+| Last edited time | Last edited time | System (Notion fills it; groups the Done tab by week) |
 
 ---
 
 ## 4. Templates (contextual workspaces, Easlo pattern)
 
-Each template is the default for its database. Linked views filter to "this page". The table is the intent; [Prompt 6](../notion/prompts/06-templates.md) is the exact definition, and wins where they differ.
+Each template is the default for its database. Every linked view sits under an H3 heading named by the question it answers, with the database title hidden, and is filtered to "this page". Where a block has tabs, they follow the record's life (now → later → done). The table is the intent; [Prompt 6](../notion/prompts/06-templates.md) is the exact definition and wins where they differ. The live snapshot is [notion/templates.md](../notion/templates.md).
 
 | Database | Template body |
 |---|---|
-| Areas | Summary callout · Goals (active) · Projects (active) · "My notes" toggle |
-| Goals | Why callout · Key Results (table: Kind, Current/Target, Done, Progress) · Projects · "My notes" |
-| Projects | "Brief" toggle heading (brain-written) · "Decision log" toggle heading (brain-written) · Open questions · Meetings (newest first) · Tasks (not done) · People · "My notes" |
-| Meetings | Notion AI meeting notes block · Minutes format prompt (§9) · "Before marking Reviewed" checklist (attendees, project, format, minutes correct) · Decisions · Questions · Tasks from this meeting |
-| People | Role and org callout · Meetings · Projects · "My notes" |
-| Orgs | People · Projects · Meetings (through projects) · "My notes" |
+| Areas | "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "My notes". Decisions, Questions, People and Clients show as the "via projects" rollups in the page header (0034 turns Decisions and Questions into views) |
+| Goals | "How are the key results moving?" (Key Results: Open, Done) · "Which projects serve it?" (Projects) · "My notes" |
+| Projects | A muted line "Brief and Decision log are written by the brain. Add your own notes in My notes." · "Brief" toggle heading (brain-written) · "Decision log" toggle heading (brain-written) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What's still open here?" (Questions, Open) · "Who's involved?" (People) · "My notes" |
+| Meetings | Unchanged from the hand-reworked template (see notion/templates.md): "Before marking Reviewed" checklist callout · Notion AI meeting notes block · "My notes" · toggles Decisions, Questions, Tasks |
+| People | "Which meetings were they in?" (Meetings: Upcoming, Past) · "What are they working on?" (Projects) · "My notes" |
+| Orgs | "Who works there?" (People) · "Which projects?" (Projects) · "My notes". Meetings show as the "Meetings via projects" rollup in the page header |
 | Decisions | (brain-generated body) · "Superseded by" callout when present |
+
+No template uses a callout to show a property: a callout can't display one, and the page layout already shows it.
 
 ---
 
 ## 5. Layout (hub-and-spoke)
 
 ```text
-Home                          ← hub: tier-1 nav, quick capture, "needs you" summary
-├── Plan                      ← Space
-├── Projects                  ← Space
+Home                          ← hub: my day, quick capture, "needs you"
+├── Tasks                     ← Space
 ├── Meetings                  ← Space
+├── Projects                  ← Space
+├── Plan                      ← Space
 ├── Review                    ← Space
 ├── Knowledge                 ← Space
 └── (backend, never navigated)
     ├── Brain Data            ← all 12 databases
-    └── System                ← tier-1 and tier-2 synced nav masters
+    └── System                ← synced nav, Archive
 ```
 
-Each Space: tier-1 synced block (Home + all Spaces, unthemed) above a divider, then its tier-2 synced block (themed), then linked views only. A small non-synced label above the page title names the current page. Views are named by the question they answer.
+Each Space: the synced Spaces navigation in a narrow left column, then one tabs block whose tabs hold the linked views (Knowledge: one tab per database, each holding one linked view with several views). Views are named by the question they answer; tab labels are short. Each view shows what you need to act on from that view, usually 2–4 properties; everything else is on the page.
 
-| Space | Job | Views (named by question) |
+| Space | Job | Tabs (view) |
 |---|---|---|
-| **Home** | Start of day | Quick capture (button → Capture Inbox) · "What needs my decision?" (Review, Pending, count) · "Which minutes need review?" (Meetings, Not Reviewed) · "What's active?" (Projects, Active) |
-| **Plan** | Areas → goals → key results → projects | "What am I working toward?" (Goals, Active, with Progress) · "How are my key results moving?" (Key Results by Goal) · "Which areas do I own?" (Areas) · "Which projects serve each goal?" (Projects grouped by Goal) |
-| **Projects** | Run projects | "What's active?" (board by Status) · "What's due soon?" (by Dates) · "Which projects have gone quiet?" (Active, Last Synced or last edit > 30 days) · "What's finished?" (Done / Archived) |
-| **Meetings** | Review minutes, track ingestion | "Which minutes need review?" (Not Reviewed) · "What's waiting for the brain?" (Reviewed) · "What did the brain take in this week?" (Ingested, last 7 days) · "All meetings by project" |
-| **Review** | Decide on proposals | "What needs my decision?" (Pending, newest first) · "Where do sources disagree?" (Kind = Contradiction, Pending) · "What did I approve recently?" (Applied, last 30 days) · "What did I reject?" (Closed) |
-| **Knowledge** | Navigate what the brain knows | "What did we decide?" (Decisions, Accepted, newest) · "What changed our minds?" (Decisions, Superseded) · "What's still open?" (Questions, Open) · "Who's who?" (People by Org) · "Which clients do I have?" (Orgs, Client) · "What's in my inbox?" (Capture Inbox, New) |
+| **Home** | Start of day: your work first | Left: navigation, then "Needs you": "What needs my decision?" (Review, Pending) and "Which minutes need review?" (Meetings, Not Reviewed, held today or earlier), 5 rows each. Right: buttons Quick capture (→ Capture Inbox), New meeting, New project; then "What's on today?" with tabs Tasks (due today or overdue) · Meetings (today) · Projects (Active) |
+| **Tasks** | Do the work | Today · Upcoming (by day) · No date · Waiting On · Someday · Done (by week) |
+| **Meetings** | Prepare, review minutes, track ingestion | Upcoming · To review · Ready for the brain · Ingested this week · Calendar |
+| **Projects** | Run projects | Active (board by Status) · By area · Deadlines (timeline) · Gone quiet |
+| **Plan** | Areas → goals → key results → projects | Goals · Key results (by goal) · Areas (the way into each Area page) · Projects by goal |
+| **Review** | Decide on proposals | Needs my decision · Sources disagree · Approved recently · Rejected |
+| **Knowledge** | Navigate what the brain knows | Decisions (Recent, Current, Provisional, Superseded, Disputed) · Questions (Open questions, Open risks, Answered) · People (by org, Disputed) · Orgs (Clients, Others) · Inbox (Capture Inbox, New) |
+| **Archive** (under System) | Find what's finished | One tab per database: Projects (Done or Archived) · Goals (Achieved, Dropped or Archived) · Areas · Decisions · Questions · People · Orgs (Archived) |
+
+Every view, with its filters, sort and properties, is in [notion/views-guide.md](../notion/views-guide.md) and Prompts 7a–7h.
 
 ---
 
@@ -289,8 +312,8 @@ The prompts live in [notion/prompts/](../notion/prompts/), each with its **Verif
 | 3 | [Relations](../notion/prompts/03-relations.md) | the two-way relations of §3 |
 | 4 | [Formula and rollup](../notion/prompts/04-formula-rollup.md) | Key Results and Goals Progress |
 | 5 | [Ownership](../notion/prompts/05-ownership.md) | owner prefix in each property description (§2) |
-| 6 | [Templates](../notion/prompts/06-templates.md) | the templates of §4, plus step 6b: paste the minutes format by hand |
-| 7 | [Spaces and views](../notion/prompts/07-spaces-views.md) | the views of §5, one prompt per Space |
+| 6 | [Templates](../notion/prompts/06-templates.md) | the templates of §4 |
+| 7 | [Spaces and views](../notion/prompts/07-spaces-views.md) | the views of §5, one prompt per Space, plus Tasks (7g) and Archive (7h) |
 | 8 (optional) | [Navigation](../notion/prompts/08-navigation.md) | tier 1 and tier 2 synced navigation |
 
 When this design changes, update the matching prompt file in the same change (decision 0022). Spaces that already exist get a migration in [notion/migrations/](../notion/migrations/), written by the `brain-notion-change` skill.
@@ -332,4 +355,4 @@ See "After building" in [notion/CHECKLIST.md](../notion/CHECKLIST.md): connect t
 
 ## 9. Minutes format prompt (for the Meetings template)
 
-The text lives in [notion/minutes-format.md](../notion/minutes-format.md). It is pasted by hand into the "Minutes format" callout of the Meetings template (Prompt 6, step 6b), so every summary has the same sections (Attendees, Decisions, Action items, Facts & numbers, Open questions, Risks, Summary). Consistent minutes make the ingest more accurate (0024).
+The text lives in [notion/minutes-format.md](../notion/minutes-format.md). It gives every summary the same sections (Attendees, Decisions, Action items, Facts & numbers, Open questions, Risks, Summary), and consistent minutes make the ingest more accurate (0024). Paste it into Notion AI when you ask it to summarise a meeting, or use it to check minutes against the "Minutes follow the format" item of the checklist. The Meetings template (reworked by hand on 2026-10-13) no longer holds it in a callout; on 2026-10-14 we chose to keep that template as it is.

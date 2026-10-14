@@ -4,7 +4,7 @@ A by-hand alternative to [Prompt 7](prompts/07-spaces-views.md) and [Prompt 8](p
 
 It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md) §3–§5. If the two ever disagree, the design document wins (decision 0022).
 
-**Before you start:** Prompts 1–6 are done. All 12 databases live on **Brain Data**, the relations exist, Progress is a percent formula on Key Results and a percent rollup on Goals, and the templates are the database defaults.
+**Before you start:** Prompts 1–6 are done. All 12 databases live on **Brain Data**, the relations exist, the formulas and rollups of Prompt 4 exist (Progress, Countdown, Task Progress, the "via projects" rollups), and the templates are the database defaults.
 
 ---
 
@@ -23,84 +23,118 @@ It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md)
 
 ---
 
+## How a Space is arranged
+
+- **Left column (narrow):** the synced Spaces navigation, plus any buttons for that Space.
+- **Right column:** one **tabs** block (`/tabs`). Each tab holds one linked view, with *Show database title* turned off. The tab label is short ("Today"); the view's name is the question it answers ("What's due today?").
+- **Lifecycle order:** tabs run from now, to later, to done, as in Easlo's dashboards.
+- **Properties:** each view shows what you need to act on from that view, usually 2–4 properties. Anything else is one click away, on the page.
+
+---
+
 ## 1. Home (start of day)
 
-**Job:** see in ten seconds what needs you today.
+**Job:** see in ten seconds what you have to do today, then what the brain needs from you.
 
-| # | View name | Database | Layout | Filter | Sort | Group | Show | Use case |
+**Left column:** navigation, then a small heading "Needs you" with two short lists (views 1–2).
+**Right column:** the three buttons in a row, then "What's on today?" as a tabs block (views 3–5).
+
+| # | Tab | View name | Database | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|---|
-| 1 | — (button) | Capture Inbox | Button "Quick capture" | — | — | — | — | One click to drop an idea, link or to-do into the inbox; the brain classifies it later |
-| 2 | What needs my decision? | Review | List | State is Pending | Created time, descending | — | Name, Kind, Decision | Proposals waiting for approve, reject or edit. Clear this first |
-| 3 | Which minutes need review? | Meetings | List | Brain Status is Not Reviewed | Date, descending | — | Name, Date, Project | Meetings whose AI minutes you still need to check before the brain may ingest them |
-| 4 | What's active? | Projects | Gallery (small cards) | Status is Active · Archived is unchecked | Priority (High→Low), then Name | — | Name, Priority, Dates, Client | What you're working on now |
+| 1 | — | What needs my decision? | Review | List, 5 rows | State is Pending | Created time, descending | Name | Proposals waiting for you. Click one to decide it in the Review Space |
+| 2 | — | Which minutes need review? | Meetings | List, 5 rows | Brain Status is Not Reviewed · Date is on or before today | Date, descending | Name | Minutes to check before the brain may ingest them. Upcoming meetings stay out |
+| 3 | Tasks | What's due today? | Tasks | List | Status is To Do or Doing · Due is on or before today | Due, ascending | Name, Project, Due | Today's work, overdue first |
+| 4 | Meetings | Which meetings are today? | Meetings | List | Date is today | Date, ascending | Name, Date, Project | Today's meetings, with time and project |
+| 5 | Projects | What's active? | Projects | Gallery (small cards) | Status is Active · Archived is unchecked | Priority (High→Low), then Name | Name, Client, Countdown, Task Progress | What you're working on, and how far along each is |
 
-**Quick capture button:** `/button` → name it "Quick capture" → action **Add page to** → *Capture Inbox* → set **Brain Status** = New → turn on *Open page after creation*.
+**Buttons** (`/button`, each with *Open page after creation* on):
 
-**Layout tip:** two columns. Put Quick capture and view 2 on the left, views 3 and 4 on the right. Set each list to show 5 rows (`•••` → *Load limit* → 10 or fewer).
+| Button | Action |
+|---|---|
+| Quick capture | Add page to *Capture Inbox*, Brain Status = New |
+| New meeting | Add page to *Meetings*, Date = today. The default template applies |
+| New project | Add page to *Projects*, Status = Planned. The default template applies |
 
 ---
 
-## 2. Plan (areas → goals → key results → projects)
+## 2. Tasks (do the work)
 
-**Job:** check that what you do serves what you want.
+**Job:** know what to do now, what's coming, what you're waiting on, and what you've done. Waiting On and Someday are Notion-only: the brain creates tasks as To Do and never reads Status back.
 
-| # | View name | Database | Layout | Filter | Sort | Group | Show | Use case |
+| # | Tab | View name | Layout | Filter | Sort | Group | Show | Use case |
 |---|---|---|---|---|---|---|---|---|
-| 1 | What am I working toward? | Goals | Gallery (medium cards) | Status is Active · Archived is unchecked | Deadline, ascending | — | Name, Progress (bar), Deadline, Area | Your active goals with progress. Glance at it weekly |
-| 2 | How are my key results moving? | Key Results | Table | Goal → Status is Active (filter on the related goal; if your Notion can't filter through a relation, use Done is unchecked) | Due, ascending | Goal | Name, Kind, Current, Target, Unit, Progress, Due, Done | Update Current numbers and tick milestones. This is where you edit progress |
-| 3 | Which areas do I own? | Areas | List | Archived is unchecked | Type, then Name | — | Name, Type, Summary | Your areas of responsibility, business and personal |
-| 4 | Which projects serve each goal? | Projects | Board | Archived is unchecked · Status is not Done | Priority (High→Low) | Goal (show the empty group as "No goal") | Name, Status, Priority | Spot projects with no goal, and goals with no project |
+| 1 | Today | What's due today? | List | Status is To Do or Doing · Due is on or before today | Due, ascending | — | Name, Project, Due, Status | Your day, overdue first. Set Doing when you start |
+| 2 | Upcoming | What's coming up? | List | Status is To Do or Doing · Due is after today | Due, ascending | Due (by day) | Name, Project | The days ahead, one group per day |
+| 3 | No date | What has no date? | List | Status is To Do or Doing · Due is empty | — | Project | Name, Meeting | Meeting tasks often arrive without a date. Give each a Due, or move it to Someday |
+| 4 | Waiting On | What am I waiting on? | List | Status is Waiting On | Due, ascending | — | Name, Project, Due | Things that depend on someone else. Chase them, or set them back to To Do |
+| 5 | Someday | What could I do someday? | List | Status is Someday | — | Project | Name | Ideas you're not committing to yet |
+| 6 | Done | What did I finish? | List | Status is Done | Last edited time, descending | Last edited time (by week) | Name, Project | Easlo's logbook: what you got done, week by week |
 
-**Progress as a bar:** in views 1 and 2, click Progress → *Show as* → **Bar**, color green, show the number.
+All views use the Tasks database. Using your own Tasks database (0018)? Map the same filters to your own properties.
 
 ---
 
-## 3. Projects (run projects)
+## 3. Meetings (prepare, review minutes, track ingestion)
 
-**Job:** keep each project moving, and notice the ones that stall.
+**Job:** prepare upcoming meetings, then move each one from raw minutes → reviewed → ingested by the brain.
 
-| # | View name | Database | Layout | Filter | Sort | Group | Show | Use case |
+| # | Tab | View name | Layout | Filter | Sort | Group | Show | Use case |
 |---|---|---|---|---|---|---|---|---|
-| 1 | What's active? | Projects | Board | Archived is unchecked | Priority (High→Low) | Status (columns in order: Planned, Active, On Hold, Done; hide Done if it gets long) | Name, Priority, Dates, Client, Key Facts | Move projects between stages, drag and drop |
-| 2 | What's due soon? | Projects | Timeline (by Dates) or Table | Status is Active or Planned · Archived is unchecked | Dates (end), ascending | — | Name, Dates, Priority, Status | Deadlines in order. Timeline shows overlap |
-| 3 | Which projects have gone quiet? | Projects | Table | Status is Active · Last edited time is **before** *one month ago* (relative) | Last edited time, ascending | — | Name, Last edited time, Last Synced, Client | Active projects nobody has touched in 30 days. Restart, pause (On Hold) or close each one |
-| 4 | What's finished? | Projects | Table | Status is Done **or** Archived is checked (use a filter group with "Or") | Dates (end), descending | — | Name, Dates, Client, Status | Your track record. Archive what you no longer need |
-
-**Use case for Key Facts:** the brain keeps it current, e.g. "Budget: 80000 EUR · Launch date: 2027-02". Read it on the card instead of opening the page.
-
----
-
-## 4. Meetings (review minutes, track ingestion)
-
-**Job:** move each meeting from raw minutes → reviewed → ingested by the brain.
-
-| # | View name | Database | Layout | Filter | Sort | Group | Show | Use case |
-|---|---|---|---|---|---|---|---|---|
-| 1 | Which minutes need review? | Meetings | Table | Brain Status is Not Reviewed | Date, descending | — | Name, Date, Attendees, Project, Brain Status | Check the minutes against the format and the checklist in the page, then set Brain Status to Reviewed (or Skipped) |
-| 2 | What's waiting for the brain? | Meetings | List | Brain Status is Reviewed | Date, ascending | — | Name, Date, Project | Reviewed meetings the next ingest will take. If one sits here for days, run the ingest |
-| 3 | What did the brain take in this week? | Meetings | Table | Brain Status is Ingested · Ingested At is within *Past week* (relative) | Ingested At, descending | — | Name, Date, Ingested At, Decisions, Questions | See what each ingest produced: decisions and questions linked back to the meeting |
-| 4 | All meetings by project | Meetings | Table | — | Date, descending | Project (show "No project" group) | Name, Date, Brain Status, Attendees | History per project. The "No project" group shows meetings to link |
-| 5 *(optional)* | Meeting calendar | Meetings | Calendar (by Date) | — | — | — | Name, Brain Status | Find a meeting by when it happened |
+| 1 | Upcoming | What's coming up? | List | Date is on or after today | Date, ascending | — | Name, Date, Project, Attendees | Meetings you created ahead of time. Open one to prepare |
+| 2 | To review | Which minutes need review? | Table | Brain Status is Not Reviewed · Date is on or before today | Date, descending | — | Name, Date, Project, Brain Status | Check the minutes with the checklist in the page, then set Reviewed (or Skipped) in this view |
+| 3 | Ready | What's waiting for the brain? | List | Brain Status is Reviewed | Date, ascending | — | Name, Date, Project | The next ingest takes these. If one sits here for days, run the ingest |
+| 4 | Ingested | What did the brain take in this week? | Table | Brain Status is Ingested · Ingested At is within *Past week* (relative) | Ingested At, descending | — | Name, Ingested At, Decisions, Questions | What each ingest produced |
+| 5 | Calendar | When did we meet? | Calendar (by Date) | — | — | — | Name, Brain Status | Find a meeting by when it happened |
 
 **The meeting flow, for reference:**
-1. Notion AI writes the minutes using the Minutes format callout.
-2. You tick the "Before marking Reviewed" checklist and set **Reviewed**.
-3. The ingest sets **Ingested** and fills in Decisions, Questions and Attendees.
-4. **Skipped** means the brain never reads that meeting.
+1. You create the meeting ahead of time (New meeting on Home), or Notion AI creates it when it starts taking notes.
+2. Notion AI writes the minutes. Use [minutes-format.md](minutes-format.md) for the sections.
+3. You tick the "Before marking Reviewed" checklist and set **Reviewed**.
+4. The ingest sets **Ingested** and fills in Decisions, Questions and Attendees.
+5. **Skipped** means the brain never reads that meeting.
 
 ---
 
-## 5. Review (decide on proposals)
+## 4. Projects (run projects)
+
+**Job:** keep each project moving, and notice the ones that stall. Finished projects are in Archive (§8).
+
+| # | Tab | View name | Layout | Filter | Sort | Group | Show | Use case |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Active | What's active? | Board | Archived is unchecked · Status is not Done | Priority (High→Low) | Status (Planned, Active, On Hold) | Name, Client, Priority, Countdown, Task Progress | Move projects between stages; see time left and work done on each card |
+| 2 | By area | What's in each area? | Board | Archived is unchecked · Status is not Done | Priority (High→Low) | Area (show "No area") | Name, Status, Countdown | Balance across areas; link projects with no area |
+| 3 | Deadlines | What's due soon? | Timeline (by Dates) | Status is Active or Planned · Archived is unchecked | Dates (end), ascending | — | Name, Countdown | Deadlines in order; the timeline shows overlap |
+| 4 | Gone quiet | Which projects have gone quiet? | Table | Status is Active · Last edited time is **before** *one month ago* (relative) | Last edited time, ascending | — | Name, Last edited time, Last Synced, Client | Active projects nobody has touched in 30 days. Restart, pause (On Hold) or close each one |
+
+**Key Facts** (for example "Budget: 80000 EUR · Launch date: 2027-02") is kept current by the brain and sits first in the project page's panel.
+
+---
+
+## 5. Plan (areas → goals → key results → projects)
+
+**Job:** check that what you do serves what you want. Areas are the way into each Area page, which collects everything for that area.
+
+| # | Tab | View name | Layout | Filter | Sort | Group | Show | Use case |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Goals | What am I working toward? | Gallery (medium cards) | Status is Active · Archived is unchecked | Deadline, ascending | — | Name, Progress (bar), Countdown, Area | Your active goals with progress and time left. Glance at it weekly |
+| 2 | Key results | How are my key results moving? | Table | Goal → Status is Active (if your Notion can't filter through a relation, use Done is unchecked) | Due, ascending | Goal | Name, Current, Target, Unit, Progress, Done | Update Current and tick milestones here |
+| 3 | Areas | Which areas do I own? | Gallery (small cards) | Archived is unchecked | Type, then Name | — | Name, Type | Open an area to see its goals, projects, tasks, meetings, decisions and people |
+| 4 | Projects by goal | Which projects serve each goal? | Board | Archived is unchecked · Status is not Done | Priority (High→Low) | Goal (show "No goal") | Name, Status | Spot projects with no goal, and goals with no project |
+
+**Progress as a bar:** click Progress → *Show as* → **Bar**, color green, show the number.
+
+---
+
+## 6. Review (decide on proposals)
 
 **Job:** approve, reject or edit every change the brain proposes to your existing knowledge (decision 0003).
 
-| # | View name | Database | Layout | Filter | Sort | Group | Show | Use case |
-|---|---|---|---|---|---|---|---|---|
-| 1 | What needs my decision? | Review | Table | State is Pending | Created time, descending | — | Name, Kind, Before, After, Why, Source Meeting, Decision, Edited Value | Your main queue. Set Decision. For Edit, type the corrected value in Edited Value. The brain applies it on the next apply |
-| 2 | Where do sources disagree? | Review | Table | Kind is Contradiction · State is Pending | Created time, ascending | — | Name, Before, After, Why, Source Meeting, Decision, Edited Value | Two sources disagree. Approve keeps both as contested. Edit sets the true value |
-| 3 | What did I approve recently? | Review | List | State is Applied · Last edited time is within *Past month* (relative) | Last edited time, descending | — | Name, Kind, Decision, After | Audit trail of what changed |
-| 4 | What did I reject? | Review | List | State is Closed | Last edited time, descending | — | Name, Kind, Decision, Why | Rejected or stale proposals. If you change your mind, the brain may propose it again on the next ingest |
-| 5 *(optional)* | By kind | Review | Board | State is Pending | Created time, descending | Kind | Name, Before, After | Batch-decide similar proposals, e.g. all "New Item" at once |
+| # | Tab | View name | Layout | Filter | Sort | Show | Use case |
+|---|---|---|---|---|---|---|---|
+| 1 | Needs my decision | What needs my decision? | Table | State is Pending | Created time, descending | Name, Kind, Before, After, Decision | Your main queue. Set Decision here. To see Why or the source, or to type an Edited Value, open the row |
+| 2 | Sources disagree | Where do sources disagree? | Table | Kind is Contradiction · State is Pending | Created time, ascending | Name, Before, After, Decision | Approve keeps both claims as contested. Edit (in the page) sets the true value |
+| 3 | Approved | What did I approve recently? | List | State is Applied · Last edited time is within *Past month* (relative) | Last edited time, descending | Name, Kind, After | Audit trail of what changed |
+| 4 | Rejected | What did I reject? | List | State is Closed | Last edited time, descending | Name, Kind | Rejected or stale proposals. The brain may propose one again on the next ingest |
 
 **How to decide:**
 
@@ -115,53 +149,79 @@ It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md)
 
 ---
 
-## 6. Knowledge (what the brain knows)
+## 7. Knowledge (what the brain knows)
 
-**Job:** find decisions, open questions, people and clients.
+**Job:** find decisions, open questions, people and organisations, in Easlo's Notes Dashboard pattern: one tab per database, and inside each tab one linked view with several views (Recent, Current, History).
 
-| # | View name | Database | Layout | Filter | Sort | Group | Show | Use case |
-|---|---|---|---|---|---|---|---|---|
-| 1 | What did we decide? | Decisions | Table | Assessment is Accepted | Date, descending | — | Name, Date, Project, Decided In, Summary | Current decisions, newest first. Answers "why did we choose X?" |
-| 2 | What changed our minds? | Decisions | Table | Assessment is Superseded | Date, descending | — | Name, Date, Superseded By, Project | Replaced decisions and what replaced them |
-| 3 | What's still open? | Questions | Board | Status is Open | Created time, descending | Kind (Question / Risk) | Name, Project, Raised In | Open questions and risks. Set Answered or Dropped when resolved |
-| 4 | Who's who? | People | Gallery (small cards) | Lifecycle is not Archived | Name | Org | Name, Role, Org, Email | Find a person by company and role |
-| 5 | Which clients do I have? | Orgs | Table | Relationship is Client | Name | — | Name, Website, People, Projects | Your client list with its contacts and projects |
-| 6 | What's in my inbox? | Capture Inbox | List | Brain Status is New | Created, descending | — | Name, Created | Unprocessed captures. Set Skipped for anything the brain shouldn't touch |
-| 7 *(optional)* | What's provisional? | Decisions | List | Assessment is Provisional | Date, descending | — | Name, Date, Project | Decisions mentioned once and not yet confirmed. Confirm them in the next meeting |
-| 8 *(optional)* | What's disputed? | (any brain database) | List | Lifecycle is Disputed | Last edited time, descending | — | Name, Summary | Records you marked as wrong. Fix them or ask the brain to |
+| Tab | View name | Layout | Filter | Sort | Group | Show | Use case |
+|---|---|---|---|---|---|---|---|
+| Decisions | What did we decide recently? | List | Date is within *Past week* (relative) | Date, descending | — | Name, Project, Date | This week's decisions |
+| Decisions | What did we decide? | Table | Assessment is Accepted · Lifecycle is not Archived | Date, descending | — | Name, Project, Date, Summary | Current decisions. Answers "why did we choose X?" |
+| Decisions | What's provisional? | List | Assessment is Provisional | Date, descending | — | Name, Project, Date | Mentioned once, not yet confirmed. Confirm them in the next meeting |
+| Decisions | What changed our minds? | Table | Assessment is Superseded | Date, descending | — | Name, Superseded By, Date | Replaced decisions and what replaced them |
+| Decisions | What's disputed? | List | Lifecycle is Disputed | Date, descending | — | Name, Summary | Records you marked as wrong. Fix them or ask the brain to |
+| Questions | What's still open? | List | Status is Open · Kind is Question | Created time, descending | — | Name, Project, Raised In | Open questions. Set Answered or Dropped when resolved |
+| Questions | Which risks are open? | List | Status is Open · Kind is Risk | Created time, descending | — | Name, Project, Raised In | Open risks |
+| Questions | What did we answer? | List | Status is Answered | Created time, descending | — | Name, Project, Summary | Resolved questions and their answer |
+| People | Who's who? | Gallery (small cards) | Lifecycle is not Archived | Name | Org | Name, Role, Org | Find a person by company and role |
+| People | Who's disputed? | List | Lifecycle is Disputed | Name | — | Name, Summary | People records you marked as wrong |
+| Orgs | Which clients do I have? | Table | Relationship is Client · Lifecycle is not Archived | Name | — | Name, People, Projects | Your clients with their contacts and projects |
+| Orgs | Who else do we work with? | Table | Relationship is not Client · Lifecycle is not Archived | Name | Relationship | Name, Relationship, People | Prospects, partners and suppliers |
+| Inbox | What's in my inbox? | List | Brain Status is New | Created, descending | — | Name, Created | Unprocessed captures. Set Skipped for anything the brain shouldn't touch |
+
+There is no Notes database on purpose: notes typed there would never reach the brain. Quick notes go to the Capture Inbox, and notes about a record go in its "My notes" toggle.
 
 ---
 
-## 7. Database page layouts
+## 8. Archive (under System)
 
-Notion lets you shape how each database page opens: which properties sit in the header, which are grouped in the side panel, and which are hidden. Set it once per database: open any row → `•••` → **Customize layout** (or *Customize page*).
+**Job:** find what's finished without cluttering the Spaces. A page named "Archive" on System, linked from the navigation, with one tab per database.
 
-- **Pinned:** in the header, under the title.
-- **Panel:** in the side panel or the property list.
+| Tab | View name | Database | Layout | Filter | Sort | Show |
+|---|---|---|---|---|---|---|
+| Projects | What's finished? | Projects | Table | Status is Done **or** Archived is checked (filter group joined with Or) | Dates (end), descending | Name, Dates, Client, Status |
+| Goals | Which goals are closed? | Goals | Table | Status is Achieved or Dropped, **or** Archived is checked | Deadline, descending | Name, Status, Deadline |
+| Areas | Which areas did I close? | Areas | List | Archived is checked | Name | Name, Type |
+| Decisions | Which decisions are archived? | Decisions | List | Lifecycle is Archived | Date, descending | Name, Project, Date |
+| Questions | Which questions are archived? | Questions | List | Lifecycle is Archived | Created time, descending | Name, Project, Status |
+| People | Who is archived? | People | List | Lifecycle is Archived | Name | Name, Org |
+| Orgs | Which orgs are archived? | Orgs | List | Lifecycle is Archived | Name | Name, Relationship |
+
+---
+
+## 9. Database page layouts
+
+Notion lets you shape how each database page opens. Set it once per database: open any row as a full page → `•••` → **Customize layout**. It applies to every page of that database.
+
+- **Heading:** the title plus pinned properties, left to right. Pin what *you* change; keep it to 2–4 so nothing falls into the side scroller.
+- **Property group:** one per layout, placed in the **main** page area or the **details panel**. Pinned properties leave it.
 - **Hidden:** shown only on *Show all properties*.
+- **Backlinks:** *Show always*, *On hover* or *Off*.
 
-| Database | Pinned | Panel | Hidden | Why |
-|---|---|---|---|---|
-| Areas | Type, Lifecycle | Summary, Goals, Projects, Archived | Brain ID, Last Synced | An area is mostly its links to goals and projects |
-| Goals | Status, Progress, Deadline | Why, Area, Key Results, Projects, Summary, Lifecycle, Archived | Brain ID, Last Synced | Progress and status at a glance |
-| Key Results | Progress, Done | Goal, Kind, Start, Current, Target, Unit, Due | — | You edit Current here |
-| Projects | Status, Priority, Dates | Area, Goal, Client, People, Key Facts, Summary, Lifecycle, Archived, Meetings, Decisions, Questions | Brain ID, Last Synced | Body = Brief + Decision log toggles; the panel holds the context |
-| Meetings | Date, Brain Status, Project | Attendees, Area, Decisions, Questions, Ingested At | Brain ID | Brain Status is the one field you change per meeting |
-| People | Role, Org | Email, Projects, Meetings, Summary, Lifecycle | Brain ID, Last Synced | Who they are and where they work |
-| Orgs | Relationship, Website | People, Projects, Summary, Lifecycle | Brain ID, Last Synced | — |
-| Decisions | Assessment, Date | Project, Decided In, Supersedes, Superseded By, Summary, Lifecycle | Brain ID, Last Synced | The body is brain-written: context, decision, consequences, sources |
-| Questions | Status, Kind | Project, Raised In, Summary, Lifecycle | Brain ID, Last Synced | You set Status |
-| Review | Decision, State, Kind | Before, After, Edited Value, Why, Target, Target Page, Source Meeting | Brain ID | Decide without scrolling: Decision is in the header |
-| Capture Inbox | Brain Status | Created | — | — |
-| Tasks | Status, Due | Project, Area, Meeting | Brain ID | Only if you use the default Tasks database |
+Relations the template already shows as linked views (meetings, tasks, questions) stay in the panel, out of the way.
+
+| Database | Heading (in order) | Property group: where · order | Hidden | Backlinks | Why |
+|---|---|---|---|---|---|
+| Areas | Type, Lifecycle | Panel · Summary, Decisions via projects, Questions via projects, People via projects, Clients via projects, Goals, Projects, Meetings, Tasks, Archived | Brain ID, Last Synced | Off | An area is mostly its links to goals and projects |
+| Goals | Status, Progress, Countdown | Panel · Deadline, Why, Area, Key Results, Projects, Summary, Lifecycle, Archived | Brain ID, Last Synced | Off | Progress and status at a glance |
+| Key Results | Progress, Current, Target | Main · Goal, Kind, Start, Unit, Done, Due | — | Off | No body; you edit Current in the heading |
+| Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Goal, People, Summary, Lifecycle, Archived, Meetings, Decisions, Questions, Tasks | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel |
+| Meetings | Brain Status, Date, Project | Panel · Attendees, Area, Decisions, Questions, Tasks, Review Items | Brain ID, Ingested At | Off | Brain Status is the one field you change per meeting |
+| People | Role, Org | Panel · Email, Projects, Meetings, Summary, Lifecycle | Brain ID, Last Synced | On hover | Who they are and where they work |
+| Orgs | Relationship, Website | Panel · Meetings via projects, People, Projects, Summary, Lifecycle | Brain ID, Last Synced | On hover | — |
+| Decisions | Assessment, Date, Project | Panel · Decided In, Supersedes, Superseded By, Summary, Lifecycle | Brain ID, Last Synced | Show always | The body is brain-written; backlinks show supersede chains and mentions |
+| Questions | Status, Kind, Project | Panel · Raised In, Summary, Lifecycle | Brain ID, Last Synced, Created time | Off | You set Status |
+| Review | Decision, Kind, State | Main · Before, After, Why, Edited Value, Target, Target Page, Source Meeting | Brain ID, Created time, Last edited time | Off | No body; read Before, After and Why, then decide in the heading |
+| Capture Inbox | Brain Status | Main · Created | — | Off | Created is the only context a capture has |
+| Tasks | Status, Due | Panel · Project, Area, Meeting | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
 
 **Hide system properties everywhere.** Brain ID, Last Synced, Created time and Last edited time are plumbing (owner "system"). Hide them in every view and layout, except where a view lists one to show (for example Last edited time in "Which projects have gone quiet?"). Don't delete them, because the brain matches records by Brain ID.
 
 ---
 
-## 8. Navigation (instead of Prompt 8)
+## 10. Navigation (instead of Prompt 8)
 
-1. **On the "System" page,** create a synced block named "Tier 1 nav": one line of links, Home · Plan · Projects · Meetings · Review · Knowledge, unthemed.
+1. **On the "System" page,** create a synced block named "Tier 1 nav": one line of links, Home · Tasks · Meetings · Projects · Plan · Review · Knowledge · Archive, unthemed.
 2. **Still on "System",** create one synced block per Space, "Tier 2 nav – Plan" and so on. Each lists that Space's view names as links (right-click a view tab → *Copy link to view*), with its own icon and a light background color.
 3. **On each Space page,** add a narrow left column containing: Tier 1 nav, a divider, then that Space's Tier 2 nav. Home gets only Tier 1.
 4. **Above each page title,** add a small gray text label with the page name. It's a plain block, not synced.
@@ -170,11 +230,14 @@ Notion lets you shape how each database page opens: which properties sit in the 
 
 ---
 
-## 9. Done checklist
+## 11. Done checklist
 
-- [ ] Every Space holds only linked views (plus Quick capture on Home); no database lives outside Brain Data.
+- [ ] Every Space holds only linked views (plus the three buttons on Home); no database lives outside Brain Data.
+- [ ] Home "Which minutes need review?" leaves out meetings dated after today.
+- [ ] Tasks has the statuses Waiting On and Someday, and the Done tab groups by week.
+- [ ] Archive is on System and linked from the navigation; "What's finished?" is no longer in Projects.
 - [ ] View names match this guide exactly, question marks included.
 - [ ] Home "What needs my decision?" shows only Pending rows; Knowledge "What changed our minds?" shows only Superseded decisions.
-- [ ] Quick capture creates a Capture Inbox row with Brain Status New.
+- [ ] Quick capture creates a Capture Inbox row with Brain Status New; New meeting and New project open a page with the default template.
 - [ ] Brain ID and Last Synced are hidden in every view and page layout.
 - [ ] Editing Tier 1 nav on System updates every Space.

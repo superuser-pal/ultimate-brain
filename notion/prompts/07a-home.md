@@ -1,23 +1,32 @@
 # Prompt 7a — Home Space views
 
-Paste into Notion AI **while you are on the "Home" page**, after [Prompt 6](06-templates.md). Other Spaces: [index](07-spaces-views.md).
+Paste into Notion AI **while you are on the "Home" page**, after [Prompt 6](06-templates.md). Other Spaces: [index](07-spaces-views.md). Every view, with its use case, is in [../views-guide.md](../views-guide.md).
 
-This page holds only linked views of databases on "Brain Data". No navigation or layout work is in this prompt.
+Home leads with your own work; the brain's queues sit small in the left column. If your Home is the root "Ultimate Brain" page, paste it there.
 
 ```text
-On this page ("Home") add:
+On this page ("Home"):
 
-1. A button "Quick capture": action Add page to "Capture Inbox", set Brain Status = New, open the page after creation.
-2. A linked view of "Review", List layout, named "What needs my decision?": filter State is Pending; sort Created time descending; show Name, Kind, Decision.
-3. A linked view of "Meetings", List layout, named "Which minutes need review?": filter Brain Status is Not Reviewed; sort Date descending; show Name, Date, Project.
-4. A linked view of "Projects", Gallery layout with small cards, named "What's active?": filter Status is Active and Archived is unchecked; sort Priority then Name; show Name, Priority, Dates, Client.
+In the left column, under the navigation, add a heading 3 "Needs you" and two linked views, List layout, at most 5 rows each:
+1. "What needs my decision?" of "Review": filter State is Pending; sort Created time descending; show Name.
+2. "Which minutes need review?" of "Meetings": filter Brain Status is Not Reviewed and Date is on or before today; sort Date descending; show Name.
 
-Show at most 10 rows in each list.
+In the right column add, in one row:
+3. A button "Quick capture": Add page to "Capture Inbox", set Brain Status = New, open the page after creation.
+4. A button "New meeting": Add page to "Meetings", set Date = today, open the page after creation.
+5. A button "New project": Add page to "Projects", set Status = Planned, open the page after creation.
 
-Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included. In every view hide the properties "Brain ID", "Last Synced", "Created time" and "Last edited time" unless the view lists them under show. Show only the properties listed. Do not add other content.
+Below them, a heading 3 "What's on today?" and three tabs:
+6. Tab "Tasks": linked view of "Tasks", List, named "What's due today?": filter Status is To Do or Doing and Due is on or before today; sort Due ascending; show Name, Project, Due.
+7. Tab "Meetings": linked view of "Meetings", List, named "Which meetings are today?": filter Date is today; sort Date ascending; show Name, Date, Project.
+8. Tab "Projects": linked view of "Projects", Gallery with small cards, named "What's active?": filter Status is Active and Archived is unchecked; sort Priority then Name; show Name, Client, Countdown, Task Progress.
+
+Put the views in a tabs block (one view per tab, tab labels as given). If you can't create tabs, add them as separate views of one linked view instead.
+
+Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included, and hide its database title. In every view hide the properties "Brain ID", "Last Synced", "Created time" and "Last edited time" unless the view lists them under show. Show only the properties listed. Leave the navigation column as it is. Do not add other content.
 ```
 
 ## Verify
-- [ ] Only the button and three linked views are on the page.
-- [ ] "What needs my decision?" shows only Pending rows.
-- [ ] Quick capture creates a Capture Inbox row with Brain Status New.
+- [ ] "Needs you" shows two short lists; a meeting dated tomorrow is not in "Which minutes need review?".
+- [ ] Quick capture creates a Capture Inbox row with Brain Status New; New meeting and New project open a page with the default template.
+- [ ] "What's on today?" has three tabs: Tasks, Meetings, Projects.

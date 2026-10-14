@@ -1,6 +1,6 @@
 # Minutes format
 
-Pasted into the "Minutes format" callout of the Meetings template ([prompt step 6b](prompts/06-templates.md)). Every meeting summary then has the same sections, which makes the ingest more accurate (decision 0024). The ingest skill reads these headings, so change them only through the repo (decision 0022). The format is a hint, not a requirement: the ingest also reads minutes with other headings, such as Notion AI meeting notes.
+Paste it into Notion AI when it summarises a meeting, and use it for the "Minutes follow the format" item of the Meetings checklist (docs/notion-space-design.md §9). Every meeting summary then has the same sections, which makes the ingest more accurate (decision 0024). The ingest skill reads these headings, so change them only through the repo (decision 0022). The format is a hint, not a requirement: the ingest also reads minutes with other headings, such as Notion AI meeting notes.
 
 ```text
 Summarize this meeting using exactly these sections, in this order. Write "None" under a section when nothing applies. Do not invent anything that was not said.
