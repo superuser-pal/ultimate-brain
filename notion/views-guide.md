@@ -221,7 +221,7 @@ Relations the template already shows as linked views (meetings, tasks, questions
 
 ## 10. Navigation (instead of Prompt 8)
 
-1. **On the "System" page,** create a synced block named "Tier 1 nav": one line of links, Home · Tasks · Meetings · Projects · Plan · Review · Knowledge · Archive, unthemed.
+1. **On the "System" page,** create a synced block named "Tier 1 nav": one line of links, Home · Tasks · Meetings · Projects · Plan · Review · Knowledge · Archive · How it works, unthemed, then a collapsed toggle "Ask AI" with the "Ask how-to" prompt from [user-prompts.md](user-prompts.md).
 2. **Still on "System",** create one synced block per Space, "Tier 2 nav – Plan" and so on. Each lists that Space's view names as links (right-click a view tab → *Copy link to view*), with its own icon and a light background color.
 3. **On each Space page,** add a narrow left column containing: Tier 1 nav, a divider, then that Space's Tier 2 nav. Home gets only Tier 1.
 4. **Above each page title,** add a small gray text label with the page name. It's a plain block, not synced.

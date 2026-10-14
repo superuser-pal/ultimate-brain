@@ -2,7 +2,7 @@
 
 Eight saved prompts you run with Notion AI while working in the Spaces. Each sits next to the views that answer the same question. They read and answer in the chat; only "Review minutes" and "Tidy a capture" may edit, and only the page text you own (decision 0035).
 
-**Where they live:** in a collapsed toggle **"Ask AI"** next to the matching view. Open the toggle, copy the prompt, open Notion AI on that page (✦, or space on an empty line), paste. If your plan's buttons can run a Notion AI prompt, a button labelled with the prompt's name works too; the text is the same.
+**Where they live:** in a collapsed toggle **"Ask AI"** next to the matching view. Open the toggle, copy the prompt, open Notion AI on that page (✦, or space on an empty line), paste. Decided on 2026-10-14: toggles are the placement, because they work on every plan and keep the prompt text visible and editable. The user's plan (Business) includes Notion AI; whether a button can run a saved prompt couldn't be checked through the API, so buttons are left out. To build them in an existing space, see [migration 0004](migrations/0004-ai-prompts-and-guide.md).
 
 **The guard line.** Every prompt ends with the same line. Keep it when you edit a prompt:
 
