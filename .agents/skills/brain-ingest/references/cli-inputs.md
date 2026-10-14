@@ -29,7 +29,7 @@ A document, then a pasted email:
 { "notes": [
   { "type": "source", "title": "Acme website brief (document)", "file_date": "2026-12-04",
     "frontmatter": { "source_key": "file:sha256:<64 hex of the file>", "kind": "document",
-                     "file_name": "acme-website-brief.pdf", "converter": "claude-read" },
+                     "file_name": "acme-website-brief.pdf", "converter": "claude-read claude-opus-5-5" },
     "body": "<the converted text, verbatim>" },
   { "type": "source", "title": "Budget approval from Carlos (email)", "file_date": "2026-12-05",
     "frontmatter": { "source_key": "agent:claude-code/2026-12-05-budget-approval-email", "kind": "email" },
@@ -38,7 +38,7 @@ A document, then a pasted email:
 ```
 
 - **`kind`:** `document`, `email`, `chat`, `note` or `capture`. Leave it out for minutes.
-- **`file_name`** (the name only, no folder) and **`converter`** (`claude-read`, or `markitdown <version>`) are required with a `file:` key.
+- **`file_name`** (the name only, no folder) and **`converter`** (`claude-read <model id>`, `codex-view-image <model id>`, or `markitdown <version>`) are required with a `file:` key.
 - **Capture:** `source_key` is `notion:<row page id>`, `kind` is `capture`, `origin_edited` is the row's `last_edited_time`.
 - **Title:** `<title> (<kind>)`. **`file_date`:** the text's own date (a document's date, an email's sent date); for a capture, the row's Created date; else today.
 - **Dates in the notes:** a new note's timeline `from` is the date the text gives, else the source's `file_date`; `learned` is always today (the day the brain learned it).
