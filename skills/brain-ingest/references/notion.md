@@ -41,7 +41,7 @@ Do these in order, after the ingest commit.
 
 1. **Tasks.** If `brain status` shows `tasks_database: true`:
    1. Run `brain sync tasks --meeting <mtg-id> --input <items.json>`.
-   2. Create one Notion page per returned item, in its `database_id` with its `properties`. An item with `pending_relations` names a project not yet in Notion: do step 2 first, then run `sync tasks` again for it. An `owner` of type `person_name` is written as text, or resolved to a Notion user if the mapped property is a people property.
+   2. Create one Notion page per returned item **without** `pending_relations`, in its `database_id` with its `properties`. An item with `pending_relations` names a project not yet in Notion: **don't create it yet**. After step 2 has published and recorded that project, run `sync tasks` again with only those items, and create each once. An `owner` of type `person_name` is written as text, or resolved to a Notion user if the mapped property is a people property.
    3. Run `brain sync record` with `{ "records": [ { "id": "<mtg-id>", "synced_at": "<now, ISO 8601 UTC>", "tasks": ["<new task page id>", …] } ] }`. `synced_at` is required on every record (spec/cli.md §5.14.6).
 2. **Notes, meeting and proposals:**
    1. Run `brain sync render --changed`.
