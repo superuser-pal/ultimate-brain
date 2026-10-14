@@ -218,7 +218,7 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 - `brain-ingest` passes a project per task;
 - `brain-sync` creates a missing Brief or Decision log toggle (or asks), as the CC-13 contract says.
 
-### CX-18 · Sources beyond meetings in the CLI · `todo` (after CC-13)
+### CX-18 · Sources beyond meetings in the CLI · `review` (after CC-13)
 **Output:** the CLI side of decision 0032, as spec/cli.md now says:
 - `src/lib/paths.ts`: source folder by key (§3.6.5): `notion:` → `sources/notion/`, `file:` → `sources/files/`, `url:` and `agent:` → `sources/text/`;
 - `note new` source dedupe also by `file:` key and by `capture` key (§5.5);
