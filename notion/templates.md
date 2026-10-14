@@ -4,7 +4,7 @@ The default page templates as they exist in the live Notion space, plus the impr
 
 - **Intent:** [docs/notion-space-design.md](../docs/notion-space-design.md) §4.
 - **Build prompt:** [prompts/06-templates.md](prompts/06-templates.md).
-- **Last pulled:** 2026-10-14, through the Notion API, read-only, after migration 0003 (the view tabs and filters were checked by hand in Notion).
+- **Last pulled:** 2026-10-14, through the Notion API, read-only, after migration 0003. The API shows headings and linked views, not view tabs or filters; those are as built by hand from Prompt 6.
 
 The API returns each linked view's title and URL, but not its filters, sorts or visible properties. The filters listed below are the ones Prompt 6 asked for; they have not been checked live.
 
