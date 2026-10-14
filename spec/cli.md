@@ -922,7 +922,7 @@ Each item:
 - `published`: B for every rendered property except Last Synced and pending relations, plus `@content` = `sha256:<hex>` of the rendered `body`/`sections` when the type has content. This is the new S once the write succeeds.
 - **Page content** (decision 0026): the brain writes only what it owns.
   - `body` (decisions, questions): replaces the whole page body.
-  - `sections` (projects): `{ "Brief": <the brief's generated block>, "Decision log": <the decision log's generated block> }`. The skill replaces only the children of the toggle heading with that exact name. If the toggle is missing, it reports `SECTION_NOT_FOUND` for that page and leaves the page as it is.
+  - `sections` (projects): `{ "Brief": <the brief's generated block>, "Decision log": <the decision log's generated block> }`. The skill replaces only the children of the toggle heading with that exact name. `render` can't see Notion page content, so finding the toggle is the skill's job, after it reads the page through the MCP (0033): a page with **no toggle headings at all** gets the missing "Brief" and "Decision log" toggles appended and filled; a page with other toggle headings but not the named one is reported as `SECTION_NOT_FOUND` and left as it is.
   - Areas, goals, people, orgs, meetings and proposals: `body` and `sections` are both `null`.
   - Rendering: `^[inferred]` → ` (AI inference)`, `^[ambiguous]` → ` (ambiguous)`, and relative links to published notes become `https://www.notion.so/<page id without dashes>` (unpublished → plain title text).
 
@@ -940,7 +940,7 @@ Renders Notion task payloads for a meeting's action items using the `brain.json`
 
 Input: `{ "items": [ { "title": "Send Supabase migration plan", "owner": "Carlos Ruiz", "due": "2026-12-10", "projects": ["prj-9x4t1b7e"] } ] }` (`owner`, `due`, `projects` optional).
 
-`projects` (dogfood finding 7): the projects this task is about, as project ids. Each must be a project note, else `INPUT_INVALID` with a pointer to the item. Absent or empty → the meeting's `projects`.
+`projects` (dogfood finding 7): the projects this task is about, as project ids. Absent or empty → the meeting's `projects`. Errors, disjoint: an id with no note → `UNKNOWN_ID`; an entry that isn't a string, or an existing note that isn't a project → `INPUT_INVALID` with the pointer `/items/<n>/projects/<m>`.
 
 Each item → `{ "database_id": "…", "properties": { "<mapped name>": {type, value} } }` with:
 - title; due; status = `new_task_status`;
@@ -951,7 +951,7 @@ Each item → `{ "database_id": "…", "properties": { "<mapped name>": {type, v
 
 Unmapped (empty) properties are left out. After creating the tasks, the skill records their page ids with `sync record`.
 
-Errors: `UNKNOWN_ID`, `BRAIN_CONFIG_INVALID` (no Tasks database, or `brain.json` fails its schema, which requires a title mapping and a backlink mapping once a Tasks database is set).
+Errors: `UNKNOWN_ID` (the meeting, or an item's project id), `INPUT_INVALID` (an item's `projects` entry that isn't a string or isn't a project), `BRAIN_CONFIG_INVALID` (no Tasks database, or `brain.json` fails its schema, which requires a title mapping and a backlink mapping once a Tasks database is set).
 
 #### 5.14.6 `brain sync record`
 
