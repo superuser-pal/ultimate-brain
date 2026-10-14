@@ -26,6 +26,19 @@ How to read one meeting's minutes and decide what becomes a note, what becomes a
 | An answer to an existing open question | `add_to_note` on the question, with the answer and the meeting as source | `proposal new` |
 | A person working on an existing project they're not listed on (new or existing person) | `add_link` on the project, `field: people` | `proposal new` |
 
+## By source kind (decision 0032)
+
+Minutes follow the table above. For other sources (references/sources.md) there is **no meeting note**: every new note lists the source note in `sources`, decisions have no `decided_in` and questions no `raised_in`. The rest of this file applies, with these differences:
+
+| Kind | What it usually yields | Different from minutes |
+|---|---|---|
+| `document` (brief, contract, report, deck) | Facts and their changes, decisions the document records, people with roles, open questions and risks | A decision's `date` is the date the document gives for it, else the document's date. When the document is about a project, propose one `add_to_note` on the project: what the document is, in 1–2 sentences, with a link to the source (relative to the project note). No action items unless the document assigns them |
+| `email`, `chat` | Decisions and facts stated in the thread, people, questions | Who said what matters: attribute a decision to its sender (`deciders`) only when the thread shows they decided. A thread that reports a decision made elsewhere ("the launch moves to March") still yields the decision note if it passes the gate. A quoted earlier message is part of the thread, not a new statement |
+| `note` | Whatever the user wrote: facts, ideas, people | The user's own words: no `^[ambiguous]` against the user's other notes; a disagreement with the brain is a `contradiction` |
+| `capture` | Usually one thing: a fact, an idea, a person, a to-do | A fact about an existing note → `update_fact`; an idea or method → a `concept` note (`summary`, `sources`, and `area`, `projects` or `tags` when the capture says what it belongs to); a new person → a person note; a to-do → listed in the report only. Nothing durable is a valid result |
+
+Action items found in any of these are listed in the report, not created as tasks (there is no meeting to attach them to).
+
 ## Owner rulings (decision 0031)
 
 When the user answers a pre-check question with content (a ruling, a correction, or a fact the minutes lack), that answer is a source:
@@ -41,6 +54,7 @@ Answers that only fix the input (a date, attendees, which spellings are one pers
 - **A decision that changes a fact gets both:** the decision note and an `update_fact` for the fact ("launch on 15 Feb 2027" → `launch_date` 2027-02 → 2027-02-15).
 - **An assignment that answers an open question** ("Carlos owns the mobile app") is an `add_to_note` on the question. It gets a decision note only if it passes the gate on its own. The user marks the question Answered in Notion.
 - **`deciders`** only when the minutes say who decided; otherwise leave it out.
+- **An approval of a new value** ("budget raised to 110000 EUR, approved by Carlos") is a fact change (`update_fact`), not a decision, unless alternatives were weighed or it commits to something hard to reverse.
 
 
 A decision gets its own note only when at least one of these holds:
@@ -57,6 +71,7 @@ Compare each fact with the loaded notes' current `facts`:
 - **The minutes state a new value as a change** ("launch moves to February"): `update_fact`, with `after` copied verbatim and `from` = the meeting date (the CLI fills `before`).
 - **No current value:** `update_fact` without `before`.
 - **The minutes disagree without saying it changed** (e.g. "budget is 70k" while the note says 80k and nobody said it was cut): `contradiction`. The user decides which is true.
+- **It may be the same thing in other words** (a role written "Product lead" where the note says "Product Manager"): ask in the pre-check whether it changed. Without an answer, leave it out rather than raise a `contradiction`.
 
 Fact keys are lowercase `snake_case` and stable: `launch_date`, `budget`, `deadline`, `owner`, `role`. Reuse an existing key before inventing one. Dates use `YYYY-MM-DD`, months use `YYYY-MM`. Money keeps its unit (`95000 EUR`).
 

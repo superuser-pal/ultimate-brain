@@ -14,12 +14,35 @@ The JSON the ingest passes to the CLI, taken from a real run on the synthetic Ac
 } ] }
 ```
 
-- **`source_key`:** `notion:<page id>` in Notion mode. In Markdown-only mode, use `url:https://…` if the minutes have a URL, else `agent:<agent>/<id>`, where `<id>` is any stable string you choose (e.g. `agent:claude-code/2026-12-10-acme-launch-review`). It records where the text came from; duplicates are detected by `content_hash`, not by this key.
+- **`source_key`:** `notion:<page id>` in Notion mode. In Markdown-only mode, use `url:https://…` if the minutes have a URL, else `agent:<agent>/<id>`, where `<id>` is any stable string you choose (e.g. `agent:claude-code/2026-12-10-acme-launch-review`). It records where the text came from; duplicates of minutes are detected by `content_hash`, not by this key.
 - **Body:** in Notion mode, built exactly as [notion.md](notion.md) "What counts as minutes" says. In Markdown-only mode, the text the user gave, with LF line endings. Otherwise verbatim.
-- **Source id:** take it from the same `brain id new` call as the other notes (step 7); the step 3 dry-run runs without one. Steps 3 and 7 use the same item; step 7 only adds the `id`. All sources live in `sources/notion/` in v1, whatever their key.
+- **Source id:** take it from the same `brain id new` call as the other notes (step 7); the step 3 dry-run runs without one. Steps 3 and 7 use the same item; step 7 only adds the `id`. The CLI picks the folder from the key (`sources/notion/`, `sources/files/`, `sources/text/`).
 - **`origin_edited`:** the Notion page's `last_edited_time` (Notion mode only).
 - **Do not set `content_hash` or `captured`;** the CLI sets both. The body must use LF line endings.
 - **Title:** `<meeting title> (minutes)`. `file_date` is the meeting date.
+
+## 1b. Other sources (references/sources.md)
+
+A document, then a pasted email:
+
+```json
+{ "notes": [
+  { "type": "source", "title": "Acme website brief (document)", "file_date": "2026-12-04",
+    "frontmatter": { "source_key": "file:sha256:<64 hex of the file>", "kind": "document",
+                     "file_name": "acme-website-brief.pdf", "converter": "claude-read claude-opus-5-5" },
+    "body": "<the converted text, verbatim>" },
+  { "type": "source", "title": "Budget approval from Carlos (email)", "file_date": "2026-12-05",
+    "frontmatter": { "source_key": "agent:claude-code/2026-12-05-budget-approval-email", "kind": "email" },
+    "body": "<the pasted thread, verbatim>" }
+] }
+```
+
+- **`kind`:** `document`, `email`, `chat`, `note` or `capture`. Leave it out for minutes.
+- **`file_name`** (the name only, no folder) and **`converter`** (`claude-read <model id>`, `codex-view-image <model id>`, or `markitdown <version>`) are required with a `file:` key.
+- **Capture:** `source_key` is `notion:<row page id>`, `kind` is `capture`, `origin_edited` is the row's `last_edited_time`.
+- **Title:** `<title> (<kind>)`. **`file_date`:** the text's own date (a document's date, an email's sent date); for a capture, the row's Created date; else today.
+- **Dates in the notes:** a new note's timeline `from` is the date the text gives, else the source's `file_date`; `learned` is always today (the day the brain learned it).
+- **Duplicates:** the CLI also skips a source whose `file:` key, or whose `capture` row, was already ingested, even if the text differs.
 
 ## 2. The new-notes batch
 
@@ -67,7 +90,7 @@ Things the CLI checks that are easy to get wrong:
 ] }
 ```
 
-- **Don't send `before` or `from`.** The CLI fills them: `before` from the current fact, `from` from the source meeting's date.
+- **Don't send `before`;** the CLI fills it from the current fact. **`from`:** leave it out for a meeting (the CLI uses the meeting's date). For any other source, send it: the date the text gives for the change ("approved on 5 December 2026" → `2026-12-05`), else the source's `file_date`; otherwise the CLI would use today.
 - **`add_link`** (decision 0028) adds one value to a list of an existing note:
   ```json
   { "kind": "add_link", "title": "Acme website: add Lucía Fernández to People", "target": "prj-9x4t1b7e", "field": "people",
