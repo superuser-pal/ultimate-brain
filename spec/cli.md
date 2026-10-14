@@ -163,7 +163,7 @@ Path by type (schema §2). Dated types use the note's `date`, else `file_date` f
 | project | `projects/<slug>/project.md` |
 | person, org, question, concept | `knowledge/people/<slug>.md`, `knowledge/orgs/…`, `knowledge/questions/…`, `knowledge/concepts/…` |
 | meeting, decision | `knowledge/meetings/<date>-<slug>.md`, `knowledge/decisions/<date>-<slug>.md` |
-| source | `sources/notion/<date>-<slug>.md` |
+| source | `sources/notion/<date>-<slug>.md` for a `notion:` key, `sources/files/…` for `file:`, `sources/text/…` for `url:` and `agent:` (0032) |
 | memory | `memories/<YYYY>/<MM>/<date>-<slug>.md` |
 | proposal | `_proposals/<created>-<slug>.md` |
 
@@ -337,7 +337,7 @@ Writes **new** notes (lifecycle `draft`, 0003). Used by the ingest skill, by `ap
 
 The CLI sets `created` = `updated` = today, `lifecycle: draft` (knowledge types), and for sources `content_hash` (schema §4, over the body as written) and `captured` (default now). Files are laid out as §3.6.5 says. References in `frontmatter` may point to existing notes **or to other notes in the same batch**. The batch is validated as if written: schema, IDs, folder, references, and every lint error rule (§5.10) that concerns the new files. So a new decision whose `decided_in` names an *existing* meeting fails `meeting-backref`: put the meeting in the same batch, or use a `new_item` proposal, whose apply updates the meeting. Any error → `INPUT_INVALID`, with `details` pointing into the input (a reference to a missing note included), and nothing is written.
 
-**Source dedupe:** if a source with the same `content_hash` already exists, or appears earlier in the same batch, that item is not written and is reported in `skipped` with the existing id. This is how the ingest skips minutes it has already ingested (synthesis §5 step 2). Other items in the batch that reference the skipped source's input `id` are an error, so the skill must check `skipped` with `--dry-run` first, or snapshot the source in its own batch.
+**Source dedupe:** a source is a duplicate if an existing source, or one earlier in the same batch, has the same `content_hash`, **or** the same `source_key` when that key is `file:` (the same original file, whatever the converter produced) or the source's `kind` is `capture` (the same Capture Inbox row, even after an edit) (0032). A duplicate is not written and is reported in `skipped` with the existing id. This is how the ingest skips minutes it has already ingested (synthesis §5 step 2). Other items in the batch that reference the skipped source's input `id` are an error, so the skill must check `skipped` with `--dry-run` first, or snapshot the source in its own batch.
 
 Input ids are checked (`ID_IN_USE`) before dedupe, so re-running a batch that supplies its own ids fails instead of being skipped; skills that re-run should let the CLI generate ids or check with `--dry-run`. A body's CRLF line endings are written as LF, except in a source, where they are an `INPUT_INVALID` error (its hash covers the exact bytes). The batch is refused if it adds a lint error to **any** note, not only the new ones (for example a new meeting whose id an existing question already names in `raised_in`).
 
@@ -585,7 +585,7 @@ Issues are sorted by `path`, `line`, `rule`, then `message`. `line` is 1-based: 
 | `brain-config` | error | `brain.json` fails its schema (lint runs even then, §4) |
 | `id-format` | error | malformed ID, or a prefix that is not one of schema §1 (the prefix may differ from the current `type`, which can change) |
 | `id-duplicate` | error | same ID in two files |
-| `wrong-folder` | error | type outside its folder (schema §2) |
+| `wrong-folder` | error | type outside its folder (schema §2); a source outside the folder of its key (`sources/notion/`, `sources/files/`, `sources/text/`) |
 | `missing-ref` | error | frontmatter reference or relation target does not exist |
 | `broken-link` | error | relative Markdown link to a missing file |
 | `wikilink` | error | `[[…]]` in a body |
@@ -922,7 +922,7 @@ Each item:
 - `published`: B for every rendered property except Last Synced and pending relations, plus `@content` = `sha256:<hex>` of the rendered `body`/`sections` when the type has content. This is the new S once the write succeeds.
 - **Page content** (decision 0026): the brain writes only what it owns.
   - `body` (decisions, questions): replaces the whole page body.
-  - `sections` (projects): `{ "Brief": <the brief's generated block>, "Decision log": <the decision log's generated block> }`. The skill replaces only the children of the toggle heading with that exact name. If the toggle is missing, it reports `SECTION_NOT_FOUND` for that page and leaves the page as it is.
+  - `sections` (projects): `{ "Brief": <the brief's generated block>, "Decision log": <the decision log's generated block> }`. The skill replaces only the children of the toggle heading with that exact name. `render` can't see Notion page content, so finding the toggle is the skill's job, after it reads the page through the MCP (0033): a page with **no toggle headings at all** gets the missing "Brief" and "Decision log" toggles appended and filled; a page with other toggle headings but not the named one is reported as `SECTION_NOT_FOUND` and left as it is.
   - Areas, goals, people, orgs, meetings and proposals: `body` and `sections` are both `null`.
   - Rendering: `^[inferred]` → ` (AI inference)`, `^[ambiguous]` → ` (ambiguous)`, and relative links to published notes become `https://www.notion.so/<page id without dashes>` (unpublished → plain title text).
 
@@ -938,18 +938,20 @@ brain sync tasks --meeting <mtg-id> --input <file|->
 
 Renders Notion task payloads for a meeting's action items using the `brain.json` Tasks mapping (0018, schema §12); writes nothing.
 
-Input: `{ "items": [ { "title": "Send Supabase migration plan", "owner": "Carlos Ruiz", "due": "2026-12-10" } ] }` (`owner`, `due` optional).
+Input: `{ "items": [ { "title": "Send Supabase migration plan", "owner": "Carlos Ruiz", "due": "2026-12-10", "projects": ["prj-9x4t1b7e"] } ] }` (`owner`, `due`, `projects` optional).
+
+`projects` (dogfood finding 7): the projects this task is about, as project ids. Absent or empty → the meeting's `projects`. Errors, disjoint: an id with no note → `UNKNOWN_ID`; an entry that isn't a string, or an existing note that isn't a project → `INPUT_INVALID` with the pointer `/items/<n>/projects/<m>`.
 
 Each item → `{ "database_id": "…", "properties": { "<mapped name>": {type, value} } }` with:
 - title; due; status = `new_task_status`;
-- project and area relations from the meeting's `projects` and `area` (when published and mapped);
+- project relation from the item's `projects`, else the meeting's; area relation from the meeting's `area` (each when published and mapped). A project not yet in Notion is left out and listed in the item's `pending_relations`, as in `render`;
 - owner as `{ "type": "person_name", "value": "Carlos Ruiz" }`: the skill writes it as text, or resolves it to a Notion user when the mapped property is a people property;
 - the backlink: the meeting relation (`meeting`), else the meeting's Notion URL (`meeting_url`);
 - brain_id = the meeting id.
 
 Unmapped (empty) properties are left out. After creating the tasks, the skill records their page ids with `sync record`.
 
-Errors: `UNKNOWN_ID`, `BRAIN_CONFIG_INVALID` (no Tasks database, or `brain.json` fails its schema, which requires a title mapping and a backlink mapping once a Tasks database is set).
+Errors: `UNKNOWN_ID` (the meeting, or an item's project id), `INPUT_INVALID` (an item's `projects` entry that isn't a string or isn't a project), `BRAIN_CONFIG_INVALID` (no Tasks database, or `brain.json` fails its schema, which requires a title mapping and a backlink mapping once a Tasks database is set).
 
 #### 5.14.6 `brain sync record`
 

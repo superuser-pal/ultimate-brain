@@ -5,7 +5,7 @@
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
 > **2026-10-14 — Status: v1 is published (npm `ultimate-brain` 0.1.1) and in daily use by the user (CC-12). Next: release 0.2.0, planned with the user below ("0.2.0 — Smooth daily use and more ways in").**
-> - **Split:** Claude Code writes the contracts first (CC-13), then the skills and the Notion track. Codex builds the CLI and tests (CX-18 to CX-21) as soon as CC-13 is merged; CX-20 can start now.
+> - **Split:** Claude Code writes the contracts first (CC-13), then the skills and the Notion track. Codex builds the CLI and tests (CX-18 to CX-20) as soon as CC-13 is merged; CX-20 can start now. CX-21 was dropped by CC-13.
 > - **Open with the user:** U-06 (the bake-off documents) before CC-15; U-07 (connect the Easlo template) before CC-17. Notion writes need an explicit yes each time.
 > - **Earlier:** v1 waves 1–4 below; dogfood findings 1–24 in the Wave 4 table.
 
@@ -146,7 +146,7 @@ Found while setting up the first real brain. Fix them before the next new user; 
 | 9 | Sync create recorded the brain's Summary (the title) and Lifecycle as published although Notion had them empty, so render never sent them; Lifecycle compared "Draft" with "draft", so a Lifecycle edit in Notion became a conflict | Baseline = what Notion shows, as §5.14.2 says; Lifecycle compared normalized; emptied Lifecycle → `REQUIRED_EMPTY` (`src/lib/sync.ts`, test in `tests/sync.test.ts`). Repair the first brain: drop `Summary` and `Lifecycle` from `notion_published` on its 2 notes | `fixed` (this PR); repair `todo` |
 | 10 | `brain-ingest` queried the Meetings database id; Notion queries need the data source id (404) | `brain-ingest` step 2: retrieve the database, query `data_sources[0].id`, as `brain-sync` says | `fixed` (#51) |
 | 11 | `brain-sync` needs the snapshot format of spec/cli.md §5.14.1, which lives outside the brain; reading it was denied. The `sync record` input (`{records: [...]}`) was guessed wrong | Copy the snapshot, plan and record formats into `skills/brain-sync/references/` | `fixed` (#51) |
-| 12 | A project created in Notion through the API has no Brief and Decision log toggles, so publish skips them (SECTION_NOT_FOUND) | `brain sync render` or the skill creates the missing toggles; or the Projects template is applied on create. Decide which | CC-13, CX-21, CC-16 |
+| 12 | A project created in Notion through the API has no Brief and Decision log toggles, so publish skips them (SECTION_NOT_FOUND) | `brain sync render` or the skill creates the missing toggles; or the Projects template is applied on create. Decide which | CC-13 (decision 0033), CC-16 |
 | 13 | `sync plan` makes new ids each run, so the plan shown can differ from the one applied | `brain-sync`: apply the saved `plan.json` that was shown, never a re-run plan | `fixed` (#51) |
 | 14 | The meeting page holds the Notion AI summary and the user's own "My notes" toggle, and they disagree ("connected data consent" vs "Connect Consent") | `extraction.md`: read both; the user's notes win on conflict, or ask; flag contradictions | `fixed` (#51, decision 0031) |
 | 15 | Page template text (the "Before marking Reviewed" checklist, inline Decisions/Questions/Tasks databases) and Notion AI footnote links `[^/p/…]` would go into the verbatim source | Source = meeting-notes summary + user notes only; strip footnote links before hashing. Spec it in `cli-inputs.md` §1 | `fixed` (#51) |
@@ -167,18 +167,18 @@ Found while setting up the first real brain. Fix them before the next new user; 
 Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smooth for the one user, and the brain ingests more than meetings. Medium size.
 
 **Two tracks:**
-- **npm 0.2.0:** CLI and skills. It ships when CC-13 to CC-16 and CX-18 to CX-21 are done.
+- **npm 0.2.0:** CLI and skills. It ships when CC-13 to CC-16 and CX-18 to CX-20 are done.
 - **Notion:** CC-17 to CC-18, in the user's workspace and the design docs. It runs alongside and never blocks the npm release.
 
 **Out of scope (0.3.0 list, docs/v2-ideas.md):** finding 3 (Notion setup steps per agent), a Sources database in Notion, Notion file uploads, Docling or Marker unless the bake-off (CC-15) asks for them.
 
 **Dependencies:**
-- CC-13 blocks CX-18, CX-19, CX-21 and CC-14.
+- CC-13 blocks CX-18, CX-19 and CC-14.
 - CX-18 blocks the CC-15 acceptance run.
 - U-06 blocks CC-15; U-07 blocks CC-17.
 - CX-20 has no blocker.
 
-### CC-13 · Contracts for 0.2.0 · `todo`
+### CC-13 · Contracts for 0.2.0 · `review` (#58; decisions 0032, 0033)
 **Output:** one spec PR covering everything Codex builds in this release:
 - **A decision "Sources beyond meetings":**
   - source kinds `document`, `email`, `chat`, `note`, `capture`;
@@ -195,7 +195,7 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
   - `sync render` reports a missing project section so the skill can create the toggle (finding 12; settle where the toggle is created);
   - Capture Inbox rows: how a row is marked Processed (a render item, or skill-side through the MCP).
 
-**Acceptance:** Codex can build CX-18, CX-19 and CX-21 from the spec alone.
+**Acceptance:** Codex can build CX-18 and CX-19 from the spec alone.
 
 ### CC-14 · Ingest-text skill · `todo` (after CC-13)
 **Output:** one ingest path for everything that isn't a Notion meeting. It is a new mode of `brain-ingest` or a sibling skill; decide in the PR, keeping one source of truth for extraction.
@@ -213,22 +213,28 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 
 **Acceptance (with the user):** 1 PDF, 1 Word or PowerPoint file, 1 pasted email and 2 Capture Inbox rows ingest end to end in the real brain, with correct sources, drafts and proposals.
 
-### CC-16 · Skill updates for findings 7 and 12 · `todo` (after CX-19, CX-21)
+### CC-16 · Skill updates for findings 7 and 12 · `todo` (after CX-19)
 **Output:**
 - `brain-ingest` passes a project per task;
 - `brain-sync` creates a missing Brief or Decision log toggle (or asks), as the CC-13 contract says.
 
 ### CX-18 · Sources beyond meetings in the CLI · `todo` (after CC-13)
-**Output:** the schema and CLI changes from CC-13 (file source key, kind, name and hash, duplicate detection by file hash), with fixtures and tests. **Acceptance:** the CC-13 spec examples pass; the existing tests still pass.
+**Output:** the CLI side of decision 0032, as spec/cli.md now says:
+- `src/lib/paths.ts`: source folder by key (§3.6.5): `notion:` → `sources/notion/`, `file:` → `sources/files/`, `url:` and `agent:` → `sources/text/`;
+- `note new` source dedupe also by `file:` key and by `capture` key (§5.5);
+- `src/lib/frontmatter.ts`: key order for the new source fields `kind`, `file_name`, `converter`;
+- lint `wrong-folder` for sources (§5.10).
+
+The schema (note.schema.json) and examples are already in place from CC-13. **Acceptance:** tests for each bullet; the existing tests still pass.
 
 ### CX-19 · Per-task project in `sync tasks` (finding 7) · `todo` (after CC-13)
-**Output:** `sync tasks` accepts `projects` per item and maps them to the Tasks database's project property; it falls back to the meeting's projects. **Acceptance:** tests for both cases.
+**Output:** spec/cli.md §5.14.5: `sync tasks` items take optional `projects` (project ids; anything else is `INPUT_INVALID` with a pointer to the item); absent or empty falls back to the meeting's projects; an unpublished project goes to the item's `pending_relations`. **Acceptance:** tests for per-item projects, the fallback, an invalid id and an unpublished project.
 
 ### CX-20 · View properties test (finding 1) · `todo` (can start now)
 **Output:** a test that every property a view or page layout in docs/notion-space-design.md (§5, §6 and notion/prompts/) sorts, filters, groups or shows exists in §3. **Acceptance:** it fails on a deliberately broken copy and passes on main.
 
-### CX-21 · Missing project sections and Capture Inbox in the CLI (finding 12) · `todo` (after CC-13)
-**Output:** whatever CC-13 assigns to the CLI for the missing Brief or Decision log toggle and for marking Capture Inbox rows Processed, with tests.
+### CX-21 · ~~Missing project sections and Capture Inbox in the CLI~~ · `dropped` (CC-13)
+Both are skill-side: the toggles because the CLI can't see Notion page content (0033), the Capture Inbox because the CLI's duplicate check by `capture` key (CX-18) already makes the skill's MCP write safe to retry (0032).
 
 ### CC-17 · Notion look pass, Easlo-referenced · `todo` (after U-07)
 **Output:**
@@ -257,7 +263,7 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 | U-05 | Two weeks of daily use | Wave 4 |
 | U-06 | Put 5–10 real documents in one folder for the bake-off: a long PDF with tables, a deck, a Word file, a scan if you have one | Before CC-15 |
 | U-07 | Connect the Easlo template to the Notion integration (read-only use) | Before CC-17 |
-| U-08 | Publish 0.2.0 (`npm version minor`, `npm publish`, push tags; docs/releasing.md) | After CC-16 and CX-18 to CX-21 |
+| U-08 | Publish 0.2.0 (`npm version minor`, `npm publish`, push tags; docs/releasing.md) | After CC-16 and CX-18 to CX-20 |
 
 ## How to start Codex on a task
 
@@ -270,4 +276,4 @@ implement it to its acceptance criteria, run the tests, then set the status to "
 and summarize what you did and any spec questions.
 ```
 
-For 0.2.0, Codex can start CX-20 now; CX-18, CX-19 and CX-21 wait for CC-13.
+For 0.2.0, Codex can start CX-20 now; CX-18 and CX-19 wait for CC-13.
