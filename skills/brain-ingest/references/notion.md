@@ -43,7 +43,7 @@ Do these in order, after the ingest commit.
 
 1. **Tasks.** If `brain status` shows `tasks_database: true`:
    1. Run `brain sync tasks --meeting <mtg-id> --input <items.json>`.
-   2. Create one Notion page per returned item, in its `database_id` with its `properties`. An `owner` of type `person_name` is written as text, or resolved to a Notion user if the mapped property is a people property.
+   2. Create one Notion page per returned item **without** `pending_relations`, in its `database_id` with its `properties`. An item with `pending_relations` names a project not yet in Notion: **don't create it yet**. After step 2 has published and recorded that project, run `sync tasks` again with only those items, and create each once. An `owner` of type `person_name` is written as text, or resolved to a Notion user if the mapped property is a people property.
    3. Run `brain sync record` with `{ "records": [ { "id": "<mtg-id>", "synced_at": "<now, ISO 8601 UTC>", "tasks": ["<new task page id>", …] } ] }`. `synced_at` is required on every record (spec/cli.md §5.14.6).
 2. **Notes, meeting and proposals:**
    1. Run `brain sync render --changed`.
@@ -53,7 +53,9 @@ Do these in order, after the ingest commit.
       - **Meeting relations with `"mode": "add"`:** add the listed pages and keep the existing ones.
       - **`"mode": "if_empty"`:** write only if the property is empty in Notion.
       - **`body` (decisions, questions):** replace the page body with it.
-      - **`sections` (projects):** replace only the children of the toggle heading with that exact name ("Brief", "Decision log"). If the toggle is missing, report `SECTION_NOT_FOUND` for that page and change nothing on it (decision 0026).
+      - **`sections` (projects):** replace only the children of the toggle heading with that exact name ("Brief", "Decision log"). Read the page's blocks first (decision 0033):
+      - **the page has no toggle headings at all** (created without the template): append a "Brief" and a "Decision log" toggle heading, in that order, at the end of the page, then fill them;
+      - **the page has other toggle headings but not this one:** report `SECTION_NOT_FOUND` for that page and change nothing on it (a rename is likely, 0026).
    3. **Pending relations:** items that list `pending_relations` reference notes not yet published. Publish and record those first, then run `sync render --changed` again.
    4. Run `brain sync record` with one record per page written: `{ "id", "notion": <page id>, "synced_at": <now>, "published": <the item's published> }`.
 3. **Commit:** `publish: <meeting title> <date>`. Then run `brain log publish <mtg-id> pages=<n>`, and commit it with the publish.

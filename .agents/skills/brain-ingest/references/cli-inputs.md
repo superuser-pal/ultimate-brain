@@ -111,12 +111,12 @@ Things the CLI checks that are easy to get wrong:
 
 ```json
 { "items": [
-  { "title": "Set up the Contentful space", "owner": "Carlos Ruiz", "due": "2026-12-17" },
+  { "title": "Set up the Contentful space", "owner": "Carlos Ruiz", "due": "2026-12-17", "projects": ["prj-9x4t1b7e"] },
   { "title": "Write the blog launch post", "owner": "Lucía Fernández" }
 ] }
 ```
 
-`brain sync tasks --meeting mtg-pcpyn31n --input <file>` turns these into Notion payloads using the Tasks mapping in `brain.json`. Leave out `due` when the minutes say "no date".
+`brain sync tasks --meeting mtg-pcpyn31n --input <file>` turns these into Notion payloads using the Tasks mapping in `brain.json`. Leave out `due` when the minutes say "no date". `projects` is the project ids the task is about; leave it out when the task is about the meeting's own project(s), and the meeting's projects are used.
 
 ## 5. Log line
 
