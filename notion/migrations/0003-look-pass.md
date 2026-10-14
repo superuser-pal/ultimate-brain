@@ -8,11 +8,11 @@ Notion-only throughout: the brain never reads any property or view added here. D
 
 | Database | Change | Type |
 |---|---|---|
-| Tasks | Status gets the options **Waiting On** and **Someday**, in the To-do group | status options |
+| Tasks | Status gets the options **Waiting On** and **Someday**, in any group except Complete. **By hand:** the API can't change status options | status options |
 | Tasks | **Last edited time** | last edited time |
 | Goals | **Countdown** | formula (Prompt 4, item 3) |
 | Projects | **Countdown** | formula (Prompt 4, item 4) |
-| Projects | **Task Progress** | rollup: Tasks → Status, percent per group Complete |
+| Projects | **Task Progress** | rollup: Tasks → Status, percent per group Complete. **By hand after an API write:** the API creates it as "show original"; set Calculate → Percent per group → Complete |
 | Areas | **People via projects**, **Clients via projects**, **Decisions via projects**, **Questions via projects** | rollups over Projects, show original |
 | Orgs | **Meetings via projects** | rollup over Projects, show original |
 
@@ -32,7 +32,7 @@ Text changes (an agent can do these through the API, with your yes):
 - **Areas:** delete the "Summary" callout.
 - **Goals:** delete the "Why" callout.
 - **People:** delete the "Role / Org" callout.
-- **Projects:** add a gray paragraph above "Brief": "Brief and Decision log are written by the brain. Add your own notes in My notes."
+- **Projects:** add a gray paragraph outside the brain's toggles: "Brief and Decision log above are written by the brain. Add your own notes in My notes." The API can only insert it after "Decision log"; by hand, put it above "Brief" and drop the word "above".
 - **Meetings:** no change.
 
 Linked views (Notion AI or by hand, because the API can't create them): open each template (database → **New** ▾ → edit) and paste:
