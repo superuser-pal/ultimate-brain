@@ -236,18 +236,33 @@ The schema (note.schema.json) and examples are already in place from CC-13. **Ac
 ### CX-21 · ~~Missing project sections and Capture Inbox in the CLI~~ · `dropped` (CC-13)
 Both are skill-side: the toggles because the CLI can't see Notion page content (0033), the Capture Inbox because the CLI's duplicate check by `capture` key (CX-18) already makes the skill's MCP write safe to retry (0032).
 
-### CC-17 · Notion look pass, Easlo-referenced · `todo` (after U-07)
+### CC-17 · Notion look pass, Easlo-referenced · `in progress`
 **Output:**
 - **A grill session with the user** on the Easlo template: what to take, what to leave.
 - **The look pass, applied with brain-notion-change.** Notion-only structure (formulas, buttons, dashboards, Notion-only properties) is free to use. At most one brain-visible change, with its own decision; anything more goes to the 0.3.0 list.
 - **The 9 template improvements** on branch `claude/notion-page-layouts` (notion/templates.md): each decided in the same session; the branch is merged.
 - **Docs:** design doc §4–§6, the prompts and the snapshot updated, plus the view list in `tests/notion-view-properties.test.ts` (CX-20), which is hand-written.
 
-### CC-18 · Notion AI user prompts · `todo` (with CC-17)
+### CC-18 · Notion AI user prompts · `in progress` (with CC-17)
 **Output:**
 - **`notion/user-prompts.md` with seven prompts:** review minutes, review queue, weekly review, meeting prep, plan check, tidy a capture, and "what's waiting for me today". Each has where it goes (next to the views answering the same question), what it reads, and a "never edit" line.
 - **A decision:** user prompts only read, or write only to My notes or properties the user owns. Every prompt says "answer only from these pages; do not edit any property".
 - **Placement:** check whether the user's plan supports Notion AI buttons; otherwise use saved prompts.
+
+**Grill outcome (2026-10-14):** keep our Spaces, borrow Easlo's arrangement (blocks with lifecycle tabs, time-first views, related blocks on every parent page, Home led by your own work). New Tasks Space with GTD statuses, Knowledge rebuilt per database, Archive page, Area pages as hubs. No brain-visible change in this pass; decision 0034 (Area on Decisions and Questions) is built in 0.3.0 (CX-22). Docs first in one PR, then the live build.
+
+### CC-19 · User guide and how-to helper · `in progress` (with CC-18)
+**Output:**
+- **`docs/guide.md`** ("How your brain works"), written for the user: each Space, the meeting flow, deciding in Review, which fields you edit and which the brain overwrites, what to say to the agent for each job.
+- **Notion:** the guide published as a "How it works" page under System, and an eighth prompt "Ask how-to" in the navigation block that answers only from that page and the current page.
+- **Agents:** a small `brain-howto` skill (Claude Code and Codex) that answers from the guide and checks the brain's live state. It reaches the user's brain with the next npm release, through `brain upgrade`.
+
+**Acceptance:** a blind run answers five how-to questions correctly from the guide alone.
+
+## 0.3.0 — queued
+
+### CX-22 · Area on Decisions and Questions (decision 0034) · `todo`
+**Output:** the sync fills a brain-owned Area relation on Decisions and Questions from their project's area (spec/cli.md, once Claude Code writes the contract). **Acceptance:** tests for one area, several projects in different areas, and a project with no area.
 
 ---
 
