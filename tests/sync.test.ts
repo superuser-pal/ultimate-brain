@@ -51,12 +51,42 @@ test("sync apply creates a Notion-created note with its lifecycle and applies co
   assert.match(log, /sync-create org-1a2b3c4d "Globex"/);
 });
 
-test("sync tasks renders mapped task fields and sync record never changes updated", async (context) => {
+test("sync tasks renders per-item projects, falls back to the meeting, and reports unpublished relations", async (context) => {
   const dir = await fixtureCopy(context);
-  const tasks = await brain(["sync", "tasks", "--brain", dir, "--meeting", "mtg-8c4n2p7w", "--input", await input(dir, "tasks.json", { items: [{ title: "Send plan", owner: "Carlos Ruiz", due: "2026-12-10" }] }), "--json"]);
-  assert.equal(tasks.code, 0, tasks.stdout);
-  assert.equal(tasks.json.data.items[0].database_id, "a1000000-0000-4000-8000-00000000000b");
-  assert.equal(tasks.json.data.items[0].properties.Name.value, "Send plan");
+  const meetingPath = join(dir, "knowledge/meetings/2026-12-03-acme-sync.md");
+  await writeFile(meetingPath, (await readFile(meetingPath, "utf8")).replace("projects: [prj-9x4t1b7e]", "projects: []"));
+  const override = await brain(["sync", "tasks", "--brain", dir, "--meeting", "mtg-8c4n2p7w", "--input", await input(dir, "tasks-override.json", { items: [{ title: "Send plan", projects: ["prj-9x4t1b7e"] }] }), "--json"]);
+  assert.equal(override.code, 0, override.stdout);
+  assert.equal(override.json.data.items[0].database_id, "a1000000-0000-4000-8000-00000000000b");
+  assert.deepEqual(override.json.data.items[0].properties.Project.value, ["2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e"]);
+  assert.deepEqual(override.json.data.items[0].pending_relations, []);
+
+  await writeFile(meetingPath, (await readFile(meetingPath, "utf8")).replace("projects: []", "projects: [prj-9x4t1b7e]"));
+  const fallback = await brain(["sync", "tasks", "--brain", dir, "--meeting", "mtg-8c4n2p7w", "--input", await input(dir, "tasks-fallback.json", { items: [{ title: "Use fallback", projects: [] }] }), "--json"]);
+  assert.equal(fallback.code, 0, fallback.stdout);
+  assert.deepEqual(fallback.json.data.items[0].properties.Project.value, ["2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e"]);
+
+  const projectPath = join(dir, "projects/acme-website/project.md");
+  await writeFile(projectPath, (await readFile(projectPath, "utf8")).replace(/notion: .*\n/, ""));
+  const unpublished = await brain(["sync", "tasks", "--brain", dir, "--meeting", "mtg-8c4n2p7w", "--input", await input(dir, "tasks-unpublished.json", { items: [{ title: "Wait for project", projects: ["prj-9x4t1b7e"] }] }), "--json"]);
+  assert.equal(unpublished.code, 0, unpublished.stdout);
+  assert.deepEqual(unpublished.json.data.items[0].properties.Project.value, []);
+  assert.deepEqual(unpublished.json.data.items[0].pending_relations, [{ property: "Project", ids: ["prj-9x4t1b7e"] }]);
+});
+
+test("sync tasks rejects missing and non-project item projects", async (context) => {
+  const dir = await fixtureCopy(context);
+  const missing = await brain(["sync", "tasks", "--brain", dir, "--meeting", "mtg-8c4n2p7w", "--input", await input(dir, "tasks-missing-project.json", { items: [{ title: "Missing", projects: ["prj-00000000"] }] }), "--json"]);
+  assert.equal(missing.code, 4);
+  assert.equal(missing.json.error.code, "UNKNOWN_ID");
+  const invalid = await brain(["sync", "tasks", "--brain", dir, "--meeting", "mtg-8c4n2p7w", "--input", await input(dir, "tasks-non-project.json", { items: [{ title: "Wrong type", projects: [MARIA, 3] }] }), "--json"]);
+  assert.equal(invalid.code, 4);
+  assert.equal(invalid.json.error.code, "INPUT_INVALID");
+  assert.deepEqual(invalid.json.error.details.map((detail: { pointer: string }) => detail.pointer), ["/items/0/projects/0", "/items/0/projects/1"]);
+});
+
+test("sync record never changes updated", async (context) => {
+  const dir = await fixtureCopy(context);
   const before = parseFrontmatter(await readFile(join(dir, "knowledge/people/maria-lopez.md"), "utf8")).attributes.updated;
   const record = await brain(["sync", "record", "--brain", dir, "--now", NOW, "--input", await input(dir, "record.json", { records: [{ id: MARIA, notion: MARIA_PAGE, synced_at: NOW, published: { Role: "Product Manager" } }] }), "--json"]);
   assert.equal(record.code, 0, record.stdout);

@@ -104,6 +104,15 @@ test("lint reports a usable line number and supports --strict and path filters",
   assert.equal((await brain(["lint", ACME, "--strict", "--brain", dir, "--json"])).code, 1);
 });
 
+test("lint requires each source key's folder", async (context) => {
+  const dir = await fixtureCopy(context);
+  const source = "sources/notion/2026-12-03-acme-sync-notion-minutes.md";
+  await replace(source, "source_key: notion:3c4d5e6f-7a8b-4c0d-9e2f-3a4b5c6d7e8f", `source_key: file:sha256:${"a".repeat(64)}\nkind: document\nfile_name: acme.pdf\nconverter: markitdown 0.1.8`)(dir);
+  const run = await brain(["lint", "--brain", dir, "--json"]);
+  const wrongFolder = run.json.data.issues.find((issue: { rule: string; path: string }) => issue.rule === "wrong-folder" && issue.path === source);
+  assert.ok(wrongFolder, JSON.stringify(run.json.data.issues));
+});
+
 test("every spec example passes or fails the JSON Schemas as labelled", async () => {
   const schemas = loadSchemas();
   const root = join(import.meta.dirname, "..", "spec", "examples");

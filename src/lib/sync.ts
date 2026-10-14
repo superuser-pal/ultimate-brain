@@ -444,8 +444,40 @@ function proposalAfter(attributes: Record<string, unknown>, workspace: Workspace
 export function renderTasks(workspace: Workspace, meetingId: string, input: unknown): Record<string, unknown> {
   if (!isRecord(input) || !Array.isArray(input.items)) throw new BrainError("INPUT_INVALID", "tasks input needs an items list");
   const config = tasksConfig(workspace); const meeting = workspace.get(meetingId); if (meeting?.type !== "meeting") throw new BrainError("UNKNOWN_ID", `No meeting with id ${meetingId}`);
-  const tasks = input.items.map((item) => { if (!isRecord(item) || typeof item.title !== "string" || item.title === "") throw new BrainError("INPUT_INVALID", "each task needs a title"); const properties: Record<string, unknown> = {}; const put = (key: string, type: string, value: unknown) => { const name = config.properties[key]; if (typeof name === "string" && name !== "") properties[name] = { type, value }; }; put("title", "title", item.title); put("status", "select", config.new_task_status); if (item.due !== undefined) put("due", "date", dateOutput(item.due)); if (item.owner !== undefined) put("owner", "person_name", item.owner); put("project", "relation", publishedPages(meeting.attributes.projects, workspace)); put("area", "relation", publishedPages(meeting.attributes.area === undefined ? [] : [meeting.attributes.area], workspace)); if (config.properties.meeting !== "") put("meeting", "relation", [meeting.attributes.notion]); else put("meeting_url", "url", meeting.attributes.notion === undefined ? undefined : `https://www.notion.so/${String(meeting.attributes.notion).replaceAll("-", "")}`); put("brain_id", "rich_text", meeting.id); return { database_id: config.database, properties }; });
+  const tasks = input.items.map((item, index) => {
+    if (!isRecord(item) || typeof item.title !== "string" || item.title === "") throw new BrainError("INPUT_INVALID", "each task needs a title");
+    const projects = taskProjects(workspace, meeting, item.projects, index);
+    const properties: Record<string, unknown> = {};
+    const pending_relations: Array<Record<string, unknown>> = [];
+    const put = (key: string, type: string, value: unknown) => { const name = config.properties[key]; if (typeof name === "string" && name !== "") properties[name] = { type, value }; };
+    put("title", "title", item.title); put("status", "select", config.new_task_status); if (item.due !== undefined) put("due", "date", dateOutput(item.due)); if (item.owner !== undefined) put("owner", "person_name", item.owner);
+    const projectProperty = config.properties.project;
+    if (typeof projectProperty === "string" && projectProperty !== "") {
+      const unpublished = projects.filter((id) => typeof workspace.get(id)?.attributes.notion !== "string");
+      if (unpublished.length > 0) pending_relations.push({ property: projectProperty, ids: unpublished });
+      put("project", "relation", publishedPages(projects, workspace));
+    }
+    put("area", "relation", publishedPages(meeting.attributes.area === undefined ? [] : [meeting.attributes.area], workspace)); if (config.properties.meeting !== "") put("meeting", "relation", [meeting.attributes.notion]); else put("meeting_url", "url", meeting.attributes.notion === undefined ? undefined : `https://www.notion.so/${String(meeting.attributes.notion).replaceAll("-", "")}`); put("brain_id", "rich_text", meeting.id);
+    return { database_id: config.database, properties, pending_relations };
+  });
   return { items: tasks };
+}
+
+function taskProjects(workspace: Workspace, meeting: Note, value: unknown, itemIndex: number): string[] {
+  if (value === undefined || (Array.isArray(value) && value.length === 0)) return Array.isArray(meeting.attributes.projects) ? meeting.attributes.projects.filter((id): id is string => typeof id === "string") : [];
+  if (!Array.isArray(value)) throw new BrainError("INPUT_INVALID", "task projects must be an array", [{ pointer: `/items/${itemIndex}/projects`, message: "must be an array of project ids" }]);
+  const problems: InputProblem[] = [];
+  const projects: string[] = [];
+  value.forEach((id, projectIndex) => {
+    const pointer = `/items/${itemIndex}/projects/${projectIndex}`;
+    if (typeof id !== "string") { problems.push({ pointer, message: "must be a project id" }); return; }
+    const note = workspace.get(id);
+    if (note === undefined) throw new BrainError("UNKNOWN_ID", `No note with id ${id}`);
+    if (note.type !== "project") { problems.push({ pointer, message: `${id} is not a project` }); return; }
+    projects.push(id);
+  });
+  assertNoProblems(problems);
+  return projects;
 }
 function publishedPages(value: unknown, workspace: Workspace): string[] { return (Array.isArray(value) ? value : []).map((id) => workspace.get(String(id))?.attributes.notion).filter((id): id is string => typeof id === "string"); }
 function tasksConfig(workspace: Workspace): { database: string; properties: Record<string, string>; new_task_status: string } { if (!loadSchemas().brain(workspace.config)) throw new BrainError("BRAIN_CONFIG_INVALID", "brain.json fails its schema"); const notion = workspace.config.notion as Record<string, unknown>; const tasks = notion.tasks as Record<string, unknown>; if (typeof tasks.database !== "string" || tasks.database === "") throw new BrainError("BRAIN_CONFIG_INVALID", "Tasks database is not configured"); return { database: tasks.database as string, properties: tasks.properties as Record<string, string>, new_task_status: tasks.new_task_status as string }; }
