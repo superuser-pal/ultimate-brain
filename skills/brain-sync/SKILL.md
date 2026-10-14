@@ -17,7 +17,7 @@ Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come 
 ## Pull
 
 1. **Check:** run `brain status`. Sync needs `notion.configured`; if it's empty, run `brain-connect-notion` first.
-2. **Read** every row of every configured database through the Notion MCP: Areas, Goals, Key Results, Projects, People, Orgs, Decisions, Questions and Review, with all pages (follow `next_cursor`). Meetings and Capture Inbox are not read here: meetings belong to the ingest, and the inbox to classification.
+2. **Read** every row of every configured database through the Notion MCP: Areas, Goals, Key Results, Projects, People, Orgs, Decisions, Questions and Review, with all pages (follow `next_cursor`). Meetings and Capture Inbox are not read here: both belong to the brain-ingest skill.
 3. **Snapshot.** Write `snapshot.json` in the format of [references/formats.md](references/formats.md), converting each property to its normalized value (the table there).
 
    Each row also carries `database` (the brain.json key), `page_id`, `last_edited` (the page's `last_edited_time`), and `"as_of"` = now. Leave out a property you didn't read; never send a guessed value.
