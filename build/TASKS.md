@@ -263,7 +263,7 @@ Both are skill-side: the toggles because the CLI can't see Notion page content (
 | U-05 | Two weeks of daily use | Wave 4 |
 | U-06 | Put 5–10 real documents in one folder for the bake-off: a long PDF with tables, a deck, a Word file, a scan if you have one | Before CC-15 |
 | U-07 | Connect the Easlo template to the Notion integration (read-only use) | Before CC-17 |
-| U-08 | Publish 0.2.0 (`npm version minor`, `npm publish`, push tags; docs/releasing.md) | After CC-16 and CX-18 to CX-21 |
+| U-08 | Publish 0.2.0 (`npm version minor`, `npm publish`, push tags; docs/releasing.md) | After CC-16 and CX-18 to CX-20 |
 
 ## How to start Codex on a task
 
@@ -276,4 +276,4 @@ implement it to its acceptance criteria, run the tests, then set the status to "
 and summarize what you did and any spec questions.
 ```
 
-For 0.2.0, Codex can start CX-20 now; CX-18, CX-19 and CX-21 wait for CC-13.
+For 0.2.0, Codex can start CX-20 now; CX-18 and CX-19 wait for CC-13.
