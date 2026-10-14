@@ -21,16 +21,25 @@ export function slugify(title: string): string {
  * note's `date`, else the input `file_date`, else `created`. `taken` says whether a path (for
  * projects: the folder) already exists; `-2`, `-3`, … are appended until it is free.
  */
-export function newNotePath(type: string, title: string, date: string, taken: (path: string) => boolean): string {
+export function newNotePath(type: string, title: string, date: string, taken: (path: string) => boolean, sourceKey?: unknown): string {
   const base = slugify(title);
   for (let n = 1; ; n += 1) {
     const slug = n === 1 ? base : `${base}-${n}`;
-    const { path, claim } = layout(type, slug, date);
+    const { path, claim } = layout(type, slug, date, sourceKey);
     if (!taken(claim)) return path;
   }
 }
 
-function layout(type: string, slug: string, date: string): { path: string; claim: string } {
+/** The folder for a source key (decision 0032). Unknown keys stay in the legacy notion folder for schema validation. */
+export function sourceFolder(sourceKey: unknown): "notion" | "files" | "text" {
+  if (typeof sourceKey === "string") {
+    if (sourceKey.startsWith("file:")) return "files";
+    if (sourceKey.startsWith("url:") || sourceKey.startsWith("agent:")) return "text";
+  }
+  return "notion";
+}
+
+function layout(type: string, slug: string, date: string, sourceKey?: unknown): { path: string; claim: string } {
   const file = (path: string) => ({ path, claim: path });
   switch (type) {
     case "area": return file(`areas/${slug}.md`);
@@ -42,7 +51,7 @@ function layout(type: string, slug: string, date: string): { path: string; claim
     case "concept": return file(`knowledge/concepts/${slug}.md`);
     case "meeting": return file(`knowledge/meetings/${date}-${slug}.md`);
     case "decision": return file(`knowledge/decisions/${date}-${slug}.md`);
-    case "source": return file(`sources/notion/${date}-${slug}.md`);
+    case "source": return file(`sources/${sourceFolder(sourceKey)}/${date}-${slug}.md`);
     case "memory": return file(`memories/${date.slice(0, 4)}/${date.slice(5, 7)}/${date}-${slug}.md`);
     case "proposal": return file(`_proposals/${date}-${slug}.md`);
     default: throw new Error(`No path layout for type ${type}`);

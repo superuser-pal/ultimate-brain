@@ -120,7 +120,12 @@ export function stageNotes(
     if (KNOWLEDGE_TYPES.has(item.type)) attributes.lifecycle = options.lifecycle ?? "draft";
     if (item.type === "source") {
       const hash = `sha256:${createHash("sha256").update(body, "utf8").digest("hex")}`;
-      const duplicate = workspace.notes.find((note) => note.type === "source" && note.attributes.content_hash === hash);
+      const sourceKey = attributes.source_key;
+      const duplicateByKey =
+        typeof sourceKey === "string" && (sourceKey.startsWith("file:") || attributes.kind === "capture");
+      const duplicate = workspace.notes.find((note) =>
+        note.type === "source" && (note.attributes.content_hash === hash || (duplicateByKey && note.attributes.source_key === sourceKey)),
+      );
       if (duplicate !== undefined) {
         result.skipped.push({ input_index: index, reason: "DUPLICATE_SOURCE", existing: duplicate.id });
         return;
@@ -136,7 +141,7 @@ export function stageNotes(
 
     const ownDate = DATED_BY_FIELD.has(item.type) && isDate(item.frontmatter.date) ? (item.frontmatter.date as string) : undefined;
     const date = ownDate ?? item.file_date ?? today;
-    const path = newNotePath(item.type, item.title, date, (candidate) => workspace.exists(candidate));
+    const path = newNotePath(item.type, item.title, date, (candidate) => workspace.exists(candidate), attributes.source_key);
     workspace.write(path, serializeNewFile(attributes, body));
     result.created.push({ id, type: item.type, title: item.title, path });
     result.pointers.set(path, pointerOf(index));
