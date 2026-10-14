@@ -1,21 +1,21 @@
 # Prompt 7e — Review Space views
 
-Paste into Notion AI **while you are on the "Review" page**, after [Prompt 6](06-templates.md). Other Spaces: [index](07-spaces-views.md).
+Paste into Notion AI **while you are on the "Review" page**, after [Prompt 6](06-templates.md). Other Spaces: [index](07-spaces-views.md). Every view, with its use case, is in [../views-guide.md](../views-guide.md).
 
-This page holds only linked views of databases on "Brain Data". No navigation or layout work is in this prompt.
+Why, Source Meeting and Edited Value are on each proposal's page: open the row to read them or to type an edited value.
 
 ```text
-On this page ("Review") add four linked views of "Review":
+On this page ("Review") add four tabs, each a linked view of "Review":
+1. Tab "Needs my decision": Table, named "What needs my decision?": filter State is Pending; sort Created time descending; show Name, Kind, Before, After, Decision.
+2. Tab "Sources disagree": Table, named "Where do sources disagree?": filter Kind is Contradiction and State is Pending; sort Created time ascending; show Name, Before, After, Decision.
+3. Tab "Approved": List, named "What did I approve recently?": filter State is Applied and Last edited time is within the past month (relative date); sort Last edited time descending; show Name, Kind, After.
+4. Tab "Rejected": List, named "What did I reject?": filter State is Closed; sort Last edited time descending; show Name, Kind.
 
-1. Table layout, named "What needs my decision?": filter State is Pending; sort Created time descending; show Name, Kind, Before, After, Why, Source Meeting, Decision, Edited Value.
-2. Table layout, named "Where do sources disagree?": filter Kind is Contradiction and State is Pending; sort Created time ascending; show Name, Before, After, Why, Source Meeting, Decision, Edited Value.
-3. List layout, named "What did I approve recently?": filter State is Applied and Last edited time is within the past month (relative date); sort Last edited time descending; show Name, Kind, Decision, After.
-4. List layout, named "What did I reject?": filter State is Closed; sort Last edited time descending; show Name, Kind, Decision, Why.
+Put the views in a tabs block (one view per tab, tab labels as given). If you can't create tabs, add them as separate views of one linked view instead.
 
-Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included. In every view hide the properties "Brain ID", "Last Synced", "Created time" and "Last edited time" unless the view lists them under show. Show only the properties listed. Do not add other content.
+Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included, and hide its database title. In every view hide the properties "Brain ID", "Last Synced", "Created time" and "Last edited time" unless the view lists them under show. Show only the properties listed. Leave the navigation column as it is. Do not add other content.
 ```
 
 ## Verify
-- [ ] Only four linked views of Review are on the page.
-- [ ] "What needs my decision?" shows only Pending rows and has the Decision and Edited Value columns.
-- [ ] View 3 uses a relative date filter.
+- [ ] Four tabs: Needs my decision, Sources disagree, Approved, Rejected.
+- [ ] "What needs my decision?" shows only Pending rows, and Decision can be set in the view.
