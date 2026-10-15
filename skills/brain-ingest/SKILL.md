@@ -1,6 +1,6 @@
 ---
 name: brain-ingest
-description: Ingest into the brain reviewed meeting minutes from Notion or a file, documents (PDF, Word, PowerPoint, Excel, HTML, images), pasted emails, chat threads and notes, and the Notion Capture Inbox. Snapshots each input as a source, matches it against what the brain already knows, writes new notes (meeting, people, decisions, questions) as drafts, proposes changes to existing knowledge for your review, and creates meeting action items as Notion tasks. Use when the user says "ingest my meetings", "process the reviewed minutes", "ingest this PDF", "ingest this email", "process my capture inbox", or after marking meetings Reviewed.
+description: Ingest into the brain reviewed meeting minutes from Notion or a file, documents (PDF, Word, PowerPoint, Excel, HTML, images), web pages by URL, pasted emails, chat threads and notes, and the Notion Capture Inbox. Snapshots each input as a source, matches it against what the brain already knows, writes new notes (meeting, people, decisions, questions) as drafts, proposes changes to existing knowledge for your review, and creates meeting action items as Notion tasks. Use when the user says "ingest my meetings", "process the reviewed minutes", "ingest this PDF", "ingest this page <url>", "ingest this email", "process my capture inbox", or after marking meetings Reviewed.
 ---
 
 # Ingest into the brain

@@ -208,7 +208,7 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 
 **Acceptance:** a blind run on synthetic fixtures (one document, one email, one capture) passes; the skill mirror is rebuilt.
 
-### CC-15 · Converter bake-off and real acceptance run · `todo` (after U-06; runs on the released 0.2.0, fixes go to 0.2.1)
+### CC-15 · Converter bake-off and real acceptance run · `in progress` (bake-off done 2026-10-15, in decision 0032; acceptance run next; fixes go to 0.2.1)
 **Output:** run the user's 5–10 documents through MarkItDown and native Read, compare against the originals, and decide whether Docling or Marker is added. Write the result into the decision from CC-13.
 
 **Acceptance (with the user):** 1 PDF, 1 Word or PowerPoint file, 1 pasted email and 2 Capture Inbox rows ingest end to end in the real brain, with correct sources, drafts and proposals.
