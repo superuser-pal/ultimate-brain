@@ -285,7 +285,7 @@ Agreed with the user on 2026-10-15 (grill session, decision 0037): the CC-15 fin
 **Output:** brain-ingest "process my drop folder" (list the files, one question, all selected by default) and the `processed/` and `skipped/` subfolders; the three-line report template in brain-ingest, brain-apply and brain-sync; parallel MCP writes with no read-backs in "Publish"; the user guide's drop-folder row.
 **Acceptance:** a blind run on a synthetic drop folder of 3 files ingests the chosen ones, moves them, and leaves the rest at the top level; every report follows the template.
 
-### CX-23 · Edit on a link row is a plan conflict (decision 0037) · `todo`
+### CX-23 · Edit on a link row is a plan conflict (decision 0037) · `review`
 **Output:** `sync plan` returns an Edit on a kind that forbids it (`add_link`, `supersede`, `merge`, `new_item`; spec/cli.md §5.14.2, schema §11.1) as an `EDIT_NOT_ALLOWED` conflict, not a decision. **Acceptance:** a test with an Edited `add_link` row and one other non-editable kind; `apply` is never reached with them.
 
 ## 0.3.0 — queued

@@ -51,7 +51,7 @@ export interface ApplyResult {
 
 const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 const ACTIONS = ["approve", "reject", "edit"];
-const EDITABLE = new Set(["update_fact", "contradiction", "add_to_note"]);
+export const EDITABLE = new Set(["update_fact", "contradiction", "add_to_note"]);
 /** Reference fields a merge leaves alone: the meeting side of a persisted pair (spec/schema.md §11.2). */
 const PAIR_FIELDS = new Set(["decisions", "questions", "decided_in", "raised_in"]);
 /** Corrections change knowledge notes only: sources are immutable and proposals are records. */
