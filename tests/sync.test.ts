@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -160,17 +160,25 @@ test("sync render presents an add_link review with its target title", async (con
   assert.equal(properties.After.value, "People: Carlos Ruiz");
 });
 
-test("sync render replaces relative Review links with Notion links", async (context) => {
+test("sync render makes target-relative Review links plain text", async (context) => {
   const dir = await fixtureCopy(context);
-  await writeFile(join(dir, "_proposals/2026-12-10-relative-review-links.md"), serializeNewFile({
-    id: "prp-0a1b2c3d", type: "proposal", title: "Update Maria", created: "2026-12-10", updated: "2026-12-10",
-    kind: "update_fact", target: MARIA, field: "role", before: "[Maria](../knowledge/people/maria-lopez.md)", after: "[Maria](../knowledge/people/maria-lopez.md)", why: "Asked by [Maria](../knowledge/people/maria-lopez.md)", status: "pending",
+  await mkdir(join(dir, "sources/files"), { recursive: true });
+  await writeFile(join(dir, "sources/files/x.md"), serializeNewFile({
+    id: "src-0a1b2c3d", type: "source", title: "X file", source_key: "file:x", content_hash: "sha256:x", captured: "2026-12-10T09:00:00Z", created: "2026-12-10", updated: "2026-12-10",
+  }, "Source text."));
+  const decisionPath = join(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
+  await writeFile(decisionPath, (await readFile(decisionPath, "utf8")).replace("updated: 2026-12-04\n", "updated: 2026-12-04\nnotion: 7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d\n"));
+  await writeFile(join(dir, "_proposals/2026-12-10-target-relative-review-links.md"), serializeNewFile({
+    id: "prp-0a1b2c3d", type: "proposal", title: "Update Acme website", created: "2026-12-10", updated: "2026-12-10",
+    kind: "add_to_note", target: "prj-9x4t1b7e", content: "Read [X file](../../sources/files/x.md) and [Use Supabase for auth](../../knowledge/decisions/2026-12-03-use-supabase-for-auth.md).", why: "See [X file](../../sources/files/x.md).", status: "pending",
   }, ""));
   const run = await brain(["sync", "render", "--brain", dir, "--ids", "prp-0a1b2c3d", "--json"]);
+  assert.equal(run.code, 0, run.stdout);
   const properties = run.json.data.items[0].properties;
-  assert.equal(properties.Before.value, "[Maria](https://www.notion.so/7a8b9c0d1e2f4a3b8c4d5e6f7a8b9c0d)");
-  assert.equal(properties.After.value, "[Maria](https://www.notion.so/7a8b9c0d1e2f4a3b8c4d5e6f7a8b9c0d)");
-  assert.equal(properties.Why.value, "Asked by [Maria](https://www.notion.so/7a8b9c0d1e2f4a3b8c4d5e6f7a8b9c0d)");
+  assert.equal(properties.After.value, "Read X file and Use Supabase for auth.");
+  assert.equal(properties.Why.value, "See X file.");
+  assert.equal(properties.Before.value, null);
+  assert.doesNotMatch(properties.After.value, /notion\.so|\[[^\]]+\]\([^)]+\)/);
 });
 
 test("sync render gives supersede and merge reviews titles and truncates text", async (context) => {
