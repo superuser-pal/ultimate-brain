@@ -45,7 +45,7 @@ A document, a web page, then a pasted email:
 - **`file_name`** (the name only, no folder) and **`converter`** (`claude-read <model id>`, `codex-view-image <model id>`, or `markitdown <version>`) are required with a `file:` key.
 - **Web page** (0036): `source_key` is `url:<the https URL as given>`; `kind` `document` and `converter` (`markitdown <version>` or `web-fetch <model id>`) are required; no `file_name`.
 - **Capture:** `source_key` is `notion:<row page id>`, `kind` is `capture`, `origin_edited` is the row's `last_edited_time`.
-- **Title:** `<title> (<kind>)`; for a web page, the page's own title. **`file_date`:** the text's own date (a document's date, a web page's stated publication or update date, an email's sent date); for a capture, the row's Created date; else today.
+- **Title:** `<title> (<kind>)`; for a web page, `<title>` is the page's own title. **`file_date`:** the text's own date (a document's date, a web page's stated publication or update date, an email's sent date); for a capture, the row's Created date; else today.
 - **Dates in the notes:** a new note's timeline `from` is the date the text gives, else the source's `file_date`; `learned` is always today (the day the brain learned it).
 - **Duplicates:** the CLI also skips a source whose `file:` key, or whose `capture` row, was already ingested, even if the text differs.
 
