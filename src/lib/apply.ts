@@ -6,7 +6,7 @@ import type { NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 import { stageNewItem } from "./proposals.ts";
 import { loadSchemas } from "./schemas.ts";
-import { formatDate } from "./time.ts";
+import { formatDate, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 import type { LogEntry } from "./log.ts";
 
@@ -49,7 +49,6 @@ export interface ApplyResult {
   log: LogEntry[];
 }
 
-const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 const ACTIONS = ["approve", "reject", "edit"];
 export const EDITABLE = new Set(["update_fact", "contradiction", "add_to_note"]);
 /** Reference fields a merge leaves alone: the meeting side of a persisted pair (spec/schema.md §11.2). */
@@ -96,7 +95,10 @@ export function parseApplyInput(input: unknown): ApplyInput {
     if (item.decided_by !== "notion" && item.decided_by !== "chat") problems.push({ pointer: `${pointer}/decided_by`, message: "must be notion or chat" });
   });
   assertNoProblems(problems);
-  return { corrections: corrections as Correction[], decisions: decisions as DecisionInput[] };
+  return {
+    corrections: (corrections as Correction[]).map((item) => ({ ...item, observed_at: normalizeTimestamp(item.observed_at)! })),
+    decisions: (decisions as DecisionInput[]).map((item) => ({ ...item, decided_at: normalizeTimestamp(item.decided_at)! })),
+  };
 }
 
 /**
@@ -561,6 +563,4 @@ function record(value: unknown): Record<string, unknown> {
   return isRecord(value) ? value : {};
 }
 
-function isTimestamp(value: unknown): value is string {
-  return typeof value === "string" && TIMESTAMP.test(value) && !Number.isNaN(Date.parse(value));
-}
+function isTimestamp(value: unknown): value is string { return normalizeTimestamp(value) !== undefined; }
