@@ -1,6 +1,6 @@
 {
   "name": "ultimate-brain",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "CLI for an AI-assisted Markdown and Git second brain",
   "license": "MIT",
   "keywords": [
