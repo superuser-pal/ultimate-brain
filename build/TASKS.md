@@ -167,7 +167,7 @@ Found while setting up the first real brain. Fix them before the next new user; 
 Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smooth for the one user, and the brain ingests more than meetings. Medium size.
 
 **Two tracks:**
-- **npm 0.2.0:** CLI and skills. It ships when CC-13 to CC-16 and CX-18 to CX-20 are done.
+- **npm 0.2.0:** CLI and skills. It ships when CC-13, CC-14, CC-16 and CX-18 to CX-20 are done. CC-15 runs on the released version (agreed 2026-10-15); its fixes go to 0.2.1.
 - **Notion:** CC-17 to CC-18, in the user's workspace and the design docs. It runs alongside and never blocks the npm release.
 
 **Out of scope (0.3.0 list, docs/v2-ideas.md):** finding 3 (Notion setup steps per agent), a Sources database in Notion, Notion file uploads, Docling or Marker unless the bake-off (CC-15) asks for them.
@@ -208,7 +208,7 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 
 **Acceptance:** a blind run on synthetic fixtures (one document, one email, one capture) passes; the skill mirror is rebuilt.
 
-### CC-15 · Converter bake-off and real acceptance run · `todo` (after CC-14, CX-18, U-06)
+### CC-15 · Converter bake-off and real acceptance run · `todo` (after U-06; runs on the released 0.2.0, fixes go to 0.2.1)
 **Output:** run the user's 5–10 documents through MarkItDown and native Read, compare against the originals, and decide whether Docling or Marker is added. Write the result into the decision from CC-13.
 
 **Acceptance (with the user):** 1 PDF, 1 Word or PowerPoint file, 1 pasted email and 2 Capture Inbox rows ingest end to end in the real brain, with correct sources, drafts and proposals.
@@ -278,7 +278,7 @@ Both are skill-side: the toggles because the CLI can't see Notion page content (
 | U-05 | Two weeks of daily use | Wave 4 |
 | U-06 | Put 5–10 real documents in one folder for the bake-off: a long PDF with tables, a deck, a Word file, a scan if you have one | Before CC-15 |
 | U-07 | Connect the Easlo template to the Notion integration (read-only use) | Before CC-17 |
-| U-08 | Publish 0.2.0 (`npm version minor`, `npm publish`, push tags; docs/releasing.md) | After CC-16 and CX-18 to CX-20 |
+| U-08 | Publish 0.2.0 (`npm version minor`, `npm publish`, push tags; docs/releasing.md) | Now: agreed 2026-10-15 to release before CC-15, so the acceptance run uses the released version |
 
 ## How to start Codex on a task
 
