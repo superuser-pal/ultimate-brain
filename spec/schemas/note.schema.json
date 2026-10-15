@@ -873,6 +873,29 @@
               "converter"
             ]
           }
+        },
+        {
+          "if": {
+            "required": [
+              "source_key"
+            ],
+            "properties": {
+              "source_key": {
+                "pattern": "^url:"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "kind",
+              "converter"
+            ],
+            "properties": {
+              "kind": {
+                "const": "document"
+              }
+            }
+          }
         }
       ]
     },
