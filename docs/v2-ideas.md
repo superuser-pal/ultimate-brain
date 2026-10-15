@@ -14,6 +14,7 @@ It would orchestrate the existing skills in one guided flow:
 2. **Interview:** who the user is and their work; their areas, goals and active projects; the people and organisations they work with; what they want to track. One topic at a time, with examples, and it suggests answers from what's already in Notion.
 3. **Populate:** create the answers as rows in Notion (Areas, Goals, Projects, People, Orgs), then run brain-sync, so Notion and the brain start identical and the first ingest has something to match.
 4. **Seed from existing material:** offer to import documents the user already has (see "Document ingestion" below) and recent meeting notes.
+   - **Drop folder, asked up front:** ask which folder the user will drop documents into for ingest (e.g. `~/Documents/brain-dropbox/`) and explain why it lives **outside both repos**: originals stay where they are and the brain keeps only the converted text, the file name and its hash (decision 0032), so private files never enter Git history, and the product repo never holds personal data (0014). Store the path in the brain's personal rules (or a `brain.json` setting, if one is added), so "ingest my drop folder" works without asking again. Raised by the user on 2026-10-15.
 5. **Personal rules:** write names, language and confidential clients into the user section of the brain's AGENTS.md.
 6. **First run:** walk through one real ingest and one query, end to end, and show where to review.
 7. **Link code repos** with `brain link`.
