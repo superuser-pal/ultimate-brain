@@ -18,6 +18,13 @@ brain --help
 
 The agent skills come with it: `brain init` copies them into the brain for Codex, and Claude Code gets them as the `ultimate-brain` plugin.
 
+**To ingest Word, PowerPoint, Excel and web pages** (optional), install [MarkItDown](https://github.com/microsoft/markitdown), the converter the ingest uses for them (decision 0032). PDFs and images need nothing extra in Claude Code; Codex uses MarkItDown for every file type.
+
+```sh
+pipx install 'markitdown[all]'
+markitdown --version
+```
+
 ## Update
 
 ```sh

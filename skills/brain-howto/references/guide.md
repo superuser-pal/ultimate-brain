@@ -113,7 +113,7 @@ Set **Disputed** on anything wrong. The brain stops relying on it, and you can a
 | A quick thought, link or idea | **Quick capture** on Home. It lands in Knowledge → Inbox. Tell your agent "process my capture inbox" |
 | A meeting | **New meeting** on Home, or let Notion AI create it when it starts taking notes |
 | A project, area, goal, person or org | Create the row in Notion (**New project** on Home for projects). The next sync imports it into the brain |
-| A document (PDF, Word, PowerPoint, Excel, web page, image) | Give your agent the file: "ingest this PDF: ~/Documents/proposal.pdf". The original file stays where it is |
+| A document (PDF, Word, PowerPoint, Excel, web page, image) | Put it in your drop folder and give your agent the path: "ingest this PDF: ~/Documents/brain-dropbox/proposal.pdf". The original file stays where it is. Word, PowerPoint, Excel and web pages need MarkItDown installed once: `pipx install 'markitdown[all]'` |
 | An email, chat thread or note | Paste it into a **Quick capture** (keep the From, Date and Subject lines), then tell your agent "process my capture inbox". Or paste it straight to your agent: "ingest this email" |
 | A task | Add it in Tasks. Tasks from meetings are created for you |
 
