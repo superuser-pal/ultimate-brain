@@ -206,3 +206,9 @@ test("freshness ignores words inside link targets", async (context) => {
   await replace(ACME, "Retail client since October 2026.", "See [the deck](https://example.com/latest-now).")(dir);
   assert.deepEqual((await issuesFor(dir)).map((issue) => issue.rule), []);
 });
+
+test("freshness ignores latest when it describes a sequence", async (context) => {
+  const dir = await fixtureCopy(context);
+  await replace(ACME, "Retail client since October 2026.", "Use the latest version of the template.")(dir);
+  assert.deepEqual((await issuesFor(dir)).map((issue) => issue.rule), []);
+});

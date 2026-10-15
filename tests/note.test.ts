@@ -216,6 +216,13 @@ test("note new routes file and text sources, orders file metadata, and dedupes f
   });
 });
 
+test("note new rejects a URL source without document metadata", async (context) => {
+  const dir = await fixtureCopy(context);
+  const run = await noteNew(dir, { notes: [{ type: "source", title: "Acme page", file_date: "2026-12-10", frontmatter: { source_key: "url:https://example.com/acme" }, body: "Fetched page.\n" }] });
+  assert.equal(run.code, 4);
+  assert.deepEqual(run.json.error.details.map((detail: { pointer: string }) => detail.pointer), ["/notes/0"]);
+});
+
 test("note new validates input shape with pointers", async (context) => {
   const dir = await fixtureCopy(context);
   const run = await noteNew(dir, {

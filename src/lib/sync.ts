@@ -8,7 +8,7 @@ import { generateId, TYPE_PREFIX } from "./ids.ts";
 import { assertStagedValid, checkNoteInput, stageNotes, type NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 import { loadSchemas } from "./schemas.ts";
-import { formatDate, formatTimestamp } from "./time.ts";
+import { formatDate, formatTimestamp, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 import type { LogEntry } from "./log.ts";
 
@@ -17,7 +17,6 @@ const CREATABLE = new Set(["areas", "goals", "projects", "people", "orgs"]);
 const TYPE_FOR_DATABASE: Record<string, string> = { areas: "area", goals: "goal", projects: "project", people: "person", orgs: "org", decisions: "decision", questions: "question", review: "proposal" };
 const DATABASE_FOR_TYPE: Record<string, string> = { area: "areas", goal: "goals", project: "projects", person: "people", org: "orgs", decision: "decisions", question: "questions", meeting: "meetings", proposal: "review" };
 const PUBLISHED_TYPES = new Set(["area", "goal", "project", "person", "org", "decision", "question", "meeting", "proposal"]);
-const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 
 export interface SyncPlan {
   as_of: string;
@@ -80,7 +79,7 @@ export function parseSnapshot(input: unknown): Snapshot {
     if (!isRecord(value.properties)) problems.push({ pointer: `${p}/properties`, message: "must be an object" });
   });
   assertNoProblems(problems);
-  return { as_of: record.as_of as string, rows: record.rows as SnapshotRow[] };
+  return { as_of: normalizeTimestamp(record.as_of)!, rows: (record.rows as SnapshotRow[]).map((row) => ({ ...row, last_edited: normalizeTimestamp(row.last_edited)! })) };
 }
 
 /** Compute the deterministic, no-network Notion pull plan (cli §5.14.2). */
@@ -292,7 +291,7 @@ function normalizeLifecycle(value: unknown): unknown { return typeof value === "
 function dateValue(value: unknown): unknown { return isRecord(value) && typeof value.start === "string" ? value.start.slice(0, 10) : value; }
 function blank(value: unknown): boolean { return value === undefined || value === null || value === ""; }
 function withoutAsOf(value: unknown): unknown { if (!isRecord(value)) return value ?? {}; const { as_of: _asOf, ...rest } = value; return rest; }
-function isTimestamp(value: unknown): value is string { return typeof value === "string" && TIMESTAMP.test(value); }
+function isTimestamp(value: unknown): value is string { return normalizeTimestamp(value) !== undefined; }
 
 export function parseKeyFacts(value: unknown): Record<string, unknown> {
   if (typeof value !== "string" || value === "") return {};
@@ -315,7 +314,7 @@ export function parsePlan(input: unknown): SyncPlan {
     if (item.lifecycle !== undefined && typeof item.lifecycle !== "string") problems.push({ pointer: `/create/${index}/lifecycle`, message: "must be a lifecycle string" });
   });
   assertNoProblems(problems);
-  return p as unknown as SyncPlan;
+  return { ...p, as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
 }
 
 export function applyPlan(workspace: Workspace, plan: SyncPlan, now: Date, recordOnly: boolean): Record<string, unknown> {
@@ -387,10 +386,11 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     const after = addLink && typeof a.field === "string"
       ? `${fieldLabel(a.field)}: ${noteTitle(a.after, workspace)}`
       : undefined;
+    const reviewText = (value: unknown) => truncate(typeof value === "string" ? notionMarkdown(value, note, workspace) : value);
     Object.assign(values, {
       Name: a.title, Kind: select(a.kind), Target: target === undefined ? null : `${target.attributes.title} (${target.id})`,
-      Before: proposalBefore(a, workspace), After: truncate(after ?? proposalAfter(a, workspace)),
-      Why: a.why ?? null, State: select(proposalState(a.status)), "Brain ID": note.id,
+      Before: reviewText(proposalBefore(a, workspace)), After: reviewText(after ?? proposalAfter(a, workspace)),
+      Why: reviewText(a.why), State: select(proposalState(a.status)), "Brain ID": note.id,
     });
     return values;
   }
@@ -415,7 +415,7 @@ function notionProperty(name: string, value: unknown, note: Note, workspace: Wor
   }
   if (["Lifecycle", "Assessment", "Kind", "State", "Brain Status"].includes(name)) return { type: "select", value };
   if (name === "Last Synced" || name === "Date" || name === "Deadline" || name === "Ingested At") return { type: "date", value };
-  return { type: name === "Brain ID" ? "rich_text" : "rich_text", value };
+  return { type: name === "Name" ? "title" : "rich_text", value };
 }
 function renderedContent(note: Note, workspace: Workspace): { body: string | null; sections: Record<string, string> | null; hash?: string } { if (note.type === "decision" || note.type === "question") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: notionMarkdown(generatedBlock(brief?.body ?? ""), note, workspace), "Decision log": notionMarkdown(generatedBlock(log?.body ?? ""), note, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
 function generatedBlock(body: string): string { const start = body.indexOf("<!-- @generated:start -->"); const end = body.indexOf("<!-- @generated:end -->"); return start >= 0 && end > start ? body.slice(start + "<!-- @generated:start -->".length, end).trim() : body.trim(); }
@@ -488,6 +488,6 @@ function tasksConfig(workspace: Workspace): { database: string; properties: Reco
 
 export function record(workspace: Workspace, input: unknown): Record<string, unknown> {
   if (!isRecord(input) || !Array.isArray(input.records)) throw new BrainError("INPUT_INVALID", "record input needs a records list"); const records: Array<Record<string, unknown>> = [];
-  for (const entry of input.records) { if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note); if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = { ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }; if (note.type !== "source" && note.type !== "view" && note.type !== "proposal") doc.attributes.last_synced = entry.synced_at; if (note.type === "meeting" && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && error.message === "NOTION_ID_MISMATCH" ? "NOTION_ID_MISMATCH" : "INVALID_RESULT", changed: [] }); } }
+  for (const entry of input.records) { if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note); if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = { ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }; if (note.type !== "source" && note.type !== "view" && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if (note.type === "meeting" && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && error.message === "NOTION_ID_MISMATCH" ? "NOTION_ID_MISMATCH" : "INVALID_RESULT", changed: [] }); } }
   return { records };
 }

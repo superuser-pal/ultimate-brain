@@ -298,6 +298,9 @@ Agreed with the user on 2026-10-15 (grill session, decision 0037): the CC-15 fin
 ### CX-23 · Edit on a link row is a plan conflict (decision 0037) · `done` (#76)
 **Output:** `sync plan` returns an Edit on a kind that forbids it (`add_link`, `supersede`, `merge`, `new_item`; spec/cli.md §5.14.2, schema §11.1) as an `EDIT_NOT_ALLOWED` conflict, not a decision. **Acceptance:** a test with an Edited `add_link` row and one other non-editable kind; `apply` is never reached with them.
 
+### CX-25 · CLI fixes from the acceptance run (CC-15 findings) · `review`
+**Output:** accept fractional-second timestamps as seconds precision; render `Name` as a title property; rewrite relative Review links; avoid sequence-meaning `latest` freshness warnings; reject incomplete `url:` sources. **Acceptance:** one test per item; existing tests pass.
+
 ## 0.3.0 — queued
 
 **Intake experience (decision 0037):** one Notion change for the user's space. Claude Code writes the contracts first (CC-22); Codex's CLI work (CX-24) follows them.

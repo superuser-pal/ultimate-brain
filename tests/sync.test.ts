@@ -61,6 +61,14 @@ test("sync plan reports an Edit on an add_link review as a conflict", async (con
   assert.deepEqual(applied.json.data.conflicts.map((item: { code: string }) => item.code), ["EDIT_NOT_ALLOWED", "EDIT_NOT_ALLOWED"]);
 });
 
+test("sync accepts fractional-second timestamps and stores seconds precision", async (context) => {
+  const dir = await fixtureCopy(context);
+  const snapshot = { as_of: "2026-12-10T09:00:00.000Z", rows: [{ database: "people", page_id: MARIA_PAGE, last_edited: "2026-12-10T08:00:00.123Z", properties: { "Brain ID": MARIA } }] };
+  const run = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "fractional-timestamps.json", snapshot), "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  assert.equal(run.json.data.as_of, NOW);
+});
+
 test("sync apply creates a Notion-created note with its lifecycle and applies corrections", async (context) => {
   const dir = await fixtureCopy(context);
   const mariaPath = join(dir, "knowledge/people/maria-lopez.md");
@@ -146,9 +154,23 @@ test("sync render presents an add_link review with its target title", async (con
   const run = await brain(["sync", "render", "--brain", dir, "--ids", "prp-0a1b2c3d", "--json"]);
   assert.equal(run.code, 0, run.stdout);
   const properties = run.json.data.items[0].properties;
+  assert.equal(properties.Name.type, "title");
   assert.equal(properties.Kind.value, "Add Link");
   assert.equal(properties.Before.value, null);
   assert.equal(properties.After.value, "People: Carlos Ruiz");
+});
+
+test("sync render replaces relative Review links with Notion links", async (context) => {
+  const dir = await fixtureCopy(context);
+  await writeFile(join(dir, "_proposals/2026-12-10-relative-review-links.md"), serializeNewFile({
+    id: "prp-0a1b2c3d", type: "proposal", title: "Update Maria", created: "2026-12-10", updated: "2026-12-10",
+    kind: "update_fact", target: MARIA, field: "role", before: "[Maria](../knowledge/people/maria-lopez.md)", after: "[Maria](../knowledge/people/maria-lopez.md)", why: "Asked by [Maria](../knowledge/people/maria-lopez.md)", status: "pending",
+  }, ""));
+  const run = await brain(["sync", "render", "--brain", dir, "--ids", "prp-0a1b2c3d", "--json"]);
+  const properties = run.json.data.items[0].properties;
+  assert.equal(properties.Before.value, "[Maria](https://www.notion.so/7a8b9c0d1e2f4a3b8c4d5e6f7a8b9c0d)");
+  assert.equal(properties.After.value, "[Maria](https://www.notion.so/7a8b9c0d1e2f4a3b8c4d5e6f7a8b9c0d)");
+  assert.equal(properties.Why.value, "Asked by [Maria](https://www.notion.so/7a8b9c0d1e2f4a3b8c4d5e6f7a8b9c0d)");
 });
 
 test("sync render gives supersede and merge reviews titles and truncates text", async (context) => {
