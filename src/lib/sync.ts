@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 
-import { applyAll, type Correction, type DecisionInput } from "./apply.ts";
+import { applyAll, EDITABLE, type Correction, type DecisionInput } from "./apply.ts";
 import { BrainError } from "./errors.ts";
 import { assertNoProblems, isRecord, unknownKeys, type InputProblem } from "./input.ts";
 import { generateId, TYPE_PREFIX } from "./ids.ts";
@@ -213,6 +213,10 @@ function planDecision(row: SnapshotRow, proposal: Note, out: SyncPlan): void {
   const action = String(decision).toLowerCase();
   const value = property(row.properties, "Edited Value");
   if (!["approve", "reject", "edit"].includes(action)) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: proposal.id, reason: "NOT_CORRECTABLE" }); return; }
+  if (action === "edit" && !EDITABLE.has(String(proposal.attributes.kind))) {
+    out.conflicts.push(conflict(row, "EDIT_NOT_ALLOWED", `Edit is not allowed on a ${String(proposal.attributes.kind)} proposal`, "Decision", decision));
+    return;
+  }
   if (action === "edit" && (value === null || value === undefined || value === "")) { out.conflicts.push(conflict(row, "EDIT_WITHOUT_VALUE", "Edit needs an Edited Value")); return; }
   out.decisions.push({ proposal: proposal.id, action: action as DecisionInput["action"], ...(action === "edit" ? { value } : {}), decided_at: row.last_edited, decided_by: "notion" });
 }
