@@ -52,4 +52,4 @@ Each operation has a skill; follow it end to end:
 
 ## My rules
 
-<!-- Yours. Upgrades never touch anything below this line. Examples: the language notes are written in, names to match ("Mike" is Michael Chen), clients to treat as confidential. -->
+<!-- Yours. Upgrades never touch anything below this line. Examples: `Drop folder: ~/Documents/brain-dropbox/`, the language notes are written in, names to match ("Mike" is Michael Chen), clients to treat as confidential. -->
