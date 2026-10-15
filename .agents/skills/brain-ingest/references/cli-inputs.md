@@ -23,7 +23,7 @@ The JSON the ingest passes to the CLI, taken from a real run on the synthetic Ac
 
 ## 1b. Other sources (references/sources.md)
 
-A document, then a pasted email:
+A document, a web page, then a pasted email:
 
 ```json
 { "notes": [
@@ -31,6 +31,10 @@ A document, then a pasted email:
     "frontmatter": { "source_key": "file:sha256:<64 hex of the file>", "kind": "document",
                      "file_name": "acme-website-brief.pdf", "converter": "claude-read claude-opus-5-5" },
     "body": "<the converted text, verbatim>" },
+  { "type": "source", "title": "Acme launch update (document)", "file_date": "2026-12-06",
+    "frontmatter": { "source_key": "url:https://acme.example/news/launch-update", "kind": "document",
+                     "converter": "markitdown 0.1.8" },
+    "body": "<the fetched page, verbatim>" },
   { "type": "source", "title": "Budget approval from Carlos (email)", "file_date": "2026-12-05",
     "frontmatter": { "source_key": "agent:claude-code/2026-12-05-budget-approval-email", "kind": "email" },
     "body": "<the pasted thread, verbatim>" }
@@ -39,8 +43,9 @@ A document, then a pasted email:
 
 - **`kind`:** `document`, `email`, `chat`, `note` or `capture`. Leave it out for minutes.
 - **`file_name`** (the name only, no folder) and **`converter`** (`claude-read <model id>`, `codex-view-image <model id>`, or `markitdown <version>`) are required with a `file:` key.
+- **Web page** (0036): `source_key` is `url:<the https URL as given>`; `kind` `document` and `converter` (`markitdown <version>` or `web-fetch <model id>`) are required; no `file_name`.
 - **Capture:** `source_key` is `notion:<row page id>`, `kind` is `capture`, `origin_edited` is the row's `last_edited_time`.
-- **Title:** `<title> (<kind>)`. **`file_date`:** the text's own date (a document's date, an email's sent date); for a capture, the row's Created date; else today.
+- **Title:** `<title> (<kind>)`; for a web page, `<title>` is the page's own title. **`file_date`:** the text's own date (a document's date, a web page's stated publication or update date, an email's sent date); for a capture, the row's Created date; else today.
 - **Dates in the notes:** a new note's timeline `from` is the date the text gives, else the source's `file_date`; `learned` is always today (the day the brain learned it).
 - **Duplicates:** the CLI also skips a source whose `file:` key, or whose `capture` row, was already ingested, even if the text differs.
 

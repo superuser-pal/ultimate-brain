@@ -44,7 +44,7 @@ Candidate converters, to evaluate on the user's real files:
 Document ingestion from local files, pasted emails and chat, and the Capture Inbox is **planned for 0.2.0** (build/TASKS.md). Left here for later:
 - **Notion file uploads:** the agent fetches files attached to Notion pages.
 - **A Sources database in Notion** to browse everything ingested (title, kind, date, what came out of it). Structural, so it needs a decision.
-- **Docling or Marker** as a second converter, if the 0.2.0 bake-off shows MarkItDown and native reading aren't enough.
+- **Docling or Marker** as a second converter: the 0.2.0 bake-off (decision 0032) found them not needed. Revisit for scanned documents, or for Codex users with table-heavy PDFs.
 - **Agent setup steps for Notion** (dogfood finding 3), before a second user.
 
 ### Email, Slack and Teams ingestion (connected)
