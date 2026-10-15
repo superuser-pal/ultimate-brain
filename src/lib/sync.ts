@@ -386,7 +386,7 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     const after = addLink && typeof a.field === "string"
       ? `${fieldLabel(a.field)}: ${noteTitle(a.after, workspace)}`
       : undefined;
-    const reviewText = (value: unknown) => truncate(typeof value === "string" ? notionMarkdown(value, note, workspace) : value);
+    const reviewText = (value: unknown) => truncate(typeof value === "string" ? reviewMarkdown(value, target) : value);
     Object.assign(values, {
       Name: a.title, Kind: select(a.kind), Target: target === undefined ? null : `${target.attributes.title} (${target.id})`,
       Before: reviewText(proposalBefore(a, workspace)), After: reviewText(after ?? proposalAfter(a, workspace)),
@@ -420,6 +420,13 @@ function notionProperty(name: string, value: unknown, note: Note, workspace: Wor
 function renderedContent(note: Note, workspace: Workspace): { body: string | null; sections: Record<string, string> | null; hash?: string } { if (note.type === "decision" || note.type === "question") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: notionMarkdown(generatedBlock(brief?.body ?? ""), note, workspace), "Decision log": notionMarkdown(generatedBlock(log?.body ?? ""), note, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
 function generatedBlock(body: string): string { const start = body.indexOf("<!-- @generated:start -->"); const end = body.indexOf("<!-- @generated:end -->"); return start >= 0 && end > start ? body.slice(start + "<!-- @generated:start -->".length, end).trim() : body.trim(); }
 function notionMarkdown(body: string, source: Note, workspace: Workspace): string { const fromFolder = source.path.includes("/") ? source.path.slice(0, source.path.lastIndexOf("/")) : ""; return body.replace(/\^\[(inferred|ambiguous)\]/g, (_, kind) => kind === "inferred" ? " (AI inference)" : " (ambiguous)").replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_all, title, link) => { const targetPath = normalizeRelative(fromFolder, link); const target = workspace.notes.find((note) => note.path === targetPath); return typeof target?.attributes.notion === "string" ? `[${title}](https://www.notion.so/${target.attributes.notion.replaceAll("-", "")})` : title; }); }
+function reviewMarkdown(body: string, target: Note | undefined): string {
+  const fromFolder = target?.path.includes("/") ? target.path.slice(0, target.path.lastIndexOf("/")) : "";
+  return body.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_all, title, link) => {
+    normalizeRelative(fromFolder, link);
+    return title;
+  });
+}
 function normalizeRelative(folder: string, link: string): string { const parts = `${folder}/${link}`.split("/"); const out: string[] = []; for (const part of parts) { if (part === "" || part === ".") continue; if (part === "..") out.pop(); else out.push(part); } return out.join("/"); }
 function hash(value: string): string { return `sha256:${createHash("sha256").update(value).digest("hex")}`; }
 function relationPages(value: unknown, workspace: Workspace): string[] { return publishedPages(value, workspace); }
