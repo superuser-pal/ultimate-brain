@@ -289,7 +289,7 @@ Agreed with the user on 2026-10-15 (grill session, decision 0037): the CC-15 fin
 **Output:**
 - `sync plan` accepts Notion's own timestamps with milliseconds (`2026-10-15T18:11:00.000Z`) and every other timestamp input, truncated to seconds (spec/cli.md, global options, `--now` row).
 - `sync render` types each database's title property (`Name`) as `title`, not `rich_text`.
-- `sync render` never emits relative file links in Review text (Before, After, Why): a link to a brain note becomes its title, or its Notion URL when the note is published.
+- `sync render` never emits Markdown links in Review text (Before, After, Why are rich-text properties, where Notion shows Markdown literally): every link becomes its text. Links in proposal text are relative to the **target** note's folder (extraction.md), not to `_proposals/` (spec/schema.md, Review row).
 - Lint `freshness` doesn't flag "latest" when it means the most recent in a sequence rather than a date (a fixture sentence such as "the latest version of the template").
 - The CC-20 follow-up: a test that `note new` rejects a `url:` source without `kind: document` or `converter`.
 
