@@ -328,6 +328,7 @@ Agreed with the user on 2026-10-15 (grill session, decision 0037): the CC-15 fin
 | U-06 | Put 5–10 real documents in one folder for the bake-off: a long PDF with tables, a deck, a Word file, a scan if you have one | Before CC-15 |
 | U-07 | Connect the Easlo template to the Notion integration (read-only use) | Before CC-17 |
 | U-08 | Publish 0.2.0 (`npm version minor`, `npm publish`, push tags; docs/releasing.md) | Now: agreed 2026-10-15 to release before CC-15, so the acceptance run uses the released version |
+| U-09 | Publish 0.2.1 (`npm version patch`, `npm publish`, push tags; docs/releasing.md), then `brain upgrade` in your brain | When CC-21, CX-23 and CX-25 are merged |
 
 ## How to start Codex on a task
 
