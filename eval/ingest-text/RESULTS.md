@@ -36,3 +36,28 @@ Gaps found and fixed:
 - **Relative links** from the site menu failed the CLI's link check. The agent made them absolute on its own; sources.md and 0036 now say so.
 - **Title:** the web-page title rule read as "no `(document)` suffix". It's reworded.
 - **expected.md** asked for a person note for a quoted person, which the "mentioned people" rule correctly declines. It's now optional.
+
+## 2026-10-15 · blind run 3 (CC-21), Claude Code, Notion unavailable, case 05 only
+
+**05-drop-folder met expected.md:**
+- Asked for the folder once and recorded `Drop folder:` in "My rules" after the yes.
+- One listing question: the copy marked as the same file, the zip marked as unreadable.
+- One source (`file:sha256:c59d…`, `markitdown`, file_date 2026-12-10). A Priya Nair person note with an `add_link`, a question on the German translations, and an `add_to_note` on the project.
+- Both `.docx` files moved to `processed/`, the zip left at the top level, nothing deleted.
+- The report fit in three lines. Lint clean.
+
+Extra output: two `update_fact` proposals with new keys (`launch_content`, `translations`). They're allowed, but they add Review rows for details the `add_to_note` already covers.
+
+Gaps found and fixed in sources.md and SKILL.md:
+- which of two same-hash files is the original;
+- committing the "My rules" line;
+- archives aren't unpacked;
+- a length limit for files with no page count;
+- naming unreadable and later files separately in the report;
+- the Next line without Notion.
+
+Left for later (not drop-folder rules):
+- `learned` (today) can be earlier than a future-dated document's `from`.
+- `why` for an `add_to_note` that describes a document has no sentence to quote.
+- No rule on when a document detail deserves a new fact key (the extra output above).
+- SKILL.md picks the mode from `notion.configured` alone, while sources.md also covers "Notion tools not available in this session".

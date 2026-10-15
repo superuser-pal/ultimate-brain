@@ -41,6 +41,8 @@ When the user's notes and the minutes disagree on a fact, ask in the pre-check (
 
 Do these in order, after the ingest commit.
 
+**Write in parallel** (decision 0037). Within each step, send the writes that don't depend on each other as parallel tool calls in one turn, up to 10 at a time (Notion limits the request rate). Don't read a page back after writing it: the write's response holds its id. Read a page only when the write needs its current content, such as a project's blocks before a section is replaced.
+
 1. **Tasks.** If `brain status` shows `tasks_database: true`:
    1. Run `brain sync tasks --meeting <mtg-id> --input <items.json>`.
    2. Create one Notion page per returned item **without** `pending_relations`, in its `database_id` with its `properties`. An item with `pending_relations` names a project not yet in Notion: **don't create it yet**. After step 2 has published and recorded that project, run `sync tasks` again with only those items, and create each once. An `owner` of type `person_name` is written as text, or resolved to a Notion user if the mapped property is a people property.
