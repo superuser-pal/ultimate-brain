@@ -299,7 +299,7 @@ Each Space: the synced Spaces navigation in a narrow left column, then one tabs 
 
 Every view, with its filters, sort and properties, is in [notion/views-guide.md](../notion/views-guide.md) and Prompts 7a–7h.
 
-**Notion AI prompts for daily use** sit next to the views that answer the same question, in an "Ask AI" toggle: [notion/user-prompts.md](../notion/user-prompts.md). They read and answer; only "Review minutes" and "Tidy a capture" may edit, and only the page text you own (0035). "Ask how-to" sits in the navigation and answers from the "How it works" page, a copy of the user guide.
+**Brain Assistant** is a Notion Custom Agent for daily use ([notion/brain-assistant.md](../notion/brain-assistant.md)): Instructions with the rules, and seven skills (Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture). Its Tools and access hold only Brain Data, How it works and its skills database, so same-named databases elsewhere in the workspace can't be confused. It reads and answers; only Check minutes and Tidy capture may edit, and only the page text you own (0035). How-to questions are answered from the "How it works" page, a copy of the user guide.
 
 ---
 

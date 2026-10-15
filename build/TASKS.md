@@ -245,16 +245,16 @@ Both are skill-side: the toggles because the CLI can't see Notion page content (
 
 ### CC-18 · Notion AI user prompts · `review` (decision 0035)
 **Output:**
-- **`notion/user-prompts.md` with seven prompts:** review minutes, review queue, weekly review, meeting prep, plan check, tidy a capture, and "what's waiting for me today". Each has where it goes (next to the views answering the same question), what it reads, and a "never edit" line.
+- **Brain Assistant** (`notion/brain-assistant.md`): a Notion Custom Agent scoped to Brain Data, with Instructions and seven skills: Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture. Replaced the planned copy-paste prompts.
 - **A decision:** user prompts only read, or write only to My notes or properties the user owns. Every prompt says "answer only from these pages; do not edit any property".
-- **Placement:** check whether the user's plan supports Notion AI buttons; otherwise use saved prompts.
+- **Placement:** the user's Business plan has Custom Agents and Skills; set up live on 2026-10-14.
 
 **Grill outcome (2026-10-14):** keep our Spaces, borrow Easlo's arrangement (blocks with lifecycle tabs, time-first views, related blocks on every parent page, Home led by your own work). New Tasks Space with GTD statuses, Knowledge rebuilt per database, Archive page, Area pages as hubs. No brain-visible change in this pass; decision 0034 (Area on Decisions and Questions) is built in 0.3.0 (CX-22). Docs first in one PR, then the live build.
 
 ### CC-19 · User guide and how-to helper · `review`
 **Output:**
 - **The user guide** ("How your brain works") in `skills/brain-howto/references/guide.md`, so it ships with the skill (`docs/guide.md` points to it), written for the user: each Space, the meeting flow, deciding in Review, which fields you edit and which the brain overwrites, what to say to the agent for each job.
-- **Notion:** the guide published as a "How it works" page under System, and an eighth prompt "Ask how-to" in the navigation block that answers only from that page and the current page.
+- **Notion:** the guide published as a "How it works" page under System, which Brain Assistant reads for how-to questions.
 - **Agents:** a small `brain-howto` skill (Claude Code and Codex) that answers from the guide and checks the brain's live state. It reaches the user's brain with the next npm release, through `brain upgrade`.
 
 **Acceptance:** a blind run answers five how-to questions correctly from the guide alone.

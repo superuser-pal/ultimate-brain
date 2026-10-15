@@ -124,6 +124,25 @@ Set **Disputed** on anything wrong. The brain stops relying on it, and you can a
 
 ---
 
+## Ask Brain Assistant in Notion
+
+**Brain Assistant** is a Notion AI agent that reads Ultimate Brain and answers. It never changes your knowledge. Open its chat (Agents → Brain Assistant, or @mention it on a page) and type a skill or a question:
+
+| Type | You get |
+|---|---|
+| `/Today` | What's due today, today's meetings, and what needs your decision |
+| `/Review queue` | Each pending change explained, without deciding for you |
+| `/Check minutes` (on a meeting page) | Missing sections and names and numbers to confirm; fixes the text after you say yes |
+| `/Prep` (on a meeting page) | Past meetings, open questions, tasks and recent decisions for that meeting |
+| `/Weekly review` | What got done and decided, goal and project health, next week |
+| `/Plan check` | Projects without goals, goals without projects, overdue items |
+| `/Tidy capture` (on a capture page) | A cleaner version of the capture; replaces the text after you say yes |
+| "how do I …?" | An answer from this guide |
+
+Brain Assistant reads; your agent in Claude Code or Codex writes. To get something *into* the brain, use the phrases below.
+
+---
+
 ## What to say to your agent
 
 Run these in Claude Code or Codex, from your brain's folder.
@@ -136,7 +155,7 @@ Run these in Claude Code or Codex, from your brain's folder.
 | Apply your Review decisions | "apply my reviews" |
 | Bring Notion edits and new rows into the brain, and publish its changes | "sync with Notion" |
 | Ask what the brain knows | "what did we decide about …?", "who is …?", "when is the … launch?" |
-| Ask how the system works | "how do I …?", "why didn't … ?" |
+| Ask how the system works | "how do I …?", "why didn't … ?" (or ask Brain Assistant in Notion) |
 | Change the Notion structure (a property, an option, a view) | "add a property to Projects …". Structure is changed in the product first, then in Notion |
 | Check your Notion space | "check my Notion space" |
 | Update the brain software | `npm install -g ultimate-brain@latest`, then "run brain upgrade" |
