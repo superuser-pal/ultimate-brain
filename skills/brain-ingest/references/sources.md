@@ -28,6 +28,8 @@ The body is the pasted text, verbatim. The source key is `agent:<agent>/<date>-<
 ### `capture`: Capture Inbox rows *(Notion)*
 Query the Capture Inbox (`notion.databases.capture_inbox`, through its data source as in [notion.md](notion.md)) for rows with Brain Status = **New**, oldest first. Never take Processed or Skipped rows. For each row, the body is the row's Name, then its page body if it has one, verbatim. The source key is `notion:<row page id>`.
 
+**A pasted email or chat thread in a capture:** when the body is an email (header lines such as From, To, Date, Subject, or a quoted reply chain) or a chat thread (speakers with timestamps), the source stays `kind: capture` with its `notion:` key, but you analyse it with the `email` or `chat` rules in [extraction.md](extraction.md), and take its date from the sent date. Say in the report that the capture was read as an email or chat.
+
 ## 2. Pre-check
 
 As in SKILL.md step 3, **one** question, only if something blocks:
