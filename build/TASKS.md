@@ -5,7 +5,7 @@
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
 > **2026-10-15 — Status: 0.2.0 is published (npm `ultimate-brain` 0.2.0, tag v0.2.0) and the user's brain runs it. The Notion track (CC-17 to CC-19) is done and live. Next: finish CC-15, then release 0.2.1.**
-> - **CC-15 (in progress):** bake-off done (decision 0032). Acceptance part 1 done in the real brain (two documents ingested and published). **Next:** the user pastes emails into Quick captures, then run "process my capture inbox" (tests the email-in-capture rule from #70). Then release 0.2.1 with #72's fixes and the findings listed under CC-15.
+> - **CC-15 (review):** bake-off done (decision 0032). Acceptance part 1 done in the real brain (two documents ingested and published). Acceptance run done on 2026-10-15 (part 2: Notion apply and three email captures). **Next:** release 0.2.1 with #72's fixes and the findings listed under CC-15.
 > - **Open PRs:** #71 (MarkItDown in setup docs) and #72 (bake-off result, conversion-noise rules, web pages by URL as CC-20 and decision 0036, this banner). Codex reviews, the user merges.
 > - **Live in Notion:** the rebuilt Spaces, Tasks and Archive pages, the "How it works" guide page, and Brain Assistant (a Custom Agent with seven skills, notion/brain-assistant.md).
 > - **Queued for 0.3.0:** CX-22 (decision 0034, Area on Decisions and Questions), finding 3, the onboarding suite (docs/v2-ideas.md), Notion file uploads.
@@ -210,12 +210,18 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 
 **Acceptance:** a blind run on synthetic fixtures (one document, one email, one capture) passes; the skill mirror is rebuilt.
 
-### CC-15 · Converter bake-off and real acceptance run · `in progress` (bake-off done 2026-10-15, in decision 0032; acceptance run next; fixes go to 0.2.1)
+### CC-15 · Converter bake-off and real acceptance run · `review` (bake-off in decision 0032; acceptance run done 2026-10-15; fixes go to 0.2.1)
 **Acceptance run, part 1 (2026-10-15, 0.2.0):** a Word file (MarkItDown) and a PDF (native read) ingested end to end and published to Notion. The run's specifics stay in the user's brain; only product findings are recorded here. Captures and an email are next. Findings for 0.2.1:
 - **Review rows show relative file links** in After (`../../knowledge/…`), meaningless in Notion. `sync render` should drop or rewrite links in proposal text.
 - **Concept notes aren't published**, so what a document teaches is visible in Notion only through proposals. Candidate: publish concepts, or say so in the report.
 - **Lint `freshness` false positive** on "latest" in a sentence that isn't about time (a sentence where "latest" means most recent in a sequence, not a date).
 - **A project created through the API had an empty page;** the 0033 rule (append Brief and Decision log) worked as written.
+**Acceptance run, part 2 (2026-10-15, 0.2.0):** a Notion-mode apply (9 Review decisions) and three Capture Inbox rows, each a pasted email thread, ingested end to end, published, and marked Processed. The email-in-capture rule (#70) worked: senders, sent dates and quoted replies were read with the email rules. Findings for 0.2.1:
+- **`sync plan` rejects Notion's own timestamps** (`2026-10-15T18:11:00.000Z`) as not ISO 8601 UTC. The skill had to strip the milliseconds. The CLI should accept them (Codex).
+- **`sync plan` passes an Edit on an `add_link`** through as a decision, so `apply` would fail with `EDIT_NOT_ALLOWED`. It should be a plan conflict that the user sees before anything is applied (Codex). In this run the user's Edited Value was really a role; the skill asked, and it became a separate `update_fact`.
+- **`sync render` types `Name` as `rich_text`**; in Notion it is the title property. The skill had to map it (Codex, or say so in the skill).
+- **Project sections:** the Notion MCP's markdown update can't target a toggle block inside a page. When the page holds only the two generated toggles, rewriting the page in toggle markdown works; otherwise the block API is needed. Write this into references/notion.md "Publish".
+- **A capture whose top email has no header** (the latest reply pasted without From/Date) falls back to the capture's Created date. Worked as written; worth one line in sources.md.
 **Output:** run the user's 5–10 documents through MarkItDown and native Read, compare against the originals, and decide whether Docling or Marker is added. Write the result into the decision from CC-13.
 
 **Acceptance (with the user):** 1 PDF, 1 Word or PowerPoint file, 1 pasted email and 2 Capture Inbox rows ingest end to end in the real brain, with correct sources, drafts and proposals.
