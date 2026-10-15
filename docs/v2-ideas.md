@@ -43,7 +43,7 @@ Candidate converters, to evaluate on the user's real files:
 
 Document ingestion from local files, pasted emails and chat, and the Capture Inbox is **planned for 0.2.0** (build/TASKS.md). Left here for later:
 - **Notion file uploads:** the agent fetches files attached to Notion pages.
-- **A Sources database in Notion** to browse everything ingested (title, kind, date, what came out of it). Structural, so it needs a decision.
+- ~~**A Sources database in Notion**~~: decided in 0037 as the Inbox (every input with Kind, Summary and Produced), for 0.3.0.
 - **Docling or Marker** as a second converter: the 0.2.0 bake-off (decision 0032) found them not needed. Revisit for scanned documents, or for Codex users with table-heavy PDFs.
 - **Agent setup steps for Notion** (dogfood finding 3), before a second user.
 
@@ -112,10 +112,10 @@ Finds likely duplicate notes and people and writes `merge` proposals. **Source:*
 ## Automation and platform
 
 ### Direct Notion API client
-**Changes:** decisions/0015 (Notion via MCP only). Add a small API client for bulk publishing and for unattended runs where MCP auth is not available headless. **Trigger:** publishing becomes slow or costly through agent turns, or schedulers need Notion access.
+**Changes:** decisions/0015 (Notion via MCP only). Add a small API client for bulk publishing and for unattended runs where MCP auth is not available headless. **Trigger:** publishing becomes slow or costly through agent turns, or schedulers need Notion access. **Evidence (2026-10-15, CC-15):** one publish took 35 MCP calls and about 4 minutes. Decision 0037 batches MCP writes first; a CLI that holds a Notion token changes how credentials are trusted and needs its own grill.
 
 ### Schedulers
-Unattended ingest and sync with n8n or Hermes. **Source:** vision.
+Unattended ingest and sync with n8n or Hermes. **Source:** vision. **Next step:** a scheduled "catch up" (decision 0037), once a manual catch-up runs without stopping for questions.
 
 ### Public source for the Claude Code plugin
 The CLI is public on npm, but the plugin installs from the private product repo, so other users can't get the skills in Claude Code. Options: a public plugin repo built from `skills/`, or a marketplace listing. **Revisit:** before the second user. **Source:** dogfood 2026-10-13.

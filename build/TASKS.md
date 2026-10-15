@@ -172,7 +172,7 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 - **npm 0.2.0:** CLI and skills. It ships when CC-13, CC-14, CC-16 and CX-18 to CX-20 are done. CC-15 runs on the released version (agreed 2026-10-15); its fixes go to 0.2.1.
 - **Notion:** CC-17 to CC-18, in the user's workspace and the design docs. It runs alongside and never blocks the npm release.
 
-**Out of scope (0.3.0 list, docs/v2-ideas.md):** finding 3 (Notion setup steps per agent), a Sources database in Notion, Notion file uploads, Docling or Marker unless the bake-off (CC-15) asks for them.
+**Out of scope (0.3.0 list, docs/v2-ideas.md):** finding 3 (Notion setup steps per agent), a Sources database in Notion (now the Inbox, decision 0037), Notion file uploads, Docling or Marker unless the bake-off (CC-15) asks for them.
 
 **Dependencies:**
 - CC-13 blocks CX-18, CX-19 and CC-14.
@@ -277,7 +277,28 @@ Both are skill-side: the toggles because the CLI can't see Notion page content (
 
 **Acceptance:** a blind run answers five how-to questions correctly from the guide alone.
 
+## 0.2.1 — Fixes from the acceptance run
+
+Agreed with the user on 2026-10-15 (grill session, decision 0037): the CC-15 findings plus the small intake fixes. Skills and CLI only, with no Notion schema change.
+
+### CC-21 · Drop folder, report shape and faster publish (decision 0037) · `todo`
+**Output:** brain-ingest "process my drop folder" (list the files, one question, all selected by default) and the `processed/` and `skipped/` subfolders; the three-line report template in brain-ingest, brain-apply and brain-sync; parallel MCP writes with no read-backs in "Publish"; the user guide's drop-folder row.
+**Acceptance:** a blind run on a synthetic drop folder of 3 files ingests the chosen ones, moves them, and leaves the rest at the top level; every report follows the template.
+
+### CX-23 · Edit on a link row is a plan conflict (decision 0037) · `todo`
+**Output:** `sync plan` returns an Edit on a kind that forbids it (`add_link`, `supersede`, `merge`, `new_item`; spec/cli.md §5.14.2, schema §11.1) as an `EDIT_NOT_ALLOWED` conflict, not a decision. **Acceptance:** a test with an Edited `add_link` row and one other non-editable kind; `apply` is never reached with them.
+
 ## 0.3.0 — queued
+
+**Intake experience (decision 0037):** one Notion change for the user's space. Claude Code writes the contracts first (CC-22); Codex's CLI work (CX-24) follows them.
+
+### CC-22 · Intake contracts and skills (decision 0037) · `todo`
+**Output:** spec/schema.md and note.schema.json (concepts published; Inbox properties); notion-space-design §3.11 as Inbox, a Concepts database, Knowledge tabs, the Review Note field; spec/cli.md (grouped `add_link`, `brain.json` `publish` and `push`, Inbox and Concepts in `sync render`); the "catch up" skill with its read-only pass and one batch of questions; owner tasks from non-meeting sources in extraction.md and sources.md; identities in the onboarding plan; the guide.
+**Acceptance:** Codex's review finds the contracts complete enough to build CX-24 without inventing behaviour; a blind catch-up run on a synthetic brain asks once, then finishes.
+
+### CX-24 · Intake in the CLI (decision 0037) · `todo` (needs CC-22)
+**Output:** grouped `add_link` proposals and their apply with a Note; `brain.json` settings; Inbox and Concepts in `sync render` and `sync record`. **Acceptance:** tests per the contract.
+
 
 ### CX-22 · Area on Decisions and Questions (decision 0034) · `todo`
 **Output:** the sync fills a brain-owned Area relation on Decisions and Questions from their project's area (spec/cli.md, once Claude Code writes the contract). **Acceptance:** tests for one area, several projects in different areas, and a project with no area.
