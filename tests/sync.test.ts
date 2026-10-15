@@ -31,25 +31,34 @@ test("sync plan detects a Notion fact correction from its published baseline", a
 
 test("sync plan reports an Edit on an add_link review as a conflict", async (context) => {
   const dir = await fixtureCopy(context);
-  const proposal = "prp-0a1b2c3d";
-  const page = "10000000-0000-4000-8000-0000000000ef";
+  const linkProposal = "prp-0a1b2c3d";
+  const supersedeProposal = "prp-1a1b2c3d";
   await writeFile(join(dir, "_proposals/2026-12-10-add-alias.md"), serializeNewFile({
-    id: proposal, type: "proposal", title: "Add Mari alias", created: "2026-12-10", updated: "2026-12-10",
+    id: linkProposal, type: "proposal", title: "Add Mari alias", created: "2026-12-10", updated: "2026-12-10",
     kind: "add_link", target: MARIA, field: "aliases", after: "Mari", status: "pending",
   }, ""));
-  const snapshot = { as_of: NOW, rows: [{ database: "review", page_id: page, last_edited: "2026-12-10T08:00:00Z", properties: {
-    "Brain ID": proposal, Decision: "Edit", "Edited Value": "Product manager", State: "Pending",
-  } }] };
+  await writeFile(join(dir, "_proposals/2026-12-10-supersede.md"), serializeNewFile({
+    id: supersedeProposal, type: "proposal", title: "Supersede Firebase", created: "2026-12-10", updated: "2026-12-10",
+    kind: "supersede", target: "dec-7k2m9q4x", supersedes: "dec-2p9f6h1r", status: "pending",
+  }, ""));
+  const snapshot = { as_of: NOW, rows: [linkProposal, supersedeProposal].map((proposal, index) => ({
+    database: "review", page_id: `10000000-0000-4000-8000-0000000000e${index}`, last_edited: "2026-12-10T08:00:00Z", properties: {
+      "Brain ID": proposal, Decision: "Edit", "Edited Value": "Product manager", State: "Pending",
+    },
+  })) };
 
   const planned = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot-link-edit.json", snapshot), "--json"]);
   assert.equal(planned.code, 0, planned.stdout);
   assert.deepEqual(planned.json.data.decisions, []);
-  assert.deepEqual(planned.json.data.conflicts.map((item: { code: string; brain_id: string; property: string }) => [item.code, item.brain_id, item.property]), [["EDIT_NOT_ALLOWED", proposal, "Decision"]]);
+  assert.deepEqual(planned.json.data.conflicts.map((item: { code: string; brain_id: string; property: string }) => [item.code, item.brain_id, item.property]), [
+    ["EDIT_NOT_ALLOWED", linkProposal, "Decision"],
+    ["EDIT_NOT_ALLOWED", supersedeProposal, "Decision"],
+  ]);
 
   const applied = await brain(["sync", "apply", "--brain", dir, "--now", NOW, "--input", await input(dir, "link-edit-plan.json", planned.json.data), "--json"]);
   assert.equal(applied.code, 0, applied.stdout);
   assert.deepEqual(applied.json.data.decisions, []);
-  assert.deepEqual(applied.json.data.conflicts.map((item: { code: string }) => item.code), ["EDIT_NOT_ALLOWED"]);
+  assert.deepEqual(applied.json.data.conflicts.map((item: { code: string }) => item.code), ["EDIT_NOT_ALLOWED", "EDIT_NOT_ALLOWED"]);
 });
 
 test("sync apply creates a Notion-created note with its lifecycle and applies corrections", async (context) => {
