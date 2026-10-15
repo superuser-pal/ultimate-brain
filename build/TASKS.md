@@ -4,9 +4,11 @@
 **Status values:** `todo` · `in progress` · `review` · `done` · `blocked`.
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
-> **2026-10-14 — Status: v1 is published (npm `ultimate-brain` 0.1.1) and in daily use by the user (CC-12). Next: release 0.2.0, planned with the user below ("0.2.0 — Smooth daily use and more ways in").**
-> - **Split:** Claude Code writes the contracts first (CC-13), then the skills and the Notion track. Codex builds the CLI and tests (CX-18 to CX-20) as soon as CC-13 is merged; CX-20 can start now. CX-21 was dropped by CC-13.
-> - **Open with the user:** U-06 (the bake-off documents) before CC-15; U-07 (connect the Easlo template) before CC-17. Notion writes need an explicit yes each time.
+> **2026-10-15 — Status: 0.2.0 is published (npm `ultimate-brain` 0.2.0, tag v0.2.0) and the user's brain runs it. The Notion track (CC-17 to CC-19) is done and live. Next: finish CC-15, then release 0.2.1.**
+> - **CC-15 (in progress):** bake-off done (decision 0032). Acceptance part 1 done in the real brain (two documents ingested and published). **Next:** the user pastes emails into Quick captures, then run "process my capture inbox" (tests the email-in-capture rule from #70). Then release 0.2.1 with #72's fixes and the findings listed under CC-15.
+> - **Open PRs:** #71 (MarkItDown in setup docs) and #72 (bake-off result, conversion-noise rules, web pages by URL, this banner). Codex reviews, the user merges.
+> - **Live in Notion:** the rebuilt Spaces, Tasks and Archive pages, the "How it works" guide page, and Brain Assistant (a Custom Agent with seven skills, notion/brain-assistant.md).
+> - **Queued for 0.3.0:** CX-22 (decision 0034, Area on Decisions and Questions), finding 3, the onboarding suite (docs/v2-ideas.md), Notion file uploads.
 > - **Earlier:** v1 waves 1–4 below; dogfood findings 1–24 in the Wave 4 table.
 
 ## Why this split
