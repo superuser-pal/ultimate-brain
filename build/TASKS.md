@@ -280,7 +280,7 @@ Agreed with the user on 2026-10-15 (grill session, decision 0037): the CC-15 fin
 **Acceptance:** a blind run on a synthetic drop folder of 3 files ingests the chosen ones, moves them, and leaves the rest at the top level; every report follows the template.
 
 ### CX-23 · Edit on a link row is a plan conflict (decision 0037) · `todo`
-**Output:** `sync plan` returns an Edit on an `add_link` row as a conflict, not a decision (spec/cli.md, once Claude Code updates §5.14.1). **Acceptance:** a test with an Edited `add_link` row; `apply` is never reached with it.
+**Output:** `sync plan` returns an Edit on a kind that forbids it (`add_link`, `supersede`, `merge`, `new_item`; spec/cli.md §5.14.2, schema §11.1) as an `EDIT_NOT_ALLOWED` conflict, not a decision. **Acceptance:** a test with an Edited `add_link` row and one other non-editable kind; `apply` is never reached with them.
 
 ## 0.3.0 — queued
 
