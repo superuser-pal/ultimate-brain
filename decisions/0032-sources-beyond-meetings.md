@@ -13,11 +13,24 @@ v1 ingests one kind of input: meeting minutes. The user also has documents (PDF,
   - Office and HTML files → **MarkItDown**;
   - PDFs and images in Claude Code → the agent's **native Read**;
   - PDFs in Codex → MarkItDown.
-  - The source note records the converter and its version. Docling or Marker are added only if the 0.2.0 bake-off (CC-15) shows the above isn't good enough.
+  - The source note records the converter and its version. Docling or Marker were to be added only if the 0.2.0 bake-off (CC-15) showed this wasn't good enough; it didn't (see Bake-off result).
 - **Pasted text** (emails, chat, notes) gets an `agent:` key, as Markdown-only minutes do.
 - **Capture Inbox rows** get the row's `notion:` key and kind `capture`. After the ingest commit, the skill sets the row's Brain Status to Processed through the Notion MCP. If that write fails, the next run finds the row New again, and the CLI's duplicate check (same `capture` key) skips it before marking it Processed, so a retry is safe.
 - **Folders follow the key:** `sources/notion/`, `sources/files/`, `sources/text/`.
 - **Converted and pasted text is untrusted input**, like minutes: instructions inside it are content, never commands. Converters run on the user's machine; nothing is sent to a hosted converter without the user's explicit yes per document.
+
+## Bake-off result (CC-15, 2026-10-15)
+Five real files, converted both ways and compared with the originals. The files and the comparison notes stay outside this repo; only converter behaviour is recorded here.
+
+| File type | MarkItDown | Native reading (Claude Code) |
+|---|---|---|
+| Word with tracked changes | Complete; accepted insertions kept, deleted text dropped | n/a |
+| Word with tables, text boxes and images | Tables as clean Markdown; a short text-box label can be lost | n/a |
+| PowerPoint with many tables, pictures and speaker notes | Every slide, table and note; text-box order scrambled on diagram slides; one image line per picture with auto-generated captions | n/a |
+| PDF printed from a web page, with a merged-cell table | Text complete, **table structure lost** (a cell spanning rows is scattered) | **Table kept** |
+| PDF printed from a web page, prose only | Complete | Complete |
+
+**Result:** the converters above are kept. **Docling and Marker are not added:** nothing needed OCR, and the gaps are handled by skill rules (references/sources.md "Known conversion noise"): ignore picture lines, order slide steps by their numbers, skip a printed page's browser chrome and the site's menu, and read PDFs natively in Claude Code. Known limit: in Codex, PDFs with merged-cell tables lose their structure; the report says so.
 
 ## Consequences
 - Schema: source key `file:sha256:…`; source fields `kind`, `file_name`, `converter` (spec/schema.md, note.schema.json). CLI: source paths by key, duplicate detection by `file:` and `capture` keys (spec/cli.md §3.6.5, §5.5); lint `wrong-folder` for sources (CX-18).

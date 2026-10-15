@@ -191,11 +191,11 @@ Immutable snapshot of input. **Never edited after creation** (lint error if `con
 | `content_hash` | `sha256:<64 hex>` of the body, defined below | ✔ |
 | `captured` | timestamp | ✔ |
 | `origin_edited` | timestamp (Notion `last_edited_time`) | |
-| `kind` | `minutes`·`document`·`email`·`chat`·`note`·`capture`; absent means `minutes` | ✔ with a `file:` key |
+| `kind` | `minutes`·`document`·`email`·`chat`·`note`·`capture`; absent means `minutes`; `document` with a `url:` key | ✔ with a `file:` or `url:` key (0036) |
 | `file_name` | the original file's name, without its folder (`acme-brief.pdf`) | ✔ with a `file:` key |
-| `converter` | what turned the file into text, with its version: `markitdown 0.1.8`, `claude-read` | ✔ with a `file:` key |
+| `converter` | what turned the file into text, with its version: `markitdown 0.1.8`, `claude-read`, `web-fetch <model id>` | ✔ with a `file:` or `url:` key (0036) |
 
-**Kinds (0032):** `minutes` is a meeting (Notion or a minutes file); `document` a converted file; `email` and `chat` pasted threads; `note` text the user wrote or pasted; `capture` a Capture Inbox row (`notion:` key of the row). The body is the text verbatim, as the ingest skill defines it per kind; for a file, the converter's output.
+**Kinds (0032):** `minutes` is a meeting (Notion or a minutes file); `document` a converted file or a web page fetched by URL (0036); `email` and `chat` pasted threads; `note` text the user wrote or pasted; `capture` a Capture Inbox row (`notion:` key of the row). The body is the text verbatim, as the ingest skill defines it per kind; for a file, the converter's output.
 
 **Hash input (normative):** the body is every byte after the newline that ends the closing `---` frontmatter line, up to the end of the file, **including** the final trailing newline. No normalization is applied (files are LF and UTF-8 by §1, so writers write exactly the bytes they hashed). Hash = lowercase hex SHA-256 of those UTF-8 bytes, prefixed `sha256:`. Example: for a file `---\n<frontmatter>\n---\n## Attendees\n…\n`, the hash covers `## Attendees\n…\n`.
 
