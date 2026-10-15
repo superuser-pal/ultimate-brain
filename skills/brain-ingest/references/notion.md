@@ -58,6 +58,8 @@ Do these in order, after the ingest commit.
       - **`sections` (projects):** replace only the children of the toggle heading with that exact name ("Brief", "Decision log"). Read the page's blocks first (decision 0033):
       - **the page has no toggle headings at all** (created without the template): append a "Brief" and a "Decision log" toggle heading, in that order, at the end of the page, then fill them;
       - **the page has other toggle headings but not this one:** report `SECTION_NOT_FOUND` for that page and change nothing on it (a rename is likely, 0026).
+
+      **Writing a section through the MCP:** the Markdown update can't target a block inside a page. If the page holds only the generated "Brief" and "Decision log" toggles, replace the whole page in toggle Markdown (`## Brief {toggle="true"}`, its content indented one tab below it, then the same for "Decision log"). If the page has anything else (the template's views, "My notes"), use the block API instead: list the toggle's children, delete them, and append the new ones. Never replace the whole page then: it would delete the user's content.
    3. **Pending relations:** items that list `pending_relations` reference notes not yet published. Publish and record those first, then run `sync render --changed` again.
    4. Run `brain sync record` with one record per page written: `{ "id", "notion": <page id>, "synced_at": <now>, "published": <the item's published> }`.
 3. **Commit:** `publish: <meeting title> <date>`. Then run `brain log publish <mtg-id> pages=<n>`, and commit it with the publish.

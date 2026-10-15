@@ -50,6 +50,7 @@ Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come 
     - **`sections` (projects):** replace only the children of the toggle heading with that exact name ("Brief", "Decision log"). Read the page's blocks first (decision 0033):
       - **the page has no toggle headings at all** (created without the template): append a "Brief" and a "Decision log" toggle heading, in that order, at the end of the page, then fill them;
       - **the page has other toggle headings but not this one:** report `SECTION_NOT_FOUND` for that page and change nothing on it (a rename is likely, 0026).
+      - **How to write it** through the MCP: the brain-ingest skill's references/notion.md, "Writing a section through the MCP".
     - **Meeting relations:** `"mode": "add"` adds pages and keeps the existing ones. `"mode": "if_empty"` writes only to an empty property. Never write a meeting's Name, Date or body (0007).
     - **`pending_relations`:** these point to notes not published yet. Publish those first, record them, then render again.
 11. **Record:** run `brain sync record` with `{ "records": [ … ] }`, one record per page written: `{ "id", "notion": <page id>, "synced_at": <now>, "published": <the item's published> }` (references/formats.md). Record only what you actually wrote. If a write failed, leave it out; the next render produces it again.
