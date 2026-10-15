@@ -11,6 +11,7 @@ Sources folded in: docs/vision.md "v2", synthesis/synthesis.md §3.3, decisions 
 
 It would orchestrate the existing skills in one guided flow:
 1. **Install and connect:** check `brain` and the plugin, give the agent access to Notion (dogfood finding 3), run `brain init` and brain-connect-notion.
+   - **Converters:** check `markitdown --version`. If it's missing, explain that it turns Word, PowerPoint, Excel and saved HTML files into text the brain can read (PDFs and images are read natively in Claude Code), and offer `pipx install 'markitdown[all]'` (installing `pipx` first if needed). Codex also needs it for PDFs. Raised by the user on 2026-10-15, when the first Word file failed for lack of it.
 2. **Interview:** who the user is and their work; their areas, goals and active projects; the people and organisations they work with; what they want to track. One topic at a time, with examples, and it suggests answers from what's already in Notion.
 3. **Populate:** create the answers as rows in Notion (Areas, Goals, Projects, People, Orgs), then run brain-sync, so Notion and the brain start identical and the first ingest has something to match.
 4. **Seed from existing material:** offer to import documents the user already has (see "Document ingestion" below) and recent meeting notes.
