@@ -285,7 +285,7 @@ Agreed with the user on 2026-10-15 (grill session, decision 0037): the CC-15 fin
 **Output:** brain-ingest "process my drop folder" (list the files, one question, all selected by default) and the `processed/` and `skipped/` subfolders; the three-line report template in brain-ingest, brain-apply and brain-sync; parallel MCP writes with no read-backs in "Publish"; the user guide's drop-folder row.
 **Acceptance:** a blind run on a synthetic drop folder of 3 files ingests the chosen ones, moves them, and leaves the rest at the top level; every report follows the template.
 
-### CX-25 · CLI fixes from the acceptance run (CC-15 findings) · `todo`
+### CX-25 · CLI fixes from the acceptance run (CC-15 findings) · `review`
 **Output:**
 - `sync plan` accepts Notion's own timestamps with milliseconds (`2026-10-15T18:11:00.000Z`) and every other timestamp input, truncated to seconds (spec/cli.md, global options, `--now` row).
 - `sync render` types each database's title property (`Name`) as `title`, not `rich_text`.
