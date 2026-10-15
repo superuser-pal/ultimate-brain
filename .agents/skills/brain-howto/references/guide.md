@@ -113,7 +113,7 @@ Set **Disputed** on anything wrong. The brain stops relying on it, and you can a
 | A quick thought, link or idea | **Quick capture** on Home. It lands in Knowledge → Inbox. Tell your agent "process my capture inbox" |
 | A meeting | **New meeting** on Home, or let Notion AI create it when it starts taking notes |
 | A project, area, goal, person or org | Create the row in Notion (**New project** on Home for projects). The next sync imports it into the brain |
-| A document (PDF, Word, PowerPoint, Excel, saved HTML page, image) | Put it in your drop folder and give your agent the path: "ingest this PDF: ~/Documents/brain-dropbox/proposal.pdf". The original file stays where it is. Word, PowerPoint, Excel and HTML files need MarkItDown installed once: `pipx install 'markitdown[all]'` |
+| A document (PDF, Word, PowerPoint, Excel, saved HTML page, image) | Put it in your drop folder and tell your agent "process my drop folder". It lists the files and asks once which to take; each ingested file moves to `processed/` inside the folder, so what's left at the top is what the brain hasn't read yet. Or name one file: "ingest this PDF: ~/Documents/brain-dropbox/proposal.pdf". Word, PowerPoint, Excel and HTML files need MarkItDown installed once: `pipx install 'markitdown[all]'` |
 | A web page | Give your agent the link: "ingest this page: https://…". For a page behind a login, save it as a PDF in your drop folder instead |
 | An email, chat thread or note | Paste it into a **Quick capture** (keep the From, Date and Subject lines), then tell your agent "process my capture inbox". Or paste it straight to your agent: "ingest this email" |
 | A task | Add it in Tasks. Tasks from meetings are created for you |
@@ -153,6 +153,7 @@ Run these in Claude Code or Codex, from your brain's folder.
 | Get reviewed meetings into the brain | "ingest my reviewed meetings" |
 | Ingest a file, web page, email or chat | "ingest this PDF: <path>", "ingest this page: <url>", "ingest this email" (then paste it) |
 | Process quick captures | "process my capture inbox" |
+| Process the files in your drop folder | "process my drop folder" |
 | Apply your Review decisions | "apply my reviews" |
 | Bring Notion edits and new rows into the brain, and publish its changes | "sync with Notion" |
 | Ask what the brain knows | "what did we decide about …?", "who is …?", "when is the … launch?" |

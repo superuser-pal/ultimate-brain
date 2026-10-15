@@ -4,6 +4,21 @@ The procedure for every input that isn't a meeting (decision 0032). Follow the s
 
 **Without Notion** (not configured, or the Notion tools aren't available in this session): skip every *(Notion)* part. New notes and proposals reach Notion with the next sync; say so in the report. A capture needs Notion: if `brain status` shows `capture_inbox` missing, tell the user to run the brain-connect-notion skill and stop.
 
+## The drop folder: "process my drop folder" (decision 0037)
+
+The user's drop folder is where they put documents for the brain, outside both repos. Its top level is the queue; `processed/` and `skipped/` hold what's done.
+
+1. **Find the folder.** Look for a line `Drop folder: <path>` in the brain's AGENTS.md, under "My rules". If there is none, ask the user for the path once, and offer to add that line to "My rules" (write it only after a yes; that section is the user's). Commit it on its own: `rules: drop folder`.
+2. **List the queue:** the files at the top level only, never `processed/`, `skipped/` or hidden files. For each, hash it (`shasum -a 256`) and check whether the brain already has it: `grep -rl "file:sha256:<hash>" <brain>/sources/`. Then ask **one** question that lists every file with its type and size (and its pages or slides when the conversion shows them), all selected by default:
+   - a file already in the brain is marked "already in the brain" and is moved to `processed/` without being ingested again;
+   - two files with the same hash are one document: the one with the shorter name is the original (`report.docx`, not `report copy.docx`), the other is marked "same file as <original>"; it is ingested once, with the original's file name, and both move to `processed/`;
+   - a file type the table in "Get the text" doesn't cover is marked "can't read" and stays where it is. Archives (`.zip` and the like) are not unpacked: the user extracts the files into the folder if they want them read;
+   - a long document asks "which parts matter?" in the same question ("Get the text", step 3): past about 30 pages for a PDF or slide deck, or past about 15,000 words in the conversion for other files, which show no page count;
+   - say how to answer: untick a file to leave it for later (it stays in the queue), or say "skip" to move it to `skipped/` for good.
+3. **Ingest the chosen files one at a time**, each through steps 1–7 below as a `document`. One file's failure doesn't stop the others; report it and go on.
+4. **Move each file** after its ingest commit (and its publish, in Notion mode): `mkdir -p "<folder>/processed" && mv -n "<file>" "<folder>/processed/"`. If `processed/` already has a file with that name, add `-2` (then `-3`) before the extension. A file whose snapshot was skipped as `DUPLICATE_SOURCE` (step 3) moves to `processed/` too. Files the user skipped go to `skipped/` the same way. Never delete or rename a file otherwise, and never move a file whose ingest failed.
+5. **Report once** for the whole folder (step 8). On the Needs you line, name what stays in the queue and why, separately: "holiday-photos.zip can't be read" and "2 files left for later".
+
 ## 1. Get the text
 
 One input at a time. Each becomes one source with a `kind`.
@@ -16,6 +31,7 @@ One input at a time. Each becomes one source with a `kind`.
    |---|---|---|
    | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp` | **Read** it yourself; converter `claude-read <model id>` | `.pdf`: MarkItDown. Images: view them with your image tool and transcribe; converter `codex-view-image <model id>` |
    | `.docx`, `.pptx`, `.xlsx`, `.xls`, `.html`, `.htm`, `.msg`, `.epub`, `.csv` | MarkItDown | MarkItDown |
+   | `.txt`, `.md` | Read it as is; converter `plain-text` | Read it as is; converter `plain-text` |
 
    - **MarkItDown:** `markitdown "<file>"` prints Markdown. The converter is `markitdown <version>`, from `pip show markitdown` (or `pipx list`). If it isn't installed, tell the user to run `pipx install 'markitdown[all]'` and stop.
    - **Reading it yourself** (Claude Code's Read, Codex's image tool): the converter names the tool and your model id (`claude-read claude-opus-5-5`). A PDF of more than 10 pages is read in page ranges of at most 20 pages. Transcribe the text **verbatim** into Markdown: keep headings, lists and tables (as Markdown tables), and describe a figure in one line in brackets (`[Chart: revenue by quarter, 2025–2026]`). Never summarise or reword while transcribing; the summary comes later, in the notes.
@@ -39,7 +55,7 @@ The body is the pasted text, verbatim. The source key is `agent:<agent>/<date>-<
 ### `capture`: Capture Inbox rows *(Notion)*
 Query the Capture Inbox (`notion.databases.capture_inbox`, through its data source as in [notion.md](notion.md)) for rows with Brain Status = **New**, oldest first. Never take Processed or Skipped rows. For each row, the body is the row's Name, then its page body if it has one, verbatim. The source key is `notion:<row page id>`.
 
-**A pasted email or chat thread in a capture:** when the body is an email (header lines such as From, To, Date, Subject, or a quoted reply chain) or a chat thread (speakers with timestamps), the source stays `kind: capture` with its `notion:` key, but you analyse it with the `email` or `chat` rules in [extraction.md](extraction.md), and take its date from the sent date. Say in the report that the capture was read as an email or chat.
+**A pasted email or chat thread in a capture:** when the body is an email (header lines such as From, To, Date, Subject, or a quoted reply chain) or a chat thread (speakers with timestamps), the source stays `kind: capture` with its `notion:` key, but you analyse it with the `email` or `chat` rules in [extraction.md](extraction.md), and take its date from the sent date. Say in the report that the capture was read as an email or chat. When the top message has no header (the latest reply pasted without From or Date), its date is the capture's Created date and its sender is the owner unless the text says otherwise.
 
 ## 2. Pre-check
 
@@ -78,4 +94,4 @@ Then run SKILL.md step 8 (propose changes) and step 9 (rebuild and check) as the
 
 ## 8. Report
 
-SKILL.md step 12. Action items found in a document, email or capture are listed in the report: there is no meeting to attach them to, so no Notion tasks are created.
+SKILL.md step 12, once per run (for the drop folder, once for all its files). Action items found in a document, email or capture are listed in the report: there is no meeting to attach them to, so no Notion tasks are created.

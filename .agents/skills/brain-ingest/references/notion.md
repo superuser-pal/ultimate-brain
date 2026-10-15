@@ -41,6 +41,8 @@ When the user's notes and the minutes disagree on a fact, ask in the pre-check (
 
 Do these in order, after the ingest commit.
 
+**Write in parallel** (decision 0037). Within each step, send the writes that don't depend on each other as parallel tool calls in one turn, up to 10 at a time (Notion limits the request rate). Don't read a page back after writing it: the write's response holds its id. Read a page only when the write needs its current content, such as a project's blocks before a section is replaced.
+
 1. **Tasks.** If `brain status` shows `tasks_database: true`:
    1. Run `brain sync tasks --meeting <mtg-id> --input <items.json>`.
    2. Create one Notion page per returned item **without** `pending_relations`, in its `database_id` with its `properties`. An item with `pending_relations` names a project not yet in Notion: **don't create it yet**. After step 2 has published and recorded that project, run `sync tasks` again with only those items, and create each once. An `owner` of type `person_name` is written as text, or resolved to a Notion user if the mapped property is a people property.
@@ -56,6 +58,8 @@ Do these in order, after the ingest commit.
       - **`sections` (projects):** replace only the children of the toggle heading with that exact name ("Brief", "Decision log"). Read the page's blocks first (decision 0033):
       - **the page has no toggle headings at all** (created without the template): append a "Brief" and a "Decision log" toggle heading, in that order, at the end of the page, then fill them;
       - **the page has other toggle headings but not this one:** report `SECTION_NOT_FOUND` for that page and change nothing on it (a rename is likely, 0026).
+
+      **Writing a section through the MCP:** the Markdown update can't target a block inside a page. If the page holds only the generated "Brief" and "Decision log" toggles, replace the whole page in toggle Markdown (`## Brief {toggle="true"}`, its content indented one tab below it, then the same for "Decision log"). If the page has anything else (the template's views, "My notes"), use the block API instead: list the toggle's children, delete them, and append the new ones. Never replace the whole page then: it would delete the user's content.
    3. **Pending relations:** items that list `pending_relations` reference notes not yet published. Publish and record those first, then run `sync render --changed` again.
    4. Run `brain sync record` with one record per page written: `{ "id", "notion": <page id>, "synced_at": <now>, "published": <the item's published> }`.
 3. **Commit:** `publish: <meeting title> <date>`. Then run `brain log publish <mtg-id> pages=<n>`, and commit it with the publish.

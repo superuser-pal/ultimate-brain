@@ -279,13 +279,23 @@ Both are skill-side: the toggles because the CLI can't see Notion page content (
 
 ## 0.2.1 — Fixes from the acceptance run
 
-Agreed with the user on 2026-10-15 (grill session, decision 0037): the CC-15 findings plus the small intake fixes. Skills and CLI only, with no Notion schema change.
+Agreed with the user on 2026-10-15 (grill session, decision 0037): the CC-15 findings plus the small intake fixes. Skills and CLI only, with no Notion schema change. **Ships when** CC-21, CX-23 and CX-25 are merged; then U-09 publishes it.
 
-### CC-21 · Drop folder, report shape and faster publish (decision 0037) · `todo`
+### CC-21 · Drop folder, report shape and faster publish (decision 0037) · `review`
 **Output:** brain-ingest "process my drop folder" (list the files, one question, all selected by default) and the `processed/` and `skipped/` subfolders; the three-line report template in brain-ingest, brain-apply and brain-sync; parallel MCP writes with no read-backs in "Publish"; the user guide's drop-folder row.
 **Acceptance:** a blind run on a synthetic drop folder of 3 files ingests the chosen ones, moves them, and leaves the rest at the top level; every report follows the template.
 
-### CX-23 · Edit on a link row is a plan conflict (decision 0037) · `review`
+### CX-25 · CLI fixes from the acceptance run (CC-15 findings) · `todo`
+**Output:**
+- `sync plan` accepts Notion's own timestamps with milliseconds (`2026-10-15T18:11:00.000Z`) and every other timestamp input, truncated to seconds (spec/cli.md, global options, `--now` row).
+- `sync render` types each database's title property (`Name`) as `title`, not `rich_text`.
+- `sync render` never emits Markdown links in Review text (Before, After, Why are rich-text properties, where Notion shows Markdown literally): every link becomes its text. Links in proposal text are relative to the **target** note's folder (extraction.md), not to `_proposals/` (spec/schema.md, Review row).
+- Lint `freshness` doesn't flag "latest" when it means the most recent in a sequence rather than a date (a fixture sentence such as "the latest version of the template").
+- The CC-20 follow-up: a test that `note new` rejects a `url:` source without `kind: document` or `converter`.
+
+**Acceptance:** one test per item; the existing tests pass.
+
+### CX-23 · Edit on a link row is a plan conflict (decision 0037) · `done` (#76)
 **Output:** `sync plan` returns an Edit on a kind that forbids it (`add_link`, `supersede`, `merge`, `new_item`; spec/cli.md §5.14.2, schema §11.1) as an `EDIT_NOT_ALLOWED` conflict, not a decision. **Acceptance:** a test with an Edited `add_link` row and one other non-editable kind; `apply` is never reached with them.
 
 ## 0.3.0 — queued
@@ -318,6 +328,7 @@ Agreed with the user on 2026-10-15 (grill session, decision 0037): the CC-15 fin
 | U-06 | Put 5–10 real documents in one folder for the bake-off: a long PDF with tables, a deck, a Word file, a scan if you have one | Before CC-15 |
 | U-07 | Connect the Easlo template to the Notion integration (read-only use) | Before CC-17 |
 | U-08 | Publish 0.2.0 (`npm version minor`, `npm publish`, push tags; docs/releasing.md) | Now: agreed 2026-10-15 to release before CC-15, so the acceptance run uses the released version |
+| U-09 | Publish 0.2.1 (`npm version patch`, `npm publish`, push tags; docs/releasing.md), then `brain upgrade` in your brain | When CC-21, CX-23 and CX-25 are merged |
 
 ## How to start Codex on a task
 

@@ -43,20 +43,27 @@ Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come 
 ## Push
 
 9. **Render.** Run `brain sync render --changed --plan plan.json`. With `--plan`, any property in a `BOTH_CHANGED` conflict is held back until the user decides, so the brain never overwrites an edit nobody has looked at.
-10. **Write** each item through the MCP:
+10. **Write** each item through the MCP. Send the writes that don't depend on each other as parallel tool calls in one turn, up to 10 at a time, and don't read a page back after writing it; read a page only when the write needs its current content, such as a project's blocks (decision 0037):
     - **`action: create`:** create a page in the item's database with its `properties`.
     - **`action: update`:** update `page_id` with `properties`.
     - **`body` (decisions, questions):** replace the page body.
     - **`sections` (projects):** replace only the children of the toggle heading with that exact name ("Brief", "Decision log"). Read the page's blocks first (decision 0033):
       - **the page has no toggle headings at all** (created without the template): append a "Brief" and a "Decision log" toggle heading, in that order, at the end of the page, then fill them;
       - **the page has other toggle headings but not this one:** report `SECTION_NOT_FOUND` for that page and change nothing on it (a rename is likely, 0026).
+      - **How to write it** through the MCP: the brain-ingest skill's references/notion.md, "Writing a section through the MCP".
     - **Meeting relations:** `"mode": "add"` adds pages and keeps the existing ones. `"mode": "if_empty"` writes only to an empty property. Never write a meeting's Name, Date or body (0007).
     - **`pending_relations`:** these point to notes not published yet. Publish those first, record them, then render again.
 11. **Record:** run `brain sync record` with `{ "records": [ … ] }`, one record per page written: `{ "id", "notion": <page id>, "synced_at": <now>, "published": <the item's published> }` (references/formats.md). Record only what you actually wrote. If a write failed, leave it out; the next render produces it again.
 12. **Log** with `brain log publish - pages=<n>` (`sync record` does not log), then **commit:** `publish: <n> pages to Notion`.
-13. **Report** briefly; with nothing waiting it fits in 2 lines:
-    - one line of counts: imported, corrected, applied, published;
-    - only if any: each conflict still waiting for the user, one line each with what they can do, and anything that failed.
+13. **Report** in three lines (decision 0037):
+    ```
+    Done: 3 imported · 1 corrected · 2 applied · 6 pages published
+    Needs you: 1 conflict (Acme budget changed in both; keep Notion's or the brain's?)
+    Next: answer the conflict here
+    ```
+    - **Done:** counts only, and only the ones that aren't zero.
+    - **Needs you:** each conflict still waiting, with what the user can do, and anything that failed. `Needs you: nothing` when there is none.
+    - **Next:** one action, or one question.
 
 ## Rules
 
