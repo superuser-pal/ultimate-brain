@@ -462,7 +462,7 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
 | Orgs · Relationship, Website | `notion_fields.relationship`, `.website` |
 | Decisions · Date, Assessment, Project, Decided In, Supersedes | `date`, `assessment`, `projects`, `decided_in`, `relations[supersedes]` |
 | Questions · Kind, Status, Project, Raised In | `kind`, `notion_fields.status`, `projects`, `raised_in` |
-| Review · all | proposal fields (§11): Name=`title`, Kind, Target=`target` title + id, Before, After, Why, Source Meeting=`source`, Decision/Edited Value → `decision`, State from `status` |
+| Review · all | proposal fields (§11): Name=`title`, Kind, Target=`target` title + id, Before, After, Why, Source Meeting=`source`, Decision/Edited Value → `decision`, State from `status`. Before, After and Why are plain text: each Markdown link becomes its link text (links in proposal text are relative to the target note's folder) |
 
 ## 15. Lint rules derived from this spec
 
