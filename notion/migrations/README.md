@@ -30,4 +30,4 @@ Run them in number order, once each. The `brain-notion-change` skill writes them
 | [0001](0001-review-kind-add-link.md) | Review → Kind gets the option **Add Link** | decision 0028, PR #30 |
 | [0002](0002-system-timestamps.md) | Review, Projects, Questions get system timestamps used by the views | Prompt 7 views |
 | [0003](0003-look-pass.md) | Look pass: new Spaces arrangement, Tasks and Archive pages, Area hubs, Countdown and Task Progress | CC-17 |
-| [0004](0004-ai-prompts-and-guide.md) | Notion AI prompts in "Ask AI" toggles, the "How it works" page, Ask how-to in the navigation | CC-18, CC-19 |
+| [0004](0004-ai-prompts-and-guide.md) | Brain Assistant (a Notion Custom Agent with Instructions and seven skills) and the "How it works" page | CC-18, CC-19 |

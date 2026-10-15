@@ -6,7 +6,7 @@ Two tiers of synced navigation, edited once on "System" and shown on every Space
 
 ```text
 On the page "System", create:
-1. A synced block "Tier 1 nav" containing one line of links: Home · Tasks · Meetings · Projects · Plan · Review · Knowledge · Archive · How it works, then a collapsed toggle "Ask AI" holding the "Ask how-to" prompt from notion/user-prompts.md (paste it by hand). No colors or icons.
+1. A synced block "Tier 1 nav" containing one line of links: Home · Tasks · Meetings · Projects · Plan · Review · Knowledge · Archive · How it works. No colors or icons.
 2. One synced block per Space named "Tier 2 nav – <Space>", each listing that Space's view names as links, with its own icon and background color.
 
 Then on Home and on each Space page, place in a narrow left column: the "Tier 1 nav" synced block, a divider, then that Space's "Tier 2 nav" synced block (Home only gets Tier 1). Add a small plain-text label above each page's title with the page name.
