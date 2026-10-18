@@ -1,6 +1,6 @@
 # Ultimate Brain
 
-Product repo for an AI-assisted second brain: Markdown + Git canonical knowledge operated by coding agents (Claude Code, Codex), with Notion as the human interface. This repo holds the **product** (CLI, skills, schema spec, templates, Notion space design); each user's brain lives in a separate private repo (decision 0014). Never write personal knowledge into this repo.
+Product repo for an AI-assisted second brain: Markdown + Git canonical knowledge operated by coding agents (Claude Code, Codex), with Notion as the human interface. This repo holds the **product** (CLI, skills, schema spec, templates, Notion space design); each user's brain lives in a separate private repo (decision 0014). Never write personal knowledge into this repo: no names, client text, Notion ids or emails from a real brain, even in a finding or a commit message. A leak check runs in CI and in a local pre-commit hook (decision 0038).
 
 Before any work, read:
 1. [docs/vision.md](docs/vision.md): product intent and v1 scope.
@@ -16,10 +16,14 @@ Research is finished (`reviews/`, `synthesis/`). Two agents build in parallel:
 
 ### Multi-agent rules
 - **Work only on tasks assigned to you in `build/TASKS.md`.** Set your task to `in progress` when you start and `review` when done; never edit another agent's open task files.
-- **One branch per task:** `claude/<task-id>-<slug>` or `codex/<task-id>-<slug>`, from `main`. Use a separate git worktree if the other agent is working in the same folder.
+- **One branch and one worktree per task:** `claude/<task-id>-<slug>` or `codex/<task-id>-<slug>`, from `main`, in `../ub-<task-id>` (`scripts/task.mjs start <task-id>`; `done` removes it after merge). Never edit files in the main checkout: it stays on a clean `main` and is used only to release (decision 0038).
 - **Specs are contracts.** `spec/` is owned by Claude Code. If a spec is wrong or missing something, Codex writes the problem under "Spec questions" in the task and does not invent behavior. Claude Code answers by updating the spec.
 - **Cross-review:** every task is reviewed by the other agent before merge, against its acceptance criteria and cited decisions. Merges to `main` need the user's approval.
 - **Small commits**, imperative messages, task id in the subject (`CX-02: add ID generator`).
+- **Every task has `**Release:** x.y.z`** and a line in `CHANGELOG.md` under that release. Main is always releasable: merge nothing you wouldn't publish tonight. Release only with `scripts/release.mjs` ([docs/releasing.md](docs/releasing.md)).
+- **Never merge a PR or push to `main` yourself.** The user merges with `scripts/merge.mjs <PR>`; only `scripts/release.mjs` pushes to `main`. A `pre-push` hook and Claude Code's deny rules enforce it, and CI's `main-guard` job reports any bypass (decision 0038).
+- **PRs follow the template:** the reviewer ticks each acceptance box with evidence (a test name, or a command and its output). CI checks the branch name, the task id in the title, the CHANGELOG line and the leak check.
+- **Findings from the user's brain arrive as `dogfood` issues.** Claude Code triages them at the start of each planning session into a task with a release, or closes them with a reason; an issue never stays open next to its task.
 
 ## Architecture (fixed)
 - Markdown + Git is canonical. Notion is the human interface, never a second knowledge base. No unrestricted two-way sync.

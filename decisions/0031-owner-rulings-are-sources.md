@@ -4,7 +4,7 @@
 **Date:** 2026-10-13
 
 ## Context
-In the first real ingest (CC-12, dogfood finding 19), the minutes left two points open: the AI summary called the renamed consent "connected data consent", while the user's notes said "Connect Consent", and it was unclear whether ePrivacy and GDPR consent stay separate clusters. The user settled both in chat. The brain had no proper home for that answer: it accepted only minutes as a source, and decision 0004 allows only `^[inferred]` and `^[ambiguous]` markers. So the answer became a proposal saying "ruled by Rodrigo Cano after the meeting", no decision note was written, and the meeting note stayed `^[ambiguous]`.
+In the first real ingest (CC-12, dogfood finding 19), the minutes left two points open: the AI summary and the user's notes gave a renamed item two different names, and it was unclear whether two related items stay separate. The user settled both in chat. The brain had no proper home for that answer: it accepted only minutes as a source, and decision 0004 allows only `^[inferred]` and `^[ambiguous]` markers. So the answer became a proposal saying "ruled by the owner after the meeting", no decision note was written, and the meeting note stayed `^[ambiguous]`.
 
 Options:
 - **A.** The owner's answer is saved as a source note, which other notes cite like the minutes.

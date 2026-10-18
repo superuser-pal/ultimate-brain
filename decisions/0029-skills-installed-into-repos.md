@@ -1,6 +1,6 @@
 # 0029 — `brain init` and `brain link` install the Codex skills into the repo
 
-**Status:** Accepted
+**Status:** Accepted; amended by 0038 (skills also go to `.claude/skills/`; the Claude Code plugin is retired)
 **Date:** 2026-10-12
 
 ## Context
