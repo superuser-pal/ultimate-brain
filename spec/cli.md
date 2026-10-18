@@ -602,7 +602,7 @@ Issues are sorted by `path`, `line`, `rule`, then `message`. `line` is 1-based: 
 | `decision-sources` | error | decision without `sources` (0005) |
 | `memory-scope` | error | memory reach lists do not match `scope` |
 | `proposal-status` | error | proposal `status` and `decision` do not match schema §11.1 |
-| `product-file` | error | a product-owned file differs from the installed package (0038): a file the package ships in a skill folder present under `.agents/skills/` or `.claude/skills/` is missing, differs or is extra; or the AGENTS.md rules block differs from the template's. The message names the package version and says: run `brain upgrade`, or file a finding. A skill folder that is missing entirely, or AGENTS.md without its markers, is not reported here (`brain upgrade` handles them) |
+| `product-file` | error | product-owned content differs from the installed package (§5.15, 0038). One issue per case: a shipped skill's folder missing from `.agents/skills/` or `.claude/skills/` (path = the folder); a shipped file in it missing or with different bytes; a file in it the package doesn't ship; `AGENTS.md` missing, its rules markers missing, out of order or duplicated, or its block differing from the template's (path `AGENTS.md`). Folders the package doesn't ship are not checked. The message names the package version and says: run `brain upgrade`, or file a finding |
 | `unknown-key` | warning | frontmatter key that the type's schema does not declare: the core fields, plus the knowledge fields (knowledge types), plus the type's own fields. `why` on a person is unknown |
 | `freshness` | warning | schema §10 |
 | `summary-length` | warning | summary longer than 200 characters |
@@ -981,8 +981,15 @@ brain upgrade [--dry-run]
 
 Brings the product-owned files of an existing brain up to the installed version of the package (dogfood finding 22), then commits and pushes them (0038). It never touches notes, `brain.json`, generated files, the log, or anything the user wrote.
 
+**The installed package** (also used by lint rule `product-file`, §5.10) is the one the running CLI belongs to, never one found on `PATH` or in the brain:
+- **Root:** start from the real path (symbolic links resolved) of the running entry module and walk up to the first folder holding a `package.json` whose `name` is `ultimate-brain`. This is the same for a global install, `npx`, the compiled `dist/` entry and a source checkout.
+- **Version:** that `package.json`'s `version`.
+- **Shipped files:** the skills are the folders in `<root>/.agents/skills/` that hold a `SKILL.md` (`README.md` at its top level is not a skill); the rules block comes from `<root>/templates/brain/AGENTS.md`.
+- **Not found** (no such `package.json`, or the skills folder or template missing or unreadable) → `INTERNAL` (exit 10, a broken install), before any write. Lint reports it as one `product-file` error on `AGENTS.md` and checks nothing else for that rule.
+- **Source checkout:** the root contains `src/cli.ts`.
+
 **Before anything is written:**
-- **Published package only.** If the running CLI's package root contains `src/cli.ts` (a source checkout, including `npm link`), refuse with `UNRELEASED_BUILD`. Prereleases (`0.3.0-rc.1`) are published packages and are allowed.
+- **Published package only.** If the installed package is a source checkout (including `npm link`), refuse with `UNRELEASED_BUILD`. Prereleases (`0.3.0-rc.1`) are published packages and are allowed.
 - **Clean brain.** If the brain is a Git repository and `git status --porcelain` prints anything, refuse with `BRAIN_DIRTY`. `--dry-run` skips this check and reports `dirty: true` instead.
 - The safety checks below.
 
@@ -998,8 +1005,8 @@ Brings the product-owned files of an existing brain up to the installed version 
    Folders in `.agents/skills/` or `.claude/skills/` that the package does not ship are the user's own and are left alone.
 4. **Retired plugin (0038).** If `.claude/settings.json` exists, remove the key `ultimate-brain@ultimate-brain` from `enabledPlugins` and the key `ultimate-brain` from `extraKnownMarketplaces`; an object left empty is removed. Other keys are kept in order, and the file is written as JSON with 2-space indent and a trailing newline (`updated`). A file left as `{}` is deleted (`removed`). A file that is not valid JSON is left alone (`skipped`) with warning `SETTINGS_UNPARSEABLE`. Nothing to remove → no change.
 5. Log `- <timestamp> upgrade - "<package version>" files=<n>` when anything changed. `--dry-run` writes and logs nothing and reports the same `files`.
-6. **Lint** the brain (§5.10) and report the counts in `lint`. Lint findings never stop the upgrade: it only wrote product-owned files.
-7. **Commit and push**, when anything changed and the brain is a Git repository: stage only the paths in `files` and the log, commit `upgrade: ultimate brain <version>`, then `git push` if the current branch has an upstream. No upstream → warning `PUSH_SKIPPED`. A push that fails → warning `PUSH_FAILED` with Git's message; the commit stays, and the exit code is still 0. A failed commit (no identity) → warning `GIT_COMMIT_SKIPPED`, files kept. Not a Git repository → no commit, no warning.
+6. **Lint** the brain (§5.10) and report the counts in `lint`. Lint findings never stop the upgrade: it only wrote product-owned files. With `--dry-run`, lint reads the **planned** tree: every `created`, `updated` or `removed` file as the upgrade would leave it, everything else (including `skipped` files) as it is on disk. So a dry run reports what would remain after the upgrade: `product-file` is silent for drift the upgrade repairs, and still reports an `AGENTS.md` left `skipped` for missing markers.
+7. **Commit and push**, when anything changed and the brain is a Git repository: stage exactly the paths in `files` whose `action` is `created`, `updated` or `removed`, plus the log file step 5 appended to (`log/<YYYY-MM>.md`). Never stage a `skipped` path or anything else in the working tree. Commit `upgrade: ultimate brain <version>`, then `git push` if the current branch has an upstream. No upstream → warning `PUSH_SKIPPED`. A push that fails → warning `PUSH_FAILED` with Git's message; the commit stays, and the exit code is still 0. A failed commit (no identity) → warning `GIT_COMMIT_SKIPPED`, files kept. Not a Git repository → no commit, no warning.
 
 The skill a linked repo carries (`brain-query`, §5.12) is refreshed by running `brain link` there again.
 

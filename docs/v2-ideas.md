@@ -10,7 +10,7 @@ Sources folded in: docs/vision.md "v2", synthesis/synthesis.md §3.3, decisions 
 **Adds:** a `brain-onboard` skill (or agent) that interviews a new user and populates the brain and Notion, so a new brain is useful on day one instead of empty.
 
 It would orchestrate the existing skills in one guided flow:
-1. **Install and connect:** check `brain` and the plugin, give the agent access to Notion (dogfood finding 3), run `brain init` and brain-connect-notion.
+1. **Install and connect:** check `brain`, give the agent access to Notion (dogfood finding 3), run `brain init` and brain-connect-notion.
    - **Converters:** check `markitdown --version`. If it's missing, explain that it turns Word, PowerPoint, Excel and saved HTML files into text the brain can read (PDFs and images are read natively in Claude Code), and offer `pipx install 'markitdown[all]'` (installing `pipx` first if needed). Codex also needs it for PDFs. Raised by the user on 2026-10-15, when the first Word file failed for lack of it.
 2. **Interview:** who the user is and their work; their areas, goals and active projects; the people and organisations they work with; what they want to track. One topic at a time, with examples, and it suggests answers from what's already in Notion.
 3. **Populate:** create the answers as rows in Notion (Areas, Goals, Projects, People, Orgs), then run brain-sync, so Notion and the brain start identical and the first ingest has something to match.
@@ -117,8 +117,8 @@ Finds likely duplicate notes and people and writes `merge` proposals. **Source:*
 ### Schedulers
 Unattended ingest and sync with n8n or Hermes. **Source:** vision. **Next step:** a scheduled "catch up" (decision 0037), once a manual catch-up runs without stopping for questions.
 
-### Public source for the Claude Code plugin
-The CLI is public on npm, but the plugin installs from the private product repo, so other users can't get the skills in Claude Code. Options: a public plugin repo built from `skills/`, or a marketplace listing. **Revisit:** before the second user. **Source:** dogfood 2026-10-13.
+### ~~Public source for the Claude Code plugin~~
+Resolved by decision 0038: the plugin is retired, and the skills reach Claude Code through the npm package (`brain init`, `brain upgrade`). Still open for other users: findings go to the private product repo's issues. **Revisit:** before the second user.
 
 ### Automated releases
 A GitHub Action that publishes to npm on a version tag (npm trusted publishing), replacing the manual `npm publish` in docs/releasing.md. **Source:** dogfood 2026-10-13.
