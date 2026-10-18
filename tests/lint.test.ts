@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
-import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { cp, mkdir, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
+import { promisify } from "node:util";
 
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
 import { loadSchemas } from "../src/lib/schemas.ts";
 import { brain, fixtureCopy, FIXTURE_BRAIN } from "./helpers.ts";
+
+const exec = promisify(execFile);
 
 test("the fixture brain lints clean: no errors, no warnings", async (context) => {
   const fixture = await fixtureCopy(context);
@@ -16,14 +20,47 @@ test("the fixture brain lints clean: no errors, no warnings", async (context) =>
   assert.equal(run.json.data.files, 21);
 });
 
-test("product-file finds nested changes and extra shipped-skill files", async (context) => {
+test("product-file covers missing, changed, extra, malformed, and fresh product files", async (context) => {
   const fixture = await fixtureCopy(context);
+  await rm(join(fixture, ".agents/skills/brain-query"), { recursive: true });
+  await rm(join(fixture, ".claude/skills/brain-ingest/SKILL.md"));
   await writeFile(join(fixture, ".agents/skills/brain-ingest/references/extraction.md"), "drift\n");
   await writeFile(join(fixture, ".claude/skills/brain-ingest/extra.md"), "extra\n");
+  await writeFile(join(fixture, "AGENTS.md"), "<!-- ultimate-brain:rules:start -->\nx\n<!-- ultimate-brain:rules:end -->\n<!-- ultimate-brain:rules:start -->\nx\n<!-- ultimate-brain:rules:end -->\n");
   const run = await brain(["lint", "--brain", fixture, "--json"]);
   assert.equal(run.code, 1);
   assert.ok(run.json.data.issues.some((issue: { rule: string; path: string }) => issue.rule === "product-file" && issue.path.endsWith("references/extraction.md")));
   assert.ok(run.json.data.issues.some((issue: { rule: string; path: string }) => issue.rule === "product-file" && issue.path.endsWith("extra.md")));
+  assert.ok(run.json.data.issues.some((issue: { path: string }) => issue.path === ".agents/skills/brain-query"));
+  assert.ok(run.json.data.issues.some((issue: { path: string }) => issue.path === ".claude/skills/brain-ingest/SKILL.md"));
+  assert.ok(run.json.data.issues.some((issue: { path: string }) => issue.path === "AGENTS.md"));
+
+  const root = join(fixture, "fresh");
+  const init = await brain(["init", root, "--no-git", "--json"]);
+  const clean = await brain(["lint", "--brain", root, "--json"]);
+  assert.equal(init.code, 0);
+  assert.equal(clean.code, 0, JSON.stringify(clean.json.data.issues));
+});
+
+test("a symlinked compiled entry resolves its package root", async (context) => {
+  const fixture = await fixtureCopy(context);
+  const root = join(fixture, "fresh");
+  const init = await brain(["init", root, "--no-git", "--json"]);
+  assert.equal(init.code, 0);
+
+  const packageRoot = join(fixture, "published-package");
+  const productRoot = join(import.meta.dirname, "..");
+  await exec("npm", ["run", "build"], { cwd: productRoot });
+  await cp(join(productRoot, "dist"), join(packageRoot, "dist"), { recursive: true });
+  await cp(join(productRoot, ".agents"), join(packageRoot, ".agents"), { recursive: true });
+  await cp(join(productRoot, "spec"), join(packageRoot, "spec"), { recursive: true });
+  await cp(join(productRoot, "templates"), join(packageRoot, "templates"), { recursive: true });
+  await cp(join(productRoot, "package.json"), join(packageRoot, "package.json"));
+  await symlink(join(productRoot, "node_modules"), join(packageRoot, "node_modules"));
+  const bin = join(fixture, "brain");
+  await symlink(join(packageRoot, "dist", "cli.js"), bin);
+  const result = await exec(process.execPath, [bin, "upgrade", "--brain", root, "--now", "2026-12-03T10:22:00Z", "--json"]);
+  assert.match(result.stdout, /"version"/);
 });
 
 const SUPABASE = "knowledge/decisions/2026-12-03-use-supabase-for-auth.md";

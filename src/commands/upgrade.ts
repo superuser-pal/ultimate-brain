@@ -82,12 +82,22 @@ export const upgradeCommand: Command = {
         let changed = false;
         for (const [key, remove] of [["enabledPlugins", "ultimate-brain@ultimate-brain"], ["extraKnownMarketplaces", "ultimate-brain"]] as const) {
           if (value[key] !== null && typeof value[key] === "object" && !Array.isArray(value[key]) && remove in (value[key] as object)) {
-            delete (value[key] as Record<string, unknown>)[remove]; changed = true;
+            delete (value[key] as Record<string, unknown>)[remove];
+            changed = true;
             if (Object.keys(value[key] as object).length === 0) delete value[key];
           }
         }
-        if (changed) changes.push({ path: settings, action: Object.keys(value).length === 0 ? "removed" : "updated", content: Object.keys(value).length === 0 ? undefined : `${JSON.stringify(value, null, 2)}\n` });
-      } catch { changes.push({ path: settings, action: "skipped" }); warnings.push({ code: "SETTINGS_UNPARSEABLE", message: ".claude/settings.json is not valid JSON; left unchanged." }); }
+        if (changed) {
+          changes.push({
+            path: settings,
+            action: Object.keys(value).length === 0 ? "removed" : "updated",
+            content: Object.keys(value).length === 0 ? undefined : `${JSON.stringify(value, null, 2)}\n`,
+          });
+        }
+      } catch {
+        changes.push({ path: settings, action: "skipped" });
+        warnings.push({ code: "SETTINGS_UNPARSEABLE", message: ".claude/settings.json is not valid JSON; left unchanged." });
+      }
     }
 
     changes.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
@@ -107,18 +117,32 @@ export const upgradeCommand: Command = {
     const plannedProductFiles = new Map<string, string | null>();
     for (const change of changes) if (change.action !== "skipped") plannedProductFiles.set(change.path, change.action === "removed" ? null : Buffer.from(change.content!).toString("utf8"));
     const lint = lintBrain({ root, notes, problems, brainConfig: brain!.config, indexMarkdown: await readOptional(join(root, "index.md")), plannedProductFiles });
-    let commit: string | null = null; let pushed = false;
+    let commit: string | null = null;
+    let pushed = false;
     if (!dryRun && written.length > 0 && await gitRepository(root)) {
       const staged = [...written.map((change) => change.path), `log/${now.toISOString().slice(0, 7)}.md`];
-      try { await exec("git", ["add", "--", ...staged], { cwd: root }); const result = await exec("git", ["commit", "-m", `upgrade: ultimate brain ${version}`], { cwd: root }); commit = (await exec("git", ["rev-parse", "--short", "HEAD"], { cwd: root })).stdout.trim();
+      try {
+        await exec("git", ["add", "--", ...staged], { cwd: root });
+        await exec("git", ["commit", "-m", `upgrade: ultimate brain ${version}`], { cwd: root });
+        commit = (await exec("git", ["rev-parse", "--short", "HEAD"], { cwd: root })).stdout.trim();
+      } catch {
+        warnings.push({ code: "GIT_COMMIT_SKIPPED", message: "Git commit was skipped; files were kept." });
+      }
+      if (commit !== null) {
         try {
           await exec("git", ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"], { cwd: root });
         } catch {
           warnings.push({ code: "PUSH_SKIPPED", message: "Git branch has no upstream; commit was not pushed." });
-          return { warnings, data: { dry_run: dryRun, dirty: undefined, version, files: changes.map(({ path, action }) => ({ path, action })), unchanged, lint: { errors: lint.filter((x) => x.severity === "error").length, warnings: lint.filter((x) => x.severity === "warning").length }, commit, pushed }, human: `${written.length} files changed, ${unchanged} unchanged\n` };
         }
-        try { await exec("git", ["push"], { cwd: root }); pushed = true; } catch (error) { warnings.push({ code: "PUSH_FAILED", message: String(error) }); }
-      } catch { warnings.push({ code: "GIT_COMMIT_SKIPPED", message: "Git commit was skipped; files were kept." }); }
+        if (!warnings.some((warning) => warning.code === "PUSH_SKIPPED")) {
+          try {
+            await exec("git", ["push"], { cwd: root });
+            pushed = true;
+          } catch (error) {
+            warnings.push({ code: "PUSH_FAILED", message: String(error) });
+          }
+        }
+      }
     }
     return {
       warnings,
