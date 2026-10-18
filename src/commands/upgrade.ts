@@ -1,14 +1,17 @@
+import { execFile } from "node:child_process";
 import { lstat, readdir, readFile, unlink } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 import type { Command, Warning } from "../lib/command.ts";
+import { BrainError } from "../lib/errors.ts";
 import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
 import { appendLog } from "../lib/log.ts";
-import { assertPlainPath, listShippedSkillFiles } from "../lib/skills.ts";
+import { lintBrain } from "../lib/lint.ts";
+import { scanNotes } from "../lib/notes.ts";
+import { assertPlainPath, installedProduct, listShippedSkillFiles } from "../lib/skills.ts";
 
-const TEMPLATE_ROOT = fileURLToPath(new URL("../../templates/brain/", import.meta.url));
-const PACKAGE_JSON = fileURLToPath(new URL("../../package.json", import.meta.url));
+const exec = promisify(execFile);
 const START = /^<!-- ultimate-brain:rules:start\b[^\n]*-->$/gm;
 const END = /^<!-- ultimate-brain:rules:end -->$/gm;
 
@@ -25,12 +28,14 @@ export const upgradeCommand: Command = {
   needsBrain: true,
   async run({ args, brain, now }) {
     const root = brain!.root;
+    const product = installedProduct();
+    if (product.source) throw new BrainError("UNRELEASED_BUILD", "brain upgrade requires a published ultimate-brain package");
     const warnings: Warning[] = [];
     const changes: Change[] = [];
     let unchanged = 0;
 
     // Every check runs before the first write, so a refusal leaves the brain untouched.
-    const template = await readFile(join(TEMPLATE_ROOT, "AGENTS.md"), "utf8");
+    const template = await readFile(join(product.root, "templates/brain/AGENTS.md"), "utf8");
     await assertPlainPath(root, "AGENTS.md");
     const current = await readOptional(join(root, "AGENTS.md"));
     if (current === null) changes.push({ path: "AGENTS.md", action: "created", content: template });
@@ -49,27 +54,57 @@ export const upgradeCommand: Command = {
     // Skills (decision 0029): shipped files are product-owned, inside the folders of shipped skills only.
     const shipped = await listShippedSkillFiles();
     const shippedPaths = new Set(shipped.map((file) => file.relative));
-    for (const name of new Set(shipped.map((file) => file.relative.split("/")[0]!))) await assertPlainPath(root, `.agents/skills/${name}`, "folder");
-    for (const file of shipped) {
-      const path = `.agents/skills/${file.relative}`;
-      await assertPlainPath(root, path);
-      const existing = await readOptionalBuffer(join(root, path));
-      if (existing === null) changes.push({ path, action: "created", content: file.content });
-      else if (existing.equals(file.content)) unchanged += 1;
-      else changes.push({ path, action: "updated", content: file.content });
+    for (const prefix of [".agents/skills", ".claude/skills"]) {
+      for (const name of new Set(shipped.map((file) => file.relative.split("/")[0]!))) await assertPlainPath(root, `${prefix}/${name}`, "folder");
+      for (const file of shipped) {
+        const path = `${prefix}/${file.relative}`;
+        await assertPlainPath(root, path);
+        const existing = await readOptionalBuffer(join(root, path));
+        if (existing === null) changes.push({ path, action: "created", content: file.content });
+        else if (existing.equals(file.content)) unchanged += 1;
+        else changes.push({ path, action: "updated", content: file.content });
+      }
+      for (const name of new Set(shipped.map((file) => file.relative.split("/")[0]!))) {
+        for (const file of await listFiles(join(root, prefix, name))) {
+          const inSkills = `${name}/${file}`;
+          await assertPlainPath(root, `${prefix}/${inSkills}`);
+          if (!shippedPaths.has(inSkills)) changes.push({ path: `${prefix}/${inSkills}`, action: "removed" });
+        }
+      }
     }
-    for (const name of new Set(shipped.map((file) => file.relative.split("/")[0]!))) {
-      for (const file of await listFiles(join(root, ".agents/skills", name))) {
-        const inSkills = `${name}/${file}`;
-        await assertPlainPath(root, `.agents/skills/${inSkills}`);
-        if (!shippedPaths.has(inSkills)) changes.push({ path: `.agents/skills/${inSkills}`, action: "removed" });
+
+    const settings = ".claude/settings.json";
+    await assertPlainPath(root, settings);
+    const settingsBefore = await readOptional(join(root, settings));
+    if (settingsBefore !== null) {
+      try {
+        const value = JSON.parse(settingsBefore) as Record<string, unknown>;
+        let changed = false;
+        for (const [key, remove] of [["enabledPlugins", "ultimate-brain@ultimate-brain"], ["extraKnownMarketplaces", "ultimate-brain"]] as const) {
+          if (value[key] !== null && typeof value[key] === "object" && !Array.isArray(value[key]) && remove in (value[key] as object)) {
+            delete (value[key] as Record<string, unknown>)[remove];
+            changed = true;
+            if (Object.keys(value[key] as object).length === 0) delete value[key];
+          }
+        }
+        if (changed) {
+          changes.push({
+            path: settings,
+            action: Object.keys(value).length === 0 ? "removed" : "updated",
+            content: Object.keys(value).length === 0 ? undefined : `${JSON.stringify(value, null, 2)}\n`,
+          });
+        }
+      } catch {
+        changes.push({ path: settings, action: "skipped" });
+        warnings.push({ code: "SETTINGS_UNPARSEABLE", message: ".claude/settings.json is not valid JSON; left unchanged." });
       }
     }
 
     changes.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
     const written = changes.filter((change) => change.action !== "skipped");
-    const version = JSON.parse(await readFile(PACKAGE_JSON, "utf8")).version as string;
+    const version = product.version;
     const dryRun = args.options["dry-run"] === true;
+    if (!dryRun && await gitDirty(root)) throw new BrainError("BRAIN_DIRTY", "brain has uncommitted changes");
     if (!dryRun && written.length > 0) {
       for (const change of written) {
         if (change.action === "removed") { await unlink(join(root, change.path)); continue; }
@@ -78,9 +113,40 @@ export const upgradeCommand: Command = {
       }
       await appendLog(root, now, [{ op: "upgrade", id: "-", title: version, pairs: [["files", written.length]] }]);
     }
+    const { notes, problems } = await scanNotes(root);
+    const plannedProductFiles = new Map<string, string | null>();
+    for (const change of changes) if (change.action !== "skipped") plannedProductFiles.set(change.path, change.action === "removed" ? null : Buffer.from(change.content!).toString("utf8"));
+    const lint = lintBrain({ root, notes, problems, brainConfig: brain!.config, indexMarkdown: await readOptional(join(root, "index.md")), plannedProductFiles });
+    let commit: string | null = null;
+    let pushed = false;
+    if (!dryRun && written.length > 0 && await gitRepository(root)) {
+      const staged = [...written.map((change) => change.path), `log/${now.toISOString().slice(0, 7)}.md`];
+      try {
+        await exec("git", ["add", "--", ...staged], { cwd: root });
+        await exec("git", ["commit", "-m", `upgrade: ultimate brain ${version}`], { cwd: root });
+        commit = (await exec("git", ["rev-parse", "--short", "HEAD"], { cwd: root })).stdout.trim();
+      } catch {
+        warnings.push({ code: "GIT_COMMIT_SKIPPED", message: "Git commit was skipped; files were kept." });
+      }
+      if (commit !== null) {
+        try {
+          await exec("git", ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"], { cwd: root });
+        } catch {
+          warnings.push({ code: "PUSH_SKIPPED", message: "Git branch has no upstream; commit was not pushed." });
+        }
+        if (!warnings.some((warning) => warning.code === "PUSH_SKIPPED")) {
+          try {
+            await exec("git", ["push"], { cwd: root });
+            pushed = true;
+          } catch (error) {
+            warnings.push({ code: "PUSH_FAILED", message: String(error) });
+          }
+        }
+      }
+    }
     return {
       warnings,
-      data: { dry_run: dryRun, version, files: changes.map(({ path, action }) => ({ path, action })), unchanged },
+      data: { dry_run: dryRun, dirty: dryRun ? await gitDirty(root) : undefined, version, files: changes.map(({ path, action }) => ({ path, action })), unchanged, lint: { errors: lint.filter((x) => x.severity === "error").length, warnings: lint.filter((x) => x.severity === "warning").length }, commit, pushed },
       human: `${written.length} files ${dryRun ? "would change" : "changed"}, ${unchanged} unchanged\n`,
     };
   },
@@ -124,4 +190,13 @@ async function readOptionalBuffer(path: string): Promise<Buffer | null> {
   } catch {
     return null;
   }
+}
+
+async function gitRepository(root: string): Promise<boolean> {
+  try { return (await exec("git", ["rev-parse", "--is-inside-work-tree"], { cwd: root })).stdout.trim() === "true"; } catch { return false; }
+}
+
+async function gitDirty(root: string): Promise<boolean> {
+  if (!await gitRepository(root)) return false;
+  return (await exec("git", ["status", "--porcelain"], { cwd: root })).stdout !== "";
 }

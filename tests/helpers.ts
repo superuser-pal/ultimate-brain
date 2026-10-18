@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { TestContext } from "node:test";
 
 import { runCli, type CliIo } from "../src/cli.ts";
+import { setInstalledProductRootForTests } from "../src/lib/skills.ts";
 
 export const FIXTURE_BRAIN = join(import.meta.dirname, "fixtures", "brain-acme");
 
@@ -13,6 +14,11 @@ export async function fixtureCopy(context: TestContext): Promise<string> {
   context.after(() => rm(parent, { recursive: true, force: true }));
   const brain = join(parent, "brain-acme");
   await cp(FIXTURE_BRAIN, brain, { recursive: true });
+  // Fixtures stay product-neutral; whole-brain lint tests receive the shipped files at runtime.
+  await rm(join(brain, ".agents", "skills"), { recursive: true, force: true });
+  await cp(join(import.meta.dirname, "..", ".agents", "skills"), join(brain, ".agents", "skills"), { recursive: true });
+  await cp(join(import.meta.dirname, "..", ".agents", "skills"), join(brain, ".claude", "skills"), { recursive: true });
+  await cp(join(import.meta.dirname, "..", "templates", "brain", "AGENTS.md"), join(brain, "AGENTS.md"));
   return brain;
 }
 
@@ -25,7 +31,13 @@ export interface CliRun {
 }
 
 /** Run the CLI in-process with captured output and an isolated environment. */
-export async function brain(args: readonly string[], home = tmpdir()): Promise<CliRun> {
+export async function brain(
+  args: readonly string[],
+  home = tmpdir(),
+  productRoot = join(import.meta.dirname, ".."),
+  productSource = false,
+): Promise<CliRun> {
+  setInstalledProductRootForTests(productRoot, productSource);
   const stdout: string[] = [];
   const stderr: string[] = [];
   const io: CliIo = {
