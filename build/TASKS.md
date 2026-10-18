@@ -5,7 +5,7 @@
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
 > **2026-10-18 — Status: 0.2.1 is published and the user's brain runs it (first real drop-folder run done). 0.2.2 is in PR #78 (CC-23) with CX-26. Next: 0.2.3, the delivery process (decision 0038), before any 0.3.0 work.**
-> - **Why 0.2.3 first:** Claude Code in the brain still runs the plugin cached on 2026-10-12, while Codex runs 0.2.1. 0.2.3 makes npm the only channel and adds the merge, leak, release and upgrade gates.
+> - **Why 0.2.3 first:** Claude Code in the brain ran the plugin cached on 2026-10-12 while Codex ran 0.2.1 (stopgap on 2026-10-18: the plugin is off and `.claude/skills/` copied by hand). 0.2.3 makes npm the only channel and adds the merge, leak, release and upgrade gates.
 > - **Every task now has `**Release:**`**, its own worktree (`../ub-<ID>`) and a CHANGELOG line (AGENTS.md, docs/releasing.md).
 > - **Untriaged `dogfood` issues:** 0.
 > - **Queued for 0.3.0:** CC-22 and CX-24 (decision 0037), CX-22 (decision 0034), the onboarding suite, Notion file uploads.
@@ -341,7 +341,7 @@ Agreed with the user on 2026-10-18 (grill session). npm becomes the only channel
 ### CX-29 · One channel in the CLI: upgrade, init, link, lint · `todo` (needs CC-24)
 **Release:** 0.2.3
 **Output:** spec/cli.md §5.15 in full (`UNRELEASED_BUILD`, `BRAIN_DIRTY`, both skill folders, the retired plugin in `.claude/settings.json`, lint counts, commit and push with `PUSH_SKIPPED`, `PUSH_FAILED`, `GIT_COMMIT_SKIPPED`); §5.1 and §5.12 write `.claude/skills/` too; lint rule `product-file` (§5.10).
-**Acceptance:** a test per check and per warning in §5.15, including a push to a local bare remote and a failing push; a settings file with other keys kept in order; `product-file` reports an edited skill file and an edited rules block, and is silent on a fresh `brain init`; the existing tests pass.
+**Acceptance:** a test per check and per warning in §5.15, including a push to a local bare remote and a failing push; a settings file with other keys kept in order; `product-file` reports each case in §5.10 (a missing skill folder, a missing, changed or extra file, a missing or changed rules block) and is silent on a fresh `brain init`; `--dry-run` lints the planned tree; the commit stages only created, updated and removed paths plus the log; package resolution works from the compiled entry through a symbolic link. Fixture brains linted as whole brains get the product files at test time (copy the fixture, write the shipped files), so fixtures never hold copies of the skills. The existing tests pass.
 
 ## 0.3.0 — queued
 
