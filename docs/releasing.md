@@ -5,7 +5,7 @@ How a change reaches a brain (decision 0038). npm is the only channel: the packa
 ## The rules
 
 - **Main is always releasable.** Merge only what you would publish tonight. A fix the user needs mid-use is an `urgent` task, shipped as a patch the same day.
-- **A task belongs to a release** through its `**Release:** x.y.z` line in build/TASKS.md, and has a line in `CHANGELOG.md` under that version.
+- **A task belongs to a release** through its `**Release:** x.y.z` line in build/TASKS.md, and has a line in `CHANGELOG.md` under that version. It is set to `done` (#N) in its own PR's last commit, after the review passes.
 - **Merge only with `node scripts/merge.mjs <PR>`:** it checks CI on the PR's head commit, the ticked boxes and the format, then merges that exact commit.
 - **Release from the main checkout only** (`~/GitHub/ultimate-brain`, always on a clean `main`). Tasks are built in their own worktrees (`../ub-<ID>`).
 - **A brain runs only published versions.** Try a candidate as a prerelease on the `next` tag.

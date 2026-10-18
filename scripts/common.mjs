@@ -33,6 +33,13 @@ export function slug(value) {
 
 export function isPrerelease(version) { return version.includes("-"); }
 
+/** CI passed when every check run completed as success, skipped or neutral, and at least one succeeded (a job that doesn't apply to the event is skipped). */
+export function checksPassed(tsv) {
+  const runs = tsv.split("\n").filter(Boolean).map((line) => line.split("\t"));
+  return runs.some(([, conclusion]) => conclusion === "success")
+    && runs.every(([status, conclusion]) => status === "completed" && ["success", "skipped", "neutral"].includes(conclusion));
+}
+
 export function packageVersion() {
   const file = resolve(ROOT, "package.json");
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")).version : undefined;

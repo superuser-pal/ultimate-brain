@@ -56,6 +56,7 @@ Every change belongs to exactly one lane:
 - **Until 0.2.3, the user runs `/plugin update ultimate-brain`** in the brain as a stopgap.
 - **Rollback of a bad upgrade:** `npm install -g ultimate-brain@<previous>`, then `git revert` the upgrade commit.
 - **Release ids are machine-read**, so a task without `**Release:**` is not in any release.
+- **Amended 2026-10-18 (CC-25):** a task is set to `done` in its own PR once the review passes, and the reviewer's verdict is the line `Review (<agent>): pass`; CX-30 makes `merge.mjs` require it. Gate scripts treat `skipped` and `neutral` check runs as passing, with at least one `success`.
 - **The merge gate is local, plus detection on the server.** Without GitHub Pro a push to `main` can't be prevented on the server. The hook, the deny rules and `merge.mjs` make a bypass take deliberate effort, and `main-guard` reports one within minutes.
 - **Findings need access to the product repo.** While it is private only its author can file them; this is revisited before the product has other users.
 
