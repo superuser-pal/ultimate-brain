@@ -12,7 +12,7 @@ export interface InstalledProduct { root: string; version: string; source: boole
 /** Resolve the package containing the running module, never a package found on PATH. */
 export function installedProduct(): InstalledProduct {
   let folder: string;
-  let entry: string;
+  let entry = fileURLToPath(import.meta.url);
   try { entry = realpathSync(process.argv[1] ?? fileURLToPath(import.meta.url)); folder = dirname(entry); }
   catch { folder = dirname(fileURLToPath(import.meta.url)); }
   for (;;) {
