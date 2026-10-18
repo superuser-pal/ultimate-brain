@@ -320,7 +320,7 @@ Agreed with the user on 2026-10-18 (grill session). npm becomes the only channel
 **Output:** decision 0038 (0029 and 0037 marked amended); spec/cli.md §3.5 (`UNRELEASED_BUILD`, `BRAIN_DIRTY`), §5.1 and §5.12 (`.claude/skills/`), §5.15 (`brain upgrade` checks, retired plugin, lint, commit and push), §5.10 rule `product-file`, schema §15; the brain AGENTS.md block (product files read-only, findings, push); push after the last commit in brain-ingest, brain-apply and brain-sync; `.github/ISSUE_TEMPLATE/dogfood.md`, `.github/pull_request_template.md`; `CHANGELOG.md`; docs/releasing.md; AGENTS.md multi-agent rules; README and skills/README without the plugin; `.claude-plugin/` removed.
 **Acceptance:** Codex's review finds §5.15 and the `product-file` rule complete enough to build CX-29 without inventing behaviour; no remaining reference to installing the plugin outside decisions and reviews.
 
-### CX-27 · Release, merge and task scripts, PR-format and main-guard checks · `todo`
+### CX-27 · Release, merge and task scripts, PR-format and main-guard checks · `review`
 **Release:** 0.2.3
 **Output:**
 - `scripts/release.mjs <version> [--dry-run]`: the gate in docs/releasing.md. It refuses unless it runs in the main worktree (not a linked worktree) on `main`, clean and level with `origin/main`; CI passed on `HEAD` (`gh api …/commits/<sha>/check-runs`, all `success`); `CHANGELOG.md` has `## <version>`; `npm test`, `npm run typecheck`, `npm run test:package` pass; every TASKS.md task with `**Release:** <version>` is `done`. Then: `npm version <version> --no-git-tag-version`, dates the CHANGELOG heading (`## 0.2.3 — YYYY-MM-DD`), commits `<version>`, tags `v<version>`, `npm publish` (`--tag next` for a prerelease), pushes commit and tag. `--dry-run` runs every check and prints what it would do. Each refusal names the failed check; nothing is changed before all checks pass.
@@ -353,10 +353,12 @@ Agreed with the user on 2026-10-18 (grill session). npm becomes the only channel
 **Acceptance:** Codex's review finds the contracts complete enough to build CX-24 without inventing behaviour; a blind catch-up run on a synthetic brain asks once, then finishes.
 
 ### CX-24 · Intake in the CLI (decision 0037) · `todo` (needs CC-22)
+**Release:** 0.3.0
 **Output:** grouped `add_link` proposals and their apply with a Note; `brain.json` settings; Inbox and Concepts in `sync render` and `sync record`. **Acceptance:** tests per the contract.
 
 
 ### CX-22 · Area on Decisions and Questions (decision 0034) · `todo`
+**Release:** 0.3.0
 **Output:** the sync fills a brain-owned Area relation on Decisions and Questions from their project's area (spec/cli.md, once Claude Code writes the contract). **Acceptance:** tests for one area, several projects in different areas, and a project with no area.
 
 ---
