@@ -4,7 +4,7 @@
 
 This repo is a second brain: Markdown notes in Git, operated by agents through the `brain` CLI, with Notion as the human view. Its value is trust: every claim traces to a source, and history is kept, never overwritten.
 
-`brain` is the Ultimate Brain CLI. If it is not installed (`command not found`), run `npm install -g ultimate-brain`. To update, run `npm install -g ultimate-brain@latest`, then `brain upgrade` (it refreshes this block and `.agents/skills/`, never your notes or the text below the block) and commit `upgrade: ultimate brain <version>`. From this repo run it as `brain <command> --brain . --json` and read the JSON it prints; `brain --help` lists the commands. Exit codes: 1 means findings to act on; 2 or 4 means your command or input was wrong, so fix it and retry; 3 or 5 means the brain or a write was refused, so stop and report to the user; 10 is a bug, so report it.
+`brain` is the Ultimate Brain CLI. If it is not installed (`command not found`), run `npm install -g ultimate-brain`. To update, run `npm install -g ultimate-brain@latest`, then `brain upgrade` (it refreshes this block, `.agents/skills/` and `.claude/skills/`, never your notes or the text below the block, then commits and pushes). From this repo run it as `brain <command> --brain . --json` and read the JSON it prints; `brain --help` lists the commands. Exit codes: 1 means findings to act on; 2 or 4 means your command or input was wrong, so fix it and retry; 3 or 5 means the brain or a write was refused, so stop and report to the user; 10 is a bug, so report it.
 
 ## Operations
 
@@ -28,6 +28,12 @@ Each operation has a skill; follow it end to end:
 - **A new decision or question for a meeting that already exists**: a `new_item` proposal, because the meeting note must change too.
 - **Generated files** (`index.md`, `log/`, the `@generated` blocks of `brief.md` and `decision-log.md`) and **source snapshots** in `sources/` are written by the CLI only. To change what a view shows, change the canonical note and regenerate.
 - **After every write:** `brain index`, `brain views`, `brain lint`. Commit when lint shows no errors you introduced, e.g. `ingest: Acme sync 2026-12-03 (4 new, 3 proposals)`. A run that publishes to Notion commits again after `brain sync record`, so the stored page ids are in Git too.
+- **After the last commit:** `git push`. If it fails (offline, no remote), say so in the report's last line and carry on; the work is committed.
+
+## Product files and findings
+
+- **Product-owned files are read-only here:** this block, `.agents/skills/` and `.claude/skills/` (the skills Ultimate Brain ships). Never edit them, even to fix a bug; the next upgrade would erase the fix and the product would never learn of it. `brain lint` reports a changed one as `product-file`.
+- **When the product is wrong** (a skill step fails, the CLI misbehaves, a rule gives a bad result), finish or stop the run, then file a finding: `gh issue create --repo superuser-pal/ultimate-brain --label dogfood --template dogfood.md`. Describe it as it would happen in a made-up brain ("a meeting with two projects…"): never names, client text or note content from this brain. Show the user the issue text before filing. If `gh` is missing, give the user the text to file.
 
 ## Trust rules
 

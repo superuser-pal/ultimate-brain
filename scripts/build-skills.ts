@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Mirror skills/ (the one source, Claude Code plugin layout) to .agents/skills/ (Codex and other
- * Agent Skills readers), after validating every skill (build/TASKS.md CC-05, decision 0014).
+ * Mirror skills/ (the one source) to .agents/skills/, which the npm package ships and brain init and brain upgrade copy into a
+ * brain for both Claude Code and Codex, after validating every skill (build/TASKS.md CC-05, decisions 0014 and 0038).
  *
  *   node scripts/build-skills.ts          validate, then rewrite .agents/skills/
  *   node scripts/build-skills.ts --check  validate and report drift; writes nothing, exit 1 on problems

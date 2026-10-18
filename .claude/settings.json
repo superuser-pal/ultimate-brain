@@ -7,7 +7,24 @@
       "Read(sources/**)"
     ],
     "deny": [
-      "Read(.env*)"
+      "Read(.env*)",
+      "Bash(gh pr merge*)",
+      "Bash(git push * main)",
+      "Bash(git push * main *)",
+      "Bash(git push *:main)",
+      "Bash(git push *:main *)",
+      "Bash(git push *:refs/heads/main*)",
+      "Bash(git push *refs/heads/main*)",
+      "Bash(git push --no-verify*)",
+      "Bash(git push * --no-verify*)",
+      "Bash(git push -f*)",
+      "Bash(git push * -f*)",
+      "Bash(git push --force*)",
+      "Bash(git push * --force*)",
+      "Bash(git push --mirror*)",
+      "Bash(git push * --mirror*)",
+      "Bash(git config *core.hooksPath*)",
+      "Bash(git -c *)"
     ]
   }
 }
