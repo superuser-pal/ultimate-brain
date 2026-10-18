@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { TestContext } from "node:test";
 
 import { runCli, type CliIo } from "../src/cli.ts";
+import { setInstalledProductRootForTests } from "../src/lib/skills.ts";
 
 export const FIXTURE_BRAIN = join(import.meta.dirname, "fixtures", "brain-acme");
 
@@ -31,6 +32,7 @@ export interface CliRun {
 
 /** Run the CLI in-process with captured output and an isolated environment. */
 export async function brain(args: readonly string[], home = tmpdir()): Promise<CliRun> {
+  setInstalledProductRootForTests(join(import.meta.dirname, ".."));
   const stdout: string[] = [];
   const stderr: string[] = [];
   const io: CliIo = {

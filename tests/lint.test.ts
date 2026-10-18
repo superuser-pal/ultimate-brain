@@ -16,6 +16,16 @@ test("the fixture brain lints clean: no errors, no warnings", async (context) =>
   assert.equal(run.json.data.files, 21);
 });
 
+test("product-file finds nested changes and extra shipped-skill files", async (context) => {
+  const fixture = await fixtureCopy(context);
+  await writeFile(join(fixture, ".agents/skills/brain-ingest/references/extraction.md"), "drift\n");
+  await writeFile(join(fixture, ".claude/skills/brain-ingest/extra.md"), "extra\n");
+  const run = await brain(["lint", "--brain", fixture, "--json"]);
+  assert.equal(run.code, 1);
+  assert.ok(run.json.data.issues.some((issue: { rule: string; path: string }) => issue.rule === "product-file" && issue.path.endsWith("references/extraction.md")));
+  assert.ok(run.json.data.issues.some((issue: { rule: string; path: string }) => issue.rule === "product-file" && issue.path.endsWith("extra.md")));
+});
+
 const SUPABASE = "knowledge/decisions/2026-12-03-use-supabase-for-auth.md";
 const FIREBASE = "knowledge/decisions/2026-10-01-use-firebase-for-auth.md";
 const SYNC = "knowledge/meetings/2026-12-03-acme-sync.md";

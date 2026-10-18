@@ -104,3 +104,11 @@ test("upgrade leaves a CLAUDE.md that links to AGENTS.md alone", async (context)
   assert.equal(run.code, 0, run.stdout);
   assert.deepEqual(run.json.data.files, []);
 });
+
+test("upgrade dry-run lints the product files it plans to repair", async (context) => {
+  const { root, target } = await freshBrain(context);
+  await writeFile(join(target, ".agents/skills/brain-query/SKILL.md"), "drift\n");
+  const run = await brain(["upgrade", "--brain", target, "--dry-run", "--now", NOW, "--json"], root);
+  assert.equal(run.code, 0, run.stdout);
+  assert.equal(run.json.data.lint.errors, 0, JSON.stringify(run.json.data.lint));
+});
