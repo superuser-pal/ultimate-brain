@@ -979,13 +979,15 @@ Stores what the skill published. Input: `{ "records": [ { "id": "per-3h8w2n6c", 
 brain upgrade [--dry-run]
 ```
 
-Brings the product-owned files of an existing brain up to the installed version of the package (dogfood finding 22), then commits and pushes them (0038). It never touches notes, `brain.json`, generated files, the log, or anything the user wrote.
+Brings the product-owned files of an existing brain up to the installed version of the package (dogfood finding 22), then commits and pushes them (0038). It never touches notes, `brain.json`, generated files, anything the user wrote, or the log beyond appending its own `upgrade` line (step 5).
 
 **The installed package** (also used by lint rule `product-file`, §5.10) is the one the running CLI belongs to, never one found on `PATH` or in the brain:
 - **Root:** start from the real path (symbolic links resolved) of the running entry module and walk up to the first folder holding a `package.json` whose `name` is `ultimate-brain`. This is the same for a global install, `npx`, the compiled `dist/` entry and a source checkout.
 - **Version:** that `package.json`'s `version`.
 - **Shipped files:** the skills are the folders in `<root>/.agents/skills/` that hold a `SKILL.md` (`README.md` at its top level is not a skill); the rules block comes from `<root>/templates/brain/AGENTS.md`.
-- **Not found** (no such `package.json`, or the skills folder or template missing or unreadable) → `INTERNAL` (exit 10, a broken install), before any write. Lint reports it as one `product-file` error on `AGENTS.md` and checks nothing else for that rule.
+- **Not found** (no such `package.json`, or the skills folder or template missing or unreadable) is a broken install:
+  - `brain upgrade` fails with `INTERNAL` (exit 10) before any write.
+  - `brain lint` completes: it reports exactly one `product-file` error (path `AGENTS.md`, message `installed package not found: <reason>`), checks nothing else for that rule, runs every other rule as usual, and exits 1.
 - **Source checkout:** the root contains `src/cli.ts`.
 
 **Before anything is written:**
