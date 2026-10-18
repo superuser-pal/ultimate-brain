@@ -5,6 +5,7 @@ One line per task, under the release that ships it (decision 0038). `scripts/rel
 ## 0.2.3 — unreleased
 
 - CC-24: delivery lanes, one channel (npm) and release gates: decision 0038, the brain's read-only and findings rules, issue and PR templates, the Claude Code plugin retired; the merge gate without GitHub Pro; three real names removed from the skills and docs.
+- CX-29: refresh product-owned files for both agents, lint their drift, and safely upgrade, commit and push brains.
 - CX-27: release, merge and task scripts; main-push and PR-format gates; package smoke test works after a release.
 
 ## 0.2.2 — 2026-10-18
