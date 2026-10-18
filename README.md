@@ -16,7 +16,7 @@ brain init ~/brain --set-default   # a new brain repository
 brain --help
 ```
 
-The agent skills come with it: `brain init` copies them into the brain for Codex, and Claude Code gets them as the `ultimate-brain` plugin.
+The agent skills come with it: `brain init` copies them into the brain, in `.agents/skills/` for Codex and `.claude/skills/` for Claude Code, so both agents run the same version (decision 0038).
 
 **To ingest Word, PowerPoint, Excel and saved HTML files** (optional), install [MarkItDown](https://github.com/microsoft/markitdown), the converter the ingest uses for them (decision 0032); it is also the first choice for web pages given by URL (decision 0036). In Claude Code, PDFs and images need nothing extra. In Codex, MarkItDown also converts PDFs, and images are read with Codex's image tool.
 
@@ -29,10 +29,12 @@ markitdown --version
 
 ```sh
 npm install -g ultimate-brain@latest
-cd ~/brain && brain upgrade && git commit -am "upgrade: ultimate brain"
+cd ~/brain && brain upgrade
 ```
 
-`brain upgrade` refreshes the brain's product-owned rules and skills. It never touches your notes.
+`brain upgrade` refreshes the brain's product-owned rules and skills, then commits and pushes. It never touches your notes, and it refuses to run on a brain with uncommitted changes.
+
+To try a release candidate: `npm install -g ultimate-brain@next`. To go back: `npm install -g ultimate-brain@latest`.
 
 ## Start here
 

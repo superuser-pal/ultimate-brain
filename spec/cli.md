@@ -119,6 +119,7 @@ Failure:
 | `BRAIN_IS_PRODUCT_REPO` | 3 | the resolved path itself contains `spec/cli.md` and `src/cli.ts` |
 | `BRAIN_CONFIG_INVALID` | 3 | the global config, or `brain.json` where a command needs it (§4), fails its schema |
 | `SCHEMA_VERSION_UNSUPPORTED` | 3 | `brain.json` `schema_version` ≠ 1 |
+| `UNRELEASED_BUILD` | 3 | `upgrade` run from a source checkout of the CLI, not a published package (0038) |
 | `INPUT_UNREADABLE` | 4 | input file missing or not JSON |
 | `INPUT_INVALID` | 4 | input fails its shape or the note/proposal schema; `details` lists `{pointer, message}` (JSON Pointer into the input) |
 | `UNKNOWN_ID` | 4 | an input refers to an ID that does not exist |
@@ -127,6 +128,7 @@ Failure:
 | `TARGET_NOT_EMPTY` | 5 | `init` target is non-empty and `--force` not given |
 | `ALREADY_A_BRAIN` | 5 | `init` target already has `brain.json` |
 | `OUTSIDE_ROOT` | 5 | a write would land outside its allowed root |
+| `BRAIN_DIRTY` | 5 | `upgrade` found uncommitted changes in the brain; commit or discard them first (0038) |
 | `WRITE_CONFLICT` | 5 | a file appeared at a path the command was creating, after it read the brain (another writer). Nothing is kept (§3.6); re-run the command |
 | `INTERNAL` | 10 | unexpected failure |
 
@@ -216,7 +218,7 @@ Creates a brain from `templates/brain/` (CC-02, CX-03).
 1. Refuse if `<path>` is the product repo (`BRAIN_IS_PRODUCT_REPO`) or already has `brain.json` (`ALREADY_A_BRAIN`, even with `--force`).
 2. If `<path>` exists and is non-empty: refuse with `TARGET_NOT_EMPTY` unless `--force`. With `--force`, template files whose path already exists are **left untouched** and listed in `skipped`; nothing is ever overwritten.
 3. Copy the template. npm never packs files named `.gitignore`, so the template stores it as `templates/brain/gitignore` and `init` writes it to the new brain as `.gitignore` (reported in `created` under that name; a `--force` run skips it like any other existing file). Write `brain.json` from the template with `schema_version: 1` and `owner.name` = `--owner` (default: the `user.name` from `git config`, else `"Owner"`).
-   Copy the skills the package ships in `.agents/skills/` to `<path>/.agents/skills/` (0029). They are product-owned and listed in `created`; with `--force`, existing files are skipped like template files.
+   Copy the skills the package ships in `.agents/skills/` to `<path>/.agents/skills/` (Codex) and to `<path>/.claude/skills/` (Claude Code) (0029, 0038). They are product-owned and listed in `created`; with `--force`, existing files are skipped like template files.
 4. Run `index` (an empty index).
 5. Log `- <timestamp> init - "<owner name>" schema=1` (no machine paths in the log).
 6. Unless `--no-git`: `git init`, add all, commit `init: ultimate brain (schema v1)`, so the new brain starts clean. If Git is missing or the commit fails (no identity), keep the files, skip the commit and add warning `GIT_COMMIT_SKIPPED`.
@@ -600,6 +602,7 @@ Issues are sorted by `path`, `line`, `rule`, then `message`. `line` is 1-based: 
 | `decision-sources` | error | decision without `sources` (0005) |
 | `memory-scope` | error | memory reach lists do not match `scope` |
 | `proposal-status` | error | proposal `status` and `decision` do not match schema §11.1 |
+| `product-file` | error | a product-owned file differs from the installed package (0038): a file the package ships in a skill folder present under `.agents/skills/` or `.claude/skills/` is missing, differs or is extra; or the AGENTS.md rules block differs from the template's. The message names the package version and says: run `brain upgrade`, or file a finding. A skill folder that is missing entirely, or AGENTS.md without its markers, is not reported here (`brain upgrade` handles them) |
 | `unknown-key` | warning | frontmatter key that the type's schema does not declare: the core fields, plus the knowledge fields (knowledge types), plus the type's own fields. `why` on a person is unknown |
 | `freshness` | warning | schema §10 |
 | `summary-length` | warning | summary longer than 200 characters |
@@ -630,7 +633,7 @@ Errors: `USAGE` (bad op or key=value), `UNKNOWN_ID`.
 brain link <repo-path> [--project <id>] [--area <id>] [--stack <name>]… [--repo-name <name>]
 ```
 
-Connects a consuming repo to the brain (0006, 0009; CX-08). Allowed root: `<repo-path>`; writes only `.brain`, `AGENTS.md`, `CLAUDE.md` and `.agents/skills/brain-query/` there. Refuses if `<repo-path>` is the brain or the product repo, or if any part of `.agents/skills/brain-query/` is a symbolic link or the wrong file type (`OUTSIDE_ROOT`, before any write).
+Connects a consuming repo to the brain (0006, 0009; CX-08). Allowed root: `<repo-path>`; writes only `.brain`, `AGENTS.md`, `CLAUDE.md`, `.agents/skills/brain-query/` and `.claude/skills/brain-query/` there. Refuses if `<repo-path>` is the brain or the product repo, or if any part of either `brain-query` folder is a symbolic link or the wrong file type (`OUTSIDE_ROOT`, before any write).
 
 1. **`.brain`** (JSON, committed with the repo; holds no machine paths):
    ```json
@@ -664,7 +667,7 @@ The brain is read-only from this repo. Never edit its files from here.
 <!-- ultimate-brain:end -->
 ```
 
-3. **Skill** (0029): `.agents/skills/brain-query/` is written from the skills the package ships. It is product-owned: files whose bytes differ are replaced, and files no longer shipped in that folder are removed. Nothing else under `.agents/` is touched. Every skill file appears in `files` with its `action` (`created`, `updated` or `unchanged`), and a removed stale file appears with `action: "removed"`, e.g. `{ "path": ".agents/skills/brain-query/SKILL.md", "action": "created" }`.
+3. **Skill** (0029, 0038): `.agents/skills/brain-query/` and `.claude/skills/brain-query/` are written from the skills the package ships. They are product-owned: files whose bytes differ are replaced, and files no longer shipped in that folder are removed. Nothing else under `.agents/` or `.claude/` is touched. Every skill file appears in `files` with its `action` (`created`, `updated` or `unchanged`), and a removed stale file appears with `action: "removed"`, e.g. `{ "path": ".agents/skills/brain-query/SKILL.md", "action": "created" }`.
 
 Idempotent: a second run with the same options changes no bytes.
 
@@ -976,18 +979,27 @@ Stores what the skill published. Input: `{ "records": [ { "id": "per-3h8w2n6c", 
 brain upgrade [--dry-run]
 ```
 
-Brings the product-owned files of an existing brain up to the installed version of the package (dogfood finding 22). Run it after updating the CLI or the plugin. It never touches notes, `brain.json`, generated files, the log, or anything the user wrote.
+Brings the product-owned files of an existing brain up to the installed version of the package (dogfood finding 22), then commits and pushes them (0038). It never touches notes, `brain.json`, generated files, the log, or anything the user wrote.
 
+**Before anything is written:**
+- **Published package only.** If the running CLI's package root contains `src/cli.ts` (a source checkout, including `npm link`), refuse with `UNRELEASED_BUILD`. Prereleases (`0.3.0-rc.1`) are published packages and are allowed.
+- **Clean brain.** If the brain is a Git repository and `git status --porcelain` prints anything, refuse with `BRAIN_DIRTY`. `--dry-run` skips this check and reports `dirty: true` instead.
+- The safety checks below.
+
+**Writes:**
 1. **`AGENTS.md` rules block.** Replace everything from the line `<!-- ultimate-brain:rules:start … -->` through `<!-- ultimate-brain:rules:end -->` with the same block from `templates/brain/AGENTS.md`. Text outside the markers is kept byte for byte.
    - `AGENTS.md` missing → written from the template (`created`).
    - Markers missing, out of order or duplicated → the file is left alone (`skipped`) with warning `AGENTS_BLOCK_NOT_FOUND`; the user restores the markers or merges by hand.
 2. **`CLAUDE.md`:** written as `@AGENTS.md` only if missing. One that exists in any form (a file, or a link to `AGENTS.md`) is left alone.
-3. **Skills (0029).** For each skill the package ships in `.agents/skills/<name>/`:
+3. **Skills (0029, 0038).** For each skill the package ships in `.agents/skills/<name>/`, in **both** `.agents/skills/<name>/` (Codex) and `.claude/skills/<name>/` (Claude Code):
    - write every shipped file whose content differs (`created` or `updated`);
    - remove files inside that skill's folder that the package no longer ships (`removed`).
 
-   Folders in `.agents/skills/` that the package does not ship are the user's own and are left alone.
-4. Log `- <timestamp> upgrade - "<package version>" files=<n>` when anything changed. `--dry-run` writes and logs nothing and reports the same `files`.
+   Folders in `.agents/skills/` or `.claude/skills/` that the package does not ship are the user's own and are left alone.
+4. **Retired plugin (0038).** If `.claude/settings.json` exists, remove the key `ultimate-brain@ultimate-brain` from `enabledPlugins` and the key `ultimate-brain` from `extraKnownMarketplaces`; an object left empty is removed. Other keys are kept in order, and the file is written as JSON with 2-space indent and a trailing newline (`updated`). A file left as `{}` is deleted (`removed`). A file that is not valid JSON is left alone (`skipped`) with warning `SETTINGS_UNPARSEABLE`. Nothing to remove → no change.
+5. Log `- <timestamp> upgrade - "<package version>" files=<n>` when anything changed. `--dry-run` writes and logs nothing and reports the same `files`.
+6. **Lint** the brain (§5.10) and report the counts in `lint`. Lint findings never stop the upgrade: it only wrote product-owned files.
+7. **Commit and push**, when anything changed and the brain is a Git repository: stage only the paths in `files` and the log, commit `upgrade: ultimate brain <version>`, then `git push` if the current branch has an upstream. No upstream → warning `PUSH_SKIPPED`. A push that fails → warning `PUSH_FAILED` with Git's message; the commit stays, and the exit code is still 0. A failed commit (no identity) → warning `GIT_COMMIT_SKIPPED`, files kept. Not a Git repository → no commit, no warning.
 
 The skill a linked repo carries (`brain-query`, §5.12) is refreshed by running `brain link` there again.
 
@@ -997,21 +1009,25 @@ brain upgrade --json
 ```json
 { "ok": true, "command": "upgrade", "brain": "/Users/me/brain", "warnings": [],
   "data": {
-    "dry_run": false, "version": "0.1.0",
+    "dry_run": false, "version": "0.2.3",
     "files": [
       { "path": ".agents/skills/brain-ingest/SKILL.md", "action": "updated" },
-      { "path": ".agents/skills/brain-sync/references/formats.md", "action": "created" },
+      { "path": ".claude/settings.json", "action": "updated" },
+      { "path": ".claude/skills/brain-ingest/SKILL.md", "action": "created" },
       { "path": "AGENTS.md", "action": "updated" }
     ],
-    "unchanged": 14
+    "unchanged": 14,
+    "lint": { "errors": 0, "warnings": 2 },
+    "commit": "2c2d653",
+    "pushed": true
   } }
 ```
 
-`files` lists only the files created, updated, removed or skipped, sorted by path; `unchanged` counts the rest. The caller commits: `upgrade: ultimate brain <version>`.
+`files` lists only the files created, updated, removed or skipped, sorted by path; `unchanged` counts the rest. `commit` is the short hash, or `null` when nothing was committed; `pushed` is `false` unless a push succeeded. `--dry-run` adds `dirty` and reports `commit: null`, `pushed: false`.
 
-**Safety:** all checks run before the first write. `AGENTS.md`, `.agents`, `.agents/skills`, a shipped skill's folder, or any file in it that is a symbolic link, or a file where a folder belongs → `OUTSIDE_ROOT`, and nothing is written or removed. `brain link` checks `.agents/skills/brain-query/` the same way (§5.12).
+**Safety:** all checks run before the first write. `AGENTS.md`, `.agents`, `.agents/skills`, `.claude`, `.claude/skills`, `.claude/settings.json`, a shipped skill's folder, or any file in it that is a symbolic link, or a file where a folder belongs → `OUTSIDE_ROOT`, and nothing is written or removed. `brain link` checks both `brain-query` folders the same way (§5.12).
 
-Errors: `OUTSIDE_ROOT`, and the brain resolution errors (§4).
+Errors: `UNRELEASED_BUILD`, `BRAIN_DIRTY`, `OUTSIDE_ROOT`, and the brain resolution errors (§4).
 ---
 
 ## 6. Standard sequences (for skills)

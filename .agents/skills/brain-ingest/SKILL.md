@@ -76,7 +76,7 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
 
 9. **Rebuild and check.** Run `brain index`, `brain views`, then `brain lint`. If lint reports an **error in a file this run wrote**, stop: report it and do not commit. Errors that were already there before the run are not yours to fix here; mention them.
 
-10. **Log and commit.** Run `brain log ingest <mtg-id> created=<n> proposals=<n> tasks=<n>`. Commit in the brain repo: `ingest: <meeting title> <date> (<n> new, <n> proposals)`.
+10. **Log and commit.** Run `brain log ingest <mtg-id> created=<n> proposals=<n> tasks=<n>`. Commit in the brain repo: `ingest: <meeting title> <date> (<n> new, <n> proposals)`. After the run's last commit, `git push`; if the push fails, say so in the report's last line and carry on (decision 0038).
 
 11. **Publish** *(Notion)*, following [references/notion.md](references/notion.md):
     - create the action items as tasks (`brain sync tasks` → MCP → `brain sync record`);

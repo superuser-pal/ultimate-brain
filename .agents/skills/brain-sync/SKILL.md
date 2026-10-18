@@ -54,7 +54,7 @@ Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come 
     - **Meeting relations:** `"mode": "add"` adds pages and keeps the existing ones. `"mode": "if_empty"` writes only to an empty property. Never write a meeting's Name, Date or body (0007).
     - **`pending_relations`:** these point to notes not published yet. Publish those first, record them, then render again.
 11. **Record:** run `brain sync record` with `{ "records": [ … ] }`, one record per page written: `{ "id", "notion": <page id>, "synced_at": <now>, "published": <the item's published> }` (references/formats.md). Record only what you actually wrote. If a write failed, leave it out; the next render produces it again.
-12. **Log** with `brain log publish - pages=<n>` (`sync record` does not log), then **commit:** `publish: <n> pages to Notion`.
+12. **Log** with `brain log publish - pages=<n>` (`sync record` does not log), then **commit:** `publish: <n> pages to Notion`. After the run's last commit, `git push`; if the push fails, say so in the report's last line and carry on (decision 0038).
 13. **Report** in three lines (decision 0037):
     ```
     Done: 3 imported · 1 corrected · 2 applied · 6 pages published
