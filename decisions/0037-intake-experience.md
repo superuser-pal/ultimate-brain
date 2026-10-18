@@ -1,6 +1,6 @@
 # 0037 — Intake experience: catch-up, drop folder, Inbox, Concepts and grouped reviews
 
-**Status:** Accepted
+**Status:** Accepted; the `push` default amended by 0038 (`auto`)
 **Date:** 2026-10-15
 
 ## Context

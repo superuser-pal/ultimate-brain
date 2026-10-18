@@ -6,8 +6,8 @@ Agent skills that operate a user's brain. The skills do the judgment and the Not
 
 | What | Where | Read by |
 |---|---|---|
-| **Source (edit here)** | `skills/<name>/SKILL.md` (+ optional `references/`, `scripts/`) | Claude Code, as the `ultimate-brain` plugin (`.claude-plugin/plugin.json`) |
-| Generated mirror | `.agents/skills/<name>/` | Codex and other Agent Skills readers |
+| **Source (edit here)** | `skills/<name>/SKILL.md` (+ optional `references/`, `scripts/`) | nothing directly |
+| Generated mirror, shipped in the npm package | `.agents/skills/<name>/` | copied by `brain init` and `brain upgrade` into a brain's `.agents/skills/` (Codex) and `.claude/skills/` (Claude Code) |
 
 Never edit `.agents/skills/`: it is rebuilt from `skills/`.
 
@@ -22,8 +22,7 @@ Run the build after changing any skill and commit both folders together. `npm te
 
 ## Install
 
-- **Claude Code:** `/plugin marketplace add superuser-pal/ultimate-brain`, then `/plugin install ultimate-brain@ultimate-brain`. Skills appear as `ultimate-brain:brain-ingest` and so on.
-- **Codex:** reads `.agents/skills/` from the repo it runs in. How a user's brain repo receives these files is part of packaging (CX-12).
+npm is the only channel (decision 0038): `brain init` and `brain upgrade` write the skills into the brain for both agents, and `brain link` writes `brain-query` into a linked repo. The Claude Code plugin is retired. A brain's copies are read-only: fix a skill here and release it.
 
 ## Rules for a skill
 

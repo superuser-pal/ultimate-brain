@@ -4,11 +4,11 @@
 **Status values:** `todo` · `in progress` · `review` · `done` · `blocked`.
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
-> **2026-10-15 — Status: 0.2.0 is published (npm `ultimate-brain` 0.2.0, tag v0.2.0) and the user's brain runs it. The Notion track (CC-17 to CC-19) is done and live. Next: finish CC-15, then release 0.2.1.**
-> - **CC-15 (review):** bake-off done (decision 0032). Acceptance part 1 done in the real brain (two documents ingested and published). Acceptance run done on 2026-10-15 (part 2: Notion apply and three email captures). **Next:** release 0.2.1 with #72's fixes and the findings listed under CC-15.
-> - **Open PRs:** #71 (MarkItDown in setup docs) and #72 (bake-off result, conversion-noise rules, web pages by URL as CC-20 and decision 0036, this banner). Codex reviews, the user merges.
-> - **Live in Notion:** the rebuilt Spaces, Tasks and Archive pages, the "How it works" guide page, and Brain Assistant (a Custom Agent with seven skills, notion/brain-assistant.md).
-> - **Queued for 0.3.0:** CX-22 (decision 0034, Area on Decisions and Questions), finding 3, the onboarding suite (docs/v2-ideas.md), Notion file uploads.
+> **2026-10-18 — Status: 0.2.1 is published and the user's brain runs it (first real drop-folder run done). 0.2.2 is in PR #78 (CC-23) with CX-26. Next: 0.2.3, the delivery process (decision 0038), before any 0.3.0 work.**
+> - **Why 0.2.3 first:** Claude Code in the brain still runs the plugin cached on 2026-10-12, while Codex runs 0.2.1. 0.2.3 makes npm the only channel and adds the merge, leak, release and upgrade gates.
+> - **Every task now has `**Release:**`**, its own worktree (`../ub-<ID>`) and a CHANGELOG line (AGENTS.md, docs/releasing.md).
+> - **Untriaged `dogfood` issues:** 0.
+> - **Queued for 0.3.0:** CC-22 and CX-24 (decision 0037), CX-22 (decision 0034), the onboarding suite, Notion file uploads.
 > - **Earlier:** v1 waves 1–4 below; dogfood findings 1–24 in the Wave 4 table.
 
 ## Why this split
@@ -305,17 +305,46 @@ The user's first real "process my drop folder" (2026-10-18, 0.2.1) worked end to
 - **The report rule was too tight for big inputs.** The user wants the report to grow with what came in, not to miss key details. The three lines stay at the top.
 - **Lint `freshness` false positive** on "latest" again ("the retailer of the latest maintenance").
 
-### CC-23 · Projects created in Notion, reports that scale (decision 0037 amended) · `review`
+### CC-23 · Projects created in Notion, reports that scale (decision 0037 amended) · `done` (#78)
 **Output:** brain-ingest sources.md pre-check and the SKILL.md stop condition (new projects go through **New project** in Notion, then sync); the report rule in brain-ingest and brain-apply (three lines, then What came in · Check · Action items, uncapped); spec/cli.md §5.14.4 (`PROJECT_NOT_IN_NOTION`); decision 0037 amended.
 
 ### CX-26 · Render refuses project creates; "latest" leaves the freshness words · `todo`
 **Output:** `sync render` returns a project without `notion` as item error `PROJECT_NOT_IN_NOTION` instead of a `create` (spec/cli.md §5.14.4); lint drops "latest" from the freshness words (the CX-25 sequence patterns go with it). **Acceptance:** a test for each.
+
+## 0.2.3 — Delivery lanes and release gates (decision 0038)
+
+Agreed with the user on 2026-10-18 (grill session). npm becomes the only channel, so Claude Code and Codex run the same skills in a brain; the brain's product files become read-only and findings come back as `dogfood` issues; merges, releases and upgrades get gates that refuse instead of relying on care. **Ships when** CC-24, CX-27, CX-28 and CX-29 are done; then U-12 publishes it with `scripts/release.mjs`.
+
+### CC-24 · Decision 0038, rules, templates and docs · `review`
+**Release:** 0.2.3
+**Output:** decision 0038 (0029 and 0037 marked amended); spec/cli.md §3.5 (`UNRELEASED_BUILD`, `BRAIN_DIRTY`), §5.1 and §5.12 (`.claude/skills/`), §5.15 (`brain upgrade` checks, retired plugin, lint, commit and push), §5.10 rule `product-file`, schema §15; the brain AGENTS.md block (product files read-only, findings, push); push after the last commit in brain-ingest, brain-apply and brain-sync; `.github/ISSUE_TEMPLATE/dogfood.md`, `.github/pull_request_template.md`; `CHANGELOG.md`; docs/releasing.md; AGENTS.md multi-agent rules; README and skills/README without the plugin; `.claude-plugin/` removed.
+**Acceptance:** Codex's review finds §5.15 and the `product-file` rule complete enough to build CX-29 without inventing behaviour; no remaining reference to installing the plugin outside decisions and reviews.
+
+### CX-27 · Release and task scripts, PR-format check · `todo`
+**Release:** 0.2.3
+**Output:**
+- `scripts/release.mjs <version> [--dry-run]`: the gate in docs/releasing.md. It refuses unless it runs in the main worktree (not a linked worktree) on `main`, clean and level with `origin/main`; CI passed on `HEAD` (`gh api …/commits/<sha>/check-runs`, all `success`); `CHANGELOG.md` has `## <version>`; `npm test`, `npm run typecheck`, `npm run test:package` pass; every TASKS.md task with `**Release:** <version>` is `done`. Then: `npm version <version> --no-git-tag-version`, dates the CHANGELOG heading (`## 0.2.3 — YYYY-MM-DD`), commits `<version>`, tags `v<version>`, `npm publish` (`--tag next` for a prerelease), pushes commit and tag. `--dry-run` runs every check and prints what it would do. Each refusal names the failed check; nothing is changed before all checks pass.
+- `scripts/task.mjs start <ID>`: refuses if the task is not in TASKS.md or not `todo`; creates `../ub-<ID>` on `claude/<ID>-<slug>` or `codex/<ID>-<slug>` from `origin/main` (the owner from the id prefix, the slug from the task title), runs `npm ci`, sets `core.hooksPath` to `.githooks`, sets the task's status to `in progress` in that worktree, and warns when `~/.config/ultimate-brain/denylist` is missing. `task.mjs done <ID>`: refuses unless the branch is merged into `origin/main`, then removes the worktree and the local branch.
+- A CI job on pull requests that fails unless the branch matches `^(claude|codex)/(CC|CX)-[0-9]+-`, the title starts with the same id followed by `:`, and the PR adds a `CHANGELOG.md` line containing that id.
+- Codex adds `**Release:**` to its own open rows (CX-22, CX-24: 0.3.0).
+**Acceptance:** tests run `release.mjs --dry-run` and `task.mjs` against a temporary repo, one test per refusal; the PR-format job passes on this task's own PR and fails on a test branch named without an id.
+
+### CX-28 · Leak check in CI and a pre-commit hook · `todo`
+**Release:** 0.2.3
+**Output:** `scripts/leak-check.mjs [--staged]` scans tracked files (or the staged diff) for a UUID, dashed or 32 hex characters, outside `tests/`, and for an email address whose domain is not `example` or does not end in `.example`; `scripts/leak-allow.txt` lists exceptions as `path:pattern`. With `--staged` it also reads `~/.config/ultimate-brain/denylist` (one term per line, `#` comments, matched case-insensitively as whole words) when it exists. A CI step runs it on every push; `.githooks/pre-commit` runs it with `--staged`. A finding prints file, line and the rule, never the denylist term's neighbours beyond the line.
+**Acceptance:** tests with a synthetic UUID, a non-example email and a denylist term, each caught; the current tree passes; `sources/` and `node_modules/` are not scanned.
+
+### CX-29 · One channel in the CLI: upgrade, init, link, lint · `todo` (needs CC-24)
+**Release:** 0.2.3
+**Output:** spec/cli.md §5.15 in full (`UNRELEASED_BUILD`, `BRAIN_DIRTY`, both skill folders, the retired plugin in `.claude/settings.json`, lint counts, commit and push with `PUSH_SKIPPED`, `PUSH_FAILED`, `GIT_COMMIT_SKIPPED`); §5.1 and §5.12 write `.claude/skills/` too; lint rule `product-file` (§5.10).
+**Acceptance:** a test per check and per warning in §5.15, including a push to a local bare remote and a failing push; a settings file with other keys kept in order; `product-file` reports an edited skill file and an edited rules block, and is silent on a fresh `brain init`; the existing tests pass.
 
 ## 0.3.0 — queued
 
 **Intake experience (decision 0037):** one Notion change for the user's space. Claude Code writes the contracts first (CC-22); Codex's CLI work (CX-24) follows them.
 
 ### CC-22 · Intake contracts and skills (decision 0037) · `todo`
+**Release:** 0.3.0
 **Output:** spec/schema.md and note.schema.json (concepts published; Inbox properties); notion-space-design §3.11 as Inbox, a Concepts database, Knowledge tabs, the Review Note field; spec/cli.md (grouped `add_link`, `brain.json` `publish` and `push`, Inbox and Concepts in `sync render`); the "catch up" skill with its read-only pass and one batch of questions; owner tasks from non-meeting sources in extraction.md and sources.md; identities in the onboarding plan; the guide.
 **Acceptance:** Codex's review finds the contracts complete enough to build CX-24 without inventing behaviour; a blind catch-up run on a synthetic brain asks once, then finishes.
 
@@ -343,16 +372,19 @@ The user's first real "process my drop folder" (2026-10-18, 0.2.1) worked end to
 | U-08 | Publish 0.2.0 (`npm version minor`, `npm publish`, push tags; docs/releasing.md) | Now: agreed 2026-10-15 to release before CC-15, so the acceptance run uses the released version |
 | U-09 | Publish 0.2.1 (`npm version patch`, `npm publish`, push tags; docs/releasing.md), then `brain upgrade` in your brain | When CC-21, CX-23 and CX-25 are merged |
 | U-10 | Publish 0.2.2 the same way, then `brain upgrade` in your brain | When CC-23 and CX-26 are merged |
+| U-11 | Stopgap and setup for 0.2.3: in the brain run `/plugin update ultimate-brain` and push it; upgrade the GitHub account to Pro and turn on branch protection for `main` (PR required, the CI check required, include administrators); create the `dogfood` label; write `~/.config/ultimate-brain/denylist` (client, project and personal names, one per line) | Now |
+| U-12 | Publish 0.2.3 with `node scripts/release.mjs 0.2.3` from the main checkout, then `brain upgrade` in your brain | When CC-24, CX-27, CX-28 and CX-29 are done |
 
 ## How to start Codex on a task
 
 Paste into Codex:
 
 ```text
-Read AGENTS.md, then build/TASKS.md. Work on task CX-01 only.
-Create branch codex/CX-01-scaffold from main, set the task status to "in progress",
-implement it to its acceptance criteria, run the tests, then set the status to "review"
-and summarize what you did and any spec questions.
+Read AGENTS.md, then build/TASKS.md. Work on task CX-27 only.
+Run `node scripts/task.mjs start CX-27` from the main checkout and work only in ../ub-CX-27
+(until CX-27 exists: git worktree add -b codex/CX-27-<slug> ../ub-CX-27 origin/main, then npm ci).
+Implement it to its acceptance criteria, add its CHANGELOG line, run the tests, then set the
+status to "review", open the PR with the template, and summarize any spec questions.
 ```
 
 For 0.2.0, Codex can start CX-20 now; CX-18 and CX-19 wait for CC-13.

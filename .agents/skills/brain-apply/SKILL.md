@@ -62,7 +62,7 @@ Run every CLI command as `brain <command> --brain <brain> --json`. Exit 1 means 
    - **`skipped` with `ALREADY_TERMINAL`:** it was already done.
    - **`failed`:** report the `reason` and `message`. `INVALID_RESULT` means applying it would break a rule, such as a value of the wrong shape. `EDIT_NOT_ALLOWED` means an edit on a kind that can't be edited. `UNKNOWN_ID` means the proposal or its note is gone.
 2. **Rebuild:** run `brain index`, `brain views`, then `brain lint`. If lint reports an error in a file this run changed, stop and report; don't commit.
-3. **Commit:** `apply: <n> applied, <n> closed`, listing the proposal titles in the body.
+3. **Commit:** `apply: <n> applied, <n> closed`, listing the proposal titles in the body. After the run's last commit, `git push`; if the push fails, say so in the report's last line and carry on (decision 0038).
 4. **Publish** *(Notion mode, attended runs only)*. A chat run does not publish: its changes go out with the next Notion-mode run or `brain sync` (spec/cli.md §6, "Apply in chat"). In Notion mode:
    1. Run `brain sync render --changed`, write the pages through the MCP, then `brain sync record`. The steps are the same as in the brain-ingest skill's references/notion.md "Publish": Review rows move to State Applied or Closed, and the changed notes are updated.
    2. Log it with `brain log publish - pages=<n>`; `sync record` itself does not log (§3.9, §5.14.6).
