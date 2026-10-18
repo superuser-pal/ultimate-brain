@@ -28,7 +28,7 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
 3. **Pre-check** (both modes). Before writing anything, ask the user **one** question covering everything that blocks a correct ingest:
    - the Date is empty;
    - the Attendees are empty or not linked;
-   - one name is spelled several ways in the minutes ("Pete Doucet", "Piete Doucet");
+   - one name is spelled several ways in the minutes ("Maria Lopez", "Maria Lopes");
    - the user's notes and the minutes disagree on a fact.
 
    If nothing blocks, don't ask. An empty Project is not a blocker (see the stop conditions).

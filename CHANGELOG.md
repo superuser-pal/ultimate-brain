@@ -4,7 +4,7 @@ One line per task, under the release that ships it (decision 0038). `scripts/rel
 
 ## 0.2.3 — unreleased
 
-- CC-24: delivery lanes, one channel (npm) and release gates: decision 0038, the brain's read-only and findings rules, issue and PR templates, the Claude Code plugin retired.
+- CC-24: delivery lanes, one channel (npm) and release gates: decision 0038, the brain's read-only and findings rules, issue and PR templates, the Claude Code plugin retired; the merge gate without GitHub Pro; three real names removed from the skills and docs.
 
 ## 0.2.2 — unreleased
 

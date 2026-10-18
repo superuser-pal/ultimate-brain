@@ -36,7 +36,12 @@ Every change belongs to exactly one lane:
 
 ### Gates
 - **Main is always releasable.** A merge means done and tested; no half feature waits for a follow-up PR. A fix the user needs mid-use is an `urgent` task, shipped as a patch release the same day.
-- **Merge:** GitHub branch protection on `main` (GitHub Pro): PR required, CI required, no direct push. A PR template asks for the task id, release, cited decisions, acceptance boxes and the leak check. A CI check fails unless the branch is `(claude|codex)/<ID>-…`, the title starts with the task id, and `CHANGELOG.md` has a line for it. The other agent ticks every acceptance box with evidence (a test name, a command and its output); the user merges when CI is green and every box is ticked.
+- **Merge, without paid branch protection** (GitHub Pro is deferred; on a private free repo GitHub enforces nothing):
+  - **Merge only with `scripts/merge.mjs <PR>`.** It refuses unless CI passed on the PR's head commit, every box in the PR body is ticked, the branch and title follow the format below, and the PR is mergeable; then it runs `gh pr merge --merge --match-head-commit <sha>`, so a commit pushed after the check can't slip in.
+  - **Agents can't skip it.** The product repo's `.claude/settings.json` denies `gh pr merge`, `git push --no-verify` and pushes to `main` for Claude Code. A `pre-push` hook refuses any push to `main` except from `release.mjs`. AGENTS.md states both rules for Codex.
+  - **A bypass is caught.** A CI job on every push to `main` checks that each new commit came from a merged PR or is a release commit (`x.y.z`, tagged); otherwise it fails and opens an issue labelled `main-guard`.
+  - GitHub Pro later adds prevention on the server; the script and the guard stay.
+- **PR format:** A PR template asks for the task id, release, cited decisions, acceptance boxes and the leak check. A CI check fails unless the branch is `(claude|codex)/<ID>-…`, the title starts with the task id, and `CHANGELOG.md` has a line for it. The other agent ticks every acceptance box with evidence (a test name, a command and its output); the user merges with `merge.mjs`.
 - **Leak check:** CI fails on a Notion id (a UUID, dashed or not) outside `tests/`, and on an email address whose domain is not `example` or ends in `.example` (the fixtures' convention), with a short committed allowlist for exceptions. Note ids are not checked: the spec and skills are full of synthetic ones, and an id says nothing without its note. A local pre-commit hook also checks a private denylist (client, project and personal names) kept at `~/.config/ultimate-brain/denylist`, outside every repo.
 - **Release:** a task carries `**Release:** x.y.z`. `scripts/release.mjs <version>` refuses unless: it runs in the main checkout on `main`, clean and level with origin; CI is green on that commit; `CHANGELOG.md` has the version's entry; `npm test`, `npm run typecheck` and `npm run test:package` pass; and every task with that release is `done`. Only then it bumps, publishes, tags and pushes.
 - **Worktrees:** the main checkout stays on a clean `main` and is used only to release. Every task, for both agents, works in `../ub-<ID>`; `scripts/task.mjs start <ID>` creates it (branch, `npm ci`) and `task.mjs done <ID>` removes it after its PR merges.
@@ -51,7 +56,7 @@ Every change belongs to exactly one lane:
 - **Until 0.2.3, the user runs `/plugin update ultimate-brain`** in the brain as a stopgap.
 - **Rollback of a bad upgrade:** `npm install -g ultimate-brain@<previous>`, then `git revert` the upgrade commit.
 - **Release ids are machine-read**, so a task without `**Release:**` is not in any release.
-- **The product repo needs GitHub Pro** for branch protection while it stays private.
+- **The merge gate is local, plus detection on the server.** Without GitHub Pro a push to `main` can't be prevented on the server. The hook, the deny rules and `merge.mjs` make a bypass take deliberate effort, and `main-guard` reports one within minutes.
 - **Findings need access to the product repo.** While it is private only its author can file them; this is revisited before the product has other users.
 
 ## Evidence
