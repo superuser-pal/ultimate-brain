@@ -77,7 +77,11 @@ Run every CLI command as `brain <command> --brain <brain> --json`. Exit 1 means 
    - **Needs you:** what failed and why in a few words, a stale proposal with the note's current value, what is still pending. `Needs you: nothing` when there is none.
    - **Next:** one action, or one question.
 
-   What changed, in words ("Acme budget is now 95000 EUR"), only when the user asks.
+   **Below the three lines, the report grows with what was applied** (decision 0037, amended 2026-10-18), uncapped, one line each:
+   - **What changed:** each applied change in words ("Acme budget is now 95000 EUR", "Ivo joins Acme rollout").
+   - **Check:** each proposal closed as stale, with the note's current value; each failure with its reason in a few words; each Edit the user should look at again.
+
+   A run with nothing applied stops at three lines. Never ids, file paths, commands or commit names.
 
 ## Don'ts
 
