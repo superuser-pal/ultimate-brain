@@ -30,7 +30,8 @@
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc --project tsconfig.build.json",
     "prepack": "npm run build",
     "test:package": "node scripts/test-package.mjs",
-    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test:scripts": "node --test tests/release-scripts.test.mjs",
+    "test": "node --experimental-strip-types --test tests/*.test.ts tests/*.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
