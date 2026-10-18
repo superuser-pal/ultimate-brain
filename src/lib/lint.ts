@@ -57,8 +57,7 @@ const FOLDERS: Readonly<Record<string, RegExp>> = {
 
 const KNOWLEDGE = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "memory"]);
 const UNDATED = new Set(["area", "goal", "project", "person", "org", "question", "concept"]);
-const FRESHNESS_WORDS = /\b(currently|now|at the moment|this week|latest|recently|soon)\b/i;
-const LATEST_SEQUENCE = /\blatest (?:version|revision|edition|release|iteration|draft|template)\b/i;
+const FRESHNESS_WORDS = /\b(currently|now|at the moment|this week|recently|soon)\b/i;
 const HAS_DATE = /\b\d{4}-\d{2}(-\d{2})?\b/;
 const MEMORY_REACH: Readonly<Record<string, string | null>> = { general: null, area: "areas", project: "projects", stack: "stacks" };
 
@@ -135,7 +134,7 @@ export function lintBrain(input: LintInput): Issue[] {
         if (resolved.startsWith("../") || !exists(resolved)) err("broken-link", line, `link target ${target} does not exist`);
       }
       const prose = raw.replace(/\]\([^)]*\)/g, "]");
-      if (UNDATED.has(note.type) && FRESHNESS_WORDS.test(prose) && !LATEST_SEQUENCE.test(prose) && !HAS_DATE.test(prose)) {
+      if (UNDATED.has(note.type) && FRESHNESS_WORDS.test(prose) && !HAS_DATE.test(prose)) {
         warn("freshness", line, `"${prose.match(FRESHNESS_WORDS)![0]}" in an undated note without a date; write (as of YYYY-MM-DD) (0011)`);
       }
     }
