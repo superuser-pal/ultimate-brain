@@ -60,6 +60,7 @@ Do these in order, after the ingest commit.
       - **the page has other toggle headings but not this one:** report `SECTION_NOT_FOUND` for that page and change nothing on it (a rename is likely, 0026).
 
       **Writing a section through the MCP:** the Markdown update can't target a block inside a page. If the page holds only the generated "Brief" and "Decision log" toggles, replace the whole page in toggle Markdown (`## Brief {toggle="true"}`, its content indented one tab below it, then the same for "Decision log"). If the page has anything else (the template's views, "My notes"), use the block API instead: list the toggle's children, delete them, and append the new ones. Never replace the whole page then: it would delete the user's content.
+   **`PROJECT_NOT_IN_NOTION`** in `errors`: a project note with no Notion page (written before 0.2.2, or by hand). Never create the page through the API: it would miss the template. Report it, and ask the user to create the project with **New project** in Notion under the same name and put the note's id in its **Brain ID**, so the next sync links the two.
    3. **Pending relations:** items that list `pending_relations` reference notes not yet published. Publish and record those first, then run `sync render --changed` again.
    4. Run `brain sync record` with one record per page written: `{ "id", "notion": <page id>, "synced_at": <now>, "published": <the item's published> }`.
 3. **Commit:** `publish: <meeting title> <date>`. Then run `brain log publish <mtg-id> pages=<n>`, and commit it with the publish.
