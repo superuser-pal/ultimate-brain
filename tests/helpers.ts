@@ -13,6 +13,11 @@ export async function fixtureCopy(context: TestContext): Promise<string> {
   context.after(() => rm(parent, { recursive: true, force: true }));
   const brain = join(parent, "brain-acme");
   await cp(FIXTURE_BRAIN, brain, { recursive: true });
+  // Fixtures stay product-neutral; whole-brain lint tests receive the shipped files at runtime.
+  await rm(join(brain, ".agents", "skills"), { recursive: true, force: true });
+  await cp(join(import.meta.dirname, "..", ".agents", "skills"), join(brain, ".agents", "skills"), { recursive: true });
+  await cp(join(import.meta.dirname, "..", ".agents", "skills"), join(brain, ".claude", "skills"), { recursive: true });
+  await cp(join(import.meta.dirname, "..", "templates", "brain", "AGENTS.md"), join(brain, "AGENTS.md"));
   return brain;
 }
 
