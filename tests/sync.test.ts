@@ -69,6 +69,18 @@ test("sync accepts fractional-second timestamps and stores seconds precision", a
   assert.equal(run.json.data.as_of, NOW);
 });
 
+test("sync render rejects a project that was not created in Notion", async (context) => {
+  const dir = await fixtureCopy(context);
+  const projectPath = join(dir, "projects/acme-website/project.md");
+  const project = await readFile(projectPath, "utf8");
+  await writeFile(projectPath, project.replace("notion: 2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e\n", ""));
+
+  const run = await brain(["sync", "render", "--brain", dir, "--ids", "prj-9x4t1b7e", "--json"]);
+  assert.equal(run.code, 1, run.stdout);
+  assert.deepEqual(run.json.data.items, []);
+  assert.deepEqual(run.json.data.errors, [{ id: "prj-9x4t1b7e", reason: "PROJECT_NOT_IN_NOTION" }]);
+});
+
 test("sync apply creates a Notion-created note with its lifecycle and applies corrections", async (context) => {
   const dir = await fixtureCopy(context);
   const mariaPath = join(dir, "knowledge/people/maria-lopez.md");

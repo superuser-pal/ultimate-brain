@@ -362,6 +362,7 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     const database = DATABASE_FOR_TYPE[note.type]; if (database === undefined) continue;
     const databaseId = databaseIdFor(workspace, database); if (databaseId === "") { warnings.push({ code: "DATABASE_NOT_CONFIGURED", message: `${database} database is not configured`, id: note.id }); continue; }
     if (note.type === "meeting" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "MEETING_NOT_PUBLISHED" }); continue; }
+    if (note.type === "project" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "PROJECT_NOT_IN_NOTION" }); continue; }
     const rendered = renderedBrainValues(note, workspace); const published = isRecord(note.attributes.notion_published) ? note.attributes.notion_published : {};
     const properties: Record<string, unknown> = {}; const pending: Array<Record<string, unknown>> = []; const heldProperties = held?.get(note.id) ?? new Set<string>();
     for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name)) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (note.attributes.notion === undefined || !Object.hasOwn(published, name) || !sameValue(value, published[name]))) properties[name] = encoded; }
