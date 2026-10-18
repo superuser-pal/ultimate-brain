@@ -1,0 +1,32 @@
+# Exact repo-relative path and case-insensitive regular expression for an allowed match.
+LICENSE:Rodrigo Cano
+scripts/leak-allow.txt:Rodrigo Cano
+.agents/skills/brain-howto/references/guide.md:@[A-Z0-9.-]+
+.agents/skills/brain-ingest/references/cli-inputs.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+.agents/skills/brain-sync/references/formats.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+.github/workflows/ci.yml:@[A-Z0-9.-]+
+README.md:@[A-Z0-9.-]+
+build/TASKS.md:@[A-Z0-9.-]+
+decisions/0038-delivery-lanes-and-release-gates.md:@[A-Z0-9.-]+
+docs/easlo-second-brain-factual-architecture-appendix.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+docs/releasing.md:@[A-Z0-9.-]+
+docs/ultimate-brain-for-notion-factual-architecture-appendix.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+eval/ingest-text/cases/01-document/acme-website-brief.pdf:@[A-Z0-9.-]+
+eval/ingest-text/cases/01-document/acme-website-brief.pdf:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+eval/ingest-text/cases/03-capture/capture.json:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+eval/ingest-text/cases/05-drop-folder/drop/acme-content-plan copy.docx:@[A-Z0-9.-]+
+eval/ingest-text/cases/05-drop-folder/drop/acme-content-plan.docx:@[A-Z0-9.-]+
+eval/ingest-text/expected.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+notion/templates.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+scripts/release.mjs:@[A-Z0-9.-]+
+skills/brain-howto/references/guide.md:@[A-Z0-9.-]+
+skills/brain-ingest/references/cli-inputs.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+skills/brain-sync/references/formats.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+spec/cli.md:@[A-Z0-9.-]+
+spec/cli.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+spec/examples/invalid/source.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+spec/examples/valid/area.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+spec/examples/valid/meeting.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+spec/examples/valid/project.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+spec/examples/valid/source.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
+templates/brain/AGENTS.md:@[A-Z0-9.-]+
