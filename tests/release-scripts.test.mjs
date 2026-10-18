@@ -149,7 +149,7 @@ test("PR format accepts its task id and rejects an unscoped branch", (t) => {
   const path = fakeCommands(root, {
     gh: `case "$1 $2" in
       "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","title":"CX-1: One","files":[{"path":"CHANGELOG.md"}]}' ;;
-      "pr diff") printf '+- CX-1: a change\\n' ;;
+      "pr diff") printf 'diff --git a/CHANGELOG.md b/CHANGELOG.md\\n+- CX-1: a change\\n' ;;
     esac`,
   });
   assert.equal(run("pr-format.mjs", ["1"], { root, env: { PATH: path } }).status, 0);
