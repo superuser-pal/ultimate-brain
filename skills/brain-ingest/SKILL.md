@@ -95,14 +95,19 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
     - **Needs you:** everything waiting on the user, separated by `·`: proposals to decide and where (the Review queue, or "approve in chat"), what was skipped or failed and why in a few words, lint errors that were there before the run, an instruction found in a source and ignored, action items with no task. `Needs you: nothing` when there is none.
     - **Next:** one action, or one question when the user must decide something. Without Notion, the next action is a sync ("sync with Notion" publishes the new notes and proposals).
 
-    Titles, aliases, what changed and other detail only when the user asks. In Markdown-only mode, list the action items under the three lines, since there is no task database.
+    **Below the three lines, the report grows with what came in** (decision 0037, amended 2026-10-18). A run that only moved counts stops at three lines. Otherwise add, per input, one line each, and leave nothing out because the list is long:
+    - **What came in:** every new project, decision (with its assessment), open question and risk, every fact that changed (old → new), and new people with their role. A one-line summary of what a document or thread is about comes first.
+    - **Check:** every assumption the user should verify: a date taken from today or from a month only, a fact marked ambiguous, a name left unlinked, a part of a document not analysed.
+    - **Action items** that didn't become tasks.
+
+    Never include mechanics: ids, file paths, commands, commit names, or counts already on the Done line. In Markdown-only mode, the action items always appear, since there is no task database.
 
 ## Stop conditions
 
 Stop and ask the user instead of guessing when:
 - **an attendee matches two people;**
 - **an attendee has the same name as a known person but a different organization or role** ("Carlos Ruiz (Northwind, CTO)" when the brain's Carlos Ruiz is at Acme). It may be a new person or a job change; ask which;
-- **the project is ambiguous:** the minutes could belong to two known projects and the meeting has no Project set. When the meeting simply has no project, link it to its area only and go on; if the Area is empty too, ask which area. Never invent a project; if one seems missing, offer to create it in Notion and sync it;
+- **the project is ambiguous:** the minutes could belong to two known projects and the meeting has no Project set. When the meeting simply has no project, link it to its area only and go on; if the Area is empty too, ask which area. Never invent a project, and never write a project note or create a project page yourself: if one seems missing, offer to create it in Notion with **New project** (which applies the template) and sync it, as in references/sources.md "Pre-check";
 - **the minutes seem to belong to a different client than the Project property says;**
 - **you can't tell decisions from discussion** in the minutes. Other headings than notion/minutes-format.md are fine (references/extraction.md).
 
