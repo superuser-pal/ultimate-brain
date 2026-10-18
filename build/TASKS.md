@@ -313,7 +313,7 @@ The user's first real "process my drop folder" (2026-10-18, 0.2.1) worked end to
 
 ## 0.2.3 — Delivery lanes and release gates (decision 0038)
 
-Agreed with the user on 2026-10-18 (grill session). npm becomes the only channel, so Claude Code and Codex run the same skills in a brain; the brain's product files become read-only and findings come back as `dogfood` issues; merges, releases and upgrades get gates that refuse instead of relying on care. **Ships when** CC-24, CX-27, CX-28 and CX-29 are done; then U-12 publishes it with `scripts/release.mjs`.
+Agreed with the user on 2026-10-18 (grill session). npm becomes the only channel, so Claude Code and Codex run the same skills in a brain; the brain's product files become read-only and findings come back as `dogfood` issues; merges, releases and upgrades get gates that refuse instead of relying on care. **Ships when** CC-24, CC-25, CX-27 and CX-29 are done (CX-28 moved to 0.2.4); then U-12 publishes it with `scripts/release.mjs`.
 
 ### CC-24 · Decision 0038, rules, templates and docs · `done` (#80)
 **Release:** 0.2.3
@@ -333,15 +333,29 @@ Agreed with the user on 2026-10-18 (grill session). npm becomes the only channel
 - Codex adds `**Release:**` to its own open rows (CX-22, CX-24: 0.3.0).
 **Acceptance:** tests run `release.mjs --dry-run`, `merge.mjs --dry-run` (with `gh` stubbed) and `task.mjs` against a temporary repo, one test per refusal; the pre-push hook refuses `main` and allows a task branch; the PR-format job passes on this task's own PR and fails on a test branch named without an id.
 
-### CX-28 · Leak check in CI and a pre-commit hook · `todo`
-**Release:** 0.2.3
-**Output:** `scripts/leak-check.mjs [--staged]` scans tracked files (or the staged diff) for a UUID, dashed or 32 hex characters, outside `tests/`, and for an email address whose domain is not `example` or does not end in `.example`; `scripts/leak-allow.txt` lists exceptions as `path:pattern`. With `--staged` it also reads `~/.config/ultimate-brain/denylist` (one term per line, `#` comments, matched case-insensitively as whole words) when it exists. A CI step runs it on every push; `.githooks/pre-commit` runs it with `--staged`. `LICENSE` (the copyright holder) is allowed for the denylist. A finding prints file, line and the rule, never the denylist term's neighbours beyond the line.
-**Acceptance:** tests with a synthetic UUID, a non-example email and a denylist term, each caught; the current tree passes; `sources/` and `node_modules/` are not scanned.
-
 ### CX-29 · One channel in the CLI: upgrade, init, link, lint · `done` (#83)
 **Release:** 0.2.3
 **Output:** spec/cli.md §5.15 in full (`UNRELEASED_BUILD`, `BRAIN_DIRTY`, both skill folders, the retired plugin in `.claude/settings.json`, lint counts, commit and push with `PUSH_SKIPPED`, `PUSH_FAILED`, `GIT_COMMIT_SKIPPED`); §5.1 and §5.12 write `.claude/skills/` too; lint rule `product-file` (§5.10).
 **Acceptance:** a test per check and per warning in §5.15, including a push to a local bare remote and a failing push; a settings file with other keys kept in order; `product-file` reports each case in §5.10 (a missing skill folder, a missing, changed or extra file, a missing or changed rules block) and is silent on a fresh `brain init`; `--dry-run` lints the planned tree; the commit stages only created, updated and removed paths plus the log; package resolution works from the compiled entry through a symbolic link. Fixture brains linted as whole brains get the product files at test time (copy the fixture, write the shipped files), so fixtures never hold copies of the skills. The existing tests pass.
+
+### CC-25 · Gate fixes: skipped checks, done before merge, CX-28 moved · `review`
+**Release:** 0.2.3
+**Output:** `merge.mjs` and `release.mjs` accept check runs that completed as `skipped` or `neutral` (a job that doesn't apply to the event: `main-guard` on a PR, `pr-format` on a push) and still need at least one `success`; until now neither gate could pass. The "done before merge" rule in AGENTS.md, docs/releasing.md and the PR template; the reviewer's verdict line `Review (<agent>): pass`. CX-28 moved to 0.2.4 and CX-30 added, with the user's approval while Codex is out of tokens. Code in `scripts/` is Codex's; written by Claude Code at the user's request.
+**Acceptance:** tests for `checksPassed` (skipped and neutral pass; a failure, a running job, only skipped, or no runs fail) and a merge dry run with a skipped job; `npm test` passes.
+
+## 0.2.4 — Leak check and the review gate
+
+Moved out of 0.2.3 on 2026-10-18 so 0.2.3 could ship while Codex was out of tokens.
+
+### CX-28 · Leak check in CI and a pre-commit hook · `todo` (moved from 0.2.3 on 2026-10-18: Codex out of tokens)
+**Release:** 0.2.4
+**Output:** `scripts/leak-check.mjs [--staged]` scans tracked files (or the staged diff) for a UUID, dashed or 32 hex characters, outside `tests/`, and for an email address whose domain is not `example` or does not end in `.example`; `scripts/leak-allow.txt` lists exceptions as `path:pattern`. With `--staged` it also reads `~/.config/ultimate-brain/denylist` (one term per line, `#` comments, matched case-insensitively as whole words) when it exists. A CI step runs it on every push; `.githooks/pre-commit` runs it with `--staged`. `LICENSE` (the copyright holder) is allowed for the denylist. A finding prints file, line and the rule, never the denylist term's neighbours beyond the line.
+**Acceptance:** tests with a synthetic UUID, a non-example email and a denylist term, each caught; the current tree passes; `sources/` and `node_modules/` are not scanned.
+
+### CX-30 · `merge.mjs` requires the other agent's pass · `todo`
+**Release:** 0.2.4
+**Output:** `merge.mjs` refuses unless the PR has a review or comment whose body starts with `Review (Claude Code): pass` on a `codex/` branch, or `Review (Codex): pass` on a `claude/` branch, posted after the head commit. Both agents post through one GitHub account, so the line is the only way to tell them apart (decision 0038). A user override: `--reviewed-by-user`, which prints a warning and is noted in the merge commit body.
+**Acceptance:** dry-run tests: a pass from the other agent passes; a pass from the same agent, a pass older than the head commit, and no pass each refuse; the override passes with its warning.
 
 ## 0.3.0 — queued
 
@@ -379,7 +393,7 @@ Agreed with the user on 2026-10-18 (grill session). npm becomes the only channel
 | U-09 | Publish 0.2.1 (`npm version patch`, `npm publish`, push tags; docs/releasing.md), then `brain upgrade` in your brain | When CC-21, CX-23 and CX-25 are merged |
 | U-10 | Publish 0.2.2 the same way, then `brain upgrade` in your brain | When CC-23 and CX-26 are merged |
 | U-11 | Setup for 0.2.3: from CX-27 on, merge only with `node scripts/merge.mjs <PR>`. GitHub Pro is deferred (decision 0038). Done by Claude on 2026-10-18: the `dogfood` label and the denylist. `/plugin update` found no match in the brain, so its Claude Code keeps the 2026-10-12 skills until 0.2.3 or a manual copy | Now |
-| U-12 | Publish 0.2.3 with `node scripts/release.mjs 0.2.3` from the main checkout, then `brain upgrade` in your brain, then `npm deprecate ultimate-brain@0.2.2 "Superseded. Install the latest version."` (0.2.2 still has a real name in a skill example) | When CC-24, CX-27, CX-28 and CX-29 are done |
+| U-12 | Publish 0.2.3 with `node scripts/release.mjs 0.2.3` from the main checkout, then `brain upgrade` in your brain, then `npm deprecate ultimate-brain@0.2.2 "Superseded. Install the latest version."` (0.2.2 still has a real name in a skill example) | When CC-24, CC-25, CX-27 and CX-29 are done |
 
 ## How to start Codex on a task
 
