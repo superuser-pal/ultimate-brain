@@ -1,6 +1,6 @@
 import { command, fail, tryCommand } from "./common.mjs";
 
-const pr = process.env.GITHUB_REF_NAME ?? process.argv[2];
+const pr = process.argv[2] ?? process.env.GITHUB_REF_NAME;
 if (!/^\d+$/.test(pr ?? "")) fail("PR number is required");
 else {
   const viewed = tryCommand("gh", ["pr", "view", pr, "--json", "headRefName,title,files"]);
