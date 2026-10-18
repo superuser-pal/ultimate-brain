@@ -62,6 +62,7 @@ Query the Capture Inbox (`notion.databases.capture_inbox`, through its data sour
 As in SKILL.md step 3, **one** question, only if something blocks:
 - the title or date is unclear (a document's own date, an email's sent date; if there is none, use today and say so);
 - which project or area it belongs to, when the text doesn't say and the user didn't;
+- **a new project** (the user says the input starts one): never write a project note or create its Notion page yourself; the page must come from the Projects template, which the API can't apply (decision 0021). Ask the user to create it with **New project** in Notion and give it its name, then run the brain-sync skill's pull (`sync plan` and `sync apply`) to import it, and go on with the ingest linked to it. If the user would rather not now, link the input to its area and say so in the report. Without Notion, write nothing for the project and say so;
 - one name spelled several ways.
 
 The user's answers that add content are owner rulings (decision 0031, [extraction.md](extraction.md)).

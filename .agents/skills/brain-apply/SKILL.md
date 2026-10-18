@@ -77,7 +77,7 @@ Run every CLI command as `brain <command> --brain <brain> --json`. Exit 1 means 
    - **Needs you:** what failed and why in a few words, a stale proposal with the note's current value, what is still pending. `Needs you: nothing` when there is none.
    - **Next:** one action, or one question.
 
-   What changed, in words ("Acme budget is now 95000 EUR"), only when the user asks.
+   Below the three lines, list what changed, in words, one line each ("Acme budget is now 95000 EUR"), however many there are. Never ids, paths or commands.
 
 ## Don'ts
 

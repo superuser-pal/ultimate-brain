@@ -52,6 +52,10 @@ The fixes were agreed with the user in a grill session on 2026-10-15. Small skil
 - **Tasks for the owner from non-meeting sources:** an action item in a document, email, chat or capture that is addressed to the **owner** becomes a Notion task, linked to the source and to its project. Due date only when the text gives one; never an invented default. Action items for other people stay in the note text. This changes 0032's "no action items" rule and the matching lines in extraction.md and sources.md.
 - **Settings in `brain.json`:** `publish: ask | auto` (default `ask`; after a run the user was happy with, the skill offers to switch) and `push: remind | auto` (default `remind`: the report says "N commits not pushed"; `auto` pushes after the run's commits).
 
+### Amended 2026-10-18 (first real drop-folder run)
+- **The report grows with the input.** The three lines stay at the top. Below them, the report lists, uncapped: what came in (new projects, decisions, questions, risks, changed facts, new people), what to check (assumed dates, ambiguities, unlinked names) and action items that didn't become tasks. Only mechanics are left out. The user's words: a big input must never come back with key details missing because of a length rule.
+- **Projects are created in Notion, never by the agent** (0021): the Projects template, with its views and "My notes", can't be applied through the API. `sync render` refuses to create one.
+
 ## Consequences
 - 0.2.1: brain-ingest (sources.md drop-folder procedure, report template), brain-apply and brain-sync (report template, parallel publish), Codex: the `sync plan` conflict.
 - 0.3.0: a new "catch up" skill or brain-ingest mode; spec/schema.md (concept published; Inbox properties), note.schema.json, notion-space-design §3.11 rewritten as Inbox and a new Concepts section, Knowledge Space tabs, Review database (Note replaces Edited Value), spec/cli.md (grouped `add_link` proposals, `brain.json` settings, Inbox and Concepts in `sync render`), the onboarding plan, extraction.md and sources.md (owner tasks), the user guide. Codex owns the CLI parts.
