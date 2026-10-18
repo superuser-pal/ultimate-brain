@@ -22,7 +22,7 @@ Research is finished (`reviews/`, `synthesis/`). Two agents build in parallel:
 - **Small commits**, imperative messages, task id in the subject (`CX-02: add ID generator`).
 - **Every task has `**Release:** x.y.z`** and a line in `CHANGELOG.md` under that release. Main is always releasable: merge nothing you wouldn't publish tonight. Release only with `scripts/release.mjs` ([docs/releasing.md](docs/releasing.md)).
 - **Never merge a PR or push to `main` yourself.** The user merges with `scripts/merge.mjs <PR>`; only `scripts/release.mjs` pushes to `main`. A `pre-push` hook and Claude Code's deny rules enforce it, and CI's `main-guard` job reports any bypass (decision 0038).
-- **PRs follow the template:** the reviewer ticks each acceptance box with evidence (a test name, or a command and its output). CI checks the branch name, the task id in the title, the CHANGELOG line and the leak check.
+- **PRs follow the template:** the reviewer ticks each acceptance box with evidence (a test name, or a command and its output) and ends with the line `Review (Claude Code): pass` or `Review (Codex): pass`. Then the author's last commit sets the task to `done` (#N) and its CHANGELOG line names the PR, so the merge completes the task and no bookkeeping PR is needed. CI checks the branch name, the task id in the title, the CHANGELOG line and the leak check.
 - **Findings from the user's brain arrive as `dogfood` issues.** Claude Code triages them at the start of each planning session into a task with a release, or closes them with a reason; an issue never stays open next to its task.
 
 ## Architecture (fixed)
