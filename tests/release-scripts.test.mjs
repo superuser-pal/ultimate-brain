@@ -162,3 +162,29 @@ test("PR format accepts its task id and rejects an unscoped branch", (t) => {
   assert.equal(invalid.status, 1);
   assert.match(invalid.stderr, /branch/);
 });
+
+test("CI passes with skipped jobs, but not with a failure, a running job or nothing that succeeded", async () => {
+  const { checksPassed } = await import("../scripts/common.mjs");
+  assert.equal(checksPassed("completed\tsuccess\ncompleted\tskipped\ncompleted\tsuccess\n"), true);
+  assert.equal(checksPassed("completed\tsuccess\ncompleted\tneutral\n"), true);
+  assert.equal(checksPassed("completed\tsuccess\ncompleted\tfailure\n"), false);
+  assert.equal(checksPassed("completed\tsuccess\nin_progress\t\n"), false);
+  assert.equal(checksPassed("completed\tskipped\n"), false);
+  assert.equal(checksPassed(""), false);
+});
+
+test("merge dry-run accepts a PR whose push-only job was skipped", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = fakeCommands(root, {
+    gh: `case "$1 $2" in
+      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"abcdef","title":"CX-1: One","body":"- [x] checked","mergeable":"MERGEABLE","state":"OPEN"}' ;;
+      "repo view") printf owner/repo ;;
+      "api repos/owner/repo/commits/abcdef/check-runs") printf 'completed\\tsuccess\\ncompleted\\tskipped\\n' ;;
+      "pr merge") exit 99 ;;
+    esac`,
+  });
+  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Would merge #12/);
+});

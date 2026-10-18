@@ -1,4 +1,4 @@
-import { command, fail, ROOT, tryCommand } from "./common.mjs";
+import { checksPassed, command, fail, ROOT, tryCommand } from "./common.mjs";
 
 const [pr, flag] = process.argv.slice(2);
 const dryRun = flag === "--dry-run";
@@ -17,7 +17,7 @@ else {
     if (details.mergeable !== "MERGEABLE") failures.push(`PR is not mergeable (${details.mergeable ?? "unknown"})`);
     const repo = tryCommand("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
     const checks = repo.ok ? tryCommand("gh", ["api", `repos/${repo.stdout}/commits/${details.headRefOid}/check-runs`, "--paginate", "--jq", ".check_runs[] | [.status,.conclusion] | @tsv"]) : repo;
-    if (!checks.ok || checks.stdout.split("\n").filter(Boolean).some((line) => line !== "completed\tsuccess")) failures.push("CI has not passed on the PR head commit");
+    if (!checks.ok || !checksPassed(checks.stdout)) failures.push("CI has not passed on the PR head commit");
     if (failures.length > 0) fail(`Refusing to merge #${pr}: ${failures.join("; ")}`);
     else if (dryRun) process.stdout.write(`Would merge #${pr} at ${details.headRefOid}\n`);
     else command("gh", ["pr", "merge", pr, "--merge", "--match-head-commit", details.headRefOid], { stdio: "inherit" });

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { command, fail, isPrerelease, ROOT, taskEntries, tryCommand } from "./common.mjs";
+import { checksPassed, command, fail, isPrerelease, ROOT, taskEntries, tryCommand } from "./common.mjs";
 
 const [version, flag] = process.argv.slice(2);
 const dryRun = flag === "--dry-run";
@@ -20,7 +20,7 @@ else {
   for (const task of taskEntries().filter((entry) => entry.release === version)) if (task.status !== "done") failures.push(`${task.id} is ${task.status}, not done`);
   const repo = tryCommand("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
   const checks = repo.ok ? tryCommand("gh", ["api", `repos/${repo.stdout}/commits/${command("git", ["rev-parse", "HEAD"])}/check-runs`, "--paginate", "--jq", ".check_runs[] | [.status,.conclusion] | @tsv"]) : repo;
-  if (!checks.ok || checks.stdout.split("\n").filter(Boolean).some((line) => line !== "completed\tsuccess")) failures.push("CI is not green on HEAD");
+  if (!checks.ok || !checksPassed(checks.stdout)) failures.push("CI is not green on HEAD");
   for (const [program, args] of [["npm", ["test"]], ["npm", ["run", "typecheck"]], ["npm", ["run", "test:package"]]]) {
     const result = tryCommand(program, args, { stdio: "inherit" });
     if (!result.ok) failures.push(`${program} ${args.join(" ")} failed`);
