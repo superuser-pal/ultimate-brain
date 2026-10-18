@@ -6,7 +6,7 @@ One line per task, under the release that ships it (decision 0038). `scripts/rel
 
 - CC-24: delivery lanes, one channel (npm) and release gates: decision 0038, the brain's read-only and findings rules, issue and PR templates, the Claude Code plugin retired; the merge gate without GitHub Pro; three real names removed from the skills and docs.
 
-## 0.2.2 — unreleased
+## 0.2.2 — 2026-10-18
 
 - CC-23: new projects are created in Notion; reports grow with the input (decision 0037 amended).
 - CX-26: `sync render` refuses project creates (`PROJECT_NOT_IN_NOTION`); "latest" leaves the freshness words.
