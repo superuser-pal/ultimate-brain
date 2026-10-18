@@ -315,7 +315,7 @@ The user's first real "process my drop folder" (2026-10-18, 0.2.1) worked end to
 
 Agreed with the user on 2026-10-18 (grill session). npm becomes the only channel, so Claude Code and Codex run the same skills in a brain; the brain's product files become read-only and findings come back as `dogfood` issues; merges, releases and upgrades get gates that refuse instead of relying on care. **Ships when** CC-24, CX-27, CX-28 and CX-29 are done; then U-12 publishes it with `scripts/release.mjs`.
 
-### CC-24 · Decision 0038, rules, templates and docs · `review`
+### CC-24 · Decision 0038, rules, templates and docs · `done` (#80)
 **Release:** 0.2.3
 **Output:** decision 0038 (0029 and 0037 marked amended); spec/cli.md §3.5 (`UNRELEASED_BUILD`, `BRAIN_DIRTY`), §5.1 and §5.12 (`.claude/skills/`), §5.15 (`brain upgrade` checks, retired plugin, lint, commit and push), §5.10 rule `product-file`, schema §15; the brain AGENTS.md block (product files read-only, findings, push); push after the last commit in brain-ingest, brain-apply and brain-sync; `.github/ISSUE_TEMPLATE/dogfood.md`, `.github/pull_request_template.md`; `CHANGELOG.md`; docs/releasing.md; AGENTS.md multi-agent rules; README and skills/README without the plugin; `.claude-plugin/` removed.
 **Acceptance:** Codex's review finds §5.15 and the `product-file` rule complete enough to build CX-29 without inventing behaviour; no remaining reference to installing the plugin outside decisions and reviews.
