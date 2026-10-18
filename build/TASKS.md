@@ -281,11 +281,11 @@ Both are skill-side: the toggles because the CLI can't see Notion page content (
 
 Agreed with the user on 2026-10-15 (grill session, decision 0037): the CC-15 findings plus the small intake fixes. Skills and CLI only, with no Notion schema change. **Ships when** CC-21, CX-23 and CX-25 are merged; then U-09 publishes it.
 
-### CC-21 · Drop folder, report shape and faster publish (decision 0037) · `review`
+### CC-21 · Drop folder, report shape and faster publish (decision 0037) · `done` (#75; first real run 2026-10-18)
 **Output:** brain-ingest "process my drop folder" (list the files, one question, all selected by default) and the `processed/` and `skipped/` subfolders; the three-line report template in brain-ingest, brain-apply and brain-sync; parallel MCP writes with no read-backs in "Publish"; the user guide's drop-folder row.
 **Acceptance:** a blind run on a synthetic drop folder of 3 files ingests the chosen ones, moves them, and leaves the rest at the top level; every report follows the template.
 
-### CX-25 · CLI fixes from the acceptance run (CC-15 findings) · `review`
+### CX-25 · CLI fixes from the acceptance run (CC-15 findings) · `done` (#77)
 **Output:**
 - `sync plan` accepts Notion's own timestamps with milliseconds (`2026-10-15T18:11:00.000Z`) and every other timestamp input, truncated to seconds (spec/cli.md, global options, `--now` row).
 - `sync render` types each database's title property (`Name`) as `title`, not `rich_text`.
@@ -297,6 +297,19 @@ Agreed with the user on 2026-10-15 (grill session, decision 0037): the CC-15 fin
 
 ### CX-23 · Edit on a link row is a plan conflict (decision 0037) · `done` (#76)
 **Output:** `sync plan` returns an Edit on a kind that forbids it (`add_link`, `supersede`, `merge`, `new_item`; spec/cli.md §5.14.2, schema §11.1) as an `EDIT_NOT_ALLOWED` conflict, not a decision. **Acceptance:** a test with an Edited `add_link` row and one other non-editable kind; `apply` is never reached with them.
+
+## 0.2.2 — Fixes from the first drop-folder run
+
+The user's first real "process my drop folder" (2026-10-18, 0.2.1) worked end to end. Three findings:
+- **A project created from a document got a bare Notion page.** The agent wrote the project note and created the page through the API, which can't apply the Projects template, so the page had no views and no "My notes". The meeting stop condition already says to create projects in Notion (0021); the document path didn't.
+- **The report rule was too tight for big inputs.** The user wants the report to grow with what came in, not to miss key details. The three lines stay at the top.
+- **Lint `freshness` false positive** on "latest" again ("the retailer of the latest maintenance").
+
+### CC-23 · Projects created in Notion, reports that scale (decision 0037 amended) · `review`
+**Output:** brain-ingest sources.md pre-check and the SKILL.md stop condition (new projects go through **New project** in Notion, then sync); the report rule in brain-ingest and brain-apply (three lines, then What came in · Check · Action items, uncapped); spec/cli.md §5.14.4 (`PROJECT_NOT_IN_NOTION`); decision 0037 amended.
+
+### CX-26 · Render refuses project creates; "latest" leaves the freshness words · `todo`
+**Output:** `sync render` returns a project without `notion` as item error `PROJECT_NOT_IN_NOTION` instead of a `create` (spec/cli.md §5.14.4); lint drops "latest" from the freshness words (the CX-25 sequence patterns go with it). **Acceptance:** a test for each.
 
 ## 0.3.0 — queued
 
@@ -329,6 +342,7 @@ Agreed with the user on 2026-10-15 (grill session, decision 0037): the CC-15 fin
 | U-07 | Connect the Easlo template to the Notion integration (read-only use) | Before CC-17 |
 | U-08 | Publish 0.2.0 (`npm version minor`, `npm publish`, push tags; docs/releasing.md) | Now: agreed 2026-10-15 to release before CC-15, so the acceptance run uses the released version |
 | U-09 | Publish 0.2.1 (`npm version patch`, `npm publish`, push tags; docs/releasing.md), then `brain upgrade` in your brain | When CC-21, CX-23 and CX-25 are merged |
+| U-10 | Publish 0.2.2 the same way, then `brain upgrade` in your brain | When CC-23 and CX-26 are merged |
 
 ## How to start Codex on a task
 

@@ -918,7 +918,7 @@ Each item:
 }
 ```
 
-- `action`: `create` when the note has no `notion`, else `update`. Meetings are always `update`; a meeting without `notion` → item error `MEETING_NOT_PUBLISHED`.
+- `action`: `create` when the note has no `notion`, else `update`. Meetings are always `update`; a meeting without `notion` → item error `MEETING_NOT_PUBLISHED`. Projects are always `update` too: a project without `notion` → item error `PROJECT_NOT_IN_NOTION`, because a project page must come from the Projects template (its views and "My notes"), which the API can't apply. The user creates it with **New project** in Notion, and the next `sync plan` imports it (0021).
 - `published`: B for every rendered property except Last Synced and pending relations, plus `@content` = `sha256:<hex>` of the rendered `body`/`sections` when the type has content. This is the new S once the write succeeds.
 - **Page content** (decision 0026): the brain writes only what it owns.
   - `body` (decisions, questions): replaces the whole page body.
