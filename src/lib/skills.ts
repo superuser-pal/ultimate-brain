@@ -1,10 +1,33 @@
 import { lstat, readdir, readFile, realpath } from "node:fs/promises";
-import { join, relative, sep } from "node:path";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { BrainError } from "./errors.ts";
 
 const SKILLS_ROOT = fileURLToPath(new URL("../../.agents/skills/", import.meta.url));
+
+export interface InstalledProduct { root: string; version: string; source: boolean; }
+
+/** Resolve the package containing the running module, never a package found on PATH. */
+export function installedProduct(): InstalledProduct {
+  let folder: string;
+  let entry: string;
+  try { entry = realpathSync(process.argv[1] ?? fileURLToPath(import.meta.url)); folder = dirname(entry); }
+  catch { folder = dirname(fileURLToPath(import.meta.url)); }
+  for (;;) {
+    const manifest = join(folder, "package.json");
+    if (existsSync(manifest)) {
+      const value = JSON.parse(readFileSync(manifest, "utf8")) as { name?: unknown; version?: unknown };
+      if (value.name === "ultimate-brain" && typeof value.version === "string") {
+        return { root: folder, version: value.version, source: entry?.endsWith("/src/cli.ts") === true };
+      }
+    }
+    const parent = dirname(folder);
+    if (parent === folder) throw new BrainError("INTERNAL", "installed package not found: no ultimate-brain package.json");
+    folder = parent;
+  }
+}
 
 export interface SkillFile {
   /** Path relative to `.agents/skills/`, e.g. `brain-query/SKILL.md`. */

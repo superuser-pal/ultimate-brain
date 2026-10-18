@@ -7,8 +7,9 @@ import { parseFrontmatter } from "../src/lib/frontmatter.ts";
 import { loadSchemas } from "../src/lib/schemas.ts";
 import { brain, fixtureCopy, FIXTURE_BRAIN } from "./helpers.ts";
 
-test("the fixture brain lints clean: no errors, no warnings", async () => {
-  const run = await brain(["lint", "--strict", "--brain", FIXTURE_BRAIN, "--json"]);
+test("the fixture brain lints clean: no errors, no warnings", async (context) => {
+  const fixture = await fixtureCopy(context);
+  const run = await brain(["lint", "--strict", "--brain", fixture, "--json"]);
   assert.equal(run.code, 0, JSON.stringify(run.json?.data?.issues, null, 2));
   assert.equal(run.json.data.errors, 0);
   assert.equal(run.json.data.warnings, 0);

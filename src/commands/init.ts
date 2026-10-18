@@ -66,16 +66,18 @@ export const initCommand: Command = {
       created.push(file.relative);
     }
 
-    // Product-owned Codex skills (decision 0029); like template files, existing ones are never overwritten.
+    // Product-owned skills (decision 0029, 0038); like template files, existing ones are never overwritten.
     for (const skill of await listShippedSkillFiles()) {
-      const path = `.agents/skills/${skill.relative}`;
-      if (await exists(join(root, path))) {
-        skipped.push(path);
-        continue;
+      for (const folder of [".agents/skills", ".claude/skills"]) {
+        const path = `${folder}/${skill.relative}`;
+        if (await exists(join(root, path))) {
+          skipped.push(path);
+          continue;
+        }
+        await ensureDirectory(root, dirname(path));
+        await atomicWriteFile(root, path, skill.content);
+        created.push(path);
       }
-      await ensureDirectory(root, dirname(path));
-      await atomicWriteFile(root, path, skill.content);
-      created.push(path);
     }
 
     // The template includes an empty index, but build it rather than trusting that snapshot.

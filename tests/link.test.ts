@@ -31,6 +31,7 @@ test("link writes a canonical marker and agent instructions, then is byte-idempo
     { path: "AGENTS.md", action: "created" },
     { path: "CLAUDE.md", action: "created" },
     { path: ".agents/skills/brain-query/SKILL.md", action: "created" },
+    { path: ".claude/skills/brain-query/SKILL.md", action: "created" },
   ]);
   assert.deepEqual(JSON.parse(await readFile(join(target, ".brain"), "utf8")), first.json.data.marker.value);
   const agents = await readFile(join(target, "AGENTS.md"), "utf8");
@@ -47,6 +48,7 @@ test("link writes a canonical marker and agent instructions, then is byte-idempo
     { path: "AGENTS.md", action: "unchanged" },
     { path: "CLAUDE.md", action: "unchanged" },
     { path: ".agents/skills/brain-query/SKILL.md", action: "unchanged" },
+    { path: ".claude/skills/brain-query/SKILL.md", action: "unchanged" },
   ]);
   const after = await Promise.all([".brain", "AGENTS.md", "CLAUDE.md"].map((path) => readFile(join(target, path), "utf8")));
   assert.deepEqual(after, before);
@@ -74,6 +76,7 @@ test("link updates fenced instructions in place and retains content outside them
     { path: "AGENTS.md", action: "updated" },
     { path: "CLAUDE.md", action: "updated" },
     { path: ".agents/skills/brain-query/SKILL.md", action: "created" },
+    { path: ".claude/skills/brain-query/SKILL.md", action: "created" },
   ]);
   const agents = await readFile(join(target, "AGENTS.md"), "utf8");
   assert.equal(agents.startsWith("# Local rules\nKeep this intro.\n\n"), true);
