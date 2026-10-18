@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
-import { readdirSync } from "node:fs";
-import { posix } from "node:path";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { join, posix } from "node:path";
+import { installedProduct } from "./skills.ts";
 
 import { buildIndex } from "./index-builder.ts";
 import { compareCodePoints, type Note, type ScanProblem } from "./notes.ts";
@@ -28,6 +29,8 @@ export interface LintInput {
   indexMarkdown: string | null | undefined;
   /** Files that exist in memory but not yet on disk (a write being validated, spec/cli.md §3.6.1). */
   pendingPaths?: ReadonlySet<string>;
+  /** Product-owned paths as an upgrade would leave them; undefined reads disk. */
+  plannedProductFiles?: ReadonlyMap<string, string | null>;
 }
 
 const ID = /^(area|gol|prj|per|org|mtg|dec|que|con|src|mem|prp|vw)-[0-9abcdefghjkmnpqrstvwxyz]{8}$/;
@@ -223,6 +226,7 @@ export function lintBrain(input: LintInput): Issue[] {
     add("warning", "index-stale", "index.md", 1, null, "index.md is out of date; run brain index");
   }
 
+  lintProductFiles(input.root, add, input.plannedProductFiles);
   return issues.sort((x, y) =>
     compareCodePoints(x.path, y.path) || x.line - y.line || compareCodePoints(x.rule, y.rule) || compareCodePoints(x.message, y.message));
 }
@@ -348,4 +352,37 @@ function record(value: unknown): Record<string, unknown> {
 
 function sameStringList(left: unknown[], right: readonly string[]): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function lintProductFiles(root: string, add: (severity: Severity, rule: string, path: string, line: number, id: string | null, message: string) => void, planned?: ReadonlyMap<string, string | null>): void {
+  let product;
+  try { product = installedProduct(); } catch (error) { add("error", "product-file", "AGENTS.md", 1, null, `installed package not found: ${String(error)}`); return; }
+  const message = `product files differ from ultimate-brain ${product.version}; run brain upgrade, or file a finding`;
+  const skills = join(product.root, ".agents/skills"); const template = join(product.root, "templates/brain/AGENTS.md");
+  if (!existsSync(skills) || !existsSync(template)) { add("error", "product-file", "AGENTS.md", 1, null, "installed package not found: missing product files"); return; }
+  const block = /<!-- ultimate-brain:rules:start\b[^>]*-->[\s\S]*?<!-- ultimate-brain:rules:end -->/.exec(readFileSync(template, "utf8"))?.[0];
+  const agents = planned?.get("AGENTS.md") ?? (existsSync(join(root, "AGENTS.md")) ? readFileSync(join(root, "AGENTS.md"), "utf8") : null);
+  const actual = agents?.match(/<!-- ultimate-brain:rules:start\b[^>]*-->[\s\S]*?<!-- ultimate-brain:rules:end -->/g) ?? null;
+  if (block === undefined || actual?.length !== 1 || actual[0] !== block) add("error", "product-file", "AGENTS.md", 1, null, message);
+  for (const prefix of [".agents/skills", ".claude/skills"]) for (const skill of readdirSync(skills, { withFileTypes: true }).filter((entry) => entry.isDirectory() && existsSync(join(skills, entry.name, "SKILL.md")))) {
+    const target = join(root, prefix, skill.name);
+    if (!existsSync(target)) { add("error", "product-file", `${prefix}/${skill.name}`, 1, null, message); continue; }
+    const expected = productFiles(join(skills, skill.name));
+    const actual = productFiles(target).filter((file) => planned?.get(`${prefix}/${skill.name}/${file}`) !== null);
+    for (const file of expected) {
+      const path = `${prefix}/${skill.name}/${file}`;
+      const bytes = planned?.has(path) ? planned.get(path) ?? null : existsSync(join(target, file)) ? readFileSync(join(target, file), "utf8") : null;
+      if (bytes === null || Buffer.from(bytes).compare(readFileSync(join(skills, skill.name, file))) !== 0) add("error", "product-file", path, 1, null, message);
+    }
+    for (const file of actual) if (!expected.includes(file)) add("error", "product-file", `${prefix}/${skill.name}/${file}`, 1, null, message);
+  }
+}
+
+function productFiles(folder: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(folder, { withFileTypes: true })) {
+    if (entry.isDirectory()) for (const nested of productFiles(join(folder, entry.name))) out.push(`${entry.name}/${nested}`);
+    else if (entry.isFile()) out.push(entry.name);
+  }
+  return out.sort();
 }

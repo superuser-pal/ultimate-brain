@@ -22,7 +22,7 @@ export function fail(message) {
 
 export function taskEntries(tasks = readFileSync(resolve(ROOT, "build/TASKS.md"), "utf8")) {
   const entries = [];
-  const pattern = /^### ((?:CC|CX)-\d+) · (.+?) · `([^`]+)`\n\*\*Release:\*\* ([^\n]+)$/gm;
+  const pattern = /^### ((?:CC|CX)-\d+) · (.+?) · `([^`]+)`(?: \([^\n]*\))?\n\*\*Release:\*\* ([^\n]+)$/gm;
   for (const match of tasks.matchAll(pattern)) entries.push({ id: match[1], title: match[2], status: match[3], release: match[4], offset: match.index });
   return entries;
 }

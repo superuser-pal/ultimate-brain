@@ -230,22 +230,23 @@ async function readOptional(root: string, path: string): Promise<string | null> 
   }
 }
 
-/** Product-owned `.agents/skills/brain-query/` (decision 0029): replace changed files, remove stale ones. */
+/** Product-owned query skills (decision 0029, 0038): replace changed files, remove stale ones. */
 async function planSkill(root: string): Promise<PlannedFile[]> {
   const shipped = await listShippedSkillFiles("brain-query");
   const planned: PlannedFile[] = [];
-  const keep = new Set<string>();
-  await assertPlainPath(root, ".agents/skills/brain-query", "folder");
-  for (const file of shipped) {
-    const path = `.agents/skills/${file.relative}`;
-    await assertPlainPath(root, path);
-    keep.add(path);
-    planned.push({ path, before: await readOptional(root, path), after: file.content.toString("utf8") });
-  }
-  const folder = ".agents/skills/brain-query";
-  for (const path of await listFiles(root, folder)) {
-    await assertPlainPath(root, path);
-    if (!keep.has(path)) planned.push({ path, before: await readOptional(root, path), after: null });
+  for (const prefix of [".agents/skills", ".claude/skills"]) {
+    const keep = new Set<string>();
+    await assertPlainPath(root, `${prefix}/brain-query`, "folder");
+    for (const file of shipped) {
+      const path = `${prefix}/${file.relative}`;
+      await assertPlainPath(root, path);
+      keep.add(path);
+      planned.push({ path, before: await readOptional(root, path), after: file.content.toString("utf8") });
+    }
+    for (const path of await listFiles(root, `${prefix}/brain-query`)) {
+      await assertPlainPath(root, path);
+      if (!keep.has(path)) planned.push({ path, before: await readOptional(root, path), after: null });
+    }
   }
   return planned.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 }
