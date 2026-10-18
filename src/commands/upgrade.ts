@@ -4,6 +4,7 @@ import { dirname, join, relative, sep } from "node:path";
 import { promisify } from "node:util";
 
 import type { Command, Warning } from "../lib/command.ts";
+import { BrainError } from "../lib/errors.ts";
 import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
 import { appendLog } from "../lib/log.ts";
 import { lintBrain } from "../lib/lint.ts";
@@ -28,7 +29,7 @@ export const upgradeCommand: Command = {
   async run({ args, brain, now }) {
     const root = brain!.root;
     const product = installedProduct();
-    if (product.source) throw new (await import("../lib/errors.ts")).BrainError("UNRELEASED_BUILD", "brain upgrade requires a published ultimate-brain package");
+    if (product.source) throw new BrainError("UNRELEASED_BUILD", "brain upgrade requires a published ultimate-brain package");
     const warnings: Warning[] = [];
     const changes: Change[] = [];
     let unchanged = 0;
@@ -93,7 +94,7 @@ export const upgradeCommand: Command = {
     const written = changes.filter((change) => change.action !== "skipped");
     const version = product.version;
     const dryRun = args.options["dry-run"] === true;
-    if (!dryRun && await gitDirty(root)) throw new (await import("../lib/errors.ts")).BrainError("BRAIN_DIRTY", "brain has uncommitted changes");
+    if (!dryRun && await gitDirty(root)) throw new BrainError("BRAIN_DIRTY", "brain has uncommitted changes");
     if (!dryRun && written.length > 0) {
       for (const change of written) {
         if (change.action === "removed") { await unlink(join(root, change.path)); continue; }
@@ -103,7 +104,9 @@ export const upgradeCommand: Command = {
       await appendLog(root, now, [{ op: "upgrade", id: "-", title: version, pairs: [["files", written.length]] }]);
     }
     const { notes, problems } = await scanNotes(root);
-    const lint = lintBrain({ root, notes, problems, brainConfig: brain!.config, indexMarkdown: await readOptional(join(root, "index.md")) });
+    const plannedProductFiles = new Map<string, string | null>();
+    for (const change of changes) if (change.action !== "skipped") plannedProductFiles.set(change.path, change.action === "removed" ? null : Buffer.from(change.content!).toString("utf8"));
+    const lint = lintBrain({ root, notes, problems, brainConfig: brain!.config, indexMarkdown: await readOptional(join(root, "index.md")), plannedProductFiles });
     let commit: string | null = null; let pushed = false;
     if (!dryRun && written.length > 0 && await gitRepository(root)) {
       const staged = [...written.map((change) => change.path), `log/${now.toISOString().slice(0, 7)}.md`];
