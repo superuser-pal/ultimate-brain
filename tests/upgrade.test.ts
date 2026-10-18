@@ -1,14 +1,17 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { cp, mkdir, mkdtemp, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
+import { promisify } from "node:util";
 
 import { brain } from "./helpers.ts";
 
 const NOW = "2026-12-03T10:22:00Z";
 const START = /<!-- ultimate-brain:rules:start[^>]*-->/;
 const END = "<!-- ultimate-brain:rules:end -->";
+const exec = promisify(execFile);
 
 async function freshBrain(context: TestContext): Promise<{ root: string; target: string }> {
   const root = await mkdtemp(join(tmpdir(), "brain-upgrade-"));
@@ -17,6 +20,11 @@ async function freshBrain(context: TestContext): Promise<{ root: string; target:
   const init = await brain(["init", target, "--owner", "Test Owner", "--no-git", "--now", NOW, "--json"], root);
   assert.equal(init.code, 0, init.stderr);
   return { root, target };
+}
+
+async function git(root: string, args: string[]): Promise<string> { return (await exec("git", args, { cwd: root })).stdout; }
+async function gitBrain(root: string): Promise<void> {
+  await git(root, ["init"]); await git(root, ["config", "user.name", "Test"]); await git(root, ["config", "user.email", "test@example.test"]); await git(root, ["add", "."]); await git(root, ["commit", "-m", "init"]);
 }
 
 test("upgrade restores product-owned files and keeps everything the user wrote", async (context) => {
@@ -111,4 +119,66 @@ test("upgrade dry-run lints the product files it plans to repair", async (contex
   const run = await brain(["upgrade", "--brain", target, "--dry-run", "--now", NOW, "--json"], root);
   assert.equal(run.code, 0, run.stdout);
   assert.equal(run.json.data.lint.errors, 0, JSON.stringify(run.json.data.lint));
+});
+
+test("upgrade refuses UNRELEASED_BUILD without writing", async (context) => {
+  const { root, target } = await freshBrain(context);
+  const before = await readFile(join(target, "AGENTS.md"), "utf8");
+  const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root, join(import.meta.dirname, ".."), true);
+  assert.equal(run.json.error.code, "UNRELEASED_BUILD");
+  assert.equal(await readFile(join(target, "AGENTS.md"), "utf8"), before);
+});
+
+test("upgrade reports BRAIN_DIRTY and dry-run dirty", async (context) => {
+  const { root, target } = await freshBrain(context); await gitBrain(target); const stale = join(target, ".agents/skills/brain-query/SKILL.md"); await writeFile(stale, "drift\n");
+  const blocked = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
+  assert.equal(blocked.json.error.code, "BRAIN_DIRTY");
+  assert.equal(await readFile(stale, "utf8"), "drift\n");
+  const dry = await brain(["upgrade", "--brain", target, "--dry-run", "--now", NOW, "--json"], root);
+  assert.equal(dry.json.data.dirty, true);
+});
+
+test("upgrade cleans settings and warns for invalid settings", async (context) => {
+  const { root, target } = await freshBrain(context);
+  await mkdir(join(target, ".claude"), { recursive: true });
+  await writeFile(join(target, ".claude/settings.json"), '{\n  "other": true,\n  "enabledPlugins": {"ultimate-brain@ultimate-brain": true},\n  "extraKnownMarketplaces": {"ultimate-brain": true}\n}\n');
+  const clean = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
+  assert.equal(clean.code, 0); assert.equal(await readFile(join(target, ".claude/settings.json"), "utf8"), '{\n  "other": true\n}\n');
+  await writeFile(join(target, ".claude/settings.json"), "{bad\n");
+  const invalid = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
+  assert.ok(invalid.json.warnings.some((warning: { code: string }) => warning.code === "SETTINGS_UNPARSEABLE"));
+  await writeFile(join(target, ".claude/settings.json"), '{"enabledPlugins":{"ultimate-brain@ultimate-brain":true}}\n');
+  const empty = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
+  assert.ok(empty.json.data.files.some((file: { path: string; action: string }) => file.path === ".claude/settings.json" && file.action === "removed"));
+  await assert.rejects(readFile(join(target, ".claude/settings.json")));
+});
+
+test("upgrade warns PUSH_SKIPPED when no upstream exists", async (context) => {
+  const { root, target } = await freshBrain(context); await gitBrain(target); await writeFile(join(target, ".agents/skills/brain-query/SKILL.md"), "drift\n"); await git(target, ["add", "."]); await git(target, ["commit", "-m", "drift"]);
+  const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
+  assert.ok(run.json.data.commit); assert.ok(run.json.warnings.some((warning: { code: string }) => warning.code === "PUSH_SKIPPED"));
+});
+
+test("upgrade pushes its commit to a local bare remote", async (context) => {
+  const { root, target } = await freshBrain(context); await gitBrain(target); const remote = join(root, "remote.git"); await exec("git", ["init", "--bare", remote]); await git(target, ["remote", "add", "origin", remote]); await git(target, ["push", "-u", "origin", "HEAD"]); await writeFile(join(target, ".agents/skills/brain-query/SKILL.md"), "drift\n"); await git(target, ["add", "."]); await git(target, ["commit", "-m", "drift"]);
+  const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root); assert.equal(run.json.data.pushed, true); assert.ok(run.json.data.commit); await git(root, ["--git-dir", remote, "cat-file", "-e", `${run.json.data.commit}^{commit}`]);
+});
+
+test("upgrade keeps its commit when push fails", async (context) => {
+  const { root, target } = await freshBrain(context); await gitBrain(target); await git(target, ["remote", "add", "origin", "file:///missing/remote.git"]);
+  const branch = (await git(target, ["branch", "--show-current"])).trim(); await git(target, ["config", `branch.${branch}.remote`, "origin"]); await git(target, ["config", `branch.${branch}.merge`, `refs/heads/${branch}`]); await git(target, ["update-ref", `refs/remotes/origin/${branch}`, "HEAD"]); await writeFile(join(target, ".agents/skills/brain-query/SKILL.md"), "drift\n"); await git(target, ["add", "."]); await git(target, ["commit", "-m", "drift"]);
+  const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root); assert.equal(run.code, 0); assert.ok(run.json.data.commit); assert.ok(run.json.warnings.some((warning: { code: string }) => warning.code === "PUSH_FAILED"));
+});
+
+test("upgrade warns GIT_COMMIT_SKIPPED without identity", async (context) => {
+  const oldGlobal = process.env.GIT_CONFIG_GLOBAL; const oldNoSystem = process.env.GIT_CONFIG_NOSYSTEM;
+  process.env.GIT_CONFIG_GLOBAL = "/dev/null"; process.env.GIT_CONFIG_NOSYSTEM = "1";
+  context.after(() => { if (oldGlobal === undefined) delete process.env.GIT_CONFIG_GLOBAL; else process.env.GIT_CONFIG_GLOBAL = oldGlobal; if (oldNoSystem === undefined) delete process.env.GIT_CONFIG_NOSYSTEM; else process.env.GIT_CONFIG_NOSYSTEM = oldNoSystem; });
+  const { root, target } = await freshBrain(context); await git(target, ["init"]); await git(target, ["config", "user.useConfigOnly", "true"]); await git(target, ["add", "."]); await git(target, ["-c", "user.name=Bootstrap", "-c", "user.email=bootstrap@example.test", "commit", "-m", "init"]); await writeFile(join(target, ".agents/skills/brain-query/SKILL.md"), "drift\n"); await git(target, ["add", "."]); await git(target, ["-c", "user.name=Bootstrap", "-c", "user.email=bootstrap@example.test", "commit", "-m", "drift"]);
+  const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root); assert.ok(run.json.warnings.some((warning: { code: string }) => warning.code === "GIT_COMMIT_SKIPPED")); assert.notEqual(await readFile(join(target, ".agents/skills/brain-query/SKILL.md"), "utf8"), "drift\n");
+});
+
+test("upgrade stages only its files and log", async (context) => {
+  const { root, target } = await freshBrain(context); await gitBrain(target); await writeFile(join(target, "AGENTS.md"), "user rules\n"); await writeFile(join(target, "unrelated.txt"), "keep\n"); await writeFile(join(target, ".agents/skills/brain-query/SKILL.md"), "drift\n"); await git(target, ["add", "."]); await git(target, ["commit", "-m", "drift and user files"]);
+  const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root); const show = await git(target, ["show", "--name-only", "--format=", run.json.data.commit]); assert.ok(!show.includes("AGENTS.md") && !show.includes("unrelated.txt"));
 });

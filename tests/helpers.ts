@@ -31,8 +31,13 @@ export interface CliRun {
 }
 
 /** Run the CLI in-process with captured output and an isolated environment. */
-export async function brain(args: readonly string[], home = tmpdir()): Promise<CliRun> {
-  setInstalledProductRootForTests(join(import.meta.dirname, ".."));
+export async function brain(
+  args: readonly string[],
+  home = tmpdir(),
+  productRoot = join(import.meta.dirname, ".."),
+  productSource = false,
+): Promise<CliRun> {
+  setInstalledProductRootForTests(productRoot, productSource);
   const stdout: string[] = [];
   const stderr: string[] = [];
   const io: CliIo = {
