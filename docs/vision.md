@@ -60,7 +60,7 @@ The "wow" is that it maintains and synthesizes itself. Tasks and project managem
 
 The full, current backlog is [v2-ideas.md](v2-ideas.md). Summary:
 
-Agent-memory proposal loop, optional long-term memory provider as an index over Markdown (evaluate GBrain; see decisions/0008), topic research dossiers, person/client profiles, weekly digest, contradiction and staleness reports, schedulers (n8n / Hermes), email/Slack/Teams ingestion, privacy tiers, MCP server, multi-user/teams, hosted product, embeddings / vector search.
+Agent-memory proposal loop, optional retrieval index over Markdown (GBrain or a local index; see decisions/0008), OKF export and alignment (reviews/06), topic research dossiers, person/client profiles, weekly digest, contradiction and staleness reports, schedulers (n8n / Hermes), email/Slack/Teams ingestion, privacy tiers, MCP server, multi-user/teams, hosted product, embeddings / vector search.
 
 ## How to evaluate reference repos
 
