@@ -25,7 +25,7 @@ test("proposal new writes an update_fact with before and from filled in, and log
   const [created] = run.json.data.created;
   assert.match(created.id, /^prp-[0-9a-hjkmnp-tv-z]{8}$/);
   assert.deepEqual(run.json.data, {
-    created: [{ id: created.id, kind: "update_fact", title: "Acme budget: 80k → 95k", target: "prj-9x4t1b7e", path: "_proposals/2026-12-10-acme-budget-80k-95k.md", before: "80000 EUR" }],
+    created: [{ id: created.id, kind: "update_fact", title: "Acme budget: 80k → 95k", target: "prj-9x4t1b7e", path: "_proposals/2026-12-10-acme-budget-80k-95k.md", before: "80000 EUR", input_indexes: [0] }],
     skipped: [],
     dry_run: false,
   });
@@ -142,6 +142,27 @@ test("add_link validates its target field and reference prefix, then skips after
   assert.equal(linkedButForbidden.json.error.details[0].pointer, "/proposals/0/field");
 });
 
+test("proposal new groups links and apply excludes one link", async (context) => {
+  const dir = await fixtureCopy(context);
+  const links = ["Acme Web", "Acme marketing"].map((after) => ({
+    kind: "add_link", title: `Add ${after}`, target: "prj-9x4t1b7e", field: "aliases", after,
+    why: "The team uses this name.", source: "mtg-8c4n2p7w",
+  }));
+  const created = await proposalNew(dir, links);
+  assert.equal(created.code, 0, created.stdout);
+  assert.equal(created.json.data.created.length, 1);
+  const proposal = created.json.data.created[0];
+  assert.deepEqual(proposal.input_indexes, [0, 1]);
+  assert.equal(proposal.title, "Acme website: add 2 aliases (Acme Web, Acme marketing)");
+  const input = join(dir, "..", "grouped-decision.json");
+  await writeFile(input, JSON.stringify({ decisions: [{ proposal: proposal.id, action: "approve", exclude: [{ field: "aliases", value: "Acme marketing" }], decided_at: NOW, decided_by: "chat" }] }));
+  const applied = await brain(["apply", "--brain", dir, "--now", NOW, "--input", input, "--json"]);
+  assert.equal(applied.code, 0, applied.stdout);
+  const project = await readFile(join(dir, "projects/acme-website/project.md"), "utf8");
+  assert.match(project, /aliases: \[acme site, Acme Web\]/);
+  assert.doesNotMatch(project, /Acme marketing/);
+});
+
 test("a new_item may name an existing meeting, which apply will update; its note must otherwise be valid", async (context) => {
   const dir = await fixtureCopy(context);
   const meeting = await readFile(join(dir, "knowledge/meetings/2026-12-03-acme-sync.md"), "utf8");
@@ -207,7 +228,7 @@ test("proposal new handles review edge cases from #14", async (context) => {
   const proto = await proposalNew(dir, [{ ...budget, field: "constructor" }], "--dry-run");
   assert.equal(proto.code, 0, proto.stdout);
   assert.equal(proto.json.data.created[0].before, undefined);
-  assert.deepEqual(Object.keys(proto.json.data.created[0]), ["id", "kind", "title", "target", "path"]);
+  assert.deepEqual(Object.keys(proto.json.data.created[0]), ["id", "kind", "title", "target", "path", "input_indexes"]);
 
   // A new_item whose note is an already-captured source is refused, not silently accepted.
   const source = await readFile(join(dir, "sources/notion/2026-12-03-acme-sync-notion-minutes.md"), "utf8");
