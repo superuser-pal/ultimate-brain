@@ -12,11 +12,11 @@ import { formatDate, formatTimestamp, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 import type { LogEntry } from "./log.ts";
 
-const DATABASES = ["areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "review"] as const;
+const DATABASES = ["areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "concepts", "review"] as const;
 const CREATABLE = new Set(["areas", "goals", "projects", "people", "orgs"]);
-const TYPE_FOR_DATABASE: Record<string, string> = { areas: "area", goals: "goal", projects: "project", people: "person", orgs: "org", decisions: "decision", questions: "question", review: "proposal" };
-const DATABASE_FOR_TYPE: Record<string, string> = { area: "areas", goal: "goals", project: "projects", person: "people", org: "orgs", decision: "decisions", question: "questions", meeting: "meetings", proposal: "review" };
-const PUBLISHED_TYPES = new Set(["area", "goal", "project", "person", "org", "decision", "question", "meeting", "proposal"]);
+const TYPE_FOR_DATABASE: Record<string, string> = { areas: "area", goals: "goal", projects: "project", people: "person", orgs: "org", decisions: "decision", questions: "question", concepts: "concept", review: "proposal" };
+const DATABASE_FOR_TYPE: Record<string, string> = { area: "areas", goal: "goals", project: "projects", person: "people", org: "orgs", decision: "decisions", question: "questions", concept: "concepts", source: "inbox", meeting: "meetings", proposal: "review" };
+const PUBLISHED_TYPES = new Set(["area", "goal", "project", "person", "org", "decision", "question", "concept", "source", "meeting", "proposal"]);
 
 export interface SyncPlan {
   as_of: string;
@@ -210,14 +210,15 @@ function planDecision(row: SnapshotRow, proposal: Note, out: SyncPlan): void {
   if (decision === undefined || property(row.properties, "State") !== "Pending") return;
   if (["applied", "closed"].includes(String(proposal.attributes.status))) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: proposal.id, reason: "ALREADY_TERMINAL" }); return; }
   const action = String(decision).toLowerCase();
-  const value = property(row.properties, "Edited Value");
+  const note = property(row.properties, "Note");
   if (!["approve", "reject", "edit"].includes(action)) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: proposal.id, reason: "NOT_CORRECTABLE" }); return; }
   if (action === "edit" && !EDITABLE.has(String(proposal.attributes.kind))) {
     out.conflicts.push(conflict(row, "EDIT_NOT_ALLOWED", `Edit is not allowed on a ${String(proposal.attributes.kind)} proposal`, "Decision", decision));
     return;
   }
-  if (action === "edit" && (value === null || value === undefined || value === "")) { out.conflicts.push(conflict(row, "EDIT_WITHOUT_VALUE", "Edit needs an Edited Value")); return; }
-  out.decisions.push({ proposal: proposal.id, action: action as DecisionInput["action"], ...(action === "edit" ? { value } : {}), decided_at: row.last_edited, decided_by: "notion" });
+  if (action === "edit" && (note === null || note === undefined || note === "")) { out.conflicts.push(conflict(row, "EDIT_WITHOUT_VALUE", "Edit needs a Note", "Note")); return; }
+  if (action !== "edit" && typeof note === "string" && note !== "") { out.conflicts.push(conflict(row, "NOTE_TO_READ", "Review Note needs interpretation by the skill", "Note", note, decision)); return; }
+  out.decisions.push({ proposal: proposal.id, action: action as DecisionInput["action"], ...(action === "edit" ? { value: note as string, note: note as string } : {}), decided_at: row.last_edited, decided_by: "notion" });
 }
 
 function planKeyResult(workspace: Workspace, asOf: string, row: SnapshotRow, out: SyncPlan): void {
@@ -248,7 +249,7 @@ function notionFields(database: string, p: Record<string, unknown>, asOf: string
 
 function brainProperties(database: string): Array<[string, string]> {
   const common: Array<[string, string]> = [["Name", "title"], ["Summary", "summary"], ["Lifecycle", "lifecycle"]];
-  const extras: Record<string, Array<[string, string]>> = { goals: [["Why", "why"], ["Deadline", "facts.deadline"], ["Area", "area"]], projects: [["Key Facts", "facts"], ["Area", "area"], ["Goal", "goal"], ["Client", "client"], ["People", "people"]], people: [["Role", "facts.role"], ["Org", "org"]], decisions: [["Assessment", "assessment"], ["Project", "projects"], ["Area", "derived_area"]], questions: [["Kind", "kind"], ["Project", "projects"], ["Area", "derived_area"]] };
+  const extras: Record<string, Array<[string, string]>> = { goals: [["Why", "why"], ["Deadline", "facts.deadline"], ["Area", "area"]], projects: [["Key Facts", "facts"], ["Area", "area"], ["Goal", "goal"], ["Client", "client"], ["People", "people"]], people: [["Role", "facts.role"], ["Org", "org"]], decisions: [["Assessment", "assessment"]], questions: [["Kind", "kind"]] };
   return [...common, ...(extras[database] ?? [])];
 }
 
@@ -356,28 +357,30 @@ function summarize(items: readonly Record<string, unknown>[]): Record<string, nu
 export interface RenderItem { id: string; type: string; database: string; database_id: string; page_id: string | null; action: "create" | "update"; properties: Record<string, unknown>; body: string | null; sections: Record<string, string> | null; pending_relations: Array<Record<string, unknown>>; published: Record<string, unknown> }
 
 export function render(workspace: Workspace, now: Date, ids?: readonly string[], held?: ReadonlyMap<string, Set<string>>): { items: RenderItem[]; errors: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id?: string }> } {
-  const selected = ids === undefined ? workspace.notes.filter((note) => PUBLISHED_TYPES.has(note.type)) : ids.map((id) => workspace.get(id)!).filter(Boolean);
+  const selected = ids === undefined ? workspace.notes.filter((note) => PUBLISHED_TYPES.has(note.type) && !(note.type === "source" && note.attributes.kind === undefined)) : ids.map((id) => workspace.get(id)!).filter(Boolean);
   const items: RenderItem[] = []; const errors: Array<Record<string, unknown>> = []; const warnings: Array<{ code: string; message: string; id?: string }> = [];
   for (const note of selected) {
-    const database = DATABASE_FOR_TYPE[note.type]; if (database === undefined) continue;
+    const database = DATABASE_FOR_TYPE[note.type]; if (database === undefined || (note.type === "source" && note.attributes.kind === undefined)) continue;
     const databaseId = databaseIdFor(workspace, database); if (databaseId === "") { warnings.push({ code: "DATABASE_NOT_CONFIGURED", message: `${database} database is not configured`, id: note.id }); continue; }
     if (note.type === "meeting" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "MEETING_NOT_PUBLISHED" }); continue; }
     if (note.type === "project" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "PROJECT_NOT_IN_NOTION" }); continue; }
+    const capturePage = note.type === "source" && note.attributes.kind === "capture" && typeof note.attributes.source_key === "string" && note.attributes.source_key.startsWith("notion:") ? note.attributes.source_key.slice("notion:".length) : undefined;
+    if (note.type === "source" && note.attributes.kind === "capture" && (capturePage === undefined || (typeof note.attributes.notion === "string" && note.attributes.notion !== capturePage))) { errors.push({ id: note.id, reason: "NOTION_ID_MISMATCH" }); continue; }
     const rendered = renderedBrainValues(note, workspace); const published = isRecord(note.attributes.notion_published) ? note.attributes.notion_published : {};
     const properties: Record<string, unknown> = {}; const pending: Array<Record<string, unknown>> = []; const heldProperties = held?.get(note.id) ?? new Set<string>();
-    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name)) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (note.attributes.notion === undefined || !Object.hasOwn(published, name) || !sameValue(value, published[name]))) properties[name] = encoded; }
+    const isCreate = note.attributes.notion === undefined && capturePage === undefined;
+    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || !Object.hasOwn(published, name) || !sameValue(value, published[name]))) properties[name] = encoded; }
     const content = renderedContent(note, workspace); if (content.hash !== undefined) rendered["@content"] = content.hash;
     const contentChanged = content.hash !== undefined && !isDeepStrictEqual(content.hash, published["@content"]);
-    const isCreate = note.attributes.notion === undefined;
     if (!isCreate && Object.keys(properties).length === 0 && !contentChanged) continue;
     if (!isCreate && note.type !== "meeting" && note.type !== "proposal") properties["Last Synced"] = { type: "date", value: { start: formatTimestamp(now), end: null } };
-    items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: typeof note.attributes.notion === "string" ? note.attributes.notion : null, action: isCreate ? "create" : "update", properties, body: content.body, sections: content.sections, pending_relations: pending, published: rendered });
+    items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: typeof note.attributes.notion === "string" ? note.attributes.notion : capturePage ?? null, action: isCreate ? "create" : "update", properties, body: content.body, sections: content.sections, pending_relations: pending, published: rendered });
   }
   items.sort((a, b) => DATABASES.concat(["meetings"] as never[]).indexOf(a.database as never) - DATABASES.concat(["meetings"] as never[]).indexOf(b.database as never) || compareCodePoints(a.id, b.id));
   return { items, errors, warnings };
 }
 
-function databaseIdFor(workspace: Workspace, database: string): string { const notion = workspace.config.notion; return isRecord(notion) && isRecord(notion.databases) && typeof notion.databases[database] === "string" ? notion.databases[database] : ""; }
+function databaseIdFor(workspace: Workspace, database: string): string { const notion = workspace.config.notion; if (!isRecord(notion) || !isRecord(notion.databases)) return ""; return typeof notion.databases[database] === "string" ? notion.databases[database] : database === "inbox" && typeof notion.databases.capture_inbox === "string" ? notion.databases.capture_inbox : ""; }
 function renderedBrainValues(note: Note, workspace: Workspace): Record<string, unknown> {
   const a = note.attributes; const values: Record<string, unknown> = {};
   const common = () => Object.assign(values, { Name: a.title, Summary: a.summary ?? null, Lifecycle: select(a.lifecycle), "Brain ID": note.id });
@@ -396,38 +399,51 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     return values;
   }
   if (note.type === "meeting") { Object.assign(values, { Decisions: relationPages(a.decisions, workspace), Questions: relationPages(a.questions, workspace), Attendees: relationPages(a.attendees, workspace), Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Brain Status": "Ingested", "Ingested At": dateOutput(a.created), "Brain ID": note.id }); return values; }
+  if (note.type === "source") return sourceValues(note, workspace);
   common();
   if (note.type === "goal") Object.assign(values, { Why: a.why ?? null, Deadline: dateOutput(isRecord(a.facts) ? a.facts.deadline : undefined), Area: relationPages(a.area === undefined ? [] : [a.area], workspace) });
   if (note.type === "project") Object.assign(values, { "Key Facts": keyFactsText(a.facts, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), Goal: relationPages(a.goal === undefined ? [] : [a.goal], workspace), Client: relationPages(a.client === undefined ? [] : [a.client], workspace), People: relationPages(a.people, workspace) });
   if (note.type === "person") Object.assign(values, { Role: isRecord(a.facts) ? a.facts.role ?? null : null, Org: relationPages(a.org === undefined ? [] : [a.org], workspace) });
-  if (note.type === "decision") Object.assign(values, { Date: dateOutput(a.date), Assessment: select(a.assessment), Area: relationPages(projectAreas(a.projects, workspace), workspace), Project: relationPages(a.projects, workspace), "Decided In": relationPages(a.decided_in === undefined ? [] : [a.decided_in], workspace), Supersedes: relationPages((Array.isArray(a.relations) ? a.relations.filter(isRecord).filter((x) => x.type === "supersedes").map((x) => x.target) : []), workspace) });
-  if (note.type === "question") Object.assign(values, { Kind: select(a.kind), Area: relationPages(projectAreas(a.projects, workspace), workspace), Project: relationPages(a.projects, workspace), "Raised In": relationPages(a.raised_in === undefined ? [] : [a.raised_in], workspace) });
+  if (note.type === "decision") Object.assign(values, { Date: dateOutput(a.date), Assessment: select(a.assessment), Project: relationPages(a.projects, workspace), "Decided In": relationPages(a.decided_in === undefined ? [] : [a.decided_in], workspace), Supersedes: relationPages((Array.isArray(a.relations) ? a.relations.filter(isRecord).filter((x) => x.type === "supersedes").map((x) => x.target) : []), workspace) });
+  if (note.type === "question") Object.assign(values, { Kind: select(a.kind), Project: relationPages(a.projects, workspace), "Raised In": relationPages(a.raised_in === undefined ? [] : [a.raised_in], workspace) });
+  if (note.type === "concept") Object.assign(values, { Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace) });
   return values;
 }
 
-/** Area on decisions and questions is a derived Notion relation (decision 0034). */
-function projectAreas(projects: unknown, workspace: Workspace): string[] {
-  const areas = (Array.isArray(projects) ? projects : []).flatMap((project) => {
-    const area = workspace.get(String(project))?.attributes.area;
-    return typeof area === "string" ? [area] : [];
-  });
-  return [...new Set(areas)].sort(compareCodePoints);
+function sourceValues(note: Note, workspace: Workspace): Record<string, unknown> {
+  const produced = workspace.notes.filter((candidate) => ["decision", "question", "concept", "person"].includes(candidate.type) && Array.isArray(candidate.attributes.sources) && candidate.attributes.sources.includes(note.id));
+  const ids = (type: string) => produced.filter((candidate) => candidate.type === type).map((candidate) => candidate.id).sort(compareCodePoints);
+  const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))].sort(compareCodePoints);
+  const areas = [...new Set([...produced.map((candidate) => candidate.attributes.area).filter((id): id is string => typeof id === "string"), ...projects.flatMap((id) => { const area = workspace.get(id)?.attributes.area; return typeof area === "string" ? [area] : []; })])].sort(compareCodePoints);
+  return { Name: note.attributes.title, Kind: select(note.attributes.kind), Summary: note.attributes.summary ?? null, Decisions: relationPages(ids("decision"), workspace), Questions: relationPages(ids("question"), workspace), Concepts: relationPages(ids("concept"), workspace), People: relationPages(ids("person"), workspace), Project: relationPages(projects, workspace), Area: relationPages(areas, workspace), "Brain Status": "Processed", "Brain ID": note.id };
 }
 
 function notionProperty(name: string, value: unknown, note: Note, workspace: Workspace, pending: Array<Record<string, unknown>>): unknown {
-  const relation = ["Area", "Goal", "Client", "People", "Org", "Project", "Decided In", "Raised In", "Supersedes", "Decisions", "Questions", "Attendees"].includes(name);
+  const relation = ["Area", "Goal", "Client", "People", "Org", "Project", "Decided In", "Raised In", "Supersedes", "Decisions", "Questions", "Concepts", "Attendees"].includes(name);
   if (relation) {
     const sourceField: Record<string, string> = { Area: "area", Goal: "goal", Client: "client", People: "people", Org: "org", Project: "projects", "Decided In": "decided_in", "Raised In": "raised_in", Decisions: "decisions", Questions: "questions", Attendees: "attendees" };
-    const raw = name === "Area" && (note.type === "decision" || note.type === "question") ? projectAreas(note.attributes.projects, workspace) : name === "Supersedes" ? (Array.isArray(note.attributes.relations) ? note.attributes.relations.filter(isRecord).filter((item) => item.type === "supersedes").map((item) => item.target) : []) : note.attributes[sourceField[name] ?? ""];
+    const raw = name === "Supersedes" ? (Array.isArray(note.attributes.relations) ? note.attributes.relations.filter(isRecord).filter((item) => item.type === "supersedes").map((item) => item.target) : []) : note.type === "source" ? sourceRelationIds(note, name, workspace) : note.attributes[sourceField[name] ?? ""];
     const missing = (Array.isArray(raw) ? raw : raw === undefined ? [] : [raw]).map(String).filter((id) => typeof workspace.get(id)?.attributes.notion !== "string");
     if (missing.length > 0) pending.push({ property: name, ids: missing });
-    return { type: "relation", value: Array.isArray(value) ? value : [], ...(note.type === "meeting" ? { mode: ["Project", "Area"].includes(name) ? "if_empty" : "add" } : {}) };
+    const mode = (note.type === "meeting" || note.type === "source") ? (["Project", "Area"].includes(name) ? "if_empty" : note.type === "meeting" ? "add" : undefined) : undefined;
+    return { type: "relation", value: Array.isArray(value) ? value : [], ...(mode === undefined ? {} : { mode }) };
   }
   if (["Lifecycle", "Assessment", "Kind", "State", "Brain Status"].includes(name)) return { type: "select", value };
   if (name === "Last Synced" || name === "Date" || name === "Deadline" || name === "Ingested At") return { type: "date", value };
   return { type: name === "Name" ? "title" : "rich_text", value };
 }
-function renderedContent(note: Note, workspace: Workspace): { body: string | null; sections: Record<string, string> | null; hash?: string } { if (note.type === "decision" || note.type === "question") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: notionMarkdown(generatedBlock(brief?.body ?? ""), note, workspace), "Decision log": notionMarkdown(generatedBlock(log?.body ?? ""), note, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
+function sourceRelationIds(note: Note, name: string, workspace: Workspace): string[] {
+  const produced = workspace.notes.filter((candidate) => ["decision", "question", "concept", "person"].includes(candidate.type) && Array.isArray(candidate.attributes.sources) && candidate.attributes.sources.includes(note.id));
+  if (name === "Decisions") return produced.filter((candidate) => candidate.type === "decision").map((candidate) => candidate.id);
+  if (name === "Questions") return produced.filter((candidate) => candidate.type === "question").map((candidate) => candidate.id);
+  if (name === "Concepts") return produced.filter((candidate) => candidate.type === "concept").map((candidate) => candidate.id);
+  if (name === "People") return produced.filter((candidate) => candidate.type === "person").map((candidate) => candidate.id);
+  const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))];
+  if (name === "Project") return projects;
+  if (name === "Area") return [...new Set([...produced.map((candidate) => candidate.attributes.area).filter((id): id is string => typeof id === "string"), ...projects.flatMap((id) => { const area = workspace.get(id)?.attributes.area; return typeof area === "string" ? [area] : []; })])];
+  return [];
+}
+function renderedContent(note: Note, workspace: Workspace): { body: string | null; sections: Record<string, string> | null; hash?: string } { if (note.type === "decision" || note.type === "question" || note.type === "concept") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: notionMarkdown(generatedBlock(brief?.body ?? ""), note, workspace), "Decision log": notionMarkdown(generatedBlock(log?.body ?? ""), note, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
 function generatedBlock(body: string): string { const start = body.indexOf("<!-- @generated:start -->"); const end = body.indexOf("<!-- @generated:end -->"); return start >= 0 && end > start ? body.slice(start + "<!-- @generated:start -->".length, end).trim() : body.trim(); }
 function notionMarkdown(body: string, source: Note, workspace: Workspace): string { const fromFolder = source.path.includes("/") ? source.path.slice(0, source.path.lastIndexOf("/")) : ""; return body.replace(/\^\[(inferred|ambiguous)\]/g, (_, kind) => kind === "inferred" ? " (AI inference)" : " (ambiguous)").replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_all, title, link) => { const targetPath = normalizeRelative(fromFolder, link); const target = workspace.notes.find((note) => note.path === targetPath); return typeof target?.attributes.notion === "string" ? `[${title}](https://www.notion.so/${target.attributes.notion.replaceAll("-", "")})` : title; }); }
 function reviewMarkdown(body: string, target: Note | undefined): string {
