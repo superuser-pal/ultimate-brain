@@ -1,6 +1,7 @@
 # Ultimate Brain for Notion (1) — Factual Architecture Appendix
 
 **Status:** Notion AI audit supplied by the user on 2026-10-11.  
+**Ids:** page, database and view ids from the audited workspace are replaced with `<id>` (2026-10-19, CC-27; the product repo holds no real Notion ids).  
 **Evidence convention:** “Verified” below means reported as observed by Notion AI through the workspace/API interfaces it could access; it has not been independently verified from a Notion export or direct API response.
 
 > **Repository research note:** This export documents the visible hierarchy, six master databases, schemas, relations, templates, dashboards, formulas, GTD/PARA mechanics, recurrence model, and archive model. It does not provide dedicated evidence for property/page permissions, button actions, database-automation trigger/action configuration, recurring-template schedules, duplicate prevention, correction history, decision supersession, representative record traces, or a final `Unknown` / `Not found` inventory. Treat those subjects as **undocumented by this audit**, not as confirmed absent.
@@ -63,38 +64,38 @@ Ultimate Brain for Notion (1) [Root Page]
 
 | Page Title | Notion URL | Parent Location | Icon | Verified Structural Role |
 | --- | --- | --- | --- | --- |
-| **Ultimate Brain for Notion (1)** | `https://app.notion.com/p/00a495661e99828cbbd38119dd5feb6e` | Workspace Root | 🧠 | Main template root; navigation hub linking all dashboards, productivity views, and special views. |
-| **Dashboard** | `https://app.notion.com/p/39d495661e9983fead0381d03bcf9f07` | Root Page | ⚡ | Central personal cockpit: links to today's tasks, notes recents/favorites, prioritized projects, and quick links. |
-| **My Day** | `https://app.notion.com/p/813495661e9982e0ad6c01cdfd4a30ea` | Root Page | ☀️ | Daily execution dashboard: Task & Events, Self-Care focus, Daily Habit trackers, and Day Review. |
-| **Quick Capture** | `https://app.notion.com/p/6a6495661e99836b99a9015b1f8c9b66` | Root Page | 📥 | Minimal, mobile-friendly landing zone for rapid entry of unassigned tasks and raw notes. |
-| **Task Manager** | `https://app.notion.com/p/746495661e998370902701d8cba7170d` | Root Page | ✅ | Master task cockpit housing linked views for Today, Tomorrow, Next 7 Days, Kanban boards, and subpage routes. |
-| **Project Hub** | `https://app.notion.com/p/93e495661e998331a129815db3029378` | Root Page | 🎯 | Project planning and status center grouped by Area, tracking progress, deadlines, and active priority. |
-| **Notes** | `https://app.notion.com/p/a7f495661e9983109e950192567dcc68` | Root Page | 🗒️ | Knowledge base dashboard: Notebooks, Note Inbox, Favorites, Recents, and Daily Journals. |
-| **Areas & Resources** | `https://app.notion.com/p/293495661e998275850e019f29e57972` | Root Page | 🗃️ | PARA structural center housing Areas and Resources within a consolidated database schema. |
-| **Goals** | `https://app.notion.com/p/ecb495661e99830e9dd2014ce5276613` | Root Page | 🏆 | High-level goal tracking dashboard connecting Goals, linked Milestones, and supporting Projects. |
-| **Process** | `https://app.notion.com/p/3de495661e9983e7968081fb754dd461` | Root Page | 🔄 | Dedicated GTD processing center for triaging Intake items into Smart Lists (Do Next, Delegated, Someday). |
-| **Plan** | `https://app.notion.com/p/140495661e9983af8cde81c3c81105a5` | Root Page | 🗓️ | Medium- and long-term planning dashboard for Quarterly/Annual reviews and active priority roadmaps. |
-| **Quick Links** | `https://app.notion.com/p/6c3495661e99826f8dbd81e6e02154c9` | Root Page | 🔗 | Workspace-wide reference directory of bookmarks, recurring links, and resource locations. |
-| **Book Tracker** | `https://app.notion.com/p/9c0495661e9982bf839281b40f0f6295` | Root Page | 📚 | Specialized library dashboard filtering Notes by Type "Book" across reading status shelves. |
-| **Recipe Book** | `https://app.notion.com/p/25e495661e99831badd981b57842752d` | Root Page | 🍳 | Culinary collection dashboard filtering Notes by Type "Recipe" with categorized tags and ingredient inboxes. |
-| **Archive** | `https://app.notion.com/p/9b1495661e99835e800981233e39ba04` | Root Page | 📦 | Structural resting place for master databases ("The Brain") and retired workspace items. |
+| **Ultimate Brain for Notion (1)** | `https://app.notion.com/p/<id>` | Workspace Root | 🧠 | Main template root; navigation hub linking all dashboards, productivity views, and special views. |
+| **Dashboard** | `https://app.notion.com/p/<id>` | Root Page | ⚡ | Central personal cockpit: links to today's tasks, notes recents/favorites, prioritized projects, and quick links. |
+| **My Day** | `https://app.notion.com/p/<id>` | Root Page | ☀️ | Daily execution dashboard: Task & Events, Self-Care focus, Daily Habit trackers, and Day Review. |
+| **Quick Capture** | `https://app.notion.com/p/<id>` | Root Page | 📥 | Minimal, mobile-friendly landing zone for rapid entry of unassigned tasks and raw notes. |
+| **Task Manager** | `https://app.notion.com/p/<id>` | Root Page | ✅ | Master task cockpit housing linked views for Today, Tomorrow, Next 7 Days, Kanban boards, and subpage routes. |
+| **Project Hub** | `https://app.notion.com/p/<id>` | Root Page | 🎯 | Project planning and status center grouped by Area, tracking progress, deadlines, and active priority. |
+| **Notes** | `https://app.notion.com/p/<id>` | Root Page | 🗒️ | Knowledge base dashboard: Notebooks, Note Inbox, Favorites, Recents, and Daily Journals. |
+| **Areas & Resources** | `https://app.notion.com/p/<id>` | Root Page | 🗃️ | PARA structural center housing Areas and Resources within a consolidated database schema. |
+| **Goals** | `https://app.notion.com/p/<id>` | Root Page | 🏆 | High-level goal tracking dashboard connecting Goals, linked Milestones, and supporting Projects. |
+| **Process** | `https://app.notion.com/p/<id>` | Root Page | 🔄 | Dedicated GTD processing center for triaging Intake items into Smart Lists (Do Next, Delegated, Someday). |
+| **Plan** | `https://app.notion.com/p/<id>` | Root Page | 🗓️ | Medium- and long-term planning dashboard for Quarterly/Annual reviews and active priority roadmaps. |
+| **Quick Links** | `https://app.notion.com/p/<id>` | Root Page | 🔗 | Workspace-wide reference directory of bookmarks, recurring links, and resource locations. |
+| **Book Tracker** | `https://app.notion.com/p/<id>` | Root Page | 📚 | Specialized library dashboard filtering Notes by Type "Book" across reading status shelves. |
+| **Recipe Book** | `https://app.notion.com/p/<id>` | Root Page | 🍳 | Culinary collection dashboard filtering Notes by Type "Recipe" with categorized tags and ingredient inboxes. |
+| **Archive** | `https://app.notion.com/p/<id>` | Root Page | 📦 | Structural resting place for master databases ("The Brain") and retired workspace items. |
 
 ---
 
 ## 2. The 6 Core Master Databases
 
-Ultimate Brain centralizes all records inside six canonical databases located on the `Archive` page under a toggle titled **"The Brain"** (`https://app.notion.com/p/d9e495661e99833a9f240135cec22bb3`).
+Ultimate Brain centralizes all records inside six canonical databases located on the `Archive` page under a toggle titled **"The Brain"** (`https://app.notion.com/p/<id>`).
 
 ### 2.1. Master Database Registry
 
 | Database Name | Database URL | Collection / Data Source URL | Icon | Record Type |
 | --- | --- | --- | --- | --- |
-| **✅ All Tasks [UB]** | `https://app.notion.com/p/9aa495661e9983b0ba1001b0a1f1e3e8` | `collection://8b349566-1e99-82e6-8283-070bd3887004` | ✅ | Actionable tasks, GTD inbox items, sub-tasks, recurring tasks |
-| **🎯 Projects [UB]** | `https://app.notion.com/p/ad6495661e9982309c9601d09ae024d3` | `collection://a3449566-1e99-839d-b4c2-87ff1bc64707` | 🎯 | Multi-step outcomes with deadlines, progress tracking, task links |
-| **🗒️ All Notes [UB]** | `https://app.notion.com/p/711495661e9982eba01501f94be52d16` | `collection://90549566-1e99-8258-9a08-87f5b382223f` | 🗒️ | Notes, daily journals, book summaries, recipes, web clips |
-| **🏆 Goals [UB]** | `https://app.notion.com/p/971495661e99829dae6881556011dba2` | `collection://e7a49566-1e99-83fd-8d08-87a7fad25227` | 🏆 | Broad objectives broken into measurable milestones and projects |
-| **📌 Milestones [UB]** | `https://app.notion.com/p/7ee495661e9982409586015a0752c1e5` | `collection://90449566-1e99-836f-8d25-07378613b3f1` | 📌 | Concrete step-targets belonging directly to a Parent Goal |
-| **🗃️ Areas/Resources [UB]** | `https://app.notion.com/p/5e0495661e998270bc900171a282a975` | `collection://6cb49566-1e99-825a-9adb-87e54f0b9278` | 🗃️ | PARA Areas of responsibility and Resource reference topics |
+| **✅ All Tasks [UB]** | `https://app.notion.com/p/<id>` | `collection://<id>` | ✅ | Actionable tasks, GTD inbox items, sub-tasks, recurring tasks |
+| **🎯 Projects [UB]** | `https://app.notion.com/p/<id>` | `collection://<id>` | 🎯 | Multi-step outcomes with deadlines, progress tracking, task links |
+| **🗒️ All Notes [UB]** | `https://app.notion.com/p/<id>` | `collection://<id>` | 🗒️ | Notes, daily journals, book summaries, recipes, web clips |
+| **🏆 Goals [UB]** | `https://app.notion.com/p/<id>` | `collection://<id>` | 🏆 | Broad objectives broken into measurable milestones and projects |
+| **📌 Milestones [UB]** | `https://app.notion.com/p/<id>` | `collection://<id>` | 📌 | Concrete step-targets belonging directly to a Parent Goal |
+| **🗃️ Areas/Resources [UB]** | `https://app.notion.com/p/<id>` | `collection://<id>` | 🗃️ | PARA Areas of responsibility and Resource reference topics |
 
 ---
 
@@ -102,7 +103,7 @@ Ultimate Brain centralizes all records inside six canonical databases located on
 
 ### 3.1. `All Tasks [UB]` Schema
 
-- **Collection URL**: `collection://8b349566-1e99-82e6-8283-070bd3887004`
+- **Collection URL**: `collection://<id>`
 - **Total Properties**: 46 properties (10 native editable, 2 system timestamps, 1 user property, 3 relations, 11 rollups, 19 formulas).
 
 | Property Name | Property ID | Type | Configuration / Options / Targets | Formula Result / Rollup Detail |
@@ -123,9 +124,9 @@ Ultimate Brain centralizes all records inside six canonical databases located on
 | **Recur Interval** | `bXZweA` | `number` | Numeric multiplier for recurrence | E.g., `1`, `2`, `14` |
 | **Recur Unit** | `YV5Tbw` | `select` | `Day(s)`, `Week(s)`, `Month(s)`, `Month(s) on the First Weekday`, `Month(s) on the Last Weekday`, `Month(s) on the Last Day`, `Year(s)` | Recurring engine frequency unit |
 | **Days (Only if Set to 1 Day(s))** | `WmhaRg` | `multi_select` | `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday` | Specific weekday recurrence selector |
-| **Project** | `YX58bA` | `relation` | Target: `collection://a3449566-1e99-839d-b4c2-87ff1bc64707` (`Projects [UB]`) | Two-way: `Projects [UB].Tasks` (`Znl4Yw`) |
-| **Parent Task** | `dXlydg` | `relation` | Target: `collection://8b349566-1e99-82e6-8283-070bd3887004` (`All Tasks [UB]`) | Two-way self-relation: `Sub-Tasks` (`d3p2RA`) |
-| **Sub-Tasks** | `d3p2RA` | `relation` | Target: `collection://8b349566-1e99-82e6-8283-070bd3887004` (`All Tasks [UB]`) | Two-way self-relation: `Parent Task` (`dXlydg`) |
+| **Project** | `YX58bA` | `relation` | Target: `collection://<id>` (`Projects [UB]`) | Two-way: `Projects [UB].Tasks` (`Znl4Yw`) |
+| **Parent Task** | `dXlydg` | `relation` | Target: `collection://<id>` (`All Tasks [UB]`) | Two-way self-relation: `Sub-Tasks` (`d3p2RA`) |
+| **Sub-Tasks** | `d3p2RA` | `relation` | Target: `collection://<id>` (`All Tasks [UB]`) | Two-way self-relation: `Parent Task` (`dXlydg`) |
 | **Created** | `QXt2SA` | `created_time` | ISO-8601 creation timestamp | System immutable |
 | **Created By** | `Rkg9Vw` | `created_by` | User URL | System immutable |
 | **Edited** | `OmBCWg` | `last_edited_time` | ISO-8601 edit timestamp | System auto-updated |
@@ -168,7 +169,7 @@ Ultimate Brain centralizes all records inside six canonical databases located on
 
 ### 3.2. `Projects [UB]` Schema
 
-- **Collection URL**: `collection://a3449566-1e99-839d-b4c2-87ff1bc64707`
+- **Collection URL**: `collection://<id>`
 - **Total Properties**: 23 properties (7 editable, 2 timestamps, 5 relations, 4 rollups, 5 formulas).
 
 | Property Name | Property ID | Type | Configuration / Options / Targets | Formula Result / Rollup Detail |
@@ -180,11 +181,11 @@ Ultimate Brain centralizes all records inside six canonical databases located on
 | **Completed** | `U2R5eA` | `date` | Final completion timestamp | Filled when marked `Done` |
 | **Archived** | `R2l3cw` | `checkbox` | Excludes project from active views | Default: `__NO__` |
 | **Review Notes** | `Y19sZw` | `text` | Narrative review / retro notes | Long text |
-| **Area** | `bG52cw` | `relation` | Target: `collection://6cb49566-1e99-825a-9adb-87e54f0b9278` (`Areas/Resources [UB]`) | Two-way: `Areas/Resources [UB].Projects` (`V2pMaQ`) |
-| **Goal** | `WztOSw` | `relation` | Target: `collection://e7a49566-1e99-83fd-8d08-87a7fad25227` (`Goals [UB]`) | Two-way: `Goals [UB].Projects` (`W1ZCeQ`) |
-| **Tasks** | `Znl4Yw` | `relation` | Target: `collection://8b349566-1e99-82e6-8283-070bd3887004` (`All Tasks [UB]`) | Two-way: `All Tasks [UB].Project` (`YX58bA`) |
-| **Notes** | `cFZnbg` | `relation` | Target: `collection://90549566-1e99-8258-9a08-87f5b382223f` (`All Notes [UB]`) | Two-way: `All Notes [UB].Project` (`fFVTfA`) |
-| **Resource Pulls** | `X1A-Vw` | `relation` | Target: `collection://6cb49566-1e99-825a-9adb-87e54f0b9278` (`Areas/Resources [UB]`) | Two-way: `Areas/Resources [UB].Pulls` (`cT1uWg`) |
+| **Area** | `bG52cw` | `relation` | Target: `collection://<id>` (`Areas/Resources [UB]`) | Two-way: `Areas/Resources [UB].Projects` (`V2pMaQ`) |
+| **Goal** | `WztOSw` | `relation` | Target: `collection://<id>` (`Goals [UB]`) | Two-way: `Goals [UB].Projects` (`W1ZCeQ`) |
+| **Tasks** | `Znl4Yw` | `relation` | Target: `collection://<id>` (`All Tasks [UB]`) | Two-way: `All Tasks [UB].Project` (`YX58bA`) |
+| **Notes** | `cFZnbg` | `relation` | Target: `collection://<id>` (`All Notes [UB]`) | Two-way: `All Notes [UB].Project` (`fFVTfA`) |
+| **Resource Pulls** | `X1A-Vw` | `relation` | Target: `collection://<id>` (`Areas/Resources [UB]`) | Two-way: `Areas/Resources [UB].Pulls` (`cT1uWg`) |
 | **Created** | `QXt2SA` | `created_time` | System creation time | Immutable |
 | **Edited** | `OmBCWg` | `last_edited_time` | System edit time | Auto-updated |
 | **Goal Area** | `T1VnfQ` | `rollup` | Relation: `Goal`; Target: `Area` (`dlk7dg`) | Inherits Area relation from linked Goal |
@@ -201,7 +202,7 @@ Ultimate Brain centralizes all records inside six canonical databases located on
 
 ### 3.3. `All Notes [UB]` Schema
 
-- **Collection URL**: `collection://90549566-1e99-8258-9a08-87f5b382223f`
+- **Collection URL**: `collection://<id>`
 - **Total Properties**: 23 properties (11 editable, 2 timestamps, 4 relations, 4 rollups, 4 formulas).
 
 | Property Name | Property ID | Type | Configuration / Options / Targets | Formula Result / Rollup Detail |
@@ -220,9 +221,9 @@ Ultimate Brain centralizes all records inside six canonical databases located on
 | **📚 Rating** | `WHR0VA` | `select` | `⭐`, `⭐⭐`, `⭐⭐⭐`, `⭐⭐⭐⭐`, `⭐⭐⭐⭐⭐` (all blue) | 5-point star rating |
 | **📚 Date Started** | `bmN8eg` | `date` | Reading start date | Format: `LT` |
 | **📚 Date Finished** | `QVR8Ow` | `date` | Reading finish date | Format: `LT` |
-| **Area/Resource** | `aD5nQw` | `relation` | Target: `collection://6cb49566-1e99-825a-9adb-87e54f0b9278` (`Areas/Resources [UB]`) | Two-way: `Areas/Resources [UB].Notes` (`WGpbeA`) |
-| **Project** | `fFVTfA` | `relation` | Target: `collection://a3449566-1e99-839d-b4c2-87ff1bc64707` (`Projects [UB]`) | Two-way: `Projects [UB].Notes` (`cFZnbg`) |
-| **Pulls** | `Um1POw` | `relation` | Target: `collection://a3449566-1e99-839d-b4c2-87ff1bc64707` (`Projects [UB]`) | Relation link for pulled project references |
+| **Area/Resource** | `aD5nQw` | `relation` | Target: `collection://<id>` (`Areas/Resources [UB]`) | Two-way: `Areas/Resources [UB].Notes` (`WGpbeA`) |
+| **Project** | `fFVTfA` | `relation` | Target: `collection://<id>` (`Projects [UB]`) | Two-way: `Projects [UB].Notes` (`cFZnbg`) |
+| **Pulls** | `Um1POw` | `relation` | Target: `collection://<id>` (`Projects [UB]`) | Relation link for pulled project references |
 | **Created** | `a2ltTg` | `created_time` | System timestamp | Immutable |
 | **Updated** | `T2t9Tg` | `last_edited_time` | System timestamp | Auto-updated on edit |
 | **Root Area** | `aXxmTw` | `rollup` | Relation: `Area/Resource`; Target: `Root Area` (`RVRnPg`) | Resolves parent Area if note is filed under a Resource |
@@ -238,7 +239,7 @@ Ultimate Brain centralizes all records inside six canonical databases located on
 
 ### 3.4. `Goals [UB]` Schema
 
-- **Collection URL**: `collection://e7a49566-1e99-83fd-8d08-87a7fad25227`
+- **Collection URL**: `collection://<id>`
 - **Total Properties**: 14 properties (5 editable, 1 timestamp, 3 relations, 1 rollup, 4 formulas).
 
 | Property Name | Property ID | Type | Configuration / Options / Targets | Formula Result / Rollup Detail |
@@ -248,9 +249,9 @@ Ultimate Brain centralizes all records inside six canonical databases located on
 | **Target Deadline** | `el1mUg` | `date` | Target delivery/achievement date | ISO-8601 date |
 | **Achieved** | `ZUZNXw` | `date` | Completion date | Populated when goal is reached |
 | **Archived** | `VH5xaA` | `checkbox` | Default: `__NO__` | Excludes goal from active dashboards |
-| **Area** | `dlk7dg` | `relation` | Target: `collection://6cb49566-1e99-825a-9adb-87e54f0b9278` (`Areas/Resources [UB]`) | Two-way: `Areas/Resources [UB].Goals` (`dFhZPw`) |
-| **Milestones** | `YEtfWw` | `relation` | Target: `collection://90449566-1e99-836f-8d25-07378613b3f1` (`Milestones [UB]`) | Two-way: `Milestones [UB].Goal` (`U1s9UQ`) |
-| **Projects** | `W1ZCeQ` | `relation` | Target: `collection://a3449566-1e99-839d-b4c2-87ff1bc64707` (`Projects [UB]`) | Two-way: `Projects [UB].Goal` (`WztOSw`) |
+| **Area** | `dlk7dg` | `relation` | Target: `collection://<id>` (`Areas/Resources [UB]`) | Two-way: `Areas/Resources [UB].Goals` (`dFhZPw`) |
+| **Milestones** | `YEtfWw` | `relation` | Target: `collection://<id>` (`Milestones [UB]`) | Two-way: `Milestones [UB].Goal` (`U1s9UQ`) |
+| **Projects** | `W1ZCeQ` | `relation` | Target: `collection://<id>` (`Projects [UB]`) | Two-way: `Projects [UB].Goal` (`WztOSw`) |
 | **Updated** | `al06VA` | `last_edited_time` | System edit timestamp | Auto-updated |
 | **Progress Percent** | `e1dLRw` | `rollup` | Relation: `Milestones`; Target: `Complete` (`RUtZdg`); Aggregation: `percent_checked` | Fraction of completed milestones (0.0 to 1.0) |
 | **Progress** | `dF5NXw` | `formula` | Number | Formats or normalizes milestone completion percentage |
@@ -262,7 +263,7 @@ Ultimate Brain centralizes all records inside six canonical databases located on
 
 ### 3.5. `Milestones [UB]` Schema
 
-- **Collection URL**: `collection://90449566-1e99-836f-8d25-07378613b3f1`
+- **Collection URL**: `collection://<id>`
 - **Total Properties**: 6 properties (4 editable, 1 relation, 1 rollup).
 
 | Property Name | Property ID | Type | Configuration / Options / Targets | Formula Result / Rollup Detail |
@@ -271,14 +272,14 @@ Ultimate Brain centralizes all records inside six canonical databases located on
 | **Complete** | `RUtZdg` | `checkbox` | Checkbox: `__NO__` / `__YES__` | Drives Goal progress rollup calculation |
 | **Target Deadline** | `PG5edg` | `date` | Target completion date | ISO-8601 date |
 | **Date Completed** | `XF96Qw` | `date` | Timestamp when checked complete | ISO-8601 date |
-| **Goal** | `U1s9UQ` | `relation` | Target: `collection://e7a49566-1e99-83fd-8d08-87a7fad25227` (`Goals [UB]`) | Two-way: `Goals [UB].Milestones` (`YEtfWw`) |
+| **Goal** | `U1s9UQ` | `relation` | Target: `collection://<id>` (`Goals [UB]`) | Two-way: `Goals [UB].Milestones` (`YEtfWw`) |
 | **Goal Area** | `UDxTOw` | `rollup` | Relation: `Goal`; Target: `Area` (`dlk7dg`) | Inherits Area relation from parent Goal |
 
 ---
 
 ### 3.6. `Areas/Resources [UB]` Schema
 
-- **Collection URL**: `collection://6cb49566-1e99-825a-9adb-87e54f0b9278`
+- **Collection URL**: `collection://<id>`
 - **Total Properties**: 9 properties (2 editable, 1 title, 4 relations, 1 rollup, 1 formula).
 
 | Property Name | Property ID | Type | Configuration / Options / Targets | Formula Result / Rollup Detail |
@@ -286,12 +287,12 @@ Ultimate Brain centralizes all records inside six canonical databases located on
 | **Name** | `title` | `title` | Area or Resource name | — |
 | **Type** | `RFB1aw` | `select` | `Area` (orange), `Resource` (purple) | Distinguishes PARA Areas vs. Resources |
 | **Archived** | `Xl5hcg` | `checkbox` | Excludes item from active views | Default: `__NO__` |
-| **Root Area** | `RVRnPg` | `relation` | Target: `collection://6cb49566-1e99-825a-9adb-87e54f0b9278` (Self) | Self-relation: links a Resource to its parent Area |
-| **Resources** | `XEBmSw` | `relation` | Target: `collection://6cb49566-1e99-825a-9adb-87e54f0b9278` (Self) | Reverse of `Root Area`: links an Area to child Resources |
-| **Projects** | `V2pMaQ` | `relation` | Target: `collection://a3449566-1e99-839d-b4c2-87ff1bc64707` (`Projects [UB]`) | Two-way: `Projects [UB].Area` (`bG52cw`) |
-| **Notes** | `WGpbeA` | `relation` | Target: `collection://90549566-1e99-8258-9a08-87f5b382223f` (`All Notes [UB]`) | Two-way: `All Notes [UB].Area/Resource` (`aD5nQw`) |
-| **Goals** | `dFhZPw` | `relation` | Target: `collection://e7a49566-1e99-83fd-8d08-87a7fad25227` (`Goals [UB]`) | Two-way: `Goals [UB].Area` (`dlk7dg`) |
-| **Pulls** | `cT1uWg` | `relation` | Target: `collection://a3449566-1e99-839d-b4c2-87ff1bc64707` (`Projects [UB]`) | Two-way: `Projects [UB].Resource Pulls` (`X1A-Vw`) |
+| **Root Area** | `RVRnPg` | `relation` | Target: `collection://<id>` (Self) | Self-relation: links a Resource to its parent Area |
+| **Resources** | `XEBmSw` | `relation` | Target: `collection://<id>` (Self) | Reverse of `Root Area`: links an Area to child Resources |
+| **Projects** | `V2pMaQ` | `relation` | Target: `collection://<id>` (`Projects [UB]`) | Two-way: `Projects [UB].Area` (`bG52cw`) |
+| **Notes** | `WGpbeA` | `relation` | Target: `collection://<id>` (`All Notes [UB]`) | Two-way: `All Notes [UB].Area/Resource` (`aD5nQw`) |
+| **Goals** | `dFhZPw` | `relation` | Target: `collection://<id>` (`Goals [UB]`) | Two-way: `Goals [UB].Area` (`dlk7dg`) |
+| **Pulls** | `cT1uWg` | `relation` | Target: `collection://<id>` (`Projects [UB]`) | Two-way: `Projects [UB].Resource Pulls` (`X1A-Vw`) |
 | **Last Updated Note** | `ZEdyew` | `rollup` | Relation: `Notes`; Target: `Updated`; Aggregation: `latest_date` | Timestamp of the most recently edited note |
 | **Note Count** | `aX1TWw` | `formula` | Text | Number of linked notes formatted for card preview |
 
@@ -385,15 +386,15 @@ Template Directory:
 
 #### 1. `Task with Sub-Tasks` (`All Tasks [UB]`)
 
-- **Template URL**: `https://app.notion.com/p/bf0495661e9983dc87cb01eae31ed1fc`
+- **Template URL**: `https://app.notion.com/p/<id>`
 - **Icon**: 🗂️
 - **Default Properties**: `Priority`: `🧀 Medium`, `Kanban Status`: `To Do`, `Done`: `__NO__`.
 - **Body Structure**:
-    - Embedded inline database view (`https://app.notion.com/p/c26495661e998297ae6081043e84af12`) of `All Tasks [UB]` filtered automatically to show rows where `Parent Task` = current page.
+    - Embedded inline database view (`https://app.notion.com/p/<id>`) of `All Tasks [UB]` filtered automatically to show rows where `Parent Task` = current page.
 
 #### 2. `Packing List` (`All Tasks [UB]`)
 
-- **Template URL**: `https://app.notion.com/p/1bf495661e9983f5896501b6754fd0df`
+- **Template URL**: `https://app.notion.com/p/<id>`
 - **Icon**: 🧳
 - **Default Properties**: `Priority`: `🧀 Medium`, `Kanban Status`: `To Do`, `Done`: `__NO__`.
 - **Body Structure**:
@@ -404,7 +405,7 @@ Template Directory:
 
 #### 3. `Project Template` (`Projects [UB]`)
 
-- **Template URL**: `https://app.notion.com/p/030495661e99823b80db81a02eb556aa`
+- **Template URL**: `https://app.notion.com/p/<id>`
 - **Icon**: 📊
 - **Default Properties**: `Status`: `To Do`, `Priority`: `__NO__`, `Archived`: `__NO__`.
 - **Body Structure**:
@@ -417,7 +418,7 @@ Template Directory:
 
 #### 4. `Daily Note` (`All Notes [UB]`)
 
-- **Template URL**: `https://app.notion.com/p/c5f495661e9982eabbc681a81568e182`
+- **Template URL**: `https://app.notion.com/p/<id>`
 - **Icon**: 🌅
 - **Default Properties**: `Type`: `Daily`, `Archived`: `__NO__`, `Favorite`: `__NO__`, `Fleeting`: `__NO__`.
 - **Body Structure**:
@@ -431,16 +432,16 @@ Template Directory:
 
 #### 5. `Note with Tasks` (`All Notes [UB]`)
 
-- **Template URL**: `https://app.notion.com/p/971495661e99836d9ced81aec7ebaada`
+- **Template URL**: `https://app.notion.com/p/<id>`
 - **Icon**: ☑️
 - **Default Properties**: `Archived`: `__YES__` (template entry archived by default), `Favorite`: `__NO__`.
 - **Body Structure**:
     - H2 `📝 Note Content` (green_bg) + divider.
-    - Toggle `✅ Inbox`: Linked database view of `All Tasks [UB]` (`https://app.notion.com/p/0b9495661e9982408b3301382f0a902b`) for capturing tasks originating from note taking.
+    - Toggle `✅ Inbox`: Linked database view of `All Tasks [UB]` (`https://app.notion.com/p/<id>`) for capturing tasks originating from note taking.
 
 #### 6. `Recipe Template` (`All Notes [UB]`)
 
-- **Template URL**: `https://app.notion.com/p/e39495661e9983cf8de981166f6602b0`
+- **Template URL**: `https://app.notion.com/p/<id>`
 - **Icon**: 🍳
 - **Default Properties**: `Type`: `Recipe`, `Archived`: `__NO__`, `Favorite`: `__NO__`.
 - **Body Structure**:
@@ -451,7 +452,7 @@ Template Directory:
 
 #### 7. `Book Notes` (`All Notes [UB]`)
 
-- **Template URL**: `https://app.notion.com/p/e0a495661e998284bb0081cd7651e410`
+- **Template URL**: `https://app.notion.com/p/<id>`
 - **Icon**: 📕
 - **Default Properties**: `Type`: `Book`, `📚 Book Status`: `Want to Read`, `📚 Author`: `enter text...`.
 - **Body Structure**:
@@ -463,7 +464,7 @@ Template Directory:
 
 #### 8. `Goal Template` (`Goals [UB]`)
 
-- **Template URL**: `https://app.notion.com/p/b76495661e9982b2a57901a8b81f1620`
+- **Template URL**: `https://app.notion.com/p/<id>`
 - **Icon**: 🏆
 - **Default Properties**: `Archived`: `__NO__`.
 - **Body Structure**:
@@ -477,7 +478,7 @@ Template Directory:
 
 #### 9. `Area Template` (`Areas/Resources [UB]`)
 
-- **Template URL**: `https://app.notion.com/p/ee1495661e99829c8a8e815747113bd0`
+- **Template URL**: `https://app.notion.com/p/<id>`
 - **Icon**: null
 - **Default Properties**: `Type`: `Area`, `Archived`: `__NO__`.
 - **Body Structure**:
@@ -490,7 +491,7 @@ Template Directory:
 
 #### 10. `Resource Template` (`Areas/Resources [UB]`)
 
-- **Template URL**: `https://app.notion.com/p/91c495661e99828cbf97013fcd6231ff`
+- **Template URL**: `https://app.notion.com/p/<id>`
 - **Icon**: null
 - **Default Properties**: `Type`: `Resource`, `Archived`: `__NO__`.
 - **Body Structure**:
@@ -591,7 +592,7 @@ Template Directory:
 
 ## 8. GTD Processing and Smart Lists Mechanics
 
-Ultimate Brain embeds an optional Getting Things Done (GTD) workflow engine centered around the `Process` dashboard (`https://app.notion.com/p/3de495661e9983e7968081fb754dd461`):
+Ultimate Brain embeds an optional Getting Things Done (GTD) workflow engine centered around the `Process` dashboard (`https://app.notion.com/p/<id>`):
 
 ```
                        [ RAW INTAKE ]
@@ -640,9 +641,9 @@ Task decomposition in Ultimate Brain is powered by a recursive self-relation on 
 ```
 All Tasks [UB] (Parent Task)
     │
-    │  collectionProperty://8b349566-1e99-82e6-8283-070bd3887004/dXlydg (Parent Task)
+    │  collectionProperty://<id>/dXlydg (Parent Task)
     ▲
-    ▼  collectionProperty://8b349566-1e99-82e6-8283-070bd3887004/d3p2RA (Sub-Tasks)
+    ▼  collectionProperty://<id>/d3p2RA (Sub-Tasks)
     │
 All Tasks [UB] (Sub-Tasks / Children)
 ```
@@ -716,7 +717,7 @@ Ultimate Brain implements Tiago Forte's PARA framework (Projects, Areas, Resourc
 
 ### Consolidated Database Design Rationale
 
-As documented in the template body text on the `Areas & Resources` page (`https://app.notion.com/p/293495661e998275850e019f29e57972`):
+As documented in the template body text on the `Areas & Resources` page (`https://app.notion.com/p/<id>`):
 
 > *"Resources often morph into full-blown Areas with related Projects, so keeping them in the same database allows for this evolution to occur seamlessly... Areas contain Projects (both One-Time and Ongoing, the latter being used to 'maintain the standard' of the Area)."*
 >
@@ -810,30 +811,30 @@ All Notes [UB] Subsystems:
 #### 2. Book Tracker
 
 - **Type**: `Book`.
-- **Dedicated Dashboard**: `Book Tracker` (`https://app.notion.com/p/9c0495661e9982bf839281b40f0f6295`).
+- **Dedicated Dashboard**: `Book Tracker` (`https://app.notion.com/p/<id>`).
 - **Dedicated Properties**:
     - `📚 Book Status` (`eE5bTg`): `Want to Read`, `Currently Reading`, `Read`, `Paused`.
     - `📚 Author` (`UEHNRg`): Text string.
     - `📚 Rating` (`WHR0VA`): `⭐` through `⭐⭐⭐⭐⭐`.
     - `📚 Date Started` (`bmN8eg`), `📚 Date Finished` (`QVR8Ow`).
     - `📚 Book  Divider` (`SFFDSA`): Formatting divider.
-- **Dedicated Template**: `Book Notes` (`https://app.notion.com/p/e0a495661e998284bb0081cd7651e410`).
+- **Dedicated Template**: `Book Notes` (`https://app.notion.com/p/<id>`).
 
 #### 3. Recipe Book
 
 - **Type**: `Recipe`.
-- **Dedicated Dashboard**: `Recipe Book` (`https://app.notion.com/p/25e495661e99831badd981b57842752d`).
+- **Dedicated Dashboard**: `Recipe Book` (`https://app.notion.com/p/<id>`).
 - **Dedicated Properties**:
     - `🍳 Recipe Tags` (`SVdieQ`): `Breakfast`, `Lunch`, `Dinner`, `Dessert`, `Quick`, `Healthy`.
     - `🍳 Recipe Divider` (`el9Kaw`): Formatting divider.
-- **Dedicated Template**: `Recipe Template` (`https://app.notion.com/p/e39495661e9983cf8de981166f6602b0`).
+- **Dedicated Template**: `Recipe Template` (`https://app.notion.com/p/<id>`).
 - **Grocery Integration**: Left column features an embedded view of `All Tasks [UB]` titled `✅ Inbox` for instantly converting missing ingredients into tasks.
 
 #### 4. Daily Journaling & Habit Tracking
 
 - **Types**: `Daily`, `Journal`.
-- **Dedicated Subpage**: `Daily Journal` (`https://app.notion.com/p/02a495661e9983f6a0e201312d90e3ec`).
-- **Dedicated Template**: `Daily Note` (`https://app.notion.com/p/c5f495661e9982eabbc681a81568e182`).
+- **Dedicated Subpage**: `Daily Journal` (`https://app.notion.com/p/<id>`).
+- **Dedicated Template**: `Daily Note` (`https://app.notion.com/p/<id>`).
 - **Body Layout**: Morning Routine, Other Habits, synced `My Day` focus blocks, embedded Next 7 Days tasks, Morning Pages section, and Day Review prompt.
 
 ---
@@ -866,7 +867,7 @@ Ultimate Brain features an automated archiving and task deferral architecture th
 1. **Problem Solved**: Normal task lists degrade when old tasks continuously roll over into "Today", causing overwhelm.
 2. **Formula Property**: `Cold` (`UF1iWA`) evaluates whether a task has remained uncompleted and un-rescheduled for more than 14 days.
 3. **Exclusion Filter**: Standard time-based views (`Today`, `Tomorrow`, `Next 7 Days`, `Priority View`) include filter condition: `Cold` = false.
-4. **Cold Storage View**: Stale tasks automatically move to `Cold Tasks` (`https://app.notion.com/p/c99495661e99821e8f1c01cbdd1f0734`), where users periodically execute triage: delete, reschedule, or move to `Someday`.
+4. **Cold Storage View**: Stale tasks automatically move to `Cold Tasks` (`https://app.notion.com/p/<id>`), where users periodically execute triage: delete, reschedule, or move to `Someday`.
 
 ### Master Archival Flags
 
@@ -886,35 +887,35 @@ Every component documented in this specification has been verified against live 
 
 | Architectural Component | Entity / Property / View | Notion ID / URL | Verification Classification | Method & Grounding Reference |
 | --- | --- | --- | --- | --- |
-| **Workspace Root** | Ultimate Brain for Notion (1) | `00a49566-1e99-828c-bbd3-8119dd5feb6e` | **Verified** | Inspected via `notion_load_page`; verified root tree and block contents. |
-| **Central Database Container** | The Brain (Archive subpage) | `d9e49566-1e99-833a-9f24-0135cec22bb3` | **Verified** | Inspected via `notion_load_page`; houses all 6 master databases. |
-| **Master Database** | All Tasks [UB] | `9aa49566-1e99-83b0-ba10-01b0a1f1e3e8` | **Verified** | Inspected via `notion_load_database`; collection schema loaded in full. |
-| **Master Database** | Projects [UB] | `ad649566-1e99-8230-9c96-01d09ae024d3` | **Verified** | Inspected via `notion_load_database`; collection schema loaded in full. |
-| **Master Database** | All Notes [UB] | `71149566-1e99-82eb-a015-01f94be52d16` | **Verified** | Inspected via `notion_load_database`; collection schema loaded in full. |
-| **Master Database** | Goals [UB] | `97149566-1e99-829d-ae68-81556011dba2` | **Verified** | Inspected via `notion_load_database`; collection schema loaded in full. |
-| **Master Database** | Milestones [UB] | `7ee49566-1e99-8240-9586-015a0752c1e5` | **Verified** | Inspected via `notion_load_database`; collection schema loaded in full. |
-| **Master Database** | Areas/Resources [UB] | `5e049566-1e99-8270-bc90-0171a282a975` | **Verified** | Inspected via `notion_load_database`; collection schema loaded in full. |
-| **Template Page** | Task with Sub-Tasks | `bf049566-1e99-83dc-87cb-01eae31ed1fc` | **Verified** | Inspected via `notion_load_page`; parent collection and inline view confirmed. |
-| **Template Page** | Packing List | `1bf49566-1e99-83f5-8965-01b6754fd0df` | **Verified** | Inspected via `notion_load_page`; verified 48 checklist items and structure. |
-| **Template Page** | Project Template | `03049566-1e99-823b-80db-81a02eb556aa` | **Verified** | Inspected via `notion_load_page`; verified 3 linked database views and callouts. |
-| **Template Page** | Daily Note | `c5f49566-1e99-82ea-bbc6-81a81568e182` | **Verified** | Inspected via `notion_load_page`; verified habits, morning pages, review. |
-| **Template Page** | Note with Tasks | `97149566-1e99-836d-9ced-81aec7ebaada` | **Verified** | Inspected via `notion_load_page`; verified embedded task inbox view. |
-| **Template Page** | Recipe Template | `e3949566-1e99-83cf-8de9-81166f6602b0` | **Verified** | Inspected via `notion_load_page`; verified ingredients/steps 2-column layout. |
-| **Template Page** | Book Notes | `e0a49566-1e99-8284-bb00-81cd7651e410` | **Verified** | Inspected via `notion_load_page`; verified summary, thoughts, takeaways structure. |
-| **Template Page** | Goal Template | `b7649566-1e99-82b2-a579-01a8b81f1620` | **Verified** | Inspected via `notion_load_page`; verified milestones, journal button, projects. |
-| **Template Page** | Area Template | `ee149566-1e99-829c-8a8e-815747113bd0` | **Verified** | Inspected via `notion_load_page`; verified 5 linked views (projects, goals, resources, favorites, notes). |
-| **Template Page** | Resource Template | `91c49566-1e99-828c-bf97-013fcd6231ff` | **Verified** | Inspected via `notion_load_page`; verified 3 linked views (notes, favorites, web clips). |
-| **Dashboard** | Dashboard | `39d49566-1e99-83fe-ad03-81d03bcf9f07` | **Verified** | Inspected via `notion_load_page`; confirmed views and quick links. |
-| **Dashboard** | My Day | `81349566-1e99-82e0-ad6c-01cdfd4a30ea` | **Verified** | Inspected via `notion_load_page`; confirmed daily cockpit structure. |
-| **Dashboard** | Quick Capture | `6a649566-1e99-836b-99a9-015b1f8c9b66` | **Verified** | Inspected via `notion_load_page`; confirmed rapid entry boxes. |
-| **Dashboard** | Task Manager | `74649566-1e99-8370-9027-01d8cba7170d` | **Verified** | Inspected via `notion_load_page`; confirmed 8 subpage routes and views. |
-| **Dashboard** | Project Hub | `93e49566-1e99-8331-a129-815db3029378` | **Verified** | Inspected via `notion_load_page`; confirmed project board and views. |
-| **Dashboard** | Notes | `a7f49566-1e99-8310-9e95-0192567dcc68` | **Verified** | Inspected via `notion_load_page`; confirmed notebook shelf and subpages. |
-| **Dashboard** | Areas & Resources | `29349566-1e99-8275-850e-019f29e57972` | **Verified** | Inspected via `notion_load_page`; confirmed consolidated PARA dashboard. |
-| **Dashboard** | Goals | `ecb49566-1e99-830e-9dd2-014ce5276613` | **Verified** | Inspected via `notion_load_page`; confirmed goal and milestone tracking center. |
-| **Dashboard** | Process | `3de49566-1e99-83e7-9680-81fb754dd461` | **Verified** | Inspected via `notion_load_page`; confirmed GTD processing logic and rules. |
-| **Dashboard** | Plan | `14049566-1e99-83af-8cde-81c3c81105a5` | **Verified** | Inspected via `notion_load_page`; confirmed planning center. |
-| **Dashboard** | Quick Links | `6c349566-1e99-826f-8dbd-81e6e02154c9` | **Verified** | Inspected via `notion_load_page`; confirmed reference directory. |
-| **Dashboard** | Book Tracker | `9c049566-1e99-82bf-8392-81b40f0f6295` | **Verified** | Inspected via `notion_load_page`; confirmed book shelves and views. |
-| **Dashboard** | Recipe Book | `25e49566-1e99-831b-add9-81b57842752d` | **Verified** | Inspected via `notion_load_page`; confirmed culinary collection hub. |
+| **Workspace Root** | Ultimate Brain for Notion (1) | `<id>` | **Verified** | Inspected via `notion_load_page`; verified root tree and block contents. |
+| **Central Database Container** | The Brain (Archive subpage) | `<id>` | **Verified** | Inspected via `notion_load_page`; houses all 6 master databases. |
+| **Master Database** | All Tasks [UB] | `<id>` | **Verified** | Inspected via `notion_load_database`; collection schema loaded in full. |
+| **Master Database** | Projects [UB] | `<id>` | **Verified** | Inspected via `notion_load_database`; collection schema loaded in full. |
+| **Master Database** | All Notes [UB] | `<id>` | **Verified** | Inspected via `notion_load_database`; collection schema loaded in full. |
+| **Master Database** | Goals [UB] | `<id>` | **Verified** | Inspected via `notion_load_database`; collection schema loaded in full. |
+| **Master Database** | Milestones [UB] | `<id>` | **Verified** | Inspected via `notion_load_database`; collection schema loaded in full. |
+| **Master Database** | Areas/Resources [UB] | `<id>` | **Verified** | Inspected via `notion_load_database`; collection schema loaded in full. |
+| **Template Page** | Task with Sub-Tasks | `<id>` | **Verified** | Inspected via `notion_load_page`; parent collection and inline view confirmed. |
+| **Template Page** | Packing List | `<id>` | **Verified** | Inspected via `notion_load_page`; verified 48 checklist items and structure. |
+| **Template Page** | Project Template | `<id>` | **Verified** | Inspected via `notion_load_page`; verified 3 linked database views and callouts. |
+| **Template Page** | Daily Note | `<id>` | **Verified** | Inspected via `notion_load_page`; verified habits, morning pages, review. |
+| **Template Page** | Note with Tasks | `<id>` | **Verified** | Inspected via `notion_load_page`; verified embedded task inbox view. |
+| **Template Page** | Recipe Template | `<id>` | **Verified** | Inspected via `notion_load_page`; verified ingredients/steps 2-column layout. |
+| **Template Page** | Book Notes | `<id>` | **Verified** | Inspected via `notion_load_page`; verified summary, thoughts, takeaways structure. |
+| **Template Page** | Goal Template | `<id>` | **Verified** | Inspected via `notion_load_page`; verified milestones, journal button, projects. |
+| **Template Page** | Area Template | `<id>` | **Verified** | Inspected via `notion_load_page`; verified 5 linked views (projects, goals, resources, favorites, notes). |
+| **Template Page** | Resource Template | `<id>` | **Verified** | Inspected via `notion_load_page`; verified 3 linked views (notes, favorites, web clips). |
+| **Dashboard** | Dashboard | `<id>` | **Verified** | Inspected via `notion_load_page`; confirmed views and quick links. |
+| **Dashboard** | My Day | `<id>` | **Verified** | Inspected via `notion_load_page`; confirmed daily cockpit structure. |
+| **Dashboard** | Quick Capture | `<id>` | **Verified** | Inspected via `notion_load_page`; confirmed rapid entry boxes. |
+| **Dashboard** | Task Manager | `<id>` | **Verified** | Inspected via `notion_load_page`; confirmed 8 subpage routes and views. |
+| **Dashboard** | Project Hub | `<id>` | **Verified** | Inspected via `notion_load_page`; confirmed project board and views. |
+| **Dashboard** | Notes | `<id>` | **Verified** | Inspected via `notion_load_page`; confirmed notebook shelf and subpages. |
+| **Dashboard** | Areas & Resources | `<id>` | **Verified** | Inspected via `notion_load_page`; confirmed consolidated PARA dashboard. |
+| **Dashboard** | Goals | `<id>` | **Verified** | Inspected via `notion_load_page`; confirmed goal and milestone tracking center. |
+| **Dashboard** | Process | `<id>` | **Verified** | Inspected via `notion_load_page`; confirmed GTD processing logic and rules. |
+| **Dashboard** | Plan | `<id>` | **Verified** | Inspected via `notion_load_page`; confirmed planning center. |
+| **Dashboard** | Quick Links | `<id>` | **Verified** | Inspected via `notion_load_page`; confirmed reference directory. |
+| **Dashboard** | Book Tracker | `<id>` | **Verified** | Inspected via `notion_load_page`; confirmed book shelves and views. |
+| **Dashboard** | Recipe Book | `<id>` | **Verified** | Inspected via `notion_load_page`; confirmed culinary collection hub. |
 | **Formula Code Expressions** | All 37 Database Formula Expressions | Various Property IDs | **Inaccessible via API** | Notion MCP / API does not expose formula syntax/code; verified formula names, IDs, output types, and evaluated row results. |
