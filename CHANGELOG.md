@@ -4,7 +4,9 @@ One line per task, under the release that ships it (decision 0038). `scripts/rel
 
 ## 0.2.4 — unreleased
 
-- CC-27: real Notion ids removed from the product docs; the review verdict names the commit it covers and comes after the done commit.
+- CC-27 (#88): real Notion ids removed from the product docs; the review verdict names the commit it covers and comes after the done commit.
+- CX-28 (#86): leak checks in CI and before commits for UUIDs, non-example emails and the local denylist.
+- CX-30 (#87): `merge.mjs` requires a pass from the other agent naming the PR's head commit, with an explicit user override.
 
 ## 0.2.3 — 2026-10-18
 
