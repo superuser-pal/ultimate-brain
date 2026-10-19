@@ -13,10 +13,10 @@ Run every CLI command as `brain <command> --brain <brain> --json`. If `brain` is
 
 ## 1. Read-only pass
 
-Write nothing in this step: no CLI writes, no Notion writes, no file moves.
+This step changes no knowledge: no note, proposal, `brain.json`, commit, Notion page or drop-folder file. Two writes are allowed because they change nothing the user owns: `brain index` may regenerate a stale `index.md` (generated, rebuilt again later in the run), and the working files (`snapshot.json`, `plan.json`, conversions) go in a temporary folder outside the brain.
 
 1. **Status.** Run `brain status`; run `brain index` if `index_stale`. Note `settings` (absent means `publish: ask`, `push: auto`) and which databases are configured. Each Notion part below needs its database configured; skip the ones that aren't and name them once on the report's Needs you line.
-2. **Pull plan.** Brain-sync "Pull", steps 2–4: snapshot every configured database (Review included), run `sync plan` once, save `plan.json`. It holds the imports, your corrections, the decided Review rows and the conflicts.
+2. **Pull plan.** Brain-sync "Pull", steps 2–4, with the snapshot and plan in the temporary folder: snapshot every configured database (Review included), run `sync plan` once, save `plan.json`. It holds the imports, your corrections, the decided Review rows and the conflicts.
 3. **Notes on Review rows.** For each `NOTE_TO_READ` conflict, read the Note against its proposal and decide what it means (brain-apply, "Reading a Note"). Write down the decision you would apply, or the question it raises.
 4. **Meetings** *(Notion)*. Brain-ingest steps 2 and 3, up to the duplicate check: the Reviewed meetings, oldest first, and each one's pre-check blockers. Minutes files are ingested only when the user names them, never looked for.
 5. **Inbox.** The New rows (brain-ingest references/sources.md, "capture"), oldest first, each with its pre-check blockers. A row with Project or Area set needs no project question.
@@ -41,7 +41,7 @@ When nothing blocks, don't ask: say what you will do in one line and start. When
 
 ## 3. Run, in this order
 
-1. **Pull and apply.** `sync apply plan.json` (brain-sync steps 6–8), then with `brain apply --input`: the decisions you resolved from Notes (brain-apply, "Reading a Note"), the chat decisions from the batch (`decided_by: chat`), and the identities (brain-connect-notion step 6, applied as approved in the batch). Rebuild and commit as brain-apply "Finish", steps 1–3. Conflicts the user didn't answer stay conflicts.
+1. **Pull and apply.** `sync apply plan.json` (brain-sync steps 6–8), then with `brain apply --input`: the decisions you resolved from Notes (brain-apply, "Reading a Note"), the chat decisions from the batch (`decided_by: chat`), and the identities. For the identities, run brain-connect-notion step 6 in full, with the batch answer as the user's approval: the owner-ruling source and, when the owner's person note exists, one `add_link` alias proposal per value applied with `decided_by: chat`; when it doesn't, a new person note (`brain note new`) carrying the aliases; then `brain config set owner.person`. Rebuild and commit as brain-apply "Finish", steps 1–3. Conflicts the user didn't answer stay conflicts.
 2. **Meetings,** one at a time: brain-ingest steps 4–10.
 3. **Inbox rows,** one at a time: sources.md steps 3–7.1.
 4. **Drop-folder files** the user chose, one at a time, the same way.
