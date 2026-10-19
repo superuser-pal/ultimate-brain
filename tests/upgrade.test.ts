@@ -153,6 +153,21 @@ test("upgrade cleans settings and warns for invalid settings", async (context) =
   await assert.rejects(readFile(join(target, ".claude/settings.json")));
 });
 
+test("upgrade renames capture_inbox to inbox", async (context) => {
+  const { root, target } = await freshBrain(context);
+  const configPath = join(target, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  config.notion.databases.capture_inbox = config.notion.databases.inbox;
+  delete config.notion.databases.inbox;
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+  const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
+  assert.equal(run.code, 0, run.stdout);
+  assert.ok(run.json.data.files.some((file: { path: string; action: string }) => file.path === "brain.json" && file.action === "updated"));
+  const upgraded = JSON.parse(await readFile(configPath, "utf8"));
+  assert.equal(upgraded.notion.databases.inbox, "");
+  assert.equal(upgraded.notion.databases.capture_inbox, undefined);
+});
+
 test("upgrade warns PUSH_SKIPPED when no upstream exists", async (context) => {
   const { root, target } = await freshBrain(context); await gitBrain(target); await writeFile(join(target, ".agents/skills/brain-query/SKILL.md"), "drift\n"); await git(target, ["add", "."]); await git(target, ["commit", "-m", "drift"]);
   const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
