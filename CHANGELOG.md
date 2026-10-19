@@ -2,14 +2,16 @@
 
 One line per task, under the release that ships it (decision 0038). `scripts/release.mjs` refuses a version with no entry here.
 
+## 0.2.4 — unreleased
+
+- CX-28: leak checks in CI and before commits for UUIDs, non-example emails and the local denylist.
+
 ## 0.2.3 — 2026-10-18
 
 - CC-24 (#80): delivery lanes, one channel (npm) and release gates: decision 0038, the brain's read-only and findings rules, issue and PR templates, the Claude Code plugin retired; the merge gate without GitHub Pro; three real names removed from the skills and docs.
 - CC-25 (#84): `merge.mjs` and `release.mjs` accept skipped check runs; a task is marked done before its PR merges.
 - CX-29 (#83): refresh product-owned files for both agents, lint their drift, and safely upgrade, commit and push brains.
 - CX-27: release, merge and task scripts; main-push and PR-format gates; package smoke test works after a release.
-- CX-28: leak checks in CI and before commits for UUIDs, non-example emails and the local denylist.
-
 ## 0.2.2 — 2026-10-18
 
 - CC-23: new projects are created in Notion; reports grow with the input (decision 0037 amended).
