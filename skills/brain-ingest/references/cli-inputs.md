@@ -45,6 +45,7 @@ A document, a web page, then a pasted email:
 - **`file_name`** (the name only, no folder) and **`converter`** (`claude-read <model id>`, `codex-view-image <model id>`, or `markitdown <version>`) are required with a `file:` key.
 - **Web page** (0036): `source_key` is `url:<the https URL as given>`; `kind` `document` and `converter` (`markitdown <version>` or `web-fetch <model id>`) are required; no `file_name`.
 - **Capture:** `source_key` is `notion:<row page id>`, `kind` is `capture`, `origin_edited` is the row's `last_edited_time`.
+- **`summary`** (every kind except minutes, added in the real run of step 6, not the step 3 dry run): one line on what the source taught. It is the Inbox row's Summary.
 - **Title:** `<title> (<kind>)`; for a web page, `<title>` is the page's own title. **`file_date`:** the text's own date (a document's date, a web page's stated publication or update date, an email's sent date); for a capture, the row's Created date; else today.
 - **Dates in the notes:** a new note's timeline `from` is the date the text gives, else the source's `file_date`; `learned` is always today (the day the brain learned it).
 - **Duplicates:** the CLI also skips a source whose `file:` key, or whose `capture` row, was already ingested, even if the text differs.
@@ -95,8 +96,8 @@ Things the CLI checks that are easy to get wrong:
 ] }
 ```
 
-- **Don't send `before`;** the CLI fills it from the current fact. **`from`:** leave it out for a meeting (the CLI uses the meeting's date). For any other source, send it: the date the text gives for the change ("approved on 5 December 2026" → `2026-12-05`), else the source's `file_date`; otherwise the CLI would use today.
-- **`add_link`** (decision 0028) adds one value to a list of an existing note:
+- **Don't send `before`;** the CLI fills it from the current fact. **`from`** (only `update_fact` and `contradiction` have one): leave it out for a meeting (the CLI uses the meeting's date). For any other source, send it: the date the text gives for the change ("approved on 5 December 2026" → `2026-12-05`), else the source's `file_date`; otherwise the CLI would use today.
+- **`add_link`** (decision 0028) adds one value to a list of an existing note. Send one item per link, each with its own `title` and `why`: the CLI groups the items with the same `target` and `source` into one proposal, one Review row (decision 0037), and writes the group's title itself:
   ```json
   { "kind": "add_link", "title": "Acme website: add Lucía Fernández to People", "target": "prj-9x4t1b7e", "field": "people",
     "after": "per-zzvs98vn", "why": "Lucía Fernández (Acme, marketing lead)", "source": "mtg-pcpyn31n" }
@@ -114,6 +115,8 @@ Things the CLI checks that are easy to get wrong:
 
 ## 4. Action items (Notion mode)
 
+From a meeting:
+
 ```json
 { "items": [
   { "title": "Set up the Contentful space", "owner": "Carlos Ruiz", "due": "2026-12-17", "projects": ["prj-9x4t1b7e"] },
@@ -122,6 +125,16 @@ Things the CLI checks that are easy to get wrong:
 ```
 
 `brain sync tasks --meeting mtg-pcpyn31n --input <file>` turns these into Notion payloads using the Tasks mapping in `brain.json`. Leave out `due` when the minutes say "no date". `projects` is the project ids the task is about; leave it out when the task is about the meeting's own project(s), and the meeting's projects are used.
+
+From any other source, the owner's tasks only ([extraction.md](extraction.md), "Tasks for the owner"); no `owner`:
+
+```json
+{ "items": [
+  { "title": "Send Carlos the migration plan", "due": "2026-12-05", "projects": ["prj-9x4t1b7e"] }
+] }
+```
+
+`brain sync tasks --source src-5t8n2v6q --input <file>`. A task with no `projects` gets no project. Its backlink is the source's Inbox row: until that row is published, the item lists it in `pending_relations`, so publish the source first ([notion.md](notion.md), "Publish").
 
 ## 5. Log line
 
