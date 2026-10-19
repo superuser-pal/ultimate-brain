@@ -29,6 +29,7 @@ export interface CreatedProposal {
   target?: string;
   path: string;
   before?: unknown;
+  input_indexes: number[];
 }
 
 export interface SkippedProposal {
@@ -56,6 +57,9 @@ export function stageProposals(
   const created: CreatedProposal[] = [];
   const skipped: SkippedProposal[] = [];
   const pointers = new Map<string, string>();
+  const links: Array<{ item: Record<string, unknown>; index: number; fields: Record<string, unknown> }> = [];
+  const linkKeys = new Map<string, number>();
+  const duplicateLinks: Array<{ input_index: number; key: string }> = [];
   // A new_item's note is checked alone first, so errors in other items are never blamed on it.
   (list as Array<Record<string, unknown>>).forEach((item, index) => {
     if (item.kind === "new_item") checkNewItem(workspace, item.note as NoteInput, `/proposals/${index}/note`, today);
@@ -71,29 +75,41 @@ export function stageProposals(
         return;
       }
 
-      const duplicate = workspace.notes.find((note) =>
-        note.type === "proposal" && note.attributes.status === "pending" &&
-        DEDUPE_KEYS.every((key) => isDeepStrictEqual(note.attributes[key], fields[key])));
+      const duplicate = workspace.notes.find((note) => note.type === "proposal" && note.attributes.status === "pending" &&
+        (item.kind === "add_link"
+          ? note.attributes.target === fields.target && proposalLinks(note.attributes).some((link) => link.field === fields.field && isDeepStrictEqual(link.value, fields.after))
+          : DEDUPE_KEYS.every((key) => isDeepStrictEqual(note.attributes[key], fields[key]))));
       if (duplicate !== undefined) {
         skipped.push({ input_index: index, reason: "DUPLICATE_PENDING", existing: duplicate.id });
         return;
       }
 
-      const id = generateId("prp", workspace.ids());
-      const attributes = { id, type: "proposal", created: today, updated: today, ...fields, status: "pending" };
-      const path = newNotePath("proposal", String(item.title), today, (candidate) => workspace.exists(candidate));
-      workspace.write(path, serializeNewFile(attributes, ""));
-      pointers.set(path, pointer);
-      const result: CreatedProposal = {
-        id,
-        kind: String(fields.kind),
-        title: String(fields.title),
-        ...(fields.target === undefined ? {} : { target: String(fields.target) }),
-        path,
-        ...(fields.before === undefined ? {} : { before: fields.before }),
-      };
-      created.push(result);
+      if (item.kind === "add_link") {
+        const key = JSON.stringify([fields.target, fields.source, fields.field, fields.after]);
+        if (linkKeys.has(key)) { duplicateLinks.push({ input_index: index, key }); return; }
+        linkKeys.set(key, index);
+        links.push({ item, index, fields });
+        return;
+      }
+
+      createProposal(workspace, fields, [index], today, pointer, pointers, created);
     });
+    const groups = new Map<string, typeof links>();
+    for (const link of links) {
+      const key = `${link.fields.target}\u0000${link.fields.source}`;
+      groups.set(key, [...(groups.get(key) ?? []), link]);
+    }
+    const createdLinks = new Map<string, string>();
+    for (const group of groups.values()) {
+      const first = group[0]!;
+      const fields: Record<string, unknown> = { ...first.fields, links: group.map(({ fields }) => ({ field: fields.field, value: fields.after })) };
+      delete fields.field; delete fields.after;
+      fields.title = group.length === 1 ? first.fields.title : groupedTitle(workspace, workspace.get(String(first.fields.target))!, group);
+      fields.why = [...new Set(group.map(({ fields }) => String(fields.why)))].join(" · ");
+      const proposal = createProposal(workspace, fields, group.map(({ index }) => index), today, `/proposals/${first.index}`, pointers, created);
+      for (const link of group) createdLinks.set(JSON.stringify([link.fields.target, link.fields.source, link.fields.field, link.fields.after]), proposal.id);
+    }
+    for (const duplicate of duplicateLinks) skipped.push({ input_index: duplicate.input_index, reason: "DUPLICATE_PENDING", existing: createdLinks.get(duplicate.key) });
     assertStagedValid(workspace, pointers, "/proposals");
   } catch (error) {
     workspace.restore(start);
@@ -101,6 +117,37 @@ export function stageProposals(
   }
   return { created, skipped };
 }
+
+function createProposal(workspace: Workspace, fields: Record<string, unknown>, inputIndexes: number[], today: string, pointer: string, pointers: Map<string, string>, created: CreatedProposal[]): CreatedProposal {
+  const id = generateId("prp", workspace.ids());
+  const attributes = { id, type: "proposal", created: today, updated: today, ...fields, status: "pending" };
+  const path = newNotePath("proposal", String(fields.title), today, (candidate) => workspace.exists(candidate));
+  workspace.write(path, serializeNewFile(attributes, ""));
+  pointers.set(path, pointer);
+  const proposal = { id, kind: String(fields.kind), title: String(fields.title), ...(fields.target === undefined ? {} : { target: String(fields.target) }), path, ...(fields.before === undefined ? {} : { before: fields.before }), input_indexes: inputIndexes };
+  created.push(proposal);
+  return proposal;
+}
+
+function proposalLinks(attributes: Record<string, unknown>): Array<{ field: unknown; value: unknown }> {
+  if (Array.isArray(attributes.links)) return attributes.links.filter(isRecord).map((link) => ({ field: link.field, value: link.value }));
+  return attributes.field === undefined ? [] : [{ field: attributes.field, value: attributes.after }];
+}
+
+function groupedTitle(workspace: Workspace, target: Note, group: Array<{ fields: Record<string, unknown> }>): string {
+  const order = ["people", "projects", "attendees", "deciders", "aliases", "tags"];
+  const nouns: Record<string, [string, string]> = { people: ["person", "people"], projects: ["project", "projects"], attendees: ["attendee", "attendees"], deciders: ["decider", "deciders"], aliases: ["alias", "aliases"], tags: ["tag", "tags"] };
+  const parts = order.flatMap((field) => {
+    const values = group.filter(({ fields }) => fields.field === field).map(({ fields }) => fields.after);
+    if (values.length === 0) return [];
+    const shown = values.slice(0, 3).map((value) => ["people", "projects", "attendees", "deciders"].includes(field) ? String(workspace.get(String(value))?.attributes.title ?? value) : String(value));
+    if (values.length > 3) shown.push("…");
+    return [`${values.length} ${nouns[field]![values.length === 1 ? 0 : 1]} (${shown.join(", ")})`];
+  });
+  const title = `${String(target.attributes.title)}: add ${parts.join(", ")}`;
+  return title.length > 120 ? `${title.slice(0, 119)}…` : title;
+}
+
 
 function checkShape(item: unknown, pointer: string): InputProblem[] {
   if (!isRecord(item)) return [{ pointer, message: "must be an object" }];
