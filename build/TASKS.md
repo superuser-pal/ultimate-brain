@@ -4,7 +4,7 @@
 **Status values:** `todo` · `in progress` · `review` · `done` · `blocked`.
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
-> **2026-10-19 — Status: 0.2.3 is released and in the brain. 0.2.4 is in review: CC-27 (#88), CX-28 (#86), CX-30 (#87). Merge in that order, then release 0.2.4 (U-14). 0.3.0 work starts now but merges only after 0.2.4 is released.**
+> **2026-10-19 — Status: 0.2.3 is released and in the brain. 0.2.4 is merged: CC-27 (#88), CX-28 (#86), CX-30 (#87); release it with U-14. 0.3.0 work starts now but merges only after 0.2.4 is released.**
 > - **0.3.0 scope agreed 2026-10-19:** the intake experience (decision 0037) and Area on Decisions and Questions (0034), in CC-22 (contracts), CC-26 (skills), CX-24, CX-22, then U-13 (Notion migration, upgrade, real catch-up). The onboarding suite and Notion file uploads move to 0.4.0.
 > - **Review order (CC-27):** the done commit comes before the verdict; the reviewer posts `Review (<agent>): pass at <sha>` last.
 > - **Untriaged `dogfood` issues:** 0.
@@ -346,17 +346,17 @@ Agreed with the user on 2026-10-18 (grill session). npm becomes the only channel
 
 Moved out of 0.2.3 on 2026-10-18 so 0.2.3 could ship while Codex was out of tokens.
 
-### CC-27 · Real Notion ids out, review verdict names its commit · `review`
+### CC-27 · Real Notion ids out, review verdict names its commit · `done` (#88)
 **Release:** 0.2.4
 **Output:** the template, page and view ids in notion/templates.md and the two `*-factual-architecture-appendix.md` files replaced with `<id>` (they came from a live workspace; none were in the npm package). The review order in AGENTS.md, docs/releasing.md, the PR template and a 0038 amendment: the author's done commit first, then the reviewer's `Review (<agent>): pass at <sha>` for the head commit (the contract for CX-30). The 0.3.0 scope agreed on 2026-10-19 recorded below.
 **Acceptance:** CX-28's `node scripts/leak-check.mjs` passes on this tree with no allowlist entry for those three files; the denylist matches no tracked file except LICENSE; `npm test` passes.
 
-### CX-28 · Leak check in CI and a pre-commit hook · `todo` (moved from 0.2.3 on 2026-10-18: Codex out of tokens)
+### CX-28 · Leak check in CI and a pre-commit hook · `done` (#86)
 **Release:** 0.2.4
 **Output:** `scripts/leak-check.mjs [--staged]` scans tracked files (or the staged diff) for a UUID, dashed or 32 hex characters, outside `tests/`, and for an email address whose domain is not `example` or does not end in `.example`; `scripts/leak-allow.txt` lists exceptions as `path:pattern`. With `--staged` it also reads `~/.config/ultimate-brain/denylist` (one term per line, `#` comments, matched case-insensitively as whole words) when it exists. A CI step runs it on every push; `.githooks/pre-commit` runs it with `--staged`. `LICENSE` (the copyright holder) is allowed for the denylist. A finding prints file, line and the rule, never the denylist term's neighbours beyond the line.
 **Acceptance:** tests with a synthetic UUID, a non-example email and a denylist term, each caught; the current tree passes; `sources/` and `node_modules/` are not scanned.
 
-### CX-30 · `merge.mjs` requires the other agent's pass · `review`
+### CX-30 · `merge.mjs` requires the other agent's pass · `done` (#87)
 **Release:** 0.2.4
 **Output:** `merge.mjs` refuses unless the PR has a review or comment whose body starts with `Review (Claude Code): pass at <sha>` on a `codex/` branch, or `Review (Codex): pass at <sha>` on a `claude/` branch. `<sha>` has at least seven hexadecimal characters and is a prefix of the head SHA, so the verdict covers the exact head commit. Both agents post through one GitHub account, so the line is the only way to tell them apart (decision 0038). A user override: `--reviewed-by-user`, which prints a warning and is noted in the merge commit body.
 **Acceptance:** dry-run tests: a pass from the other agent naming the head passes; a pass from the same agent, a pass naming another SHA, and no pass each refuse; the override passes with its warning.
