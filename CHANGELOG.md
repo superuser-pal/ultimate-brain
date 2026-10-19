@@ -4,7 +4,7 @@ One line per task, under the release that ships it (decision 0038). `scripts/rel
 
 ## 0.2.4 — unreleased
 
-- CX-30: require a fresh pass from the other agent before `merge.mjs` merges a PR, with an explicit user override.
+- CC-27: real Notion ids removed from the product docs; the review verdict names the commit it covers and comes after the done commit.
 
 ## 0.2.3 — 2026-10-18
 

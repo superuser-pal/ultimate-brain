@@ -1,6 +1,7 @@
 # EASLO Second Brain — Factual Architecture Appendix
 
 **Status:** Notion AI audit supplied by the user on 2026-10-11.  
+**Ids:** page, database and view ids from the audited workspace are replaced with `<id>` (2026-10-19, CC-27; the product repo holds no real Notion ids).  
 **Scope:** Accessible EASLO workspace configuration, including canonical databases, views, templates, connection metadata, permissions, and sampled records.  
 **Evidence convention:** Findings retain the source audit’s `Verified`, `Inferred`, and `Unknown` labels. “Verified” means observed by Notion AI through the workspace interfaces it could access; it has not been independently verified from an exported workspace or API response.
 
