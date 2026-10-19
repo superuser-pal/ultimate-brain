@@ -44,17 +44,17 @@ Do these in order, after the ingest commit.
 **Write in parallel** (decision 0037). Within each step, send the writes that don't depend on each other as parallel tool calls in one turn, up to 10 at a time (Notion limits the request rate). Don't read a page back after writing it: the write's response holds its id. Read a page only when the write needs its current content, such as a project's blocks before a section is replaced.
 
 1. **Tasks.** If `brain status` shows `tasks_database: true`:
-   1. Run `brain sync tasks --meeting <mtg-id> --input <items.json>`.
-   2. Create one Notion page per returned item **without** `pending_relations`, in its `database_id` with its `properties`. An item with `pending_relations` names a project not yet in Notion: **don't create it yet**. After step 2 has published and recorded that project, run `sync tasks` again with only those items, and create each once. An `owner` of type `person_name` is written as text, or resolved to a Notion user if the mapped property is a people property.
-   3. Run `brain sync record` with `{ "records": [ { "id": "<mtg-id>", "synced_at": "<now, ISO 8601 UTC>", "tasks": ["<new task page id>", …] } ] }`. `synced_at` is required on every record (spec/cli.md §5.14.6).
+   1. Run `brain sync tasks --meeting <mtg-id> --input <items.json>`, or `--source <src-id>` for the owner's tasks from any other source.
+   2. Create one Notion page per returned item **without** `pending_relations`, in its `database_id` with its `properties`. An item with `pending_relations` names a page not yet in Notion (a project, or the source's own Inbox row): **don't create it yet**. After step 2 has published and recorded it, run `sync tasks` again with only those items, and create each once. An `owner` of type `person_name` is written as text, or resolved to a Notion user if the mapped property is a people property.
+   3. Run `brain sync record` with `{ "records": [ { "id": "<mtg-id or src-id>", "synced_at": "<now, ISO 8601 UTC>", "tasks": ["<new task page id>", …] } ] }`. `synced_at` is required on every record (spec/cli.md §5.14.6).
 2. **Notes, meeting and proposals:**
    1. Run `brain sync render --changed`.
    2. For each item:
       - **`action: create`:** create a page in `database_id` with `properties`.
       - **`action: update`:** update `page_id` with `properties`.
-      - **Meeting relations with `"mode": "add"`:** add the listed pages and keep the existing ones.
+      - **Meeting and Inbox relations with `"mode": "add"`:** add the listed pages and keep the existing ones.
       - **`"mode": "if_empty"`:** write only if the property is empty in Notion.
-      - **`body` (decisions, questions):** replace the page body with it.
+      - **`body` (decisions, questions, concepts):** replace the page body with it. An Inbox item (a source) has no body; a capture's page body is the user's.
       - **`sections` (projects):** replace only the children of the toggle heading with that exact name ("Brief", "Decision log"). Read the page's blocks first (decision 0033):
       - **the page has no toggle headings at all** (created without the template): append a "Brief" and a "Decision log" toggle heading, in that order, at the end of the page, then fill them;
       - **the page has other toggle headings but not this one:** report `SECTION_NOT_FOUND` for that page and change nothing on it (a rename is likely, 0026).
