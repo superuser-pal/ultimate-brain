@@ -28,7 +28,7 @@ The Markdown brain stays canonical (vision). Notion shows curated knowledge, col
 | Easlo | Entity pages as contextual workspaces | Templates for Project, Goal, Area, Person, Org, Meeting |
 | Ultimate Brain | Milestones as tick-off steps | `Kind = Milestone` in Key Results |
 | Ultimate Brain | Focused dashboards (My Day, Process, Project Hub) | Spaces with views named by the question they answer |
-| Ultimate Brain | Low-friction capture, classify later | Capture Inbox + quick-capture button on Home |
+| Ultimate Brain | Low-friction capture, classify later | Inbox + quick-capture button on Home |
 | Ultimate Brain | Cold items leave active views for review | "Gone quiet" views for projects and open questions |
 | Easlo | Blocks whose tabs follow a record's life (now → later → done) | Every Space (§5) and template (§4) |
 | Easlo | Time-first views: today, upcoming, calendar, deadlines | Home, Tasks, Meetings, Projects |
@@ -41,7 +41,7 @@ The Markdown brain stays canonical (vision). Notion shows curated knowledge, col
 
 ### What we deliberately leave out
 
-Task engine features (recurrence, contexts, energy, snooze), Topics/Notebooks/Highlights, books/recipes/journal subsystems, a universal Notes database, formula-heavy logic. A Notes database would split your knowledge in two: notes typed there never reach the brain, so quick notes go to the Capture Inbox and page notes to "My notes". Tasks stay in your existing database (0018); the Waiting On and Someday states are Notion-only and the brain never reads them.
+Task engine features (recurrence, contexts, energy, snooze), Topics/Notebooks/Highlights, books/recipes/journal subsystems, a universal Notes database, formula-heavy logic. A Notes database would split your knowledge in two: notes typed there never reach the brain, so quick notes go to the Inbox and page notes to "My notes". Tasks stay in your existing database (0018); the Waiting On and Someday states are Notion-only and the brain never reads them.
 
 ---
 
@@ -55,17 +55,17 @@ Every database that mirrors a brain note has three kinds of properties. Each pro
 | **You** | Operational fields | Status, Priority, Progress, Lifecycle, Archived, Brain status | Notion → brain as pointers; the brain never writes them |
 | **System** | Bridge plumbing | Brain ID, Last synced, Created time, Last edited time | Brain → Notion only (the two timestamps are filled by Notion itself). Never edit |
 
-**Creation:** new rows you create in Areas, Goals, Projects, People, Orgs are imported by the next `brain sync` (0021). Rows in Decisions, Questions and Review are created by the brain only.
+**Creation:** new rows you create in Areas, Goals, Projects, People, Orgs are imported by the next `brain sync` (0021). Rows in Decisions, Questions, Concepts and Review are created by the brain only. Inbox rows come from you (Quick capture) or from the brain (every document, email, chat or note it ingests, 0037).
 
-**Page bodies (0026):** the brain writes only inside named toggle headings: "Brief" and "Decision log" on project pages. It owns the whole body of Decisions and Questions pages, publishes no body for Areas, Goals, People and Orgs, and never edits Meetings (0007). Everything else on a page is yours, including the **"My notes"** toggle.
+**Page bodies (0026):** the brain writes only inside named toggle headings: "Brief" and "Decision log" on project pages. It owns the whole body of Decisions, Questions and Concepts pages, publishes no body for Areas, Goals, People, Orgs and Inbox rows, and never edits Meetings (0007) or a capture you wrote. Everything else on a page is yours, including the **"My notes"** toggle.
 
 ---
 
 ## 3. Databases
 
-Twelve databases, all on the backend page **Brain Data**. Naming: plural Title Case database names, Title Case property names, no emoji in property names (the agent addresses them by name through the Notion MCP).
+Thirteen databases, all on the backend page **Brain Data**. Naming: plural Title Case database names, Title Case property names, no emoji in property names (the agent addresses them by name through the Notion MCP).
 
-**Common properties** on every brain-mirrored database (Areas, Goals, Projects, People, Orgs, Decisions, Questions):
+**Common properties** on every brain-mirrored database (Areas, Goals, Projects, People, Orgs, Decisions, Questions, Concepts):
 
 | Property | Type | Owner | Notes |
 |---|---|---|---|
@@ -84,12 +84,14 @@ Ongoing responsibilities (clients, health, learning…).
 | Goals | Relation → Goals | You |
 | Projects | Relation → Projects | You |
 | Meetings | Relation → Meetings (two-way with Area) | Brain |
+| Decisions | Relation → Decisions (two-way with Area) | Brain (0034) |
+| Questions | Relation → Questions (two-way with Area) | Brain (0034) |
+| Concepts | Relation → Concepts (two-way with Area) | Brain |
+| Inbox | Relation → Inbox (two-way with Area) | You (brain fills if empty) |
 | Tasks | Relation → Tasks (two-way with Area) | You |
 | Archived | Checkbox | You |
 | People via projects | Rollup: Projects → People, show original | You (derived, Notion-only) |
 | Clients via projects | Rollup: Projects → Client, show original | You (derived, Notion-only) |
-| Decisions via projects | Rollup: Projects → Decisions, show original | You (derived, Notion-only; until 0034 ships) |
-| Questions via projects | Rollup: Projects → Questions, show original | You (derived, Notion-only; until 0034 ships) |
 
 ### 3.2 Goals
 | Property | Type | Owner |
@@ -133,6 +135,8 @@ Notion-owned entirely (0020). Not mirrored as brain notes; the brain snapshots t
 | Meetings | Relation → Meetings | Brain |
 | Decisions | Relation → Decisions | Brain |
 | Questions | Relation → Questions | Brain |
+| Concepts | Relation → Concepts (two-way with Project) | Brain |
+| Inbox | Relation → Inbox (two-way with Project) | You (brain fills if empty) |
 | Tasks | Relation → Tasks (two-way with Project) | You |
 | Key Facts | Text | Brain: current key facts, e.g. "Budget: 80000 EUR · Launch date: 2027-02" (format in spec/cli.md §5.14.4) |
 | Archived | Checkbox | You |
@@ -170,6 +174,7 @@ The brain **never edits the meeting page body** (0007). Instead of publishing a 
 | Email | Email | You |
 | Projects | Relation → Projects | Brain |
 | Meetings | Relation → Meetings (two-way with Attendees) | Brain |
+| Sources | Relation → Inbox (two-way with People) | Brain (filled from the Inbox side) |
 
 ### 3.7 Orgs
 Clients, partners, suppliers. One canonical entity database (your pattern's rule).
@@ -190,8 +195,10 @@ Created by the brain only.
 | Date | Date | Brain |
 | Assessment | Select: Accepted, Provisional, Contested, Superseded | Brain (0005) |
 | Project | Relation → Projects | Brain |
+| Area | Relation → Areas (two-way with Decisions) | Brain: the areas of its projects, never typed (0034) |
 | Decided In | Relation → Meetings | Brain |
 | Supersedes | Relation → Decisions (self, two-way "Superseded By") | Brain |
+| Sources | Relation → Inbox (two-way with Decisions) | Brain (filled from the Inbox side) |
 
 Page body: context, decision, consequences, sources. `^[inferred]` statements shown with an "AI inference" label (0004).
 
@@ -203,7 +210,9 @@ Open questions and risks raised in meetings.
 | Kind | Select: Question, Risk | Brain |
 | Status | Select: Open, Answered, Dropped | You (brain may propose "Answered") |
 | Project | Relation → Projects | Brain |
+| Area | Relation → Areas (two-way with Questions) | Brain: the areas of its projects (0034) |
 | Raised In | Relation → Meetings | Brain |
+| Sources | Relation → Inbox (two-way with Questions) | Brain (filled from the Inbox side) |
 | Created time | Created time | System (Notion fills it; sorts open questions) |
 
 ### 3.10 Review
@@ -220,20 +229,33 @@ The approval queue (0003). Created by the brain; you decide.
 | Why | Text | Brain: the sentence from the source that triggered it |
 | Source Meeting | Relation → Meetings | Brain |
 | Decision | Select: Approve, Reject, Edit | **You** |
-| Edited Value | Text | **You** (when Decision = Edit) |
+| Note | Text | **You**: with Edit, the value to use; with Approve or Reject, what to do differently ("all except Ana"). The brain reads it and never applies a different change silently (0037) |
 | State | Select: Pending, Applied, Closed | System |
 | Brain ID | Text | System (`prp-…`) |
 | Created time | Created time | System (Notion fills it; sorts the queue) |
 | Last edited time | Last edited time | System (Notion fills it; "approved recently" filter) |
 
-### 3.11 Capture Inbox
-Quick capture. Classified later by the brain (Ultimate Brain's "classify later").
+### 3.11 Inbox
+Everything that came into the brain except meetings, which have their own database (0037). It replaces the Capture Inbox (same database, renamed). Your quick captures land here as **New**; every document, email, chat or note the brain ingests gets a row, created as **Processed**, so **History** shows what came in and what the brain learned from it.
 
 | Property | Type | Owner |
 |---|---|---|
-| Name | Title | You |
+| Name | Title | You on a capture; Brain on a row it creates |
+| Kind | Select: Capture, Document, Email, Chat, Note | System |
+| Summary | Text | Brain: one line on what it taught |
+| Decisions | Relation → Decisions (two-way with Sources) | Brain |
+| Questions | Relation → Questions (two-way with Sources) | Brain |
+| Concepts | Relation → Concepts (two-way with Sources) | Brain |
+| People | Relation → People (two-way with Sources) | Brain |
+| Project | Relation → Projects (two-way with Inbox) | You: set it on a capture and the ingest uses it without asking (brain fills if empty) |
+| Area | Relation → Areas (two-way with Inbox) | You (brain fills if empty) |
 | Brain Status | Select: New, Processed, Skipped | You set Skipped; brain sets Processed |
+| Tasks | Relation → Tasks (two-way with Source) | You |
+| Brain ID | Text | System (the source's id, `src-…`) |
+| Last Synced | Date (with time) | System |
 | Created | Created time | System |
+
+Decisions, Questions, Concepts and People together are **Produced**: the notes the brain made from this input. The page body is yours on a capture; the brain never writes a body. The brain doesn't read Inbox rows back except to ingest New captures, so an edit to Summary or Produced stays in Notion until the brain's own value changes.
 
 ### 3.12 Tasks (default, only if you have no tasks system)
 Minimal, so the brain can send action items (0018). If you already have a tasks database, skip it and map yours in `brain.json`.
@@ -246,8 +268,21 @@ Minimal, so the brain can send action items (0018). If you already have a tasks 
 | Project | Relation → Projects | |
 | Area | Relation → Areas | |
 | Meeting | Relation → Meetings | The backlink for action items |
+| Source | Relation → Inbox | The backlink for your action items from documents, emails, chats, notes and captures (0037) |
 | Brain ID | Text | Set when the brain created it |
 | Last edited time | Last edited time | System (Notion fills it; groups the Done tab by week) |
+
+### 3.13 Concepts
+Ideas, methods and definitions the brain learned, mostly from documents (0037). Created by the brain only; the Inbox records what came in, Concepts holds what the brain learned from it.
+
+| Property | Type | Owner |
+|---|---|---|
+| Project | Relation → Projects (two-way with Concepts) | Brain |
+| Area | Relation → Areas (two-way with Concepts) | Brain |
+| Sources | Relation → Inbox (two-way with Concepts) | Brain (filled from the Inbox side) |
+| Created time | Created time | System (Notion fills it; "Recent" view) |
+
+Plus the common properties. Page body: the concept's explanation, brain-written. `^[inferred]` statements shown with an "AI inference" label (0004).
 
 ---
 
@@ -257,13 +292,15 @@ Each template is the default for its database. Every linked view sits under an H
 
 | Database | Template body |
 |---|---|
-| Areas | "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "My notes". Decisions, Questions, People and Clients show as the "via projects" rollups in the page header (0034 turns Decisions and Questions into views) |
+| Areas | "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What have we decided here?" (Decisions: Current, Superseded) · "What's still open here?" (Questions: Open questions, Open risks, Answered) · "My notes". People and Clients show as the "via projects" rollups in the page header (0034) |
 | Goals | "How are the key results moving?" (Key Results: Open, Done) · "Which projects serve it?" (Projects) · "My notes" |
 | Projects | A muted line "Brief and Decision log are written by the brain. Add your own notes in My notes." · "Brief" toggle heading (brain-written) · "Decision log" toggle heading (brain-written) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What's still open here?" (Questions, Open) · "Who's involved?" (People) · "My notes" |
 | Meetings | Unchanged from the hand-reworked template (see notion/templates.md): "Before marking Reviewed" checklist callout · Notion AI meeting notes block · "My notes" · toggles Decisions, Questions, Tasks |
 | People | "Which meetings were they in?" (Meetings: Upcoming, Past) · "What are they working on?" (Projects) · "My notes" |
 | Orgs | "Who works there?" (People) · "Which projects?" (Projects) · "My notes". Meetings show as the "Meetings via projects" rollup in the page header |
 | Decisions | (brain-generated body) · "Superseded by" callout when present |
+| Concepts | (brain-generated body); no template needed |
+| Inbox | None: a capture's body is yours, and rows the brain creates have no body |
 
 No template uses a callout to show a property: a callout can't display one, and the page layout already shows it.
 
@@ -280,7 +317,7 @@ Home                          ← hub: my day, quick capture, "needs you"
 ├── Review                    ← Space
 ├── Knowledge                 ← Space
 └── (backend, never navigated)
-    ├── Brain Data            ← all 12 databases
+    ├── Brain Data            ← all 13 databases
     └── System                ← synced nav, Archive, How it works
 ```
 
@@ -288,14 +325,14 @@ Each Space: the synced Spaces navigation in a narrow left column, then one tabs 
 
 | Space | Job | Tabs (view) |
 |---|---|---|
-| **Home** | Start of day: your work first | Left: navigation, then "Needs you": "What needs my decision?" (Review, Pending) and "Which minutes need review?" (Meetings, Not Reviewed, held today or earlier), 5 rows each. Right: buttons Quick capture (→ Capture Inbox), New meeting, New project; then "What's on today?" with tabs Tasks (due today or overdue) · Meetings (today) · Projects (Active) |
+| **Home** | Start of day: your work first | Left: navigation, then "Needs you": "What needs my decision?" (Review, Pending) and "Which minutes need review?" (Meetings, Not Reviewed, held today or earlier), 5 rows each. Right: buttons Quick capture (→ Inbox, Kind Capture, Brain Status New), New meeting, New project; then "What's on today?" with tabs Tasks (due today or overdue) · Meetings (today) · Projects (Active) |
 | **Tasks** | Do the work | Today · Upcoming (by day) · No date · Waiting On · Someday · Done (by week) |
 | **Meetings** | Prepare, review minutes, track ingestion | Upcoming · To review · Ready for the brain · Ingested this week · Calendar |
 | **Projects** | Run projects | Active (board by Status) · By area · Deadlines (timeline) · Gone quiet |
 | **Plan** | Areas → goals → key results → projects | Goals · Key results (by goal) · Areas (the way into each Area page) · Projects by goal |
 | **Review** | Decide on proposals | Needs my decision · Sources disagree · Approved recently · Rejected |
-| **Knowledge** | Navigate what the brain knows | Decisions (Recent, Current, Provisional, Superseded, Disputed) · Questions (Open questions, Open risks, Answered) · People (by org, Disputed) · Orgs (Clients, Others) · Inbox (Capture Inbox, New) |
-| **Archive** (under System) | Find what's finished | One tab per database: Projects (Done or Archived) · Goals (Achieved, Dropped or Archived) · Areas · Decisions · Questions · People · Orgs (Archived) |
+| **Knowledge** | Navigate what the brain knows | Decisions (Recent, Current, Provisional, Superseded, Disputed) · Questions (Open questions, Open risks, Answered) · Concepts (Recent, By project, Drafts) · People (by org, Disputed) · Orgs (Clients, Others) · Inbox (Inbox: New, oldest first · History: Processed, newest first) |
+| **Archive** (under System) | Find what's finished | One tab per database: Projects (Done or Archived) · Goals (Achieved, Dropped or Archived) · Areas · Decisions · Questions · Concepts · People · Orgs (Archived) |
 
 Every view, with its filters, sort and properties, is in [notion/views-guide.md](../notion/views-guide.md) and Prompts 7a–7h.
 
@@ -310,7 +347,7 @@ The prompts live in [notion/prompts/](../notion/prompts/), each with its **Verif
 | # | Prompt | Builds |
 |---|---|---|
 | 1 | [Pages](../notion/prompts/01-pages.md) | the eight pages of §5 |
-| 2 | [Databases](../notion/prompts/02-databases.md) | the 12 databases of §3, without relations |
+| 2 | [Databases](../notion/prompts/02-databases.md) | the 13 databases of §3, without relations |
 | 3 | [Relations](../notion/prompts/03-relations.md) | the two-way relations of §3 |
 | 4 | [Formula and rollup](../notion/prompts/04-formula-rollup.md) | Key Results and Goals Progress |
 | 5 | [Ownership](../notion/prompts/05-ownership.md) | owner prefix in each property description (§2) |
@@ -333,13 +370,13 @@ See "After building" in [notion/CHECKLIST.md](../notion/CHECKLIST.md): connect t
     "databases": {
       "areas": "<id>", "goals": "<id>", "key_results": "<id>", "projects": "<id>",
       "meetings": "<id>", "people": "<id>", "orgs": "<id>", "decisions": "<id>",
-      "questions": "<id>", "review": "<id>", "capture_inbox": "<id>"
+      "questions": "<id>", "review": "<id>", "inbox": "<id>", "concepts": "<id>"
     },
     "tasks": {
       "database": "<id>",
       "properties": {
         "title": "Name", "status": "Status", "due": "Due",
-        "project": "Project", "area": "Area", "meeting": "Meeting", "brain_id": "Brain ID"
+        "project": "Project", "area": "Area", "meeting": "Meeting", "source": "Source", "brain_id": "Brain ID"
       },
       "new_task_status": "To Do"
     }
