@@ -63,7 +63,7 @@ Choices made while writing the 0.3.0 contracts, where the text above left the me
 - **Project and Area on an Inbox row stay yours.** The brain fills them only when they are empty (from the produced notes), as it does on Meetings.
 - **Grouping happens in `brain proposal new`:** `add_link` items in one input with the same target and source become one proposal with a `links` list. Skills keep proposing one link per item.
 - **The CLI never reads a Note's meaning.** An Edit takes its value from the Note, as Edited Value did. An Approve or Reject that carries a Note comes out of `sync plan` as a conflict `NOTE_TO_READ`; the skill reads the Note and passes `brain apply` an explicit decision (with `exclude` for "all except X"), or proposes the different change the Note describes, or asks.
-- **Owner tasks from a source** use `brain sync tasks --source`, linked to the source's Inbox row through a new optional Tasks mapping `source`, and deduped by the source's `tasks`.
+- **Owner tasks from a source** use `brain sync tasks --source`, linked to the source's Inbox row through a new optional Tasks mapping `source`. They are created once, in the run that ingests the source (a source is never ingested twice: `DUPLICATE_SOURCE`), as a meeting's are; the source's `tasks` records their page ids.
 - **`owner.person`** in `brain.json` names the owner's person note, where the identities from onboarding are stored as aliases.
 - **`notion.databases.capture_inbox` becomes `inbox`** (the same database, renamed in Notion), and `concepts` is added; `brain upgrade` renames the key.
 

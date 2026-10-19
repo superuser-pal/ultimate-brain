@@ -917,6 +917,25 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "const": "capture"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "source_key": {
+                "pattern": "^notion:"
+              }
+            }
+          }
         }
       ]
     },
