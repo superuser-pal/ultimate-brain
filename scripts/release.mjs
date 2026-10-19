@@ -33,7 +33,7 @@ else {
     writeFileSync(resolve(ROOT, "CHANGELOG.md"), dated);
     command("git", ["add", "package.json", "package-lock.json", "CHANGELOG.md"]);
     command("git", ["commit", "-m", version]);
-    command("git", ["tag", `v${version}`]);
+    command("git", ["tag", "-a", `v${version}`, "-m", version]);
     command("npm", ["publish", ...(isPrerelease(version) ? ["--tag", "next"] : [])], { stdio: "inherit" });
     command("git", ["push", "--follow-tags"], { env: { ...process.env, UB_RELEASE: "1" }, stdio: "inherit" });
   }
