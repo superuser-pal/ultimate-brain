@@ -21,6 +21,8 @@ export interface Correction {
 export interface Decision {
   action: "approve" | "reject" | "edit";
   value?: unknown;
+  note?: string;
+  exclude?: Array<{ field: string; value: unknown }>;
   decided_at: string;
   decided_by: "notion" | "chat";
 }
@@ -86,11 +88,13 @@ export function parseApplyInput(input: unknown): ApplyInput {
   (decisions as unknown[]).forEach((item, index) => {
     const pointer = `/decisions/${index}`;
     if (!isRecord(item)) return problems.push({ pointer, message: "must be an object" });
-    problems.push(...unknownKeys(item, ["proposal", "action", "value", "decided_at", "decided_by"], pointer));
+    problems.push(...unknownKeys(item, ["proposal", "action", "value", "note", "exclude", "decided_at", "decided_by"], pointer));
     if (typeof item.proposal !== "string") problems.push({ pointer: `${pointer}/proposal`, message: "must be a proposal id" });
     if (!ACTIONS.includes(item.action as string)) problems.push({ pointer: `${pointer}/action`, message: "must be approve, reject or edit" });
     if (item.action === "edit" && (item.value === undefined || item.value === null)) problems.push({ pointer: `${pointer}/value`, message: "is required for edit" });
     if (item.action !== "edit" && item.value !== undefined) problems.push({ pointer: `${pointer}/value`, message: "is only allowed for edit" });
+    if (item.note !== undefined && typeof item.note !== "string") problems.push({ pointer: `${pointer}/note`, message: "must be a string" });
+    if (item.exclude !== undefined && (!Array.isArray(item.exclude) || item.exclude.some((entry) => !isRecord(entry) || typeof entry.field !== "string" || !Object.hasOwn(entry, "value")))) problems.push({ pointer: `${pointer}/exclude`, message: "must be a list of {field, value} pairs" });
     if (!isTimestamp(item.decided_at)) problems.push({ pointer: `${pointer}/decided_at`, message: "must be an ISO 8601 UTC timestamp" });
     if (item.decided_by !== "notion" && item.decided_by !== "chat") problems.push({ pointer: `${pointer}/decided_by`, message: "must be notion or chat" });
   });
@@ -215,10 +219,10 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   const p = document.attributes;
   if (p.status === "applied" || p.status === "closed") return { result: "skipped", reason: "ALREADY_TERMINAL" };
 
-  const incoming: Decision = { action: input.action, ...(input.value === undefined ? {} : { value: input.value }), decided_at: input.decided_at, decided_by: input.decided_by };
+  const incoming: Decision = { action: input.action, ...(input.value === undefined ? {} : { value: input.value }), ...(input.note === undefined ? {} : { note: input.note }), ...(input.exclude === undefined ? {} : { exclude: input.exclude }), decided_at: input.decided_at, decided_by: input.decided_by };
   const recorded = isRecord(p.decision) ? (p.decision as unknown as Decision) : undefined;
   let decision = incoming;
-  if (recorded !== undefined && (recorded.action !== incoming.action || !isDeepStrictEqual(recorded.value, incoming.value))) {
+  if (recorded !== undefined && (recorded.action !== incoming.action || !isDeepStrictEqual(recorded.value, incoming.value) || !isDeepStrictEqual(recorded.exclude, incoming.exclude))) {
     // You changed your mind in Notion before it was applied: the later decision wins.
     if (Date.parse(recorded.decided_at) >= Date.parse(incoming.decided_at)) decision = recorded;
   } else if (recorded !== undefined) {
@@ -226,6 +230,11 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   }
   if (decision.action === "edit" && !EDITABLE.has(String(p.kind))) {
     throw new ItemFailure("EDIT_NOT_ALLOWED", `edit is not allowed on a ${String(p.kind)} proposal (spec/schema.md §11.1)`);
+  }
+  if (decision.exclude !== undefined) {
+    if (decision.action !== "approve" || p.kind !== "add_link") throw new ItemFailure("INPUT_INVALID", "exclude is only allowed on an approved add_link proposal");
+    const links = proposalLinks(p);
+    if (decision.exclude.some((excluded) => !links.some((link) => link.field === excluded.field && isDeepStrictEqual(link.value, excluded.value)))) throw new ItemFailure("EXCLUDE_UNKNOWN", "exclude contains a link that is not in the proposal");
   }
   const action = decision.action === incoming.action ? undefined : decision.action;
 
@@ -245,7 +254,7 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
 
   const D = decision.decided_at.slice(0, 10);
   const V = decision.action === "edit" ? decision.value : undefined;
-  const stale = applyKind(workspace, p, proposal.path, V, D, today);
+  const stale = applyKind(workspace, p, proposal.path, V, D, today, decision.exclude ?? []);
   if (stale !== null) {
     p.status = "closed";
     p.closed_reason = "stale";
@@ -258,7 +267,7 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
 }
 
 /** Apply a proposal's kind to its targets. Returns a message when the proposal is stale. */
-function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPath: string, V: unknown, D: string, today: string): string | null {
+function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPath: string, V: unknown, D: string, today: string, exclude: Array<{ field: string; value: unknown }> = []): string | null {
   const kind = String(p.kind);
   if (kind === "new_item") {
     stageNewItem(workspace, p.note as NoteInput, proposalPath, new Date(`${today}T00:00:00Z`));
@@ -294,7 +303,7 @@ function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPat
       break;
     }
     case "add_link":
-      if (!list(a[field]).some((value) => isDeepStrictEqual(value, p.after))) a[field] = [...list(a[field]), p.after];
+      for (const link of proposalLinks(p)) if (!exclude.some((item) => item.field === link.field && isDeepStrictEqual(item.value, link.value)) && !list(a[String(link.field)]).some((value) => isDeepStrictEqual(value, link.value))) a[String(link.field)] = [...list(a[String(link.field)]), link.value];
       break;
     case "supersede": {
       const older = existing(workspace, String(p.supersedes));
@@ -313,6 +322,11 @@ function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPat
   a.updated = today;
   workspace.save(target.path, document);
   return null;
+}
+
+function proposalLinks(proposal: Record<string, unknown>): Array<{ field: unknown; value: unknown }> {
+  if (Array.isArray(proposal.links)) return proposal.links.filter(isRecord).map((link) => ({ field: link.field, value: link.value }));
+  return proposal.field === undefined ? [] : [{ field: proposal.field, value: proposal.after }];
 }
 
 /** update_fact (and a facts.<key> correction): retire accepted entries, append the new value. */
