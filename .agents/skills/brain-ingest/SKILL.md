@@ -95,7 +95,7 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
     ```
     - **Done:** counts only, and only the ones that aren't zero.
     - **Needs you:** everything waiting on the user, separated by `·`: proposals to decide and where (the Review queue, or "approve in chat"), what was skipped or failed and why in a few words, lint errors that were there before the run, an instruction found in a source and ignored, action items with no task. `Needs you: nothing` when there is none.
-    - **Next:** one action, or one question when the user must decide something. Without Notion, the next action is a sync ("sync with Notion" publishes the new notes and proposals).
+    - **Next:** one action, or one question when the user must decide something. Without Notion, the next action is deciding the proposals in chat ("what needs my decision"), or connecting Notion ("connect the brain to Notion"), after which a sync publishes everything.
 
     **Below the three lines, the report grows with what came in** (decision 0037, amended 2026-10-18). A run that only moved counts stops at three lines. Otherwise add, per input, one line each, and leave nothing out because the list is long:
     - **What came in:** every new project, decision (with its assessment), open question and risk, every fact that changed (old → new), and new people with their role. A one-line summary of what a document or thread is about comes first.

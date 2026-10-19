@@ -2,7 +2,7 @@
 
 The procedure for every input that isn't a meeting (decision 0032). Follow the steps below in order; each says when to run a SKILL.md step as it is. There is no meeting note: the **source note** is what every new note cites.
 
-**Without Notion** (not configured, or the Notion tools aren't available in this session): skip every *(Notion)* part. New notes and proposals reach Notion with the next sync; say so in the report. A capture needs Notion: if `brain status` shows `inbox` missing, tell the user to run the brain-connect-notion skill and stop.
+**Without Notion** (not configured, or the Notion tools aren't available in this session): skip every *(Notion)* part. New notes and proposals reach Notion with the next sync; say so in the report. A capture needs Notion: if `brain status` shows `inbox` missing, skip the Inbox and tell the user to run the brain-connect-notion skill; other inputs go on.
 
 ## The drop folder: "process my drop folder" (decision 0037)
 
@@ -63,7 +63,8 @@ As in SKILL.md step 3, **one** question, only if something blocks:
 - the title or date is unclear (a document's own date, an email's sent date; if there is none, use today and say so);
 - which project or area it belongs to, when the text doesn't say, the user didn't, and (for a capture) the row's Project and Area are empty;
 - **a new project** (the user says the input starts one): never write a project note or create its Notion page yourself; the page must come from the Projects template, which the API can't apply (decision 0021). Ask the user to create it with **New project** in Notion and give it its name, then run the brain-sync skill's pull (`sync plan` and `sync apply`) to import it, and go on with the ingest linked to it. If the user would rather not now, link the input to its area and say so in the report. Without Notion, write nothing for the project and say so;
-- one name spelled several ways.
+- one name spelled several ways;
+- anything [extraction.md](extraction.md) says to ask in the pre-check, such as a role or fact worded differently from the brain's.
 
 The user's answers that add content are owner rulings (decision 0031, [extraction.md](extraction.md)).
 
