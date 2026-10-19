@@ -6,7 +6,7 @@ One line per task, under the release that ships it (decision 0038). `scripts/rel
 
 - CC-28: the 0.3.0 retro's tasks: gate fixes for lost CHANGELOG lines, done before merge and merges outside the gate (CX-32); changelog fragments (CC-29) and a blind-run setup script (CX-33) for 0.4.0.
 
-## 0.3.0 — unreleased
+## 0.3.0 — 2026-10-19
 
 - CC-22 (#90): intake contracts: the Inbox (every source but minutes), Concepts, grouped link reviews with a Note, owner tasks from sources, `brain.json` settings, Area on Decisions and Questions; Notion migration 0005.
 - CC-26 (#92): intake skills: "catch up" (one read-only pass, one batch of questions), Review Notes and grouped rows in brain-apply, Inbox rows and owner tasks in brain-ingest, identities and Notion access steps in brain-connect-notion, publish and push settings, the user guide.
