@@ -2,7 +2,7 @@
 
 One line per task, under the release that ships it (decision 0038). `scripts/release.mjs` refuses a version with no entry here.
 
-## 0.2.4 — unreleased
+## 0.2.4 — 2026-10-19
 
 - CC-27 (#88): real Notion ids removed from the product docs; the review verdict names the commit it covers and comes after the done commit.
 - CX-28 (#86): leak checks in CI and before commits for UUIDs, non-example emails and the local denylist.
