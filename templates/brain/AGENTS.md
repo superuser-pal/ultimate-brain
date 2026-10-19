@@ -13,7 +13,8 @@ Each operation has a skill; follow it end to end:
 | The user wants to… | Skill |
 |---|---|
 | connect the brain to Notion (after building the space) | `brain-connect-notion` |
-| ingest reviewed meeting minutes | `brain-ingest` |
+| catch up: do everything that's waiting (decided reviews, reviewed meetings, the Inbox, the drop folder) | `brain-catch-up` |
+| ingest one input: reviewed minutes, a document, a web page, a pasted email or note, the Inbox, the drop folder | `brain-ingest` |
 | apply decisions from the Notion Review queue | `brain-apply` |
 | pull Notion edits and new rows, republish notes | `brain-sync` |
 | answer a question from the brain | `brain-query` |
@@ -28,7 +29,8 @@ Each operation has a skill; follow it end to end:
 - **A new decision or question for a meeting that already exists**: a `new_item` proposal, because the meeting note must change too.
 - **Generated files** (`index.md`, `log/`, the `@generated` blocks of `brief.md` and `decision-log.md`) and **source snapshots** in `sources/` are written by the CLI only. To change what a view shows, change the canonical note and regenerate.
 - **After every write:** `brain index`, `brain views`, `brain lint`. Commit when lint shows no errors you introduced, e.g. `ingest: Acme sync 2026-12-03 (4 new, 3 proposals)`. A run that publishes to Notion commits again after `brain sync record`, so the stored page ids are in Git too.
-- **After the last commit:** `git push`. If it fails (offline, no remote), say so in the report's last line and carry on; the work is committed.
+- **Publishing** follows `settings.publish` in `brain.json` (see `brain status`): `ask` (the default) asks once per run before writing to Notion; `auto` publishes without asking. After a run the user was happy with and that asked, offer once to switch: `brain config set settings.publish '"auto"'`.
+- **After the last commit,** per `settings.push`: `auto` (the default) runs `git push`; if it fails (offline, no remote), say so in the report's last line and carry on, the work is committed. `remind` leaves it to the user, and the report's last line says how many commits are not pushed.
 
 ## Product files and findings
 

@@ -4,8 +4,9 @@ One line per task, under the release that ships it (decision 0038). `scripts/rel
 
 ## 0.3.0 — unreleased
 
-- CC-22: intake contracts: the Inbox (every source but minutes), Concepts, grouped link reviews with a Note, owner tasks from sources, `brain.json` settings, Area on Decisions and Questions; Notion migration 0005.
-- CX-22: render the brain-owned Area relation for Decisions and Questions from their projects.
+- CC-22 (#90): intake contracts: the Inbox (every source but minutes), Concepts, grouped link reviews with a Note, owner tasks from sources, `brain.json` settings, Area on Decisions and Questions; Notion migration 0005.
+- CC-26 (#92): intake skills: "catch up" (one read-only pass, one batch of questions), Review Notes and grouped rows in brain-apply, Inbox rows and owner tasks in brain-ingest, identities and Notion access steps in brain-connect-notion, publish and push settings, the user guide.
+- CX-22 (#93): render the brain-owned Area relation for Decisions and Questions from their projects.
 - CX-24: implement grouped link reviews, Inbox and Concepts sync, source tasks, settings status and Inbox upgrade.
 
 ## 0.2.4 — 2026-10-19
