@@ -14,7 +14,13 @@ The two build/TASKS.md conflicts were different. Each time, a new task block had
 
 ## Decision
 - **A task's changelog line is a field of its row.** Each task in build/TASKS.md carries a `**Changelog:** <text>` line directly after its `**Release:**` line. A PR edits its own row only; it no longer touches `CHANGELOG.md`.
-- **`release.mjs <version>` writes the section.** It collects every task with that release, in TASKS.md order, refuses if one is not `done` (as today) or has no `**Changelog:**` line, and writes `## <version> — <date>` at the top of `CHANGELOG.md`. Each line reads `- <id> (#N): <text>`, with the PR numbers taken from the `` `done` (#N) `` heading (`(#60, #64)` when it names several). Tasks marked `dropped` are left out. The section is part of the release commit, as the dated heading is now.
+- **`dropped` is a task status**, next to `todo`, `in progress`, `review`, `done` and `blocked`: the task will not ship. `release.mjs` filters out a version's `dropped` tasks before any other check, for every version, so a dropped task needs no `**Changelog:**` line.
+- **`release.mjs <version>` writes the section.** It takes the version's remaining tasks in TASKS.md order and refuses, naming each task, when one:
+  - is not `done` (as today);
+  - has no `**Changelog:**` line, or one that is empty or only whitespace;
+  - has a done heading whose suffix is not one or more PR numbers: `` `done` (#N) ``, `` `done` (#N, #M) `` (any count, comma and space between), each optionally followed by `; <note>` before the closing parenthesis, as in `` `done` (#58; decisions 0032, 0033) ``. A bare `` `done` `` and the older `(PR #N)` form refuse.
+
+  Then it writes `## <version> — <date>` at the top of `CHANGELOG.md`, one line per task: `- <id> (#N): <text>`, or `- <id> (#N, #M): <text>` with every number in heading order and the note left out. The section is part of the release commit, as the dated heading is now.
 - **`pr-format.mjs`** checks that the PR's own task row has a non-empty `**Changelog:**` line on the head, instead of a `CHANGELOG.md` addition. It keeps CX-32's guard against lost task headings, extended to a `**Changelog:**` line that was on the base and is gone on the head.
 - **`merge.mjs`** keeps CX-32's `` `done` (#N) `` check and drops its `CHANGELOG.md` `(#N)` check: the PR number now comes from the heading.
 - **build/TASKS.md stays as it is.** New task blocks arrive in planning PRs that merge before their work starts, and status edits on separate tasks don't conflict. A bad resolution is caught by the lost-heading guard. No new rule is needed.

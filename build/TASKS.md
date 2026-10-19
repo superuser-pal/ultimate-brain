@@ -1,7 +1,7 @@
 # Build Plan v1
 
 **Owners:** `CC` = Claude Code · `CX` = Codex · `U` = you (the user).
-**Status values:** `todo` · `in progress` · `review` · `done` · `blocked`.
+**Status values:** `todo` · `in progress` · `review` · `done` · `blocked` · `dropped` (won't ship; skipped by `release.mjs`).
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
 > **2026-10-19 — Status: 0.2.4 is released. 0.3.0 is merged except CX-31 (#91, passed); then release 0.3.0 and U-13. 0.3.1 (CX-32, gate fixes from the 0.3.0 retro) merges after the 0.3.0 release.**
@@ -424,8 +424,8 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 ### CX-34 · Changelog from task rows (decision 0039) · `todo`
 **Release:** 0.4.0
 **Changelog:** `release.mjs` writes each release's CHANGELOG section from the task rows; PRs no longer edit CHANGELOG.md.
-**Output:** per decision 0039: `taskEntries` also reads the optional `**Changelog:**` line after `**Release:**`; `release.mjs <version>` (0.4.0 and later) refuses a task of that version with no `**Changelog:**` line, writes `## <version> — <date>` with `- <id> (#N): <text>` per task in TASKS.md order (PR numbers from the `` `done` (#N) `` heading, all of them when it names several; `dropped` tasks left out), replaces a hand-written `## <version> — unreleased` section, and commits it in the release commit; `pr-format.mjs` checks the PR's own row has a non-empty `**Changelog:**` line instead of a CHANGELOG.md addition, and its lost-heading guard also fails on a `**Changelog:**` line lost from the base; `merge.mjs` drops CX-32's CHANGELOG.md `(#N)` check and keeps the `` `done` (#N) `` one. Versions before 0.4.0 keep today's behaviour.
-**Acceptance:** tests: `release.mjs 0.4.0 --dry-run` on a fixture TASKS.md prints the generated section with two tasks in order, one naming `(#60, #64)`, and a `dropped` task left out; a task with no `**Changelog:**` line refuses; a 0.3.x version needs its hand-written section as today; `pr-format` passes a PR that edits only its own row and fails one with an empty field; `merge.mjs --dry-run` passes `done (#N)` with no CHANGELOG.md change.
+**Output:** per decision 0039: `taskEntries` also reads the optional `**Changelog:**` line after `**Release:**`; `release.mjs <version>` skips the version's `dropped` tasks before every check (all versions); for 0.4.0 and later it refuses, naming each task, one with no `**Changelog:**` line or an empty or whitespace-only one, and a done heading whose suffix isn't `(#N)` or `(#N, #M, …)`, each optionally with `; <note>` before the `)` (decision 0039 gives the grammar); it writes `## <version> — <date>` with `- <id> (#N): <text>` or `- <id> (#N, #M): <text>` per task in TASKS.md order (every number, note left out), replaces a hand-written `## <version> — unreleased` section, and commits it in the release commit; `pr-format.mjs` checks the PR's own row has a non-empty `**Changelog:**` line instead of a CHANGELOG.md addition, and its lost-heading guard also fails on a `**Changelog:**` line lost from the base; `merge.mjs` drops CX-32's CHANGELOG.md `(#N)` check and keeps the `` `done` (#N) `` one. Versions before 0.4.0 keep today's behaviour.
+**Acceptance:** tests: `release.mjs 0.4.0 --dry-run` on a fixture TASKS.md prints the generated section with two tasks in order, one naming `(#60, #64)`, and a `(#58; note)` heading generating `(#58)`; a `dropped` task with no `**Changelog:**` line left out without refusing; refusals for a task with no `**Changelog:**` line, one with `**Changelog:**   `, a bare `` `done` `` and a `(PR #12)` suffix; a 0.3.x version needs its hand-written section as today; `pr-format` passes a PR that edits only its own row and fails one with an empty field; `merge.mjs --dry-run` passes `done (#N)` with no CHANGELOG.md change.
 
 ### CC-30 · Docs for changelog lines in task rows (decision 0039) · `todo`
 **Release:** 0.4.0
