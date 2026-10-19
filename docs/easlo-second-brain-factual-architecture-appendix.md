@@ -1,6 +1,7 @@
 # EASLO Second Brain — Factual Architecture Appendix
 
 **Status:** Notion AI audit supplied by the user on 2026-10-11.  
+**Ids:** page, database and view ids from the audited workspace are replaced with `<id>` (2026-10-19, CC-27; the product repo holds no real Notion ids).  
 **Scope:** Accessible EASLO workspace configuration, including canonical databases, views, templates, connection metadata, permissions, and sampled records.  
 **Evidence convention:** Findings retain the source audit’s `Verified`, `Inferred`, and `Unknown` labels. “Verified” means observed by Notion AI through the workspace interfaces it could access; it has not been independently verified from an exported workspace or API response.
 
@@ -29,7 +30,7 @@ Important limitation: database loaders expose schema, views, formulas, rollup de
 
 ### 1.1 Tasks
 
-Data source: collection://add49566-1e99-82e2-a488-077d3c7f1570
+Data source: collection://<id>
 Confidence: Verified from the database configuration.
 
 | Exact property name | Type | Configuration |
@@ -65,7 +66,7 @@ The accessible task sample included Complete a 10km run, with Status = Next Acti
 
 ### 1.2 Projects
 
-Data source: collection://dcf49566-1e99-82cd-a33c-87d11f1a7868
+Data source: collection://<id>
 Confidence: Verified.
 
 | Exact property name | Type | Configuration |
@@ -102,7 +103,7 @@ Train for half marathon — Status = In Progress, Priority = High, related to Co
 
 ### 1.3 Goals
 
-Data source: collection://bcd49566-1e99-8270-a39a-8722744e5168
+Data source: collection://<id>
 Confidence: Verified.
 
 | Exact property name | Type | Configuration |
@@ -129,7 +130,7 @@ The schema marks Quarter and Countdown as unavailable to SQL queries.
 
 ### 1.4 Key Results
 
-Data source: collection://51f49566-1e99-821c-934a-076705c3ff36
+Data source: collection://<id>
 Confidence: Verified.
 
 | Exact property name | Type | Configuration |
@@ -151,7 +152,7 @@ The completed view filters by the status group Complete, while the configured co
 
 ### 1.5 Areas
 
-Data source: collection://30b49566-1e99-8223-bdaf-87a4db89dd61
+Data source: collection://<id>
 Confidence: Verified.
 
 | Exact property name | Type | Configuration |
@@ -173,7 +174,7 @@ No formulas or rollups were exposed for Areas.
 
 ### 1.6 Events
 
-Data source: collection://13c49566-1e99-836a-9242-07c761643f11
+Data source: collection://<id>
 Confidence: Verified.
 
 | Exact property name | Type | Configuration |
@@ -196,7 +197,7 @@ No Status or Archive property exists on Events.
 
 ### 1.7 Topics
 
-Data source: collection://f5f49566-1e99-824c-9ec7-07282fff8b9f
+Data source: collection://<id>
 Confidence: Verified.
 
 | Exact property name | Type | Configuration |
@@ -217,7 +218,7 @@ The formula uses the exact expression containing current.‣. The schema marks C
 
 ### 1.8 Notebooks
 
-Data source: collection://a2649566-1e99-828d-83f2-077fae6ab031
+Data source: collection://<id>
 Confidence: Verified.
 
 | Exact property name | Type | Configuration |
@@ -236,7 +237,7 @@ The schema marks Counter as unavailable to SQL queries.
 
 ### 1.9 Notes
 
-Data source: collection://ad149566-1e99-83db-9784-07939e672058
+Data source: collection://<id>
 Confidence: Verified.
 
 | Exact property name | Type | Configuration |
@@ -266,7 +267,7 @@ The schema marks Goal Area, Topics Area, Project Area, and Notebook Area as unav
 
 ### 1.10 References
 
-Data source: collection://5c649566-1e99-83ac-af8c-0760471a4561
+Data source: collection://<id>
 Confidence: Verified.
 
 | Exact property name | Type | Configuration |
@@ -298,7 +299,7 @@ The schema marks Topics Area as unavailable to SQL queries.
 
 ### 1.11 Highlights
 
-Data source: collection://28d49566-1e99-831b-be4e-07f01f561f36
+Data source: collection://<id>
 Confidence: Verified.
 
 | Exact property name | Type | Configuration |

@@ -4,11 +4,10 @@
 **Status values:** `todo` · `in progress` · `review` · `done` · `blocked`.
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
-> **2026-10-18 — Status: 0.2.1 is published and the user's brain runs it (first real drop-folder run done). 0.2.2 is in PR #78 (CC-23) with CX-26. Next: 0.2.3, the delivery process (decision 0038), before any 0.3.0 work.**
-> - **Why 0.2.3 first:** Claude Code in the brain ran the plugin cached on 2026-10-12 while Codex ran 0.2.1 (stopgap on 2026-10-18: the plugin is off and `.claude/skills/` copied by hand). 0.2.3 makes npm the only channel and adds the merge, leak, release and upgrade gates.
-> - **Every task now has `**Release:**`**, its own worktree (`../ub-<ID>`) and a CHANGELOG line (AGENTS.md, docs/releasing.md).
+> **2026-10-19 — Status: 0.2.3 is released and in the brain. 0.2.4 is in review: CC-27 (#88), CX-28 (#86), CX-30 (#87). Merge in that order, then release 0.2.4 (U-14). 0.3.0 work starts now but merges only after 0.2.4 is released.**
+> - **0.3.0 scope agreed 2026-10-19:** the intake experience (decision 0037) and Area on Decisions and Questions (0034), in CC-22 (contracts), CC-26 (skills), CX-24, CX-22, then U-13 (Notion migration, upgrade, real catch-up). The onboarding suite and Notion file uploads move to 0.4.0.
+> - **Review order (CC-27):** the done commit comes before the verdict; the reviewer posts `Review (<agent>): pass at <sha>` last.
 > - **Untriaged `dogfood` issues:** 0.
-> - **Queued for 0.3.0:** CC-22 and CX-24 (decision 0037), CX-22 (decision 0034), the onboarding suite, Notion file uploads.
 > - **Earlier:** v1 waves 1–4 below; dogfood findings 1–24 in the Wave 4 table.
 
 ## Why this split
@@ -347,6 +346,11 @@ Agreed with the user on 2026-10-18 (grill session). npm becomes the only channel
 
 Moved out of 0.2.3 on 2026-10-18 so 0.2.3 could ship while Codex was out of tokens.
 
+### CC-27 · Real Notion ids out, review verdict names its commit · `review`
+**Release:** 0.2.4
+**Output:** the template, page and view ids in notion/templates.md and the two `*-factual-architecture-appendix.md` files replaced with `<id>` (they came from a live workspace; none were in the npm package). The review order in AGENTS.md, docs/releasing.md, the PR template and a 0038 amendment: the author's done commit first, then the reviewer's `Review (<agent>): pass at <sha>` for the head commit (the contract for CX-30). The 0.3.0 scope agreed on 2026-10-19 recorded below.
+**Acceptance:** CX-28's `node scripts/leak-check.mjs` passes on this tree with no allowlist entry for those three files; the denylist matches no tracked file except LICENSE; `npm test` passes.
+
 ### CX-28 · Leak check in CI and a pre-commit hook · `todo` (moved from 0.2.3 on 2026-10-18: Codex out of tokens)
 **Release:** 0.2.4
 **Output:** `scripts/leak-check.mjs [--staged]` scans tracked files (or the staged diff) for a UUID, dashed or 32 hex characters, outside `tests/`, and for an email address whose domain is not `example` or does not end in `.example`; `scripts/leak-allow.txt` lists exceptions as `path:pattern`. With `--staged` it also reads `~/.config/ultimate-brain/denylist` (one term per line, `#` comments, matched case-insensitively as whole words) when it exists. A CI step runs it on every push; `.githooks/pre-commit` runs it with `--staged`. `LICENSE` (the copyright holder) is allowed for the denylist. A finding prints file, line and the rule, never the denylist term's neighbours beyond the line.
@@ -357,24 +361,33 @@ Moved out of 0.2.3 on 2026-10-18 so 0.2.3 could ship while Codex was out of toke
 **Output:** `merge.mjs` refuses unless the PR has a review or comment whose body starts with `Review (Claude Code): pass at <sha>` on a `codex/` branch, or `Review (Codex): pass at <sha>` on a `claude/` branch. `<sha>` has at least seven hexadecimal characters and is a prefix of the head SHA, so the verdict covers the exact head commit. Both agents post through one GitHub account, so the line is the only way to tell them apart (decision 0038). A user override: `--reviewed-by-user`, which prints a warning and is noted in the merge commit body.
 **Acceptance:** dry-run tests: a pass from the other agent naming the head passes; a pass from the same agent, a pass naming another SHA, and no pass each refuse; the override passes with its warning.
 
-## 0.3.0 — queued
+## 0.3.0 — Intake experience
 
-**Intake experience (decision 0037):** one Notion change for the user's space. Claude Code writes the contracts first (CC-22); Codex's CLI work (CX-24) follows them.
+Agreed with the user on 2026-10-19. **Goal:** one "catch up" handles everything that's waiting; every input and everything the brain learns is visible in Notion; routine reviews take one click; the user's Notion space changes once. Decisions 0037 and 0034.
 
-### CC-22 · Intake contracts and skills (decision 0037) · `todo`
+**Order:** CC-22 → Codex reviews the contracts → CX-24, CX-22 and CC-26 in parallel → release 0.3.0 → U-13. Nothing merges before 0.2.4 is released. The Notion space is migrated after the release, not before: 0.2.3 still expects the Capture Inbox.
+
+### CC-22 · Intake contracts (decisions 0037, 0034) · `todo`
 **Release:** 0.3.0
-**Output:** spec/schema.md and note.schema.json (concepts published; Inbox properties); notion-space-design §3.11 as Inbox, a Concepts database, Knowledge tabs, the Review Note field; spec/cli.md (grouped `add_link`, `brain.json` `publish` and `push`, Inbox and Concepts in `sync render`); the "catch up" skill with its read-only pass and one batch of questions; owner tasks from non-meeting sources in extraction.md and sources.md; identities in the onboarding plan; the guide.
-**Acceptance:** Codex's review finds the contracts complete enough to build CX-24 without inventing behaviour; a blind catch-up run on a synthetic brain asks once, then finishes.
+**Output:** spec/schema.md and note.schema.json (concepts published; Inbox properties); spec/cli.md (grouped `add_link` proposals and their apply with a Note, `brain.json` `publish: ask | auto` and `push: auto` (0038), Inbox and Concepts in `sync render` and `sync record`, the derived Area on Decisions and Questions); notion-space-design: §3.11 rewritten as Inbox (Kind, Summary, Produced, Project, Area; views Inbox and History), a Concepts section, Knowledge tabs, the Review Note replacing Edited Value, Area on Decisions and Questions with Area page views; the matching Prompts and a Notion migration. The migration sets Kind = Capture on existing rows, copies any Edited Value on a pending Review row into Note before removing the property, and backfills Inbox rows (Processed) for the documents and emails already ingested.
+**Acceptance:** Codex's review finds the contracts complete enough to build CX-24 and CX-22 without inventing behaviour.
+
+### CC-26 · Intake skills (decision 0037) · `todo` (needs CC-22)
+**Release:** 0.3.0
+**Output:** the "catch up" skill (read-only pass, every blocking question in one batch, then apply → Reviewed meetings → New Inbox rows → drop folder → publish → push, one report; blocked items skipped and listed); brain-apply (Notes, grouped rows, Check skips notes with nothing to publish); brain-ingest (Inbox rows, Project or Area taken from the capture, owner tasks from non-meeting sources in extraction.md and sources.md); the owner's names and work emails asked once and stored as aliases (at setup, and once by catch-up in an existing brain); dogfood finding 3 (connect your agent to Notion, per agent; brain-connect-notion stops with the exact fix); the user guide.
+**Acceptance:** a blind catch-up run on a synthetic brain asks once, then finishes; the skills match the CC-22 contracts.
 
 ### CX-24 · Intake in the CLI (decision 0037) · `todo` (needs CC-22)
 **Release:** 0.3.0
 **Output:** grouped `add_link` proposals and their apply with a Note; `brain.json` settings; Inbox and Concepts in `sync render` and `sync record`. **Acceptance:** tests per the contract.
 
-
-### CX-22 · Area on Decisions and Questions (decision 0034) · `todo`
+### CX-22 · Area on Decisions and Questions (decision 0034) · `todo` (needs CC-22)
 **Release:** 0.3.0
-**Output:** the sync fills a brain-owned Area relation on Decisions and Questions from their project's area (spec/cli.md, once Claude Code writes the contract). **Acceptance:** tests for one area, several projects in different areas, and a project with no area.
+**Output:** the sync fills a brain-owned Area relation on Decisions and Questions from their projects' areas (spec/cli.md, CC-22). **Acceptance:** tests for one area, several projects in different areas, and a project with no area.
 
+## 0.4.0 — queued
+
+Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `brain-onboard` interview, converter check, drop folder asked up front) and Notion file uploads. Planned after U-13.
 ---
 
 ## Your tasks
@@ -394,6 +407,8 @@ Moved out of 0.2.3 on 2026-10-18 so 0.2.3 could ship while Codex was out of toke
 | U-10 | Publish 0.2.2 the same way, then `brain upgrade` in your brain | When CC-23 and CX-26 are merged |
 | U-11 | Setup for 0.2.3: from CX-27 on, merge only with `node scripts/merge.mjs <PR>`. GitHub Pro is deferred (decision 0038). Done by Claude on 2026-10-18: the `dogfood` label and the denylist. `/plugin update` found no match in the brain, so its Claude Code keeps the 2026-10-12 skills until 0.2.3 or a manual copy | Now |
 | U-12 | Publish 0.2.3 with `node scripts/release.mjs 0.2.3` from the main checkout, then `brain upgrade` in your brain, then `npm deprecate ultimate-brain@0.2.2 "Superseded. Install the latest version."` (0.2.2 still has a real name in a skill example) | When CC-24, CC-25, CX-27 and CX-29 are done |
+| U-13 | 0.3.0 in your brain, one session with Claude: migrate your Notion space with brain-notion-change (your yes at each step), `brain upgrade`, then one real "catch up" as the acceptance run | After 0.3.0 is released |
+| U-14 | Publish 0.2.4 with `node scripts/release.mjs 0.2.4` from the main checkout, then `brain upgrade` in your brain | When CC-27, CX-28 and CX-30 are merged |
 
 ## How to start Codex on a task
 

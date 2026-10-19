@@ -13,6 +13,6 @@
 - [ ] `CHANGELOG.md` has a line for this task under its release
 - [ ] Leak check passes: no real names, client text, Notion ids or emails (fixtures are synthetic)
 - [ ] Spec questions, if any, are written under the task in build/TASKS.md
-- [ ] After the review passes: the task row says `done` (#N) and the CHANGELOG line names the PR
+- [ ] After the review finds nothing left: the task row says `done` (#N) and the CHANGELOG line names the PR
 
-<!-- The reviewer ends with: Review (Claude Code): pass  or  Review (Codex): pass -->
+<!-- Last step, after the done commit: the reviewer posts "Review (Claude Code): pass at <sha>" or "Review (Codex): pass at <sha>", naming the PR's head commit. -->
