@@ -69,6 +69,34 @@ test("release refuses an invalid version before mutating files", (t) => {
   assert.match(result.stderr, /Usage/);
 });
 
+test("release pushes its annotated tag through --follow-tags", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  writeFileSync(join(root, "CHANGELOG.md"), "## 1.2.3 — unreleased\n");
+  writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done`\n**Release:** 1.2.3\n");
+  const path = fakeCommands(root, {
+    gh: `case "$1" in
+      "repo view") printf owner/repo ;;
+      api) printf 'completed\\tsuccess\\n' ;;
+    esac`,
+    npm: "exit 0",
+  });
+  command(root, ["init", "-b", "main"]);
+  command(root, ["config", "user.email", "tests@example.test"]);
+  command(root, ["config", "user.name", "Tests"]);
+  command(root, ["add", "."]);
+  command(root, ["commit", "-m", "fixture"]);
+  const origin = `${root}-origin.git`;
+  t.after(() => rmSync(origin, { recursive: true, force: true }));
+  execFileSync("git", ["init", "--bare", origin]);
+  command(root, ["remote", "add", "origin", origin]);
+  command(root, ["push", "-u", "origin", "main"]);
+  const result = run("release.mjs", ["1.2.3"], { root, env: { PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(command(root, ["ls-remote", "--tags", "origin"]), /refs\/tags\/v1\.2\.3$/m);
+  assert.equal(command(root, ["cat-file", "-t", "v1.2.3"]).trim(), "tag");
+});
+
 test("merge dry-run requires a green, mergeable PR and does not merge it", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
