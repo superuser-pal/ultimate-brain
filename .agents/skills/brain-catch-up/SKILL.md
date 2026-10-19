@@ -16,7 +16,7 @@ Run every CLI command as `brain <command> --brain <brain> --json`. If `brain` is
 This step changes no knowledge: no note, proposal, `brain.json`, commit, Notion page or drop-folder file. Two writes are allowed because they change nothing the user owns: `brain index` may regenerate a stale `index.md` (generated, rebuilt again later in the run), and the working files (`snapshot.json`, `plan.json`, conversions) go in a temporary folder outside the brain.
 
 1. **Status.** Run `brain status`; run `brain index` if `index_stale`. Note `settings` (absent means `publish: ask`, `push: auto`) and which databases are configured. Each Notion part below needs its database configured; skip the ones that aren't and name them once on the report's Needs you line.
-2. **Pull plan.** Brain-sync "Pull", steps 2–4, with the snapshot and plan in the temporary folder: snapshot every configured database (Review included), run `sync plan` once, save `plan.json`. It holds the imports, your corrections, the decided Review rows and the conflicts.
+2. **Pull plan.** Brain-sync "Pull", steps 2–4, with the snapshot and plan in the temporary folder: snapshot the databases brain-sync step 2 reads (Areas, Goals, Key Results, Projects, People, Orgs, Decisions, Questions, Concepts, Review; never Meetings or the Inbox, which `sync plan` rejects), whichever are configured; run `sync plan` once, save `plan.json`. It holds the imports, your corrections, the decided Review rows and the conflicts.
 3. **Notes on Review rows.** For each `NOTE_TO_READ` conflict, read the Note against its proposal and decide what it means (brain-apply, "Reading a Note"). Write down the decision you would apply, or the question it raises.
 4. **Meetings** *(Notion)*. Brain-ingest steps 2 and 3, up to the duplicate check: the Reviewed meetings, oldest first, and each one's pre-check blockers. Minutes files are ingested only when the user names them, never looked for.
 5. **Inbox.** The New rows (brain-ingest references/sources.md, "capture"), oldest first, each with its pre-check blockers. A row with Project or Area set needs no project question.
@@ -50,7 +50,11 @@ For each input, publishing waits for step 4 below. **Skipped, not asked:** an in
 
 ## 4. Publish, push, report
 
-1. **Publish** (when `settings.publish` is `auto`, or the user said yes): brain-ingest references/notion.md "Publish", once for the whole run: the tasks of each ingested meeting and source, then one `sync render --changed --plan plan.json` for everything, then `sync record`, log and commit. Set Brain Status = Skipped on the Inbox rows the user skipped.
+1. **Publish** (when `settings.publish` is `auto`, or the user said yes), once for the whole run, following brain-ingest references/notion.md "Publish" for each write, in this order:
+   1. **Pages:** `sync render --changed --plan plan.json`, write every item (pending relations: publish and record those first, then render again, until no item is pending), `sync record`. This publishes the new notes, the proposals, the meetings' relations and every source's Inbox row.
+   2. **Tasks,** now that their projects and Inbox rows exist: `sync tasks --meeting` for each ingested meeting and `sync tasks --source` for each ingested source with owner tasks; create each returned item once; `sync record` its page ids. An item still listing `pending_relations` (a project that isn't in Notion) is not created: list it under Check.
+   3. Set Brain Status = Skipped on the Inbox rows the user skipped.
+   4. Log `brain log publish - pages=<n>` and commit `publish: catch up`.
 2. **Move the drop-folder files** (sources.md, "The drop folder", step 4): after the publish commit, or right after each file's ingest commit when the run doesn't publish.
 3. **Push** per `settings.push` (AGENTS.md, "Write path").
 4. **Report** once, in the shape of brain-ingest step 12, for the whole run, the decisions included:
