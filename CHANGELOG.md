@@ -4,7 +4,7 @@ One line per task, under the release that ships it (decision 0038). `scripts/rel
 
 ## 0.2.4 — unreleased
 
-- CX-28: leak checks in CI and before commits for UUIDs, non-example emails and the local denylist.
+- CC-27: real Notion ids removed from the product docs; the review verdict names the commit it covers and comes after the done commit.
 
 ## 0.2.3 — 2026-10-18
 
