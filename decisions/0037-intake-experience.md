@@ -1,6 +1,6 @@
 # 0037 — Intake experience: catch-up, drop folder, Inbox, Concepts and grouped reviews
 
-**Status:** Accepted; the `push` default amended by 0038 (`auto`)
+**Status:** Accepted; the `push` default amended by 0038 (`auto`); contract choices amended 2026-10-19 (CC-22)
 **Date:** 2026-10-15
 
 ## Context
@@ -55,6 +55,17 @@ The fixes were agreed with the user in a grill session on 2026-10-15. Small skil
 ### Amended 2026-10-18 (first real drop-folder run)
 - **The report grows with the input.** The three lines stay at the top. Below them, the report lists, uncapped: what came in (new projects, decisions, questions, risks, changed facts, new people), what to check (assumed dates, ambiguities, unlinked names) and action items that didn't become tasks. Apply reports use the same shape with **What changed** and **Check** (stale and failed proposals). Only mechanics are left out. The user's words: a big input must never come back with key details missing because of a length rule.
 - **Projects are created in Notion, never by the agent** (0021): the Projects template, with its views and "My notes", can't be applied through the API. `sync render` refuses to create one.
+
+### Amended 2026-10-19 (CC-22 contracts)
+Choices made while writing the 0.3.0 contracts, where the text above left the mechanism open:
+- **An Inbox row is a source note's page.** Every source except `minutes` is published to the Inbox. A capture's row already exists (its `notion:` key is the row), so it is only updated; any other source gets a new row. The source's body stays immutable; the source gains system fields for publishing (`notion`, `notion_published`, `last_synced`, `tasks`) and an optional `summary`, written once at creation, for the Inbox Summary. Because publishing is driven by the source notes, the History of everything already ingested fills on the first sync after the upgrade, with no migration code.
+- **Produced is four relations, not one:** a Notion relation points at one database, so the Inbox has **Decisions**, **Questions**, **Concepts** and **People**, each two-way (the other side is that database's **Sources**). "Produced" is the view group of the four. A note counts as produced by a source when its `sources` lists the source's id.
+- **Project and Area on an Inbox row stay yours.** The brain fills them only when they are empty (from the produced notes), as it does on Meetings.
+- **Grouping happens in `brain proposal new`:** `add_link` items in one input with the same target and source become one proposal with a `links` list. Skills keep proposing one link per item.
+- **The CLI never reads a Note's meaning.** An Edit takes its value from the Note, as Edited Value did. An Approve or Reject that carries a Note comes out of `sync plan` as a conflict `NOTE_TO_READ`; the skill reads the Note and passes `brain apply` an explicit decision (with `exclude` for "all except X"), or proposes the different change the Note describes, or asks.
+- **Owner tasks from a source** use `brain sync tasks --source`, linked to the source's Inbox row through a new optional Tasks mapping `source`, and deduped by the source's `tasks`.
+- **`owner.person`** in `brain.json` names the owner's person note, where the identities from onboarding are stored as aliases.
+- **`notion.databases.capture_inbox` becomes `inbox`** (the same database, renamed in Notion), and `concepts` is added; `brain upgrade` renames the key.
 
 ## Consequences
 - 0.2.1: brain-ingest (sources.md drop-folder procedure, report template), brain-apply and brain-sync (report template, parallel publish), Codex: the `sync plan` conflict.
