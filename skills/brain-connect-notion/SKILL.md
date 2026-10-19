@@ -5,7 +5,7 @@ description: Connect the brain to the user's Notion space after it was built fro
 
 # Connect the brain to Notion
 
-Find the user's Notion databases and record their ids in `brain.json` (decision 0015). This skill **only reads Notion**. Its single write is `brain.json`, through `brain config set`.
+Find the user's Notion databases and record their ids in `brain.json` (decision 0015). This skill **only reads Notion**. It writes `brain.json` through `brain config set`, and, only in step 6 and only with the user's answer as their approval, the owner's identities: an owner-ruling source note, plus either alias proposals on the owner's person note (applied in chat) or a new person note.
 
 Run CLI commands as `brain <command> --brain <brain> --json`. If `brain` is not found (`command not found`), install it with `npm install -g ultimate-brain`, then retry.
 
