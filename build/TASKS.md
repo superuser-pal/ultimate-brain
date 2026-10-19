@@ -415,7 +415,7 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 
 Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `brain-onboard` interview, converter check, drop folder asked up front) and Notion file uploads. Planned after U-13.
 
-### CC-29 · Decision: changelog lines in task rows (decision 0039) · `review`
+### CC-29 · Decision: changelog lines in task rows (decision 0039) · `done` (#96)
 **Release:** 0.4.0
 **Changelog:** decision 0039: a task's changelog line lives in its build/TASKS.md row and `release.mjs` writes the CHANGELOG section.
 **Output:** decision 0039, agreed with the user on 2026-10-19 (task-row field chosen over fragment files and a union merge driver; build/TASKS.md left as it is, with the reason); CX-34 and CC-30 below. Amends 0038.
