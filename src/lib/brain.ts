@@ -15,7 +15,7 @@ export interface Brain {
  * Full JSON Schema validation of `brain.json` arrives with the validator in CX-05;
  * until then only presence, JSON syntax and `schema_version` are checked.
  */
-export async function openBrain(options: ResolveBrainDirectoryOptions = {}): Promise<Brain> {
+export async function openBrain(options: ResolveBrainDirectoryOptions = {}, allowInvalidConfig = false): Promise<Brain> {
   const root = await resolveBrainDirectory(options);
   const configPath = join(root, "brain.json");
 
@@ -30,6 +30,7 @@ export async function openBrain(options: ResolveBrainDirectoryOptions = {}): Pro
   try {
     config = JSON.parse(raw);
   } catch (error) {
+    if (allowInvalidConfig) return { root, config: {} };
     const detail = error instanceof Error ? error.message : String(error);
     throw new BrainError("BRAIN_CONFIG_INVALID", `brain.json is not valid JSON: ${detail}`);
   }

@@ -7,6 +7,7 @@ import { buildIndex } from "../lib/index-builder.ts";
 import { lintBrain } from "../lib/lint.ts";
 import { scanNotes } from "../lib/notes.ts";
 import { describeErrors, loadSchemas } from "../lib/schemas.ts";
+import { isRecord } from "../lib/input.ts";
 
 const NOTE_TYPES = ["area", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "goal", "memory"];
 const PROPOSAL_STATUSES = ["pending", "approved", "edited", "rejected", "applied", "closed"];
@@ -54,6 +55,7 @@ export const statusCommand: Command = {
     const viewStale = issues.filter((issue) => issue.rule === "view-stale").map((issue) => issue.path);
 
     const notion = readNotion(brain!.config);
+    const settings = readSettings(brain!.config);
     const lastLog = await findLastLogLine(brain!.root);
     const data = {
       schema_version: brain!.config.schema_version,
@@ -61,6 +63,7 @@ export const statusCommand: Command = {
       notes: noteCounts,
       proposals: proposalCounts,
       notion,
+      settings,
       index_stale: currentIndex !== index,
       views_stale: viewStale,
       last_log: lastLog,
@@ -74,11 +77,17 @@ function readNotion(config: Record<string, unknown>): { configured: string[]; mi
   const databases = notion.databases as Record<string, unknown>;
   const configured: string[] = [];
   const missing: string[] = [];
-  for (const [key, value] of Object.entries(databases)) {
+  for (const key of ["areas", "goals", "key_results", "projects", "meetings", "people", "orgs", "decisions", "questions", "review", "inbox", "concepts"]) {
+    const value = key === "inbox" && databases.inbox === undefined ? databases.capture_inbox : databases[key];
     (typeof value === "string" && value !== "" ? configured : missing).push(key);
   }
   const tasks = notion.tasks as Record<string, unknown>;
   return { configured, missing, tasks_database: typeof tasks.database === "string" && tasks.database !== "" };
+}
+
+function readSettings(config: Record<string, unknown>): { publish: string; push: string } {
+  const settings = config.settings;
+  return { publish: isRecord(settings) && settings.publish === "auto" ? "auto" : "ask", push: isRecord(settings) && settings.push === "remind" ? "remind" : "auto" };
 }
 
 async function findLastLogLine(root: string): Promise<string | null> {
