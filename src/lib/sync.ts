@@ -387,8 +387,8 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
   if (note.type === "proposal") {
     const target = typeof a.target === "string" ? workspace.get(a.target) : undefined;
     const addLink = a.kind === "add_link";
-    const after = addLink && typeof a.field === "string"
-      ? `${fieldLabel(a.field)}: ${noteTitle(a.after, workspace)}`
+    const after = addLink
+      ? proposalLinks(a).map((link) => `${fieldLabel(String(link.field))}: ${noteTitle(link.value, workspace)}`).join("\n")
       : undefined;
     const reviewText = (value: unknown) => truncate(typeof value === "string" ? reviewMarkdown(value, target) : value);
     Object.assign(values, {
@@ -442,6 +442,10 @@ function sourceRelationIds(note: Note, name: string, workspace: Workspace): stri
   if (name === "Project") return projects;
   if (name === "Area") return [...new Set([...produced.map((candidate) => candidate.attributes.area).filter((id): id is string => typeof id === "string"), ...projects.flatMap((id) => { const area = workspace.get(id)?.attributes.area; return typeof area === "string" ? [area] : []; })])];
   return [];
+}
+function proposalLinks(attributes: Record<string, unknown>): Array<{ field: unknown; value: unknown }> {
+  if (Array.isArray(attributes.links)) return attributes.links.filter(isRecord).map((link) => ({ field: link.field, value: link.value }));
+  return attributes.field === undefined ? [] : [{ field: attributes.field, value: attributes.after }];
 }
 function renderedContent(note: Note, workspace: Workspace): { body: string | null; sections: Record<string, string> | null; hash?: string } { if (note.type === "decision" || note.type === "question" || note.type === "concept") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: notionMarkdown(generatedBlock(brief?.body ?? ""), note, workspace), "Decision log": notionMarkdown(generatedBlock(log?.body ?? ""), note, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
 function generatedBlock(body: string): string { const start = body.indexOf("<!-- @generated:start -->"); const end = body.indexOf("<!-- @generated:end -->"); return start >= 0 && end > start ? body.slice(start + "<!-- @generated:start -->".length, end).trim() : body.trim(); }
