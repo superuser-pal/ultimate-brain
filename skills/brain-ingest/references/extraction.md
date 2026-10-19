@@ -4,7 +4,7 @@ How to read one meeting's minutes and decide what becomes a note, what becomes a
 
 ## Who is who
 
-- **The owner:** "I", "me" and descriptions of the owner's role in the minutes ("the new team member" when that is the owner) mean the owner in `brain.json`. Link them to the owner's person note; if there is none, create it in the batch with `title` = the owner name in `brain.json`. Keep the wording verbatim in quoted facts.
+- **The owner:** "I", "me", descriptions of the owner's role ("the new team member" when that is the owner), and every name or work email in the `aliases` of the owner's person note (`owner.person` in `brain.json`, decision 0037) mean the owner. A From line or signature with one of them is the owner. Link them to that person note; if there is none, create it in the batch with `title` = the owner name in `brain.json`. Keep the wording verbatim in quoted facts.
 - **Mentioned people** (named, not attendees) get a person note only when they own a system, deliverable or decision named in the minutes, or have an action item. Otherwise their name stays in the text, with no note.
 - **Projects are per item.** A meeting may touch several projects: set `projects` on each decision and question from what that item is about, and list every one on the meeting. Ask only when an item could belong to two. Action items too: give each its `projects` in the `sync tasks` input ([cli-inputs.md](cli-inputs.md) §4); left out, a task gets the meeting's projects.
 
@@ -32,12 +32,19 @@ Minutes follow the table above. For other sources (references/sources.md) there 
 
 | Kind | What it usually yields | Different from minutes |
 |---|---|---|
-| `document` (brief, contract, report, deck) | Facts and their changes, decisions the document records, people with roles, open questions and risks | A decision's `date` is the date the document gives for it, else the document's date. When the document is about a project, propose one `add_to_note` on the project: what the document is, in 1–2 sentences, with a link to the source (relative to the project note). No action items unless the document assigns them |
+| `document` (brief, contract, report, deck) | Facts and their changes, decisions the document records, people with roles, open questions and risks | A decision's `date` is the date the document gives for it, else the document's date. When the document is about a project, propose one `add_to_note` on the project: what the document is, in 1–2 sentences, with a link to the source (relative to the project note). Action items only where the document assigns them |
 | `email`, `chat` | Decisions and facts stated in the thread, people, questions | Who said what matters: attribute a decision to its sender (`deciders`) only when the thread shows they decided. A thread that reports a decision made elsewhere ("the launch moves to March") still yields the decision note if it passes the gate. A quoted earlier message is part of the thread, not a new statement |
 | `note` | Whatever the user wrote: facts, ideas, people | The user's own words: no `^[ambiguous]` against the user's other notes; a disagreement with the brain is a `contradiction` |
-| `capture` | Usually one thing: a fact, an idea, a person, a to-do | A fact about an existing note → `update_fact`; an idea or method → a `concept` note (`summary`, `sources`, and `area`, `projects` or `tags` when the capture says what it belongs to); a new person → a person note; a to-do → listed in the report only. Nothing durable is a valid result. **A capture holding a pasted email or chat thread** is analysed with the `email`/`chat` row instead (sources.md) |
+| `capture` | Usually one thing: a fact, an idea, a person, a to-do | A fact about an existing note → `update_fact`; an idea or method → a `concept` note (`summary`, `sources`, and `area`, `projects` or `tags` when the capture says what it belongs to); a new person → a person note; the owner's own to-do → a task (below). Nothing durable is a valid result. **A capture holding a pasted email or chat thread** is analysed with the `email`/`chat` row instead (sources.md) |
 
-Action items found in any of these are listed in the report, not created as tasks (there is no meeting to attach them to).
+### Tasks for the owner (decision 0037)
+
+In these sources, an action item becomes a Notion **task** only when it is addressed to the **owner**: "can you send me the plan by Friday" in an email to the owner, "I need to book the venue" in the owner's capture. Each task:
+- `title`: the action, as an imperative ("Send Carlos the migration plan");
+- `due`: only when the text gives a date or a day you can date from the source ("by Friday" in an email sent on 2026-12-03 → `2026-12-05`); otherwise leave it out. Never a default;
+- `projects`: the projects the action is about, or the capture row's Project; else none.
+
+They go to `brain sync tasks --source` ([cli-inputs.md](cli-inputs.md) §4). Action items for other people stay in the note text, and the report lists them.
 
 ## Owner rulings (decision 0031)
 
