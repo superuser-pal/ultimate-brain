@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { checksPassed, command, fail, isPrerelease, ROOT, taskEntries, tryCommand } from "./common.mjs";
+import { checksPassed, command, donePrNumbers, fail, isPrerelease, ROOT, taskEntries, tryCommand } from "./common.mjs";
 
 const [version, flag] = process.argv.slice(2);
 const dryRun = flag === "--dry-run";
@@ -25,7 +25,7 @@ else {
     if (task.status !== "done") failures.push(`${task.id} is ${task.status}, not done`);
     if (rowChangelog && task.changelog?.trim() === "") failures.push(`${task.id} has an empty **Changelog:** line`);
     if (rowChangelog && task.changelog === undefined) failures.push(`${task.id} has no **Changelog:** line`);
-    if (rowChangelog && !/^ \(#\d+(?:, #\d+)*(?:; .+)?\)$/.test(task.suffix)) failures.push(`${task.id} has an invalid done suffix`);
+    if (rowChangelog && donePrNumbers(task.suffix) === undefined) failures.push(`${task.id} has an invalid done suffix`);
   }
   const repo = tryCommand("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
   const checks = repo.ok ? tryCommand("gh", ["api", `repos/${repo.stdout}/commits/${command("git", ["rev-parse", "HEAD"])}/check-runs`, "--paginate", "--jq", ".check_runs[] | [.status,.conclusion] | @tsv"]) : repo;
@@ -60,14 +60,20 @@ function usesTaskRowChangelog(version) {
 }
 
 function releaseSection(version, tasks, date) {
-  const lines = tasks.map((task) => `- ${task.id} (${task.suffix.match(/#\d+(?:, #\d+)*/)[0]}): ${task.changelog.trim()}`);
+  const lines = tasks.map((task) => `- ${task.id} (${donePrNumbers(task.suffix).map((number) => `#${number}`).join(", ")}): ${task.changelog.trim()}`);
   return [`## ${version} — ${date}`, "", ...lines].join("\n");
 }
 
 function writeReleaseSection(changelog, version, section) {
   const heading = `## ${version} — unreleased`;
   const start = changelog.indexOf(heading);
-  if (start === -1) return `${section}\n\n${changelog}`;
+  if (start === -1) {
+    const firstSection = changelog.search(/^## /m);
+    const before = firstSection === -1 ? changelog : changelog.slice(0, firstSection);
+    const after = firstSection === -1 ? "" : changelog.slice(firstSection);
+    const separator = before === "" || before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
+    return `${before}${separator}${section}\n\n${after}`;
+  }
   const after = changelog.indexOf("\n## ", start + heading.length);
-  return `${changelog.slice(0, start)}${section}\n${after === -1 ? "" : changelog.slice(after + 1)}`;
+  return `${changelog.slice(0, start)}${section}${after === -1 ? "\n" : `\n\n${changelog.slice(after + 1)}`}`;
 }

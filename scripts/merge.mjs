@@ -1,4 +1,4 @@
-import { checksPassed, command, fail, taskEntries, tryCommand } from "./common.mjs";
+import { checksPassed, command, donePrNumbers, fail, taskEntries, tryCommand } from "./common.mjs";
 
 const [pr, ...flags] = process.argv.slice(2);
 const dryRun = flags.includes("--dry-run");
@@ -25,7 +25,7 @@ else {
       const rows = tasksAt(repo.stdout, details.headRefOid);
       const task = rows.ok ? taskEntries(rows.stdout).find((entry) => entry.id === branch[2]) : undefined;
       if (!rows.ok) failures.push(`cannot read PR task row: ${rows.message}`);
-      else if (task?.status !== "done" || task.suffix !== ` (#${pr})`) failures.push(`PR task ${branch[2]} must be \`done\` (#${pr})`);
+      else if (task?.status !== "done" || !donePrNumbers(task.suffix)?.includes(Number(pr))) failures.push(`PR task ${branch[2]} must be \`done\` with #${pr}`);
     }
     if (!reviewedByUser && (branch === null || !repo.ok || !hasOtherAgentPass(repo.stdout, pr, details.headRefOid, branch[1]))) {
       failures.push("no fresh pass from the other agent");

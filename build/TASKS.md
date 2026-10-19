@@ -402,6 +402,7 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 
 ### CX-32 · Gate scripts: lost lines, done before merge, merges outside the gate · `todo`
 **Release:** 0.3.1
+**Note:** CX-34 ships the `done` suffix check and task-row lost-heading guard; CX-32 retains its 0.3.1 CHANGELOG, mergeability, main-guard and skills-hook items.
 **Output:**
 - `pr-format.mjs` fails when a task id that has a line in the base branch's CHANGELOG.md (`- XX-N`) has none on the PR head, or a task heading in the base branch's build/TASKS.md (`### XX-N ·`) is missing on the head, naming each id. A reworded line or a changed status passes; only a lost id fails.
 - `merge.mjs` refuses unless the PR head's build/TASKS.md shows the title's task as `` `done` (#N) `` and its CHANGELOG.md line starts `- <id> (#N)`, where N is the PR number; the refusal says what to commit. `--reviewed-by-user` does not skip this check.
