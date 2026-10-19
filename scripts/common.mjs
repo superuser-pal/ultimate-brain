@@ -43,6 +43,11 @@ export function slug(value) {
 
 export function isPrerelease(version) { return version.includes("-"); }
 
+export function donePrNumbers(suffix) {
+  const match = /^ \(#(\d+(?:, #\d+)*)(?:; .+)?\)$/.exec(suffix);
+  return match?.[1].split(", #").map(Number);
+}
+
 /** CI passed when every check run completed as success, skipped or neutral, and at least one succeeded (a job that doesn't apply to the event is skipped). */
 export function checksPassed(tsv) {
   const runs = tsv.split("\n").filter(Boolean).map((line) => line.split("\t"));
