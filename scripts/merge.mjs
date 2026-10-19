@@ -1,4 +1,4 @@
-import { checksPassed, command, fail, tryCommand } from "./common.mjs";
+import { checksPassed, command, fail, taskEntries, tryCommand } from "./common.mjs";
 
 const [pr, ...flags] = process.argv.slice(2);
 const dryRun = flags.includes("--dry-run");
@@ -21,6 +21,12 @@ else {
     const repo = tryCommand("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
     const checks = repo.ok ? tryCommand("gh", ["api", `repos/${repo.stdout}/commits/${details.headRefOid}/check-runs`, "--paginate", "--jq", ".check_runs[] | [.status,.conclusion] | @tsv"]) : repo;
     if (!checks.ok || !checksPassed(checks.stdout)) failures.push("CI has not passed on the PR head commit");
+    if (branch !== null && repo.ok) {
+      const rows = tasksAt(repo.stdout, details.headRefOid);
+      const task = rows.ok ? taskEntries(rows.stdout).find((entry) => entry.id === branch[2]) : undefined;
+      if (!rows.ok) failures.push(`cannot read PR task row: ${rows.message}`);
+      else if (task?.status !== "done" || task.suffix !== ` (#${pr})`) failures.push(`PR task ${branch[2]} must be \`done\` (#${pr})`);
+    }
     if (!reviewedByUser && (branch === null || !repo.ok || !hasOtherAgentPass(repo.stdout, pr, details.headRefOid, branch[1]))) {
       failures.push("no fresh pass from the other agent");
     }
@@ -36,6 +42,11 @@ else {
       }
     }
   }
+}
+
+function tasksAt(repo, ref) {
+  const result = tryCommand("gh", ["api", `repos/${repo}/contents/build/TASKS.md?ref=${ref}`, "--jq", ".content"]);
+  return result.ok ? { ok: true, stdout: Buffer.from(result.stdout.replace(/\s/g, ""), "base64").toString("utf8") } : result;
 }
 
 function hasOtherAgentPass(repo, pr, head, author) {
