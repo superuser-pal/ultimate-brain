@@ -369,7 +369,7 @@ Agreed with the user on 2026-10-19. **Goal:** one "catch up" handles everything 
 
 ### CC-22 · Intake contracts (decisions 0037, 0034) · `review`
 
-### CX-31 · Push annotated release tags · `review`
+### CX-31 · Push annotated release tags · `done` (#91)
 **Release:** 0.3.0
 **Output:** `release.mjs` creates each release tag as annotated (`git tag -a v<version> -m <version>`), so its existing `git push --follow-tags` publishes the tag with the release commit.
 **Acceptance:** a release-script test proves the annotated tag reaches the remote through `--follow-tags`.
