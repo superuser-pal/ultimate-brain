@@ -354,8 +354,8 @@ Moved out of 0.2.3 on 2026-10-18 so 0.2.3 could ship while Codex was out of toke
 
 ### CX-30 · `merge.mjs` requires the other agent's pass · `review`
 **Release:** 0.2.4
-**Output:** `merge.mjs` refuses unless the PR has a review or comment whose body starts with `Review (Claude Code): pass` on a `codex/` branch, or `Review (Codex): pass` on a `claude/` branch, posted after the head commit. Both agents post through one GitHub account, so the line is the only way to tell them apart (decision 0038). A user override: `--reviewed-by-user`, which prints a warning and is noted in the merge commit body.
-**Acceptance:** dry-run tests: a pass from the other agent passes; a pass from the same agent, a pass older than the head commit, and no pass each refuse; the override passes with its warning.
+**Output:** `merge.mjs` refuses unless the PR has a review or comment whose body starts with `Review (Claude Code): pass at <sha>` on a `codex/` branch, or `Review (Codex): pass at <sha>` on a `claude/` branch. `<sha>` has at least seven hexadecimal characters and is a prefix of the head SHA, so the verdict covers the exact head commit. Both agents post through one GitHub account, so the line is the only way to tell them apart (decision 0038). A user override: `--reviewed-by-user`, which prints a warning and is noted in the merge commit body.
+**Acceptance:** dry-run tests: a pass from the other agent naming the head passes; a pass from the same agent, a pass naming another SHA, and no pass each refuse; the override passes with its warning.
 
 ## 0.3.0 — queued
 
