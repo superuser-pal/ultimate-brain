@@ -1,0 +1,22 @@
+# Exact repo-relative path and case-insensitive regular expression for an allowed match.
+LICENSE:^Copyright
+.agents/skills/brain-ingest/references/cli-inputs.md:3c4d5e6f-7a8b-4c0d-9e2f-3a4b5c6d7e8f
+.agents/skills/brain-sync/references/formats.md:6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d
+.agents/skills/brain-sync/references/formats.md:9b8a7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d
+eval/ingest-text/cases/03-capture/capture.json:10000000-0000-4000-8000-0000000000e1
+eval/ingest-text/expected.md:10000000-0000-4000-8000-0000000000e1
+eval/ingest-text/expected.md:c59d6a01681a8a55cfe04bf6d97c8a1f
+eval/ingest-text/expected.md:e8f1aaef5698ec657a1d3d6c51f87f35
+skills/brain-ingest/references/cli-inputs.md:3c4d5e6f-7a8b-4c0d-9e2f-3a4b5c6d7e8f
+skills/brain-sync/references/formats.md:6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d
+skills/brain-sync/references/formats.md:9b8a7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d
+spec/cli.md:2c4e6a80-1b3d-4f50-9a7c-8e6d4b2a0f13
+spec/cli.md:6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d
+spec/cli.md:9b8a7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d
+spec/examples/invalid/source.md:3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f
+spec/examples/valid/area.md:1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+spec/examples/valid/meeting.md:3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f
+spec/examples/valid/project.md:2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e
+spec/examples/valid/source.md:3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f
+spec/examples/valid/source.md:fcb5268a3dc461907e96eaf6c9a5ceb5
+spec/examples/valid/source.md:9c9cc8bb4c5488d4e70f7ebe438b4224
