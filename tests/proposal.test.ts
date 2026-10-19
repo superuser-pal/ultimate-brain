@@ -163,6 +163,16 @@ test("proposal new groups links and apply excludes one link", async (context) =>
   assert.doesNotMatch(project, /Acme marketing/);
 });
 
+test("proposal new skips a duplicate link in its own input", async (context) => {
+  const dir = await fixtureCopy(context);
+  const link = { kind: "add_link", title: "Add Acme Web", target: "prj-9x4t1b7e", field: "aliases", after: "Acme Web", why: "The team uses this name.", source: "mtg-8c4n2p7w" };
+  const run = await proposalNew(dir, [link, link]);
+  assert.equal(run.code, 0, run.stdout);
+  assert.equal(run.json.data.created.length, 1);
+  assert.deepEqual(run.json.data.created[0].input_indexes, [0]);
+  assert.deepEqual(run.json.data.skipped.map((item: { input_index: number; reason: string; existing?: string }) => [item.input_index, item.reason, item.existing !== undefined]), [[1, "DUPLICATE_PENDING", true]]);
+});
+
 test("a new_item may name an existing meeting, which apply will update; its note must otherwise be valid", async (context) => {
   const dir = await fixtureCopy(context);
   const meeting = await readFile(join(dir, "knowledge/meetings/2026-12-03-acme-sync.md"), "utf8");
