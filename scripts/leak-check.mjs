@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import { ROOT, command, fail } from "./common.mjs";
 
 const UUID = /\b(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})\b/gi;
-const EMAIL = /\b[A-Z0-9._%+-]+@([A-Z0-9-]+(?:\.[A-Z0-9-]+)+|example)\b/gi;
+const EMAIL = /\b[A-Z0-9._%+-]+@([A-Z0-9-]+(?:\.[A-Z0-9-]+)*\.[A-Z]{2,}|example)\b/gi;
 const staged = process.argv.slice(2).join(" ") === "--staged";
 
 if (process.argv.length > 3 && !staged) {
@@ -26,19 +26,19 @@ function filesToScan() {
 }
 
 function excluded(path) {
-  return path.startsWith("tests/") || path === "sources" || path.startsWith("sources/") || path === "node_modules" || path.startsWith("node_modules/");
+  return path === "scripts/leak-allow.txt" || path.startsWith("tests/") || path === "sources" || path.startsWith("sources/") || path === "node_modules" || path.startsWith("node_modules/");
 }
 
 function scan(path, allow, denied) {
   const content = staged ? stagedContent(path) : readFileSync(resolve(ROOT, path), "utf8");
+  if (content.includes("\0")) return [];
   const lines = content.split(/\r?\n/);
   const findings = [];
   for (const [index, line] of lines.entries()) {
     UUID.lastIndex = 0;
     if (UUID.test(line) && !allowed(path, line, allow)) findings.push({ path, line: index + 1, rule: "UUID" });
-    EMAIL.lastIndex = 0;
-    const email = EMAIL.exec(line);
-    if (email !== null && !email[1].toLowerCase().endsWith(".example") && email[1].toLowerCase() !== "example" && !allowed(path, line, allow)) {
+    const hasNonExampleEmail = [...line.matchAll(EMAIL)].some((email) => !email[1].toLowerCase().endsWith(".example") && email[1].toLowerCase() !== "example");
+    if (hasNonExampleEmail && !allowed(path, line, allow)) {
       findings.push({ path, line: index + 1, rule: "EMAIL" });
     }
     if (denied.some((term) => wholeWord(line, term)) && !allowed(path, line, allow)) findings.push({ path, line: index + 1, rule: "DENYLIST" });
@@ -47,11 +47,7 @@ function scan(path, allow, denied) {
 }
 
 function stagedContent(path) {
-  try {
-    return command("git", ["show", `:${path}`]);
-  } catch {
-    return "";
-  }
+  return command("git", ["show", `:${path}`]);
 }
 
 function readAllowlist() {
