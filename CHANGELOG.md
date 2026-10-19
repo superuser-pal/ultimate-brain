@@ -5,6 +5,7 @@ One line per task, under the release that ships it (decision 0038). `scripts/rel
 ## 0.3.0 — unreleased
 
 - CC-22: intake contracts: the Inbox (every source but minutes), Concepts, grouped link reviews with a Note, owner tasks from sources, `brain.json` settings, Area on Decisions and Questions; Notion migration 0005.
+- CX-22: render the brain-owned Area relation for Decisions and Questions from their projects.
 
 ## 0.2.4 — 2026-10-19
 
