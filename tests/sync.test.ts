@@ -135,6 +135,23 @@ test("sync render updates a capture at the Inbox page in its key", async (contex
   assert.equal(run.json.data.items[0].properties.Name, undefined);
 });
 
+test("sync tasks renders source tasks with an Inbox backlink", async (context) => {
+  const dir = await fixtureCopy(context);
+  const configPath = join(dir, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  config.notion.tasks.properties.source = "Source";
+  await writeFile(configPath, JSON.stringify(config, null, 2));
+  const source = "src-4a5b6c7d";
+  const noteInput = { notes: [{ type: "source", id: source, title: "Pasted email", file_date: "2026-12-10", frontmatter: { source_key: "agent:test/email", kind: "email" }, body: "Please send a plan.\n" }] };
+  const created = await brain(["note", "new", "--brain", dir, "--now", NOW, "--input", await input(dir, "task-source.json", noteInput), "--json"]);
+  assert.equal(created.code, 0, created.stdout);
+  const run = await brain(["sync", "tasks", "--brain", dir, "--source", source, "--input", await input(dir, "source-tasks.json", { items: [{ title: "Send plan", projects: ["prj-9x4t1b7e"] }] }), "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  assert.deepEqual(run.json.data.items[0].pending_relations, [{ property: "Source", ids: [source] }]);
+  assert.equal(run.json.data.items[0].properties.Owner, undefined);
+  assert.equal(run.json.data.items[0].properties["Brain ID"].value, source);
+});
+
 test("sync apply creates a Notion-created note with its lifecycle and applies corrections", async (context) => {
   const dir = await fixtureCopy(context);
   const mariaPath = join(dir, "knowledge/people/maria-lopez.md");

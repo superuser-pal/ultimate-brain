@@ -51,6 +51,31 @@ export const upgradeCommand: Command = {
     if (!(await exists(join(root, "CLAUDE.md")))) changes.push({ path: "CLAUDE.md", action: "created", content: "@AGENTS.md\n" });
     else unchanged += 1;
 
+    // 0.3.0: Inbox is the former Capture Inbox. Keep the database id, but retire the old key.
+    const brainJson = "brain.json";
+    await assertPlainPath(root, brainJson);
+    const brainText = await readOptional(join(root, brainJson));
+    if (brainText !== null) {
+      try {
+        const config = JSON.parse(brainText) as Record<string, unknown>;
+        const notion = config.notion;
+        if (notion !== null && typeof notion === "object" && !Array.isArray(notion)) {
+          const databases = (notion as Record<string, unknown>).databases;
+          if (databases !== null && typeof databases === "object" && !Array.isArray(databases)) {
+            const values = databases as Record<string, unknown>;
+            if (values.inbox === undefined && values.capture_inbox !== undefined) {
+              const nextDatabases: Record<string, unknown> = { ...values, inbox: values.capture_inbox };
+              delete nextDatabases.capture_inbox;
+              const next = { ...config, notion: { ...(notion as Record<string, unknown>), databases: nextDatabases } };
+              changes.push({ path: brainJson, action: "updated", content: `${JSON.stringify(next, null, 2)}\n` });
+            }
+          }
+        }
+      } catch {
+        // brain.json validation is handled by the normal command boundary; do not mask it here.
+      }
+    }
+
     // Skills (decision 0029): shipped files are product-owned, inside the folders of shipped skills only.
     const shipped = await listShippedSkillFiles();
     const shippedPaths = new Set(shipped.map((file) => file.relative));

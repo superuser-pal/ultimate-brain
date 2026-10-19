@@ -478,30 +478,40 @@ function proposalAfter(attributes: Record<string, unknown>, workspace: Workspace
   return attributes.after ?? null;
 }
 
-export function renderTasks(workspace: Workspace, meetingId: string, input: unknown): Record<string, unknown> {
+export function renderTasks(workspace: Workspace, targetId: string, input: unknown): Record<string, unknown> {
   if (!isRecord(input) || !Array.isArray(input.items)) throw new BrainError("INPUT_INVALID", "tasks input needs an items list");
-  const config = tasksConfig(workspace); const meeting = workspace.get(meetingId); if (meeting?.type !== "meeting") throw new BrainError("UNKNOWN_ID", `No meeting with id ${meetingId}`);
+  const config = tasksConfig(workspace); const target = workspace.get(targetId); const sourceMode = target?.type === "source";
+  if (target === undefined || (target.type !== "meeting" && !sourceMode)) throw new BrainError("UNKNOWN_ID", `No meeting or source has id ${targetId}`);
+  if (sourceMode && target.attributes.kind === undefined) throw new BrainError("INPUT_INVALID", "minutes sources use their meeting for tasks");
   const tasks = input.items.map((item, index) => {
     if (!isRecord(item) || typeof item.title !== "string" || item.title === "") throw new BrainError("INPUT_INVALID", "each task needs a title");
-    const projects = taskProjects(workspace, meeting, item.projects, index);
+    const projects = taskProjects(workspace, sourceMode ? undefined : target, item.projects, index);
     const properties: Record<string, unknown> = {};
     const pending_relations: Array<Record<string, unknown>> = [];
     const put = (key: string, type: string, value: unknown) => { const name = config.properties[key]; if (typeof name === "string" && name !== "") properties[name] = { type, value }; };
-    put("title", "title", item.title); put("status", "select", config.new_task_status); if (item.due !== undefined) put("due", "date", dateOutput(item.due)); if (item.owner !== undefined) put("owner", "person_name", item.owner);
+    put("title", "title", item.title); put("status", "select", config.new_task_status); if (item.due !== undefined) put("due", "date", dateOutput(item.due)); if (!sourceMode && item.owner !== undefined) put("owner", "person_name", item.owner);
     const projectProperty = config.properties.project;
     if (typeof projectProperty === "string" && projectProperty !== "") {
       const unpublished = projects.filter((id) => typeof workspace.get(id)?.attributes.notion !== "string");
       if (unpublished.length > 0) pending_relations.push({ property: projectProperty, ids: unpublished });
       put("project", "relation", publishedPages(projects, workspace));
     }
-    put("area", "relation", publishedPages(meeting.attributes.area === undefined ? [] : [meeting.attributes.area], workspace)); if (config.properties.meeting !== "") put("meeting", "relation", [meeting.attributes.notion]); else put("meeting_url", "url", meeting.attributes.notion === undefined ? undefined : `https://www.notion.so/${String(meeting.attributes.notion).replaceAll("-", "")}`); put("brain_id", "rich_text", meeting.id);
+    const areas = sourceMode ? [...new Set(projects.flatMap((id) => { const area = workspace.get(id)?.attributes.area; return typeof area === "string" ? [area] : []; }))] : target.attributes.area === undefined ? [] : [target.attributes.area];
+    put("area", "relation", publishedPages(areas, workspace));
+    if (sourceMode) {
+      if (config.properties.source !== "") {
+        if (typeof target.attributes.notion !== "string") pending_relations.push({ property: config.properties.source, ids: [target.id] });
+        else put("source", "relation", [target.attributes.notion]);
+      }
+    } else if (config.properties.meeting !== "") put("meeting", "relation", [target.attributes.notion]); else put("meeting_url", "url", target.attributes.notion === undefined ? undefined : `https://www.notion.so/${String(target.attributes.notion).replaceAll("-", "")}`);
+    put("brain_id", "rich_text", target.id);
     return { database_id: config.database, properties, pending_relations };
   });
   return { items: tasks };
 }
 
-function taskProjects(workspace: Workspace, meeting: Note, value: unknown, itemIndex: number): string[] {
-  if (value === undefined || (Array.isArray(value) && value.length === 0)) return Array.isArray(meeting.attributes.projects) ? meeting.attributes.projects.filter((id): id is string => typeof id === "string") : [];
+function taskProjects(workspace: Workspace, meeting: Note | undefined, value: unknown, itemIndex: number): string[] {
+  if (value === undefined || (Array.isArray(value) && value.length === 0)) return Array.isArray(meeting?.attributes.projects) ? meeting.attributes.projects.filter((id): id is string => typeof id === "string") : [];
   if (!Array.isArray(value)) throw new BrainError("INPUT_INVALID", "task projects must be an array", [{ pointer: `/items/${itemIndex}/projects`, message: "must be an array of project ids" }]);
   const problems: InputProblem[] = [];
   const projects: string[] = [];
@@ -521,6 +531,6 @@ function tasksConfig(workspace: Workspace): { database: string; properties: Reco
 
 export function record(workspace: Workspace, input: unknown): Record<string, unknown> {
   if (!isRecord(input) || !Array.isArray(input.records)) throw new BrainError("INPUT_INVALID", "record input needs a records list"); const records: Array<Record<string, unknown>> = [];
-  for (const entry of input.records) { if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note); if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = { ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }; if (note.type !== "source" && note.type !== "view" && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if (note.type === "meeting" && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && error.message === "NOTION_ID_MISMATCH" ? "NOTION_ID_MISMATCH" : "INVALID_RESULT", changed: [] }); } }
+  for (const entry of input.records) { if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note); if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = { ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }; if (note.type !== "view" && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && error.message === "NOTION_ID_MISMATCH" ? "NOTION_ID_MISMATCH" : "INVALID_RESULT", changed: [] }); } }
   return { records };
 }
