@@ -918,7 +918,7 @@ Notes whose database id is empty in `brain.json` are skipped with warning `DATAB
 - **Area on Decisions and Questions** (0034) is derived, never stored in the note: the `area` of each note in the record's `projects`, deduped and sorted. No projects, or projects without an area → empty. It is brain-owned and compared like any other property, so the first render after the upgrade sends it to every decision and question once.
 - **Concepts:** Project = `projects`, Area = `area`; the body is the whole page body, as for decisions.
 - **Inbox** (0037; sources, every kind except `minutes`):
-  - `action`: `update` when the source has `notion`, or is a `capture` (page id = the id in its `notion:` key: the row you created); otherwise `create`.
+  - `action`: `update` when the source has `notion`, or is a `capture` (page id = the id in its `notion:` key: the row you created; a capture's key is always `notion:`, schema §4); otherwise `create`. A capture whose `notion` differs from its key's id → item error `NOTION_ID_MISMATCH`.
   - Name = `title`, sent on `create` only: a capture's Name is yours. Kind = the source `kind` as a select label (`Capture`, `Document`, `Email`, `Chat`, `Note`). Summary = `summary` (empty when the source has none).
   - Decisions, Questions, Concepts, People = every note of that type whose `sources` lists the source's id, sorted; notes not yet published go to `pending_relations`. These are the "Produced" relations; the other side of each is that database's Sources relation, which Notion fills.
   - Project and Area carry `"mode": "if_empty"` (as on Meetings): Project = the `projects` of the produced notes, Area = their `area` and the `area` of those projects, each deduped and sorted. You may set them yourself before the ingest; the brain never overwrites them.
@@ -986,6 +986,8 @@ Unmapped (empty) properties are left out. After creating the tasks, the skill re
 - `owner` is left out: these tasks are yours.
 
 Who the item is for and its due date are the skill's judgment: only action items addressed to the owner become tasks, and `due` only when the text gives one (0037).
+
+**No dedupe here, for either form.** `sync tasks` renders exactly the items it is given, every time; it never compares them with the note's `tasks`. Tasks are created once, in the run that ingests the meeting or source: a second ingest of the same input is skipped as `DUPLICATE_SOURCE` (§5.5) before any action item is extracted, so there is no rerun to dedupe. Within that run, the skill creates each rendered item once and records the page ids it created (§5.14.6); an item held back by `pending_relations` is rendered again with only the held-back items, as above. The note's `tasks` is a record of page ids (appended, deduped by id), not a dedupe key.
 
 Errors: `UNKNOWN_ID` (the meeting or source, or an item's project id), `INPUT_INVALID` (an item's `projects` entry that isn't a string or isn't a project; `--source` naming a `minutes` source or a note that isn't a source), `BRAIN_CONFIG_INVALID` (no Tasks database, or `brain.json` fails its schema, which requires a title mapping and a backlink mapping once a Tasks database is set).
 
