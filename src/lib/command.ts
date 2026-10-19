@@ -48,6 +48,8 @@ export interface Command {
   /** Most positional arguments accepted (default: unlimited). */
   maxPositionals?: number;
   needsBrain: boolean;
+  /** Allow a maintenance command to run when brain.json cannot be parsed. */
+  allowInvalidBrainConfig?: boolean;
   run(context: CommandContext): Promise<CommandResult>;
 }
 
@@ -83,7 +85,7 @@ export async function runCommand(
         brainFlag: args.options.brain as string | undefined,
         env: environment.env,
         homeDirectory: environment.homeDirectory,
-      });
+      }, command.allowInvalidBrainConfig);
       brainRoot = brain.root;
     }
 
