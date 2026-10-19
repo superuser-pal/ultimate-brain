@@ -43,7 +43,7 @@ test("leak check catches a synthetic UUID", (t) => {
 
 test("leak check catches a non-example email", (t) => {
   const root = fixture(t);
-  write(root, "docs/value.md", "contact: person@company.test\n");
+  write(root, "docs/value.md", "contact: allowed@example, person@company.test\n");
   track(root, "docs/value.md");
   const result = run(root);
   assert.equal(result.status, 1);
@@ -68,12 +68,14 @@ test("leak check passes the current tracked tree", () => {
   assert.equal(result.status, 0, result.stderr);
 });
 
-test("leak check excludes sources and node_modules", (t) => {
+test("leak check excludes sources, node_modules, and NUL files", (t) => {
   const root = fixture(t);
   write(root, "sources/private.md", "id: 01234567-89ab-cdef-0123-456789abcdef\n");
   write(root, "node_modules/private/index.js", "person@company.test\n");
+  write(root, "docs/binary.bin", "\0person@company.test\n");
   track(root, "sources/private.md");
   track(root, "node_modules/private/index.js");
+  track(root, "docs/binary.bin");
   const result = run(root);
   assert.equal(result.status, 0, result.stderr);
 });

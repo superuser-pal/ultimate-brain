@@ -1,32 +1,22 @@
 # Exact repo-relative path and case-insensitive regular expression for an allowed match.
-LICENSE:Rodrigo Cano
-scripts/leak-allow.txt:Rodrigo Cano
-.agents/skills/brain-howto/references/guide.md:@[A-Z0-9.-]+
-.agents/skills/brain-ingest/references/cli-inputs.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-.agents/skills/brain-sync/references/formats.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-.github/workflows/ci.yml:@[A-Z0-9.-]+
-README.md:@[A-Z0-9.-]+
-build/TASKS.md:@[A-Z0-9.-]+
-decisions/0038-delivery-lanes-and-release-gates.md:@[A-Z0-9.-]+
-docs/easlo-second-brain-factual-architecture-appendix.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-docs/releasing.md:@[A-Z0-9.-]+
-docs/ultimate-brain-for-notion-factual-architecture-appendix.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-eval/ingest-text/cases/01-document/acme-website-brief.pdf:@[A-Z0-9.-]+
-eval/ingest-text/cases/01-document/acme-website-brief.pdf:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-eval/ingest-text/cases/03-capture/capture.json:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-eval/ingest-text/cases/05-drop-folder/drop/acme-content-plan copy.docx:@[A-Z0-9.-]+
-eval/ingest-text/cases/05-drop-folder/drop/acme-content-plan.docx:@[A-Z0-9.-]+
-eval/ingest-text/expected.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-notion/templates.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-scripts/release.mjs:@[A-Z0-9.-]+
-skills/brain-howto/references/guide.md:@[A-Z0-9.-]+
-skills/brain-ingest/references/cli-inputs.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-skills/brain-sync/references/formats.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-spec/cli.md:@[A-Z0-9.-]+
-spec/cli.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-spec/examples/invalid/source.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-spec/examples/valid/area.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-spec/examples/valid/meeting.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-spec/examples/valid/project.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-spec/examples/valid/source.md:(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})
-templates/brain/AGENTS.md:@[A-Z0-9.-]+
+LICENSE:^Copyright
+.agents/skills/brain-ingest/references/cli-inputs.md:3c4d5e6f-7a8b-4c0d-9e2f-3a4b5c6d7e8f
+.agents/skills/brain-sync/references/formats.md:6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d
+.agents/skills/brain-sync/references/formats.md:9b8a7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d
+eval/ingest-text/cases/03-capture/capture.json:10000000-0000-4000-8000-0000000000e1
+eval/ingest-text/expected.md:10000000-0000-4000-8000-0000000000e1
+eval/ingest-text/expected.md:c59d6a01681a8a55cfe04bf6d97c8a1f
+eval/ingest-text/expected.md:e8f1aaef5698ec657a1d3d6c51f87f35
+skills/brain-ingest/references/cli-inputs.md:3c4d5e6f-7a8b-4c0d-9e2f-3a4b5c6d7e8f
+skills/brain-sync/references/formats.md:6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d
+skills/brain-sync/references/formats.md:9b8a7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d
+spec/cli.md:2c4e6a80-1b3d-4f50-9a7c-8e6d4b2a0f13
+spec/cli.md:6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d
+spec/cli.md:9b8a7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d
+spec/examples/invalid/source.md:3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f
+spec/examples/valid/area.md:1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+spec/examples/valid/meeting.md:3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f
+spec/examples/valid/project.md:2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e
+spec/examples/valid/source.md:3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f
+spec/examples/valid/source.md:fcb5268a3dc461907e96eaf6c9a5ceb5
+spec/examples/valid/source.md:9c9cc8bb4c5488d4e70f7ebe438b4224
