@@ -17,6 +17,7 @@ jobs:
       - run: npm test
       - run: npm run typecheck
       - run: npm run test:package
+      - run: node scripts/leak-check.mjs
 
   pr-format:
     if: github.event_name == 'pull_request'

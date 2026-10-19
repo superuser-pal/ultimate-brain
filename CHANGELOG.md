@@ -12,7 +12,6 @@ One line per task, under the release that ships it (decision 0038). `scripts/rel
 - CC-25 (#84): `merge.mjs` and `release.mjs` accept skipped check runs; a task is marked done before its PR merges.
 - CX-29 (#83): refresh product-owned files for both agents, lint their drift, and safely upgrade, commit and push brains.
 - CX-27: release, merge and task scripts; main-push and PR-format gates; package smoke test works after a release.
-
 ## 0.2.2 — 2026-10-18
 
 - CC-23: new projects are created in Notion; reports grow with the input (decision 0037 amended).
