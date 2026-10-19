@@ -2,11 +2,11 @@
 
 Paste into Notion AI **while you are on the "Review" page**, after [Prompt 6](06-templates.md). Other Spaces: [index](07-spaces-views.md). Every view, with its use case, is in [../views-guide.md](../views-guide.md).
 
-Why, Source Meeting and Edited Value are on each proposal's page: open the row to read them or to type an edited value.
+Why and Source Meeting are on each proposal's page. Note is in the "What needs my decision?" table: with Edit, type the value to use; with Approve or Reject, type what to do differently ("all except Ana").
 
 ```text
 On this page ("Review") add four tabs, each a linked view of "Review":
-1. Tab "Needs my decision": Table, named "What needs my decision?": filter State is Pending; sort Created time descending; show Name, Kind, Before, After, Decision.
+1. Tab "Needs my decision": Table, named "What needs my decision?": filter State is Pending; sort Created time descending; show Name, Kind, Before, After, Decision, Note.
 2. Tab "Sources disagree": Table, named "Where do sources disagree?": filter Kind is Contradiction and State is Pending; sort Created time ascending; show Name, Before, After, Decision.
 3. Tab "Approved": List, named "What did I approve recently?": filter State is Applied and Last edited time is within the past month (relative date); sort Last edited time descending; show Name, Kind, After.
 4. Tab "Rejected": List, named "What did I reject?": filter State is Closed; sort Last edited time descending; show Name, Kind.

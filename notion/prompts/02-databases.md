@@ -16,13 +16,14 @@ On the page "Brain Data", create these full-page databases with exactly these pr
 7. "Orgs": Name (title), Summary (text), Relationship (select: Client, Prospect, Partner, Supplier, Other), Website (url), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date).
 8. "Decisions": Name (title), Summary (text), Date (date), Assessment (select: Accepted, Provisional, Contested, Superseded), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date).
 9. "Questions": Name (title), Summary (text), Kind (select: Question, Risk), Status (select: Open, Answered, Dropped), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time).
-10. "Review": Name (title), Kind (select: Update Fact, Add To Note, Add Link, Supersede, Contradiction, Merge, New Item), Target (text), Target Page (url), Before (text), After (text), Why (text), Decision (select: Approve, Reject, Edit), Edited Value (text), State (select: Pending, Applied, Closed; default Pending), Brain ID (text), Created time (created time), Last edited time (last edited time).
-11. "Capture Inbox": Name (title), Brain Status (select: New, Processed, Skipped; default New), Created (created time).
+10. "Review": Name (title), Kind (select: Update Fact, Add To Note, Add Link, Supersede, Contradiction, Merge, New Item), Target (text), Target Page (url), Before (text), After (text), Why (text), Decision (select: Approve, Reject, Edit), Note (text), State (select: Pending, Applied, Closed; default Pending), Brain ID (text), Created time (created time), Last edited time (last edited time).
+11. "Inbox": Name (title), Kind (select: Capture, Document, Email, Chat, Note; default Capture), Summary (text), Brain Status (select: New, Processed, Skipped; default New), Brain ID (text), Last Synced (date), Created (created time).
 12. "Tasks": Name (title), Status (status: To Do, Doing, Waiting On, Someday, Done; put Waiting On and Someday in any group except Complete), Due (date), Brain ID (text), Last edited time (last edited time).
+13. "Concepts": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time).
 ```
 
 ## Verify
-- [ ] "Brain Data" holds 12 databases (11 if you skipped Tasks), and nothing else.
-- [ ] Every property name is spelled exactly as above, including capitals and spaces ("Brain ID", "Last Synced", "Edited Value"). The brain finds properties by name.
-- [ ] Select options match exactly, in that order. Brain Status in Meetings defaults to Not Reviewed; State in Review defaults to Pending.
+- [ ] "Brain Data" holds 13 databases (12 if you skipped Tasks), and nothing else.
+- [ ] Every property name is spelled exactly as above, including capitals and spaces ("Brain ID", "Last Synced", "Note"). The brain finds properties by name.
+- [ ] Select options match exactly, in that order. Brain Status in Meetings defaults to Not Reviewed; State in Review defaults to Pending; Kind in Inbox defaults to Capture.
 - [ ] No extra properties were added (Notion AI sometimes adds "Tags" or "Created by"; delete them).

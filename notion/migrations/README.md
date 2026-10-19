@@ -31,3 +31,4 @@ Run them in number order, once each. The `brain-notion-change` skill writes them
 | [0002](0002-system-timestamps.md) | Review, Projects, Questions get system timestamps used by the views | Prompt 7 views |
 | [0003](0003-look-pass.md) | Look pass: new Spaces arrangement, Tasks and Archive pages, Area hubs, Countdown and Task Progress | CC-17 |
 | [0004](0004-ai-prompts-and-guide.md) | Brain Assistant (a Notion Custom Agent with Instructions and seven skills) and the "How it works" page | CC-18, CC-19 |
+| [0005](0005-inbox-concepts-review-note.md) | Inbox replaces the Capture Inbox, a Concepts database, Note replaces Edited Value on Review, Area on Decisions and Questions | decisions 0037, 0034; CC-22 (release 0.3.0) |

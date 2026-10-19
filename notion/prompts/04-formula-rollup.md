@@ -13,7 +13,7 @@ Progress is used by the brain's planning snapshot (0020). Countdown, Task Progre
 3. In "Goals", add a formula property "Countdown" that returns text: empty when Deadline is empty or Status is Achieved or Dropped; "Overdue" when Deadline is before today; otherwise the number of days from today to Deadline followed by " days left".
 4. In "Projects", add a formula property "Countdown" that returns text: empty when Dates is empty or Status is Done; "Overdue" when the end of Dates (or Dates itself if it has no end) is before today; otherwise the number of days from today to that date followed by " days left".
 5. In "Projects", add a rollup property "Task Progress" over the relation "Tasks", property "Status", calculated as Percent per group, group Complete, shown as a percentage.
-6. In "Areas", add four rollup properties over the relation "Projects", each calculated as Show original: "People via projects" (property People), "Clients via projects" (property Client), "Decisions via projects" (property Decisions), "Questions via projects" (property Questions).
+6. In "Areas", add two rollup properties over the relation "Projects", each calculated as Show original: "People via projects" (property People), "Clients via projects" (property Client). Decisions and Questions relate to Areas directly (decision 0034).
 7. In "Orgs", add a rollup property "Meetings via projects" over the relation "Projects", property "Meetings", calculated as Show original.
 Do not change or add any other property.
 ```

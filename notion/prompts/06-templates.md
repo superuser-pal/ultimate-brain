@@ -12,6 +12,8 @@ Create a default page template for each database below. Each item "Heading: data
   "What's active here?": Projects where Area is this page (views: "Active" Status is Active; "Planned" Status is Planned; "Done" Status is Done), showing Name, Status, Countdown, Task Progress.
   "What's on my plate here?": Tasks where Area is this page (views: "Open" Status is To Do or Doing; "Waiting On" Status is Waiting On; "Done" Status is Done), showing Name, Project, Due.
   "Which meetings?": Meetings where Area is this page (views: "Upcoming" Date on or after today, Date ascending; "Past" Date before today, Date descending), showing Name, Date, Project.
+  "What have we decided here?": Decisions where Area is this page (views: "Current" Assessment is not Superseded, Date descending; "Superseded" Assessment is Superseded, Date descending), showing Name, Project, Date.
+  "What's still open here?": Questions where Area is this page (views: "Open questions" Status is Open and Kind is Question; "Open risks" Status is Open and Kind is Risk; "Answered" Status is Answered), showing Name, Project, Kind.
   Then a toggle "My notes".
 - Goals:
   "How are the key results moving?": Key Results where Goal is this page (views: "Open" Progress is less than 100%; "Done" Progress is 100%), showing Name, Current, Target, Unit, Progress, Done.
@@ -45,6 +47,6 @@ Set each of these templates as the database default.
 
 ## Verify
 - [ ] Create a new Project: the gray hint line comes first, then "Brief" and "Decision log" as **toggle** headings (with an arrow), then the four headed views and "My notes". Delete the test project.
-- [ ] Create a new Area: its page header shows the four "via projects" rollups (set in the page layout, [views-guide.md](../views-guide.md) §9). Delete the test area.
+- [ ] Create a new Area: it has the six headed views, and its page header shows the two "via projects" rollups (set in the page layout, [views-guide.md](../views-guide.md) §9). Delete the test area.
 - [ ] No template has a callout that prints "[Summary]", "[Role]" or "Why".
 - [ ] Every template listed above is the default for its database.
