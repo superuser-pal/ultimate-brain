@@ -4,7 +4,7 @@
 **Status values:** `todo` · `in progress` · `review` · `done` · `blocked`.
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
-> **2026-10-19 — Status: 0.2.3 is released and in the brain. 0.2.4 is in review: CC-27 (#TBD), CX-28 (#86), CX-30 (#87). Merge in that order, then release 0.2.4 (U-14). 0.3.0 work starts now but merges only after 0.2.4 is released.**
+> **2026-10-19 — Status: 0.2.3 is released and in the brain. 0.2.4 is in review: CC-27 (#88), CX-28 (#86), CX-30 (#87). Merge in that order, then release 0.2.4 (U-14). 0.3.0 work starts now but merges only after 0.2.4 is released.**
 > - **0.3.0 scope agreed 2026-10-19:** the intake experience (decision 0037) and Area on Decisions and Questions (0034), in CC-22 (contracts), CC-26 (skills), CX-24, CX-22, then U-13 (Notion migration, upgrade, real catch-up). The onboarding suite and Notion file uploads move to 0.4.0.
 > - **Review order (CC-27):** the done commit comes before the verdict; the reviewer posts `Review (<agent>): pass at <sha>` last.
 > - **Untriaged `dogfood` issues:** 0.
