@@ -117,6 +117,31 @@ test("sync render derives decision and question Areas from their projects", asyn
   assert.deepEqual(byId.get("que-8n3v5x1d")?.properties.Area, { type: "relation", value: [] });
 });
 
+test("sync plan reports edits to derived decision and question relations as not correctable", async (context) => {
+  const dir = await fixtureCopy(context);
+  const projectPage = "2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e";
+  const areaPage = "1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d";
+  const decisionPage = "10000000-0000-4000-8000-0000000000d1";
+  const decisionPath = join(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
+  const questionPath = join(dir, "knowledge/questions/who-owns-the-acme-mobile-app.md");
+  for (const [path, page, published] of [[decisionPath, decisionPage, { Project: [projectPage], Area: [areaPage] }], [questionPath, "4e5f6a7b-8c9d-4e0f-9a1b-2c3d4e5f6a7b", { Project: [projectPage], Area: [areaPage] }]] as const) {
+    const document = parseFrontmatter(await readFile(path, "utf8"));
+    document.attributes.notion = page;
+    document.attributes.notion_published = published;
+    await writeFile(path, serializeFrontmatter(document));
+  }
+  const snapshot = { as_of: NOW, rows: [
+    { database: "decisions", page_id: decisionPage, last_edited: "2026-12-10T08:00:00Z", properties: { "Brain ID": "dec-7k2m9q4x", Project: [], Area: [] } },
+    { database: "questions", page_id: "4e5f6a7b-8c9d-4e0f-9a1b-2c3d4e5f6a7b", last_edited: "2026-12-10T08:00:00Z", properties: { "Brain ID": "que-8n3v5x1d", Project: [], Area: [] } },
+  ] };
+  const run = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "derived-relations.json", snapshot), "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  assert.deepEqual(run.json.data.corrections, []);
+  assert.deepEqual(run.json.data.ignored.map((item: { database: string; property: string; reason: string }) => [item.database, item.property, item.reason]), [
+    ["decisions", "Area", "NOT_CORRECTABLE"], ["decisions", "Project", "NOT_CORRECTABLE"], ["questions", "Area", "NOT_CORRECTABLE"], ["questions", "Project", "NOT_CORRECTABLE"],
+  ]);
+});
+
 test("sync apply creates a Notion-created note with its lifecycle and applies corrections", async (context) => {
   const dir = await fixtureCopy(context);
   const mariaPath = join(dir, "knowledge/people/maria-lopez.md");
