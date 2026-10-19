@@ -4,6 +4,7 @@ The default page templates as they exist in the live Notion space, plus the impr
 
 - **Intent:** [docs/notion-space-design.md](../docs/notion-space-design.md) §4.
 - **Build prompt:** [prompts/06-templates.md](prompts/06-templates.md).
+- **Ids:** template, page and view ids are left out (`<id>`): the product repo holds no Notion ids from a real workspace (AGENTS.md, decision 0038). Look them up live.
 - **Last pulled:** 2026-10-14, through the Notion API, read-only, after migration 0003. The API shows headings and linked views, not view tabs or filters; those are as built by hand from Prompt 6.
 
 The API returns each linked view's title and URL, but not its filters, sorts or visible properties. The filters listed below are the ones Prompt 6 asked for; they have not been checked live.
@@ -15,7 +16,7 @@ Legend: `▦` linked view · `▸` toggle · `## ▸` toggle heading.
 ## Snapshot
 
 ### Areas · "Default Area" (default)
-Template id `8d5150a7-2d19-417a-9625-b8a5d09aaafb`. Header shows the four "via projects" rollups (page layout).
+Template id `<id>`. Header shows the four "via projects" rollups (page layout).
 
 ```text
 ### What am I working toward here?   ▦ Goals       Area is this page, Status Active
@@ -26,7 +27,7 @@ Template id `8d5150a7-2d19-417a-9625-b8a5d09aaafb`. Header shows the four "via p
 ```
 
 ### Goals · "Default Goal" (default)
-Template id `37144e1e-546a-4357-bea7-66b621b93c33`
+Template id `<id>`
 
 ```text
 ### How are the key results moving? ▦ Key Results Open · Done
@@ -35,7 +36,7 @@ Template id `37144e1e-546a-4357-bea7-66b621b93c33`
 ```
 
 ### Projects · "Default Project" (default)
-Template id `194938c3-a2c1-4594-a5ad-1b32ae02f7d7`
+Template id `<id>`
 
 ```text
 ## ▸ Brief           brain-written (0026)
@@ -49,7 +50,7 @@ gray italic: "Brief and Decision log above are written by the brain. Add your ow
 ```
 
 ### Meetings · "Default Meeting" (default)
-Template id `06419666-b2c5-47f4-b349-fd4d1d802a1a`. Reworked by hand on 2026-10-13.
+Template id `<id>`. Reworked by hand on 2026-10-13.
 
 ```text
 ℹ️ callout (gray)
@@ -71,7 +72,7 @@ Template id `06419666-b2c5-47f4-b349-fd4d1d802a1a`. Reworked by hand on 2026-10-
 ```
 
 ### People · "Default Person" (default)
-Template id `fa3d5f95-7647-4e54-8239-5605cd6de9ed`
+Template id `<id>`
 
 ```text
 ### Which meetings were they in?     ▦ Meetings    Upcoming · Past
@@ -80,7 +81,7 @@ Template id `fa3d5f95-7647-4e54-8239-5605cd6de9ed`
 ```
 
 ### Orgs · "Default Org" (default)
-Template id `7a8cd951-14e9-4aba-a5b8-25df420f356d`. Header shows the "Meetings via projects" rollup (page layout).
+Template id `<id>`. Header shows the "Meetings via projects" rollup (page layout).
 
 ```text
 ### Who works there?                 ▦ People
