@@ -373,6 +373,11 @@ Agreed with the user on 2026-10-19. **Goal:** one "catch up" handles everything 
 **Acceptance:** Codex's review finds the contracts complete enough to build CX-24 and CX-22 without inventing behaviour.
 **Delegated (Codex, review of #90):** the reference list in `tests/notion-view-properties.test.ts` (Codex's file) is updated here, because the new prompts would otherwise fail it; Codex reviewed the change as mechanically correct.
 
+### CX-31 · Push annotated release tags · `done` (#91)
+**Release:** 0.3.0
+**Output:** `release.mjs` creates each release tag as annotated (`git tag -a v<version> -m <version>`), so its existing `git push --follow-tags` publishes the tag with the release commit.
+**Acceptance:** a release-script test proves the annotated tag reaches the remote through `--follow-tags`.
+
 ### CC-26 · Intake skills (decision 0037) · `done` (#92)
 **Release:** 0.3.0
 **Output:** the "catch up" skill (read-only pass, every blocking question in one batch, then apply → Reviewed meetings → New Inbox rows → drop folder → publish → push, one report; blocked items skipped and listed); brain-apply (Notes, grouped rows, Check skips notes with nothing to publish); brain-ingest (Inbox rows, Project or Area taken from the capture, owner tasks from non-meeting sources in extraction.md and sources.md); the owner's names and work emails asked once and stored as aliases (at setup, and once by catch-up in an existing brain); dogfood finding 3 (connect your agent to Notion, per agent; brain-connect-notion stops with the exact fix); the user guide.
