@@ -347,10 +347,12 @@ Agreed with the user on 2026-10-18 (grill session). npm becomes the only channel
 
 Moved out of 0.2.3 on 2026-10-18 so 0.2.3 could ship while Codex was out of tokens.
 
-### CX-28 · Leak check in CI and a pre-commit hook · `todo` (moved from 0.2.3 on 2026-10-18: Codex out of tokens)
+### CX-28 · Leak check in CI and a pre-commit hook · `review` (moved from 0.2.3 on 2026-10-18: Codex out of tokens)
 **Release:** 0.2.4
 **Output:** `scripts/leak-check.mjs [--staged]` scans tracked files (or the staged diff) for a UUID, dashed or 32 hex characters, outside `tests/`, and for an email address whose domain is not `example` or does not end in `.example`; `scripts/leak-allow.txt` lists exceptions as `path:pattern`. With `--staged` it also reads `~/.config/ultimate-brain/denylist` (one term per line, `#` comments, matched case-insensitively as whole words) when it exists. A CI step runs it on every push; `.githooks/pre-commit` runs it with `--staged`. `LICENSE` (the copyright holder) is allowed for the denylist. A finding prints file, line and the rule, never the denylist term's neighbours beyond the line.
 **Acceptance:** tests with a synthetic UUID, a non-example email and a denylist term, each caught; the current tree passes; `sources/` and `node_modules/` are not scanned.
+
+**Spec questions:** `scripts/leak-allow.txt` calls its right-hand side a “pattern” but does not define matching semantics. This implementation treats it as a case-insensitive JavaScript regular expression against a line in the exact repo-relative path on the left.
 
 ### CX-30 · `merge.mjs` requires the other agent's pass · `todo`
 **Release:** 0.2.4

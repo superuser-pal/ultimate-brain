@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import { ROOT, command, fail } from "./common.mjs";
 
 const UUID = /\b(?:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}|[0-9a-f]{32})\b/gi;
-const EMAIL = /\b[A-Z0-9._%+-]+@([A-Z0-9.-]+)\b/gi;
+const EMAIL = /\b[A-Z0-9._%+-]+@([A-Z0-9-]+(?:\.[A-Z0-9-]+)+|example)\b/gi;
 const staged = process.argv.slice(2).join(" ") === "--staged";
 
 if (process.argv.length > 3 && !staged) {
