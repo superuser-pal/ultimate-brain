@@ -8,6 +8,7 @@ One line per task, under the release that ships it (decision 0038). `scripts/rel
 - CC-26 (#92): intake skills: "catch up" (one read-only pass, one batch of questions), Review Notes and grouped rows in brain-apply, Inbox rows and owner tasks in brain-ingest, identities and Notion access steps in brain-connect-notion, publish and push settings, the user guide.
 - CX-22 (#93): render the brain-owned Area relation for Decisions and Questions from their projects.
 - CX-24 (#94): implement grouped link reviews, Inbox and Concepts sync, source tasks, settings status and Inbox upgrade.
+- CX-31 (#91): release tags are annotated so `git push --follow-tags` publishes them.
 
 ## 0.2.4 — 2026-10-19
 
