@@ -2,7 +2,7 @@
 
 Everything deliberately deferred from v1, in one place. Each entry names what it would change and, where known, when to revisit it. Nothing here is scheduled; pick from it after the v1 dogfood (U-05).
 
-Sources folded in: docs/vision.md "v2", synthesis/synthesis.md §3.3, decisions 0008, 0010, 0011, 0015, 0028, 0030, and the CC-12 dogfood (2026-10-13). Open v1 fixes stay in build/TASKS.md (dogfood table); rejected ideas stay in synthesis §3.4.
+Sources folded in: docs/vision.md "v2", synthesis/synthesis.md §3.3, decisions 0008, 0010, 0011, 0015, 0028, 0030, the CC-12 dogfood (2026-10-13), and reviews/06-okf-and-gbrain.md (2026-10-19). Open v1 fixes stay in build/TASKS.md (dogfood table); rejected ideas stay in synthesis §3.4.
 
 ## Onboarding and getting knowledge in
 
@@ -106,8 +106,17 @@ Finds likely duplicate notes and people and writes `merge` proposals. **Source:*
 ### MCP server
 `search`, `expand`, `recall` and `remember` for other repos and tools, next to or in place of the CLI and query skill. **Source:** vision, synthesis §3.3. **Revisit:** when several agents or tools need the brain.
 
-### Long-term memory provider
-**Changes:** decisions/0008. Evaluate GBrain (or similar) as a search index over the Markdown memory and knowledge files, never as a second store.
+### Retrieval index over Markdown
+**Changes:** decisions/0008. A search index over the Markdown memory and knowledge files, rebuildable from them and never a second store. **Candidates** (reviews/06-okf-and-gbrain.md §5): GBrain in read-only use (`gbrain import` + `gbrain search`; its database-as-canonical model, `[[wikilink]]` auto-linking and overnight enrichment conflict with 0008, 0002 and synthesis §3.4), a local BM25 index like reviews/01's, or extending the query ladder. OKF is not a candidate: it is a file format with no retrieval. **Revisit:** with "BM25, graph or vector search" below.
+
+### OKF: export, then maybe alignment
+**Changes:** spec/schema.md, possibly decisions 0001–0005 field names. The Open Knowledge Format (Google Cloud, v0.2) is Markdown + frontmatter with provenance (`sources`), trust (`generated`, `verified`) and lifecycle (`status`, `stale_after`), close to our schema. Three levels, each optional (reviews/06-okf-and-gbrain.md §3):
+1. **Export:** `brain export --okf <dir>` writes a conformant bundle; the brain doesn't change. About one CC + one CX task.
+2. **Align:** rename our `sources` (ids) so `sources` can hold OKF objects; write `generated` and `verified` (from the Notion review); derive `status` from `lifecycle`. A migration and a release-sized change.
+3. **Profile:** our spec becomes "OKF + required extensions". OKF can never replace the spec: it has no proposals, assessment, timeline or Notion mapping.
+
+**Until then:** when `sources` changes for any other reason, take the OKF shape at the same time; it is the one field that collides.
+**Revisit when** any of: OKF reaches v0.3 or 1.0 with the maintainer merging again (one contributor, no commits since 2026-08-21 as of 2026-10-19); it gets a governance home or a second vendor; Notion, Claude Code, Codex or another tool we use reads OKF bundles; or the user wants to share part of the brain with an OKF consumer.
 
 ### BM25, graph or vector search
 **Source:** vision, synthesis. **Revisit:** when the query ladder gets slow or misses notes.

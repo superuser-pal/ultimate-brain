@@ -5,6 +5,7 @@ One line per task, under the release that ships it (decision 0038). `scripts/rel
 ## 0.4.0 — unreleased
 
 - CC-29 (#96): decision 0039: a task's changelog line lives in its build/TASKS.md row and `release.mjs` writes the CHANGELOG section (built in CX-34, documented in CC-30).
+- CC-31 (#98): OKF and GBrain reviewed and parked for v2 (reviews/06): a retrieval index over Markdown, and OKF export, then maybe alignment.
 
 ## 0.3.1 — unreleased
 

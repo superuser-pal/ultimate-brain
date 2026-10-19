@@ -437,6 +437,12 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 **Release:** 0.4.0
 **Output:** `scripts/blind-brain.mjs <fixture> <dir>` copies a fixture brain from `tests/fixtures/`, blanks its Notion ids in `brain.json`, runs `git init` and commits, so a skill's blind run starts from one command. A dev script; not in the npm package.
 **Acceptance:** a test builds a brain from `brain-acme` that `brain status --json` reads with `ok: true` and no Notion ids.
+
+### CC-31 · OKF and GBrain parked for v2 · `done` (#98)
+**Release:** 0.4.0
+**Changelog:** OKF and GBrain reviewed and parked for v2 (reviews/06): a retrieval index over Markdown, and OKF export, then maybe alignment.
+**Output:** reviews/06-okf-and-gbrain.md (OKF vs our schema, three adoption levels, standard-or-not evidence, GBrain fit); docs/v2-ideas.md "Retrieval index over Markdown" (replaces "Long-term memory provider") and "OKF: export, then maybe alignment", each with revisit triggers; the docs/vision.md summary line. Docs only; no spec or decision change.
+**Acceptance:** Codex's review finds the OKF mapping in reviews/06 §2 consistent with spec/schema.md and SPEC v0.2, and no binding decision changed.
 ---
 
 ## Your tasks
