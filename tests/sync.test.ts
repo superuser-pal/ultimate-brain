@@ -81,6 +81,42 @@ test("sync render rejects a project that was not created in Notion", async (cont
   assert.deepEqual(run.json.data.errors, [{ id: "prj-9x4t1b7e", reason: "PROJECT_NOT_IN_NOTION" }]);
 });
 
+test("sync render derives decision and question Areas from their projects", async (context) => {
+  const dir = await fixtureCopy(context);
+  const secondArea = "area-3m7c4h8n";
+  const secondProject = "prj-3x4t1b7e";
+  const noAreaProject = "prj-4x4t1b7e";
+  const secondAreaPage = "11111111-0000-4000-8000-000000000001";
+  const secondProjectPage = "11111111-0000-4000-8000-000000000002";
+  const noAreaProjectPage = "11111111-0000-4000-8000-000000000003";
+  const existingArea = await readFile(join(dir, "areas/clients.md"), "utf8");
+  const existingProject = await readFile(join(dir, "projects/acme-website/project.md"), "utf8");
+  await writeFile(join(dir, "areas/second-client.md"), existingArea
+    .replace("area-2m7c4h8n", secondArea).replace("title: Clients", "title: Second client")
+    .replaceAll("1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d", secondAreaPage));
+  await mkdir(join(dir, "projects/second-client"));
+  await writeFile(join(dir, "projects/second-client/project.md"), existingProject
+    .replace("prj-9x4t1b7e", secondProject).replace("title: Acme website", "title: Second project")
+    .replace("area: area-2m7c4h8n", `area: ${secondArea}`).replace("2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d", secondProjectPage));
+  await mkdir(join(dir, "projects/no-area"));
+  await writeFile(join(dir, "projects/no-area/project.md"), existingProject
+    .replace("prj-9x4t1b7e", noAreaProject).replace("title: Acme website", "title: No-area project")
+    .replace("area: area-2m7c4h8n\n", "").replace("2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d", noAreaProjectPage));
+
+  const decisionPath = join(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
+  await writeFile(decisionPath, (await readFile(decisionPath, "utf8"))
+    .replace("area: area-2m7c4h8n\n", "").replace("projects: [prj-9x4t1b7e]", `projects: [prj-9x4t1b7e, ${secondProject}]`));
+  const questionPath = join(dir, "knowledge/questions/who-owns-the-acme-mobile-app.md");
+  await writeFile(questionPath, (await readFile(questionPath, "utf8"))
+    .replace("area: area-2m7c4h8n\n", "").replace("projects: [prj-9x4t1b7e]", `projects: [${noAreaProject}]`));
+
+  const run = await brain(["sync", "render", "--brain", dir, "--ids", `dec-7k2m9q4x,que-8n3v5x1d`, "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  const byId = new Map<string, { properties: Record<string, unknown> }>(run.json.data.items.map((item: { id: string; properties: Record<string, unknown> }) => [item.id, item]));
+  assert.deepEqual(byId.get("dec-7k2m9q4x")?.properties.Area, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d", secondAreaPage] });
+  assert.deepEqual(byId.get("que-8n3v5x1d")?.properties.Area, { type: "relation", value: [] });
+});
+
 test("sync apply creates a Notion-created note with its lifecycle and applies corrections", async (context) => {
   const dir = await fixtureCopy(context);
   const mariaPath = join(dir, "knowledge/people/maria-lopez.md");
