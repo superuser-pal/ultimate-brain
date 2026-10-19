@@ -22,7 +22,7 @@ A copy of the inputs in spec/cli.md §5.14, so the skill works from inside a bra
 }
 ```
 
-- `database`: the `brain.json` key: `areas`, `goals`, `key_results`, `projects`, `people`, `orgs`, `decisions`, `questions` or `review`.
+- `database`: the `brain.json` key: `areas`, `goals`, `key_results`, `projects`, `people`, `orgs`, `decisions`, `questions`, `concepts` or `review`. The Inbox and Meetings are never snapshot databases.
 - `properties`: the Notion property names exactly, with normalized values:
 
   | Notion type | Normalized value |
@@ -50,4 +50,4 @@ The `data` object of the `sync plan` reply, unchanged. Not the whole reply.
 
 - One record per page actually written. `synced_at` is required.
 - `published`: the render item's `published`, unchanged.
-- `tasks` (meetings only): the new task page ids.
+- `tasks` (meetings and sources): the new task page ids.
