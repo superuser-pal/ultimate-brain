@@ -1,6 +1,7 @@
 # Ultimate Brain for Notion (1) — Factual Architecture Appendix
 
 **Status:** Notion AI audit supplied by the user on 2026-10-11.  
+**Ids:** page, database and view ids from the audited workspace are replaced with `<id>` (2026-10-19, CC-27; the product repo holds no real Notion ids).  
 **Evidence convention:** “Verified” below means reported as observed by Notion AI through the workspace/API interfaces it could access; it has not been independently verified from a Notion export or direct API response.
 
 > **Repository research note:** This export documents the visible hierarchy, six master databases, schemas, relations, templates, dashboards, formulas, GTD/PARA mechanics, recurrence model, and archive model. It does not provide dedicated evidence for property/page permissions, button actions, database-automation trigger/action configuration, recurring-template schedules, duplicate prevention, correction history, decision supersession, representative record traces, or a final `Unknown` / `Not found` inventory. Treat those subjects as **undocumented by this audit**, not as confirmed absent.
