@@ -74,11 +74,10 @@ test("merge dry-run requires a green, mergeable PR and does not merge it", (t) =
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const path = fakeCommands(root, {
     gh: `case "$1 $2" in
-      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"abcdef","title":"CX-1: One","body":"- [x] checked","mergeable":"MERGEABLE","state":"OPEN"}' ;;
+      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"abcdef0","title":"CX-1: One","body":"- [x] checked","mergeable":"MERGEABLE","state":"OPEN"}' ;;
       "repo view") printf owner/repo ;;
-      "api repos/owner/repo/commits/abcdef/check-runs") printf 'completed\\tsuccess\\n' ;;
-      "api repos/owner/repo/commits/abcdef") printf '2026-10-19T10:00:00Z' ;;
-      "api repos/owner/repo/pulls/12/reviews") printf '%s' '[[{"body":"Review (Claude Code): pass","submitted_at":"2026-10-19T10:01:00Z"}]]' ;;
+      "api repos/owner/repo/commits/abcdef0/check-runs") printf 'completed\\tsuccess\\n' ;;
+      "api repos/owner/repo/pulls/12/reviews") printf '%s' '[[{"body":"Review (Claude Code): pass at abcdef0"}]]' ;;
       "pr merge") exit 99 ;;
     esac`,
   });
@@ -92,9 +91,9 @@ test("merge refuses an unchecked PR checklist", (t) => {
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const path = fakeCommands(root, {
     gh: `case "$1 $2" in
-      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"abcdef","title":"CX-1: One","body":"- [ ] review","mergeable":"MERGEABLE","state":"OPEN"}' ;;
+      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"abcdef0","title":"CX-1: One","body":"- [ ] review","mergeable":"MERGEABLE","state":"OPEN"}' ;;
       "repo view") printf owner/repo ;;
-      "api repos/owner/repo/commits/abcdef/check-runs") printf 'completed\\tsuccess\\n' ;;
+      "api repos/owner/repo/commits/abcdef0/check-runs") printf 'completed\\tsuccess\\n' ;;
     esac`,
   });
   const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
@@ -180,11 +179,10 @@ test("merge dry-run accepts a PR whose push-only job was skipped", (t) => {
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const path = fakeCommands(root, {
     gh: `case "$1 $2" in
-      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"abcdef","title":"CX-1: One","body":"- [x] checked","mergeable":"MERGEABLE","state":"OPEN"}' ;;
+      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"abcdef0","title":"CX-1: One","body":"- [x] checked","mergeable":"MERGEABLE","state":"OPEN"}' ;;
       "repo view") printf owner/repo ;;
-      "api repos/owner/repo/commits/abcdef/check-runs") printf 'completed\\tsuccess\\ncompleted\\tskipped\\n' ;;
-      "api repos/owner/repo/commits/abcdef") printf '2026-10-19T10:00:00Z' ;;
-      "api repos/owner/repo/pulls/12/reviews") printf '%s' '[[{"body":"Review (Claude Code): pass","submitted_at":"2026-10-19T10:01:00Z"}]]' ;;
+      "api repos/owner/repo/commits/abcdef0/check-runs") printf 'completed\\tsuccess\\ncompleted\\tskipped\\n' ;;
+      "api repos/owner/repo/pulls/12/reviews") printf '%s' '[[{"body":"Review (Claude Code): pass at abcdef0"}]]' ;;
       "pr merge") exit 99 ;;
     esac`,
   });
@@ -196,10 +194,9 @@ test("merge dry-run accepts a PR whose push-only job was skipped", (t) => {
 function mergeReviewPath(root, review) {
   return fakeCommands(root, {
     gh: `case "$1 $2" in
-      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"abcdef","title":"CX-1: One","body":"- [x] checked","mergeable":"MERGEABLE","state":"OPEN"}' ;;
+      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"abcdef0","title":"CX-1: One","body":"- [x] checked","mergeable":"MERGEABLE","state":"OPEN"}' ;;
       "repo view") printf owner/repo ;;
-      "api repos/owner/repo/commits/abcdef/check-runs") printf 'completed\\tsuccess\\n' ;;
-      "api repos/owner/repo/commits/abcdef") printf '2026-10-19T10:00:00Z' ;;
+      "api repos/owner/repo/commits/abcdef0/check-runs") printf 'completed\\tsuccess\\n' ;;
       "api repos/owner/repo/pulls/12/reviews") printf '%s' '${review}' ;;
       "api repos/owner/repo/issues/12/comments") printf '%s' '[]' ;;
     esac`,
@@ -209,7 +206,7 @@ function mergeReviewPath(root, review) {
 test("merge dry-run accepts a fresh pass from the other agent", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, '[[{"body":"Review (Claude Code): pass","submitted_at":"2026-10-19T10:01:00Z"}]]');
+  const path = mergeReviewPath(root, '[[{"body":"Review (Claude Code): pass at abcdef0"}]]');
   const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
   assert.equal(result.status, 0, result.stderr);
 });
@@ -217,16 +214,16 @@ test("merge dry-run accepts a fresh pass from the other agent", (t) => {
 test("merge dry-run refuses a pass from the same agent", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, '[[{"body":"Review (Codex): pass","submitted_at":"2026-10-19T10:01:00Z"}]]');
+  const path = mergeReviewPath(root, '[[{"body":"Review (Codex): pass at abcdef0"}]]');
   const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /other agent/);
 });
 
-test("merge dry-run refuses a pass older than the head commit", (t) => {
+test("merge dry-run refuses a pass naming another commit", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, '[[{"body":"Review (Claude Code): pass","submitted_at":"2026-10-19T09:59:00Z"}]]');
+  const path = mergeReviewPath(root, '[[{"body":"Review (Claude Code): pass at deadbee"}]]');
   const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /other agent/);

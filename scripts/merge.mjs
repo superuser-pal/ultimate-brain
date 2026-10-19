@@ -39,15 +39,17 @@ else {
 }
 
 function hasOtherAgentPass(repo, pr, head, author) {
-  const commit = tryCommand("gh", ["api", `repos/${repo}/commits/${head}`, "--jq", ".commit.committer.date"]);
-  if (!commit.ok || Number.isNaN(Date.parse(commit.stdout))) return false;
   const endpoint = [`repos/${repo}/pulls/${pr}/reviews`, `repos/${repo}/issues/${pr}/comments`];
   const required = author === "codex" ? "Claude Code" : "Codex";
+  const verdict = new RegExp(`^Review \\(${required}\\): pass at ([0-9a-f]{7,})\\b`, "i");
   return endpoint.some((path) => {
     const result = tryCommand("gh", ["api", path, "--paginate", "--slurp"]);
     if (!result.ok) return false;
     try {
-      return JSON.parse(result.stdout).flat().some((item) => item.body?.startsWith(`Review (${required}): pass`) && Date.parse(item.submitted_at ?? item.created_at) > Date.parse(commit.stdout));
+      return JSON.parse(result.stdout).flat().some((item) => {
+        const match = verdict.exec(item.body ?? "");
+        return match !== null && head.toLowerCase().startsWith(match[1].toLowerCase());
+      });
     } catch {
       return false;
     }
