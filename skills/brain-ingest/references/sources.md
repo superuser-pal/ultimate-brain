@@ -2,7 +2,7 @@
 
 The procedure for every input that isn't a meeting (decision 0032). Follow the steps below in order; each says when to run a SKILL.md step as it is. There is no meeting note: the **source note** is what every new note cites.
 
-**Without Notion** (not configured, or the Notion tools aren't available in this session): skip every *(Notion)* part. New notes and proposals reach Notion with the next sync; say so in the report. A capture needs Notion: if `brain status` shows `capture_inbox` missing, tell the user to run the brain-connect-notion skill and stop.
+**Without Notion** (not configured, or the Notion tools aren't available in this session): skip every *(Notion)* part. New notes and proposals reach Notion with the next sync; say so in the report. A capture needs Notion: if `brain status` shows `inbox` missing, tell the user to run the brain-connect-notion skill and stop.
 
 ## The drop folder: "process my drop folder" (decision 0037)
 
@@ -52,8 +52,8 @@ One input at a time. Each becomes one source with a `kind`.
 ### `email`, `chat`, `note`: text the user pastes
 The body is the pasted text, verbatim. The source key is `agent:<agent>/<date>-<slug>`, for example `agent:claude-code/2026-10-14-acme-budget-email`.
 
-### `capture`: Capture Inbox rows *(Notion)*
-Query the Capture Inbox (`notion.databases.capture_inbox`, through its data source as in [notion.md](notion.md)) for rows with Brain Status = **New**, oldest first. Never take Processed or Skipped rows. For each row, the body is the row's Name, then its page body if it has one, verbatim. The source key is `notion:<row page id>`.
+### `capture`: Inbox rows *(Notion)*
+Query the Inbox (`notion.databases.inbox`, through its data source as in [notion.md](notion.md)) for rows with Brain Status = **New**, oldest first: these are the user's captures. Never take Processed or Skipped rows; the brain creates its own rows as Processed. For each row, the body is the row's Name, then its page body if it has one, verbatim. The source key is `notion:<row page id>`. Also read the row's **Project** and **Area**: when the user set them, they say where the capture belongs (decision 0037), so the pre-check doesn't ask.
 
 **A pasted email or chat thread in a capture:** when the body is an email (header lines such as From, To, Date, Subject, or a quoted reply chain) or a chat thread (speakers with timestamps), the source stays `kind: capture` with its `notion:` key, but you analyse it with the `email` or `chat` rules in [extraction.md](extraction.md), and take its date from the sent date. Say in the report that the capture was read as an email or chat. When the top message has no header (the latest reply pasted without From or Date), its date is the capture's Created date and its sender is the owner unless the text says otherwise.
 
@@ -61,7 +61,7 @@ Query the Capture Inbox (`notion.databases.capture_inbox`, through its data sour
 
 As in SKILL.md step 3, **one** question, only if something blocks:
 - the title or date is unclear (a document's own date, an email's sent date; if there is none, use today and say so);
-- which project or area it belongs to, when the text doesn't say and the user didn't;
+- which project or area it belongs to, when the text doesn't say, the user didn't, and (for a capture) the row's Project and Area are empty;
 - **a new project** (the user says the input starts one): never write a project note or create its Notion page yourself; the page must come from the Projects template, which the API can't apply (decision 0021). Ask the user to create it with **New project** in Notion and give it its name, then run the brain-sync skill's pull (`sync plan` and `sync apply`) to import it, and go on with the ingest linked to it. If the user would rather not now, link the input to its area and say so in the report. Without Notion, write nothing for the project and say so;
 - one name spelled several ways.
 
@@ -70,7 +70,7 @@ The user's answers that add content are owner rulings (decision 0031, [extractio
 ## 3. Snapshot the source
 
 Build the source item ([cli-inputs.md](cli-inputs.md) §1b) and run `brain note new --dry-run` with it alone:
-- **`skipped` with `DUPLICATE_SOURCE`:** already ingested (the same text, the same file, or the same capture row). Report it. For a capture, still set the row to Processed (step 7). Stop here for this input.
+- **`skipped` with `DUPLICATE_SOURCE`:** already ingested (the same text, the same file, or the same capture row). Report it. A capture row that is not the existing source's own row (the same text captured twice) is set to Brain Status = Processed through the MCP, and nothing else on it changes. Stop here for this input.
 - **Otherwise:** keep the item for step 6.
 
 ## 4. Match and load context
@@ -83,16 +83,19 @@ Follow [extraction.md](extraction.md), including "By source kind".
 
 ## 6. Write new notes
 
-Run SKILL.md step 7 as it is (ids from `brain id new`, the dry run for paths, links, the real run; [example-batch.json](example-batch.json) shows the shapes), with one difference: there is no meeting note. The batch holds the source and the new notes (people, decisions, questions, concepts); every new note lists the source in `sources`; decisions and questions have no `decided_in` or `raised_in`.
+Run SKILL.md step 7 as it is (ids from `brain id new`, the dry run for paths, links, the real run; [example-batch.json](example-batch.json) shows the shapes), with these differences:
+- there is no meeting note. The batch holds the source and the new notes (people, decisions, questions, concepts); every new note lists the source in `sources`; decisions and questions have no `decided_in` or `raised_in`;
+- give the source a `summary`: one line on what it taught, in the user's terms ("Acme's brief sets the February launch and a 95000 EUR budget"). It becomes the Inbox row's Summary, and is written once: the source never changes after this run;
+- the owner's action items become tasks ([extraction.md](extraction.md), "Tasks for the owner"); hold them for step 7.
 
 Then run SKILL.md step 8 (propose changes) and step 9 (rebuild and check) as they are.
 
 ## 7. Log, commit, publish
 
-1. Run `brain log ingest <source id> created=<n> proposals=<n> tasks=0`. Commit: `ingest: <title> (<kind>) (<n> new, <n> proposals)`.
-2. *(Notion)* Publish the new notes and proposals: `brain sync render --changed`, write through the MCP, `brain sync record` ([notion.md](notion.md) "Publish", step 2; sources themselves are never published). Commit `publish: <title>`.
-3. *(Notion, captures only)* Set the row's **Brain Status** to **Processed** through the MCP. Change no other property and not the page body. If this write fails, the next run finds the row New again, skips it as a duplicate and sets it then.
+1. Run `brain log ingest <source id> created=<n> proposals=<n> tasks=<n>`. Commit: `ingest: <title> (<kind>) (<n> new, <n> proposals)`.
+2. *(Notion, per `settings.publish`)* Publish, following [notion.md](notion.md) "Publish": the owner's tasks with `brain sync tasks --source <source id>`, then the new notes, the proposals and the **source itself**, which `sync render --changed` renders as its Inbox row (a capture's row is updated: Kind, Summary, what it produced, Brain Status Processed; any other source gets a new row). Commit `publish: <title>`. If a write fails, the next render produces it again; a capture whose row wasn't updated stays New and is skipped as a duplicate next time.
+3. *(Notion, captures the user said to skip)* Set the row's Brain Status to **Skipped** through the MCP; change nothing else on it.
 
 ## 8. Report
 
-SKILL.md step 12, once per run (for the drop folder, once for all its files). Action items found in a document, email or capture are listed in the report: there is no meeting to attach them to, so no Notion tasks are created.
+SKILL.md step 12, once per run (for the drop folder, once for all its files). Tasks created for the owner count on the Done line; action items for other people, and any of the owner's that weren't created, are listed under the report.
