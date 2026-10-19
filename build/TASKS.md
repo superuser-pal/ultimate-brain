@@ -1,7 +1,7 @@
 # Build Plan v1
 
 **Owners:** `CC` = Claude Code · `CX` = Codex · `U` = you (the user).
-**Status values:** `todo` · `in progress` · `review` · `done` · `blocked`.
+**Status values:** `todo` · `in progress` · `review` · `done` · `blocked` · `dropped` (won't ship; skipped by `release.mjs`).
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
 > **2026-10-19 — Status: 0.2.4 is released. 0.3.0 is merged except CX-31 (#91, passed); then release 0.3.0 and U-13. 0.3.1 (CX-32, gate fixes from the 0.3.0 retro) merges after the 0.3.0 release.**
@@ -393,9 +393,9 @@ Agreed with the user on 2026-10-19. **Goal:** one "catch up" handles everything 
 
 ## 0.3.1 — Gate fixes from the 0.3.0 retro
 
-Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0.3.0 build. Measured: 11 of the 12 merges of `main` into a task branch since 2026-10-15 conflicted on CHANGELOG.md or build/TASKS.md, and 5 of them dropped 8 task lines from CHANGELOG.md (none reached `main`; each was found by hand); 4 of 91 merged PRs only set a task to `done`; #93 was merged outside `merge.mjs` and `main-guard` passed it; `merge.mjs` refused 3 times on GitHub's transient `UNKNOWN` merge state. Merges after the 0.3.0 release.
+Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0.3.0 build. Measured: 9 of the 11 merges of `main` into a task branch since 2026-10-15 conflicted on CHANGELOG.md (2 also on build/TASKS.md), and 5 of them dropped 8 task lines from CHANGELOG.md (none reached `main`; each was found by hand); 4 of 91 merged PRs only set a task to `done`; #93 was merged outside `merge.mjs` and `main-guard` passed it; `merge.mjs` refused 3 times on GitHub's transient `UNKNOWN` merge state. Merges after the 0.3.0 release.
 
-### CC-28 · Record the retro's tasks · `review`
+### CC-28 · Record the retro's tasks · `done` (#95)
 **Release:** 0.3.1
 **Output:** this section, CX-32, and CC-29 and CX-33 under 0.4.0.
 **Acceptance:** Codex's review finds CX-32 specified well enough to build without inventing behaviour.
@@ -415,10 +415,23 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 
 Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `brain-onboard` interview, converter check, drop folder asked up front) and Notion file uploads. Planned after U-13.
 
-### CC-29 · Decision: changelog fragments, fewer shared-file conflicts · `todo`
+### CC-29 · Decision: changelog lines in task rows (decision 0039) · `done` (#96)
 **Release:** 0.4.0
-**Output:** a new decision amending 0038: each task adds `changes/<release>/<task-id>.md` (its one CHANGELOG line) instead of editing CHANGELOG.md, and `release.mjs` gathers them into CHANGELOG.md and deletes them; and what makes build/TASKS.md conflict in parallel PRs (status edits inside one release section), with a fix or a reason to keep it. Decided with the user before Codex builds it.
-**Acceptance:** the user approves the decision; it names the changes `pr-format.mjs`, `merge.mjs` and `release.mjs` need, so the Codex task needs no spec question.
+**Changelog:** decision 0039: a task's changelog line lives in its build/TASKS.md row and `release.mjs` writes the CHANGELOG section.
+**Output:** decision 0039, agreed with the user on 2026-10-19 (task-row field chosen over fragment files and a union merge driver; build/TASKS.md left as it is, with the reason); CX-34 and CC-30 below. Amends 0038.
+**Acceptance:** the user approves the decision; it names the changes `pr-format.mjs`, `merge.mjs` and `release.mjs` need, so CX-34 needs no spec question.
+
+### CX-34 · Changelog from task rows (decision 0039) · `todo`
+**Release:** 0.4.0
+**Changelog:** `release.mjs` writes each release's CHANGELOG section from the task rows; PRs no longer edit CHANGELOG.md.
+**Output:** per decision 0039: `taskEntries` also reads the optional `**Changelog:**` line after `**Release:**`; `release.mjs <version>` skips the version's `dropped` tasks before every check (all versions); for 0.4.0 and later it refuses, naming each task, one with no `**Changelog:**` line or an empty or whitespace-only one, and a done heading whose suffix isn't `(#N)` or `(#N, #M, …)`, each optionally with `; <note>` before the `)` (decision 0039 gives the grammar); it writes `## <version> — <date>` with `- <id> (#N): <text>` or `- <id> (#N, #M): <text>` per task in TASKS.md order (every number, note left out), replaces a hand-written `## <version> — unreleased` section, and commits it in the release commit; `pr-format.mjs` checks the PR's own row has a non-empty `**Changelog:**` line instead of a CHANGELOG.md addition, and its lost-heading guard also fails on a `**Changelog:**` line lost from the base; `merge.mjs` drops CX-32's CHANGELOG.md `(#N)` check and keeps the `` `done` (#N) `` one. Versions before 0.4.0 keep today's behaviour.
+**Acceptance:** tests: `release.mjs 0.4.0 --dry-run` on a fixture TASKS.md prints the generated section with two tasks in order, one naming `(#60, #64)`, and a `(#58; note)` heading generating `(#58)`; a `dropped` task with no `**Changelog:**` line left out without refusing; refusals for a task with no `**Changelog:**` line, one with `**Changelog:**   `, a bare `` `done` `` and a `(PR #12)` suffix; a 0.3.x version needs its hand-written section as today; `pr-format` passes a PR that edits only its own row and fails one with an empty field; `merge.mjs --dry-run` passes `done (#N)` with no CHANGELOG.md change.
+
+### CC-30 · Docs for changelog lines in task rows (decision 0039) · `todo`
+**Release:** 0.4.0
+**Changelog:** AGENTS.md, the PR template and the release guide describe the `**Changelog:**` field.
+**Output:** AGENTS.md ("Every task has", "PRs follow the template"), `.github/pull_request_template.md` (the CHANGELOG boxes) and docs/releasing.md say: a task carries `**Changelog:**` in its row; the done commit sets `` `done` (#N) ``; `release.mjs` writes the CHANGELOG section. Merges right after CX-34, so the docs never describe a gate that isn't there.
+**Acceptance:** no file outside CHANGELOG.md's history tells an agent to edit CHANGELOG.md for a 0.4.0 or later task (`grep -rn CHANGELOG AGENTS.md docs .github`).
 
 ### CX-33 · Blind-run brain setup script · `todo`
 **Release:** 0.4.0
