@@ -96,7 +96,7 @@ Things the CLI checks that are easy to get wrong:
 ] }
 ```
 
-- **Don't send `before`;** the CLI fills it from the current fact. **`from`:** leave it out for a meeting (the CLI uses the meeting's date). For any other source, send it: the date the text gives for the change ("approved on 5 December 2026" → `2026-12-05`), else the source's `file_date`; otherwise the CLI would use today.
+- **Don't send `before`;** the CLI fills it from the current fact. **`from`** (only `update_fact` and `contradiction` have one): leave it out for a meeting (the CLI uses the meeting's date). For any other source, send it: the date the text gives for the change ("approved on 5 December 2026" → `2026-12-05`), else the source's `file_date`; otherwise the CLI would use today.
 - **`add_link`** (decision 0028) adds one value to a list of an existing note. Send one item per link, each with its own `title` and `why`: the CLI groups the items with the same `target` and `source` into one proposal, one Review row (decision 0037), and writes the group's title itself:
   ```json
   { "kind": "add_link", "title": "Acme website: add Lucía Fernández to People", "target": "prj-9x4t1b7e", "field": "people",
