@@ -2,6 +2,7 @@
   "schema_version": 1,
   "owner": { "name": "Owner" },
   "budgets": { "ingest_max_notes": 8 },
+  "settings": { "publish": "ask", "push": "auto" },
   "notion": {
     "databases": {
       "areas": "",
@@ -14,7 +15,8 @@
       "decisions": "",
       "questions": "",
       "review": "",
-      "capture_inbox": ""
+      "inbox": "",
+      "concepts": ""
     },
     "tasks": {
       "database": "",
@@ -27,6 +29,7 @@
         "owner": "",
         "meeting": "Meeting",
         "meeting_url": "",
+        "source": "",
         "brain_id": "Brain ID"
       },
       "new_task_status": "To Do"

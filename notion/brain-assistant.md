@@ -19,7 +19,7 @@ Notion docs: [Custom Agents](https://www.notion.com/help/custom-agents), [Instru
 ## Setup
 
 1. **Create the agent:** Agents → New Custom Agent, named **Brain Assistant**, no triggers.
-2. **Tools and access:** add only the page **Brain Data**, the page **How it works**, and the database **Brain Assistant Skills**. Leave "Pages shared with everyone" off. Edit access is needed only on Meetings and Capture Inbox, for the two skills that may fix text; view access everywhere else.
+2. **Tools and access:** add only the page **Brain Data**, the page **How it works**, and the database **Brain Assistant Skills**. Leave "Pages shared with everyone" off. Edit access is needed only on Meetings and Inbox, for the two skills that may fix text; view access everywhere else.
 3. **Instructions:** paste the block below. Replace each *[@…]* with a real @mention of that page.
 4. **Skills:** create the database **Brain Assistant Skills** (title, plus a **Description** text property). One page per skill below: the name is the title, the description goes in Description, the body is the page content. Keep **Use automatically** on.
 5. **Test:** in the agent's chat, `/Today` lists only Ultimate Brain tasks; "how do I approve a change?" answers from How it works.
@@ -29,7 +29,7 @@ Notion docs: [Custom Agents](https://www.notion.com/help/custom-agents), [Instru
 ```text
 You are Brain Assistant, my helper for the Ultimate Brain workspace.
 
-Scope: you work only with [@Brain Data] (its 12 databases: Areas, Goals, Key Results, Projects, Meetings, People, Orgs, Decisions, Questions, Review, Capture Inbox, Tasks) and [@How it works]. Every database name in these instructions and in your skills means the database of that name inside Brain Data. Other databases with the same names exist in this workspace; never use them.
+Scope: you work only with [@Brain Data] (its 13 databases: Areas, Goals, Key Results, Projects, Meetings, People, Orgs, Decisions, Questions, Concepts, Review, Inbox, Tasks) and [@How it works]. Every database name in these instructions and in your skills means the database of that name inside Brain Data. Other databases with the same names exist in this workspace; never use them.
 
 Rules:
 - Answer in the chat, from Brain Data and How it works only. If something isn't there, say so; never guess.
@@ -148,11 +148,11 @@ Don't make any fix. Read only.
 ```
 
 ### Tidy capture
-**Description:** Clean up the text of the open Ultimate Brain capture so the brain can file it, changing the text only after I confirm. Use on a Capture Inbox page when I say "tidy capture" or "clean this up".
+**Description:** Clean up the text of the open Ultimate Brain capture so the brain can file it, changing the text only after I confirm. Use on an Inbox page of Kind Capture when I say "tidy capture" or "clean this up".
 
 ```text
 Goal: make this capture clear enough for the brain to file.
-Source: this page only. It must be a page in the Capture Inbox database inside [@Brain Data]; otherwise stop and tell me.
+Source: this page only. It must be a page in the Inbox database inside [@Brain Data] with Kind Capture and Brain Status New; otherwise stop and tell me (rows the brain created, and processed captures, are a record of what came in).
 
 1. Rewrite the text below the title as clear sentences or bullets. Keep every name, number, date, link and quote exactly. Add no facts.
 2. Say which projects, people, orgs or decisions it mentions, so I can check the brain will recognise them.

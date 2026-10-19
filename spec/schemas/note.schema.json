@@ -833,6 +833,27 @@
         "converter": {
           "type": "string",
           "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "notion": {
+          "$ref": "#/$defs/notionPageId"
+        },
+        "notion_published": {
+          "description": "Notion property name → value last published to the Inbox (spec/cli.md §5.14).",
+          "type": "object"
+        },
+        "last_synced": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/notionPageId"
+          }
         }
       },
       "not": {
@@ -893,6 +914,25 @@
             "properties": {
               "kind": {
                 "const": "document"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "const": "capture"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "source_key": {
+                "pattern": "^notion:"
               }
             }
           }

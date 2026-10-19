@@ -12,7 +12,7 @@ In the left column, under the navigation, add a heading 3 "Needs you" and two li
 2. "Which minutes need review?" of "Meetings": filter Brain Status is Not Reviewed and Date is on or before today; sort Date descending; show Name.
 
 In the right column add, in one row:
-3. A button "Quick capture": Add page to "Capture Inbox", set Brain Status = New, open the page after creation.
+3. A button "Quick capture": Add page to "Inbox", set Kind = Capture and Brain Status = New, open the page after creation.
 4. A button "New meeting": Add page to "Meetings", set Date = today, open the page after creation.
 5. A button "New project": Add page to "Projects", set Status = Planned, open the page after creation.
 
@@ -28,5 +28,5 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 
 ## Verify
 - [ ] "Needs you" shows two short lists; a meeting dated tomorrow is not in "Which minutes need review?".
-- [ ] Quick capture creates a Capture Inbox row with Brain Status New; New meeting and New project open a page with the default template.
+- [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status New; New meeting and New project open a page with the default template.
 - [ ] "What's on today?" has three tabs: Tasks, Meetings, Projects.

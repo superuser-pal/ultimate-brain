@@ -2,6 +2,10 @@
 
 One line per task, under the release that ships it (decision 0038). `scripts/release.mjs` refuses a version with no entry here.
 
+## 0.3.0 — unreleased
+
+- CC-22: intake contracts: the Inbox (every source but minutes), Concepts, grouped link reviews with a Note, owner tasks from sources, `brain.json` settings, Area on Decisions and Questions; Notion migration 0005.
+
 ## 0.2.4 — 2026-10-19
 
 - CC-27 (#88): real Notion ids removed from the product docs; the review verdict names the commit it covers and comes after the done commit.

@@ -367,10 +367,11 @@ Agreed with the user on 2026-10-19. **Goal:** one "catch up" handles everything 
 
 **Order:** CC-22 → Codex reviews the contracts → CX-24, CX-22 and CC-26 in parallel → release 0.3.0 → U-13. Nothing merges before 0.2.4 is released. The Notion space is migrated after the release, not before: 0.2.3 still expects the Capture Inbox.
 
-### CC-22 · Intake contracts (decisions 0037, 0034) · `todo`
+### CC-22 · Intake contracts (decisions 0037, 0034) · `review`
 **Release:** 0.3.0
 **Output:** spec/schema.md and note.schema.json (concepts published; Inbox properties); spec/cli.md (grouped `add_link` proposals and their apply with a Note, `brain.json` `publish: ask | auto` and `push: auto` (0038), Inbox and Concepts in `sync render` and `sync record`, the derived Area on Decisions and Questions); notion-space-design: §3.11 rewritten as Inbox (Kind, Summary, Produced, Project, Area; views Inbox and History), a Concepts section, Knowledge tabs, the Review Note replacing Edited Value, Area on Decisions and Questions with Area page views; the matching Prompts and a Notion migration. The migration sets Kind = Capture on existing rows, copies any Edited Value on a pending Review row into Note before removing the property, and backfills Inbox rows (Processed) for the documents and emails already ingested.
 **Acceptance:** Codex's review finds the contracts complete enough to build CX-24 and CX-22 without inventing behaviour.
+**Delegated (Codex, review of #90):** the reference list in `tests/notion-view-properties.test.ts` (Codex's file) is updated here, because the new prompts would otherwise fail it; Codex reviewed the change as mechanically correct.
 
 ### CC-26 · Intake skills (decision 0037) · `todo` (needs CC-22)
 **Release:** 0.3.0
@@ -379,7 +380,7 @@ Agreed with the user on 2026-10-19. **Goal:** one "catch up" handles everything 
 
 ### CX-24 · Intake in the CLI (decision 0037) · `todo` (needs CC-22)
 **Release:** 0.3.0
-**Output:** grouped `add_link` proposals and their apply with a Note; `brain.json` settings; Inbox and Concepts in `sync render` and `sync record`. **Acceptance:** tests per the contract.
+**Output:** per the CC-22 contracts (spec/cli.md, spec/schema.md, the three JSON schemas): `proposal new` groups `add_link` items into one proposal with `links` (§5.6); `apply` with `note` and `exclude` (§5.7); `sync plan` reads Review **Note** (Edit value, `NOTE_TO_READ`) and the `concepts` snapshot database (§5.14.2); `sync render` and `sync record` for Concepts and the Inbox (sources), including the capture update and the first-run backfill (§5.14.4, §5.14.6); `sync tasks --source` (§5.14.5); `status` with `inbox`, `concepts` and `settings` (§5.2); `upgrade` renames `capture_inbox` (§5.15); lint knows the new source fields. **Acceptance:** tests per the contract, including a grouped proposal's title, an `exclude` that applies all but one link, a Note on Approve as `NOTE_TO_READ`, a capture rendered as `update` from its key, a document rendered as `create` with its produced relations, and the upgrade rename.
 
 ### CX-22 · Area on Decisions and Questions (decision 0034) · `todo` (needs CC-22)
 **Release:** 0.3.0

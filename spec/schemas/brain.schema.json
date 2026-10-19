@@ -25,6 +25,10 @@
         "name": {
           "type": "string",
           "minLength": 1
+        },
+        "person": {
+          "type": "string",
+          "pattern": "^per-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
         }
       }
     },
@@ -37,6 +41,26 @@
           "minimum": 1,
           "maximum": 20,
           "default": 8
+        }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "publish": {
+          "enum": [
+            "ask",
+            "auto"
+          ],
+          "default": "ask"
+        },
+        "push": {
+          "enum": [
+            "auto",
+            "remind"
+          ],
+          "default": "auto"
         }
       }
     },
@@ -83,6 +107,14 @@
               "$ref": "#/$defs/dbId"
             },
             "capture_inbox": {
+              "$ref": "#/$defs/dbId",
+              "deprecated": true,
+              "description": "Old name of inbox; read as inbox when inbox is absent. brain upgrade renames it."
+            },
+            "inbox": {
+              "$ref": "#/$defs/dbId"
+            },
+            "concepts": {
               "$ref": "#/$defs/dbId"
             }
           }
@@ -128,6 +160,9 @@
                   "type": "string"
                 },
                 "meeting_url": {
+                  "type": "string"
+                },
+                "source": {
                   "type": "string"
                 },
                 "brain_id": {

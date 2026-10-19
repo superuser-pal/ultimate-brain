@@ -2,7 +2,7 @@
 
 Paste into Notion AI. Before: [Prompt 2](02-databases.md). Next: [Prompt 4](04-formula-rollup.md).
 
-Skipped the Tasks database? Delete the three "Tasks" lines before pasting, and later relate your own Tasks database to Projects, Areas and Meetings the same way.
+Skipped the Tasks database? Delete the four "Tasks" lines before pasting, and later relate your own Tasks database to Projects, Areas, Meetings and Inbox the same way.
 
 ```text
 In the databases on "Brain Data", add these two-way relations. Use exactly these property names on each side.
@@ -23,9 +23,20 @@ In the databases on "Brain Data", add these two-way relations. Use exactly these
 - People "Org" ↔ Orgs "People"
 - Decisions "Supersedes" ↔ Decisions "Superseded By"
 - Review "Source Meeting" ↔ Meetings "Review Items"
+- Decisions "Area" ↔ Areas "Decisions"
+- Questions "Area" ↔ Areas "Questions"
+- Concepts "Project" ↔ Projects "Concepts"
+- Concepts "Area" ↔ Areas "Concepts"
+- Inbox "Decisions" ↔ Decisions "Sources"
+- Inbox "Questions" ↔ Questions "Sources"
+- Inbox "Concepts" ↔ Concepts "Sources"
+- Inbox "People" ↔ People "Sources"
+- Inbox "Project" ↔ Projects "Inbox"
+- Inbox "Area" ↔ Areas "Inbox"
 - Tasks "Project" ↔ Projects "Tasks"
 - Tasks "Area" ↔ Areas "Tasks"
 - Tasks "Meeting" ↔ Meetings "Tasks"
+- Tasks "Source" ↔ Inbox "Tasks"
 
 Do not create any other relations.
 ```

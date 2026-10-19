@@ -104,6 +104,32 @@
         "value": {
           "$ref": "note.schema.json#/$defs/factValue"
         },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exclude": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "required": [
+              "field",
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "field": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
         "decided_at": {
           "$ref": "note.schema.json#/$defs/timestamp"
         },
@@ -170,6 +196,35 @@
     "notion_published": {
       "description": "Review property name → value last published (spec/cli.md §5.14).",
       "type": "object"
+    },
+    "links": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "required": [
+          "field",
+          "value"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "enum": [
+              "aliases",
+              "tags",
+              "projects",
+              "people",
+              "attendees",
+              "deciders"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
     }
   },
   "additionalProperties": false,
@@ -237,9 +292,7 @@
       },
       "then": {
         "required": [
-          "target",
-          "field",
-          "after"
+          "target"
         ],
         "properties": {
           "field": {
@@ -275,7 +328,39 @@
               ]
             }
           ]
-        }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "links"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "field"
+                  ]
+                },
+                {
+                  "required": [
+                    "after"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "required": [
+              "field",
+              "after"
+            ],
+            "not": {
+              "required": [
+                "links"
+              ]
+            }
+          }
+        ]
       }
     },
     {
@@ -551,6 +636,48 @@
         "properties": {
           "status": {
             "const": "closed"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "links"
+        ]
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "add_link"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "decision"
+        ],
+        "properties": {
+          "decision": {
+            "required": [
+              "exclude"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "add_link"
+          },
+          "decision": {
+            "properties": {
+              "action": {
+                "const": "approve"
+              }
+            }
           }
         }
       }
