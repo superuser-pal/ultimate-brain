@@ -2,6 +2,10 @@
 
 One line per task, under the release that ships it (decision 0038). `scripts/release.mjs` refuses a version with no entry here.
 
+## 0.2.4 — unreleased
+
+- CX-30: require a fresh pass from the other agent before `merge.mjs` merges a PR, with an explicit user override.
+
 ## 0.2.3 — 2026-10-18
 
 - CC-24 (#80): delivery lanes, one channel (npm) and release gates: decision 0038, the brain's read-only and findings rules, issue and PR templates, the Claude Code plugin retired; the merge gate without GitHub Pro; three real names removed from the skills and docs.

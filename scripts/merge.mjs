@@ -1,8 +1,11 @@
-import { checksPassed, command, fail, ROOT, tryCommand } from "./common.mjs";
+import { checksPassed, command, fail, tryCommand } from "./common.mjs";
 
-const [pr, flag] = process.argv.slice(2);
-const dryRun = flag === "--dry-run";
-if (!/^\d+$/.test(pr ?? "") || (flag !== undefined && !dryRun)) fail("Usage: node scripts/merge.mjs <PR> [--dry-run]");
+const [pr, ...flags] = process.argv.slice(2);
+const dryRun = flags.includes("--dry-run");
+const reviewedByUser = flags.includes("--reviewed-by-user");
+if (!/^\d+$/.test(pr ?? "") || flags.length !== new Set(flags).size || flags.some((flag) => flag !== "--dry-run" && flag !== "--reviewed-by-user")) {
+  fail("Usage: node scripts/merge.mjs <PR> [--dry-run] [--reviewed-by-user]");
+}
 else {
   const viewed = tryCommand("gh", ["pr", "view", pr, "--json", "headRefName,headRefOid,title,body,mergeable,state"]);
   if (!viewed.ok) fail(`Cannot read PR #${pr}: ${viewed.message}`);
@@ -18,8 +21,35 @@ else {
     const repo = tryCommand("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
     const checks = repo.ok ? tryCommand("gh", ["api", `repos/${repo.stdout}/commits/${details.headRefOid}/check-runs`, "--paginate", "--jq", ".check_runs[] | [.status,.conclusion] | @tsv"]) : repo;
     if (!checks.ok || !checksPassed(checks.stdout)) failures.push("CI has not passed on the PR head commit");
+    if (!reviewedByUser && (branch === null || !repo.ok || !hasOtherAgentPass(repo.stdout, pr, details.headRefOid, branch[1]))) {
+      failures.push("no fresh pass from the other agent");
+    }
     if (failures.length > 0) fail(`Refusing to merge #${pr}: ${failures.join("; ")}`);
-    else if (dryRun) process.stdout.write(`Would merge #${pr} at ${details.headRefOid}\n`);
-    else command("gh", ["pr", "merge", pr, "--merge", "--match-head-commit", details.headRefOid], { stdio: "inherit" });
+    else {
+      const warning = reviewedByUser ? "WARNING: user override bypasses the other-agent review gate\n" : "";
+      const mergeArgs = ["pr", "merge", pr, "--merge", "--match-head-commit", details.headRefOid];
+      if (reviewedByUser) mergeArgs.push("--body", "Review gate overridden by user.");
+      if (dryRun) process.stdout.write(`${warning}Would merge #${pr} at ${details.headRefOid}\n`);
+      else {
+        if (warning) process.stderr.write(warning);
+        command("gh", mergeArgs, { stdio: "inherit" });
+      }
+    }
   }
+}
+
+function hasOtherAgentPass(repo, pr, head, author) {
+  const commit = tryCommand("gh", ["api", `repos/${repo}/commits/${head}`, "--jq", ".commit.committer.date"]);
+  if (!commit.ok || Number.isNaN(Date.parse(commit.stdout))) return false;
+  const endpoint = [`repos/${repo}/pulls/${pr}/reviews`, `repos/${repo}/issues/${pr}/comments`];
+  const required = author === "codex" ? "Claude Code" : "Codex";
+  return endpoint.some((path) => {
+    const result = tryCommand("gh", ["api", path, "--paginate", "--slurp"]);
+    if (!result.ok) return false;
+    try {
+      return JSON.parse(result.stdout).flat().some((item) => item.body?.startsWith(`Review (${required}): pass`) && Date.parse(item.submitted_at ?? item.created_at) > Date.parse(commit.stdout));
+    } catch {
+      return false;
+    }
+  });
 }
