@@ -4,7 +4,7 @@
 **Status values:** `todo` · `in progress` · `review` · `done` · `blocked`.
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
-> **2026-10-19 — Status: 0.2.3 is released and in the brain. 0.2.4 is merged: CC-27 (#88), CX-28 (#86), CX-30 (#87); release it with U-14. 0.3.0 work starts now but merges only after 0.2.4 is released.**
+> **2026-10-19 — Status: 0.2.4 is released. 0.3.0 is merged except CX-31 (#91, passed); then release 0.3.0 and U-13. 0.3.1 (CX-32, gate fixes from the 0.3.0 retro) merges after the 0.3.0 release.**
 > - **0.3.0 scope agreed 2026-10-19:** the intake experience (decision 0037) and Area on Decisions and Questions (0034), in CC-22 (contracts), CC-26 (skills), CX-24, CX-22, then U-13 (Notion migration, upgrade, real catch-up). The onboarding suite and Notion file uploads move to 0.4.0.
 > - **Review order (CC-27):** the done commit comes before the verdict; the reviewer posts `Review (<agent>): pass at <sha>` last.
 > - **Untriaged `dogfood` issues:** 0.
@@ -386,9 +386,39 @@ Agreed with the user on 2026-10-19. **Goal:** one "catch up" handles everything 
 **Release:** 0.3.0
 **Output:** the sync fills a brain-owned Area relation on Decisions and Questions from their projects' areas (spec/cli.md, CC-22). **Acceptance:** tests for one area, several projects in different areas, and a project with no area.
 
+## 0.3.1 — Gate fixes from the 0.3.0 retro
+
+Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0.3.0 build. Measured: 11 of the 12 merges of `main` into a task branch since 2026-10-15 conflicted on CHANGELOG.md or build/TASKS.md, and 5 of them dropped 8 task lines from CHANGELOG.md (none reached `main`; each was found by hand); 4 of 91 merged PRs only set a task to `done`; #93 was merged outside `merge.mjs` and `main-guard` passed it; `merge.mjs` refused 3 times on GitHub's transient `UNKNOWN` merge state. Merges after the 0.3.0 release.
+
+### CC-28 · Record the retro's tasks · `review`
+**Release:** 0.3.1
+**Output:** this section, CX-32, and CC-29 and CX-33 under 0.4.0.
+**Acceptance:** Codex's review finds CX-32 specified well enough to build without inventing behaviour.
+
+### CX-32 · Gate scripts: lost lines, done before merge, merges outside the gate · `todo`
+**Release:** 0.3.1
+**Output:**
+- `pr-format.mjs` fails when a task id that has a line in the base branch's CHANGELOG.md (`- XX-N`) has none on the PR head, or a task heading in the base branch's build/TASKS.md (`### XX-N ·`) is missing on the head, naming each id. A reworded line or a changed status passes; only a lost id fails.
+- `merge.mjs` refuses unless the PR head's build/TASKS.md shows the title's task as `` `done` (#N) `` and its CHANGELOG.md line starts `- <id> (#N)`, where N is the PR number; the refusal says what to commit. `--reviewed-by-user` does not skip this check.
+- `merge.mjs`, while GitHub reports `mergeable` as `UNKNOWN`, asks again every 2 s for up to 20 s; it refuses on `CONFLICTING`, or on `UNKNOWN` after the wait with "GitHub has not computed mergeability; retry".
+- `main-guard.mjs` also fails a PR merge on `main` that has neither the other agent's `Review (<agent>): pass at <sha>` naming the merged head (the same rule as `merge.mjs`, decision 0038) nor the user-override note `merge.mjs` writes into the merge commit body.
+- `npm run skills` runs `scripts/build-skills.ts` and then `tests/skills.test.ts`; `.githooks/pre-commit` runs `node scripts/build-skills.ts --check` when the staged files include `skills/`.
+
+**Acceptance:** tests: a head that drops another task's CHANGELOG line fails `pr-format` and one that adds `(#N)` to it passes; `merge.mjs --dry-run` refuses a task in `review` and passes `done (#N)`; `UNKNOWN` then `MERGEABLE` passes and `UNKNOWN` throughout refuses after the wait; `main-guard` fails a merge with no pass and passes one with the pass or the override note; a commit that stages a skill edit without the rebuilt mirror is refused.
+
 ## 0.4.0 — queued
 
 Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `brain-onboard` interview, converter check, drop folder asked up front) and Notion file uploads. Planned after U-13.
+
+### CC-29 · Decision: changelog fragments, fewer shared-file conflicts · `todo`
+**Release:** 0.4.0
+**Output:** a new decision amending 0038: each task adds `changes/<release>/<task-id>.md` (its one CHANGELOG line) instead of editing CHANGELOG.md, and `release.mjs` gathers them into CHANGELOG.md and deletes them; and what makes build/TASKS.md conflict in parallel PRs (status edits inside one release section), with a fix or a reason to keep it. Decided with the user before Codex builds it.
+**Acceptance:** the user approves the decision; it names the changes `pr-format.mjs`, `merge.mjs` and `release.mjs` need, so the Codex task needs no spec question.
+
+### CX-33 · Blind-run brain setup script · `todo`
+**Release:** 0.4.0
+**Output:** `scripts/blind-brain.mjs <fixture> <dir>` copies a fixture brain from `tests/fixtures/`, blanks its Notion ids in `brain.json`, runs `git init` and commits, so a skill's blind run starts from one command. A dev script; not in the npm package.
+**Acceptance:** a test builds a brain from `brain-acme` that `brain status --json` reads with `ok: true` and no Notion ids.
 ---
 
 ## Your tasks
