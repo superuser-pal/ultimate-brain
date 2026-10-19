@@ -2,6 +2,10 @@
 
 One line per task, under the release that ships it (decision 0038). `scripts/release.mjs` refuses a version with no entry here.
 
+## 0.4.0 — unreleased
+
+- CC-29: decision 0039: a task's changelog line lives in its build/TASKS.md row and `release.mjs` writes the CHANGELOG section (built in CX-34, documented in CC-30).
+
 ## 0.3.1 — unreleased
 
 - CC-28: the 0.3.0 retro's tasks: gate fixes for lost CHANGELOG lines, done before merge and merges outside the gate (CX-32); changelog fragments (CC-29) and a blind-run setup script (CX-33) for 0.4.0.
