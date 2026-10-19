@@ -367,19 +367,18 @@ Agreed with the user on 2026-10-19. **Goal:** one "catch up" handles everything 
 
 **Order:** CC-22 → Codex reviews the contracts → CX-24, CX-22 and CC-26 in parallel → release 0.3.0 → U-13. Nothing merges before 0.2.4 is released. The Notion space is migrated after the release, not before: 0.2.3 still expects the Capture Inbox.
 
-### CC-22 · Intake contracts (decisions 0037, 0034) · `review`
+### CC-22 · Intake contracts (decisions 0037, 0034) · `done` (#90)
+**Release:** 0.3.0
+**Output:** spec/schema.md and note.schema.json (concepts published; Inbox properties); spec/cli.md (grouped `add_link` proposals and their apply with a Note, `brain.json` `publish: ask | auto` and `push: auto` (0038), Inbox and Concepts in `sync render` and `sync record`, the derived Area on Decisions and Questions); notion-space-design: §3.11 rewritten as Inbox (Kind, Summary, Produced, Project, Area; views Inbox and History), a Concepts section, Knowledge tabs, the Review Note replacing Edited Value, Area on Decisions and Questions with Area page views; the matching Prompts and a Notion migration. The migration sets Kind = Capture on existing rows, copies any Edited Value on a pending Review row into Note before removing the property, and backfills Inbox rows (Processed) for the documents and emails already ingested.
+**Acceptance:** Codex's review finds the contracts complete enough to build CX-24 and CX-22 without inventing behaviour.
+**Delegated (Codex, review of #90):** the reference list in `tests/notion-view-properties.test.ts` (Codex's file) is updated here, because the new prompts would otherwise fail it; Codex reviewed the change as mechanically correct.
 
 ### CX-31 · Push annotated release tags · `done` (#91)
 **Release:** 0.3.0
 **Output:** `release.mjs` creates each release tag as annotated (`git tag -a v<version> -m <version>`), so its existing `git push --follow-tags` publishes the tag with the release commit.
 **Acceptance:** a release-script test proves the annotated tag reaches the remote through `--follow-tags`.
 
-**Release:** 0.3.0
-**Output:** spec/schema.md and note.schema.json (concepts published; Inbox properties); spec/cli.md (grouped `add_link` proposals and their apply with a Note, `brain.json` `publish: ask | auto` and `push: auto` (0038), Inbox and Concepts in `sync render` and `sync record`, the derived Area on Decisions and Questions); notion-space-design: §3.11 rewritten as Inbox (Kind, Summary, Produced, Project, Area; views Inbox and History), a Concepts section, Knowledge tabs, the Review Note replacing Edited Value, Area on Decisions and Questions with Area page views; the matching Prompts and a Notion migration. The migration sets Kind = Capture on existing rows, copies any Edited Value on a pending Review row into Note before removing the property, and backfills Inbox rows (Processed) for the documents and emails already ingested.
-**Acceptance:** Codex's review finds the contracts complete enough to build CX-24 and CX-22 without inventing behaviour.
-**Delegated (Codex, review of #90):** the reference list in `tests/notion-view-properties.test.ts` (Codex's file) is updated here, because the new prompts would otherwise fail it; Codex reviewed the change as mechanically correct.
-
-### CC-26 · Intake skills (decision 0037) · `todo` (needs CC-22)
+### CC-26 · Intake skills (decision 0037) · `done` (#92)
 **Release:** 0.3.0
 **Output:** the "catch up" skill (read-only pass, every blocking question in one batch, then apply → Reviewed meetings → New Inbox rows → drop folder → publish → push, one report; blocked items skipped and listed); brain-apply (Notes, grouped rows, Check skips notes with nothing to publish); brain-ingest (Inbox rows, Project or Area taken from the capture, owner tasks from non-meeting sources in extraction.md and sources.md); the owner's names and work emails asked once and stored as aliases (at setup, and once by catch-up in an existing brain); dogfood finding 3 (connect your agent to Notion, per agent; brain-connect-notion stops with the exact fix); the user guide.
 **Acceptance:** a blind catch-up run on a synthetic brain asks once, then finishes; the skills match the CC-22 contracts.
@@ -388,7 +387,7 @@ Agreed with the user on 2026-10-19. **Goal:** one "catch up" handles everything 
 **Release:** 0.3.0
 **Output:** per the CC-22 contracts (spec/cli.md, spec/schema.md, the three JSON schemas): `proposal new` groups `add_link` items into one proposal with `links` (§5.6); `apply` with `note` and `exclude` (§5.7); `sync plan` reads Review **Note** (Edit value, `NOTE_TO_READ`) and the `concepts` snapshot database (§5.14.2); `sync render` and `sync record` for Concepts and the Inbox (sources), including the capture update and the first-run backfill (§5.14.4, §5.14.6); `sync tasks --source` (§5.14.5); `status` with `inbox`, `concepts` and `settings` (§5.2); `upgrade` renames `capture_inbox` (§5.15); lint knows the new source fields. **Acceptance:** tests per the contract, including a grouped proposal's title, an `exclude` that applies all but one link, a Note on Approve as `NOTE_TO_READ`, a capture rendered as `update` from its key, a document rendered as `create` with its produced relations, and the upgrade rename.
 
-### CX-22 · Area on Decisions and Questions (decision 0034) · `todo` (needs CC-22)
+### CX-22 · Area on Decisions and Questions (decision 0034) · `done` (#93)
 **Release:** 0.3.0
 **Output:** the sync fills a brain-owned Area relation on Decisions and Questions from their projects' areas (spec/cli.md, CC-22). **Acceptance:** tests for one area, several projects in different areas, and a project with no area.
 
