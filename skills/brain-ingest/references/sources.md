@@ -94,7 +94,9 @@ Then run SKILL.md step 8 (propose changes) and step 9 (rebuild and check) as the
 ## 7. Log, commit, publish
 
 1. Run `brain log ingest <source id> created=<n> proposals=<n> tasks=<n>`. Commit: `ingest: <title> (<kind>) (<n> new, <n> proposals)`.
-2. *(Notion, per `settings.publish`)* Publish, following [notion.md](notion.md) "Publish": the owner's tasks with `brain sync tasks --source <source id>`, then the new notes, the proposals and the **source itself**, which `sync render --changed` renders as its Inbox row (a capture's row is updated: Kind, Summary, what it produced, Brain Status Processed; any other source gets a new row). Commit `publish: <title>`. If a write fails, the next render produces it again; a capture whose row wasn't updated stays New and is skipped as a duplicate next time.
+2. *(Notion, per `settings.publish`)* Publish, following [notion.md](notion.md) "Publish" for each write, pages before tasks:
+   1. **Pages:** `sync render --changed`, write, `sync record`: the new notes, the proposals and the **source itself**, rendered as its Inbox row (a capture's row is updated: Kind, Summary, what it produced, Brain Status Processed; any other source gets a new row).
+   2. **Tasks,** now that the Inbox row exists for their backlink: `brain sync tasks --source <source id>`, create each item once, `sync record` the page ids. An item still pending (a project not in Notion) isn't created; list it in the report. Commit `publish: <title>`. If a write fails, the next render produces it again; a capture whose row wasn't updated stays New and is skipped as a duplicate next time.
 3. *(Notion, captures the user said to skip)* Set the row's Brain Status to **Skipped** through the MCP; change nothing else on it.
 
 ## 8. Report
