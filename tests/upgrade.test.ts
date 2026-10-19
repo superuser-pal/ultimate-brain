@@ -168,6 +168,33 @@ test("upgrade renames capture_inbox to inbox", async (context) => {
   assert.equal(upgraded.notion.databases.capture_inbox, undefined);
 });
 
+test("upgrade keeps a configured Inbox id, replaces an empty one, and warns for broken brain.json", async (context) => {
+  const { root, target } = await freshBrain(context);
+  const configPath = join(target, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  config.notion.databases = { review: "review-id", capture_inbox: "capture-id", inbox: "inbox-id" };
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+  const retained = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
+  assert.equal(retained.code, 0, retained.stdout);
+  let upgraded = JSON.parse(await readFile(configPath, "utf8"));
+  assert.deepEqual(Object.keys(upgraded.notion.databases), ["review", "inbox"]);
+  assert.equal(upgraded.notion.databases.inbox, "inbox-id");
+
+  upgraded.notion.databases.capture_inbox = "capture-id";
+  upgraded.notion.databases.inbox = "";
+  await writeFile(configPath, `${JSON.stringify(upgraded, null, 2)}\n`);
+  const replaced = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
+  assert.equal(replaced.code, 0, replaced.stdout);
+  upgraded = JSON.parse(await readFile(configPath, "utf8"));
+  assert.equal(upgraded.notion.databases.inbox, "capture-id");
+
+  await writeFile(configPath, "{not json\n");
+  const broken = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
+  assert.equal(broken.code, 0, broken.stdout);
+  assert.ok(broken.json.warnings.some((warning: { code: string }) => warning.code === "BRAIN_JSON_UNPARSEABLE"));
+  assert.ok(broken.json.data.files.some((file: { path: string; action: string }) => file.path === "brain.json" && file.action === "skipped"));
+});
+
 test("upgrade warns PUSH_SKIPPED when no upstream exists", async (context) => {
   const { root, target } = await freshBrain(context); await gitBrain(target); await writeFile(join(target, ".agents/skills/brain-query/SKILL.md"), "drift\n"); await git(target, ["add", "."]); await git(target, ["commit", "-m", "drift"]);
   const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);

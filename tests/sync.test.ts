@@ -152,6 +152,49 @@ test("sync tasks renders source tasks with an Inbox backlink", async (context) =
   assert.equal(run.json.data.items[0].properties["Brain ID"].value, source);
 });
 
+test("sync tasks treats an absent source mapping as unmapped", async (context) => {
+  const dir = await fixtureCopy(context);
+  const configPath = join(dir, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  delete config.notion.tasks.properties.source;
+  await writeFile(configPath, JSON.stringify(config, null, 2));
+  const source = "src-4a5b6c7d";
+  const created = await brain(["note", "new", "--brain", dir, "--now", NOW, "--input", await input(dir, "unmapped-source.json", { notes: [{ type: "source", id: source, title: "Pasted email", file_date: "2026-12-10", frontmatter: { source_key: "agent:test/email", kind: "email" }, body: "Please send a plan.\n" }] }), "--json"]);
+  assert.equal(created.code, 0, created.stdout);
+  const run = await brain(["sync", "tasks", "--brain", dir, "--source", source, "--input", await input(dir, "unmapped-source-tasks.json", { items: [{ title: "Send plan" }] }), "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  assert.deepEqual(run.json.data.items[0].pending_relations, []);
+  assert.equal(run.json.data.items[0].properties.Source, undefined);
+});
+
+test("sync tasks rejects a non-meeting, non-source target", async (context) => {
+  const dir = await fixtureCopy(context);
+  const run = await brain(["sync", "tasks", "--brain", dir, "--source", MARIA, "--input", await input(dir, "person-tasks.json", { items: [{ title: "Nope" }] }), "--json"]);
+  assert.equal(run.code, 4);
+  assert.equal(run.json.error.code, "INPUT_INVALID");
+});
+
+test("sync plan reports concept relation edits as not correctable", async (context) => {
+  const dir = await fixtureCopy(context);
+  const source = "src-1a2b3c4d";
+  const concept = "con-2a3b4c5d";
+  const created = await brain(["note", "new", "--brain", dir, "--now", NOW, "--input", await input(dir, "concept-for-plan.json", { notes: [
+    { type: "source", id: source, title: "Architecture brief", file_date: "2026-12-10", frontmatter: { source_key: "agent:test/document", kind: "document" }, body: "Deployment notes.\n" },
+    { type: "concept", id: concept, title: "Deployment model", frontmatter: { summary: "A deployment approach.", sources: [source], projects: ["prj-9x4t1b7e"] }, body: "Deploy safely.\n" },
+  ] }), "--json"]);
+  assert.equal(created.code, 0, created.stdout);
+  const conceptPath = join(dir, "knowledge/concepts/deployment-model.md");
+  const document = parseFrontmatter(await readFile(conceptPath, "utf8"));
+  document.attributes.notion = "10000000-0000-4000-8000-0000000000c1";
+  document.attributes.notion_published = { Project: ["2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e"], Area: [] };
+  await writeFile(conceptPath, serializeFrontmatter(document));
+  const snapshot = { as_of: NOW, rows: [{ database: "concepts", page_id: document.attributes.notion, last_edited: "2026-12-10T08:00:00Z", properties: { "Brain ID": concept, Project: [], Area: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] } }] };
+  const run = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "concept-relations.json", snapshot), "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  assert.deepEqual(run.json.data.corrections, []);
+  assert.deepEqual(run.json.data.ignored.map((item: { property: string; reason: string }) => [item.property, item.reason]), [["Area", "NOT_CORRECTABLE"], ["Project", "NOT_CORRECTABLE"]]);
+});
+
 test("sync apply creates a Notion-created note with its lifecycle and applies corrections", async (context) => {
   const dir = await fixtureCopy(context);
   const mariaPath = join(dir, "knowledge/people/maria-lopez.md");
