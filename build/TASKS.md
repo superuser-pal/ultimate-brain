@@ -352,7 +352,7 @@ Moved out of 0.2.3 on 2026-10-18 so 0.2.3 could ship while Codex was out of toke
 **Output:** `scripts/leak-check.mjs [--staged]` scans tracked files (or the staged diff) for a UUID, dashed or 32 hex characters, outside `tests/`, and for an email address whose domain is not `example` or does not end in `.example`; `scripts/leak-allow.txt` lists exceptions as `path:pattern`. With `--staged` it also reads `~/.config/ultimate-brain/denylist` (one term per line, `#` comments, matched case-insensitively as whole words) when it exists. A CI step runs it on every push; `.githooks/pre-commit` runs it with `--staged`. `LICENSE` (the copyright holder) is allowed for the denylist. A finding prints file, line and the rule, never the denylist term's neighbours beyond the line.
 **Acceptance:** tests with a synthetic UUID, a non-example email and a denylist term, each caught; the current tree passes; `sources/` and `node_modules/` are not scanned.
 
-### CX-30 · `merge.mjs` requires the other agent's pass · `todo`
+### CX-30 · `merge.mjs` requires the other agent's pass · `review`
 **Release:** 0.2.4
 **Output:** `merge.mjs` refuses unless the PR has a review or comment whose body starts with `Review (Claude Code): pass` on a `codex/` branch, or `Review (Codex): pass` on a `claude/` branch, posted after the head commit. Both agents post through one GitHub account, so the line is the only way to tell them apart (decision 0038). A user override: `--reviewed-by-user`, which prints a warning and is noted in the merge commit body.
 **Acceptance:** dry-run tests: a pass from the other agent passes; a pass from the same agent, a pass older than the head commit, and no pass each refuse; the override passes with its warning.
