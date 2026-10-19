@@ -26,6 +26,7 @@ export const upgradeCommand: Command = {
   options: { "dry-run": "boolean" },
   maxPositionals: 0,
   needsBrain: true,
+  allowInvalidBrainConfig: true,
   async run({ args, brain, now }) {
     const root = brain!.root;
     const product = installedProduct();
@@ -50,6 +51,36 @@ export const upgradeCommand: Command = {
     }
     if (!(await exists(join(root, "CLAUDE.md")))) changes.push({ path: "CLAUDE.md", action: "created", content: "@AGENTS.md\n" });
     else unchanged += 1;
+
+    // 0.3.0: Inbox is the former Capture Inbox. Keep the database id, but retire the old key.
+    const brainJson = "brain.json";
+    await assertPlainPath(root, brainJson);
+    const brainText = await readOptional(join(root, brainJson));
+    if (brainText !== null) {
+      try {
+        const config = JSON.parse(brainText) as Record<string, unknown>;
+        const notion = config.notion;
+        if (notion !== null && typeof notion === "object" && !Array.isArray(notion)) {
+          const databases = (notion as Record<string, unknown>).databases;
+          if (databases !== null && typeof databases === "object" && !Array.isArray(databases)) {
+            const values = databases as Record<string, unknown>;
+            if (values.capture_inbox !== undefined) {
+              const inbox = typeof values.inbox === "string" && values.inbox !== "" ? values.inbox : values.capture_inbox;
+              const nextDatabases: Record<string, unknown> = {};
+              for (const [key, value] of Object.entries(values)) {
+                if (key === "capture_inbox") nextDatabases.inbox = inbox;
+                else if (key !== "inbox") nextDatabases[key] = value;
+              }
+              const next = { ...config, notion: { ...(notion as Record<string, unknown>), databases: nextDatabases } };
+              changes.push({ path: brainJson, action: "updated", content: `${JSON.stringify(next, null, 2)}\n` });
+            }
+          }
+        }
+      } catch {
+        changes.push({ path: brainJson, action: "skipped" });
+        warnings.push({ code: "BRAIN_JSON_UNPARSEABLE", message: "brain.json is not valid JSON; left unchanged." });
+      }
+    }
 
     // Skills (decision 0029): shipped files are product-owned, inside the folders of shipped skills only.
     const shipped = await listShippedSkillFiles();
