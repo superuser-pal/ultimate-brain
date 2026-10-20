@@ -13,6 +13,7 @@ One line per task, under the release that ships it (decision 0038). `scripts/rel
 - CC-28: the 0.3.0 retro's tasks: gate fixes for lost CHANGELOG lines, done before merge and merges outside the gate (CX-32); changelog fragments (CC-29) and a blind-run setup script (CX-33) for 0.4.0.
 - CC-32 (#100): loose ends: lagging task statuses closed, the guide uses the live Inbox view names, `--version` specified (built in CX-35); dogfood #101 (Concepts created by hand in migration 0005) and #102 (Tasks `source` mapped by default).
 - CX-32 (#104): gate scripts: `pr-format` fails a PR that loses another task's CHANGELOG.md line, `merge.mjs` waits out GitHub's UNKNOWN mergeability, `main-guard` fails a merge without the other agent's pass or the user override, `npm run skills` and the pre-commit hook check the skill mirror.
+- CX-35 (#103): `brain --version` (text, or the §3.3 envelope with `--json`); tests that a `url:` source needs `kind: document` and `converter`.
 
 ## 0.3.0 — 2026-10-19
 
