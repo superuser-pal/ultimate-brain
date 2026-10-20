@@ -22,8 +22,18 @@ export function fail(message) {
 
 export function taskEntries(tasks = readFileSync(resolve(ROOT, "build/TASKS.md"), "utf8")) {
   const entries = [];
-  const pattern = /^### ((?:CC|CX)-\d+) · (.+?) · `([^`]+)`(?: \([^\n]*\))?\n\*\*Release:\*\* ([^\n]+)$/gm;
-  for (const match of tasks.matchAll(pattern)) entries.push({ id: match[1], title: match[2], status: match[3], release: match[4], offset: match.index });
+  const pattern = /^### ((?:CC|CX)-\d+) · (.+?) · `([^`]+)`([^\n]*)\n\*\*Release:\*\* ([^\n]+)(?:\n\*\*Changelog:\*\*(.*))?$/gm;
+  for (const match of tasks.matchAll(pattern)) {
+    entries.push({
+      id: match[1],
+      title: match[2],
+      status: match[3],
+      suffix: match[4],
+      release: match[5],
+      changelog: match[6],
+      offset: match.index,
+    });
+  }
   return entries;
 }
 
@@ -32,6 +42,11 @@ export function slug(value) {
 }
 
 export function isPrerelease(version) { return version.includes("-"); }
+
+export function donePrNumbers(suffix) {
+  const match = /^ \(#(\d+(?:, #\d+)*)(?:; .+)?\)$/.exec(suffix);
+  return match?.[1].split(", #").map(Number);
+}
 
 /** CI passed when every check run completed as success, skipped or neutral, and at least one succeeded (a job that doesn't apply to the event is skipped). */
 export function checksPassed(tsv) {
