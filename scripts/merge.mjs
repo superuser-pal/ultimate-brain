@@ -1,4 +1,8 @@
-import { checksPassed, command, donePrNumbers, fail, taskEntries, tryCommand } from "./common.mjs";
+import { checksPassed, command, contentAt, donePrNumbers, fail, hasOtherAgentPass, REVIEW_OVERRIDE_NOTE, sleep, taskEntries, tryCommand } from "./common.mjs";
+
+// GitHub computes mergeability lazily: ask again every 2 s for up to 20 s while it says UNKNOWN. Tests shorten the interval.
+const POLL_MS = Number(process.env.UB_MERGEABLE_POLL_MS ?? 2000);
+const POLLS = 10;
 
 const [pr, ...flags] = process.argv.slice(2);
 const dryRun = flags.includes("--dry-run");
@@ -7,7 +11,12 @@ if (!/^\d+$/.test(pr ?? "") || flags.length !== new Set(flags).size || flags.som
   fail("Usage: node scripts/merge.mjs <PR> [--dry-run] [--reviewed-by-user]");
 }
 else {
-  const viewed = tryCommand("gh", ["pr", "view", pr, "--json", "headRefName,headRefOid,title,body,mergeable,state"]);
+  const view = () => tryCommand("gh", ["pr", "view", pr, "--json", "headRefName,headRefOid,title,body,mergeable,state"]);
+  let viewed = view();
+  for (let poll = 0; poll < POLLS && viewed.ok && JSON.parse(viewed.stdout).mergeable === "UNKNOWN"; poll++) {
+    sleep(POLL_MS);
+    viewed = view();
+  }
   if (!viewed.ok) fail(`Cannot read PR #${pr}: ${viewed.message}`);
   else {
     const details = JSON.parse(viewed.stdout);
@@ -17,12 +26,13 @@ else {
     if (branch === null) failures.push("branch must be claude|codex/<CC|CX>-N-…");
     else if (!new RegExp(`^${branch[2]}:`).test(details.title ?? "")) failures.push("title must start with its task id and colon");
     if (/^- \[ \]/m.test(details.body ?? "")) failures.push("all PR checklist boxes must be ticked");
-    if (details.mergeable !== "MERGEABLE") failures.push(`PR is not mergeable (${details.mergeable ?? "unknown"})`);
+    if (details.mergeable === "UNKNOWN") failures.push("GitHub has not computed mergeability; retry");
+    else if (details.mergeable !== "MERGEABLE") failures.push(`PR is not mergeable (${details.mergeable ?? "unknown"})`);
     const repo = tryCommand("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
     const checks = repo.ok ? tryCommand("gh", ["api", `repos/${repo.stdout}/commits/${details.headRefOid}/check-runs`, "--paginate", "--jq", ".check_runs[] | [.status,.conclusion] | @tsv"]) : repo;
     if (!checks.ok || !checksPassed(checks.stdout)) failures.push("CI has not passed on the PR head commit");
     if (branch !== null && repo.ok) {
-      const rows = tasksAt(repo.stdout, details.headRefOid);
+      const rows = contentAt(repo.stdout, "build/TASKS.md", details.headRefOid);
       const task = rows.ok ? taskEntries(rows.stdout).find((entry) => entry.id === branch[2]) : undefined;
       if (!rows.ok) failures.push(`cannot read PR task row: ${rows.message}`);
       else if (task?.status !== "done" || !donePrNumbers(task.suffix)?.includes(Number(pr))) failures.push(`PR task ${branch[2]} must be \`done\` with #${pr}`);
@@ -34,7 +44,7 @@ else {
     else {
       const warning = reviewedByUser ? "WARNING: user override bypasses the other-agent review gate\n" : "";
       const mergeArgs = ["pr", "merge", pr, "--merge", "--match-head-commit", details.headRefOid];
-      if (reviewedByUser) mergeArgs.push("--body", "Review gate overridden by user.");
+      if (reviewedByUser) mergeArgs.push("--body", REVIEW_OVERRIDE_NOTE);
       if (dryRun) process.stdout.write(`${warning}Would merge #${pr} at ${details.headRefOid}\n`);
       else {
         if (warning) process.stderr.write(warning);
@@ -42,27 +52,4 @@ else {
       }
     }
   }
-}
-
-function tasksAt(repo, ref) {
-  const result = tryCommand("gh", ["api", `repos/${repo}/contents/build/TASKS.md?ref=${ref}`, "--jq", ".content"]);
-  return result.ok ? { ok: true, stdout: Buffer.from(result.stdout.replace(/\s/g, ""), "base64").toString("utf8") } : result;
-}
-
-function hasOtherAgentPass(repo, pr, head, author) {
-  const endpoint = [`repos/${repo}/pulls/${pr}/reviews`, `repos/${repo}/issues/${pr}/comments`];
-  const required = author === "codex" ? "Claude Code" : "Codex";
-  const verdict = new RegExp(`^Review \\(${required}\\): pass at ([0-9a-f]{7,})\\b`, "i");
-  return endpoint.some((path) => {
-    const result = tryCommand("gh", ["api", path, "--paginate", "--slurp"]);
-    if (!result.ok) return false;
-    try {
-      return JSON.parse(result.stdout).flat().some((item) => {
-        const match = verdict.exec(item.body ?? "");
-        return match !== null && head.toLowerCase().startsWith(match[1].toLowerCase());
-      });
-    } catch {
-      return false;
-    }
-  });
 }
