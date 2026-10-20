@@ -4,7 +4,7 @@
 **Status values:** `todo` · `in progress` · `review` · `done` · `blocked` · `dropped` (won't ship; skipped by `release.mjs`).
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
-> **2026-10-20 — Status: 0.3.0 is released and in the user's brain; U-13 waits on the user's Notion checks. 0.3.1: loose ends (CC-32, CX-35), then the retro's gate fixes (CX-32). 0.4.0: CX-34 is merged; CC-30 and CX-33 are open; its feature scope is chosen after 0.3.1.**
+> **2026-10-20 — Status: 0.3.0 is released and in the user's brain; U-13 waits on the user's Notion checks. 0.3.1: CC-32, CX-35 and CX-32 are merged; CC-33 and CX-36 (decision 0040: web merges, the merge-ready status) finish it, CX-36 merged last so `main` turns green. 0.4.0: CX-34 and CC-30 are merged, CX-33 is open; its feature scope is chosen after 0.3.1.**
 > - **0.3.1 order (agreed 2026-10-20):** the loose ends first (CC-32, CX-35), then CX-32.
 > - **Review order (CC-27):** the done commit comes before the verdict; the reviewer posts `Review (<agent>): pass at <sha>` last.
 > - **Untriaged `dogfood` issues:** 0.
@@ -427,6 +427,20 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 - `npm run skills` runs `scripts/build-skills.ts` and then `tests/skills.test.ts`; `.githooks/pre-commit` runs `node scripts/build-skills.ts --check` when the staged files include `skills/`.
 
 **Acceptance:** tests: a head that drops another task's CHANGELOG line fails `pr-format` and one that adds `(#N)` to it passes; `merge.mjs --dry-run` refuses a task in `review` and passes `done (#N)`; `UNKNOWN` then `MERGEABLE` passes and `UNKNOWN` throughout refuses after the wait; `main-guard` fails a merge with no pass and passes one with the pass or the override note; a commit that stages a skill edit without the rebuilt mirror is refused.
+
+### CC-33 · Decision 0040: web merges and the merge-ready check · `done` (#107)
+**Release:** 0.3.1
+**Output:** decision 0040 (agreed with the user on 2026-10-20, after `main-guard` failed on the web merges of #104 and #105 and blocked the 0.3.1 release): the user merges on the GitHub PR page; a `merge-ready` status replaces `merge.mjs` as the gate; `main-guard` checks only that each commit came from a PR. 0038 amended; AGENTS.md and docs/releasing.md say so; CX-36 below.
+**Acceptance:** the user approves 0040; `grep -rn "merge.mjs" AGENTS.md docs/releasing.md` finds no line that makes it required; CX-36 is buildable without a spec question.
+
+### CX-36 · merge-ready status and a main-guard without the review check (decision 0040) · `todo`
+**Release:** 0.3.1
+**Output:**
+- `scripts/common.mjs`: `readinessProblems(repo, pr, details)` returns the problems `merge.mjs` checks besides CI and mergeability: branch `(claude|codex)/<ID>-…`, title starting with the task id, no unticked box (`- [ ]`) in the body, the task row on the head `done` with the PR's number (`donePrNumbers`), and the other agent's pass naming the head (`hasOtherAgentPass`). `merge.mjs` uses it; `--reviewed-by-user` still skips only the pass.
+- `scripts/merge-ready.mjs <PR>`: reads the PR, runs `readinessProblems`, and sets the commit status `merge-ready` on the head commit (`gh api repos/<repo>/statuses/<sha>`): `success` with "Ready to merge", or `failure` with the problems joined by "; ", cut to 140 characters. It exits 0 either way, so the status is the only signal; it exits 1 only when it can't read the PR or set the status.
+- `.github/workflows/merge-ready.yml`: runs `merge-ready.mjs` on `pull_request` (opened, edited, synchronize, reopened), `pull_request_review` (submitted, edited, dismissed) and `issue_comment` (created, edited, only when the issue is a PR), with `statuses: write`, `pull-requests: read`, `contents: read`.
+- `scripts/main-guard.mjs`: drops the merged-PR review check from CX-32; a commit that is neither from a merged PR nor a tagged release commit still fails and opens a `main-guard` issue.
+**Acceptance:** tests: `merge-ready` sets `success` for a `done (#N)` PR with ticked boxes and a fresh other-agent pass, and `failure` naming each problem for a task in `review`, an unticked box and a missing pass (each with exit 0); `merge.mjs --dry-run` keeps its current results; `main-guard` passes a merged PR with no review and fails a commit from no PR.
 
 ## 0.4.0 — queued
 
