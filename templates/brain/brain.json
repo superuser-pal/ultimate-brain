@@ -29,7 +29,7 @@
         "owner": "",
         "meeting": "Meeting",
         "meeting_url": "",
-        "source": "",
+        "source": "Source",
         "brain_id": "Brain ID"
       },
       "new_task_status": "To Do"
