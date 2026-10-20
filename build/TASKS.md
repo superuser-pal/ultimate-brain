@@ -402,6 +402,7 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 
 ### CX-32 · Gate scripts: lost lines, done before merge, merges outside the gate · `todo`
 **Release:** 0.3.1
+**Note:** CX-34 ships the `done` suffix check and task-row lost-heading guard; CX-32 retains its 0.3.1 CHANGELOG, mergeability, main-guard and skills-hook items.
 **Output:**
 - `pr-format.mjs` fails when a task id that has a line in the base branch's CHANGELOG.md (`- XX-N`) has none on the PR head, or a task heading in the base branch's build/TASKS.md (`### XX-N ·`) is missing on the head, naming each id. A reworded line or a changed status passes; only a lost id fails.
 - `merge.mjs` refuses unless the PR head's build/TASKS.md shows the title's task as `` `done` (#N) `` and its CHANGELOG.md line starts `- <id> (#N)`, where N is the PR number; the refusal says what to commit. `--reviewed-by-user` does not skip this check.
@@ -421,7 +422,7 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 **Output:** decision 0039, agreed with the user on 2026-10-19 (task-row field chosen over fragment files and a union merge driver; build/TASKS.md left as it is, with the reason); CX-34 and CC-30 below. Amends 0038.
 **Acceptance:** the user approves the decision; it names the changes `pr-format.mjs`, `merge.mjs` and `release.mjs` need, so CX-34 needs no spec question.
 
-### CX-34 · Changelog from task rows (decision 0039) · `todo`
+### CX-34 · Changelog from task rows (decision 0039) · `done` (#99)
 **Release:** 0.4.0
 **Changelog:** `release.mjs` writes each release's CHANGELOG section from the task rows; PRs no longer edit CHANGELOG.md.
 **Output:** per decision 0039: `taskEntries` also reads the optional `**Changelog:**` line after `**Release:**`; `release.mjs <version>` skips the version's `dropped` tasks before every check (all versions); for 0.4.0 and later it refuses, naming each task, one with no `**Changelog:**` line or an empty or whitespace-only one, and a done heading whose suffix isn't `(#N)` or `(#N, #M, …)`, each optionally with `; <note>` before the `)` (decision 0039 gives the grammar); it writes `## <version> — <date>` with `- <id> (#N): <text>` or `- <id> (#N, #M): <text>` per task in TASKS.md order (every number, note left out), replaces a hand-written `## <version> — unreleased` section, and commits it in the release commit; `pr-format.mjs` checks the PR's own row has a non-empty `**Changelog:**` line instead of a CHANGELOG.md addition, and its lost-heading guard also fails on a `**Changelog:**` line lost from the base; `merge.mjs` drops CX-32's CHANGELOG.md `(#N)` check and keeps the `` `done` (#N) `` one. Versions before 0.4.0 keep today's behaviour.
