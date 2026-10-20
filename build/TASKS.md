@@ -307,7 +307,7 @@ The user's first real "process my drop folder" (2026-10-18, 0.2.1) worked end to
 ### CC-23 · Projects created in Notion, reports that scale (decision 0037 amended) · `done` (#78)
 **Output:** brain-ingest sources.md pre-check and the SKILL.md stop condition (new projects go through **New project** in Notion, then sync); the report rule in brain-ingest and brain-apply (three lines, then What came in · Check · Action items, uncapped); spec/cli.md §5.14.4 (`PROJECT_NOT_IN_NOTION`); decision 0037 amended.
 
-### CX-26 · Render refuses project creates; "latest" leaves the freshness words · `done` (#79; status set by CC-32)
+### CX-26 · Render refuses project creates; "latest" leaves the freshness words · `todo`
 **Output:** `sync render` returns a project without `notion` as item error `PROJECT_NOT_IN_NOTION` instead of a `create` (spec/cli.md §5.14.4); lint drops "latest" from the freshness words (the CX-25 sequence patterns go with it). **Acceptance:** a test for each.
 
 ## 0.2.3 — Delivery lanes and release gates (decision 0038)
@@ -403,7 +403,7 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 ### CC-32 · Loose ends before the gate fixes · `review` (#100)
 **Release:** 0.3.1
 **Output:** agreed with the user on 2026-10-20, before CX-32:
-- Statuses that lagged behind their merges: CC-15 (#72, #73), CC-18 (#67, #68), CC-19 (#67, blind run in eval/howto) and CC-20 (#72) set to `done`; CX-26 set to `done` (#79), Codex's row, confirmed in Codex's review of this PR; dogfood finding 3 `fixed` (#92); finding 9's repair not needed.
+- Statuses that lagged behind their merges: CC-15 (#72, #73), CC-18 (#67, #68), CC-19 (#67, blind run in eval/howto) and CC-20 (#72) set to `done`; CX-26 (#79) is left to Codex (CX-35); dogfood finding 3 `fixed` (#92); finding 9's repair not needed.
 - The guide names the Inbox views as migration 0005 and notion/views-guide.md do ("What's in my inbox?", "What came in?"). After the release, with the user's yes, the "How it works" page in Notion is republished from it.
 - spec/cli.md §3.1: `--version` (built in CX-35).
 - The status banner.
@@ -413,8 +413,8 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 
 ### CX-35 · `--version` and the `url:` source test · `todo`
 **Release:** 0.3.1
-**Output:** `brain --version` per spec/cli.md §3.1 (text: the version alone; `--json`: `{"ok": true, "version": …}`; no brain needed); the CC-20 follow-up: a test that `note new` rejects a `url:` source without `kind: document` or without `converter`.
-**Acceptance:** tests: `brain --version` prints `package.json`'s version and exits 0 outside any brain; `brain --version --json` parses with `ok: true`; `brain status --version` also prints it; `note new` with a `url:` source lacking `kind: document`, and one lacking `converter`, each fail validation.
+**Output:** `brain --version` per spec/cli.md §3.1 and §3.3 (text: the version alone; `--json`: the success envelope with `command` "version", `brain` null and `data.version`; no brain needed); CX-26 set to `done` (#79), which shipped in 0.2.2; the CC-20 follow-up: a test that `note new` rejects a `url:` source without `kind: document` or without `converter`.
+**Acceptance:** tests: `brain --version` prints `package.json`'s version and exits 0 outside any brain; `brain --version --json` prints the §3.3 envelope with `command: "version"`, `brain: null`, `data.version` and `warnings: []`; `brain status --version` also prints it; `note new` with a `url:` source lacking `kind: document`, and one lacking `converter`, each fail validation.
 
 ### CX-32 · Gate scripts: lost lines, done before merge, merges outside the gate · `todo`
 **Release:** 0.3.1

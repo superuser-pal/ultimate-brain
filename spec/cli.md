@@ -60,7 +60,7 @@ After CX-12: `npx ultimate-brain <command>` or `brain <command>`. In this docume
 | `--json` | Print exactly one JSON document (§3.3) on stdout. **Skills always pass it.** Without it, output is human-readable text, which is not part of this contract |
 | `--now <timestamp>` | Use this ISO 8601 UTC timestamp (`2026-12-03T10:22:00Z`) as the current time. For tests and replays. Default: system clock. Every timestamp the CLI writes uses seconds precision with `Z` (`2026-12-03T10:22:00Z`), and every date is the UTC date of that time. Every timestamp the CLI **reads** (flags and JSON input, such as Notion's `last_edited`) may also carry fractional seconds (`2026-12-03T10:22:00.000Z`, as Notion returns them); the CLI truncates them to seconds before comparing or storing |
 | `-h`, `--help` | Help for the CLI or a command. Exit 0 |
-| `--version` | Print the installed package's `version` (from its `package.json`) and exit 0, with or without a command and without resolving a brain. With `--json`: `{"ok": true, "version": "0.3.1"}` |
+| `--version` | Print the installed package's `version` (from its `package.json`) and exit 0, without resolving a brain. Any command and other options given with it are ignored, except `--json`, which prints the success envelope (§3.3) with `command` `"version"`, `brain` `null` and `data` `{ "version": "0.3.1" }` |
 
 Options can appear anywhere after the command name. Unknown options are a usage error (exit 2). Repeated single-value options: last one wins.
 
