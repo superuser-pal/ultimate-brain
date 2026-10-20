@@ -1,0 +1,33 @@
+name: merge-ready
+
+# Decision 0040: shows on each PR whether it is ready to merge (format, ticked boxes, task done with the PR number,
+# the other agent's pass for the head commit) as the commit status `merge-ready`. It informs; the user merges.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+  issue_comment:
+    types: [created, edited]
+
+concurrency:
+  group: merge-ready-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  merge-ready:
+    if: github.event_name != 'issue_comment' || github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/merge-ready.mjs "${{ github.event.pull_request.number || github.event.issue.number }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}

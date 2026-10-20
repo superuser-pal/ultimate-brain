@@ -433,7 +433,7 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 **Output:** decision 0040 (agreed with the user on 2026-10-20, after `main-guard` failed on the web merges of #104 and #105 and blocked the 0.3.1 release): the user merges on the GitHub PR page; a `merge-ready` status replaces `merge.mjs` as the gate; `main-guard` checks only that each commit came from a PR. 0038 amended; AGENTS.md and docs/releasing.md say so; CX-36 below.
 **Acceptance:** the user approves 0040; `grep -rn "merge.mjs" AGENTS.md docs/releasing.md` finds no line that makes it required; CX-36 is buildable without a spec question.
 
-### CX-36 · merge-ready status and a main-guard without the review check (decision 0040) · `todo`
+### CX-36 · merge-ready status and a main-guard without the review check (decision 0040) · `review` (Claude Code while Codex is out; the user's choice, 2026-10-20)
 **Release:** 0.3.1
 **Output:**
 - `scripts/common.mjs`: `readinessProblems(repo, pr, details)` returns the problems `merge.mjs` checks besides CI and mergeability: branch `(claude|codex)/<ID>-…`, title starting with the task id, no unticked box (`- [ ]`) in the body, the task row on the head `done` with the PR's number (`donePrNumbers`), and the other agent's pass naming the head (`hasOtherAgentPass`). `merge.mjs` uses it; `--reviewed-by-user` still skips only the pass.
