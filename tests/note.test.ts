@@ -221,6 +221,14 @@ test("note new rejects a URL source without document metadata", async (context) 
   const run = await noteNew(dir, { notes: [{ type: "source", title: "Acme page", file_date: "2026-12-10", frontmatter: { source_key: "url:https://example.com/acme" }, body: "Fetched page.\n" }] });
   assert.equal(run.code, 4);
   assert.deepEqual(run.json.error.details.map((detail: { pointer: string }) => detail.pointer), ["/notes/0"]);
+  for (const frontmatter of [
+    { source_key: "url:https://example.com/acme", converter: "fetch" },
+    { source_key: "url:https://example.com/acme", kind: "email", converter: "fetch" },
+    { source_key: "url:https://example.com/acme", kind: "document" },
+  ]) {
+    const partial = await noteNew(dir, { notes: [{ type: "source", title: "Acme page", file_date: "2026-12-10", frontmatter, body: "Fetched page.\n" }] });
+    assert.equal(partial.code, 4, JSON.stringify(frontmatter));
+  }
 });
 
 test("note new validates input shape with pointers", async (context) => {
