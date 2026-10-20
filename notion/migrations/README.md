@@ -17,7 +17,7 @@ Run them in number order, once each. The `brain-notion-change` skill writes them
 <a prompt that changes only this, and says to keep everything else>
 
 ## By hand
-<steps Notion AI can't do reliably, e.g. adding a select option>
+<steps Notion AI can't do reliably, e.g. adding a select option>. Creating a database is always one of them: the Notion API can't create databases, so a migration gives the user a Notion AI prompt for it and runs it before the agent steps that need the new database
 
 ## Verify
 - [ ] …
