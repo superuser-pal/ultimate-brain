@@ -1,4 +1,4 @@
-import { checksPassed, command, contentAt, donePrNumbers, fail, hasOtherAgentPass, REVIEW_OVERRIDE_NOTE, sleep, taskEntries, tryCommand } from "./common.mjs";
+import { checksPassed, command, fail, readinessProblems, REVIEW_OVERRIDE_NOTE, sleep, tryCommand } from "./common.mjs";
 
 // GitHub computes mergeability lazily: ask again every 2 s for up to 20 s while it says UNKNOWN. Tests shorten the interval.
 const POLL_MS = Number(process.env.UB_MERGEABLE_POLL_MS ?? 2000);
@@ -20,26 +20,15 @@ else {
   if (!viewed.ok) fail(`Cannot read PR #${pr}: ${viewed.message}`);
   else {
     const details = JSON.parse(viewed.stdout);
-    const branch = /^(claude|codex)\/((?:CC|CX)-\d+)-/.exec(details.headRefName ?? "");
     const failures = [];
     if (details.state !== "OPEN") failures.push("PR is not open");
-    if (branch === null) failures.push("branch must be claude|codex/<CC|CX>-N-…");
-    else if (!new RegExp(`^${branch[2]}:`).test(details.title ?? "")) failures.push("title must start with its task id and colon");
-    if (/^- \[ \]/m.test(details.body ?? "")) failures.push("all PR checklist boxes must be ticked");
     if (details.mergeable === "UNKNOWN") failures.push("GitHub has not computed mergeability; retry");
     else if (details.mergeable !== "MERGEABLE") failures.push(`PR is not mergeable (${details.mergeable ?? "unknown"})`);
     const repo = tryCommand("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
     const checks = repo.ok ? tryCommand("gh", ["api", `repos/${repo.stdout}/commits/${details.headRefOid}/check-runs`, "--paginate", "--jq", ".check_runs[] | [.status,.conclusion] | @tsv"]) : repo;
     if (!checks.ok || !checksPassed(checks.stdout)) failures.push("CI has not passed on the PR head commit");
-    if (branch !== null && repo.ok) {
-      const rows = contentAt(repo.stdout, "build/TASKS.md", details.headRefOid);
-      const task = rows.ok ? taskEntries(rows.stdout).find((entry) => entry.id === branch[2]) : undefined;
-      if (!rows.ok) failures.push(`cannot read PR task row: ${rows.message}`);
-      else if (task?.status !== "done" || !donePrNumbers(task.suffix)?.includes(Number(pr))) failures.push(`PR task ${branch[2]} must be \`done\` with #${pr}`);
-    }
-    if (!reviewedByUser && (branch === null || !repo.ok || !hasOtherAgentPass(repo.stdout, pr, details.headRefOid, branch[1]))) {
-      failures.push("no fresh pass from the other agent");
-    }
+    if (repo.ok) failures.push(...readinessProblems(repo.stdout, pr, details, { skipPass: reviewedByUser }));
+    else failures.push(`cannot read the repository: ${repo.message}`);
     if (failures.length > 0) fail(`Refusing to merge #${pr}: ${failures.join("; ")}`);
     else {
       const warning = reviewedByUser ? "WARNING: user override bypasses the other-agent review gate\n" : "";
