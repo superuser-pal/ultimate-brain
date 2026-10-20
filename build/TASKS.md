@@ -4,8 +4,8 @@
 **Status values:** `todo` · `in progress` · `review` · `done` · `blocked` · `dropped` (won't ship; skipped by `release.mjs`).
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
-> **2026-10-19 — Status: 0.2.4 is released. 0.3.0 is merged except CX-31 (#91, passed); then release 0.3.0 and U-13. 0.3.1 (CX-32, gate fixes from the 0.3.0 retro) merges after the 0.3.0 release.**
-> - **0.3.0 scope agreed 2026-10-19:** the intake experience (decision 0037) and Area on Decisions and Questions (0034), in CC-22 (contracts), CC-26 (skills), CX-24, CX-22, then U-13 (Notion migration, upgrade, real catch-up). The onboarding suite and Notion file uploads move to 0.4.0.
+> **2026-10-20 — Status: 0.3.0 is released and in the user's brain; U-13 waits on the user's Notion checks. 0.3.1: loose ends (CC-32, CX-35), then the retro's gate fixes (CX-32). 0.4.0: CX-34 is merged; CC-30 and CX-33 are open; its feature scope is chosen after 0.3.1.**
+> - **0.3.1 order (agreed 2026-10-20):** the loose ends first (CC-32, CX-35), then CX-32.
 > - **Review order (CC-27):** the done commit comes before the verdict; the reviewer posts `Review (<agent>): pass at <sha>` last.
 > - **Untriaged `dogfood` issues:** 0.
 > - **Earlier:** v1 waves 1–4 below; dogfood findings 1–24 in the Wave 4 table.
@@ -138,13 +138,13 @@ Found while setting up the first real brain. Fix them before the next new user; 
 |---|---|---|---|
 | 1 | Views sorted and filtered on Created/Last edited time, but §3 never listed those properties. Views were written from §5 without checking §3 | Properties added to the design, prompts 2 and 5, migration 0002 (#47). Add a test that every property a view uses exists in §3 | `fixed` (#47 design, #63 test) |
 | 2 | The plugin ships skills but nothing puts `brain` on PATH; npm package not published | `prepare` script and install hint in skills and AGENTS.md (#48). Publishing to npm is the user's call | `fixed` (#48) |
-| 3 | No setup steps to give the agent access to Notion (MCP or integration token) and to share Brain Data with it, for Claude Code and Codex | Checklist section "Connect your agent to Notion" per agent; `brain-connect-notion` stops with the exact fix when Notion is unreachable. Check the current Notion MCP steps first | `todo` (0.3.0) |
+| 3 | No setup steps to give the agent access to Notion (MCP or integration token) and to share Brain Data with it, for Claude Code and Codex | Checklist section "Connect your agent to Notion" per agent; `brain-connect-notion` stops with the exact fix when Notion is unreachable. Check the current Notion MCP steps first | `fixed` (#92, CC-26) |
 | 4 | Ingest on an empty brain did not run or request `brain-sync` first, so Areas, Projects and People were unknown | `brain-ingest` step 1: if the brain has no notes and Notion is configured, run `brain-sync` first (or tell the user) | `fixed` (#51) |
 | 5 | A meeting with no project: the skill asked instead of linking the meeting to its area only | Document in `brain-ingest`: project is optional; link area only; never invent a project; offer to create one in Notion and sync | `fixed` (#51) |
 | 6 | Notion AI meeting notes use their own headings, not the minutes format | `extraction.md`: extract from any heading structure; the format is a hint, not a requirement. Say so in `notion/minutes-format.md` | `fixed` (#51) |
 | 7 | A meeting that discusses several projects: the skill does not say project is per item | `extraction.md`: assign `projects` per decision, question and task from what each is about; a meeting may list several; ask only when an item is ambiguous | `fixed` (#51 decisions and questions; #60 CLI, CC-16 skill for tasks) |
 | 8 | Attendee, date and name-spelling problems in the minutes are found only by the ingest | Before ingest, `brain-ingest` reports missing Date and attendee names, and spelling variants of one name, in one question | `fixed` (#51) |
-| 9 | Sync create recorded the brain's Summary (the title) and Lifecycle as published although Notion had them empty, so render never sent them; Lifecycle compared "Draft" with "draft", so a Lifecycle edit in Notion became a conflict | Baseline = what Notion shows, as §5.14.2 says; Lifecycle compared normalized; emptied Lifecycle → `REQUIRED_EMPTY` (`src/lib/sync.ts`, test in `tests/sync.test.ts`). Repair the first brain: drop `Summary` and `Lifecycle` from `notion_published` on its 2 notes | `fixed` (this PR); repair `todo` |
+| 9 | Sync create recorded the brain's Summary (the title) and Lifecycle as published although Notion had them empty, so render never sent them; Lifecycle compared "Draft" with "draft", so a Lifecycle edit in Notion became a conflict | Baseline = what Notion shows, as §5.14.2 says; Lifecycle compared normalized; emptied Lifecycle → `REQUIRED_EMPTY` (`src/lib/sync.ts`, test in `tests/sync.test.ts`). Repair the first brain: drop `Summary` and `Lifecycle` from `notion_published` on its 2 notes | `fixed` (this PR); repair not needed: later syncs, the 0.3.0 catch-up among them, ran without the conflict (CC-32) |
 | 10 | `brain-ingest` queried the Meetings database id; Notion queries need the data source id (404) | `brain-ingest` step 2: retrieve the database, query `data_sources[0].id`, as `brain-sync` says | `fixed` (#51) |
 | 11 | `brain-sync` needs the snapshot format of spec/cli.md §5.14.1, which lives outside the brain; reading it was denied. The `sync record` input (`{records: [...]}`) was guessed wrong | Copy the snapshot, plan and record formats into `skills/brain-sync/references/` | `fixed` (#51) |
 | 12 | A project created in Notion through the API has no Brief and Decision log toggles, so publish skips them (SECTION_NOT_FOUND) | `brain sync render` or the skill creates the missing toggles; or the Projects template is applied on create. Decide which | `fixed` (decision 0033, CC-16) |
@@ -209,7 +209,7 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 
 **Acceptance:** a blind run on synthetic fixtures (one document, one email, one capture) passes; the skill mirror is rebuilt.
 
-### CC-15 · Converter bake-off and real acceptance run · `review` (bake-off in decision 0032; acceptance run done 2026-10-15; fixes go to 0.2.1)
+### CC-15 · Converter bake-off and real acceptance run · `done` (#72, #73; bake-off in decision 0032; acceptance run done 2026-10-15; fixes go to 0.2.1)
 **Acceptance run, part 1 (2026-10-15, 0.2.0):** a Word file (MarkItDown) and a PDF (native read) ingested end to end and published to Notion. The run's specifics stay in the user's brain; only product findings are recorded here. Captures and an email are next. Findings for 0.2.1:
 - **Review rows show relative file links** in After (`../../knowledge/…`), meaningless in Notion. `sync render` should drop or rewrite links in proposal text.
 - **Concept notes aren't published**, so what a document teaches is visible in Notion only through proposals. Candidate: publish concepts, or say so in the report.
@@ -225,10 +225,10 @@ Agreed with the user on 2026-10-14 (grill session). **Goal:** daily use is smoot
 
 **Acceptance (with the user):** 1 PDF, 1 Word or PowerPoint file, 1 pasted email and 2 Capture Inbox rows ingest end to end in the real brain, with correct sources, drafts and proposals.
 
-### CC-20 · Web pages by URL (decision 0036) · `review` (#72; split out of CC-15 at Codex's review)
+### CC-20 · Web pages by URL (decision 0036) · `done` (#72; split out of CC-15 at Codex's review)
 **Output:** decision 0036; the `url:` source rule in note.schema.json and spec/schema.md (`kind: document` and `converter` required); brain-ingest sources.md and cli-inputs.md §1b (fetch, payload, title and date); the guide's "ingest this page"; eval case `eval/ingest-text/cases/04-web-page` (synthetic page, fetch simulated).
 **Acceptance:** a blind run of case 04 meets expected.md; the existing CLI tests pass against the new schema rule; the skill mirror is rebuilt.
-**Follow-up for Codex (0.2.1):** a CLI test that `note new` rejects a `url:` source without `kind: document` or `converter`.
+**Follow-up for Codex (CX-35, 0.3.1):** a CLI test that `note new` rejects a `url:` source without `kind: document` or `converter`.
 
 ### CC-16 · Skill updates for findings 7 and 12 · `done` (#62)
 **Output:**
@@ -260,7 +260,7 @@ Both are skill-side: the toggles because the CLI can't see Notion page content (
 - **The 9 template improvements** on branch `claude/notion-page-layouts` (notion/templates.md): each decided in the same session; the branch is merged.
 - **Docs:** design doc §4–§6, the prompts and the snapshot updated, plus the view list in `tests/notion-view-properties.test.ts` (CX-20), which is hand-written.
 
-### CC-18 · Notion AI user prompts · `review` (decision 0035)
+### CC-18 · Notion AI user prompts · `done` (#67, #68; decision 0035)
 **Output:**
 - **Brain Assistant** (`notion/brain-assistant.md`): a Notion Custom Agent scoped to Brain Data, with Instructions and seven skills: Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture. Replaced the planned copy-paste prompts.
 - **A decision:** user prompts only read, or write only to My notes or properties the user owns. Every prompt says "answer only from these pages; do not edit any property".
@@ -268,7 +268,7 @@ Both are skill-side: the toggles because the CLI can't see Notion page content (
 
 **Grill outcome (2026-10-14):** keep our Spaces, borrow Easlo's arrangement (blocks with lifecycle tabs, time-first views, related blocks on every parent page, Home led by your own work). New Tasks Space with GTD statuses, Knowledge rebuilt per database, Archive page, Area pages as hubs. No brain-visible change in this pass; decision 0034 (Area on Decisions and Questions) is built in 0.3.0 (CX-22). Docs first in one PR, then the live build.
 
-### CC-19 · User guide and how-to helper · `review`
+### CC-19 · User guide and how-to helper · `done` (#67; blind run 5/5 in eval/howto/RESULTS.md)
 **Output:**
 - **The user guide** ("How your brain works") in `skills/brain-howto/references/guide.md`, so it ships with the skill (`docs/guide.md` points to it), written for the user: each Space, the meeting flow, deciding in Review, which fields you edit and which the brain overwrites, what to say to the agent for each job.
 - **Notion:** the guide published as a "How it works" page under System, which Brain Assistant reads for how-to questions.
@@ -307,7 +307,7 @@ The user's first real "process my drop folder" (2026-10-18, 0.2.1) worked end to
 ### CC-23 · Projects created in Notion, reports that scale (decision 0037 amended) · `done` (#78)
 **Output:** brain-ingest sources.md pre-check and the SKILL.md stop condition (new projects go through **New project** in Notion, then sync); the report rule in brain-ingest and brain-apply (three lines, then What came in · Check · Action items, uncapped); spec/cli.md §5.14.4 (`PROJECT_NOT_IN_NOTION`); decision 0037 amended.
 
-### CX-26 · Render refuses project creates; "latest" leaves the freshness words · `todo`
+### CX-26 · Render refuses project creates; "latest" leaves the freshness words · `done` (#79; status set by CC-32)
 **Output:** `sync render` returns a project without `notion` as item error `PROJECT_NOT_IN_NOTION` instead of a `create` (spec/cli.md §5.14.4); lint drops "latest" from the freshness words (the CX-25 sequence patterns go with it). **Acceptance:** a test for each.
 
 ## 0.2.3 — Delivery lanes and release gates (decision 0038)
@@ -399,6 +399,20 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 **Release:** 0.3.1
 **Output:** this section, CX-32, and CC-29 and CX-33 under 0.4.0.
 **Acceptance:** Codex's review finds CX-32 specified well enough to build without inventing behaviour.
+
+### CC-32 · Loose ends before the gate fixes · `in progress`
+**Release:** 0.3.1
+**Output:** agreed with the user on 2026-10-20, before CX-32:
+- Statuses that lagged behind their merges: CC-15 (#72, #73), CC-18 (#67, #68), CC-19 (#67, blind run in eval/howto) and CC-20 (#72) set to `done`; CX-26 set to `done` (#79), Codex's row, confirmed in Codex's review of this PR; dogfood finding 3 `fixed` (#92); finding 9's repair not needed.
+- The guide names the Inbox views as migration 0005 and notion/views-guide.md do ("What's in my inbox?", "What came in?"). After the release, with the user's yes, the "How it works" page in Notion is republished from it.
+- spec/cli.md §3.1: `--version` (built in CX-35).
+- The status banner.
+**Acceptance:** `grep -n "History" skills/brain-howto/references/guide.md` finds no view name; the skill mirror check passes; Codex's review finds CX-35 buildable without a spec question.
+
+### CX-35 · `--version` and the `url:` source test · `todo`
+**Release:** 0.3.1
+**Output:** `brain --version` per spec/cli.md §3.1 (text: the version alone; `--json`: `{"ok": true, "version": …}`; no brain needed); the CC-20 follow-up: a test that `note new` rejects a `url:` source without `kind: document` or without `converter`.
+**Acceptance:** tests: `brain --version` prints `package.json`'s version and exits 0 outside any brain; `brain --version --json` parses with `ok: true`; `brain status --version` also prints it; `note new` with a `url:` source lacking `kind: document`, and one lacking `converter`, each fail validation.
 
 ### CX-32 · Gate scripts: lost lines, done before merge, merges outside the gate · `todo`
 **Release:** 0.3.1
