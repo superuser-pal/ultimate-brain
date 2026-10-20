@@ -4,8 +4,10 @@
 **Status values:** `todo` · `in progress` · `review` · `done` · `blocked` · `dropped` (won't ship; skipped by `release.mjs`).
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
-> **2026-10-20 — Status: 0.3.0 is released and in the user's brain; U-13 waits on the user's Notion checks. 0.3.1: CC-32, CX-35 and CX-32 are merged; CC-33 and CX-36 (decision 0040: web merges, the merge-ready status) finish it, CX-36 merged last so `main` turns green. 0.4.0: CX-34 and CC-30 are merged, CX-33 is open; its feature scope is chosen after 0.3.1.**
-> - **0.3.1 order (agreed 2026-10-20):** the loose ends first (CC-32, CX-35), then CX-32.
+> **2026-10-20 — Status: 0.3.1 is released (npm `latest`) and in the user's brain; "How it works" in Notion is republished from its guide. Next: the user picks the 0.4.0 theme (below), then Claude Code writes its tasks. U-13 waits on the user's Notion checks.**
+> - **Merging (decision 0040):** the user merges on the GitHub PR page, with the PR's `merge-ready` status in view; `merge.mjs` is optional; agents never merge. `main-guard` fails only on a commit that came from no PR.
+> - **0.4.0 so far:** CC-29, CX-34, CC-30, CC-31 merged; CX-33 (blind-run setup script) open. The theme is the user's choice: **"Ready for user two"** (the onboarding suite, capability profiles, automated npm releases) or **"The brain gives back"** (weekly digest, scheduled catch-up). Notion file uploads go in either way. The deciding question: is a second user coming soon?
+> - **Codex was out on 2026-10-20:** Claude Code built CX-35, CX-32 and CX-36 at the user's request (each row says so).
 > - **Review order (CC-27):** the done commit comes before the verdict; the reviewer posts `Review (<agent>): pass at <sha>` last.
 > - **Untriaged `dogfood` issues:** 0.
 > - **Earlier:** v1 waves 1–4 below; dogfood findings 1–24 in the Wave 4 table.
@@ -444,7 +446,7 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 
 ## 0.4.0 — queued
 
-Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `brain-onboard` interview, converter check, drop folder asked up front) and Notion file uploads. Planned after U-13.
+Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `brain-onboard` interview, converter check, drop folder asked up front) and Notion file uploads. The feature theme is chosen by the user after 0.3.1 (see the status banner).
 
 ### CC-29 · Decision: changelog lines in task rows (decision 0039) · `done` (#96)
 **Release:** 0.4.0
@@ -463,6 +465,12 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 **Changelog:** AGENTS.md, the PR template and the release guide describe the `**Changelog:**` field.
 **Output:** AGENTS.md ("Every task has", "PRs follow the template"), `.github/pull_request_template.md` (the CHANGELOG boxes) and docs/releasing.md say: a task carries `**Changelog:**` in its row; the done commit sets `` `done` (#N) ``; `release.mjs` writes the CHANGELOG section. Merges right after CX-34, so the docs never describe a gate that isn't there.
 **Acceptance:** no file outside CHANGELOG.md's history tells an agent to edit CHANGELOG.md for a 0.4.0 or later task (`grep -rn CHANGELOG AGENTS.md docs .github`).
+
+### CC-34 · Handoff after 0.3.1 · `review`
+**Release:** 0.4.0
+**Changelog:** the status banner after the 0.3.1 release: decision 0040 merging, the open 0.4.0 theme choice.
+**Output:** the status banner and the 0.4.0 intro say 0.3.1 is out, how merging works now, and what the user decides next.
+**Acceptance:** the banner names no open 0.3.1 work and states the 0.4.0 choice.
 
 ### CX-33 · Blind-run brain setup script · `todo`
 **Release:** 0.4.0
