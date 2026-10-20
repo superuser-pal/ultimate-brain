@@ -411,7 +411,7 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 - Dogfood #102: the brain template maps Tasks `source` to "Source" like the other default names (spec/schema.md example too); migration 0005 §4 tells default-Tasks users to set it; brain-connect-notion clears it when the default database has no such relation.
 **Acceptance:** `grep -n "History" skills/brain-howto/references/guide.md` finds no view name; the skill mirror check passes; Codex's review finds CX-35 buildable without a spec question; `jq .notion.tasks.properties.source templates/brain/brain.json` prints `"Source"`; migration 0005 §3 marks no database creation as an agent step.
 
-### CX-35 · `--version` and the `url:` source test · `review` (Claude Code while Codex is out; the user's choice, 2026-10-20)
+### CX-35 · `--version` and the `url:` source test · `done` (#103; Claude Code while Codex is out; the user's choice, 2026-10-20)
 **Release:** 0.3.1
 **Output:** `brain --version` per spec/cli.md §3.1 and §3.3 (text: the version alone; `--json`: the success envelope with `command` "version", `brain` null and `data.version`; no brain needed); CX-26 set to `done` (#79), which shipped in 0.2.2; the CC-20 follow-up: a test that `note new` rejects a `url:` source without `kind: document` or without `converter`.
 **Acceptance:** tests: `brain --version` prints `package.json`'s version and exits 0 outside any brain; `brain --version --json` prints the §3.3 envelope with `command: "version"`, `brain: null`, `data.version` and `warnings: []`; `brain status --version` also prints it; `note new` with a `url:` source lacking `kind: document`, and one lacking `converter`, each fail validation.
