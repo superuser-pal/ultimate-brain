@@ -410,7 +410,7 @@ test("merge dry-run refuses a task in review or a suffix for another PR", (t) =>
     const path = mergeReviewPath(root, '[[{"body":"Review (Claude Code): pass at abcdef0"}]]', task);
     const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /must be `done` with #12/);
+    assert.match(result.stderr, /not `done` \(#12\)/);
   }
 });
 
@@ -540,26 +540,63 @@ function guardPath(root, after, review) {
   });
 }
 
-test("main-guard fails a merge with no other-agent pass", (t) => {
+test("main-guard passes a merged PR with no review, as merged on the web page (decision 0040)", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const { before, after } = guardRepo(root, "Merged.");
+  const { before, after } = guardRepo(root, "CX-1: One");
   const result = run("main-guard.mjs", [before, after], { root, env: { PATH: guardPath(root, after, "[]") } });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /#12 \(no other-agent pass or user override\)/);
+  assert.equal(result.status, 0, result.stderr);
 });
 
-test("main-guard passes a merge with the other agent's pass or the user override", (t) => {
+test("main-guard fails a commit that came from no PR", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const passed = guardRepo(root, "Merged.");
-  const pass = run("main-guard.mjs", [passed.before, passed.after], { root, env: { PATH: guardPath(root, passed.after, '[[{"body":"Review (Claude Code): pass at abcdef0"}]]') } });
-  assert.equal(pass.status, 0, pass.stderr);
-  const other = temporaryRoot();
-  t.after(() => rmSync(other, { recursive: true, force: true }));
-  const overridden = guardRepo(other, "Review gate overridden by user.");
-  const override = run("main-guard.mjs", [overridden.before, overridden.after], { root: other, env: { PATH: guardPath(other, overridden.after, "[]") } });
-  assert.equal(override.status, 0, override.stderr);
+  const { before, after } = guardRepo(root, "Pushed directly.");
+  const path = fakeCommands(root, { gh: `case "$1 $2" in
+      "repo view") printf owner/repo ;;
+      "issue create") exit 0 ;;
+    esac` });
+  const result = run("main-guard.mjs", [before, after], { root, env: { PATH: path } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, new RegExp(`main-guard rejected: ${after}`));
+});
+
+function mergeReadyPath(root, { task = "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n", body = "- [x] checked", review = '[[{"body":"Review (Claude Code): pass at abcdef0"}]]' } = {}) {
+  return fakeCommands(root, {
+    gh: `case "$1 $2" in
+      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"abcdef0","title":"CX-1: One","body":"${body}"}' ;;
+      "repo view") printf owner/repo ;;
+      "api repos/owner/repo/contents/build/TASKS.md?ref=abcdef0") printf '%s' '${taskRows(task)}' ;;
+      "api repos/owner/repo/pulls/12/reviews") printf '%s' '${review}' ;;
+      "api repos/owner/repo/issues/12/comments") printf '%s' '[]' ;;
+      "api repos/owner/repo/statuses/abcdef0") printf '%s\n' "$@" > '${join(root, "status")}' ;;
+    esac`,
+  });
+}
+
+test("merge-ready sets success on a done PR with ticked boxes and a fresh pass", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const result = run("merge-ready.mjs", ["12"], { root, env: { PATH: mergeReadyPath(root) } });
+  assert.equal(result.status, 0, result.stderr);
+  const status = readFileSync(join(root, "status"), "utf8");
+  assert.match(status, /^state=success$/m);
+  assert.match(status, /^context=merge-ready$/m);
+  assert.match(status, /^description=Ready to merge$/m);
+});
+
+test("merge-ready sets failure naming each problem, and still exits 0", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = mergeReadyPath(root, { task: "### CX-1 · One · `review`\n**Release:** 0.4.0\n**Changelog:** One\n", body: "- [ ] unchecked", review: "[]" });
+  const result = run("merge-ready.mjs", ["12"], { root, env: { PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  const status = readFileSync(join(root, "status"), "utf8");
+  assert.match(status, /^state=failure$/m);
+  assert.match(status, /unticked checklist boxes/);
+  assert.match(status, /CX-1 is `review`, not `done` \(#12\)/);
+  assert.match(status, /no pass from the other agent \(Claude Code\) at abcdef0$/m);
+  assert.ok(status.split("\n").find((line) => line.startsWith("description=")).length <= "description=".length + 140);
 });
 
 test("the pre-commit hook refuses a skill edit staged without its rebuilt mirror", (t) => {

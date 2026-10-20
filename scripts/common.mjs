@@ -92,3 +92,28 @@ export function hasOtherAgentPass(repo, pr, head, author) {
 export function sleep(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
+
+/**
+ * What must hold before a PR is merged, besides CI and mergeability, which GitHub shows itself (decision 0040):
+ * the branch and title format, every box ticked, the task `done` with this PR's number, and the other agent's pass naming the head.
+ * `skipPass` drops the last one (`merge.mjs --reviewed-by-user`). Returns the problems, empty when ready.
+ */
+export function readinessProblems(repo, pr, details, { skipPass = false } = {}) {
+  const problems = [];
+  const branch = /^(claude|codex)\/((?:CC|CX)-\d+)-/.exec(details.headRefName ?? "");
+  if (branch === null) problems.push("branch must be claude|codex/<CC|CX>-N-…");
+  else if (!new RegExp(`^${branch[2]}:`).test(details.title ?? "")) problems.push("title must start with its task id and colon");
+  if (/^- \[ \]/m.test(details.body ?? "")) problems.push("unticked checklist boxes");
+  if (branch !== null) {
+    const rows = contentAt(repo, "build/TASKS.md", details.headRefOid);
+    const task = rows.ok ? taskEntries(rows.stdout).find((entry) => entry.id === branch[2]) : undefined;
+    if (!rows.ok) problems.push(`cannot read PR task row: ${rows.message}`);
+    else if (task?.status !== "done" || !donePrNumbers(task.suffix)?.includes(Number(pr))) {
+      problems.push(`${branch[2]} is ${task === undefined ? "missing" : `\`${task.status}\`${task.suffix}`}, not \`done\` (#${pr})`);
+    }
+    if (!skipPass && !hasOtherAgentPass(repo, pr, details.headRefOid, branch[1])) {
+      problems.push(`no pass from the other agent (${branch[1] === "codex" ? "Claude Code" : "Codex"}) at ${String(details.headRefOid).slice(0, 7)}`);
+    }
+  }
+  return problems;
+}
