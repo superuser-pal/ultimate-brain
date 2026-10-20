@@ -20,6 +20,7 @@ import { syncApplyCommand, syncPlanCommand, syncRecordCommand, syncRenderCommand
 import { viewsCommand } from "./commands/views.ts";
 import { runCommand, type CliIo, type Command, type RunEnvironment } from "./lib/command.ts";
 import { exitCodeFor } from "./lib/errors.ts";
+import { installedProduct } from "./lib/skills.ts";
 
 export type { CliIo, OutputWriter } from "./lib/command.ts";
 
@@ -40,6 +41,7 @@ Global options:
   --json            Print one JSON document on stdout
   --now <time>      Use this ISO 8601 UTC time as "now"
   -h, --help        Show help
+  --version         Print the installed version
 
 Commands:
 ${COMMANDS.map((command) => `  ${command.name.padEnd(16)}${command.summary.split(". ")[0]!.replace(/\.$/, "")}`).join("\n")}
@@ -62,6 +64,15 @@ export async function runCli(args: readonly string[], options: CliOptions = {}):
 
   if (first === undefined || first === "help" || first === "--help" || first === "-h") {
     io.stdout.write(HELP_TEXT);
+    return 0;
+  }
+
+  // spec/cli.md §3.1: --version ignores any command and every other option but --json.
+  if (args.includes("--version")) {
+    const { version } = installedProduct();
+    io.stdout.write(args.includes("--json")
+      ? `${JSON.stringify({ ok: true, command: "version", brain: null, data: { version }, warnings: [] })}\n`
+      : `${version}\n`);
     return 0;
   }
 
