@@ -466,7 +466,7 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 **Output:** AGENTS.md ("Every task has", "PRs follow the template"), `.github/pull_request_template.md` (the CHANGELOG boxes) and docs/releasing.md say: a task carries `**Changelog:**` in its row; the done commit sets `` `done` (#N) ``; `release.mjs` writes the CHANGELOG section. Merges right after CX-34, so the docs never describe a gate that isn't there.
 **Acceptance:** no file outside CHANGELOG.md's history tells an agent to edit CHANGELOG.md for a 0.4.0 or later task (`grep -rn CHANGELOG AGENTS.md docs .github`).
 
-### CC-34 · Handoff after 0.3.1 · `review`
+### CC-34 · Handoff after 0.3.1 · `done` (#110)
 **Release:** 0.4.0
 **Changelog:** the status banner after the 0.3.1 release: decision 0040 merging, the open 0.4.0 theme choice.
 **Output:** the status banner and the 0.4.0 intro say 0.3.1 is out, how merging works now, and what the user decides next.
