@@ -7,7 +7,7 @@ Sources folded in: docs/vision.md "v2", synthesis/synthesis.md §3.3, decisions 
 ## Onboarding and getting knowledge in
 
 ### Onboarding suite
-**Scheduled:** 0.4.0 (build/TASKS.md, agreed 2026-10-19). The owner's identities and finding 3 ship earlier, in 0.3.0 (CC-26).
+**Not scheduled:** moved out of 0.4.0 on 2026-10-20 (no second user yet; 0.4.0 is about payback, CC-35). The owner's identities and finding 3 shipped in 0.3.0 (CC-26).
 
 **Adds:** a `brain-onboard` skill (or agent) that interviews a new user and populates the brain and Notion, so a new brain is useful on day one instead of empty.
 
@@ -44,7 +44,7 @@ Candidate converters, to evaluate on the user's real files:
 **Revisit:** with the onboarding suite (seeding), or when the user wants to ingest contracts, briefs or reports.
 
 Document ingestion from local files, pasted emails and chat, and the Capture Inbox is **planned for 0.2.0** (build/TASKS.md). Left here for later:
-- **Notion file uploads:** the agent fetches files attached to Notion pages. Scheduled for 0.4.0.
+- **Notion file uploads:** the agent fetches files attached to Inbox rows and meeting pages. In 0.4.0 (decision 0042).
 - ~~**A Sources database in Notion**~~: decided in 0037 as the Inbox (every input with Kind, Summary and Produced), for 0.3.0.
 - **Docling or Marker** as a second converter: the 0.2.0 bake-off (decision 0032) found them not needed. Revisit for scanned documents, or for Codex users with table-heavy PDFs.
 - ~~**Agent setup steps for Notion**~~ (dogfood finding 3): in 0.3.0 (CC-26).
