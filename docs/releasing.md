@@ -5,8 +5,8 @@ How a change reaches a brain (decision 0038). npm is the only channel: the packa
 ## The rules
 
 - **Main is always releasable.** Merge only what you would publish tonight. A fix the user needs mid-use is an `urgent` task, shipped as a patch the same day.
-- **A task belongs to a release** through its `**Release:** x.y.z` line in build/TASKS.md, and has a line in `CHANGELOG.md` under that version. It is set to `done` (#N) in its own PR's last commit, once the review finds nothing left; the reviewer then posts `Review (<agent>): pass at <sha>` for that commit.
-- **Merge only with `node scripts/merge.mjs <PR>`:** it checks CI on the PR's head commit, the ticked boxes, the format and the other agent's pass for that commit, then merges that exact commit.
+- **A task belongs to a release** through its `**Release:** x.y.z` line in build/TASKS.md, and, from 0.4.0 on, a `**Changelog:**` line below it: the sentence `release.mjs` puts in the CHANGELOG (decision 0039). PRs don't edit `CHANGELOG.md`; a 0.3.x task still adds its line there by hand. It is set to `done` (#N) in its own PR's last commit, once the review finds nothing left; the reviewer then posts `Review (<agent>): pass at <sha>` for that commit.
+- **Merge only with `node scripts/merge.mjs <PR>`:** it checks CI on the PR's head commit, the ticked boxes, the format and the other agent's pass for that commit, then merges that exact commit. Never use GitHub's Merge or Update branch buttons: `main-guard` fails the push of a merge with neither the other agent's pass nor the override note `merge.mjs --reviewed-by-user` writes, and `release.mjs` refuses while CI on `main` is red, until the next merge through `merge.mjs`.
 - **Release from the main checkout only** (`~/GitHub/ultimate-brain`, always on a clean `main`). Tasks are built in their own worktrees (`../ub-<ID>`).
 - **A brain runs only published versions.** Try a candidate as a prerelease on the `next` tag.
 
@@ -23,18 +23,18 @@ npm requires two-factor authentication to publish. `npm publish` asks for the co
 ```sh
 cd ~/GitHub/ultimate-brain
 git pull
-node scripts/release.mjs 0.2.3
+node scripts/release.mjs 0.4.0
 ```
 
 `release.mjs` (CX-27) refuses, and changes nothing, unless all of these hold:
 
 1. It runs in the main checkout, on `main`, with a clean tree, level with `origin/main`.
 2. CI passed on that commit.
-3. `CHANGELOG.md` has a `## 0.2.3` entry.
+3. For 0.4.0 and later: every task of the release that isn't `dropped` has a non-empty `**Changelog:**` line and a `done` (#N) heading. For 0.3.x: `CHANGELOG.md` has a `## 0.3.1` entry.
 4. `npm test`, `npm run typecheck` and `npm run test:package` pass.
-5. Every task with `**Release:** 0.2.3` is `done`.
+5. Every task with `**Release:** 0.4.0` is `done`.
 
-Then it sets the version, dates the CHANGELOG entry, commits `0.2.3`, tags `v0.2.3`, publishes and pushes the commit and tag. Check with `npm view ultimate-brain version`.
+Then it sets the version, writes the CHANGELOG section from the task rows (`- <id> (#N): <text>`, in build/TASKS.md order; for 0.3.x it dates the hand-written entry), commits `0.4.0`, tags `v0.4.0`, publishes and pushes the commit and tag. Check with `npm view ultimate-brain version`.
 
 - **patch:** fixes only. **minor:** new commands, skill changes, new template rules. Stay below 1.0.0 until v1 is declared stable.
 - **A candidate:** `node scripts/release.mjs 0.3.0-rc.1` publishes on the `next` tag, never `latest`.

@@ -1,6 +1,6 @@
 # Changelog
 
-One line per task, under the release that ships it (decision 0038). `scripts/release.mjs` refuses a version with no entry here.
+One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
 ## 0.4.0 — unreleased
 
