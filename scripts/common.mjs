@@ -59,3 +59,36 @@ export function packageVersion() {
   const file = resolve(ROOT, "package.json");
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")).version : undefined;
 }
+
+/** The note `merge.mjs --reviewed-by-user` writes into the merge commit body; main-guard accepts it in place of a pass. */
+export const REVIEW_OVERRIDE_NOTE = "Review gate overridden by user.";
+
+/** A file's text at a commit, read through the GitHub contents API. */
+export function contentAt(repo, path, ref) {
+  const result = tryCommand("gh", ["api", `repos/${repo}/contents/${path}?ref=${ref}`, "--jq", ".content"]);
+  return result.ok ? { ok: true, stdout: Buffer.from(result.stdout.replace(/\s/g, ""), "base64").toString("utf8") } : result;
+}
+
+/** True when the other agent posted `Review (<agent>): pass at <sha>` naming `head` (decision 0038). `author` is the branch prefix. */
+export function hasOtherAgentPass(repo, pr, head, author) {
+  const endpoint = [`repos/${repo}/pulls/${pr}/reviews`, `repos/${repo}/issues/${pr}/comments`];
+  const required = author === "codex" ? "Claude Code" : "Codex";
+  const verdict = new RegExp(`^Review \\(${required}\\): pass at ([0-9a-f]{7,})\\b`, "i");
+  return endpoint.some((path) => {
+    const result = tryCommand("gh", ["api", path, "--paginate", "--slurp"]);
+    if (!result.ok) return false;
+    try {
+      return JSON.parse(result.stdout).flat().some((item) => {
+        const match = verdict.exec(item.body ?? "");
+        return match !== null && head.toLowerCase().startsWith(match[1].toLowerCase());
+      });
+    } catch {
+      return false;
+    }
+  });
+}
+
+/** Block this process for `ms` milliseconds. */
+export function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}

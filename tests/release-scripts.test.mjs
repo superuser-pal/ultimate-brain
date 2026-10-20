@@ -449,3 +449,136 @@ test("merge dry-run accepts a user review override with a warning", (t) => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /WARNING: user override/);
 });
+
+function prFormatPath(root, baseLog, headLog) {
+  const rows = taskRows("### CX-1 · One · `review`\n**Release:** 0.3.1\n\n### CC-2 · Two · `done` (#2)\n**Release:** 0.3.1\n");
+  return fakeCommands(root, {
+    gh: `case "$1 $2" in
+      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"head","baseRefOid":"base","title":"CX-1: One","files":[{"path":"CHANGELOG.md"}]}' ;;
+      "repo view") printf owner/repo ;;
+      "api repos/owner/repo/contents/build/TASKS.md?ref=base"|"api repos/owner/repo/contents/build/TASKS.md?ref=head") printf '%s' '${rows}' ;;
+      "api repos/owner/repo/contents/CHANGELOG.md?ref=base") printf '%s' '${taskRows(baseLog)}' ;;
+      "api repos/owner/repo/contents/CHANGELOG.md?ref=head") printf '%s' '${taskRows(headLog)}' ;;
+    esac`,
+  });
+}
+
+test("PR format rejects a CHANGELOG.md line lost from another task", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = prFormatPath(root, "## 0.3.1 — unreleased\n\n- CC-2: two\n", "## 0.3.1 — unreleased\n\n- CX-1: one\n");
+  const result = run("pr-format.mjs", ["1"], { root, env: { PATH: path } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /loses CHANGELOG\.md line\(s\): CC-2/);
+});
+
+test("PR format accepts a CHANGELOG.md line that only gains its PR number", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = prFormatPath(root, "## 0.3.1 — unreleased\n\n- CC-2: two\n", "## 0.3.1 — unreleased\n\n- CX-1: one\n- CC-2 (#2): two, reworded\n");
+  const result = run("pr-format.mjs", ["1"], { root, env: { PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+});
+
+function mergeabilityPath(root, states) {
+  const count = join(root, "views");
+  const json = (state) => `{"headRefName":"codex/CX-1-one","headRefOid":"abcdef0","title":"CX-1: One","body":"- [x] checked","mergeable":"${state}","state":"OPEN"}`;
+  return fakeCommands(root, {
+    gh: `case "$1 $2" in
+      "pr view") n=$(cat '${count}' 2>/dev/null || echo 0); n=$((n+1)); echo $n > '${count}'
+        if [ $n -le ${states.length - 1} ]; then printf '%s' '${json(states[0])}'; else printf '%s' '${json(states.at(-1))}'; fi ;;
+      "repo view") printf owner/repo ;;
+      "api repos/owner/repo/commits/abcdef0/check-runs") printf 'completed\\tsuccess\\n' ;;
+      "api repos/owner/repo/contents/build/TASKS.md?ref=abcdef0") printf '%s' '${taskRows("### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n")}' ;;
+      "api repos/owner/repo/pulls/12/reviews") printf '%s' '[[{"body":"Review (Claude Code): pass at abcdef0"}]]' ;;
+      "api repos/owner/repo/issues/12/comments") printf '%s' '[]' ;;
+    esac`,
+  });
+}
+
+test("merge dry-run waits while GitHub reports UNKNOWN mergeability", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = mergeabilityPath(root, ["UNKNOWN", "UNKNOWN", "MERGEABLE"]);
+  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path, UB_MERGEABLE_POLL_MS: "1" } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(readFileSync(join(root, "views"), "utf8").trim(), "3");
+});
+
+test("merge dry-run refuses UNKNOWN mergeability after the wait, and CONFLICTING at once", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const unknown = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: mergeabilityPath(root, ["UNKNOWN"]), UB_MERGEABLE_POLL_MS: "1" } });
+  assert.equal(unknown.status, 1);
+  assert.match(unknown.stderr, /GitHub has not computed mergeability; retry/);
+  assert.equal(readFileSync(join(root, "views"), "utf8").trim(), "11");
+  rmSync(join(root, "views"));
+  const conflicting = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: mergeabilityPath(root, ["CONFLICTING"]), UB_MERGEABLE_POLL_MS: "1" } });
+  assert.equal(conflicting.status, 1);
+  assert.match(conflicting.stderr, /not mergeable \(CONFLICTING\)/);
+  assert.equal(readFileSync(join(root, "views"), "utf8").trim(), "1");
+});
+
+function guardRepo(root, mergeBody) {
+  command(root, ["init", "-q", "-b", "main"]);
+  command(root, ["-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "--allow-empty", "-m", "base"]);
+  const before = command(root, ["rev-parse", "HEAD"]).trim();
+  command(root, ["-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "--allow-empty", "-m", "Merge pull request #12", "-m", mergeBody]);
+  return { before, after: command(root, ["rev-parse", "HEAD"]).trim() };
+}
+
+function guardPath(root, after, review) {
+  return fakeCommands(root, {
+    gh: `case "$1 $2" in
+      "repo view") printf owner/repo ;;
+      "api repos/owner/repo/commits/${after}/pulls") printf '12' ;;
+      "api repos/owner/repo/pulls/12") printf 'abcdef0123\\tcodex/CX-1-one\\t${after}' ;;
+      "api repos/owner/repo/pulls/12/reviews") printf '%s' '${review}' ;;
+      "api repos/owner/repo/issues/12/comments") printf '%s' '[]' ;;
+      "issue create") exit 0 ;;
+    esac`,
+  });
+}
+
+test("main-guard fails a merge with no other-agent pass", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const { before, after } = guardRepo(root, "Merged.");
+  const result = run("main-guard.mjs", [before, after], { root, env: { PATH: guardPath(root, after, "[]") } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /#12 \(no other-agent pass or user override\)/);
+});
+
+test("main-guard passes a merge with the other agent's pass or the user override", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const passed = guardRepo(root, "Merged.");
+  const pass = run("main-guard.mjs", [passed.before, passed.after], { root, env: { PATH: guardPath(root, passed.after, '[[{"body":"Review (Claude Code): pass at abcdef0"}]]') } });
+  assert.equal(pass.status, 0, pass.stderr);
+  const other = temporaryRoot();
+  t.after(() => rmSync(other, { recursive: true, force: true }));
+  const overridden = guardRepo(other, "Review gate overridden by user.");
+  const override = run("main-guard.mjs", [overridden.before, overridden.after], { root: other, env: { PATH: guardPath(other, overridden.after, "[]") } });
+  assert.equal(override.status, 0, override.stderr);
+});
+
+test("the pre-commit hook refuses a skill edit staged without its rebuilt mirror", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "ultimate-brain-hook-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  for (const folder of ["scripts", "skills", ".agents", "src", ".githooks"]) execFileSync("cp", ["-R", join(source, folder), join(root, folder)]);
+  execFileSync("ln", ["-s", join(source, "node_modules"), join(root, "node_modules")]);
+  command(root, ["init", "-q", "-b", "main"]);
+  command(root, ["add", "-A"]);
+  command(root, ["-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "--no-verify", "-m", "base"]);
+  const skill = join(root, "skills", "brain-howto", "SKILL.md");
+  writeFileSync(skill, `${readFileSync(skill, "utf8")}\nOne more line.\n`);
+  command(root, ["add", "skills"]);
+  const hook = () => spawnSync("sh", [".githooks/pre-commit"], { cwd: root, encoding: "utf8", env: { ...process.env, HOME: root } });
+  const refused = hook();
+  assert.equal(refused.status, 1, refused.stdout);
+  assert.match(refused.stdout + refused.stderr, /drift/);
+  execFileSync(process.execPath, ["--experimental-strip-types", "scripts/build-skills.ts"], { cwd: root });
+  command(root, ["add", ".agents"]);
+  const accepted = hook();
+  assert.equal(accepted.status, 0, accepted.stdout + accepted.stderr);
+});
