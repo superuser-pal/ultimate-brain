@@ -407,7 +407,9 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 - The guide names the Inbox views as migration 0005 and notion/views-guide.md do ("What's in my inbox?", "What came in?"). After the release, with the user's yes, the "How it works" page in Notion is republished from it.
 - spec/cli.md §3.1: `--version` (built in CX-35).
 - The status banner.
-**Acceptance:** `grep -n "History" skills/brain-howto/references/guide.md` finds no view name; the skill mirror check passes; Codex's review finds CX-35 buildable without a spec question.
+- Dogfood #101: migration 0005 makes "create Concepts" a Notion AI step with its prompt, run first; the migrations README says a migration never asks the agent to create a database.
+- Dogfood #102: the brain template maps Tasks `source` to "Source" like the other default names (spec/schema.md example too); migration 0005 §4 tells default-Tasks users to set it; brain-connect-notion clears it when the default database has no such relation.
+**Acceptance:** `grep -n "History" skills/brain-howto/references/guide.md` finds no view name; the skill mirror check passes; Codex's review finds CX-35 buildable without a spec question; `jq .notion.tasks.properties.source templates/brain/brain.json` prints `"Source"`; migration 0005 §3 marks no database creation as an agent step.
 
 ### CX-35 · `--version` and the `url:` source test · `todo`
 **Release:** 0.3.1
