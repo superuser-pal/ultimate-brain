@@ -406,7 +406,7 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
     "tasks": {
       "database": "",
       "properties": { "title": "Name", "status": "Status", "due": "Due", "project": "Project",
-                      "area": "Area", "owner": "", "meeting": "Meeting", "meeting_url": "", "source": "",
+                      "area": "Area", "owner": "", "meeting": "Meeting", "meeting_url": "", "source": "Source",
                       "brain_id": "Brain ID" },
       "new_task_status": "To Do"
     }

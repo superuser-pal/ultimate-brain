@@ -27,8 +27,11 @@ The steps marked **agent** can be done through the API by the `brain-notion-chan
 
 | Change | Who |
 |---|---|
-| On **Brain Data**, create the database **Concepts** with the properties of Prompt 2, item 13 | agent |
+| On **Brain Data**, create the database **Concepts** with the prompt below (the Notion API can't create databases), then paste its link to the agent. Do this first, so the agent steps of §3–§6 run in one pass | by hand (Notion AI) |
 | Record its id: `brain config set notion.databases.concepts '"<id>"'` | agent |
+
+Prompt (from Prompt 2, item 13):
+> On "Brain Data", create a database "Concepts" with exactly these properties: Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time). Don't change anything else.
 
 ## 4 · Relations (Prompt 3)
 
@@ -43,7 +46,7 @@ All two-way, with exactly these names on each side (**agent**):
 - Inbox "People" ↔ People "Sources"
 - Inbox "Project" ↔ Projects "Inbox"
 - Inbox "Area" ↔ Areas "Inbox"
-- Tasks "Source" ↔ Inbox "Tasks": only for the default Tasks database. With your own Tasks database, add a relation to the Inbox there if you want the backlink, then `brain config set notion.tasks.properties.source '"<its name>"'`; without one, owner tasks from documents simply have no backlink.
+- Tasks "Source" ↔ Inbox "Tasks": only for the default Tasks database; then `brain config set notion.tasks.properties.source '"Source"'` (brains made before 0.3.1 have it empty, and owner tasks from documents get no backlink until it is set). With your own Tasks database, add a relation to the Inbox there if you want the backlink, then `brain config set notion.tasks.properties.source '"<its name>"'`; without one, owner tasks from documents simply have no backlink.
 
 ## 5 · Areas: views replace two rollups (0034)
 

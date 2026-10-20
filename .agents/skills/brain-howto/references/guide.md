@@ -21,7 +21,7 @@ The navigation on the left of every page lists the Spaces. Each one has tabs tha
 | **Projects** | Keep projects moving | Active · By area · Deadlines · Gone quiet |
 | **Plan** | Check that your work serves your goals | Goals · Key results · Areas · Projects by goal |
 | **Review** | Decide on the changes the brain proposes | Needs my decision · Sources disagree · Approved recently · Rejected |
-| **Knowledge** | Find what the brain knows, and everything that came in | Decisions · Questions · Concepts · People · Orgs · Inbox (Inbox: new captures · History: everything ingested, with what it produced) |
+| **Knowledge** | Find what the brain knows, and everything that came in | Decisions · Questions · Concepts · People · Orgs · Inbox (What's in my inbox?: new captures · What came in?: everything ingested, with what it produced) |
 | **Archive** (under System) | Find finished and archived records | One tab per database |
 
 **Area pages** collect everything for one area: its goals, projects, tasks, meetings, decisions and open questions in views, and its people and clients as lists at the top. Open one from Plan → Areas.
@@ -182,4 +182,4 @@ Run these in Claude Code or Codex, from your brain's folder.
 | A record shows Draft | You haven't reviewed it yet | Read it; set **Reviewed**, or **Disputed** if it's wrong |
 | An Area page doesn't list a decision | A decision's Area comes from its project | Link the decision's project to the area, then "sync with Notion" |
 | A Review row with a Note is still pending | The agent couldn't tell what the Note meant, or it described a different change | Answer the agent's question, or look for the new row it proposed |
-| You want to see what the brain made from a document | Every input has a row in Knowledge → Inbox → History | Open the row: Decisions, Questions, Concepts and People list what it produced |
+| You want to see what the brain made from a document | Every input has a row in Knowledge → Inbox → What came in? | Open the row: Decisions, Questions, Concepts and People list what it produced |
