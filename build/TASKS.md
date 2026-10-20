@@ -482,6 +482,36 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 **Changelog:** OKF and GBrain reviewed and parked for v2 (reviews/06): a retrieval index over Markdown, and OKF export, then maybe alignment.
 **Output:** reviews/06-okf-and-gbrain.md (OKF vs our schema, three adoption levels, standard-or-not evidence, GBrain fit); docs/v2-ideas.md "Retrieval index over Markdown" (replaces "Long-term memory provider") and "OKF: export, then maybe alignment", each with revisit triggers; the docs/vision.md summary line. Docs only; no spec or decision change.
 **Acceptance:** Codex's review finds the OKF mapping in reviews/06 §2 consistent with spec/schema.md and SPEC v0.2, and no binding decision changed.
+
+### CC-35 · 0.4.0 plan: decisions 0041 and 0042 and their tasks · `review`
+**Release:** 0.4.0
+**Changelog:** the 0.4.0 plan: the brain gives back (reviewed notes, answered questions, Briefs) and takes in linked repos and Notion attachments (decisions 0041, 0042).
+**Output:** agreed with the user in a grill on 2026-10-20, after a look at the first brain's use (every note still `draft`, 23 of 24 proposals approved, no question ever asked of the brain). Theme: payback before a second user. Decision 0041 (a Review notes row per ingest, the backlog's rows once, Answer rows, Briefs from reviewed notes only, area Briefs; amends 0005 and 0026) and decision 0042 (linked repos as read-only sources, the product repo as the pilot area; files attached to Inbox rows and meetings). Tasks CC-36, CX-37, CX-38, CC-37 and U-15. Out of 0.4.0: the onboarding suite (no second user yet); the agency brain moves in after 0.4.0. Habit bar for the two weeks after the release: every real meeting ingested within 2 working days, and at least one question a week answered better by Notion or the brain than by memory, logged as a capture.
+**Acceptance:** the user approves both decisions; each task below names its decisions and its acceptance; Codex's review finds CX-37 and CX-38 scoped so that CC-36 can answer every spec question before they start.
+
+### CC-36 · Contracts for 0.4.0 (decisions 0041, 0042) · `todo`
+**Release:** 0.4.0
+**Changelog:** contracts for 0.4.0: the `review_notes` and `answer` proposals, Briefs from reviewed notes and for areas, linked repos and Notion attachments as sources.
+**Output:** spec/schema.md: §8 (an applied `review_notes` sets `reviewed` or `archived`), §11 and §11.1–11.2 (`review_notes` with `notes`, `answer` with `answer` and `answer_note`, their apply rules, `EDIT_NOT_ALLOWED`, notes no longer `draft` skipped and reported), §16.1 (reviewed-only items, answered questions left out, the "Nothing reviewed yet" line), a new §16.3 `area_brief`, the source fields `repo`, `repo_path`, `commit`, `attached_to` and the `verbatim` converter, §12 `repos` in `brain.json`, §7 and §14 (question Status written only from an approved `answer`); spec/schemas; spec/cli.md (the backlog rows command, the repo commands that list changed files and record the ingested commit, `sync render` for `area_brief` and for a source with `attached_to`); Notion migration 0006 (Review Kinds "Review notes" and "Answer", run through the API; no step by hand); notion design §5 and the views guide.
+**Acceptance:** Codex's review finds CX-37 and CX-38 buildable from the contracts with no spec question; a schema example for each new proposal kind and source field validates; migration 0006 marks no step as by hand.
+
+### CX-37 · Review notes, answers and Briefs in the CLI (decision 0041) · `todo` (needs CC-36)
+**Release:** 0.4.0
+**Changelog:** the CLI applies Review notes and Answer rows, writes the backlog's rows once, and builds Briefs from reviewed notes, for areas too.
+**Output:** per CC-36: `review_notes` and `answer` in proposal validation, `brain apply` (approve, approve with `exclude`, reject, edit refused on `review_notes`, a note no longer `draft` skipped) and `sync plan` (Review Kinds); the backlog command (one `review_notes` per source over its `draft` notes; a second run writes nothing); `brain views` (reviewed-only Brief sections, the waiting line, `area_brief`); `sync render` (area Briefs, an approved answer's Status = Answered).
+**Acceptance:** tests on the fixture brain: approving a 3-note row with one excluded leaves 2 `reviewed` and 1 `draft`; rejecting archives the `draft` ones with no successor; an edit on `review_notes` gives `EDIT_NOT_ALLOWED`; the backlog command on a brain with 2 sources writes 2 rows, then 0 on a second run; an approved `answer` sets the question's `answer` and renders Status = Answered; a Brief lists a `reviewed` decision, leaves out a `draft` one and prints the waiting line; an area Brief renders; `brain lint` passes on every result.
+
+### CX-38 · Linked repos and attachments in the CLI (decision 0042) · `todo` (needs CC-36)
+**Release:** 0.4.0
+**Changelog:** the CLI reads linked repos (changed files since the last ingested commit) and takes files attached in Notion as sources under their Inbox row or meeting.
+**Output:** per CC-36: `repos` in `brain.json` and `brain status`; the repo commands (add a repo with its area and patterns; list added and modified files matching the patterns since the recorded commit, deleted files apart; record the ingested commit), refusing a path that is the brain itself; source validation for `repo`, `repo_path`, `commit`, `attached_to` and `verbatim`; `sync render` gives an attached source no Inbox row of its own and links its notes to the parent's row or meeting.
+**Acceptance:** tests with a temporary Git repo: two commits after the recorded one list the right files (a non-matching file and a deleted one left out, the deleted one reported); recording the commit makes the next listing empty; a source with `attached_to` renders no Inbox row and its decision's Sources relation points at the parent row; the brain itself as a repo path is refused.
+
+### CC-37 · Skills for 0.4.0 (decisions 0041, 0042) · `todo` (needs CC-36; blind runs use CX-33)
+**Release:** 0.4.0
+**Changelog:** catch-up writes Review notes and Answer rows, writes the backlog's rows on the first run, reads linked repos and Notion attachments, and the guide explains Briefs and reviewing notes.
+**Output:** brain-ingest (the Review notes row after each ingest; Answer rows from open questions; attachments: download, convert, `attached_to`; repo files as documents), brain-apply (the two new Kinds, "all except" on Review notes), brain-catch-up (the backlog's rows once; changed repo files and attachments in the read-only pass and the one batch, more than 10 repo files asked; publish order with area Briefs), brain-sync (area Brief toggle appended when missing), brain-notion-change (migration 0006), the user guide and brain-howto.
+**Acceptance:** a blind catch-up on a synthetic brain built with CX-33 writes one Review notes row per ingest and one Answer row for a question the input answers, asks once, then finishes; a blind run with a synthetic linked repo ingests only the files changed since the recorded commit; the skills match the CC-36 contracts; the skill mirror check passes.
 ---
 
 ## Your tasks
@@ -503,6 +533,7 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 | U-12 | Publish 0.2.3 with `node scripts/release.mjs 0.2.3` from the main checkout, then `brain upgrade` in your brain, then `npm deprecate ultimate-brain@0.2.2 "Superseded. Install the latest version."` (0.2.2 still has a real name in a skill example) | When CC-24, CC-25, CX-27 and CX-29 are done |
 | U-13 | 0.3.0 in your brain, one session with Claude: migrate your Notion space with brain-notion-change (your yes at each step), `brain upgrade`, then one real "catch up" as the acceptance run | After 0.3.0 is released |
 | U-14 | Publish 0.2.4 with `node scripts/release.mjs 0.2.4` from the main checkout, then `brain upgrade` in your brain | When CC-27, CX-28 and CX-30 are merged |
+| U-15 | 0.4.0 in your brain, one session with Claude: `brain upgrade`, Notion migration 0006, approve the backlog's Review notes rows and check the Briefs, link the product repo as the "Ultimate Brain" area and run its first ingest; then two weeks against the habit bar in CC-35 | After 0.4.0 is released and U-13 is closed |
 
 ## How to start Codex on a task
 
