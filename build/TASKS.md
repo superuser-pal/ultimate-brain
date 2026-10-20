@@ -428,7 +428,7 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 
 **Acceptance:** tests: a head that drops another task's CHANGELOG line fails `pr-format` and one that adds `(#N)` to it passes; `merge.mjs --dry-run` refuses a task in `review` and passes `done (#N)`; `UNKNOWN` then `MERGEABLE` passes and `UNKNOWN` throughout refuses after the wait; `main-guard` fails a merge with no pass and passes one with the pass or the override note; a commit that stages a skill edit without the rebuilt mirror is refused.
 
-### CC-33 · Decision 0040: web merges and the merge-ready check · `review`
+### CC-33 · Decision 0040: web merges and the merge-ready check · `done` (#107)
 **Release:** 0.3.1
 **Output:** decision 0040 (agreed with the user on 2026-10-20, after `main-guard` failed on the web merges of #104 and #105 and blocked the 0.3.1 release): the user merges on the GitHub PR page; a `merge-ready` status replaces `merge.mjs` as the gate; `main-guard` checks only that each commit came from a PR. 0038 amended; AGENTS.md and docs/releasing.md say so; CX-36 below.
 **Acceptance:** the user approves 0040; `grep -rn "merge.mjs" AGENTS.md docs/releasing.md` finds no line that makes it required; CX-36 is buildable without a spec question.
