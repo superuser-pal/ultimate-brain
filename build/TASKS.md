@@ -416,7 +416,7 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 **Output:** `brain --version` per spec/cli.md §3.1 and §3.3 (text: the version alone; `--json`: the success envelope with `command` "version", `brain` null and `data.version`; no brain needed); CX-26 set to `done` (#79), which shipped in 0.2.2; the CC-20 follow-up: a test that `note new` rejects a `url:` source without `kind: document` or without `converter`.
 **Acceptance:** tests: `brain --version` prints `package.json`'s version and exits 0 outside any brain; `brain --version --json` prints the §3.3 envelope with `command: "version"`, `brain: null`, `data.version` and `warnings: []`; `brain status --version` also prints it; `note new` with a `url:` source lacking `kind: document`, and one lacking `converter`, each fail validation.
 
-### CX-32 · Gate scripts: lost lines, done before merge, merges outside the gate · `todo`
+### CX-32 · Gate scripts: lost lines, done before merge, merges outside the gate · `done` (#104; Claude Code while Codex is out; the user's choice, 2026-10-20)
 **Release:** 0.3.1
 **Note:** CX-34 ships the `done` suffix check and task-row lost-heading guard; CX-32 retains its 0.3.1 CHANGELOG, mergeability, main-guard and skills-hook items.
 **Output:**
