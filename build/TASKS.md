@@ -400,7 +400,7 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 **Output:** this section, CX-32, and CC-29 and CX-33 under 0.4.0.
 **Acceptance:** Codex's review finds CX-32 specified well enough to build without inventing behaviour.
 
-### CC-32 · Loose ends before the gate fixes · `review` (#100)
+### CC-32 · Loose ends before the gate fixes · `done` (#100)
 **Release:** 0.3.1
 **Output:** agreed with the user on 2026-10-20, before CX-32:
 - Statuses that lagged behind their merges: CC-15 (#72, #73), CC-18 (#67, #68), CC-19 (#67, blind run in eval/howto) and CC-20 (#72) set to `done`; CX-26 (#79) is left to Codex (CX-35); dogfood finding 3 `fixed` (#92); finding 9's repair not needed.
