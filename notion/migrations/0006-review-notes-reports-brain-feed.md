@@ -40,11 +40,9 @@ Run it in one session, right after installing 0.4.0 and running `brain upgrade` 
 
 > In this template, before the toggle "My notes", add exactly these, each an H3 heading followed by a linked view filtered to the current page with the database title hidden:
 > - Projects template: "What came in?": Inbox where Project is this page, sorted Created descending, showing Name, Kind, Summary. Then "What do we know?": one linked view with two views, "Decisions" (Decisions where Project is this page, sorted Date descending, showing Name, Assessment, Date) and "Concepts" (Concepts where Project is this page, sorted Created time descending, showing Name, Summary).
-> - Areas template: "What came in?": Inbox where Area is this page, sorted Created descending, showing Name, Kind, Summary. Then "What do we know?": Concepts where Area is this page, sorted Created time descending, showing Name, Summary, Project.
+> - Areas template: "What came in?": Inbox where Area is this page, sorted Created descending, showing Name, Kind, Summary. Then "What do we know?": one linked view with two views, "Decisions" (Decisions where Area is this page, sorted Date descending, showing Name, Assessment, Date, Project) and "Concepts" (Concepts where Area is this page, sorted Created time descending, showing Name, Summary, Project).
 >
 > Don't change anything else.
-
-The Areas "What do we know?" shows Concepts only: an area's decisions are already under its "What have we decided here?".
 
 Existing project and area pages keep their body; add the same views to the pages you use most, or leave them, since the Inbox and Concepts tabs in Knowledge show the same rows.
 
