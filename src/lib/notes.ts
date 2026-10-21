@@ -11,6 +11,7 @@ export const NOTE_FOLDERS = [
   "archive",
   "knowledge",
   "sources",
+  "reports",
   "memories",
   "_proposals",
 ] as const;

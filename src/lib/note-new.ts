@@ -4,6 +4,7 @@ import { BrainError } from "./errors.ts";
 import { serializeNewFile } from "./frontmatter.ts";
 import { generateId, TYPE_PREFIX } from "./ids.ts";
 import { assertNoProblems, escapePointer, isRecord, unknownKeys, type InputProblem } from "./input.ts";
+import { rangesProblem, splitParts } from "./parts.ts";
 import { newNotePath } from "./paths.ts";
 import { formatDate, formatTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
@@ -78,6 +79,15 @@ export function checkNoteInput(value: unknown, pointer: string, withId = true): 
     for (const key of Object.keys(value.frontmatter)) {
       if (forbidden.includes(key)) at(`frontmatter/${escapePointer(key)}`, "is set by the CLI");
     }
+    if (value.type === "source") {
+      // Order, overlap and the part count are not in the JSON Schema (spec/cli.md §5.5).
+      if (value.frontmatter.notion_text_requested !== undefined) at("frontmatter/notion_text_requested", "is set by brain source full-text");
+      const parts = value.frontmatter.notion_parts;
+      if (Array.isArray(parts) && typeof value.body === "string") {
+        const problem = rangesProblem(parts, splitParts(value.body).parts.length);
+        if (problem !== null) at("frontmatter/notion_parts", problem);
+      }
+    }
   }
   return problems;
 }
@@ -109,6 +119,23 @@ export function stageNotes(
   });
   if (clashes.length > 0) throw new BrainError("ID_IN_USE", `${clashes[0]!.pointer} ${clashes[0]!.message}`, clashes);
 
+  // attached_to names a source that exists, or comes earlier in the batch, and isn't attached itself (spec/cli.md §5.5, 0042).
+  const parents: InputProblem[] = [];
+  items.forEach((item, index) => {
+    const parent = item.type === "source" ? item.frontmatter.attached_to : undefined;
+    if (parent === undefined) return;
+    const existingParent = workspace.get(String(parent));
+    const earlier = items.slice(0, index).find((candidate) => candidate.id === parent);
+    const type = existingParent?.type ?? earlier?.type;
+    const attached = existingParent !== undefined ? existingParent.attributes.attached_to : earlier?.frontmatter.attached_to;
+    const problem = type === undefined ? `${String(parent)} is not an existing source or one earlier in the batch`
+      : type !== "source" ? `${String(parent)} is a ${type}, not a source`
+      : attached !== undefined ? `${String(parent)} is attached to ${String(attached)} itself; attach to that source instead`
+      : undefined;
+    if (problem !== undefined) parents.push({ pointer: `${pointerOf(index)}/frontmatter/attached_to`, message: problem });
+  });
+  assertNoProblems(parents);
+
   const today = formatDate(options.now);
   const taken = new Set([...existing, ...seen]);
   const result: StagedNotes = { created: [], skipped: [], pointers: new Map() };
@@ -132,6 +159,11 @@ export function stageNotes(
       }
       attributes.content_hash = hash;
       attributes.captured ??= formatTimestamp(options.now);
+      // The kind sets whether the Inbox row shows the text (0043): full for email and chat.
+      if (attributes.notion_text === undefined && attributes.attached_to === undefined) {
+        if (attributes.kind === "email" || attributes.kind === "chat") attributes.notion_text = "full";
+        else if (attributes.kind === "document" || attributes.kind === "note") attributes.notion_text = "digest";
+      }
     }
     const id = item.id ?? generateId(TYPE_PREFIX[item.type]!, taken);
     taken.add(id);
