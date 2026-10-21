@@ -250,6 +250,30 @@ test("sync tasks renders per-item projects, falls back to the meeting, and repor
   assert.deepEqual(unpublished.json.data.items[0].pending_relations, [{ property: "Project", ids: ["prj-9x4t1b7e"] }]);
 });
 
+test("sync tasks types the Status value by notion.tasks.status_type (#113)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const configPath = join(dir, "brain.json");
+  const base = JSON.parse(await readFile(configPath, "utf8"));
+  assert.equal(base.notion.tasks.status_type, undefined, "fixture must leave status_type absent");
+  const run = async (statusType: unknown) => {
+    const config = structuredClone(base);
+    if (statusType === undefined) delete config.notion.tasks.status_type;
+    else config.notion.tasks.status_type = statusType;
+    await writeFile(configPath, JSON.stringify(config, null, 2));
+    return brain(["sync", "tasks", "--brain", dir, "--meeting", "mtg-8c4n2p7w", "--input", await input(dir, `status-${String(statusType)}.json`, { items: [{ title: "Send plan" }] }), "--json"]);
+  };
+  for (const [statusType, type] of [[undefined, "select"], ["select", "select"], ["status", "status"]] as const) {
+    const result = await run(statusType);
+    assert.equal(result.code, 0, result.stdout);
+    assert.deepEqual(result.json.data.items[0].properties.Status, { type, value: "To Do" }, `status_type ${String(statusType)}`);
+  }
+  const invalid = await run("text");
+  assert.equal(invalid.json.ok, false);
+  assert.equal(invalid.json.error.code, "BRAIN_CONFIG_INVALID");
+  const lint = await brain(["lint", "--brain", dir, "--json"]);
+  assert.ok(lint.json.data.issues.some((issue: { rule: string; severity: string }) => issue.rule === "brain-config" && issue.severity === "error"), lint.stdout);
+});
+
 test("sync tasks rejects missing and non-project item projects", async (context) => {
   const dir = await fixtureCopy(context);
   const missing = await brain(["sync", "tasks", "--brain", dir, "--meeting", "mtg-8c4n2p7w", "--input", await input(dir, "tasks-missing-project.json", { items: [{ title: "Missing", projects: ["prj-00000000"] }] }), "--json"]);
