@@ -13,6 +13,7 @@ In the left column, under the navigation, add a heading 3 "Needs you" and two li
 
 In the right column add, in one row:
 3. A button "Quick capture": Add page to "Inbox", set Kind = Capture and Brain Status = New, open the page after creation.
+3b. A button "Ask the brain": Add page to "Inbox", set Kind = Ask and Brain Status = New, open the page after creation.
 4. A button "New meeting": Add page to "Meetings", set Date = today, open the page after creation.
 5. A button "New project": Add page to "Projects", set Status = Planned, open the page after creation.
 
@@ -23,6 +24,11 @@ Below them, a heading 3 "What's on today?" and three tabs:
 
 Put the views in a tabs block (one view per tab, tab labels as given). If you can't create tabs, add them as separate views of one linked view instead.
 
+Below that, a heading 3 "What did the brain take in?" and two tabs:
+9. Tab "Came in": linked view of "Inbox", List, at most 10 rows, named "What came in lately?": filter Brain Status is Processed; sort Created descending; show Name, Kind, Project.
+10. Tab "Meetings": linked view of "Meetings", List, at most 10 rows, named "Which meetings did it take in?": filter Brain Status is Ingested; sort Ingested At descending; show Name, Date, Project.
+Put these two in their own tabs block.
+
 Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included, and hide its database title. In every view hide the properties "Brain ID", "Last Synced", "Created time" and "Last edited time" unless the view lists them under show. Show only the properties listed. Leave the navigation column as it is. Do not add other content.
 ```
 
@@ -30,3 +36,5 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 - [ ] "Needs you" shows two short lists; a meeting dated tomorrow is not in "Which minutes need review?".
 - [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status New; New meeting and New project open a page with the default template.
 - [ ] "What's on today?" has three tabs: Tasks, Meetings, Projects.
+- [ ] Ask the brain creates an Inbox row with Kind Ask and Brain Status New.
+- [ ] "What did the brain take in?" has two tabs, Came in and Meetings, each with the 10 latest rows.

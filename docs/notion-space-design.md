@@ -57,7 +57,7 @@ Every database that mirrors a brain note has three kinds of properties. Each pro
 
 **Creation:** new rows you create in Areas, Goals, Projects, People, Orgs are imported by the next `brain sync` (0021). Rows in Decisions, Questions, Concepts and Review are created by the brain only. Inbox rows come from you (Quick capture) or from the brain (every document, email, chat or note it ingests, 0037).
 
-**Page bodies (0026):** the brain writes only inside named toggle headings: "Brief" and "Decision log" on project pages. It owns the whole body of Decisions, Questions and Concepts pages, publishes no body for Areas, Goals, People, Orgs and Inbox rows, and never edits Meetings (0007) or a capture you wrote. Everything else on a page is yours, including the **"My notes"** toggle.
+**Page bodies (0026, 0041, 0043):** the brain writes only inside named toggle headings: "Brief" and "Decision log" on project pages, "Brief" on area pages. It owns the whole body of Decisions, Questions and Concepts pages and of the Inbox rows it creates (a digest of what came in, a "Full text" toggle when you choose it, and the report on a Report row). It publishes no body for Goals, People and Orgs, and never edits Meetings (0007), a capture you wrote or an Ask row. Everything else on a page is yours, including the **"My notes"** toggle.
 
 ---
 
@@ -92,6 +92,8 @@ Ongoing responsibilities (clients, health, learning…).
 | Archived | Checkbox | You |
 | People via projects | Rollup: Projects → People, show original | You (derived, Notion-only) |
 | Clients via projects | Rollup: Projects → Client, show original | You (derived, Notion-only) |
+
+Page body: a toggle heading **Brief** (brain-written, 0041: the area's projects, reviewed decisions and open questions), then the template's linked views and "My notes". The publish appends the toggle at the end of a page that has none; drag it to the top once.
 
 ### 3.2 Goals
 | Property | Type | Owner |
@@ -208,7 +210,7 @@ Open questions and risks raised in meetings.
 | Property | Type | Owner |
 |---|---|---|
 | Kind | Select: Question, Risk | Brain |
-| Status | Select: Open, Answered, Dropped | You (brain may propose "Answered") |
+| Status | Select: Open, Answered, Dropped | You. The brain sets Answered once, after you approve an Answer row in Review (0041) |
 | Project | Relation → Projects | Brain |
 | Area | Relation → Areas (two-way with Questions) | Brain: the areas of its projects (0034) |
 | Raised In | Relation → Meetings | Brain |
@@ -221,8 +223,8 @@ The approval queue (0003). Created by the brain; you decide.
 | Property | Type | Owner |
 |---|---|---|
 | Name | Title | Brain: e.g. "Acme launch: Jan → Feb" |
-| Kind | Select: Update Fact, Add To Note, Add Link, Supersede, Contradiction, Merge, New Item | Brain |
-| Target | Text | Brain: note title + Brain ID |
+| Kind | Select: Update Fact, Add To Note, Add Link, Supersede, Contradiction, Merge, New Item, Review Notes, Answer | Brain. **Review Notes** (0041, 0043): one row per ingest, its new notes and links lettered a), b)…; Approve accepts them, "all except b, d" in Note keeps those out, Reject archives the new notes. **Answer**: an answer to an open question |
+| Target | Text | Brain: note title + Brain ID (for Review Notes, the meeting or source). Says what changes; your corrections go in Note |
 | Target Page | URL | Brain: link to the Notion page affected |
 | Before | Text | Brain |
 | After | Text | Brain |
@@ -241,7 +243,7 @@ Everything that came into the brain except meetings, which have their own databa
 | Property | Type | Owner |
 |---|---|---|
 | Name | Title | You on a capture; Brain on a row it creates |
-| Kind | Select: Capture, Document, Email, Chat, Note | System |
+| Kind | Select: Capture, Document, Email, Chat, Note, Ask, Report | System; **Ask** is yours: a question for the brain (0043) |
 | Summary | Text | Brain: one line on what it taught |
 | Decisions | Relation → Decisions (two-way with Sources) | Brain |
 | Questions | Relation → Questions (two-way with Sources) | Brain |
@@ -250,12 +252,17 @@ Everything that came into the brain except meetings, which have their own databa
 | Project | Relation → Projects (two-way with Inbox) | You: set it on a capture and the ingest uses it without asking (brain fills if empty) |
 | Area | Relation → Areas (two-way with Inbox) | You (brain fills if empty) |
 | Brain Status | Select: New, Processed, Skipped | You set Skipped; brain sets Processed |
+| Full text | Checkbox | You: tick it to have the document's text on the row; the brain writes it on the next catch-up and clears the box (0043) |
+| Report | Relation → Inbox (two-way with Ask) | Brain: on an Ask row, the report that answers it |
+| Ask | Relation → Inbox (two-way with Report) | Brain: on a Report row, the question it answers |
 | Tasks | Relation → Tasks (two-way with Source) | You |
 | Brain ID | Text | System (the source's id, `src-…`) |
 | Last Synced | Date (with time) | System |
 | Created | Created time | System |
 
-Decisions, Questions, Concepts and People together are **Produced**: the notes the brain made from this input. The page body is yours on a capture; the brain never writes a body. The brain doesn't read Inbox rows back except to ingest New captures, so an edit to Summary or Produced stays in Notion until the brain's own value changes.
+Decisions, Questions, Concepts and People together are **Produced**: the notes the brain made from this input. The page body is yours on a capture and on an Ask row. On a row the brain creates, the body is a digest written once: what the input is, its summary, the key points by section and the figures and dates as stated. Below it, a toggle heading **Full text** holds the text itself when you chose it (emails and chats by default, documents and decks on request, or part of one: "slides 3–9"). It is a one-way copy: the source in the brain stays the real one, and an edit there doesn't reach the brain.
+
+**Ask and Report (0043):** add a row with Kind = Ask and your question as its Name ("Everything about the Acme launch since August"). The next catch-up answers it with a new row, Kind = Report, linked to your Ask row, which becomes Processed. The report has Where it stands, Timeline (oldest first, each line linked), Decisions in force, Open questions and risks, People involved, and Gaps; lines resting on notes you haven't reviewed are marked *(not reviewed)*. A report is a dated snapshot, never ingested back: ask again to refresh it. The brain doesn't read Inbox rows back except to ingest New captures, so an edit to Summary or Produced stays in Notion until the brain's own value changes.
 
 ### 3.12 Tasks (default, only if you have no tasks system)
 Minimal, so the brain can send action items (0018). If you already have a tasks database, skip it and map yours in `brain.json`.
@@ -292,15 +299,15 @@ Each template is the default for its database. Every linked view sits under an H
 
 | Database | Template body |
 |---|---|
-| Areas | "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What have we decided here?" (Decisions: Current, Superseded) · "What's still open here?" (Questions: Open questions, Open risks, Answered) · "My notes". People and Clients show as the "via projects" rollups in the page header (0034) |
+| Areas | "Brief" toggle heading (brain-written, 0041) · "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What have we decided here?" (Decisions: Current, Superseded) · "What's still open here?" (Questions: Open questions, Open risks, Answered) · "What came in?" (Inbox where Area is this page, newest first) · "What do we know?" (Concepts where Area is this page) · "My notes". People and Clients show as the "via projects" rollups in the page header (0034) |
 | Goals | "How are the key results moving?" (Key Results: Open, Done) · "Which projects serve it?" (Projects) · "My notes" |
-| Projects | A muted line "Brief and Decision log are written by the brain. Add your own notes in My notes." · "Brief" toggle heading (brain-written) · "Decision log" toggle heading (brain-written) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What's still open here?" (Questions, Open) · "Who's involved?" (People) · "My notes" |
+| Projects | A muted line "Brief and Decision log are written by the brain. Add your own notes in My notes." · "Brief" toggle heading (brain-written) · "Decision log" toggle heading (brain-written) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What's still open here?" (Questions, Open) · "Who's involved?" (People) · "What came in?" (Inbox where Project is this page, newest first) · "What do we know?" (tabs Decisions and Concepts where Project is this page) · "My notes" |
 | Meetings | Unchanged from the hand-reworked template (see notion/templates.md): "Before marking Reviewed" checklist callout · Notion AI meeting notes block · "My notes" · toggles Decisions, Questions, Tasks |
 | People | "Which meetings were they in?" (Meetings: Upcoming, Past) · "What are they working on?" (Projects) · "My notes" |
 | Orgs | "Who works there?" (People) · "Which projects?" (Projects) · "My notes". Meetings show as the "Meetings via projects" rollup in the page header |
 | Decisions | (brain-generated body) · "Superseded by" callout when present |
 | Concepts | (brain-generated body); no template needed |
-| Inbox | None: a capture's body is yours, and rows the brain creates have no body |
+| Inbox | None: a capture's body is yours, and the brain writes the body of the rows it creates (§3.11) |
 
 No template uses a callout to show a property: a callout can't display one, and the page layout already shows it.
 
@@ -325,12 +332,12 @@ Each Space: the synced Spaces navigation in a narrow left column, then one tabs 
 
 | Space | Job | Tabs (view) |
 |---|---|---|
-| **Home** | Start of day: your work first | Left: navigation, then "Needs you": "What needs my decision?" (Review, Pending) and "Which minutes need review?" (Meetings, Not Reviewed, held today or earlier), 5 rows each. Right: buttons Quick capture (→ Inbox, Kind Capture, Brain Status New), New meeting, New project; then "What's on today?" with tabs Tasks (due today or overdue) · Meetings (today) · Projects (Active) |
+| **Home** | Start of day: your work first | Left: navigation, then "Needs you": "What needs my decision?" (Review, Pending) and "Which minutes need review?" (Meetings, Not Reviewed, held today or earlier), 5 rows each. Right: buttons Quick capture (→ Inbox, Kind Capture, Brain Status New), Ask the brain (→ Inbox, Kind Ask, Brain Status New), New meeting, New project; then "What's on today?" with tabs Tasks (due today or overdue) · Meetings (today) · Projects (Active); then "What did the brain take in?" (the Brain feed, 0043) with tabs Came in (Inbox, Processed, newest first, 10 rows) · Meetings (Brain Status Ingested, newest Ingested At first, 10 rows) |
 | **Tasks** | Do the work | Today · Upcoming (by day) · No date · Waiting On · Someday · Done (by week) |
 | **Meetings** | Prepare, review minutes, track ingestion | Upcoming · To review · Ready for the brain · Ingested this week · Calendar |
 | **Projects** | Run projects | Active (board by Status) · By area · Deadlines (timeline) · Gone quiet |
 | **Plan** | Areas → goals → key results → projects | Goals · Key results (by goal) · Areas (the way into each Area page) · Projects by goal |
-| **Review** | Decide on proposals | Needs my decision · Sources disagree · Approved recently · Rejected |
+| **Review** | Decide on proposals | A muted line above the views: "Your corrections go in Note. Target says what changes." (0043) · Needs my decision · Sources disagree · Approved recently · Rejected |
 | **Knowledge** | Navigate what the brain knows | Decisions (Recent, Current, Provisional, Superseded, Disputed) · Questions (Open questions, Open risks, Answered) · Concepts (Recent, By project, Drafts) · People (by org, Disputed) · Orgs (Clients, Others) · Inbox (Inbox: New, oldest first · History: Processed, newest first) |
 | **Archive** (under System) | Find what's finished | One tab per database: Projects (Done or Archived) · Goals (Achieved, Dropped or Archived) · Areas · Decisions · Questions · Concepts · People · Orgs (Archived) |
 
@@ -394,4 +401,4 @@ See "After building" in [notion/CHECKLIST.md](../notion/CHECKLIST.md): connect t
 
 ## 9. Minutes format prompt (for the Meetings template)
 
-The text lives in [notion/minutes-format.md](../notion/minutes-format.md). It gives every summary the same sections (Attendees, Decisions, Action items, Facts & numbers, Open questions, Risks, Summary), and consistent minutes make the ingest more accurate (0024). Paste it into Notion AI when you ask it to summarise a meeting, or use it to check minutes against the "Minutes follow the format" item of the checklist. The Meetings template (reworked by hand on 2026-10-13) no longer holds it in a callout; on 2026-10-14 we chose to keep that template as it is.
+The text lives in [notion/minutes-format.md](../notion/minutes-format.md). It gives every summary the same sections (Attendees, Projects, Action Items, Decisions, Open Questions, Risks, Meeting Purpose, Background, Current Status, Requirements and Deadlines, Other relevant topics; 0043), and consistent minutes make the ingest more accurate (0024). Paste it into Notion AI when you ask it to summarise a meeting, or use it to check minutes against the "Minutes follow the format" item of the checklist. The Meetings template (reworked by hand on 2026-10-13) no longer holds it in a callout; on 2026-10-14 we chose to keep that template as it is.
