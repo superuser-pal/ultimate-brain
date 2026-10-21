@@ -40,15 +40,11 @@ When the user's notes and the minutes disagree on a fact, ask in the pre-check (
 
 ## Publish (SKILL.md step 11)
 
-Do these in order, after the ingest commit.
+Do these in order, after the ingest commit: pages first, so every task's project, meeting or Inbox row exists when the task is created.
 
 **Write in parallel** (decision 0037). Within each step, send the writes that don't depend on each other as parallel tool calls in one turn, up to 10 at a time (Notion limits the request rate). Don't read a page back after writing it: the write's response holds its id. Read a page only when the write needs its current content, such as a project's blocks before a section is replaced.
 
-1. **Tasks.** If `brain status` shows `tasks_database: true`:
-   1. Run `brain sync tasks --meeting <mtg-id> --input <items.json>`, or `--source <src-id>` for the owner's tasks from any other source.
-   2. Create one Notion page per returned item **without** `pending_relations`, in its `database_id` with its `properties`. An item with `pending_relations` names a page not yet in Notion (a project, or the source's own Inbox row): **don't create it yet**. After step 2 has published and recorded it, run `sync tasks` again with only those items, and create each once. An `owner` of type `person_name` is written as text, or resolved to a Notion user if the mapped property is a people property.
-   3. Run `brain sync record` with `{ "records": [ { "id": "<mtg-id or src-id>", "synced_at": "<now, ISO 8601 UTC>", "tasks": ["<new task page id>", …] } ] }`. `synced_at` is required on every record (spec/cli.md §5.14.6).
-2. **Notes, meeting and proposals:**
+1. **Pages: notes, meeting, sources and proposals:**
    1. Run `brain sync render --changed`.
    2. For each item:
       - **`action: create`:** create a page in `database_id` with `properties`.
@@ -68,6 +64,10 @@ Do these in order, after the ingest commit.
    **`PROJECT_NOT_IN_NOTION`** in `errors`: a project note with no Notion page (written before 0.2.2, or by hand). Never create the page through the API: it would miss the template. Report it, and ask the user to create the project with **New project** in Notion under the same name and put the note's id in its **Brain ID**, so the next sync links the two.
    3. **Pending relations:** items that list `pending_relations` reference notes not yet published. Publish and record those first, then run `sync render --changed` again.
    4. Run `brain sync record` with one record per page written: `{ "id", "notion": <page id>, "synced_at": <now>, "published": <the item's published> }`.
+2. **Tasks,** now that the pages they link to exist (decision 0037). If `brain status` shows `tasks_database: true`:
+   1. Run `brain sync tasks --meeting <mtg-id> --input <items.json>`, or `--source <src-id>` for the owner's tasks from any other source.
+   2. Create one Notion page per returned item **without** `pending_relations`, in its `database_id` with its `properties`. An item with `pending_relations` names a page not yet in Notion (a project, or the source's own Inbox row): **don't create it**: after step 1 that page is a project not in Notion yet, so leave the item out and list it in the report. An `owner` of type `person_name` is written as text, or resolved to a Notion user if the mapped property is a people property.
+   3. Run `brain sync record` with `{ "records": [ { "id": "<mtg-id or src-id>", "synced_at": "<now, ISO 8601 UTC>", "tasks": ["<new task page id>", …] } ] }`. `synced_at` is required on every record (spec/cli.md §5.14.6).
 3. **Commit:** `publish: <meeting title> <date>`. Then run `brain log publish <mtg-id> pages=<n>`, and commit it with the publish.
 
 ### Inbox bodies (decision 0043)
