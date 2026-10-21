@@ -4,7 +4,7 @@
 **Status values:** `todo` · `in progress` · `review` · `done` · `blocked` · `dropped` (won't ship; skipped by `release.mjs`).
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
-> **2026-10-21 — Status: 0.3.1 is released and in the user's brain. U-13 ran on 2026-10-20 (two catch-ups); its findings, decided in a grill on 2026-10-21, are decision 0043 (CC-38), folded into the 0.4.0 tasks. 0.4.0 plan: decisions 0041–0043, tasks CC-36, CX-37, CX-38, CC-37, U-15. 0.3.2: CX-39 (#113) ships before 0.4.0.**
+> **2026-10-21 — Status: 0.3.1 is released and in the user's brain. U-13 ran on 2026-10-20 (two catch-ups) and is closed; its findings, decided in a grill on 2026-10-21, are decision 0043 (CC-38), folded into the 0.4.0 tasks. 0.4.0 plan: decisions 0041–0043, tasks CC-36, CX-37, CX-38, CC-37, U-15. 0.3.2: CX-39 (#113) ships before 0.4.0.**
 > - **Merging (decision 0040):** the user merges on the GitHub PR page, with the PR's `merge-ready` status in view; `merge.mjs` is optional; agents never merge. `main-guard` fails only on a commit that came from no PR.
 > - **0.4.0 so far:** CC-29, CX-34, CC-30, CC-31, CC-35 merged; CX-33 (blind-run setup script) open. Theme (CC-35): the brain gives back; decision 0043 (CC-38) adds what U-13 found: Inbox bodies, reports, one Review row per source, a 5-minute catch-up, the user's minutes format.
 > - **Codex was out on 2026-10-20:** Claude Code built CX-35, CX-32 and CX-36 at the user's request (each row says so).
@@ -501,7 +501,7 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 ### CC-38 · U-13 findings: decision 0043 and the 0.4.0 tasks · `in progress`
 **Release:** 0.4.0
 **Changelog:** decision 0043: Inbox rows show a digest or the full text, reports on request land in the Inbox, one Review row per source, a 5-minute catch-up, and the user's minutes format.
-**Output:** decision 0043, agreed with the user in a grill on 2026-10-21 after U-13's two catch-ups (amends 0026 and 0041, refines 0024 and 0037); its work folded into CC-36, CX-37 and CC-37 below, and into U-15; CX-39 under 0.3.2 for #113; docs/v2-ideas.md "Owners on Tasks".
+**Output:** decision 0043, agreed with the user in a grill on 2026-10-21 after U-13's two catch-ups (amends 0026 and 0041, refines 0024 and 0037); its work folded into CC-36, CX-37 and CC-37 below, and into U-15; CX-39 under 0.3.2 for #113; docs/v2-ideas.md "Owners on Tasks"; U-13 closed with notion/templates.md pulled again after migration 0005 (Areas' two new views, the Inbox "Capture" template).
 **Acceptance:** the user approves decision 0043; each of CC-36, CX-37 and CC-37 names what 0043 adds to it and its acceptance; Codex's review finds CX-37's 0043 part and CX-39 scoped so that a spec question, if any, can be answered before they start.
 
 ### CC-36 · Contracts for 0.4.0 (decisions 0041–0043) · `todo`
@@ -546,7 +546,7 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 | U-10 | Publish 0.2.2 the same way, then `brain upgrade` in your brain | When CC-23 and CX-26 are merged |
 | U-11 | Setup for 0.2.3: from CX-27 on, merge only with `node scripts/merge.mjs <PR>`. GitHub Pro is deferred (decision 0038). Done by Claude on 2026-10-18: the `dogfood` label and the denylist. `/plugin update` found no match in the brain, so its Claude Code keeps the 2026-10-12 skills until 0.2.3 or a manual copy | Now |
 | U-12 | Publish 0.2.3 with `node scripts/release.mjs 0.2.3` from the main checkout, then `brain upgrade` in your brain, then `npm deprecate ultimate-brain@0.2.2 "Superseded. Install the latest version."` (0.2.2 still has a real name in a skill example) | When CC-24, CC-25, CX-27 and CX-29 are done |
-| U-13 | 0.3.0 in your brain, one session with Claude: migrate your Notion space with brain-notion-change (your yes at each step), `brain upgrade`, then one real "catch up" as the acceptance run. Ran 2026-10-20; findings → decision 0043 (CC-38) and #113 | After 0.3.0 is released |
+| U-13 | 0.3.0 in your brain, one session with Claude: migrate your Notion space with brain-notion-change (your yes at each step), `brain upgrade`, then one real "catch up" as the acceptance run. Ran 2026-10-20; findings → decision 0043 (CC-38) and #113 (CX-39). **Closed 2026-10-21**; notion/templates.md pulled again | Done |
 | U-14 | Publish 0.2.4 with `node scripts/release.mjs 0.2.4` from the main checkout, then `brain upgrade` in your brain | When CC-27, CX-28 and CX-30 are merged |
 | U-15 | 0.4.0 in your brain, one session with Claude: `brain upgrade`, Notion migration 0006, approve the backlog's Review notes rows and check the Briefs, link the product repo as the "Ultimate Brain" area and run its first ingest; then a catch-up over real meetings within the 5-minute bar, one document kept in full, one report asked from an Ask row (decision 0043); then two weeks against the habit bar in CC-35 | After 0.4.0 is released and U-13 is closed |
 
