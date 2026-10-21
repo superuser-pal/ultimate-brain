@@ -1,4 +1,4 @@
-<!-- Title: "<TASK-ID>: <what it does>". Branch: claude/<TASK-ID>-… or codex/<TASK-ID>-…  (decision 0038) -->
+<!-- Title: "<TASK-ID>: <what it does>". Branch: claude/<CC-N>-… (decisions 0038, 0044; codex/ branches are history) -->
 
 **Task:** CC-00 · **Release:** x.y.z · **Decisions:** 00xx
 

@@ -15,10 +15,13 @@
 
 ## Why this split
 
-- **Claude Code** has the full design context from the research and grilling sessions, so it owns the things that encode judgment: the schema and CLI contracts, the agent skills and prompts (ingest, apply, sync, query), the Notion design, and the evaluation of meeting extraction.
-- **Codex** gets well-specified, testable engineering: the TypeScript CLI that does the deterministic work (IDs, frontmatter, index, lint, proposals, apply, views, link, init), its tests and fixtures.
-- **Contracts come first** (wave 1) so both can then work in parallel without guessing.
-- Every task is reviewed by the other agent.
+**Now (decision 0044, 2026-10-21):** Claude Code builds every task: the contracts, skills, prompts and Notion design, and the TypeScript CLI with its tests and fixtures. Codex reviews every PR against its acceptance, its decisions and `spec/`, and builds nothing. Contracts still come first.
+
+**Waves 1–4 and 0.2–0.3 (history):**
+- **Claude Code** had the full design context from the research and grilling sessions, so it owned the things that encode judgment: the schema and CLI contracts, the agent skills and prompts (ingest, apply, sync, query), the Notion design, and the evaluation of meeting extraction.
+- **Codex** got well-specified, testable engineering: the TypeScript CLI that does the deterministic work (IDs, frontmatter, index, lint, proposals, apply, views, link, init), its tests and fixtures.
+- **Contracts came first** (wave 1) so both could work in parallel without guessing.
+- Every task was reviewed by the other agent.
 
 ## Waves at a glance
 
@@ -484,6 +487,7 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 
 ### CC-41 · Blind-run brain setup script (was CX-33) · `todo`
 **Release:** 0.4.0
+**Changelog:** a script builds a blind-run brain from a fixture, with its Notion ids blanked and its first commit made.
 **Output:** `scripts/blind-brain.mjs <fixture> <dir>` copies a fixture brain from `tests/fixtures/`, blanks its Notion ids in `brain.json`, runs `git init` and commits, so a skill's blind run starts from one command. A dev script; not in the npm package.
 **Acceptance:** a test builds a brain from `brain-acme` that `brain status --json` reads with `ok: true` and no Notion ids.
 
@@ -493,7 +497,7 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 **Output:** reviews/06-okf-and-gbrain.md (OKF vs our schema, three adoption levels, standard-or-not evidence, GBrain fit); docs/v2-ideas.md "Retrieval index over Markdown" (replaces "Long-term memory provider") and "OKF: export, then maybe alignment", each with revisit triggers; the docs/vision.md summary line. Docs only; no spec or decision change.
 **Acceptance:** Codex's review finds the OKF mapping in reviews/06 §2 consistent with spec/schema.md and SPEC v0.2, and no binding decision changed.
 
-### CC-35 · 0.4.0 plan: decisions 0041 and 0042 and their tasks · `review`
+### CC-35 · 0.4.0 plan: decisions 0041 and 0042 and their tasks · `done` (#111)
 **Release:** 0.4.0
 **Changelog:** the 0.4.0 plan: the brain gives back (reviewed notes, answered questions, Briefs) and takes in linked repos and Notion attachments (decisions 0041, 0042).
 **Output:** agreed with the user in a grill on 2026-10-20, after a look at the first brain's use (every note still `draft`, 23 of 24 proposals approved, no question ever asked of the brain). Theme: payback before a second user. Decision 0041 (a Review notes row per ingest, the backlog's rows once, Answer rows, Briefs from reviewed notes only, area Briefs; amends 0005 and 0026) and decision 0042 (linked repos as read-only sources, the product repo as the pilot area; files attached to Inbox rows and meetings). Tasks CC-36, CX-37, CX-38, CC-37 and U-15. Out of 0.4.0: the onboarding suite (no second user yet); the agency brain moves in after 0.4.0. Habit bar for the two weeks after the release: every real meeting ingested within 2 working days, and at least one question a week answered better by Notion or the brain than by memory, logged as a capture.
@@ -508,8 +512,8 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 ### CC-39 · Claude Code builds, Codex reviews (decision 0044) · `review`
 **Release:** 0.4.0
 **Changelog:** decision 0044: Claude Code builds every task, the CLI included, and Codex reviews every PR.
-**Output:** decision 0044, at the user's request on 2026-10-21 after CC-36 (#115); AGENTS.md (current phase, multi-agent rules, layout owners); this file: the owners line, the status note, and the open Codex tasks renumbered (CX-39 → CC-40, CX-33 → CC-41, CX-37 → CC-42, CX-38 → CC-43), each title saying "was CX-n"; references to them in open rows follow. Done rows keep their ids.
-**Acceptance:** the user approves decision 0044; `node scripts/task.mjs start CC-40` would create `claude/CC-40-…` (the id gives the prefix); no open row names a CX id except as "was CX-n"; `npm test` passes.
+**Output:** decision 0044, at the user's request on 2026-10-21 after CC-36 (#115); AGENTS.md (current phase, multi-agent rules, layout owners); this file: the owners line, the status note, and the open Codex tasks renumbered as CC-40, CC-41, CC-42 and CC-43, each title saying which id it was; references to them in open rows follow. Done rows keep their ids.
+CC-35 set to `done` (#111), its merged state. **Acceptance:** the user approves decision 0044; `node scripts/task.mjs start CC-40` would create `claude/CC-40-…` (the id gives the prefix); no open row names a CX id except as "was CX-n"; `npm test` passes.
 
 ### CC-36 · Contracts for 0.4.0 (decisions 0041–0043) · `done` (#115)
 **Release:** 0.4.0
