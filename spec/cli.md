@@ -971,7 +971,7 @@ Input: `{ "items": [ { "title": "Send Supabase migration plan", "owner": "Carlos
 `projects` (dogfood finding 7): the projects this task is about, as project ids. Absent or empty → the meeting's `projects`. Errors, disjoint: an id with no note → `UNKNOWN_ID`; an entry that isn't a string, or an existing note that isn't a project → `INPUT_INVALID` with the pointer `/items/<n>/projects/<m>`.
 
 Each item → `{ "database_id": "…", "properties": { "<mapped name>": {type, value} } }` with:
-- title; due; status = `new_task_status`;
+- title; due; status = `new_task_status`, typed as `notion.tasks.status_type` (`{ "type": "select", "value": "To Do" }` when absent or `select`, `"status"` when the mapping says `status`; schema §12, #113);
 - project relation from the item's `projects`, else the meeting's; area relation from the meeting's `area` (each when published and mapped). A project not yet in Notion is left out and listed in the item's `pending_relations`, as in `render`;
 - owner as `{ "type": "person_name", "value": "Carlos Ruiz" }`: the skill writes it as text, or resolves it to a Notion user when the mapped property is a people property;
 - the backlink: the meeting relation (`meeting`), else the meeting's Notion URL (`meeting_url`);
