@@ -45,8 +45,8 @@ A document, a web page, then a pasted email:
 - **`file_name`** (the name only, no folder) and **`converter`** (`claude-read <model id>`, `codex-view-image <model id>`, or `markitdown <version>`) are required with a `file:` key.
 - **Web page** (0036): `source_key` is `url:<the https URL as given>`; `kind` `document` and `converter` (`markitdown <version>` or `web-fetch <model id>`) are required; no `file_name`.
 - **Capture:** `source_key` is `notion:<row page id>`, `kind` is `capture`, `origin_edited` is the row's `last_edited_time`.
-- **`summary`** (every kind except minutes, added in the real run of step 6, not the step 3 dry run): one line on what the source taught. It is the Inbox row's Summary.
-- **`digest`** (every kind except minutes, captures and attachments, added with `summary`; decision 0043): the key points by section and the figures and dates as stated, in Markdown. It is the body of the Inbox row.
+- **`summary`** (every kind except minutes, added in the real run of step 6, not the step 3 dry run), in `frontmatter` like every field below: one line on what the source taught. It is the Inbox row's Summary.
+- **`digest`** (in `frontmatter`; every kind except minutes, captures and attachments, added with `summary`; decision 0043): the key points by section and the figures and dates as stated, in Markdown. It is the body of the Inbox row.
 - **`notion_text`** and **`notion_parts`:** leave them out unless the user chose otherwise; the CLI writes `full` for `email` and `chat`, `digest` for `document` and `note`. `"notion_text": "full", "notion_parts": ["3-9"]` puts slides 3 to 9 on the row. Never send `notion_text_requested`: only `brain source full-text` writes it.
 - **A linked repo's file** (decision 0042) adds `"repo": "<name>", "repo_path": "decisions/0041-review.md", "commit": "<the listing's to, 40 hex>"` to a `document` with a `file:` key, `file_name` = the path's last segment and `converter: verbatim` for a text file.
 - **A file attached in Notion** adds `"attached_to": "<the parent's src- id>"` to a `document` with a `file:` key, and has no `digest`, `notion_text` or `notion_parts`. The parent must exist already or come earlier in the same batch.
@@ -110,7 +110,7 @@ Things the CLI checks that are easy to get wrong:
 - **`why`** is the sentence from the minutes, verbatim.
 - **`title`** reads as a Review row: `<subject> <field>: <old> → <new>`.
 - **Other kinds** (spec/schema.md §11):
-  - `add_to_note`: `target`, `content`.
+  - `add_to_note`: `target`, `content`. A link in `content` is relative to the target note's folder.
   - `contradiction`: `target`, `field`, `after` (the target must have a current value).
   - `supersede`: `target` = the new note, `supersedes` = the old one.
   - `merge`: `target` = the duplicate, `merge_into` = the survivor.

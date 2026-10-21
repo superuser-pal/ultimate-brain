@@ -28,7 +28,7 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
 3. **Pre-check** (both modes). Before writing anything, ask the user **one** question covering everything that blocks a correct ingest:
    - the Date is empty;
    - the Attendees are empty or not linked;
-   - one name is spelled several ways in the minutes ("Maria Lopez", "Maria Lopes");
+   - one name is spelled several ways in the minutes ("Maria Lopez", "Maria Lopes") and no person note settles it. A new spelling of a known person whose organization and role leave no doubt is not a question: it is an alias `add_link` (step 8, references/extraction.md "People");
    - the user's notes and the minutes disagree on a fact.
 
    If nothing blocks, don't ask. An empty Project is not a blocker (see the stop conditions). **When the Project property is empty and the minutes have a `## Projects` section** (notion/minutes-format.md), use the projects it lists, matched in step 4, instead of asking (decision 0043).
