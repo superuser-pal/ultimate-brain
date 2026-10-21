@@ -234,3 +234,11 @@ test("render: an answer row shows answer → note; once applied, the question's 
   assert.equal(after?.properties.Status, undefined, "Status goes out once");
   assert.deepEqual(await lintErrors(dir), []);
 });
+
+test("render: a Review row links its page and its source meeting", async (context) => {
+  const dir = await fixtureCopy(context);
+  const created = await run(dir, ["proposal", "new"], { proposals: reviewInput });
+  const [item] = await rendered(dir, [created.json.data.created[0].id]);
+  assert.deepEqual(item!.properties["Target Page"], { type: "url", value: "https://www.notion.so/3c4d5e6f7a8b4c0d9e2f3a4b5c6d7e8f" });
+  assert.deepEqual(item!.properties["Source Meeting"], { type: "relation", value: ["3c4d5e6f-7a8b-4c0d-9e2f-3a4b5c6d7e8f"] });
+});
