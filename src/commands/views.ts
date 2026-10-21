@@ -4,27 +4,40 @@ import { serializeNewFile } from "../lib/frontmatter.ts";
 import { generateId } from "../lib/ids.ts";
 import { compareCodePoints, type Note } from "../lib/notes.ts";
 import { formatDate, formatTimestamp } from "../lib/time.ts";
-import { deriveView, generatedBlockRange, projectViewPath, type ViewKind } from "../lib/views.ts";
+import { areaBriefPath, deriveView, generatedBlockRange, projectViewPath, type ViewKind } from "../lib/views.ts";
 import { Workspace } from "../lib/workspace.ts";
 
-/** `brain views [--project <id>] [--check]` (spec/cli.md §5.9). */
+/** `brain views [--project <id> | --area <id>] [--check]` (spec/cli.md §5.9). */
 export const viewsCommand: Command = {
   name: "views",
-  usage: "brain views [--project <id>] [--check] [--json]",
-  summary: "Regenerate project briefs and decision logs while preserving user blocks.",
-  options: { project: "string", check: "boolean" },
+  usage: "brain views [--project <id> | --area <id>] [--check] [--json]",
+  summary: "Regenerate project briefs, decision logs and area briefs while preserving user blocks.",
+  options: { project: "string", area: "string", check: "boolean" },
   maxPositionals: 0,
   needsBrain: true,
   async run({ args, brain, now }) {
     const workspace = await Workspace.open(brain!);
     const requested = args.options.project as string | undefined;
-    let projects = workspace.notes.filter((note) => note.type === "project");
+    const requestedArea = args.options.area as string | undefined;
+    if (requested !== undefined && requestedArea !== undefined) throw new BrainError("USAGE", "Use --project or --area, not both");
+    let projects = requestedArea === undefined ? workspace.notes.filter((note) => note.type === "project") : [];
+    let areas = requested === undefined ? workspace.notes.filter((note) => note.type === "area") : [];
     if (requested !== undefined) {
       const project = workspace.get(requested);
       if (project?.type !== "project") throw new BrainError("UNKNOWN_ID", `No project with id ${requested}`);
       projects = [project];
     }
+    if (requestedArea !== undefined) {
+      const area = workspace.get(requestedArea);
+      if (area?.type !== "area") throw new BrainError("UNKNOWN_ID", `No area with id ${requestedArea}`);
+      areas = [area];
+    }
     projects.sort((left, right) => compareCodePoints(left.path, right.path));
+    areas.sort((left, right) => compareCodePoints(left.path, right.path));
+    const targets = [
+      ...projects.flatMap((project) => (["brief", "decision_log"] as const).map((kind) => ({ owner: project, kind, path: projectViewPath(project, kind) }))),
+      ...areas.map((area) => ({ owner: area, kind: "area_brief" as const, path: areaBriefPath(area) })),
+    ];
 
     const written: string[] = [];
     const created: string[] = [];
@@ -33,9 +46,8 @@ export const viewsCommand: Command = {
     const ids = workspace.ids();
     const check = args.options.check === true;
 
-    for (const project of projects) {
-      for (const kind of ["brief", "decision_log"] as const) {
-        const path = projectViewPath(project, kind);
+    for (const { owner: project, kind, path } of targets) {
+      {
         const existing = workspace.notes.find((note) => note.path === path);
         const derived = deriveView(project, kind, workspace.notes);
         if (existing === undefined && workspace.exists(path)) {
@@ -51,7 +63,8 @@ export const viewsCommand: Command = {
           }
           continue;
         }
-        const range = existing.type === "view" && existing.attributes.project === project.id && existing.attributes.view_kind === kind
+        const owned = kind === "area_brief" ? existing.attributes.area === project.id : existing.attributes.project === project.id;
+        const range = existing.type === "view" && owned && existing.attributes.view_kind === kind
           ? generatedBlockRange(existing.body)
           : undefined;
         if (range === undefined) {
@@ -90,21 +103,21 @@ export const viewsCommand: Command = {
     errors.sort((left, right) => compareCodePoints(left.path, right.path));
     const exitCode = errors.length > 0 || (check && (written.length > 0 || created.length > 0)) ? 1 : 0;
     return {
-      data: { projects: projects.length, written, created, unchanged, errors, check },
+      data: { projects: projects.length, areas: areas.length, written, created, unchanged, errors, check },
       exitCode,
       human: errors.length > 0 ? `${errors.map((error) => `${error.path}: ${error.reason}`).join("\n")}\n` : "Views are current.\n",
     };
   },
 };
 
-function newViewAttributes(id: string, project: Note, kind: ViewKind, generatedFrom: string[], now: Date): Record<string, unknown> {
-  const suffix = kind === "brief" ? "brief" : "decision log";
+function newViewAttributes(id: string, owner: Note, kind: ViewKind, generatedFrom: string[], now: Date): Record<string, unknown> {
+  const suffix = kind === "decision_log" ? "decision log" : "brief";
   return {
     id,
     type: "view",
-    title: `${String(project.attributes.title)} — ${suffix}`,
+    title: `${String(owner.attributes.title)} — ${suffix}`,
     view_kind: kind,
-    project: project.id,
+    ...(kind === "area_brief" ? { area: owner.id } : { project: owner.id }),
     generated_from: generatedFrom,
     generated_at: formatTimestamp(now),
     created: formatDate(now),

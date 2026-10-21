@@ -61,7 +61,7 @@ test("query applies linked repository project context and explicit type selectio
 
   const views = await brain(["query", "--candidates", "acme", "--types", "view", ...BRAIN]);
   assert.equal(views.code, 0, views.stdout);
-  assert.deepEqual(views.json.data.candidates.map((candidate: { type: string }) => candidate.type), ["view", "view"]);
+  assert.deepEqual(views.json.data.candidates.map((candidate: { type: string }) => candidate.type), ["view", "view", "view"]);
 });
 
 test("query tokenizes accents and rejects invalid candidate forms", async () => {
