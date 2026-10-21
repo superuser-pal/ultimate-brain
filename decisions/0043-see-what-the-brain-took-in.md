@@ -1,6 +1,6 @@
 # 0043 — See what the brain took in, ask it for a report, review in fewer rows
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-10-21
 **Amends:** 0026, 0041
 **Refines:** 0024, 0037
