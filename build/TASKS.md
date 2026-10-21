@@ -551,7 +551,7 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 | U-13 | 0.3.0 in your brain, one session with Claude: migrate your Notion space with brain-notion-change (your yes at each step), `brain upgrade`, then one real "catch up" as the acceptance run. Ran 2026-10-20; findings → decision 0043 (CC-38) and #113 (CX-39). **Closed 2026-10-21**; notion/templates.md pulled again | Done |
 | U-14 | Publish 0.2.4 with `node scripts/release.mjs 0.2.4` from the main checkout, then `brain upgrade` in your brain | When CC-27, CX-28 and CX-30 are merged |
 | U-15 | 0.4.0 in your brain, one session with Claude: `brain upgrade`, Notion migration 0006, approve the backlog's Review notes rows and check the Briefs, link the product repo as the "Ultimate Brain" area and run its first ingest; then a catch-up over real meetings within the 5-minute bar, one document kept in full, one report asked from an Ask row (decision 0043); then two weeks against the habit bar in CC-35 | After 0.4.0 is released and U-13 is closed |
-| U-16 | After 0.3.2: in your brain, `brain upgrade`, then `brain config set notion.tasks.status_type '"status"'` (your Tasks database is the default one, with Notion's built-in Status; CX-39, #113) | After 0.3.2 is released |
+| U-16 | After 0.3.2: in your brain, `brain upgrade`, then ask Claude to "connect Notion" again (brain-connect-notion sets `notion.tasks.status_type` to `status` for the default Tasks database), or run `brain config set notion.tasks.status_type '"status"'` yourself (CX-39, #113) | After 0.3.2 is released |
 
 ## How to start Codex on a task
 
