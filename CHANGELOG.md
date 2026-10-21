@@ -10,7 +10,7 @@ One line per task, under the release that ships it (decision 0038). From 0.4.0 o
 
 ## 0.3.2 — unreleased
 
-- CC-40: `brain sync tasks` types the Status value by `notion.tasks.status_type` (`status` for Notion's built-in Status, as in the default Tasks database; absent or `select` as before), so new tasks no longer fail on that database (#113).
+- CC-40 (#117): `brain sync tasks` types the Status value by `notion.tasks.status_type` (`status` for Notion's built-in Status, as in the default Tasks database; absent or `select` as before), so new tasks no longer fail on that database (#113).
 
 ## 0.3.1 — 2026-10-20
 
