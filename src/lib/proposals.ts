@@ -11,16 +11,16 @@ import { loadSchemas } from "./schemas.ts";
 import { formatDate } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 
-export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "add_link", "supersede", "contradiction", "merge", "new_item"] as const;
+export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "add_link", "supersede", "contradiction", "merge", "new_item", "review_notes", "answer"] as const;
 export const PROPOSAL_STATUSES = ["pending", "approved", "rejected", "edited", "applied", "closed"] as const;
 
 /** Input keys of `proposal new`: the schema §11 fields the CLI does not set (spec/cli.md §5.6). */
-const INPUT_KEYS = ["title", "kind", "target", "field", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source"];
+const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source"];
 const ID = /^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{8}$/;
 const KNOWLEDGE_TYPES = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "memory"]);
 const ADD_LINK_FIELDS = new Set(["aliases", "tags", "projects", "people", "attendees", "deciders"]);
 /** Fields that make two pending proposals the same change (dedupe, spec/cli.md §5.6). */
-const DEDUPE_KEYS = ["kind", "target", "field", "after", "content", "note", "supersedes", "merge_into"];
+const DEDUPE_KEYS = ["kind", "target", "field", "after", "content", "note", "supersedes", "merge_into", "answer", "answer_note"];
 
 export interface CreatedProposal {
   id: string;
@@ -29,12 +29,12 @@ export interface CreatedProposal {
   target?: string;
   path: string;
   before?: unknown;
-  input_indexes: number[];
+  input_indexes?: number[];
 }
 
 export interface SkippedProposal {
   input_index: number;
-  reason: "DUPLICATE_PENDING" | "ALREADY_LINKED";
+  reason: "DUPLICATE_PENDING" | "ALREADY_LINKED" | "NOTHING_TO_REVIEW" | "ALREADY_ANSWERED";
   existing?: string;
 }
 
@@ -64,11 +64,26 @@ export function stageProposals(
   (list as Array<Record<string, unknown>>).forEach((item, index) => {
     if (item.kind === "new_item") checkNewItem(workspace, item.note as NoteInput, `/proposals/${index}/note`, today);
   });
+  // One review_notes per source; it takes in that source's add_link items (spec/cli.md §5.6, 0043).
+  const reviews = new Map<string, { index: number; item: Record<string, unknown>; links: Array<{ index: number; fields: Record<string, unknown> }> }>();
+  (list as Array<Record<string, unknown>>).forEach((item, index) => {
+    if (item.kind !== "review_notes") return;
+    const source = String(item.source);
+    if (reviews.has(source)) assertNoProblems([{ pointer: `/proposals/${index}/source`, message: `a second review_notes for ${source} in one input` }]);
+    checkReviewNotes(workspace, item, `/proposals/${index}`);
+    reviews.set(source, { index, item, links: [] });
+  });
   const start = workspace.checkpoint();
   try {
     (list as Array<Record<string, unknown>>).forEach((item, index) => {
       const pointer = `/proposals/${index}`;
+      if (item.kind === "review_notes") return;
       const fields = resolveFields(workspace, item, pointer, today);
+      if (item.kind === "answer" && workspace.get(String(fields.target))!.attributes.answer !== undefined) {
+        skipped.push({ input_index: index, reason: "ALREADY_ANSWERED" });
+        return;
+      }
+      const review = item.kind === "add_link" ? reviews.get(String(fields.source)) : undefined;
 
       if (item.kind === "add_link" && listField(workspace.get(String(fields.target))!, String(fields.field)).some((value) => isDeepStrictEqual(value, fields.after))) {
         skipped.push({ input_index: index, reason: "ALREADY_LINKED" });
@@ -77,7 +92,9 @@ export function stageProposals(
 
       const duplicate = workspace.notes.find((note) => note.type === "proposal" && note.attributes.status === "pending" &&
         (item.kind === "add_link"
-          ? note.attributes.target === fields.target && proposalLinks(note.attributes).some((link) => link.field === fields.field && isDeepStrictEqual(link.value, fields.after))
+          ? (note.attributes.kind === "review_notes"
+            ? review !== undefined && reviewLinks(note.attributes).some((link) => link.target === fields.target && link.field === fields.field && isDeepStrictEqual(link.value, fields.after))
+            : note.attributes.target === fields.target && proposalLinks(note.attributes).some((link) => link.field === fields.field && isDeepStrictEqual(link.value, fields.after)))
           : DEDUPE_KEYS.every((key) => isDeepStrictEqual(note.attributes[key], fields[key]))));
       if (duplicate !== undefined) {
         skipped.push({ input_index: index, reason: "DUPLICATE_PENDING", existing: duplicate.id });
@@ -88,7 +105,8 @@ export function stageProposals(
         const key = JSON.stringify([fields.target, fields.source, fields.field, fields.after]);
         if (linkKeys.has(key)) { duplicateLinks.push({ input_index: index, key }); return; }
         linkKeys.set(key, index);
-        links.push({ item, index, fields });
+        if (review !== undefined) review.links.push({ index, fields });
+        else links.push({ item, index, fields });
         return;
       }
 
@@ -109,6 +127,24 @@ export function stageProposals(
       const proposal = createProposal(workspace, fields, group.map(({ index }) => index), today, `/proposals/${first.index}`, pointers, created);
       for (const link of group) createdLinks.set(JSON.stringify([link.fields.target, link.fields.source, link.fields.field, link.fields.after]), proposal.id);
     }
+    for (const review of reviews.values()) {
+      const notes = review.item.notes as string[];
+      if (notes.length === 0 && review.links.length === 0) {
+        skipped.push({ input_index: review.index, reason: "NOTHING_TO_REVIEW" });
+        continue;
+      }
+      const source = String(review.item.source);
+      const fields: Record<string, unknown> = {
+        kind: "review_notes",
+        title: review.item.title ?? reviewTitle(workspace, source, notes.length, review.links.length),
+        notes,
+        links: review.links.map(({ fields }) => ({ target: fields.target, field: fields.field, value: fields.after })),
+        why: review.item.why ?? `New notes and links from ${sourceTitle(workspace, source)}`,
+        source,
+      };
+      const proposal = createProposal(workspace, fields, [review.index, ...review.links.map(({ index }) => index)].sort((a, b) => a - b), today, `/proposals/${review.index}`, pointers, created);
+      for (const link of review.links) createdLinks.set(JSON.stringify([link.fields.target, link.fields.source, link.fields.field, link.fields.after]), proposal.id);
+    }
     for (const duplicate of duplicateLinks) skipped.push({ input_index: duplicate.input_index, reason: "DUPLICATE_PENDING", existing: createdLinks.get(duplicate.key) });
     assertStagedValid(workspace, pointers, "/proposals");
   } catch (error) {
@@ -127,6 +163,55 @@ function createProposal(workspace: Workspace, fields: Record<string, unknown>, i
   const proposal = { id, kind: String(fields.kind), title: String(fields.title), ...(fields.target === undefined ? {} : { target: String(fields.target) }), path, ...(fields.before === undefined ? {} : { before: fields.before }), input_indexes: inputIndexes };
   created.push(proposal);
   return proposal;
+}
+
+/** The `{target, field, value}` links of a review_notes proposal. */
+function reviewLinks(attributes: Record<string, unknown>): Array<{ target: unknown; field: unknown; value: unknown }> {
+  return Array.isArray(attributes.links) ? attributes.links.filter(isRecord).map((link) => ({ target: link.target, field: link.field, value: link.value })) : [];
+}
+
+/** Ids listed by every review_notes proposal, any status (spec/cli.md §5.6). */
+function reviewedIds(workspace: Workspace): Map<string, string> {
+  const listed = new Map<string, string>();
+  for (const note of workspace.notes) {
+    if (note.type !== "proposal" || note.attributes.kind !== "review_notes" || !Array.isArray(note.attributes.notes)) continue;
+    for (const id of note.attributes.notes) if (typeof id === "string" && !listed.has(id)) listed.set(id, note.id);
+  }
+  return listed;
+}
+
+/** The meeting's title for a meeting id, else the source's (spec/cli.md §5.6). */
+function sourceTitle(workspace: Workspace, source: string): string {
+  return String(workspace.get(source)?.attributes.title ?? source);
+}
+
+function reviewTitle(workspace: Workspace, source: string, notes: number, links: number): string {
+  const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  const from = sourceTitle(workspace, source);
+  const title = notes === 0
+    ? `Accept ${count(links, "link", "links")} from ${from}`
+    : `Accept ${count(notes, "new note", "new notes")} from ${from}${links === 0 ? "" : `, and ${count(links, "link", "links")}`}`;
+  return title.length > 120 ? `${title.slice(0, 119)}…` : title;
+}
+
+/** A review_notes item's notes: existing knowledge notes, listed once here and by no other review_notes. */
+function checkReviewNotes(workspace: Workspace, item: Record<string, unknown>, pointer: string): void {
+  const source = workspace.get(String(item.source));
+  if (source === undefined) throw new BrainError("UNKNOWN_ID", `${pointer}/source: no note with id ${String(item.source)}`, [{ pointer: `${pointer}/source`, message: "does not exist" }]);
+  if (source.type !== "meeting" && source.type !== "source") assertNoProblems([{ pointer: `${pointer}/source`, message: "must be a meeting or a source" }]);
+  const listed = reviewedIds(workspace);
+  const seen = new Set<string>();
+  const problems: InputProblem[] = [];
+  (item.notes as unknown[]).forEach((id, index) => {
+    const at = `${pointer}/notes/${index}`;
+    const note = typeof id === "string" ? workspace.get(id) : undefined;
+    if (note === undefined) problems.push({ pointer: at, message: `no note with id ${String(id)}` });
+    else if (!KNOWLEDGE_TYPES.has(note.type)) problems.push({ pointer: at, message: `is a ${note.type}, not a knowledge note` });
+    else if (seen.has(note.id)) problems.push({ pointer: at, message: "is listed twice" });
+    else if (listed.has(note.id)) problems.push({ pointer: at, message: `is already listed by ${listed.get(note.id)}` });
+    if (typeof id === "string") seen.add(id);
+  });
+  assertNoProblems(problems);
 }
 
 function proposalLinks(attributes: Record<string, unknown>): Array<{ field: unknown; value: unknown }> {
@@ -154,10 +239,25 @@ function checkShape(item: unknown, pointer: string): InputProblem[] {
   const problems = unknownKeys(item, INPUT_KEYS, pointer);
   const at = (key: string, message: string) => problems.push({ pointer: `${pointer}/${key}`, message });
   if (!(PROPOSAL_KINDS as readonly unknown[]).includes(item.kind)) at("kind", `must be one of ${PROPOSAL_KINDS.join(", ")}`);
-  for (const key of ["title", "why", "source"]) {
+  for (const key of item.kind === "review_notes" ? ["source"] : ["title", "why", "source"]) {
     if (typeof item[key] !== "string" || item[key] === "") at(key, "must be a non-empty string");
   }
-  if (item.kind === "new_item") {
+  for (const key of item.kind === "review_notes" ? ["title", "why"] : []) {
+    if (item[key] !== undefined && (typeof item[key] !== "string" || item[key] === "")) at(key, "must be a non-empty string");
+  }
+  if (item.kind === "review_notes") {
+    if (item.target !== undefined) at("target", "a review_notes has no target");
+    if (!Array.isArray(item.notes)) at("notes", "must be a list of note ids");
+  } else if (item.notes !== undefined) {
+    at("notes", "is only allowed on review_notes");
+  }
+  if (item.kind === "answer" && (typeof item.answer !== "string" || item.answer.trim() === "")) at("answer", "must be a non-empty string");
+  if (item.kind !== "answer") {
+    for (const key of ["answer", "answer_note"]) if (item[key] !== undefined) at(key, "is only allowed on answer");
+  }
+  if (item.kind === "review_notes") {
+    // Checked against the brain in checkReviewNotes.
+  } else if (item.kind === "new_item") {
     if (item.target !== undefined) at("target", "a new_item has no target");
     problems.push(...checkNoteInput(item.note, `${pointer}/note`, false));
   } else if (typeof item.target !== "string") {
@@ -191,6 +291,13 @@ function resolveFields(workspace: Workspace, item: Record<string, unknown>, poin
   if (kind === "new_item") return fields;
   const target = existing("target");
   if (!KNOWLEDGE_TYPES.has(target.type)) invalid("target", `is a ${target.type}; proposals change knowledge notes only`);
+  if (kind === "answer") {
+    if (target.type !== "question") invalid("target", `is a ${target.type}; an answer targets a question`);
+    if (item.answer_note !== undefined) {
+      const note = existing("answer_note");
+      if (!KNOWLEDGE_TYPES.has(note.type)) invalid("answer_note", `is a ${note.type}, not a knowledge note`);
+    }
+  }
 
   if (kind === "update_fact" || kind === "contradiction") {
     if (typeof item.field !== "string") invalid("field", "is required for this kind");
@@ -289,7 +396,52 @@ export function listProposals(workspace: Workspace, statuses: readonly string[],
   return workspace.notes
     .filter((note) => note.type === "proposal")
     .filter((note) => statuses.length === 0 || statuses.includes(String(note.attributes.status)))
-    .filter((note) => target === undefined || note.attributes.target === target)
+    .filter((note) => target === undefined || note.attributes.target === target
+      || (note.attributes.kind === "review_notes" && ((Array.isArray(note.attributes.notes) && note.attributes.notes.includes(target)) || reviewLinks(note.attributes).some((link) => link.target === target))))
     .map((note): Record<string, unknown> => ({ ...note.attributes, path: note.path }))
     .sort((a, b) => compareCodePoints(String(a.created), String(b.created)) || compareCodePoints(String(a.id), String(b.id)));
+}
+
+/**
+ * `proposal backlog` (spec/cli.md §5.6, 0041): one review_notes per source over the `draft`
+ * notes nobody has accepted yet, for a brain made before 0.4.0. A second run writes nothing.
+ */
+export function stageBacklog(workspace: Workspace, now: Date): CreatedProposal[] {
+  const today = formatDate(now);
+  const listed = reviewedIds(workspace);
+  const claimed = new Set<string>();
+  const created: CreatedProposal[] = [];
+  const pointers = new Map<string, string>();
+  const sources = workspace.notes
+    .filter((note) => note.type === "source")
+    .sort((a, b) => compareCodePoints(String(a.attributes.captured ?? ""), String(b.attributes.captured ?? "")) || compareCodePoints(a.id, b.id));
+  const start = workspace.checkpoint();
+  try {
+    for (const source of sources) {
+      const minutes = (source.attributes.kind ?? "minutes") === "minutes";
+      const meeting = minutes ? workspace.notes.find((note) => note.type === "meeting" && note.attributes.source === source.id) : undefined;
+      const provenance = meeting?.id ?? source.id;
+      const notes = workspace.notes
+        .filter((note) => KNOWLEDGE_TYPES.has(note.type) && note.attributes.lifecycle === "draft" && !listed.has(note.id) && !claimed.has(note.id)
+          && (note.id === meeting?.id || (Array.isArray(note.attributes.sources) && note.attributes.sources.includes(provenance))))
+        .sort((a, b) => compareCodePoints(String(a.attributes.created), String(b.attributes.created)) || compareCodePoints(a.id, b.id));
+      if (notes.length === 0) continue;
+      for (const note of notes) claimed.add(note.id);
+      const fields = {
+        kind: "review_notes",
+        title: reviewTitle(workspace, provenance, notes.length, 0),
+        notes: notes.map((note) => note.id),
+        links: [],
+        why: `Notes from ${sourceTitle(workspace, provenance)} waiting for your review`,
+        source: provenance,
+      };
+      const { input_indexes: _unused, ...proposal } = createProposal(workspace, fields, [], today, "", pointers, []);
+      created.push(proposal);
+    }
+    assertStagedValid(workspace, pointers, "");
+  } catch (error) {
+    workspace.restore(start);
+    throw error;
+  }
+  return created;
 }

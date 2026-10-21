@@ -14,7 +14,7 @@ import { logCommand } from "./commands/log.ts";
 import { noteNewCommand } from "./commands/note.ts";
 import { linkCommand } from "./commands/link.ts";
 import { upgradeCommand } from "./commands/upgrade.ts";
-import { proposalListCommand, proposalNewCommand } from "./commands/proposal.ts";
+import { proposalBacklogCommand, proposalListCommand, proposalNewCommand } from "./commands/proposal.ts";
 import { queryCommand } from "./commands/query.ts";
 import { syncApplyCommand, syncPlanCommand, syncRecordCommand, syncRenderCommand, syncTasksCommand } from "./commands/sync.ts";
 import { viewsCommand } from "./commands/views.ts";
@@ -28,7 +28,7 @@ export type CommandHandler = (args: readonly string[], io: CliIo) => number | Pr
 
 /** Registered commands, in help order. */
 export const COMMANDS: readonly Command[] = [
-  initCommand, statusCommand, configGetCommand, configSetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, applyCommand,
+  initCommand, statusCommand, configGetCommand, configSetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, proposalBacklogCommand, applyCommand,
   syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand, viewsCommand, linkCommand, queryCommand, upgradeCommand,
 ];
 

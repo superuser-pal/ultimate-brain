@@ -1,7 +1,7 @@
 import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { assertNoProblems, isRecord, readJsonInput, unknownKeys } from "../lib/input.ts";
-import { listProposals, PROPOSAL_STATUSES, stageProposals } from "../lib/proposals.ts";
+import { listProposals, PROPOSAL_STATUSES, stageBacklog, stageProposals } from "../lib/proposals.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { lintWarnings } from "../lib/warnings.ts";
 
@@ -55,5 +55,26 @@ export const proposalListCommand: Command = {
       ? "No proposals.\n"
       : proposals.map((proposal) => `${String(proposal.id)} ${String(proposal.status)} ${String(proposal.kind)} ${String(proposal.title)}\n`).join("");
     return { data: { proposals }, human };
+  },
+};
+
+/** `brain proposal backlog [--dry-run]` (spec/cli.md §5.6, 0041). */
+export const proposalBacklogCommand: Command = {
+  name: "proposal backlog",
+  usage: "brain proposal backlog [--dry-run] [--json]",
+  summary: "Write one Review notes proposal per source over the draft notes nobody has accepted yet. A second run writes nothing.",
+  options: { "dry-run": "boolean" },
+  maxPositionals: 0,
+  needsBrain: true,
+  async run({ args, brain, now }) {
+    const dryRun = args.options["dry-run"] === true;
+    const workspace = await Workspace.open(brain!);
+    const created = stageBacklog(workspace, now);
+    const warnings = lintWarnings(workspace.warnings());
+    if (!dryRun) {
+      await workspace.commit(created.map((proposal) => ({ op: "proposal-new", id: proposal.id, title: proposal.title, pairs: [["kind", proposal.kind]] })), now);
+    }
+    const human = created.map((proposal) => `${dryRun ? "would create" : "created"} ${proposal.path}\n`).join("");
+    return { data: { created, skipped: [], dry_run: dryRun }, warnings, human: human || "Nothing to write.\n" };
   },
 };
