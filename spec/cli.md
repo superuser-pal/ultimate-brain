@@ -4,7 +4,7 @@
 **Applies to:** the `brain` CLI in `src/` (tasks CX-02 to CX-11).
 **Depends on:** [schema.md](schema.md) (field names, file formats, apply rules). When this document and schema.md disagree on a file format, schema.md wins and this document is fixed.
 
-Decisions referenced: 0003, 0006, 0007, 0009, 0011, 0013, 0014, 0015, 0016, 0017, 0018, 0021, 0023, 0024, 0026, 0027.
+Decisions referenced: 0003, 0006, 0007, 0009, 0011, 0013, 0014, 0015, 0016, 0017, 0018, 0021, 0023, 0024, 0026, 0027, 0041–0043.
 
 ---
 
@@ -14,7 +14,7 @@ The CLI does the **deterministic** work: IDs, file writes, validation, index, vi
 
 Rules for every command:
 - **No network.** The CLI never calls Notion or any other service. Notion data enters only as JSON files written by a skill.
-- **No Git, except `init`.** Commands write files; the skill commits. `init` creates the repository and its first commit.
+- **No Git, except `init`, `upgrade` and `repo`.** Commands write files; the skill commits. `init` creates the repository and its first commit, `upgrade` commits its own files (§5.15), and `repo` reads a linked repo with read-only Git commands (§5.16, 0042).
 - **No LLM.** Same input and same brain give the same output, except for new random IDs and the clock (see `--now`).
 - **Writes only inside the brain**, except `init` (the new brain folder, and the global config file with `--set-default`) and `link` (three files in the target repo).
 
@@ -29,7 +29,8 @@ Decision 0024 lists user-facing commands. Some are skills that call the CLI; som
 | `brain ingest` | skill (CC-06) | `status`, `index`, `id new`, `note new`, `proposal new`, `views`, `lint`, `log`, `sync tasks`, `sync render`, `sync record` |
 | `brain apply` | skill (CC-09) | `sync plan`, `sync apply` (or `apply` in chat), `index`, `views`, `sync render`, `sync record` |
 | `brain sync` | skill (CC-08) | `sync plan`, `sync apply`, `index`, `views`, `sync render`, `sync record` |
-| `brain query` | skill (CC-10) | `query --candidates`, `index` |
+| `brain query` | skill (CC-10) | `query --candidates`, `index`; report mode (0043): `report new`, `sync render`, `sync record` |
+| catch up | skill (0037) | the calls of ingest, apply and sync, plus `proposal backlog` (once, 0041), `repo changes` and `repo record` (0042), `source full-text` (0043) |
 | `brain link` | CLI | `link` |
 | `brain upgrade` | CLI | `upgrade` |
 | `brain lint` / index | CLI | `lint`, `index` |
@@ -130,6 +131,9 @@ Failure:
 | `ALREADY_A_BRAIN` | 5 | `init` target already has `brain.json` |
 | `OUTSIDE_ROOT` | 5 | a write would land outside its allowed root |
 | `BRAIN_DIRTY` | 5 | `upgrade` found uncommitted changes in the brain; commit or discard them first (0038) |
+| `REPO_NOT_FOUND` | 4 | a `repo` command's repo isn't in `brain.json`, or its `path` isn't a Git working tree (0042) |
+| `REPO_IS_BRAIN` | 4 | `repo add` was given the brain itself (0042) |
+| `REPO_COMMIT_UNKNOWN` | 4 | a commit given to, or recorded for, a `repo` command doesn't exist in the repo, or isn't an ancestor of the commit it is compared with |
 | `WRITE_CONFLICT` | 5 | a file appeared at a path the command was creating, after it read the brain (another writer). Nothing is kept (§3.6); re-run the command |
 | `INTERNAL` | 10 | unexpected failure |
 
@@ -144,7 +148,7 @@ Batch commands (`note new`, `proposal new`, `apply`, `sync apply`) also report *
 5. **Format (normative, so golden files and source hashes are stable).**
    - Files are UTF-8 with LF line endings and end with exactly one newline.
    - Frontmatter is serialized with the `yaml` package (v2), YAML 1.2 core schema, options `{ lineWidth: 0, flowCollectionPadding: false }`. Mappings and lists of mappings use block style. **Lists of scalars use flow style** (`projects: [prj-9x4t1b7e]`), and an empty list is `[]`. Strings are plain unless the library must quote them.
-   - **Key order for new notes:** `id`, `type`, `title`, `summary`, `lifecycle`, then the type's own fields in the order of their table in schema §4, then `aliases`, `tags`, `area`, `projects`, `sources`, `relations`, `facts`, `timeline`, then `created`, `updated`, then `notion`, `last_synced`, `notion_fields`, `notion_published`. A key listed twice (e.g. `area` for goals and projects) takes its first position. **Sources** follow their table in schema §4, except that `summary` takes its position after `title`, and the system fields go last in the order `notion`, `last_synced`, `notion_published`, `tasks`. **Proposals** follow the order of the schema §11 example: `id`, `type`, `title`, `created`, `updated`, then the fields of the §11 table in order, then `notion`, `notion_published`. Absent keys are skipped. A key a command adds to an existing file goes at the position this order gives it among the keys present; existing keys never move and unknown keys are kept (CX-02 round-trip).
+   - **Key order for new notes:** `id`, `type`, `title`, `summary`, `lifecycle`, then the type's own fields in the order of their table in schema §4, then `aliases`, `tags`, `area`, `projects`, `sources`, `relations`, `facts`, `timeline`, then `created`, `updated`, then `notion`, `last_synced`, `notion_fields`, `notion_published`. A key listed twice (e.g. `area` for goals and projects) takes its first position. **Sources** follow their table in schema §4, except that `summary` and `digest` take their positions after `title`, and the system fields go last in the order `notion_text`, `notion_parts`, `notion_text_requested`, `notion`, `last_synced`, `notion_published`, `tasks`. **Views** follow their table in schema §4. **Proposals** follow the order of the schema §11 example: `id`, `type`, `title`, `created`, `updated`, then the fields of the §11 table in order, then `notion`, `notion_published`. Absent keys are skipped. A key a command adds to an existing file goes at the position this order gives it among the keys present; existing keys never move and unknown keys are kept (CX-02 round-trip).
    - **Body separator:** a new note is written as `---\n<frontmatter>---\n\n<body>` (one blank line before the body), except a **source**, which is `---\n<frontmatter>---\n<body>`, so its `content_hash` covers exactly the body given. A note with an empty body (proposals) ends right after the closing `---\n`.
    - The CX-02 serializer (`src/lib/frontmatter.ts`) is brought in line with these rules by CX-06, the first task that edits existing notes.
 6. **`updated` (one rule).** Every command that changes a note's content sets `updated` to today (the UTC date of `--now`), whatever date the change was decided or observed. Changes to system fields only (`notion`, `last_synced`, `tasks`, `notion_fields`, `notion_published`) do not change `updated`.
@@ -152,7 +156,7 @@ Batch commands (`note new`, `proposal new`, `apply`, `sync apply`) also report *
 
 ### 3.7 What counts as a note
 
-The CLI scans these folders under the brain root: `areas/`, `goals/`, `projects/`, `archive/`, `knowledge/`, `sources/`, `memories/`, `_proposals/`. Every `*.md` file there must have frontmatter with an `id` (lint error `not-a-note` otherwise). Files elsewhere (root `AGENTS.md`, `CLAUDE.md`, `README.md`, `index.md`, `log/`, dot-folders) are not notes.
+The CLI scans these folders under the brain root: `areas/` (with `areas/briefs/`), `goals/`, `projects/`, `archive/`, `knowledge/`, `sources/`, `reports/`, `memories/`, `_proposals/`. Every `*.md` file there must have frontmatter with an `id` (lint error `not-a-note` otherwise). Files elsewhere (root `AGENTS.md`, `CLAUDE.md`, `README.md`, `index.md`, `log/`, dot-folders) are not notes.
 
 ### 3.8 Slugs and paths for new files
 
@@ -168,6 +172,7 @@ Path by type (schema §2). Dated types use the note's `date`, else `file_date` f
 | meeting, decision | `knowledge/meetings/<date>-<slug>.md`, `knowledge/decisions/<date>-<slug>.md` |
 | source | `sources/notion/<date>-<slug>.md` for a `notion:` key, `sources/files/…` for `file:`, `sources/text/…` for `url:` and `agent:` (0032) |
 | memory | `memories/<YYYY>/<MM>/<date>-<slug>.md` |
+| view | `projects/<slug>/brief.md` and `decision-log.md`; `areas/briefs/<area file slug>.md` (`area_brief`); `reports/<date of generated_at>-<slug of title>.md` (`report`) |
 | proposal | `_proposals/<created>-<slug>.md` |
 
 If the path exists (for projects: the folder), append `-2`, `-3`, … to the slug until it is free.
@@ -180,7 +185,7 @@ Write commands append to `log/<YYYY-MM>.md` (month of `--now`), creating it with
 - <timestamp> <op> <id> "<title>"[ <key>=<value>]…
 ```
 
-`"` and `\` in titles are escaped with `\`, and CR and LF become `\r` and `\n`, so every entry is exactly one line. Values with spaces, quotes, backslashes or line breaks are quoted and escaped the same way. The file is created exclusively with its header, then lines are appended; an unreadable log is an error, never a reason to start the file over. Ops written by the CLI: `init`, `note-new`, `proposal-new`, `apply`, `correct`, `sync-create`, `sync-update`, `upgrade`. Skills add their own (`ingest`, `publish`) with `brain log` (§5.11). `index` and `views` do not log.
+`"` and `\` in titles are escaped with `\`, and CR and LF become `\r` and `\n`, so every entry is exactly one line. Values with spaces, quotes, backslashes or line breaks are quoted and escaped the same way. The file is created exclusively with its header, then lines are appended; an unreadable log is an error, never a reason to start the file over. Ops written by the CLI: `init`, `note-new`, `proposal-new`, `apply`, `correct`, `sync-create`, `sync-update`, `upgrade`, `repo-add`, `repo-record`, `full-text`, `report-new`. Skills add their own (`ingest`, `publish`) with `brain log` (§5.11). `index` and `views` do not log.
 
 ---
 
@@ -259,13 +264,14 @@ Read-only health summary; the first call of every skill.
     "proposals": { "pending": 3, "approved": 0, "edited": 0, "rejected": 0, "applied": 14, "closed": 2 },
     "notion": { "configured": ["areas", "goals", "projects", "meetings", "people", "orgs", "decisions", "questions", "review"], "missing": ["key_results", "inbox", "concepts"], "tasks_database": true },
     "settings": { "publish": "ask", "push": "auto" },
+    "repos": [ { "name": "acme-api", "area": "area-2m7c4h8n", "commit": "", "found": true } ],
     "index_stale": false,
     "views_stale": ["projects/acme-website/brief.md"],
     "last_log": "- 2026-12-03T10:22:00Z ingest mtg-8c4n2p7w \"Acme sync\" created=4 proposals=3"
 } }
 ```
 
-`notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `concepts`. A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto" }`. Exit 0 even when stale.
+`notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `concepts`. A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto" }`. `repos` lists `brain.json` `repos` in order (empty when absent): `found` is whether `path` is a Git working tree. `views_stale` includes area briefs. Exit 0 even when stale.
 
 ### 5.3 `brain config`
 
@@ -341,6 +347,15 @@ Writes **new** notes (lifecycle `draft`, 0003). Used by the ingest skill, by `ap
 
 The CLI sets `created` = `updated` = today, `lifecycle: draft` (knowledge types), and for sources `content_hash` (schema §4, over the body as written) and `captured` (default now). Files are laid out as §3.6.5 says. References in `frontmatter` may point to existing notes **or to other notes in the same batch**. The batch is validated as if written: schema, IDs, folder, references, and every lint error rule (§5.10) that concerns the new files. So a new decision whose `decided_in` names an *existing* meeting fails `meeting-backref`: put the meeting in the same batch, or use a `new_item` proposal, whose apply updates the meeting. Any error → `INPUT_INVALID`, with `details` pointing into the input (a reference to a missing note included), and nothing is written.
 
+**Source fields (0042, 0043).** A source item is also refused (`INPUT_INVALID`) when:
+- `repo`, `repo_path` and `commit` are not all present or all absent; `repo` doesn't name an entry of `brain.json` `repos`; `commit` isn't 40 lowercase hex; or the key isn't `file:`;
+- `attached_to` isn't the id of an existing source (or one earlier in the batch) that has no `attached_to` itself, or the key isn't `file:`;
+- `digest`, `notion_text` or `notion_parts` is given on a `minutes` or `capture` source or one with `attached_to`;
+- `notion_parts` is given without `notion_text: full`, or breaks schema §4 (malformed, out of order, overlapping, or above the body's part count);
+- `notion_text_requested` is given (only `source full-text` writes it).
+
+When `notion_text` isn't given, the CLI writes it by the kind (0043): `full` for an `email` or `chat` source, `digest` for a `document` or `note`; none for a `minutes` or `capture` source or one with `attached_to`. So an email ingested with no choice renders its Full text at the next render, and a document only its digest. The skill passes `notion_text` only when the user changed the default in the catch-up's questions.
+
 **Source dedupe:** a source is a duplicate if an existing source, or one earlier in the same batch, has the same `content_hash`, **or** the same `source_key` when that key is `file:` (the same original file, whatever the converter produced) or the source's `kind` is `capture` (the same Inbox row, even after an edit) (0032). A duplicate is not written and is reported in `skipped` with the existing id. This is how the ingest skips minutes it has already ingested (synthesis §5 step 2). Other items in the batch that reference the skipped source's input `id` are an error, so the skill must check `skipped` with `--dry-run` first, or snapshot the source in its own batch.
 
 Input ids are checked (`ID_IN_USE`) before dedupe, so re-running a batch that supplies its own ids fails instead of being skipped; skills that re-run should let the CLI generate ids or check with `--dry-run`. A body's CRLF line endings are written as LF, except in a source, where they are an `INPUT_INVALID` error (its hash covers the exact bytes). The batch is refused if it adds a lint error to **any** note, not only the new ones (for example a new meeting whose id an existing question already names in `raised_in`).
@@ -366,6 +381,7 @@ Errors: `INPUT_UNREADABLE`, `INPUT_INVALID` (incl. refused type, forbidden key, 
 ```text
 brain proposal new --input <file|-> [--dry-run]
 brain proposal list [--status <s>[,<s>…]] [--target <id>]
+brain proposal backlog [--dry-run]
 ```
 
 **`proposal new`** writes proposals (schema §11) for changes to existing knowledge (0003).
@@ -394,7 +410,15 @@ Input keys are the proposal fields of schema §11 except `id`, `type`, `created`
 - **dedupes:** an item equal to an existing `pending` proposal on (`kind`, `target`, `field`, `after`, `content`, `note`, `supersedes`, `merge_into`) is skipped (`DUPLICATE_PENDING`), so re-running an ingest does not duplicate review rows. For `add_link`, the item's (`field`, `after`) is compared with each entry of a pending `add_link` on the same target (its `links`, or its `field` and `after` if it is an old single one). An `add_link` whose value is already listed is skipped as `{ "input_index": 2, "reason": "ALREADY_LINKED" }` (no `existing`).
 - **groups `add_link` items (0037):** after validation and dedupe, the remaining `add_link` items of the input with the same `target` and `source` become **one** proposal, in input order: `links` = their (`field`, `after`) pairs as `{field, value}`, `why` = their distinct `why` texts joined by ` · `. Every new `add_link` proposal is written with `links`, never `field` and `after`, even with a single link. Its `title` is the item's own `title` when the group has one item; for two or more, the CLI writes `<target title>: add <parts>`, where `<parts>` lists each field present, in the order `people`, `projects`, `attendees`, `deciders`, `aliases`, `tags`, as `<n> <noun> (<v1>, <v2>, <v3>, …)` joined by `, `: nouns `person`/`people`, `project`/`projects`, `attendee`/`attendees`, `decider`/`deciders`, `alias`/`aliases`, `tag`/`tags` (singular for 1); values are note titles for reference fields, else the string; at most three values, then `…`; for a single value the parentheses hold just it. Titles longer than 120 characters are cut to 119 and end with `…`. Example: `Acme website: add 2 people (Lucía Fernández, Tomás Vidal), 1 alias (acme site)`.
 
-Each `created` item lists `input_indexes`, the input items it holds (several for a grouped `add_link`). Proposals are written with an empty body. Logs `proposal-new <id> "<title>" kind=<kind> target=<target>` (one line per proposal written).
+**`review_notes` (0041, 0043).** Input: `{ "kind": "review_notes", "source": "<id>", "notes": ["dec-…", "que-…"] }`, plus optional `title` and `why`. `source` is the ingest's provenance value, as the other proposals of the ingest carry it: the meeting id for minutes, else the `src-` id. The CLI:
+- checks every id in `notes` exists, is a knowledge note and is not listed by another `review_notes` proposal (any status) or twice here (`INPUT_INVALID`, pointer to the entry); at most one `review_notes` per `source` in one input (`INPUT_INVALID`);
+- **folds the routine links:** every `add_link` item of the same input with the same `source` becomes an entry `{target, field, value: after}` of this proposal's `links`, in input order, instead of a grouped `add_link` proposal. Each is validated, deduped against pending `add_link` and `review_notes` proposals (`DUPLICATE_PENDING`) and skipped when already linked (`ALREADY_LINKED`) exactly as an `add_link` item; skipped items are reported and not folded. Without a `review_notes` item for their source, `add_link` items are grouped as above;
+- needs at least one entry in `notes` and `links` together after folding; with none, the item is skipped (`NOTHING_TO_REVIEW`);
+- writes `title`, unless given: `Accept <n> new notes from <source title>` (`1 new note`); with links, `, and <m> links` (`1 link`) is appended; with no notes, `Accept <m> links from <source title>`. `<source title>` is the meeting's title for a meeting id, else the source's. Cut to 120 characters as above. `why` defaults to `New notes and links from <source title>`.
+
+**`answer` (0041).** Input: `{ "kind": "answer", "target": "que-…", "answer": "<sentence>", "answer_note": "dec-…", "why": "<quote>", "source": "<id>", "title": "…" }`, `answer_note` optional. `target` must be a question (`INPUT_INVALID`); `answer` non-empty; `answer_note`, when given, an existing knowledge note (`UNKNOWN_ID`). A question that already has an `answer` → skipped, `ALREADY_ANSWERED`. Dedupe: a pending `answer` on the same `target` with the same `answer` and `answer_note` → `DUPLICATE_PENDING`.
+
+Each `created` item lists `input_indexes`, the input items it holds (several for a grouped `add_link` or a `review_notes` with folded links). Proposals are written with an empty body. Logs `proposal-new <id> "<title>" kind=<kind> target=<target>` (one line per proposal written).
 
 ```json
 { "data": {
@@ -406,7 +430,14 @@ Each `created` item lists `input_indexes`, the input items it holds (several for
 
 Errors: `INPUT_INVALID`, `UNKNOWN_ID`, `BEFORE_MISMATCH`.
 
-**`proposal list`** returns proposals filtered by status (default all) and target, sorted by `created` then id. Each item has every frontmatter field plus `path`.
+**`proposal list`** returns proposals filtered by status (default all) and target, sorted by `created` then id. Each item has every frontmatter field plus `path`. `--target` also matches a `review_notes` that lists the id in `notes` or as a `links` target.
+
+**`proposal backlog`** (0041) writes the `review_notes` rows of a brain that existed before 0.4.0: one per source, over the `draft` notes nobody has accepted yet. Deterministic; a second run writes nothing.
+1. Sources are taken in `captured` order, then id. A source's provenance value is its meeting's id when it is `minutes` (the meeting whose `source` is it), else its own id.
+2. A source **claims** every knowledge note that has `lifecycle: draft`, is not listed in any `review_notes` proposal (any status), is not claimed by an earlier source, and either is that meeting or has the provenance value in its `sources`.
+3. For each source that claims at least one note: one `review_notes` with `source` = the provenance value, `notes` = the claimed notes sorted by `created`, then id, `links: []`, the `title` rule above, and `why` = `Notes from <source title> waiting for your review`.
+
+`data` as for `proposal new` (`created`, `skipped: []`, `dry_run`), without `input_indexes`. Logs `proposal-new` per proposal.
 
 ```json
 { "data": { "proposals": [ { "id": "prp-3c8v1n5x", "kind": "update_fact", "status": "pending", "title": "Acme launch: Jan → Feb", "target": "prj-9x4t1b7e", "field": "launch_date", "before": "2027-01", "after": "2027-02", "from": "2026-12-03", "why": "…", "source": "mtg-8c4n2p7w", "created": "2026-12-03", "updated": "2026-12-03", "path": "_proposals/2026-12-03-acme-launch-jan-feb.md" } ] } }
@@ -434,7 +465,7 @@ Applies **decided** proposals (schema §11.1–11.2) and **your Notion correctio
 }
 ```
 
-A decision item may carry `note` (the Review row's Note, recorded as written in `decision.note`) and, on `approve` of an `add_link`, `exclude`: the `{field, value}` pairs of its `links` not to apply (schema §11.2). The CLI never interprets `note`; the skill turns a Note into `value` or `exclude` (0037). `exclude` on any other kind or action → item `failed`, `INPUT_INVALID`; a pair that is not in the proposal's `links` → `failed`, `EXCLUDE_UNKNOWN`.
+A decision item may carry `note` (the Review row's Note, recorded as written in `decision.note`) and, on `approve` of an `add_link` or a `review_notes`, `exclude`: on `add_link`, the `{field, value}` pairs of its `links` not to apply; on `review_notes`, `{note: <id>}` entries of its `notes` that stay `draft` and `{target, field, value}` entries of its `links` not to apply (schema §11.2). The CLI never interprets `note`; the skill turns a Note into `value` or `exclude` (0037), reading the letters of the Review row (§5.14.4). `exclude` on any other kind or action → item `failed`, `INPUT_INVALID`; an entry that is not in the proposal → `failed`, `EXCLUDE_UNKNOWN`.
 
 **Order:** all `corrections` first, then all `decisions`, each in input order. Later items see the results of earlier ones.
 
@@ -452,8 +483,10 @@ A decision item may carry `note` (the Review row's Note, recorded as written in 
 
 **Stale proposals.** Before applying `update_fact` or `contradiction`, the target's current `facts.<field>` must still equal the proposal's `before` (both absent counts as equal). If it doesn't, the proposal is **closed**: decision recorded, `status: closed`, `closed_reason: stale`, and the item result is `closed` with reason `STALE_PROPOSAL`. The Review row shows Closed, and the next ingest may propose the change again against the current value.
 
+**`review_notes` results (0041).** An applied or closed `review_notes` item also returns `notes`: one entry per listed note, `{ "id": "…", "result": "reviewed" | "archived" | "kept_draft" | "unchanged", "lifecycle": "<its lifecycle now>" }`. `unchanged` is a note that was no longer `draft` when the row was applied (you changed its Lifecycle in Notion); it is left as it is. `kept_draft` is an excluded note. The skill's report names the `unchanged` and `kept_draft` notes once.
+
 Other item failures (proposal unchanged):
-- `EDIT_NOT_ALLOWED`: edit on a kind that forbids it (schema §11.1);
+- `EDIT_NOT_ALLOWED`: edit on a kind that forbids it (schema §11.1); `review_notes` is one of them;
 - `UNKNOWN_ID`: proposal or target missing;
 - `INVALID_RESULT`: the result would fail schema or lint, e.g. an edited value of the wrong shape;
 - `INPUT_INVALID`, `EXCLUDE_UNKNOWN`: an `exclude` that doesn't fit the proposal (above).
@@ -546,15 +579,16 @@ Regenerates `index.md` exactly as schema §13 specifies (CX-04). `--check` write
 ### 5.9 `brain views`
 
 ```text
-brain views [--project <id>] [--check]
+brain views [--project <id> | --area <id>] [--check]
 ```
 
-Regenerates `brief.md` and `decision-log.md` for every project (in `projects/` and `archive/projects/`), or one project, per schema §16 (CX-07). Creates missing view files (with a new `vw-` id). Replaces only the generated block; the `@user` block is preserved byte for byte. Idempotent per schema §16. An existing view file without exactly one well-formed `@generated` block is **not** rewritten (it may hold your text): it is listed in `errors` as `{path, reason: "MARKERS_INVALID"}` and the command exits 1.
+Regenerates `brief.md` and `decision-log.md` for every project (in `projects/` and `archive/projects/`), or one project, and `areas/briefs/<slug>.md` for every area, per schema §16 (CX-07, 0041). Reports are never touched. Creates missing view files (with a new `vw-` id). Replaces only the generated block; the `@user` block is preserved byte for byte. Idempotent per schema §16. An existing view file without exactly one well-formed `@generated` block is **not** rewritten (it may hold your text): it is listed in `errors` as `{path, reason: "MARKERS_INVALID"}` and the command exits 1.
 
 ```json
 { "data": {
     "projects": 1,
-    "written": ["projects/acme-website/brief.md"],
+    "areas": 1,
+    "written": ["areas/briefs/clients.md", "projects/acme-website/brief.md"],
     "created": [],
     "unchanged": ["projects/acme-website/decision-log.md"],
     "errors": [],
@@ -562,7 +596,7 @@ Regenerates `brief.md` and `decision-log.md` for every project (in `projects/` a
 } }
 ```
 
-`--check`: writes nothing, lists what would change in `written`/`created`, exit 1 if any. Errors: `UNKNOWN_ID` (`--project`).
+`--project` rebuilds only that project's two views, `--area` only that area's brief. `--check`: writes nothing, lists what would change in `written`/`created`, exit 1 if any. Errors: `UNKNOWN_ID` (`--project`, `--area`).
 
 ### 5.10 `brain lint`
 
@@ -594,7 +628,7 @@ Issues are sorted by `path`, `line`, `rule`, then `message`. `line` is 1-based: 
 | `brain-config` | error | `brain.json` fails its schema (lint runs even then, §4) |
 | `id-format` | error | malformed ID, or a prefix that is not one of schema §1 (the prefix may differ from the current `type`, which can change) |
 | `id-duplicate` | error | same ID in two files |
-| `wrong-folder` | error | type outside its folder (schema §2); a source outside the folder of its key (`sources/notion/`, `sources/files/`, `sources/text/`) |
+| `wrong-folder` | error | type outside its folder (schema §2); a source outside the folder of its key (`sources/notion/`, `sources/files/`, `sources/text/`); a view outside the folder of its `view_kind` |
 | `missing-ref` | error | frontmatter reference or relation target does not exist |
 | `broken-link` | error | relative Markdown link to a missing file |
 | `wikilink` | error | `[[…]]` in a body |
@@ -609,6 +643,8 @@ Issues are sorted by `path`, `line`, `rule`, then `message`. `line` is 1-based: 
 | `decision-sources` | error | decision without `sources` (0005) |
 | `memory-scope` | error | memory reach lists do not match `scope` |
 | `proposal-status` | error | proposal `status` and `decision` do not match schema §11.1 |
+| `notion-parts` | error | a source's `notion_parts` names a part above its body's part count (schema §4) |
+| `review-notes` | error | a `review_notes` lists a note that isn't a knowledge note, or a note another `review_notes` also lists (0041) |
 | `product-file` | error | product-owned content differs from the installed package (§5.15, 0038). One issue per case: a shipped skill's folder missing from `.agents/skills/` or `.claude/skills/` (path = the folder); a shipped file in it missing or with different bytes; a file in it the package doesn't ship; `AGENTS.md` missing, its rules markers missing, out of order or duplicated, or its block differing from the template's (path `AGENTS.md`). Folders the package doesn't ship are not checked. The message names the package version and says: run `brain upgrade`, or file a finding |
 | `unknown-key` | warning | frontmatter key that the type's schema does not declare: the core fields, plus the knowledge fields (knowledge types), plus the type's own fields. `why` on a person is unknown |
 | `freshness` | warning | schema §10 |
@@ -771,7 +807,7 @@ Written by the skill, normalized from MCP results:
 }
 ```
 
-- `database`: a key of `brain.json` `notion.databases` among `areas`, `goals`, `key_results`, `projects`, `people`, `orgs`, `decisions`, `questions`, `concepts`, `review`. The Inbox and Meetings are not snapshot databases: the brain never reads their rows back through `sync plan` (an edit you make to an Inbox row's Summary or relations stays in Notion until the brain's value changes).
+- `database`: a key of `brain.json` `notion.databases` among `areas`, `goals`, `key_results`, `projects`, `people`, `orgs`, `decisions`, `questions`, `concepts`, `review`, `inbox`. Meetings are not a snapshot database. For `inbox`, the skill passes only the rows whose **Full text** box is ticked, with the properties `Full text` and `Brain ID`; nothing else on an Inbox row is read back (an edit you make to an Inbox row's Summary or relations stays in Notion until the brain's value changes; 0043).
 - A property missing from `properties` was not read and is not compared.
 
 **Normalized values** (the one form used in snapshots, render payloads and `notion_published`):
@@ -821,10 +857,11 @@ Read-only. Compares each row with the brain and returns a plan. Notes are matche
 - **Lifecycle** (yours; agents also set `draft` and `archived`) → three-way comparison; "your correction" here is an `updates` item that sets `lifecycle`.
 - **Brain-owned** properties → three-way comparison; "your correction" is a `corrections` item when the property is correctable (table below), otherwise `ignored`, `NOT_CORRECTABLE`. For Key Facts, the comparison runs **per key** on the parsed texts (N, S and B each parsed as §5.14.4 says), so a change to one key never conflicts with a change to another; each key is reported as `property: "Key Facts/<key>"`. A key in S that is missing from N → `ignored`, `FACT_REMOVAL_NOT_SUPPORTED`. A Name, Summary or Lifecycle emptied in Notion → conflict `REQUIRED_EMPTY`; a Lifecycle option the brain does not know → `ignored`, `UNKNOWN_OPTION`. Lifecycle is compared case-insensitively (Notion shows `Draft`, the brain stores `draft`).
 - **Review rows** with `Decision` set and `State` = `Pending` (0037: the row's **Note** replaces Edited Value; the snapshot property is `Note`, text). A proposal already terminal is checked first (below), so a row whose Note the skill has handled never comes back as `NOTE_TO_READ`:
-  - **Edit** → a `decisions` item for `brain apply`: `action: edit`, `value` = the Note (converted as above), `note` = the Note, `decided_at` = `last_edited`, `decided_by: notion`. `Edit` on a kind that forbids it (`edit` is allowed only for `update_fact`, `contradiction` and `add_to_note`, schema §11.1) → conflict `EDIT_NOT_ALLOWED` on the `Decision` property, so the user sees it before anything is applied. `Edit` with an empty Note → conflict `EDIT_WITHOUT_VALUE`.
+  - **Edit** → a `decisions` item for `brain apply`: `action: edit`, `value` = the Note (converted as above), `note` = the Note, `decided_at` = `last_edited`, `decided_by: notion`. `Edit` on a kind that forbids it (`edit` is allowed only for `update_fact`, `contradiction`, `add_to_note` and `answer`, schema §11.1; so never on `review_notes`) → conflict `EDIT_NOT_ALLOWED` on the `Decision` property, so the user sees it before anything is applied. `Edit` with an empty Note → conflict `EDIT_WITHOUT_VALUE`.
   - **Approve** or **Reject** with an empty Note → a `decisions` item as above, without `value` or `note`.
-  - **Approve** or **Reject** with a Note → conflict `NOTE_TO_READ` on the `Note` property, with `notion_value` = the Note and `brain_value` = the Decision label. No decision item: the skill reads the Note and passes `brain apply` the decision it means (with `note`, and `exclude` for "all except …" on an `add_link`), proposes the different change it describes, or asks the user. The plan never guesses a Note's meaning.
+  - **Approve** or **Reject** with a Note → conflict `NOTE_TO_READ` on the `Note` property, with `notion_value` = the Note and `brain_value` = the Decision label. No decision item: the skill reads the Note and passes `brain apply` the decision it means (with `note`, and `exclude` for "all except …" on an `add_link` or a `review_notes`, whose letters §5.14.4 defines), proposes the different change it describes, or asks the user. The plan never guesses a Note's meaning.
   - A proposal already terminal → `ignored`, `ALREADY_TERMINAL`.
+- **Inbox** rows (0043): a row with `Full text` = true → a `full_text_requests` item `{ "page_id": "…", "source": "src-…" }` when its Brain ID names a source that has an Inbox body (not `minutes`, `capture` or attached); the skill passes it to `source full-text` (§5.17). A Brain ID naming no note → conflict `UNKNOWN_BRAIN_ID`; a capture, a report, an Ask row (no Brain ID) or any other source → `ignored`, `NO_FULL_TEXT`. Every other Inbox property is ignored.
 - **Key Results** rows are grouped by their `Goal` relation into the goal's `notion_fields.key_results` (sorted by name, then page id) and compared like other Notion-owned fields. A Key Result whose goal the brain does not know → `ignored`, `UNKNOWN_GOAL`.
 
 **Property ownership per database** (schema §14). Name and Summary are brain-owned everywhere; Brain ID and Last Synced are system:
@@ -853,6 +890,7 @@ Other brain-owned properties (Assessment, Supersedes, Decided In, Raised In, Kin
     "updates": [ { "id": "prj-9x4t1b7e", "notion_fields": { "as_of": "2026-12-05T09:00:00Z", "status": "Active", "priority": "High", "dates": { "start": "2026-10-01" }, "archived": false } } ],
     "corrections": [ { "target": "per-3h8w2n6c", "field": "facts.role", "value": "Product lead", "observed_at": "2026-12-05T08:40:00Z", "property": "Role", "notion_value": "Product lead" } ],
     "decisions": [ { "proposal": "prp-3c8v1n5x", "action": "approve", "decided_at": "2026-12-04T08:15:00Z", "decided_by": "notion" } ],
+    "full_text_requests": [ { "page_id": "…", "source": "src-6t2w9k4m" } ],
     "conflicts": [ { "database": "goals", "page_id": "…", "brain_id": null, "code": "MISSING_REQUIRED", "message": "goal \"Write a book\" has no Area" } ],
     "ignored": [ { "database": "decisions", "page_id": "…", "brain_id": "dec-7k2m9q4x", "property": "Assessment", "reason": "NOT_CORRECTABLE" } ]
 } }
@@ -861,7 +899,7 @@ Other brain-owned properties (Assessment, Supersedes, Decided In, Raised In, Kin
 - `observed_at` of a correction is the row's `last_edited`; `property` and `notion_value` (N, normalized) let `sync apply` set S. For Key Facts, `notion_value` is the whole Key Facts text.
 - An `updates` item is `{id, notion?, lifecycle?, notion_fields?, published?}`: each optional key is set only when it changes; `published` is a map of S values to set (the converged case of the three-way table).
 - A conflict item is `{database, page_id, brain_id, code, message, property?, notion_value?, brain_value?}`.
-- Every array is sorted by database (in the order of the snapshot `database` list above), then `page_id`, then `field` or `property`.
+- Every array is sorted by database (in the order of the snapshot `database` list above), then `page_id`, then `field` or `property`. `sync apply` echoes `full_text_requests` without executing them.
 
 Errors: `INPUT_UNREADABLE`, `INPUT_INVALID` (unknown database key, bad value shape).
 
@@ -894,40 +932,55 @@ Builds Notion payloads; writes nothing. With `--plan`, every property named by a
 - notes of a published type (area, goal, project, person, org, decision, question, concept) with no `notion`;
 - sources of every kind except `minutes` with no `notion` (0037: the Inbox). On the first run after the upgrade to 0.3.0 this selects every such source already in the brain, so the Inbox History fills with no migration;
 - notes, meetings and sources (with `notion`) where any rendered property's B differs from S, or the page content changed (B of `@content` ≠ S);
-- proposals with no `notion`, or whose State (or another rendered property) differs from S.
+- proposals with no `notion`, or whose State (or another rendered property) differs from S;
+- reports (views with `view_kind: report`) with no `notion` (0043). A published report is never rendered again.
 
-Notes whose database id is empty in `brain.json` are skipped with warning `DATABASE_NOT_CONFIGURED`.
+A source with `attached_to` is never selected: it has no Inbox row (0042). Notes whose database id is empty in `brain.json` are skipped with warning `DATABASE_NOT_CONFIGURED`.
 
 **Rendered properties per database** (exactly these; nothing else is ever sent):
 
 | Database | Properties |
 |---|---|
-| areas | Name, Summary, Lifecycle, Brain ID, Last Synced |
+| areas | Name, Summary, Lifecycle, Brain ID, Last Synced; `sections` "Brief" (0041) |
 | goals | Name, Summary, Why, Deadline, Area, Lifecycle, Brain ID, Last Synced |
 | projects | Name, Summary, Key Facts, Area, Goal, Client, People, Lifecycle, Brain ID, Last Synced |
 | people | Name, Summary, Role, Org, Lifecycle, Brain ID, Last Synced |
 | orgs | Name, Summary, Lifecycle, Brain ID, Last Synced |
 | decisions | Name, Summary, Date, Assessment, Project, Area, Decided In, Supersedes, Lifecycle, Brain ID, Last Synced |
-| questions | Name, Summary, Kind, Project, Area, Raised In, Lifecycle, Brain ID, Last Synced |
+| questions | Name, Summary, Kind, Project, Area, Raised In, Lifecycle, Brain ID, Last Synced, Status *(Answered, once)* |
 | concepts | Name, Summary, Project, Area, Lifecycle, Brain ID, Last Synced |
 | meetings | Decisions, Questions, Attendees *(add)*, Project *(if empty)*, Area *(if empty)*, Brain Status, Ingested At, Brain ID |
 | review | Name, Kind, Target, Target Page, Before, After, Why, Source Meeting, State, Brain ID |
-| inbox | Name *(create only)*, Kind, Summary, Decisions, Questions, Concepts, People, Project *(if empty)*, Area *(if empty)*, Brain Status, Brain ID, Last Synced |
+| inbox | Name *(create only)*, Kind, Summary, Decisions, Questions, Concepts, People, Project *(if empty)*, Area *(if empty)*, Brain Status, Brain ID, Last Synced, Full text *(clear)*; a report: Name, Kind, Project, Area, Ask, Brain Status, Brain ID, Last Synced |
 
 - On `create`, every listed property is sent. On `update`, only properties whose B ≠ S are sent, plus Last Synced (= `--now`) for the databases that have it (not Meetings or Review). So Lifecycle goes out on create (`Draft`) and when the brain changed it (`archived` by a supersession), and your own Lifecycle edits, already pulled into the brain, are never overwritten.
 - Project relations carry every id in `projects`.
 - **Area on Decisions and Questions** (0034) is derived, never stored in the note: the `area` of each note in the record's `projects`, deduped and sorted. No projects, or projects without an area → empty. It is brain-owned and compared like any other property, so the first render after the upgrade sends it to every decision and question once.
 - **Concepts:** Project = `projects`, Area = `area`; the body is the whole page body, as for decisions.
+- **Question Status (0041):** when the question has `answer`, B of `Status` is `Answered`; it is sent only while S has no `Status` of `Answered`, so it goes out once, right after the `answer` proposal is applied. A question with no `answer` never has Status in `properties`. Status stays Notion-owned for `sync plan` (§5.14.2): if you reopen the question in Notion, the brain never sets it back.
+- **Areas (0041):** `sections` = `{ "Brief": <the area brief's generated block> }`. The skill replaces the children of the area page's "Brief" toggle heading; a page without one gets a "Brief" toggle heading appended at the **end** of the page, then filled (the page is yours, so the brain never inserts above your content).
 - **Inbox** (0037; sources, every kind except `minutes`):
   - `action`: `update` when the source has `notion`, or is a `capture` (page id = the id in its `notion:` key: the row you created; a capture's key is always `notion:`, schema §4); otherwise `create`. A capture whose `notion` differs from its key's id → item error `NOTION_ID_MISMATCH`.
   - Name = `title`, sent on `create` only: a capture's Name is yours. Kind = the source `kind` as a select label (`Capture`, `Document`, `Email`, `Chat`, `Note`). Summary = `summary` (empty when the source has none).
   - Decisions, Questions, Concepts, People = every note of that type whose `sources` lists the source's id, sorted; notes not yet published go to `pending_relations`. These are the "Produced" relations; the other side of each is that database's Sources relation, which Notion fills.
   - Project and Area carry `"mode": "if_empty"` (as on Meetings): Project = the `projects` of the produced notes, Area = their `area` and the `area` of those projects, each deduped and sorted. You may set them yourself before the ingest; the brain never overwrites them.
   - Brain Status = `Processed`. Brain ID = the source's id.
-  - `body` and `sections` are `null`: the page body is never written (a capture's body is yours; a created row has none).
+  - **Produced** relations also include every note whose `sources` lists the id of a source **attached** to this one (0042).
+  - **Body (0043):** a capture's body is yours: `body` and `sections` are `null`. Any other source's `body` is its digest, written once (its content never changes, so B of `@content` = S after the first publish):
+    ```text
+    *<Kind> · <file_name, else the URL, else "pasted text"> · <file_date, else the date of captured> · <word count> words[ · <part count> slides]*
+
+    <summary>
+
+    <digest>
+    ```
+    A missing `summary` or `digest` leaves out its paragraph; `[ · <part count> slides]` only when the body has slide markers. The words are the body's runs of non-space characters.
+  - **Full text (0043):** B of `@full_text` = `{ "text": <notion_text or "digest">, "parts": <notion_parts or null>, "requested": <notion_text_requested or null> }`. When B.text is `full` and S has no `@full_text`, or S's `text` or `parts` differs from B's, `sections` = `{ "Full text": <text> }`: the preamble, then the chosen parts in order (all when `parts` is null); a partial choice starts with the line `*Slides 3–9 of 12*` or `*Sections 2, 4–5 of 5*` (ranges as stored, en dash, joined by `, `). The skill writes it into a toggle heading "Full text" after the body, creating the toggle when missing, and splits long text into as many blocks as the API needs. When B.requested is not null and differs from S's, `properties` also has `"Full text": { "type": "checkbox", "value": false }`, with or without `sections`: so a box ticked again on a row already in full is cleared, and no text is written twice. `published` carries `@full_text` = B whenever either is sent.
   - `published` holds what was sent, so a later ingest that produces more notes from the same source (or publishes a pending one) re-renders only the changed relations.
 - **Meetings** (0007; the page is yours): never Name, Date or body. *(add)* relations carry `"mode": "add"`: the skill adds the listed pages and keeps those you linked. *(if empty)* relations carry `"mode": "if_empty"`: the skill writes them only when the property is empty in Notion (design §3.5: "brain fills if empty"). Brain Status = `Ingested` and Ingested At = `{start: <meeting created>}` go out once, because S then holds them.
-- **Review** (proposals): Name = `title`; Kind; Target = `<target title> (<target id>)`; Target Page = the target's Notion URL if published; Before and After (for `supersede`: old and new note title; `merge`: duplicate and survivor title; `add_to_note`: After = `content`; `add_link`: Before empty, After = one line per entry of `links` (or the old single `field`/`after`), `<Field>: <value>` with a note id rendered as its title, joined by `\n`, e.g. `People: Lucía Fernández\nPeople: Tomás Vidal\nAliases: acme site`; `new_item`: After = the note's title and type), cut to 2000 characters; Why; Source Meeting = relation when `source` is a published meeting; State.
+- **Reports** (0043): `action` is always `create`. Name = `title`; Kind = `Report`; Project = `projects`, Area = `area` (plain relations, not *if empty*); Ask = `[asked_in]` when set, a relation to your Ask row, whose other side (Report) Notion fills; Brain Status = `Processed`; Brain ID = the view's id. `body` = the report body, rendered as other bodies. The skill sets the Ask row's own Brain Status to Processed through the MCP; nothing else on it changes.
+- **Review** (proposals): Name = `title`; Kind; Target = `<target title> (<target id>)`; Target Page = the target's Notion URL if published; Before and After (for `supersede`: old and new note title; `merge`: duplicate and survivor title; `add_to_note`: After = `content`; `add_link`: Before empty, After = one line per entry of `links` (or the old single `field`/`after`), `<Field>: <value>` with a note id rendered as its title, joined by `\n`, e.g. `People: Lucía Fernández\nPeople: Tomás Vidal\nAliases: acme site`; `new_item`: After = the note's title and type; `answer`: Before empty, After = `answer`, plus ` → <answer_note title>` when set; `review_notes`: see below), cut to 2000 characters; Why; Source Meeting = relation when `source` is a published meeting; State.
+- **Review notes rows** (0041, 0043): Target = `<source title> (<source id>)`, with `<source title>` as in the proposal title rule (§5.6), and Target Page = that meeting's or Inbox row's URL if published. Before is empty. After is one line per item, **lettered** in order: `a`, `b`, … `z`, then `aa`, `ab`, …; first every entry of `notes` as `<letter>) <Type>: <title>` (`a) Decision: Use Supabase for auth`), then every entry of `links` as `<letter>) <Field> on <target title>: <value>` (`e) People on Acme website: Lucía Fernández`), with a note id rendered as its title. The letters are the ones you name in the Note ("all except b, e"); the skill maps them back to `exclude` entries in this order.
 - References to notes not yet published are left out of `properties` and listed in `pending_relations` (`[{ "property": "Org", "ids": ["org-…"] }]`). The skill publishes those notes first, records them, and renders again.
 
 Each item:
@@ -947,11 +1000,13 @@ Each item:
 ```
 
 - `action`: `create` when the note has no `notion`, else `update`. Meetings are always `update`; a meeting without `notion` → item error `MEETING_NOT_PUBLISHED`. Projects are always `update` too: a project without `notion` → item error `PROJECT_NOT_IN_NOTION`, because a project page must come from the Projects template (its views and "My notes"), which the API can't apply. The user creates it with **New project** in Notion, and the next `sync plan` imports it (0021).
-- `published`: B for every rendered property except Last Synced and pending relations, plus `@content` = `sha256:<hex>` of the rendered `body`/`sections` when the type has content. This is the new S once the write succeeds.
+- `published`: B for every rendered property except Last Synced and pending relations, plus `@content` = `sha256:<hex>` of the rendered `body`/`sections` when the type has content (for a source, of `body` only; its Full text is tracked by `@full_text`). This is the new S once the write succeeds.
 - **Page content** (decision 0026): the brain writes only what it owns.
   - `body` (decisions, questions, concepts): replaces the whole page body.
   - `sections` (projects): `{ "Brief": <the brief's generated block>, "Decision log": <the decision log's generated block> }`. The skill replaces only the children of the toggle heading with that exact name. `render` can't see Notion page content, so finding the toggle is the skill's job, after it reads the page through the MCP (0033): a page with **no toggle headings at all** gets the missing "Brief" and "Decision log" toggles appended and filled; a page with other toggle headings but not the named one is reported as `SECTION_NOT_FOUND` and left as it is.
-  - Areas, goals, people, orgs, meetings, sources and proposals: `body` and `sections` are both `null`.
+  - `sections` (areas, 0041): `{ "Brief": … }`, as above.
+  - `body` (sources other than captures, 0043; reports): as above; `sections` `{ "Full text": … }` on a source when due.
+  - Goals, people, orgs, meetings, captures and proposals: `body` and `sections` are both `null`.
   - Rendering: `^[inferred]` → ` (AI inference)`, `^[ambiguous]` → ` (ambiguous)`, and relative links to published notes become `https://www.notion.so/<page id without dashes>` (unpublished → plain title text).
 
 `data` = `{ "items": […], "errors": [ { "id": "…", "reason": "MEETING_NOT_PUBLISHED" } ] }`, items sorted by database (table order), then id. Exit 1 if `errors` is non-empty (the other items are still returned); `UNKNOWN_ID` for `--ids` is a whole-command error.
@@ -1004,7 +1059,8 @@ Stores what the skill published. Input: `{ "records": [ { "id": "per-3h8w2n6c", 
 - `published` (the render item's `published`): merged into `notion_published`, key by key.
 - `synced_at` → `last_synced` (knowledge notes and sources), the time of the last publish.
 - `tasks` (meetings and sources): appended to the note's `tasks`, deduped, order kept.
-- A source record changes only these system fields (schema §4: its body and content fields stay as captured).
+- A source record changes only these system fields (schema §4: its body and content fields stay as captured). `@full_text` is merged like any other key.
+- A report record (0043) sets the view's `notion`, `last_synced` and `notion_published`; nothing else.
 - Does not change `updated`; does not log (the skill logs `publish`).
 
 `data` = `{ "records": [ { "id": "…", "result": "recorded"|"failed", "reason"?: "…", "changed": ["…"] } ] }`. Exit 1 if any failed.
@@ -1075,16 +1131,74 @@ brain upgrade --json
 **Safety:** all checks run before the first write. `AGENTS.md`, `.agents`, `.agents/skills`, `.claude`, `.claude/skills`, `.claude/settings.json`, a shipped skill's folder, or any file in it that is a symbolic link, or a file where a folder belongs → `OUTSIDE_ROOT`, and nothing is written or removed. `brain link` checks both `brain-query` folders the same way (§5.12).
 
 Errors: `UNRELEASED_BUILD`, `BRAIN_DIRTY`, `OUTSIDE_ROOT`, and the brain resolution errors (§4).
+
+### 5.16 `brain repo` (linked repos, 0042)
+
+```text
+brain repo add <name> --path <path> --area <area-id> --pattern <glob> [--pattern <glob>]…
+brain repo changes <name>
+brain repo record <name> (--commit <sha> | --reset)
+```
+
+A linked repo is a read-only source: these commands read it with Git (`git -C <path> …`) and write only `brain.json` `repos` (schema §12). The skill reads each file's text with `git -C <path> show <commit>:<repo_path>` and ingests it as a document (brain-ingest).
+
+**`repo add`** appends `{name, path, area, patterns, commit: ""}` to `repos`. `name` is lowercase kebab-case and unused (`INPUT_INVALID`); `area` must exist (`UNKNOWN_ID`); `path` is stored as given, and must resolve to the top of a Git working tree (`REPO_NOT_FOUND`) that is not the brain (`REPO_IS_BRAIN`, compared after resolving symbolic links). At least one `--pattern`; each is a Git glob pathspec relative to the repo root. `brain.json` is written as JSON with 2-space indent and a trailing newline. Logs `repo-add - "<name>"`.
+
+**`repo changes`** writes nothing. With **to** = the repo's `HEAD` commit and **from** = the recorded `commit`:
+- `from` is `""` (first ingest): every file matching the patterns at `to` is `added`.
+- Otherwise `from` must be an ancestor of `to` (`REPO_COMMIT_UNKNOWN`). Files added or modified between them that match the patterns are listed, without rename detection (a rename is a deletion and an addition); deleted ones go to `deleted`.
+- Each file carries the last commit in the range that touched it, and the files are ordered by that commit's committer time, oldest first, then by path. `sha256` is the hash of the file's bytes at `to`, so the skill can build its `file:` key; `bytes` is their size.
+- Uncommitted changes in the working tree are not read; when there are any, warning `REPO_DIRTY`.
+
+```json
+{ "data": {
+    "name": "acme-api", "area": "area-2m7c4h8n", "from": "", "to": "9f3c…(40 hex)",
+    "files": [ { "path": "decisions/0001-use-supabase.md", "status": "added", "commit": "4b1e…", "committed_at": "2026-11-02T10:00:00Z", "sha256": "…", "bytes": 1840 } ],
+    "deleted": []
+} }
+```
+
+**`repo record`** sets the repo's `commit` after an ingest: `--commit` must exist in the repo and have the recorded commit (when not `""`) as an ancestor (`REPO_COMMIT_UNKNOWN`). `--reset` sets `""`, so the next `changes` lists every matching file again (their sources are found as duplicates by `note new`). Logs `repo-record - "<name>" commit=<sha>`. `data` = `{ "name": "…", "previous": "…", "commit": "…" }`.
+
+Errors: `REPO_NOT_FOUND`, `REPO_IS_BRAIN`, `REPO_COMMIT_UNKNOWN`, `UNKNOWN_ID`, `INPUT_INVALID`, `USAGE` (missing `--path`, `--area` or `--pattern`).
+
+### 5.17 `brain source full-text` (0043)
+
+```text
+brain source full-text <src-id> [--parts <range>[,<range>…]]
+```
+
+Asks for a source's text on its Inbox row. Sets `notion_text: full`; with `--parts`, `notion_parts` = the list as given (`--parts 2,4-5` → `["2", "4-5"]`); without it, removes `notion_parts`, so every part is included (this replaces an earlier partial choice). It also sets `notion_text_requested` to now, so the next render clears the row's Full text box (§5.14.4). These are system fields: `updated` doesn't change. Logs `full-text <id> "<title>" parts=<list or all>`.
+
+`INPUT_INVALID` when the id isn't a source; the source is `minutes`, `capture` or attached (no brain-written Inbox body); or `--parts` has an empty item (`2,,4`), a malformed, reversed (`9-3`), out-of-order or overlapping range (`2-4,3-5`), or a part above the body's count (schema §4 parts). `UNKNOWN_ID` for a missing id.
+
+```json
+{ "data": { "id": "src-6t2w9k4m", "path": "sources/files/2026-11-02-acme-requirements.md", "parts": 12, "notion_text": "full", "notion_parts": ["3-9"], "notion_text_requested": "2026-12-05T09:00:00Z" } }
+```
+
+`parts` is the body's part count.
+
+### 5.18 `brain report new` (0043)
+
+```text
+brain report new --input <file|->
+```
+
+Stores a report the brain-query skill wrote (schema §4 view, §16.4). Input: `{ "title": "Acme launch: where we stand", "question": "Everything about the Acme launch since August", "asked_in": "<Ask row page id>", "projects": ["prj-…"], "area": "area-…", "body": "## Where it stands\n…" }`; `asked_in`, `projects` and `area` optional.
+
+The CLI writes a `view` with `view_kind: report`, `generated_at` = now and `generated_from` = the ids of the notes the body links to (relative links from `reports/`, sorted), at `reports/<date>-<slug of title>.md`. `INPUT_INVALID` when the body's `##` sections aren't exactly the six of §16.4 in order, or a link doesn't resolve to a note; `UNKNOWN_ID` for `projects` or `area`. Reports are never edited, so there is no update command. Logs `report-new <id> "<title>"`. `data` = `{ "id": "vw-…", "path": "reports/…", "generated_from": ["…"] }`.
+
 ---
 
 ## 6. Standard sequences (for skills)
 
 | Flow | Sequence |
 |---|---|
-| **Ingest one meeting** (CC-06) | `status` → `index` (JSON, for matching) → `note new --dry-run` with the source (check `DUPLICATE_SOURCE`) → `id new` for the new notes → `note new` (source, meeting, people, decisions, questions) → `proposal new` → `index` → `views` → `lint` → `log ingest <mtg> created=… proposals=… tasks=…` → `git commit` → `sync tasks` + MCP → `sync render --changed` + MCP → `sync record` → `git commit` |
+| **Ingest one meeting** (CC-06) | `status` → `index` (JSON, for matching) → `note new --dry-run` with the source (check `DUPLICATE_SOURCE`) → `id new` for the new notes → `note new` (source, meeting, people, decisions, questions) → `proposal new` (with one `review_notes` for the source, which takes in its `add_link` items, and any `answer`, 0041, 0043) → `index` → `views` → `lint` → `log ingest <mtg> created=… proposals=… tasks=…` → `git commit` → `sync tasks` + MCP → `sync render --changed` + MCP → `sync record` → `git commit` |
 | **Apply reviews** (CC-09) | MCP read Review rows → `sync plan` → `sync apply` → `index` → `views` → `lint` → commit → `sync render --changed` + MCP → `sync record` → commit |
 | **Ingest a document, email, chat, note or capture** (0032, 0037) | as above, with the source's own procedure (brain-ingest `sources.md`); owner action items → `sync tasks --source` + MCP; the source is published to the Inbox by `sync render --changed` |
-| **Catch up** (0037) | read-only pass (MCP reads of Review, Meetings and Inbox; `sync plan`; drop-folder listing; one batch of questions) → **Apply reviews** → **Ingest one meeting** for each Reviewed meeting → **Ingest a …** for each New Inbox row, then each chosen drop-folder file → `sync render --changed` + MCP → `sync record` → commit → push per `settings.push` |
+| **Catch up** (0037, 0041–0043) | read-only pass (MCP reads of Review, Meetings, the Inbox's New rows and ticked Full text boxes; `sync plan`; drop-folder listing; `repo changes` per linked repo; attachments on the New rows and Reviewed meetings; one batch of questions) → `proposal backlog` → **Apply reviews** → `source full-text` per `full_text_requests` → **Ingest one meeting** for each Reviewed meeting → **Ingest a …** for each New Inbox capture, each attachment, each chosen drop-folder file and each changed repo file, then `repo record` → **Report** for each New Ask row → `views` → `sync render --changed` + MCP → `sync record` → commit → push per `settings.push` |
+| **Report** (0043) | `query --candidates` and the notes → the skill writes the six sections → `report new` → commit → `sync render --changed` + MCP (the Report row; the Ask row's Brain Status set to Processed) → `sync record` → commit |
 | **Apply in chat** | `proposal list --status pending` → ask → `apply` with `decided_by: chat` → `index` → `views` → `lint` → commit. The next sync publishes the change |
 | **Sync** (CC-08) | as §5.14 |
 | **Query** (CC-10) | `query --candidates` → read the top notes → answer with citations |

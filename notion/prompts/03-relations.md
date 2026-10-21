@@ -33,6 +33,7 @@ In the databases on "Brain Data", add these two-way relations. Use exactly these
 - Inbox "People" ↔ People "Sources"
 - Inbox "Project" ↔ Projects "Inbox"
 - Inbox "Area" ↔ Areas "Inbox"
+- Inbox "Ask" ↔ Inbox "Report" (a relation of the Inbox to itself: a report row's Ask, an Ask row's Report)
 - Tasks "Project" ↔ Projects "Tasks"
 - Tasks "Area" ↔ Areas "Tasks"
 - Tasks "Meeting" ↔ Meetings "Tasks"

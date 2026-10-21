@@ -37,7 +37,7 @@ It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md)
 **Job:** see in ten seconds what you have to do today, then what the brain needs from you.
 
 **Left column:** navigation, then a small heading "Needs you" with two short lists (views 1–2).
-**Right column:** the three buttons in a row, then "What's on today?" as a tabs block (views 3–5).
+**Right column:** the four buttons in a row, then "What's on today?" as a tabs block (views 3–5), then "What did the brain take in?" as a second tabs block (views 6–7).
 
 | # | Tab | View name | Database | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|---|
@@ -46,12 +46,15 @@ It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md)
 | 3 | Tasks | What's due today? | Tasks | List | Status is To Do or Doing · Due is on or before today | Due, ascending | Name, Project, Due | Today's work, overdue first |
 | 4 | Meetings | Which meetings are today? | Meetings | List | Date is today | Date, ascending | Name, Date, Project | Today's meetings, with time and project |
 | 5 | Projects | What's active? | Projects | Gallery (small cards) | Status is Active · Archived is unchecked | Priority (High→Low), then Name | Name, Client, Countdown, Task Progress | What you're working on, and how far along each is |
+| 6 | Came in | What came in lately? | Inbox | List, 10 rows | Brain Status is Processed | Created, descending | Name, Kind, Project | The Brain feed (0043): every document, email, capture and report the brain took in, newest first |
+| 7 | Meetings | Which meetings did it take in? | Meetings | List, 10 rows | Brain Status is Ingested | Ingested At, descending | Name, Date, Project | The meetings the brain ingested, newest first. Together with view 6, everything the brain did |
 
 **Buttons** (`/button`, each with *Open page after creation* on):
 
 | Button | Action |
 |---|---|
 | Quick capture | Add page to *Inbox*, Kind = Capture, Brain Status = New |
+| Ask the brain | Add page to *Inbox*, Kind = Ask, Brain Status = New. Type your question as the Name; the next catch-up answers it with a Report row (0043) |
 | New meeting | Add page to *Meetings*, Date = today. The default template applies |
 | New project | Add page to *Projects*, Status = Planned. The default template applies |
 
@@ -127,7 +130,9 @@ All views use the Tasks database. Using your own Tasks database (0018)? Map the 
 
 ## 6. Review (decide on proposals)
 
-**Job:** approve, reject or edit every change the brain proposes to your existing knowledge (decision 0003).
+**Job:** approve, reject or edit every change the brain proposes to your existing knowledge (decision 0003), and accept the notes each ingest made (Review Notes rows, 0041).
+
+Above the tabs, a gray line: "Your corrections go in Note. Target says what changes." (0043). On a **Review Notes** row, After lists the new notes and links lettered a), b)…: Approve accepts them all, Approve with "all except b, d" in Note keeps those out, Reject archives the new notes. On an **Answer** row, Approve marks the question Answered.
 
 | # | Tab | View name | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|
@@ -217,7 +222,7 @@ Relations the template already shows as linked views (meetings, tasks, questions
 | Decisions | Assessment, Date, Project | Panel · Area, Decided In, Supersedes, Superseded By, Sources, Summary, Lifecycle | Brain ID, Last Synced | Show always | The body is brain-written; backlinks show supersede chains and mentions |
 | Questions | Status, Kind, Project | Panel · Area, Raised In, Sources, Summary, Lifecycle | Brain ID, Last Synced, Created time | Off | You set Status |
 | Review | Decision, Kind, State | Main · Before, After, Why, Note, Target, Target Page, Source Meeting | Brain ID, Created time, Last edited time | Off | No body; read Before, After and Why, then decide in the heading |
-| Inbox | Brain Status, Kind, Project | Main · Summary, Area, Decisions, Questions, Concepts, People, Tasks, Created | Brain ID, Last Synced | Off | What came in, and what the brain made from it |
+| Inbox | Brain Status, Kind, Project, Full text | Main · Summary, Area, Decisions, Questions, Concepts, People, Tasks, Ask, Report, Created | Brain ID, Last Synced | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
 | Concepts | Lifecycle, Project | Panel · Area, Sources, Summary | Brain ID, Last Synced, Created time | Show always | The body is brain-written |
 | Tasks | Status, Due | Panel · Project, Area, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
 

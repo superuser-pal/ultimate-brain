@@ -16,7 +16,7 @@ Legend: `▦` linked view · `▸` toggle · `## ▸` toggle heading.
 ## Snapshot
 
 ### Areas · "Default Area" (default)
-Template id `<id>`. The "via projects" rollups were removed by migration 0005; Decisions and Questions now relate to Areas directly.
+Template id `<id>`. Header shows the "People via projects" and "Clients via projects" rollups (page layout); migration 0005 removed the other two, since Decisions and Questions now relate to Areas directly.
 
 ```text
 ### What am I working toward here?   ▦ Goals       Area is this page, Status Active

@@ -84,7 +84,7 @@ Never recommend Approve or Reject: the decision is mine. Read only.
 Goal: make the minutes on this meeting page ready for the brain.
 Source: this page only. It must be a page in the Meetings database inside [@Brain Data]; otherwise stop and tell me.
 
-1. Sections: check for Attendees, Decisions, Action items, Facts & numbers, Open questions, Risks, Summary. List any that are missing.
+1. Sections: check for Attendees, Projects, Action Items, Decisions, Open Questions, Risks, Meeting Purpose, Background, Current Status, Requirements and Deadlines, Other relevant topics. List any that are missing.
 2. List every name, number, date and amount for me to confirm.
 3. Flag decisions or action items with no owner, and anything that reads like a guess.
 4. Compare the attendees and project named in the text with the Attendees and Project properties. Report differences; don't change the properties.
