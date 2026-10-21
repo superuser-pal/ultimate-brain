@@ -452,7 +452,7 @@ Agreed with the user on 2026-10-19, after a retro on the 0.2.4 release and the 0
 
 Found in U-13 (2026-10-20), issue #113. Ships before 0.4.0, on its own.
 
-### CC-40 · `sync tasks` writes the Status property type the Tasks database uses (#113) (was CX-39) · `todo`
+### CC-40 · `sync tasks` writes the Status property type the Tasks database uses (#113) (was CX-39) · `done` (#117)
 **Release:** 0.3.2
 **Output:** per spec/schema.md §12 and spec/cli.md §5.14.5 (settled in CC-38): `notion.tasks.status_type` (`status` | `select`, absent = `select`, today's behaviour, so an existing mapping to a select property keeps working) in config validation; `brain sync tasks` types the Status value by it: `{ "type": "select", "value": "To Do" }` when absent or `select`, `{ "type": "status", … }` when `status`. brain.schema.json carries the field; templates/brain/brain.json sets `status` explicitly for the default Tasks database, and brain-connect-notion records it for every mapping. A brain made before 0.3.2 with the default Tasks database sets it once (U-16). Its CHANGELOG.md line is written by hand (a 0.3.x task).
 **Acceptance:** tests: no `status_type` and `status_type: "select"` both give a Status item of type `select` (existing `sync tasks` tests pass unchanged); `status_type: "status"` gives type `status`; `status_type: "text"` fails `brain-config` lint and `sync tasks` with `BRAIN_CONFIG_INVALID`; `brain init` writes a `brain.json` with `status_type: "status"`.
