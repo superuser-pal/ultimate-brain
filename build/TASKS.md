@@ -509,7 +509,7 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 **Output:** decision 0043, agreed with the user in a grill on 2026-10-21 after U-13's two catch-ups (amends 0026 and 0041, refines 0024 and 0037); its work folded into CC-36, CX-37 and CC-37 below, and into U-15; CX-39 under 0.3.2 for #113; docs/v2-ideas.md "Owners on Tasks"; U-13 closed with notion/templates.md pulled again after migration 0005 (Areas' two new views, the Inbox "Capture" template).
 **Acceptance:** the user approves decision 0043; each of CC-36, CX-37 and CC-37 names what 0043 adds to it and its acceptance; Codex's review finds CX-37's 0043 part and CX-39 scoped so that a spec question, if any, can be answered before they start. **Spec settled here (from Codex's review of #114):** `status_type` (absent = `select`) in spec/schema.md §12, spec/cli.md §5.14.5, brain.schema.json, the template brain.json (`status`) and brain-connect-notion; the full-text fields, part ranges and write-once rule in CC-36.
 
-### CC-39 · Claude Code builds, Codex reviews (decision 0044) · `review`
+### CC-39 · Claude Code builds, Codex reviews (decision 0044) · `done` (#116)
 **Release:** 0.4.0
 **Changelog:** decision 0044: Claude Code builds every task, the CLI included, and Codex reviews every PR.
 **Output:** decision 0044, at the user's request on 2026-10-21 after CC-36 (#115); AGENTS.md (current phase, multi-agent rules, layout owners); this file: the owners line, the status note, and the open Codex tasks renumbered as CC-40, CC-41, CC-42 and CC-43, each title saying which id it was; references to them in open rows follow. Done rows keep their ids.
