@@ -44,7 +44,7 @@ To try a release candidate: `npm install -g ultimate-brain@next`. To go back: `n
 | [synthesis/synthesis.md](synthesis/synthesis.md) | The v1 design: schema, meeting-ingest workflow, Notion bridge |
 | [docs/notion-space-design.md](docs/notion-space-design.md) | Notion databases, views, and the Notion AI prompts to build them |
 | [decisions/](decisions/) | Every accepted architecture decision |
-| [build/TASKS.md](build/TASKS.md) | Build plan split between Claude Code and Codex |
+| [build/TASKS.md](build/TASKS.md) | Build plan: Claude Code builds, Codex reviews (decision 0044) |
 | [reviews/](reviews/) | Research: reviews of five open-source second-brain repos |
 
 Agent rules live in [AGENTS.md](AGENTS.md); `CLAUDE.md` imports it.
