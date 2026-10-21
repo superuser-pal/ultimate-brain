@@ -5,7 +5,7 @@ The default page templates as they exist in the live Notion space, plus the impr
 - **Intent:** [docs/notion-space-design.md](../docs/notion-space-design.md) §4.
 - **Build prompt:** [prompts/06-templates.md](prompts/06-templates.md).
 - **Ids:** template, page and view ids are left out (`<id>`): the product repo holds no Notion ids from a real workspace (AGENTS.md, decision 0038). Look them up live.
-- **Last pulled:** 2026-10-14, through the Notion API, read-only, after migration 0003. The API shows headings and linked views, not view tabs or filters; those are as built by hand from Prompt 6.
+- **Last pulled:** 2026-10-21, through the Notion API, read-only, after migration 0005 (U-13). Only Areas and Inbox changed since the 2026-10-14 pull. The API shows headings and linked views, not view tabs or filters; those are as built by hand from Prompt 6.
 
 The API returns each linked view's title and URL, but not its filters, sorts or visible properties. The filters listed below are the ones Prompt 6 asked for; they have not been checked live.
 
@@ -16,15 +16,20 @@ Legend: `▦` linked view · `▸` toggle · `## ▸` toggle heading.
 ## Snapshot
 
 ### Areas · "Default Area" (default)
-Template id `<id>`. Header shows the four "via projects" rollups (page layout).
+Template id `<id>`. The "via projects" rollups were removed by migration 0005; Decisions and Questions now relate to Areas directly.
 
 ```text
 ### What am I working toward here?   ▦ Goals       Area is this page, Status Active
 ### What's active here?              ▦ Projects    Active · Planned · Done
 ### What's on my plate here?         ▦ Tasks       Open · Waiting On · Done
 ### Which meetings?                  ▦ Meetings    Upcoming · Past
+### What have we decided here?       ▦ Decisions   Current · Superseded   (heading bold, an empty paragraph after it)
+### What's still open here?          ▦ Questions   Open questions · Open risks · Answered   (heading bold)
 ▸ My notes
+(empty paragraph)
 ```
+
+The two new linked views show as "Untitled" through the API; their data source and filters are the ones migration 0005 asked for, set up by hand in Notion.
 
 ### Goals · "Default Goal" (default)
 Template id `<id>`
@@ -89,8 +94,11 @@ Template id `<id>`. Header shows the "Meetings via projects" rollup (page layout
 ▸ My notes
 ```
 
-### Decisions, Questions, Review, Key Results, Capture Inbox, Tasks
-No template. This is intended: the brain writes the whole body of Decisions and Questions pages (0026), and the other databases are property-only.
+### Inbox · "Capture" (default)
+Template id `<id>`. Empty body; it only sets Kind = Capture on a new row (migration 0005), so a quick capture needs nothing set.
+
+### Decisions, Questions, Concepts, Review, Key Results, Tasks
+No template. This is intended: the brain writes the whole body of Decisions, Questions and Concepts pages (0026, 0037), and the other databases are property-only.
 
 ---
 
