@@ -8,7 +8,7 @@ One line per task, under the release that ships it (decision 0038). From 0.4.0 o
 - CC-29 (#96): decision 0039: a task's changelog line lives in its build/TASKS.md row and `release.mjs` writes the CHANGELOG section (built in CX-34, documented in CC-30).
 - CC-31 (#98): OKF and GBrain reviewed and parked for v2 (reviews/06): a retrieval index over Markdown, and OKF export, then maybe alignment.
 
-## 0.3.2 — unreleased
+## 0.3.2 — 2026-10-21
 
 - CC-40 (#117): `brain sync tasks` types the Status value by `notion.tasks.status_type` (`status` for Notion's built-in Status, as in the default Tasks database; absent or `select` as before), so new tasks no longer fail on that database (#113).
 
