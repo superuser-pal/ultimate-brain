@@ -307,3 +307,27 @@ test("render: an attached source has no Inbox row; its notes go on the parent's 
   assert.deepEqual(row.pending_relations.find((relation: { property: string }) => relation.property === "Decisions"), { property: "Decisions", ids: [decision] });
   await assertLintClean(dir);
 });
+
+test("note new: attached_to must name a source, existing or earlier in the batch, that isn't attached itself", async (context) => {
+  const dir = await inboxBrain(context);
+  const parent = await newSource(dir, source("Launch thread", "email", "From: Maria\n\nPlan attached.\n"));
+  const attach = (title: string, to: string) => {
+    const item = source(title, "document", `${title} body.\n`, { attached_to: to });
+    delete (item.frontmatter as Record<string, unknown>).digest;
+    return item;
+  };
+  const child = await newSource(dir, attach("Launch plan", parent.id));
+  const nested = await run(dir, ["note", "new"], { notes: [attach("Plan annex", child.id)] });
+  assert.equal(nested.json.error?.code, "INPUT_INVALID");
+  assert.equal(nested.json.error.details[0].pointer, "/notes/0/frontmatter/attached_to");
+  assert.equal((await run(dir, ["note", "new"], { notes: [attach("Annex", "dec-7k2m9q4x")] })).json.error?.code, "INPUT_INVALID", "not a source");
+  assert.equal((await run(dir, ["note", "new"], { notes: [attach("Annex", "src-00000000")] })).json.error?.code, "INPUT_INVALID", "missing");
+
+  const ids = (await run(dir, ["id", "new", "source", "--count", "2"])).json.data.ids as string[];
+  const batch = [{ ...source("Second thread", "email", "From: Ana\n\nTwo files.\n"), id: ids[0] }, { ...attach("Second plan", ids[0]!), id: ids[1] }];
+  assert.equal((await run(dir, ["note", "new"], { notes: batch })).code, 0, "a parent earlier in the batch is fine");
+  const chained = (await run(dir, ["id", "new", "source", "--count", "2"])).json.data.ids as string[];
+  const chain = [{ ...attach("Third plan", parent.id), id: chained[0] }, { ...attach("Third annex", chained[0]!), id: chained[1] }];
+  assert.equal((await run(dir, ["note", "new"], { notes: chain })).json.error?.code, "INPUT_INVALID", "nor attached earlier in the batch");
+  await assertLintClean(dir);
+});

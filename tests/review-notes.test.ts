@@ -242,3 +242,13 @@ test("render: a Review row links its page and its source meeting", async (contex
   assert.deepEqual(item!.properties["Target Page"], { type: "url", value: "https://www.notion.so/3c4d5e6f7a8b4c0d9e2f3a4b5c6d7e8f" });
   assert.deepEqual(item!.properties["Source Meeting"], { type: "relation", value: ["3c4d5e6f-7a8b-4c0d-9e2f-3a4b5c6d7e8f"] });
 });
+
+test("render: a Review row whose meeting has no Notion page lists it as pending", async (context) => {
+  const dir = await fixtureCopy(context);
+  const meetingPath = join(dir, "knowledge/meetings/2026-12-03-acme-sync.md");
+  await writeFile(meetingPath, (await readFile(meetingPath, "utf8")).replace(/^notion: .*\n/m, ""));
+  const created = await run(dir, ["proposal", "new"], { proposals: reviewInput });
+  const [item] = await rendered(dir, [created.json.data.created[0].id]);
+  assert.deepEqual(item!.pending_relations.find((relation: { property: string }) => relation.property === "Source Meeting"), { property: "Source Meeting", ids: [SYNC] });
+  assert.deepEqual(item!.published["Source Meeting"], [], "as for other relations, only published pages are recorded as sent");
+});

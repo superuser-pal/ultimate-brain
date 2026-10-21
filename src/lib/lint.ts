@@ -39,7 +39,7 @@ const ID = /^(area|gol|prj|per|org|mtg|dec|que|con|src|mem|prp|vw)-[0-9abcdefghj
 const REFERENCE_KEYS = new Set([
   "area", "goal", "client", "org", "projects", "people", "attendees", "decided_in", "raised_in", "deciders",
   "source", "sources", "decisions", "questions", "answer", "target", "supersedes", "merge_into", "project",
-  "generated_from", "facts", "notes", "answer_note", "links",
+  "generated_from", "facts", "notes", "answer_note", "links", "attached_to",
 ]);
 
 /** Where each kind of view must live (spec/schema.md §2, 0041, 0043). */

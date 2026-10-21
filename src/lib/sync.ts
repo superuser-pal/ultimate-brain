@@ -488,7 +488,12 @@ function notionProperty(name: string, value: unknown, note: Note, workspace: Wor
     const mode = (note.type === "meeting" || note.type === "source") ? (["Project", "Area"].includes(name) ? "if_empty" : note.type === "meeting" ? "add" : undefined) : undefined;
     return { type: "relation", value: Array.isArray(value) ? value : [], ...(mode === undefined ? {} : { mode }) };
   }
-  if (name === "Ask" || name === "Source Meeting") return { type: "relation", value: Array.isArray(value) ? value : [] };
+  if (name === "Source Meeting") {
+    const meeting = typeof note.attributes.source === "string" ? workspace.get(note.attributes.source) : undefined;
+    if (meeting?.type === "meeting" && typeof meeting.attributes.notion !== "string") pending.push({ property: name, ids: [meeting.id] });
+    return { type: "relation", value: Array.isArray(value) ? value : [] };
+  }
+  if (name === "Ask") return { type: "relation", value: Array.isArray(value) ? value : [] };
   if (name === "Target Page") return { type: "url", value };
   if (["Lifecycle", "Assessment", "Kind", "State", "Brain Status", "Status"].includes(name)) return { type: "select", value };
   if (name === "Last Synced" || name === "Date" || name === "Deadline" || name === "Ingested At") return { type: "date", value };
