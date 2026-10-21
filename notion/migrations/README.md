@@ -32,3 +32,4 @@ Run them in number order, once each. The `brain-notion-change` skill writes them
 | [0003](0003-look-pass.md) | Look pass: new Spaces arrangement, Tasks and Archive pages, Area hubs, Countdown and Task Progress | CC-17 |
 | [0004](0004-ai-prompts-and-guide.md) | Brain Assistant (a Notion Custom Agent with Instructions and seven skills) and the "How it works" page | CC-18, CC-19 |
 | [0005](0005-inbox-concepts-review-note.md) | Inbox replaces the Capture Inbox, a Concepts database, Note replaces Edited Value on Review, Area on Decisions and Questions | decisions 0037, 0034; CC-22 (release 0.3.0) |
+| [0006](0006-review-notes-reports-brain-feed.md) | Review Notes and Answer Kinds, Ask and Report rows, Full text on the Inbox, Brief on area pages, the Brain feed and template views | decisions 0041–0043; CC-36 (release 0.4.0) |
