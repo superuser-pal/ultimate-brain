@@ -408,7 +408,8 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
       "properties": { "title": "Name", "status": "Status", "due": "Due", "project": "Project",
                       "area": "Area", "owner": "", "meeting": "Meeting", "meeting_url": "", "source": "Source",
                       "brain_id": "Brain ID" },
-      "new_task_status": "To Do"
+      "new_task_status": "To Do",
+      "status_type": "status"
     }
   }
 }
@@ -424,6 +425,7 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
 
 **Tasks mapping (0018):** each value is the name of a property in your Tasks database; an empty string means "this database has no such property", and the field is skipped.
 - `title` is required.
+- `status_type` (#113): the Notion type of the mapped `status` property, `status` (Notion's built-in Status, as in the default Tasks database) or `select`. Absent means `status`. It isn't a property name, so it sits next to `new_task_status`, outside `properties`.
 - `owner`: a person or text property for the action item's owner.
 - **Backlink to the meeting** (required by 0018): `meeting` = a relation property to the Meetings database (preferred), or `meeting_url` = a URL property when your Tasks database has no relation to Meetings. Once `tasks.database` is set, `title` and at least one of the two must be non-empty (the JSON Schema enforces it).
 - `source` (0037): a relation property to the Inbox, the backlink for an owner task taken from a document, email, chat, note or capture (cli.md §5.14.5). Empty → such tasks have no backlink.
