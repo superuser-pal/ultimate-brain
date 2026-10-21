@@ -7,7 +7,7 @@
 
 This is the contract for every file in a user's brain repo. The CLI (`src/`) validates against it, and the skills write to it. When this document and the JSON Schemas disagree, the JSON Schemas win and this document is fixed.
 
-Decisions referenced: 0001–0005, 0008–0011, 0013, 0017, 0018, 0020, 0021, 0023, 0032.
+Decisions referenced: 0001–0005, 0008–0011, 0013, 0017, 0018, 0020, 0021, 0023, 0032, 0041–0043.
 
 ---
 
@@ -50,6 +50,7 @@ The prefix is fixed at creation even if `type` later changes; `type` is the trut
 ├── index.md                     GENERATED §12
 ├── log/YYYY-MM.md               GENERATED §12
 ├── areas/<slug>.md              type: area
+├── areas/briefs/<slug>.md       type: view, view_kind area_brief (GENERATED, 0041)
 ├── goals/<slug>.md              type: goal
 ├── projects/<slug>/
 │   ├── project.md               type: project
@@ -68,11 +69,12 @@ The prefix is fixed at creation even if `type` later changes; `type` is the trut
 ├── sources/notion/YYYY-MM-DD-<slug>.md  type: source (immutable), key notion:
 ├── sources/files/YYYY-MM-DD-<slug>.md   type: source, key file: (0032)
 ├── sources/text/YYYY-MM-DD-<slug>.md    type: source, key url: or agent: (0032)
+├── reports/YYYY-MM-DD-<slug>.md   type: view, view_kind report (0043)
 ├── memories/YYYY/MM/YYYY-MM-DD-<slug>.md type: memory (v2 loop)
 └── _proposals/YYYY-MM-DD-<slug>.md      type: proposal
 ```
 
-Each type must live in its folder (lint error otherwise). `archive/` may hold `project` and `view` (inside project folders) and `goal`.
+Each type must live in its folder (lint error otherwise). A `view` lives inside a project folder (`brief`, `decision_log`), in `areas/briefs/` (`area_brief`) or in `reports/` (`report`). `archive/` may hold `project` and `view` (inside project folders) and `goal`.
 
 ---
 
@@ -177,15 +179,15 @@ An ongoing responsibility (e.g. "Clients", "Health").
 |---|---|---|---|
 | `kind` | `question`·`risk` | ✔ | brain |
 | `raised_in` | ID (`mtg-`) | | brain |
-| `answer` | string or ID | | brain |
-- `notion_fields`: `status` (`Open`·`Answered`·`Dropped`).
+| `answer` | string or ID | | brain (set by an applied `answer` proposal, 0041) |
+- `notion_fields`: `status` (`Open`·`Answered`·`Dropped`). Status is yours, with one exception: the publish after an applied `answer` proposal sets it to Answered once (0041, cli.md §5.14.4).
 
 ### concept · `knowledge/concepts/` · Notion: Concepts (0037)
 Ideas, methods, definitions: what the brain learned from a document, an email or a meeting. Only the §3.2 fields; `area` and `projects` place it, `sources` says where it came from.
 - Body: the explanation, published as the whole page body (as for decisions).
 
 ### source · `sources/<notion|files|text>/YYYY-MM-DD-<slug>.md` · Notion: Inbox (every kind except `minutes`, 0037)
-Immutable snapshot of input. **Its body and the fields above `summary` in the table are never edited after creation** (lint error if `content_hash` no longer matches the body). Only the system fields `notion`, `notion_published`, `last_synced` and `tasks` change later, written by `sync record` (cli.md §5.14.6). The folder follows the key: `notion:` → `sources/notion/`, `file:` → `sources/files/`, `url:` and `agent:` → `sources/text/` (0032).
+Immutable snapshot of input. **Its body and the fields above `summary` in the table, `summary` and `digest` are never edited after creation** (lint error if `content_hash` no longer matches the body). Only the system fields change later: `notion`, `notion_published`, `last_synced` and `tasks`, written by `sync record` (cli.md §5.14.6), and `notion_text`, `notion_parts` and `notion_text_requested`, written by `source full-text` (cli.md §5.17). The folder follows the key: `notion:` → `sources/notion/`, `file:` → `sources/files/`, `url:` and `agent:` → `sources/text/` (0032).
 | Field | Type | Req |
 |---|---|---|
 | `source_key` | source key | ✔ |
@@ -194,25 +196,50 @@ Immutable snapshot of input. **Its body and the fields above `summary` in the ta
 | `origin_edited` | timestamp (Notion `last_edited_time`) | |
 | `kind` | `minutes`·`document`·`email`·`chat`·`note`·`capture`; absent means `minutes`; `document` with a `url:` key | ✔ with a `file:` or `url:` key (0036) |
 | `file_name` | the original file's name, without its folder (`acme-brief.pdf`) | ✔ with a `file:` key |
-| `converter` | what turned the file into text, with its version: `markitdown 0.1.8`, `claude-read`, `web-fetch <model id>` | ✔ with a `file:` or `url:` key (0036) |
+| `converter` | what turned the file into text, with its version: `markitdown 0.1.8`, `claude-read`, `web-fetch <model id>`, or `verbatim` for a text file taken as it is (0042) | ✔ with a `file:` or `url:` key (0036) |
+| `repo` | the name of the linked repo the file came from (§12 `repos`, 0042) | with `repo_path` and `commit`, all three or none; only with a `file:` key |
+| `repo_path` | the file's path in that repo, forward slashes | as `repo` |
+| `commit` | the full commit hash (40 hex) the file was read at | as `repo` |
+| `attached_to` | the `src-` id of the Inbox row's or meeting's source this file was attached to in Notion (0042) | only with a `file:` key; must name an existing source without `attached_to` |
 | `summary` | string, aim for ≤200 chars: one line on what the source taught, written at creation; the Inbox Summary | |
+| `digest` | Markdown, written at creation by the ingest skill: the key points by section and the figures and dates as stated (0043). The Inbox row body (cli.md §5.14.4) | |
+| `notion_text` | `digest` or `full`; absent = `digest`. Whether the Inbox row also shows the source's text (0043) | |
+| `notion_parts` | non-empty list of part ranges, each `"<n>"` or `"<n>-<m>"` (1-based, inclusive, `n < m`), ascending and not overlapping; absent = all parts. Only with `notion_text: full`. Parts are defined below | |
+| `notion_text_requested` | timestamp of the last request for the text (system, cli.md §5.17) | |
 | `notion` | the Inbox row's page id (system). For a `capture`, the id in its `notion:` key | |
 | `notion_published`, `last_synced` | as §3.2 (system) | |
 | `tasks` | list of Notion task page ids created from the source's owner action items (system, cli.md §5.14.5) | |
 
 **Kinds (0032):** `minutes` is a meeting (Notion or a minutes file); `document` a converted file or a web page fetched by URL (0036); `email` and `chat` pasted threads; `note` text the user wrote or pasted; `capture` an Inbox row the user created: its `source_key` must be `notion:<row page id>` (the JSON Schema enforces it), and its `notion`, once recorded, is that same id. The body is the text verbatim, as the ingest skill defines it per kind; for a file, the converter's output.
 
+**Linked repos and attachments (0042):** a file from a linked repo is a `file:` source keyed by the hash of its bytes at `commit`, with `kind: document`; its `file_name` is the last segment of `repo_path`. A file attached in Notion is a `file:` source with `attached_to`; it has no Inbox row of its own (cli.md §5.14.4). `digest`, `notion_text` and `notion_parts` are refused on a `minutes` or `capture` source and on one with `attached_to`, which have no brain-written Inbox body.
+
+**Parts (normative, 0043).** A source body is split into numbered parts, counted from 1:
+- **Slides,** when the body has at least one line that is exactly `<!-- Slide number: <n> -->` (markitdown's slide marker): each part starts at such a line and runs to the next one.
+- **Sections** otherwise: the ATX headings (`#` to `######` followed by a space) outside fenced code blocks, at the smallest level present; each part starts at such a heading and runs to the next one at that level.
+- A body with neither has one part, the whole body.
+- Text before the first part is the **preamble**. It is always included.
+
+The part count is fixed by the body, so a range above it is invalid.
+
 **Hash input (normative):** the body is every byte after the newline that ends the closing `---` frontmatter line, up to the end of the file, **including** the final trailing newline. No normalization is applied (files are LF and UTF-8 by §1, so writers write exactly the bytes they hashed). Hash = lowercase hex SHA-256 of those UTF-8 bytes, prefixed `sha256:`. Example: for a file `---\n<frontmatter>\n---\n## Attendees\n…\n`, the hash covers `## Attendees\n…\n`.
 
-### view · inside `projects/<slug>/` · rendered into the Notion project page
+### view · `projects/<slug>/`, `areas/briefs/`, `reports/` · rendered into Notion
 Generated; never evidence (lint error if any note's `sources` cites a view).
 | Field | Type | Req |
 |---|---|---|
-| `view_kind` | `brief`·`decision_log` | ✔ |
-| `project` | ID | ✔ |
+| `view_kind` | `brief`·`decision_log`·`area_brief`·`report` | ✔ |
+| `project` | ID | ✔ for `brief` and `decision_log`; absent otherwise |
+| `area` | ID | ✔ for `area_brief`; optional for `report`; absent otherwise |
+| `projects` | list of IDs | optional, `report` only |
+| `question` | string | ✔ for `report`: what you asked, as you asked it |
+| `asked_in` | the Ask row's Notion page id | optional, `report` only (0043) |
 | `generated_from` | list of IDs | ✔ |
 | `generated_at` | timestamp | ✔ |
-Body: `<!-- @generated:start -->` … `<!-- @generated:end -->`, then optional `<!-- @user:start -->` … `<!-- @user:end -->`. Tools replace only the generated block. The content of each view kind is fixed in §16.
+| `notion`, `last_synced`, `notion_published` | as §3.2 (system) | `report` only |
+Body of `brief`, `decision_log` and `area_brief`: `<!-- @generated:start -->` … `<!-- @generated:end -->`, then optional `<!-- @user:start -->` … `<!-- @user:end -->`. Tools replace only the generated block. The content of each view kind is fixed in §16.
+
+**Reports (0043)** are the one view the CLI doesn't build: the brain-query skill writes the body, and `brain report new` (cli.md §5.18) stores it once. A report is a dated snapshot. It is never rebuilt by `brain views`, never edited after creation, and never cited as a source, so the brain doesn't learn from its own summaries. Its body is the sections of §16.4. It is published as an Inbox row with Kind = Report.
 
 ### memory · `memories/YYYY/MM/` · never published (0008, 0009; loop is v2)
 | Field | Type | Req |
@@ -304,7 +331,7 @@ Only sync writes `notion_fields`. The brain never pushes these values to Notion.
 
 ## 8. Lifecycle and assessment (0005)
 
-- **lifecycle** (every **knowledge** note; not `source`, `view` or `proposal`, which have their own states: immutable, regenerated, `status`; decision 0025): `draft` → `reviewed` | `disputed` → `archived`. Agents only set `draft` (creation) and `archived` (supersession). You set the rest in Notion.
+- **lifecycle** (every **knowledge** note; not `source`, `view` or `proposal`, which have their own states: immutable, regenerated, `status`; decision 0025): `draft` → `reviewed` | `disputed` → `archived`. Agents set `draft` (creation) and `archived` (supersession). They also set `reviewed`, or `archived` with no successor, when, and only when, they apply a `review_notes` proposal you decided (0041, §11.2). You set the rest in Notion.
 - **assessment** (decisions, timeline entries): `accepted`, `provisional` (mentioned once, unconfirmed), `contested` (conflicting sources; keep both entries), `superseded` (replaced; kept as history).
 
 ---
@@ -342,10 +369,13 @@ notion: 7c6b…
 
 | Field | Type | Req | Notes |
 |---|---|---|---|
-| `kind` | `update_fact`·`add_to_note`·`add_link`·`supersede`·`contradiction`·`merge`·`new_item` | ✔ | `new_item`: a new note the agent is unsure about (e.g. possible duplicate person). `add_link`: add values to list fields of one note (0028); one proposal groups the routine links of one ingest for that note (0037) |
-| `target` | ID | ✔ (except `new_item`) | see per-kind rules below |
+| `kind` | `update_fact`·`add_to_note`·`add_link`·`supersede`·`contradiction`·`merge`·`new_item`·`review_notes`·`answer` | ✔ | `new_item`: a new note the agent is unsure about (e.g. possible duplicate person). `add_link`: add values to list fields of one note (0028); one proposal groups the routine links of one ingest for that note (0037). `review_notes`: one per ingest, the new notes and the routine links of that source, to accept together (0041, 0043). `answer`: an answer to an open question (0041) |
+| `target` | ID | ✔ (except `new_item` and `review_notes`) | see per-kind rules below; for `answer`, a question |
 | `field` | string | for `update_fact`, `contradiction`; `add_link` written before 0.3.0 | fact key; for an old single `add_link`, the list field |
-| `links` | list of `{field, value}`, at least one | for `add_link` written from 0.3.0 on | the values to add (0037). `field` is the list field: `aliases`, `tags`, `projects`, `people`, `attendees` or `deciders`, declared by the target's type; `value` is a note id with the field's prefix (`prj-`, `per-`) for reference fields, else a non-empty string. Pairs are unique. A proposal with `field` and `after` (before 0.3.0) is read as `links: [{field, value: after}]` |
+| `links` | list of `{field, value}`, at least one; on `review_notes` a list of `{target, field, value}`, possibly empty | for `add_link` written from 0.3.0 on; for `review_notes` | the values to add (0037). `field` is the list field: `aliases`, `tags`, `projects`, `people`, `attendees` or `deciders`, declared by the target's type; `value` is a note id with the field's prefix (`prj-`, `per-`) for reference fields, else a non-empty string. Pairs (triples on `review_notes`) are unique. A proposal with `field` and `after` (before 0.3.0) is read as `links: [{field, value: after}]` |
+| `notes` | list of knowledge note IDs, unique | for `review_notes` (with `links`, at least one entry in all) | the new notes of the ingest, in the order the ingest wrote them |
+| `answer` | string | for `answer` | the answer in a sentence |
+| `answer_note` | ID | | for `answer`: the note that holds the answer, usually a decision the same ingest created |
 | `before` / `after` | string, number or date | `after` for `update_fact` (and an old single `add_link`); both for `contradiction` | `before` = current value at proposal time (absent if the fact is new) |
 | `from` | date or month | for `update_fact`, `contradiction` | event time of the new value; defaults to the source meeting's `date`, else `created` |
 | `content` | string | for `add_to_note` | Markdown to append |
@@ -355,7 +385,7 @@ notion: 7c6b…
 | `why` | string | ✔ | the source sentence that triggered it |
 | `source` | ID or source key | ✔ | |
 | `status` | `pending`·`approved`·`rejected`·`edited`·`applied`·`closed` | ✔ | |
-| `decision` | `{action: approve·reject·edit, value?, note?, exclude?, decided_at, decided_by: notion·chat}` | when decided | `note`: the Review row's Note, kept as written. `exclude`: only on an approved `add_link`, a list of `{field, value}` from its `links` that are not applied ("all except X") |
+| `decision` | `{action: approve·reject·edit, value?, note?, exclude?, decided_at, decided_by: notion·chat}` | when decided | `note`: the Review row's Note, kept as written. `exclude`: only on an approved `add_link` or `review_notes` ("all except X"): on `add_link`, a list of `{field, value}` from its `links`; on `review_notes`, a list of `{note: <id>}` from its `notes` and `{target, field, value}` from its `links` |
 | `closed_reason` | `stale` | only with `status: closed` and a non-reject decision | the target changed before apply (§11.1) |
 | `notion` | Review row page id | | |
 
@@ -371,7 +401,7 @@ notion: 7c6b…
 | `closed` | `reject` | rejected and closed; terminal |
 | `closed` + `closed_reason: stale` | `approve` or `edit` | the target's value changed after the proposal was written, so it was not applied; terminal. A new proposal may be written against the current value |
 
-`brain apply` moves `approved`/`edited` → `applied` and `rejected` → `closed`. Applying a proposal already in a terminal state is a **no-op** (exit 0, reported as skipped). `edit` is allowed only for `update_fact`, `contradiction` and `add_to_note`; an `edit` on any other kind is an error (exit non-zero, proposal left unchanged).
+`brain apply` moves `approved`/`edited` → `applied` and `rejected` → `closed`. Applying a proposal already in a terminal state is a **no-op** (exit 0, reported as skipped). `edit` is allowed only for `update_fact`, `contradiction`, `add_to_note` and `answer`; an `edit` on any other kind is an error (exit non-zero, proposal left unchanged).
 
 ### 11.2 How each kind is applied (normative)
 
@@ -386,10 +416,12 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
 | `supersede` | the **newer** note (already written as `draft` by the ingest, 0003) | `target.relations` += `{supersedes: <supersedes>}`; `<supersedes>.relations` += `{superseded_by: target}`; older note `lifecycle: archived`; if both are decisions, older gets `assessment: superseded` and `valid_until: <target.valid_from or target.date>` | the newer note stays, without the relation |
 | `merge` | the **duplicate** X to retire, merged into the survivor Y = `merge_into` | Steps, in order: **1. References.** In every note except X, Y, sources and proposals (proposals are a record of what was decided about X), rewrite frontmatter references to X's id into Y's id (then dedupe each list, keeping the first occurrence) and relative links to X's file into links to Y's file. **Persisted pairs are left alone**: a meeting's `decisions`/`questions` entries, a decision's `decided_in`, a question's `raised_in`, and other notes' `supersedes`/`superseded_by` relations keep pointing at X, whose side of those pairs stays in place (X is archived, not deleted). **2. Into Y:** union `aliases` (plus X's `title`), `tags`, `sources`, `projects`; add X's `relations` except `supersedes`/`superseded_by` and any whose target is X or Y (dedupe); append X's `timeline` entries (dedupe exact entries); a `facts` key only X has is copied to Y; for a key both have, Y's value stays and X's `accepted` entries with a different value become `superseded` with `until: <today>`; append X's body under `## Merged from <X title>`. **3. Pair:** X gets `lifecycle: archived` and `relations` += `{superseded_by: Y}`; Y gets `{supersedes: X}`. If X is a decision, it also gets `assessment: superseded` and `valid_until` = Y's `valid_from` or `date` | nothing changes |
 | `new_item` | — | Write `note` as a new note with the `brain note new` rules (lifecycle `draft`). If it has `decided_in` or `raised_in`, add its id to that meeting's `decisions` or `questions` | discard |
+| `review_notes` | — (the notes and link targets it lists) | Every listed note not excluded and still `draft` gets `lifecycle: reviewed`; an excluded one stays `draft`. Every entry of `links` not excluded is applied to its `target` as an `add_link` entry (append if not already there). A listed note that is no longer `draft` is left as it is and reported (cli.md §5.7). No edit | Every listed note still `draft` gets `lifecycle: archived`, with no successor; nothing is deleted. No link is applied |
+| `answer` | the question | The question's `answer` = `answer_note` when set, else V(`answer`). **edit:** `answer` = V (your Note, as text); `answer_note` is not used. The next publish sets the question's Notion Status to Answered (cli.md §5.14.4) | nothing changes; the question stays open |
 
 **Merge caveats.** A still-pending proposal that targets X keeps pointing at the archived X; apply it or reject it. If X is already a superseded decision, merging overwrites its `valid_until` with Y's `valid_from` or `date`.
 
-**Write sets.** Besides the proposal file itself, applying a proposal writes only: `update_fact`, `contradiction`, `add_to_note`, `add_link` → the target; `supersede` → the target and the older note; `merge` → X, Y and the notes whose references step 1 rewrites; `new_item` → the new note and its meeting. All writes for one proposal happen in one operation; if any write fails, none are kept.
+**Write sets.** Besides the proposal file itself, applying a proposal writes only: `update_fact`, `contradiction`, `add_to_note`, `add_link`, `answer` → the target; `supersede` → the target and the older note; `merge` → X, Y and the notes whose references step 1 rewrites; `new_item` → the new note and its meeting; `review_notes` → every listed note whose lifecycle changes and every link target that changes. All writes for one proposal happen in one operation; if any write fails, none are kept.
 
 ## 12. `brain.json` · see [schemas/brain.schema.json](schemas/brain.schema.json)
 
@@ -399,6 +431,10 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
   "owner": { "name": "Rodrigo", "person": "per-3h8w2n6c" },
   "budgets": { "ingest_max_notes": 8 },
   "settings": { "publish": "ask", "push": "auto" },
+  "repos": [
+    { "name": "acme-api", "path": "~/code/acme-api", "area": "area-2m7c4h8n",
+      "patterns": ["decisions/**", "docs/vision.md", "CHANGELOG.md"], "commit": "" }
+  ],
   "notion": {
     "databases": { "areas": "", "goals": "", "key_results": "", "projects": "", "meetings": "",
                    "people": "", "orgs": "", "decisions": "", "questions": "", "review": "", "inbox": "",
@@ -420,6 +456,8 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
 **Settings** (0037, 0038), read by the skills; the CLI only validates them:
 - `publish`: `ask` (default) asks before each publish to Notion; `auto` publishes after each run without asking.
 - `push`: `auto` (default) pushes the brain after a run's commits; `remind` leaves it to you, and the report says how many commits are not pushed.
+
+**Repos** (0042): the linked repos the brain reads, never writes. Each has a unique `name` (lowercase kebab-case), a `path` (absolute or starting with `~/`; the machine's own clone), the `area` its knowledge belongs to (an existing `area-` id), `patterns` (non-empty list of Git glob pathspecs, relative to the repo root, e.g. `decisions/**`), and `commit`, the last commit ingested (40 hex, or `""` before the first ingest). Written by `brain repo add` and `brain repo record` (cli.md §5.16); `repos` absent means none.
 
 **Databases:** `inbox` is the database formerly called Capture Inbox; a `brain.json` that still has `capture_inbox` is read as `inbox` when `inbox` is absent, and `brain upgrade` renames the key (cli.md §5.15). `concepts` holds concept notes.
 
@@ -482,25 +520,29 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
 | Orgs · Relationship, Website | `notion_fields.relationship`, `.website` |
 | Decisions · Date, Assessment, Project, Decided In, Supersedes | `date`, `assessment`, `projects`, `decided_in`, `relations[supersedes]` |
 | Decisions, Questions · Area | derived: the `area` of each of the record's `projects` (0034); not stored in the note |
-| Questions · Kind, Status, Project, Raised In | `kind`, `notion_fields.status`, `projects`, `raised_in` |
+| Questions · Kind, Status, Project, Raised In | `kind`, `notion_fields.status`, `projects`, `raised_in`. Status = Answered is written once after an applied `answer` (0041) |
+| Areas · Brief toggle | the area's `area_brief` view (§16.3, 0041) |
 | Concepts · Area, Project | `area`, `projects` |
 | Decisions, Questions, Concepts, People · Sources | inverse of the Inbox relations below (Notion fills it) |
 | Inbox · Name | the source's `title` (on rows the brain creates; a capture's Name is yours) |
-| Inbox · Kind, Summary | source `kind` (`Capture`, `Document`, `Email`, `Chat`, `Note`), source `summary` |
+| Inbox · Kind, Summary | source `kind` (`Capture`, `Document`, `Email`, `Chat`, `Note`), source `summary`; `Report` for a report view; `Ask` is yours (0043) |
+| Inbox · page body | a brain-created row's digest and, when chosen, its "Full text" toggle (0043); a report's body. Never a capture's or an Ask row's |
+| Inbox · Full text | yours (a checkbox: ask for the text); the brain clears it once the text is published (0043) |
+| Inbox · Ask, Report | a report's `asked_in` (two-way relation within the Inbox, 0043) |
 | Inbox · Decisions, Questions, Concepts, People | derived: the published notes of those types whose `sources` lists the source's id |
 | Inbox · Project, Area | yours; the brain fills them only when empty, from the produced notes' `projects` and `area` |
 | Inbox · Brain Status | `Processed`, set by the brain when it publishes the row; `New` and `Skipped` are yours |
-| Review · all | proposal fields (§11): Name=`title`, Kind, Target=`target` title + id, Before, After, Why, Source Meeting=`source`, Decision/Note → `decision` (cli.md §5.14.2), State from `status`. Before, After and Why are plain text: each Markdown link becomes its link text (links in proposal text are relative to the target note's folder) |
+| Review · all | proposal fields (§11): Name=`title`, Kind (`Review Notes` and `Answer` from 0.4.0), Target=`target` title + id, Before, After, Why, Source Meeting=`source`, Decision/Note → `decision` (cli.md §5.14.2), State from `status`. Before, After and Why are plain text: each Markdown link becomes its link text (links in proposal text are relative to the target note's folder) |
 
 ## 15. Lint rules derived from this spec
 
-Errors: `.md` file in a note folder without frontmatter `id`; unparseable frontmatter; invalid frontmatter vs schema; missing required field; malformed or duplicate ID; type in wrong folder; frontmatter reference to a missing ID; broken relative link; `[[wikilink]]` present; unknown `^[...]` marker; source body hash mismatch (§4 source); a view cited as a source; `facts` key without a matching accepted timeline entry (unless contested); one side of a `supersedes`/`superseded_by` pair missing (§6); `decided_in`/`raised_in` disagreeing with the meeting's lists; superseded decision without `valid_until`; superseded decision without a `superseded_by` relation (0005); decision without `sources` (0005); memory reach lists not matching `scope`; proposal `status` and `decision` not matching §11.1; a product-owned file (shipped skill file, AGENTS.md rules block) differing from the installed package (0038).
+Errors: `.md` file in a note folder without frontmatter `id`; unparseable frontmatter; invalid frontmatter vs schema; missing required field; malformed or duplicate ID; type in wrong folder; frontmatter reference to a missing ID; broken relative link; `[[wikilink]]` present; unknown `^[...]` marker; source body hash mismatch (§4 source); a view cited as a source; `facts` key without a matching accepted timeline entry (unless contested); one side of a `supersedes`/`superseded_by` pair missing (§6); `decided_in`/`raised_in` disagreeing with the meeting's lists; superseded decision without `valid_until`; superseded decision without a `superseded_by` relation (0005); decision without `sources` (0005); memory reach lists not matching `scope`; proposal `status` and `decision` not matching §11.1; a product-owned file (shipped skill file, AGENTS.md rules block) differing from the installed package (0038); a source's `notion_parts` naming a part above its body's part count (§4 source); a `review_notes` listing a note that isn't a knowledge note, or a note listed by two `review_notes` proposals (0041).
 Warnings: unknown frontmatter key; freshness (§10); summary longer than 200 chars; knowledge note with no `sources` (except area, goal, project; decisions are an error above); generated block of a view out of date (re-run `brain views`); `index.md` out of date (re-run `brain index`).
 Rule codes, output format and the folders scanned are in [cli.md](cli.md) §5.10 and §3.7.
 
 ## 16. Derived view contract (normative)
 
-Views are rebuilt by `brain views` for every project (CX-07). Inputs are canonical notes only. All links are relative to the view file. Dates render as stored. Every item line links to the note it came from (headings and `- None` lines have no link). The view's frontmatter `title` is `<project title> — brief` or `<project title> — decision log`; the body has no heading of its own. Its layout is: one blank line, the generated block, one blank line, the user block. Inside the generated block, sections are separated by one blank line.
+Views are rebuilt by `brain views` for every project and every area (CX-07, 0041); reports (§16.4) are not rebuilt. Inputs are canonical notes only. All links are relative to the view file. Dates render as stored. Every item line links to the note it came from (headings and `- None` lines have no link). The view's frontmatter `title` is `<project title> — brief`, `<project title> — decision log` or `<area title> — brief`; the body has no heading of its own. Its layout is: one blank line, the generated block, one blank line, the user block. Inside the generated block, sections are separated by one blank line.
 
 **Idempotence:** if the new generated block and `generated_from` equal the current ones, the file is not rewritten (so `generated_at` only changes when content changes). `generated_from` is the project's id plus the id of every note that produced an item line, sorted.
 
@@ -512,14 +554,39 @@ The generated block contains these sections in this order; a section with no ite
    - One line per `facts` key, sorted by key: `- <Key>: <value> ([project](project.md))`, where `<Key>` is the key with `_` → space and the first letter capitalized (`launch_date` → `Launch date`). Person-id values render as the person's linked title.
 2. `## Goal` — `- [<goal title>](<path>)` or `- None`.
 3. `## People` — project `people`, sorted by title then id: `- [<title>](<path>)[ — <facts.role>]`.
-4. `## Recent decisions` — decisions whose `projects` contains the project and `assessment` is `accepted`, `provisional` or `contested`; sorted by `date` descending, then id; at most 5: `- <date> — [<title>](<path>) (<assessment>)`.
-5. `## Open questions` — questions whose `projects` contains the project and `notion_fields.status` is `Open` or absent; sorted by `created` descending, then id: `- [<title>](<path>) (<kind>)`.
+4. `## Recent decisions` — decisions whose `projects` contains the project, `assessment` is `accepted`, `provisional` or `contested`, and `lifecycle` is `reviewed` (0041); sorted by `date` descending, then id; at most 5: `- <date> — [<title>](<path>) (<assessment>)`.
+5. `## Open questions` — questions whose `projects` contains the project, `notion_fields.status` is `Open` or absent, `answer` is absent, and `lifecycle` is `reviewed` (0041); sorted by `created` descending, then id: `- [<title>](<path>) (<kind>)`.
+
+**Waiting line (0041).** In sections 4 and 5, when no note qualifies but N ≥ 1 notes would qualify if their `lifecycle` were `reviewed` (they are `draft`), the section renders the single line `- Nothing reviewed yet: N notes waiting in Review` (`1 note` for one) in place of `- None`. Those draft notes produce no item line and are not in `generated_from`.
 6. `## Recent meetings` — meetings whose `projects` contains the project; sorted by `date` descending, then id; at most 5: `- <date> — [<title>](<path>)`.
 
 ### 16.2 `decision-log.md` (`view_kind: decision_log`)
+The decision log lists every decision of the project, whatever its lifecycle: it is the history, not a summary of what you reviewed.
+
 Two sections, each sorted by `date` descending (`valid_until` descending for superseded), then id; empty section renders `- None`:
 
 1. `## Current` — decisions for the project with `assessment` `accepted`, `provisional` or `contested`:
    `- <date> — [<title>](<path>) — <assessment>[ — supersedes [<old title>](<old path>)]`
 2. `## Superseded` — decisions for the project with `assessment: superseded`:
    `- <valid_from or date> → <valid_until> — [<title>](<path>) — superseded by [<new title>](<new path>)`
+
+### 16.3 `areas/briefs/<area slug>.md` (`view_kind: area_brief`, 0041)
+One per area, rebuilt with the project views; `<area slug>` is the slug of the area note's file name. A note **belongs to the area** when its `area` is the area, or any note in its `projects` has that `area`. Sections in this order; a section with no items renders `- None`, and sections 2 and 3 use the waiting line of §16.1:
+
+1. `## Projects` — projects whose `area` is the area and whose `notion_fields.archived` is not `true`, sorted by title then id: `- [<title>](<path>)[ — <notion_fields.status>]`.
+2. `## Recent decisions` — decisions that belong to the area, with the filters and format of §16.1 item 4; at most 5.
+3. `## Open questions` — questions that belong to the area, with the filters and format of §16.1 item 5; at most 10.
+
+`generated_from` is the area's id plus every note that produced an item line, sorted. The publish writes the generated block into the "Brief" toggle heading of the area page (cli.md §5.14.4).
+
+### 16.4 `reports/YYYY-MM-DD-<slug>.md` (`view_kind: report`, 0043)
+Written by `brain report new` from the skill's text; no `@generated` markers. The body is exactly these six `##` sections, in this order, and nothing before the first:
+
+1. `## Where it stands` — 3 to 5 lines, as of the report's date.
+2. `## Timeline` — one bullet per dated event, oldest first: `- <YYYY-MM-DD> · <what happened> ([<note title>](<path>))`.
+3. `## Decisions in force`
+4. `## Open questions and risks`
+5. `## People involved`
+6. `## Gaps` — what the brain doesn't know.
+
+A section with nothing renders `- None`. Each line that rests on a `draft` note ends with ` *(not reviewed)*`. Links are relative to the report file, as for every view. `generated_from` lists every note the body links to, sorted.
