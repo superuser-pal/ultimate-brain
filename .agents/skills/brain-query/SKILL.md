@@ -57,10 +57,10 @@ A report gathers everything the brain knows about one subject, as of today: "rep
    5. `## People involved`, each with their role.
    6. `## Gaps`: what the brain doesn't know ("no development update since August", "no budget figure").
 
-   A section with nothing says `- None`. **Every line that rests on a `draft` note ends with ` *(not reviewed)*`.** Links are relative to `reports/` (`../knowledge/…`, `../projects/…`). Trust labels as in step 4 below; copy figures and dates as the notes state them.
-3. **Store it:** `brain report new --input <file>` with `{ "title": "<subject>: where we stand", "question": "<the question as asked>", "projects": [...], "area": "...", "asked_in": "<the Ask row's page id, only for an Ask row>", "body": "…" }`. The CLI checks the sections and links and writes `reports/<date>-<slug>.md`. Commit: `report: <title>`.
+   A section with nothing says `- None`. **Every line that rests on a `draft` note ends with ` *(not reviewed)*`:** a line whose linked note is still `draft`, even when a proposal about it was approved. A proposal still pending isn't in the brain yet: name it under Gaps ("waiting for your review: …"). Links are relative to `reports/` (`../knowledge/…`, `../projects/…`). Trust labels as in step 4 below; copy figures and dates as the notes state them.
+3. **Store it:** `brain report new --input <file>` with `{ "title": "<subject>: where we stand", "question": "<the question as asked>", "projects": ["prj-…"], "area": "area-…", "asked_in": "<the Ask row's page id, only for an Ask row>", "body": "…" }`, with note ids for `projects` and `area`. The CLI checks the sections and links and writes `reports/<date>-<slug>.md`. Commit: `report: <title>`.
 4. **Publish** *(Notion, per `settings.publish`)*: `brain sync render --changed`, write the Report row (its body is the report: the brain-ingest skill's references/notion.md, "Inbox bodies"), then set the Ask row's Brain Status to Processed through the MCP, then `brain sync record`, and commit `publish: report <title>`. In a catch-up, the run's one publish does this.
-5. **Answer in chat** with "Where it stands", and the link to the Report row when published.
+5. **Answer in chat** with the "Where it stands" lines and the Gaps, and the link to the Report row when published.
 
 **A report is a snapshot.** It is never ingested, never rebuilt and never cited as a source, and it creates no proposal: if the brain learned from its own summaries, its mistakes would become knowledge. To refresh one, ask again: a new dated report is written.
 
