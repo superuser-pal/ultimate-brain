@@ -485,7 +485,7 @@ Moved out of 0.3.0 on 2026-10-19: the onboarding suite (docs/v2-ideas.md: the `b
 **Output:** the status banner and the 0.4.0 intro say 0.3.1 is out, how merging works now, and what the user decides next.
 **Acceptance:** the banner names no open 0.3.1 work and states the 0.4.0 choice.
 
-### CC-41 · Blind-run brain setup script (was CX-33) · `todo`
+### CC-41 · Blind-run brain setup script (was CX-33) · `in progress`
 **Release:** 0.4.0
 **Changelog:** a script builds a blind-run brain from a fixture, with its Notion ids blanked and its first commit made.
 **Output:** `scripts/blind-brain.mjs <fixture> <dir>` copies a fixture brain from `tests/fixtures/`, blanks its Notion ids in `brain.json`, runs `git init` and commits, so a skill's blind run starts from one command. A dev script; not in the npm package.
