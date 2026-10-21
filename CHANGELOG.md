@@ -2,11 +2,21 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
-## 0.4.0 — unreleased
+## 0.4.0 — 2026-10-21
 
-- CX-34 (#99): generate 0.4.0 changelog sections from task rows and gate task-row changelog fields.
-- CC-29 (#96): decision 0039: a task's changelog line lives in its build/TASKS.md row and `release.mjs` writes the CHANGELOG section (built in CX-34, documented in CC-30).
+- CC-29 (#96): decision 0039: a task's changelog line lives in its build/TASKS.md row and `release.mjs` writes the CHANGELOG section.
+- CX-34 (#99): `release.mjs` writes each release's CHANGELOG section from the task rows; PRs no longer edit CHANGELOG.md.
+- CC-30 (#105): AGENTS.md, the PR template and the release guide describe the `**Changelog:**` field.
+- CC-34 (#110): the status banner after the 0.3.1 release: decision 0040 merging, the open 0.4.0 theme choice.
+- CC-41 (#120): a script builds a blind-run brain from a fixture, with its Notion ids blanked and its first commit made.
 - CC-31 (#98): OKF and GBrain reviewed and parked for v2 (reviews/06): a retrieval index over Markdown, and OKF export, then maybe alignment.
+- CC-35 (#111): the 0.4.0 plan: the brain gives back (reviewed notes, answered questions, Briefs) and takes in linked repos and Notion attachments (decisions 0041, 0042).
+- CC-38 (#114): decision 0043: Inbox rows show a digest or the full text, reports on request land in the Inbox, one Review row per source, a 5-minute catch-up, and the user's minutes format.
+- CC-39 (#116): decision 0044: Claude Code builds every task, the CLI included, and Codex reviews every PR.
+- CC-36 (#115): contracts for 0.4.0: the `review_notes` and `answer` proposals, Briefs from reviewed notes and for areas, linked repos and Notion attachments as sources.
+- CC-42 (#118): the CLI applies Review notes and Answer rows, writes the backlog's rows once, builds Briefs from reviewed notes, for areas too, writes each source's digest and, when asked, its full text to the Inbox, and stores reports.
+- CC-43 (#119): the CLI reads linked repos (changed files since the last ingested commit) and takes files attached in Notion as sources under their Inbox row or meeting.
+- CC-37 (#121): catch-up writes Review notes and Answer rows, writes the backlog's rows on the first run, reads linked repos and Notion attachments, and the guide explains Briefs and reviewing notes.
 
 ## 0.3.2 — 2026-10-21
 
