@@ -163,10 +163,10 @@ export function lintBrain(input: LintInput): Issue[] {
     for (const source of list(a.sources)) {
       if (typeof source === "string" && byId.get(source)?.type === "view") err("view-cited", lineOfKey(note, "sources"), `${source} is a derived view and can't be evidence`);
     }
-    if (note.type === "view" && (a.view_kind === "brief" || a.view_kind === "decision_log")) {
-      const project = byId.get(String(a.project));
+    if (note.type === "view" && (a.view_kind === "brief" || a.view_kind === "decision_log" || a.view_kind === "area_brief")) {
+      const project = byId.get(String(a.view_kind === "area_brief" ? a.area : a.project));
       const range = generatedBlockRange(note.body);
-      if (project?.type === "project" && range !== undefined) {
+      if (project?.type === (a.view_kind === "area_brief" ? "area" : "project") && range !== undefined) {
         const derived = deriveView(project, a.view_kind as ViewKind, input.notes);
         const generatedFrom = Array.isArray(a.generated_from) ? a.generated_from : [];
         if (note.body.slice(range.start, range.end) !== derived.generatedBlock || !sameStringList(generatedFrom, derived.generatedFrom)) {
