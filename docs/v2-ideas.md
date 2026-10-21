@@ -96,6 +96,7 @@ Finds likely duplicate notes and people and writes `merge` proposals. **Source:*
 
 ## New flows and outputs
 
+- **Owners on Tasks:** an optional owner mapping on the user's Tasks database, so other people's action items become tasks too; today they stay in the meeting text, because a task with no owner would show as the user's. The Tasks database is the user's (0018). **Source:** U-13, decision 0043.
 - **Weekly digest:** decisions, open questions and what changed. **Source:** vision, synthesis.
 - **Person and client profiles,** generated from the notes. **Source:** vision.
 - **Topic research dossiers:** draft, then merge into the brain. **Source:** vision, synthesis (Review 1).

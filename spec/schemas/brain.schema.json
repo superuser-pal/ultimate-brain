@@ -172,6 +172,12 @@
             },
             "new_task_status": {
               "type": "string"
+            },
+            "status_type": {
+              "enum": [
+                "status",
+                "select"
+              ]
             }
           },
           "allOf": [
