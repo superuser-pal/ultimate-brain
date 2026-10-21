@@ -110,3 +110,87 @@ test("proposal backlog writes one row per source over its draft notes, then noth
   assert.equal(second.code, 0, second.stdout);
   assert.deepEqual(second.json.data.created, []);
 });
+
+const decided = (proposal: string, action: string, extra: Record<string, unknown> = {}) => ({ proposal, action, decided_at: "2026-12-10T08:00:00Z", decided_by: "notion", ...extra });
+
+async function reviewRow(dir: string, proposals: unknown[]): Promise<{ id: string; path: string }> {
+  const created = await run(dir, ["proposal", "new"], { proposals });
+  assert.equal(created.code, 0, created.stdout);
+  return created.json.data.created.find((row: { kind: string }) => row.kind === "review_notes");
+}
+
+test("approving a 3-note row with one excluded leaves 2 reviewed and 1 draft", async (context) => {
+  const dir = await fixtureCopy(context);
+  const row = await reviewRow(dir, [{ kind: "review_notes", source: SYNC, notes: [SYNC, DECISION, QUESTION] }]);
+  const applied = await run(dir, ["apply"], { decisions: [decided(row.id, "approve", { note: "all except c", exclude: [{ note: QUESTION }] })] });
+  assert.equal(applied.code, 0, applied.stdout);
+  const [item] = applied.json.data.decisions;
+  assert.equal(item.result, "applied");
+  assert.deepEqual(item.notes, [
+    { id: SYNC, result: "reviewed", lifecycle: "reviewed" },
+    { id: DECISION, result: "reviewed", lifecycle: "reviewed" },
+    { id: QUESTION, result: "kept_draft", lifecycle: "draft" },
+  ]);
+  assert.equal((await attributes(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md")).lifecycle, "reviewed");
+  assert.equal((await attributes(dir, "knowledge/questions/who-owns-the-acme-mobile-app.md")).lifecycle, "draft");
+  assert.deepEqual(await lintErrors(dir), []);
+});
+
+test("rejecting archives the draft notes with no successor; a note no longer draft is unchanged", async (context) => {
+  const dir = await fixtureCopy(context);
+  const row = await reviewRow(dir, [{ kind: "review_notes", source: SYNC, notes: [DECISION, QUESTION, "per-3h8w2n6c"] }]);
+  const rejected = await run(dir, ["apply"], { decisions: [decided(row.id, "reject")] });
+  assert.equal(rejected.code, 0, rejected.stdout);
+  const [item] = rejected.json.data.decisions;
+  assert.equal(item.result, "closed");
+  assert.deepEqual(item.notes.map((note: { result: string }) => note.result), ["archived", "archived", "unchanged"]);
+  const decision = await attributes(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
+  assert.equal(decision.lifecycle, "archived");
+  assert.equal((decision.relations as unknown[] | undefined)?.some((relation) => (relation as { type: string }).type === "superseded_by") ?? false, false);
+  assert.equal((await attributes(dir, "knowledge/people/maria-lopez.md")).lifecycle, "reviewed");
+});
+
+test("an edit on review_notes is refused; an exclude that isn't in the row is unknown", async (context) => {
+  const dir = await fixtureCopy(context);
+  const row = await reviewRow(dir, [{ kind: "review_notes", source: SYNC, notes: [DECISION] }]);
+  const edit = await run(dir, ["apply"], { decisions: [decided(row.id, "edit", { value: "x", note: "x" })] });
+  assert.equal(edit.json.data.decisions[0].reason, "EDIT_NOT_ALLOWED");
+  const unknown = await run(dir, ["apply"], { decisions: [decided(row.id, "approve", { exclude: [{ note: QUESTION }] })] });
+  assert.equal(unknown.json.data.decisions[0].reason, "EXCLUDE_UNKNOWN");
+  const proposal = await attributes(dir, row.path);
+  assert.equal(proposal.status, "pending", "a failed item leaves the proposal unchanged");
+});
+
+test("approving 2 notes, a link and an alias with the alias excluded applies the link and closes the alias", async (context) => {
+  const dir = await fixtureCopy(context);
+  const row = await reviewRow(dir, reviewInput);
+  const applied = await run(dir, ["apply"], { decisions: [decided(row.id, "approve", { note: "all except d", exclude: [{ target: DECISION, field: "aliases", value: "Supabase auth" }] })] });
+  assert.equal(applied.code, 0, applied.stdout);
+  assert.deepEqual(applied.json.data.decisions[0].notes.map((note: { result: string }) => note.result), ["reviewed", "reviewed"]);
+  assert.deepEqual((await attributes(dir, "knowledge/concepts/row-level-security.md")).projects, [PROJECT]);
+  assert.equal((await attributes(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md")).aliases, undefined);
+  assert.equal((await attributes(dir, row.path)).status, "applied");
+  assert.deepEqual(await lintErrors(dir), []);
+});
+
+test("an approved answer sets the question's answer; an edit uses your Note; a second answer is skipped", async (context) => {
+  const dir = await fixtureCopy(context);
+  const answer = { kind: "answer", title: "Who owns the app: Maria", target: QUESTION, answer: "Maria owns the mobile app.", answer_note: DECISION, why: "Maria said she owns it.", source: SYNC };
+  const created = await run(dir, ["proposal", "new"], { proposals: [answer] });
+  assert.equal(created.code, 0, created.stdout);
+  const duplicate = await run(dir, ["proposal", "new"], { proposals: [answer] });
+  assert.equal(duplicate.json.data.skipped[0].reason, "DUPLICATE_PENDING");
+  const applied = await run(dir, ["apply"], { decisions: [decided(created.json.data.created[0].id, "approve")] });
+  assert.equal(applied.json.data.decisions[0].result, "applied", applied.stdout);
+  const questionPath = "knowledge/questions/who-owns-the-acme-mobile-app.md";
+  assert.equal((await attributes(dir, questionPath)).answer, DECISION);
+  const again = await run(dir, ["proposal", "new"], { proposals: [{ ...answer, answer: "Carlos does." }] });
+  assert.equal(again.json.data.skipped[0].reason, "ALREADY_ANSWERED");
+
+  const edited = await fixtureCopy(context);
+  const second = await run(edited, ["proposal", "new"], { proposals: [answer] });
+  const edit = await run(edited, ["apply"], { decisions: [decided(second.json.data.created[0].id, "edit", { value: "Carlos owns it now.", note: "Carlos owns it now." })] });
+  assert.equal(edit.json.data.decisions[0].result, "applied", edit.stdout);
+  assert.equal((await attributes(edited, questionPath)).answer, "Carlos owns it now.");
+  assert.deepEqual(await lintErrors(edited), []);
+});
