@@ -85,8 +85,8 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
 10. **Log and commit.** Run `brain log ingest <mtg-id> created=<n> proposals=<n> tasks=<n>`. Commit in the brain repo: `ingest: <meeting title> <date> (<n> new, <n> proposals)`. If this run does not publish, push now (step 11, "Push"); otherwise push after the publish commit.
 
 11. **Publish** *(Notion, per `settings.publish`: with `ask`, ask once before this step)*, following [references/notion.md](references/notion.md):
-    - create the action items as tasks (`brain sync tasks` → MCP → `brain sync record`);
     - publish new and changed notes and the new proposals (`brain sync render --changed` → MCP → `brain sync record`);
+    - then create the action items as tasks (`brain sync tasks` → MCP → `brain sync record`);
     - this sets the meeting's relations, Brain Status = Ingested and Ingested At, and never touches its title or body (decision 0007).
 
     Then commit again: `publish: <meeting title> <date>`.

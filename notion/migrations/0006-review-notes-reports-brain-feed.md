@@ -44,6 +44,8 @@ Run it in one session, right after installing 0.4.0 and running `brain upgrade` 
 >
 > Don't change anything else.
 
+The Areas "What do we know?" shows Concepts only: an area's decisions are already under its "What have we decided here?".
+
 Existing project and area pages keep their body; add the same views to the pages you use most, or leave them, since the Inbox and Concepts tabs in Knowledge show the same rows.
 
 **Area Brief (0041):** no step. The first publish appends a "Brief" toggle heading at the end of each area page and fills it; drag it to the top once if you like. New areas from the template get it the same way.
