@@ -15,4 +15,4 @@
 - [ ] Spec questions, if any, are written under the task in build/TASKS.md
 - [ ] After the review finds nothing left: the task row says `done` (#N) (for 0.3.x, the CHANGELOG line names the PR too)
 
-<!-- Last step, after the done commit: the reviewer posts "Review (Claude Code): pass at <sha>" or "Review (Codex): pass at <sha>", naming the PR's head commit. -->
+<!-- Last step, after the done commit: Codex posts "Review (Codex): pass at <sha>", naming the PR's head commit (decision 0044). -->
