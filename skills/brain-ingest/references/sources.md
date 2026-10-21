@@ -19,6 +19,26 @@ The user's drop folder is where they put documents for the brain, outside both r
 4. **Move each file** after its ingest commit (and its publish, in Notion mode): `mkdir -p "<folder>/processed" && mv -n "<file>" "<folder>/processed/"`. If `processed/` already has a file with that name, add `-2` (then `-3`) before the extension. A file whose snapshot was skipped as `DUPLICATE_SOURCE` (step 3) moves to `processed/` too. Files the user skipped go to `skipped/` the same way. Never delete or rename a file otherwise, and never move a file whose ingest failed.
 5. **Report once** for the whole folder (step 8). On the Needs you line, name what stays in the queue and why, separately: "holiday-photos.zip can't be read" and "2 files left for later".
 
+## Attachments: files attached in Notion (decision 0042) *(Notion)*
+
+A file attached to a New Inbox row or a Reviewed meeting page is ingested with that row or meeting: file, PDF and image blocks in the page body, or a Files property. Files on other pages (projects, areas) are never read.
+
+1. **List them** when you read the row or meeting, with each file's name, type and size. They go in the pre-check (or the catch-up's batch), all selected by default; a long one asks "which parts?" as for the drop folder.
+2. **Download each one during the run** into the run's temporary folder, outside the brain: Notion's file links expire after about an hour, so never save a link to use later. Hash it and convert it as "Get the text" says for a `document`.
+3. **Ingest the parent first** (the row's capture or the meeting's minutes), so its source id exists. Then each attachment is its own source: `kind: document`, `source_key` `file:sha256:<hash>`, `file_name`, `converter`, `attached_to` = the parent's source id, and no `digest` or `notion_text` (it has no Inbox row of its own; its notes go on the parent's). Its new notes list the attachment in `sources`, and they go in the parent's Review notes row: one `review_notes` for the parent input, listing the parent's and the attachments' notes.
+4. **A file that can't be read** (an unknown format, a broken file, MarkItDown missing) is skipped: the parent is still ingested and still becomes Processed (or Ingested), and the report's Check line names the file, the reason and the fix.
+
+## Linked repos: "catch up" with a repo linked (decision 0042)
+
+A linked repo is a read-only source: `brain.json` `repos` lists its name, path, area, file patterns and the last commit the brain ingested. Never write to it, and never run its code.
+
+0. **Link it** when the user asks ("link the repo at ~/code/acme-api to the area Clients, files decisions/** and docs/*.md"): `brain repo add <name> --path <path> --area <area id> --pattern <glob> [--pattern …]`. `name` is short kebab-case (the folder's name, usually); the path is absolute or starts with `~/`; patterns are Git globs from the repo root (`decisions/**`, `docs/vision.md`, `CHANGELOG.md`). Ask which area when the user didn't say, and suggest the patterns when they didn't give any: the decision records and the docs that say what the product is, never code, tests or plans. Commit `brain.json`: `repo: link <name>`. The first ingest runs at the next catch-up, or now if the user asks.
+1. **List the changes:** `brain repo changes <name>`. It returns the added and modified files matching the patterns since the recorded commit, oldest first, each with its `commit`, `sha256` and `bytes`, and the deleted ones apart. `REPO_DIRTY` means the working tree has uncommitted changes, which aren't read; say so once. With more than 10 files (a first ingest), ask which to take, default all, and whether the others are skipped for good or taken later; never run it unattended.
+2. **Read each file at its commit:** `git -C <path> show <to>:<repo_path>`, where `<to>` is the listing's `to`. A text file (`.md`, `.txt`) is its own text: converter `verbatim`. Any other file is converted as "Get the text" says.
+3. **Ingest each file as a `document`,** oldest first, through steps 2–7 below: `source_key` `file:sha256:<sha256>`, `file_name` = the last segment of the path, `repo` = the repo's name, `repo_path` = the file's path, `commit` = the listing's `to`, `file_date` = the date of the file's `committed_at`. Its notes belong to the repo's area unless the text says which project. A changed file is a new source: what changed becomes proposals as usual; a file seen before with the same bytes is skipped as `DUPLICATE_SOURCE`.
+4. **Record the commit** after the last file's ingest commit: `brain repo record <name> --commit <to>`, then commit `brain.json` with it (`repo: <name> at <short sha>`). If a file's ingest failed, don't record: the next run lists every file again, and the ones already in are skipped as `DUPLICATE_SOURCE`. Record only when every listed file is in, or the user skipped the rest for good: a recorded commit never lists them again. If the user wants some later, don't record: the next run lists them again with the ones already in, which skip as `DUPLICATE_SOURCE`. To take skipped files after all, `brain repo record <name> --reset` lists every matching file again.
+5. **Deleted files** change nothing in the brain; the report lists them once.
+
 ## 1. Get the text
 
 One input at a time. Each becomes one source with a `kind`.
@@ -60,6 +80,7 @@ Query the Inbox (`notion.databases.inbox`, through its data source as in [notion
 ## 2. Pre-check
 
 As in SKILL.md step 3, **one** question, only if something blocks:
+- **a capture that repeats a source** the brain already has (the same document pasted or quoted, but not the same bytes, so the CLI doesn't catch it): the default is to skip it, and the question names that source and its Inbox row: "Skip: it repeats the Acme requirements (document, 12 Mar; <link to its row>)". Never call it a duplicate: "duplicate" is only the CLI's `DUPLICATE_SOURCE` (decision 0043). A skipped capture's row is set to Skipped (step 7);
 - the title or date is unclear (a document's own date, an email's sent date; if there is none, use today and say so);
 - which project or area it belongs to, when the text doesn't say, the user didn't, and (for a capture) the row's Project and Area are empty;
 - **a new project** (the user says the input starts one): never write a project note or create its Notion page yourself; the page must come from the Projects template, which the API can't apply (decision 0021). Ask the user to create it with **New project** in Notion and give it its name, then run the brain-sync skill's pull (`sync plan` and `sync apply`) to import it, and go on with the ingest linked to it. If the user would rather not now, link the input to its area and say so in the report. Without Notion, write nothing for the project and say so;
@@ -87,6 +108,8 @@ Follow [extraction.md](extraction.md), including "By source kind".
 Run SKILL.md step 7 as it is (ids from `brain id new`, the dry run for paths, links, the real run; [example-batch.json](example-batch.json) shows the shapes), with these differences:
 - there is no meeting note. The batch holds the source and the new notes (people, decisions, questions, concepts); every new note lists the source in `sources`; decisions and questions have no `decided_in` or `raised_in`;
 - give the source a `summary`: one line on what it taught, in the user's terms ("Acme's brief sets the February launch and a 95000 EUR budget"). It becomes the Inbox row's Summary, and is written once: the source never changes after this run;
+- give every source except a `capture` or an attachment a **`digest`** (decision 0043): the key points by section, as Markdown bullets under the input's own headings, and the figures and dates exactly as stated. No links, no conclusions of your own. It becomes the body of the source's Inbox row, written once;
+- **full text or digest** (decision 0043): leave `notion_text` out and the CLI sets it by kind: emails and chats get their whole text on the row too (`full`), documents and notes only the digest. Pass `notion_text` only when the user chose otherwise ("4 full", "the email as digest"), and `notion_parts` (`["3-9"]`, `["2", "4-5"]`) with `notion_text: full` when they asked for parts ("5 full, slides 3–9"). Later, a ticked **Full text** box on the row, or "full text for the Acme brief" in chat, is done with `brain source full-text <src-id> [--parts 3-9]` and a publish;
 - the owner's action items become tasks ([extraction.md](extraction.md), "Tasks for the owner"); hold them for step 7.
 
 Then run SKILL.md step 8 (propose changes) and step 9 (rebuild and check) as they are.
@@ -95,7 +118,7 @@ Then run SKILL.md step 8 (propose changes) and step 9 (rebuild and check) as the
 
 1. Run `brain log ingest <source id> created=<n> proposals=<n> tasks=<n>`. Commit: `ingest: <title> (<kind>) (<n> new, <n> proposals)`.
 2. *(Notion, per `settings.publish`)* Publish, following [notion.md](notion.md) "Publish" for each write, pages before tasks:
-   1. **Pages:** `sync render --changed`, write, `sync record`: the new notes, the proposals and the **source itself**, rendered as its Inbox row (a capture's row is updated: Kind, Summary, what it produced, Brain Status Processed; any other source gets a new row).
+   1. **Pages:** `sync render --changed`, write, `sync record`: the new notes, the proposals and the **source itself**, rendered as its Inbox row (a capture's row is updated: Kind, Summary, what it produced, Brain Status Processed; any other source gets a new row, with its digest as the body and, when chosen, a "Full text" toggle: [notion.md](notion.md), "Inbox bodies"). An attachment has no row: its notes appear on the parent's.
    2. **Tasks,** now that the Inbox row exists for their backlink: `brain sync tasks --source <source id>`, create each item once, `sync record` the page ids. An item still pending (a project not in Notion) isn't created; list it in the report. Commit `publish: <title>`. If a write fails, the next render produces it again; a capture whose row wasn't updated stays New and is skipped as a duplicate next time.
 3. *(Notion, captures the user said to skip)* Set the row's Brain Status to **Skipped** through the MCP; change nothing else on it.
 

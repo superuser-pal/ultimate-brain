@@ -16,7 +16,7 @@ Create a default page template for each database below. Each item "Heading: data
   "What have we decided here?": Decisions where Area is this page (views: "Current" Assessment is not Superseded, Date descending; "Superseded" Assessment is Superseded, Date descending), showing Name, Project, Date.
   "What's still open here?": Questions where Area is this page (views: "Open questions" Status is Open and Kind is Question; "Open risks" Status is Open and Kind is Risk; "Answered" Status is Answered), showing Name, Project, Kind.
   "What came in?": Inbox where Area is this page, sorted Created descending, showing Name, Kind, Summary.
-  "What do we know?": Concepts where Area is this page, sorted Created time descending, showing Name, Summary, Project.
+  "What do we know?": two views, "Decisions" (Decisions where Area is this page, sorted Date descending, showing Name, Assessment, Date, Project) and "Concepts" (Concepts where Area is this page, sorted Created time descending, showing Name, Summary, Project).
   Then a toggle "My notes".
 - Goals:
   "How are the key results moving?": Key Results where Goal is this page (views: "Open" Progress is less than 100%; "Done" Progress is 100%), showing Name, Current, Target, Unit, Progress, Done.

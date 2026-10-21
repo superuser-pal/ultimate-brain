@@ -1,6 +1,6 @@
 ---
 name: brain-notion-change
-description: Change the structure of the user's Notion space (a database, property, select option, relation, template, view) the safe way, design first in the product repo and then applied in Notion, or check the live Notion space against the design and report drift. Use when the user says "add a property to Projects", "change the Notion space", "add an option to Kind", "check my Notion space", "is my Notion set up right", or after a structural edit made directly in Notion.
+description: Change the structure of the user's Notion space (a database, property, select option, relation, template, view) the safe way, design first in the product repo and then applied in Notion; run a released migration on the user's space; or check the live Notion space against the design and report drift. Use when the user says "add a property to Projects", "change the Notion space", "add an option to Kind", "run migration 0006", "migrate my Notion space", "check my Notion space", "is my Notion set up right", or after a structural edit made directly in Notion.
 ---
 
 # Change or check the Notion space
@@ -9,6 +9,7 @@ The Notion space's structure is designed in the product repo, in docs/notion-spa
 
 Pick the mode from the request:
 - **Change:** the user wants the structure to be different. Run it in the product repo (`ultimate-brain`).
+- **Migrate:** a release shipped a migration (notion/migrations/) and the user's space predates it ("run migration 0006", or after `brain upgrade` says one is due). Run it in the brain, with the product's migration file.
 - **Check:** the user wants to know whether the live space matches. Run it anywhere the Notion connection and the design doc are available.
 
 ## Change
@@ -19,7 +20,7 @@ Pick the mode from the request:
    - spec/cli.md §5.14 (sync plan's ownership table, sync render's rendered properties, value conversion), spec/schema.md §14 (Notion property mapping), and `brain.json` defaults (templates/brain/brain.json, spec/schemas/brain.schema.json);
    - skills that read or write it.
 
-   A property the brain reads or writes is a CLI change too: say so, and add a task for Codex. A change that clears the decision gate (it changes what the brain stores, or who owns a field) gets a decision record in decisions/.
+   A property the brain reads or writes is a CLI change too: say so, and add a CLI task for it (decision 0044). A change that clears the decision gate (it changes what the brain stores, or who owns a field) gets a decision record in decisions/.
 2. **Change the design and the build prompts** in the same branch, so a new user building from scratch gets the new structure (0022).
 3. **Write a migration**, `notion/migrations/<NNNN>-<slug>.md` (next number; format in notion/migrations/README.md), for spaces that already exist. It holds:
    - a Notion AI prompt that changes **only** this, and keeps everything else as it is;
@@ -29,6 +30,19 @@ Pick the mode from the request:
 5. **Check** (below), limited to what the migration touched, and report.
 
 **Select options: add, never delete-and-recreate.** Options added by Notion AI can share an internal id with an existing option. Deleting one of them then deletes both. That happened with Add Link and Supersede in Review → Kind. Migrations that add an option say: add it by hand (property → Edit property → Add an option), then run the check to confirm every option has its own id.
+
+## Migrate
+
+Migrations run once each, in number order (notion/migrations/README.md). The file lists its changes in tables, each with **who** does it: the **agent** through the API, **Notion AI** from a prompt the user pastes, or the user **by hand**.
+
+1. **Read the migration** in full, and check that the earlier ones were run (their Verify items hold). Find the databases from `brain config get notion.databases`.
+2. **Agent steps, one at a time, each with the user's yes** (the brain's AGENTS.md: never write to Notion without it). Say what the step changes in one line, wait for the yes, make the change, then read it back to confirm it took. Order:
+   - **Select options:** add them through the data source update, keeping every existing option with its id. Never delete and recreate an option (below). Then retrieve the property and check that each option has its own id; if two share one, stop and tell the user to fix it by hand.
+   - **Properties and relations:** add them with the type, the pair of a two-way relation, and the ownership description the migration gives (descriptions follow notion/prompts/05-ownership.md).
+   - **Page blocks** (a line above a page's tabs, a Brain Assistant skill's text): through the block API, after reading the page's blocks. When the API can't insert where the migration says (above the first block of a column), add it right after and ask the user to drag it once.
+3. **Notion AI and by-hand steps:** give the user each prompt, as written in the migration, with the page to open first, one at a time, and wait until they say it's done. Never rephrase a prompt.
+4. **Check** (below), limited to what the migration touched, then go through its **Verify** list with the user. Items that need a catch-up ("after the first catch-up …") are checked after the next "catch up".
+5. **Report:** what was changed, what the user still has to do by hand, and the Verify items still open.
 
 ## Check
 
