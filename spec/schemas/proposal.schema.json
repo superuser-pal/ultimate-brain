@@ -42,7 +42,9 @@
         "supersede",
         "contradiction",
         "merge",
-        "new_item"
+        "new_item",
+        "review_notes",
+        "answer"
       ]
     },
     "target": {
@@ -114,12 +116,14 @@
           "uniqueItems": true,
           "items": {
             "type": "object",
-            "required": [
-              "field",
-              "value"
-            ],
             "additionalProperties": false,
             "properties": {
+              "note": {
+                "$ref": "note.schema.json#/$defs/id"
+              },
+              "target": {
+                "$ref": "note.schema.json#/$defs/id"
+              },
               "field": {
                 "type": "string"
               },
@@ -127,7 +131,44 @@
                 "type": "string",
                 "minLength": 1
               }
-            }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "note"
+                ],
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "field"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "value"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "target"
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "required": [
+                  "field",
+                  "value"
+                ],
+                "not": {
+                  "required": [
+                    "note"
+                  ]
+                }
+              }
+            ]
           }
         },
         "decided_at": {
@@ -199,7 +240,6 @@
     },
     "links": {
       "type": "array",
-      "minItems": 1,
       "uniqueItems": true,
       "items": {
         "type": "object",
@@ -209,6 +249,9 @@
         ],
         "additionalProperties": false,
         "properties": {
+          "target": {
+            "$ref": "note.schema.json#/$defs/id"
+          },
           "field": {
             "enum": [
               "aliases",
@@ -225,6 +268,20 @@
           }
         }
       }
+    },
+    "notes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "note.schema.json#/$defs/id"
+      }
+    },
+    "answer": {
+      "type": "string",
+      "minLength": 1
+    },
+    "answer_note": {
+      "$ref": "note.schema.json#/$defs/id"
     }
   },
   "additionalProperties": false,
@@ -326,6 +383,21 @@
               "required": [
                 "before"
               ]
+            },
+            {
+              "required": [
+                "notes"
+              ]
+            },
+            {
+              "required": [
+                "answer"
+              ]
+            },
+            {
+              "required": [
+                "answer_note"
+              ]
             }
           ]
         },
@@ -347,6 +419,18 @@
                   ]
                 }
               ]
+            },
+            "properties": {
+              "links": {
+                "minItems": 1,
+                "items": {
+                  "not": {
+                    "required": [
+                      "target"
+                    ]
+                  }
+                }
+              }
             }
           },
           {
@@ -620,7 +704,8 @@
             "enum": [
               "update_fact",
               "contradiction",
-              "add_to_note"
+              "add_to_note",
+              "answer"
             ]
           }
         }
@@ -649,7 +734,10 @@
       "then": {
         "properties": {
           "kind": {
-            "const": "add_link"
+            "enum": [
+              "add_link",
+              "review_notes"
+            ]
           }
         }
       }
@@ -670,12 +758,307 @@
       "then": {
         "properties": {
           "kind": {
-            "const": "add_link"
+            "enum": [
+              "add_link",
+              "review_notes"
+            ]
           },
           "decision": {
             "properties": {
               "action": {
                 "const": "approve"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "review_notes"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "notes",
+          "links"
+        ],
+        "properties": {
+          "links": {
+            "items": {
+              "required": [
+                "target"
+              ]
+            }
+          }
+        },
+        "anyOf": [
+          {
+            "properties": {
+              "notes": {
+                "minItems": 1
+              }
+            }
+          },
+          {
+            "properties": {
+              "links": {
+                "minItems": 1
+              }
+            }
+          }
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "target"
+              ]
+            },
+            {
+              "required": [
+                "field"
+              ]
+            },
+            {
+              "required": [
+                "before"
+              ]
+            },
+            {
+              "required": [
+                "after"
+              ]
+            },
+            {
+              "required": [
+                "content"
+              ]
+            },
+            {
+              "required": [
+                "note"
+              ]
+            },
+            {
+              "required": [
+                "supersedes"
+              ]
+            },
+            {
+              "required": [
+                "merge_into"
+              ]
+            },
+            {
+              "required": [
+                "answer"
+              ]
+            },
+            {
+              "required": [
+                "answer_note"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "answer"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "target",
+          "answer"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "field"
+              ]
+            },
+            {
+              "required": [
+                "before"
+              ]
+            },
+            {
+              "required": [
+                "after"
+              ]
+            },
+            {
+              "required": [
+                "content"
+              ]
+            },
+            {
+              "required": [
+                "note"
+              ]
+            },
+            {
+              "required": [
+                "links"
+              ]
+            },
+            {
+              "required": [
+                "notes"
+              ]
+            },
+            {
+              "required": [
+                "supersedes"
+              ]
+            },
+            {
+              "required": [
+                "merge_into"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "anyOf": [
+          {
+            "required": [
+              "notes"
+            ]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "review_notes"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "anyOf": [
+          {
+            "required": [
+              "answer"
+            ]
+          },
+          {
+            "required": [
+              "answer_note"
+            ]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "answer"
+          }
+        }
+      }
+    },
+    {
+      "description": "exclude entries fit the kind: {field, value} on add_link, {note} or {target, field, value} on review_notes.",
+      "if": {
+        "required": [
+          "kind",
+          "decision"
+        ],
+        "properties": {
+          "kind": {
+            "const": "add_link"
+          },
+          "decision": {
+            "required": [
+              "exclude"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "decision": {
+            "properties": {
+              "exclude": {
+                "items": {
+                  "required": [
+                    "field",
+                    "value"
+                  ],
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "target"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "note"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "kind",
+          "decision"
+        ],
+        "properties": {
+          "kind": {
+            "const": "review_notes"
+          },
+          "decision": {
+            "required": [
+              "exclude"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "decision": {
+            "properties": {
+              "exclude": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "note"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "target",
+                        "field",
+                        "value"
+                      ]
+                    }
+                  ]
+                }
               }
             }
           }
