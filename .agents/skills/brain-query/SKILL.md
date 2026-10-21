@@ -1,11 +1,11 @@
 ---
 name: brain-query
-description: Answer a question from the user's second brain with citations, such as what was decided and why, who someone is, a date, budget, owner or other key fact, what changed and when. Works from the brain repo or any repo linked to it with `brain link`. Read-only. Use when the user asks "what did we decide about…", "why did we…", "who is…", "when is the launch…", "what do we know about…", or when the repo's "Ultimate Brain" block says to consult the brain before a decision.
+description: Answer a question from the user's second brain with citations, such as what was decided and why, who someone is, a date, budget, owner or other key fact, what changed and when. Works from the brain repo or any repo linked to it with `brain link`. Read-only, except its report mode, which writes a dated report and publishes it to the Inbox. Use when the user asks "what did we decide about…", "why did we…", "who is…", "when is the launch…", "what do we know about…", "report on…", "where do we stand with…", when an Ask row is waiting in the Inbox, or when the repo's "Ultimate Brain" block says to consult the brain before a decision.
 ---
 
 # Answer from the brain
 
-Find the notes that answer the question, read them, and answer briefly, citing the notes. **Read-only:** never write to the brain from this skill. If the user wants the answer saved, that is a separate step (an ingest or a proposal), done only when they ask.
+Find the notes that answer the question, read them, and answer briefly, citing the notes. **Read-only:** never write to the brain from this skill, except a report in report mode (below). If the user wants an answer saved as knowledge, that is a separate step (an ingest or a proposal), done only when they ask.
 
 ## Where the brain is
 
@@ -43,6 +43,26 @@ If `brain` is not found (`command not found`), install it with `npm install -g u
      - A sentence ending `^[inferred]`: say it is the brain's inference, not something said in the meeting.
      - `^[ambiguous]`: the sources were unclear.
    - **Separate what the brain knows from your own reasoning.** If you add advice, mark it as yours.
+
+## Report mode (decision 0043)
+
+A report gathers everything the brain knows about one subject, as of today: "report on the Acme launch", "where do we stand with Acme?", or an **Ask** row in the Inbox (the catch-up hands you its page id, its question and its Project or Area). It runs only in the brain repo.
+
+1. **Gather.** `brain query --candidates "<the subject>" --limit 50`, then again with the project's and client's names and the people's names. Read the project or area note, its Brief, and every decision, question, meeting and source that is about the subject. Unlike an answer, a report reads widely: everything that bears on the subject, `draft` notes included.
+2. **Write the body:** exactly these six sections, in this order, with nothing before the first (spec/schema.md §16.4):
+   1. `## Where it stands`: 3 to 5 lines, as of today.
+   2. `## Timeline`: one bullet per dated event, oldest first: `- 2026-12-03 · Supabase chosen for auth ([Use Supabase for auth](../knowledge/decisions/2026-12-03-use-supabase-for-auth.md))`.
+   3. `## Decisions in force`: current decisions only; a superseded one appears in the timeline, never here.
+   4. `## Open questions and risks`.
+   5. `## People involved`, each with their role.
+   6. `## Gaps`: what the brain doesn't know ("no development update since August", "no budget figure").
+
+   A section with nothing says `- None`. **Every line that rests on a `draft` note ends with ` *(not reviewed)*`.** Links are relative to `reports/` (`../knowledge/…`, `../projects/…`). Trust labels as in step 4 below; copy figures and dates as the notes state them.
+3. **Store it:** `brain report new --input <file>` with `{ "title": "<subject>: where we stand", "question": "<the question as asked>", "projects": [...], "area": "...", "asked_in": "<the Ask row's page id, only for an Ask row>", "body": "…" }`. The CLI checks the sections and links and writes `reports/<date>-<slug>.md`. Commit: `report: <title>`.
+4. **Publish** *(Notion, per `settings.publish`)*: `brain sync render --changed`, write the Report row (its body is the report: the brain-ingest skill's references/notion.md, "Inbox bodies"), then set the Ask row's Brain Status to Processed through the MCP, then `brain sync record`, and commit `publish: report <title>`. In a catch-up, the run's one publish does this.
+5. **Answer in chat** with "Where it stands", and the link to the Report row when published.
+
+**A report is a snapshot.** It is never ingested, never rebuilt and never cited as a source, and it creates no proposal: if the brain learned from its own summaries, its mistakes would become knowledge. To refresh one, ask again: a new dated report is written.
 
 ## Example (synthetic Acme brain)
 

@@ -58,7 +58,7 @@ Existing project and area pages keep their body; add the same views to the pages
 Run "catch up". It writes, once:
 - one **Review Notes** row per source for the notes still Draft (the backlog, 0041): a few clicks accept them;
 - a **Brief** on every area page;
-- a **digest** in the body of every Inbox row the brain created, and the **Full text** toggle on the email and chat rows: expect one body write per row, reported in the counts.
+- a **digest** in the body of every Inbox row the brain created: expect one body write per row, reported in the counts. Rows made before 0.4.0 get the digest only, emails and chats included (their sources have no full-text choice, which reads as digest); tick **Full text** on any of them to have its text too.
 
 ## Verify
 - [ ] Review → Kind lists Review Notes and Answer; the Review page shows the gray line above the tabs.

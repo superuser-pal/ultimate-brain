@@ -22,7 +22,7 @@ A copy of the inputs in spec/cli.md §5.14, so the skill works from inside a bra
 }
 ```
 
-- `database`: the `brain.json` key: `areas`, `goals`, `key_results`, `projects`, `people`, `orgs`, `decisions`, `questions`, `concepts` or `review`. The Inbox and Meetings are never snapshot databases.
+- `database`: the `brain.json` key: `areas`, `goals`, `key_results`, `projects`, `people`, `orgs`, `decisions`, `questions`, `concepts`, `review` or `inbox`. Meetings are never a snapshot database; of the Inbox, send only rows whose Full text box is ticked, with `"Full text": true` and `"Brain ID"` (decision 0043). Each becomes a `full_text_requests` item `{ "page_id", "source" }` in the plan.
 - `properties`: the Notion property names exactly, with normalized values:
 
   | Notion type | Normalized value |
