@@ -8,6 +8,7 @@ import { lintBrain } from "../lib/lint.ts";
 import { scanNotes } from "../lib/notes.ts";
 import { describeErrors, loadSchemas } from "../lib/schemas.ts";
 import { isRecord } from "../lib/input.ts";
+import { expandPath, linkedRepos, workTreeTop } from "../lib/repos.ts";
 
 const NOTE_TYPES = ["area", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "goal", "memory"];
 const PROPOSAL_STATUSES = ["pending", "approved", "edited", "rejected", "applied", "closed"];
@@ -20,7 +21,7 @@ export const statusCommand: Command = {
   options: {},
   maxPositionals: 0,
   needsBrain: true,
-  async run({ brain }) {
+  async run({ brain, environment }) {
     const schemas = loadSchemas();
     if (!schemas.brain(brain!.config)) {
       throw new BrainError("BRAIN_CONFIG_INVALID", `brain.json fails schema: ${describeErrors(schemas.brain.errors).join("; ")}`);
@@ -57,6 +58,7 @@ export const statusCommand: Command = {
     const notion = readNotion(brain!.config);
     const settings = readSettings(brain!.config);
     const lastLog = await findLastLogLine(brain!.root);
+    const repos = await Promise.all(linkedRepos(brain!.config).map(async (repo) => ({ name: repo.name, area: repo.area, commit: repo.commit, found: (await workTreeTop(expandPath(repo.path, environment.homeDirectory))) !== null })));
     const data = {
       schema_version: brain!.config.schema_version,
       owner: (brain!.config.owner as Record<string, unknown>).name,
@@ -64,6 +66,7 @@ export const statusCommand: Command = {
       proposals: proposalCounts,
       notion,
       settings,
+      repos,
       index_stale: currentIndex !== index,
       views_stale: viewStale,
       last_log: lastLog,
