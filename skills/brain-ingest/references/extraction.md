@@ -1,11 +1,12 @@
 # Extraction rules (step 6)
 
-How to read one meeting's minutes and decide what becomes a note, what becomes a proposal and what is left out. The minutes may follow notion/minutes-format.md (Attendees, Decisions, Action items, Facts & numbers, Open questions, Risks, Summary), or any other headings, such as Notion AI's. The format is a hint: classify each line by what it says, not by the heading it sits under.
+How to read one meeting's minutes and decide what becomes a note, what becomes a proposal and what is left out. The minutes may follow notion/minutes-format.md (Attendees, Projects, Action Items, Decisions, Open Questions, Risks, Meeting Purpose, Background, Current Status, Requirements and Deadlines, Other relevant topics; decision 0043), the format before it (with Facts & numbers and Summary), or any other headings, such as Notion AI's. The format is a hint: classify each line by what it says, not by the heading it sits under.
 
 ## Who is who
 
 - **The owner:** "I", "me", descriptions of the owner's role ("the new team member" when that is the owner), and every name or work email in the `aliases` of the owner's person note (`owner.person` in `brain.json`, decision 0037) mean the owner. A From line or signature with one of them is the owner. Link them to that person note; if there is none, create it in the batch with `title` = the owner name in `brain.json`. Keep the wording verbatim in quoted facts.
 - **Mentioned people** (named, not attendees) get a person note only when they own a system, deliverable or decision named in the minutes, or have an action item. Otherwise their name stays in the text, with no note.
+- **Pronouns:** write the person's name or "they". Never guess a pronoun from a name (decision 0043); keep one only when the source itself uses it for that person, verbatim.
 - **Projects are per item.** A meeting may touch several projects: set `projects` on each decision and question from what that item is about, and list every one on the meeting. Ask only when an item could belong to two. Action items too: give each its `projects` in the `sync tasks` input ([cli-inputs.md](cli-inputs.md) §4); left out, a task gets the meeting's projects.
 
 ## What each part of the minutes becomes
@@ -14,16 +15,19 @@ How to read one meeting's minutes and decide what becomes a note, what becomes a
 |---|---|---|
 | The whole meeting | One **meeting** note (`knowledge/meetings/`) | `note new` |
 | Attendees | Links to **person** notes. Unknown names → new person notes | `note new` |
+| Projects | The meeting's `projects` when its Project property is empty (SKILL.md step 3); each item's own `projects` still comes from what it is about | `note new` |
 | Decisions | A **decision** note if it passes the decision gate; otherwise a line in the meeting body, plus a proposal if it changes a fact | `note new` / `proposal new` |
-| Action items | Notion **tasks** (Notion mode), and a list in the meeting body. Never notes | `sync tasks` |
-| Facts & numbers | A change to a `facts` key of an existing note → `update_fact`. A new fact about an existing note → `update_fact` with no `before`. Facts about a new note go in its frontmatter | `proposal new` / `note new` |
+| Action Items | Notion **tasks** (Notion mode), and a list in the meeting body. Never notes. Each item's owner, deliverable, timing and dependencies are as written | `sync tasks` |
+| Facts and figures, wherever they're stated (Current Status, Requirements and Deadlines, Background, or an older Facts & numbers section) | A change to a `facts` key of an existing note → `update_fact`. A new fact about an existing note → `update_fact` with no `before`. Facts about a new note go in its frontmatter | `proposal new` / `note new` |
 | Role changes ("Maria is now PM") | `update_fact` on the person's `role` | `proposal new` |
 | Open questions | A **question** note (`kind: question`) when it matters beyond this meeting | `note new` |
 | Risks | A **question** note with `kind: risk` | `note new` |
-| Summary | The meeting note's `summary` (≤200 characters) and its `## Summary` section | `note new` |
+| Meeting Purpose, Current Status, or an older Summary | The meeting note's `summary` (≤200 characters) and its `## Summary` section | `note new` |
+| Requirements and Deadlines | Facts and dates of the project they belong to (`update_fact`), or a decision when one passes the gate; "confirmed" kept apart from "expected" and "open" | `proposal new` / `note new` |
+| Background, Other relevant topics | Context for the analysis; a note only when a line passes the rules below | |
 | Something that contradicts a loaded note | `contradiction` (both claims kept until the user decides) | `proposal new` |
 | A standing requirement of the client ("Acme's legal team requires EU data residency") | `add_to_note` on the org, besides any decision that cites it | `proposal new` |
-| An answer to an existing open question | `add_to_note` on the question, with the answer and the meeting as source | `proposal new` |
+| An answer to an existing open question | `answer` on the question (decision 0041): the answer in one sentence, the line as `why`, and `answer_note` = the decision or note that answers it, when there is one. Approved, it closes the question and sets its Status to Answered in Notion | `proposal new` |
 | A person working on an existing project they're not listed on (new or existing person) | `add_link` on the project, `field: people` | `proposal new` |
 
 ## By source kind (decision 0032)
@@ -59,7 +63,7 @@ Answers that only fix the input (a date, attendees, which spellings are one pers
 
 - **"(tentative)" does not lower a decision below the gate.** It only sets `assessment: provisional`. A tentative launch date passes the gate; a tentative routine ("send drafts on Fridays") does not, because routines never do.
 - **A decision that changes a fact gets both:** the decision note and an `update_fact` for the fact ("launch on 15 Feb 2027" → `launch_date` 2027-02 → 2027-02-15).
-- **An assignment that answers an open question** ("Carlos owns the mobile app") is an `add_to_note` on the question. It gets a decision note only if it passes the gate on its own. The user marks the question Answered in Notion.
+- **An assignment that answers an open question** ("Carlos owns the mobile app") is an `answer` on the question. It gets a decision note only if it passes the gate on its own; then that note is the `answer_note`. Approving the row marks the question Answered in Notion; you never set Status yourself.
 - **`deciders`** only when the minutes say who decided; otherwise leave it out.
 - **An approval of a new value** ("budget raised to 110000 EUR, approved by Carlos") is a fact change (`update_fact`), not a decision, unless alternatives were weighed or it commits to something hard to reverse.
 
