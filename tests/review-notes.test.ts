@@ -194,3 +194,43 @@ test("an approved answer sets the question's answer; an edit uses your Note; a s
   assert.equal((await attributes(edited, questionPath)).answer, "Carlos owns it now.");
   assert.deepEqual(await lintErrors(edited), []);
 });
+
+async function rendered(dir: string, ids: string[]): Promise<Array<Record<string, any>>> {
+  const result = await run(dir, ["sync", "render", "--ids", ids.join(",")]);
+  assert.equal(result.code, 0, result.stdout);
+  return result.json.data.items;
+}
+
+async function record(dir: string, item: Record<string, any>, notion = item.page_id ?? "e1000000-0000-4000-8000-000000000001"): Promise<void> {
+  const recorded = await run(dir, ["sync", "record"], { records: [{ id: item.id, notion, synced_at: NOW, published: item.published }] });
+  assert.equal(recorded.code, 0, recorded.stdout);
+}
+
+test("render: a Review notes row letters its notes, then its links, with titles for ids", async (context) => {
+  const dir = await fixtureCopy(context);
+  const created = await run(dir, ["proposal", "new"], { proposals: reviewInput });
+  const [item] = await rendered(dir, [created.json.data.created[0].id]);
+  assert.equal(item!.properties.Kind.value, "Review Notes");
+  assert.equal(item!.properties.Target.value, `Acme sync (${SYNC})`);
+  assert.deepEqual(item!.properties.Before, { type: "rich_text", value: null });
+  assert.equal(item!.properties.After.value, "a) Decision: Use Supabase for auth\nb) Question: Who owns the Acme mobile app?\nc) Projects on Row-level security: Acme website\nd) Aliases on Use Supabase for auth: Supabase auth");
+});
+
+test("render: an answer row shows answer → note; once applied, the question's Status goes out as Answered once", async (context) => {
+  const dir = await fixtureCopy(context);
+  const answer = { kind: "answer", title: "Who owns the app: Maria", target: QUESTION, answer: "Maria owns the mobile app.", answer_note: DECISION, why: "Maria said she owns it.", source: SYNC };
+  const created = await run(dir, ["proposal", "new"], { proposals: [answer] });
+  const [row] = await rendered(dir, [created.json.data.created[0].id]);
+  assert.deepEqual(row!.properties.Before, { type: "rich_text", value: null });
+  assert.equal(row!.properties.After.value, "Maria owns the mobile app. → Use Supabase for auth");
+
+  const [before] = await rendered(dir, [QUESTION]);
+  assert.equal(before?.properties.Status, undefined, "a question with no answer never has Status");
+  await run(dir, ["apply"], { decisions: [decided(created.json.data.created[0].id, "approve")] });
+  const [question] = await rendered(dir, [QUESTION]);
+  assert.deepEqual(question!.properties.Status, { type: "select", value: "Answered" });
+  await record(dir, question!);
+  const [after] = await rendered(dir, [QUESTION]);
+  assert.equal(after?.properties.Status, undefined, "Status goes out once");
+  assert.deepEqual(await lintErrors(dir), []);
+});
