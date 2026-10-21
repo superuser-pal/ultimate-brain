@@ -503,7 +503,7 @@ export function renderTasks(workspace: Workspace, targetId: string, input: unkno
     const properties: Record<string, unknown> = {};
     const pending_relations: Array<Record<string, unknown>> = [];
     const put = (key: string, type: string, value: unknown) => { const name = config.properties[key]; if (typeof name === "string" && name !== "") properties[name] = { type, value }; };
-    put("title", "title", item.title); put("status", "select", config.new_task_status); if (item.due !== undefined) put("due", "date", dateOutput(item.due)); if (!sourceMode && item.owner !== undefined) put("owner", "person_name", item.owner);
+    put("title", "title", item.title); put("status", config.status_type, config.new_task_status); if (item.due !== undefined) put("due", "date", dateOutput(item.due)); if (!sourceMode && item.owner !== undefined) put("owner", "person_name", item.owner);
     const projectProperty = config.properties.project;
     if (typeof projectProperty === "string" && projectProperty !== "") {
       const unpublished = projects.filter((id) => typeof workspace.get(id)?.attributes.notion !== "string");
@@ -541,7 +541,7 @@ function taskProjects(workspace: Workspace, meeting: Note | undefined, value: un
   return projects;
 }
 function publishedPages(value: unknown, workspace: Workspace): string[] { return (Array.isArray(value) ? value : []).map((id) => workspace.get(String(id))?.attributes.notion).filter((id): id is string => typeof id === "string"); }
-function tasksConfig(workspace: Workspace): { database: string; properties: Record<string, string>; new_task_status: string } { if (!loadSchemas().brain(workspace.config)) throw new BrainError("BRAIN_CONFIG_INVALID", "brain.json fails its schema"); const notion = workspace.config.notion as Record<string, unknown>; const tasks = notion.tasks as Record<string, unknown>; if (typeof tasks.database !== "string" || tasks.database === "") throw new BrainError("BRAIN_CONFIG_INVALID", "Tasks database is not configured"); return { database: tasks.database as string, properties: tasks.properties as Record<string, string>, new_task_status: tasks.new_task_status as string }; }
+function tasksConfig(workspace: Workspace): { database: string; properties: Record<string, string>; new_task_status: string; status_type: "status" | "select" } { if (!loadSchemas().brain(workspace.config)) throw new BrainError("BRAIN_CONFIG_INVALID", "brain.json fails its schema"); const notion = workspace.config.notion as Record<string, unknown>; const tasks = notion.tasks as Record<string, unknown>; if (typeof tasks.database !== "string" || tasks.database === "") throw new BrainError("BRAIN_CONFIG_INVALID", "Tasks database is not configured"); return { database: tasks.database as string, properties: tasks.properties as Record<string, string>, new_task_status: tasks.new_task_status as string, status_type: tasks.status_type === "status" ? "status" : "select" }; }
 
 export function record(workspace: Workspace, input: unknown): Record<string, unknown> {
   if (!isRecord(input) || !Array.isArray(input.records)) throw new BrainError("INPUT_INVALID", "record input needs a records list"); const records: Array<Record<string, unknown>> = [];
