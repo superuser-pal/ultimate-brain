@@ -968,13 +968,13 @@ A source with `attached_to` is never selected: it has no Inbox row (0042). Notes
   - **Produced** relations also include every note whose `sources` lists the id of a source **attached** to this one (0042).
   - **Body (0043):** a capture's body is yours: `body` and `sections` are `null`. Any other source's `body` is its digest, written once (its content never changes, so B of `@content` = S after the first publish):
     ```text
-    *<Kind> · <file_name, else the URL, else "pasted text"> · <file_date, else the date of captured> · <word count> words[ · <part count> slides]*
+    *<Kind> · <file_name, else the URL, else "pasted text"> · <the date in the file name> · <word count> words[ · <part count> slides]*
 
     <summary>
 
     <digest>
     ```
-    A missing `summary` or `digest` leaves out its paragraph; `[ · <part count> slides]` only when the body has slide markers. The words are the body's runs of non-space characters.
+    A missing `summary` or `digest` leaves out its paragraph; `[ · <part count> slides]` only when the body has slide markers. The date is the one in the source's file name: `file_date` when `note new` was given one, else `created` (§5.5); `file_date` is not stored, so `render` reads it from the path. The words are the body's runs of non-space characters.
   - **Full text (0043):** B of `@full_text` = `{ "text": <notion_text or "digest">, "parts": <notion_parts or null>, "requested": <notion_text_requested or null> }`. When B.text is `full` and S has no `@full_text`, or S's `text` or `parts` differs from B's, `sections` = `{ "Full text": <text> }`: the preamble, then the chosen parts in order (all when `parts` is null); a partial choice starts with the line `*Slides 3–9 of 12*` or `*Sections 2, 4–5 of 5*` (ranges as stored, en dash, joined by `, `). The skill writes it into a toggle heading "Full text" after the body, creating the toggle when missing, and splits long text into as many blocks as the API needs. When B.requested is not null and differs from S's, `properties` also has `"Full text": { "type": "checkbox", "value": false }`, with or without `sections`: so a box ticked again on a row already in full is cleared, and no text is written twice. `published` carries `@full_text` = B whenever either is sent.
   - `published` holds what was sent, so a later ingest that produces more notes from the same source (or publishes a pending one) re-renders only the changed relations.
 - **Meetings** (0007; the page is yours): never Name, Date or body. *(add)* relations carry `"mode": "add"`: the skill adds the listed pages and keeps those you linked. *(if empty)* relations carry `"mode": "if_empty"`: the skill writes them only when the property is empty in Notion (design §3.5: "brain fills if empty"). Brain Status = `Ingested` and Ingested At = `{start: <meeting created>}` go out once, because S then holds them.

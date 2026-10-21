@@ -5,6 +5,7 @@ import { installedProduct } from "./skills.ts";
 
 import { buildIndex } from "./index-builder.ts";
 import { compareCodePoints, type Note, type ScanProblem } from "./notes.ts";
+import { rangesProblem, splitParts } from "./parts.ts";
 import { sourceFolder } from "./paths.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
@@ -38,8 +39,14 @@ const ID = /^(area|gol|prj|per|org|mtg|dec|que|con|src|mem|prp|vw)-[0-9abcdefghj
 const REFERENCE_KEYS = new Set([
   "area", "goal", "client", "org", "projects", "people", "attendees", "decided_in", "raised_in", "deciders",
   "source", "sources", "decisions", "questions", "answer", "target", "supersedes", "merge_into", "project",
-  "generated_from", "facts",
+  "generated_from", "facts", "notes", "answer_note", "links", "attached_to",
 ]);
+
+/** Where each kind of view must live (spec/schema.md §2, 0041, 0043). */
+const VIEW_FOLDERS: Readonly<Record<string, RegExp>> = {
+  area_brief: /^areas\/briefs\/[^/]+\.md$/,
+  report: /^reports\/\d{4}-\d{2}-\d{2}-[^/]+\.md$/,
+};
 
 /** Where each type must live (spec/schema.md §2). */
 const FOLDERS: Readonly<Record<string, RegExp>> = {
@@ -90,6 +97,12 @@ export function lintBrain(input: LintInput): Issue[] {
     const others = pathsById.get(note.id)!.filter((path) => path !== note.path);
     if (others.length > 0) add("error", "id-duplicate", note.path, lineOfKey(note, "id"), note.id, `${note.id} is also used by ${others.join(", ")}`);
   }
+  // Every review_notes proposal listing each note id (rule review-notes, 0041).
+  const reviewedBy = new Map<string, string[]>();
+  for (const note of input.notes) {
+    if (note.type !== "proposal" || note.attributes.kind !== "review_notes") continue;
+    for (const id of new Set(list(note.attributes.notes).map(String))) reviewedBy.set(id, [...(reviewedBy.get(id) ?? []), note.id]);
+  }
   const onDisk = caseSensitiveExists(input.root);
   const exists = (path: string) => input.pendingPaths?.has(path) === true || onDisk(path);
 
@@ -105,7 +118,7 @@ export function lintBrain(input: LintInput): Issue[] {
       err("schema", firstKey === undefined ? 1 : lineOfKey(note, firstKey), describeErrors(validate.errors).join("; "));
     }
     if (!ID.test(note.id)) err("id-format", lineOfKey(note, "id"), `"${note.id}" is not <prefix>-<8 chars> with a schema prefix`);
-    const folder = FOLDERS[note.type];
+    const folder = note.type === "view" ? VIEW_FOLDERS[String(a.view_kind)] ?? FOLDERS.view : FOLDERS[note.type];
     const correctFolder = note.type === "source"
       ? new RegExp(`^sources/${sourceFolder(a.source_key)}/\\d{4}-\\d{2}-\\d{2}-[^/]+\\.md$`)
       : folder;
@@ -150,10 +163,10 @@ export function lintBrain(input: LintInput): Issue[] {
     for (const source of list(a.sources)) {
       if (typeof source === "string" && byId.get(source)?.type === "view") err("view-cited", lineOfKey(note, "sources"), `${source} is a derived view and can't be evidence`);
     }
-    if (note.type === "view" && (a.view_kind === "brief" || a.view_kind === "decision_log")) {
-      const project = byId.get(String(a.project));
+    if (note.type === "view" && (a.view_kind === "brief" || a.view_kind === "decision_log" || a.view_kind === "area_brief")) {
+      const project = byId.get(String(a.view_kind === "area_brief" ? a.area : a.project));
       const range = generatedBlockRange(note.body);
-      if (project?.type === "project" && range !== undefined) {
+      if (project?.type === (a.view_kind === "area_brief" ? "area" : "project") && range !== undefined) {
         const derived = deriveView(project, a.view_kind as ViewKind, input.notes);
         const generatedFrom = Array.isArray(a.generated_from) ? a.generated_from : [];
         if (note.body.slice(range.start, range.end) !== derived.generatedBlock || !sameStringList(generatedFrom, derived.generatedFrom)) {
@@ -211,6 +224,18 @@ export function lintBrain(input: LintInput): Issue[] {
     if (note.type === "proposal") {
       const problem = proposalStatusProblem(a);
       if (problem !== null) err("proposal-status", lineOfKey(note, "status"), problem);
+    }
+    if (note.type === "proposal" && a.kind === "review_notes") {
+      for (const id of list(a.notes)) {
+        const listed = byId.get(String(id));
+        if (listed !== undefined && !KNOWLEDGE.has(listed.type)) err("review-notes", lineOfKey(note, "notes"), `${String(id)} is a ${listed.type}, not a knowledge note`);
+        const others = (reviewedBy.get(String(id)) ?? []).filter((other) => other !== note.id);
+        if (others.length > 0) err("review-notes", lineOfKey(note, "notes"), `${String(id)} is also listed by ${others.join(", ")}`);
+      }
+    }
+    if (note.type === "source" && Array.isArray(a.notion_parts)) {
+      const problem = rangesProblem(a.notion_parts, splitParts(note.body).parts.length);
+      if (problem !== null) err("notion-parts", lineOfKey(note, "notion_parts"), problem);
     }
 
     // Quality warnings

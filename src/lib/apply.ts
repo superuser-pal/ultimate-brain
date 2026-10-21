@@ -22,7 +22,8 @@ export interface Decision {
   action: "approve" | "reject" | "edit";
   value?: unknown;
   note?: string;
-  exclude?: Array<{ field: string; value: unknown }>;
+  /** add_link: `{field, value}`; review_notes: `{note}` or `{target, field, value}` (spec/schema.md §11). */
+  exclude?: Array<Record<string, unknown>>;
   decided_at: string;
   decided_by: "notion" | "chat";
 }
@@ -42,6 +43,14 @@ export interface ItemResult {
   reason?: string;
   message?: string;
   changed: string[];
+  /** review_notes only: what happened to each listed note (spec/cli.md §5.7). */
+  notes?: NoteResult[];
+}
+
+export interface NoteResult {
+  id: string;
+  result: "reviewed" | "archived" | "kept_draft" | "unchanged";
+  lifecycle: string;
 }
 
 export interface ApplyResult {
@@ -52,7 +61,7 @@ export interface ApplyResult {
 }
 
 const ACTIONS = ["approve", "reject", "edit"];
-export const EDITABLE = new Set(["update_fact", "contradiction", "add_to_note"]);
+export const EDITABLE = new Set(["update_fact", "contradiction", "add_to_note", "answer"]);
 /** Reference fields a merge leaves alone: the meeting side of a persisted pair (spec/schema.md §11.2). */
 const PAIR_FIELDS = new Set(["decisions", "questions", "decided_in", "raised_in"]);
 /** Corrections change knowledge notes only: sources are immutable and proposals are records. */
@@ -94,7 +103,7 @@ export function parseApplyInput(input: unknown): ApplyInput {
     if (item.action === "edit" && (item.value === undefined || item.value === null)) problems.push({ pointer: `${pointer}/value`, message: "is required for edit" });
     if (item.action !== "edit" && item.value !== undefined) problems.push({ pointer: `${pointer}/value`, message: "is only allowed for edit" });
     if (item.note !== undefined && typeof item.note !== "string") problems.push({ pointer: `${pointer}/note`, message: "must be a string" });
-    if (item.exclude !== undefined && (!Array.isArray(item.exclude) || item.exclude.some((entry) => !isRecord(entry) || typeof entry.field !== "string" || !Object.hasOwn(entry, "value")))) problems.push({ pointer: `${pointer}/exclude`, message: "must be a list of {field, value} pairs" });
+    if (item.exclude !== undefined && (!Array.isArray(item.exclude) || item.exclude.some((entry) => !isRecord(entry) || !(isNoteExclude(entry) || (typeof entry.field === "string" && Object.hasOwn(entry, "value") && Object.keys(entry).every((key) => ["target", "field", "value"].includes(key))))))) problems.push({ pointer: `${pointer}/exclude`, message: "must be a list of {field, value}, {target, field, value} or {note} entries" });
     if (!isTimestamp(item.decided_at)) problems.push({ pointer: `${pointer}/decided_at`, message: "must be an ISO 8601 UTC timestamp" });
     if (item.decided_by !== "notion" && item.decided_by !== "chat") problems.push({ pointer: `${pointer}/decided_by`, message: "must be notion or chat" });
   });
@@ -148,6 +157,7 @@ interface Outcome {
   result: ItemResult["result"];
   reason?: string;
   message?: string;
+  notes?: NoteResult[];
   /** Action actually applied, when it differs from the input's (an earlier, later-dated decision). */
   action?: string;
 }
@@ -232,9 +242,17 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
     throw new ItemFailure("EDIT_NOT_ALLOWED", `edit is not allowed on a ${String(p.kind)} proposal (spec/schema.md §11.1)`);
   }
   if (decision.exclude !== undefined) {
-    if (decision.action !== "approve" || p.kind !== "add_link") throw new ItemFailure("INPUT_INVALID", "exclude is only allowed on an approved add_link proposal");
-    const links = proposalLinks(p);
-    if (decision.exclude.some((excluded) => !links.some((link) => link.field === excluded.field && isDeepStrictEqual(link.value, excluded.value)))) throw new ItemFailure("EXCLUDE_UNKNOWN", "exclude contains a link that is not in the proposal");
+    if (decision.action !== "approve" || (p.kind !== "add_link" && p.kind !== "review_notes")) throw new ItemFailure("INPUT_INVALID", "exclude is only allowed on an approved add_link or review_notes proposal");
+    if (p.kind === "add_link") {
+      if (decision.exclude.some((excluded) => excluded.target !== undefined || isNoteExclude(excluded))) throw new ItemFailure("INPUT_INVALID", "exclude on an add_link takes {field, value} entries");
+      const links = proposalLinks(p);
+      if (decision.exclude.some((excluded) => !links.some((link) => link.field === excluded.field && isDeepStrictEqual(link.value, excluded.value)))) throw new ItemFailure("EXCLUDE_UNKNOWN", "exclude contains a link that is not in the proposal");
+    } else {
+      if (decision.exclude.some((excluded) => !isNoteExclude(excluded) && excluded.target === undefined)) throw new ItemFailure("INPUT_INVALID", "exclude on a review_notes takes {note} and {target, field, value} entries");
+      const notes = list(p.notes);
+      const links = reviewLinks(p);
+      if (decision.exclude.some((excluded) => isNoteExclude(excluded) ? !notes.includes(excluded.note) : !links.some((link) => sameLink(link, excluded)))) throw new ItemFailure("EXCLUDE_UNKNOWN", "exclude contains an entry that is not in the proposal");
+    }
   }
   const action = decision.action === incoming.action ? undefined : decision.action;
 
@@ -249,12 +267,20 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   if (decision.action === "reject") {
     p.status = "closed";
     workspace.save(proposal.path, document);
-    return { result: "closed", action };
+    // A rejected review_notes archives the notes still draft, with no successor (spec/schema.md §11.2).
+    const notes = p.kind === "review_notes" ? reviewNotes(workspace, p, "reject", [], today) : undefined;
+    return { result: "closed", action, ...(notes === undefined ? {} : { notes }) };
   }
 
   const D = decision.decided_at.slice(0, 10);
   const V = decision.action === "edit" ? decision.value : undefined;
-  const stale = applyKind(workspace, p, proposal.path, V, D, today, decision.exclude ?? []);
+  if (p.kind === "review_notes") {
+    const notes = reviewNotes(workspace, p, "approve", decision.exclude ?? [], today);
+    p.status = "applied";
+    workspace.save(proposal.path, document);
+    return { result: "applied", action, notes };
+  }
+  const stale = applyKind(workspace, p, proposal.path, V, D, today, (decision.exclude ?? []) as Array<{ field: string; value: unknown }>);
   if (stale !== null) {
     p.status = "closed";
     p.closed_reason = "stale";
@@ -316,12 +342,65 @@ function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPat
     case "merge":
       merge(workspace, target, existing(workspace, String(p.merge_into)), today);
       return null;
+    case "answer":
+      // edit: your Note is the answer, as text; otherwise the note that holds it, else the sentence.
+      a.answer = V !== undefined ? String(V) : p.answer_note ?? p.answer;
+      break;
     default:
       throw new ItemFailure("INVALID_RESULT", `Unknown proposal kind ${kind}`);
   }
   a.updated = today;
   workspace.save(target.path, document);
   return null;
+}
+
+/**
+ * Apply or reject a review_notes proposal (spec/schema.md §11.2): approve marks the listed draft
+ * notes `reviewed` and applies the links, reject archives the draft notes. Excluded entries stay
+ * as they are; a note no longer `draft` is left alone and reported `unchanged`.
+ */
+function reviewNotes(workspace: Workspace, p: Record<string, unknown>, action: "approve" | "reject", exclude: Array<Record<string, unknown>>, today: string): NoteResult[] {
+  const results: NoteResult[] = [];
+  for (const id of list(p.notes).map(String)) {
+    const note = existing(workspace, id);
+    const lifecycle = String(note.attributes.lifecycle);
+    const excluded = exclude.some((entry) => isNoteExclude(entry) && entry.note === id);
+    if (lifecycle !== "draft") results.push({ id, result: "unchanged", lifecycle });
+    else if (excluded) results.push({ id, result: "kept_draft", lifecycle });
+    else {
+      const next = action === "approve" ? "reviewed" : "archived";
+      const document = workspace.edit(note);
+      document.attributes.lifecycle = next;
+      document.attributes.updated = today;
+      workspace.save(note.path, document);
+      results.push({ id, result: action === "approve" ? "reviewed" : "archived", lifecycle: next });
+    }
+  }
+  if (action === "approve") {
+    for (const link of reviewLinks(p)) {
+      if (exclude.some((entry) => sameLink(link, entry))) continue;
+      const target = existing(workspace, String(link.target));
+      const document = workspace.edit(target);
+      const values = list(document.attributes[String(link.field)]);
+      if (values.some((value) => isDeepStrictEqual(value, link.value))) continue;
+      document.attributes[String(link.field)] = [...values, link.value];
+      document.attributes.updated = today;
+      workspace.save(target.path, document);
+    }
+  }
+  return results;
+}
+
+function reviewLinks(proposal: Record<string, unknown>): Array<{ target: unknown; field: unknown; value: unknown }> {
+  return list(proposal.links).filter(isRecord).map((link) => ({ target: link.target, field: link.field, value: link.value }));
+}
+
+function sameLink(link: { target: unknown; field: unknown; value: unknown }, entry: Record<string, unknown>): boolean {
+  return entry.target === link.target && entry.field === link.field && isDeepStrictEqual(entry.value, link.value);
+}
+
+function isNoteExclude(entry: Record<string, unknown>): boolean {
+  return typeof entry.note === "string" && Object.keys(entry).length === 1;
 }
 
 function proposalLinks(proposal: Record<string, unknown>): Array<{ field: unknown; value: unknown }> {

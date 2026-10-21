@@ -17,7 +17,7 @@ test("the fixture brain lints clean: no errors, no warnings", async (context) =>
   assert.equal(run.code, 0, JSON.stringify(run.json?.data?.issues, null, 2));
   assert.equal(run.json.data.errors, 0);
   assert.equal(run.json.data.warnings, 0);
-  assert.equal(run.json.data.files, 21);
+  assert.equal(run.json.data.files, 22);
 });
 
 test("product-file covers missing, changed, extra, malformed, and fresh product files", async (context) => {
