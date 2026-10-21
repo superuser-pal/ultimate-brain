@@ -134,6 +134,12 @@ export function stageNotes(
       : undefined;
     if (problem !== undefined) parents.push({ pointer: `${pointerOf(index)}/frontmatter/attached_to`, message: problem });
   });
+  // A repo file names a linked repo of brain.json (0042).
+  const repoNames = new Set(Array.isArray(workspace.config.repos) ? workspace.config.repos.filter(isRecord).map((repo) => repo.name) : []);
+  items.forEach((item, index) => {
+    const repo = item.type === "source" ? item.frontmatter.repo : undefined;
+    if (repo !== undefined && !repoNames.has(repo)) parents.push({ pointer: `${pointerOf(index)}/frontmatter/repo`, message: `${String(repo)} is not a linked repo in brain.json repos` });
+  });
   assertNoProblems(parents);
 
   const today = formatDate(options.now);
