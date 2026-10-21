@@ -45,7 +45,11 @@ A document, a web page, then a pasted email:
 - **`file_name`** (the name only, no folder) and **`converter`** (`claude-read <model id>`, `codex-view-image <model id>`, or `markitdown <version>`) are required with a `file:` key.
 - **Web page** (0036): `source_key` is `url:<the https URL as given>`; `kind` `document` and `converter` (`markitdown <version>` or `web-fetch <model id>`) are required; no `file_name`.
 - **Capture:** `source_key` is `notion:<row page id>`, `kind` is `capture`, `origin_edited` is the row's `last_edited_time`.
-- **`summary`** (every kind except minutes, added in the real run of step 6, not the step 3 dry run): one line on what the source taught. It is the Inbox row's Summary.
+- **`summary`** (every kind except minutes, added in the real run of step 6, not the step 3 dry run), in `frontmatter` like every field below: one line on what the source taught. It is the Inbox row's Summary.
+- **`digest`** (in `frontmatter`; every kind except minutes, captures and attachments, added with `summary`; decision 0043): the key points by section and the figures and dates as stated, in Markdown. It is the body of the Inbox row.
+- **`notion_text`** and **`notion_parts`:** leave them out unless the user chose otherwise; the CLI writes `full` for `email` and `chat`, `digest` for `document` and `note`. `"notion_text": "full", "notion_parts": ["3-9"]` puts slides 3 to 9 on the row. Never send `notion_text_requested`: only `brain source full-text` writes it.
+- **A linked repo's file** (decision 0042) adds `"repo": "<name>", "repo_path": "decisions/0041-review.md", "commit": "<the listing's to, 40 hex>"` to a `document` with a `file:` key, `file_name` = the path's last segment and `converter: verbatim` for a text file.
+- **A file attached in Notion** adds `"attached_to": "<the parent's src- id>"` to a `document` with a `file:` key, and has no `digest`, `notion_text` or `notion_parts`. The parent must exist already or come earlier in the same batch.
 - **Title:** `<title> (<kind>)`; for a web page, `<title>` is the page's own title. **`file_date`:** the text's own date (a document's date, a web page's stated publication or update date, an email's sent date); for a capture, the row's Created date; else today.
 - **Dates in the notes:** a new note's timeline `from` is the date the text gives, else the source's `file_date`; `learned` is always today (the day the brain learned it).
 - **Duplicates:** the CLI also skips a source whose `file:` key, or whose `capture` row, was already ingested, even if the text differs.
@@ -106,11 +110,24 @@ Things the CLI checks that are easy to get wrong:
 - **`why`** is the sentence from the minutes, verbatim.
 - **`title`** reads as a Review row: `<subject> <field>: <old> → <new>`.
 - **Other kinds** (spec/schema.md §11):
-  - `add_to_note`: `target`, `content`.
+  - `add_to_note`: `target`, `content`. A link in `content` is relative to the target note's folder.
   - `contradiction`: `target`, `field`, `after` (the target must have a current value).
   - `supersede`: `target` = the new note, `supersedes` = the old one.
   - `merge`: `target` = the duplicate, `merge_into` = the survivor.
   - `new_item`: `note`, a `note new` item without `id`, for a decision or question of a meeting that already existed.
+- **`review_notes`** (decisions 0041, 0043): one per input, in the same batch as its `add_link` items, which the CLI folds into it as lettered items:
+  ```json
+  { "kind": "review_notes", "source": "mtg-pcpyn31n",
+    "notes": ["mtg-pcpyn31n", "per-zzvs98vn", "dec-axker49q", "dec-xe9x6apm", "que-wtnyy4r6", "que-zv7ckbtk"] }
+  ```
+  `source` is the meeting id for minutes, else the source's id: the same value the batch's other proposals carry. `notes` lists every knowledge note `note new` created for this input (never the source). The CLI writes the title ("Accept 6 new notes from Acme launch review, and 2 links"). A note can be in only one `review_notes`.
+- **`answer`** (decision 0041), on an open question the input answers:
+  ```json
+  { "kind": "answer", "title": "Who owns the mobile app: Carlos Ruiz", "target": "que-8n3v5x1d",
+    "answer": "Carlos Ruiz owns the mobile app.", "answer_note": "dec-axker49q",
+    "why": "Carlos takes over the mobile app from January.", "source": "mtg-pcpyn31n" }
+  ```
+  `answer_note` only when a note answers it (usually a decision of this batch). A question that already has an answer is skipped as `ALREADY_ANSWERED`.
 - **A re-run is safe:** identical pending proposals are skipped as `DUPLICATE_PENDING`.
 
 ## 4. Action items (Notion mode)

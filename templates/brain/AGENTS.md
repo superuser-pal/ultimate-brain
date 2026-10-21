@@ -13,11 +13,11 @@ Each operation has a skill; follow it end to end:
 | The user wants to… | Skill |
 |---|---|
 | connect the brain to Notion (after building the space) | `brain-connect-notion` |
-| catch up: do everything that's waiting (decided reviews, reviewed meetings, the Inbox, the drop folder) | `brain-catch-up` |
-| ingest one input: reviewed minutes, a document, a web page, a pasted email or note, the Inbox, the drop folder | `brain-ingest` |
+| catch up: do everything that's waiting (decided reviews, reviewed meetings, the Inbox and its attachments, the drop folder, linked repos, reports asked for) | `brain-catch-up` |
+| ingest one input: reviewed minutes, a document, a web page, a pasted email or note, the Inbox, the drop folder, a linked repo; link a repo | `brain-ingest` |
 | apply decisions from the Notion Review queue | `brain-apply` |
 | pull Notion edits and new rows, republish notes | `brain-sync` |
-| answer a question from the brain | `brain-query` |
+| answer a question from the brain, or write a report on a subject | `brain-query` |
 | learn how the system works ("how do I…", "why didn't…") | `brain-howto` |
 | change the Notion structure (databases, properties, views) | `brain-notion-change`; structure is changed in the product repo first, never edited directly in Notion (0022) |
 
@@ -47,7 +47,7 @@ Each operation has a skill; follow it end to end:
 6. **Decision gate.** A decision note is for a choice that is hard to reverse, surprising without context, or a real trade-off. Anything smaller becomes a dated line in the project, through a proposal.
 7. **Dated, not "current".** Write facts as timeless, dated ("as of 2026-12-03"), or as pointers ("status: see Notion"). Volatile status (task state, project status, priority) lives in Notion.
 8. **Cite canonical notes.** `index.md` and the views are navigation; cite the note or source they point to.
-9. **Answering is read-only.** Answering the user's questions from the brain writes nothing; save an answer to the brain only when the user asks.
+9. **Answering is read-only.** Answering the user's questions from the brain writes nothing; save an answer to the brain only when the user asks. A report the user asks for is stored as a dated view in `reports/` and published, never as knowledge: it is never ingested or cited as a source (decision 0043).
 10. **Unattended runs add, never apply.** With no user present, an agent may add drafts and proposals; applying proposals waits for the user.
 
 ## Reading notes
