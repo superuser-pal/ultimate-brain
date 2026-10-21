@@ -32,7 +32,8 @@
         "source": "Source",
         "brain_id": "Brain ID"
       },
-      "new_task_status": "To Do"
+      "new_task_status": "To Do",
+      "status_type": "status"
     }
   }
 }
