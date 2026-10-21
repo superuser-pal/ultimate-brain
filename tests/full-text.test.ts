@@ -286,3 +286,24 @@ test("report new refuses wrong sections, broken links and unknown ids", async (c
   assert.equal(await code({ ...base, area: "prj-9x4t1b7e" }), "INPUT_INVALID");
   assert.equal(await code({ ...base, extra: 1 }), "INPUT_INVALID");
 });
+
+test("render: an attached source has no Inbox row; its notes go on the parent's Produced relations", async (context) => {
+  const dir = await inboxBrain(context);
+  const parent = await newSource(dir, source("Launch thread", "email", "From: Maria\n\nSee the attached plan.\n"));
+  const plan = source("Launch plan", "document", DOCUMENT, { attached_to: parent.id });
+  delete (plan.frontmatter as Record<string, unknown>).digest;
+  const attached = await newSource(dir, plan);
+  const made = await run(dir, ["note", "new"], { notes: [{ type: "decision", title: "Launch in February", frontmatter: { summary: "Launch in February.", date: "2026-12-01", assessment: "accepted", projects: ["prj-9x4t1b7e"], sources: [attached.id] }, body: "Launch in February.\n" }] });
+  assert.equal(made.code, 0, made.stdout);
+  const decision = made.json.data.created[0].id;
+
+  const byId = await run(dir, ["sync", "render", "--ids", attached.id]);
+  assert.deepEqual(byId.json.data?.items, [], byId.stdout);
+  const all = await run(dir, ["sync", "render", "--changed"]);
+  assert.equal(all.code, 0, all.stdout.slice(0, 600));
+  const items = all.json.data.items;
+  assert.equal(items.some((item: { id: string }) => item.id === attached.id), false);
+  const row = items.find((item: { id: string }) => item.id === parent.id);
+  assert.deepEqual(row.pending_relations.find((relation: { property: string }) => relation.property === "Decisions"), { property: "Decisions", ids: [decision] });
+  await assertLintClean(dir);
+});

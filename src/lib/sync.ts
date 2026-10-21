@@ -388,6 +388,8 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     const database = isReport(note) ? "inbox" : DATABASE_FOR_TYPE[note.type]; if (database === undefined || (note.type === "source" && note.attributes.kind === undefined)) continue;
     // A published report is never rendered again (0043).
     if (isReport(note) && note.attributes.notion !== undefined) continue;
+    // An attached source has no Inbox row: its notes go on the parent's (0042).
+    if (note.type === "source" && note.attributes.attached_to !== undefined) continue;
     const databaseId = databaseIdFor(workspace, database); if (databaseId === "") { warnings.push({ code: "DATABASE_NOT_CONFIGURED", message: `${database} database is not configured`, id: note.id }); continue; }
     if (note.type === "meeting" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "MEETING_NOT_PUBLISHED" }); continue; }
     if (note.type === "project" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "PROJECT_NOT_IN_NOTION" }); continue; }
@@ -427,8 +429,12 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     // A Review notes row names its source: the meeting for minutes, else the source (0041).
     const source = a.kind === "review_notes" && typeof a.source === "string" ? workspace.get(a.source) : undefined;
     const targetText = source !== undefined ? `${source.attributes.title} (${source.id})` : target === undefined ? null : `${target.attributes.title} (${target.id})`;
+    const page = (source ?? target)?.attributes.notion;
+    const meeting = typeof a.source === "string" ? workspace.get(a.source) : undefined;
     Object.assign(values, {
       Name: a.title, Kind: select(a.kind), Target: targetText,
+      "Target Page": typeof page === "string" ? `https://www.notion.so/${page.replaceAll("-", "")}` : null,
+      "Source Meeting": meeting?.type === "meeting" && typeof meeting.attributes.notion === "string" ? [meeting.attributes.notion] : [],
       Before: reviewText(proposalBefore(a, workspace)), After: reviewText(after ?? proposalAfter(a, workspace)),
       Why: reviewText(a.why), State: select(proposalState(a.status)), "Brain ID": note.id,
     });
@@ -458,8 +464,14 @@ function projectAreas(projects: unknown, workspace: Workspace): string[] {
   return [...new Set(areas)].sort(compareCodePoints);
 }
 
+/** The notes a source produced, with those of the sources attached to it (cli §5.14.4, 0042). */
+function producedBy(note: Note, workspace: Workspace): Note[] {
+  const sources = new Set([note.id, ...workspace.notes.filter((candidate) => candidate.type === "source" && candidate.attributes.attached_to === note.id).map((candidate) => candidate.id)]);
+  return workspace.notes.filter((candidate) => ["decision", "question", "concept", "person"].includes(candidate.type) && Array.isArray(candidate.attributes.sources) && candidate.attributes.sources.some((id) => sources.has(String(id))));
+}
+
 function sourceValues(note: Note, workspace: Workspace): Record<string, unknown> {
-  const produced = workspace.notes.filter((candidate) => ["decision", "question", "concept", "person"].includes(candidate.type) && Array.isArray(candidate.attributes.sources) && candidate.attributes.sources.includes(note.id));
+  const produced = producedBy(note, workspace);
   const ids = (type: string) => produced.filter((candidate) => candidate.type === type).map((candidate) => candidate.id).sort(compareCodePoints);
   const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))].sort(compareCodePoints);
   const areas = [...new Set([...produced.map((candidate) => candidate.attributes.area).filter((id): id is string => typeof id === "string"), ...projects.flatMap((id) => { const area = workspace.get(id)?.attributes.area; return typeof area === "string" ? [area] : []; })])].sort(compareCodePoints);
@@ -476,13 +488,14 @@ function notionProperty(name: string, value: unknown, note: Note, workspace: Wor
     const mode = (note.type === "meeting" || note.type === "source") ? (["Project", "Area"].includes(name) ? "if_empty" : note.type === "meeting" ? "add" : undefined) : undefined;
     return { type: "relation", value: Array.isArray(value) ? value : [], ...(mode === undefined ? {} : { mode }) };
   }
-  if (name === "Ask") return { type: "relation", value: Array.isArray(value) ? value : [] };
+  if (name === "Ask" || name === "Source Meeting") return { type: "relation", value: Array.isArray(value) ? value : [] };
+  if (name === "Target Page") return { type: "url", value };
   if (["Lifecycle", "Assessment", "Kind", "State", "Brain Status", "Status"].includes(name)) return { type: "select", value };
   if (name === "Last Synced" || name === "Date" || name === "Deadline" || name === "Ingested At") return { type: "date", value };
   return { type: name === "Name" ? "title" : "rich_text", value };
 }
 function sourceRelationIds(note: Note, name: string, workspace: Workspace): string[] {
-  const produced = workspace.notes.filter((candidate) => ["decision", "question", "concept", "person"].includes(candidate.type) && Array.isArray(candidate.attributes.sources) && candidate.attributes.sources.includes(note.id));
+  const produced = producedBy(note, workspace);
   if (name === "Decisions") return produced.filter((candidate) => candidate.type === "decision").map((candidate) => candidate.id);
   if (name === "Questions") return produced.filter((candidate) => candidate.type === "question").map((candidate) => candidate.id);
   if (name === "Concepts") return produced.filter((candidate) => candidate.type === "concept").map((candidate) => candidate.id);
