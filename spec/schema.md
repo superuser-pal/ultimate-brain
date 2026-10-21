@@ -203,7 +203,7 @@ Immutable snapshot of input. **Its body and the fields above `summary` in the ta
 | `attached_to` | the `src-` id of the Inbox row's or meeting's source this file was attached to in Notion (0042) | only with a `file:` key; must name an existing source without `attached_to` |
 | `summary` | string, aim for ≤200 chars: one line on what the source taught, written at creation; the Inbox Summary | |
 | `digest` | Markdown, written at creation by the ingest skill: the key points by section and the figures and dates as stated (0043). The Inbox row body (cli.md §5.14.4) | |
-| `notion_text` | `digest` or `full`; absent = `digest`. Whether the Inbox row also shows the source's text (0043) | |
+| `notion_text` | `digest` or `full`. Whether the Inbox row also shows the source's text (0043). Set at creation by the kind when not given: `full` for `email` and `chat`, `digest` for `document` and `note` (cli.md §5.5); absent (a source made before 0.4.0) = `digest` | |
 | `notion_parts` | non-empty list of part ranges, each `"<n>"` or `"<n>-<m>"` (1-based, inclusive, `n < m`), ascending and not overlapping; absent = all parts. Only with `notion_text: full`. Parts are defined below | |
 | `notion_text_requested` | timestamp of the last request for the text (system, cli.md §5.17) | |
 | `notion` | the Inbox row's page id (system). For a `capture`, the id in its `notion:` key | |
