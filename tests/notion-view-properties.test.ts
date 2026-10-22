@@ -49,7 +49,7 @@ const viewPropertyReferences: readonly PropertyReference[] = [
   { database: "Projects", source: "Prompt 7b Plan", properties: ["Goal", "Archived", "Status", "Priority", "Name"] },
   { database: "Projects", source: "Prompt 7c Projects", properties: ["Archived", "Status", "Priority", "Name", "Client", "Countdown", "Task Progress", "Area", "Dates", "Last edited time", "Last Synced"] },
   { database: "Meetings", source: "Prompt 7d Meetings", properties: ["Brain Status", "Date", "Name", "Project", "Attendees", "Ingested At", "Decisions", "Questions"] },
-  { database: "Review", source: "Prompt 7e Review", properties: ["State", "Created time", "Name", "Kind", "Before", "After", "Decision", "Note", "Last edited time"] },
+  { database: "Review", source: "Prompt 7e Review", properties: ["State", "Created time", "Name", "Kind", "Now", "Proposed", "Your call", "What to fix", "Last edited time"] },
   { database: "Decisions", source: "Prompt 7f Knowledge", properties: ["Date", "Name", "Project", "Assessment", "Lifecycle", "Summary", "Superseded By"] },
   { database: "Questions", source: "Prompt 7f Knowledge", properties: ["Status", "Kind", "Created time", "Name", "Project", "Raised In", "Summary"] },
   { database: "People", source: "Prompt 7f Knowledge", properties: ["Lifecycle", "Org", "Name", "Role", "Summary"] },

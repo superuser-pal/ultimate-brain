@@ -30,6 +30,10 @@ In the databases on "Brain Data", add these two-way relations. Use exactly these
 - Inbox "Decisions" ↔ Decisions "Sources"
 - Inbox "Questions" ↔ Questions "Sources"
 - Inbox "Concepts" ↔ Concepts "Sources"
+- Inbox "References" ↔ References "Sources"
+- References "Project" ↔ Projects "References"
+- References "Area" ↔ Areas "References"
+- Inbox "Refresh report" → Inbox (one-way)
 - Inbox "People" ↔ People "Sources"
 - Inbox "Project" ↔ Projects "Inbox"
 - Inbox "Area" ↔ Areas "Inbox"
@@ -44,6 +48,6 @@ Do not create any other relations.
 
 ## Verify
 - [ ] Open each database: both sides of every relation exist, with the names above.
-- [ ] Each relation is two-way: linking a Project to an Area in Projects shows the Project in that Area's "Projects".
+- [ ] Each relation is two-way, except Inbox "Refresh report": linking a Project to an Area in Projects shows the Project in that Area's "Projects".
 - [ ] Decisions has both "Supersedes" and "Superseded By", pointing at Decisions itself.
 - [ ] No other relations were created.

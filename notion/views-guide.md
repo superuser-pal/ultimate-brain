@@ -41,7 +41,7 @@ It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md)
 
 | # | Tab | View name | Database | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|---|
-| 1 | — | What's waiting for you? | Review | List, grouped by Kind (counts shown), 5 rows per group | State is Pending | Created time, descending | Name, Target Page | Where reviewing starts (0045): one Review Notes row per meeting or document, plus the other changes. Target Page opens what it came from; click a row to decide it in the Review Space |
+| 1 | — | What's waiting for you? | Review | List, grouped by Kind (counts shown), 5 rows per group | State is Pending | Created time, descending | Name, About Page | Where reviewing starts (0045): one Review Notes row per meeting or document, plus the other changes. Target Page opens what it came from; click a row to decide it in the Review Space |
 | 2 | — | Which minutes need review? | Meetings | List, 5 rows | Brain Status is Not Reviewed · Date is on or before today | Date, descending | Name | Minutes to check before the brain may ingest them. Upcoming meetings stay out |
 | 3 | Tasks | What's due today? | Tasks | List | Status is To Do or Doing · Due is on or before today | Due, ascending | Name, Project, Due | Today's work, overdue first |
 | 4 | Meetings | Which meetings are today? | Meetings | List | Date is today | Date, ascending | Name, Date, Project | Today's meetings, with time and project |
@@ -132,25 +132,28 @@ All views use the Tasks database. Using your own Tasks database (0018)? Map the 
 
 **Job:** approve, reject or edit every change the brain proposes to your existing knowledge (decision 0003), and accept the notes each ingest made (Review Notes rows, 0041).
 
-Above the tabs, a gray line: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. Your corrections go in Note. Target says what changes." (0043, 0045). A decided row leaves Review 30 days after the decision: the catch-up moves it to Notion's trash, and the brain keeps it in Git. On a **Review Notes** row, After lists the new notes and links lettered a), b)…: Approve accepts them all, Approve with "all except b, d" in Note keeps those out, Reject archives the new notes. On an **Answer** row, Approve marks the question Answered.
+Above the tabs, a gray line: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. To correct something, pick Fix in Your call and say what's wrong in What to fix." (0043, 0045). A decided row leaves Review 30 days after the decision: the catch-up moves it to Notion's trash, and the brain keeps it in Git. On a **Review Notes** row, After lists the new notes and links lettered a), b)…: Approve accepts them all, Approve with "all except b, d" in Note keeps those out, Reject archives the new notes. On an **Answer** row, Approve marks the question Answered.
 
 | # | Tab | View name | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|
-| 1 | Needs my decision | What needs my decision? | Table | State is Pending | Created time, descending | Name, Kind, Before, After, Decision, Note | Your main queue. Set Decision here, and Note when you want something different: the value for Edit, or "all except Ana" on a grouped row. To see Why or the source, open the row |
-| 2 | Sources disagree | Where do sources disagree? | Table | Kind is Contradiction · State is Pending | Created time, ascending | Name, Before, After, Decision | Approve keeps both claims as contested. Edit (in the page) sets the true value |
-| 3 | Approved | What did I approve recently? | List | State is Applied · Last edited time is within *Past month* (relative) | Last edited time, descending | Name, Kind, After | Audit trail of what changed |
+| 1 | Needs my decision | What needs my decision? | Table | State is Pending | Created time, descending | Name, Kind, Now, Proposed, Your call, What to fix | Your main queue. Set Your call here, and What to fix when you want something different: with Fix, what's wrong ("a: March"); with Approve, what to leave out ("all except b, d"), which moves to a row of its own. To see Why or the source, open the row |
+| 2 | Sources disagree | Where do sources disagree? | Table | Kind is Contradiction · State is Pending | Created time, ascending | Name, Now, Proposed, Your call | Approve keeps both claims as contested. Fix, with the true value in What to fix, sets it |
+| 3 | Approved | What did I approve recently? | List | State is Applied · Last edited time is within *Past month* (relative) | Last edited time, descending | Name, Kind, Proposed | Audit trail of what changed |
 | 4 | Rejected | What did I reject? | List | State is Closed | Last edited time, descending | Name, Kind | Rejected or stale proposals. The brain may propose one again on the next ingest |
 
 **How to decide:**
 
-| Kind | Approve means | Edit allowed? |
+| Kind | Approve means | Fix means (0045) |
 |---|---|---|
-| Update Fact | The new value replaces the old one; history is kept | Yes, with your own value |
-| Add To Note | The text is appended to the note | Yes, with your own wording |
-| Contradiction | Both claims are kept as contested | Yes: your value becomes the accepted truth |
-| Supersede | The newer note replaces the older one, which is archived | No |
-| Merge | The duplicate is folded into the survivor | No |
-| New Item | The new note is created as Draft | No |
+| Review Notes | Every item is applied: fact changes, added text, the new notes become Reviewed, the links are added | Each item you name is applied as you corrected it ("a: March"); "all except b" moves b to a row of its own |
+| Update Fact | The new value replaces the old one; history is kept | Your value is used instead |
+| Add To Note | The text is appended to the note | Your wording is used instead |
+| Update Body | The kept reference gets the new text | Your corrected text is used instead |
+| Contradiction | Both claims are kept as contested | Your value becomes the accepted truth |
+| Supersede | The newer note replaces the older one, which is archived | It replaces the note you name instead |
+| Merge | The duplicate is folded into the survivor | It is folded into the record you name instead |
+| New Item | The new note is created as Draft | It is created with your corrections |
+| Answer | The question gets this answer and shows as Answered | Your text becomes the answer |
 
 ---
 
@@ -221,7 +224,7 @@ Relations the template already shows as linked views (meetings, tasks, questions
 | Orgs | Relationship, Website | Panel · Meetings via projects, People, Projects, Summary, Lifecycle | Brain ID, Last Synced | On hover | — |
 | Decisions | Assessment, Date, Project | Panel · Area, Decided In, Supersedes, Superseded By, Sources, Summary, Lifecycle | Brain ID, Last Synced | Show always | The body is brain-written; backlinks show supersede chains and mentions |
 | Questions | Status, Kind, Project | Panel · Area, Raised In, Sources, Summary, Lifecycle | Brain ID, Last Synced, Created time | Off | You set Status |
-| Review | Decision, Kind, State | Main · Before, After, Why, Note, Target, Target Page, Source Meeting | Brain ID, Created time, Last edited time | Off | No body; read Before, After and Why, then decide in the heading |
+| Review | Your call, Kind, State | Main · Now, Proposed, Why, What to fix, About, About Page, Source Meeting | Brain ID, Created time, Last edited time | Off | No body; read Now, Proposed and Why, then decide in the heading |
 | Inbox | Brain Status, Kind, Project, Full text | Main · Summary, Area, Decisions, Questions, Concepts, People, Tasks, Ask, Report, Created | Brain ID, Last Synced | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
 | Concepts | Lifecycle, Project | Panel · Area, Sources, Summary | Brain ID, Last Synced, Created time | Show always | The body is brain-written |
 | Tasks | Status, Due | Panel · Project, Area, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
