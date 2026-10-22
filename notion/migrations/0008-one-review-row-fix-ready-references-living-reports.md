@@ -9,7 +9,7 @@ Renaming a property or a select option keeps its values, its id and every view t
 ## 1 · References: a new database (0045)
 
 **Notion AI**, on **Brain Data** (the API can't create databases):
-> In this page, create one database "References" with: Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time). Don't change anything else.
+> In this page, create one database "References" with: Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time), Last edited time (last edited time). Don't change anything else.
 
 Then:
 
