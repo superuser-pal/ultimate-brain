@@ -543,13 +543,13 @@ CC-35 set to `done` (#111), its merged state. **Acceptance:** the user approves 
 
 The small part of the U-15 feedback, ahead of 0.5.0. U-15's two-week habit run continues on 0.4.0 meanwhile.
 
-### CC-44 · U-15 feedback: decision 0045 and the 0.4.1 and 0.5.0 tasks · `review`
+### CC-44 · U-15 feedback: decision 0045 and the 0.4.1 and 0.5.0 tasks · `done` (#123)
 **Release:** 0.4.1
 **Changelog:** decision 0045 records the first brain's feedback: 0.4.1 starts questions as Open, adds `/Clean email`, says what approving does and clears finished Review rows; the rest is planned for 0.5.0.
 **Output:** decision 0045, agreed with the user in a grill on 2026-10-22 after the first days of U-15 (amends 0003, 0026, 0041 and 0043; refines 0007, 0032 and 0035); tasks CC-45 and CC-46 for 0.4.1, CC-47 to CC-50 for 0.5.0, U-17 and U-18; U-15's note; docs/v2-ideas.md "Area homes" (0.6.0, before the agency brain moves in), "Hermes as an always-on brain operator" and the search index's new revisit trigger; the status banner.
 **Acceptance:** the user approves decision 0045; each task below names its part of 0045 and its acceptance; Codex's review finds CC-45 and CC-48 scoped so that their contracts can be written without a new question to the user.
 
-### CC-51 · Stacked task branches (decision 0046) · `review`
+### CC-51 · Stacked task branches (decision 0046) · `done` (#124)
 **Release:** 0.4.1
 **Changelog:** decision 0046: a task can start from the branch of the task below it, and Codex reviews a stack of PRs in one session.
 **Output:** decision 0046, at the user's request on 2026-10-22 (amends 0038 and 0044); `scripts/task.mjs start <id> --from <branch>` reads the row from that branch on `origin` and creates the worktree from it, with no upstream; `readinessProblems` reports a PR whose base isn't `main`, so `merge-ready` stays red until the PR below is merged and this one retargeted; AGENTS.md (one branch per task, Review).
