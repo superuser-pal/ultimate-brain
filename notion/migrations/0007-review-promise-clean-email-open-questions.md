@@ -9,7 +9,7 @@ Run it in one session, right after installing 0.4.1 and running `brain upgrade` 
 | Change | Who |
 |---|---|
 | On the **Review** page, replace the gray paragraph above the tabs ("Your corrections go in Note. Target says what changes.") with: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. Your corrections go in Note. Target says what changes." | agent: update that block's text |
-| Description of Review → **Decision**: "Owner: you. Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed." So every Review row shows it on hover: rows are created through the API, which can't give them a template | agent |
+| Description of Review → **Decision**: "Owner: you. Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed." So every Review row shows it on hover. Rows carry no muted line of their own: the brain creates them through the API, without a body or a template (decision 0045) | agent |
 
 ## 2 · Home: where reviewing starts (0045)
 
@@ -32,7 +32,7 @@ No other step: the first publish after the upgrade sets Open once on every quest
 |---|---|
 | In the database **Brain Assistant Skills**, add a page **Clean email**: Description and body from [brain-assistant.md](../brain-assistant.md), "Clean email" | agent |
 | In the agent's **Instructions**, replace the rule line "Only the skills "Check minutes" and "Tidy capture" may edit page text, and only after I confirm." with the one in [brain-assistant.md](../brain-assistant.md) (adds "Clean email") | by hand: the API can't reach a Custom Agent's Instructions |
-| Without a Custom Agent: save the Clean email text as a personal skill instead | by hand, optional |
+| Without a Custom Agent: save the Clean email text as a personal skill instead | by hand, optional: personal skills belong to your Notion account, which the API can't reach |
 
 ## 5 · How it works
 
@@ -42,9 +42,12 @@ No other step: the first publish after the upgrade sets Open once on every quest
 
 ## 6 · First catch-up
 
-Run "catch up". It writes, once:
-- **Status = Open** on every question with an empty Status and no answer;
-- **Review rows decided more than 30 days ago move to Notion's trash.** Expect most of your Applied and Closed rows the first time; the brain keeps every one in Git, and Notion keeps the trash for 30 days. From then on, rows leave one by one, 30 days after you decide them.
+Run "catch up". Its publish writes these once, through the API like every publish (`brain sync render`, the pages updated or moved to the trash through the Notion MCP, then `brain sync record`):
+
+| Change | Who |
+|---|---|
+| **Status = Open** on every question with an empty Status and no answer | agent: the catch-up's publish (page update) |
+| **Review rows decided more than 30 days ago move to Notion's trash.** Expect most of your Applied and Closed rows the first time; the brain keeps every one in Git, and Notion keeps the trash for 30 days. From then on, rows leave one by one, 30 days after you decide them | agent: the catch-up's publish (page update with `in_trash`) |
 
 ## Verify
 - [ ] The Review page's gray line starts "Approving makes these notes trusted"; hovering Decision on a Review row shows the same sentence.

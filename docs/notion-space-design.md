@@ -225,7 +225,7 @@ The approval queue (0003). Created by the brain; you decide.
 | Name | Title | Brain: e.g. "Acme launch: Jan → Feb" |
 | Kind | Select: Update Fact, Add To Note, Add Link, Supersede, Contradiction, Merge, New Item, Review Notes, Answer | Brain. **Review Notes** (0041, 0043): one row per ingest, its new notes and links lettered a), b)…; Approve accepts them, "all except b, d" in Note keeps those out, Reject archives the new notes. **Answer**: an answer to an open question |
 | Target | Text | Brain: note title + Brain ID (for Review Notes, the meeting or source). Says what changes; your corrections go in Note |
-| Target Page | URL | Brain: link to the Notion page affected |
+| Target Page | URL | Brain: link to the Notion page affected; for Review Notes, the meeting or Inbox row it came from |
 | Before | Text | Brain |
 | After | Text | Brain |
 | Why | Text | Brain: the sentence from the source that triggered it |
