@@ -1,6 +1,6 @@
 # 0046 — Stacked task branches, reviewed as one run
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-10-22
 **Amends:** 0038, 0044
 
