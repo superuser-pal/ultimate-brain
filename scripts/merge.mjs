@@ -11,7 +11,7 @@ if (!/^\d+$/.test(pr ?? "") || flags.length !== new Set(flags).size || flags.som
   fail("Usage: node scripts/merge.mjs <PR> [--dry-run] [--reviewed-by-user]");
 }
 else {
-  const view = () => tryCommand("gh", ["pr", "view", pr, "--json", "headRefName,headRefOid,title,body,mergeable,state"]);
+  const view = () => tryCommand("gh", ["pr", "view", pr, "--json", "baseRefName,headRefName,headRefOid,title,body,mergeable,state"]);
   let viewed = view();
   for (let poll = 0; poll < POLLS && viewed.ok && JSON.parse(viewed.stdout).mergeable === "UNKNOWN"; poll++) {
     sleep(POLL_MS);

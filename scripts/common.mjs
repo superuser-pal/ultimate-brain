@@ -95,7 +95,7 @@ export function sleep(ms) {
 
 /**
  * What must hold before a PR is merged, besides CI and mergeability, which GitHub shows itself (decision 0040):
- * the branch and title format, every box ticked, the task `done` with this PR's number, and the other agent's pass naming the head.
+ * the branch and title format, a base of `main`, every box ticked, the task `done` with this PR's number, and the other agent's pass naming the head.
  * `skipPass` drops the last one (`merge.mjs --reviewed-by-user`). Returns the problems, empty when ready.
  */
 export function readinessProblems(repo, pr, details, { skipPass = false } = {}) {
@@ -104,6 +104,8 @@ export function readinessProblems(repo, pr, details, { skipPass = false } = {}) 
   if (branch === null) problems.push("branch must be claude|codex/<CC|CX>-N-…");
   else if (!new RegExp(`^${branch[2]}:`).test(details.title ?? "")) problems.push("title must start with its task id and colon");
   if (/^- \[ \]/m.test(details.body ?? "")) problems.push("unticked checklist boxes");
+  // A stacked PR merges only once the PR below it is merged and it is retargeted to main (decision 0046).
+  if (details.baseRefName !== undefined && details.baseRefName !== "main") problems.push(`base is ${details.baseRefName}: merge the PR below first, then retarget this one to main`);
   if (branch !== null) {
     const rows = contentAt(repo, "build/TASKS.md", details.headRefOid);
     const task = rows.ok ? taskEntries(rows.stdout).find((entry) => entry.id === branch[2]) : undefined;
