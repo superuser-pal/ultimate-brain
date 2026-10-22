@@ -543,7 +543,7 @@ CC-35 set to `done` (#111), its merged state. **Acceptance:** the user approves 
 
 The small part of the U-15 feedback, ahead of 0.5.0. U-15's two-week habit run continues on 0.4.0 meanwhile.
 
-### CC-44 · U-15 feedback: decision 0045 and the 0.4.1 and 0.5.0 tasks · `in progress`
+### CC-44 · U-15 feedback: decision 0045 and the 0.4.1 and 0.5.0 tasks · `review`
 **Release:** 0.4.1
 **Changelog:** decision 0045: Review in one row per source with Fix and What to fix, inputs fixed before ingest, living reports, and documents that keep what you ask for.
 **Output:** decision 0045, agreed with the user in a grill on 2026-10-22 after the first days of U-15 (amends 0003, 0026, 0041 and 0043; refines 0007, 0032 and 0035); tasks CC-45 and CC-46 for 0.4.1, CC-47 to CC-50 for 0.5.0, U-17 and U-18; U-15's note; docs/v2-ideas.md "Area homes" (0.6.0, before the agency brain moves in), "Hermes as an always-on brain operator" and the search index's new revisit trigger; the status banner.
