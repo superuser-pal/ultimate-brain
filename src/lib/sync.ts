@@ -377,7 +377,7 @@ export function applyPlan(workspace: Workspace, plan: SyncPlan, now: Date, recor
 function references(value: unknown): string[] { if (Array.isArray(value)) return value.flatMap(references); if (isRecord(value)) return Object.values(value).flatMap(references); return typeof value === "string" && /^(area|gol|prj|per|org|mtg|dec|que|con|src|mem)-/.test(value) ? [value] : []; }
 function summarize(items: readonly Record<string, unknown>[]): Record<string, number> { const result: Record<string, number> = { applied: 0, closed: 0, recorded: 0, corrected: 0, skipped: 0, failed: 0 }; for (const item of items) if (typeof item.result === "string" && Object.hasOwn(result, item.result)) result[item.result] += 1; return result; }
 
-export interface RenderItem { id: string; type: string; database: string; database_id: string; page_id: string | null; action: "create" | "update"; properties: Record<string, unknown>; body: string | null; sections: Record<string, string> | null; pending_relations: Array<Record<string, unknown>>; published: Record<string, unknown> }
+export interface RenderItem { id: string; type: string; database: string; database_id: string; page_id: string | null; action: "create" | "update" | "trash"; properties: Record<string, unknown>; body: string | null; sections: Record<string, string> | null; pending_relations: Array<Record<string, unknown>>; published: Record<string, unknown> }
 
 export function render(workspace: Workspace, now: Date, ids?: readonly string[], held?: ReadonlyMap<string, Set<string>>): { items: RenderItem[]; errors: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id?: string }> } {
   const selected = ids === undefined
@@ -390,6 +390,9 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     if (isReport(note) && note.attributes.notion !== undefined) continue;
     // An attached source has no Inbox row: its notes go on the parent's (0042).
     if (note.type === "source" && note.attributes.attached_to !== undefined) continue;
+    // A decided Review row leaves Notion 30 days after its decision, once (0045).
+    if (note.type === "proposal" && isRecord(note.attributes.notion_published) && note.attributes.notion_published["@trashed"] !== undefined) continue;
+    if (note.type === "proposal" && trashDue(note, now)) { const databaseId = databaseIdFor(workspace, database); if (databaseId !== "") items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: String(note.attributes.notion), action: "trash", properties: {}, body: null, sections: null, pending_relations: [], published: { "@trashed": formatTimestamp(now) } }); continue; }
     const databaseId = databaseIdFor(workspace, database); if (databaseId === "") { warnings.push({ code: "DATABASE_NOT_CONFIGURED", message: `${database} database is not configured`, id: note.id }); continue; }
     if (note.type === "meeting" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "MEETING_NOT_PUBLISHED" }); continue; }
     if (note.type === "project" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "PROJECT_NOT_IN_NOTION" }); continue; }
@@ -415,6 +418,15 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
   return { items, errors, warnings };
 }
 
+const TRASH_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
+/** A published Review row whose proposal was applied or closed more than 30 days before `now` (0045). */
+function trashDue(note: Note, now: Date): boolean {
+  const a = note.attributes;
+  if (typeof a.notion !== "string" || (a.status !== "applied" && a.status !== "closed")) return false;
+  const decided = isRecord(a.decision) && typeof a.decision.decided_at === "string" ? a.decision.decided_at : a.updated;
+  const time = typeof decided === "string" ? Date.parse(decided) : Number.NaN;
+  return Number.isFinite(time) && now.getTime() - time > TRASH_AFTER_MS;
+}
 function databaseIdFor(workspace: Workspace, database: string): string { const notion = workspace.config.notion; if (!isRecord(notion) || !isRecord(notion.databases)) return ""; return typeof notion.databases[database] === "string" ? notion.databases[database] : database === "inbox" && typeof notion.databases.capture_inbox === "string" ? notion.databases.capture_inbox : ""; }
 function renderedBrainValues(note: Note, workspace: Workspace): Record<string, unknown> {
   const a = note.attributes; const values: Record<string, unknown> = {};
@@ -449,8 +461,13 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
   if (note.type === "person") Object.assign(values, { Role: isRecord(a.facts) ? a.facts.role ?? null : null, Org: relationPages(a.org === undefined ? [] : [a.org], workspace) });
   if (note.type === "decision") Object.assign(values, { Date: dateOutput(a.date), Assessment: select(a.assessment), Area: relationPages(projectAreas(a.projects, workspace), workspace), Project: relationPages(a.projects, workspace), "Decided In": relationPages(a.decided_in === undefined ? [] : [a.decided_in], workspace), Supersedes: relationPages((Array.isArray(a.relations) ? a.relations.filter(isRecord).filter((x) => x.type === "supersedes").map((x) => x.target) : []), workspace) });
   if (note.type === "question") Object.assign(values, { Kind: select(a.kind), Area: relationPages(projectAreas(a.projects, workspace), workspace), Project: relationPages(a.projects, workspace), "Raised In": relationPages(a.raised_in === undefined ? [] : [a.raised_in], workspace) });
-  // An answered question's Status goes out once as Answered; it stays yours after that (0041).
-  if (note.type === "question" && a.answer !== undefined && (!isRecord(a.notion_published) || a.notion_published.Status !== "Answered")) values.Status = "Answered";
+  // Status goes out once as Open while you never set one, and once as Answered after an approved answer; it stays yours otherwise (0041, 0045).
+  if (note.type === "question") {
+    const published = isRecord(a.notion_published) ? a.notion_published : {};
+    const yours = isRecord(a.notion_fields) && a.notion_fields.status !== undefined;
+    if (a.answer !== undefined) { if (published.Status !== "Answered") values.Status = "Answered"; }
+    else if (published.Status === undefined && !yours) values.Status = "Open";
+  }
   if (note.type === "concept") Object.assign(values, { Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace) });
   return values;
 }
