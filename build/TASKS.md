@@ -549,6 +549,12 @@ The small part of the U-15 feedback, ahead of 0.5.0. U-15's two-week habit run c
 **Output:** decision 0045, agreed with the user in a grill on 2026-10-22 after the first days of U-15 (amends 0003, 0026, 0041 and 0043; refines 0007, 0032 and 0035); tasks CC-45 and CC-46 for 0.4.1, CC-47 to CC-50 for 0.5.0, U-17 and U-18; U-15's note; docs/v2-ideas.md "Area homes" (0.6.0, before the agency brain moves in), "Hermes as an always-on brain operator" and the search index's new revisit trigger; the status banner.
 **Acceptance:** the user approves decision 0045; each task below names its part of 0045 and its acceptance; Codex's review finds CC-45 and CC-48 scoped so that their contracts can be written without a new question to the user.
 
+### CC-51 · Stacked task branches (decision 0046) · `review`
+**Release:** 0.4.1
+**Changelog:** decision 0046: a task can start from the branch of the task below it, and Codex reviews a stack of PRs in one session.
+**Output:** decision 0046, at the user's request on 2026-10-22 (amends 0038 and 0044); `scripts/task.mjs start <id> --from <branch>` reads the row from that branch on `origin` and creates the worktree from it, with no upstream; `readinessProblems` reports a PR whose base isn't `main`, so `merge-ready` stays red until the PR below is merged and this one retargeted; AGENTS.md (one branch per task, Review).
+**Acceptance:** the user approves decision 0046; tests: `task start CC-2 --from <branch>` creates the worktree from that branch with CC-2 `in progress`, CC-2 unknown without `--from`, a missing branch refused, `--from` refused on `done`; `merge-ready` on a PR whose base is another task's branch sets failure naming that base; `npm test` passes.
+
 ### CC-45 · Open questions and leaving Review rows in the CLI (decision 0045) · `todo`
 **Release:** 0.4.1
 **Changelog:** new questions and risks reach Notion as Open, and Review rows leave Notion 30 days after they were decided.

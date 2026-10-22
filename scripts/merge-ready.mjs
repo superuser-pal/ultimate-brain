@@ -4,7 +4,7 @@ import { fail, readinessProblems, tryCommand } from "./common.mjs";
 const pr = process.argv[2];
 if (!/^\d+$/.test(pr ?? "")) fail("Usage: node scripts/merge-ready.mjs <PR>");
 else {
-  const viewed = tryCommand("gh", ["pr", "view", pr, "--json", "headRefName,headRefOid,title,body"]);
+  const viewed = tryCommand("gh", ["pr", "view", pr, "--json", "baseRefName,headRefName,headRefOid,title,body"]);
   const repo = tryCommand("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
   if (!viewed.ok || !repo.ok) fail(`Cannot read PR #${pr}: ${(viewed.ok ? repo : viewed).message}`);
   else {
