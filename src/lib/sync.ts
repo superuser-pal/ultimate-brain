@@ -392,8 +392,8 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     if (note.type === "source" && note.attributes.attached_to !== undefined) continue;
     // A decided Review row leaves Notion 30 days after its decision, once (0045).
     if (note.type === "proposal" && isRecord(note.attributes.notion_published) && note.attributes.notion_published["@trashed"] !== undefined) continue;
-    if (note.type === "proposal" && trashDue(note, now)) { const databaseId = databaseIdFor(workspace, database); if (databaseId !== "") items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: String(note.attributes.notion), action: "trash", properties: {}, body: null, sections: null, pending_relations: [], published: { "@trashed": formatTimestamp(now) } }); continue; }
     const databaseId = databaseIdFor(workspace, database); if (databaseId === "") { warnings.push({ code: "DATABASE_NOT_CONFIGURED", message: `${database} database is not configured`, id: note.id }); continue; }
+    if (note.type === "proposal" && trashDue(note, now)) { items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: String(note.attributes.notion), action: "trash", properties: {}, body: null, sections: null, pending_relations: [], published: { "@trashed": formatTimestamp(now) } }); continue; }
     if (note.type === "meeting" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "MEETING_NOT_PUBLISHED" }); continue; }
     if (note.type === "project" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "PROJECT_NOT_IN_NOTION" }); continue; }
     const capturePage = note.type === "source" && note.attributes.kind === "capture" && typeof note.attributes.source_key === "string" && note.attributes.source_key.startsWith("notion:") ? note.attributes.source_key.slice("notion:".length) : undefined;

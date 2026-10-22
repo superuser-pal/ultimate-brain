@@ -41,7 +41,7 @@ It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md)
 
 | # | Tab | View name | Database | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|---|
-| 1 | — | What's waiting for you? | Review | List, grouped by Kind (counts shown), 5 rows per group | State is Pending | Created time, descending | Name, About Page | Where reviewing starts (0045): one Review Notes row per meeting or document, plus the other changes. Target Page opens what it came from; click a row to decide it in the Review Space |
+| 1 | — | What's waiting for you? | Review | List, grouped by Kind (counts shown), 5 rows per group | State is Pending | Created time, descending | Name, About Page | Where reviewing starts (0045): one Review Notes row per meeting or document, plus the other changes. On a Review Notes row, About Page opens the meeting or Inbox row it came from; on the others, the note it changes; click a row to decide it in the Review Space |
 | 2 | — | Which minutes need review? | Meetings | List, 5 rows | Brain Status is Not Reviewed · Date is on or before today | Date, descending | Name | Minutes to check before the brain may ingest them. Upcoming meetings stay out |
 | 3 | Tasks | What's due today? | Tasks | List | Status is To Do or Doing · Due is on or before today | Due, ascending | Name, Project, Due | Today's work, overdue first |
 | 4 | Meetings | Which meetings are today? | Meetings | List | Date is today | Date, ascending | Name, Date, Project | Today's meetings, with time and project |
