@@ -95,3 +95,17 @@ test("render: a Review row decided more than 30 days ago is trashed once (0045)"
   assert.equal(changed.json.data.items.some((entry: { id: string }) => entry.id === APPLIED), false);
   assert.deepEqual(await lintErrors(dir), []);
 });
+
+test("render: a due Review row with no Review database configured is skipped with DATABASE_NOT_CONFIGURED (0045)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const [published] = await rendered(dir, [APPLIED]);
+  await record(dir, published!);
+  const config = join(dir, "brain.json");
+  const brainJson = JSON.parse(await readFile(config, "utf8"));
+  brainJson.notion.databases.review = "";
+  await writeFile(config, JSON.stringify(brainJson, null, 2));
+  const result = await run(dir, ["sync", "render", "--ids", APPLIED], "2027-01-04T08:16:00Z");
+  assert.equal(result.code, 0, result.stdout);
+  assert.deepEqual(result.json.data.items, []);
+  assert.ok(result.json.warnings.some((warning: { code: string; id: string }) => warning.code === "DATABASE_NOT_CONFIGURED" && warning.id === APPLIED), JSON.stringify(result.json.warnings));
+});
