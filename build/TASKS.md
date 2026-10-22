@@ -543,25 +543,25 @@ CC-35 set to `done` (#111), its merged state. **Acceptance:** the user approves 
 
 The small part of the U-15 feedback, ahead of 0.5.0. U-15's two-week habit run continues on 0.4.0 meanwhile.
 
-### CC-44 · U-15 feedback: decision 0045 and the 0.4.1 and 0.5.0 tasks · `review`
+### CC-44 · U-15 feedback: decision 0045 and the 0.4.1 and 0.5.0 tasks · `done` (#123)
 **Release:** 0.4.1
 **Changelog:** decision 0045 records the first brain's feedback: 0.4.1 starts questions as Open, adds `/Clean email`, says what approving does and clears finished Review rows; the rest is planned for 0.5.0.
 **Output:** decision 0045, agreed with the user in a grill on 2026-10-22 after the first days of U-15 (amends 0003, 0026, 0041 and 0043; refines 0007, 0032 and 0035); tasks CC-45 and CC-46 for 0.4.1, CC-47 to CC-50 for 0.5.0, U-17 and U-18; U-15's note; docs/v2-ideas.md "Area homes" (0.6.0, before the agency brain moves in), "Hermes as an always-on brain operator" and the search index's new revisit trigger; the status banner.
 **Acceptance:** the user approves decision 0045; each task below names its part of 0045 and its acceptance; Codex's review finds CC-45 and CC-48 scoped so that their contracts can be written without a new question to the user.
 
-### CC-51 · Stacked task branches (decision 0046) · `review`
+### CC-51 · Stacked task branches (decision 0046) · `done` (#124)
 **Release:** 0.4.1
 **Changelog:** decision 0046: a task can start from the branch of the task below it, and Codex reviews a stack of PRs in one session.
 **Output:** decision 0046, at the user's request on 2026-10-22 (amends 0038 and 0044); `scripts/task.mjs start <id> --from <branch>` reads the row from that branch on `origin` and creates the worktree from it, with no upstream; `readinessProblems` reports a PR whose base isn't `main`, so `merge-ready` stays red until the PR below is merged and this one retargeted; AGENTS.md (one branch per task, Review).
 **Acceptance:** the user approves decision 0046; tests: `task start CC-2 --from <branch>` creates the worktree from that branch with CC-2 `in progress`, CC-2 unknown without `--from`, a missing branch refused, `--from` refused on `done`; `merge-ready` on a PR whose base is another task's branch sets failure naming that base; `npm test` passes.
 
-### CC-45 · Open questions and leaving Review rows in the CLI (decision 0045) · `review`
+### CC-45 · Open questions and leaving Review rows in the CLI (decision 0045) · `done` (#125)
 **Release:** 0.4.1
 **Changelog:** new questions and risks reach Notion as Open, and Review rows leave Notion 30 days after they were decided.
 **Output:** spec first, in the same PR: spec/cli.md §5.14.4 and spec/schema.md §7 and §14 (question Status: Open in the create properties; Open once on a published question with no Status in its snapshot and no `answer`; Answered once after an approved `answer`, as today); `sync render` emits a trash item for each published Review row whose proposal is `applied` or `closed` with `decision.decided_at` (or, for a stale close, its `updated`) more than 30 days before the run, and `sync record` stores `@trashed` in its `notion_published`, so the row is never rendered again (the `notion` id stays, so `--changed` doesn't create the row again); the code and tests.
 **Acceptance:** tests on the fixture brain: a new question renders Status = Open; a published question with no Status in the snapshot and no `answer` renders Open once and, after `sync record`, nothing; one with Status = Done in the snapshot renders no Status; an approved `answer` still renders Answered; an applied proposal decided 31 days ago renders a trash item, one decided 29 days ago and a pending one render none, and after `sync record` the trashed one renders nothing; `brain lint` passes on every result.
 
-### CC-46 · Clean email, the promise line and the Home count (decision 0045) · `review`
+### CC-46 · Clean email, the promise line and the Home count (decision 0045) · `done` (#126)
 **Release:** 0.4.1
 **Changelog:** a `/Clean email` prompt for pasted threads, a Review that says what approving does, a Home count of what waits for you, and catch-ups that trash finished Review rows.
 **Output:** notion/brain-assistant.md: the skill `/Clean email` (clean, never summarize: signatures, disclaimers, quoted copies, "Sent from" lines and tracking links out; one header per message, oldest first; text word for word; an optional "Why I saved this" line; rewrites the page only after the user confirms) and the same text as a plain prompt for plans without Custom Agents; the Instructions' list of skills that may edit text; Notion migration 0007 (the promise line at the top of Review and in the Decision property's description, shown on every row on hover; Home's pending Review rows grouped by Kind with counts, each Review notes row's Target Page opening its meeting or Inbox row); brain-catch-up and brain-sync (CC-45's trash items through MCP, after the publish); the user guide and brain-howto ("How do I paste an email?", "What does approving do?").
