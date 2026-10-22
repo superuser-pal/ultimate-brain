@@ -1,6 +1,6 @@
 # 0045 — Review in one row, fix before ingest, living reports and kept notes
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-10-22
 **Amends:** 0003, 0026, 0041, 0043
 **Refines:** 0007, 0032, 0035
