@@ -5,7 +5,7 @@ Paste into Notion AI **while you are on the "Knowledge" page**, after [Prompt 6]
 Easlo's Notes Dashboard pattern: one tab per database, and inside each tab one linked view with several views.
 
 ```text
-On this page ("Knowledge") add six tabs. In each tab put one linked view of the named database, with the views listed as its view tabs, in order:
+On this page ("Knowledge") add seven tabs. In each tab put one linked view of the named database, with the views listed as its view tabs, in order:
 
 1. Tab "Decisions" (database "Decisions"):
    - List "What did we decide recently?": Date is within the past week; sort Date descending; show Name, Project, Date.

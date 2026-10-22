@@ -260,9 +260,9 @@ Read-only health summary; the first call of every skill.
 { "data": {
     "schema_version": 1,
     "owner": "Rodrigo",
-    "notes": { "area": 2, "project": 3, "person": 7, "org": 2, "meeting": 12, "decision": 9, "question": 4, "concept": 1, "source": 12, "view": 6, "goal": 1, "memory": 0 },
+    "notes": { "area": 2, "project": 3, "person": 7, "org": 2, "meeting": 12, "decision": 9, "question": 4, "concept": 1, "source": 12, "view": 6, "goal": 1, "memory": 0, "reference": 1 },
     "proposals": { "pending": 3, "approved": 0, "edited": 0, "rejected": 0, "applied": 14, "closed": 2 },
-    "notion": { "configured": ["areas", "goals", "projects", "meetings", "people", "orgs", "decisions", "questions", "review"], "missing": ["key_results", "inbox", "concepts"], "tasks_database": true },
+    "notion": { "configured": ["areas", "goals", "projects", "meetings", "people", "orgs", "decisions", "questions", "review"], "missing": ["key_results", "inbox", "concepts", "references"], "tasks_database": true },
     "settings": { "publish": "ask", "push": "auto" },
     "repos": [ { "name": "acme-api", "area": "area-2m7c4h8n", "commit": "", "found": true } ],
     "index_stale": false,
@@ -271,7 +271,7 @@ Read-only health summary; the first call of every skill.
 } }
 ```
 
-`notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `concepts`. A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto" }`. `repos` lists `brain.json` `repos` in order (empty when absent): `found` is whether `path` is a Git working tree. `views_stale` includes area briefs. Exit 0 even when stale.
+`notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `concepts`, `references` (0045). `notes` counts every type, `reference` included (0045). A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto" }`. `repos` lists `brain.json` `repos` in order (empty when absent): `found` is whether `path` is a Git working tree. `views_stale` includes area briefs. Exit 0 even when stale.
 
 ### 5.3 `brain config`
 
@@ -544,7 +544,7 @@ Regenerates `index.md` exactly as schema §13 specifies (CX-04). `--check` write
     "written": true,
     "stale": false,
     "path": "index.md",
-    "counts": { "area": 1, "project": 1, "person": 2, "org": 1, "meeting": 2, "decision": 2, "question": 1, "concept": 1, "source": 2, "view": 2, "proposal": 2, "memory": 1, "goal": 1 },
+    "counts": { "area": 1, "project": 1, "person": 2, "org": 1, "meeting": 2, "decision": 2, "question": 1, "concept": 1, "source": 2, "view": 2, "proposal": 2, "memory": 1, "goal": 1, "reference": 0 },
     "notes": [
       {
         "id": "prj-9x4t1b7e", "type": "project", "title": "Acme website",
@@ -578,7 +578,7 @@ Regenerates `index.md` exactly as schema §13 specifies (CX-04). `--check` write
   | view | `view_kind`, `project` |
   | proposal | `kind`, `status`, `target` |
   | memory | `scope` |
-  | area, concept | — |
+  | area, concept, reference | — (a reference's place is in `area` and `projects`, 0045) |
 
 - `backlinks` (schema §6): computed inverses. Keyed by target id (sorted); each list sorted by `type`, then `source`. Built from relation types `about` → `mentioned_in`, `depends_on` → `needed_by`, `contradicts` → `contradicts`, `derived_from` → `used_by`, `related_to` → `related_to`, and from fields `projects` → `project_of`, `area` → `area_of`, `goal` → `goal_of`, `client` → `client_of`, `org` → `member`, `attendees` → `attended`, `decided_in` → `decisions`, `raised_in` → `questions`. The persisted pair `supersedes`/`superseded_by` is not included. Links to missing IDs are left out (lint reports them). Notes with no backlinks have no key.
 - `written`: the file was rewritten (only when its bytes change). `stale`: `index.md` is still out of date after the command, so it is `true` only with `--check`.
@@ -864,7 +864,7 @@ Read-only. Compares each row with the brain and returns a plan. Notes are matche
 - **Notion-owned** properties → the type's `notion_fields` (table below), plus `as_of`. If any value differs from the stored snapshot (ignoring `as_of`) → an `updates` item with the full new `notion_fields`. Notion is the authority; no three-way comparison.
 - **Lifecycle** (yours; agents also set `draft` and `archived`) → three-way comparison; "your correction" here is an `updates` item that sets `lifecycle`.
 - **Brain-owned** properties → three-way comparison; "your correction" is a `corrections` item when the property is correctable (table below), otherwise `ignored`, `NOT_CORRECTABLE`. For Key Facts, the comparison runs **per key** on the parsed texts (N, S and B each parsed as §5.14.4 says), so a change to one key never conflicts with a change to another; each key is reported as `property: "Key Facts/<key>"`. A key in S that is missing from N → `ignored`, `FACT_REMOVAL_NOT_SUPPORTED`. A Name, Summary or Lifecycle emptied in Notion → conflict `REQUIRED_EMPTY`; a Lifecycle option the brain does not know → `ignored`, `UNKNOWN_OPTION`. Lifecycle is compared case-insensitively (Notion shows `Draft`, the brain stores `draft`).
-- **Review rows** with **Your call** set and `State` = `Pending` (0045; a space not yet migrated to 0.5.0 has `Decision` and `Note` instead, read the same way, and its option **Edit** is read as **Fix**). The snapshot properties are `Your call` (select) and `What to fix` (text). A proposal already terminal is checked first (below), so a row whose What to fix the skill has handled never comes back:
+- **Review rows** with **Your call** set and `State` = `Pending` (0045; a snapshot taken before migration 0008 has `Decision` and `Note` instead, read the same way, and the option **Edit** is read as **Fix**, so decisions made before the migration are never lost. Only reading is compatible: render sends the 0.5.0 names, see §5.14.4). The snapshot properties are `Your call` (select) and `What to fix` (text). A proposal already terminal is checked first (below), so a row whose What to fix the skill has handled never comes back:
   - **Approve** or **Reject** with an empty What to fix → a `decisions` item for `brain apply`: `action`, `decided_at` = `last_edited`, `decided_by: notion`.
   - **Approve** or **Reject** with What to fix → conflict `NOTE_TO_READ` on `What to fix`, with `notion_value` = the text and `brain_value` = the label. No decision item: the skill reads the text and passes `brain apply` the decision it means (with `note`, and `exclude` for "all except …"), or asks the user.
   - **Fix** with What to fix → conflict `FIX_TO_READ` on `What to fix`, the same way: the skill reads the text and passes `brain apply` an `action: fix` decision with `note` and `fixes` (schema §11.3), naming items by the row's letters (§5.14.4). The plan never guesses what the text means.
@@ -964,7 +964,7 @@ A source with `attached_to` is never selected: it has no Inbox row (0042). Notes
 | concepts | Name, Summary, Project, Area, Lifecycle, Brain ID, Last Synced |
 | references | Name, Summary, Project, Area, Lifecycle, Brain ID, Last Synced (0045) |
 | meetings | Decisions, Questions, Attendees *(add)*, Project *(if empty)*, Area *(if empty)*, Brain Status, Ingested At, Brain ID |
-| review | Name, Kind, About, About Page, Now, Proposed, Why, Source Meeting, State, Brain ID (Target, Target Page, Before, After before 0.5.0; 0045) |
+| review | Name, Kind, About, About Page, Now, Proposed, Why, Source Meeting, State, Brain ID (Target, Target Page, Before, After before 0.5.0; 0045). Render always sends the 0.5.0 names: it doesn't read the space's schema, so a space not yet migrated (migration 0008) rejects the write. Migration 0008 therefore runs before the first publish on 0.5.0; `brain upgrade` names it, and the publish's error report names the missing property |
 | inbox | Name *(create only)*, Kind, Summary, Decisions, Questions, Concepts, References, People, Project *(if empty)*, Area *(if empty)*, Brain Status, Brain ID, Last Synced, Full text *(clear)*; a report: Name, Kind, Project, Area, Ask, Brain Status, Brain ID, Last Synced, Refresh *(clear)*, What to fix *(clear)* |
 
 - On `create`, every listed property is sent. On `update`, only properties whose B ≠ S are sent, plus Last Synced (= `--now`) for the databases that have it (not Meetings or Review). So Lifecycle goes out on create (`Draft`) and when the brain changed it (`archived` by a supersession), and your own Lifecycle edits, already pulled into the brain, are never overwritten.
@@ -981,7 +981,7 @@ A source with `attached_to` is never selected: it has no Inbox row (0042). Notes
 - **Inbox** (0037; sources, every kind except `minutes`):
   - `action`: `update` when the source has `notion`, or is a `capture` (page id = the id in its `notion:` key: the row you created; a capture's key is always `notion:`, schema §4); otherwise `create`. A capture whose `notion` differs from its key's id → item error `NOTION_ID_MISMATCH`.
   - Name = `title`, sent on `create` only: a capture's Name is yours. Kind = the source `kind` as a select label (`Capture`, `Document`, `Email`, `Chat`, `Note`). Summary = `summary` (empty when the source has none).
-  - Decisions, Questions, Concepts, References, People = every note of that type whose `sources` lists the source's id, sorted; notes not yet published go to `pending_relations`. These are the "Produced" relations; the other side of each is that database's Sources relation, which Notion fills.
+  - Decisions, Questions, Concepts, References, People = every note of that type whose `sources` lists the source's id, sorted; notes not yet published go to `pending_relations`. When `references` is empty in `brain.json` (a space without migration 0008), References is left out entirely, from `properties` and from `pending_relations`, since that Inbox has no such property; the reference notes themselves are skipped with `DATABASE_NOT_CONFIGURED`. These are the "Produced" relations; the other side of each is that database's Sources relation, which Notion fills.
   - Project and Area carry `"mode": "if_empty"` (as on Meetings): Project = the `projects` of the produced notes, Area = their `area` and the `area` of those projects, each deduped and sorted. You may set them yourself before the ingest; the brain never overwrites them.
   - Brain Status = `Processed`. Brain ID = the source's id.
   - **Produced** relations also include every note whose `sources` lists the id of a source **attached** to this one (0042).
@@ -998,7 +998,7 @@ A source with `attached_to` is never selected: it has no Inbox row (0042). Notes
   - `published` holds what was sent, so a later ingest that produces more notes from the same source (or publishes a pending one) re-renders only the changed relations.
 - **Meetings** (0007; the page is yours): never Name, Date or body. *(add)* relations carry `"mode": "add"`: the skill adds the listed pages and keeps those you linked. *(if empty)* relations carry `"mode": "if_empty"`: the skill writes them only when the property is empty in Notion (design §3.5: "brain fills if empty"). Brain Status = `Ingested` and Ingested At = `{start: <meeting created>}` go out once, because S then holds them.
 - **Reports** (0043, 0045): `action` is `create` with no `notion`, else `update`. Name = `title`; Kind = `Report`; Project = `projects`, Area = `area` (plain relations, not *if empty*); Ask = `asked_in` as a list (one id or several), a relation to your Ask rows, whose other side (Report) Notion fills; Brain Status = `Processed`; Brain ID = the view's id. `body` = the report body, rendered as other bodies; on `update`, sent only when B of `@content` ≠ S (a refresh), and then `properties` also has `"Refresh": { "type": "checkbox", "value": false }`. When the number of `fixes` entries is above S's `@fixes`, `properties` has `"What to fix": { "type": "rich_text", "value": null }`, which clears the field, and `published` carries `@fixes` = that number. The skill sets each Ask row's own Brain Status to Processed through the MCP; nothing else on it changes.
-- **Review** (proposals; property names from 0.5.0, 0045): Name = `title`; Kind; About = `<target title> (<target id>)`; About Page = the target's Notion URL if published; Now and Proposed (for `supersede`: old and new note title; `merge`: duplicate and survivor title; `add_to_note`: Proposed = `content`; `update_body`: Now empty, Proposed = the changed lines of the body as `- <old line>` and `+ <new line>`, in body order (§5.19's diff without context lines); `add_link`: Before empty, After = one line per entry of `links` (or the old single `field`/`after`), `<Field>: <value>` with a note id rendered as its title, joined by `\n`, e.g. `People: Lucía Fernández\nPeople: Tomás Vidal\nAliases: acme site`; `new_item`: After = the note's title and type; `answer`: Before empty, After = `answer`, plus ` → <answer_note title>` when set; `review_notes`: see below), cut to 2000 characters; Why; Source Meeting = relation when `source` is a published meeting; State.
+- **Review** (proposals; property names from 0.5.0, 0045): Name = `title`; Kind; About = `<target title> (<target id>)`; About Page = the target's Notion URL if published; Now and Proposed (for `supersede`: old and new note title; `merge`: duplicate and survivor title; `add_to_note`: Proposed = `content`; `update_body`: Now empty, Proposed = the changed lines of the body as `- <old line>` and `+ <new line>`, in body order (§5.19's diff without context lines); `add_link`: Now empty, Proposed = one line per entry of `links` (or the old single `field`/`after`), `<Field>: <value>` with a note id rendered as its title, joined by `\n`, e.g. `People: Lucía Fernández\nPeople: Tomás Vidal\nAliases: acme site`; `new_item`: Proposed = the note's title and type; `answer`: Now empty, Proposed = `answer`, plus ` → <answer_note title>` when set; `review_notes`: see below), cut to 2000 characters; Why; Source Meeting = relation when `source` is a published meeting; State.
 - **Review notes rows** (0041, 0043, 0045): About = `<source title> (<source id>)`, with `<source title>` as in the proposal title rule (§5.6), and About Page = that meeting's or Inbox row's URL if published. Now is empty. Proposed is one line per item, **lettered** in the order of schema §11.3: `a`, `b`, … `z`, then `aa`, `ab`, …:
   - every entry of `changes`, as stored: an `update_fact` as `<letter>) ⚠ <Field> on <target title>: <before> → <after>` (`a) ⚠ Launch date on Acme website: 2027-01 → 2027-02`; with no `before`, `(new) → <after>`); an `update_body` as `<letter>) ⚠ <target title>: <n> lines changed` (`b) ⚠ Acme website: requirements: 2 lines changed`); an `add_to_note` as `<letter>) Add to <target title>: <first line of content, cut to 80 characters>`;
   - every entry of `notes` as `<letter>) <Type>: <title>` (`c) Decision: Use Supabase for auth`);
@@ -1225,7 +1225,12 @@ The CLI writes a `view` with `view_kind: report`, `generated_at` = now and `gene
 brain source diff <src-id>
 ```
 
-Read-only. For a source with `replaces`, the line diff of its body against the body of the source it replaces: the longest common subsequence of lines, then every removed line as `- <line>` and every added line as `+ <line>`, in body order, with no context lines. `data` = `{ "id": "src-…", "replaces": "src-…", "removed": <n>, "added": <n>, "diff": "<the lines, joined by \n>" }`. The ingest reads it to propose only what changed. `INPUT_INVALID` when the source has no `replaces`; `UNKNOWN_ID` for a missing id.
+Read-only. For a source with `replaces`, the line diff of its body against the body of the source it replaces, with no context lines. It is deterministic:
+1. Both bodies are split into lines on `\n` after turning `\r\n` into `\n`; old = the replaced source's lines `o[0..m)`, new = this source's lines `n[0..k)`. Lines compare as exact strings.
+2. `L[i][j]` = the length of the longest common subsequence of the suffixes `o[i..m)` and `n[j..k)` (`L[m][j] = L[i][k] = 0`).
+3. A walk from `i = 0, j = 0`: if `o[i] = n[j]`, both advance and nothing is written; otherwise, if `L[i+1][j] ≥ L[i][j+1]`, write `- o[i]` and advance `i` (a tie removes first); otherwise write `+ n[j]` and advance `j`. When one side ends, write the rest of the other (`- ` for old, `+ ` for new) in order.
+
+Example: old `A, B, A`, new `A, A, B` gives `- B` then `+ B`. `data` = `{ "id": "src-…", "replaces": "src-…", "removed": <n>, "added": <n>, "diff": "<the lines, joined by \n>" }`. The ingest reads it to propose only what changed. `INPUT_INVALID` when the source has no `replaces`; `UNKNOWN_ID` for a missing id.
 
 ---
 

@@ -18,4 +18,4 @@ Do not rename or change any property.
 - [ ] In Projects, hover: Status says "you", Key Facts says "brain", Brain ID says "system", Area says "you when creating, then brain".
 - [ ] In Meetings, hover: Name and Attendees say "you", Decisions says "brain".
 - [ ] In Review, hover: Your call says "you", Proposed says "brain", State says "system".
-- [ ] In Inbox, hover: Kind says "system, except Ask"; in Questions, Status says the brain sets Open, then Answered once; in Review, Decision says approving makes notes trusted.
+- [ ] In Inbox, hover: Kind says "system, except Ask"; in Questions, Status says the brain sets Open, then Answered once; in Review, Your call says approving makes notes trusted.

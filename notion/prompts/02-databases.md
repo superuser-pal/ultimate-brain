@@ -25,6 +25,6 @@ On the page "Brain Data", create these full-page databases with exactly these pr
 
 ## Verify
 - [ ] "Brain Data" holds 14 databases (13 if you skipped Tasks), and nothing else.
-- [ ] Every property name is spelled exactly as above, including capitals and spaces ("Brain ID", "Last Synced", "Note"). The brain finds properties by name.
+- [ ] Every property name is spelled exactly as above, including capitals and spaces ("Brain ID", "Last Synced", "What to fix"). The brain finds properties by name.
 - [ ] Select options match exactly, in that order. Brain Status in Meetings defaults to Not Reviewed; State in Review defaults to Pending; Kind in Inbox defaults to Capture.
 - [ ] No extra properties were added (Notion AI sometimes adds "Tags" or "Created by"; delete them).
