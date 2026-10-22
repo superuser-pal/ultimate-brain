@@ -7,8 +7,8 @@ Home leads with your own work; the brain's queues sit small in the left column. 
 ```text
 On this page ("Home"):
 
-In the left column, under the navigation, add a heading 3 "Needs you" and two linked views, List layout, at most 5 rows each:
-1. "What needs my decision?" of "Review": filter State is Pending; sort Created time descending; show Name.
+In the left column, under the navigation, add a heading 3 "Needs you", a gray paragraph "Start here: approving makes the brain's notes trusted.", and two linked views, List layout, at most 5 rows each:
+1. "What's waiting for you?" of "Review": filter State is Pending; group by Kind, with group counts shown; sort Created time descending; show Name, Target Page.
 2. "Which minutes need review?" of "Meetings": filter Brain Status is Not Reviewed and Date is on or before today; sort Date descending; show Name.
 
 In the right column add, in one row:

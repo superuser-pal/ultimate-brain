@@ -5,7 +5,7 @@ Paste into Notion AI **while you are on the "Review" page**, after [Prompt 6](06
 Why and Source Meeting are on each proposal's page. Note is in the "What needs my decision?" table: with Edit, type the value to use; with Approve or Reject, type what to do differently ("all except Ana").
 
 ```text
-On this page ("Review"), first add one gray paragraph: "Your corrections go in Note. Target says what changes." Then add four tabs, each a linked view of "Review":
+On this page ("Review"), first add one gray paragraph: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. Your corrections go in Note. Target says what changes." Then add four tabs, each a linked view of "Review":
 1. Tab "Needs my decision": Table, named "What needs my decision?": filter State is Pending; sort Created time descending; show Name, Kind, Before, After, Decision, Note.
 2. Tab "Sources disagree": Table, named "Where do sources disagree?": filter Kind is Contradiction and State is Pending; sort Created time ascending; show Name, Before, After, Decision.
 3. Tab "Approved": List, named "What did I approve recently?": filter State is Applied and Last edited time is within the past month (relative date); sort Last edited time descending; show Name, Kind, After.
@@ -17,6 +17,6 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 ```
 
 ## Verify
-- [ ] A gray line "Your corrections go in Note. Target says what changes." sits above the tabs.
+- [ ] A gray line starting "Approving makes these notes trusted" sits above the tabs.
 - [ ] Four tabs: Needs my decision, Sources disagree, Approved, Rejected.
 - [ ] "What needs my decision?" shows only Pending rows, and Decision can be set in the view.

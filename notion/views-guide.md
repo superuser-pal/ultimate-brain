@@ -41,7 +41,7 @@ It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md)
 
 | # | Tab | View name | Database | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|---|
-| 1 | — | What needs my decision? | Review | List, 5 rows | State is Pending | Created time, descending | Name | Proposals waiting for you. Click one to decide it in the Review Space |
+| 1 | — | What's waiting for you? | Review | List, grouped by Kind (counts shown), 5 rows per group | State is Pending | Created time, descending | Name, Target Page | Where reviewing starts (0045): one Review Notes row per meeting or document, plus the other changes. Target Page opens what it came from; click a row to decide it in the Review Space |
 | 2 | — | Which minutes need review? | Meetings | List, 5 rows | Brain Status is Not Reviewed · Date is on or before today | Date, descending | Name | Minutes to check before the brain may ingest them. Upcoming meetings stay out |
 | 3 | Tasks | What's due today? | Tasks | List | Status is To Do or Doing · Due is on or before today | Due, ascending | Name, Project, Due | Today's work, overdue first |
 | 4 | Meetings | Which meetings are today? | Meetings | List | Date is today | Date, ascending | Name, Date, Project | Today's meetings, with time and project |
@@ -132,7 +132,7 @@ All views use the Tasks database. Using your own Tasks database (0018)? Map the 
 
 **Job:** approve, reject or edit every change the brain proposes to your existing knowledge (decision 0003), and accept the notes each ingest made (Review Notes rows, 0041).
 
-Above the tabs, a gray line: "Your corrections go in Note. Target says what changes." (0043). On a **Review Notes** row, After lists the new notes and links lettered a), b)…: Approve accepts them all, Approve with "all except b, d" in Note keeps those out, Reject archives the new notes. On an **Answer** row, Approve marks the question Answered.
+Above the tabs, a gray line: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. Your corrections go in Note. Target says what changes." (0043, 0045). A decided row leaves Review 30 days after the decision: the catch-up moves it to Notion's trash, and the brain keeps it in Git. On a **Review Notes** row, After lists the new notes and links lettered a), b)…: Approve accepts them all, Approve with "all except b, d" in Note keeps those out, Reject archives the new notes. On an **Answer** row, Approve marks the question Answered.
 
 | # | Tab | View name | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|
@@ -248,7 +248,7 @@ Relations the template already shows as linked views (meetings, tasks, questions
 - [ ] Tasks has the statuses Waiting On and Someday, and the Done tab groups by week.
 - [ ] Archive is on System and linked from the navigation; "What's finished?" is no longer in Projects.
 - [ ] View names match this guide exactly, question marks included.
-- [ ] Home "What needs my decision?" shows only Pending rows; Knowledge "What changed our minds?" shows only Superseded decisions.
+- [ ] Home "What's waiting for you?" shows only Pending rows, grouped by Kind with counts; Knowledge "What changed our minds?" shows only Superseded decisions.
 - [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status New; New meeting and New project open a page with the default template.
 - [ ] Brain ID and Last Synced are hidden in every view and page layout.
 - [ ] Editing Tier 1 nav on System updates every Space.

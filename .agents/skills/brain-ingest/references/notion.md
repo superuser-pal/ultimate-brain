@@ -49,6 +49,7 @@ Do these in order, after the ingest commit: pages first, so every task's project
    2. For each item:
       - **`action: create`:** create a page in `database_id` with `properties`.
       - **`action: update`:** update `page_id` with `properties`.
+      - **`action: trash`** (a Review row decided more than 30 days ago, decision 0045): move `page_id` to Notion's trash (update the page with `in_trash: true`; `archived: true` on API versions before 2025-09). Nothing else. Record it like any other write; the proposal stays in the brain.
       - **Meeting and Inbox relations with `"mode": "add"`:** add the listed pages and keep the existing ones.
       - **`"mode": "if_empty"`:** write only if the property is empty in Notion.
       - **`body` (decisions, questions, concepts):** replace the page body with it.
