@@ -33,8 +33,8 @@ The user decided each point in a grill on 2026-10-22.
 - **Optionally,** a "Why I saved this" line at the top, written by the user. The skill may suggest one.
 
 ### Review says what it is for (0.4.1)
-- **The promise, in one line,** at the top of Review and in the muted line of every Review row: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed."
-- **Home is where reviewing starts:** a count of what waits, per source ("3 meetings and 1 document waiting for you"), linking to Review. Each Review row links to its meeting or Inbox row.
+- **The promise, in one line,** at the top of the Review page and in the description of the property you decide in (Decision; Your call from 0.5.0), which every Review row shows on hover: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed." The brain creates Review rows through the API, without a body or a template, so a row has no muted line of its own.
+- **Home is where reviewing starts:** the pending Review rows, grouped by Kind with a count per group, linking to Review. A Review notes row stands for one meeting, email or document, so its count is the number of sources waiting, and its Target Page (About Page from 0.5.0) opens that meeting or Inbox row. A count by type of source ("3 meetings and 1 document") would need a new Review property; it waits until one Review row per source (0.5.0) shows whether it is still missed.
 - **Finished rows leave.** A Review row whose proposal was applied or closed more than 30 days ago is moved to Notion's trash at the next catch-up. Git keeps every proposal. "What did I approve recently?" still shows the last month.
 
 ### One Review row per source (0.5.0; amends 0041 and 0043)
@@ -64,14 +64,14 @@ The user decided each point in a grill on 2026-10-22.
 
 - **Fix** means "apply it, corrected as I wrote in What to fix", in plain words ("Lucía is on Acme website, not Acme app", "e: March"). The brain applies its corrected version and says in the report what it changed. Fix works on every Kind (today Edit is refused on links and Review notes rows).
 - State keeps its values: Pending, Applied, Closed.
-- The muted line becomes: "Pick Your call. To correct something, pick Fix and say what's wrong in What to fix."
+- The Review page's gray line ends: "To correct something, pick Fix in Your call and say what's wrong in What to fix."
 
 ### Fix first, then ingest (0.5.0; refines 0007 and 0032)
 - **Two kinds of wrong, two places:**
   - **The input itself is wrong** (minutes that misheard a name, a messy email): fix it before the brain reads it.
   - **The brain read it wrong** (wrong project, a suggestion taken as a decision): Fix on the Review row.
 - **Meetings:** the meeting template says "Check the minutes, fix them, then set Brain Status to Reviewed". The brain still ingests only Reviewed meetings and still never edits a meeting (0007).
-- **Inbox rows wait for Ready.** A catch-up takes in an Inbox row only when its Status is **Ready**. A capture becomes Ready on its own 1 day after it was created, so a forgotten Status doesn't break the habit. Documents and emails wait for the user, because they usually want a check, a Keep (below) or `/Clean email` first. Ask rows are not ingested, so they don't need Ready: a catch-up answers them as before.
+- **Inbox rows wait for Ready.** A catch-up takes in an Inbox row only when its Status is **Ready**. A capture still **New** 1 day after it was created is taken in as if it were Ready, so a forgotten Status doesn't break the habit. A capture set to anything else (Skipped, say) is never taken in by that rule. The catch-up skill applies the gate; the CLI reports Inbox rows as before. Documents and emails wait for the user, because they usually want a check, a Keep (below) or `/Clean email` first. Ask rows are not ingested, so they don't need Ready: a catch-up answers them as before.
 - **Re-reads.** After an ingest, a user who fixes the input sets it back to Reviewed (meeting) or Ready (Inbox row). The next catch-up reads it again. The new text is a new version of the source, linked to the old one; the old version stays in Git, unchanged (0032). The brain proposes only what changed between the versions, in one Review row. Today a second ingest of the same meeting is refused as a duplicate (`DUPLICATE_SOURCE`).
 
 ### Living reports (0.5.0; amends 0043)
@@ -107,7 +107,7 @@ The user decided each point in a grill on 2026-10-22.
 - **Refines 0032:** a re-read source is a new source version with a link to the version it replaces.
 - **Refines 0035:** the Brain Assistant gains `/Clean email`, its third skill that may edit page text, after Check minutes and Tidy capture.
 - **New:**
-  - the note type `reference`;
+  - the note type `reference`, with a References database of its own in Notion (not a Kind on another database: its own relations and tab);
   - the Review properties About, Now, Proposed, Your call and What to fix;
   - the Inbox Status Ready and the Inbox fields Keep, Refresh (checkbox) and What to fix;
   - the Ask row's Refresh relation;
