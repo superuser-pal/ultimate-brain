@@ -20,7 +20,7 @@ On the page "Brain Data", create these full-page databases with exactly these pr
 11. "Inbox": Name (title), Kind (select: Capture, Document, Email, Chat, Note, Ask, Report; default Capture), Summary (text), Brain Status (select: New, Ready, Processed, Skipped; default New), Keep (text), Full text (checkbox), Refresh (checkbox), What to fix (text), Brain ID (text), Last Synced (date), Created (created time).
 12. "Tasks": Name (title), Status (status: To Do, Doing, Waiting On, Someday, Done; put Waiting On and Someday in any group except Complete), Due (date), Brain ID (text), Last edited time (last edited time).
 13. "Concepts": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time).
-14. "References": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time).
+14. "References": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time), Last edited time (last edited time).
 ```
 
 ## Verify

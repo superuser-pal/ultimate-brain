@@ -63,9 +63,9 @@ Every database that mirrors a brain note has three kinds of properties. Each pro
 
 ## 3. Databases
 
-Thirteen databases, all on the backend page **Brain Data**. Naming: plural Title Case database names, Title Case property names, no emoji in property names (the agent addresses them by name through the Notion MCP).
+Fourteen databases, all on the backend page **Brain Data**. Naming: plural Title Case database names, Title Case property names, no emoji in property names (the agent addresses them by name through the Notion MCP).
 
-**Common properties** on every brain-mirrored database (Areas, Goals, Projects, People, Orgs, Decisions, Questions, Concepts):
+**Common properties** on every brain-mirrored database (Areas, Goals, Projects, People, Orgs, Decisions, Questions, Concepts, References):
 
 | Property | Type | Owner | Notes |
 |---|---|---|---|
@@ -87,6 +87,7 @@ Ongoing responsibilities (clients, health, learning…).
 | Decisions | Relation → Decisions (two-way with Area) | Brain (0034) |
 | Questions | Relation → Questions (two-way with Area) | Brain (0034) |
 | Concepts | Relation → Concepts (two-way with Area) | Brain |
+| References | Relation → References (two-way with Area) | Brain (0045) |
 | Inbox | Relation → Inbox (two-way with Area) | You (brain fills if empty) |
 | Tasks | Relation → Tasks (two-way with Area) | You |
 | Archived | Checkbox | You |
@@ -138,6 +139,7 @@ Notion-owned entirely (0020). Not mirrored as brain notes; the brain snapshots t
 | Decisions | Relation → Decisions | Brain |
 | Questions | Relation → Questions | Brain |
 | Concepts | Relation → Concepts (two-way with Project) | Brain |
+| References | Relation → References (two-way with Project) | Brain (0045) |
 | Inbox | Relation → Inbox (two-way with Project) | You (brain fills if empty) |
 | Tasks | Relation → Tasks (two-way with Project) | You |
 | Key Facts | Text | Brain: current key facts, e.g. "Budget: 80000 EUR · Launch date: 2027-02" (format in spec/cli.md §5.14.4) |
@@ -305,6 +307,7 @@ What you kept from a document: a requirements list, a spec, a price list (0045).
 | Area | Relation → Areas (two-way with References) | Brain |
 | Sources | Relation → Inbox (two-way with References) | Brain (filled from the Inbox side) |
 | Created time | Created time | System |
+| Last edited time | Last edited time | System (Notion fills it; sorts "What did we keep?") |
 
 Plus the common properties. Page body: the kept content, brain-written.
 
