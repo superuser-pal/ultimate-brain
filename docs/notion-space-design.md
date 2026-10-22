@@ -316,10 +316,10 @@ Each template is the default for its database. Every linked view sits under an H
 
 | Database | Template body |
 |---|---|
-| Areas | "Brief" toggle heading (brain-written, 0041) · "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What have we decided here?" (Decisions: Current, Superseded) · "What's still open here?" (Questions: Open questions, Open risks, Answered) · "What came in?" (Inbox where Area is this page, newest first) · "What do we know?" (tabs Decisions and Concepts where Area is this page) · "My notes". People and Clients show as the "via projects" rollups in the page header (0034) |
+| Areas | "Brief" toggle heading (brain-written, 0041) · "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What have we decided here?" (Decisions: Current, Superseded) · "What's still open here?" (Questions: Open questions, Open risks, Answered) · "What came in?" (Inbox where Area is this page, newest first) · "What do we know?" (tabs Decisions, Concepts and References where Area is this page, 0045) · "Reports" (Inbox where Area is this page and Kind is Report, 0045) · "My notes". People and Clients show as the "via projects" rollups in the page header (0034) |
 | Goals | "How are the key results moving?" (Key Results: Open, Done) · "Which projects serve it?" (Projects) · "My notes" |
-| Projects | A muted line "Brief and Decision log are written by the brain. Add your own notes in My notes." · "Brief" toggle heading (brain-written) · "Decision log" toggle heading (brain-written) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What's still open here?" (Questions, Open) · "Who's involved?" (People) · "What came in?" (Inbox where Project is this page, newest first) · "What do we know?" (tabs Decisions and Concepts where Project is this page) · "My notes" |
-| Meetings | Unchanged from the hand-reworked template (see notion/templates.md): "Before marking Reviewed" checklist callout · Notion AI meeting notes block · "My notes" · toggles Decisions, Questions, Tasks |
+| Projects | A muted line "Brief and Decision log are written by the brain. Add your own notes in My notes." · "Brief" toggle heading (brain-written) · "Decision log" toggle heading (brain-written) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What's still open here?" (Questions, Open) · "Who's involved?" (People) · "What came in?" (Inbox where Project is this page, newest first) · "What do we know?" (tabs Decisions, Concepts and References where Project is this page, 0045) · "Reports" (Inbox where Project is this page and Kind is Report, 0045) · "My notes" |
+| Meetings | Unchanged from the hand-reworked template (see notion/templates.md): "Before marking Reviewed" checklist callout, ending with the gray line "Check the minutes, fix them, then set Brain Status to Reviewed. Fixed them after the brain took them in? Set Reviewed again: it reads only what changed." (0045) · Notion AI meeting notes block · "My notes" · toggles Decisions, Questions, Tasks |
 | People | "Which meetings were they in?" (Meetings: Upcoming, Past) · "What are they working on?" (Projects) · "My notes" |
 | Orgs | "Who works there?" (People) · "Which projects?" (Projects) · "My notes". Meetings show as the "Meetings via projects" rollup in the page header |
 | Decisions | (brain-generated body) · "Superseded by" callout when present |
@@ -341,7 +341,7 @@ Home                          ← hub: my day, quick capture, "needs you"
 ├── Review                    ← Space
 ├── Knowledge                 ← Space
 └── (backend, never navigated)
-    ├── Brain Data            ← all 13 databases
+    ├── Brain Data            ← all 14 databases
     └── System                ← synced nav, Archive, How it works
 ```
 
@@ -355,7 +355,7 @@ Each Space: the synced Spaces navigation in a narrow left column, then one tabs 
 | **Projects** | Run projects | Active (board by Status) · By area · Deadlines (timeline) · Gone quiet |
 | **Plan** | Areas → goals → key results → projects | Goals · Key results (by goal) · Areas (the way into each Area page) · Projects by goal |
 | **Review** | Decide on proposals | A muted line above the views: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. To correct something, pick Fix in Your call and say what's wrong in What to fix." (0043, 0045). A decided row leaves Review 30 days after the decision; the brain keeps it in Git (0045) · Needs my decision · Sources disagree · Approved recently · Rejected |
-| **Knowledge** | Navigate what the brain knows | Decisions (Recent, Current, Provisional, Superseded, Disputed) · Questions (Open questions, Open risks, Answered) · Concepts (Recent, By project, Drafts) · People (by org, Disputed) · Orgs (Clients, Others) · Inbox (Inbox: New, oldest first · History: Processed, newest first) |
+| **Knowledge** | Navigate what the brain knows | Decisions (Recent, Current, Provisional, Superseded, Disputed) · Questions (Open questions, Open risks, Answered) · Concepts (Recent, By project, Drafts) · References (What did we keep?, 0045) · People (by org, Disputed) · Orgs (Clients, Others) · Inbox (Inbox: New or Ready, oldest first · History: Processed, newest first) |
 | **Archive** (under System) | Find what's finished | One tab per database: Projects (Done or Archived) · Goals (Achieved, Dropped or Archived) · Areas · Decisions · Questions · Concepts · People · Orgs (Archived) |
 
 Every view, with its filters, sort and properties, is in [notion/views-guide.md](../notion/views-guide.md) and Prompts 7a–7h.
@@ -371,7 +371,7 @@ The prompts live in [notion/prompts/](../notion/prompts/), each with its **Verif
 | # | Prompt | Builds |
 |---|---|---|
 | 1 | [Pages](../notion/prompts/01-pages.md) | the eight pages of §5 |
-| 2 | [Databases](../notion/prompts/02-databases.md) | the 13 databases of §3, without relations |
+| 2 | [Databases](../notion/prompts/02-databases.md) | the 14 databases of §3, without relations |
 | 3 | [Relations](../notion/prompts/03-relations.md) | the two-way relations of §3 |
 | 4 | [Formula and rollup](../notion/prompts/04-formula-rollup.md) | Key Results and Goals Progress |
 | 5 | [Ownership](../notion/prompts/05-ownership.md) | owner prefix in each property description (§2) |

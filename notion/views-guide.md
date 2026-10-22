@@ -4,7 +4,7 @@ A by-hand alternative to [Prompt 7](prompts/07-spaces-views.md) and [Prompt 8](p
 
 It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md) §3–§5. If the two ever disagree, the design document wins (decision 0022).
 
-**Before you start:** Prompts 1–6 are done. All 13 databases live on **Brain Data**, the relations exist, the formulas and rollups of Prompt 4 exist (Progress, Countdown, Task Progress, the "via projects" rollups), and the templates are the database defaults.
+**Before you start:** Prompts 1–6 are done. All 14 databases live on **Brain Data**, the relations exist, the formulas and rollups of Prompt 4 exist (Progress, Countdown, Task Progress, the "via projects" rollups), and the templates are the database defaults.
 
 ---
 
@@ -130,9 +130,9 @@ All views use the Tasks database. Using your own Tasks database (0018)? Map the 
 
 ## 6. Review (decide on proposals)
 
-**Job:** approve, reject or edit every change the brain proposes to your existing knowledge (decision 0003), and accept the notes each ingest made (Review Notes rows, 0041).
+**Job:** approve, reject or fix every change the brain proposes to your existing knowledge (decision 0003), and accept the notes each ingest made (Review Notes rows, 0041).
 
-Above the tabs, a gray line: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. To correct something, pick Fix in Your call and say what's wrong in What to fix." (0043, 0045). A decided row leaves Review 30 days after the decision: the catch-up moves it to Notion's trash, and the brain keeps it in Git. On a **Review Notes** row, After lists the new notes and links lettered a), b)…: Approve accepts them all, Approve with "all except b, d" in Note keeps those out, Reject archives the new notes. On an **Answer** row, Approve marks the question Answered.
+Above the tabs, a gray line: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. To correct something, pick Fix in Your call and say what's wrong in What to fix." (0043, 0045). A decided row leaves Review 30 days after the decision: the catch-up moves it to Notion's trash, and the brain keeps it in Git. On a **Review Notes** row, Proposed lists everything the source brings, lettered a), b)…: fact changes first (⚠), then text added to notes, then new notes, then links. Approve accepts them all; Approve with "all except b, d" in What to fix moves those to a row of their own that waits for you; Fix with "a: March" applies it, corrected; Reject archives the new notes and drops the changes. On an **Answer** row, Approve marks the question Answered.
 
 | # | Tab | View name | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|
@@ -174,11 +174,12 @@ Above the tabs, a gray line: "Approving makes these notes trusted: they appear i
 | Concepts | What did we learn recently? | List | Lifecycle is not Archived | Created time, descending | — | Name, Project, Summary | Ideas and methods from your documents and meetings |
 | Concepts | What do we know per project? | Table | Lifecycle is not Archived | Name | Project | Name, Area, Summary | What the brain learned, by project |
 | Concepts | Which concepts are drafts? | List | Lifecycle is Draft | Created time, descending | — | Name, Project | New concepts to read and mark Reviewed |
+| References | What did we keep? | List | Lifecycle is not Archived | Last edited time, descending | — | Name, Project, Summary | What you kept from documents (0045): requirements, specs, price lists, kept up to date as new versions arrive |
 | People | Who's who? | Gallery (small cards) | Lifecycle is not Archived | Name | Org | Name, Role, Org | Find a person by company and role |
 | People | Who's disputed? | List | Lifecycle is Disputed | Name | — | Name, Summary | People records you marked as wrong |
 | Orgs | Which clients do I have? | Table | Relationship is Client · Lifecycle is not Archived | Name | — | Name, People, Projects | Your clients with their contacts and projects |
 | Orgs | Who else do we work with? | Table | Relationship is not Client · Lifecycle is not Archived | Name | Relationship | Name, Relationship, People | Prospects, partners and suppliers |
-| Inbox | What's in my inbox? | List | Brain Status is New | Created, ascending | — | Name, Kind, Project, Created | Captures waiting for the brain, oldest first. Set Project so the ingest doesn't ask; set Skipped for anything the brain shouldn't touch |
+| Inbox | What's in my inbox? | List | Brain Status is New or Ready | Created, ascending | — | Name, Kind, Brain Status, Keep, Project, Created | Rows waiting for the brain, oldest first. Set Ready when one can be taken in (a capture is taken in after a day anyway); for a document, say in Keep what to keep (0045). Set Project so the ingest doesn't ask; set Skipped for anything the brain shouldn't touch |
 | Inbox | What came in? | Table | Brain Status is Processed | Created, descending | — | Name, Kind, Summary, Project, Decisions, Concepts | History: every document, email and capture the brain took in, and what it made from each |
 
 There is no Notes database on purpose: notes typed there would never reach the brain. Quick notes go to the Inbox, and notes about a record go in its "My notes" toggle.
@@ -215,18 +216,19 @@ Relations the template already shows as linked views (meetings, tasks, questions
 
 | Database | Heading (in order) | Property group: where · order | Hidden | Backlinks | Why |
 |---|---|---|---|---|---|
-| Areas | Type, Lifecycle | Panel · Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Decisions, Questions, Concepts, Inbox, Tasks, Archived | Brain ID, Last Synced | Off | An area is mostly its links to goals and projects |
+| Areas | Type, Lifecycle | Panel · Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Decisions, Questions, Concepts, References, Inbox, Tasks, Archived | Brain ID, Last Synced | Off | An area is mostly its links to goals and projects |
 | Goals | Status, Progress, Countdown | Panel · Deadline, Why, Area, Key Results, Projects, Summary, Lifecycle, Archived | Brain ID, Last Synced | Off | Progress and status at a glance |
 | Key Results | Progress, Current, Target | Main · Goal, Kind, Start, Unit, Done, Due | — | Off | No body; you edit Current in the heading |
-| Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Goal, People, Summary, Lifecycle, Archived, Meetings, Decisions, Questions, Concepts, Inbox, Tasks | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel |
+| Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Goal, People, Summary, Lifecycle, Archived, Meetings, Decisions, Questions, Concepts, References, Inbox, Tasks | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel |
 | Meetings | Brain Status, Date, Project | Panel · Attendees, Area, Decisions, Questions, Tasks, Review Items | Brain ID, Ingested At | Off | Brain Status is the one field you change per meeting |
 | People | Role, Org | Panel · Email, Projects, Meetings, Sources, Summary, Lifecycle | Brain ID, Last Synced | On hover | Who they are and where they work |
 | Orgs | Relationship, Website | Panel · Meetings via projects, People, Projects, Summary, Lifecycle | Brain ID, Last Synced | On hover | — |
 | Decisions | Assessment, Date, Project | Panel · Area, Decided In, Supersedes, Superseded By, Sources, Summary, Lifecycle | Brain ID, Last Synced | Show always | The body is brain-written; backlinks show supersede chains and mentions |
 | Questions | Status, Kind, Project | Panel · Area, Raised In, Sources, Summary, Lifecycle | Brain ID, Last Synced, Created time | Off | You set Status |
 | Review | Your call, Kind, State | Main · Now, Proposed, Why, What to fix, About, About Page, Source Meeting | Brain ID, Created time, Last edited time | Off | No body; read Now, Proposed and Why, then decide in the heading |
-| Inbox | Brain Status, Kind, Project, Full text | Main · Summary, Area, Decisions, Questions, Concepts, People, Tasks, Ask, Report, Created | Brain ID, Last Synced | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
+| Inbox | Brain Status, Kind, Project, Full text | Main · Keep, What to fix, Refresh, Refresh report, Summary, Area, Decisions, Questions, Concepts, References, People, Tasks, Ask, Report, Created | Brain ID, Last Synced | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
 | Concepts | Lifecycle, Project | Panel · Area, Sources, Summary | Brain ID, Last Synced, Created time | Show always | The body is brain-written |
+| References | Lifecycle, Project | Panel · Area, Sources, Summary | Brain ID, Last Synced, Created time | Show always | The body is brain-written: what you kept, kept current through Review (0045) |
 | Tasks | Status, Due | Panel · Project, Area, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
 
 **Hide system properties everywhere.** Brain ID, Last Synced, Created time and Last edited time are plumbing (owner "system"). Hide them in every view and layout, except where a view lists one to show (for example Last edited time in "Which projects have gone quiet?"). Don't delete them, because the brain matches records by Brain ID.
