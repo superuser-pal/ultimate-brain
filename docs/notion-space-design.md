@@ -223,15 +223,15 @@ The approval queue (0003). Created by the brain; you decide.
 | Property | Type | Owner |
 |---|---|---|
 | Name | Title | Brain: e.g. "Acme launch: Jan → Feb" |
-| Kind | Select: Update Fact, Add To Note, Add Link, Supersede, Contradiction, Merge, New Item, Review Notes, Answer | Brain. **Review Notes** (0041, 0043): one row per ingest, its new notes and links lettered a), b)…; Approve accepts them, "all except b, d" in Note keeps those out, Reject archives the new notes. **Answer**: an answer to an open question |
-| Target | Text | Brain: note title + Brain ID (for Review Notes, the meeting or source). Says what changes; your corrections go in Note |
-| Target Page | URL | Brain: link to the Notion page affected |
-| Before | Text | Brain |
-| After | Text | Brain |
+| Kind | Select: Update Fact, Add To Note, Update Body, Add Link, Supersede, Contradiction, Merge, New Item, Review Notes, Answer | Brain. **Review Notes** (0041, 0043, 0045): one row per meeting, email or document, holding everything it proposes, lettered a), b)…: fact changes first, marked ⚠, then text added to existing notes, then the new notes, then links. Approve accepts them; "all except b, d" in What to fix moves those to a row of their own that waits for you; Reject archives the new notes. Contradiction, Supersede, Merge and Answer keep rows of their own. **Update Body**: a change to a kept reference (0045) |
+| About | Text | Brain: note title + Brain ID (for Review Notes, the meeting or source). Was Target before 0.5.0 (0045) |
+| About Page | URL | Brain: link to the Notion page affected (was Target Page) |
+| Now | Text | Brain: the current value (was Before) |
+| Proposed | Text | Brain: the proposed value, or the lettered items (was After) |
 | Why | Text | Brain: the sentence from the source that triggered it |
 | Source Meeting | Relation → Meetings | Brain |
-| Decision | Select: Approve, Reject, Edit | **You**. Its description carries the promise of Review, so every row shows it on hover: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed." (0045) |
-| Note | Text | **You**: with Edit, the value to use; with Approve or Reject, what to do differently ("all except Ana"). The brain reads it and never applies a different change silently (0037) |
+| Your call | Select: Approve, Reject, Fix | **You** (was Decision, with Edit; 0045). Its description carries the promise of Review, so every row shows it on hover: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed." |
+| What to fix | Text | **You** (was Note): with Fix, what's wrong, in your words ("Lucía is on Acme website, not Acme app", "a: March"); with Approve, what to leave out ("all except b, d"). The brain applies its corrected version and says in its report what it changed; it never applies a change your words didn't clearly ask for (0037, 0045) |
 | State | Select: Pending, Applied, Closed | System |
 | Brain ID | Text | System (`prp-…`) |
 | Created time | Created time | System (Notion fills it; sorts the queue) |
@@ -248,21 +248,26 @@ Everything that came into the brain except meetings, which have their own databa
 | Decisions | Relation → Decisions (two-way with Sources) | Brain |
 | Questions | Relation → Questions (two-way with Sources) | Brain |
 | Concepts | Relation → Concepts (two-way with Sources) | Brain |
+| References | Relation → References (two-way with Sources) | Brain (0045) |
 | People | Relation → People (two-way with Sources) | Brain |
 | Project | Relation → Projects (two-way with Inbox) | You: set it on a capture and the ingest uses it without asking (brain fills if empty) |
 | Area | Relation → Areas (two-way with Inbox) | You (brain fills if empty) |
-| Brain Status | Select: New, Processed, Skipped | You set Skipped; brain sets Processed |
+| Brain Status | Select: New, Ready, Processed, Skipped | You set Ready ("take it in") and Skipped; brain sets Processed. A catch-up takes in Ready rows, and captures New for a day or more (0045) |
+| Keep | Text | You: what to keep from a document, email or note ("just the requirements"). Empty: the catch-up asks (0045) |
 | Full text | Checkbox | You: tick it to have the document's text on the row; the brain writes it on the next catch-up and clears the box (0043) |
 | Report | Relation → Inbox (two-way with Ask) | Brain: on an Ask row, the report that answers it |
-| Ask | Relation → Inbox (two-way with Report) | Brain: on a Report row, the question it answers |
+| Ask | Relation → Inbox (two-way with Report) | Brain: on a Report row, the questions it answers |
+| Refresh | Checkbox | You, on a Report row: rewrite it with what the brain knows now; the brain clears it (0045) |
+| Refresh report | Relation → Inbox | You, on an Ask row: the report this question refreshes; empty = a new report (0045) |
+| What to fix | Text | You, on a Report row: what the report gets wrong; the brain turns it into Review rows, clears it, and refreshes the report once you approve them (0045) |
 | Tasks | Relation → Tasks (two-way with Source) | You |
 | Brain ID | Text | System (the source's id, `src-…`) |
 | Last Synced | Date (with time) | System |
 | Created | Created time | System |
 
-Decisions, Questions, Concepts and People together are **Produced**: the notes the brain made from this input. The page body is yours on a capture and on an Ask row. On a row the brain creates, the body is a digest written once: what the input is, its summary, the key points by section and the figures and dates as stated. Below it, a toggle heading **Full text** holds the text itself when you chose it (emails and chats by default, documents and decks on request, or part of one: "slides 3–9"). It is a one-way copy: the source in the brain stays the real one, and an edit there doesn't reach the brain.
+Decisions, Questions, Concepts, References and People together are **Produced**: the notes the brain made from this input. The page body is yours on a capture and on an Ask row. On a row the brain creates, the body is a digest written once: what the input is, its summary, the key points by section and the figures and dates as stated. Below it, a toggle heading **Full text** holds the text itself when you chose it (emails and chats by default, documents and decks on request, or part of one: "slides 3–9"). It is a one-way copy: the source in the brain stays the real one, and an edit there doesn't reach the brain.
 
-**Ask and Report (0043):** add a row with Kind = Ask and your question as its Name ("Everything about the Acme launch since August"). The next catch-up answers it with a new row, Kind = Report, linked to your Ask row, which becomes Processed. The report has Where it stands, Timeline (oldest first, each line linked), Decisions in force, Open questions and risks, People involved, and Gaps; lines resting on notes you haven't reviewed are marked *(not reviewed)*. A report is a dated snapshot, never ingested back: ask again to refresh it. The brain doesn't read Inbox rows back except to ingest New captures, so an edit to Summary or Produced stays in Notion until the brain's own value changes.
+**Ask and Report (0043):** add a row with Kind = Ask and your question as its Name ("Everything about the Acme launch since August"). The next catch-up answers it with a new row, Kind = Report, linked to your Ask row, which becomes Processed. The report has Where it stands, Timeline (oldest first, each line linked), Decisions in force, Open questions and risks, People involved, and Gaps; lines resting on notes you haven't reviewed are marked *(not reviewed)*. A report is **living** (0045): one per subject, shown on the project and area pages under "Reports". Tick **Refresh** to have it rewritten with a new date, or set an Ask row's **Refresh report** to it; write in **What to fix** what it gets wrong. It is never ingested back. The brain doesn't read Inbox rows back except to ingest New captures, so an edit to Summary or Produced stays in Notion until the brain's own value changes.
 
 ### 3.12 Tasks (default, only if you have no tasks system)
 Minimal, so the brain can send action items (0018). If you already have a tasks database, skip it and map yours in `brain.json`.
@@ -290,6 +295,18 @@ Ideas, methods and definitions the brain learned, mostly from documents (0037). 
 | Created time | Created time | System (Notion fills it; "Recent" view) |
 
 Plus the common properties. Page body: the concept's explanation, brain-written. `^[inferred]` statements shown with an "AI inference" label (0004).
+
+### 3.14 References
+What you kept from a document: a requirements list, a spec, a price list (0045). The brain creates one when an Inbox row's **Keep** says what to keep ("just the requirements"), and proposes changes to it when a new version of the document arrives (Kind Update Body in Review). Created by the brain only.
+
+| Property | Type | Owner |
+|---|---|---|
+| Project | Relation → Projects (two-way with References) | Brain |
+| Area | Relation → Areas (two-way with References) | Brain |
+| Sources | Relation → Inbox (two-way with References) | Brain (filled from the Inbox side) |
+| Created time | Created time | System |
+
+Plus the common properties. Page body: the kept content, brain-written.
 
 ---
 
@@ -337,7 +354,7 @@ Each Space: the synced Spaces navigation in a narrow left column, then one tabs 
 | **Meetings** | Prepare, review minutes, track ingestion | Upcoming · To review · Ready for the brain · Ingested this week · Calendar |
 | **Projects** | Run projects | Active (board by Status) · By area · Deadlines (timeline) · Gone quiet |
 | **Plan** | Areas → goals → key results → projects | Goals · Key results (by goal) · Areas (the way into each Area page) · Projects by goal |
-| **Review** | Decide on proposals | A muted line above the views: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. Your corrections go in Note. Target says what changes." (0043, 0045). A decided row leaves Review 30 days after the decision; the brain keeps it in Git (0045) · Needs my decision · Sources disagree · Approved recently · Rejected |
+| **Review** | Decide on proposals | A muted line above the views: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. To correct something, pick Fix in Your call and say what's wrong in What to fix." (0043, 0045). A decided row leaves Review 30 days after the decision; the brain keeps it in Git (0045) · Needs my decision · Sources disagree · Approved recently · Rejected |
 | **Knowledge** | Navigate what the brain knows | Decisions (Recent, Current, Provisional, Superseded, Disputed) · Questions (Open questions, Open risks, Answered) · Concepts (Recent, By project, Drafts) · People (by org, Disputed) · Orgs (Clients, Others) · Inbox (Inbox: New, oldest first · History: Processed, newest first) |
 | **Archive** (under System) | Find what's finished | One tab per database: Projects (Done or Archived) · Goals (Achieved, Dropped or Archived) · Areas · Decisions · Questions · Concepts · People · Orgs (Archived) |
 

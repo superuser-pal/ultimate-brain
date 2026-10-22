@@ -38,6 +38,7 @@
       "enum": [
         "update_fact",
         "add_to_note",
+        "update_body",
         "add_link",
         "supersede",
         "contradiction",
@@ -63,6 +64,10 @@
     "content": {
       "type": "string",
       "minLength": 1
+    },
+    "before_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
     },
     "supersedes": {
       "$ref": "note.schema.json#/$defs/id"
@@ -100,6 +105,7 @@
           "enum": [
             "approve",
             "reject",
+            "fix",
             "edit"
           ]
         },
@@ -109,6 +115,52 @@
         "note": {
           "type": "string",
           "minLength": 1
+        },
+        "fixes": {
+          "description": "On fix: the corrected values the skill read from the What to fix text (spec/schema.md §11.3).",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {},
+              "change": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "note": {
+                "$ref": "note.schema.json#/$defs/id"
+              },
+              "field": {
+                "type": "string",
+                "minLength": 1
+              },
+              "link": {
+                "type": "object",
+                "required": [
+                  "field",
+                  "value"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "$ref": "note.schema.json#/$defs/id"
+                  },
+                  "field": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
         },
         "exclude": {
           "type": "array",
@@ -130,6 +182,10 @@
               "value": {
                 "type": "string",
                 "minLength": 1
+              },
+              "change": {
+                "type": "integer",
+                "minimum": 0
               }
             },
             "oneOf": [
@@ -153,6 +209,11 @@
                       "required": [
                         "target"
                       ]
+                    },
+                    {
+                      "required": [
+                        "change"
+                      ]
                     }
                   ]
                 }
@@ -163,8 +224,46 @@
                   "value"
                 ],
                 "not": {
-                  "required": [
-                    "note"
+                  "anyOf": [
+                    {
+                      "required": [
+                        "note"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "change"
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "required": [
+                  "change"
+                ],
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "note"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "target"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "field"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "value"
+                      ]
+                    }
                   ]
                 }
               }
@@ -181,18 +280,51 @@
           ]
         }
       },
-      "if": {
-        "properties": {
-          "action": {
-            "const": "edit"
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "edit"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "value"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "fix"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "note",
+              "fixes"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "fixes"
+            ]
+          },
+          "then": {
+            "properties": {
+              "action": {
+                "const": "fix"
+              }
+            }
           }
         }
-      },
-      "then": {
-        "required": [
-          "value"
-        ]
-      }
+      ]
     },
     "notion": {
       "$ref": "note.schema.json#/$defs/notionPageId"
@@ -276,6 +408,38 @@
         "$ref": "note.schema.json#/$defs/id"
       }
     },
+    "changes": {
+      "description": "review_notes only: the update_fact, update_body and add_to_note items of the same ingest, in render order (spec/schema.md §11.3).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/change"
+      }
+    },
+    "deferred_from": {
+      "type": "string",
+      "pattern": "^prp-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+    },
+    "dropped": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "change",
+          "reason"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "change": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reason": {
+            "const": "stale"
+          }
+        }
+      }
+    },
     "answer": {
       "type": "string",
       "minLength": 1
@@ -335,6 +499,46 @@
         "not": {
           "required": [
             "note"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "update_body"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "target",
+          "content",
+          "before_hash"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "field"
+              ]
+            },
+            {
+              "required": [
+                "before"
+              ]
+            },
+            {
+              "required": [
+                "after"
+              ]
+            },
+            {
+              "required": [
+                "note"
+              ]
+            }
           ]
         }
       }
@@ -563,6 +767,7 @@
             "properties": {
               "action": {
                 "enum": [
+                  "fix",
                   "edit"
                 ]
               }
@@ -620,6 +825,7 @@
               "action": {
                 "enum": [
                   "approve",
+                  "fix",
                   "edit"
                 ]
               }
@@ -670,6 +876,7 @@
                   "action": {
                     "enum": [
                       "approve",
+                      "fix",
                       "edit"
                     ]
                   }
@@ -705,6 +912,7 @@
               "update_fact",
               "contradiction",
               "add_to_note",
+              "update_body",
               "answer"
             ]
           }
@@ -766,7 +974,10 @@
           "decision": {
             "properties": {
               "action": {
-                "const": "approve"
+                "enum": [
+                  "approve",
+                  "fix"
+                ]
               }
             }
           }
@@ -806,6 +1017,16 @@
           {
             "properties": {
               "links": {
+                "minItems": 1
+              }
+            }
+          },
+          {
+            "required": [
+              "changes"
+            ],
+            "properties": {
+              "changes": {
                 "minItems": 1
               }
             }
@@ -1011,6 +1232,11 @@
                         "required": [
                           "note"
                         ]
+                      },
+                      {
+                        "required": [
+                          "change"
+                        ]
                       }
                     ]
                   }
@@ -1056,6 +1282,11 @@
                         "field",
                         "value"
                       ]
+                    },
+                    {
+                      "required": [
+                        "change"
+                      ]
                     }
                   ]
                 }
@@ -1064,6 +1295,222 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "required": [
+          "before_hash"
+        ]
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "update_body"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "anyOf": [
+          {
+            "required": [
+              "changes"
+            ]
+          },
+          {
+            "required": [
+              "deferred_from"
+            ]
+          },
+          {
+            "required": [
+              "dropped"
+            ]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "review_notes"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "dropped"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "applied"
+          }
+        }
+      }
     }
-  ]
+  ],
+  "$defs": {
+    "change": {
+      "type": "object",
+      "required": [
+        "kind",
+        "target"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "update_fact",
+            "update_body",
+            "add_to_note"
+          ]
+        },
+        "target": {
+          "$ref": "note.schema.json#/$defs/id"
+        },
+        "why": {
+          "type": "string",
+          "minLength": 1
+        },
+        "field": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "before": {
+          "$ref": "note.schema.json#/$defs/factValue"
+        },
+        "after": {
+          "$ref": "note.schema.json#/$defs/factValue"
+        },
+        "from": {
+          "$ref": "note.schema.json#/$defs/dateOrMonth"
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1
+        },
+        "before_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "update_fact"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "field",
+              "after"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "content"
+                  ]
+                },
+                {
+                  "required": [
+                    "before_hash"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "update_body"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "content",
+              "before_hash"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "field"
+                  ]
+                },
+                {
+                  "required": [
+                    "before"
+                  ]
+                },
+                {
+                  "required": [
+                    "after"
+                  ]
+                },
+                {
+                  "required": [
+                    "from"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "add_to_note"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "content"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "field"
+                  ]
+                },
+                {
+                  "required": [
+                    "before"
+                  ]
+                },
+                {
+                  "required": [
+                    "after"
+                  ]
+                },
+                {
+                  "required": [
+                    "from"
+                  ]
+                },
+                {
+                  "required": [
+                    "before_hash"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
 }

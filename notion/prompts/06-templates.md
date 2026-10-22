@@ -16,7 +16,8 @@ Create a default page template for each database below. Each item "Heading: data
   "What have we decided here?": Decisions where Area is this page (views: "Current" Assessment is not Superseded, Date descending; "Superseded" Assessment is Superseded, Date descending), showing Name, Project, Date.
   "What's still open here?": Questions where Area is this page (views: "Open questions" Status is Open and Kind is Question; "Open risks" Status is Open and Kind is Risk; "Answered" Status is Answered), showing Name, Project, Kind.
   "What came in?": Inbox where Area is this page, sorted Created descending, showing Name, Kind, Summary.
-  "What do we know?": two views, "Decisions" (Decisions where Area is this page, sorted Date descending, showing Name, Assessment, Date, Project) and "Concepts" (Concepts where Area is this page, sorted Created time descending, showing Name, Summary, Project).
+  "What do we know?": three views, "Decisions" (Decisions where Area is this page, sorted Date descending, showing Name, Assessment, Date, Project), "Concepts" (Concepts where Area is this page, sorted Created time descending, showing Name, Summary, Project) and "References" (References where Area is this page, sorted Last edited time descending, showing Name, Summary, Project).
+  "Reports": Inbox where Area is this page and Kind is Report, sorted Last edited time descending, showing Name, Refresh, What to fix.
   Then a toggle "My notes".
 - Goals:
   "How are the key results moving?": Key Results where Goal is this page (views: "Open" Progress is less than 100%; "Done" Progress is 100%), showing Name, Current, Target, Unit, Progress, Done.
@@ -30,10 +31,11 @@ Create a default page template for each database below. Each item "Heading: data
   "What's still open here?": Questions where Project is this page and Status is Open, showing Name, Kind.
   "Who's involved?": People where Projects contains this page, showing Name, Role, Org.
   "What came in?": Inbox where Project is this page, sorted Created descending, showing Name, Kind, Summary.
-  "What do we know?": two views, "Decisions" (Decisions where Project is this page, sorted Date descending, showing Name, Assessment, Date) and "Concepts" (Concepts where Project is this page, sorted Created time descending, showing Name, Summary).
+  "What do we know?": three views, "Decisions" (Decisions where Project is this page, sorted Date descending, showing Name, Assessment, Date), "Concepts" (Concepts where Project is this page, sorted Created time descending, showing Name, Summary) and "References" (References where Project is this page, sorted Last edited time descending, showing Name, Summary).
+  "Reports": Inbox where Project is this page and Kind is Report, sorted Last edited time descending, showing Name, Refresh, What to fix.
   Then a toggle "My notes".
 - Meetings:
-  A gray callout containing a heading 3 "Before marking Reviewed", a divider, and the to-do items "Attendees linked", "Project linked", "Minutes follow the format", "Minutes checked and corrected".
+  A gray callout containing a heading 3 "Before marking Reviewed", a divider, and the to-do items "Attendees linked", "Project linked", "Minutes follow the format", "Minutes checked and corrected", then a gray line "Check the minutes, fix them, then set Brain Status to Reviewed. Fixed them after the brain took them in? Set Reviewed again: it reads only what changed."
   A Notion AI meeting notes block.
   A toggle "My notes".
   A toggle "Decisions" containing a linked view of Decisions where Decided In is this page.
@@ -51,7 +53,7 @@ Set each of these templates as the database default.
 ```
 
 ## Verify
-- [ ] Create a new Project: the gray hint line comes first, then "Brief" and "Decision log" as **toggle** headings (with an arrow), then the six headed views and "My notes". Delete the test project.
-- [ ] Create a new Area: it starts with a "Brief" toggle heading, then has the eight headed views, and its page header shows the two "via projects" rollups (set in the page layout, [views-guide.md](../views-guide.md) §9). Delete the test area.
+- [ ] Create a new Project: the gray hint line comes first, then "Brief" and "Decision log" as **toggle** headings (with an arrow), then the seven headed views (Reports included) and "My notes". Delete the test project.
+- [ ] Create a new Area: it starts with a "Brief" toggle heading, then has the nine headed views (Reports included), and its page header shows the two "via projects" rollups (set in the page layout, [views-guide.md](../views-guide.md) §9). Delete the test area.
 - [ ] No template has a callout that prints "[Summary]", "[Role]" or "Why".
 - [ ] Every template listed above is the default for its database.

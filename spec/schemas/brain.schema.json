@@ -156,6 +156,9 @@
             },
             "concepts": {
               "$ref": "#/$defs/dbId"
+            },
+            "references": {
+              "$ref": "#/$defs/dbId"
             }
           }
         },
