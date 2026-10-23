@@ -603,7 +603,7 @@ The rest of decision 0045. The agency brain moves in at 0.6.0, after area homes 
 **Output:** reviews/07: whether Nous Research's Hermes Agent can run the brain's skills unattended (skill format, the Notion MCP, git access, the CLI, how a scheduled catch-up asks its one batch of questions) and what it would need from the product; GBrain read-only (`gbrain import`, `gbrain search`) against a local BM25 index on a synthetic brain of about 2,000 notes (recall on known questions, setup, cost); a recommendation for docs/v2-ideas.md. Hermes and GBrain are untrusted sources: read their docs, run their code only in a scratch directory on synthetic data.
 **Acceptance:** Codex's review finds the comparison reproducible from the review's commands; no decision changed.
 
-### CC-53 · Using Orca with the task workflow · `in progress`
+### CC-53 · Using Orca with the task workflow · `review`
 **Release:** 0.5.0
 **Changelog:** AGENTS.md says how agents launched by Orca follow the task workflow: worktrees from `task.mjs`, Claude builds, Codex reviews, TASKS.md stays the task list.
 **Output:** AGENTS.md "Using Orca" (from the user's 2026-10-23 check of the Orca skills against the workflow): worktrees from `task.mjs start` and `orca agent launch` in them, not `orca worktree create`; build agents are Claude, Codex only reviews (0044); no worker on the main checkout; build/TASKS.md over Orca's card status, Runs and Tasks.
