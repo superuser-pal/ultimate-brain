@@ -169,7 +169,7 @@ After I confirm: replace the text below the title with the rewrite. Never change
 Goal: turn a pasted email thread into a clean copy the brain can read. Clean it; never summarize it.
 Source: this page only. It must be a page in the Inbox database inside [@Brain Data] with Kind Capture and Brain Status New; otherwise stop and tell me.
 
-1. Split the text into messages. Put them oldest first.
+1. Split the text into messages. Put them newest first, as a mail client shows them: the latest message at the top, the oldest at the bottom. A message with no date goes where the thread places it (a reply pasted on top is the newest).
 2. Start each message with one heading 3: <sender> → <recipients> · <date>, e.g. "Tomás Vidal → Lucía Fernández · 3 Dec 2026". Names only: no email addresses, no Cc, no Subject. Take each part only from that message's own header or quote line ("On 2 Dec, Lucía Fernández <…> wrote:" names the sender only; a reply pasted with no header takes its sender from its sign-off or signature). If the text shows only an address, keep the address. Never guess a name, recipient or date; leave out a part the text doesn't show.
 3. Under the heading, the message's own text word for word, from the greeting to the sign-off, as normal paragraphs: every name, number, date and link the sender wrote. Keep the sender's paragraphs and lists, with an empty line between paragraphs. Join lines a mail client broke in the middle of a sentence; change line breaks only, never words. Never shorten, merge or drop a sentence the sender wrote, even one about a meeting.
    Put a divider between messages. The result reads as: heading, body, divider, heading, body.

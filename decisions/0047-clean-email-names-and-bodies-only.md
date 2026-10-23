@@ -16,6 +16,7 @@ The user wants only the bodies, with who wrote to whom.
 ## Decision
 - **One line per message, names only:** `<sender> → <recipients> · <date>`. For example: `Tomás Vidal → Lucía Fernández · 3 Dec 2026`. No email addresses, no Cc, no Subject. If the text shows only an address and no name, the address stays: the skill never guesses a name. A part the text doesn't show is left out.
 - **Then the message's own text, word for word:** what the sender wrote, from the greeting to the sign-off.
+- **Newest first,** as a mail client shows a thread: the latest message on top, the oldest at the bottom (the user, 2026-10-23). The brain dates each message from its heading, so the order changes nothing for the ingest.
 - **Easy to read in Notion** (the user, 2026-10-23: the first version was still hard to read):
   - the names-and-date line is a heading 3;
   - the body sits under it as normal paragraphs, with the sender's own paragraphs and lists;
@@ -36,7 +37,7 @@ The user wants only the bodies, with who wrote to whom.
 - **Still clean, never summarize** (0045): a sentence the sender wrote is never shortened, merged or dropped. That includes a sentence about a meeting ("Let's meet Thursday at 10").
 
 ## Consequences
-- **Amends 0045:** "one header per message (From, To, Date, Subject)" becomes a heading with names and date, and "after the user confirms, it rewrites the page" becomes "it rewrites the page, and asks only on a serious doubt". Check minutes and Tidy capture still wait for a yes.
+- **Amends 0045:** "one header per message (From, To, Date, Subject)" becomes a heading with names and date; "oldest first" becomes newest first; and "after the user confirms, it rewrites the page" becomes "it rewrites the page, and asks only on a serious doubt". Check minutes and Tidy capture still wait for a yes.
 - **The ingest** reads a capture whose messages start with `<sender> → <recipients> · <date>` (a heading) as an email, as it does today for From and Date lines.
 - **Notion:** migration 0008 replaces the Clean email skill's text in Brain Assistant Skills. The migration for 0.5.0 becomes 0009.
 - **Release:** 0.4.2.

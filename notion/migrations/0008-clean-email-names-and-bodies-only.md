@@ -14,6 +14,6 @@ Run it after installing 0.4.2 and running `brain upgrade`. The **agent** step is
 | In the agent's **Instructions**, replace the rule line "Never edit any property or page. Only the skills … may edit page text, and only after I confirm." with the one in [brain-assistant.md](../brain-assistant.md) (Clean email edits directly) | by hand: the API can't reach a Custom Agent's Instructions |
 
 ## Verify
-- [ ] `/Clean email` on a capture holding a pasted thread shows, per message, a heading 3 `<sender> → <recipients> · <date>` with names only, the message's own text word for word in normal paragraphs below it, and a divider before the next message, oldest first.
+- [ ] `/Clean email` on a capture holding a pasted thread shows, per message, a heading 3 `<sender> → <recipients> · <date>` with names only, the message's own text word for word in normal paragraphs below it, and a divider before the next message, newest first.
 - [ ] No email addresses, Cc, Subject, Teams, Zoom or Meet join details, or "[EXTERNAL]" banners are left; every sentence the senders wrote is.
 - [ ] The page is rewritten without a question, and the reply counts what was removed; a thread with two different copies of the same message gets a question first, and nothing changes until you answer.
