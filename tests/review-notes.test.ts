@@ -48,7 +48,7 @@ test("review_notes folds the source's add_link items and titles the row", async 
   assert.equal(created.json.data.created.length, 1, "the links are folded, not grouped into add_link proposals");
   const [row] = created.json.data.created;
   assert.equal(row.kind, "review_notes");
-  assert.equal(row.title, "Accept 2 new notes from Acme sync, and 2 links");
+  assert.equal(row.title, "From Acme sync: 2 new notes and 2 links");
   assert.deepEqual(row.input_indexes, [0, 1, 2]);
   const proposal = await attributes(dir, row.path);
   assert.deepEqual(proposal.notes, [DECISION, QUESTION]);
@@ -56,7 +56,7 @@ test("review_notes folds the source's add_link items and titles the row", async 
     { target: CONCEPT, field: "projects", value: PROJECT },
     { target: DECISION, field: "aliases", value: "Supabase auth" },
   ]);
-  assert.equal(proposal.why, "New notes and links from Acme sync");
+  assert.equal(proposal.why, "What came in from Acme sync");
   assert.deepEqual(await lintErrors(dir), []);
 
   const again = await run(dir, ["proposal", "new"], { proposals: reviewInput });
@@ -97,7 +97,7 @@ test("proposal backlog writes one row per source over its draft notes, then noth
   const [kickoff, sync] = await Promise.all(first.json.data.created.map((row: { path: string }) => attributes(dir, row.path)));
   assert.equal(kickoff!.source, "mtg-5r2k8v3a");
   assert.deepEqual(kickoff!.notes, ["per-9t2c6m4a"]);
-  assert.equal(kickoff!.title, "Accept 1 new note from Acme kickoff");
+  assert.equal(kickoff!.title, "From Acme kickoff: 1 new note");
   assert.equal(kickoff!.why, "Notes from Acme kickoff waiting for your review");
   assert.equal(sync!.source, SYNC);
   assert.deepEqual([...(sync!.notes as string[])].sort(), [DECISION, SYNC, QUESTION].sort());
