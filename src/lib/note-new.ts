@@ -40,7 +40,7 @@ export interface StagedNotes {
 }
 
 const ITEM_KEYS = ["type", "id", "title", "file_date", "frontmatter", "body"];
-const KNOWLEDGE_TYPES = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "memory"]);
+const KNOWLEDGE_TYPES = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 const NEW_NOTE_TYPES = new Set([...KNOWLEDGE_TYPES, "source"]);
 const FORBIDDEN_KEYS = ["id", "type", "title", "created", "updated", "lifecycle"];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;

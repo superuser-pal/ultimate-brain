@@ -13,9 +13,11 @@ const SECTIONS: ReadonlyArray<readonly [type: string, heading: string]> = [
   ["question", "Questions"],
   ["meeting", "Meetings"],
   ["concept", "Concepts"],
+  ["reference", "References"],
 ];
 
 const NON_KNOWLEDGE = new Set(["source", "view", "proposal"]);
+const TYPES = [...SECTIONS.map(([type]) => type), "source", "view", "proposal", "memory"];
 
 /** Computed inverses exposed as backlinks (spec/schema.md §6). */
 const RELATION_INVERSES: Readonly<Record<string, string>> = {
@@ -80,7 +82,8 @@ export function buildIndex(allNotes: readonly Note[]): BuiltIndex {
     notes.push(note);
   }
 
-  const counts: Record<string, number> = {};
+  // Every type has a count, zero included (spec/cli.md §5.8).
+  const counts: Record<string, number> = Object.fromEntries(TYPES.map((type) => [type, 0]));
   for (const note of notes) counts[note.type] = (counts[note.type] ?? 0) + 1;
 
   return {
@@ -151,6 +154,8 @@ function typeFields(note: Note, byId: ReadonlyMap<string, Note>): Array<[string,
       return [["kind", scalar(a.kind)], ["status", notionField("status")]];
     case "meeting":
       return [["date", scalar(a.date)], ["project", refs(a.projects)]];
+    case "reference":
+      return [["area", ref(a.area)], ["project", refs(a.projects)]];
     default:
       return [];
   }
