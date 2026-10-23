@@ -134,6 +134,20 @@ export function stageNotes(
       : undefined;
     if (problem !== undefined) parents.push({ pointer: `${pointerOf(index)}/frontmatter/attached_to`, message: problem });
   });
+  // replaces names a source, existing or earlier in the batch, that no other source replaces (spec/cli.md §5.5, 0045).
+  const replaced = new Map<string, string>();
+  for (const note of workspace.notes) if (note.type === "source" && typeof note.attributes.replaces === "string") replaced.set(note.attributes.replaces, note.id);
+  items.forEach((item, index) => {
+    const earlier = item.type === "source" ? item.frontmatter.replaces : undefined;
+    if (earlier === undefined) return;
+    const type = workspace.get(String(earlier))?.type ?? items.slice(0, index).find((candidate) => candidate.id === earlier)?.type;
+    const problem = type === undefined ? `${String(earlier)} is not an existing source or one earlier in the batch`
+      : type !== "source" ? `${String(earlier)} is a ${type}, not a source`
+      : replaced.has(String(earlier)) ? `${String(earlier)} is already replaced by ${replaced.get(String(earlier))}`
+      : undefined;
+    if (problem !== undefined) parents.push({ pointer: `${pointerOf(index)}/frontmatter/replaces`, message: problem });
+    replaced.set(String(earlier), item.id ?? `/notes/${index}`);
+  });
   // A repo file names a linked repo of brain.json (0042).
   const repoNames = new Set(Array.isArray(workspace.config.repos) ? workspace.config.repos.filter(isRecord).map((repo) => repo.name) : []);
   items.forEach((item, index) => {
@@ -154,8 +168,9 @@ export function stageNotes(
     if (item.type === "source") {
       const hash = `sha256:${createHash("sha256").update(body, "utf8").digest("hex")}`;
       const sourceKey = attributes.source_key;
+      // A new version (replaces) is compared by its text only, so a corrected input can be read again (0045).
       const duplicateByKey =
-        typeof sourceKey === "string" && (sourceKey.startsWith("file:") || attributes.kind === "capture");
+        attributes.replaces === undefined && typeof sourceKey === "string" && (sourceKey.startsWith("file:") || attributes.kind === "capture");
       const duplicate = workspace.notes.find((note) =>
         note.type === "source" && (note.attributes.content_hash === hash || (duplicateByKey && note.attributes.source_key === sourceKey)),
       );
