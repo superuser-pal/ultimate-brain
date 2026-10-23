@@ -210,7 +210,7 @@ Open questions and risks raised in meetings.
 | Property | Type | Owner |
 |---|---|---|
 | Kind | Select: Question, Risk | Brain |
-| Status | Select: Open, Answered, Dropped | You. The brain sets Answered once, after you approve an Answer row in Review (0041) |
+| Status | Select: Open, Answered, Dropped | You. The brain sets Open when it creates a question, and Answered once after you approve an Answer row in Review (0041, 0045) |
 | Project | Relation → Projects | Brain |
 | Area | Relation → Areas (two-way with Questions) | Brain: the areas of its projects (0034) |
 | Raised In | Relation → Meetings | Brain |
@@ -225,12 +225,12 @@ The approval queue (0003). Created by the brain; you decide.
 | Name | Title | Brain: e.g. "Acme launch: Jan → Feb" |
 | Kind | Select: Update Fact, Add To Note, Add Link, Supersede, Contradiction, Merge, New Item, Review Notes, Answer | Brain. **Review Notes** (0041, 0043): one row per ingest, its new notes and links lettered a), b)…; Approve accepts them, "all except b, d" in Note keeps those out, Reject archives the new notes. **Answer**: an answer to an open question |
 | Target | Text | Brain: note title + Brain ID (for Review Notes, the meeting or source). Says what changes; your corrections go in Note |
-| Target Page | URL | Brain: link to the Notion page affected |
+| Target Page | URL | Brain: link to the Notion page affected; for Review Notes, the meeting or Inbox row it came from |
 | Before | Text | Brain |
 | After | Text | Brain |
 | Why | Text | Brain: the sentence from the source that triggered it |
 | Source Meeting | Relation → Meetings | Brain |
-| Decision | Select: Approve, Reject, Edit | **You** |
+| Decision | Select: Approve, Reject, Edit | **You**. Its description carries the promise of Review, so every row shows it on hover: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed." (0045) |
 | Note | Text | **You**: with Edit, the value to use; with Approve or Reject, what to do differently ("all except Ana"). The brain reads it and never applies a different change silently (0037) |
 | State | Select: Pending, Applied, Closed | System |
 | Brain ID | Text | System (`prp-…`) |
@@ -332,18 +332,18 @@ Each Space: the synced Spaces navigation in a narrow left column, then one tabs 
 
 | Space | Job | Tabs (view) |
 |---|---|---|
-| **Home** | Start of day: your work first | Left: navigation, then "Needs you": "What needs my decision?" (Review, Pending) and "Which minutes need review?" (Meetings, Not Reviewed, held today or earlier), 5 rows each. Right: buttons Quick capture (→ Inbox, Kind Capture, Brain Status New), Ask the brain (→ Inbox, Kind Ask, Brain Status New), New meeting, New project; then "What's on today?" with tabs Tasks (due today or overdue) · Meetings (today) · Projects (Active); then "What did the brain take in?" (the Brain feed, 0043) with tabs Came in (Inbox, Processed, newest first, 10 rows) · Meetings (Brain Status Ingested, newest Ingested At first, 10 rows) |
+| **Home** | Start of day: your work first | Left: navigation, then "Needs you": a muted line "Start here: approving makes the brain's notes trusted." and "What's waiting for you?" (Review, Pending, grouped by Kind with counts, 0045) and "Which minutes need review?" (Meetings, Not Reviewed, held today or earlier), 5 rows each. Right: buttons Quick capture (→ Inbox, Kind Capture, Brain Status New), Ask the brain (→ Inbox, Kind Ask, Brain Status New), New meeting, New project; then "What's on today?" with tabs Tasks (due today or overdue) · Meetings (today) · Projects (Active); then "What did the brain take in?" (the Brain feed, 0043) with tabs Came in (Inbox, Processed, newest first, 10 rows) · Meetings (Brain Status Ingested, newest Ingested At first, 10 rows) |
 | **Tasks** | Do the work | Today · Upcoming (by day) · No date · Waiting On · Someday · Done (by week) |
 | **Meetings** | Prepare, review minutes, track ingestion | Upcoming · To review · Ready for the brain · Ingested this week · Calendar |
 | **Projects** | Run projects | Active (board by Status) · By area · Deadlines (timeline) · Gone quiet |
 | **Plan** | Areas → goals → key results → projects | Goals · Key results (by goal) · Areas (the way into each Area page) · Projects by goal |
-| **Review** | Decide on proposals | A muted line above the views: "Your corrections go in Note. Target says what changes." (0043) · Needs my decision · Sources disagree · Approved recently · Rejected |
+| **Review** | Decide on proposals | A muted line above the views: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. Your corrections go in Note. Target says what changes." (0043, 0045). A decided row leaves Review 30 days after the decision; the brain keeps it in Git (0045) · Needs my decision · Sources disagree · Approved recently · Rejected |
 | **Knowledge** | Navigate what the brain knows | Decisions (Recent, Current, Provisional, Superseded, Disputed) · Questions (Open questions, Open risks, Answered) · Concepts (Recent, By project, Drafts) · People (by org, Disputed) · Orgs (Clients, Others) · Inbox (Inbox: New, oldest first · History: Processed, newest first) |
 | **Archive** (under System) | Find what's finished | One tab per database: Projects (Done or Archived) · Goals (Achieved, Dropped or Archived) · Areas · Decisions · Questions · Concepts · People · Orgs (Archived) |
 
 Every view, with its filters, sort and properties, is in [notion/views-guide.md](../notion/views-guide.md) and Prompts 7a–7h.
 
-**Brain Assistant** is a Notion Custom Agent for daily use ([notion/brain-assistant.md](../notion/brain-assistant.md)): Instructions with the rules, and seven skills (Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture). Its Tools and access hold only Brain Data, How it works and its skills database, so same-named databases elsewhere in the workspace can't be confused. It reads and answers; only Check minutes and Tidy capture may edit, and only the page text you own (0035). How-to questions are answered from the "How it works" page, a copy of the user guide.
+**Brain Assistant** is a Notion Custom Agent for daily use ([notion/brain-assistant.md](../notion/brain-assistant.md)): Instructions with the rules, and eight skills (Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Clean email). Its Tools and access hold only Brain Data, How it works and its skills database, so same-named databases elsewhere in the workspace can't be confused. It reads and answers; only Check minutes, Tidy capture and Clean email may edit, and only the page text you own (0035, 0045). How-to questions are answered from the "How it works" page, a copy of the user guide.
 
 ---
 

@@ -63,7 +63,7 @@ For each input, publishing waits for step 4 below. **Skipped, not asked:** an in
 ## 4. Publish, push, report
 
 1. **Publish** (when `settings.publish` is `auto`, or the user said yes), once for the whole run, following brain-ingest references/notion.md "Publish" for each write, in this order. Run `brain views` first, so the project and area Briefs are current:
-   1. **Pages:** `sync render --changed --plan plan.json`, write every item (pending relations: publish and record those first, then render again, until no item is pending), `sync record`. This publishes the new notes, the proposals, the meetings' relations, every source's Inbox row with its digest and full text, the report rows (then each Ask row's Brain Status to Processed), the cleared Full text boxes, and the project and area Briefs. Write in parallel, up to 10 at a time, and never read a page back after writing it.
+   1. **Pages:** `sync render --changed --plan plan.json`, write every item (pending relations: publish and record those first, then render again, until no item is pending), `sync record`. This publishes the new notes, the proposals, the meetings' relations, every source's Inbox row with its digest and full text, the report rows (then each Ask row's Brain Status to Processed), the cleared Full text boxes, the project and area Briefs, a question's Status = Open, and the Review rows decided more than 30 days ago (`action: trash`, moved to Notion's trash; decision 0045). Write in parallel, up to 10 at a time, and never read a page back after writing it.
    2. **Tasks,** now that their projects and Inbox rows exist: `sync tasks --meeting` for each ingested meeting and `sync tasks --source` for each ingested source with owner tasks; create each returned item once; `sync record` its page ids. An item still listing `pending_relations` (a project that isn't in Notion) is not created: list it under Check.
    3. Set Brain Status = Skipped on the Inbox rows the user skipped.
    4. Log `brain log publish - pages=<n>` and commit `publish: catch up`.
@@ -71,7 +71,7 @@ For each input, publishing waits for step 4 below. **Skipped, not asked:** an in
 3. **Push** per `settings.push` (AGENTS.md, "Write path").
 4. **Report** once, in the shape of brain-ingest step 12, for the whole run, the decisions included:
    ```
-   Done: 9 applied · 3 captures and 2 files ingested · 12 new notes · 1 task for you
+   Done: 9 applied · 3 captures and 2 files ingested · 12 new notes · 1 task for you · 5 old Review rows trashed
    Needs you: 3 Review rows (2 Review notes rows, 1 answer) · 2 files skipped (too long, say which parts)
    Next: decide in Notion, then "catch up"
    ```

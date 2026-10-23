@@ -59,6 +59,8 @@ The brain only ingests meetings you marked **Reviewed**, and only when you ask: 
 
 ## Deciding in Review
 
+**What approving does:** it makes the brain's notes **trusted**. Approved notes appear in your Briefs and in the brain's answers; until then, the brain treats them as unconfirmed. Start from Home → **Needs you → What's waiting for you?**: it counts what waits, by Kind, and each row's **Target Page** opens the meeting or Inbox row it came from.
+
 The brain never changes what it already knows without your yes. Each proposed change is a row in **Review → Needs my decision**, showing what it was (**Before**) and what it would become (**After**).
 
 1. Set **Decision**:
@@ -67,6 +69,7 @@ The brain never changes what it already knows without your yes. Each proposed ch
    - **Edit** applies your own value: type it in **Note**.
 2. **Note** is also for anything else you want the brain to know about that row: "all except Tomás" on a row that adds several people, or "she's the product lead, not marketing". The agent reads it, and when it describes a different change, proposes that change as a new row or asks you. It never applies something your Note didn't clearly say.
 3. Tell your agent "apply my reviews" (or "catch up"). The change is made, and the row moves to Approved or Rejected.
+4. **30 days after you decide,** the next catch-up moves the row to Notion's trash, so Review holds only what's recent. The brain keeps every decision, and Notion keeps the trash for 30 more days.
 
 **One Review notes row per input.** Every meeting or document the brain reads brings one row: "Accept 6 new notes from Acme launch review, and 2 links". Its After lists every new note and routine link, lettered:
 
@@ -121,7 +124,7 @@ Hover over a property name to see its owner. Each description starts with "Owner
 - Decision, Question and Concept pages are written entirely by the brain.
 - A capture's text is yours; the brain only adds its Kind, Summary and what it produced. An Ask row's text is yours too.
 - **Inbox rows the brain creates** (a document, email, web page, a repo file) get a **digest** in their body: what the input is, a summary and the key points, with figures and dates as stated. Emails and chats also get their whole text in a **Full text** toggle. For a document, tick **Full text** on its row (or say "full text for …") and the next catch-up adds it. Both are written once and never read back, so an edit you make there stays in Notion. The original file is the real copy.
-- A question's **Status** is yours, except that the brain sets **Answered** once, when you approve an Answer row.
+- A question's **Status** is yours. The brain sets it twice at most: **Open** when it creates the question, and **Answered** once, when you approve an Answer row.
 
 **Lifecycle** tells you how far to trust a record:
 - **Draft:** new, not reviewed by you yet;
@@ -145,7 +148,7 @@ Set **Disputed** on anything wrong. The brain stops relying on it, and you can a
 | A file from your phone | Attach it to a **Quick capture** (or to the meeting page), with Project set if you know it. The next catch-up reads it with the row. Files on project and area pages are not read |
 | A repo's knowledge (decisions, docs, changelog) | "link the repo at ~/code/acme-api to the area Clients, files decisions/** and docs/*.md". Each catch-up then reads the files changed since the last one; the first time, it asks which to take. The brain never writes to the repo |
 | A question for a full report | **Ask the brain** on Home: type the question as the Name ("Where do we stand with the Acme launch?"). The next catch-up answers with a **Report** row in the Inbox, linked from yours |
-| An email, chat thread or note | Paste it into a **Quick capture** (keep the From, Date and Subject lines), then "catch up". Or paste it straight to your agent: "ingest this email" |
+| An email, chat thread or note | Paste it into a **Quick capture** (keep the From, Date and Subject lines). For a thread, run **`/Clean email`** on the page: Brain Assistant drops signatures, disclaimers and quoted copies, keeps every message word for word, oldest first, and changes the page only after you confirm. Then "catch up". Or paste it straight to your agent: "ingest this email" |
 | A task | Add it in Tasks. Action items from meetings, and your own from documents, emails and captures, are created for you |
 
 **Tasks:**
@@ -168,6 +171,7 @@ Set **Disputed** on anything wrong. The brain stops relying on it, and you can a
 | `/Weekly review` | What got done and decided, goal and project health, next week |
 | `/Plan check` | Projects without goals, goals without projects, overdue items |
 | `/Tidy capture` (on a new capture in the Inbox) | A cleaner version of the capture; replaces the text after you say yes |
+| `/Clean email` (on a new capture holding a pasted email thread) | The thread without signatures, disclaimers and quoted copies, each message word for word, oldest first; replaces the text after you say yes |
 | "how do I …?" | An answer from this guide |
 
 Brain Assistant reads; your agent in Claude Code or Codex writes. To get something *into* the brain, use the phrases below.
