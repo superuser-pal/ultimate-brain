@@ -16,5 +16,5 @@ The Instructions don't change: Clean email already may edit page text.
 
 ## Verify
 - [ ] `/Clean email` on a capture holding a pasted thread shows, per message, one line `<sender> → <recipients> · <date>` with names only, then the message's own text word for word, oldest first.
-- [ ] No email addresses, Cc, Subject, Teams or Zoom join details, or "[EXTERNAL]" banners are left; every sentence the senders wrote is.
+- [ ] No email addresses, Cc, Subject, Teams, Zoom or Meet join details, or "[EXTERNAL]" banners are left; every sentence the senders wrote is.
 - [ ] Nothing changes until you confirm.
