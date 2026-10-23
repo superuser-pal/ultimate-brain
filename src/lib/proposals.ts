@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 
 import { BrainError } from "./errors.ts";
@@ -11,7 +12,7 @@ import { loadSchemas } from "./schemas.ts";
 import { formatDate } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 
-export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "add_link", "supersede", "contradiction", "merge", "new_item", "review_notes", "answer"] as const;
+export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "update_body", "add_link", "supersede", "contradiction", "merge", "new_item", "review_notes", "answer"] as const;
 export const PROPOSAL_STATUSES = ["pending", "approved", "rejected", "edited", "applied", "closed"] as const;
 
 /** Input keys of `proposal new`: the schema §11 fields the CLI does not set (spec/cli.md §5.6). */
@@ -19,6 +20,8 @@ const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answ
 const ID = /^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{8}$/;
 const KNOWLEDGE_TYPES = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 const ADD_LINK_FIELDS = new Set(["aliases", "tags", "projects", "people", "attendees", "deciders"]);
+/** Kinds a review_notes takes in as `changes`, in the order they are stored (spec/schema.md §11.3, 0045). */
+export const CHANGE_KINDS = ["update_fact", "update_body", "add_to_note"];
 /** Fields that make two pending proposals the same change (dedupe, spec/cli.md §5.6). */
 const DEDUPE_KEYS = ["kind", "target", "field", "after", "content", "note", "supersedes", "merge_into", "answer", "answer_note"];
 
@@ -34,7 +37,7 @@ export interface CreatedProposal {
 
 export interface SkippedProposal {
   input_index: number;
-  reason: "DUPLICATE_PENDING" | "ALREADY_LINKED" | "NOTHING_TO_REVIEW" | "ALREADY_ANSWERED";
+  reason: "DUPLICATE_PENDING" | "ALREADY_LINKED" | "NOTHING_TO_REVIEW" | "ALREADY_ANSWERED" | "NO_CHANGE";
   existing?: string;
 }
 
@@ -64,14 +67,14 @@ export function stageProposals(
   (list as Array<Record<string, unknown>>).forEach((item, index) => {
     if (item.kind === "new_item") checkNewItem(workspace, item.note as NoteInput, `/proposals/${index}/note`, today);
   });
-  // One review_notes per source; it takes in that source's add_link items (spec/cli.md §5.6, 0043).
-  const reviews = new Map<string, { index: number; item: Record<string, unknown>; links: Array<{ index: number; fields: Record<string, unknown> }> }>();
+  // One review_notes per source; it takes in that source's add_link items and changes (spec/cli.md §5.6, 0043, 0045).
+  const reviews = new Map<string, { index: number; item: Record<string, unknown>; links: Array<{ index: number; fields: Record<string, unknown> }>; changes: Array<{ index: number; change: Record<string, unknown> }> }>();
   (list as Array<Record<string, unknown>>).forEach((item, index) => {
     if (item.kind !== "review_notes") return;
     const source = String(item.source);
     if (reviews.has(source)) assertNoProblems([{ pointer: `/proposals/${index}/source`, message: `a second review_notes for ${source} in one input` }]);
     checkReviewNotes(workspace, item, `/proposals/${index}`);
-    reviews.set(source, { index, item, links: [] });
+    reviews.set(source, { index, item, links: [], changes: [] });
   });
   const start = workspace.checkpoint();
   try {
@@ -83,7 +86,12 @@ export function stageProposals(
         skipped.push({ input_index: index, reason: "ALREADY_ANSWERED" });
         return;
       }
-      const review = item.kind === "add_link" ? reviews.get(String(fields.source)) : undefined;
+      if (item.kind === "update_body" && bodyOf(String(fields.content)) === workspace.get(String(fields.target))!.body) {
+        skipped.push({ input_index: index, reason: "NO_CHANGE" });
+        return;
+      }
+      const folds = item.kind === "add_link" || CHANGE_KINDS.includes(String(item.kind));
+      const review = folds ? reviews.get(String(fields.source)) : undefined;
 
       if (item.kind === "add_link" && listField(workspace.get(String(fields.target))!, String(fields.field)).some((value) => isDeepStrictEqual(value, fields.after))) {
         skipped.push({ input_index: index, reason: "ALREADY_LINKED" });
@@ -95,9 +103,15 @@ export function stageProposals(
           ? (note.attributes.kind === "review_notes"
             ? review !== undefined && reviewLinks(note.attributes).some((link) => link.target === fields.target && link.field === fields.field && isDeepStrictEqual(link.value, fields.after))
             : note.attributes.target === fields.target && proposalLinks(note.attributes).some((link) => link.field === fields.field && isDeepStrictEqual(link.value, fields.after)))
-          : DEDUPE_KEYS.every((key) => isDeepStrictEqual(note.attributes[key], fields[key]))));
+          : DEDUPE_KEYS.every((key) => isDeepStrictEqual(note.attributes[key], fields[key]))
+            || (CHANGE_KINDS.includes(String(item.kind)) && note.attributes.kind === "review_notes" && listOf(note.attributes.changes).some((change) => sameChange(change, fields)))));
       if (duplicate !== undefined) {
         skipped.push({ input_index: index, reason: "DUPLICATE_PENDING", existing: duplicate.id });
+        return;
+      }
+      if (review !== undefined && CHANGE_KINDS.includes(String(item.kind))) {
+        if (review.changes.some(({ change }) => sameChange(change, fields))) { skipped.push({ input_index: index, reason: "DUPLICATE_PENDING" }); return; }
+        review.changes.push({ index, change: changeEntry(fields) });
         return;
       }
 
@@ -129,20 +143,24 @@ export function stageProposals(
     }
     for (const review of reviews.values()) {
       const notes = review.item.notes as string[];
-      if (notes.length === 0 && review.links.length === 0) {
+      if (notes.length === 0 && review.links.length === 0 && review.changes.length === 0) {
         skipped.push({ input_index: review.index, reason: "NOTHING_TO_REVIEW" });
         continue;
       }
       const source = String(review.item.source);
+      // Changes are stored in render order: every update_fact, then update_body, then add_to_note (spec/schema.md §11.3).
+      const changes = [...review.changes].sort((a, b) => CHANGE_KINDS.indexOf(String(a.change.kind)) - CHANGE_KINDS.indexOf(String(b.change.kind)) || a.index - b.index);
       const fields: Record<string, unknown> = {
         kind: "review_notes",
-        title: review.item.title ?? reviewTitle(workspace, source, notes.length, review.links.length),
+        title: review.item.title ?? reviewTitle(workspace, source, changes.length, notes.length, review.links.length),
         notes,
         links: review.links.map(({ fields }) => ({ target: fields.target, field: fields.field, value: fields.after })),
-        why: review.item.why ?? `New notes and links from ${sourceTitle(workspace, source)}`,
+        ...(changes.length === 0 ? {} : { changes: changes.map(({ change }) => change) }),
+        why: review.item.why ?? `What came in from ${sourceTitle(workspace, source)}`,
         source,
       };
-      const proposal = createProposal(workspace, fields, [review.index, ...review.links.map(({ index }) => index)].sort((a, b) => a - b), today, `/proposals/${review.index}`, pointers, created);
+      const held = [review.index, ...review.links.map(({ index }) => index), ...changes.map(({ index }) => index)].sort((a, b) => a - b);
+      const proposal = createProposal(workspace, fields, held, today, `/proposals/${review.index}`, pointers, created);
       for (const link of review.links) createdLinks.set(JSON.stringify([link.fields.target, link.fields.source, link.fields.field, link.fields.after]), proposal.id);
     }
     for (const duplicate of duplicateLinks) skipped.push({ input_index: duplicate.input_index, reason: "DUPLICATE_PENDING", existing: createdLinks.get(duplicate.key) });
@@ -185,13 +203,39 @@ function sourceTitle(workspace: Workspace, source: string): string {
   return String(workspace.get(source)?.attributes.title ?? source);
 }
 
-function reviewTitle(workspace: Workspace, source: string, notes: number, links: number): string {
+/** `From <source title>: 1 change, 3 new notes and 2 links` (spec/cli.md §5.6, 0045); a deferred row starts `Deferred from`. */
+export function reviewTitle(workspace: Workspace, source: string, changes: number, notes: number, links: number, lead = "From"): string {
   const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-  const from = sourceTitle(workspace, source);
-  const title = notes === 0
-    ? `Accept ${count(links, "link", "links")} from ${from}`
-    : `Accept ${count(notes, "new note", "new notes")} from ${from}${links === 0 ? "" : `, and ${count(links, "link", "links")}`}`;
+  const parts = [[changes, "change", "changes"], [notes, "new note", "new notes"], [links, "link", "links"]] as const;
+  const counts = parts.filter(([n]) => n > 0).map(([n, one, many]) => count(n, one, many));
+  const joined = counts.length <= 1 ? counts.join("") : `${counts.slice(0, -1).join(", ")} and ${counts.at(-1)}`;
+  const title = `${lead} ${sourceTitle(workspace, source)}: ${joined}`;
   return title.length > 120 ? `${title.slice(0, 119)}…` : title;
+}
+
+/** A change entry of a review_notes: the item's kind, target, why and that kind's fields (spec/schema.md §11). */
+function changeEntry(fields: Record<string, unknown>): Record<string, unknown> {
+  const keys = ["kind", "target", "why", "field", "before", "after", "from", "content", "before_hash"];
+  return Object.fromEntries(keys.filter((key) => fields[key] !== undefined).map((key) => [key, fields[key]]));
+}
+
+function sameChange(change: unknown, fields: Record<string, unknown>): boolean {
+  return isRecord(change) && ["kind", "target", "field", "after", "content"].every((key) => isDeepStrictEqual(change[key], fields[key]));
+}
+
+/** A reference's body as stored, for `content`: one blank line after the frontmatter, LF endings, a final newline. */
+export function bodyOf(content: string): string {
+  const text = content.replace(/\r\n?/g, "\n").replace(/^\n+/, "");
+  return `\n${text.endsWith("\n") ? text : `${text}\n`}`;
+}
+
+/** The body hash an update_body is checked against (the source hash rule, spec/schema.md §4). */
+export function bodyHash(body: string): string {
+  return `sha256:${createHash("sha256").update(body, "utf8").digest("hex")}`;
+}
+
+function listOf(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
 }
 
 /** A review_notes item's notes: existing knowledge notes, listed once here and by no other review_notes. */
@@ -252,6 +296,7 @@ function checkShape(item: unknown, pointer: string): InputProblem[] {
     at("notes", "is only allowed on review_notes");
   }
   if (item.kind === "answer" && (typeof item.answer !== "string" || item.answer.trim() === "")) at("answer", "must be a non-empty string");
+  if (item.kind === "update_body" && (typeof item.content !== "string" || item.content.trim() === "")) at("content", "must be the whole new body");
   if (item.kind !== "answer") {
     for (const key of ["answer", "answer_note"]) if (item[key] !== undefined) at(key, "is only allowed on answer");
   }
@@ -317,6 +362,10 @@ function resolveFields(workspace: Workspace, item: Record<string, unknown>, poin
       const meeting = typeof item.source === "string" && item.source.startsWith("mtg-") ? workspace.get(item.source) : undefined;
       fields.from = typeof meeting?.attributes.date === "string" ? meeting.attributes.date : today;
     }
+  }
+  if (kind === "update_body") {
+    if (target.type !== "reference") invalid("target", `is a ${target.type}; update_body replaces the body of a reference`);
+    fields.before_hash = bodyHash(target.body);
   }
   if (kind === "add_link") {
     const field = typeof item.field === "string" ? item.field : "";
@@ -397,7 +446,7 @@ export function listProposals(workspace: Workspace, statuses: readonly string[],
     .filter((note) => note.type === "proposal")
     .filter((note) => statuses.length === 0 || statuses.includes(String(note.attributes.status)))
     .filter((note) => target === undefined || note.attributes.target === target
-      || (note.attributes.kind === "review_notes" && ((Array.isArray(note.attributes.notes) && note.attributes.notes.includes(target)) || reviewLinks(note.attributes).some((link) => link.target === target))))
+      || (note.attributes.kind === "review_notes" && ((Array.isArray(note.attributes.notes) && note.attributes.notes.includes(target)) || reviewLinks(note.attributes).some((link) => link.target === target) || listOf(note.attributes.changes).some((change) => isRecord(change) && change.target === target))))
     .map((note): Record<string, unknown> => ({ ...note.attributes, path: note.path }))
     .sort((a, b) => compareCodePoints(String(a.created), String(b.created)) || compareCodePoints(String(a.id), String(b.id)));
 }
@@ -429,7 +478,7 @@ export function stageBacklog(workspace: Workspace, now: Date): CreatedProposal[]
       for (const note of notes) claimed.add(note.id);
       const fields = {
         kind: "review_notes",
-        title: reviewTitle(workspace, provenance, notes.length, 0),
+        title: reviewTitle(workspace, provenance, 0, notes.length, 0),
         notes: notes.map((note) => note.id),
         links: [],
         why: `Notes from ${sourceTitle(workspace, provenance)} waiting for your review`,
