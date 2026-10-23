@@ -571,7 +571,7 @@ The small part of the U-15 feedback, ahead of 0.5.0. U-15's two-week habit run c
 
 The rest of decision 0045. The agency brain moves in at 0.6.0, after area homes (docs/v2-ideas.md).
 
-### CC-47 · Contracts for 0.5.0 (decision 0045) · `done` (#127)
+### CC-47 · Contracts for 0.5.0 (decision 0045) · `done` (#127, #128)
 **Release:** 0.5.0
 **Changelog:** contracts for 0.5.0: one Review row per source with Fix, the Ready gate and re-reads, living reports, and `reference` notes from a document's Keep.
 **Output:** spec/schema.md: §11 and §11.1–11.2 (`update_fact` and `add_to_note` items in `review_notes`, fact changes first; `exclude` defers an item to a new pending proposal; one stale item closed alone; `fix` replacing `edit`, on every kind, with the user's text recorded and the corrected values the skill derives); a new type `reference` (fields, folder, Notion mapping, how a new source version proposes changes to it); source versions (a re-read source links the one it replaces; how "only what changed" is computed); §16.4 living reports (rewritten in place, `as_of`, Refresh, What to fix → proposals); spec/cli.md (`review_notes` input and apply for the new items, `DUPLICATE_SOURCE` allowing a declared re-read, `report` refresh, Keep and What to fix read back, the Inbox Ready gate and the capture's 1-day rule as a skill rule in the workflows (§6; `sync plan` doesn't filter Inbox rows), the new Review property names); Notion migration 0008 (Review properties About, Now, Proposed, Your call, What to fix; Inbox Status Ready, Keep, Refresh, What to fix; the Ask row's Refresh relation; a References database; the Reports tab on Projects and Areas; the meeting template's "check, fix, then Reviewed" line); notion design and the views guide.
