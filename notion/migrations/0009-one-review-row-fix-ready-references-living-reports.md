@@ -1,4 +1,4 @@
-# 0008 · Your call and What to fix, the Ready gate, Keep, References, living reports
+# 0009 · Your call and What to fix, the Ready gate, Keep, References, living reports
 
 **Design change:** CC-47 (decision 0045; docs/notion-space-design.md §3.5, §3.10, §3.11, §3.14, §4). **Applies to:** spaces built before release 0.5.0.
 
