@@ -32,3 +32,5 @@ eval/skills-0.5/inputs/inbox.json:d1000000-0000-4000-8000-000000000003
 eval/skills-0.5/inputs/inbox.json:d1000000-0000-4000-8000-000000000004
 eval/skills-0.5/inputs/inbox.json:d1000000-0000-4000-8000-000000000005
 eval/skills-0.5/inputs/inbox.json:d1000000-0000-4000-8000-000000000006
+eval/skills-0.5/runs/fix.diff:7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d
+eval/skills-0.5/runs/fix.diff:2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e

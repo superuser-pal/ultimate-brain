@@ -56,7 +56,7 @@ Run every CLI command as `brain <command> --brain <brain> --json`. Exit 1 means 
    - `decisions`: what will be applied;
    - `conflicts`: `NOTE_TO_READ` is an Approve or Reject with text in What to fix, and `FIX_TO_READ` a Fix with its text: read each as "Reading What to fix" below says. `FIX_WITHOUT_TEXT` is a Fix with What to fix empty: the user says what's wrong in Notion (or here);
    - `ignored`: e.g. `ALREADY_TERMINAL`. Nothing to do.
-3. **Apply.** Run `brain sync apply --input <plan file>`, adding `--record-only` when unattended. Then apply the decisions you resolved from What to fix with `brain apply --input` (unattended: leave `NOTE_TO_READ` and `FIX_TO_READ` rows for an attended run).
+3. **Apply.** Run `brain sync apply --input <plan file>`, adding `--record-only` when unattended. Then apply the decisions you resolved from What to fix with `brain apply --input <file>` (unattended: leave `NOTE_TO_READ` and `FIX_TO_READ` rows for an attended run).
 4. Continue with **Finish** below.
 
 ## Reading What to fix
