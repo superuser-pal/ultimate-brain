@@ -569,7 +569,7 @@ The small part of the U-15 feedback, ahead of 0.5.0. U-15's two-week habit run c
 
 ## 0.4.2 — Clean email from U-17 (decision 0047)
 
-### CC-52 · Clean email keeps names and bodies only (decision 0047) · `review`
+### CC-52 · Clean email keeps names and bodies only (decision 0047) · `done` (#129)
 **Release:** 0.4.2
 **Changelog:** `/Clean email` rewrites the page directly (asking only on a serious doubt) and gives each message, newest first, a heading with names and date, its own text below it and a divider before the next: no addresses, Subject, Cc, banners or Teams, Zoom and Meet blocks.
 **Output:** decision 0047 (amends 0045, from the user's U-17 feedback on 2026-10-23); notion/brain-assistant.md (the Clean email text); Notion migration 0008 (the new text in Brain Assistant Skills and How it works), with 0.5.0's migration renumbered 0009; brain-ingest reading the new message lines as an email; the user guide; eval/clean-email (the thread with addresses, Cc, a banner and a Teams block; the blind runs).

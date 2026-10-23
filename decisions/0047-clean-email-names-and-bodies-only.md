@@ -1,6 +1,6 @@
 # 0047 — Clean email keeps names and bodies only
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-10-23
 **Amends:** 0045
 
