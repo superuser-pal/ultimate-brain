@@ -29,6 +29,15 @@ test("sync plan detects a Notion fact correction from its published baseline", a
   assert.deepEqual(run.json.data.corrections, [{ target: MARIA, field: "facts.role", value: "Product lead", observed_at: "2026-12-10T08:00:00Z", property: "Role", notion_value: "Product lead" }]);
 });
 
+test("sync plan refuses as_of on a row; it belongs at the snapshot's top (#122)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const snapshot = { as_of: NOW, rows: [{ database: "people", page_id: MARIA_PAGE, last_edited: "2026-12-10T08:00:00Z", as_of: NOW, properties: { "Brain ID": MARIA } }] };
+  const run = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot.json", snapshot), "--json"]);
+  assert.notEqual(run.code, 0, run.stdout);
+  assert.match(run.stdout, /\/rows\/0\/as_of/);
+  assert.match(run.stdout, /unknown key/);
+});
+
 test("sync plan reads a pre-0.5.0 Edit as Fix: with a Note it is for the skill, without one a conflict", async (context) => {
   const dir = await fixtureCopy(context);
   const linkProposal = "prp-0a1b2c3d";
