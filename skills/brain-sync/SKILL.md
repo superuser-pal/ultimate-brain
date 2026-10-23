@@ -20,7 +20,7 @@ Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come 
 2. **Read** every row of every configured database through the Notion MCP: Areas, Goals, Key Results, Projects, People, Orgs, Decisions, Questions, Concepts and Review, with all pages (follow `next_cursor`). Meetings are not read here, and of the Inbox only the rows whose **Full text** box is ticked, with their Full text and Brain ID: the rest belongs to the brain-ingest skill. `sync plan` turns each ticked box into a `full_text_requests` item; run `brain source full-text <source>` for each after step 6, so the push writes the text and clears the box (decision 0043).
 3. **Snapshot.** Write `snapshot.json` in the format of [references/formats.md](references/formats.md), converting each property to its normalized value (the table there).
 
-   Each row also carries `database` (the brain.json key), `page_id`, `last_edited` (the page's `last_edited_time`), and `"as_of"` = now. Leave out a property you didn't read; never send a guessed value.
+   Each row also carries `database` (the brain.json key), `page_id` and `last_edited` (the page's `last_edited_time`). The snapshot carries `"as_of"` = now once, at the top, never on a row. Leave out a property you didn't read; never send a guessed value.
 4. **Plan.** Run `brain sync plan --input snapshot.json` once. It writes nothing. Save the reply's **`data` object** as `plan.json`; `sync apply` rejects the whole reply. Each run of `sync plan` makes new ids, so show the user this `plan.json` and apply this same file; never re-run the plan between showing and applying.
 5. **Show the user what will happen,** grouped:
    - **New from Notion** (`create`): "Project *Website for Globex* will be added to the brain."
