@@ -35,6 +35,13 @@ if (withGbrain === "gbrain") {
     console.error("GBRAIN_HOME must point at the scratch GBrain home");
     process.exit(2);
   }
+  // The parser below reads GBrain's text output, which can change between releases.
+  const GBRAIN_VERSION = "0.46.30.0";
+  const version = execFileSync("gbrain", ["--version"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  if (version !== `gbrain ${GBRAIN_VERSION}`) {
+    console.error(`this comparison was run with gbrain ${GBRAIN_VERSION}; found "${version}" (bun add -g github:garrytan/gbrain#v${GBRAIN_VERSION})`);
+    process.exit(2);
+  }
   retrievers.gbrain = (q) => {
     const outText = execFileSync("gbrain", ["search", q, "--limit", String(LIMIT * 3)], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
     const ids = [];
