@@ -65,7 +65,7 @@ export const EDITABLE = new Set(["update_fact", "contradiction", "add_to_note", 
 /** Reference fields a merge leaves alone: the meeting side of a persisted pair (spec/schema.md §11.2). */
 const PAIR_FIELDS = new Set(["decisions", "questions", "decided_in", "raised_in"]);
 /** Corrections change knowledge notes only: sources are immutable and proposals are records. */
-const KNOWLEDGE_TYPES = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "memory"]);
+const KNOWLEDGE_TYPES = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 const REFERENCE_FIELDS = [
   "area", "areas", "goal", "client", "org", "projects", "people", "attendees", "deciders", "source", "sources",
   "answer", "project", "generated_from", "facts",

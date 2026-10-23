@@ -42,7 +42,7 @@ test("brain index --json lists every note and computed backlinks", async () => {
   assert.equal(notes.length, 22);
   assert.deepEqual(counts, {
     area: 1, goal: 1, project: 1, person: 2, org: 1, meeting: 2, decision: 2,
-    question: 1, concept: 1, source: 2, view: 3, proposal: 4, memory: 1,
+    question: 1, concept: 1, reference: 0, source: 2, view: 3, proposal: 4, memory: 1,
   });
   assert.deepEqual(notes.map((note: { path: string }) => note.path), [...notes.map((note: { path: string }) => note.path)].sort());
 

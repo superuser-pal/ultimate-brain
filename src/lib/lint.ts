@@ -34,12 +34,12 @@ export interface LintInput {
   plannedProductFiles?: ReadonlyMap<string, string | null>;
 }
 
-const ID = /^(area|gol|prj|per|org|mtg|dec|que|con|src|mem|prp|vw)-[0-9abcdefghjkmnpqrstvwxyz]{8}$/;
+const ID = /^(area|gol|prj|per|org|mtg|dec|que|con|ref|src|mem|prp|vw)-[0-9abcdefghjkmnpqrstvwxyz]{8}$/;
 /** Frontmatter keys whose values are references (spec/schema.md §3–§11); `relations` and `timeline` are handled by shape. */
 const REFERENCE_KEYS = new Set([
   "area", "goal", "client", "org", "projects", "people", "attendees", "decided_in", "raised_in", "deciders",
   "source", "sources", "decisions", "questions", "answer", "target", "supersedes", "merge_into", "project",
-  "generated_from", "facts", "notes", "answer_note", "links", "attached_to",
+  "generated_from", "facts", "notes", "answer_note", "links", "attached_to", "changes", "replaces", "deferred_from",
 ]);
 
 /** Where each kind of view must live (spec/schema.md §2, 0041, 0043). */
@@ -60,13 +60,14 @@ const FOLDERS: Readonly<Record<string, RegExp>> = {
   decision: /^knowledge\/decisions\/\d{4}-\d{2}-\d{2}-[^/]+\.md$/,
   question: /^knowledge\/questions\/[^/]+\.md$/,
   concept: /^knowledge\/concepts\/[^/]+\.md$/,
+  reference: /^knowledge\/references\/[^/]+\.md$/,
   source: /^sources\/(notion|files|text)\/\d{4}-\d{2}-\d{2}-[^/]+\.md$/,
   memory: /^memories\/\d{4}\/\d{2}\/\d{4}-\d{2}-\d{2}-[^/]+\.md$/,
   proposal: /^_proposals\/[^/]+\.md$/,
 };
 
-const KNOWLEDGE = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "memory"]);
-const UNDATED = new Set(["area", "goal", "project", "person", "org", "question", "concept"]);
+const KNOWLEDGE = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
+const UNDATED = new Set(["area", "goal", "project", "person", "org", "question", "concept", "reference"]);
 const FRESHNESS_WORDS = /\b(currently|now|at the moment|this week|recently|soon)\b/i;
 const HAS_DATE = /\b\d{4}-\d{2}(-\d{2})?\b/;
 const MEMORY_REACH: Readonly<Record<string, string | null>> = { general: null, area: "areas", project: "projects", stack: "stacks" };
@@ -102,6 +103,11 @@ export function lintBrain(input: LintInput): Issue[] {
   for (const note of input.notes) {
     if (note.type !== "proposal" || note.attributes.kind !== "review_notes") continue;
     for (const id of new Set(list(note.attributes.notes).map(String))) reviewedBy.set(id, [...(reviewedBy.get(id) ?? []), note.id]);
+  }
+  // Every source replacing each source id (rule source-replaces, 0045).
+  const replacedBy = new Map<string, string[]>();
+  for (const note of input.notes) {
+    if (note.type === "source" && typeof note.attributes.replaces === "string") replacedBy.set(note.attributes.replaces, [...(replacedBy.get(note.attributes.replaces) ?? []), note.id]);
   }
   const onDisk = caseSensitiveExists(input.root);
   const exists = (path: string) => input.pendingPaths?.has(path) === true || onDisk(path);
@@ -229,9 +235,23 @@ export function lintBrain(input: LintInput): Issue[] {
       for (const id of list(a.notes)) {
         const listed = byId.get(String(id));
         if (listed !== undefined && !KNOWLEDGE.has(listed.type)) err("review-notes", lineOfKey(note, "notes"), `${String(id)} is a ${listed.type}, not a knowledge note`);
-        const others = (reviewedBy.get(String(id)) ?? []).filter((other) => other !== note.id);
+        // A deferred row lists again the notes the row it came from excluded (0045).
+        const others = (reviewedBy.get(String(id)) ?? []).filter((other) => other !== note.id && !deferredPair(note, byId.get(other), String(id)));
         if (others.length > 0) err("review-notes", lineOfKey(note, "notes"), `${String(id)} is also listed by ${others.join(", ")}`);
       }
+    }
+    if (note.type === "proposal") {
+      const bodies = [...(a.kind === "update_body" ? [a.target] : []), ...list(a.changes).map(record).filter((change) => change.kind === "update_body").map((change) => change.target)];
+      for (const target of bodies) {
+        const reference = typeof target === "string" ? byId.get(target) : undefined;
+        if (reference !== undefined && reference.type !== "reference") err("update-body", lineOfKey(note, a.kind === "update_body" ? "target" : "changes"), `update_body targets ${reference.id}, a ${reference.type}; only a reference has its body replaced (0045)`);
+      }
+    }
+    if (note.type === "source" && typeof a.replaces === "string") {
+      const replaced = byId.get(a.replaces);
+      if (replaced !== undefined && replaced.type !== "source") err("source-replaces", lineOfKey(note, "replaces"), `replaces ${a.replaces}, a ${replaced.type}, not a source`);
+      const others = (replacedBy.get(a.replaces) ?? []).filter((other) => other !== note.id);
+      if (others.length > 0) err("source-replaces", lineOfKey(note, "replaces"), `${a.replaces} is also replaced by ${others.join(", ")}`);
     }
     if (note.type === "source" && Array.isArray(a.notion_parts)) {
       const problem = rangesProblem(a.notion_parts, splitParts(note.body).parts.length);
@@ -265,10 +285,10 @@ function proposalStatusProblem(a: Record<string, unknown>): string | null {
   const expected: Record<string, unknown[]> = {
     pending: [undefined],
     approved: ["approve"],
-    edited: ["edit"],
+    edited: ["fix", "edit"],
     rejected: ["reject"],
-    applied: ["approve", "edit"],
-    closed: stale ? ["approve", "edit"] : ["reject"],
+    applied: ["approve", "fix", "edit"],
+    closed: stale ? ["approve", "fix", "edit"] : ["reject"],
   };
   const allowed = expected[String(status)];
   if (allowed === undefined) return null; // the schema reports unknown statuses
@@ -276,6 +296,13 @@ function proposalStatusProblem(a: Record<string, unknown>): string | null {
     return `status ${String(status)}${stale ? " (stale)" : ""} needs decision ${allowed.map((value) => value ?? "absent").join(" or ")}, found ${action === undefined ? "none" : String(action)}`;
   }
   return null;
+}
+
+/** A deferred row and the row whose excluded note it took over (spec/schema.md §15, 0045). */
+function deferredPair(note: Note, other: Note | undefined, id: string): boolean {
+  if (other === undefined) return false;
+  const excluded = (proposal: Note) => list(record(proposal.attributes.decision).exclude).some((entry) => record(entry).note === id);
+  return (note.attributes.deferred_from === other.id && excluded(other)) || (other.attributes.deferred_from === note.id && excluded(note));
 }
 
 function collectIds(value: unknown, out: string[] = []): string[] {
