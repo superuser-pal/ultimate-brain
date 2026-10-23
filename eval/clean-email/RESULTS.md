@@ -1,6 +1,6 @@
 # Clean email: blind runs
 
-## 0.4.2: names and bodies only (CC-52, decision 0047)
+## Names and bodies only (CC-52, decision 0047; released with 0.5.0)
 
 **Runs:** 2026-10-23, two fresh agents acting as Notion AI. Each got only the `/Clean email` text from notion/brain-assistant.md and [thread.md](thread.md), and never saw the expected result below. The thread now also has email addresses, a Cc line, an "[EXTERNAL]" banner, a Subject line, and a Teams meeting block under a sentence about the call (the cases from U-17).
 

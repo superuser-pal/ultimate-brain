@@ -1,8 +1,8 @@
 # 0008 · Clean email keeps names and bodies only
 
-**Design change:** CC-52 (decision 0047). **Applies to:** spaces built before release 0.4.2 that ran [0007](0007-review-promise-clean-email-open-questions.md).
+**Design change:** CC-52 (decision 0047). **Applies to:** spaces built before release 0.5.0 that ran [0007](0007-review-promise-clean-email-open-questions.md).
 
-Run it after installing 0.4.2 and running `brain upgrade`. The **agent** step is done through the API by the `brain-notion-change` skill, with your yes.
+Run it before migration 0009, after installing 0.5.0 and running `brain upgrade`. It needs no CLI change, so on 0.4.1 you can apply it by hand from [brain-assistant.md](../brain-assistant.md) right away; then skip it at the upgrade. The **agent** step is done through the API by the `brain-notion-change` skill, with your yes.
 
 ## 1 · Brain Assistant: the new Clean email text (0047)
 
