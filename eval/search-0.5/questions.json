@@ -1,0 +1,252 @@
+[
+  {
+    "kind": "decision-by-topic",
+    "q": "What did we decide about translations for Lumdun CRM migration?",
+    "answer": "dec-7ag6ghs9"
+  },
+  {
+    "kind": "decision-by-topic",
+    "q": "What did we decide about authentication for Zelsel mobile app?",
+    "answer": "dec-2anhv1bb"
+  },
+  {
+    "kind": "decision-by-topic",
+    "q": "What did we decide about invoicing for Pexzel CRM migration?",
+    "answer": "dec-rs59n2jm"
+  },
+  {
+    "kind": "decision-by-topic",
+    "q": "What did we decide about hosting for Marzel intranet?",
+    "answer": "dec-g7bavz95"
+  },
+  {
+    "kind": "decision-by-topic",
+    "q": "What did we decide about content management for Brenkip mobile app?",
+    "answer": "dec-15hn9j63"
+  },
+  {
+    "kind": "decision-by-topic",
+    "q": "What did we decide about search for Marzel mobile app?",
+    "answer": "dec-rj9jjyjq"
+  },
+  {
+    "kind": "decision-by-topic",
+    "q": "What did we decide about translations for Quopex mobile app?",
+    "answer": "dec-sg88vmh7"
+  },
+  {
+    "kind": "decision-by-topic",
+    "q": "What did we decide about translations for Brental website?",
+    "answer": "dec-envwbdfd"
+  },
+  {
+    "kind": "decision-by-topic",
+    "q": "What did we decide about hosting for Ralvik intranet?",
+    "answer": "dec-zmcrk42n"
+  },
+  {
+    "kind": "decision-by-topic",
+    "q": "What did we decide about authentication for Nortor booking platform?",
+    "answer": "dec-7ekt3de2"
+  },
+  {
+    "kind": "paraphrase",
+    "q": "How do we handle where it runs on the Ostvik CRM migration?",
+    "answer": "dec-qvgz1yag"
+  },
+  {
+    "kind": "paraphrase",
+    "q": "How do we handle log in on the Zelvik intranet?",
+    "answer": "dec-mrre4zp7"
+  },
+  {
+    "kind": "paraphrase",
+    "q": "How do we handle languages on the Talquo mobile app?",
+    "answer": "dec-4mxg2f0h"
+  },
+  {
+    "kind": "paraphrase",
+    "q": "How do we handle where the data lives on the Brental mobile app?",
+    "answer": "dec-5pq2mvc7"
+  },
+  {
+    "kind": "paraphrase",
+    "q": "How do we handle transactional mail on the Zelvik mobile app?",
+    "answer": "dec-z2qbjcfw"
+  },
+  {
+    "kind": "paraphrase",
+    "q": "How do we handle data store on the Zelsel mobile app?",
+    "answer": "dec-tprnyc1v"
+  },
+  {
+    "kind": "paraphrase",
+    "q": "How do we handle editing pages on the Selbren website?",
+    "answer": "dec-5sy4tw8t"
+  },
+  {
+    "kind": "paraphrase",
+    "q": "How do we handle transactional mail on the Pexzel shop?",
+    "answer": "dec-jw3s554w"
+  },
+  {
+    "kind": "paraphrase",
+    "q": "How do we handle newsletters on the Pextal website?",
+    "answer": "dec-pmt0zq12"
+  },
+  {
+    "kind": "paraphrase",
+    "q": "How do we handle multilingual on the Lumvik mobile app?",
+    "answer": "dec-vmfgeac6"
+  },
+  {
+    "kind": "why",
+    "q": "Why did Vikkip pick Resend for the mobile app?",
+    "answer": "dec-nnr4q526"
+  },
+  {
+    "kind": "why",
+    "q": "Why did Quopex pick Lokalise for the shop?",
+    "answer": "dec-3rpzg42q"
+  },
+  {
+    "kind": "why",
+    "q": "Why did Kipsel pick MySQL for the booking platform?",
+    "answer": "dec-j2k1agrh"
+  },
+  {
+    "kind": "why",
+    "q": "Why did Quopex pick Plausible for the shop?",
+    "answer": "dec-k6ddpg7b"
+  },
+  {
+    "kind": "why",
+    "q": "Why did Zelvik pick React Native for the mobile app?",
+    "answer": "dec-5faq1cjh"
+  },
+  {
+    "kind": "why",
+    "q": "Why did Dunvik pick WordPress for the CRM migration?",
+    "answer": "dec-f4777h4v"
+  },
+  {
+    "kind": "why",
+    "q": "Why did Selbren pick Lokalise for the website?",
+    "answer": "dec-b885da3s"
+  },
+  {
+    "kind": "why",
+    "q": "Why did Lumdun pick Paddle for the intranet?",
+    "answer": "dec-cjqtqjep"
+  },
+  {
+    "kind": "why",
+    "q": "Why did Dunmar pick Plausible for the CRM migration?",
+    "answer": "dec-esx9xvef"
+  },
+  {
+    "kind": "why",
+    "q": "Why did Lumvik pick WordPress for the shop?",
+    "answer": "dec-wen2vbyh"
+  },
+  {
+    "kind": "fact-in-body",
+    "q": "What is the budget for the Marzel shop?",
+    "answer": "mtg-8rx8gzg1"
+  },
+  {
+    "kind": "fact-in-body",
+    "q": "What is the budget for the Nortor website?",
+    "answer": "mtg-m4kqe345"
+  },
+  {
+    "kind": "fact-in-body",
+    "q": "What is the budget for the Kipsel intranet?",
+    "answer": "mtg-sa4kyc3c"
+  },
+  {
+    "kind": "fact-in-body",
+    "q": "What is the budget for the Talquo CRM migration?",
+    "answer": "mtg-vsymkfrp"
+  },
+  {
+    "kind": "fact-in-body",
+    "q": "What is the budget for the Selbren website?",
+    "answer": "mtg-pvb0ngmy"
+  },
+  {
+    "kind": "fact-in-body",
+    "q": "What is the budget for the Dunvik CRM migration?",
+    "answer": "mtg-zt8xcz32"
+  },
+  {
+    "kind": "fact-in-body",
+    "q": "What is the budget for the Quopex shop?",
+    "answer": "mtg-aktwmm1e"
+  },
+  {
+    "kind": "fact-in-body",
+    "q": "What is the budget for the Nortor intranet?",
+    "answer": "mtg-tjaqs0pr"
+  },
+  {
+    "kind": "fact-in-body",
+    "q": "What is the budget for the Talquo mobile app?",
+    "answer": "mtg-j65t7bs8"
+  },
+  {
+    "kind": "fact-in-body",
+    "q": "What is the budget for the Lumvik booking platform?",
+    "answer": "mtg-rkv1mnta"
+  },
+  {
+    "kind": "person-role",
+    "q": "Who is the designer on the Quokip CRM migration?",
+    "answer": "per-t2ekwh7y"
+  },
+  {
+    "kind": "person-role",
+    "q": "Who is the data analyst on the Pexzel CRM migration?",
+    "answer": "per-mjn3cg8m"
+  },
+  {
+    "kind": "person-role",
+    "q": "Who is the data analyst on the Quokip booking platform?",
+    "answer": "per-geqba9pj"
+  },
+  {
+    "kind": "person-role",
+    "q": "Who is the data analyst on the Pexzel shop?",
+    "answer": "per-mjn3cg8m"
+  },
+  {
+    "kind": "person-role",
+    "q": "Who is the data analyst on the Nortor intranet?",
+    "answer": "per-n81w5nwq"
+  },
+  {
+    "kind": "person-role",
+    "q": "Who is the project manager on the Lumdun CRM migration?",
+    "answer": "per-8fr6jd8q"
+  },
+  {
+    "kind": "person-role",
+    "q": "Who is the QA lead on the Brenkip mobile app?",
+    "answer": "per-6qjkz7ww"
+  },
+  {
+    "kind": "person-role",
+    "q": "Who is the account manager on the Lumdun intranet?",
+    "answer": "per-cyy2m5gv"
+  },
+  {
+    "kind": "person-role",
+    "q": "Who is the product owner on the Dunmar CRM migration?",
+    "answer": "per-gnvkjyv9"
+  },
+  {
+    "kind": "person-role",
+    "q": "Who is the project manager on the Marzel intranet?",
+    "answer": "per-sg8p48sx"
+  }
+]
