@@ -1,0 +1,8 @@
+{ "proposals": [
+  { "kind": "review_notes", "source": "mtg-8c4n2p7w", "notes": [] },
+  { "kind": "update_fact", "title": "Acme budget: 80000 → 90000 EUR", "target": "prj-9x4t1b7e", "field": "budget", "after": "90000 EUR", "why": "Budget raised to 90000 EUR.", "source": "mtg-8c4n2p7w" },
+  { "kind": "update_fact", "title": "Maria López role: Head of product", "target": "per-3h8w2n6c", "field": "role", "after": "Head of product", "why": "Maria now leads product at Acme.", "source": "mtg-8c4n2p7w" },
+  { "kind": "update_fact", "title": "Acme CMS: Contentful", "target": "prj-9x4t1b7e", "field": "cms", "after": "Contentful", "why": "The site will run on Contentful.", "source": "mtg-8c4n2p7w" },
+  { "kind": "update_fact", "title": "Acme hosting: EU", "target": "prj-9x4t1b7e", "field": "hosting", "after": "EU only", "why": "Hosting stays in the EU.", "source": "mtg-8c4n2p7w" },
+  { "kind": "update_fact", "title": "Acme launch: 2027-04", "target": "prj-9x4t1b7e", "field": "launch_date", "after": "2027-04", "why": "Launch moves to April 2027.", "source": "mtg-8c4n2p7w" }
+] }
