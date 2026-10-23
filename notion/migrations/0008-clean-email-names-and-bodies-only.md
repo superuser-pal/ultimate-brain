@@ -15,6 +15,6 @@ Run it after installing 0.4.2 and running `brain upgrade`. The **agent** step is
 The Instructions don't change: Clean email already may edit page text.
 
 ## Verify
-- [ ] `/Clean email` on a capture holding a pasted thread shows, per message, one line `<sender> → <recipients> · <date>` with names only, then the message's own text word for word, oldest first.
+- [ ] `/Clean email` on a capture holding a pasted thread shows, per message, a heading 3 `<sender> → <recipients> · <date>` with names only, the message's own text word for word in normal paragraphs below it, and a divider before the next message, oldest first.
 - [ ] No email addresses, Cc, Subject, Teams, Zoom or Meet join details, or "[EXTERNAL]" banners are left; every sentence the senders wrote is.
 - [ ] Nothing changes until you confirm.

@@ -16,6 +16,37 @@
 
 **After run 1**, the skill text says to take each part only from the message's own header or quote line, and to word the Why line with the thread's own facts. **After run 2**, it says that a reply pasted with no header takes its sender from its sign-off or signature. Run 2 already did that, but the text didn't say so.
 
+**Run 3** (2026-10-23, after the user asked for a result that's easier to read): the skill now gives each message a heading 3, its body in normal paragraphs below it, and a divider before the next message. A fresh agent got the same inputs and wrote the result as Notion-flavoured Markdown, so the blocks are visible:
+
+```markdown
+### Lucía Fernández · 2 Dec 2026
+
+Tomás, can you confirm whether we're still on track for the January launch? Legal needs the date by Friday.
+
+---
+
+### Tomás Vidal → Lucía Fernández · 3 Dec 2026
+
+Hi Lucía,
+
+The CMS migration slipped a week. We can still make 15 Feb if content freeze stays on 1 Feb. Budget unchanged at 80,000 EUR.
+
+Let's go through the plan on Thursday's call at 10:00.
+
+Tomás
+
+---
+
+### Lucía Fernández
+
+Sounds good, let's lock 15 February then. I'll tell the agency today.
+
+Best,
+Lucía
+```
+
+Every check in the table passes again: the sender's paragraphs and sign-off are kept, there are no headings besides the one per message, no bold, and the Why line uses the thread's own figures.
+
 ## 0.4.1: first version (CC-46, decision 0045)
 
 **Run:** 2026-10-22, on the same thread without the U-17 cases. All checks passed: order, headers (From, To, Date, Subject where shown, none guessed), the text word for word, the removals, nothing added, the Why line asked, and nothing changed before the user's yes.

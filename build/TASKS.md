@@ -571,9 +571,9 @@ The small part of the U-15 feedback, ahead of 0.5.0. U-15's two-week habit run c
 
 ### CC-52 · Clean email keeps names and bodies only (decision 0047) · `review`
 **Release:** 0.4.2
-**Changelog:** `/Clean email` keeps one line per message with names and date, then the message's own text: no addresses, Subject, Cc, banners or Teams, Zoom and Meet blocks.
+**Changelog:** `/Clean email` gives each message a heading with names and date, its own text below it and a divider before the next: no addresses, Subject, Cc, banners or Teams, Zoom and Meet blocks.
 **Output:** decision 0047 (amends 0045, from the user's U-17 feedback on 2026-10-23); notion/brain-assistant.md (the Clean email text); Notion migration 0008 (the new text in Brain Assistant Skills and How it works), with 0.5.0's migration renumbered 0009; brain-ingest reading the new message lines as an email; the user guide; eval/clean-email (the thread with addresses, Cc, a banner and a Teams block; the blind runs).
-**Acceptance:** the user approves decision 0047; a blind run of the Clean email text on the synthetic thread gives one `<sender> → <recipients> · <date>` line per message with names only and nothing guessed, keeps every sentence the senders wrote (the one about the call included), and removes the Teams block, the banner, the Cc, the Subject and the addresses; migration 0008 marks each step agent or by hand with the reason; the skill mirror check passes.
+**Acceptance:** the user approves decision 0047; a blind run of the Clean email text on the synthetic thread gives one heading 3 `<sender> → <recipients> · <date>` per message with names only and nothing guessed, the body in normal paragraphs below it and a divider between messages, keeps every sentence the senders wrote (the one about the call included), and removes the Teams block, the banner, the Cc, the Subject and the addresses; migration 0008 marks each step agent or by hand with the reason; the skill mirror check passes.
 
 ## 0.5.0 — Review in one row, fix before ingest, living reports, kept notes (decision 0045)
 
