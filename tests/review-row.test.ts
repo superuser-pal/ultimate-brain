@@ -163,3 +163,31 @@ test("a fact changed before apply is dropped as stale; the rest of the row is ap
   assert.equal((await byId(dir, decision)).lifecycle, "reviewed");
   assert.deepEqual(await lintErrors(dir), []);
 });
+
+test("render: a Review notes row letters its changes first, then notes, then links, under About/Now/Proposed", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { row } = await ingest(dir);
+  const [item] = (await run(dir, ["sync", "render", "--ids", row.id])).json.data.items;
+  assert.deepEqual(item.properties.About, { type: "rich_text", value: `Acme sync (${SYNC})` });
+  assert.deepEqual(item.properties.Now, { type: "rich_text", value: null });
+  assert.equal(item.properties.Proposed.value, [
+    "a) ⚠ Launch date on Acme website: 2027-02 → 2027-03",
+    "b) Add to Row-level security: Carlos will use RLS for the auth migration.",
+    "c) Decision: Launch in March",
+    "d) Projects on Row-level security: Acme website",
+  ].join("\n"));
+  for (const old of ["Target", "Target Page", "Before", "After"]) assert.equal(item.properties[old], undefined, old);
+});
+
+test("sync plan reads Your call and What to fix: an Approve alone is a decision, any text is for the skill", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { row } = await ingest(dir);
+  const page = "b4000000-0000-4000-8000-000000000001";
+  const plan = async (properties: Record<string, unknown>) => (await run(dir, ["sync", "plan"], { as_of: NOW, rows: [{ database: "review", page_id: page, last_edited: "2026-12-10T08:00:00Z", properties: { "Brain ID": row.id, State: "Pending", ...properties } }] })).json.data;
+  const codes = (data: { conflicts: Array<{ code: string; property: string; notion_value?: string }> }) => data.conflicts.map((item) => [item.code, item.property, item.notion_value]);
+  assert.deepEqual((await plan({ "Your call": "Approve", "What to fix": "" })).decisions, [{ proposal: row.id, action: "approve", decided_at: "2026-12-10T08:00:00Z", decided_by: "notion" }]);
+  assert.deepEqual(codes(await plan({ "Your call": "Approve", "What to fix": "all except a" })), [["NOTE_TO_READ", "What to fix", "all except a"]]);
+  assert.deepEqual(codes(await plan({ "Your call": "Fix", "What to fix": "a: April" })), [["FIX_TO_READ", "What to fix", "a: April"]]);
+  assert.deepEqual(codes(await plan({ "Your call": "Fix", "What to fix": null })), [["FIX_WITHOUT_TEXT", "What to fix", undefined]]);
+  assert.deepEqual((await plan({ "Your call": null })).decisions, [], "no call yet");
+});
