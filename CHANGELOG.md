@@ -2,6 +2,13 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.4.1 — 2026-10-23
+
+- CC-44 (#123): decision 0045 records the first brain's feedback: 0.4.1 starts questions as Open, adds `/Clean email`, says what approving does and clears finished Review rows; the rest is planned for 0.5.0.
+- CC-51 (#124): decision 0046: a task can start from the branch of the task below it, and Codex reviews a stack of PRs in one session.
+- CC-45 (#125): new questions and risks reach Notion as Open, and Review rows leave Notion 30 days after they were decided.
+- CC-46 (#126): a `/Clean email` prompt for pasted threads, a Review that says what approving does, a Home count of what waits for you, and catch-ups that trash finished Review rows.
+
 ## 0.4.0 — 2026-10-21
 
 - CC-29 (#96): decision 0039: a task's changelog line lives in its build/TASKS.md row and `release.mjs` writes the CHANGELOG section.
