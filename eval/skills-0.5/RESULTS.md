@@ -2,6 +2,8 @@
 
 CC-49 acceptance (decision 0045). Four blind runs on 2026-10-23, on brains built with `scripts/blind-brain.mjs brain-acme <dir>` (CC-41): no Notion ids, no Notion tools in the session, the CLI from the CC-49 branch through a `brain` shim. Each fresh agent had not seen the skills being written, and read only its brain, the inputs in [inputs/](inputs/) and a temporary folder. The user was away: the agent wrote any question to a file and took its default.
 
+**Evidence** is in [runs/](runs/): each run's commits on top of the blind brain, with their full diffs (`git log -p` from the base commit; the base is rebuilt with `node scripts/blind-brain.mjs brain-acme <dir>`), and the questions each agent wrote while the user was away. Run 4's gate is the batch in [runs/report-questions.md](runs/report-questions.md), request 2: it wrote nothing.
+
 The checks that need a real Notion space run in the user's 0.5.0 session (migration 0009, then "catch up"), as for 0.4.0: a Report row's Refresh box cleared after the refresh, and the Ready gate on a live Inbox query. Here the Refresh run uses chat, and the gate runs on an exported query ([inputs/inbox.json](inputs/inbox.json)). The CLI side of both is covered by tests in CC-48 (`tests/full-text.test.ts`, "a Report row: What to fix becomes a report fix …").
 
 ## Run 1 · a document with Keep, then its new version

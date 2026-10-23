@@ -70,7 +70,7 @@ A report gathers everything the brain knows about one subject, as of today: "rep
 **What to fix on a report** (decision 0045). The user writes what the report gets wrong on its Report row ("Lucía left Acme in June"); the catch-up hands you `report_fixes`. The error lives in the notes, not in the report, so never edit the report's text to match:
 1. Find the notes the line rests on, and write the correction as proposals (brain-ingest references/cli-inputs.md §3): an `update_fact`, an `add_to_note`, a `supersede` …, with `why` = the user's text and `source` = the notes' own source (the meeting or `src-` id the wrong claim came from). When the text needs no change to the notes (the report misread a note that is right), write none and say why in the report.
 2. Record it: `brain report fix <vw-id> --text "<What to fix, as written>" --proposals <prp-id>,<prp-id>` (empty `--proposals ""` when none). The next publish clears What to fix on the row.
-3. Once every proposal it listed is applied or closed, refresh the report (above). A catch-up checks this each run: a report whose last `fixes` entry lists only decided proposals, and wasn't refreshed since, is refreshed.
+3. Once every proposal it listed is applied, rejected or closed, refresh the report (above); an approved or fixed one that was only recorded (`--record-only`) still waits. A catch-up checks this each run: a report whose last `fixes` entry lists only such proposals, and wasn't refreshed since, is refreshed.
 
 **A report is never knowledge.** It is never ingested and never cited as a source, and it creates no proposal of its own: if the brain learned from its own summaries, its mistakes would become knowledge. Corrections go to the notes, as above.
 
