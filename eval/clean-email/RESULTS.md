@@ -12,7 +12,7 @@
 | Text word for word | every sentence and figure, including "Let's go through the plan on Thursday's call at 10:00." | ✔ | ✔ |
 | Removed | Teams block, banner, Cc, Subject, 2 signatures, the notice, the quoted copy, "Sent from my iPhone", tracking and unsubscribe links | ✔ | ✔ |
 | Why line | suggested with facts as the thread states them | ✘ added a year the thread doesn't state | ✔ |
-| Confirm first | nothing changed before the user's yes | ✔ | ✔ |
+| Confirm first (dropped in run 4) | nothing changed before the user's yes | ✔ | ✔ |
 
 **After run 1**, the skill text says to take each part only from the message's own header or quote line, and to word the Why line with the thread's own facts. **After run 2**, it says that a reply pasted with no header takes its sender from its sign-off or signature. Run 2 already did that, but the text didn't say so.
 
@@ -46,6 +46,12 @@ Lucía
 ```
 
 Every check in the table passes again: the sender's paragraphs and sign-off are kept, there are no headings besides the one per message, no bold, and the Why line uses the thread's own figures.
+
+**Run 4** (2026-10-23, after the user asked for no confirmation step unless there's a serious doubt): one fresh agent ran the skill on two pages.
+- **Page A, [thread.md](thread.md):** replaced the page text without asking, with the same result as run 3. It then gave the count of what it removed, said the page history keeps the original, and suggested a Why line without waiting for an answer. ✔
+- **Page B, [thread-conflict.md](thread-conflict.md):** the same thread, except that the quoted copy of Tomás's message says 85,000 EUR and his own message says 80,000 EUR. It made no change and asked one question that quotes both figures. ✔
+
+It reported one judgment call: a quoted copy that is only shorter (Tomás's quote leaves out the Thursday sentence) is not a doubt. The skill text now says so.
 
 ## 0.4.1: first version (CC-46, decision 0045)
 
