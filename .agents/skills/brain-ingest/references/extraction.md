@@ -36,10 +36,32 @@ Minutes follow the table above. For other sources (references/sources.md) there 
 
 | Kind | What it usually yields | Different from minutes |
 |---|---|---|
-| `document` (brief, contract, report, deck) | Facts and their changes, decisions the document records, people with roles, open questions and risks | A decision's `date` is the date the document gives for it, else the document's date. When the document is about a project, propose one `add_to_note` on the project: what the document is, in 1–2 sentences, with a link to the source (relative to the project note). A document about an area only, or about work that has no project note, gets none: its Inbox row already files it, and the report suggests creating the project in Notion when the work deserves one. Action items only where the document assigns them |
+| `document` (brief, contract, report, deck) | Facts and their changes, decisions the document records, people with roles, open questions and risks; with a Keep, only one `reference` note (below) | A decision's `date` is the date the document gives for it, else the document's date. When the document is about a project, propose one `add_to_note` on the project: what the document is, in 1–2 sentences, with a link to the source (relative to the project note). A document about an area only, or about work that has no project note, gets none: its Inbox row already files it, and the report suggests creating the project in Notion when the work deserves one. Action items only where the document assigns them |
 | `email`, `chat` | Decisions and facts stated in the thread, people, questions | Who said what matters: attribute a decision to its sender (`deciders`) only when the thread shows they decided. A thread that reports a decision made elsewhere ("the launch moves to March") still yields the decision note if it passes the gate. A quoted earlier message is part of the thread, not a new statement |
 | `note` | Whatever the user wrote: facts, ideas, people | The user's own words: no `^[ambiguous]` against the user's other notes; a disagreement with the brain is a `contradiction` |
 | `capture` | Usually one thing: a fact, an idea, a person, a to-do | A fact about an existing note → `update_fact`; an idea or method → a `concept` note (`summary`, `sources`, and `area`, `projects` or `tags` when the capture says what it belongs to); a new person → a person note; the owner's own to-do → a task (below). Nothing durable is a valid result. **A capture holding a pasted email or chat thread** is analysed with the `email`/`chat` row instead (sources.md) |
+
+### Keep: what the user wants from a document (decision 0045)
+
+A `document`, `email`, `chat` or `note` source may carry a **Keep**: what the user wants from it ("just the requirements", "the price list and the deadlines"), from the Inbox row's Keep or the catch-up's question. It goes on the source as `keep`, as written. A capture has no Keep of its own; a file attached to it does.
+
+- **Keep is empty or "all":** today's full extraction, as above.
+- **Keep names something:** extract **only** that, into **one `reference` note** and nothing else: no decision, question, person or concept notes, no `add_to_note` on the project, no tasks. Everything else in the source stays in the brain, unread, and the user can ask for it later ("take the budget from the Acme doc too"), which is a new ingest of the same source with that Keep.
+  - `title`: what it is, named for its subject: "Acme website: requirements", "Globex: price list";
+  - `frontmatter`: `summary` (one line: what it holds and from which document, without a version or date, so a new version doesn't make it stale), `sources: [<the source id>]`, and `projects` or `area` from the project or area the document is about;
+  - body: the kept content, as a Markdown list or table, in the document's order and wording; every figure, date and name exactly as stated. No commentary, no links of your own. Under the list, nothing: the source is in `sources`;
+  - it is a new note like any other: it goes in the input's `review_notes`.
+- **A new version of a document whose reference exists** (the source has `replaces`, sources.md "New versions"): never a second reference. Read the old reference's body, change only the lines the new version changes (`brain source diff` says which), and propose the result as an `update_body` on that reference: `content` = the whole new body, every unchanged line copied exactly, so the Review row shows only the lines that differ. `why` names what changed ("Requirement 4: deadline 1 Mar → 15 Mar"). It goes in the new source's `review_notes` as a lettered item. A new version that changes nothing the Keep names proposes nothing.
+
+### Re-reads: only what changed (decision 0045)
+
+A corrected input read again (a meeting set back to Reviewed, an Inbox row set back to Ready, a new version of a document) is a new source with `replaces` (sources.md "Re-reads"). Analyse **only the lines `brain source diff` gives**, against what the brain already holds from the earlier version:
+- a changed value (a date, an amount, a name, a role) on a note the earlier version wrote or changed → `update_fact` or `add_to_note` on that note, `why` = the new line;
+- a new line that passes the rules above → a new note or a change, as in a first ingest. For a meeting, a new decision or question is a `new_item` (the meeting note already exists);
+- a removed or reversed line that a note rests on (a decision the minutes no longer record, a misheard name) → never archive or rewrite that note yourself. Name it under the report's Check, with what to do ("Use Firebase for auth rests on a line the corrected minutes removed: reject it in Review if it's still pending, or say 'archive it'").
+- the meeting note's own text (its summary and body) still says what the first version said: when a change touches it, add one `add_to_note` on the meeting ("Corrected minutes: the launch moves to March 2027, not February"), and name under Check any `summary` the change makes stale (a project's, the meeting's): no proposal kind rewrites a summary;
+- an action item only when its line changed (a new owner or date): it becomes a task as in a first ingest. Unchanged ones already are tasks, and the report doesn't list them again;
+- unchanged lines are not read again: what they gave is already in the brain.
 
 ### Tasks for the owner (decision 0037)
 

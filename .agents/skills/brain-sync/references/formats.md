@@ -22,7 +22,7 @@ A copy of the inputs in spec/cli.md §5.14, so the skill works from inside a bra
 }
 ```
 
-- `database`: the `brain.json` key: `areas`, `goals`, `key_results`, `projects`, `people`, `orgs`, `decisions`, `questions`, `concepts`, `review` or `inbox`. Meetings are never a snapshot database; of the Inbox, send only rows whose Full text box is ticked, with `"Full text": true` and `"Brain ID"` (decision 0043). Each becomes a `full_text_requests` item `{ "page_id", "source" }` in the plan.
+- `database`: the `brain.json` key: `areas`, `goals`, `key_results`, `projects`, `people`, `orgs`, `decisions`, `questions`, `concepts`, `review` or `inbox`. Meetings are never a snapshot database; of the Inbox, send only rows whose Full text box is ticked, with `"Full text": true` and `"Brain ID"` (decision 0043), and Report rows with Refresh ticked or What to fix set, with `"Brain ID"`, `"Refresh"` and `"What to fix"` (decision 0045). They become `full_text_requests` `{ "page_id", "source" }`, `refresh_requests` `{ "page_id", "report" }` and `report_fixes` `{ "page_id", "report", "text" }` in the plan. A Review row sends `"Your call"` and `"What to fix"` (`"Decision"` and `"Note"` on a space before migration 0009).
 - `properties`: the Notion property names exactly, with normalized values:
 
   | Notion type | Normalized value |

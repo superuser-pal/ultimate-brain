@@ -1,6 +1,6 @@
 ---
 name: brain-ingest
-description: Ingest into the brain reviewed meeting minutes from Notion or a file, documents (PDF, Word, PowerPoint, Excel, HTML, images), web pages by URL, pasted emails, chat threads and notes, the Notion Inbox, files attached in Notion, and the changed files of a linked repo. Snapshots each input as a source, matches it against what the brain already knows, writes new notes (meeting, people, decisions, questions, concepts) as drafts with one Review notes row to accept them, proposes changes to existing knowledge and answers to open questions for your review, and creates action items as Notion tasks. Use when the user says "ingest my meetings", "process the reviewed minutes", "ingest this PDF", "ingest this page <url>", "ingest this email", "process my inbox", "process my drop folder", "link the repo at <path>", or after marking meetings Reviewed.
+description: Ingest into the brain reviewed meeting minutes from Notion or a file, documents (PDF, Word, PowerPoint, Excel, HTML, images), web pages by URL, pasted emails, chat threads and notes, the Notion Inbox, files attached in Notion, and the changed files of a linked repo. Snapshots each input as a source, matches it against what the brain already knows, writes new notes (meeting, people, decisions, questions, concepts, and a reference note for what you asked to keep from a document) as drafts, with one Review row per source holding them and every change to existing knowledge, proposes answers to open questions, reads a corrected input again for only what changed, and creates action items as Notion tasks. Use when the user says "ingest my meetings", "process the reviewed minutes", "ingest this PDF", "ingest this page <url>", "ingest this email", "process my inbox", "process my drop folder", "link the repo at <path>", or after marking meetings Reviewed.
 ---
 
 # Ingest into the brain
@@ -23,7 +23,7 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
 
 2. **Fetch** *(Notion)*. Query the Meetings database for pages with Brain Status = **Reviewed**, oldest Date first, through its data source ([references/notion.md](references/notion.md)). Process them one at a time. Never take Not Reviewed or Skipped meetings (decision 0012). For each page, read its properties (Name, Date, Attendees, Project, Area) and the minutes: which parts of the page count as minutes is in references/notion.md.
 
-   **Already ingested?** If a meeting note in `brain index --json` already has this page's id as `notion`, the brain side is done (a publish failed earlier): skip to step 11 for it.
+   **Already ingested?** If a meeting note in `brain index --json` already has this page's id as `notion`, the user set it back to Reviewed: either they fixed the minutes (a **re-read**, decision 0045), or a publish failed earlier. Snapshot the minutes as a re-read (step 3): when the dry run skips them as `DUPLICATE_SOURCE`, nothing changed and the brain side is done, so skip to step 11 for it; otherwise go on as a re-read ([references/sources.md](references/sources.md), "Re-reads and new versions").
 
 3. **Pre-check** (both modes). Before writing anything, ask the user **one** question covering everything that blocks a correct ingest:
    - the Date is empty;
@@ -38,6 +38,8 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
    **Snapshot the source.** Build the source note (see [references/cli-inputs.md](references/cli-inputs.md) §1). Its body is the minutes **verbatim**, as references/notion.md defines them; beyond those exclusions, don't tidy them. Run `brain note new --dry-run` with only the source, without an `id` (the source gets its id in step 7):
    - **`skipped` with `DUPLICATE_SOURCE`:** this exact text was already ingested. Report it, and in Notion mode set nothing. Stop here for this meeting.
    - **Otherwise:** keep the source item for step 7.
+
+   **A re-read** (the meeting was ingested before) adds `replaces` = the latest version of the meeting's source to the item, writes the new source alone in step 7, then reads only the lines `brain source diff` gives ([references/sources.md](references/sources.md), "Re-reads and new versions"). It writes no new meeting note: steps 4–6 run on the changed lines only, and step 8 proposes what changed in one Review row.
 
 4. **Match.** Run `brain index` (JSON) and resolve every name in the minutes against titles and `aliases`:
    - attendees → person notes;
@@ -58,7 +60,7 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
    - contradictions with the loaded notes;
    - action items.
 
-   Keep every claim attached to its subject, and copy values verbatim. Hold the result in memory as two lists: **new notes** and **changes to existing notes**.
+   Keep every claim attached to its subject, and copy values verbatim. Hold the result in memory as two lists: **new notes** and **changes to existing notes**. A document with a **Keep** yields one `reference` note and nothing else (references/extraction.md, "Keep").
 
 7. **Write new notes.** Write **one** `brain note new` batch containing the source, the meeting, new people, new decisions and new questions (shapes in [references/cli-inputs.md](references/cli-inputs.md) §2).
    1. **Get ids** with `brain id new <type> --count <n>`, so the notes can reference each other by id. The meeting lists its `decisions` and `questions`, and each decision's `decided_in` and each question's `raised_in` names the meeting, so the pair is consistent.
@@ -69,13 +71,14 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
 8. **Propose changes.** Write every change to an existing note in **one** `brain proposal new` batch ([references/cli-inputs.md](references/cli-inputs.md) §3):
    - a fact change → `update_fact`;
    - text to add to an existing note → `add_to_note`;
+   - a reference note's new text, from a new version of its document → `update_body` (references/extraction.md, "Keep");
    - a link to add to an existing note's list → `add_link`: a new or existing person joining a project's `people`, an attendee missing from an existing meeting, a new alias for an existing person (decision 0028);
    - two sources disagreeing → `contradiction`;
    - a new decision replacing an older one → write the new decision in step 7, then `supersede`;
    - a likely duplicate → `merge`;
    - a new decision or question for a meeting that already existed before this run → `new_item`.
 
-   - a new note this run wrote, and every `add_link` → **one** `review_notes` item for the input (decision 0041, 0043): `{ "kind": "review_notes", "source": "<mtg-id, or the src- id for any other input>", "notes": [<every knowledge note step 7 created: the meeting, people, decisions, questions, concepts; never the source>] }`. The CLI folds every `add_link` item with the same `source` into it, so links and aliases are lettered items of that one Review row, and writes its title;
+   - a new note this run wrote, every `add_link`, `update_fact`, `update_body` and `add_to_note` → **one** `review_notes` item for the input (decisions 0041, 0043, 0045): `{ "kind": "review_notes", "source": "<mtg-id, or the src- id for any other input>", "notes": [<every knowledge note step 7 created: the meeting, people, decisions, questions, concepts, references; never the source>] }`, with `notes: []` when the input created none (a re-read). The CLI folds every change and link item with the same `source` into it, fact changes first, so they are lettered items of that one Review row, and writes its title ("From Acme sync: 2 changes, 1 new note and 1 link"). Send the change items as usual, each with its own `title` and `why`. Only judgment calls get rows of their own: `contradiction`, `supersede`, `merge`, `new_item` and `answer`;
    - the material answers an open question the brain already has → `answer`, on that question: the answer in one sentence, the quote as `why`, and `answer_note` = the note that answers it when there is one (usually a decision step 7 created).
 
    `DUPLICATE_PENDING`, `ALREADY_LINKED` and `ALREADY_ANSWERED` skips are fine: the change is already waiting for review, already made, or the question already has an answer. `NOTHING_TO_REVIEW` means the input created no note and no link: fine too.
@@ -87,7 +90,8 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
 11. **Publish** *(Notion, per `settings.publish`: with `ask`, ask once before this step)*, following [references/notion.md](references/notion.md):
     - publish new and changed notes and the new proposals (`brain sync render --changed` → MCP → `brain sync record`);
     - then create the action items as tasks (`brain sync tasks` → MCP → `brain sync record`);
-    - this sets the meeting's relations, Brain Status = Ingested and Ingested At, and never touches its title or body (decision 0007).
+    - this sets the meeting's relations, Brain Status = Ingested and Ingested At, and never touches its title or body (decision 0007);
+    - **after a re-read**, or when an earlier publish already sent them, render has no Brain Status left to send (it goes out once): set the meeting's Brain Status back to **Ingested** through the MCP yourself, and nothing else on the page. Otherwise it stays Reviewed and the next run reads it again.
 
     Then commit again: `publish: <meeting title> <date>`.
 
@@ -104,7 +108,7 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
     - **Next:** one action, or one question when the user must decide something. Without Notion, the next action is deciding the proposals in chat ("what needs my decision"), or connecting Notion ("connect the brain to Notion"), after which a sync publishes everything.
 
     **Below the three lines, the report grows with what came in** (decision 0037, amended 2026-10-18). A run that only moved counts stops at three lines. Otherwise add, per input, one line each, and leave nothing out because the list is long:
-    - **What came in:** every new project, decision (with its assessment), open question and risk, every fact that changed (old → new), and new people with their role. A one-line summary of what a document or thread is about comes first.
+    - **What came in:** every new project, decision (with its assessment), open question and risk, every fact that changed (old → new), new people with their role, and each reference note with what it keeps. A one-line summary of what a document or thread is about comes first. For a re-read: "Acme sync, read again: 1 change (launch 2027-02 → 2027-03)".
     - **Check:** every assumption the user should verify: a date taken from today or from a month only, a fact marked ambiguous, a name left unlinked, a part of a document not analysed.
     - **Action items** that didn't become tasks.
 

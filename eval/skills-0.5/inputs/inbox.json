@@ -1,0 +1,72 @@
+{
+ "queried_at": "2026-10-23T18:25:29Z",
+ "database": "inbox",
+ "rows": [
+  {
+   "page_id": "d1000000-0000-4000-8000-000000000001",
+   "Name": "Lucía says the blog launch post is ready for review",
+   "Kind": "Capture",
+   "Brain Status": "New",
+   "Created": "2026-10-21T18:25:29Z",
+   "Brain ID": null,
+   "Project": [],
+   "Keep": null
+  },
+  {
+   "page_id": "d1000000-0000-4000-8000-000000000002",
+   "Name": "Old idea about a podcast",
+   "Kind": "Capture",
+   "Brain Status": "Skipped",
+   "Created": "2026-10-18T18:25:29Z",
+   "Brain ID": null,
+   "Project": [],
+   "Keep": null
+  },
+  {
+   "page_id": "d1000000-0000-4000-8000-000000000003",
+   "Name": "Acme hosting contract",
+   "Kind": "Document",
+   "Brain Status": "New",
+   "Created": "2026-10-20T18:25:29Z",
+   "Brain ID": null,
+   "Project": [],
+   "Keep": null,
+   "Files": [
+    "acme-hosting-contract.pdf"
+   ]
+  },
+  {
+   "page_id": "d1000000-0000-4000-8000-000000000004",
+   "Name": "Call Carlos about the CMS",
+   "Kind": "Capture",
+   "Brain Status": "New",
+   "Created": "2026-10-23T15:25:29Z",
+   "Brain ID": null,
+   "Project": [],
+   "Keep": null
+  },
+  {
+   "page_id": "d1000000-0000-4000-8000-000000000005",
+   "Name": "Acme analytics brief",
+   "Kind": "Document",
+   "Brain Status": "Ready",
+   "Created": "2026-10-22T16:25:29Z",
+   "Brain ID": null,
+   "Project": [],
+   "Keep": null,
+   "Files": [
+    "acme-analytics-brief.pdf"
+   ]
+  },
+  {
+   "page_id": "d1000000-0000-4000-8000-000000000006",
+   "Name": "Where do we stand with Acme analytics?",
+   "Kind": "Ask",
+   "Brain Status": "New",
+   "Created": "2026-10-23T17:25:29Z",
+   "Brain ID": null,
+   "Project": [],
+   "Refresh report": []
+  }
+ ]
+}
