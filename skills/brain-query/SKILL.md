@@ -1,11 +1,11 @@
 ---
 name: brain-query
-description: Answer a question from the user's second brain with citations, such as what was decided and why, who someone is, a date, budget, owner or other key fact, what changed and when. Works from the brain repo or any repo linked to it with `brain link`. Read-only, except its report mode, which writes a dated report and publishes it to the Inbox. Use when the user asks "what did we decide about…", "why did we…", "who is…", "when is the launch…", "what do we know about…", "report on…", "where do we stand with…", when an Ask row is waiting in the Inbox, or when the repo's "Ultimate Brain" block says to consult the brain before a decision.
+description: Answer a question from the user's second brain with citations, such as what was decided and why, who someone is, a date, budget, owner or other key fact, what changed and when. Works from the brain repo or any repo linked to it with `brain link`. Read-only, except its report mode, which writes a report, refreshes it in place and publishes it to the Inbox. Use when the user asks "what did we decide about…", "why did we…", "who is…", "when is the launch…", "what do we know about…", "report on…", "where do we stand with…", "refresh the Acme report", when an Ask row is waiting in the Inbox, a Report row has Refresh ticked or a What to fix, or when the repo's "Ultimate Brain" block says to consult the brain before a decision.
 ---
 
 # Answer from the brain
 
-Find the notes that answer the question, read them, and answer briefly, citing the notes. **Read-only:** never write to the brain from this skill, except a report in report mode (below). If the user wants an answer saved as knowledge, that is a separate step (an ingest or a proposal), done only when they ask.
+Find the notes that answer the question, read them, and answer briefly, citing the notes. **Read-only:** never write to the brain from this skill, except a report in report mode and the one log line each answer or report adds (below). If the user wants an answer saved as knowledge, that is a separate step (an ingest or a proposal), done only when they ask.
 
 ## Where the brain is
 
@@ -44,10 +44,13 @@ If `brain` is not found (`command not found`), install it with `npm install -g u
      - `^[ambiguous]`: the sources were unclear.
    - **Separate what the brain knows from your own reasoning.** If you add advice, mark it as yours.
 
+5. **Log it,** from the brain repo only: `brain log query - notes_read=<n> seconds=<s>`, where `n` is the number of notes whose full text you read and `s` the seconds from the question to the answer (decision 0045). The log is the brain's own record; it needs no commit of its own and goes in with the next one. In a linked repo, skip this step.
+
 ## Report mode (decision 0043)
 
 A report gathers everything the brain knows about one subject, as of today: "report on the Acme launch", "where do we stand with Acme?", or an **Ask** row in the Inbox (the catch-up hands you its page id, its question and its Project or Area). It runs only in the brain repo.
 
+0. **New or refresh?** A report is kept up to date in place, one per subject (decision 0045). Refresh an existing report when the request names it: its Report row has **Refresh** ticked (the catch-up hands you `refresh_requests`), an Ask row's **Refresh report** relation points to it, or the user says "refresh the Acme report". Otherwise write a new one. Never guess that two questions are the same subject: an Ask row with Refresh report empty is a new report.
 1. **Gather.** `brain query --candidates "<the subject>" --limit 50`, then again with the project's and client's names and the people's names. Read the project or area note, its Brief, and every decision, question, meeting and source that is about the subject. Unlike an answer, a report reads widely: everything that bears on the subject, `draft` notes included.
 2. **Write the body:** exactly these six sections, in this order, with nothing before the first (spec/schema.md §16.4):
    1. `## Where it stands`: 3 to 5 lines, as of today.
@@ -59,10 +62,17 @@ A report gathers everything the brain knows about one subject, as of today: "rep
 
    A section with nothing says `- None`. **Every line that rests on a `draft` note ends with ` *(not reviewed)*`:** a line whose linked note is still `draft`, even when a proposal about it was approved. A proposal still pending isn't in the brain yet: name it under Gaps ("waiting for your review: …"). Links are relative to `reports/` (`../knowledge/…`, `../projects/…`). Trust labels as in step 4 below; copy figures and dates as the notes state them.
 3. **Store it:** `brain report new --input <file>` with `{ "title": "<subject>: where we stand", "question": "<the question as asked>", "projects": ["prj-…"], "area": "area-…", "asked_in": "<the Ask row's page id, only for an Ask row>", "body": "…" }`, with note ids for `projects` and `area`. The CLI checks the sections and links and writes `reports/<date>-<slug>.md`. Commit: `report: <title>`.
-4. **Publish** *(Notion, per `settings.publish`)*: `brain sync render --changed`, write the Report row (its body is the report: the brain-ingest skill's references/notion.md, "Inbox bodies"), then set the Ask row's Brain Status to Processed through the MCP, then `brain sync record`, and commit `publish: report <title>`. In a catch-up, the run's one publish does this.
-5. **Answer in chat** with the "Where it stands" lines and the Gaps, and the link to the Report row when published.
+   **A refresh** gathers and writes the whole body again, as of today, and passes `{ "refresh": "<the report's vw- id>", "body": "…" }`, plus `asked_in` when an Ask row asked for it; `title`, `projects` and `area` only when they changed. The CLI rewrites the same file with a new date; `question` and the Notion row stay, and Git keeps the earlier version. Commit: `report: refresh <title>`.
+4. **Publish** *(Notion, per `settings.publish`)*: `brain sync render --changed`, write the Report row (its body is the report: the brain-ingest skill's references/notion.md, "Inbox bodies"; a refresh is an `update` that replaces the body and clears Refresh), then set the Ask row's Brain Status to Processed through the MCP, then `brain sync record`, and commit `publish: report <title>`. In a catch-up, the run's one publish does this.
+5. **Log** `brain log report <vw-id> notes_read=<n> seconds=<s>` (the notes whose full text you read, and the seconds the report took; decision 0045), and commit it with the report.
+6. **Answer in chat** with the "Where it stands" lines and the Gaps, and the link to the Report row when published.
 
-**A report is a snapshot.** It is never ingested, never rebuilt and never cited as a source, and it creates no proposal: if the brain learned from its own summaries, its mistakes would become knowledge. To refresh one, ask again: a new dated report is written.
+**What to fix on a report** (decision 0045). The user writes what the report gets wrong on its Report row ("Lucía left Acme in June"); the catch-up hands you `report_fixes`. The error lives in the notes, not in the report, so never edit the report's text to match:
+1. Find the notes the line rests on, and write the correction as proposals (brain-ingest references/cli-inputs.md §3): an `update_fact`, an `add_to_note`, a `supersede` …, with `why` = the user's text and `source` = the notes' own source (the meeting or `src-` id the wrong claim came from). When the text needs no change to the notes (the report misread a note that is right), write none and say why in the report.
+2. Record it: `brain report fix <vw-id> --text "<What to fix, as written>" --proposals <prp-id>,<prp-id>` (empty `--proposals ""` when none). The next publish clears What to fix on the row.
+3. Once every proposal it listed is applied or closed, refresh the report (above). A catch-up checks this each run: a report whose last `fixes` entry lists only decided proposals, and wasn't refreshed since, is refreshed.
+
+**A report is never knowledge.** It is never ingested and never cited as a source, and it creates no proposal of its own: if the brain learned from its own summaries, its mistakes would become knowledge. Corrections go to the notes, as above.
 
 ## Example (synthetic Acme brain)
 

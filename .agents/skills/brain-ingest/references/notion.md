@@ -52,7 +52,7 @@ Do these in order, after the ingest commit: pages first, so every task's project
       - **`action: trash`** (a Review row decided more than 30 days ago, decision 0045): move `page_id` to Notion's trash (update the page with `in_trash: true`; `archived: true` on API versions before 2025-09). Nothing else. Record it like any other write; the proposal stays in the brain.
       - **Meeting and Inbox relations with `"mode": "add"`:** add the listed pages and keep the existing ones.
       - **`"mode": "if_empty"`:** write only if the property is empty in Notion.
-      - **`body` (decisions, questions, concepts):** replace the page body with it.
+      - **`body` (decisions, questions, concepts, references):** replace the page body with it.
       - **`body` and `sections` on an Inbox item** (a source, or a report): see "Inbox bodies" below. A capture's or an Ask row's page body is the user's: render never gives one a body.
       - **`sections` (projects):** replace only the children of the toggle heading with that exact name ("Brief", "Decision log"). Read the page's blocks first (decision 0033):
         - **the page has no toggle headings at all** (created without the template): append a "Brief" and a "Decision log" toggle heading, in that order, at the end of the page, then fill them;
@@ -74,9 +74,9 @@ Do these in order, after the ingest commit: pages first, so every task's project
 ### Inbox bodies (decision 0043)
 
 The brain writes the body of the Inbox rows it creates, once:
-- **`body`** on a `create`: the row's page content, written as blocks after the row is created. For a source it is the digest: a line saying what the input is, the summary and the key points. For a report it is the report's six sections.
+- **`body`** on a `create`: the row's page content, written as blocks after the row is created. For a source it is the digest: a line saying what the input is, the summary and the key points. For a report it is the report's six sections; a refreshed report comes back as an `update` with a `body` (decision 0045): replace the row's page content with it, then send its properties (Refresh cleared).
 - **`sections` `{ "Full text": … }`:** a toggle heading **"Full text"** after the body, holding the text. Create the toggle when the row has none; when it has one, replace its children. Keep the text's headings as headings (one per slide of a deck), Markdown tables as Notion tables, and an email or chat thread as one block per message. Split long text into as many blocks as the API needs (a block holds at most 2000 characters of text, and one append at most 100 blocks), in order, never cutting a word.
-- Neither is ever rebuilt or read back: an edit you make there stays in Notion.
+- Neither is ever rebuilt or read back (except a report's body on a refresh): an edit you make there stays in Notion.
 
 A report row's **Ask** relation links it to the Ask row it answers. After writing the report row, set that Ask row's **Brain Status** to Processed through the MCP; change nothing else on it.
 
