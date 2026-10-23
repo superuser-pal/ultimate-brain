@@ -609,6 +609,12 @@ The rest of decision 0045. The agency brain moves in at 0.6.0, after area homes 
 **Output:** AGENTS.md "Using Orca" (from the user's 2026-10-23 check of the Orca skills against the workflow): worktrees from `task.mjs start` and `orca agent launch` in them, not `orca worktree create`; build agents are Claude, Codex only reviews (0044); no worker on the main checkout; build/TASKS.md over Orca's card status, Runs and Tasks.
 **Acceptance:** the section names each of the four rules with the decision it applies; the commands it gives match `orca worktree create --help` and `orca agent launch --help`; no other rule in AGENTS.md changes.
 
+### CC-54 · Snapshot as_of only at the top in brain-sync (#122) · `in progress`
+**Release:** 0.5.0
+**Changelog:** brain-sync writes the snapshot's `as_of` once at the top, so `sync plan` no longer refuses its rows with "unknown key".
+**Output:** skills/brain-sync step 3 and its `.agents/skills/` mirror: each row carries `database`, `page_id` and `last_edited`; `as_of` is the snapshot's, once at the top, as in spec/cli.md §5.14.1 (dogfood #122, found on 0.4.0); a test in tests/sync.test.ts that `as_of` on a row is refused. No CLI or spec change.
+**Acceptance:** step 3 names no row key that §5.14.1 doesn't allow; a snapshot written per step 3 (one row, top-level `as_of`) gives a plan from `brain sync plan` on the fixture brain, and the same row with `as_of` added is refused with "unknown key"; the skill mirror check passes.
+
 
 ---
 
