@@ -1,7 +1,7 @@
 # Review 07: Hermes as a brain operator, and a search index
 
 **Focus:** whether Nous Research's Hermes Agent can run the brain's skills unattended, and which search index (GBrain read-only or a local BM25 index) would serve a brain of about 2,000 notes (CC-50, decision 0045)
-**Reviewed:** Hermes Agent v0.21.5 (upstream 98d8ea79, 2026-10-03), its docs in `website/docs/` and the code they cite; GBrain 0.46.30.0 (installed from npm; 0.60.411.0 was available)
+**Reviewed:** Hermes Agent v0.21.5 (upstream 98d8ea79, 2026-10-03), its docs in `website/docs/` and the code they cite; GBrain 0.46.30.0 (installed with Bun from the GitHub tag `v0.46.30.0`; 0.60.411.0 was available)
 **Date:** 2026-10-23
 **Method:** Hermes: its docs and code read, plus `hermes skills` in a scratch `HERMES_HOME` on a synthetic brain; no model call, no cron job, no Notion. Search: a synthetic brain of 1,982 notes and 50 known questions, run against `brain query --candidates`, a local BM25 index and `gbrain search`, with GBrain in a scratch `GBRAIN_HOME` on a copy of the brain. Commands in §5.
 
@@ -111,6 +111,9 @@ HERMES_HOME=$S/hh hermes skills list     # brain-apply … brain-sync, Source lo
 
 **Search**
 ```sh
+# S0. GBrain at the version reviewed; run.mjs stops on any other
+bun add -g github:garrytan/gbrain#v0.46.30.0
+gbrain --version                         # gbrain 0.46.30.0
 # S1. The synthetic brain and its questions (questions.json is committed; the script rewrites it the same)
 node $UB/src/cli.ts init $S/big --owner "Test Owner" --no-git
 node $UB/eval/search-0.5/make-brain.mjs $S/big $UB/eval/search-0.5/questions.json
