@@ -306,8 +306,8 @@ test("sync render presents an add_link review with its target title", async (con
   const properties = run.json.data.items[0].properties;
   assert.equal(properties.Name.type, "title");
   assert.equal(properties.Kind.value, "Add Link");
-  assert.equal(properties.Before.value, null);
-  assert.equal(properties.After.value, "People: Carlos Ruiz");
+  assert.equal(properties.Now.value, null);
+  assert.equal(properties.Proposed.value, "People: Carlos Ruiz");
 });
 
 test("sync render makes target-relative Review links plain text", async (context) => {
@@ -325,10 +325,10 @@ test("sync render makes target-relative Review links plain text", async (context
   const run = await brain(["sync", "render", "--brain", dir, "--ids", "prp-0a1b2c3d", "--json"]);
   assert.equal(run.code, 0, run.stdout);
   const properties = run.json.data.items[0].properties;
-  assert.equal(properties.After.value, "Read X file and Use Supabase for auth.");
+  assert.equal(properties.Proposed.value, "Read X file and Use Supabase for auth.");
   assert.equal(properties.Why.value, "See X file.");
-  assert.equal(properties.Before.value, null);
-  assert.doesNotMatch(properties.After.value, /notion\.so|\[[^\]]+\]\([^)]+\)/);
+  assert.equal(properties.Now.value, null);
+  assert.doesNotMatch(properties.Proposed.value, /notion\.so|\[[^\]]+\]\([^)]+\)/);
 });
 
 test("sync render gives supersede and merge reviews titles and truncates text", async (context) => {
@@ -340,9 +340,9 @@ test("sync render gives supersede and merge reviews titles and truncates text", 
   const run = await brain(["sync", "render", "--brain", dir, "--ids", "prp-0a1b2c3d,prp-1a1b2c3d,prp-2a1b2c3d", "--json"]);
   assert.equal(run.code, 0, run.stdout);
   const byId = new Map<string, Record<string, { value: unknown }>>(run.json.data.items.map((item: { id: string; properties: Record<string, { value: unknown }> }) => [item.id, item.properties]));
-  assert.equal(byId.get("prp-0a1b2c3d")!.Before.value, "Use Firebase for auth");
-  assert.equal(byId.get("prp-1a1b2c3d")!.Before.value, "Carlos Ruiz");
-  assert.equal((byId.get("prp-2a1b2c3d")!.After.value as string).length, 2000);
+  assert.equal(byId.get("prp-0a1b2c3d")!.Now.value, "Use Firebase for auth");
+  assert.equal(byId.get("prp-1a1b2c3d")!.Now.value, "Carlos Ruiz");
+  assert.equal((byId.get("prp-2a1b2c3d")!.Proposed.value as string).length, 2000);
 });
 
 test("sync publishes the brain's values for a Notion-created row whose brain-owned properties are empty", async (context) => {

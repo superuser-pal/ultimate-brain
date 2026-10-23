@@ -137,7 +137,7 @@ test("a capture fixed and read again is a new version of the same Inbox row", as
 });
 
 test("source diff: a tie removes first, and the rest of either side is written in order", async () => {
-  const { lineDiff } = await import("../src/commands/source.ts");
+  const { lineDiff } = await import("../src/lib/diff.ts");
   assert.deepEqual(lineDiff("A\nB\nA", "A\nA\nB"), ["- B", "+ B"]);
   assert.deepEqual(lineDiff("A\r\nB\r\n", "A\nB\nC\n"), ["+ C"]);
   assert.deepEqual(lineDiff("A\nB\nC", "A"), ["- B", "- C"]);
@@ -174,4 +174,23 @@ test("an approved update_body replaces the reference's body; one whose body chan
   const stale = await run(dir, ["apply"], { decisions: [{ proposal: later.id, action: "approve", decided_at: "2026-12-10T08:00:00Z", decided_by: "notion" }] });
   assert.equal(stale.json.data.decisions[0].reason, "STALE_PROPOSAL", stale.stdout);
   assert.equal((await run(dir, ["lint"])).json.data.errors, 0);
+});
+
+test("render: an update_body row shows the changed lines as Proposed, and keeps them once applied", async (context) => {
+  const dir = await fixtureCopy(context);
+  const v1 = await newSource(dir, source("Acme requirements v1", "document", REQUIREMENTS));
+  const reference = await newReference(dir, v1.id);
+  const updated = REQUIREMENTS.replace("2027-02", "2027-03");
+  const proposed = await run(dir, ["proposal", "new"], { proposals: [{ kind: "update_body", title: "Requirements v2", target: reference.id, content: updated, why: "Version 2.", source: v1.id }] });
+  const [row] = proposed.json.data.created;
+  const render = async () => (await run(dir, ["sync", "render", "--ids", row.id])).json.data.items[0];
+  const item = await render();
+  assert.deepEqual(item.properties.Now, { type: "rich_text", value: null });
+  assert.equal(item.properties.Proposed.value, "- - Launch in 2027-02\n+ - Launch in 2027-03");
+  const recorded = await run(dir, ["sync", "record"], { records: [{ id: row.id, notion: "b3000000-0000-4000-8000-000000000001", synced_at: NOW, published: item.published }] });
+  assert.equal(recorded.code, 0, recorded.stdout);
+  await run(dir, ["apply"], { decisions: [{ proposal: row.id, action: "approve", decided_at: "2026-12-10T08:00:00Z", decided_by: "notion" }] });
+  const after = await render();
+  assert.deepEqual(after.properties.State, { type: "select", value: "Applied" });
+  assert.equal(after.properties.Proposed, undefined, "the diff shown stays as published");
 });
