@@ -1,6 +1,7 @@
 import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { rangesProblem, splitParts } from "../lib/parts.ts";
+import { lineDiff } from "../lib/diff.ts";
 import { hasInboxBody } from "../lib/sync.ts";
 import { formatTimestamp } from "../lib/time.ts";
 import { Workspace } from "../lib/workspace.ts";
@@ -46,6 +47,35 @@ export const sourceFullTextCommand: Command = {
     return {
       data: { id: note.id, path: note.path, parts: count, notion_text: "full", notion_parts: parts ?? null, notion_text_requested: requested },
       human: `${note.path}: full text${parts === undefined ? "" : ` (parts ${parts.join(", ")} of ${count})`} on the next publish\n`,
+    };
+  },
+};
+
+/** `brain source diff <src-id>` (spec/cli.md §5.19, 0045): the lines that changed from the version it replaces. */
+export const sourceDiffCommand: Command = {
+  name: "source diff",
+  usage: "brain source diff <src-id> [--json]",
+  summary: "Show the lines a new version of a source changed against the version it replaces, without context lines. Read-only.",
+  options: {},
+  maxPositionals: 1,
+  needsBrain: true,
+  async run({ args, brain }) {
+    const [id] = args.positionals;
+    if (id === undefined) throw new BrainError("USAGE", "Name the source: brain source diff <src-id>");
+    const workspace = await Workspace.open(brain!);
+    const note = workspace.get(id);
+    if (note === undefined) throw new BrainError("UNKNOWN_ID", `No note with id ${id}`);
+    const invalid = (message: string): never => { throw new BrainError("INPUT_INVALID", message, [{ pointer: "", message }]); };
+    if (note.type !== "source") invalid(`${id} is a ${note.type}, not a source`);
+    const replaces = note.attributes.replaces;
+    if (typeof replaces !== "string") invalid(`${id} has no replaces: it is the first version`);
+    const earlier = workspace.get(replaces as string);
+    if (earlier === undefined) throw new BrainError("UNKNOWN_ID", `No note with id ${String(replaces)}`);
+    const lines = lineDiff(earlier.body, note.body);
+    const diff = lines.join("\n");
+    return {
+      data: { id: note.id, replaces: earlier.id, removed: lines.filter((line) => line.startsWith("- ")).length, added: lines.filter((line) => line.startsWith("+ ")).length, diff },
+      human: diff === "" ? "no lines changed\n" : `${diff}\n`,
     };
   },
 };

@@ -10,7 +10,7 @@ import { describeErrors, loadSchemas } from "../lib/schemas.ts";
 import { isRecord } from "../lib/input.ts";
 import { expandPath, linkedRepos, workTreeTop } from "../lib/repos.ts";
 
-const NOTE_TYPES = ["area", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "goal", "memory"];
+const NOTE_TYPES = ["area", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "goal", "memory", "reference"];
 const PROPOSAL_STATUSES = ["pending", "approved", "edited", "rejected", "applied", "closed"];
 
 /** `brain status` (spec/cli.md §5.2). */
@@ -80,7 +80,7 @@ function readNotion(config: Record<string, unknown>): { configured: string[]; mi
   const databases = notion.databases as Record<string, unknown>;
   const configured: string[] = [];
   const missing: string[] = [];
-  for (const key of ["areas", "goals", "key_results", "projects", "meetings", "people", "orgs", "decisions", "questions", "review", "inbox", "concepts"]) {
+  for (const key of ["areas", "goals", "key_results", "projects", "meetings", "people", "orgs", "decisions", "questions", "review", "inbox", "concepts", "references"]) {
     const value = key === "inbox" && databases.inbox === undefined ? databases.capture_inbox : databases[key];
     (typeof value === "string" && value !== "" ? configured : missing).push(key);
   }

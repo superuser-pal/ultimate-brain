@@ -287,6 +287,58 @@ test("report new refuses wrong sections, broken links and unknown ids", async (c
   assert.equal(await code({ ...base, extra: 1 }), "INPUT_INVALID");
 });
 
+test("a Report row: What to fix becomes a report fix, and a refresh keeps the id and Notion row and clears Refresh (0045)", async (context) => {
+  const dir = await inboxBrain(context);
+  const [ask, ask2] = ["f1000000-0000-4000-8000-000000000001", "f1000000-0000-4000-8000-000000000002"];
+  const created = await run(dir, ["report", "new"], { title: "Acme launch: where we stand", question: "Everything about the Acme launch", asked_in: ask, projects: ["prj-9x4t1b7e"], body: REPORT_BODY });
+  const id = created.json.data.id as string;
+  await renderAndRecord(dir, id);
+  const path = join(dir, created.json.data.path);
+  const page = parseFrontmatter(await readFile(path, "utf8")).attributes.notion as string;
+
+  const snapshot = (fix: string) => ({ as_of: NOW, rows: [{ database: "inbox", page_id: page, last_edited: NOW, properties: { "Brain ID": id, Refresh: true, "What to fix": fix } }] });
+  const plan = async (fix: string) => (await run(dir, ["sync", "plan"], snapshot(fix))).json.data;
+  const first = await plan("Lucía left Acme in June");
+  assert.deepEqual(first.refresh_requests, [{ page_id: page, report: id }]);
+  assert.deepEqual(first.report_fixes, [{ page_id: page, report: id, text: "Lucía left Acme in June" }]);
+
+  const proposal = await run(dir, ["proposal", "new"], { proposals: [{ kind: "update_fact", title: "Launch: March", target: "prj-9x4t1b7e", field: "launch_date", after: "2027-03", why: "The report was wrong.", source: "mtg-8c4n2p7w" }] });
+  const prp = proposal.json.data.created[0].id as string;
+  assert.equal((await run(dir, ["report", "fix", id, "--text", "Lucía left Acme in June", "--proposals", "prp-00000000"])).json.error?.code, "UNKNOWN_ID");
+  const fixed = await run(dir, ["report", "fix", id, "--text", "Lucía left Acme in June", "--proposals", prp]);
+  assert.deepEqual(fixed.json.data, { id, fixes: 1 });
+  assert.deepEqual(parseFrontmatter(await readFile(path, "utf8")).attributes.fixes, [{ text: "Lucía left Acme in June", received: NOW, proposals: [prp] }]);
+  assert.deepEqual((await plan("Lucía left Acme in June")).report_fixes, [], "a fix already recorded is not read again");
+
+  const cleared = await renderAndRecord(dir, id);
+  assert.equal(cleared!.action, "update");
+  assert.deepEqual(cleared!.properties["What to fix"], { type: "rich_text", value: null });
+  assert.equal(cleared!.properties.Refresh, undefined);
+  assert.equal(cleared!.body, null, "the body goes out only on a refresh");
+  assert.equal(cleared!.published["@fixes"], 1);
+
+  const later = "2026-12-17T09:00:00Z";
+  const input = join(dir, "..", "refresh.json");
+  await writeFile(input, JSON.stringify({ refresh: id, asked_in: ask2, body: REPORT_BODY.replace("Launch is set for February", "Launch is set for March") }));
+  const refreshed = await brain(["report", "new", "--input", input, "--brain", dir, "--now", later, "--json"]);
+  assert.equal(refreshed.code, 0, refreshed.stdout);
+  assert.equal(refreshed.json.data.id, id);
+  assert.equal(refreshed.json.data.path, created.json.data.path);
+  const view = parseFrontmatter(await readFile(path, "utf8")).attributes;
+  assert.deepEqual([view.notion, view.question, view.generated_at, view.asked_in], [page, "Everything about the Acme launch", later, [ask, ask2]]);
+  assert.ok((await readFile(join(dir, "log/2026-12.md"), "utf8")).includes(`report-refresh ${id} "Acme launch: where we stand"`));
+
+  const sent = await renderAndRecord(dir, id);
+  assert.equal(sent!.action, "update");
+  assert.equal(sent!.page_id, page);
+  assert.ok(sent!.body.startsWith("## Where it stands\n\nLaunch is set for March"), sent!.body);
+  assert.deepEqual(sent!.properties.Refresh, { type: "checkbox", value: false });
+  assert.deepEqual(sent!.properties.Ask, { type: "relation", value: [ask, ask2] });
+  assert.equal(await renderAndRecord(dir, id), undefined, "nothing changed since");
+  assert.equal((await run(dir, ["report", "new"], { refresh: "dec-7k2m9q4x", body: REPORT_BODY })).json.error?.code, "INPUT_INVALID");
+  await assertLintClean(dir);
+});
+
 test("render: an attached source has no Inbox row; its notes go on the parent's Produced relations", async (context) => {
   const dir = await inboxBrain(context);
   const parent = await newSource(dir, source("Launch thread", "email", "From: Maria\n\nSee the attached plan.\n"));
