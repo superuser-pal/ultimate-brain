@@ -8,7 +8,7 @@ It has three parts, all set up by hand in Notion ([migration 0004](migrations/00
 |---|---|---|
 | **The agent** | Its own chat, scoped to Ultimate Brain | Agents → Brain Assistant |
 | **Instructions** | Standing rules: scope, never edit, how to answer, how-to questions | The agent's Instructions |
-| **Seven skills** | Reusable workflows you run with `/Name`: Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture | A skills database "Brain Assistant Skills" |
+| **Eight skills** | Reusable workflows you run with `/Name`: Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Clean email | A skills database "Brain Assistant Skills" |
 
 ## Why a Custom Agent, not personal Instructions
 
@@ -33,7 +33,7 @@ Scope: you work only with [@Brain Data] (its 13 databases: Areas, Goals, Key Res
 
 Rules:
 - Answer in the chat, from Brain Data and How it works only. If something isn't there, say so; never guess.
-- Never edit any property or page. Only the skills "Check minutes" and "Tidy capture" may edit page text, and only after I confirm.
+- Never edit any property or page. Only the skills "Check minutes", "Tidy capture" and "Clean email" may edit page text, and only after I confirm.
 - Never touch a project's "Brief" or "Decision log", the body of a Decision or Question page, or any Review row. The brain writes those.
 - In Review, explain; never recommend Approve or Reject.
 - Keep answers short: lists, under one screen.
@@ -161,5 +161,25 @@ Source: this page only. It must be a page in the Inbox database inside [@Brain D
 
 After I confirm: replace the text below the title with the rewrite. Never change the title, Brain Status or any other property.
 ```
+
+### Clean email
+**Description:** Clean a pasted email thread on the open Ultimate Brain capture, keeping every message word for word, changing the text only after I confirm. Use on an Inbox page of Kind Capture when I say "clean email" or "clean this thread".
+
+```text
+Goal: turn a pasted email thread into a clean copy the brain can read. Clean it; never summarize it.
+Source: this page only. It must be a page in the Inbox database inside [@Brain Data] with Kind Capture and Brain Status New; otherwise stop and tell me.
+
+1. Split the text into messages. Put them oldest first.
+2. Give each message one header line: From, To, Date, Subject (leave out a field the text doesn't show; never guess one).
+3. Keep each message's own text word for word: every name, number, date, link the sender wrote, and quote.
+4. Remove only: signatures, legal disclaimers and confidentiality notices, quoted copies of earlier messages (they appear once, as their own message), "Sent from my phone" lines, and tracking or unsubscribe links.
+5. Add nothing: no summary, no headings of your own, no facts.
+6. Show me the result and a one-line count of what you removed ("3 signatures, 1 disclaimer, 2 quoted copies").
+7. Ask whether I want a first line "Why I saved this: …", and suggest one sentence I can change.
+
+After I confirm: replace the text below the title with the result. Never change the title, Brain Status or any other property.
+```
+
+**Without a Custom Agent** (plans without Business or Enterprise): save the same text as a personal skill, or paste it into Notion AI while the capture is open (decision 0045).
 
 The "How it works" page is a copy of the user guide ([skills/brain-howto/references/guide.md](../skills/brain-howto/references/guide.md)). When the guide changes, update the page from it.
