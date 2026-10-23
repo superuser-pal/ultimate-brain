@@ -109,7 +109,7 @@ Each type must live in its folder (lint error otherwise). A `view` lives inside 
 | `notion` | string (Notion page id) | | system | set once published |
 | `last_synced` | timestamp | | system | time of the last publish to Notion (written only by `sync record`) |
 | `notion_fields` | map | | system (snapshot of you-owned fields) | §7 |
-| `notion_published` | map | | system | Notion property name → value the brain last published or imported, in the normalized form of [cli.md](cli.md) §5.14.1, plus `@content` (hash of the published page content). Baseline for the three-way comparison of cli.md §5.14 |
+| `notion_published` | map | | system | Notion property name → value the brain last published or imported, in the normalized form of [cli.md](cli.md) §5.14.1, plus `@content` (hash of the published page content); on a proposal, `@trashed` (when its Review row was moved to Notion's trash, 0045). Baseline for the three-way comparison of cli.md §5.14 |
 
 ---
 
@@ -180,7 +180,7 @@ An ongoing responsibility (e.g. "Clients", "Health").
 | `kind` | `question`·`risk` | ✔ | brain |
 | `raised_in` | ID (`mtg-`) | | brain |
 | `answer` | string or ID | | brain (set by an applied `answer` proposal, 0041) |
-- `notion_fields`: `status` (`Open`·`Answered`·`Dropped`). Status is yours, with one exception: the publish after an applied `answer` proposal sets it to Answered once (0041, cli.md §5.14.4).
+- `notion_fields`: `status` (`Open`·`Answered`·`Dropped`). Status is yours, with two exceptions, each sent once: a question reaches Notion as Open while you have set no Status (0045), and the publish after an applied `answer` proposal sets it to Answered (0041, cli.md §5.14.4).
 
 ### concept · `knowledge/concepts/` · Notion: Concepts (0037)
 Ideas, methods, definitions: what the brain learned from a document, an email or a meeting. Only the §3.2 fields; `area` and `projects` place it, `sources` says where it came from.
@@ -520,7 +520,7 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
 | Orgs · Relationship, Website | `notion_fields.relationship`, `.website` |
 | Decisions · Date, Assessment, Project, Decided In, Supersedes | `date`, `assessment`, `projects`, `decided_in`, `relations[supersedes]` |
 | Decisions, Questions · Area | derived: the `area` of each of the record's `projects` (0034); not stored in the note |
-| Questions · Kind, Status, Project, Raised In | `kind`, `notion_fields.status`, `projects`, `raised_in`. Status = Answered is written once after an applied `answer` (0041) |
+| Questions · Kind, Status, Project, Raised In | `kind`, `notion_fields.status`, `projects`, `raised_in`. Status = Open is written once while Notion has none, and Answered once after an applied `answer` (0041, 0045) |
 | Areas · Brief toggle | the area's `area_brief` view (§16.3, 0041) |
 | Concepts · Area, Project | `area`, `projects` |
 | Decisions, Questions, Concepts, People · Sources | inverse of the Inbox relations below (Notion fills it) |
