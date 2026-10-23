@@ -40,7 +40,7 @@ The user wants only the bodies, with who wrote to whom.
 - **Amends 0045:** "one header per message (From, To, Date, Subject)" becomes a heading with names and date; "oldest first" becomes newest first; and "after the user confirms, it rewrites the page" becomes "it rewrites the page, and asks only on a serious doubt". Check minutes and Tidy capture still wait for a yes.
 - **The ingest** reads a capture whose messages start with `<sender> → <recipients> · <date>` (a heading) as an email, as it does today for From and Date lines.
 - **Notion:** migration 0008 replaces the Clean email skill's text in Brain Assistant Skills. The migration for 0.5.0 becomes 0009.
-- **Release:** 0.4.2.
+- **Release:** with 0.5.0. Nothing in it needs the CLI, so there is no 0.4.2. The user applies migration 0008's steps by hand on 0.4.1 (2026-10-23).
 
 ## Evidence
 - U-17, 2026-10-23: the user's feedback on the first cleaned thread.
