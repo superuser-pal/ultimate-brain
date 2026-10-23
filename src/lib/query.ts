@@ -6,7 +6,7 @@ import { compareCodePoints, type Note } from "./notes.ts";
 
 /** V1 note types accepted by `brain query --types` (spec/cli.md §5.13). */
 export const QUERY_TYPES = [
-  "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "memory", "proposal",
+  "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "source", "view", "memory", "proposal",
 ] as const;
 
 type QueryType = typeof QUERY_TYPES[number];

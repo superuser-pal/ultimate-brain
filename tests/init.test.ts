@@ -41,7 +41,7 @@ test("init creates a valid empty brain with an index and append-only init log", 
   const status = await brain(["status", "--brain", target, "--json"], root);
   assert.deepEqual(status.json.data.notes, {
     area: 0, project: 0, person: 0, org: 0, meeting: 0, decision: 0,
-    question: 0, concept: 0, source: 0, view: 0, goal: 0, memory: 0,
+    question: 0, concept: 0, source: 0, view: 0, goal: 0, memory: 0, reference: 0,
   });
   assert.equal(status.json.data.index_stale, false);
   assert.equal(status.json.data.last_log, '- 2026-12-03T10:22:00Z init - "Test Owner" schema=1');

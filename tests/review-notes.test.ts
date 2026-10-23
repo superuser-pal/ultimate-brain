@@ -48,7 +48,7 @@ test("review_notes folds the source's add_link items and titles the row", async 
   assert.equal(created.json.data.created.length, 1, "the links are folded, not grouped into add_link proposals");
   const [row] = created.json.data.created;
   assert.equal(row.kind, "review_notes");
-  assert.equal(row.title, "Accept 2 new notes from Acme sync, and 2 links");
+  assert.equal(row.title, "From Acme sync: 2 new notes and 2 links");
   assert.deepEqual(row.input_indexes, [0, 1, 2]);
   const proposal = await attributes(dir, row.path);
   assert.deepEqual(proposal.notes, [DECISION, QUESTION]);
@@ -56,7 +56,7 @@ test("review_notes folds the source's add_link items and titles the row", async 
     { target: CONCEPT, field: "projects", value: PROJECT },
     { target: DECISION, field: "aliases", value: "Supabase auth" },
   ]);
-  assert.equal(proposal.why, "New notes and links from Acme sync");
+  assert.equal(proposal.why, "What came in from Acme sync");
   assert.deepEqual(await lintErrors(dir), []);
 
   const again = await run(dir, ["proposal", "new"], { proposals: reviewInput });
@@ -97,7 +97,7 @@ test("proposal backlog writes one row per source over its draft notes, then noth
   const [kickoff, sync] = await Promise.all(first.json.data.created.map((row: { path: string }) => attributes(dir, row.path)));
   assert.equal(kickoff!.source, "mtg-5r2k8v3a");
   assert.deepEqual(kickoff!.notes, ["per-9t2c6m4a"]);
-  assert.equal(kickoff!.title, "Accept 1 new note from Acme kickoff");
+  assert.equal(kickoff!.title, "From Acme kickoff: 1 new note");
   assert.equal(kickoff!.why, "Notes from Acme kickoff waiting for your review");
   assert.equal(sync!.source, SYNC);
   assert.deepEqual([...(sync!.notes as string[])].sort(), [DECISION, SYNC, QUESTION].sort());
@@ -211,9 +211,9 @@ test("render: a Review notes row letters its notes, then its links, with titles 
   const created = await run(dir, ["proposal", "new"], { proposals: reviewInput });
   const [item] = await rendered(dir, [created.json.data.created[0].id]);
   assert.equal(item!.properties.Kind.value, "Review Notes");
-  assert.equal(item!.properties.Target.value, `Acme sync (${SYNC})`);
-  assert.deepEqual(item!.properties.Before, { type: "rich_text", value: null });
-  assert.equal(item!.properties.After.value, "a) Decision: Use Supabase for auth\nb) Question: Who owns the Acme mobile app?\nc) Projects on Row-level security: Acme website\nd) Aliases on Use Supabase for auth: Supabase auth");
+  assert.equal(item!.properties.About.value, `Acme sync (${SYNC})`);
+  assert.deepEqual(item!.properties.Now, { type: "rich_text", value: null });
+  assert.equal(item!.properties.Proposed.value, "a) Decision: Use Supabase for auth\nb) Question: Who owns the Acme mobile app?\nc) Projects on Row-level security: Acme website\nd) Aliases on Use Supabase for auth: Supabase auth");
 });
 
 test("render: an answer row shows answer → note; once applied, the question's Status goes out as Answered once", async (context) => {
@@ -221,8 +221,8 @@ test("render: an answer row shows answer → note; once applied, the question's 
   const answer = { kind: "answer", title: "Who owns the app: Maria", target: QUESTION, answer: "Maria owns the mobile app.", answer_note: DECISION, why: "Maria said she owns it.", source: SYNC };
   const created = await run(dir, ["proposal", "new"], { proposals: [answer] });
   const [row] = await rendered(dir, [created.json.data.created[0].id]);
-  assert.deepEqual(row!.properties.Before, { type: "rich_text", value: null });
-  assert.equal(row!.properties.After.value, "Maria owns the mobile app. → Use Supabase for auth");
+  assert.deepEqual(row!.properties.Now, { type: "rich_text", value: null });
+  assert.equal(row!.properties.Proposed.value, "Maria owns the mobile app. → Use Supabase for auth");
 
   const [before] = await rendered(dir, [QUESTION]);
   assert.equal(before?.properties.Status, undefined, "a question with no answer never has Status");
@@ -239,7 +239,7 @@ test("render: a Review row links its page and its source meeting", async (contex
   const dir = await fixtureCopy(context);
   const created = await run(dir, ["proposal", "new"], { proposals: reviewInput });
   const [item] = await rendered(dir, [created.json.data.created[0].id]);
-  assert.deepEqual(item!.properties["Target Page"], { type: "url", value: "https://www.notion.so/3c4d5e6f7a8b4c0d9e2f3a4b5c6d7e8f" });
+  assert.deepEqual(item!.properties["About Page"], { type: "url", value: "https://www.notion.so/3c4d5e6f7a8b4c0d9e2f3a4b5c6d7e8f" });
   assert.deepEqual(item!.properties["Source Meeting"], { type: "relation", value: ["3c4d5e6f-7a8b-4c0d-9e2f-3a4b5c6d7e8f"] });
 });
 

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 
-import { applyAll, EDITABLE, type Correction, type DecisionInput } from "./apply.ts";
+import { applyAll, type Correction, type DecisionInput } from "./apply.ts";
 import { BrainError } from "./errors.ts";
 import { assertNoProblems, isRecord, unknownKeys, type InputProblem } from "./input.ts";
 import { generateId, TYPE_PREFIX } from "./ids.ts";
@@ -11,13 +11,15 @@ import { fullText, splitParts } from "./parts.ts";
 import { loadSchemas } from "./schemas.ts";
 import { formatDate, formatTimestamp, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
+import { lineDiff } from "./diff.ts";
 import type { LogEntry } from "./log.ts";
+import { bodyHash, bodyOf } from "./proposals.ts";
 
-const DATABASES = ["areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "concepts", "review", "inbox"] as const;
+const DATABASES = ["areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "concepts", "references", "review", "inbox"] as const;
 const CREATABLE = new Set(["areas", "goals", "projects", "people", "orgs"]);
-const TYPE_FOR_DATABASE: Record<string, string> = { areas: "area", goals: "goal", projects: "project", people: "person", orgs: "org", decisions: "decision", questions: "question", concepts: "concept", review: "proposal" };
-const DATABASE_FOR_TYPE: Record<string, string> = { area: "areas", goal: "goals", project: "projects", person: "people", org: "orgs", decision: "decisions", question: "questions", concept: "concepts", source: "inbox", meeting: "meetings", proposal: "review" };
-const PUBLISHED_TYPES = new Set(["area", "goal", "project", "person", "org", "decision", "question", "concept", "source", "meeting", "proposal"]);
+const TYPE_FOR_DATABASE: Record<string, string> = { areas: "area", goals: "goal", projects: "project", people: "person", orgs: "org", decisions: "decision", questions: "question", concepts: "concept", references: "reference", review: "proposal" };
+const DATABASE_FOR_TYPE: Record<string, string> = { area: "areas", goal: "goals", project: "projects", person: "people", org: "orgs", decision: "decisions", question: "questions", concept: "concepts", reference: "references", source: "inbox", meeting: "meetings", proposal: "review" };
+const PUBLISHED_TYPES = new Set(["area", "goal", "project", "person", "org", "decision", "question", "concept", "reference", "source", "meeting", "proposal"]);
 
 export interface SyncPlan {
   as_of: string;
@@ -27,6 +29,9 @@ export interface SyncPlan {
   decisions: DecisionInput[];
   /** Inbox rows whose Full text box is ticked (0043); the skill runs `source full-text` for each. */
   full_text_requests: Array<{ page_id: string; source: string }>;
+  /** Report rows whose Refresh box is ticked, and their new What to fix texts (0045); the skill runs `report new` / `report fix`. */
+  refresh_requests: Array<{ page_id: string; report: string }>;
+  report_fixes: Array<{ page_id: string; report: string; text: string }>;
   conflicts: Array<Record<string, unknown>>;
   ignored: Array<Record<string, unknown>>;
 }
@@ -87,7 +92,7 @@ export function parseSnapshot(input: unknown): Snapshot {
 
 /** Compute the deterministic, no-network Notion pull plan (cli §5.14.2). */
 export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
-  const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], decisions: [], full_text_requests: [], conflicts: [], ignored: [] };
+  const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], decisions: [], full_text_requests: [], refresh_requests: [], report_fixes: [], conflicts: [], ignored: [] };
   const createsByPage = new Map<string, { id: string; type: string }>();
   for (const row of snapshot.rows) if (CREATABLE.has(row.database) && blank(property(row.properties, "Brain ID"))) {
     const existing = noteByNotion(workspace, row.page_id);
@@ -210,28 +215,35 @@ function planKeyFacts(row: SnapshotRow, note: Note, published: Record<string, un
 }
 
 function planDecision(row: SnapshotRow, proposal: Note, out: SyncPlan): void {
-  const decision = property(row.properties, "Decision");
-  if (decision === undefined || property(row.properties, "State") !== "Pending") return;
+  // A snapshot taken before migration 0009 has Decision and Note; Edit there is read as Fix (cli §5.14.2, 0045).
+  const call = property(row.properties, "Your call") ?? property(row.properties, "Decision");
+  const label = Object.hasOwn(row.properties, "Your call") ? "Your call" : "Decision";
+  const textLabel = Object.hasOwn(row.properties, "What to fix") || !Object.hasOwn(row.properties, "Note") ? "What to fix" : "Note";
+  if (call === undefined || call === null || property(row.properties, "State") !== "Pending") return;
   if (["applied", "closed"].includes(String(proposal.attributes.status))) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: proposal.id, reason: "ALREADY_TERMINAL" }); return; }
-  const action = String(decision).toLowerCase();
-  const note = property(row.properties, "Note");
-  if (!["approve", "reject", "edit"].includes(action)) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: proposal.id, reason: "NOT_CORRECTABLE" }); return; }
-  if (action === "edit" && !EDITABLE.has(String(proposal.attributes.kind))) {
-    out.conflicts.push(conflict(row, "EDIT_NOT_ALLOWED", `Edit is not allowed on a ${String(proposal.attributes.kind)} proposal`, "Decision", decision));
-    return;
-  }
-  if (action === "edit" && (note === null || note === undefined || note === "")) { out.conflicts.push(conflict(row, "EDIT_WITHOUT_VALUE", "Edit needs a Note", "Note")); return; }
-  if (action !== "edit" && typeof note === "string" && note !== "") { out.conflicts.push(conflict(row, "NOTE_TO_READ", "Review Note needs interpretation by the skill", "Note", note, decision)); return; }
-  out.decisions.push({ proposal: proposal.id, action: action as DecisionInput["action"], ...(action === "edit" ? { value: note as string, note: note as string } : {}), decided_at: row.last_edited, decided_by: "notion" });
+  const action = String(call).toLowerCase() === "edit" ? "fix" : String(call).toLowerCase();
+  const text = property(row.properties, textLabel);
+  const written = typeof text === "string" && text.trim() !== "";
+  if (!["approve", "reject", "fix"].includes(action)) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: proposal.id, property: label, reason: "UNKNOWN_OPTION" }); return; }
+  if (action === "fix" && !written) { out.conflicts.push(conflict(row, "FIX_WITHOUT_TEXT", "Fix needs What to fix: what to correct", "What to fix")); return; }
+  if (action === "fix") { out.conflicts.push(conflict(row, "FIX_TO_READ", "What to fix needs reading by the skill", "What to fix", text, "Fix")); return; }
+  if (written) { out.conflicts.push(conflict(row, "NOTE_TO_READ", "What to fix needs reading by the skill", "What to fix", text, action === "approve" ? "Approve" : "Reject")); return; }
+  out.decisions.push({ proposal: proposal.id, action: action as DecisionInput["action"], decided_at: row.last_edited, decided_by: "notion" });
 }
 
-/** An Inbox row is read only for its Full text box (cli §5.14.2, 0043). */
+/** An Inbox row is read for its Full text box (0043) and, on a Report row, Refresh and What to fix (cli §5.14.2, 0045). */
 function planInbox(workspace: Workspace, row: SnapshotRow, out: SyncPlan): void {
-  if (property(row.properties, "Full text") !== true) return;
   const brainId = property(row.properties, "Brain ID");
+  const note = typeof brainId === "string" && brainId !== "" ? workspace.get(brainId) : undefined;
+  if (note !== undefined && isReport(note)) {
+    if (property(row.properties, "Refresh") === true) out.refresh_requests.push({ page_id: row.page_id, report: note.id });
+    const text = property(row.properties, "What to fix");
+    const last = (Array.isArray(note.attributes.fixes) ? note.attributes.fixes : []).filter(isRecord).at(-1);
+    if (typeof text === "string" && text.trim() !== "" && text !== last?.text) out.report_fixes.push({ page_id: row.page_id, report: note.id, text });
+  }
+  if (property(row.properties, "Full text") !== true) return;
   const ignore = (id: string | null) => out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: id, property: "Full text", reason: "NO_FULL_TEXT" });
   if (typeof brainId !== "string" || brainId === "") { ignore(null); return; }
-  const note = workspace.get(brainId);
   if (note === undefined) { out.conflicts.push(conflict(row, "UNKNOWN_BRAIN_ID", `No note has Brain ID ${brainId}`)); return; }
   if (hasInboxBody(note)) out.full_text_requests.push({ page_id: row.page_id, source: note.id });
   else ignore(note.id);
@@ -259,7 +271,7 @@ function planKeyResult(workspace: Workspace, asOf: string, row: SnapshotRow, out
 
 function sortPlan(plan: SyncPlan): void {
   const order = (item: Record<string, unknown>) => [DATABASES.indexOf(String(item.database) as typeof DATABASES[number]), String(item.page_id ?? item.id), String(item.field ?? item.property ?? "")].join("\u0000");
-  for (const values of [plan.create, plan.updates, plan.corrections, plan.decisions, plan.full_text_requests, plan.conflicts, plan.ignored]) values.sort((a, b) => order(a as Record<string, unknown>).localeCompare(order(b as Record<string, unknown>)));
+  for (const values of [plan.create, plan.updates, plan.corrections, plan.decisions, plan.full_text_requests, plan.refresh_requests, plan.report_fixes, plan.conflicts, plan.ignored]) values.sort((a, b) => order(a as Record<string, unknown>).localeCompare(order(b as Record<string, unknown>)));
 }
 
 function notionFields(database: string, p: Record<string, unknown>, asOf: string): Record<string, unknown> {
@@ -271,7 +283,7 @@ function notionFields(database: string, p: Record<string, unknown>, asOf: string
 
 function brainProperties(database: string): Array<[string, string]> {
   const common: Array<[string, string]> = [["Name", "title"], ["Summary", "summary"], ["Lifecycle", "lifecycle"]];
-  const extras: Record<string, Array<[string, string]>> = { goals: [["Why", "why"], ["Deadline", "facts.deadline"], ["Area", "area"]], projects: [["Key Facts", "facts"], ["Area", "area"], ["Goal", "goal"], ["Client", "client"], ["People", "people"]], people: [["Role", "facts.role"], ["Org", "org"]], decisions: [["Assessment", "assessment"], ["Project", "projects"], ["Area", "derived_area"]], questions: [["Kind", "kind"], ["Project", "projects"], ["Area", "derived_area"]], concepts: [["Project", "concept_projects"], ["Area", "concept_area"]] };
+  const extras: Record<string, Array<[string, string]>> = { goals: [["Why", "why"], ["Deadline", "facts.deadline"], ["Area", "area"]], projects: [["Key Facts", "facts"], ["Area", "area"], ["Goal", "goal"], ["Client", "client"], ["People", "people"]], people: [["Role", "facts.role"], ["Org", "org"]], decisions: [["Assessment", "assessment"], ["Project", "projects"], ["Area", "derived_area"]], questions: [["Kind", "kind"], ["Project", "projects"], ["Area", "derived_area"]], concepts: [["Project", "concept_projects"], ["Area", "concept_area"]], references: [["Project", "reference_projects"], ["Area", "reference_area"]] };
   return [...common, ...(extras[database] ?? [])];
 }
 
@@ -326,8 +338,8 @@ export function parseKeyFacts(value: unknown): Record<string, unknown> {
 /** Input validation and execution for `sync apply`. */
 export function parsePlan(input: unknown): SyncPlan {
   if (!isRecord(input)) assertNoProblems([{ pointer: "", message: "must be an object" }]);
-  const p = input as Record<string, unknown>; const problems = unknownKeys(p, ["as_of", "create", "updates", "corrections", "decisions", "full_text_requests", "conflicts", "ignored"], "");
-  if (p.full_text_requests !== undefined && !Array.isArray(p.full_text_requests)) problems.push({ pointer: "/full_text_requests", message: "must be a list" });
+  const p = input as Record<string, unknown>; const problems = unknownKeys(p, ["as_of", "create", "updates", "corrections", "decisions", "full_text_requests", "refresh_requests", "report_fixes", "conflicts", "ignored"], "");
+  for (const key of ["full_text_requests", "refresh_requests", "report_fixes"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   if (!isTimestamp(p.as_of)) problems.push({ pointer: "/as_of", message: "must be an ISO 8601 UTC timestamp" });
   for (const key of ["create", "updates", "corrections", "decisions", "conflicts", "ignored"]) if (!Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   (Array.isArray(p.create) ? p.create : []).forEach((item, index) => {
@@ -338,7 +350,7 @@ export function parsePlan(input: unknown): SyncPlan {
     if (item.lifecycle !== undefined && typeof item.lifecycle !== "string") problems.push({ pointer: `/create/${index}/lifecycle`, message: "must be a lifecycle string" });
   });
   assertNoProblems(problems);
-  return { ...p, full_text_requests: p.full_text_requests ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
+  return { ...p, full_text_requests: p.full_text_requests ?? [], refresh_requests: p.refresh_requests ?? [], report_fixes: p.report_fixes ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
 }
 
 export function applyPlan(workspace: Workspace, plan: SyncPlan, now: Date, recordOnly: boolean): Record<string, unknown> {
@@ -371,23 +383,21 @@ export function applyPlan(workspace: Workspace, plan: SyncPlan, now: Date, recor
     ...updates.filter((item) => item.result === "applied").map((item) => ({ op: "sync-update", id: String(item.id), title: String(workspace.get(String(item.id))?.attributes.title ?? item.id) })),
     ...(correctionApply?.log ?? []), ...(decisionApply.log ?? []),
   ];
-  return { create, updates, corrections, decisions: decisionResult, full_text_requests: plan.full_text_requests, conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...updates, ...corrections, ...decisionResult].map((item) => ({ ...item }))), log };
+  return { create, updates, corrections, decisions: decisionResult, full_text_requests: plan.full_text_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...updates, ...corrections, ...decisionResult].map((item) => ({ ...item }))), log };
 }
 
-function references(value: unknown): string[] { if (Array.isArray(value)) return value.flatMap(references); if (isRecord(value)) return Object.values(value).flatMap(references); return typeof value === "string" && /^(area|gol|prj|per|org|mtg|dec|que|con|src|mem)-/.test(value) ? [value] : []; }
+function references(value: unknown): string[] { if (Array.isArray(value)) return value.flatMap(references); if (isRecord(value)) return Object.values(value).flatMap(references); return typeof value === "string" && /^(area|gol|prj|per|org|mtg|dec|que|con|ref|src|mem)-/.test(value) ? [value] : []; }
 function summarize(items: readonly Record<string, unknown>[]): Record<string, number> { const result: Record<string, number> = { applied: 0, closed: 0, recorded: 0, corrected: 0, skipped: 0, failed: 0 }; for (const item of items) if (typeof item.result === "string" && Object.hasOwn(result, item.result)) result[item.result] += 1; return result; }
 
 export interface RenderItem { id: string; type: string; database: string; database_id: string; page_id: string | null; action: "create" | "update" | "trash"; properties: Record<string, unknown>; body: string | null; sections: Record<string, string> | null; pending_relations: Array<Record<string, unknown>>; published: Record<string, unknown> }
 
 export function render(workspace: Workspace, now: Date, ids?: readonly string[], held?: ReadonlyMap<string, Set<string>>): { items: RenderItem[]; errors: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id?: string }> } {
   const selected = ids === undefined
-    ? workspace.notes.filter((note) => (PUBLISHED_TYPES.has(note.type) && !(note.type === "source" && note.attributes.kind === undefined)) || (isReport(note) && note.attributes.notion === undefined))
+    ? workspace.notes.filter((note) => (PUBLISHED_TYPES.has(note.type) && !(note.type === "source" && note.attributes.kind === undefined)) || isReport(note))
     : ids.map((id) => workspace.get(id)!).filter(Boolean);
   const items: RenderItem[] = []; const errors: Array<Record<string, unknown>> = []; const warnings: Array<{ code: string; message: string; id?: string }> = [];
   for (const note of selected) {
     const database = isReport(note) ? "inbox" : DATABASE_FOR_TYPE[note.type]; if (database === undefined || (note.type === "source" && note.attributes.kind === undefined)) continue;
-    // A published report is never rendered again (0043).
-    if (isReport(note) && note.attributes.notion !== undefined) continue;
     // An attached source has no Inbox row: its notes go on the parent's (0042).
     if (note.type === "source" && note.attributes.attached_to !== undefined) continue;
     // A decided Review row leaves Notion 30 days after its decision, once (0045).
@@ -400,17 +410,27 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     if (note.type === "source" && note.attributes.kind === "capture" && (capturePage === undefined || (typeof note.attributes.notion === "string" && note.attributes.notion !== capturePage))) { errors.push({ id: note.id, reason: "NOTION_ID_MISMATCH" }); continue; }
     const rendered = renderedBrainValues(note, workspace); const published = isRecord(note.attributes.notion_published) ? note.attributes.notion_published : {};
     const properties: Record<string, unknown> = {}; const pending: Array<Record<string, unknown>> = []; const heldProperties = held?.get(note.id) ?? new Set<string>();
-    const isCreate = isReport(note) || (note.attributes.notion === undefined && capturePage === undefined);
+    const isCreate = note.attributes.notion === undefined && capturePage === undefined;
     for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || !Object.hasOwn(published, name) || !sameValue(value, published[name]))) properties[name] = encoded; }
     const content = renderedContent(note, workspace); if (content.hash !== undefined) rendered["@content"] = content.hash;
     const contentChanged = content.hash !== undefined && !isDeepStrictEqual(content.hash, published["@content"]);
+    // A report (0045): a refresh sends the body once and clears Refresh; a new fix clears What to fix.
+    let reportDue = false;
+    if (isReport(note)) {
+      const fixes = Array.isArray(note.attributes.fixes) ? note.attributes.fixes.length : 0;
+      const stored = typeof published["@fixes"] === "number" ? published["@fixes"] : 0;
+      if (!isCreate && contentChanged) properties.Refresh = { type: "checkbox", value: false };
+      if (!isCreate && !contentChanged) content.body = null;
+      if (fixes > stored) { properties["What to fix"] = { type: "rich_text", value: null }; reportDue = true; }
+      rendered["@fixes"] = Math.max(fixes, stored);
+    }
     // Full text (0043): the text goes out once per choice, and a ticked box is cleared once per request.
     const full = note.type === "source" && hasInboxBody(note) ? fullTextDue(note, published["@full_text"]) : undefined;
     if (full?.sections !== undefined) content.sections = { ...(content.sections ?? {}), ...full.sections };
     if (full?.clear === true) properties["Full text"] = { type: "checkbox", value: false };
     if (full !== undefined && (full.sections !== undefined || full.clear)) rendered["@full_text"] = full.record;
     const fullTextDueNow = full !== undefined && (full.sections !== undefined || full.clear);
-    if (!isCreate && Object.keys(properties).length === 0 && !contentChanged && !fullTextDueNow) continue;
+    if (!isCreate && Object.keys(properties).length === 0 && !contentChanged && !fullTextDueNow && !reportDue) continue;
     if (!isCreate && note.type !== "meeting" && note.type !== "proposal") properties["Last Synced"] = { type: "date", value: { start: formatTimestamp(now), end: null } };
     items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: typeof note.attributes.notion === "string" ? note.attributes.notion : capturePage ?? null, action: isCreate ? "create" : "update", properties, body: content.body, sections: content.sections, pending_relations: pending, published: rendered });
   }
@@ -436,7 +456,9 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     const addLink = a.kind === "add_link";
     const after = addLink
       ? proposalLinks(a).map((link) => `${fieldLabel(String(link.field))}: ${noteTitle(link.value, workspace)}`).join("\n")
-      : a.kind === "review_notes" ? reviewNotesAfter(a, workspace) : undefined;
+      : a.kind === "review_notes" ? reviewNotesAfter(a, workspace) : a.kind === "update_body" ? bodyChange(a, workspace)?.join("\n") ?? null : undefined;
+    // A body diff can only be shown while the target's body is the one proposed against; then S keeps it (0045).
+    const proposed = staleBody(a, workspace) && isRecord(a.notion_published) && Object.hasOwn(a.notion_published, "Proposed") ? a.notion_published.Proposed : undefined;
     const reviewText = (value: unknown) => truncate(typeof value === "string" ? reviewMarkdown(value, target) : value);
     // A Review notes row names its source: the meeting for minutes, else the source (0041).
     const source = a.kind === "review_notes" && typeof a.source === "string" ? workspace.get(a.source) : undefined;
@@ -444,15 +466,15 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     const page = (source ?? target)?.attributes.notion;
     const meeting = typeof a.source === "string" ? workspace.get(a.source) : undefined;
     Object.assign(values, {
-      Name: a.title, Kind: select(a.kind), Target: targetText,
-      "Target Page": typeof page === "string" ? `https://www.notion.so/${page.replaceAll("-", "")}` : null,
+      Name: a.title, Kind: select(a.kind), About: targetText,
+      "About Page": typeof page === "string" ? `https://www.notion.so/${page.replaceAll("-", "")}` : null,
       "Source Meeting": meeting?.type === "meeting" && typeof meeting.attributes.notion === "string" ? [meeting.attributes.notion] : [],
-      Before: reviewText(proposalBefore(a, workspace)), After: reviewText(after ?? proposalAfter(a, workspace)),
+      Now: reviewText(proposalBefore(a, workspace)), Proposed: proposed !== undefined ? proposed : reviewText(after ?? proposalAfter(a, workspace)),
       Why: reviewText(a.why), State: select(proposalState(a.status)), "Brain ID": note.id,
     });
     return values;
   }
-  if (isReport(note)) { Object.assign(values, { Name: a.title, Kind: "Report", Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), Ask: typeof a.asked_in === "string" ? [a.asked_in] : [], "Brain Status": "Processed", "Brain ID": note.id }); return values; }
+  if (isReport(note)) { Object.assign(values, { Name: a.title, Kind: "Report", Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), Ask: typeof a.asked_in === "string" ? [a.asked_in] : Array.isArray(a.asked_in) ? a.asked_in : [], "Brain Status": "Processed", "Brain ID": note.id }); return values; }
   if (note.type === "meeting") { Object.assign(values, { Decisions: relationPages(a.decisions, workspace), Questions: relationPages(a.questions, workspace), Attendees: relationPages(a.attendees, workspace), Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Brain Status": "Ingested", "Ingested At": dateOutput(a.created), "Brain ID": note.id }); return values; }
   if (note.type === "source") return sourceValues(note, workspace);
   common();
@@ -468,7 +490,7 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     if (a.answer !== undefined) { if (published.Status !== "Answered") values.Status = "Answered"; }
     else if (published.Status === undefined && !yours) values.Status = "Open";
   }
-  if (note.type === "concept") Object.assign(values, { Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace) });
+  if (note.type === "concept" || note.type === "reference") Object.assign(values, { Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace) });
   return values;
 }
 
@@ -484,7 +506,7 @@ function projectAreas(projects: unknown, workspace: Workspace): string[] {
 /** The notes a source produced, with those of the sources attached to it (cli §5.14.4, 0042). */
 function producedBy(note: Note, workspace: Workspace): Note[] {
   const sources = new Set([note.id, ...workspace.notes.filter((candidate) => candidate.type === "source" && candidate.attributes.attached_to === note.id).map((candidate) => candidate.id)]);
-  return workspace.notes.filter((candidate) => ["decision", "question", "concept", "person"].includes(candidate.type) && Array.isArray(candidate.attributes.sources) && candidate.attributes.sources.some((id) => sources.has(String(id))));
+  return workspace.notes.filter((candidate) => ["decision", "question", "concept", "reference", "person"].includes(candidate.type) && Array.isArray(candidate.attributes.sources) && candidate.attributes.sources.some((id) => sources.has(String(id))));
 }
 
 function sourceValues(note: Note, workspace: Workspace): Record<string, unknown> {
@@ -492,11 +514,11 @@ function sourceValues(note: Note, workspace: Workspace): Record<string, unknown>
   const ids = (type: string) => produced.filter((candidate) => candidate.type === type).map((candidate) => candidate.id).sort(compareCodePoints);
   const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))].sort(compareCodePoints);
   const areas = [...new Set([...produced.map((candidate) => candidate.attributes.area).filter((id): id is string => typeof id === "string"), ...projects.flatMap((id) => { const area = workspace.get(id)?.attributes.area; return typeof area === "string" ? [area] : []; })])].sort(compareCodePoints);
-  return { Name: note.attributes.title, Kind: select(note.attributes.kind), Summary: note.attributes.summary ?? null, Decisions: relationPages(ids("decision"), workspace), Questions: relationPages(ids("question"), workspace), Concepts: relationPages(ids("concept"), workspace), People: relationPages(ids("person"), workspace), Project: relationPages(projects, workspace), Area: relationPages(areas, workspace), "Brain Status": "Processed", "Brain ID": note.id };
+  return { Name: note.attributes.title, Kind: select(note.attributes.kind), Summary: note.attributes.summary ?? null, Decisions: relationPages(ids("decision"), workspace), Questions: relationPages(ids("question"), workspace), Concepts: relationPages(ids("concept"), workspace), ...(databaseIdFor(workspace, "references") === "" ? {} : { References: relationPages(ids("reference"), workspace) }), People: relationPages(ids("person"), workspace), Project: relationPages(projects, workspace), Area: relationPages(areas, workspace), "Brain Status": "Processed", "Brain ID": note.id };
 }
 
 function notionProperty(name: string, value: unknown, note: Note, workspace: Workspace, pending: Array<Record<string, unknown>>): unknown {
-  const relation = ["Area", "Goal", "Client", "People", "Org", "Project", "Decided In", "Raised In", "Supersedes", "Decisions", "Questions", "Concepts", "Attendees"].includes(name);
+  const relation = ["Area", "Goal", "Client", "People", "Org", "Project", "Decided In", "Raised In", "Supersedes", "Decisions", "Questions", "Concepts", "References", "Attendees"].includes(name);
   if (relation) {
     const sourceField: Record<string, string> = { Area: "area", Goal: "goal", Client: "client", People: "people", Org: "org", Project: "projects", "Decided In": "decided_in", "Raised In": "raised_in", Decisions: "decisions", Questions: "questions", Attendees: "attendees" };
     const raw = name === "Area" && (note.type === "decision" || note.type === "question") ? projectAreas(note.attributes.projects, workspace) : name === "Supersedes" ? (Array.isArray(note.attributes.relations) ? note.attributes.relations.filter(isRecord).filter((item) => item.type === "supersedes").map((item) => item.target) : []) : note.type === "source" ? sourceRelationIds(note, name, workspace) : note.attributes[sourceField[name] ?? ""];
@@ -511,7 +533,7 @@ function notionProperty(name: string, value: unknown, note: Note, workspace: Wor
     return { type: "relation", value: Array.isArray(value) ? value : [] };
   }
   if (name === "Ask") return { type: "relation", value: Array.isArray(value) ? value : [] };
-  if (name === "Target Page") return { type: "url", value };
+  if (name === "About Page") return { type: "url", value };
   if (["Lifecycle", "Assessment", "Kind", "State", "Brain Status", "Status"].includes(name)) return { type: "select", value };
   if (name === "Last Synced" || name === "Date" || name === "Deadline" || name === "Ingested At") return { type: "date", value };
   return { type: name === "Name" ? "title" : "rich_text", value };
@@ -521,6 +543,7 @@ function sourceRelationIds(note: Note, name: string, workspace: Workspace): stri
   if (name === "Decisions") return produced.filter((candidate) => candidate.type === "decision").map((candidate) => candidate.id);
   if (name === "Questions") return produced.filter((candidate) => candidate.type === "question").map((candidate) => candidate.id);
   if (name === "Concepts") return produced.filter((candidate) => candidate.type === "concept").map((candidate) => candidate.id);
+  if (name === "References") return produced.filter((candidate) => candidate.type === "reference").map((candidate) => candidate.id);
   if (name === "People") return produced.filter((candidate) => candidate.type === "person").map((candidate) => candidate.id);
   const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))];
   if (name === "Project") return projects;
@@ -536,7 +559,7 @@ function renderedContent(note: Note, workspace: Workspace): { body: string | nul
   // A source's digest is written once; its Full text is tracked by @full_text, not @content (0043).
   if (note.type === "source") { if (!hasInboxBody(note)) return { body: null, sections: null }; const body = digestBody(note); return { body, sections: null, hash: hash(body) }; }
   if (isReport(note)) { const body = notionMarkdown(note.body.replace(/^\n+/, ""), note, workspace); return { body, sections: null, hash: hash(body) }; }
-  if (note.type === "decision" || note.type === "question" || note.type === "concept") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: notionMarkdown(generatedBlock(brief?.body ?? ""), note, workspace), "Decision log": notionMarkdown(generatedBlock(log?.body ?? ""), note, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
+  if (note.type === "decision" || note.type === "question" || note.type === "concept" || note.type === "reference") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: notionMarkdown(generatedBlock(brief?.body ?? ""), note, workspace), "Decision log": notionMarkdown(generatedBlock(log?.body ?? ""), note, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
 function generatedBlock(body: string): string { const start = body.indexOf("<!-- @generated:start -->"); const end = body.indexOf("<!-- @generated:end -->"); return start >= 0 && end > start ? body.slice(start + "<!-- @generated:start -->".length, end).trim() : body.trim(); }
 function notionMarkdown(body: string, source: Note, workspace: Workspace): string { const fromFolder = source.path.includes("/") ? source.path.slice(0, source.path.lastIndexOf("/")) : ""; return body.replace(/\^\[(inferred|ambiguous)\]/g, (_, kind) => kind === "inferred" ? " (AI inference)" : " (ambiguous)").replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_all, title, link) => { const targetPath = normalizeRelative(fromFolder, link); const target = workspace.notes.find((note) => note.path === targetPath); return typeof target?.attributes.notion === "string" ? `[${title}](https://www.notion.so/${target.attributes.notion.replaceAll("-", "")})` : title; }); }
 function reviewMarkdown(body: string, target: Note | undefined): string {
@@ -557,15 +580,34 @@ function personTitle(value: unknown, workspace: Workspace): unknown { return typ
 function noteTitle(value: unknown, workspace: Workspace): unknown { return typeof value === "string" ? workspace.get(value)?.attributes.title ?? value : value ?? null; }
 function fieldLabel(field: string): string { return field[0]?.toUpperCase() + field.slice(1).replaceAll("_", " "); }
 function truncate(value: unknown): unknown { return typeof value === "string" ? value.slice(0, 2000) : value; }
-/** The lettered lines of a Review notes row: its notes, then its links (cli §5.14.4). */
+/** The lettered lines of a Review notes row: its changes, then its notes, then its links (cli §5.14.4, 0045). */
 function reviewNotesAfter(attributes: Record<string, unknown>, workspace: Workspace): string {
+  const changes = (Array.isArray(attributes.changes) ? attributes.changes.filter(isRecord) : []).map((change) => {
+    const target = String(noteTitle(change.target, workspace));
+    if (change.kind === "update_fact") return `⚠ ${fieldLabel(String(change.field))} on ${target}: ${change.before === undefined ? "(new)" : String(noteTitle(change.before, workspace))} → ${String(noteTitle(change.after, workspace))}`;
+    if (change.kind === "update_body") return `⚠ ${target}: ${bodyChange(change, workspace)?.length ?? 0} lines changed`;
+    return `Add to ${target}: ${String(change.content ?? "").split("\n")[0]!.slice(0, 80)}`;
+  });
   const notes = (Array.isArray(attributes.notes) ? attributes.notes : []).map((id) => {
     const note = workspace.get(String(id));
     return `${note === undefined ? "Note" : fieldLabel(note.type)}: ${String(noteTitle(id, workspace))}`;
   });
   const links = (Array.isArray(attributes.links) ? attributes.links.filter(isRecord) : []).map((link) =>
     `${fieldLabel(String(link.field))} on ${String(noteTitle(link.target, workspace))}: ${String(noteTitle(link.value, workspace))}`);
-  return [...notes, ...links].map((line, index) => `${letters(index)}) ${line}`).join("\n");
+  return [...changes, ...notes, ...links].map((line, index) => `${letters(index)}) ${line}`).join("\n");
+}
+
+/** The changed lines an update_body proposes against its target's body (cli §5.19), or undefined once that body changed. */
+function bodyChange(change: Record<string, unknown>, workspace: Workspace): string[] | undefined {
+  const target = typeof change.target === "string" ? workspace.get(change.target) : undefined;
+  if (target === undefined || bodyHash(target.body) !== change.before_hash) return undefined;
+  return lineDiff(target.body, bodyOf(String(change.content ?? "")));
+}
+
+/** Whether a proposal holds an update_body whose target's body is no longer the one it was proposed against. */
+function staleBody(attributes: Record<string, unknown>, workspace: Workspace): boolean {
+  const bodies = attributes.kind === "update_body" ? [attributes] : (Array.isArray(attributes.changes) ? attributes.changes.filter(isRecord) : []).filter((change) => change.kind === "update_body");
+  return bodies.some((change) => bodyChange(change, workspace) === undefined);
 }
 
 /** a, b, … z, then aa, ab, … */
@@ -601,7 +643,7 @@ function digestBody(note: Note): string {
 }
 
 function proposalBefore(attributes: Record<string, unknown>, workspace: Workspace): unknown {
-  if (attributes.kind === "add_link" || attributes.kind === "review_notes" || attributes.kind === "answer") return null;
+  if (attributes.kind === "add_link" || attributes.kind === "review_notes" || attributes.kind === "answer" || attributes.kind === "update_body") return null;
   if (attributes.kind === "supersede") return truncate(noteTitle(attributes.supersedes, workspace));
   if (attributes.kind === "merge") return truncate(noteTitle(attributes.target, workspace));
   return truncate(attributes.before ?? null);

@@ -15,9 +15,9 @@ import { noteNewCommand } from "./commands/note.ts";
 import { linkCommand } from "./commands/link.ts";
 import { upgradeCommand } from "./commands/upgrade.ts";
 import { proposalBacklogCommand, proposalListCommand, proposalNewCommand } from "./commands/proposal.ts";
-import { reportNewCommand } from "./commands/report.ts";
+import { reportFixCommand, reportNewCommand } from "./commands/report.ts";
 import { repoAddCommand, repoChangesCommand, repoRecordCommand } from "./commands/repo.ts";
-import { sourceFullTextCommand } from "./commands/source.ts";
+import { sourceDiffCommand, sourceFullTextCommand } from "./commands/source.ts";
 import { queryCommand } from "./commands/query.ts";
 import { syncApplyCommand, syncPlanCommand, syncRecordCommand, syncRenderCommand, syncTasksCommand } from "./commands/sync.ts";
 import { viewsCommand } from "./commands/views.ts";
@@ -31,7 +31,7 @@ export type CommandHandler = (args: readonly string[], io: CliIo) => number | Pr
 
 /** Registered commands, in help order. */
 export const COMMANDS: readonly Command[] = [
-  initCommand, statusCommand, configGetCommand, configSetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, proposalBacklogCommand, sourceFullTextCommand, reportNewCommand, repoAddCommand, repoChangesCommand, repoRecordCommand, applyCommand,
+  initCommand, statusCommand, configGetCommand, configSetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, proposalBacklogCommand, sourceFullTextCommand, sourceDiffCommand, reportNewCommand, reportFixCommand, repoAddCommand, repoChangesCommand, repoRecordCommand, applyCommand,
   syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand, viewsCommand, linkCommand, queryCommand, upgradeCommand,
 ];
 

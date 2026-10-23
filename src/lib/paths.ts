@@ -49,6 +49,7 @@ function layout(type: string, slug: string, date: string, sourceKey?: unknown): 
     case "org": return file(`knowledge/orgs/${slug}.md`);
     case "question": return file(`knowledge/questions/${slug}.md`);
     case "concept": return file(`knowledge/concepts/${slug}.md`);
+    case "reference": return file(`knowledge/references/${slug}.md`);
     case "meeting": return file(`knowledge/meetings/${date}-${slug}.md`);
     case "decision": return file(`knowledge/decisions/${date}-${slug}.md`);
     case "source": return file(`sources/${sourceFolder(sourceKey)}/${date}-${slug}.md`);
