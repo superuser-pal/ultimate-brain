@@ -22,12 +22,26 @@ On Tue, 3 Dec 2026 at 10:12, Tomás Vidal <tomas@globex.example> wrote:
 
 From: Tomás Vidal <tomas@globex.example>
 To: Lucía Fernández <lucia@acme.example>
+Cc: Ana Ruiz <ana@globex.example>
 Date: Tue, 3 Dec 2026 10:12
 Subject: Re: Acme website launch date
+
+[EXTERNAL] You don't often get email from tomas@globex.example. Learn why this is important
 
 Hi Lucía,
 
 The CMS migration slipped a week. We can still make 15 Feb if content freeze stays on 1 Feb. Budget unchanged at 80,000 EUR.
+
+Let's go through the plan on Thursday's call at 10:00.
+
+________________________________________________________________________________
+Microsoft Teams meeting
+Join on your computer, mobile app or room device
+Click here to join the meeting <https://teams.example/l/meetup-join/19%3ameeting_abc123>
+Meeting ID: 312 456 789 012
+Passcode: aB3cD4
+Download Teams | Join on the web
+________________________________________________________________________________
 
 Tomás
 Tomás Vidal · Delivery Manager · Globex
