@@ -148,7 +148,7 @@ Set **Disputed** on anything wrong. The brain stops relying on it, and you can a
 | A file from your phone | Attach it to a **Quick capture** (or to the meeting page), with Project set if you know it. The next catch-up reads it with the row. Files on project and area pages are not read |
 | A repo's knowledge (decisions, docs, changelog) | "link the repo at ~/code/acme-api to the area Clients, files decisions/** and docs/*.md". Each catch-up then reads the files changed since the last one; the first time, it asks which to take. The brain never writes to the repo |
 | A question for a full report | **Ask the brain** on Home: type the question as the Name ("Where do we stand with the Acme launch?"). The next catch-up answers with a **Report** row in the Inbox, linked from yours |
-| An email, chat thread or note | Paste it into a **Quick capture** (keep who sent it and when). For a thread, run **`/Clean email`** on the page: Brain Assistant keeps one line per message with names and date ("Tomás Vidal → Lucía Fernández · 3 Dec 2026"), then the message's own text word for word, oldest first. It drops addresses, signatures, disclaimers, quoted copies and Teams, Zoom or Meet blocks, and changes the page only after you confirm. Then "catch up". Or paste it straight to your agent: "ingest this email" |
+| An email, chat thread or note | Paste it into a **Quick capture** (keep who sent it and when). For a thread, run **`/Clean email`** on the page: Brain Assistant gives each message a heading with names and date ("Tomás Vidal → Lucía Fernández · 3 Dec 2026"), its own text word for word below it, and a divider before the next, oldest first. It drops addresses, signatures, disclaimers, quoted copies and Teams, Zoom or Meet blocks, and changes the page only after you confirm. Then "catch up". Or paste it straight to your agent: "ingest this email" |
 | A task | Add it in Tasks. Action items from meetings, and your own from documents, emails and captures, are created for you |
 
 **Tasks:**
@@ -171,7 +171,7 @@ Set **Disputed** on anything wrong. The brain stops relying on it, and you can a
 | `/Weekly review` | What got done and decided, goal and project health, next week |
 | `/Plan check` | Projects without goals, goals without projects, overdue items |
 | `/Tidy capture` (on a new capture in the Inbox) | A cleaner version of the capture; replaces the text after you say yes |
-| `/Clean email` (on a new capture holding a pasted email thread) | Each message as one line of names and date, then its own text word for word, oldest first; no addresses, signatures, disclaimers, quoted copies or meeting blocks; replaces the text after you say yes |
+| `/Clean email` (on a new capture holding a pasted email thread) | Each message under a heading of names and date, its own text word for word, a divider between messages, oldest first; no addresses, signatures, disclaimers, quoted copies or meeting blocks; replaces the text after you say yes |
 | "how do I …?" | An answer from this guide |
 
 Brain Assistant reads; your agent in Claude Code or Codex writes. To get something *into* the brain, use the phrases below.

@@ -170,12 +170,13 @@ Goal: turn a pasted email thread into a clean copy the brain can read. Clean it;
 Source: this page only. It must be a page in the Inbox database inside [@Brain Data] with Kind Capture and Brain Status New; otherwise stop and tell me.
 
 1. Split the text into messages. Put them oldest first.
-2. Start each message with one line: <sender> → <recipients> · <date>, e.g. "Tomás Vidal → Lucía Fernández · 3 Dec 2026". Names only: no email addresses, no Cc, no Subject. Take each part only from that message's own header or quote line ("On 2 Dec, Lucía Fernández <…> wrote:" names the sender only; a reply pasted with no header takes its sender from its sign-off or signature). If the text shows only an address, keep the address. Never guess a name, recipient or date; leave out a part the text doesn't show.
-3. Then keep the message's own text word for word, from the greeting to the sign-off: every name, number, date and link the sender wrote. Never shorten, merge or drop a sentence the sender wrote, even one about a meeting.
+2. Start each message with one heading 3: <sender> → <recipients> · <date>, e.g. "Tomás Vidal → Lucía Fernández · 3 Dec 2026". Names only: no email addresses, no Cc, no Subject. Take each part only from that message's own header or quote line ("On 2 Dec, Lucía Fernández <…> wrote:" names the sender only; a reply pasted with no header takes its sender from its sign-off or signature). If the text shows only an address, keep the address. Never guess a name, recipient or date; leave out a part the text doesn't show.
+3. Under the heading, the message's own text word for word, from the greeting to the sign-off, as normal paragraphs: every name, number, date and link the sender wrote. Keep the sender's paragraphs and lists, with an empty line between paragraphs. Join lines a mail client broke in the middle of a sentence; change line breaks only, never words. Never shorten, merge or drop a sentence the sender wrote, even one about a meeting.
+   Put a divider between messages. The result reads as: heading, body, divider, heading, body.
 4. Remove everything else: signatures; legal disclaimers and confidentiality notices; quoted copies of earlier messages (they appear once, as their own message); "Sent from my phone" lines; tracking and unsubscribe links; meeting and calendar blocks (Teams, Zoom or Meet join links, meeting IDs, passcodes, dial-in numbers); banners such as "[EXTERNAL]" or "You don't often get email from…"; reply and forward header blocks ("-----Original Message-----", From/Sent/To/Subject lines); image and logo placeholders; social links.
-5. Add nothing: no summary, no headings of your own, no facts.
+5. Add nothing: no summary, no headings besides the one per message, no bold or colours, no facts.
 6. Show me the result and a one-line count of what you removed ("3 signatures, 1 disclaimer, 2 quoted copies, 1 Teams block").
-7. Ask whether I want a first line "Why I saved this: …", and suggest one sentence I can change, using only facts and figures as the thread states them.
+7. Ask whether I want a first line "Why I saved this: …" (a gray paragraph above the first heading), and suggest one sentence I can change, using only facts and figures as the thread states them.
 
 After I confirm: replace the text below the title with the result. Never change the title, Brain Status or any other property.
 ```
