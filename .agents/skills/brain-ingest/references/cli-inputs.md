@@ -49,6 +49,8 @@ A document, a web page, then a pasted email:
 - **`digest`** (in `frontmatter`; every kind except minutes, captures and attachments, added with `summary`; decision 0043): the key points by section and the figures and dates as stated, in Markdown. It is the body of the Inbox row.
 - **`notion_text`** and **`notion_parts`:** leave them out unless the user chose otherwise; the CLI writes `full` for `email` and `chat`, `digest` for `document` and `note`. `"notion_text": "full", "notion_parts": ["3-9"]` puts slides 3 to 9 on the row. Never send `notion_text_requested`: only `brain source full-text` writes it.
 - **A linked repo's file** (decision 0042) adds `"repo": "<name>", "repo_path": "decisions/0041-review.md", "commit": "<the listing's to, 40 hex>"` to a `document` with a `file:` key, `file_name` = the path's last segment and `converter: verbatim` for a text file.
+- **`keep`** (decision 0045; `document`, `email`, `chat` or `note` only, never a capture): what the user asked to keep, as written (`"keep": "just the requirements"`). Leave it out for "all".
+- **`replaces`** (decision 0045): on a re-read or a new version, the `src-` id of the version it follows. The CLI then dedupes it by content only, and refuses an id that isn't a source or that another source already replaces (`INPUT_INVALID`).
 - **A file attached in Notion** adds `"attached_to": "<the parent's src- id>"` to a `document` with a `file:` key, and has no `digest`, `notion_text` or `notion_parts`. The parent must exist already or come earlier in the same batch.
 - **Title:** `<title> (<kind>)`; for a web page, `<title>` is the page's own title. **`file_date`:** the text's own date (a document's date, a web page's stated publication or update date, an email's sent date); for a capture, the row's Created date; else today.
 - **Dates in the notes:** a new note's timeline `from` is the date the text gives, else the source's `file_date`; `learned` is always today (the day the brain learned it).
@@ -89,6 +91,19 @@ Things the CLI checks that are easy to get wrong:
 - **The meeting body uses relative links**, e.g. `../people/…`, `../decisions/…`, `../../projects/<slug>/project.md`.
 - **Sources (`sources`) of knowledge notes are the meeting id.** The meeting itself cites the source snapshot.
 
+### A reference note (decision 0045)
+
+What a Keep produces, in the same batch as its source:
+
+```json
+{ "type": "reference", "id": "ref-4k8m2q7w", "title": "Acme website: requirements",
+  "frontmatter": { "summary": "The requirements from Acme's website brief v1.", "projects": ["prj-9x4t1b7e"],
+                   "area": "area-2m7c4h8n", "sources": ["src-5t8n2v6q"] },
+  "body": "## Requirements\n\n- Login with email\n- Launch in 2027-02\n" }
+```
+
+`sources` is required. It goes in the input's `review_notes` like any new note.
+
 ## 3. The proposals batch
 
 ```json
@@ -111,16 +126,17 @@ Things the CLI checks that are easy to get wrong:
 - **`title`** reads as a Review row: `<subject> <field>: <old> → <new>`.
 - **Other kinds** (spec/schema.md §11):
   - `add_to_note`: `target`, `content`. A link in `content` is relative to the target note's folder.
+  - `update_body` (decision 0045): `target` = a `reference` note, `content` = its whole new body, every unchanged line copied exactly. The CLI stores the old body's hash, so a body changed meanwhile is caught as stale, and refuses a `content` equal to the body (`NO_CHANGE`).
   - `contradiction`: `target`, `field`, `after` (the target must have a current value).
   - `supersede`: `target` = the new note, `supersedes` = the old one.
   - `merge`: `target` = the duplicate, `merge_into` = the survivor.
   - `new_item`: `note`, a `note new` item without `id`, for a decision or question of a meeting that already existed.
-- **`review_notes`** (decisions 0041, 0043): one per input, in the same batch as its `add_link` items, which the CLI folds into it as lettered items:
+- **`review_notes`** (decisions 0041, 0043, 0045): one per input, in the same batch as its `add_link`, `update_fact`, `update_body` and `add_to_note` items, which the CLI folds into it as lettered items (changes first, then notes, then links):
   ```json
   { "kind": "review_notes", "source": "mtg-pcpyn31n",
     "notes": ["mtg-pcpyn31n", "per-zzvs98vn", "dec-axker49q", "dec-xe9x6apm", "que-wtnyy4r6", "que-zv7ckbtk"] }
   ```
-  `source` is the meeting id for minutes, else the source's id: the same value the batch's other proposals carry. `notes` lists every knowledge note `note new` created for this input (never the source). The CLI writes the title ("Accept 6 new notes from Acme launch review, and 2 links"). A note can be in only one `review_notes`.
+  `source` is the meeting id for minutes, else the source's id: the same value the batch's other proposals carry. `notes` lists every knowledge note `note new` created for this input (never the source), or is `[]` when it created none (a re-read). The CLI writes the title ("From Acme launch review: 1 change, 6 new notes and 2 links"). A note can be in only one `review_notes`. The reply's `created` has one proposal for all of them; folded items are not listed separately.
 - **`answer`** (decision 0041), on an open question the input answers:
   ```json
   { "kind": "answer", "title": "Who owns the mobile app: Carlos Ruiz", "target": "que-8n3v5x1d",
