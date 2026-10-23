@@ -25,6 +25,13 @@ Research is finished (`reviews/`, `synthesis/`). Since decision 0044:
 - **PRs follow the template:** the reviewer ticks each acceptance box with evidence (a test name, or a command and its output). Once the review finds nothing left, the author's last commit sets the task to `done` (#N) (a 0.3.x task's CHANGELOG line also names the PR), so the merge completes the task and no bookkeeping PR is needed. Then Codex checks that commit and posts the verdict naming the head commit: `Review (Codex): pass at <sha>` (7 or more characters). `merge-ready` stays red without that pass for the PR's current head. CI checks the branch name, the task id in the title, the task's `**Changelog:**` line (or, for 0.3.x, its CHANGELOG line), that no other task's line was lost, and the leak check.
 - **Findings from the user's brain arrive as `dogfood` issues.** Claude Code triages them at the start of each planning session into a task with a release, or closes them with a reason; an issue never stays open next to its task.
 
+### Using Orca
+Orca may launch and watch the agents; the rules above still decide branches, roles and the task list.
+- **Worktrees come from `scripts/task.mjs start`,** never `orca worktree create`: Orca picks its own branch name and folder, which fail CI's branch check, and its parent link sets no git base for a stack (decision 0046). Then start the agent in that worktree: `orca agent launch --agent claude --worktree path:<abs path to ../ub-<task-id>>`.
+- **Build agents are `--agent claude`; `--agent codex` only reviews** (decision 0044), whatever Orca's examples show.
+- **Never launch a worker with `--worktree current` from the main checkout:** Orca registers the repo at that path, and it stays on a clean `main` (decision 0038).
+- **`build/TASKS.md` is the task list.** Orca's card status, Runs and Tasks are a view of the work; they don't replace a row's status (decision 0044).
+
 ## Architecture (fixed)
 - Markdown + Git is canonical. Notion is the human interface, never a second knowledge base. No unrestricted two-way sync.
 - New notes apply directly as `draft`; changes to existing knowledge are proposals reviewed in Notion or chat (0003).
