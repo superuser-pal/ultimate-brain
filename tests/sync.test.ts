@@ -29,7 +29,7 @@ test("sync plan detects a Notion fact correction from its published baseline", a
   assert.deepEqual(run.json.data.corrections, [{ target: MARIA, field: "facts.role", value: "Product lead", observed_at: "2026-12-10T08:00:00Z", property: "Role", notion_value: "Product lead" }]);
 });
 
-test("sync plan reports an Edit on an add_link review as a conflict", async (context) => {
+test("sync plan reads a pre-0.5.0 Edit as Fix: with a Note it is for the skill, without one a conflict", async (context) => {
   const dir = await fixtureCopy(context);
   const linkProposal = "prp-0a1b2c3d";
   const supersedeProposal = "prp-1a1b2c3d";
@@ -41,9 +41,9 @@ test("sync plan reports an Edit on an add_link review as a conflict", async (con
     id: supersedeProposal, type: "proposal", title: "Supersede Firebase", created: "2026-12-10", updated: "2026-12-10",
     kind: "supersede", target: "dec-7k2m9q4x", supersedes: "dec-2p9f6h1r", status: "pending",
   }, ""));
-  const snapshot = { as_of: NOW, rows: [linkProposal, supersedeProposal].map((proposal, index) => ({
+  const snapshot = { as_of: NOW, rows: [[linkProposal, "Mari is a nickname, not an alias"], [supersedeProposal, ""]].map(([proposal, note], index) => ({
     database: "review", page_id: `10000000-0000-4000-8000-0000000000e${index}`, last_edited: "2026-12-10T08:00:00Z", properties: {
-      "Brain ID": proposal, Decision: "Edit", "Edited Value": "Product manager", State: "Pending",
+      "Brain ID": proposal, Decision: "Edit", Note: note, State: "Pending",
     },
   })) };
 
@@ -51,14 +51,14 @@ test("sync plan reports an Edit on an add_link review as a conflict", async (con
   assert.equal(planned.code, 0, planned.stdout);
   assert.deepEqual(planned.json.data.decisions, []);
   assert.deepEqual(planned.json.data.conflicts.map((item: { code: string; brain_id: string; property: string }) => [item.code, item.brain_id, item.property]), [
-    ["EDIT_NOT_ALLOWED", linkProposal, "Decision"],
-    ["EDIT_NOT_ALLOWED", supersedeProposal, "Decision"],
+    ["FIX_TO_READ", linkProposal, "What to fix"],
+    ["FIX_WITHOUT_TEXT", supersedeProposal, "What to fix"],
   ]);
 
   const applied = await brain(["sync", "apply", "--brain", dir, "--now", NOW, "--input", await input(dir, "link-edit-plan.json", planned.json.data), "--json"]);
   assert.equal(applied.code, 0, applied.stdout);
   assert.deepEqual(applied.json.data.decisions, []);
-  assert.deepEqual(applied.json.data.conflicts.map((item: { code: string }) => item.code), ["EDIT_NOT_ALLOWED", "EDIT_NOT_ALLOWED"]);
+  assert.deepEqual(applied.json.data.conflicts.map((item: { code: string }) => item.code), ["FIX_TO_READ", "FIX_WITHOUT_TEXT"]);
 });
 
 test("sync plan leaves an approval Note for the skill to interpret", async (context) => {
@@ -70,7 +70,7 @@ test("sync plan leaves an approval Note for the skill to interpret", async (cont
   const run = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "review-note.json", snapshot), "--json"]);
   assert.equal(run.code, 0, run.stdout);
   assert.deepEqual(run.json.data.decisions, []);
-  assert.deepEqual(run.json.data.conflicts.map((item: { code: string; property: string; notion_value: string }) => [item.code, item.property, item.notion_value]), [["NOTE_TO_READ", "Note", "all except Carlos"]]);
+  assert.deepEqual(run.json.data.conflicts.map((item: { code: string; property: string; notion_value: string }) => [item.code, item.property, item.notion_value]), [["NOTE_TO_READ", "What to fix", "all except Carlos"]]);
 });
 
 test("sync accepts fractional-second timestamps and stores seconds precision", async (context) => {
