@@ -933,7 +933,8 @@ Builds Notion payloads; writes nothing. With `--plan`, every property named by a
 - sources of every kind except `minutes` with no `notion` (0037: the Inbox). On the first run after the upgrade to 0.3.0 this selects every such source already in the brain, so the Inbox History fills with no migration;
 - notes, meetings and sources (with `notion`) where any rendered property's B differs from S, or the page content changed (B of `@content` ≠ S);
 - proposals with no `notion`, or whose State (or another rendered property) differs from S;
-- reports (views with `view_kind: report`) with no `notion` (0043). A published report is never rendered again.
+- reports (views with `view_kind: report`) with no `notion` (0043). A published report is never rendered again;
+- published proposals that are `applied` or `closed`, decided more than 30 days before `--now`, and not yet trashed (0045; see **Leaving Review** below).
 
 A source with `attached_to` is never selected: it has no Inbox row (0042). Notes whose database id is empty in `brain.json` are skipped with warning `DATABASE_NOT_CONFIGURED`.
 
@@ -947,7 +948,7 @@ A source with `attached_to` is never selected: it has no Inbox row (0042). Notes
 | people | Name, Summary, Role, Org, Lifecycle, Brain ID, Last Synced |
 | orgs | Name, Summary, Lifecycle, Brain ID, Last Synced |
 | decisions | Name, Summary, Date, Assessment, Project, Area, Decided In, Supersedes, Lifecycle, Brain ID, Last Synced |
-| questions | Name, Summary, Kind, Project, Area, Raised In, Lifecycle, Brain ID, Last Synced, Status *(Answered, once)* |
+| questions | Name, Summary, Kind, Project, Area, Raised In, Lifecycle, Brain ID, Last Synced, Status *(Open or Answered, once)* |
 | concepts | Name, Summary, Project, Area, Lifecycle, Brain ID, Last Synced |
 | meetings | Decisions, Questions, Attendees *(add)*, Project *(if empty)*, Area *(if empty)*, Brain Status, Ingested At, Brain ID |
 | review | Name, Kind, Target, Target Page, Before, After, Why, Source Meeting, State, Brain ID |
@@ -957,7 +958,11 @@ A source with `attached_to` is never selected: it has no Inbox row (0042). Notes
 - Project relations carry every id in `projects`.
 - **Area on Decisions and Questions** (0034) is derived, never stored in the note: the `area` of each note in the record's `projects`, deduped and sorted. No projects, or projects without an area → empty. It is brain-owned and compared like any other property, so the first render after the upgrade sends it to every decision and question once.
 - **Concepts:** Project = `projects`, Area = `area`; the body is the whole page body, as for decisions.
-- **Question Status (0041):** when the question has `answer`, B of `Status` is `Answered`; it is sent only while S has no `Status` of `Answered`, so it goes out once, right after the `answer` proposal is applied. A question with no `answer` never has Status in `properties`. Status stays Notion-owned for `sync plan` (§5.14.2): if you reopen the question in Notion, the brain never sets it back.
+- **Question Status (0041, 0045):** Status stays Notion-owned for `sync plan` (§5.14.2); the brain sends it in two cases only, each once:
+  - **Open:** when the question has no `answer`, S has no `Status` and its snapshot has no `notion_fields.status`, B of `Status` is `Open`. So a new question is created as Open, and a question published before 0.4.1 with Status empty in Notion gets Open on the next publish. Once S holds it, it is never sent again; a Status you set (pulled into `notion_fields.status`) is never overwritten.
+  - **Answered:** when the question has `answer`, B of `Status` is `Answered`; it is sent only while S has no `Status` of `Answered`, so it goes out once, right after the `answer` proposal is applied.
+
+  If you reopen the question in Notion, the brain never sets it back.
 - **Areas (0041):** `sections` = `{ "Brief": <the area brief's generated block> }`. The skill replaces the children of the area page's "Brief" toggle heading; a page without one gets a "Brief" toggle heading appended at the **end** of the page, then filled (the page is yours, so the brain never inserts above your content).
 - **Inbox** (0037; sources, every kind except `minutes`):
   - `action`: `update` when the source has `notion`, or is a `capture` (page id = the id in its `notion:` key: the row you created; a capture's key is always `notion:`, schema §4); otherwise `create`. A capture whose `notion` differs from its key's id → item error `NOTION_ID_MISMATCH`.
@@ -981,6 +986,7 @@ A source with `attached_to` is never selected: it has no Inbox row (0042). Notes
 - **Reports** (0043): `action` is always `create`. Name = `title`; Kind = `Report`; Project = `projects`, Area = `area` (plain relations, not *if empty*); Ask = `[asked_in]` when set, a relation to your Ask row, whose other side (Report) Notion fills; Brain Status = `Processed`; Brain ID = the view's id. `body` = the report body, rendered as other bodies. The skill sets the Ask row's own Brain Status to Processed through the MCP; nothing else on it changes.
 - **Review** (proposals): Name = `title`; Kind; Target = `<target title> (<target id>)`; Target Page = the target's Notion URL if published; Before and After (for `supersede`: old and new note title; `merge`: duplicate and survivor title; `add_to_note`: After = `content`; `add_link`: Before empty, After = one line per entry of `links` (or the old single `field`/`after`), `<Field>: <value>` with a note id rendered as its title, joined by `\n`, e.g. `People: Lucía Fernández\nPeople: Tomás Vidal\nAliases: acme site`; `new_item`: After = the note's title and type; `answer`: Before empty, After = `answer`, plus ` → <answer_note title>` when set; `review_notes`: see below), cut to 2000 characters; Why; Source Meeting = relation when `source` is a published meeting; State.
 - **Review notes rows** (0041, 0043): Target = `<source title> (<source id>)`, with `<source title>` as in the proposal title rule (§5.6), and Target Page = that meeting's or Inbox row's URL if published. Before is empty. After is one line per item, **lettered** in order: `a`, `b`, … `z`, then `aa`, `ab`, …; first every entry of `notes` as `<letter>) <Type>: <title>` (`a) Decision: Use Supabase for auth`), then every entry of `links` as `<letter>) <Field> on <target title>: <value>` (`e) People on Acme website: Lucía Fernández`), with a note id rendered as its title. The letters are the ones you name in the Note ("all except b, e"); the skill maps them back to `exclude` entries in this order.
+- **Leaving Review (0045):** a proposal with `notion` whose `status` is `applied` or `closed`, and whose `decision.decided_at` (else `updated`) is more than 30 days before `--now`, renders as an item with `action: "trash"`, `page_id` = its `notion`, empty `properties`, `body` and `sections` `null`, and `published` = `{ "@trashed": <--now> }`. The skill moves that page to Notion's trash through the MCP, then records it. A proposal whose `notion_published` has `@trashed` is never rendered again, with `--changed` or `--ids`. The proposal file stays in Git with its `notion` id.
 - References to notes not yet published are left out of `properties` and listed in `pending_relations` (`[{ "property": "Org", "ids": ["org-…"] }]`). The skill publishes those notes first, records them, and renders again.
 
 Each item:
@@ -999,7 +1005,7 @@ Each item:
 }
 ```
 
-- `action`: `create` when the note has no `notion`, else `update`. Meetings are always `update`; a meeting without `notion` → item error `MEETING_NOT_PUBLISHED`. Projects are always `update` too: a project without `notion` → item error `PROJECT_NOT_IN_NOTION`, because a project page must come from the Projects template (its views and "My notes"), which the API can't apply. The user creates it with **New project** in Notion, and the next `sync plan` imports it (0021).
+- `action`: `create` when the note has no `notion`, else `update`; `trash` for a Review row leaving Notion (above). Meetings are always `update`; a meeting without `notion` → item error `MEETING_NOT_PUBLISHED`. Projects are always `update` too: a project without `notion` → item error `PROJECT_NOT_IN_NOTION`, because a project page must come from the Projects template (its views and "My notes"), which the API can't apply. The user creates it with **New project** in Notion, and the next `sync plan` imports it (0021).
 - `published`: B for every rendered property except Last Synced and pending relations, plus `@content` = `sha256:<hex>` of the rendered `body`/`sections` when the type has content (for a source, of `body` only; its Full text is tracked by `@full_text`). This is the new S once the write succeeds.
 - **Page content** (decision 0026): the brain writes only what it owns.
   - `body` (decisions, questions, concepts): replaces the whole page body.
@@ -1061,6 +1067,7 @@ Stores what the skill published. Input: `{ "records": [ { "id": "per-3h8w2n6c", 
 - `tasks` (meetings and sources): appended to the note's `tasks`, deduped, order kept.
 - A source record changes only these system fields (schema §4: its body and content fields stay as captured). `@full_text` is merged like any other key.
 - A report record (0043) sets the view's `notion`, `last_synced` and `notion_published`; nothing else.
+- A trash record (0045) is a proposal record whose `published` is `{ "@trashed": … }`: it is merged into `notion_published` like any other, so the row is never rendered again.
 - Does not change `updated`; does not log (the skill logs `publish`).
 
 `data` = `{ "records": [ { "id": "…", "result": "recorded"|"failed", "reason"?: "…", "changed": ["…"] } ] }`. Exit 1 if any failed.
