@@ -26,3 +26,9 @@ spec/examples/valid/view-report.md:5d6e7f8a-9b0c-4d1e-8f2a-3b4c5d6e7f8a
 spec/examples/invalid/source-keep-on-capture.md:5d6e7f8a-9b0c-4d1e-8f2a-3b4c5d6e7f8a
 spec/examples/valid/view-report-living.md:5d6e7f8a-9b0c-4d1e-8f2a-3b4c5d6e7f8a
 spec/examples/valid/view-report-living.md:6e7f8a9b-0c1d-4e2f-9a3b-4c5d6e7f8a9b
+eval/skills-0.5/inputs/inbox.json:d1000000-0000-4000-8000-000000000001
+eval/skills-0.5/inputs/inbox.json:d1000000-0000-4000-8000-000000000002
+eval/skills-0.5/inputs/inbox.json:d1000000-0000-4000-8000-000000000003
+eval/skills-0.5/inputs/inbox.json:d1000000-0000-4000-8000-000000000004
+eval/skills-0.5/inputs/inbox.json:d1000000-0000-4000-8000-000000000005
+eval/skills-0.5/inputs/inbox.json:d1000000-0000-4000-8000-000000000006

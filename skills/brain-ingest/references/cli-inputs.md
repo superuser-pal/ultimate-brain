@@ -42,7 +42,7 @@ A document, a web page, then a pasted email:
 ```
 
 - **`kind`:** `document`, `email`, `chat`, `note` or `capture`. Leave it out for minutes.
-- **`file_name`** (the name only, no folder) and **`converter`** (`claude-read <model id>`, `codex-view-image <model id>`, or `markitdown <version>`) are required with a `file:` key.
+- **`file_name`** (the name only, no folder) and **`converter`** (`claude-read <model id>`, `codex-view-image <model id>`, `markitdown <version>`, `plain-text` for a `.txt` or `.md` file, `verbatim` for a repo file) are required with a `file:` key.
 - **Web page** (0036): `source_key` is `url:<the https URL as given>`; `kind` `document` and `converter` (`markitdown <version>` or `web-fetch <model id>`) are required; no `file_name`.
 - **Capture:** `source_key` is `notion:<row page id>`, `kind` is `capture`, `origin_edited` is the row's `last_edited_time`.
 - **`summary`** (every kind except minutes, added in the real run of step 6, not the step 3 dry run), in `frontmatter` like every field below: one line on what the source taught. It is the Inbox row's Summary.
@@ -97,7 +97,7 @@ What a Keep produces, in the same batch as its source:
 
 ```json
 { "type": "reference", "id": "ref-4k8m2q7w", "title": "Acme website: requirements",
-  "frontmatter": { "summary": "The requirements from Acme's website brief v1.", "projects": ["prj-9x4t1b7e"],
+  "frontmatter": { "summary": "The requirements from Acme's website brief.", "projects": ["prj-9x4t1b7e"],
                    "area": "area-2m7c4h8n", "sources": ["src-5t8n2v6q"] },
   "body": "## Requirements\n\n- Login with email\n- Launch in 2027-02\n" }
 ```

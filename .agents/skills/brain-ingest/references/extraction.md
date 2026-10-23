@@ -48,7 +48,7 @@ A `document`, `email`, `chat` or `note` source may carry a **Keep**: what the us
 - **Keep is empty or "all":** today's full extraction, as above.
 - **Keep names something:** extract **only** that, into **one `reference` note** and nothing else: no decision, question, person or concept notes, no `add_to_note` on the project, no tasks. Everything else in the source stays in the brain, unread, and the user can ask for it later ("take the budget from the Acme doc too"), which is a new ingest of the same source with that Keep.
   - `title`: what it is, named for its subject: "Acme website: requirements", "Globex: price list";
-  - `frontmatter`: `summary` (one line: what it holds and from which document), `sources: [<the source id>]`, and `projects` or `area` from the project or area the document is about;
+  - `frontmatter`: `summary` (one line: what it holds and from which document, without a version or date, so a new version doesn't make it stale), `sources: [<the source id>]`, and `projects` or `area` from the project or area the document is about;
   - body: the kept content, as a Markdown list or table, in the document's order and wording; every figure, date and name exactly as stated. No commentary, no links of your own. Under the list, nothing: the source is in `sources`;
   - it is a new note like any other: it goes in the input's `review_notes`.
 - **A new version of a document whose reference exists** (the source has `replaces`, sources.md "New versions"): never a second reference. Read the old reference's body, change only the lines the new version changes (`brain source diff` says which), and propose the result as an `update_body` on that reference: `content` = the whole new body, every unchanged line copied exactly, so the Review row shows only the lines that differ. `why` names what changed ("Requirement 4: deadline 1 Mar → 15 Mar"). It goes in the new source's `review_notes` as a lettered item. A new version that changes nothing the Keep names proposes nothing.
@@ -59,6 +59,8 @@ A corrected input read again (a meeting set back to Reviewed, an Inbox row set b
 - a changed value (a date, an amount, a name, a role) on a note the earlier version wrote or changed → `update_fact` or `add_to_note` on that note, `why` = the new line;
 - a new line that passes the rules above → a new note or a change, as in a first ingest. For a meeting, a new decision or question is a `new_item` (the meeting note already exists);
 - a removed or reversed line that a note rests on (a decision the minutes no longer record, a misheard name) → never archive or rewrite that note yourself. Name it under the report's Check, with what to do ("Use Firebase for auth rests on a line the corrected minutes removed: reject it in Review if it's still pending, or say 'archive it'").
+- the meeting note's own text (its summary and body) still says what the first version said: when a change touches it, add one `add_to_note` on the meeting ("Corrected minutes: the launch moves to March 2027, not February"), and name under Check any `summary` the change makes stale (a project's, the meeting's): no proposal kind rewrites a summary;
+- an action item only when its line changed (a new owner or date): it becomes a task as in a first ingest. Unchanged ones already are tasks, and the report doesn't list them again;
 - unchanged lines are not read again: what they gave is already in the brain.
 
 ### Tasks for the owner (decision 0037)
