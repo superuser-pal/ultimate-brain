@@ -8,7 +8,7 @@
 |---|---|---|---|
 | One line per message | `<sender> → <recipients> · <date>`, names only; no address, Cc or Subject | ✔ | ✔ |
 | Nothing guessed | a part the text doesn't show is left out | ✘ gave the 2 Dec message a recipient its quote line doesn't name | ✔ `Lucía Fernández · 2 Dec 2026` |
-| Order | 2 Dec (Lucía), 3 Dec (Tomás), the undated reply (Lucía) | ✔ | ✔ |
+| Order (newest first from run 5) | 2 Dec (Lucía), 3 Dec (Tomás), the undated reply (Lucía) | ✔ | ✔ |
 | Text word for word | every sentence and figure, including "Let's go through the plan on Thursday's call at 10:00." | ✔ | ✔ |
 | Removed | Teams block, banner, Cc, Subject, 2 signatures, the notice, the quoted copy, "Sent from my iPhone", tracking and unsubscribe links | ✔ | ✔ |
 | Why line | suggested with facts as the thread states them | ✘ added a year the thread doesn't state | ✔ |
@@ -52,6 +52,8 @@ Every check in the table passes again: the sender's paragraphs and sign-off are 
 - **Page B, [thread-conflict.md](thread-conflict.md):** the same thread, except that the quoted copy of Tomás's message says 85,000 EUR and his own message says 80,000 EUR. It made no change and asked one question that quotes both figures. ✔
 
 It reported one judgment call: a quoted copy that is only shorter (Tomás's quote leaves out the Thursday sentence) is not a doubt. The skill text now says so.
+
+**Run 5** (2026-10-23, after the user asked for newest first, as a mail client shows a thread): a fresh agent ran the skill on [thread.md](thread.md). It replaced the page without asking, in this order: the undated reply (Lucía) at the top, then 3 Dec (Tomás), then 2 Dec (Lucía) at the bottom, with dividers between them. The headings, bodies, removals and report were the same as in run 4. ✔
 
 ## 0.4.1: first version (CC-46, decision 0045)
 
