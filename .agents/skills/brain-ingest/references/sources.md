@@ -14,6 +14,8 @@ The user's drop folder is where they put documents for the brain, outside both r
    - two files with the same hash are one document: the one with the shorter name is the original (`report.docx`, not `report copy.docx`), the other is marked "same file as <original>"; it is ingested once, with the original's file name, and both move to `processed/`;
    - a file type the table in "Get the text" doesn't cover is marked "can't read" and stays where it is. Archives (`.zip` and the like) are not unpacked: the user extracts the files into the folder if they want them read;
    - a long document asks "which parts matter?" in the same question ("Get the text", step 3): past about 30 pages for a PDF or slide deck, or past about 15,000 words in the conversion for other files, which show no page count;
+   - **what to keep** from each file (decision 0045): "Acme requirements (document): what do you want from it? all / just …", default **all**. The answer becomes the source's `keep` ([extraction.md](extraction.md), "Keep");
+   - a file that looks like a **new version** of a document the brain has (the same name but for a version mark or a date, `acme-requirements-v2.pdf` after `acme-requirements-v1.pdf`, or the same title): "New version of Acme requirements v1? (default yes)". Yes: it is ingested as a new version ("New versions" below), and its Keep defaults to the earlier version's `keep`;
    - say how to answer: untick a file to leave it for later (it stays in the queue), or say "skip" to move it to `skipped/` for good.
 3. **Ingest the chosen files one at a time**, each through steps 1–7 below as a `document`. One file's failure doesn't stop the others; report it and go on.
 4. **Move each file** after its ingest commit (and its publish, in Notion mode): `mkdir -p "<folder>/processed" && mv -n "<file>" "<folder>/processed/"`. If `processed/` already has a file with that name, add `-2` (then `-3`) before the extension. A file whose snapshot was skipped as `DUPLICATE_SOURCE` (step 3) moves to `processed/` too. Files the user skipped go to `skipped/` the same way. Never delete or rename a file otherwise, and never move a file whose ingest failed.
@@ -73,7 +75,13 @@ One input at a time. Each becomes one source with a `kind`.
 The body is the pasted text, verbatim. The source key is `agent:<agent>/<date>-<slug>`, for example `agent:claude-code/2026-10-14-acme-budget-email`.
 
 ### `capture`: Inbox rows *(Notion)*
-Query the Inbox (`notion.databases.inbox`, through its data source as in [notion.md](notion.md)) for rows with Brain Status = **New**, oldest first: these are the user's captures. Never take Processed or Skipped rows; the brain creates its own rows as Processed. For each row, the body is the row's Name, then its page body if it has one, verbatim. The source key is `notion:<row page id>`. Also read the row's **Project** and **Area**: when the user set them, they say where the capture belongs (decision 0037), so the pre-check doesn't ask.
+Query the Inbox (`notion.databases.inbox`, through its data source as in [notion.md](notion.md)) for the user's rows that are **ready to take in** (decision 0045), oldest first:
+- Brain Status = **Ready**: the user checked the row (and its Keep, or cleaned a pasted email with `/Clean email`);
+- Brain Status = **New**, Kind empty or Capture, and Created at least one day before now: a forgotten Status doesn't break the habit. A row whose Kind is Document, Email, Chat or Note waits for Ready, since those usually want a check or a Keep first.
+
+A row the user created is a `capture`, whatever its Kind: its text is the capture, and a file on it is an attachment, a `document` that takes the row's Keep ("Attachments" above). Never take Processed or Skipped rows, nor a New row younger than a day, nor an Ask or Report row (Kind Ask or Report: those are the brain-query skill's). The brain creates its own rows as Processed. For each row, the body is the row's Name, then its page body if it has one, verbatim. The source key is `notion:<row page id>`. Also read the row's **Project** and **Area**: when the user set them, they say where the capture belongs (decision 0037), so the pre-check doesn't ask; and its **Keep**, which applies to the files attached to it (a capture has no Keep of its own).
+
+**A row the brain already took in** (it has a Brain ID) and that the user set back to Ready is a **re-read** ("Re-reads" below): the user fixed it.
 
 **A pasted email or chat thread in a capture:** when the body is an email (header lines such as From, To, Date, Subject, a quoted reply chain, or the headings `/Clean email` writes, `### <sender> → <recipients> · <date>`, one per message, decision 0047) or a chat thread (speakers with timestamps), the source stays `kind: capture` with its `notion:` key, but you analyse it with the `email` or `chat` rules in [extraction.md](extraction.md), and take its date from the sent date. Say in the report that the capture was read as an email or chat. When the top message has no header (the latest reply pasted without From or Date), its date is the capture's Created date and its sender is the owner unless the text says otherwise.
 
@@ -85,15 +93,27 @@ As in SKILL.md step 3, **one** question, only if something blocks:
 - which project or area it belongs to, when the text doesn't say, the user didn't, and (for a capture) the row's Project and Area are empty;
 - **a new project** (the user says the input starts one): never write a project note or create its Notion page yourself; the page must come from the Projects template, which the API can't apply (decision 0021). Ask the user to create it with **New project** in Notion and give it its name, then run the brain-sync skill's pull (`sync plan` and `sync apply`) to import it, and go on with the ingest linked to it. If the user would rather not now, link the input to its area and say so in the report. Without Notion, write nothing for the project and say so;
 - one name spelled several ways;
-- anything [extraction.md](extraction.md) says to ask in the pre-check, such as a role or fact worded differently from the brain's.
+- anything [extraction.md](extraction.md) says to ask in the pre-check, such as a role or fact worded differently from the brain's;
+- **what to keep**, for a `document`, `email`, `chat` or `note` whose Keep is empty (decision 0045): "what do you want from it? all / just …", default all. A drop-folder file asks it in the folder's question; a Notion attachment takes its row's Keep;
+- **a new version:** a document that looks like a newer version of one the brain has (above, "The drop folder"), default yes.
 
 The user's answers that add content are owner rulings (decision 0031, [extraction.md](extraction.md)).
 
 ## 3. Snapshot the source
 
-Build the source item ([cli-inputs.md](cli-inputs.md) §1b) and run `brain note new --dry-run` with it alone:
+Build the source item ([cli-inputs.md](cli-inputs.md) §1b), with `keep` when the user named one, and run `brain note new --dry-run` with it alone:
 - **`skipped` with `DUPLICATE_SOURCE`:** already ingested (the same text, the same file, or the same capture row). Report it. A capture row that is not the existing source's own row (the same text captured twice) is set to Brain Status = Processed through the MCP, and nothing else on it changes. Stop here for this input.
 - **Otherwise:** keep the item for step 6.
+
+### Re-reads and new versions (decision 0045)
+
+A corrected input is read again as a **new source** with `replaces` = the id of the version the brain read before; the old version stays as it is (decision 0032). Find that id by following `replaces` forward from the first version: `grep -rl "replaces: <id>" <brain>/sources/` until nothing names the last one.
+- **A meeting set back to Reviewed** after its ingest (the meeting note already has this page's `notion`): the first version is the meeting's `source`. Snapshot the minutes again with `replaces`. A dry run that skips it as `DUPLICATE_SOURCE` means the minutes didn't change: the brain side is done (SKILL.md step 2).
+- **A minutes file in Markdown-only mode** that the user says corrects a meeting already in the brain ("I fixed the Acme sync minutes, read them again"): the same, with the meeting found by its title and date.
+- **An Inbox row set back to Ready** that has a Brain ID: the first version is the source with that row's `notion:` key. Snapshot it again with `replaces` (without it, the CLI skips the same row as a duplicate). The row keeps its page: the next render moves its Brain ID to the new version.
+- **New versions** of a document (a v2 of a requirements file, by the user's word or the pre-check's yes): `replaces` = the latest version of that document. Its Keep, when the user gave none, is the earlier version's `keep`, without asking.
+
+A new version keeps the first version's `source_key` and `title`, so the versions sit side by side, even in Markdown-only mode (the key records where the text first came from; versions are told apart by `replaces` and their content). Then write the new source alone, with its real id, in the step 6 batch, and run `brain source diff <new src-id>`: it returns the removed (`- `) and added (`+ `) lines. Analyse **only those lines** ([extraction.md](extraction.md), "Re-reads"). The result usually holds no new note, only changes: they go in one `review_notes` for the input, with `notes: []` (a meeting's changes carry the meeting id as `source`; any other input's, the new source's id), so the user sees one Review row with only what changed. A re-read whose diff yields nothing durable writes the source and proposes nothing: say so.
 
 ## 4. Match and load context
 
@@ -108,7 +128,7 @@ Follow [extraction.md](extraction.md), including "By source kind".
 Run SKILL.md step 7 as it is (ids from `brain id new`, the dry run for paths, links, the real run; [example-batch.json](example-batch.json) shows the shapes), with these differences:
 - there is no meeting note. The batch holds the source and the new notes (people, decisions, questions, concepts); every new note lists the source in `sources`; decisions and questions have no `decided_in` or `raised_in`;
 - give the source a `summary`: one line on what it taught, in the user's terms ("Acme's brief sets the February launch and a 95000 EUR budget"). It becomes the Inbox row's Summary, and is written once: the source never changes after this run;
-- give every source except a `capture` or an attachment a **`digest`** (decision 0043): the key points by section, as Markdown bullets under the input's own headings, and the figures and dates exactly as stated. No links, no conclusions of your own. It becomes the body of the source's Inbox row, written once;
+- give every source except a `capture` or an attachment a **`digest`** (decision 0043), of the whole input even when a Keep narrows the notes (the Inbox row describes the document): the key points by section, as Markdown bullets under the input's own headings, and the figures and dates exactly as stated. No links, no conclusions of your own. It becomes the body of the source's Inbox row, written once;
 - **full text or digest** (decision 0043): leave `notion_text` out and the CLI sets it by kind: emails and chats get their whole text on the row too (`full`), documents and notes only the digest. Pass `notion_text` only when the user chose otherwise ("4 full", "the email as digest"), and `notion_parts` (`["3-9"]`, `["2", "4-5"]`) with `notion_text: full` when they asked for parts ("5 full, slides 3–9"). Later, a ticked **Full text** box on the row, or "full text for the Acme brief" in chat, is done with `brain source full-text <src-id> [--parts 3-9]` and a publish;
 - the owner's action items become tasks ([extraction.md](extraction.md), "Tasks for the owner"); hold them for step 7.
 
