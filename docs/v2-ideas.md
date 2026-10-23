@@ -102,13 +102,16 @@ Finds likely duplicate notes and people and writes `merge` proposals. **Source:*
 - **Topic research dossiers:** draft, then merge into the brain. **Source:** vision, synthesis (Review 1).
 - **Agent-memory loop:** agents propose memories and the user promotes them to knowledge. `memories/` already exists. Includes Stop-hook memory capture. **Source:** vision, 0008, 0009.
 
+### Area homes
+**Target: 0.6.0, designed before the agency brain moves in** (raised by the user on 2026-10-22). With one area, the Spaces work unfiltered. The agency brain and the product repo (0042) bring at least three areas: the user's day-job area, the agency and Ultimate Brain. Every view would then need an area filter. **Shape agreed:** each Area page becomes that area's home. Its template gains the missing tabs (today's tasks, meetings, Review waiting, Inbox), next to its existing "What do we know?" and "What's still open here?" tabs. Today's Home becomes the top level: one line per area with its counts, plus everything due across areas. A new area is one page from the template, with no copy of the Spaces and no migration per area. **Open:** whether Review stays one queue across areas or splits per area; what the top-level Home shows first.
+
 ## Retrieval and access
 
 ### MCP server
 `search`, `expand`, `recall` and `remember` for other repos and tools, next to or in place of the CLI and query skill. **Source:** vision, synthesis §3.3. **Revisit:** when several agents or tools need the brain.
 
 ### Retrieval index over Markdown
-**Changes:** decisions/0008. A search index over the Markdown memory and knowledge files, rebuildable from them and never a second store. **Candidates** (reviews/06-okf-and-gbrain.md §5): GBrain in read-only use (`gbrain import` + `gbrain search`; its database-as-canonical model, `[[wikilink]]` auto-linking and overnight enrichment conflict with 0008, 0002 and synthesis §3.4), a local BM25 index like reviews/01's, or extending the query ladder. OKF is not a candidate: it is a file format with no retrieval. **Revisit:** with "BM25, graph or vector search" below.
+**Changes:** decisions/0008. A search index over the Markdown memory and knowledge files, rebuildable from them and never a second store. **Candidates** (reviews/06-okf-and-gbrain.md §5): GBrain in read-only use (`gbrain import` + `gbrain search`; its database-as-canonical model, `[[wikilink]]` auto-linking and overnight enrichment conflict with 0008, 0002 and synthesis §3.4), a local BM25 index like reviews/01's, or extending the query ladder. OKF is not a candidate: it is a file format with no retrieval. **Revisit:** with "BM25, graph or vector search" below. **Signals (decision 0045, 2026-10-22):** each catch-up and report logs the notes it read and its duration; revisit when a report or answer misses a note the user knows exists, or the 5-minute catch-up bar breaks twice. The first brain had 58 notes then. CC-50 compares GBrain read-only with a local BM25 index.
 
 ### OKF: export, then maybe alignment
 **Changes:** spec/schema.md, possibly decisions 0001–0005 field names. The Open Knowledge Format (Google Cloud, v0.2) is Markdown + frontmatter with provenance (`sources`), trust (`generated`, `verified`) and lifecycle (`status`, `stale_after`), close to our schema. Three levels, each optional (reviews/06-okf-and-gbrain.md §3):
@@ -129,6 +132,9 @@ Finds likely duplicate notes and people and writes `merge` proposals. **Source:*
 
 ### Schedulers
 Unattended ingest and sync with n8n or Hermes. **Source:** vision. **Next step:** a scheduled "catch up" (decision 0037), once a manual catch-up runs without stopping for questions.
+
+### Hermes as an always-on brain operator
+**Raised by the user on 2026-10-22 (U-15 grill).** Hermes (Nous Research's Hermes Agent) would run the brain next to Claude Code and Codex: scheduled catch-ups, captures and answers from a phone. It would not build the product (0044). **Why:** the brain pays back only when it runs regularly; an operator that runs on its own makes the habit bar ("every meeting ingested within 2 working days") automatic. **Open:** whether it can run the shared skills and the CLI unattended, its Notion access, how a scheduled catch-up asks its one batch of questions, and how it answers short questions fast (see "Retrieval index over Markdown"). **Next step:** CC-50 (reviews/07). Ties to "Schedulers" and "Adapters for more agent platforms".
 
 ### ~~Public source for the Claude Code plugin~~
 Resolved by decision 0038: the plugin is retired, and the skills reach Claude Code through the npm package (`brain init`, `brain upgrade`). Still open for other users: findings go to the private product repo's issues. **Revisit:** before the second user.
