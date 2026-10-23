@@ -183,6 +183,12 @@ function createProposal(workspace: Workspace, fields: Record<string, unknown>, i
   return proposal;
 }
 
+/** Write a new pending proposal with these fields (apply's deferred row, spec/schema.md §11.3). Not validated. */
+export function writeProposal(workspace: Workspace, fields: Record<string, unknown>, today: string): { id: string; path: string } {
+  const { id, path } = createProposal(workspace, fields, [], today, "", new Map(), []);
+  return { id, path };
+}
+
 /** The `{target, field, value}` links of a review_notes proposal. */
 function reviewLinks(attributes: Record<string, unknown>): Array<{ target: unknown; field: unknown; value: unknown }> {
   return Array.isArray(attributes.links) ? attributes.links.filter(isRecord).map((link) => ({ target: link.target, field: link.field, value: link.value })) : [];
@@ -199,7 +205,7 @@ function reviewedIds(workspace: Workspace): Map<string, string> {
 }
 
 /** The meeting's title for a meeting id, else the source's (spec/cli.md §5.6). */
-function sourceTitle(workspace: Workspace, source: string): string {
+export function sourceTitle(workspace: Workspace, source: string): string {
   return String(workspace.get(source)?.attributes.title ?? source);
 }
 

@@ -151,3 +151,27 @@ test("note new: keep is refused on a capture and when empty", async (context) =>
   const empty = await run(dir, ["note", "new"], { notes: [source("Empty keep", "document", "Text.\n", { keep: "" })] });
   assert.equal(empty.json.error?.code, "INPUT_INVALID");
 });
+
+test("an approved update_body replaces the reference's body; one whose body changed first is closed as stale", async (context) => {
+  const dir = await fixtureCopy(context);
+  const v1 = await newSource(dir, source("Acme requirements v1", "document", REQUIREMENTS));
+  const reference = await newReference(dir, v1.id);
+  const v2 = await newSource(dir, source("Acme requirements v2", "document", REQUIREMENTS.replace("2027-02", "2027-03"), { replaces: v1.id }));
+  const updated = REQUIREMENTS.replace("2027-02", "2027-03");
+  const proposed = await run(dir, ["proposal", "new"], { proposals: [{ kind: "update_body", title: "Requirements v2", target: reference.id, content: updated, why: "Version 2 moves the launch.", source: v2.id }] });
+  assert.equal(proposed.code, 0, proposed.stdout);
+  const [row] = proposed.json.data.created;
+  const applied = await run(dir, ["apply"], { decisions: [{ proposal: row.id, action: "approve", decided_at: "2026-12-10T08:00:00Z", decided_by: "notion" }] });
+  assert.equal(applied.json.data.decisions[0].result, "applied", applied.stdout);
+  const after = parseFrontmatter(await readFile(join(dir, reference.path), "utf8"));
+  assert.equal(after.body.trimStart(), updated);
+  assert.deepEqual(after.attributes.sources, [v1.id, v2.id]);
+
+  const again = await run(dir, ["proposal", "new"], { proposals: [{ kind: "update_body", title: "Requirements v3", target: reference.id, content: `${updated}- Dark mode\n`, why: "v3.", source: v2.id }] });
+  const [later] = again.json.data.created;
+  const path = join(dir, reference.path);
+  await writeFile(path, `${await readFile(path, "utf8")}- Edited by hand\n`);
+  const stale = await run(dir, ["apply"], { decisions: [{ proposal: later.id, action: "approve", decided_at: "2026-12-10T08:00:00Z", decided_by: "notion" }] });
+  assert.equal(stale.json.data.decisions[0].reason, "STALE_PROPOSAL", stale.stdout);
+  assert.equal((await run(dir, ["lint"])).json.data.errors, 0);
+});
