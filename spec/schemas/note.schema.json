@@ -26,6 +26,7 @@
         "decision",
         "question",
         "concept",
+        "reference",
         "source",
         "view",
         "memory"
@@ -156,6 +157,18 @@
       "if": {
         "properties": {
           "type": {
+            "const": "reference"
+          }
+        }
+      },
+      "then": {
+        "$ref": "#/$defs/reference"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
             "const": "source"
           }
         }
@@ -196,7 +209,7 @@
     },
     "id": {
       "type": "string",
-      "pattern": "^(area|gol|prj|per|org|mtg|dec|que|con|src|mem|prp|vw)-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+      "pattern": "^(area|gol|prj|per|org|mtg|dec|que|con|ref|src|mem|prp|vw)-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
     },
     "areaId": {
       "type": "string",
@@ -795,6 +808,24 @@
         }
       ]
     },
+    "reference": {
+      "description": "What the user kept from a document (decision 0045, spec/schema.md §4 reference).",
+      "allOf": [
+        {
+          "$ref": "#/$defs/knowledge"
+        },
+        {
+          "required": [
+            "sources"
+          ],
+          "properties": {
+            "sources": {
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    },
     "source": {
       "required": [
         "source_key",
@@ -849,6 +880,13 @@
         },
         "attached_to": {
           "$ref": "#/$defs/sourceId"
+        },
+        "replaces": {
+          "$ref": "#/$defs/sourceId"
+        },
+        "keep": {
+          "type": "string",
+          "minLength": 1
         },
         "summary": {
           "type": "string",
@@ -1098,6 +1136,45 @@
               ]
             }
           }
+        },
+        {
+          "description": "keep only on a source that is read for its content (0045).",
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "attached_to"
+                ]
+              },
+              {
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "minutes",
+                      "capture"
+                    ]
+                  }
+                }
+              },
+              {
+                "not": {
+                  "required": [
+                    "kind"
+                  ]
+                }
+              }
+            ]
+          },
+          "then": {
+            "not": {
+              "required": [
+                "keep"
+              ]
+            }
+          }
         }
       ]
     },
@@ -1133,7 +1210,48 @@
           "minLength": 1
         },
         "asked_in": {
-          "$ref": "#/$defs/notionPageId"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/notionPageId"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/notionPageId"
+              }
+            }
+          ]
+        },
+        "fixes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "text",
+              "received",
+              "proposals"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "received": {
+                "$ref": "#/$defs/timestamp"
+              },
+              "proposals": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^prp-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+                }
+              }
+            }
+          }
         },
         "generated_from": {
           "type": "array",
@@ -1217,6 +1335,11 @@
                     },
                     {
                       "required": [
+                        "fixes"
+                      ]
+                    },
+                    {
+                      "required": [
                         "notion"
                       ]
                     },
@@ -1272,6 +1395,11 @@
                     {
                       "required": [
                         "asked_in"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "fixes"
                       ]
                     },
                     {

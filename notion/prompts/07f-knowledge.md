@@ -5,7 +5,7 @@ Paste into Notion AI **while you are on the "Knowledge" page**, after [Prompt 6]
 Easlo's Notes Dashboard pattern: one tab per database, and inside each tab one linked view with several views.
 
 ```text
-On this page ("Knowledge") add six tabs. In each tab put one linked view of the named database, with the views listed as its view tabs, in order:
+On this page ("Knowledge") add seven tabs. In each tab put one linked view of the named database, with the views listed as its view tabs, in order:
 
 1. Tab "Decisions" (database "Decisions"):
    - List "What did we decide recently?": Date is within the past week; sort Date descending; show Name, Project, Date.
@@ -21,6 +21,8 @@ On this page ("Knowledge") add six tabs. In each tab put one linked view of the 
    - List "What did we learn recently?": Lifecycle is not Archived; sort Created time descending; show Name, Project, Summary.
    - Table "What do we know per project?": Lifecycle is not Archived; sort Name; group by Project; show Name, Area, Summary.
    - List "Which concepts are drafts?": Lifecycle is Draft; sort Created time descending; show Name, Project.
+3b. Tab "References" (database "References"):
+   - List "What did we keep?": Lifecycle is not Archived; sort Last edited time descending; show Name, Project, Summary.
 4. Tab "People" (database "People"):
    - Gallery with small cards "Who's who?": Lifecycle is not Archived; sort Name; group by Org; show Name, Role, Org.
    - List "Who's disputed?": Lifecycle is Disputed; sort Name; show Name, Summary.
@@ -28,7 +30,7 @@ On this page ("Knowledge") add six tabs. In each tab put one linked view of the 
    - Table "Which clients do I have?": Relationship is Client and Lifecycle is not Archived; sort Name; show Name, People, Projects.
    - Table "Who else do we work with?": Relationship is not Client and Lifecycle is not Archived; sort Name; group by Relationship; show Name, Relationship, People.
 6. Tab "Inbox" (database "Inbox"):
-   - List "What's in my inbox?": Brain Status is New; sort Created ascending; show Name, Kind, Project, Created.
+   - List "What's in my inbox?": Brain Status is New or Ready; sort Created ascending; show Name, Kind, Brain Status, Keep, Project, Created.
    - Table "What came in?": Brain Status is Processed; sort Created descending; show Name, Kind, Summary, Project, Decisions, Concepts.
 
 If you can't create tabs, add one heading 3 per database instead, each followed by its linked view.
@@ -37,5 +39,5 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 ```
 
 ## Verify
-- [ ] Six tabs: Decisions, Questions, Concepts, People, Orgs, Inbox, each with its views as view tabs.
+- [ ] Seven tabs: Decisions, Questions, Concepts, References, People, Orgs, Inbox, each with its views as view tabs.
 - [ ] "What changed our minds?" shows only Superseded decisions.
