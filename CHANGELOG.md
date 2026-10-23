@@ -2,6 +2,16 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.5.0 — 2026-10-23
+
+- CC-52 (#129, #130): `/Clean email` rewrites the page directly (asking only on a serious doubt) and gives each message, newest first, a heading with names and date, its own text below it and a divider before the next: no addresses, Subject, Cc, banners or Teams, Zoom and Meet blocks.
+- CC-47 (#127, #128): contracts for 0.5.0: one Review row per source with Fix, the Ready gate and re-reads, living reports, and `reference` notes from a document's Keep.
+- CC-48 (#133): the CLI folds fact and text changes into one Review row per source, defers excluded items, applies Fix, re-reads a corrected source, refreshes reports and writes `reference` notes.
+- CC-49 (#135): catch-up asks what to keep from each document, takes in only Ready rows, re-reads corrected sources, reads Fix and What to fix, and refreshes reports.
+- CC-50 (#136): research on Hermes as an always-on brain operator and on a search index (GBrain read-only or local BM25).
+- CC-53 (#131): AGENTS.md says how agents launched by Orca follow the task workflow: worktrees from `task.mjs`, Claude builds, Codex reviews, TASKS.md stays the task list.
+- CC-54 (#132): brain-sync writes the snapshot's `as_of` once at the top, so `sync plan` no longer refuses its rows with "unknown key".
+
 ## 0.4.1 — 2026-10-23
 
 - CC-44 (#123): decision 0045 records the first brain's feedback: 0.4.1 starts questions as Open, adds `/Clean email`, says what approving does and clears finished Review rows; the rest is planned for 0.5.0.
