@@ -4,6 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
+import { parseFrontmatter } from "../src/lib/frontmatter.ts";
 import { brain, fixtureCopy } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
@@ -85,4 +86,68 @@ test("note new refuses a reference with no sources", async (context) => {
   const refused = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "No sources", frontmatter: { summary: "Kept from nowhere." }, body: "x\n" }] });
   assert.equal(refused.json.error?.code, "INPUT_INVALID");
   assert.match(refused.stdout, /sources/);
+});
+
+const SYNC_SOURCE = "src-7w3c9k5m";
+
+function minutes(body: string, frontmatter: Record<string, unknown> = {}) {
+  return { type: "source", title: "Acme sync (Notion minutes)", file_date: "2026-12-10", frontmatter: { source_key: "notion:3c4d5e6f-7a8b-4c0d-9e2f-3a4b5c6d7e8f", origin_edited: "2026-12-10T08:00:00Z", ...frontmatter }, body };
+}
+
+test("a re-read of a changed meeting is a new version linked to the old one; an unchanged one is refused", async (context) => {
+  const dir = await fixtureCopy(context);
+  const SYNC_MINUTES = parseFrontmatter(await readFile(join(dir, "sources/notion/2026-12-03-acme-sync-notion-minutes.md"), "utf8")).body;
+  assert.ok(SYNC_MINUTES.includes("- Draft auth migration plan — Carlos — 2026-12-10\n"), "the fixture's minutes body");
+
+  const unchanged = await run(dir, ["note", "new"], { notes: [minutes(SYNC_MINUTES, { replaces: SYNC_SOURCE })] });
+  assert.equal(unchanged.code, 0, unchanged.stdout);
+  assert.deepEqual(unchanged.json.data.skipped, [{ input_index: 0, reason: "DUPLICATE_SOURCE", existing: SYNC_SOURCE }]);
+
+  const fixed = SYNC_MINUTES.replace("2026-12-10", "2026-12-17");
+  const sameKey = await run(dir, ["note", "new"], { notes: [minutes(fixed)] });
+  assert.equal(sameKey.json.data.skipped[0]?.reason, undefined, "a Notion page key alone never dedupes minutes");
+  const dir2 = await fixtureCopy(context);
+  const version = await newSource(dir2, minutes(fixed, { replaces: SYNC_SOURCE }));
+  const diff = await run(dir2, ["source", "diff", version.id]);
+  assert.equal(diff.code, 0, diff.stdout);
+  assert.deepEqual(diff.json.data, { id: version.id, replaces: SYNC_SOURCE, removed: 1, added: 1, diff: "- - Draft auth migration plan — Carlos — 2026-12-10\n+ - Draft auth migration plan — Carlos — 2026-12-17" });
+  assert.equal((await run(dir2, ["lint"])).json.data.errors, 0);
+
+  const second = await run(dir2, ["note", "new"], { notes: [minutes(`${fixed}\nMore.\n`, { replaces: SYNC_SOURCE })] });
+  assert.equal(second.json.error?.code, "INPUT_INVALID", "a source replaced twice");
+  assert.match(second.stdout, /already replaced by/);
+  for (const replaces of ["src-00000000", "dec-7k2m9q4x"]) {
+    const refused = await run(dir2, ["note", "new"], { notes: [minutes(`${fixed}\n${replaces}\n`, { replaces })] });
+    assert.equal(refused.json.error?.code, "INPUT_INVALID", replaces);
+  }
+  const first = await run(dir2, ["source", "diff", SYNC_SOURCE]);
+  assert.equal(first.json.error?.code, "INPUT_INVALID", "the first version has nothing to diff");
+  assert.equal((await run(dir2, ["source", "diff", "src-00000000"])).json.error?.code, "UNKNOWN_ID");
+});
+
+test("a capture fixed and read again is a new version of the same Inbox row", async (context) => {
+  const dir = await fixtureCopy(context);
+  const capture = (body: string, frontmatter: Record<string, unknown> = {}) => ({ type: "source", title: "Call with Lucía", file_date: "2026-12-05", frontmatter: { source_key: "notion:d1000000-0000-4000-8000-000000000001", kind: "capture", ...frontmatter }, body });
+  const first = await newSource(dir, capture("Lucía says launch is in February.\n"));
+  const edited = await run(dir, ["note", "new"], { notes: [capture("Lucía says launch is in March.\n")] });
+  assert.equal(edited.json.data.skipped[0].reason, "DUPLICATE_SOURCE", "without replaces, the same row is a duplicate");
+  const again = await newSource(dir, capture("Lucía says launch is in March.\n", { replaces: first.id }));
+  assert.notEqual(again.id, first.id);
+  assert.equal((await run(dir, ["lint"])).json.data.errors, 0);
+});
+
+test("source diff: a tie removes first, and the rest of either side is written in order", async () => {
+  const { lineDiff } = await import("../src/commands/source.ts");
+  assert.deepEqual(lineDiff("A\nB\nA", "A\nA\nB"), ["- B", "+ B"]);
+  assert.deepEqual(lineDiff("A\r\nB\r\n", "A\nB\nC\n"), ["+ C"]);
+  assert.deepEqual(lineDiff("A\nB\nC", "A"), ["- B", "- C"]);
+  assert.deepEqual(lineDiff("same\n", "same\n"), []);
+});
+
+test("note new: keep is refused on a capture and when empty", async (context) => {
+  const dir = await fixtureCopy(context);
+  const onCapture = await run(dir, ["note", "new"], { notes: [{ type: "source", title: "A capture", file_date: "2026-12-05", frontmatter: { source_key: "notion:d1000000-0000-4000-8000-000000000002", kind: "capture", keep: "the numbers" }, body: "Text.\n" }] });
+  assert.equal(onCapture.json.error?.code, "INPUT_INVALID");
+  const empty = await run(dir, ["note", "new"], { notes: [source("Empty keep", "document", "Text.\n", { keep: "" })] });
+  assert.equal(empty.json.error?.code, "INPUT_INVALID");
 });
