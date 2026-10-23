@@ -269,6 +269,46 @@ test("task start creates an isolated worktree and marks only its task in progres
   assert.equal(command(worktree, ["config", "--get", "core.hooksPath"]).trim(), ".githooks");
 });
 
+test("task start --from stacks a task whose row exists only on that branch (decision 0046)", (t) => {
+  const parent = mkdtempSync(join(tmpdir(), "ultimate-brain-task-"));
+  const root = join(parent, "repo");
+  mkdirSync(join(root, "build"), { recursive: true });
+  writeFileSync(join(root, "package.json"), '{"name":"fixture","version":"0.0.0"}\n');
+  writeFileSync(join(root, "package-lock.json"), '{"name":"fixture","lockfileVersion":3,"packages":{}}\n');
+  writeFileSync(join(root, "build/TASKS.md"), "### CC-1 · Below · `todo`\n**Release:** 1.2.3\n");
+  command(root, ["init", "-b", "main"]);
+  command(root, ["config", "user.email", "tests@example.test"]);
+  command(root, ["config", "user.name", "Tests"]);
+  command(root, ["add", "."]);
+  command(root, ["commit", "-m", "fixture"]);
+  const bare = join(parent, "origin.git");
+  execFileSync("git", ["init", "--bare", bare]);
+  command(root, ["remote", "add", "origin", bare]);
+  command(root, ["push", "-u", "origin", "main"]);
+  command(root, ["checkout", "-b", "claude/CC-1-below"]);
+  writeFileSync(join(root, "build/TASKS.md"), "### CC-1 · Below · `review`\n**Release:** 1.2.3\n\n### CC-2 · Above · `todo`\n**Release:** 1.2.3\n");
+  writeFileSync(join(root, "below.txt"), "below\n");
+  command(root, ["add", "."]);
+  command(root, ["commit", "-m", "CC-1: below"]);
+  command(root, ["push", "origin", "claude/CC-1-below"]);
+  command(root, ["checkout", "main"]);
+  const path = fakeCommands(root, { npm: "exit 0" });
+  t.after(() => rmSync(parent, { recursive: true, force: true }));
+  const onMain = run("task.mjs", ["start", "CC-2"], { root, env: { PATH: path } });
+  assert.match(onMain.stderr, /Unknown task CC-2/);
+  const result = run("task.mjs", ["start", "CC-2", "--from", "claude/CC-1-below"], { root, env: { PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  const worktree = join(parent, "ub-CC-2");
+  assert.equal(command(worktree, ["branch", "--show-current"]).trim(), "claude/CC-2-above");
+  assert.equal(readFileSync(join(worktree, "below.txt"), "utf8"), "below\n");
+  assert.match(readFileSync(join(worktree, "build/TASKS.md"), "utf8"), /CC-2 · Above · `in progress`/);
+  assert.match(readFileSync(join(worktree, "build/TASKS.md"), "utf8"), /CC-1 · Below · `review`/);
+  const missing = run("task.mjs", ["start", "CC-3", "--from", "claude/CC-9-none"], { root, env: { PATH: path } });
+  assert.match(missing.stderr, /Cannot read build\/TASKS.md on origin\/claude\/CC-9-none/);
+  const usage = run("task.mjs", ["done", "CC-2", "--from", "claude/CC-1-below"], { root });
+  assert.match(usage.stderr, /Usage/);
+});
+
 test("task start refuses unknown and non-todo tasks", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -561,10 +601,10 @@ test("main-guard fails a commit that came from no PR", (t) => {
   assert.match(result.stderr, new RegExp(`main-guard rejected: ${after}`));
 });
 
-function mergeReadyPath(root, { task = "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n", body = "- [x] checked", review = '[[{"body":"Review (Claude Code): pass at abcdef0"}]]' } = {}) {
+function mergeReadyPath(root, { task = "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n", body = "- [x] checked", review = '[[{"body":"Review (Claude Code): pass at abcdef0"}]]', base = "main" } = {}) {
   return fakeCommands(root, {
     gh: `case "$1 $2" in
-      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"abcdef0","title":"CX-1: One","body":"${body}"}' ;;
+      "pr view") printf '%s' '{"baseRefName":"${base}","headRefName":"codex/CX-1-one","headRefOid":"abcdef0","title":"CX-1: One","body":"${body}"}' ;;
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/contents/build/TASKS.md?ref=abcdef0") printf '%s' '${taskRows(task)}' ;;
       "api repos/owner/repo/pulls/12/reviews") printf '%s' '${review}' ;;
@@ -597,6 +637,16 @@ test("merge-ready sets failure naming each problem, and still exits 0", (t) => {
   assert.match(status, /CX-1 is `review`, not `done` \(#12\)/);
   assert.match(status, /no pass from the other agent \(Claude Code\) at abcdef0$/m);
   assert.ok(status.split("\n").find((line) => line.startsWith("description=")).length <= "description=".length + 140);
+});
+
+test("merge-ready stays red on a stacked PR until its base is main (decision 0046)", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const result = run("merge-ready.mjs", ["12"], { root, env: { PATH: mergeReadyPath(root, { base: "claude/CC-1-below" }) } });
+  assert.equal(result.status, 0, result.stderr);
+  const status = readFileSync(join(root, "status"), "utf8");
+  assert.match(status, /^state=failure$/m);
+  assert.match(status, /base is claude\/CC-1-below: merge the PR below first, then retarget this one to main/);
 });
 
 test("the pre-commit hook refuses a skill edit staged without its rebuilt mirror", (t) => {
