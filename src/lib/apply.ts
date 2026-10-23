@@ -4,7 +4,7 @@ import { posix } from "node:path";
 import { assertNoProblems, isRecord, unknownKeys, type InputProblem } from "./input.ts";
 import type { NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
-import { stageNewItem } from "./proposals.ts";
+import { bodyHash, bodyOf, reviewTitle, sourceTitle, stageNewItem, writeProposal } from "./proposals.ts";
 import { loadSchemas } from "./schemas.ts";
 import { formatDate, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
@@ -19,10 +19,12 @@ export interface Correction {
 }
 
 export interface Decision {
-  action: "approve" | "reject" | "edit";
+  action: "approve" | "reject" | "fix" | "edit";
   value?: unknown;
   note?: string;
-  /** add_link: `{field, value}`; review_notes: `{note}` or `{target, field, value}` (spec/schema.md §11). */
+  /** fix: the corrected values, per kind (spec/schema.md §11.3, 0045). */
+  fixes?: Array<Record<string, unknown>>;
+  /** add_link: `{field, value}`; review_notes: `{note}`, `{target, field, value}` or `{change}` (spec/schema.md §11). */
   exclude?: Array<Record<string, unknown>>;
   decided_at: string;
   decided_by: "notion" | "chat";
@@ -45,6 +47,17 @@ export interface ItemResult {
   changed: string[];
   /** review_notes only: what happened to each listed note (spec/cli.md §5.7). */
   notes?: NoteResult[];
+  /** applied review_notes only: what happened to each change, and the row holding the excluded items (0045). */
+  changes?: ChangeResult[];
+  deferred?: string;
+}
+
+export interface ChangeResult {
+  index: number;
+  kind: string;
+  target: string;
+  result: "applied" | "dropped" | "deferred";
+  reason?: "STALE_PROPOSAL";
 }
 
 export interface NoteResult {
@@ -60,8 +73,9 @@ export interface ApplyResult {
   log: LogEntry[];
 }
 
-const ACTIONS = ["approve", "reject", "edit"];
-export const EDITABLE = new Set(["update_fact", "contradiction", "add_to_note", "answer"]);
+const ACTIONS = ["approve", "reject", "fix", "edit"];
+export const EDITABLE = new Set(["update_fact", "contradiction", "add_to_note", "update_body", "answer"]);
+const FIX_KEYS = ["value", "change", "note", "field", "link"];
 /** Reference fields a merge leaves alone: the meeting side of a persisted pair (spec/schema.md §11.2). */
 const PAIR_FIELDS = new Set(["decisions", "questions", "decided_in", "raised_in"]);
 /** Corrections change knowledge notes only: sources are immutable and proposals are records. */
@@ -97,13 +111,16 @@ export function parseApplyInput(input: unknown): ApplyInput {
   (decisions as unknown[]).forEach((item, index) => {
     const pointer = `/decisions/${index}`;
     if (!isRecord(item)) return problems.push({ pointer, message: "must be an object" });
-    problems.push(...unknownKeys(item, ["proposal", "action", "value", "note", "exclude", "decided_at", "decided_by"], pointer));
+    problems.push(...unknownKeys(item, ["proposal", "action", "value", "note", "fixes", "exclude", "decided_at", "decided_by"], pointer));
     if (typeof item.proposal !== "string") problems.push({ pointer: `${pointer}/proposal`, message: "must be a proposal id" });
-    if (!ACTIONS.includes(item.action as string)) problems.push({ pointer: `${pointer}/action`, message: "must be approve, reject or edit" });
+    if (!ACTIONS.includes(item.action as string)) problems.push({ pointer: `${pointer}/action`, message: "must be approve, reject, fix or edit" });
+    if (item.action === "fix" && (typeof item.note !== "string" || item.note === "")) problems.push({ pointer: `${pointer}/note`, message: "is required for fix: the user's words" });
+    if (item.action === "fix" && (!Array.isArray(item.fixes) || item.fixes.length === 0 || item.fixes.some((entry) => !isRecord(entry) || !Object.hasOwn(entry, "value") || Object.keys(entry).some((key) => !FIX_KEYS.includes(key))))) problems.push({ pointer: `${pointer}/fixes`, message: "must be a non-empty list of entries with a value (spec/schema.md §11.3)" });
+    if (item.action !== "fix" && item.fixes !== undefined) problems.push({ pointer: `${pointer}/fixes`, message: "is only allowed for fix" });
     if (item.action === "edit" && (item.value === undefined || item.value === null)) problems.push({ pointer: `${pointer}/value`, message: "is required for edit" });
     if (item.action !== "edit" && item.value !== undefined) problems.push({ pointer: `${pointer}/value`, message: "is only allowed for edit" });
     if (item.note !== undefined && typeof item.note !== "string") problems.push({ pointer: `${pointer}/note`, message: "must be a string" });
-    if (item.exclude !== undefined && (!Array.isArray(item.exclude) || item.exclude.some((entry) => !isRecord(entry) || !(isNoteExclude(entry) || (typeof entry.field === "string" && Object.hasOwn(entry, "value") && Object.keys(entry).every((key) => ["target", "field", "value"].includes(key))))))) problems.push({ pointer: `${pointer}/exclude`, message: "must be a list of {field, value}, {target, field, value} or {note} entries" });
+    if (item.exclude !== undefined && (!Array.isArray(item.exclude) || item.exclude.some((entry) => !isRecord(entry) || !(isNoteExclude(entry) || isChangeExclude(entry) || (typeof entry.field === "string" && Object.hasOwn(entry, "value") && Object.keys(entry).every((key) => ["target", "field", "value"].includes(key))))))) problems.push({ pointer: `${pointer}/exclude`, message: "must be a list of {field, value}, {target, field, value}, {note} or {change} entries" });
     if (!isTimestamp(item.decided_at)) problems.push({ pointer: `${pointer}/decided_at`, message: "must be an ISO 8601 UTC timestamp" });
     if (item.decided_by !== "notion" && item.decided_by !== "chat") problems.push({ pointer: `${pointer}/decided_by`, message: "must be notion or chat" });
   });
@@ -158,6 +175,8 @@ interface Outcome {
   reason?: string;
   message?: string;
   notes?: NoteResult[];
+  changes?: ChangeResult[];
+  deferred?: string;
   /** Action actually applied, when it differs from the input's (an earlier, later-dated decision). */
   action?: string;
 }
@@ -229,35 +248,36 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   const p = document.attributes;
   if (p.status === "applied" || p.status === "closed") return { result: "skipped", reason: "ALREADY_TERMINAL" };
 
-  const incoming: Decision = { action: input.action, ...(input.value === undefined ? {} : { value: input.value }), ...(input.note === undefined ? {} : { note: input.note }), ...(input.exclude === undefined ? {} : { exclude: input.exclude }), decided_at: input.decided_at, decided_by: input.decided_by };
+  const incoming: Decision = { action: input.action, ...(input.value === undefined ? {} : { value: input.value }), ...(input.note === undefined ? {} : { note: input.note }), ...(input.fixes === undefined ? {} : { fixes: input.fixes }), ...(input.exclude === undefined ? {} : { exclude: input.exclude }), decided_at: input.decided_at, decided_by: input.decided_by };
   const recorded = isRecord(p.decision) ? (p.decision as unknown as Decision) : undefined;
   let decision = incoming;
-  if (recorded !== undefined && (recorded.action !== incoming.action || !isDeepStrictEqual(recorded.value, incoming.value) || !isDeepStrictEqual(recorded.exclude, incoming.exclude))) {
+  if (recorded !== undefined && (recorded.action !== incoming.action || !isDeepStrictEqual(recorded.value, incoming.value) || !isDeepStrictEqual(recorded.fixes, incoming.fixes) || !isDeepStrictEqual(recorded.exclude, incoming.exclude))) {
     // You changed your mind in Notion before it was applied: the later decision wins.
     if (Date.parse(recorded.decided_at) >= Date.parse(incoming.decided_at)) decision = recorded;
   } else if (recorded !== undefined) {
     decision = recorded;
   }
   if (decision.action === "edit" && !EDITABLE.has(String(p.kind))) {
-    throw new ItemFailure("EDIT_NOT_ALLOWED", `edit is not allowed on a ${String(p.kind)} proposal (spec/schema.md §11.1)`);
+    throw new ItemFailure("EDIT_NOT_ALLOWED", `edit is not allowed on a ${String(p.kind)} proposal (spec/schema.md §11.1); use fix`);
   }
+  const exclude = decision.exclude ?? [];
   if (decision.exclude !== undefined) {
-    if (decision.action !== "approve" || (p.kind !== "add_link" && p.kind !== "review_notes")) throw new ItemFailure("INPUT_INVALID", "exclude is only allowed on an approved add_link or review_notes proposal");
+    if ((decision.action !== "approve" && decision.action !== "fix") || (p.kind !== "add_link" && p.kind !== "review_notes")) throw new ItemFailure("INPUT_INVALID", "exclude is only allowed on an approved or fixed add_link or review_notes proposal");
     if (p.kind === "add_link") {
-      if (decision.exclude.some((excluded) => excluded.target !== undefined || isNoteExclude(excluded))) throw new ItemFailure("INPUT_INVALID", "exclude on an add_link takes {field, value} entries");
+      if (exclude.some((excluded) => excluded.target !== undefined || isNoteExclude(excluded) || isChangeExclude(excluded))) throw new ItemFailure("INPUT_INVALID", "exclude on an add_link takes {field, value} entries");
       const links = proposalLinks(p);
-      if (decision.exclude.some((excluded) => !links.some((link) => link.field === excluded.field && isDeepStrictEqual(link.value, excluded.value)))) throw new ItemFailure("EXCLUDE_UNKNOWN", "exclude contains a link that is not in the proposal");
+      if (exclude.some((excluded) => !links.some((link) => link.field === excluded.field && isDeepStrictEqual(link.value, excluded.value)))) throw new ItemFailure("EXCLUDE_UNKNOWN", "exclude contains a link that is not in the proposal");
     } else {
-      if (decision.exclude.some((excluded) => !isNoteExclude(excluded) && excluded.target === undefined)) throw new ItemFailure("INPUT_INVALID", "exclude on a review_notes takes {note} and {target, field, value} entries");
-      const notes = list(p.notes);
-      const links = reviewLinks(p);
-      if (decision.exclude.some((excluded) => isNoteExclude(excluded) ? !notes.includes(excluded.note) : !links.some((link) => sameLink(link, excluded)))) throw new ItemFailure("EXCLUDE_UNKNOWN", "exclude contains an entry that is not in the proposal");
+      if (exclude.some((excluded) => !isNoteExclude(excluded) && !isChangeExclude(excluded) && excluded.target === undefined)) throw new ItemFailure("INPUT_INVALID", "exclude on a review_notes takes {note}, {target, field, value} and {change} entries");
+      if (exclude.some((excluded) => !inReview(p, excluded))) throw new ItemFailure("EXCLUDE_UNKNOWN", "exclude contains an entry that is not in the proposal");
     }
   }
+  // A fix corrects the proposal before it is applied; the file keeps what was proposed (spec/schema.md §11.3).
+  const fixed = decision.action === "fix" ? corrected(workspace, p, decision.fixes ?? [], exclude) : { q: p, noteFixes: new Map<string, Array<Record<string, unknown>>>() };
   const action = decision.action === incoming.action ? undefined : decision.action;
 
   p.decision = decision;
-  p.status = decision.action === "approve" ? "approved" : decision.action === "edit" ? "edited" : "rejected";
+  p.status = decision.action === "approve" ? "approved" : decision.action === "reject" ? "rejected" : "edited";
   p.updated = today;
   if (recordOnly) {
     workspace.save(proposal.path, document);
@@ -268,19 +288,21 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
     p.status = "closed";
     workspace.save(proposal.path, document);
     // A rejected review_notes archives the notes still draft, with no successor (spec/schema.md §11.2).
-    const notes = p.kind === "review_notes" ? reviewNotes(workspace, p, "reject", [], today) : undefined;
+    const notes = p.kind === "review_notes" ? reviewNotes(workspace, p, "reject", [], today, "", new Map()).notes : undefined;
     return { result: "closed", action, ...(notes === undefined ? {} : { notes }) };
   }
 
   const D = decision.decided_at.slice(0, 10);
-  const V = decision.action === "edit" ? decision.value : undefined;
+  const V = decision.action === "edit" ? decision.value : fixed.value;
   if (p.kind === "review_notes") {
-    const notes = reviewNotes(workspace, p, "approve", decision.exclude ?? [], today);
+    const applied = reviewNotes(workspace, fixed.q, "approve", exclude, today, D, fixed.noteFixes);
+    if (applied.dropped.length > 0) p.dropped = applied.dropped;
     p.status = "applied";
     workspace.save(proposal.path, document);
-    return { result: "applied", action, notes };
+    const deferred = exclude.length === 0 ? undefined : defer(workspace, proposal.id, p, exclude, today);
+    return { result: "applied", action, notes: applied.notes, changes: applied.changes, ...(deferred === undefined ? {} : { deferred }) };
   }
-  const stale = applyKind(workspace, p, proposal.path, V, D, today, (decision.exclude ?? []) as Array<{ field: string; value: unknown }>);
+  const stale = applyKind(workspace, fixed.q, proposal.path, V, D, today, exclude as Array<{ field: string; value: unknown }>);
   if (stale !== null) {
     p.status = "closed";
     p.closed_reason = "stale";
@@ -290,6 +312,137 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   p.status = "applied";
   workspace.save(proposal.path, document);
   return { result: "applied", action };
+}
+
+/** Whether an exclude or fix entry names an item of a review_notes (spec/schema.md §11.3). */
+function inReview(p: Record<string, unknown>, entry: Record<string, unknown>): boolean {
+  if (entry.change !== undefined) return Number.isInteger(entry.change) && (entry.change as number) >= 0 && (entry.change as number) < list(p.changes).length;
+  if (entry.note !== undefined) return list(p.notes).includes(entry.note);
+  return reviewLinks(p).some((link) => sameLink(link, entry));
+}
+
+/**
+ * The proposal as `fixes` correct it (spec/schema.md §11.3): a copy of its fields, the value V for
+ * single-value kinds, and the fields to set on listed notes. Throws FIX_UNKNOWN for an entry that names
+ * no item, INVALID_RESULT for a value of the wrong shape, INPUT_INVALID for an item fixed and excluded.
+ */
+function corrected(workspace: Workspace, p: Record<string, unknown>, fixes: Array<Record<string, unknown>>, exclude: Array<Record<string, unknown>>): { q: Record<string, unknown>; value?: unknown; noteFixes: Map<string, Array<Record<string, unknown>>> } {
+  const q = structuredClone(p);
+  const noteFixes = new Map<string, Array<Record<string, unknown>>>();
+  const kind = String(p.kind);
+  const unknown = (entry: Record<string, unknown>): never => { throw new ItemFailure("FIX_UNKNOWN", `fixes entry ${JSON.stringify(entry)} names no item of this ${kind} proposal`); };
+  const shape = (message: string): never => { throw new ItemFailure("INVALID_RESULT", message); };
+  const only = (keys: string[]) => (entry: Record<string, unknown>) => Object.keys(entry).every((key) => keys.includes(key));
+  const single = (): Record<string, unknown> => {
+    const entry = fixes[0]!;
+    if (!only(["value"])(entry)) unknown(entry);
+    if (fixes.length !== 1) shape(`a fix on a ${kind} takes exactly one {value}`);
+    return entry;
+  };
+
+  if (kind === "update_fact" || kind === "contradiction") {
+    const { value } = single();
+    if (typeof value !== "string" && typeof value !== "number") shape("a fact value is a string or a number");
+    return { q, value, noteFixes };
+  }
+  if (kind === "add_to_note" || kind === "update_body" || kind === "answer") {
+    const { value } = single();
+    if (typeof value !== "string" || value.trim() === "") shape(`a fix on a ${kind} is a non-empty text`);
+    return { q, value, noteFixes };
+  }
+  if (kind === "supersede" || kind === "merge") {
+    const { value } = single();
+    const key = kind === "supersede" ? "supersedes" : "merge_into";
+    const note = typeof value === "string" ? workspace.get(value) : undefined;
+    const target = workspace.get(String(p.target));
+    if (note === undefined || note.id === p.target || note.type !== target?.type) shape(`${String(value)} must be another existing ${target?.type ?? "note"}`);
+    if (kind === "supersede" && list(note!.attributes.relations).some((relation) => record(relation).type === "superseded_by")) shape(`${note!.id} is already superseded`);
+    q[key] = note!.id;
+    return { q, noteFixes };
+  }
+  if (kind === "new_item") {
+    const note = record(q.note);
+    const frontmatter = record(note.frontmatter);
+    for (const entry of fixes) {
+      if (!only(["field", "value"])(entry) || typeof entry.field !== "string" || (entry.field !== "title" && !Object.hasOwn(frontmatter, entry.field))) unknown(entry);
+      if (entry.field === "title") note.title = entry.value;
+      else frontmatter[entry.field as string] = entry.value;
+    }
+    return { q, noteFixes };
+  }
+  if (kind === "add_link") {
+    const links = list(q.links).map(record);
+    for (const entry of fixes) {
+      const link = record(entry.link);
+      const at = only(["link", "value"])(entry) ? links.findIndex((candidate) => candidate.field === link.field && isDeepStrictEqual(candidate.value, link.value)) : -1;
+      if (at === -1) unknown(entry);
+      if (exclude.some((excluded) => excluded.field === link.field && isDeepStrictEqual(excluded.value, link.value))) throw new ItemFailure("INPUT_INVALID", "an item can't be both fixed and excluded");
+      links[at] = { ...links[at], value: entry.value };
+    }
+    q.links = links;
+    return { q, noteFixes };
+  }
+  if (kind === "review_notes") {
+    const changes = list(q.changes).map(record);
+    const links = list(q.links).map(record);
+    for (const entry of fixes) {
+      const excluded = (item: Record<string, unknown>) => exclude.some((other) => isDeepStrictEqual(other, item));
+      if (entry.change !== undefined) {
+        if (!only(["change", "value"])(entry) || !inReview(p, { change: entry.change })) unknown(entry);
+        if (excluded({ change: entry.change })) throw new ItemFailure("INPUT_INVALID", "an item can't be both fixed and excluded");
+        const change = changes[entry.change as number]!;
+        if (change.kind === "update_fact") {
+          if (typeof entry.value !== "string" && typeof entry.value !== "number") shape("a fact value is a string or a number");
+          change.after = entry.value;
+        } else {
+          if (typeof entry.value !== "string" || entry.value.trim() === "") shape(`a fix on an ${String(change.kind)} is a non-empty text`);
+          change.content = entry.value;
+        }
+      } else if (entry.note !== undefined) {
+        if (!only(["note", "field", "value"])(entry) || !inReview(p, { note: entry.note })) unknown(entry);
+        if (excluded({ note: entry.note })) throw new ItemFailure("INPUT_INVALID", "an item can't be both fixed and excluded");
+        const field = entry.field;
+        if (typeof field !== "string" || !(NOTE_FIX_FIELDS.includes(field) || /^facts\.[a-z][a-z0-9_]*$/.test(field))) shape(`${String(field)} is not a field a fix may set on a note`);
+        noteFixes.set(String(entry.note), [...(noteFixes.get(String(entry.note)) ?? []), { field, value: entry.value }]);
+      } else if (entry.link !== undefined) {
+        const link = record(entry.link);
+        const at = only(["link", "value"])(entry) ? links.findIndex((candidate) => sameLink({ target: candidate.target, field: candidate.field, value: candidate.value }, link)) : -1;
+        if (at === -1) unknown(entry);
+        if (excluded(link)) throw new ItemFailure("INPUT_INVALID", "an item can't be both fixed and excluded");
+        links[at] = { ...links[at], value: entry.value };
+      } else {
+        unknown(entry);
+      }
+    }
+    q.changes = changes;
+    q.links = links;
+    return { q, noteFixes };
+  }
+  throw new ItemFailure("INVALID_RESULT", `Unknown proposal kind ${kind}`);
+}
+
+/** Fields a fix may set on a note listed by a review_notes: those a correction may set, and projects (spec/schema.md §11.3). */
+const NOTE_FIX_FIELDS = ["title", "summary", "why", "area", "goal", "client", "org", "people", "projects"];
+
+/**
+ * Write the excluded items of an applied review_notes as one new pending review_notes (spec/schema.md
+ * §11.3): the same source, `deferred_from` = this proposal, each item as stored, in its original order.
+ */
+function defer(workspace: Workspace, id: string, p: Record<string, unknown>, exclude: Array<Record<string, unknown>>, today: string): string {
+  const notes = list(p.notes).filter((note) => exclude.some((entry) => isNoteExclude(entry) && entry.note === note));
+  const links = reviewLinks(p).filter((link) => exclude.some((entry) => sameLink(link, entry)));
+  const changes = list(p.changes).filter((_change, index) => exclude.some((entry) => entry.change === index));
+  const source = String(p.source);
+  const fields = {
+    kind: "review_notes",
+    title: reviewTitle(workspace, source, changes.length, notes.length, links.length, "Deferred from"),
+    notes, links,
+    ...(changes.length === 0 ? {} : { changes }),
+    deferred_from: id,
+    why: p.why,
+    source,
+  };
+  return writeProposal(workspace, fields, today).id;
 }
 
 /** Apply a proposal's kind to its targets. Returns a message when the proposal is stale. */
@@ -312,6 +465,7 @@ function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPat
       return `facts.${field} is ${shown(current)}, proposal expected ${shown(p.before)}`;
     }
   }
+  if (kind === "update_body" && bodyHash(target.body) !== p.before_hash) return `${target.id}'s body changed after the proposal was written`;
 
   switch (kind) {
     case "update_fact":
@@ -328,6 +482,10 @@ function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPat
       a.sources = union(list(a.sources), [p.source]);
       break;
     }
+    case "update_body":
+      document.body = bodyOf(String(V ?? p.content));
+      a.sources = union(list(a.sources), [p.source]);
+      break;
     case "add_link":
       for (const link of proposalLinks(p)) if (!exclude.some((item) => item.field === link.field && isDeepStrictEqual(item.value, link.value)) && !list(a[String(link.field)]).some((value) => isDeepStrictEqual(value, link.value))) a[String(link.field)] = [...list(a[String(link.field)]), link.value];
       break;
@@ -355,21 +513,47 @@ function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPat
 }
 
 /**
- * Apply or reject a review_notes proposal (spec/schema.md §11.2): approve marks the listed draft
- * notes `reviewed` and applies the links, reject archives the draft notes. Excluded entries stay
- * as they are; a note no longer `draft` is left alone and reported `unchanged`.
+ * Apply or reject a review_notes proposal (spec/schema.md §11.2–11.3). Approve applies, in order, the
+ * changes not excluded (a stale one is dropped alone), marks the listed draft notes `reviewed` with
+ * their fixes, and applies the links; reject archives the draft notes. Excluded entries stay as they
+ * are; a note no longer `draft` is left alone and reported `unchanged`.
  */
-function reviewNotes(workspace: Workspace, p: Record<string, unknown>, action: "approve" | "reject", exclude: Array<Record<string, unknown>>, today: string): NoteResult[] {
+function reviewNotes(workspace: Workspace, p: Record<string, unknown>, action: "approve" | "reject", exclude: Array<Record<string, unknown>>, today: string, D: string, noteFixes: ReadonlyMap<string, Array<Record<string, unknown>>>): { notes: NoteResult[]; changes: ChangeResult[]; dropped: Array<{ change: number; reason: "stale" }> } {
+  const changes: ChangeResult[] = [];
+  const dropped: Array<{ change: number; reason: "stale" }> = [];
+  if (action === "approve") {
+    list(p.changes).map(record).forEach((change, index) => {
+      const entry = { index, kind: String(change.kind), target: String(change.target) };
+      if (exclude.some((excluded) => excluded.change === index)) { changes.push({ ...entry, result: "deferred" }); return; }
+      const stale = applyKind(workspace, { ...change, source: p.source }, "", undefined, D, today);
+      if (stale === null) changes.push({ ...entry, result: "applied" });
+      else {
+        changes.push({ ...entry, result: "dropped", reason: "STALE_PROPOSAL" });
+        dropped.push({ change: index, reason: "stale" });
+      }
+    });
+  }
   const results: NoteResult[] = [];
   for (const id of list(p.notes).map(String)) {
     const note = existing(workspace, id);
-    const lifecycle = String(note.attributes.lifecycle);
     const excluded = exclude.some((entry) => isNoteExclude(entry) && entry.note === id);
+    const fixes = action === "approve" ? noteFixes.get(id) ?? [] : [];
+    if (fixes.length > 0) {
+      const document = workspace.edit(note);
+      for (const { field, value } of fixes) {
+        const fact = /^facts\.(.+)$/.exec(String(field))?.[1];
+        if (fact !== undefined) setFact(document.attributes, fact, value, D, D, String(p.source));
+        else document.attributes[String(field)] = value;
+      }
+      document.attributes.updated = today;
+      workspace.save(note.path, document);
+    }
+    const lifecycle = String(workspace.get(id)!.attributes.lifecycle);
     if (lifecycle !== "draft") results.push({ id, result: "unchanged", lifecycle });
     else if (excluded) results.push({ id, result: "kept_draft", lifecycle });
     else {
       const next = action === "approve" ? "reviewed" : "archived";
-      const document = workspace.edit(note);
+      const document = workspace.edit(workspace.get(id)!);
       document.attributes.lifecycle = next;
       document.attributes.updated = today;
       workspace.save(note.path, document);
@@ -388,7 +572,7 @@ function reviewNotes(workspace: Workspace, p: Record<string, unknown>, action: "
       workspace.save(target.path, document);
     }
   }
-  return results;
+  return { notes: results, changes, dropped };
 }
 
 function reviewLinks(proposal: Record<string, unknown>): Array<{ target: unknown; field: unknown; value: unknown }> {
@@ -401,6 +585,10 @@ function sameLink(link: { target: unknown; field: unknown; value: unknown }, ent
 
 function isNoteExclude(entry: Record<string, unknown>): boolean {
   return typeof entry.note === "string" && Object.keys(entry).length === 1;
+}
+
+function isChangeExclude(entry: Record<string, unknown>): boolean {
+  return Number.isInteger(entry.change) && (entry.change as number) >= 0 && Object.keys(entry).length === 1;
 }
 
 function proposalLinks(proposal: Record<string, unknown>): Array<{ field: unknown; value: unknown }> {
