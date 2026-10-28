@@ -667,7 +667,8 @@ Issues are sorted by `path`, `line`, `rule`, then `message`. `line` is 1-based: 
 | `notion-parts` | error | a source's `notion_parts` names a part above its body's part count (schema §4) |
 | `review-notes` | error | a `review_notes` lists a note that isn't a knowledge note, or a note another `review_notes` also lists (0041), unless one excluded it and the other has `deferred_from` = that one (0045) |
 | `source-replaces` | error | a source's `replaces` names a note that isn't a source (a missing id is `missing-ref`), or a source two others replace (0045) |
-| `update-body` | error | an `update_body` proposal, or an `update_body` entry of a `review_notes`'s `changes`, whose target isn't a `reference` (0045) |
+| `update-body` | error | an `update_body` proposal, or an `update_body` entry of a `review_notes`'s `changes`, whose target isn't a `reference` (0045) or is a `promoted` one (0049) |
+| `promoted-from` | error | a Document's `promoted_from` names a note that isn't a decision or concept (a missing id is `missing-ref`; set without `origin: promoted` is `schema`) (0049) |
 | `product-file` | error | product-owned content differs from the installed package (§5.15, 0038). One issue per case: a shipped skill's folder missing from `.agents/skills/` or `.claude/skills/` (path = the folder); a shipped file in it missing or with different bytes; a file in it the package doesn't ship; `AGENTS.md` missing, its rules markers missing, out of order or duplicated, or its block differing from the template's (path `AGENTS.md`). Folders the package doesn't ship are not checked. The message names the package version and says: run `brain upgrade`, or file a finding |
 | `unknown-key` | warning | frontmatter key that the type's schema does not declare: the core fields, plus the knowledge fields (knowledge types), plus the type's own fields. `why` on a person is unknown |
 | `freshness` | warning | schema §10 |

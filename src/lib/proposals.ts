@@ -371,6 +371,7 @@ function resolveFields(workspace: Workspace, item: Record<string, unknown>, poin
   }
   if (kind === "update_body") {
     if (target.type !== "reference") invalid("target", `is a ${target.type}; update_body replaces the body of a reference`);
+    if (target.attributes.origin === "promoted") invalid("target", `is a promoted Document; its body is yours, edited in Notion (0049)`);
     fields.before_hash = bodyHash(target.body);
   }
   if (kind === "add_link") {

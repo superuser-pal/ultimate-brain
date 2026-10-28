@@ -13,7 +13,7 @@ const SECTIONS: ReadonlyArray<readonly [type: string, heading: string]> = [
   ["question", "Questions"],
   ["meeting", "Meetings"],
   ["concept", "Concepts"],
-  ["reference", "References"],
+  ["reference", "Documents"],
 ];
 
 const NON_KNOWLEDGE = new Set(["source", "view", "proposal"]);
@@ -155,7 +155,7 @@ function typeFields(note: Note, byId: ReadonlyMap<string, Note>): Array<[string,
     case "meeting":
       return [["date", scalar(a.date)], ["project", refs(a.projects)]];
     case "reference":
-      return [["area", ref(a.area)], ["project", refs(a.projects)]];
+      return [["origin", scalar(a.origin)], ["area", ref(a.area)], ["project", refs(a.projects)]];
     default:
       return [];
   }

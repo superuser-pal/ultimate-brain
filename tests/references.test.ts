@@ -57,7 +57,7 @@ test("a reference validates, is listed under its project and renders to Referenc
   assert.equal(index.code, 0, index.stdout);
   assert.equal(index.json.data.counts.reference, 1);
   const markdown = await readFile(join(dir, "index.md"), "utf8");
-  assert.match(markdown, /\n## References\n- \[Acme requirements\]\(knowledge\/references\/acme-requirements\.md\) — ref-\w{8} · area: Clients · project: Acme website · What Acme requires of the website\.\n/);
+  assert.match(markdown, /\n## Documents\n- \[Acme requirements\]\(knowledge\/references\/acme-requirements\.md\) — ref-\w{8} · origin: part · area: Clients · project: Acme website · What Acme requires of the website\.\n/);
   const status = await run(dir, ["status"]);
   assert.equal(status.json.data.notes.reference, 1);
   assert.ok(status.json.data.notion.missing.includes("documents"));
@@ -258,4 +258,28 @@ test("note new: a source's area and projects must exist (UNKNOWN_ID, 0050)", asy
     const refused = await run(dir, ["note", "new"], { notes: [source(`Misplaced ${JSON.stringify(extra)}`, "document", "Other text.\n", extra)] });
     assert.equal(refused.json.error?.code, "UNKNOWN_ID", JSON.stringify(extra));
   }
+});
+
+test("a promoted Document's body is yours: update_body is refused, and lint reports one written by hand (0049)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Supabase auth (page)", frontmatter: { summary: "A page for the decision.", origin: "promoted", promoted_from: "dec-7k2m9q4x" }, body: "## Why\nBecause.\n" }] });
+  assert.equal(created.code, 0, created.stdout);
+  const page = created.json.data.created[0];
+
+  const refused = await run(dir, ["proposal", "new"], { proposals: [{ kind: "update_body", title: "New body", target: page.id, content: "## Why\nOther.\n", why: "x", source: "src-7w3c9k5m" }] });
+  assert.equal(refused.json.error?.code, "INPUT_INVALID");
+  assert.match(refused.json.error.message, /promoted Document/);
+
+  // A promoted_from naming a note retyped as a question, and an update_body proposal written by hand.
+  const path = join(dir, page.path);
+  await writeFile(path, (await readFile(path, "utf8")).replace("promoted_from: dec-7k2m9q4x", "promoted_from: con-1s6t8e2b"));
+  const concept = join(dir, "knowledge/concepts/row-level-security.md");
+  await writeFile(concept, (await readFile(concept, "utf8")).replace(/^type: concept$/m, "type: question"));
+  const accepted = await run(dir, ["proposal", "new"], { proposals: [{ kind: "update_body", title: "Requirements v2", target: (await newReference(dir, "src-7w3c9k5m")).id, content: "x\n", why: "x", source: "src-7w3c9k5m" }] });
+  const proposal = join(dir, accepted.json.data.created[0].path);
+  await writeFile(proposal, (await readFile(proposal, "utf8")).replace(/^target: ref-\w+$/m, `target: ${page.id}`));
+  const lint = await run(dir, ["lint"]);
+  const rules = lint.json.data.issues.filter((issue: { severity: string }) => issue.severity === "error").map((issue: { rule: string }) => issue.rule);
+  assert.ok(rules.includes("promoted-from"), JSON.stringify(rules));
+  assert.ok(rules.includes("update-body"), JSON.stringify(rules));
 });
