@@ -4,7 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { parseFrontmatter } from "../src/lib/frontmatter.ts";
+import { parseFrontmatter, serializeFrontmatter } from "../src/lib/frontmatter.ts";
 import { fullText, rangesProblem, splitParts } from "../src/lib/parts.ts";
 import { brain, fixtureCopy } from "./helpers.ts";
 
@@ -58,28 +58,31 @@ test("parts: slides by marker, else sections at the smallest heading level outsi
   for (const bad of [["9-3"], ["2-4", "3-5"], ["13"], ["4", "2"], ["3-3"]]) assert.notEqual(rangesProblem(bad, 12), null, JSON.stringify(bad));
 });
 
-test("note new sets notion_text by kind and refuses bad parts", async (context) => {
+test("note new writes no notion_text and refuses the retired source keys (0049)", async (context) => {
   const dir = await fixtureCopy(context);
   const email = await newSource(dir, source("Launch thread", "email", "From: Maria\n\nWe launch in February.\n"));
-  const doc = await newSource(dir, source("Requirements", "document", DOCUMENT));
-  assert.equal(parseFrontmatter(await readFile(join(dir, email.path), "utf8")).attributes.notion_text, "full");
-  assert.equal(parseFrontmatter(await readFile(join(dir, doc.path), "utf8")).attributes.notion_text, "digest");
+  const doc = await newSource(dir, source("Requirements", "document", DOCUMENT, { only_keep: "the requirements table" }));
+  assert.equal(parseFrontmatter(await readFile(join(dir, email.path), "utf8")).attributes.notion_text, undefined);
+  const docAttributes = parseFrontmatter(await readFile(join(dir, doc.path), "utf8")).attributes;
+  assert.equal(docAttributes.notion_text, undefined);
+  assert.equal(docAttributes.only_keep, "the requirements table");
 
-  for (const parts of [["9-3"], ["2-4", "3-5"], ["13"]]) {
-    const refused = await run(dir, ["note", "new"], { notes: [source(`Deck ${parts.join(" ")}`, "document", DECK, { notion_text: "full", notion_parts: parts })] });
-    assert.equal(refused.json.error?.code, "INPUT_INVALID", JSON.stringify(parts));
+  for (const extra of [{ notion_text: "full" }, { notion_text: "full", notion_parts: ["2"] }, { notion_text_requested: NOW }, { keep: "the deadlines" }]) {
+    const refused = await run(dir, ["note", "new"], { notes: [source(`Deck ${Object.keys(extra).join(" ")}`, "document", DECK, extra)] });
+    assert.equal(refused.json.error?.code, "INPUT_INVALID", JSON.stringify(extra));
   }
-  const requested = await run(dir, ["note", "new"], { notes: [source("Asked", "note", "Text.\n", { notion_text_requested: NOW })] });
-  assert.equal(requested.json.error?.code, "INPUT_INVALID");
+  const minutes = await run(dir, ["note", "new"], { notes: [source("Minutes", "minutes", "Notes.\n", { only_keep: "the decisions" })] });
+  assert.equal(minutes.json.error?.code, "INPUT_INVALID", "only_keep is refused on minutes");
   const lint = await run(dir, ["lint"]);
   assert.equal(lint.json.data.errors, 0, JSON.stringify(lint.json.data.issues));
 });
 
 test("lint: notion-parts above the part count and a note listed by two review_notes", async (context) => {
   const dir = await fixtureCopy(context);
-  const deck = await newSource(dir, source("Deck", "document", DECK, { notion_text: "full", notion_parts: ["3-9"] }));
+  const deck = await newSource(dir, source("Deck", "document", DECK));
+  // A source from before 0.6.0, whose parts were chosen with source full-text.
   const file = join(dir, deck.path);
-  await writeFile(file, (await readFile(file, "utf8")).replace("notion_parts: [3-9]", "notion_parts: [3-13]"));
+  await writeFile(file, (await readFile(file, "utf8")).replace("\ncontent_hash:", "\nnotion_text: full\nnotion_parts: [3-13]\ncontent_hash:"));
   const created = await run(dir, ["proposal", "new"], { proposals: [{ kind: "review_notes", source: "mtg-8c4n2p7w", notes: ["dec-7k2m9q4x"] }] });
   const path = join(dir, created.json.data.created[0].path);
   const copy = (await readFile(path, "utf8")).replace(/^id: prp-\w+$/m, "id: prp-2b3c4d5e");
@@ -121,7 +124,7 @@ async function assertLintClean(dir: string): Promise<void> {
   assert.equal(lint.json.data.errors, 0, JSON.stringify(lint.json.data.issues));
 }
 
-test("render: a document gets its digest only, an email its digest and Full text, once; a capture no body", async (context) => {
+test("render: a document and an email get their digest only, once; a capture no body; no Full text (0049)", async (context) => {
   const dir = await inboxBrain(context);
   const doc = await newSource(dir, source("Requirements", "document", DOCUMENT));
   const email = await newSource(dir, source("Launch thread", "email", "From: Maria\nDate: 2026-12-01\n\nWe launch in February.\n"));
@@ -134,11 +137,11 @@ test("render: a document gets its digest only, an email its digest and Full text
 
   const emailItem = await renderAndRecord(dir, email.id);
   assert.ok(emailItem!.body.startsWith("*Email · pasted text · 2026-12-01 · "), emailItem!.body);
-  assert.deepEqual(emailItem!.sections, { "Full text": "From: Maria\nDate: 2026-12-01\n\nWe launch in February.\n" });
-  assert.deepEqual(emailItem!.published["@full_text"], { text: "full", parts: null, requested: null });
+  assert.equal(emailItem!.sections, null);
+  assert.equal(emailItem!.published["@full_text"], undefined);
 
   assert.equal(await renderAndRecord(dir, doc.id), undefined, "a second render writes no digest again");
-  assert.equal(await renderAndRecord(dir, email.id), undefined, "nor the Full text");
+  assert.equal(await renderAndRecord(dir, email.id), undefined);
 
   const capture = await newSource(dir, { type: "source", title: "Call Acme", file_date: "2026-12-02", frontmatter: { source_key: "notion:c3000000-0000-4000-8000-000000000001", kind: "capture", summary: "Call Acme." }, body: "Call Acme about the launch.\n" });
   const captureItem = (await run(dir, ["sync", "render", "--ids", capture.id])).json.data.items[0];
@@ -146,17 +149,17 @@ test("render: a document gets its digest only, an email its digest and Full text
   await assertLintClean(dir);
 });
 
-test("render: chosen parts only, in order, under a line naming them", async (context) => {
+test("render: a source from before 0.6.0 with notion_text full sends no Full text and keeps its @full_text", async (context) => {
   const dir = await inboxBrain(context);
-  const deck = await newSource(dir, source("Launch deck", "document", DECK, { notion_text: "full", notion_parts: ["3-9"] }));
-  const doc = await newSource(dir, source("Spec", "document", DOCUMENT, { notion_text: "full", notion_parts: ["2", "4-5"] }));
-  const deckText = (await renderAndRecord(dir, deck.id))!.sections["Full text"] as string;
-  assert.ok(deckText.startsWith("*Slides 3–9 of 12*\n\nAcme launch deck\n\n<!-- Slide number: 3 -->"));
-  assert.deepEqual([...deckText.matchAll(/^# Slide (\d+)$/gm)].map((match) => Number(match[1])), [3, 4, 5, 6, 7, 8, 9]);
-  assert.ok((await renderAndRecord(dir, deck.id)) === undefined);
-  const docText = (await renderAndRecord(dir, doc.id))!.sections["Full text"] as string;
-  assert.ok(docText.startsWith("*Sections 2, 4–5 of 5*\n\nIntro line.\n\n## Two"));
-  assert.deepEqual([...docText.matchAll(/^## (\w+)$/gm)].map((match) => match[1]), ["Two", "Four", "Five"]);
+  const deck = await newSource(dir, source("Launch deck", "document", DECK));
+  await renderAndRecord(dir, deck.id);
+  const file = join(dir, deck.path);
+  const document = parseFrontmatter(await readFile(file, "utf8"));
+  const stored = { text: "full", parts: ["3-9"], requested: null };
+  Object.assign(document.attributes, { notion_text: "full", notion_parts: ["3-9"], notion_published: { ...(document.attributes.notion_published as object), "@full_text": stored } });
+  await writeFile(file, serializeFrontmatter(document));
+  assert.equal(await renderAndRecord(dir, deck.id), undefined, "nothing is due");
+  assert.deepEqual((parseFrontmatter(await readFile(file, "utf8")).attributes.notion_published as Record<string, unknown>)["@full_text"], stored);
   await assertLintClean(dir);
 });
 

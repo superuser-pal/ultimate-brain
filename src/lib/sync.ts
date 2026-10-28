@@ -7,7 +7,7 @@ import { assertNoProblems, isRecord, unknownKeys, type InputProblem } from "./in
 import { generateId, TYPE_PREFIX } from "./ids.ts";
 import { assertStagedValid, checkNoteInput, stageNotes, type NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
-import { fullText, splitParts } from "./parts.ts";
+import { splitParts } from "./parts.ts";
 import { loadSchemas } from "./schemas.ts";
 import { formatDate, formatTimestamp, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
@@ -426,13 +426,8 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
       if (fixes > stored) { properties["What to fix"] = { type: "rich_text", value: null }; reportDue = true; }
       rendered["@fixes"] = Math.max(fixes, stored);
     }
-    // Full text (0043): the text goes out once per choice, and a ticked box is cleared once per request.
-    const full = note.type === "source" && hasInboxBody(note) ? fullTextDue(note, published["@full_text"]) : undefined;
-    if (full?.sections !== undefined) content.sections = { ...(content.sections ?? {}), ...full.sections };
-    if (full?.clear === true) properties["Full text"] = { type: "checkbox", value: false };
-    if (full !== undefined && (full.sections !== undefined || full.clear)) rendered["@full_text"] = full.record;
-    const fullTextDueNow = full !== undefined && (full.sections !== undefined || full.clear);
-    if (!isCreate && Object.keys(properties).length === 0 && !contentChanged && !fullTextDueNow && !reportDue) continue;
+    // Full text (0043) is retired (0049): nothing is sent, and `@full_text` in S stays as it is.
+    if (!isCreate && Object.keys(properties).length === 0 && !contentChanged && !reportDue) continue;
     if (!isCreate && note.type !== "meeting" && note.type !== "proposal") properties["Last Synced"] = { type: "date", value: { start: formatTimestamp(now), end: null } };
     items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: typeof note.attributes.notion === "string" ? note.attributes.notion : capturePage ?? null, action: isCreate ? "create" : "update", properties, body: content.body, sections: content.sections, pending_relations: pending, published: rendered });
   }
@@ -558,7 +553,7 @@ function proposalLinks(attributes: Record<string, unknown>): Array<{ field: unkn
 }
 function renderedContent(note: Note, workspace: Workspace): { body: string | null; sections: Record<string, string> | null; hash?: string } {
   if (note.type === "area") { const brief = workspace.notes.find((x) => x.type === "view" && x.attributes.view_kind === "area_brief" && x.attributes.area === note.id); if (brief === undefined) return { body: null, sections: null }; const sections = { Brief: notionMarkdown(generatedBlock(brief.body), brief, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; }
-  // A source's digest is written once; its Full text is tracked by @full_text, not @content (0043).
+  // A source's digest is written once (0043).
   if (note.type === "source") { if (!hasInboxBody(note)) return { body: null, sections: null }; const body = digestBody(note); return { body, sections: null, hash: hash(body) }; }
   if (isReport(note)) { const body = notionMarkdown(note.body.replace(/^\n+/, ""), note, workspace); return { body, sections: null, hash: hash(body) }; }
   if (note.type === "decision" || note.type === "question" || note.type === "concept" || note.type === "reference") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: notionMarkdown(generatedBlock(brief?.body ?? ""), note, workspace), "Decision log": notionMarkdown(generatedBlock(log?.body ?? ""), note, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
@@ -618,19 +613,6 @@ export function letters(index: number): string {
 }
 
 function isReport(note: Note): boolean { return note.type === "view" && note.attributes.view_kind === "report"; }
-
-/**
- * Whether a source's Full text is due (cli §5.14.4): B of `@full_text` against S. The text goes out
- * when it is chosen and S doesn't hold the same choice; the box is cleared when a request is new.
- */
-function fullTextDue(note: Note, stored: unknown): { record: Record<string, unknown>; sections?: Record<string, string>; clear: boolean } {
-  const a = note.attributes;
-  const record = { text: a.notion_text ?? "digest", parts: Array.isArray(a.notion_parts) ? a.notion_parts : null, requested: a.notion_text_requested ?? null };
-  const s = isRecord(stored) ? stored : undefined;
-  const send = record.text === "full" && (s === undefined || s.text !== record.text || !isDeepStrictEqual(s.parts ?? null, record.parts));
-  const clear = record.requested !== null && record.requested !== (s?.requested ?? null);
-  return { record, ...(send ? { sections: { "Full text": fullText(note.body, record.parts as string[] | null) } } : {}), clear };
-}
 
 /** A brain-created Inbox row's body: a line about the source, its summary and its digest (cli §5.14.4). */
 function digestBody(note: Note): string {
