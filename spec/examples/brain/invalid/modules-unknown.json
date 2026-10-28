@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "owner": { "name": "Alex" },
+  "budgets": { "ingest_max_notes": 8 },
+  "modules": { "knowledge": true, "core": false },
+  "notion": {
+    "databases": { "areas": "", "projects": "", "meetings": "", "people": "", "review": "", "inbox": "", "decisions": "", "questions": "", "concepts": "", "orgs": "" },
+    "tasks": { "database": "", "properties": { "title": "Name" }, "new_task_status": "To Do" }
+  }
+}

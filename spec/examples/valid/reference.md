@@ -4,6 +4,7 @@ type: reference
 title: "Acme website: requirements"
 summary: The client's requirements for the Acme website, as kept from the requirements document.
 lifecycle: draft
+origin: part
 area: area-2m7c4h8n
 projects: [prj-9x4t1b7e]
 sources: [src-4m9q2x7c]
