@@ -258,7 +258,7 @@ test("report new refuses wrong sections, broken links and unknown ids", async (c
   assert.equal(await code({ ...base, extra: 1 }), "INPUT_INVALID");
 });
 
-test("a Report row: What to fix becomes a report fix, and a refresh keeps the id and Notion row and clears Refresh (0045)", async (context) => {
+test("a Report row: What to fix becomes a report fix, and a refresh keeps the id and Notion row and clears Refresh asked (0045, 0048)", async (context) => {
   const dir = await inboxBrain(context);
   const [ask, ask2] = ["f1000000-0000-4000-8000-000000000001", "f1000000-0000-4000-8000-000000000002"];
   const created = await run(dir, ["report", "new"], { title: "Acme launch: where we stand", question: "Everything about the Acme launch", asked_in: ask, projects: ["prj-9x4t1b7e"], body: REPORT_BODY });
@@ -287,7 +287,7 @@ test("a Report row: What to fix becomes a report fix, and a refresh keeps the id
   const cleared = await renderAndRecord(dir, id);
   assert.equal(cleared!.action, "update");
   assert.deepEqual(cleared!.properties["What to fix"], { type: "rich_text", value: null });
-  assert.equal(cleared!.properties.Refresh, undefined);
+  assert.equal(cleared!.properties["Refresh asked"], undefined);
   assert.equal(cleared!.body, null, "the body goes out only on a refresh");
   assert.equal(cleared!.published["@fixes"], 1);
 
@@ -306,7 +306,7 @@ test("a Report row: What to fix becomes a report fix, and a refresh keeps the id
   assert.equal(sent!.action, "update");
   assert.equal(sent!.page_id, page);
   assert.ok(sent!.body.startsWith("## Where it stands\n\nLaunch is set for March"), sent!.body);
-  assert.deepEqual(sent!.properties.Refresh, { type: "checkbox", value: false });
+  assert.deepEqual(sent!.properties["Refresh asked"], { type: "checkbox", value: false });
   assert.deepEqual(sent!.properties.Ask, { type: "relation", value: [ask, ask2] });
   assert.equal(await renderAndRecord(dir, id), undefined, "nothing changed since");
   assert.equal((await run(dir, ["report", "new"], { refresh: "dec-7k2m9q4x", body: REPORT_BODY })).json.error?.code, "INPUT_INVALID");
