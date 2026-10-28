@@ -809,18 +809,77 @@
       ]
     },
     "reference": {
-      "description": "What the user kept from a document (decision 0045, spec/schema.md §4 reference).",
+      "description": "A Document (decision 0049; a reference note, decision 0045; spec/schema.md §4 reference): a source's whole text, a part the user asked to keep, or a page promoted from a decision or concept.",
       "allOf": [
         {
           "$ref": "#/$defs/knowledge"
         },
         {
-          "required": [
-            "sources"
-          ],
           "properties": {
-            "sources": {
-              "minItems": 1
+            "origin": {
+              "enum": [
+                "whole",
+                "part",
+                "promoted"
+              ],
+              "description": "whole: a source's converted text, verbatim; part: what Only keep named; promoted: seeded from a decision or concept. Absent: part (written before 0.6.0)."
+            },
+            "promoted_from": {
+              "type": "string",
+              "pattern": "^(dec|con)-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+            }
+          }
+        },
+        {
+          "description": "promoted_from exactly with origin: promoted.",
+          "if": {
+            "required": [
+              "origin"
+            ],
+            "properties": {
+              "origin": {
+                "const": "promoted"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "promoted_from"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "promoted_from"
+              ]
+            },
+            "required": [
+              "sources"
+            ],
+            "properties": {
+              "sources": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "description": "A whole Document holds one source's text.",
+          "if": {
+            "required": [
+              "origin"
+            ],
+            "properties": {
+              "origin": {
+                "const": "whole"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "sources": {
+                "maxItems": 1
+              }
             }
           }
         }
@@ -884,9 +943,27 @@
         "replaces": {
           "$ref": "#/$defs/sourceId"
         },
+        "area": {
+          "$ref": "#/$defs/areaId",
+          "description": "The Area the user set on the Inbox row or meeting when it was taken in (decision 0050)."
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/projectId"
+          },
+          "description": "The Project(s) the user set on the Inbox row or meeting when it was taken in (decision 0050)."
+        },
         "keep": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "deprecated": true,
+          "description": "Before 0.6.0: read as only_keep (decision 0049)."
+        },
+        "only_keep": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What the user asked to keep as a Document, when only part (decision 0049). Absent: the whole input."
         },
         "summary": {
           "type": "string",
@@ -901,7 +978,9 @@
           "enum": [
             "digest",
             "full"
-          ]
+          ],
+          "deprecated": true,
+          "description": "Retired in 0.6.0 (decision 0049): kept on sources written before; never written again."
         },
         "notion_parts": {
           "type": "array",
@@ -910,10 +989,14 @@
           "items": {
             "type": "string",
             "pattern": "^[1-9][0-9]*(-[1-9][0-9]*)?$"
-          }
+          },
+          "deprecated": true,
+          "description": "Retired in 0.6.0 (decision 0049): kept on sources written before; never written again."
         },
         "notion_text_requested": {
-          "$ref": "#/$defs/timestamp"
+          "$ref": "#/$defs/timestamp",
+          "deprecated": true,
+          "description": "Retired in 0.6.0 (decision 0049): kept on sources written before; never written again."
         },
         "notion": {
           "$ref": "#/$defs/notionPageId"
@@ -1138,14 +1221,9 @@
           }
         },
         {
-          "description": "keep only on a source that is read for its content (0045).",
+          "description": "keep and only_keep only on a source read for its content: not minutes or capture (0045, 0049). An attached file takes its row's Only keep.",
           "if": {
             "anyOf": [
-              {
-                "required": [
-                  "attached_to"
-                ]
-              },
               {
                 "required": [
                   "kind"
@@ -1170,8 +1248,17 @@
           },
           "then": {
             "not": {
-              "required": [
-                "keep"
+              "anyOf": [
+                {
+                  "required": [
+                    "keep"
+                  ]
+                },
+                {
+                  "required": [
+                    "only_keep"
+                  ]
+                }
               ]
             }
           }

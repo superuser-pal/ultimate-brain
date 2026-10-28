@@ -21,7 +21,7 @@ On this page ("Knowledge") add seven tabs. In each tab put one linked view of th
    - List "What did we learn recently?": Lifecycle is not Archived; sort Created time descending; show Name, Project, Summary.
    - Table "What do we know per project?": Lifecycle is not Archived; sort Name; group by Project; show Name, Area, Summary.
    - List "Which concepts are drafts?": Lifecycle is Draft; sort Created time descending; show Name, Project.
-3b. Tab "References" (database "References"):
+3b. Tab "Documents" (database "Documents"):
    - List "What did we keep?": Lifecycle is not Archived; sort Last edited time descending; show Name, Project, Summary.
 4. Tab "People" (database "People"):
    - Gallery with small cards "Who's who?": Lifecycle is not Archived; sort Name; group by Org; show Name, Role, Org.
@@ -30,8 +30,8 @@ On this page ("Knowledge") add seven tabs. In each tab put one linked view of th
    - Table "Which clients do I have?": Relationship is Client and Lifecycle is not Archived; sort Name; show Name, People, Projects.
    - Table "Who else do we work with?": Relationship is not Client and Lifecycle is not Archived; sort Name; group by Relationship; show Name, Relationship, People.
 6. Tab "Inbox" (database "Inbox"):
-   - List "What's in my inbox?": Brain Status is New or Ready; sort Created ascending; show Name, Kind, Brain Status, Keep, Project, Created.
-   - Table "What came in?": Brain Status is Processed; sort Created descending; show Name, Kind, Summary, Project, Decisions, Concepts.
+   - List "What's in my inbox?": Brain Status is New or Ready; sort Created ascending; show Name, Kind, Brain Status, Only keep, Project, Created.
+   - Table "What came in?": Brain Status is Done; sort Created descending; show Name, Kind, Summary, Project, Decisions, Concepts.
 
 If you can't create tabs, add one heading 3 per database instead, each followed by its linked view.
 
@@ -39,5 +39,5 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 ```
 
 ## Verify
-- [ ] Seven tabs: Decisions, Questions, Concepts, References, People, Orgs, Inbox, each with its views as view tabs.
+- [ ] Seven tabs: Decisions, Questions, Concepts, Documents, People, Orgs, Inbox, each with its views as view tabs.
 - [ ] "What changed our minds?" shows only Superseded decisions.
