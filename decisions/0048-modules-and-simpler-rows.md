@@ -1,6 +1,6 @@
 # 0048 — Modules, simpler rows and buttons
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-10-28
 **Amends:** 0043, 0045
 **Refines:** 0037, 0041
