@@ -2,7 +2,7 @@
 
 Paste into Notion AI **while you are on the "Plan" page**, after [Prompt 6](06-templates.md). Other Spaces: [index](07-spaces-views.md). Every view, with its use case, is in [../views-guide.md](../views-guide.md).
 
-Areas are the way into each Area page, which collects everything for that area.
+**Planning module only** (decision 0048): skip this prompt if you left Planning off. Areas are the way into each Area page, which collects everything for that area.
 
 ```text
 On this page ("Plan") add four tabs:
