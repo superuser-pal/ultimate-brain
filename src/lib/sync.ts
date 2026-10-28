@@ -494,7 +494,7 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     if (isReport(note)) {
       const fixes = Array.isArray(note.attributes.fixes) ? note.attributes.fixes.length : 0;
       const stored = typeof published["@fixes"] === "number" ? published["@fixes"] : 0;
-      if (!isCreate && contentChanged) properties.Refresh = { type: "checkbox", value: false };
+      if (!isCreate && contentChanged) properties["Refresh asked"] = { type: "checkbox", value: false };
       if (!isCreate && !contentChanged) content.body = null;
       if (fixes > stored) { properties["What to fix"] = { type: "rich_text", value: null }; reportDue = true; }
       rendered["@fixes"] = Math.max(fixes, stored);
