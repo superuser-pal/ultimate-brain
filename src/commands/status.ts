@@ -8,6 +8,7 @@ import { lintBrain } from "../lib/lint.ts";
 import { scanNotes } from "../lib/notes.ts";
 import { describeErrors, loadSchemas } from "../lib/schemas.ts";
 import { isRecord } from "../lib/input.ts";
+import { databaseId, modulesOf } from "../lib/modules.ts";
 import { expandPath, linkedRepos, workTreeTop } from "../lib/repos.ts";
 
 const NOTE_TYPES = ["area", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "goal", "memory", "reference"];
@@ -65,6 +66,7 @@ export const statusCommand: Command = {
       notes: noteCounts,
       proposals: proposalCounts,
       notion,
+      modules: modulesOf(brain!.config),
       settings,
       repos,
       index_stale: currentIndex !== index,
@@ -77,12 +79,10 @@ export const statusCommand: Command = {
 
 function readNotion(config: Record<string, unknown>): { configured: string[]; missing: string[]; tasks_database: boolean } {
   const notion = config.notion as Record<string, unknown>;
-  const databases = notion.databases as Record<string, unknown>;
   const configured: string[] = [];
   const missing: string[] = [];
-  for (const key of ["areas", "goals", "key_results", "projects", "meetings", "people", "orgs", "decisions", "questions", "review", "inbox", "concepts", "references"]) {
-    const value = key === "inbox" && databases.inbox === undefined ? databases.capture_inbox : databases[key];
-    (typeof value === "string" && value !== "" ? configured : missing).push(key);
+  for (const key of ["areas", "goals", "key_results", "projects", "meetings", "people", "orgs", "decisions", "questions", "review", "inbox", "concepts", "documents"]) {
+    (databaseId(config, key) !== "" ? configured : missing).push(key);
   }
   const tasks = notion.tasks as Record<string, unknown>;
   return { configured, missing, tasks_database: typeof tasks.database === "string" && tasks.database !== "" };

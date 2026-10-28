@@ -4,7 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { parseFrontmatter } from "../src/lib/frontmatter.ts";
+import { parseFrontmatter, serializeFrontmatter } from "../src/lib/frontmatter.ts";
 import { fullText, rangesProblem, splitParts } from "../src/lib/parts.ts";
 import { brain, fixtureCopy } from "./helpers.ts";
 
@@ -58,28 +58,31 @@ test("parts: slides by marker, else sections at the smallest heading level outsi
   for (const bad of [["9-3"], ["2-4", "3-5"], ["13"], ["4", "2"], ["3-3"]]) assert.notEqual(rangesProblem(bad, 12), null, JSON.stringify(bad));
 });
 
-test("note new sets notion_text by kind and refuses bad parts", async (context) => {
+test("note new writes no notion_text and refuses the retired source keys (0049)", async (context) => {
   const dir = await fixtureCopy(context);
   const email = await newSource(dir, source("Launch thread", "email", "From: Maria\n\nWe launch in February.\n"));
-  const doc = await newSource(dir, source("Requirements", "document", DOCUMENT));
-  assert.equal(parseFrontmatter(await readFile(join(dir, email.path), "utf8")).attributes.notion_text, "full");
-  assert.equal(parseFrontmatter(await readFile(join(dir, doc.path), "utf8")).attributes.notion_text, "digest");
+  const doc = await newSource(dir, source("Requirements", "document", DOCUMENT, { only_keep: "the requirements table" }));
+  assert.equal(parseFrontmatter(await readFile(join(dir, email.path), "utf8")).attributes.notion_text, undefined);
+  const docAttributes = parseFrontmatter(await readFile(join(dir, doc.path), "utf8")).attributes;
+  assert.equal(docAttributes.notion_text, undefined);
+  assert.equal(docAttributes.only_keep, "the requirements table");
 
-  for (const parts of [["9-3"], ["2-4", "3-5"], ["13"]]) {
-    const refused = await run(dir, ["note", "new"], { notes: [source(`Deck ${parts.join(" ")}`, "document", DECK, { notion_text: "full", notion_parts: parts })] });
-    assert.equal(refused.json.error?.code, "INPUT_INVALID", JSON.stringify(parts));
+  for (const extra of [{ notion_text: "full" }, { notion_text: "full", notion_parts: ["2"] }, { notion_text_requested: NOW }, { keep: "the deadlines" }]) {
+    const refused = await run(dir, ["note", "new"], { notes: [source(`Deck ${Object.keys(extra).join(" ")}`, "document", DECK, extra)] });
+    assert.equal(refused.json.error?.code, "INPUT_INVALID", JSON.stringify(extra));
   }
-  const requested = await run(dir, ["note", "new"], { notes: [source("Asked", "note", "Text.\n", { notion_text_requested: NOW })] });
-  assert.equal(requested.json.error?.code, "INPUT_INVALID");
+  const minutes = await run(dir, ["note", "new"], { notes: [source("Minutes", "minutes", "Notes.\n", { only_keep: "the decisions" })] });
+  assert.equal(minutes.json.error?.code, "INPUT_INVALID", "only_keep is refused on minutes");
   const lint = await run(dir, ["lint"]);
   assert.equal(lint.json.data.errors, 0, JSON.stringify(lint.json.data.issues));
 });
 
 test("lint: notion-parts above the part count and a note listed by two review_notes", async (context) => {
   const dir = await fixtureCopy(context);
-  const deck = await newSource(dir, source("Deck", "document", DECK, { notion_text: "full", notion_parts: ["3-9"] }));
+  const deck = await newSource(dir, source("Deck", "document", DECK));
+  // A source from before 0.6.0, whose parts were chosen with source full-text.
   const file = join(dir, deck.path);
-  await writeFile(file, (await readFile(file, "utf8")).replace("notion_parts: [3-9]", "notion_parts: [3-13]"));
+  await writeFile(file, (await readFile(file, "utf8")).replace("\ncontent_hash:", "\nnotion_text: full\nnotion_parts: [3-13]\ncontent_hash:"));
   const created = await run(dir, ["proposal", "new"], { proposals: [{ kind: "review_notes", source: "mtg-8c4n2p7w", notes: ["dec-7k2m9q4x"] }] });
   const path = join(dir, created.json.data.created[0].path);
   const copy = (await readFile(path, "utf8")).replace(/^id: prp-\w+$/m, "id: prp-2b3c4d5e");
@@ -121,7 +124,7 @@ async function assertLintClean(dir: string): Promise<void> {
   assert.equal(lint.json.data.errors, 0, JSON.stringify(lint.json.data.issues));
 }
 
-test("render: a document gets its digest only, an email its digest and Full text, once; a capture no body", async (context) => {
+test("render: a document and an email get their digest only, once; a capture no body; no Full text (0049)", async (context) => {
   const dir = await inboxBrain(context);
   const doc = await newSource(dir, source("Requirements", "document", DOCUMENT));
   const email = await newSource(dir, source("Launch thread", "email", "From: Maria\nDate: 2026-12-01\n\nWe launch in February.\n"));
@@ -134,11 +137,11 @@ test("render: a document gets its digest only, an email its digest and Full text
 
   const emailItem = await renderAndRecord(dir, email.id);
   assert.ok(emailItem!.body.startsWith("*Email · pasted text · 2026-12-01 · "), emailItem!.body);
-  assert.deepEqual(emailItem!.sections, { "Full text": "From: Maria\nDate: 2026-12-01\n\nWe launch in February.\n" });
-  assert.deepEqual(emailItem!.published["@full_text"], { text: "full", parts: null, requested: null });
+  assert.equal(emailItem!.sections, null);
+  assert.equal(emailItem!.published["@full_text"], undefined);
 
   assert.equal(await renderAndRecord(dir, doc.id), undefined, "a second render writes no digest again");
-  assert.equal(await renderAndRecord(dir, email.id), undefined, "nor the Full text");
+  assert.equal(await renderAndRecord(dir, email.id), undefined);
 
   const capture = await newSource(dir, { type: "source", title: "Call Acme", file_date: "2026-12-02", frontmatter: { source_key: "notion:c3000000-0000-4000-8000-000000000001", kind: "capture", summary: "Call Acme." }, body: "Call Acme about the launch.\n" });
   const captureItem = (await run(dir, ["sync", "render", "--ids", capture.id])).json.data.items[0];
@@ -146,87 +149,43 @@ test("render: a document gets its digest only, an email its digest and Full text
   await assertLintClean(dir);
 });
 
-test("render: chosen parts only, in order, under a line naming them", async (context) => {
-  const dir = await inboxBrain(context);
-  const deck = await newSource(dir, source("Launch deck", "document", DECK, { notion_text: "full", notion_parts: ["3-9"] }));
-  const doc = await newSource(dir, source("Spec", "document", DOCUMENT, { notion_text: "full", notion_parts: ["2", "4-5"] }));
-  const deckText = (await renderAndRecord(dir, deck.id))!.sections["Full text"] as string;
-  assert.ok(deckText.startsWith("*Slides 3–9 of 12*\n\nAcme launch deck\n\n<!-- Slide number: 3 -->"));
-  assert.deepEqual([...deckText.matchAll(/^# Slide (\d+)$/gm)].map((match) => Number(match[1])), [3, 4, 5, 6, 7, 8, 9]);
-  assert.ok((await renderAndRecord(dir, deck.id)) === undefined);
-  const docText = (await renderAndRecord(dir, doc.id))!.sections["Full text"] as string;
-  assert.ok(docText.startsWith("*Sections 2, 4–5 of 5*\n\nIntro line.\n\n## Two"));
-  assert.deepEqual([...docText.matchAll(/^## (\w+)$/gm)].map((match) => match[1]), ["Two", "Four", "Five"]);
-  await assertLintClean(dir);
-});
-
-test("source full-text: the text goes out once with the box cleared; a re-tick clears the box only", async (context) => {
-  const dir = await inboxBrain(context);
-  const doc = await newSource(dir, source("Requirements", "document", DOCUMENT));
-  await renderAndRecord(dir, doc.id);
-
-  const asked = await run(dir, ["source", "full-text", doc.id]);
-  assert.equal(asked.code, 0, asked.stdout);
-  assert.deepEqual(asked.json.data, { id: doc.id, path: doc.path, parts: 5, notion_text: "full", notion_parts: null, notion_text_requested: NOW });
-  const second = await renderAndRecord(dir, doc.id);
-  assert.equal(second!.action, "update");
-  assert.equal(second!.sections["Full text"], DOCUMENT);
-  assert.deepEqual(second!.properties["Full text"], { type: "checkbox", value: false });
-  assert.equal(await renderAndRecord(dir, doc.id), undefined, "after its record, a third render emits nothing");
-
-  const retick = await brain(["source", "full-text", doc.id, "--brain", dir, "--now", "2026-12-11T09:00:00Z", "--json"]);
-  assert.equal(retick.code, 0, retick.stdout);
-  const cleared = await renderAndRecord(dir, doc.id);
-  assert.equal(cleared!.sections, null, "no text is written twice");
-  assert.deepEqual(cleared!.properties["Full text"], { type: "checkbox", value: false });
-  assert.equal(await renderAndRecord(dir, doc.id), undefined);
-  await assertLintClean(dir);
-  const log = await readFile(join(dir, "log/2026-12.md"), "utf8");
-  assert.ok(log.includes(`full-text ${doc.id} "Requirements" parts=all`), log);
-});
-
-test("source full-text: --parts stores the list, all parts replace it, bad lists are refused", async (context) => {
+test("render: a source from before 0.6.0 with notion_text full sends no Full text and keeps its @full_text", async (context) => {
   const dir = await inboxBrain(context);
   const deck = await newSource(dir, source("Launch deck", "document", DECK));
-  const sources = await newSource(dir, source("Spec", "document", DOCUMENT));
   await renderAndRecord(dir, deck.id);
-
-  const partial = await run(dir, ["source", "full-text", deck.id, "--parts", "3-9"]);
-  assert.deepEqual(partial.json.data.notion_parts, ["3-9"]);
-  await renderAndRecord(dir, deck.id);
-  await run(dir, ["source", "full-text", deck.id]);
-  const all = await renderAndRecord(dir, deck.id);
-  assert.equal(all!.sections["Full text"], DECK, "full-text without --parts renders all 12 slides");
-  assert.equal(parseFrontmatter(await readFile(join(dir, deck.path), "utf8")).attributes.notion_parts, undefined);
-
-  const listed = await run(dir, ["source", "full-text", sources.id, "--parts", "2,4-5"]);
-  assert.deepEqual(listed.json.data.notion_parts, ["2", "4-5"]);
-  assert.deepEqual(parseFrontmatter(await readFile(join(dir, sources.path), "utf8")).attributes.notion_parts, ["2", "4-5"]);
-  for (const parts of ["2,,4", "9-3", "2-4,3-5", "13"]) {
-    const refused = await run(dir, ["source", "full-text", deck.id, "--parts", parts]);
-    assert.equal(refused.json.error?.code, "INPUT_INVALID", parts);
-  }
-  const minutes = await run(dir, ["source", "full-text", "src-7w3c9k5m"]);
-  assert.equal(minutes.json.error?.code, "INPUT_INVALID", "minutes have no Inbox body");
-  assert.equal((await run(dir, ["source", "full-text", "src-00000000"])).json.error?.code, "UNKNOWN_ID");
+  const file = join(dir, deck.path);
+  const document = parseFrontmatter(await readFile(file, "utf8"));
+  const stored = { text: "full", parts: ["3-9"], requested: null };
+  Object.assign(document.attributes, { notion_text: "full", notion_parts: ["3-9"], notion_published: { ...(document.attributes.notion_published as object), "@full_text": stored } });
+  await writeFile(file, serializeFrontmatter(document));
+  assert.equal(await renderAndRecord(dir, deck.id), undefined, "nothing is due");
+  assert.deepEqual((parseFrontmatter(await readFile(file, "utf8")).attributes.notion_published as Record<string, unknown>)["@full_text"], stored);
   await assertLintClean(dir);
 });
 
-test("sync plan reports a ticked Full text box for a source with an Inbox body, and ignores the rest", async (context) => {
+test("source full-text is retired: it writes nothing and fails with RETIRED (0049)", async (context) => {
   const dir = await inboxBrain(context);
   const doc = await newSource(dir, source("Requirements", "document", DOCUMENT));
-  const row = (page: string, brainId: string | null) => ({ database: "inbox", page_id: page, last_edited: NOW, properties: { "Full text": true, "Brain ID": brainId } });
+  const before = await readFile(join(dir, doc.path), "utf8");
+  for (const args of [["source", "full-text", doc.id], ["source", "full-text", doc.id, "--parts", "2"]]) {
+    const refused = await run(dir, args);
+    assert.equal(refused.code, 2, refused.stdout);
+    assert.equal(refused.json.error.code, "RETIRED");
+    assert.match(refused.json.error.message, /retired in 0\.6\.0: use Keep as document/);
+  }
+  assert.equal(await readFile(join(dir, doc.path), "utf8"), before);
+});
+
+test("sync plan ignores a Full text box as RETIRED (0049)", async (context) => {
+  const dir = await inboxBrain(context);
+  const doc = await newSource(dir, source("Requirements", "document", DOCUMENT));
   const plan = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [
-    row("d1000000-0000-4000-8000-000000000001", doc.id),
-    row("d1000000-0000-4000-8000-000000000002", null),
-    row("d1000000-0000-4000-8000-000000000003", "src-7w3c9k5m"),
-    row("d1000000-0000-4000-8000-000000000004", "src-00000000"),
-    { database: "inbox", page_id: "d1000000-0000-4000-8000-000000000005", last_edited: NOW, properties: { "Full text": false, "Brain ID": doc.id } },
+    { database: "inbox", page_id: "d1000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { "Full text": true, "Brain ID": doc.id } },
   ] });
   assert.equal(plan.code, 0, plan.stdout);
-  assert.deepEqual(plan.json.data.full_text_requests, [{ page_id: "d1000000-0000-4000-8000-000000000001", source: doc.id }]);
-  assert.deepEqual(plan.json.data.ignored.map((item: { reason: string; brain_id: string | null }) => [item.reason, item.brain_id]), [["NO_FULL_TEXT", null], ["NO_FULL_TEXT", "src-7w3c9k5m"]]);
-  assert.deepEqual(plan.json.data.conflicts.map((item: { code: string }) => item.code), ["UNKNOWN_BRAIN_ID"]);
+  assert.equal(plan.json.data.full_text_requests, undefined);
+  assert.deepEqual(plan.json.data.document_requests, []);
+  assert.deepEqual(plan.json.data.ignored, [{ database: "inbox", page_id: "d1000000-0000-4000-8000-000000000001", brain_id: doc.id, property: "Full text", reason: "RETIRED" }]);
 });
 
 test("render: an area page gets its Brief section from the area Brief, with links to published pages", async (context) => {
@@ -266,13 +225,25 @@ test("report new stores a dated report view; render creates its Inbox row once, 
   assert.equal(item!.action, "create");
   assert.equal(item!.database, "inbox");
   const p = item!.properties;
-  assert.deepEqual([p.Name.value, p.Kind.value, p["Brain Status"].value, p["Brain ID"].value], ["Acme launch: where we stand", "Report", "Processed", created.json.data.id]);
+  assert.deepEqual([p.Name.value, p.Kind.value, p["Brain Status"].value, p["Brain ID"].value], ["Acme launch: where we stand", "Report", "Done", created.json.data.id]);
   assert.deepEqual(p.Ask, { type: "relation", value: [ask] });
   assert.deepEqual(p.Project, { type: "relation", value: ["2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e"] });
   assert.deepEqual(p.Area, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] });
   assert.ok(item!.body.startsWith("## Where it stands\n\nLaunch is set for February, per the auth decision."), item!.body);
   assert.equal(await renderAndRecord(dir, created.json.data.id), undefined, "a published report is never rendered again");
   await assertLintClean(dir);
+});
+
+test("render skips reports while Reports is off, and names one asked for by id MODULE_OFF (0048)", async (context) => {
+  const dir = await inboxBrain(context);
+  const input = { title: "Acme launch: where we stand", question: "Everything about the Acme launch", asked_in: "f1000000-0000-4000-8000-000000000002", projects: ["prj-9x4t1b7e"], area: "area-2m7c4h8n", body: REPORT_BODY };
+  const created = await run(dir, ["report", "new"], input);
+  assert.equal(created.code, 0, created.stdout);
+  assert.equal((await run(dir, ["modules", "off", "reports"])).code, 0);
+  const changed = await run(dir, ["sync", "render", "--changed"]);
+  assert.equal(changed.json.data.items.some((item: { id: string }) => item.id === created.json.data.id), false);
+  const named = await run(dir, ["sync", "render", "--ids", created.json.data.id]);
+  assert.deepEqual(named.json.data.errors, [{ id: created.json.data.id, reason: "MODULE_OFF" }]);
 });
 
 test("report new refuses wrong sections, broken links and unknown ids", async (context) => {
@@ -287,7 +258,7 @@ test("report new refuses wrong sections, broken links and unknown ids", async (c
   assert.equal(await code({ ...base, extra: 1 }), "INPUT_INVALID");
 });
 
-test("a Report row: What to fix becomes a report fix, and a refresh keeps the id and Notion row and clears Refresh (0045)", async (context) => {
+test("a Report row: What to fix becomes a report fix, and a refresh keeps the id and Notion row and clears Refresh asked (0045, 0048)", async (context) => {
   const dir = await inboxBrain(context);
   const [ask, ask2] = ["f1000000-0000-4000-8000-000000000001", "f1000000-0000-4000-8000-000000000002"];
   const created = await run(dir, ["report", "new"], { title: "Acme launch: where we stand", question: "Everything about the Acme launch", asked_in: ask, projects: ["prj-9x4t1b7e"], body: REPORT_BODY });
@@ -296,11 +267,14 @@ test("a Report row: What to fix becomes a report fix, and a refresh keeps the id
   const path = join(dir, created.json.data.path);
   const page = parseFrontmatter(await readFile(path, "utf8")).attributes.notion as string;
 
-  const snapshot = (fix: string) => ({ as_of: NOW, rows: [{ database: "inbox", page_id: page, last_edited: NOW, properties: { "Brain ID": id, Refresh: true, "What to fix": fix } }] });
+  const snapshot = (fix: string) => ({ as_of: NOW, rows: [{ database: "inbox", page_id: page, last_edited: NOW, properties: { "Brain ID": id, "Refresh asked": true, "What to fix": fix } }] });
   const plan = async (fix: string) => (await run(dir, ["sync", "plan"], snapshot(fix))).json.data;
   const first = await plan("Lucía left Acme in June");
   assert.deepEqual(first.refresh_requests, [{ page_id: page, report: id }]);
   assert.deepEqual(first.report_fixes, [{ page_id: page, report: id, text: "Lucía left Acme in June" }]);
+  // A space before migration 0010 still has the Refresh checkbox.
+  const legacy = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [{ database: "inbox", page_id: page, last_edited: NOW, properties: { "Brain ID": id, Refresh: true } }] });
+  assert.deepEqual(legacy.json.data.refresh_requests, [{ page_id: page, report: id }]);
 
   const proposal = await run(dir, ["proposal", "new"], { proposals: [{ kind: "update_fact", title: "Launch: March", target: "prj-9x4t1b7e", field: "launch_date", after: "2027-03", why: "The report was wrong.", source: "mtg-8c4n2p7w" }] });
   const prp = proposal.json.data.created[0].id as string;
@@ -313,7 +287,7 @@ test("a Report row: What to fix becomes a report fix, and a refresh keeps the id
   const cleared = await renderAndRecord(dir, id);
   assert.equal(cleared!.action, "update");
   assert.deepEqual(cleared!.properties["What to fix"], { type: "rich_text", value: null });
-  assert.equal(cleared!.properties.Refresh, undefined);
+  assert.equal(cleared!.properties["Refresh asked"], undefined);
   assert.equal(cleared!.body, null, "the body goes out only on a refresh");
   assert.equal(cleared!.published["@fixes"], 1);
 
@@ -332,7 +306,7 @@ test("a Report row: What to fix becomes a report fix, and a refresh keeps the id
   assert.equal(sent!.action, "update");
   assert.equal(sent!.page_id, page);
   assert.ok(sent!.body.startsWith("## Where it stands\n\nLaunch is set for March"), sent!.body);
-  assert.deepEqual(sent!.properties.Refresh, { type: "checkbox", value: false });
+  assert.deepEqual(sent!.properties["Refresh asked"], { type: "checkbox", value: false });
   assert.deepEqual(sent!.properties.Ask, { type: "relation", value: [ask, ask2] });
   assert.equal(await renderAndRecord(dir, id), undefined, "nothing changed since");
   assert.equal((await run(dir, ["report", "new"], { refresh: "dec-7k2m9q4x", body: REPORT_BODY })).json.error?.code, "INPUT_INVALID");
