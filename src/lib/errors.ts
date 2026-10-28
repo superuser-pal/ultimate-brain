@@ -1,6 +1,7 @@
 /** Error codes and exit codes from spec/cli.md §3.4–3.5. */
 export const EXIT_CODES = {
   USAGE: 2,
+  RETIRED: 2,
   BRAIN_NOT_CONFIGURED: 3,
   BRAIN_NOT_FOUND: 3,
   BRAIN_IS_PRODUCT_REPO: 3,
@@ -15,6 +16,7 @@ export const EXIT_CODES = {
   REPO_NOT_FOUND: 4,
   REPO_IS_BRAIN: 4,
   REPO_COMMIT_UNKNOWN: 4,
+  MODULE_OFF: 4,
   TARGET_NOT_EMPTY: 5,
   ALREADY_A_BRAIN: 5,
   OUTSIDE_ROOT: 5,

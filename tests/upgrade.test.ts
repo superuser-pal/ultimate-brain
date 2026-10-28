@@ -168,6 +168,29 @@ test("upgrade renames capture_inbox to inbox", async (context) => {
   assert.equal(upgraded.notion.databases.capture_inbox, undefined);
 });
 
+test("upgrade renames references to documents and writes a modules block with every module on (0048, 0049)", async (context) => {
+  const { root, target } = await freshBrain(context);
+  const configPath = join(target, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  // A brain made before 0.6.0: References, no modules block.
+  delete config.modules;
+  config.notion.databases = { review: "review-id", references: "refs-id", inbox: "inbox-id" };
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+  const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
+  assert.equal(run.code, 0, run.stdout);
+  const upgraded = JSON.parse(await readFile(configPath, "utf8"));
+  assert.deepEqual(upgraded.notion.databases, { review: "review-id", documents: "refs-id", inbox: "inbox-id" });
+  assert.deepEqual(Object.keys(upgraded), ["schema_version", "owner", "budgets", "settings", "modules", "notion"]);
+  assert.deepEqual(upgraded.modules, { knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: true });
+
+  // A present block is the user's: a second upgrade leaves brain.json alone.
+  upgraded.modules.reports = false;
+  await writeFile(configPath, `${JSON.stringify(upgraded, null, 2)}\n`);
+  const again = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
+  assert.equal(again.json.data.files.some((file: { path: string }) => file.path === "brain.json"), false);
+  assert.equal(JSON.parse(await readFile(configPath, "utf8")).modules.reports, false);
+});
+
 test("upgrade keeps a configured Inbox id, replaces an empty one, and warns for broken brain.json", async (context) => {
   const { root, target } = await freshBrain(context);
   const configPath = join(target, "brain.json");
