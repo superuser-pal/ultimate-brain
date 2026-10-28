@@ -1,6 +1,6 @@
 # 0050 — Area homes
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-10-28
 
 ## Context

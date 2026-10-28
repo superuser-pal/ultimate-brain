@@ -1,6 +1,6 @@
 # 0049 — Documents: keep a file as a page, promote a note
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-10-28
 **Amends:** 0043, 0045
 
