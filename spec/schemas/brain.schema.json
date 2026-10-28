@@ -64,6 +64,37 @@
         }
       }
     },
+    "modules": {
+      "description": "Which optional modules are on (decision 0048, spec/schema.md §12). Absent: every module on (a brain made before 0.6.0). A key absent from a present block takes the module's default.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "knowledge": {
+          "type": "boolean",
+          "default": true
+        },
+        "orgs": {
+          "type": "boolean",
+          "default": true
+        },
+        "documents": {
+          "type": "boolean",
+          "default": false
+        },
+        "reports": {
+          "type": "boolean",
+          "default": false
+        },
+        "tasks": {
+          "type": "boolean",
+          "default": false
+        },
+        "planning": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
     "repos": {
       "type": "array",
       "items": {
@@ -158,6 +189,11 @@
               "$ref": "#/$defs/dbId"
             },
             "references": {
+              "$ref": "#/$defs/dbId",
+              "deprecated": true,
+              "description": "Old name of documents (decision 0049); read as documents when documents is absent. brain upgrade renames it."
+            },
+            "documents": {
               "$ref": "#/$defs/dbId"
             }
           }

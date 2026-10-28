@@ -16,7 +16,7 @@ Create a default page template for each database below. Each item "Heading: data
   "What have we decided here?": Decisions where Area is this page (views: "Current" Assessment is not Superseded, Date descending; "Superseded" Assessment is Superseded, Date descending), showing Name, Project, Date.
   "What's still open here?": Questions where Area is this page (views: "Open questions" Status is Open and Kind is Question; "Open risks" Status is Open and Kind is Risk; "Answered" Status is Answered), showing Name, Project, Kind.
   "What came in?": Inbox where Area is this page, sorted Created descending, showing Name, Kind, Summary.
-  "What do we know?": three views, "Decisions" (Decisions where Area is this page, sorted Date descending, showing Name, Assessment, Date, Project), "Concepts" (Concepts where Area is this page, sorted Created time descending, showing Name, Summary, Project) and "References" (References where Area is this page, sorted Last edited time descending, showing Name, Summary, Project).
+  "What do we know?": three views, "Decisions" (Decisions where Area is this page, sorted Date descending, showing Name, Assessment, Date, Project), "Concepts" (Concepts where Area is this page, sorted Created time descending, showing Name, Summary, Project) and "Documents" (Documents where Area is this page, sorted Last edited time descending, showing Name, Summary, Project).
   "Reports": Inbox where Area is this page and Kind is Report, sorted Last edited time descending, showing Name, Refresh, What to fix.
   Then a toggle "My notes".
 - Goals:
@@ -31,7 +31,7 @@ Create a default page template for each database below. Each item "Heading: data
   "What's still open here?": Questions where Project is this page and Status is Open, showing Name, Kind.
   "Who's involved?": People where Projects contains this page, showing Name, Role, Org.
   "What came in?": Inbox where Project is this page, sorted Created descending, showing Name, Kind, Summary.
-  "What do we know?": three views, "Decisions" (Decisions where Project is this page, sorted Date descending, showing Name, Assessment, Date), "Concepts" (Concepts where Project is this page, sorted Created time descending, showing Name, Summary) and "References" (References where Project is this page, sorted Last edited time descending, showing Name, Summary).
+  "What do we know?": three views, "Decisions" (Decisions where Project is this page, sorted Date descending, showing Name, Assessment, Date), "Concepts" (Concepts where Project is this page, sorted Created time descending, showing Name, Summary) and "Documents" (Documents where Project is this page, sorted Last edited time descending, showing Name, Summary).
   "Reports": Inbox where Project is this page and Kind is Report, sorted Last edited time descending, showing Name, Refresh, What to fix.
   Then a toggle "My notes".
 - Meetings:
