@@ -113,7 +113,7 @@ Goals, Key Results, Projects, Meetings, People, Orgs, Questions and Tasks keep t
 |---|---|
 | In the agent's **Instructions**, replace the Scope line, the rule after "Answer in the chat", and the "Never touch" rule with the ones in [brain-assistant.md](../brain-assistant.md), and add its "Never tick" rule | by hand: the API can't reach a Custom Agent's Instructions |
 | In the database **Brain Assistant Skills**, replace the bodies of **Today**, **Review queue**, **Tidy capture** and **Clean email** with the ones in [brain-assistant.md](../brain-assistant.md) (Review by Type; captures New or Ready) | by hand: Brain Assistant Skills is outside Brain Data, so the integration can't reach it (#137) |
-| Update the **How it works** page from the user guide, [skills/brain-howto/references/guide.md](../../skills/brain-howto/references/guide.md) (modules, the Inbox and its buttons, three kinds of Review row, Documents) | agent |
+| Update the **How it works** page from the user guide, [skills/brain-howto/references/guide.md](../../skills/brain-howto/references/guide.md) (modules, the Inbox and its buttons, three kinds of Review row, Documents) | agent, when How it works is shared with the integration (brain-connect-notion, "Integration token"); otherwise by hand: How it works sits on System, outside Brain Data (#137) |
 
 ## 10 · Modules (0048)
 
