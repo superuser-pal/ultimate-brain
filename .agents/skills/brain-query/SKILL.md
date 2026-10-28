@@ -1,6 +1,6 @@
 ---
 name: brain-query
-description: Answer a question from the user's second brain with citations, such as what was decided and why, who someone is, a date, budget, owner or other key fact, what changed and when. Works from the brain repo or any repo linked to it with `brain link`. Read-only, except its report mode, which writes a report, refreshes it in place and publishes it to the Inbox. Use when the user asks "what did we decide about…", "why did we…", "who is…", "when is the launch…", "what do we know about…", "report on…", "where do we stand with…", "refresh the Acme report", when an Ask row is waiting in the Inbox, a Report row has Refresh ticked or a What to fix, or when the repo's "Ultimate Brain" block says to consult the brain before a decision.
+description: Answer a question from the user's second brain with citations, such as what was decided and why, who someone is, a date, budget, owner or other key fact, what changed and when. Works from the brain repo or any repo linked to it with `brain link`. Read-only, except its report mode, which writes a report, refreshes it in place and publishes it to the Inbox. Use when the user asks "what did we decide about…", "why did we…", "who is…", "when is the launch…", "what do we know about…", "report on…", "where do we stand with…", "refresh the Acme report", when an Ask row is waiting in the Inbox, a Report row has Refresh asked ticked or a What to fix, or when the repo's "Ultimate Brain" block says to consult the brain before a decision.
 ---
 
 # Answer from the brain
