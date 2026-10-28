@@ -44,7 +44,7 @@ if(or(prop("Kind") == "Review Notes", prop("Kind") == "Update Fact", prop("Kind"
   if(prop("Kind") == "Answer", "Answer", if(empty(prop("Kind")), "", "Conflict")))
 ```
 
-Areas To review, Meetings to review and Due (0050):
+Areas To review, Meetings to review and, with Tasks, Due (0050), in that order:
 
 ```text
 prop("Review").filter(current.prop("State") == "Pending").length()
