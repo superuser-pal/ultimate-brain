@@ -91,6 +91,9 @@ One correction propagated to every restatement of the fact. **Source:** synthesi
 ### Dedup audit
 Finds likely duplicate notes and people and writes `merge` proposals. **Source:** synthesis §3.3.
 
+### Two CLI loose ends
+Noted on 2026-10-23, left out of 0.6.0 by the user: an applied fact doesn't refresh a summary that states it, and `brain report --help` with no subcommand exits 2 instead of showing help. **Target:** the next patch that touches the CLI.
+
 ### Freshness rule as a hard lint
 **Changes:** decisions/0011. Promote the warning to a failing check once the note format is stable.
 
@@ -103,7 +106,7 @@ Finds likely duplicate notes and people and writes `merge` proposals. **Source:*
 - **Agent-memory loop:** agents propose memories and the user promotes them to knowledge. `memories/` already exists. Includes Stop-hook memory capture. **Source:** vision, 0008, 0009.
 
 ### Area homes
-**Target: 0.6.0, designed before the agency brain moves in** (raised by the user on 2026-10-22). With one area, the Spaces work unfiltered. The agency brain and the product repo (0042) bring at least three areas: the user's day-job area, the agency and Ultimate Brain. Every view would then need an area filter. **Shape agreed:** each Area page becomes that area's home. Its template gains the missing tabs (today's tasks, meetings, Review waiting, Inbox), next to its existing "What do we know?" and "What's still open here?" tabs. Today's Home becomes the top level: one line per area with its counts, plus everything due across areas. A new area is one page from the template, with no copy of the Spaces and no migration per area. **Open:** whether Review stays one queue across areas or splits per area; what the top-level Home shows first.
+**Decided in 0050 (2026-10-28), built in 0.6.0 (CC-56 to CC-59).** **Target: 0.6.0, designed before the agency brain moves in** (raised by the user on 2026-10-22). With one area, the Spaces work unfiltered. The agency brain and the product repo (0042) bring at least three areas: the user's day-job area, the agency and Ultimate Brain. Every view would then need an area filter. **Shape agreed:** each Area page becomes that area's home. Its template gains the missing tabs (today's tasks, meetings, Review waiting, Inbox), next to its existing "What do we know?" and "What's still open here?" tabs. Today's Home becomes the top level: one line per area with its counts, plus everything due across areas. A new area is one page from the template, with no copy of the Spaces and no migration per area. **Open:** whether Review stays one queue across areas or splits per area; what the top-level Home shows first.
 
 ## Retrieval and access
 
