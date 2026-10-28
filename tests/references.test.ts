@@ -283,3 +283,71 @@ test("a promoted Document's body is yours: update_body is refused, and lint repo
   assert.ok(rules.includes("promoted-from"), JSON.stringify(rules));
   assert.ok(rules.includes("update-body"), JSON.stringify(rules));
 });
+
+const INBOX_ROW = (page: string, brainId: string | null, properties: Record<string, unknown> = {}) =>
+  ({ database: "inbox", page_id: page, last_edited: NOW, properties: { "Keep as document": true, "Only keep": null, "Brain ID": brainId, ...properties } });
+
+test("sync plan: Keep as document asks for a Document of the latest version or of each attached file (0049)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const capture = { type: "source", id: "src-4c8n2k7q", title: "BRS mail", file_date: "2026-12-04", frontmatter: { source_key: "notion:d2000000-0000-4000-8000-000000000001", kind: "capture", summary: "The BRS, attached." }, body: "See the attached BRS.\n" };
+  const files = ["src-5d9p3m8r", "src-6e2q4n9s"].map((id, index) => ({ ...source(`BRS part ${index + 1}`, "document", `Part ${index + 1} text.\n`, { attached_to: "src-4c8n2k7q" }), id }));
+  for (const item of files) delete (item.frontmatter as Record<string, unknown>).digest;
+  const v1 = await newSource(dir, source("Spec v1", "document", "Version one.\n"));
+  const v2 = await newSource(dir, source("Spec v2", "document", "Version two.\n", { replaces: v1.id }));
+  const created = await run(dir, ["note", "new"], { notes: [capture, ...files] });
+  assert.equal(created.code, 0, created.stdout);
+  const whole = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Spec v2 (whole)", frontmatter: { summary: "Whole.", origin: "whole", sources: [v2.id] }, body: "Version two.\n" }] });
+  assert.equal(whole.code, 0, whole.stdout);
+
+  const plan = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [
+    INBOX_ROW("d3000000-0000-4000-8000-000000000001", "src-4c8n2k7q", { "Only keep": "the deadlines" }),
+    INBOX_ROW("d3000000-0000-4000-8000-000000000002", v1.id),
+    INBOX_ROW("d3000000-0000-4000-8000-000000000003", null),
+    INBOX_ROW("d3000000-0000-4000-8000-000000000004", "src-7w3c9k5m"),
+    INBOX_ROW("d3000000-0000-4000-8000-000000000005", "src-00000000"),
+    INBOX_ROW("d3000000-0000-4000-8000-000000000006", "src-4c8n2k7q", { "Keep as document": false }),
+  ] });
+  assert.equal(plan.code, 0, plan.stdout);
+  assert.deepEqual(plan.json.data.document_requests, [
+    { page_id: "d3000000-0000-4000-8000-000000000001", source: "src-4c8n2k7q", files: ["src-5d9p3m8r", "src-6e2q4n9s"], only_keep: "the deadlines" },
+    { page_id: "d3000000-0000-4000-8000-000000000002", source: v2.id, files: [], only_keep: null, existing: [whole.json.data.created[0].id] },
+  ]);
+  assert.deepEqual(plan.json.data.ignored.map((item: { reason: string; brain_id: string | null }) => [item.reason, item.brain_id]), [["NOT_INGESTED", null], ["NOT_A_SOURCE", "src-7w3c9k5m"]]);
+  assert.deepEqual(plan.json.data.conflicts.map((item: { code: string }) => item.code), ["UNKNOWN_BRAIN_ID"]);
+});
+
+test("sync plan: Promote asks for a promoted Document, or names the one there (0049)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const promoted = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "RLS (page)", frontmatter: { summary: "A page.", origin: "promoted", promoted_from: "con-1s6t8e2b" }, body: "RLS.\n" }] });
+  assert.equal(promoted.code, 0, promoted.stdout);
+  const plan = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [
+    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { "Brain ID": "dec-7k2m9q4x", Promote: true } },
+    { database: "concepts", page_id: "d4000000-0000-4000-8000-000000000002", last_edited: NOW, properties: { "Brain ID": "con-1s6t8e2b", Promote: true } },
+    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000003", last_edited: NOW, properties: { "Brain ID": "dec-2p9f6h1r", Promote: false } },
+  ] });
+  assert.equal(plan.code, 0, plan.stdout);
+  assert.deepEqual(plan.json.data.promote_requests, [
+    { page_id: "d4000000-0000-4000-8000-000000000001", note: "dec-7k2m9q4x" },
+    { page_id: "d4000000-0000-4000-8000-000000000002", note: "con-1s6t8e2b", existing: promoted.json.data.created[0].id },
+  ]);
+  const applied = await run(dir, ["sync", "apply", "--dry-run"], plan.json.data);
+  assert.deepEqual(applied.json.data.promote_requests, plan.json.data.promote_requests, "sync apply echoes the requests");
+});
+
+test("sync plan: rows of a module that is off are ignored as MODULE_OFF (0048)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const configPath = join(dir, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  config.modules = { knowledge: false, orgs: true, documents: false, reports: false };
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+  const plan = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [
+    { database: "decisions", page_id: "d5000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { "Brain ID": "dec-7k2m9q4x", Name: "Changed in Notion" } },
+    { database: "goals", page_id: "d5000000-0000-4000-8000-000000000002", last_edited: NOW, properties: { "Brain ID": null, Name: "Write a book" } },
+    INBOX_ROW("d5000000-0000-4000-8000-000000000003", "src-7w3c9k5m"),
+  ] });
+  assert.equal(plan.code, 0, plan.stdout);
+  assert.deepEqual(plan.json.data.ignored.map((item: { page_id: string; reason: string; property?: string }) => [item.page_id.slice(-1), item.reason, item.property ?? null]), [
+    ["2", "MODULE_OFF", null], ["1", "MODULE_OFF", null], ["3", "MODULE_OFF", "Keep as document"],
+  ]);
+  assert.deepEqual([plan.json.data.create, plan.json.data.updates, plan.json.data.corrections, plan.json.data.document_requests], [[], [], [], []]);
+});
