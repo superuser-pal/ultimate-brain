@@ -2,6 +2,14 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.6.0 — 2026-10-28
+
+- CC-55 (#138): decisions 0048 (modules, three Inbox states, three kinds of Review row, buttons and page layouts), 0049 (Documents: keep a file as a page, promote a note) and 0050 (area homes) plan 0.6.0.
+- CC-56 (#139): contracts for 0.6.0: modules, the New → Ready → Done Inbox, three kinds of Review row, buttons and layouts, Documents kept whole or in part, promoted notes, and area homes.
+- CC-57 (#140): the CLI switches modules, takes in Ready rows only, writes Documents whole or in part and promoted ones, keeps a Kind the user chose, and gives Review rows an area.
+- CC-58 (#141): the skills turn modules on and off on request, keep documents whole or in part, promote notes, and fix U-18's findings: no placeholder writes, a full pull, re-read corrections that replace the old wording.
+- CC-59 (#142): Notion migration 0010 renames References to Documents, adds the buttons and page layouts, simplifies Brain Status, and turns Area pages into area homes; migration 0009's text is corrected.
+
 ## 0.5.0 — 2026-10-23
 
 - CC-52 (#129, #130): `/Clean email` rewrites the page directly (asking only on a serious doubt) and gives each message, newest first, a heading with names and date, its own text below it and a divider before the next: no addresses, Subject, Cc, banners or Teams, Zoom and Meet blocks.
