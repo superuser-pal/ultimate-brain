@@ -128,14 +128,20 @@ Run "catch up". Expect:
 
 ## Verify
 - [ ] Brain Data holds **Documents** (no References), with Sources, Project, Area, From decision and From concept; Inbox, Projects and Areas have a "Documents" relation; `brain status` shows `documents` configured.
-- [ ] Inbox → Brain Status lists New, Ready, Done (no Processed, no Skipped); Kind lists File (no Document); Inbox has Only keep, Document asked and Refresh asked, and no property named Keep or Refresh.
+- [ ] Inbox → Brain Status lists New, Ready, Done (no Processed, no Skipped); Kind lists File (no Document); Inbox has Only keep, Document asked and Refresh asked, no property named Keep, and its only property named Refresh is the **button** of section 5 (no Refresh checkbox).
+- [ ] No Inbox row holds Skipped any more (the option is gone); the rows that did are Done, and those that had no Summary say "Skipped before 0.6.0".
+- [ ] Full text and Refresh report are either deleted or left unused; nothing else on the Inbox changed.
 - [ ] Decisions and Concepts have Promote asked.
 - [ ] Review has Type and Area (limited to one page); Areas has Review, To review, Meetings to review and Due; every select option has its own id (run the check).
+- [ ] Hover over each property sections 1–4 added or renamed: its description starts with the owner given there (Only keep, Document asked, Refresh asked, Kind and Brain Status on the Inbox; Promote asked; From decision, From concept and the Documents relations "Owner: brain."; Type, To review, Meetings to review, Due "Owner: you."; Review Area and Areas Review "Owner: brain.").
 - [ ] Clicking **Keep as document** on an Inbox row ticks Document asked and sets Ready; **Refresh** ticks Refresh asked; **Promote to document** ticks Promote asked on a decision and on a concept. Untick them again.
 - [ ] **Quick capture** creates a row with Brain Status Ready.
 - [ ] Home starts with "How are my areas?" and "What's due across areas?"; "What's waiting for you?" groups by Type.
 - [ ] Review's views show Type, not Kind; Knowledge has a Documents tab; Archive has a Documents tab.
 - [ ] A new area has "What needs me here?" with Today, Meetings, Review waiting and Inbox tabs; new projects and areas show a "Documents" view under "What do we know?".
+- [ ] Each existing area page you chose to update has the same "What needs me here?" block after its Brief; the others are unchanged.
 - [ ] The page layouts of Inbox, Review, Decisions, Concepts, Documents and Areas match section 8.
-- [ ] Brain Assistant's `/Review queue` groups rows by Type; `/Tidy capture` works on a Ready capture; How it works describes the Inbox's New, Ready and Done.
+- [ ] Brain Assistant's Instructions carry the new Scope line and the "skip a database Brain Data doesn't have" and "Never tick" rules.
+- [ ] `/Today` shows the Review count by Type; `/Review queue` groups rows by Type; `/Tidy capture` and `/Clean email` work on a Ready capture.
+- [ ] How it works describes modules, the Inbox's New, Ready and Done, the buttons and Documents.
 - [ ] After the first catch-up: a row you took in is Done with its Kind unchanged; a Review row from a project's meeting shows that project's area and appears in the area's "Review waiting" tab.
