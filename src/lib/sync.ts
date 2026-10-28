@@ -13,7 +13,7 @@ import { formatDate, formatTimestamp, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 import { lineDiff } from "./diff.ts";
 import type { LogEntry } from "./log.ts";
-import { databaseId } from "./modules.ts";
+import { databaseId, moduleForDatabase, modulesOf } from "./modules.ts";
 import { bodyHash, bodyOf } from "./proposals.ts";
 
 const DATABASES = ["areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "concepts", "documents", "review", "inbox"] as const;
@@ -28,8 +28,10 @@ export interface SyncPlan {
   updates: Array<Record<string, unknown>>;
   corrections: Correction[];
   decisions: DecisionInput[];
-  /** Inbox rows whose Full text box is ticked (0043); the skill runs `source full-text` for each. */
-  full_text_requests: Array<{ page_id: string; source: string }>;
+  /** Inbox rows whose Keep as document box is ticked (0049); the skill writes a Document for each. */
+  document_requests: Array<{ page_id: string; source: string; files: string[]; only_keep: string | null; existing?: string[] }>;
+  /** Decision and concept rows whose Promote box is ticked (0049); the skill writes a promoted Document for each. */
+  promote_requests: Array<{ page_id: string; note: string; existing?: string }>;
   /** Report rows whose Refresh box is ticked, and their new What to fix texts (0045); the skill runs `report new` / `report fix`. */
   refresh_requests: Array<{ page_id: string; report: string }>;
   report_fixes: Array<{ page_id: string; report: string; text: string }>;
@@ -94,14 +96,18 @@ export function parseSnapshot(input: unknown): Snapshot {
 
 /** Compute the deterministic, no-network Notion pull plan (cli §5.14.2). */
 export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
-  const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], decisions: [], full_text_requests: [], refresh_requests: [], report_fixes: [], conflicts: [], ignored: [] };
+  const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], decisions: [], document_requests: [], promote_requests: [], refresh_requests: [], report_fixes: [], conflicts: [], ignored: [] };
   const createsByPage = new Map<string, { id: string; type: string }>();
   for (const row of snapshot.rows) if (CREATABLE.has(row.database) && blank(property(row.properties, "Brain ID"))) {
     const existing = noteByNotion(workspace, row.page_id);
     if (existing === undefined) createsByPage.set(row.page_id, { id: generateId(TYPE_PREFIX[TYPE_FOR_DATABASE[row.database]]!, new Set([...workspace.ids(), ...[...createsByPage.values()].map((x) => x.id)])), type: TYPE_FOR_DATABASE[row.database]! });
   }
 
+  const modules = modulesOf(workspace.config);
   for (const row of snapshot.rows) {
+    // A database whose module is off is not read at all (cli §5.14.2, 0048).
+    const module = moduleForDatabase(row.database);
+    if (module !== null && !modules[module]) { result.ignored.push(ignoredRow(row, "MODULE_OFF")); continue; }
     if (row.database === "key_results") { planKeyResult(workspace, snapshot.as_of, row, result); continue; }
     if (row.database === "inbox") { planInbox(workspace, row, result); continue; }
     const brainId = property(row.properties, "Brain ID");
@@ -117,6 +123,7 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
     // A create whose publish failed has no Brain ID in Notion yet; treat the row as if it had it (cli §5.14.2).
     const known = typeof brainId === "string" && brainId !== "" ? row : { ...row, properties: { ...row.properties, "Brain ID": note.id } };
     planExisting(workspace, snapshot.as_of, known, note, result);
+    if ((row.database === "decisions" || row.database === "concepts") && property(row.properties, "Promote") === true) planPromote(workspace, row, note, modules.documents, result);
   }
   sortPlan(result);
   return result;
@@ -233,22 +240,65 @@ function planDecision(row: SnapshotRow, proposal: Note, out: SyncPlan): void {
   out.decisions.push({ proposal: proposal.id, action: action as DecisionInput["action"], decided_at: row.last_edited, decided_by: "notion" });
 }
 
-/** An Inbox row is read for its Full text box (0043) and, on a Report row, Refresh and What to fix (cli §5.14.2, 0045). */
+function ignoredRow(row: SnapshotRow, reason: string, propertyName?: string): Record<string, unknown> {
+  const brainId = property(row.properties, "Brain ID");
+  return { database: row.database, page_id: row.page_id, brain_id: typeof brainId === "string" && brainId !== "" ? brainId : null, ...(propertyName === undefined ? {} : { property: propertyName }), reason };
+}
+
+/**
+ * An Inbox row is read for Keep as document (0049) and, on a Report row, Refresh and What to fix
+ * (0045); a Full text box is retired (cli §5.14.2).
+ */
 function planInbox(workspace: Workspace, row: SnapshotRow, out: SyncPlan): void {
+  const modules = modulesOf(workspace.config);
   const brainId = property(row.properties, "Brain ID");
   const note = typeof brainId === "string" && brainId !== "" ? workspace.get(brainId) : undefined;
+  if (Object.hasOwn(row.properties, "Full text")) out.ignored.push(ignoredRow(row, "RETIRED", "Full text"));
   if (note !== undefined && isReport(note)) {
+    if (!modules.reports) { out.ignored.push(ignoredRow(row, "MODULE_OFF")); return; }
     if (property(row.properties, "Refresh") === true) out.refresh_requests.push({ page_id: row.page_id, report: note.id });
     const text = property(row.properties, "What to fix");
     const last = (Array.isArray(note.attributes.fixes) ? note.attributes.fixes : []).filter(isRecord).at(-1);
     if (typeof text === "string" && text.trim() !== "" && text !== last?.text) out.report_fixes.push({ page_id: row.page_id, report: note.id, text });
   }
-  if (property(row.properties, "Full text") !== true) return;
-  const ignore = (id: string | null) => out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: id, property: "Full text", reason: "NO_FULL_TEXT" });
-  if (typeof brainId !== "string" || brainId === "") { ignore(null); return; }
+  if (property(row.properties, "Keep as document") !== true) return;
+  if (!modules.documents) { out.ignored.push(ignoredRow(row, "MODULE_OFF", "Keep as document")); return; }
+  if (typeof brainId !== "string" || brainId === "") { out.ignored.push(ignoredRow(row, "NOT_INGESTED", "Keep as document")); return; }
   if (note === undefined) { out.conflicts.push(conflict(row, "UNKNOWN_BRAIN_ID", `No note has Brain ID ${brainId}`)); return; }
-  if (hasInboxBody(note)) out.full_text_requests.push({ page_id: row.page_id, source: note.id });
-  else ignore(note.id);
+  if (note.type !== "source" || note.attributes.kind === undefined || note.attributes.kind === "minutes") { out.ignored.push(ignoredRow(row, "NOT_A_SOURCE", "Keep as document")); return; }
+  const source = latestVersion(workspace, note);
+  const files = workspace.notes.filter((candidate) => candidate.type === "source" && candidate.attributes.attached_to === source.id).map((file) => file.id).sort(compareCodePoints);
+  const onlyKeep = property(row.properties, "Only keep");
+  const only = typeof onlyKeep === "string" && onlyKeep.trim() !== "" ? onlyKeep : null;
+  const request: SyncPlan["document_requests"][number] = { page_id: row.page_id, source: source.id, files, only_keep: only };
+  if (only === null) {
+    const wholes = (files.length > 0 ? files : [source.id]).map((id) => wholeDocumentOf(workspace, id));
+    if (wholes.every((id) => id !== undefined)) request.existing = wholes as string[];
+  }
+  out.document_requests.push(request);
+}
+
+/** A Promote box on a decision or concept row (cli §5.14.2, 0049). */
+function planPromote(workspace: Workspace, row: SnapshotRow, note: Note, documentsOn: boolean, out: SyncPlan): void {
+  if (!documentsOn) { out.ignored.push(ignoredRow(row, "MODULE_OFF", "Promote")); return; }
+  const existing = workspace.notes.find((candidate) => candidate.type === "reference" && candidate.attributes.origin === "promoted" && candidate.attributes.promoted_from === note.id);
+  out.promote_requests.push({ page_id: row.page_id, note: note.id, ...(existing === undefined ? {} : { existing: existing.id }) });
+}
+
+/** The latest version of a source, following `replaces` forward (schema §4, 0045). */
+function latestVersion(workspace: Workspace, note: Note): Note {
+  let current = note;
+  const seen = new Set([note.id]);
+  for (;;) {
+    const next = workspace.notes.find((candidate) => candidate.type === "source" && candidate.attributes.replaces === current.id);
+    if (next === undefined || seen.has(next.id)) return current;
+    seen.add(next.id);
+    current = next;
+  }
+}
+
+function wholeDocumentOf(workspace: Workspace, source: string): string | undefined {
+  return workspace.notes.find((note) => note.type === "reference" && note.attributes.origin === "whole" && Array.isArray(note.attributes.sources) && note.attributes.sources[0] === source)?.id;
 }
 
 /** A source whose Inbox row the brain writes: not minutes, a capture or an attached file (0042, 0043). */
@@ -272,8 +322,8 @@ function planKeyResult(workspace: Workspace, asOf: string, row: SnapshotRow, out
 }
 
 function sortPlan(plan: SyncPlan): void {
-  const order = (item: Record<string, unknown>) => [DATABASES.indexOf(String(item.database) as typeof DATABASES[number]), String(item.page_id ?? item.id), String(item.field ?? item.property ?? "")].join("\u0000");
-  for (const values of [plan.create, plan.updates, plan.corrections, plan.decisions, plan.full_text_requests, plan.refresh_requests, plan.report_fixes, plan.conflicts, plan.ignored]) values.sort((a, b) => order(a as Record<string, unknown>).localeCompare(order(b as Record<string, unknown>)));
+  const order = (item: Record<string, unknown>) => [String(DATABASES.indexOf(String(item.database) as typeof DATABASES[number])).padStart(2, "0"), String(item.page_id ?? item.id), String(item.field ?? item.property ?? "")].join("\u0000");
+  for (const values of [plan.create, plan.updates, plan.corrections, plan.decisions, plan.document_requests, plan.promote_requests, plan.refresh_requests, plan.report_fixes, plan.conflicts, plan.ignored]) values.sort((a, b) => order(a as Record<string, unknown>).localeCompare(order(b as Record<string, unknown>)));
 }
 
 function notionFields(database: string, p: Record<string, unknown>, asOf: string): Record<string, unknown> {
@@ -340,8 +390,8 @@ export function parseKeyFacts(value: unknown): Record<string, unknown> {
 /** Input validation and execution for `sync apply`. */
 export function parsePlan(input: unknown): SyncPlan {
   if (!isRecord(input)) assertNoProblems([{ pointer: "", message: "must be an object" }]);
-  const p = input as Record<string, unknown>; const problems = unknownKeys(p, ["as_of", "create", "updates", "corrections", "decisions", "full_text_requests", "refresh_requests", "report_fixes", "conflicts", "ignored"], "");
-  for (const key of ["full_text_requests", "refresh_requests", "report_fixes"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
+  const p = input as Record<string, unknown>; const problems = unknownKeys(p, ["as_of", "create", "updates", "corrections", "decisions", "document_requests", "promote_requests", "refresh_requests", "report_fixes", "conflicts", "ignored"], "");
+  for (const key of ["document_requests", "promote_requests", "refresh_requests", "report_fixes"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   if (!isTimestamp(p.as_of)) problems.push({ pointer: "/as_of", message: "must be an ISO 8601 UTC timestamp" });
   for (const key of ["create", "updates", "corrections", "decisions", "conflicts", "ignored"]) if (!Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   (Array.isArray(p.create) ? p.create : []).forEach((item, index) => {
@@ -352,7 +402,7 @@ export function parsePlan(input: unknown): SyncPlan {
     if (item.lifecycle !== undefined && typeof item.lifecycle !== "string") problems.push({ pointer: `/create/${index}/lifecycle`, message: "must be a lifecycle string" });
   });
   assertNoProblems(problems);
-  return { ...p, full_text_requests: p.full_text_requests ?? [], refresh_requests: p.refresh_requests ?? [], report_fixes: p.report_fixes ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
+  return { ...p, document_requests: p.document_requests ?? [], promote_requests: p.promote_requests ?? [], refresh_requests: p.refresh_requests ?? [], report_fixes: p.report_fixes ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
 }
 
 export function applyPlan(workspace: Workspace, plan: SyncPlan, now: Date, recordOnly: boolean): Record<string, unknown> {
@@ -385,7 +435,7 @@ export function applyPlan(workspace: Workspace, plan: SyncPlan, now: Date, recor
     ...updates.filter((item) => item.result === "applied").map((item) => ({ op: "sync-update", id: String(item.id), title: String(workspace.get(String(item.id))?.attributes.title ?? item.id) })),
     ...(correctionApply?.log ?? []), ...(decisionApply.log ?? []),
   ];
-  return { create, updates, corrections, decisions: decisionResult, full_text_requests: plan.full_text_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...updates, ...corrections, ...decisionResult].map((item) => ({ ...item }))), log };
+  return { create, updates, corrections, decisions: decisionResult, document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...updates, ...corrections, ...decisionResult].map((item) => ({ ...item }))), log };
 }
 
 function references(value: unknown): string[] { if (Array.isArray(value)) return value.flatMap(references); if (isRecord(value)) return Object.values(value).flatMap(references); return typeof value === "string" && /^(area|gol|prj|per|org|mtg|dec|que|con|ref|src|mem)-/.test(value) ? [value] : []; }

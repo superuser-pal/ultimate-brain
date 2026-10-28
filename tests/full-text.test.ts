@@ -176,21 +176,16 @@ test("source full-text is retired: it writes nothing and fails with RETIRED (004
   assert.equal(await readFile(join(dir, doc.path), "utf8"), before);
 });
 
-test("sync plan reports a ticked Full text box for a source with an Inbox body, and ignores the rest", async (context) => {
+test("sync plan ignores a Full text box as RETIRED (0049)", async (context) => {
   const dir = await inboxBrain(context);
   const doc = await newSource(dir, source("Requirements", "document", DOCUMENT));
-  const row = (page: string, brainId: string | null) => ({ database: "inbox", page_id: page, last_edited: NOW, properties: { "Full text": true, "Brain ID": brainId } });
   const plan = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [
-    row("d1000000-0000-4000-8000-000000000001", doc.id),
-    row("d1000000-0000-4000-8000-000000000002", null),
-    row("d1000000-0000-4000-8000-000000000003", "src-7w3c9k5m"),
-    row("d1000000-0000-4000-8000-000000000004", "src-00000000"),
-    { database: "inbox", page_id: "d1000000-0000-4000-8000-000000000005", last_edited: NOW, properties: { "Full text": false, "Brain ID": doc.id } },
+    { database: "inbox", page_id: "d1000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { "Full text": true, "Brain ID": doc.id } },
   ] });
   assert.equal(plan.code, 0, plan.stdout);
-  assert.deepEqual(plan.json.data.full_text_requests, [{ page_id: "d1000000-0000-4000-8000-000000000001", source: doc.id }]);
-  assert.deepEqual(plan.json.data.ignored.map((item: { reason: string; brain_id: string | null }) => [item.reason, item.brain_id]), [["NO_FULL_TEXT", null], ["NO_FULL_TEXT", "src-7w3c9k5m"]]);
-  assert.deepEqual(plan.json.data.conflicts.map((item: { code: string }) => item.code), ["UNKNOWN_BRAIN_ID"]);
+  assert.equal(plan.json.data.full_text_requests, undefined);
+  assert.deepEqual(plan.json.data.document_requests, []);
+  assert.deepEqual(plan.json.data.ignored, [{ database: "inbox", page_id: "d1000000-0000-4000-8000-000000000001", brain_id: doc.id, property: "Full text", reason: "RETIRED" }]);
 });
 
 test("render: an area page gets its Brief section from the area Brief, with links to published pages", async (context) => {
