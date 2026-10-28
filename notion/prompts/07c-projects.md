@@ -4,12 +4,17 @@ Paste into Notion AI **while you are on the "Projects" page**, after [Prompt 6](
 
 Finished projects live in Archive (Prompt 7h), not here.
 
+First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md)).
+
 ```text
+Ignore the module names in square brackets at the start of lines.
 On this page ("Projects") add four tabs, each a linked view of "Projects":
-1. Tab "Active": Board, named "What's active?": filter Archived is unchecked and Status is not Done; group by Status with columns Planned, Active, On Hold; sort Priority high to low; show Name, Client, Priority, Countdown, Task Progress.
+1. Tab "Active": Board, named "What's active?": filter Archived is unchecked and Status is not Done; group by Status with columns Planned, Active, On Hold; sort Priority high to low; show Name, Priority, Countdown.
+[Orgs] In "What's active?", also show Client.
+[Tasks] In "What's active?", also show Task Progress.
 2. Tab "By area": Board, named "What's in each area?": filter Archived is unchecked and Status is not Done; group by Area, showing the empty group; sort Priority high to low; show Name, Status, Countdown.
 3. Tab "Deadlines": Timeline by Dates (or Table if Timeline is unavailable), named "What's due soon?": filter Status is Active or Planned and Archived is unchecked; sort Dates (end) ascending; show Name, Countdown.
-4. Tab "Gone quiet": Table, named "Which projects have gone quiet?": filter Status is Active and Last edited time is before one month ago (relative date); sort Last edited time ascending; show Name, Last edited time, Last Synced, Client. (Last Synced is the one exception to the hide rule: show it here.)
+4. Tab "Gone quiet": Table, named "Which projects have gone quiet?": filter Status is Active and Last edited time is before one month ago (relative date); sort Last edited time ascending; show Name, Last edited time, Last Synced. (Last Synced is the one exception to the hide rule: show it here.)
 
 Put the views in a tabs block (one view per tab, tab labels as given). If you can't create tabs, add them as separate views of one linked view instead.
 

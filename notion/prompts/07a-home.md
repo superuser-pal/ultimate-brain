@@ -4,23 +4,29 @@ Paste into Notion AI **while you are on the "Home" page**, after [Prompt 6](06-t
 
 Home leads with your own work; the brain's queues sit small in the left column. If your Home is the root "Ultimate Brain" page, paste it there.
 
+First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md)).
+
 ```text
+Ignore the module names in square brackets at the start of lines.
 On this page ("Home"):
 
+At the top, across the page, a linked view of "Areas", List, named "How are my areas?": filter Archived is unchecked; sort Name; show Name, To review, Meetings to review.
+[Tasks] In that view, also show Due. Below it, a linked view of "Tasks", List, at most 5 rows, named "What's due across areas?": filter Status is not Done and Due is on or before today; sort Due ascending; show Name, Area, Due.
+
 In the left column, under the navigation, add a heading 3 "Needs you", a gray paragraph "Start here: approving makes the brain's notes trusted.", and two linked views, List layout, at most 5 rows each:
-1. "What's waiting for you?" of "Review": filter State is Pending; group by Kind, with group counts shown; sort Created time descending; show Name, About Page.
+1. "What's waiting for you?" of "Review": filter State is Pending; group by Type, with group counts shown; sort Created time descending; show Name, About Page.
 2. "Which minutes need review?" of "Meetings": filter Brain Status is Not Reviewed and Date is on or before today; sort Date descending; show Name.
 
 In the right column add, in one row:
-3. A button "Quick capture": Add page to "Inbox", set Kind = Capture and Brain Status = New, open the page after creation.
-3b. A button "Ask the brain": Add page to "Inbox", set Kind = Ask and Brain Status = New, open the page after creation.
+3. A button "Quick capture": Add page to "Inbox", set Kind = Capture and Brain Status = Ready, open the page after creation.
+[Reports] 3b. A button "Ask the brain": Add page to "Inbox", set Kind = Ask and Brain Status = New, open the page after creation.
 4. A button "New meeting": Add page to "Meetings", set Date = today, open the page after creation.
 5. A button "New project": Add page to "Projects", set Status = Planned, open the page after creation.
 
-Below them, a heading 3 "What's on today?" and three tabs:
-6. Tab "Tasks": linked view of "Tasks", List, named "What's due today?": filter Status is To Do or Doing and Due is on or before today; sort Due ascending; show Name, Project, Due.
+Below them, a heading 3 "What's on today?" and a tabs block:
+[Tasks] 6. Tab "Tasks": linked view of "Tasks", List, named "What's due today?": filter Status is To Do or Doing and Due is on or before today; sort Due ascending; show Name, Project, Due.
 7. Tab "Meetings": linked view of "Meetings", List, named "Which meetings are today?": filter Date is today; sort Date ascending; show Name, Date, Project.
-8. Tab "Projects": linked view of "Projects", Gallery with small cards, named "What's active?": filter Status is Active and Archived is unchecked; sort Priority then Name; show Name, Client, Countdown, Task Progress.
+8. Tab "Projects": linked view of "Projects", Gallery with small cards, named "What's active?": filter Status is Active and Archived is unchecked; sort Priority then Name; show Name, Countdown.
 
 Put the views in a tabs block (one view per tab, tab labels as given). If you can't create tabs, add them as separate views of one linked view instead.
 
@@ -33,8 +39,9 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 ```
 
 ## Verify
-- [ ] "Needs you" shows two short lists; a meeting dated tomorrow is not in "Which minutes need review?".
-- [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status New; New meeting and New project open a page with the default template.
-- [ ] "What's on today?" has three tabs: Tasks, Meetings, Projects.
-- [ ] Ask the brain creates an Inbox row with Kind Ask and Brain Status New.
+- [ ] "How are my areas?" shows one line per area with its counts (decision 0050).
+- [ ] "Needs you" shows two short lists, the Review one grouped by Type (From source, Conflict, Answer); a meeting dated tomorrow is not in "Which minutes need review?".
+- [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status **Ready**; New meeting and New project open a page with the default template.
+- [ ] "What's on today?" has its tabs: Tasks (Tasks module), Meetings, Projects.
+- [ ] (Reports) Ask the brain creates an Inbox row with Kind Ask and Brain Status New.
 - [ ] "What did the brain take in?" has two tabs, Came in and Meetings, each with the 10 latest rows.
