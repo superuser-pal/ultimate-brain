@@ -7,7 +7,9 @@ import type { Command, Warning } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
 import { appendLog } from "../lib/log.ts";
+import { isRecord } from "../lib/input.ts";
 import { lintBrain } from "../lib/lint.ts";
+import { modulesOf, withModules } from "../lib/modules.ts";
 import { scanNotes } from "../lib/notes.ts";
 import { assertPlainPath, installedProduct, listShippedSkillFiles } from "../lib/skills.ts";
 
@@ -52,30 +54,30 @@ export const upgradeCommand: Command = {
     if (!(await exists(join(root, "CLAUDE.md")))) changes.push({ path: "CLAUDE.md", action: "created", content: "@AGENTS.md\n" });
     else unchanged += 1;
 
-    // 0.3.0: Inbox is the former Capture Inbox. Keep the database id, but retire the old key.
+    // 0.3.0: Inbox is the former Capture Inbox; 0.6.0: Documents are the former References (0049).
+    // Keep each database id, but retire the old key. 0.6.0 also writes the modules block (0048).
     const brainJson = "brain.json";
     await assertPlainPath(root, brainJson);
     const brainText = await readOptional(join(root, brainJson));
     if (brainText !== null) {
       try {
-        const config = JSON.parse(brainText) as Record<string, unknown>;
+        let config = JSON.parse(brainText) as Record<string, unknown>;
+        let changed = false;
         const notion = config.notion;
-        if (notion !== null && typeof notion === "object" && !Array.isArray(notion)) {
-          const databases = (notion as Record<string, unknown>).databases;
-          if (databases !== null && typeof databases === "object" && !Array.isArray(databases)) {
-            const values = databases as Record<string, unknown>;
-            if (values.capture_inbox !== undefined) {
-              const inbox = typeof values.inbox === "string" && values.inbox !== "" ? values.inbox : values.capture_inbox;
-              const nextDatabases: Record<string, unknown> = {};
-              for (const [key, value] of Object.entries(values)) {
-                if (key === "capture_inbox") nextDatabases.inbox = inbox;
-                else if (key !== "inbox") nextDatabases[key] = value;
-              }
-              const next = { ...config, notion: { ...(notion as Record<string, unknown>), databases: nextDatabases } };
-              changes.push({ path: brainJson, action: "updated", content: `${JSON.stringify(next, null, 2)}\n` });
-            }
+        if (isRecord(notion) && isRecord(notion.databases)) {
+          let databases = notion.databases;
+          for (const [old, key] of [["capture_inbox", "inbox"], ["references", "documents"]] as const) {
+            if (databases[old] === undefined) continue;
+            databases = renameKey(databases, old, key);
+            changed = true;
           }
+          if (changed) config = { ...config, notion: { ...notion, databases } };
         }
+        if (isRecord(config) && !("modules" in config)) {
+          config = withModules(config, modulesOf(config));
+          changed = true;
+        }
+        if (changed) changes.push({ path: brainJson, action: "updated", content: `${JSON.stringify(config, null, 2)}\n` });
       } catch {
         changes.push({ path: brainJson, action: "skipped" });
         warnings.push({ code: "BRAIN_JSON_UNPARSEABLE", message: "brain.json is not valid JSON; left unchanged." });
@@ -230,4 +232,15 @@ async function gitRepository(root: string): Promise<boolean> {
 async function gitDirty(root: string): Promise<boolean> {
   if (!await gitRepository(root)) return false;
   return (await exec("git", ["status", "--porcelain"], { cwd: root })).stdout !== "";
+}
+
+/** Rename `old` to `key` in place; when `key` already holds an id, just drop `old` (spec/cli.md §5.15 step 5). */
+function renameKey(values: Record<string, unknown>, old: string, key: string): Record<string, unknown> {
+  const value = typeof values[key] === "string" && values[key] !== "" ? values[key] : values[old];
+  const next: Record<string, unknown> = {};
+  for (const [name, existing] of Object.entries(values)) {
+    if (name === old) next[key] = value;
+    else if (name !== key) next[name] = existing;
+  }
+  return next;
 }

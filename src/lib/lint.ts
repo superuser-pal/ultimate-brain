@@ -39,7 +39,7 @@ const ID = /^(area|gol|prj|per|org|mtg|dec|que|con|ref|src|mem|prp|vw)-[0-9abcde
 const REFERENCE_KEYS = new Set([
   "area", "goal", "client", "org", "projects", "people", "attendees", "decided_in", "raised_in", "deciders",
   "source", "sources", "decisions", "questions", "answer", "target", "supersedes", "merge_into", "project",
-  "generated_from", "facts", "notes", "answer_note", "links", "attached_to", "changes", "replaces", "deferred_from",
+  "generated_from", "facts", "notes", "answer_note", "links", "attached_to", "changes", "replaces", "deferred_from", "promoted_from",
 ]);
 
 /** Where each kind of view must live (spec/schema.md §2, 0041, 0043). */
@@ -245,7 +245,12 @@ export function lintBrain(input: LintInput): Issue[] {
       for (const target of bodies) {
         const reference = typeof target === "string" ? byId.get(target) : undefined;
         if (reference !== undefined && reference.type !== "reference") err("update-body", lineOfKey(note, a.kind === "update_body" ? "target" : "changes"), `update_body targets ${reference.id}, a ${reference.type}; only a reference has its body replaced (0045)`);
+        if (reference?.type === "reference" && reference.attributes.origin === "promoted") err("update-body", lineOfKey(note, a.kind === "update_body" ? "target" : "changes"), `update_body targets ${reference.id}, a promoted Document, whose body is yours (0049)`);
       }
+    }
+    if (note.type === "reference" && typeof a.promoted_from === "string") {
+      const from = byId.get(a.promoted_from);
+      if (from !== undefined && from.type !== "decision" && from.type !== "concept") err("promoted-from", lineOfKey(note, "promoted_from"), `promoted_from names ${a.promoted_from}, a ${from.type}, not a decision or concept (0049)`);
     }
     if (note.type === "source" && typeof a.replaces === "string") {
       const replaced = byId.get(a.replaces);

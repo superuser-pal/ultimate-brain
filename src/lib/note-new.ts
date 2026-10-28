@@ -4,7 +4,6 @@ import { BrainError } from "./errors.ts";
 import { serializeNewFile } from "./frontmatter.ts";
 import { generateId, TYPE_PREFIX } from "./ids.ts";
 import { assertNoProblems, escapePointer, isRecord, unknownKeys, type InputProblem } from "./input.ts";
-import { rangesProblem, splitParts } from "./parts.ts";
 import { newNotePath } from "./paths.ts";
 import { formatDate, formatTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
@@ -28,7 +27,7 @@ export interface CreatedNote {
 
 export interface SkippedNote {
   input_index: number;
-  reason: "DUPLICATE_SOURCE";
+  reason: "DUPLICATE_SOURCE" | "ALREADY_KEPT";
   existing: string;
 }
 
@@ -80,14 +79,13 @@ export function checkNoteInput(value: unknown, pointer: string, withId = true): 
       if (forbidden.includes(key)) at(`frontmatter/${escapePointer(key)}`, "is set by the CLI");
     }
     if (value.type === "source") {
-      // Order, overlap and the part count are not in the JSON Schema (spec/cli.md §5.5).
-      if (value.frontmatter.notion_text_requested !== undefined) at("frontmatter/notion_text_requested", "is set by brain source full-text");
-      const parts = value.frontmatter.notion_parts;
-      if (Array.isArray(parts) && typeof value.body === "string") {
-        const problem = rangesProblem(parts, splitParts(value.body).parts.length);
-        if (problem !== null) at("frontmatter/notion_parts", problem);
+      // Read on existing sources, never written again (spec/cli.md §5.5, 0049).
+      if (value.frontmatter.keep !== undefined) at("frontmatter/keep", "is the name before 0.6.0: use only_keep");
+      for (const key of ["notion_text", "notion_parts", "notion_text_requested"]) {
+        if (value.frontmatter[key] !== undefined) at(`frontmatter/${key}`, "is retired in 0.6.0: Keep as document gives the whole text");
       }
     }
+    if (value.type === "reference" && value.frontmatter.origin === undefined) at("frontmatter/origin", "is required on a new Document: whole, part or promoted");
   }
   return problems;
 }
@@ -154,17 +152,35 @@ export function stageNotes(
     const repo = item.type === "source" ? item.frontmatter.repo : undefined;
     if (repo !== undefined && !repoNames.has(repo)) parents.push({ pointer: `${pointerOf(index)}/frontmatter/repo`, message: `${String(repo)} is not a linked repo in brain.json repos` });
   });
+  parents.push(...documentProblems(workspace, items, pointerOf));
   assertNoProblems(parents);
+  assertPlacesExist(workspace, items, pointerOf);
 
   const today = formatDate(options.now);
   const taken = new Set([...existing, ...seen]);
   const result: StagedNotes = { created: [], skipped: [], pointers: new Map() };
+  const wholeKept = new Map<string, string>();
 
   items.forEach((item, index) => {
     const lf = item.body.replace(/\r\n?/g, "\n");
     const body = lf === "" || lf.endsWith("\n") ? lf : `${lf}\n`;
     const attributes: Record<string, unknown> = { type: item.type, title: item.title, ...item.frontmatter };
     if (KNOWLEDGE_TYPES.has(item.type)) attributes.lifecycle = options.lifecycle ?? "draft";
+    if (item.type === "reference" && attributes.origin === "whole") {
+      // The source's own text needs no Review; one whole Document per source (spec/cli.md §5.5, 0049).
+      const source = String((attributes.sources as unknown[])[0]);
+      const kept = workspace.notes.find((note) => note.type === "reference" && note.attributes.origin === "whole" && Array.isArray(note.attributes.sources) && note.attributes.sources[0] === source)?.id
+        ?? wholeKept.get(source);
+      if (kept !== undefined) {
+        result.skipped.push({ input_index: index, reason: "ALREADY_KEPT", existing: kept });
+        return;
+      }
+      attributes.lifecycle = "reviewed";
+    }
+    if (item.type === "reference" && attributes.origin === "promoted") {
+      // A promoted Document stands where its note stands (0049).
+      attributes.lifecycle = workspace.get(String(attributes.promoted_from))?.attributes.lifecycle ?? attributes.lifecycle;
+    }
     if (item.type === "source") {
       const hash = `sha256:${createHash("sha256").update(body, "utf8").digest("hex")}`;
       const sourceKey = attributes.source_key;
@@ -180,11 +196,6 @@ export function stageNotes(
       }
       attributes.content_hash = hash;
       attributes.captured ??= formatTimestamp(options.now);
-      // The kind sets whether the Inbox row shows the text (0043): full for email and chat.
-      if (attributes.notion_text === undefined && attributes.attached_to === undefined) {
-        if (attributes.kind === "email" || attributes.kind === "chat") attributes.notion_text = "full";
-        else if (attributes.kind === "document" || attributes.kind === "note") attributes.notion_text = "digest";
-      }
     }
     const id = item.id ?? generateId(TYPE_PREFIX[item.type]!, taken);
     taken.add(id);
@@ -197,9 +208,65 @@ export function stageNotes(
     const path = newNotePath(item.type, item.title, date, (candidate) => workspace.exists(candidate), attributes.source_key);
     workspace.write(path, serializeNewFile(attributes, body));
     result.created.push({ id, type: item.type, title: item.title, path });
+    if (item.type === "reference" && attributes.origin === "whole") wholeKept.set(String((attributes.sources as unknown[])[0]), id);
     result.pointers.set(path, pointerOf(index));
   });
   return result;
+}
+
+/** Normalized body as `stageNotes` writes it: LF line endings and a trailing newline. */
+function writtenBody(body: string): string {
+  const lf = body.replace(/\r\n?/g, "\n");
+  return lf === "" || lf.endsWith("\n") ? lf : `${lf}\n`;
+}
+
+function sha256(body: string): string {
+  return `sha256:${createHash("sha256").update(body, "utf8").digest("hex")}`;
+}
+
+/** The Document rules of spec/cli.md §5.5 (0049) that the JSON Schema can't state. */
+function documentProblems(workspace: Workspace, items: readonly NoteInput[], pointerOf: (index: number) => string): InputProblem[] {
+  const problems: InputProblem[] = [];
+  const promoted = new Map<string, string>();
+  for (const note of workspace.notes) if (note.type === "reference" && note.attributes.origin === "promoted") promoted.set(String(note.attributes.promoted_from), note.id);
+  items.forEach((item, index) => {
+    if (item.type !== "reference") return;
+    const at = (key: string, message: string) => problems.push({ pointer: `${pointerOf(index)}/${key}`, message });
+    const { origin, sources, promoted_from: from } = item.frontmatter;
+    if (origin === "whole") {
+      if (!Array.isArray(sources) || sources.length !== 1 || typeof sources[0] !== "string" || !sources[0].startsWith("src-")) {
+        return at("frontmatter/sources", "a whole Document names exactly one source (src-)");
+      }
+      const id = sources[0];
+      const existing = workspace.get(id);
+      const earlier = items.slice(0, index).find((candidate) => candidate.id === id && candidate.type === "source");
+      const hash = existing?.type === "source" ? existing.attributes.content_hash : earlier !== undefined ? sha256(writtenBody(earlier.body)) : undefined;
+      if (hash === undefined) return at("frontmatter/sources", `${id} is not an existing source or one earlier in the batch`);
+      if (sha256(writtenBody(item.body)) !== hash) at("body", `a whole Document's body must be ${id}'s body byte for byte`);
+    }
+    if (origin === "promoted" && typeof from === "string") {
+      const type = workspace.get(from)?.type;
+      if (type !== "decision" && type !== "concept") return at("frontmatter/promoted_from", `${from} is not an existing decision or concept`);
+      const other = promoted.get(from);
+      if (other !== undefined) return at("frontmatter/promoted_from", `${from} is already promoted to ${other}`);
+      promoted.set(from, item.id ?? `${pointerOf(index)}`);
+    }
+  });
+  return problems;
+}
+
+/** A source's `area` and `projects` name existing notes of those types (spec/cli.md §5.5, 0050). */
+function assertPlacesExist(workspace: Workspace, items: readonly NoteInput[], pointerOf: (index: number) => string): void {
+  const problems: InputProblem[] = [];
+  items.forEach((item, index) => {
+    if (item.type !== "source") return;
+    const { area, projects } = item.frontmatter;
+    if (typeof area === "string" && workspace.get(area)?.type !== "area") problems.push({ pointer: `${pointerOf(index)}/frontmatter/area`, message: `${area} is not an existing area` });
+    (Array.isArray(projects) ? projects : []).forEach((project, position) => {
+      if (typeof project === "string" && workspace.get(project)?.type !== "project") problems.push({ pointer: `${pointerOf(index)}/frontmatter/projects/${position}`, message: `${project} is not an existing project` });
+    });
+  });
+  if (problems.length > 0) throw new BrainError("UNKNOWN_ID", `${problems[0]!.pointer} ${problems[0]!.message}`, problems);
 }
 
 /**

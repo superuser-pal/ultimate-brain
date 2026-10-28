@@ -2,6 +2,7 @@ import { readJsonInput } from "../lib/input.ts";
 import { applyPlan, buildPlan, parsePlan, parseSnapshot, record, render, renderTasks } from "../lib/sync.ts";
 import type { Command } from "../lib/command.ts";
 import { Workspace } from "../lib/workspace.ts";
+import { modulesOf } from "../lib/modules.ts";
 import { BrainError } from "../lib/errors.ts";
 import { lintWarnings } from "../lib/warnings.ts";
 
@@ -30,7 +31,7 @@ export const syncRenderCommand: Command = {
 
 export const syncTasksCommand: Command = {
   name: "sync tasks", usage: "brain sync tasks (--meeting <mtg-id> | --source <src-id>) --input <file|-> [--json]", summary: "Render action-item task payloads for a meeting or source.", options: { meeting: "string", source: "string", input: "string" }, maxPositionals: 0, needsBrain: true,
-  async run({ args, brain }) { const meeting = args.options.meeting as string | undefined; const source = args.options.source as string | undefined; const input = args.options.input as string | undefined; if ((meeting === undefined) === (source === undefined) || input === undefined) throw new BrainError("USAGE", "sync tasks needs exactly one of --meeting or --source, and --input"); return { data: renderTasks(await Workspace.open(brain!), meeting ?? source!, await readJsonInput(input, "sync tasks")), human: "Task payloads rendered.\n" }; },
+  async run({ args, brain }) { const meeting = args.options.meeting as string | undefined; const source = args.options.source as string | undefined; const input = args.options.input as string | undefined; if ((meeting === undefined) === (source === undefined) || input === undefined) throw new BrainError("USAGE", "sync tasks needs exactly one of --meeting or --source, and --input"); if (!modulesOf(brain!.config).tasks) throw new BrainError("MODULE_OFF", "The Tasks module is off: brain modules on tasks"); return { data: renderTasks(await Workspace.open(brain!), meeting ?? source!, await readJsonInput(input, "sync tasks")), human: "Task payloads rendered.\n" }; },
 };
 
 export const syncRecordCommand: Command = {
