@@ -39,14 +39,14 @@ async function configure(dir: string, key: string, id: string): Promise<void> {
 }
 
 export async function newReference(dir: string, sourceId: string, title = "Acme requirements"): Promise<{ id: string; path: string }> {
-  const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title, frontmatter: { summary: "What Acme requires of the website.", area: AREA, projects: [PROJECT], sources: [sourceId] }, body: REQUIREMENTS }] });
+  const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title, frontmatter: { summary: "What Acme requires of the website.", origin: "part", area: AREA, projects: [PROJECT], sources: [sourceId] }, body: REQUIREMENTS }] });
   assert.equal(created.code, 0, created.stdout);
   return created.json.data.created[0];
 }
 
 test("a reference validates, is listed under its project and renders to References with its body", async (context) => {
   const dir = await fixtureCopy(context);
-  const document = await newSource(dir, source("Acme requirements v1", "document", REQUIREMENTS, { keep: "just the requirements" }));
+  const document = await newSource(dir, source("Acme requirements v1", "document", REQUIREMENTS, { only_keep: "just the requirements" }));
   const reference = await newReference(dir, document.id);
   assert.match(reference.id, /^ref-/);
   assert.equal(reference.path, "knowledge/references/acme-requirements.md");
@@ -83,7 +83,7 @@ test("a reference validates, is listed under its project and renders to Referenc
 
 test("note new refuses a reference with no sources", async (context) => {
   const dir = await fixtureCopy(context);
-  const refused = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "No sources", frontmatter: { summary: "Kept from nowhere." }, body: "x\n" }] });
+  const refused = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "No sources", frontmatter: { summary: "Kept from nowhere.", origin: "part" }, body: "x\n" }] });
   assert.equal(refused.json.error?.code, "INPUT_INVALID");
   assert.match(refused.stdout, /sources/);
 });
@@ -144,11 +144,11 @@ test("source diff: a tie removes first, and the rest of either side is written i
   assert.deepEqual(lineDiff("same\n", "same\n"), []);
 });
 
-test("note new: keep is refused on a capture and when empty", async (context) => {
+test("note new: only_keep is refused on a capture and when empty", async (context) => {
   const dir = await fixtureCopy(context);
-  const onCapture = await run(dir, ["note", "new"], { notes: [{ type: "source", title: "A capture", file_date: "2026-12-05", frontmatter: { source_key: "notion:d1000000-0000-4000-8000-000000000002", kind: "capture", keep: "the numbers" }, body: "Text.\n" }] });
+  const onCapture = await run(dir, ["note", "new"], { notes: [{ type: "source", title: "A capture", file_date: "2026-12-05", frontmatter: { source_key: "notion:d1000000-0000-4000-8000-000000000002", kind: "capture", only_keep: "the numbers" }, body: "Text.\n" }] });
   assert.equal(onCapture.json.error?.code, "INPUT_INVALID");
-  const empty = await run(dir, ["note", "new"], { notes: [source("Empty keep", "document", "Text.\n", { keep: "" })] });
+  const empty = await run(dir, ["note", "new"], { notes: [source("Empty keep", "document", "Text.\n", { only_keep: "" })] });
   assert.equal(empty.json.error?.code, "INPUT_INVALID");
 });
 
@@ -193,4 +193,69 @@ test("render: an update_body row shows the changed lines as Proposed, and keeps 
   const after = await render();
   assert.deepEqual(after.properties.State, { type: "select", value: "Applied" });
   assert.equal(after.properties.Proposed, undefined, "the diff shown stays as published");
+});
+
+test("note new: a whole Document is the source's text, reviewed, once per source (0049)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const document = await newSource(dir, source("Acme requirements", "document", REQUIREMENTS));
+  const whole = (title: string, body = REQUIREMENTS, sources: unknown = [document.id]) =>
+    ({ type: "reference", title, frontmatter: { summary: "The requirements, whole.", origin: "whole", area: AREA, sources }, body });
+
+  const created = await run(dir, ["note", "new"], { notes: [whole("Acme requirements (whole)")] });
+  assert.equal(created.code, 0, created.stdout);
+  const kept = created.json.data.created[0];
+  assert.equal(parseFrontmatter(await readFile(join(dir, kept.path), "utf8")).attributes.lifecycle, "reviewed");
+
+  const again = await run(dir, ["note", "new"], { notes: [whole("Acme requirements again")] });
+  assert.equal(again.code, 0, again.stdout);
+  assert.deepEqual(again.json.data, { created: [], skipped: [{ input_index: 0, reason: "ALREADY_KEPT", existing: kept.id }], dry_run: false });
+
+  for (const [item, pointer] of [
+    [whole("Edited", `${REQUIREMENTS}- Dark mode\n`), "/notes/0/body"],
+    [whole("Two sources", REQUIREMENTS, [document.id, "src-7w3c9k5m"]), "/notes/0/frontmatter/sources"],
+    [whole("From a meeting", REQUIREMENTS, ["mtg-8c4n2p7w"]), "/notes/0/frontmatter/sources"],
+  ] as const) {
+    const refused = await run(dir, ["note", "new"], { notes: [item] });
+    assert.equal(refused.json.error?.code, "INPUT_INVALID", item.title);
+    assert.ok(refused.json.error.details.some((problem: { pointer: string }) => problem.pointer === pointer), JSON.stringify(refused.json.error.details));
+  }
+});
+
+test("note new: a whole Document of a source earlier in the batch, and a second one in the same batch is skipped", async (context) => {
+  const dir = await fixtureCopy(context);
+  const item = { ...source("Launch brief", "document", REQUIREMENTS), id: "src-3k8m2q7w" };
+  const whole = (title: string) => ({ type: "reference", title, frontmatter: { summary: "Whole.", origin: "whole", sources: ["src-3k8m2q7w"] }, body: REQUIREMENTS });
+  const created = await run(dir, ["note", "new"], { notes: [item, whole("Launch brief (whole)"), whole("Launch brief twice")] });
+  assert.equal(created.code, 0, created.stdout);
+  assert.equal(created.json.data.created.length, 2);
+  assert.deepEqual(created.json.data.skipped, [{ input_index: 2, reason: "ALREADY_KEPT", existing: created.json.data.created[1].id }]);
+});
+
+test("note new: a promoted Document takes its note's lifecycle, one per note; origin is required (0049)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const promoted = (title: string, from: string) => ({ type: "reference", title, frontmatter: { summary: "A page for the note.", origin: "promoted", promoted_from: from }, body: "## Why\nBecause.\n" });
+
+  const fromArchived = await run(dir, ["note", "new"], { notes: [promoted("Firebase auth (page)", "dec-2p9f6h1r")] });
+  assert.equal(fromArchived.code, 0, fromArchived.stdout);
+  assert.equal(parseFrontmatter(await readFile(join(dir, fromArchived.json.data.created[0].path), "utf8")).attributes.lifecycle, "archived");
+
+  const twice = await run(dir, ["note", "new"], { notes: [promoted("Firebase auth again", "dec-2p9f6h1r")] });
+  assert.equal(twice.json.error?.code, "INPUT_INVALID");
+  const sameBatch = await run(dir, ["note", "new"], { notes: [promoted("RLS one", "con-1s6t8e2b"), promoted("RLS two", "con-1s6t8e2b")] });
+  assert.deepEqual(sameBatch.json.error?.details.map((problem: { pointer: string }) => problem.pointer), ["/notes/1/frontmatter/promoted_from"]);
+  const notADecision = await run(dir, ["note", "new"], { notes: [promoted("A question page", "dec-00000000")] });
+  assert.equal(notADecision.json.error?.code, "INPUT_INVALID");
+
+  const noOrigin = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "No origin", frontmatter: { summary: "x", sources: ["src-7w3c9k5m"] }, body: "x\n" }] });
+  assert.equal(noOrigin.json.error?.details[0].pointer, "/notes/0/frontmatter/origin");
+});
+
+test("note new: a source's area and projects must exist (UNKNOWN_ID, 0050)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const placed = await run(dir, ["note", "new"], { notes: [source("Placed", "document", "Text.\n", { area: AREA, projects: [PROJECT] })] });
+  assert.equal(placed.code, 0, placed.stdout);
+  for (const extra of [{ area: "area-00000000" }, { projects: [PROJECT, "prj-00000000"] }, { area: PROJECT }]) {
+    const refused = await run(dir, ["note", "new"], { notes: [source(`Misplaced ${JSON.stringify(extra)}`, "document", "Other text.\n", extra)] });
+    assert.equal(refused.json.error?.code, "UNKNOWN_ID", JSON.stringify(extra));
+  }
 });
