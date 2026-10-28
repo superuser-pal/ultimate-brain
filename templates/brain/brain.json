@@ -3,6 +3,7 @@
   "owner": { "name": "Owner" },
   "budgets": { "ingest_max_notes": 8 },
   "settings": { "publish": "ask", "push": "auto" },
+  "modules": { "knowledge": true, "orgs": true, "documents": false, "reports": false, "tasks": false, "planning": false },
   "notion": {
     "databases": {
       "areas": "",
@@ -17,7 +18,7 @@
       "review": "",
       "inbox": "",
       "concepts": "",
-      "references": ""
+      "documents": ""
     },
     "tasks": {
       "database": "",

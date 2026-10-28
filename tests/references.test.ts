@@ -60,7 +60,7 @@ test("a reference validates, is listed under its project and renders to Referenc
   assert.match(markdown, /\n## References\n- \[Acme requirements\]\(knowledge\/references\/acme-requirements\.md\) — ref-\w{8} · area: Clients · project: Acme website · What Acme requires of the website\.\n/);
   const status = await run(dir, ["status"]);
   assert.equal(status.json.data.notes.reference, 1);
-  assert.ok(status.json.data.notion.missing.includes("references"));
+  assert.ok(status.json.data.notion.missing.includes("documents"));
 
   const unconfigured = await run(dir, ["sync", "render", "--ids", reference.id]);
   assert.deepEqual(unconfigured.json.data.items, []);
@@ -71,7 +71,7 @@ test("a reference validates, is listed under its project and renders to Referenc
 
   await configure(dir, "references", "a1000000-0000-4000-8000-00000000000c");
   const [item] = (await run(dir, ["sync", "render", "--ids", reference.id])).json.data.items;
-  assert.equal(item.database, "references");
+  assert.equal(item.database, "documents", "a references key is read as documents (0049)");
   assert.equal(item.action, "create");
   assert.deepEqual(item.properties.Project, { type: "relation", value: ["2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e"] });
   assert.deepEqual(item.properties.Area, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] });
