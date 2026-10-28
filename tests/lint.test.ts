@@ -173,6 +173,17 @@ test("every spec example passes or fails the JSON Schemas as labelled", async ()
   }
 });
 
+test("every brain.json example passes or fails its JSON Schema as labelled", async () => {
+  const schemas = loadSchemas();
+  const root = join(import.meta.dirname, "..", "spec", "examples", "brain");
+  for (const kind of ["valid", "invalid"] as const) {
+    for (const file of (await readdir(join(root, kind))).sort()) {
+      const config = JSON.parse(await readFile(join(root, kind, file), "utf8"));
+      assert.equal(schemas.brain(config), kind === "valid", `brain/${kind}/${file}`);
+    }
+  }
+});
+
 const issuesFor = async (dir: string, extra: string[] = []) =>
   (await brain(["lint", ...extra, "--brain", dir, "--json"])).json.data.issues as Array<{ rule: string; path: string; line: number }>;
 

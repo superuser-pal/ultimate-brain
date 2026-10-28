@@ -25,7 +25,7 @@ Below them, a heading 3 "What's on today?" and three tabs:
 Put the views in a tabs block (one view per tab, tab labels as given). If you can't create tabs, add them as separate views of one linked view instead.
 
 Below that, a heading 3 "What did the brain take in?" and two tabs:
-9. Tab "Came in": linked view of "Inbox", List, at most 10 rows, named "What came in lately?": filter Brain Status is Processed; sort Created descending; show Name, Kind, Project.
+9. Tab "Came in": linked view of "Inbox", List, at most 10 rows, named "What came in lately?": filter Brain Status is Done; sort Created descending; show Name, Kind, Project.
 10. Tab "Meetings": linked view of "Meetings", List, at most 10 rows, named "Which meetings did it take in?": filter Brain Status is Ingested; sort Ingested At descending; show Name, Date, Project.
 Put these two in their own tabs block.
 
