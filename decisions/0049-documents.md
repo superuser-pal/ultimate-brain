@@ -20,7 +20,7 @@ The References database (0045) is the place for them, under a clearer name. The 
 - **On a project or area page:** "What do we know?" → Decisions · Questions · Documents.
 
 ### Keep as document (0.6.0; amends 0043 and 0045)
-- **The "Keep as document" button** (0048) on an Inbox row ticks Keep as document and sets the row to Ready.
+- **The "Keep as document" button** (0048) on an Inbox row ticks Document asked and sets the row to Ready.
 - **With "Only keep" empty:** the catch-up writes one Document holding the input's **whole converted text, verbatim**: the file's text, or the page's for a web page. It isn't the brain's claim, so it needs **no Review**: it appears after the catch-up, ready to read, linked to its project or area and to its source.
 - **With "Only keep" filled in** ("the requirements table and the deadlines"): the Document holds only that, chosen by the brain. It arrives as an item in that source's Review row ("a) Document: Acme website: requirements and deadlines") and is a draft until approved, as 0045's `reference` notes are today.
 - **The notes are extracted either way.** Keeping a document as a page doesn't stop the brain from taking its decisions and questions out.
@@ -30,7 +30,7 @@ The References database (0045) is the place for them, under a clearer name. The 
 - **Only keep replaces Keep.** The new name says what it does, and an empty field means the whole thing. The brain no longer asks about an empty field.
 
 ### Promote to document (0.6.0)
-- **The "Promote to document" button** on a Decision or Concept row ticks Promote. The next catch-up creates a Document seeded from the note (its summary and body) and linked to it in both directions. The decision or concept itself stays as it is.
+- **The "Promote to document" button** on a Decision or Concept row ticks Promote asked. The next catch-up creates a Document seeded from the note (its summary and body) and linked to it in both directions. The decision or concept itself stays as it is.
 
 ### Who owns a Document's text
 - **Kept from a file, the brain.** It is the source's text: the body changes only through proposals, and a new version of the file proposes its diff. An edit the user types is read as a correction, as on every brain-owned field.
@@ -39,7 +39,7 @@ The References database (0045) is the place for them, under a clearer name. The 
 ## Consequences
 - **Amends 0045:** the `reference` type keeps its id prefix and folder, and is shown as Document; a Document kept whole needs no proposal; Keep is renamed Only keep; an empty Keep is no longer asked.
 - **Amends 0043:** the Full text box is retired.
-- **New:** verbatim Documents with no Review; promoted Documents owned by the user; the Keep as document and Promote checkboxes and their buttons (0048).
+- **New:** verbatim Documents with no Review; promoted Documents owned by the user; the Document asked and Promote asked checkboxes and their buttons (0048).
 - **Notion:** migration 0010 renames References to Documents, keeping its id and every relation and view, and renames Keep to Only keep and Kind "Document" to File; it adds the checkboxes and buttons; it leaves Full text in place, unused, for the user to delete.
 - **Module:** Documents is optional (0048); the first brain has it on.
 

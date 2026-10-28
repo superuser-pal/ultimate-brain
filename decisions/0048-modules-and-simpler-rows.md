@@ -59,9 +59,11 @@ The user decided each point in a grill on 2026-10-28. The audience stays v1's: a
 
   | Button | On | Ticks | Also |
   |---|---|---|---|
-  | **Keep as document** | Inbox rows | Keep as document | sets Brain Status to Ready |
-  | **Refresh** | Report rows | Refresh | — |
-  | **Promote to document** | Decisions, Concepts | Promote | — (0049) |
+  | **Keep as document** | Inbox rows | Document asked | sets Brain Status to Ready |
+  | **Refresh** | Report rows | Refresh asked (the Refresh checkbox of 0045, renamed) | — |
+  | **Promote to document** | Decisions, Concepts | Promote asked | — (0049) |
+
+  The checkboxes have names of their own, because Notion can't give a button and another property the same name (corrected in the CC-56 review, 2026-10-28).
 
 - Archived and Done (a milestone) stay checkboxes: they describe a state, not a request.
 
