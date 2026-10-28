@@ -115,3 +115,34 @@ test("render leaves out the notes and relations of a module that is off; --ids n
     }
   }
 });
+
+test("with Planning off, sync plan reads no Goals or Key Results; switching a module off and on loses no note (0048)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const before = await brain(["status", "--brain", dir, "--json"]);
+  assert.equal((await brain(["modules", "off", "planning", "--brain", dir, "--now", NOW, "--json"])).code, 0);
+  const plan = await brain(["sync", "plan", "--input", await writeInput(dir, { as_of: NOW, rows: [
+    { database: "goals", page_id: "d7000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { "Brain ID": null, Name: "Write a book" } },
+    { database: "key_results", page_id: "d7000000-0000-4000-8000-000000000002", last_edited: NOW, properties: { Name: "Draft 3 chapters", Goal: [] } },
+  ] }), "--brain", dir, "--json"]);
+  assert.equal(plan.code, 0, plan.stdout);
+  assert.deepEqual(plan.json.data.ignored.map((item: { reason: string }) => item.reason), ["MODULE_OFF", "MODULE_OFF"]);
+  assert.deepEqual(plan.json.data.create, []);
+
+  assert.equal((await brain(["modules", "on", "planning", "--brain", dir, "--now", NOW, "--json"])).code, 0);
+  const after = await brain(["status", "--brain", dir, "--json"]);
+  assert.deepEqual(after.json.data.notes, before.json.data.notes);
+});
+
+test("sync tasks fails with MODULE_OFF while Tasks is off (0048)", async (context) => {
+  const dir = await fixtureCopy(context);
+  assert.equal((await brain(["modules", "off", "tasks", "--brain", dir, "--now", NOW, "--json"])).code, 0);
+  const run = await brain(["sync", "tasks", "--meeting", "mtg-8c4n2p7w", "--input", await writeInput(dir, { tasks: [] }), "--brain", dir, "--json"]);
+  assert.equal(run.code, 4, run.stdout);
+  assert.equal(run.json.error.code, "MODULE_OFF");
+});
+
+async function writeInput(dir: string, value: unknown): Promise<string> {
+  const file = join(dir, "..", `input-${Math.random().toString(36).slice(2)}.json`);
+  await writeFile(file, JSON.stringify(value));
+  return file;
+}
