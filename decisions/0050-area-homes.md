@@ -39,6 +39,7 @@ With one area, the Spaces work unfiltered. The agency brain and the product repo
   | Tasks tab, "due" count, "Due across areas" | Tasks |
   | "What do we know?": Decisions, Concepts · "What's still open here?" | Knowledge |
   | "What do we know?": Documents | Documents |
+| Reports tab (0045), also on project pages | Reports |
   | Goals and projects by goal | Planning |
 
 - **Nothing replaces a left-out tab.** With only Core and Knowledge on, an area home has Meetings, Review waiting, Inbox, "What do we know?" (Decisions, Concepts) and "What's still open here?", and Home's lines read "3 to review · 1 meeting".
