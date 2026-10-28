@@ -223,8 +223,8 @@ Created by the brain only.
 | Decided In | Relation → Meetings | Brain |
 | Supersedes | Relation → Decisions (self, two-way "Superseded By") | Brain |
 | Sources | Relation → Inbox (two-way with Decisions) | Brain (filled from the Inbox side) |
-| Promote to document | Button: ticks Promote | You (Documents module, 0048, 0049) |
-| Promote | Checkbox | You, through the button: "waiting for the brain". The brain creates a Document seeded from this decision and clears it |
+| Promote to document | Button: ticks Promote asked | You (Documents module, 0048, 0049) |
+| Promote asked | Checkbox | You, through the button: "waiting for the brain". The brain creates a Document seeded from this decision and clears it |
 | Documents | Relation → Documents (two-way with From decision) | Brain (filled from the Documents side) |
 
 Page body: context, decision, consequences, sources. `^[inferred]` statements shown with an "AI inference" label (0004).
@@ -270,8 +270,8 @@ Everything that came into the brain except meetings, which have their own databa
 | Property | Type | Owner |
 |---|---|---|
 | Name | Title | You on a capture; Brain on a row it creates |
-| Keep as document | Button: ticks Keep as document and sets Brain Status to Ready | You (Documents module, 0048, 0049) |
-| Refresh | Button, on a Report row: ticks the Refresh checkbox | You (Reports module, 0048) |
+| Keep as document | Button: ticks Document asked and sets Brain Status to Ready | You (Documents module, 0048, 0049) |
+| Refresh | Button, on a Report row: ticks Refresh asked | You (Reports module, 0048) |
 | Kind | Select: Capture, File, Email, Chat, Note, Ask, Report | System, written only when empty, so a Kind you choose stands (0048). File was Document before 0.6.0 (0049). **Ask** is yours: a question for the brain (Reports module, 0043) |
 | Summary | Text | Brain: one line on what it taught; on a row the brain skipped, why ("Skipped: same as …") |
 | Decisions | Relation → Decisions (two-way with Sources) | Brain |
@@ -282,11 +282,11 @@ Everything that came into the brain except meetings, which have their own databa
 | Project | Relation → Projects (two-way with Inbox) | You: set it on a capture and the ingest uses it without asking (brain fills if empty) |
 | Area | Relation → Areas (two-way with Inbox) | You (brain fills if empty) |
 | Brain Status | Select: New, Ready, Done | You set Ready ("take it in"); the brain sets Done when it has taken the row in, or skipped it. **A catch-up takes in only Ready rows** (0048) |
-| Keep as document | Checkbox | You, through the button: "waiting for the brain". The brain keeps the input as a Document and clears it (0049) |
+| Document asked | Checkbox | You, through the Keep as document button: "waiting for the brain". The brain keeps the input as a Document and clears it (0049) |
 | Only keep | Text | You: when only part should be kept ("the requirements table and the deadlines"). Empty = the whole input (0049; was Keep) |
 | Report | Relation → Inbox (two-way with Ask) | Brain: on an Ask row, the report that answers it |
 | Ask | Relation → Inbox (two-way with Report) | Brain: on a Report row, the questions it answers |
-| Refresh | Checkbox | You, on a Report row, through the button: rewrite it with what the brain knows now; the brain clears it (0045) |
+| Refresh asked | Checkbox | You, on a Report row, through the Refresh button (was the Refresh checkbox before 0.6.0): rewrite it with what the brain knows now; the brain clears it (0045) |
 | What to fix | Text | You, on a Report row: what the report gets wrong; the brain turns it into Review rows, clears it, and refreshes the report once you approve them (0045) |
 | Tasks | Relation → Tasks (two-way with Source) | You |
 | Brain ID | Text | System (the source's id, `src-…`) |
@@ -322,8 +322,8 @@ Ideas, methods and definitions the brain learned, mostly from documents (0037). 
 | Project | Relation → Projects (two-way with Concepts) | Brain |
 | Area | Relation → Areas (two-way with Concepts) | Brain |
 | Sources | Relation → Inbox (two-way with Concepts) | Brain (filled from the Inbox side) |
-| Promote to document | Button: ticks Promote | You (Documents module, 0048, 0049) |
-| Promote | Checkbox | You, through the button: "waiting for the brain"; the brain clears it |
+| Promote to document | Button: ticks Promote asked | You (Documents module, 0048, 0049) |
+| Promote asked | Checkbox | You, through the button: "waiting for the brain"; the brain clears it |
 | Documents | Relation → Documents (two-way with From concept) | Brain (filled from the Documents side) |
 | Created time | Created time | System (Notion fills it; "Recent" view) |
 
@@ -355,9 +355,11 @@ Plus the common properties. Page body: the kept text (brain-written), or, on a p
 
 | Button | Database | Ticks | Also | Module |
 |---|---|---|---|---|
-| Keep as document | Inbox | Keep as document | sets Brain Status to Ready | Documents |
-| Refresh | Inbox (Report rows) | Refresh | — | Reports |
-| Promote to document | Decisions, Concepts | Promote | — | Documents |
+| Keep as document | Inbox | Document asked | sets Brain Status to Ready | Documents |
+| Refresh | Inbox (Report rows) | Refresh asked | — | Reports |
+| Promote to document | Decisions, Concepts | Promote asked | — | Documents |
+
+Each checkbox has its own name, because Notion can't give a button and another property the same name.
 
 Archived and Done (on a milestone) stay checkboxes: they describe a state, not a request.
 
@@ -365,10 +367,10 @@ Archived and Done (on a milestone) stay checkboxes: they describe a state, not a
 
 | Database | Pinned at the top | Collapsed |
 |---|---|---|
-| Inbox | Keep as document (button and checkbox), Refresh (button and checkbox, on Report rows), Brain Status, Project, Area, Only keep | Brain ID, Last Synced, Created |
+| Inbox | Keep as document and Document asked, Refresh and Refresh asked (on Report rows), Brain Status, Project, Area, Only keep | Brain ID, Last Synced, Created |
 | Review | Your call, What to fix, About Page | Kind, State, Brain ID, Created time, Last edited time |
-| Decisions | Promote to document (button and checkbox), Lifecycle | Brain ID, Last Synced |
-| Concepts | Promote to document (button and checkbox), Lifecycle | Brain ID, Last Synced, Created time |
+| Decisions | Promote to document and Promote asked, Lifecycle | Brain ID, Last Synced |
+| Concepts | Promote to document and Promote asked, Lifecycle | Brain ID, Last Synced, Created time |
 | Documents | Lifecycle, Project, Area, Sources | Brain ID, Last Synced, Created time, Last edited time |
 | Areas, Goals, Projects, People, Orgs, Questions, Meetings | the "You" properties of §3 | Brain ID, Last Synced, Ingested At |
 

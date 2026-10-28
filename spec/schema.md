@@ -597,13 +597,13 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 | Concepts · Area, Project | `area`, `projects` |
 | Documents · Area, Project, page body | `area`, `projects`, the body (0045, 0049). A `promoted` Document's body is sent on create only: after that it is yours |
 | Documents · From decision, From concept | a `promoted` Document's `promoted_from` (two-way with Decisions · Documents and Concepts · Documents, which Notion fills, 0049) |
-| Decisions, Concepts · Promote | yours (a checkbox, ticked by the Promote to document button): ask for a promoted Document. The brain clears it once it has acted (0048, 0049) |
+| Decisions, Concepts · Promote asked | yours (a checkbox, ticked by the Promote to document button): ask for a promoted Document. The brain clears it once it has acted (0048, 0049) |
 | Decisions, Questions, Concepts, Documents, People · Sources | inverse of the Inbox relations below (Notion fills it) |
 | Inbox · Name | the source's `title` (on rows the brain creates; a capture's Name is yours) |
 | Inbox · Kind, Summary | source `kind` (`Capture`, `File` for `document` (Document before 0.6.0), `Email`, `Chat`, `Note`), written only when Kind is empty in Notion, so a Kind you chose stands (0048); source `summary`; `Report` for a report view; `Ask` is yours (0043) |
 | Inbox · page body | a brain-created row's digest (0043); a report's body. Never a capture's or an Ask row's. ("Full text" toggles written before 0.6.0 stay as they are; no new one is written, 0049) |
 | Inbox · Ask, Report | a report's `asked_in` (two-way relation within the Inbox, 0043) |
-| Inbox · Keep as document | yours (a checkbox, ticked by the Keep as document button, which also sets Brain Status to Ready): keep the input as a Document. The brain clears it once it has acted (0048, 0049) |
+| Inbox · Document asked | yours (a checkbox, ticked by the Keep as document button, which also sets Brain Status to Ready): keep the input as a Document. The brain clears it once it has acted (0048, 0049) |
 | Inbox · Only keep | yours: when only part should be kept ("the requirements table and the deadlines"); the ingest stores it as the source's `only_keep`. Empty = the whole input (0049; was Keep, 0045) |
 | Inbox · Refresh, on a Report row | yours (a checkbox, ticked by the Refresh button): ask for the report again; the brain clears it when it rewrites the report (0045, 0048). (The Ask row's Refresh report relation is retired in 0.6.0: an Ask row is always a new report, 0048) |
 | Inbox · What to fix, on a Report row | yours: what the report gets wrong; the brain records it in the report's `fixes`, turns it into proposals and clears it (0045) |
