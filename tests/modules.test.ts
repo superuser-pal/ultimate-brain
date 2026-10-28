@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 
-import { brain } from "./helpers.ts";
+import { brain, fixtureCopy } from "./helpers.ts";
 
 const NOW = "2026-12-03T10:22:00Z";
 
@@ -90,5 +90,28 @@ test("modules refuses core, an unknown module and a switch without one", async (
     const run = await brain([...args, "--brain", target, "--now", NOW, "--json"], root);
     assert.equal(run.code, 2, run.stdout);
     assert.equal(run.json.error.code, "USAGE");
+  }
+});
+
+test("render leaves out the notes and relations of a module that is off; --ids names them MODULE_OFF (0048)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const configPath = join(dir, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  config.modules = { knowledge: false, orgs: false, documents: false, reports: false, tasks: false, planning: false };
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+
+  const changed = await brain(["sync", "render", "--changed", "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(changed.code, 0, changed.stdout);
+  const types = new Set(changed.json.data.items.map((item: { type: string }) => item.type));
+  for (const type of ["decision", "question", "concept", "org", "goal"]) assert.equal(types.has(type), false, type);
+
+  const named = await brain(["sync", "render", "--ids", "dec-7k2m9q4x,per-3h8w2n6c,mtg-8c4n2p7w", "--brain", dir, "--now", NOW, "--json"]);
+  assert.deepEqual(named.json.data.errors, [{ id: "dec-7k2m9q4x", reason: "MODULE_OFF" }]);
+  for (const item of named.json.data.items) {
+    for (const property of ["Org", "Decisions", "Questions"]) {
+      assert.equal(item.properties[property], undefined, `${item.id} ${property}`);
+      assert.equal(item.published[property], undefined, `${item.id} ${property}`);
+      assert.equal(item.pending_relations.some((relation: { property: string }) => relation.property === property), false);
+    }
   }
 });

@@ -225,13 +225,25 @@ test("report new stores a dated report view; render creates its Inbox row once, 
   assert.equal(item!.action, "create");
   assert.equal(item!.database, "inbox");
   const p = item!.properties;
-  assert.deepEqual([p.Name.value, p.Kind.value, p["Brain Status"].value, p["Brain ID"].value], ["Acme launch: where we stand", "Report", "Processed", created.json.data.id]);
+  assert.deepEqual([p.Name.value, p.Kind.value, p["Brain Status"].value, p["Brain ID"].value], ["Acme launch: where we stand", "Report", "Done", created.json.data.id]);
   assert.deepEqual(p.Ask, { type: "relation", value: [ask] });
   assert.deepEqual(p.Project, { type: "relation", value: ["2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e"] });
   assert.deepEqual(p.Area, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] });
   assert.ok(item!.body.startsWith("## Where it stands\n\nLaunch is set for February, per the auth decision."), item!.body);
   assert.equal(await renderAndRecord(dir, created.json.data.id), undefined, "a published report is never rendered again");
   await assertLintClean(dir);
+});
+
+test("render skips reports while Reports is off, and names one asked for by id MODULE_OFF (0048)", async (context) => {
+  const dir = await inboxBrain(context);
+  const input = { title: "Acme launch: where we stand", question: "Everything about the Acme launch", asked_in: "f1000000-0000-4000-8000-000000000002", projects: ["prj-9x4t1b7e"], area: "area-2m7c4h8n", body: REPORT_BODY };
+  const created = await run(dir, ["report", "new"], input);
+  assert.equal(created.code, 0, created.stdout);
+  assert.equal((await run(dir, ["modules", "off", "reports"])).code, 0);
+  const changed = await run(dir, ["sync", "render", "--changed"]);
+  assert.equal(changed.json.data.items.some((item: { id: string }) => item.id === created.json.data.id), false);
+  const named = await run(dir, ["sync", "render", "--ids", created.json.data.id]);
+  assert.deepEqual(named.json.data.errors, [{ id: created.json.data.id, reason: "MODULE_OFF" }]);
 });
 
 test("report new refuses wrong sections, broken links and unknown ids", async (context) => {
