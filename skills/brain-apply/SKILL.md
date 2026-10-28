@@ -113,5 +113,5 @@ In a catch-up these are decided in its read-only pass and confirmed in its one b
 ## Don'ts
 
 - **Don't apply anything the user didn't decide in this chat or in Notion.**
-- **Don't edit notes directly** to "help" a proposal along. If a proposal is wrong, the user rejects or fixes it.
+- **Don't edit notes or proposal files directly** (`sed`, a text editor, a script; U-18) to "help" a proposal along, nor to mark one applied. If a proposal is wrong, the user rejects or fixes it, and `brain sync apply` or `brain apply` writes the result.
 - **Don't re-run `apply` after a failure** without changing the input. Apply is atomic per item, and the failed item is unchanged; fix the cause first.

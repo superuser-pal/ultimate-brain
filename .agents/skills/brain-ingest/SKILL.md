@@ -85,6 +85,8 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
 
    `DUPLICATE_PENDING`, `ALREADY_LINKED` and `ALREADY_ANSWERED` skips are fine: the change is already waiting for review, already made, or the question already has an answer. `NOTHING_TO_REVIEW` means the input created no note and no link: fine too.
 
+   **Never edit a proposal or a note file yourself** (`sed`, a text editor, a script; U-18): the CLI writes them, with their hashes and log entries. A proposal that came out wrong is rejected or fixed through brain-apply; a new batch with the right values is written instead, and the wrong one is closed when the user rejects it. If lint fails on a file this run wrote, stop (step 9).
+
 9. **Rebuild and check.** Run `brain index`, `brain views`, then `brain lint`. If lint reports an **error in a file this run wrote**, stop: report it and do not commit. Errors that were already there before the run are not yours to fix here; mention them.
 
 10. **Log and commit.** Run `brain log ingest <mtg-id> created=<n> proposals=<n> tasks=<n>`. Commit in the brain repo: `ingest: <meeting title> <date> (<n> new, <n> proposals)`. If this run does not publish, push now (step 11, "Push"); otherwise push after the publish commit.
