@@ -285,7 +285,7 @@ test("a promoted Document's body is yours: update_body is refused, and lint repo
 });
 
 const INBOX_ROW = (page: string, brainId: string | null, properties: Record<string, unknown> = {}) =>
-  ({ database: "inbox", page_id: page, last_edited: NOW, properties: { "Keep as document": true, "Only keep": null, "Brain ID": brainId, ...properties } });
+  ({ database: "inbox", page_id: page, last_edited: NOW, properties: { "Document asked": true, "Only keep": null, "Brain ID": brainId, ...properties } });
 
 test("sync plan: Keep as document asks for a Document of the latest version or of each attached file (0049)", async (context) => {
   const dir = await fixtureCopy(context);
@@ -305,7 +305,7 @@ test("sync plan: Keep as document asks for a Document of the latest version or o
     INBOX_ROW("d3000000-0000-4000-8000-000000000003", null),
     INBOX_ROW("d3000000-0000-4000-8000-000000000004", "src-7w3c9k5m"),
     INBOX_ROW("d3000000-0000-4000-8000-000000000005", "src-00000000"),
-    INBOX_ROW("d3000000-0000-4000-8000-000000000006", "src-4c8n2k7q", { "Keep as document": false }),
+    INBOX_ROW("d3000000-0000-4000-8000-000000000006", "src-4c8n2k7q", { "Document asked": false }),
   ] });
   assert.equal(plan.code, 0, plan.stdout);
   assert.deepEqual(plan.json.data.document_requests, [
@@ -321,9 +321,9 @@ test("sync plan: Promote asks for a promoted Document, or names the one there (0
   const promoted = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "RLS (page)", frontmatter: { summary: "A page.", origin: "promoted", promoted_from: "con-1s6t8e2b" }, body: "RLS.\n" }] });
   assert.equal(promoted.code, 0, promoted.stdout);
   const plan = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [
-    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { "Brain ID": "dec-7k2m9q4x", Promote: true } },
-    { database: "concepts", page_id: "d4000000-0000-4000-8000-000000000002", last_edited: NOW, properties: { "Brain ID": "con-1s6t8e2b", Promote: true } },
-    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000003", last_edited: NOW, properties: { "Brain ID": "dec-2p9f6h1r", Promote: false } },
+    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { "Brain ID": "dec-7k2m9q4x", "Promote asked": true } },
+    { database: "concepts", page_id: "d4000000-0000-4000-8000-000000000002", last_edited: NOW, properties: { "Brain ID": "con-1s6t8e2b", "Promote asked": true } },
+    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000003", last_edited: NOW, properties: { "Brain ID": "dec-2p9f6h1r", "Promote asked": false } },
   ] });
   assert.equal(plan.code, 0, plan.stdout);
   assert.deepEqual(plan.json.data.promote_requests, [
@@ -347,7 +347,7 @@ test("sync plan: rows of a module that is off are ignored as MODULE_OFF (0048)",
   ] });
   assert.equal(plan.code, 0, plan.stdout);
   assert.deepEqual(plan.json.data.ignored.map((item: { page_id: string; reason: string; property?: string }) => [item.page_id.slice(-1), item.reason, item.property ?? null]), [
-    ["2", "MODULE_OFF", null], ["1", "MODULE_OFF", null], ["3", "MODULE_OFF", "Keep as document"],
+    ["2", "MODULE_OFF", null], ["1", "MODULE_OFF", null], ["3", "MODULE_OFF", "Document asked"],
   ]);
   assert.deepEqual([plan.json.data.create, plan.json.data.updates, plan.json.data.corrections, plan.json.data.document_requests], [[], [], [], []]);
 });

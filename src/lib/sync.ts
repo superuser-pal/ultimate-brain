@@ -28,7 +28,7 @@ export interface SyncPlan {
   updates: Array<Record<string, unknown>>;
   corrections: Correction[];
   decisions: DecisionInput[];
-  /** Inbox rows whose Keep as document box is ticked (0049); the skill writes a Document for each. */
+  /** Inbox rows whose Document asked box is ticked by the Keep as document button (0049); the skill writes a Document for each. */
   document_requests: Array<{ page_id: string; source: string; files: string[]; only_keep: string | null; existing?: string[] }>;
   /** Decision and concept rows whose Promote box is ticked (0049); the skill writes a promoted Document for each. */
   promote_requests: Array<{ page_id: string; note: string; existing?: string }>;
@@ -123,7 +123,7 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
     // A create whose publish failed has no Brain ID in Notion yet; treat the row as if it had it (cli §5.14.2).
     const known = typeof brainId === "string" && brainId !== "" ? row : { ...row, properties: { ...row.properties, "Brain ID": note.id } };
     planExisting(workspace, snapshot.as_of, known, note, result);
-    if ((row.database === "decisions" || row.database === "concepts") && property(row.properties, "Promote") === true) planPromote(workspace, row, note, modules.documents, result);
+    if ((row.database === "decisions" || row.database === "concepts") && property(row.properties, "Promote asked") === true) planPromote(workspace, row, note, modules.documents, result);
   }
   sortPlan(result);
   return result;
@@ -247,7 +247,7 @@ function ignoredRow(row: SnapshotRow, reason: string, propertyName?: string): Re
 }
 
 /**
- * An Inbox row is read for Keep as document (0049) and, on a Report row, Refresh and What to fix
+ * An Inbox row is read for Document asked (0049) and, on a Report row, Refresh and What to fix
  * (0045); a Full text box is retired (cli §5.14.2).
  */
 function planInbox(workspace: Workspace, row: SnapshotRow, out: SyncPlan): void {
@@ -257,16 +257,16 @@ function planInbox(workspace: Workspace, row: SnapshotRow, out: SyncPlan): void 
   if (Object.hasOwn(row.properties, "Full text")) out.ignored.push(ignoredRow(row, "RETIRED", "Full text"));
   if (note !== undefined && isReport(note)) {
     if (!modules.reports) { out.ignored.push(ignoredRow(row, "MODULE_OFF")); return; }
-    if (property(row.properties, "Refresh") === true) out.refresh_requests.push({ page_id: row.page_id, report: note.id });
+    if (property(row.properties, "Refresh asked") === true || property(row.properties, "Refresh") === true) out.refresh_requests.push({ page_id: row.page_id, report: note.id });
     const text = property(row.properties, "What to fix");
     const last = (Array.isArray(note.attributes.fixes) ? note.attributes.fixes : []).filter(isRecord).at(-1);
     if (typeof text === "string" && text.trim() !== "" && text !== last?.text) out.report_fixes.push({ page_id: row.page_id, report: note.id, text });
   }
-  if (property(row.properties, "Keep as document") !== true) return;
-  if (!modules.documents) { out.ignored.push(ignoredRow(row, "MODULE_OFF", "Keep as document")); return; }
-  if (typeof brainId !== "string" || brainId === "") { out.ignored.push(ignoredRow(row, "NOT_INGESTED", "Keep as document")); return; }
+  if (property(row.properties, "Document asked") !== true) return;
+  if (!modules.documents) { out.ignored.push(ignoredRow(row, "MODULE_OFF", "Document asked")); return; }
+  if (typeof brainId !== "string" || brainId === "") { out.ignored.push(ignoredRow(row, "NOT_INGESTED", "Document asked")); return; }
   if (note === undefined) { out.conflicts.push(conflict(row, "UNKNOWN_BRAIN_ID", `No note has Brain ID ${brainId}`)); return; }
-  if (note.type !== "source" || note.attributes.kind === undefined || note.attributes.kind === "minutes") { out.ignored.push(ignoredRow(row, "NOT_A_SOURCE", "Keep as document")); return; }
+  if (note.type !== "source" || note.attributes.kind === undefined || note.attributes.kind === "minutes") { out.ignored.push(ignoredRow(row, "NOT_A_SOURCE", "Document asked")); return; }
   const source = latestVersion(workspace, note);
   const files = workspace.notes.filter((candidate) => candidate.type === "source" && candidate.attributes.attached_to === source.id).map((file) => file.id).sort(compareCodePoints);
   const onlyKeep = property(row.properties, "Only keep");
@@ -279,9 +279,9 @@ function planInbox(workspace: Workspace, row: SnapshotRow, out: SyncPlan): void 
   out.document_requests.push(request);
 }
 
-/** A Promote box on a decision or concept row (cli §5.14.2, 0049). */
+/** A Promote asked box on a decision or concept row (cli §5.14.2, 0049). */
 function planPromote(workspace: Workspace, row: SnapshotRow, note: Note, documentsOn: boolean, out: SyncPlan): void {
-  if (!documentsOn) { out.ignored.push(ignoredRow(row, "MODULE_OFF", "Promote")); return; }
+  if (!documentsOn) { out.ignored.push(ignoredRow(row, "MODULE_OFF", "Promote asked")); return; }
   const existing = workspace.notes.find((candidate) => candidate.type === "reference" && candidate.attributes.origin === "promoted" && candidate.attributes.promoted_from === note.id);
   out.promote_requests.push({ page_id: row.page_id, note: note.id, ...(existing === undefined ? {} : { existing: existing.id }) });
 }

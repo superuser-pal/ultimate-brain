@@ -267,11 +267,14 @@ test("a Report row: What to fix becomes a report fix, and a refresh keeps the id
   const path = join(dir, created.json.data.path);
   const page = parseFrontmatter(await readFile(path, "utf8")).attributes.notion as string;
 
-  const snapshot = (fix: string) => ({ as_of: NOW, rows: [{ database: "inbox", page_id: page, last_edited: NOW, properties: { "Brain ID": id, Refresh: true, "What to fix": fix } }] });
+  const snapshot = (fix: string) => ({ as_of: NOW, rows: [{ database: "inbox", page_id: page, last_edited: NOW, properties: { "Brain ID": id, "Refresh asked": true, "What to fix": fix } }] });
   const plan = async (fix: string) => (await run(dir, ["sync", "plan"], snapshot(fix))).json.data;
   const first = await plan("Lucía left Acme in June");
   assert.deepEqual(first.refresh_requests, [{ page_id: page, report: id }]);
   assert.deepEqual(first.report_fixes, [{ page_id: page, report: id, text: "Lucía left Acme in June" }]);
+  // A space before migration 0010 still has the Refresh checkbox.
+  const legacy = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [{ database: "inbox", page_id: page, last_edited: NOW, properties: { "Brain ID": id, Refresh: true } }] });
+  assert.deepEqual(legacy.json.data.refresh_requests, [{ page_id: page, report: id }]);
 
   const proposal = await run(dir, ["proposal", "new"], { proposals: [{ kind: "update_fact", title: "Launch: March", target: "prj-9x4t1b7e", field: "launch_date", after: "2027-03", why: "The report was wrong.", source: "mtg-8c4n2p7w" }] });
   const prp = proposal.json.data.created[0].id as string;
