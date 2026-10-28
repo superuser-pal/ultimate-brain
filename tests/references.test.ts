@@ -44,7 +44,7 @@ export async function newReference(dir: string, sourceId: string, title = "Acme 
   return created.json.data.created[0];
 }
 
-test("a reference validates, is listed under its project and renders to References with its body", async (context) => {
+test("a reference validates, is listed under its project and renders to Documents with its body", async (context) => {
   const dir = await fixtureCopy(context);
   const document = await newSource(dir, source("Acme requirements v1", "document", REQUIREMENTS, { only_keep: "just the requirements" }));
   const reference = await newReference(dir, document.id);
@@ -67,7 +67,7 @@ test("a reference validates, is listed under its project and renders to Referenc
   assert.equal(unconfigured.json.warnings[0].code, "DATABASE_NOT_CONFIGURED");
   await configure(dir, "inbox", "a1000000-0000-4000-8000-00000000000b");
   const inboxOnly = await run(dir, ["sync", "render", "--ids", document.id]);
-  assert.equal(inboxOnly.json.data.items[0].properties.References, undefined, "an Inbox without the References property gets none");
+  assert.equal(inboxOnly.json.data.items[0].properties.Documents, undefined, "an Inbox without the Documents property gets none");
 
   await configure(dir, "references", "a1000000-0000-4000-8000-00000000000c");
   const [item] = (await run(dir, ["sync", "render", "--ids", reference.id])).json.data.items;
@@ -77,8 +77,8 @@ test("a reference validates, is listed under its project and renders to Referenc
   assert.deepEqual(item.properties.Area, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] });
   assert.equal(item.body.trimStart(), REQUIREMENTS);
   const [row] = (await run(dir, ["sync", "render", "--ids", document.id])).json.data.items;
-  assert.deepEqual(row.properties.References, { type: "relation", value: [] });
-  assert.deepEqual(row.pending_relations, [{ property: "References", ids: [reference.id] }]);
+  assert.deepEqual(row.properties.Documents, { type: "relation", value: [] });
+  assert.deepEqual(row.pending_relations, [{ property: "Documents", ids: [reference.id] }]);
 });
 
 test("note new refuses a reference with no sources", async (context) => {
@@ -350,4 +350,50 @@ test("sync plan: rows of a module that is off are ignored as MODULE_OFF (0048)",
     ["2", "MODULE_OFF", null], ["1", "MODULE_OFF", null], ["3", "MODULE_OFF", "Keep as document"],
   ]);
   assert.deepEqual([plan.json.data.create, plan.json.data.updates, plan.json.data.corrections, plan.json.data.document_requests], [[], [], [], []]);
+});
+
+test("render: a promoted Document links its note through From decision, and its body goes out on create only (0049)", async (context) => {
+  const dir = await fixtureCopy(context);
+  await configure(dir, "documents", "a1000000-0000-4000-8000-00000000000c");
+  const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Supabase auth (page)", frontmatter: { summary: "A page for the decision.", origin: "promoted", promoted_from: "dec-7k2m9q4x", projects: [PROJECT] }, body: "## Why\nBecause.\n" }] });
+  assert.equal(created.code, 0, created.stdout);
+  const page = created.json.data.created[0];
+
+  const [item] = (await run(dir, ["sync", "render", "--ids", page.id])).json.data.items;
+  assert.equal(item.action, "create");
+  assert.equal(item.body.trimStart(), "## Why\nBecause.\n");
+  assert.deepEqual(item.properties["From decision"], { type: "relation", value: [] });
+  assert.deepEqual(item.properties["From concept"], { type: "relation", value: [] });
+  assert.deepEqual(item.pending_relations, [{ property: "From decision", ids: ["dec-7k2m9q4x"] }]);
+  const recorded = await run(dir, ["sync", "record"], { records: [{ id: page.id, notion: "b3000000-0000-4000-8000-000000000001", synced_at: NOW, published: item.published }] });
+  assert.equal(recorded.code, 0, recorded.stdout);
+
+  // The page is yours now: a new seed in the file is never sent.
+  const path = join(dir, page.path);
+  await writeFile(path, (await readFile(path, "utf8")).replace("Because.", "Because, reworded."));
+  assert.deepEqual((await run(dir, ["sync", "render", "--ids", page.id])).json.data.items, []);
+});
+
+test("render: an Inbox row's Kind is File, written if empty; Brain Status is Done; old values aren't sent again (0048)", async (context) => {
+  const dir = await fixtureCopy(context);
+  await configure(dir, "inbox", "a1000000-0000-4000-8000-00000000000b");
+  const document = await newSource(dir, source("Acme brief", "document", REQUIREMENTS));
+  const [item] = (await run(dir, ["sync", "render", "--ids", document.id])).json.data.items;
+  assert.deepEqual(item.properties.Kind, { type: "select", value: "File", mode: "if_empty" });
+  assert.deepEqual(item.properties["Brain Status"], { type: "select", value: "Done" });
+
+  // A row published before 0.6.0 holds Document and Processed in S.
+  const published = { ...item.published, Kind: "Document", "Brain Status": "Processed" };
+  await run(dir, ["sync", "record"], { records: [{ id: document.id, notion: "b3000000-0000-4000-8000-000000000002", synced_at: NOW, published }] });
+  assert.deepEqual((await run(dir, ["sync", "render", "--ids", document.id])).json.data.items, []);
+});
+
+test("render: a Review row names its kind and carries the source's area (0048, 0050)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const items = (await run(dir, ["sync", "render", "--ids", "prp-1q5w8e3r,prp-4n8c2w7t"])).json.data.items;
+  const byId = Object.fromEntries(items.map((item: { id: string }) => [item.id, item]));
+  assert.deepEqual(byId["prp-1q5w8e3r"].properties.Name, { type: "title", value: "Conflict: Supabase supersedes Firebase for auth" });
+  assert.deepEqual(byId["prp-1q5w8e3r"].properties.Area, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] });
+  assert.equal(byId["prp-4n8c2w7t"].published.Name, "Acme launch: Jan → Feb", "an update_fact has no prefix");
+  assert.deepEqual(byId["prp-4n8c2w7t"].properties.Area, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] });
 });

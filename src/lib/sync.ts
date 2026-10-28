@@ -13,7 +13,7 @@ import { formatDate, formatTimestamp, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 import { lineDiff } from "./diff.ts";
 import type { LogEntry } from "./log.ts";
-import { databaseId, moduleForDatabase, modulesOf } from "./modules.ts";
+import { databaseId, moduleForDatabase, modulesOf, typeIsOn } from "./modules.ts";
 import { bodyHash, bodyOf } from "./proposals.ts";
 
 const DATABASES = ["areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "concepts", "documents", "review", "inbox"] as const;
@@ -174,8 +174,9 @@ function planExisting(workspace: Workspace, asOf: string, row: SnapshotRow, note
   const published = isRecord(note.attributes.notion_published) ? note.attributes.notion_published : undefined;
   const rendered = renderedBrainValues(note, workspace);
   const publish = (name: string, value: unknown) => { updates.published = { ...(isRecord(updates.published) ? updates.published : {}), [name]: value }; };
+  const off = offRelations(workspace.config, row.database);
   for (const [name, brainField] of brainProperties(row.database)) {
-    if (!Object.hasOwn(row.properties, name)) continue;
+    if (!Object.hasOwn(row.properties, name) || off.has(name)) continue;
     if (name === "Key Facts") { planKeyFacts(row, note, published, updates, out); continue; }
     // N, S and B are compared in Notion's normalized form (cli §5.14.1): page ids, {start,end} dates, select labels.
     // Lifecycle compares case-insensitively; a link to a note not yet in Notion counts as a brain change.
@@ -361,6 +362,22 @@ function linksUnpublished(workspace: Workspace, note: Note, brainField: string):
 }
 
 /** Equal in Notion's normalized form; relations compare as sets, and an empty text equals null. */
+/** Relation properties left out while their module is off (cli §5.14.4, 0048), per database. */
+function offRelations(config: Record<string, unknown>, database: string): Set<string> {
+  const on = modulesOf(config);
+  const off = new Set<string>();
+  if (!on.orgs && database === "projects") off.add("Client");
+  if (!on.orgs && database === "people") off.add("Org");
+  if (!on.planning && database === "projects") off.add("Goal");
+  if (!on.knowledge && (database === "inbox" || database === "meetings")) { off.add("Decisions"); off.add("Questions"); }
+  if (!on.knowledge && database === "inbox") off.add("Concepts");
+  if (!on.documents && database === "inbox") off.add("Documents");
+  return off;
+}
+
+/** Brain values that were renamed (0048, 0049): an S of the old one compares equal to the new one. */
+const RENAMED_VALUES: Record<string, Record<string, string>> = { "Brain Status": { Processed: "Done" }, Kind: { Document: "File" } };
+
 function sameValue(a: unknown, b: unknown): boolean {
   const norm = (value: unknown) => Array.isArray(value) ? [...value].map(String).sort(compareCodePoints) : value === "" || value === undefined ? null : value;
   return isDeepStrictEqual(norm(a), norm(b));
@@ -448,8 +465,11 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     ? workspace.notes.filter((note) => (PUBLISHED_TYPES.has(note.type) && !(note.type === "source" && note.attributes.kind === undefined)) || isReport(note))
     : ids.map((id) => workspace.get(id)!).filter(Boolean);
   const items: RenderItem[] = []; const errors: Array<Record<string, unknown>> = []; const warnings: Array<{ code: string; message: string; id?: string }> = [];
+  const modules = modulesOf(workspace.config);
   for (const note of selected) {
     const database = isReport(note) ? "inbox" : DATABASE_FOR_TYPE[note.type]; if (database === undefined || (note.type === "source" && note.attributes.kind === undefined)) continue;
+    // A note of a module that is off isn't published; naming one is an error (0048).
+    if ((isReport(note) && !modules.reports) || !typeIsOn(workspace.config, note.type)) { if (ids !== undefined) errors.push({ id: note.id, reason: "MODULE_OFF" }); continue; }
     // An attached source has no Inbox row: its notes go on the parent's (0042).
     if (note.type === "source" && note.attributes.attached_to !== undefined) continue;
     // A decided Review row leaves Notion 30 days after its decision, once (0045).
@@ -461,10 +481,13 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     const capturePage = note.type === "source" && note.attributes.kind === "capture" && typeof note.attributes.source_key === "string" && note.attributes.source_key.startsWith("notion:") ? note.attributes.source_key.slice("notion:".length) : undefined;
     if (note.type === "source" && note.attributes.kind === "capture" && (capturePage === undefined || (typeof note.attributes.notion === "string" && note.attributes.notion !== capturePage))) { errors.push({ id: note.id, reason: "NOTION_ID_MISMATCH" }); continue; }
     const rendered = renderedBrainValues(note, workspace); const published = isRecord(note.attributes.notion_published) ? note.attributes.notion_published : {};
+    for (const name of offRelations(workspace.config, database)) delete rendered[name];
     const properties: Record<string, unknown> = {}; const pending: Array<Record<string, unknown>> = []; const heldProperties = held?.get(note.id) ?? new Set<string>();
     const isCreate = note.attributes.notion === undefined && capturePage === undefined;
-    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || !Object.hasOwn(published, name) || !sameValue(value, published[name]))) properties[name] = encoded; }
+    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || !Object.hasOwn(published, name) || !sameValue(value, RENAMED_VALUES[name]?.[String(published[name])] ?? published[name]))) properties[name] = encoded; }
     const content = renderedContent(note, workspace); if (content.hash !== undefined) rendered["@content"] = content.hash;
+    // A promoted Document's body is yours once its page exists (0049): sent on create only.
+    if (note.type === "reference" && note.attributes.origin === "promoted" && !isCreate) { content.body = null; delete rendered["@content"]; if (Object.hasOwn(published, "@content")) rendered["@content"] = published["@content"]; content.hash = undefined; }
     const contentChanged = content.hash !== undefined && !isDeepStrictEqual(content.hash, published["@content"]);
     // A report (0045): a refresh sends the body once and clears Refresh; a new fix clears What to fix.
     let reportDue = false;
@@ -513,15 +536,15 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     const page = (source ?? target)?.attributes.notion;
     const meeting = typeof a.source === "string" ? workspace.get(a.source) : undefined;
     Object.assign(values, {
-      Name: a.title, Kind: select(a.kind), About: targetText,
+      Name: reviewName(a), Kind: select(a.kind), About: targetText,
       "About Page": typeof page === "string" ? `https://www.notion.so/${page.replaceAll("-", "")}` : null,
       "Source Meeting": meeting?.type === "meeting" && typeof meeting.attributes.notion === "string" ? [meeting.attributes.notion] : [],
       Now: reviewText(proposalBefore(a, workspace)), Proposed: proposed !== undefined ? proposed : reviewText(after ?? proposalAfter(a, workspace)),
-      Why: reviewText(a.why), State: select(proposalState(a.status)), "Brain ID": note.id,
+      Why: reviewText(a.why), Area: relationPages(reviewArea(a, workspace), workspace), State: select(proposalState(a.status)), "Brain ID": note.id,
     });
     return values;
   }
-  if (isReport(note)) { Object.assign(values, { Name: a.title, Kind: "Report", Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), Ask: typeof a.asked_in === "string" ? [a.asked_in] : Array.isArray(a.asked_in) ? a.asked_in : [], "Brain Status": "Processed", "Brain ID": note.id }); return values; }
+  if (isReport(note)) { Object.assign(values, { Name: a.title, Kind: "Report", Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), Ask: typeof a.asked_in === "string" ? [a.asked_in] : Array.isArray(a.asked_in) ? a.asked_in : [], "Brain Status": "Done", "Brain ID": note.id }); return values; }
   if (note.type === "meeting") { Object.assign(values, { Decisions: relationPages(a.decisions, workspace), Questions: relationPages(a.questions, workspace), Attendees: relationPages(a.attendees, workspace), Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Brain Status": "Ingested", "Ingested At": dateOutput(a.created), "Brain ID": note.id }); return values; }
   if (note.type === "source") return sourceValues(note, workspace);
   common();
@@ -538,7 +561,27 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     else if (published.Status === undefined && !yours) values.Status = "Open";
   }
   if (note.type === "concept" || note.type === "reference") Object.assign(values, { Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace) });
+  if (note.type === "reference") {
+    const from = a.origin === "promoted" && typeof a.promoted_from === "string" ? a.promoted_from : undefined;
+    Object.assign(values, { "From decision": relationPages(from?.startsWith("dec-") ? [from] : [], workspace), "From concept": relationPages(from?.startsWith("con-") ? [from] : [], workspace) });
+  }
   return values;
+}
+
+/** A Review row's Name says which kind of row it is (cli §5.14.4, 0048). */
+function reviewName(a: Record<string, unknown>): unknown {
+  const prefix = ["contradiction", "supersede", "merge", "new_item"].includes(String(a.kind)) ? "Conflict: " : a.kind === "answer" ? "Answer: " : "";
+  return typeof a.title === "string" && prefix !== "" && !a.title.startsWith(prefix) ? `${prefix}${a.title}` : a.title;
+}
+
+/** A Review row's one area: its source note's own area, else the area of its first project (cli §5.14.4, 0050). */
+function reviewArea(a: Record<string, unknown>, workspace: Workspace): string[] {
+  const source = typeof a.source === "string" ? workspace.get(a.source) : undefined;
+  if (source === undefined) return [];
+  if (typeof source.attributes.area === "string") return [source.attributes.area];
+  const first = Array.isArray(source.attributes.projects) ? source.attributes.projects[0] : undefined;
+  const area = typeof first === "string" ? workspace.get(first)?.attributes.area : undefined;
+  return typeof area === "string" ? [area] : [];
 }
 
 /** Area on decisions and questions is a derived Notion relation (decision 0034). */
@@ -553,7 +596,8 @@ function projectAreas(projects: unknown, workspace: Workspace): string[] {
 /** The notes a source produced, with those of the sources attached to it (cli §5.14.4, 0042). */
 function producedBy(note: Note, workspace: Workspace): Note[] {
   const sources = new Set([note.id, ...workspace.notes.filter((candidate) => candidate.type === "source" && candidate.attributes.attached_to === note.id).map((candidate) => candidate.id)]);
-  return workspace.notes.filter((candidate) => ["decision", "question", "concept", "reference", "person"].includes(candidate.type) && Array.isArray(candidate.attributes.sources) && candidate.attributes.sources.some((id) => sources.has(String(id))));
+  // A promoted Document comes from its note, not the source (0049).
+  return workspace.notes.filter((candidate) => ["decision", "question", "concept", "reference", "person"].includes(candidate.type) && !(candidate.type === "reference" && candidate.attributes.origin === "promoted") && Array.isArray(candidate.attributes.sources) && candidate.attributes.sources.some((id) => sources.has(String(id))));
 }
 
 function sourceValues(note: Note, workspace: Workspace): Record<string, unknown> {
@@ -561,14 +605,16 @@ function sourceValues(note: Note, workspace: Workspace): Record<string, unknown>
   const ids = (type: string) => produced.filter((candidate) => candidate.type === type).map((candidate) => candidate.id).sort(compareCodePoints);
   const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))].sort(compareCodePoints);
   const areas = [...new Set([...produced.map((candidate) => candidate.attributes.area).filter((id): id is string => typeof id === "string"), ...projects.flatMap((id) => { const area = workspace.get(id)?.attributes.area; return typeof area === "string" ? [area] : []; })])].sort(compareCodePoints);
-  return { Name: note.attributes.title, Kind: select(note.attributes.kind), Summary: note.attributes.summary ?? null, Decisions: relationPages(ids("decision"), workspace), Questions: relationPages(ids("question"), workspace), Concepts: relationPages(ids("concept"), workspace), ...(databaseIdFor(workspace, "documents") === "" ? {} : { References: relationPages(ids("reference"), workspace) }), People: relationPages(ids("person"), workspace), Project: relationPages(projects, workspace), Area: relationPages(areas, workspace), "Brain Status": "Processed", "Brain ID": note.id };
+  return { Name: note.attributes.title, Kind: note.attributes.kind === "document" ? "File" : select(note.attributes.kind), Summary: note.attributes.summary ?? null, Decisions: relationPages(ids("decision"), workspace), Questions: relationPages(ids("question"), workspace), Concepts: relationPages(ids("concept"), workspace), ...(databaseIdFor(workspace, "documents") === "" ? {} : { Documents: relationPages(ids("reference"), workspace) }), People: relationPages(ids("person"), workspace), Project: relationPages(projects, workspace), Area: relationPages(areas, workspace), "Brain Status": "Done", "Brain ID": note.id };
 }
 
 function notionProperty(name: string, value: unknown, note: Note, workspace: Workspace, pending: Array<Record<string, unknown>>): unknown {
-  const relation = ["Area", "Goal", "Client", "People", "Org", "Project", "Decided In", "Raised In", "Supersedes", "Decisions", "Questions", "Concepts", "References", "Attendees"].includes(name);
+  const relation = ["Area", "Goal", "Client", "People", "Org", "Project", "Decided In", "Raised In", "Supersedes", "Decisions", "Questions", "Concepts", "Documents", "Attendees", "From decision", "From concept"].includes(name);
   if (relation) {
     const sourceField: Record<string, string> = { Area: "area", Goal: "goal", Client: "client", People: "people", Org: "org", Project: "projects", "Decided In": "decided_in", "Raised In": "raised_in", Decisions: "decisions", Questions: "questions", Attendees: "attendees" };
-    const raw = name === "Area" && (note.type === "decision" || note.type === "question") ? projectAreas(note.attributes.projects, workspace) : name === "Supersedes" ? (Array.isArray(note.attributes.relations) ? note.attributes.relations.filter(isRecord).filter((item) => item.type === "supersedes").map((item) => item.target) : []) : note.type === "source" ? sourceRelationIds(note, name, workspace) : note.attributes[sourceField[name] ?? ""];
+    const raw = name === "Area" && note.type === "proposal" ? reviewArea(note.attributes, workspace)
+      : name === "From decision" || name === "From concept" ? (Array.isArray(value) && note.attributes.promoted_from !== undefined && String(note.attributes.promoted_from).startsWith(name === "From decision" ? "dec-" : "con-") ? [note.attributes.promoted_from] : [])
+      : name === "Area" && (note.type === "decision" || note.type === "question") ? projectAreas(note.attributes.projects, workspace) : name === "Supersedes" ? (Array.isArray(note.attributes.relations) ? note.attributes.relations.filter(isRecord).filter((item) => item.type === "supersedes").map((item) => item.target) : []) : note.type === "source" ? sourceRelationIds(note, name, workspace) : note.attributes[sourceField[name] ?? ""];
     const missing = (Array.isArray(raw) ? raw : raw === undefined ? [] : [raw]).map(String).filter((id) => typeof workspace.get(id)?.attributes.notion !== "string");
     if (missing.length > 0) pending.push({ property: name, ids: missing });
     const mode = (note.type === "meeting" || note.type === "source") ? (["Project", "Area"].includes(name) ? "if_empty" : note.type === "meeting" ? "add" : undefined) : undefined;
@@ -581,6 +627,8 @@ function notionProperty(name: string, value: unknown, note: Note, workspace: Wor
   }
   if (name === "Ask") return { type: "relation", value: Array.isArray(value) ? value : [] };
   if (name === "About Page") return { type: "url", value };
+  // An Inbox row's Kind is written only when empty in Notion, so a Kind you chose stands (0048).
+  if (name === "Kind" && note.type === "source") return { type: "select", value, mode: "if_empty" };
   if (["Lifecycle", "Assessment", "Kind", "State", "Brain Status", "Status"].includes(name)) return { type: "select", value };
   if (name === "Last Synced" || name === "Date" || name === "Deadline" || name === "Ingested At") return { type: "date", value };
   return { type: name === "Name" ? "title" : "rich_text", value };
@@ -590,7 +638,7 @@ function sourceRelationIds(note: Note, name: string, workspace: Workspace): stri
   if (name === "Decisions") return produced.filter((candidate) => candidate.type === "decision").map((candidate) => candidate.id);
   if (name === "Questions") return produced.filter((candidate) => candidate.type === "question").map((candidate) => candidate.id);
   if (name === "Concepts") return produced.filter((candidate) => candidate.type === "concept").map((candidate) => candidate.id);
-  if (name === "References") return produced.filter((candidate) => candidate.type === "reference").map((candidate) => candidate.id);
+  if (name === "Documents") return produced.filter((candidate) => candidate.type === "reference").map((candidate) => candidate.id);
   if (name === "People") return produced.filter((candidate) => candidate.type === "person").map((candidate) => candidate.id);
   const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))];
   if (name === "Project") return projects;
