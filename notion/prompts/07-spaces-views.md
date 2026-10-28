@@ -15,7 +15,7 @@ Each Space has the navigation in a narrow left column and one tabs block on the 
 | g | Knowledge | [07f-knowledge.md](07f-knowledge.md) |
 | h | Archive (on System) | [07h-archive.md](07h-archive.md) |
 
-The order is the one to use when time is short: Home, Review and Meetings matter most during ingest.
+The order is the one to use when time is short: Home, Review and Meetings matter most during ingest. Tasks (7g) is for the Tasks module and Plan (7b) for Planning: skip them if you left those off. The other prompts carry module tags: delete the tagged lines of the modules you didn't choose ([CHECKLIST](../CHECKLIST.md)).
 
 Across all pages:
 - [ ] No database lives outside Brain Data.

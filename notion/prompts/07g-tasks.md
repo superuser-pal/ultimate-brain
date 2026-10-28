@@ -2,7 +2,7 @@
 
 Paste into Notion AI **while you are on the "Tasks" page**, after [Prompt 6](06-templates.md). Other Spaces: [index](07-spaces-views.md). Every view, with its use case, is in [../views-guide.md](../views-guide.md).
 
-Waiting On and Someday are Notion-only statuses (Prompt 2): the brain creates tasks as To Do and never reads Status back. Using your own Tasks database? Map the filters to your own properties.
+**Tasks module only** (decision 0048): skip this prompt if you left Tasks off. Waiting On and Someday are Notion-only statuses (Prompt 2): the brain creates tasks as To Do and never reads Status back. Using your own Tasks database? Map the filters to your own properties.
 
 ```text
 On this page ("Tasks") add six tabs, each a linked view of "Tasks", List layout:
