@@ -397,3 +397,46 @@ test("render: a Review row names its kind and carries the source's area (0048, 0
   assert.equal(byId["prp-4n8c2w7t"].published.Name, "Acme launch: Jan → Feb", "an update_fact has no prefix");
   assert.deepEqual(byId["prp-4n8c2w7t"].properties.Area, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] });
 });
+
+test("acceptance: Keep as document with Only keep empty gives a whole Document and no proposal; the next plan finds it there (0049)", async (context) => {
+  const dir = await fixtureCopy(context);
+  await configure(dir, "inbox", "a1000000-0000-4000-8000-00000000000b");
+  await configure(dir, "documents", "a1000000-0000-4000-8000-00000000000c");
+  const document = await newSource(dir, source("Acme BRS", "document", REQUIREMENTS));
+  const row = INBOX_ROW("d6000000-0000-4000-8000-000000000001", document.id);
+  const [request] = (await run(dir, ["sync", "plan"], { as_of: NOW, rows: [row] })).json.data.document_requests;
+  assert.deepEqual(request, { page_id: row.page_id, source: document.id, files: [], only_keep: null });
+
+  const sourceBody = (await readFile(join(dir, document.path), "utf8")).split("\n---\n").slice(1).join("\n---\n");
+  const kept = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Acme BRS", frontmatter: { summary: "The BRS, whole.", origin: "whole", area: AREA, sources: [request.source] }, body: sourceBody }] });
+  assert.equal(kept.code, 0, kept.stdout);
+  const proposals = await run(dir, ["proposal", "list", "--status", "pending"]);
+  assert.equal(proposals.json.data.proposals.some((proposal: { title: string }) => proposal.title.includes("Acme BRS")), false, "no proposal for a whole Document");
+  const [again] = (await run(dir, ["sync", "plan"], { as_of: NOW, rows: [row] })).json.data.document_requests;
+  assert.deepEqual(again.existing, [kept.json.data.created[0].id], "a second catch-up only clears the box");
+  const lint = await run(dir, ["lint"]);
+  assert.equal(lint.json.data.errors, 0, JSON.stringify(lint.json.data.issues));
+});
+
+test("acceptance: with Only keep set, a part Document goes in the source's review_notes, and approving it makes it reviewed (0049)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const document = await newSource(dir, source("Acme BRS v2", "document", `${REQUIREMENTS}\n## Budget\n\n- 80000\n`, { only_keep: "just the requirements" }));
+  const part = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Acme BRS: requirements", frontmatter: { summary: "Just the requirements.", origin: "part", area: AREA, sources: [document.id] }, body: REQUIREMENTS }] });
+  assert.equal(part.code, 0, part.stdout);
+  const page = part.json.data.created[0];
+  const row = await run(dir, ["proposal", "new"], { proposals: [{ kind: "review_notes", source: document.id, notes: [page.id] }] });
+  assert.equal(row.code, 0, row.stdout);
+  const applied = await run(dir, ["apply"], { decisions: [{ proposal: row.json.data.created[0].id, action: "approve", decided_at: NOW, decided_by: "notion" }] });
+  assert.equal(applied.code, 0, applied.stdout);
+  assert.equal(parseFrontmatter(await readFile(join(dir, page.path), "utf8")).attributes.lifecycle, "reviewed");
+});
+
+test("acceptance: a Review row from a project's meeting with no area of its own carries the project's area (0050)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const meeting = join(dir, "knowledge/meetings/2026-12-03-acme-sync.md");
+  const text = await readFile(meeting, "utf8");
+  assert.match(text, /^projects:/m);
+  await writeFile(meeting, text.replace(/^area: area-2m7c4h8n\n/m, ""));
+  const [item] = (await run(dir, ["sync", "render", "--ids", "prp-4n8c2w7t"])).json.data.items;
+  assert.deepEqual(item.properties.Area, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] });
+});
