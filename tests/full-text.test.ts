@@ -160,56 +160,17 @@ test("render: chosen parts only, in order, under a line naming them", async (con
   await assertLintClean(dir);
 });
 
-test("source full-text: the text goes out once with the box cleared; a re-tick clears the box only", async (context) => {
+test("source full-text is retired: it writes nothing and fails with RETIRED (0049)", async (context) => {
   const dir = await inboxBrain(context);
   const doc = await newSource(dir, source("Requirements", "document", DOCUMENT));
-  await renderAndRecord(dir, doc.id);
-
-  const asked = await run(dir, ["source", "full-text", doc.id]);
-  assert.equal(asked.code, 0, asked.stdout);
-  assert.deepEqual(asked.json.data, { id: doc.id, path: doc.path, parts: 5, notion_text: "full", notion_parts: null, notion_text_requested: NOW });
-  const second = await renderAndRecord(dir, doc.id);
-  assert.equal(second!.action, "update");
-  assert.equal(second!.sections["Full text"], DOCUMENT);
-  assert.deepEqual(second!.properties["Full text"], { type: "checkbox", value: false });
-  assert.equal(await renderAndRecord(dir, doc.id), undefined, "after its record, a third render emits nothing");
-
-  const retick = await brain(["source", "full-text", doc.id, "--brain", dir, "--now", "2026-12-11T09:00:00Z", "--json"]);
-  assert.equal(retick.code, 0, retick.stdout);
-  const cleared = await renderAndRecord(dir, doc.id);
-  assert.equal(cleared!.sections, null, "no text is written twice");
-  assert.deepEqual(cleared!.properties["Full text"], { type: "checkbox", value: false });
-  assert.equal(await renderAndRecord(dir, doc.id), undefined);
-  await assertLintClean(dir);
-  const log = await readFile(join(dir, "log/2026-12.md"), "utf8");
-  assert.ok(log.includes(`full-text ${doc.id} "Requirements" parts=all`), log);
-});
-
-test("source full-text: --parts stores the list, all parts replace it, bad lists are refused", async (context) => {
-  const dir = await inboxBrain(context);
-  const deck = await newSource(dir, source("Launch deck", "document", DECK));
-  const sources = await newSource(dir, source("Spec", "document", DOCUMENT));
-  await renderAndRecord(dir, deck.id);
-
-  const partial = await run(dir, ["source", "full-text", deck.id, "--parts", "3-9"]);
-  assert.deepEqual(partial.json.data.notion_parts, ["3-9"]);
-  await renderAndRecord(dir, deck.id);
-  await run(dir, ["source", "full-text", deck.id]);
-  const all = await renderAndRecord(dir, deck.id);
-  assert.equal(all!.sections["Full text"], DECK, "full-text without --parts renders all 12 slides");
-  assert.equal(parseFrontmatter(await readFile(join(dir, deck.path), "utf8")).attributes.notion_parts, undefined);
-
-  const listed = await run(dir, ["source", "full-text", sources.id, "--parts", "2,4-5"]);
-  assert.deepEqual(listed.json.data.notion_parts, ["2", "4-5"]);
-  assert.deepEqual(parseFrontmatter(await readFile(join(dir, sources.path), "utf8")).attributes.notion_parts, ["2", "4-5"]);
-  for (const parts of ["2,,4", "9-3", "2-4,3-5", "13"]) {
-    const refused = await run(dir, ["source", "full-text", deck.id, "--parts", parts]);
-    assert.equal(refused.json.error?.code, "INPUT_INVALID", parts);
+  const before = await readFile(join(dir, doc.path), "utf8");
+  for (const args of [["source", "full-text", doc.id], ["source", "full-text", doc.id, "--parts", "2"]]) {
+    const refused = await run(dir, args);
+    assert.equal(refused.code, 2, refused.stdout);
+    assert.equal(refused.json.error.code, "RETIRED");
+    assert.match(refused.json.error.message, /retired in 0\.6\.0: use Keep as document/);
   }
-  const minutes = await run(dir, ["source", "full-text", "src-7w3c9k5m"]);
-  assert.equal(minutes.json.error?.code, "INPUT_INVALID", "minutes have no Inbox body");
-  assert.equal((await run(dir, ["source", "full-text", "src-00000000"])).json.error?.code, "UNKNOWN_ID");
-  await assertLintClean(dir);
+  assert.equal(await readFile(join(dir, doc.path), "utf8"), before);
 });
 
 test("sync plan reports a ticked Full text box for a source with an Inbox body, and ignores the rest", async (context) => {
