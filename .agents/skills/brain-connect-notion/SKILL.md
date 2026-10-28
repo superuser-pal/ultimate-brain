@@ -1,6 +1,6 @@
 ---
 name: brain-connect-notion
-description: Connect the brain to the user's Notion space after it was built from the notion/ prompts. Gives the agent access to Notion, finds the Brain Data page and its databases, checks each has the properties the brain reads and writes, stores their ids in brain.json, maps the Tasks database and records the owner's identities. Changes nothing in Notion. Use when the user says "connect the brain to Notion", after building the Notion space, when Notion is unreachable, or when a skill reports a Notion database is not configured.
+description: Connect the brain to the user's Notion space after it was built from the notion/ prompts. Gives the agent access to Notion, finds the Brain Data page and its databases, checks each has the properties the brain reads and writes, stores their ids in brain.json, maps the Tasks database and records the owner's identities. Also lists and switches the optional modules (Knowledge, Orgs, Documents, Reports, Tasks, Planning), walking the user through a module's Notion steps when it is turned on. Changes nothing in Notion itself. Use when the user says "connect the brain to Notion", "which modules do I have?", "turn on documents", "turn planning off", after building the Notion space, when Notion is unreachable, or when a skill reports a Notion database is not configured or a module is off.
 ---
 
 # Connect the brain to Notion
@@ -11,6 +11,19 @@ Run CLI commands as `brain <command> --brain <brain> --json`. If `brain` is not 
 
 ## Procedure
 
+0. **Modules** (decision 0048), at the first connection, when the user hasn't chosen yet. Run `brain modules` and show the checklist, with what each module adds and its default:
+
+   ```
+   Core (always on): Inbox, Meetings, Projects, Areas, People, Review
+   [x] Knowledge: Decisions, Questions, Concepts
+   [x] Orgs: client and partner organizations
+   [ ] Documents: keep a document, or part of one, as a page
+   [ ] Reports: ask the brain in the Inbox, get a report you can refresh
+   [ ] Tasks: action items as Notion tasks
+   [ ] Planning: Goals and Key Results
+   ```
+
+   Ask once: "Keep these, or change some? (e.g. "add documents")". Write each change with `brain modules on|off <module>`. The steps below look only for the databases of modules that are on; a database that exists for a module that is off is reported ("Goals found; Planning is off: say "turn on planning" to use it"), and its id is still stored.
 1. **Check access.** The Notion connection (MCP) must reach the user's workspace. Search for the page **"Brain Data"**:
    - **No Notion tools in this session:** the agent isn't connected to Notion. Give the user the steps in "Connect your agent to Notion" below for the agent they are using, and stop.
    - **Not found:** the connection can't see the page. With the hosted Notion MCP, the user's own Notion account must have access to Brain Data; with an integration token, open Brain Data in Notion → `•••` → **Connections** → add the integration. Then stop.
@@ -31,9 +44,10 @@ Run CLI commands as `brain <command> --brain <brain> --json`. If `brain` is not 
    | Review | `review` |
    | Inbox (called Capture Inbox before 0.3.0) | `inbox` |
    | Concepts | `concepts` |
+   | Documents (called References before migration 0010) | `documents` |
    | Tasks | `notion.tasks.database` (below) |
 
-   A missing database is reported, not invented. The brain works without it, and the skills that need it say so.
+   A missing database is reported, not invented. A missing database of a module that is on is the module's Notion steps still to do ("Turning a module on" below); the brain works without it, and the skills that need it say so.
 3. **Check each database** (read-only). Retrieve the database, then its data source (current Notion API: a database has `data_sources`, and its properties live on the data source). Check that every property in docs/notion-space-design.md §3 for that database exists with the right type: relations point to the right database, and selects have the listed options.
    - Report each difference as `Database · Property: expected …, found …`.
    - Report two select options that share an id (it has happened after adding an option through Notion AI), and suggest deleting and re-adding the option by hand.
@@ -54,7 +68,20 @@ Run CLI commands as `brain <command> --brain <brain> --json`. If `brain` is not 
 9. **Report:**
    - the databases connected;
    - anything missing or different from the design (step 3);
+   - the modules on, and those with a database still missing;
    - what to do next: build the Notion space's missing parts, or run `brain-sync` to import the rows you already created in Notion (0021), then ingest reviewed meetings.
+
+## Turning a module on or off
+
+When the user asks ("turn on documents", "turn planning off", "which modules do I have?"), outside the procedure above:
+
+1. **List:** `brain modules`. Report each module as on or off; for one that is on, its `missing` databases.
+2. **Off:** `brain modules off <module>`, commit `modules: <module> off`. Say what stops: "Planning off: catch-up no longer reads Goals or Key Results. Nothing is deleted; turn it on again any time." Nothing changes in Notion; the user may hide the databases themselves.
+3. **On:** `brain modules on <module>`. Then its `missing` list says what Notion still needs:
+   - **Nothing missing** (its databases are connected, or Reports, which has none): commit `modules: <module> on`, and say what the next catch-up does with it.
+   - **A database missing:** walk the user through `notion/modules/<module>.md` in the product repo, step by step: the Notion AI prompts they paste, the buttons and layouts they set by hand, then find the new database under Brain Data (step 2 above), check it (step 3) and store its id with `brain config set notion.databases.<key> '"<id>"'` (Tasks: step 5). This skill doesn't build anything in Notion itself (decision 0022). Run `brain modules` again: `missing` is empty. Commit `modules: <module> on`.
+   - **The user stops halfway:** the module stays on with a database missing; its notes are skipped with `DATABASE_NOT_CONFIGURED` until the id is set. Say so, and that "turn on <module>" picks up where they left off.
+4. **Report** in three lines: what changed, what still needs them in Notion, and the next step.
 
 ## Connect your agent to Notion
 
