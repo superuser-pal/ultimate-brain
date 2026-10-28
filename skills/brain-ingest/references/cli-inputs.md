@@ -47,11 +47,12 @@ A document, a web page, then a pasted email:
 - **Capture:** `source_key` is `notion:<row page id>`, `kind` is `capture`, `origin_edited` is the row's `last_edited_time`.
 - **`summary`** (every kind except minutes, added in the real run of step 6, not the step 3 dry run), in `frontmatter` like every field below: one line on what the source taught. It is the Inbox row's Summary.
 - **`digest`** (in `frontmatter`; every kind except minutes, captures and attachments, added with `summary`; decision 0043): the key points by section and the figures and dates as stated, in Markdown. It is the body of the Inbox row.
-- **`notion_text`** and **`notion_parts`:** leave them out unless the user chose otherwise; the CLI writes `full` for `email` and `chat`, `digest` for `document` and `note`. `"notion_text": "full", "notion_parts": ["3-9"]` puts slides 3 to 9 on the row. Never send `notion_text_requested`: only `brain source full-text` writes it.
+- **Never send `notion_text`, `notion_parts`, `notion_text_requested` or `keep`:** they are retired (decision 0049) and the CLI refuses them (`INPUT_INVALID`). A whole text to read in Notion is a `whole` Document (§2, "Documents").
 - **A linked repo's file** (decision 0042) adds `"repo": "<name>", "repo_path": "decisions/0041-review.md", "commit": "<the listing's to, 40 hex>"` to a `document` with a `file:` key, `file_name` = the path's last segment and `converter: verbatim` for a text file.
-- **`keep`** (decision 0045; `document`, `email`, `chat` or `note` only, never a capture): what the user asked to keep, as written (`"keep": "just the requirements"`). Leave it out for "all".
+- **`only_keep`** (decision 0049; any kind but `minutes` and `capture`, attached files included): what the user asked to keep as a Document, as written (`"only_keep": "just the requirements"`), from the row's Only keep, the drop folder's "only …" or the user's words. Leave it out when the whole input is kept, or none of it. An attached file takes its row's Only keep.
+- **`area`** and **`projects`** (decision 0050): the Area and Project the user set on the Inbox row (or the meeting), as brain ids. Each must be an existing area or project, else the CLI refuses the batch (`UNKNOWN_ID`). Leave them out when the row has none.
 - **`replaces`** (decision 0045): on a re-read or a new version, the `src-` id of the version it follows. The CLI then dedupes it by content only, and refuses an id that isn't a source or that another source already replaces (`INPUT_INVALID`).
-- **A file attached in Notion** adds `"attached_to": "<the parent's src- id>"` to a `document` with a `file:` key, and has no `digest`, `notion_text` or `notion_parts`. The parent must exist already or come earlier in the same batch.
+- **A file attached in Notion** adds `"attached_to": "<the parent's src- id>"` to a `document` with a `file:` key, and has no `digest`. The parent must exist already or come earlier in the same batch.
 - **Title:** `<title> (<kind>)`; for a web page, `<title>` is the page's own title. **`file_date`:** the text's own date (a document's date, a web page's stated publication or update date, an email's sent date); for a capture, the row's Created date; else today.
 - **Dates in the notes:** a new note's timeline `from` is the date the text gives, else the source's `file_date`; `learned` is always today (the day the brain learned it).
 - **Duplicates:** the CLI also skips a source whose `file:` key, or whose `capture` row, was already ingested, even if the text differs.
@@ -91,18 +92,27 @@ Things the CLI checks that are easy to get wrong:
 - **The meeting body uses relative links**, e.g. `../people/…`, `../decisions/…`, `../../projects/<slug>/project.md`.
 - **Sources (`sources`) of knowledge notes are the meeting id.** The meeting itself cites the source snapshot.
 
-### A reference note (decision 0045)
+### Documents (decisions 0045, 0049)
 
-What a Keep produces, in the same batch as its source:
+A Document is a `reference` note with an `origin` (references/extraction.md, "Documents"). In the same batch as its source when the input is new; on its own for a source already in the brain.
 
 ```json
+{ "type": "reference", "id": "ref-6p2v8k4m", "title": "Acme website brief",
+  "frontmatter": { "origin": "whole", "summary": "Acme's brief for the new website, as sent.",
+                   "area": "area-2m7c4h8n", "projects": ["prj-9x4t1b7e"], "sources": ["src-5t8n2v6q"] },
+  "body": "<the source's body, byte for byte>" }
 { "type": "reference", "id": "ref-4k8m2q7w", "title": "Acme website: requirements",
-  "frontmatter": { "summary": "The requirements from Acme's website brief.", "projects": ["prj-9x4t1b7e"],
+  "frontmatter": { "origin": "part", "summary": "The requirements from Acme's website brief.", "projects": ["prj-9x4t1b7e"],
                    "area": "area-2m7c4h8n", "sources": ["src-5t8n2v6q"] },
   "body": "## Requirements\n\n- Login with email\n- Launch in 2027-02\n" }
+{ "type": "reference", "id": "ref-9w3c7n2t", "title": "Use Supabase for auth",
+  "frontmatter": { "origin": "promoted", "promoted_from": "dec-3f7k9m2q", "summary": "Acme moves auth from Firebase to Supabase.",
+                   "projects": ["prj-9x4t1b7e"], "sources": ["mtg-8c4n2p7w"] },
+  "body": "Acme moves auth from Firebase to Supabase.\n\n## Decision\nUse Supabase for auth.\n" }
 ```
 
-`sources` is required. It goes in the input's `review_notes` like any new note.
+- **`origin` is required.** `whole`: `sources` is exactly that one `src-` id and the body is its body byte for byte, or the CLI refuses it; the CLI writes it as `reviewed`, and a second one of the same source comes back in `skipped` as `ALREADY_KEPT` (fine). `part`: a draft that goes in the input's `review_notes` like any new note. `promoted`: `promoted_from` names an existing decision or concept that has no promoted Document yet; it takes that note's lifecycle; `sources` may be left out.
+- Leave `whole` and `promoted` Documents out of `review_notes`: they need no Review.
 
 ## 3. The proposals batch
 
@@ -126,7 +136,7 @@ What a Keep produces, in the same batch as its source:
 - **`title`** reads as a Review row: `<subject> <field>: <old> → <new>`.
 - **Other kinds** (spec/schema.md §11):
   - `add_to_note`: `target`, `content`. A link in `content` is relative to the target note's folder.
-  - `update_body` (decision 0045): `target` = a `reference` note, `content` = its whole new body, every unchanged line copied exactly. The CLI stores the old body's hash, so a body changed meanwhile is caught as stale, and refuses a `content` equal to the body (`NO_CHANGE`).
+  - `update_body` (decisions 0045, 0049): `target` = a Document (`reference` note) whose `origin` isn't `promoted`, `content` = its whole new body, every unchanged line copied exactly. The CLI stores the old body's hash, so a body changed meanwhile is caught as stale, and refuses a `content` equal to the body (`NO_CHANGE`).
   - `contradiction`: `target`, `field`, `after` (the target must have a current value).
   - `supersede`: `target` = the new note, `supersedes` = the old one.
   - `merge`: `target` = the duplicate, `merge_into` = the survivor.

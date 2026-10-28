@@ -1057,7 +1057,7 @@ Each item:
   - `body` (decisions, questions, concepts, references): replaces the whole page body (a `promoted` reference: on create only).
   - `sections` (projects): `{ "Brief": <the brief's generated block>, "Decision log": <the decision log's generated block> }`. The skill replaces only the children of the toggle heading with that exact name. `render` can't see Notion page content, so finding the toggle is the skill's job, after it reads the page through the MCP (0033): a page with **no toggle headings at all** gets the missing "Brief" and "Decision log" toggles appended and filled; a page with other toggle headings but not the named one is reported as `SECTION_NOT_FOUND` and left as it is.
   - `sections` (areas, 0041): `{ "Brief": … }`, as above.
-  - `body` (sources other than captures, 0043; reports): as above; `sections` `{ "Full text": … }` on a source when due.
+  - `body` (sources other than captures, 0043; reports): as above. No `sections` on a source: Full text is retired (0049).
   - Goals, people, orgs, meetings, captures and proposals: `body` and `sections` are both `null`.
   - Rendering: `^[inferred]` → ` (AI inference)`, `^[ambiguous]` → ` (ambiguous)`, and relative links to published notes become `https://www.notion.so/<page id without dashes>` (unpublished → plain title text).
 

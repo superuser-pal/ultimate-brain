@@ -42,6 +42,8 @@ When the user's notes and the minutes disagree on a fact, ask in the pre-check (
 
 Do these in order, after the ingest commit: pages first, so every task's project, meeting or Inbox row exists when the task is created.
 
+**One write, final content** (U-18). Every write carries the page's real content: never create a page with a placeholder ("…", "TBD", "content to follow") to fill it in later, and never write a body in pieces that leave the page half-written between turns. A body goes in the create call, or in one append right after it; a body longer than one append allows (100 blocks, 2000 characters a block) goes in consecutive appends of real content, in order, in the same turn. If a write fails partway, report it: the next render produces the page again.
+
 **Write in parallel** (decision 0037). Within each step, send the writes that don't depend on each other as parallel tool calls in one turn, up to 10 at a time (Notion limits the request rate). Don't read a page back after writing it: the write's response holds its id. Read a page only when the write needs its current content, such as a project's blocks before a section is replaced.
 
 1. **Pages: notes, meeting, sources and proposals:**
@@ -52,7 +54,7 @@ Do these in order, after the ingest commit: pages first, so every task's project
       - **`action: trash`** (a Review row decided more than 30 days ago, decision 0045): move `page_id` to Notion's trash (update the page with `in_trash: true`; `archived: true` on API versions before 2025-09). Nothing else. Record it like any other write; the proposal stays in the brain.
       - **Meeting and Inbox relations with `"mode": "add"`:** add the listed pages and keep the existing ones.
       - **`"mode": "if_empty"`:** write only if the property is empty in Notion.
-      - **`body` (decisions, questions, concepts, references):** replace the page body with it.
+      - **`body` (decisions, questions, concepts, Documents):** replace the page body with it. A `promoted` Document has a `body` only on `create`; on `update` it is `null`, and its page body is the user's (decision 0049).
       - **`body` and `sections` on an Inbox item** (a source, or a report): see "Inbox bodies" below. A capture's or an Ask row's page body is the user's: render never gives one a body.
       - **`sections` (projects):** replace only the children of the toggle heading with that exact name ("Brief", "Decision log"). Read the page's blocks first (decision 0033):
         - **the page has no toggle headings at all** (created without the template): append a "Brief" and a "Decision log" toggle heading, in that order, at the end of the page, then fill them;
@@ -61,7 +63,7 @@ Do these in order, after the ingest commit: pages first, so every task's project
 
       **Writing a section through the MCP: the block API only** (decision 0043). List the toggle's children, delete them, and append the new ones as blocks. Never write a section through the Markdown page update, even on a page that holds nothing else: it flattens the toggles and can delete the user's content.
 
-      **`properties` with `"Full text": { "type": "checkbox", "value": false }`** clears the row's box: send it as any other property.
+      **`properties` with `"Refresh asked": { "type": "checkbox", "value": false }`** on a report row clears its box: send it as any other property. Document asked and Promote asked are never in `properties`: the skill unticks them through the MCP once it has acted (brain-catch-up, step 5).
    **`PROJECT_NOT_IN_NOTION`** in `errors`: a project note with no Notion page (written before 0.2.2, or by hand). Never create the page through the API: it would miss the template. Report it, and ask the user to create the project with **New project** in Notion under the same name and put the note's id in its **Brain ID**, so the next sync links the two.
    3. **Pending relations:** items that list `pending_relations` reference notes not yet published. Publish and record those first, then run `sync render --changed` again.
    4. Run `brain sync record` with one record per page written: `{ "id", "notion": <page id>, "synced_at": <now>, "published": <the item's published> }`.
@@ -74,11 +76,11 @@ Do these in order, after the ingest commit: pages first, so every task's project
 ### Inbox bodies (decision 0043)
 
 The brain writes the body of the Inbox rows it creates, once:
-- **`body`** on a `create`: the row's page content, written as blocks after the row is created. For a source it is the digest: a line saying what the input is, the summary and the key points. For a report it is the report's six sections; a refreshed report comes back as an `update` with a `body` (decision 0045): replace the row's page content with it, then send its properties (Refresh cleared).
-- **`sections` `{ "Full text": … }`:** a toggle heading **"Full text"** after the body, holding the text. Create the toggle when the row has none; when it has one, replace its children. Keep the text's headings as headings (one per slide of a deck), Markdown tables as Notion tables, and an email or chat thread as one block per message. Split long text into as many blocks as the API needs (a block holds at most 2000 characters of text, and one append at most 100 blocks), in order, never cutting a word.
-- Neither is ever rebuilt or read back (except a report's body on a refresh): an edit you make there stays in Notion.
+- **`body`** on a `create`: the row's page content, written as blocks after the row is created. For a source it is the digest: a line saying what the input is, the summary and the key points. For a report it is the report's six sections; a refreshed report comes back as an `update` with a `body` (decision 0045): replace the row's page content with it, then send its properties (Refresh asked cleared).
+- **No Full text** (decision 0049): render sends no `sections` on a source. A row that already shows a "Full text" toggle keeps it; leave it alone. The whole text of an input now lives in a Document ([extraction.md](extraction.md), "Documents").
+- The body is never rebuilt or read back (except a report's body on a refresh): an edit you make there stays in Notion.
 
-A report row's **Ask** relation links it to the Ask row it answers. After writing the report row, set that Ask row's **Brain Status** to Processed through the MCP; change nothing else on it.
+A report row's **Ask** relation links it to the Ask row it answers. After writing the report row, set that Ask row's **Brain Status** to Done through the MCP; change nothing else on it.
 
 ## If Notion fails partway
 
