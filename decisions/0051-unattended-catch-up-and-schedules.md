@@ -1,6 +1,6 @@
 # 0051 — Unattended catch-up and schedules
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-10-29
 **Amends:** 0003, 0037 · **Refines:** 0045
 
