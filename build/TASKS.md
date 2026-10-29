@@ -5,6 +5,7 @@
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
 > **2026-10-28 — Status: 0.5.0 is released and in the user's brain. U-18 is closed: the re-read and the report refresh passed, Keep failed and Fix wasn't tried. Its findings, decided in a grill on 2026-10-28, are decisions 0048 (modules, simpler rows, buttons), 0049 (Documents) and 0050 (area homes), planned as 0.6.0 (CC-55 to CC-59) with one Notion migration, 0010. The agency brain moves in after 0.6.0.**
+> - **2026-10-29, CC-60 (planning):** two third-party vault skills reviewed (reviews/08) and grilled with the user: decisions 0051 (unattended catch-up and schedules) and 0052 (reflection), Accepted 2026-10-29 (#147). Plan: 0.6.1 skills audit (CC-61), 0.7.0 the brain runs itself (CC-62 to CC-64, U-20, after U-19), 0.8.0 the brain tidies itself (CC-65 to CC-67, U-21, after the agency brain moves in). Order before them unchanged: release 0.6.0, `brain upgrade` and migration 0010, U-19.
 > - **Claude Code builds, Codex reviews (decision 0044, CC-39):** from 2026-10-21 every task is Claude Code's; the open Codex tasks became CX-39 → CC-40, CX-33 → CC-41, CX-37 → CC-42, CX-38 → CC-43.
 > - **Merging (decision 0040):** the user merges on the GitHub PR page, with the PR's `merge-ready` status in view; `merge.mjs` is optional; agents never merge. `main-guard` fails only on a commit that came from no PR.
 > - **0.4.0 (released 2026-10-21):** theme (CC-35): the brain gives back (decisions 0041–0043). Its Notion checks (the 5-minute bar, the Full text box, Ask → Report) are closed in U-15.
@@ -652,6 +653,67 @@ U-18's findings (2026-10-28): less to learn for a second user, with nothing take
 **Acceptance:** migration 0010 names every change with who does it, and every layout change database by database; its Verify list covers each; a new space built from the prompts with only Core and Knowledge has no Documents, Tasks, Goals or Key Results database; #137's four points are fixed in 0009, and none recurs in 0010.
 
 
+## 0.6.1 — Skills for current models
+
+### CC-60 · Plan 0.6.1 to 0.8.0: decisions 0051 and 0052 and their tasks · `done` (#147)
+**Release:** 0.6.1
+**Changelog:** decisions 0051 (unattended catch-up and schedules) and 0052 (reflection) plan 0.7.0 and 0.8.0, from a review of two third-party vault skills.
+**Output:** reviews/08 (two third-party vault skills, an unattended "operator" and an audit with a "reflection" pass, read against the product; ideas only, no text copied); decisions 0051 and 0052, agreed with the user in a grill on 2026-10-29 (0051 amends 0003 and 0037, refines 0045, keeps 0043); tasks CC-61 to CC-67, U-20 and U-21; docs/v2-ideas.md: Schedulers, Hermes, Contradiction and staleness reports, Dedup audit and Correction sweep point to 0051 and 0052, and the Onboarding suite gains the read-first, probe-the-connectors, ask-the-gaps setup; the status banner.
+**Acceptance:** the user approves decisions 0051 and 0052; each task below names its part of them and its acceptance; Codex's review finds CC-62 and CC-65 scoped so that their contracts can be written without a new question to the user.
+
+### CC-61 · Audit the skills and the brain AGENTS template for current models · `todo`
+**Release:** 0.6.1
+**Changelog:** the skills and the brain's agent rules drop leftover emphasis and bare rules, give the reason for each hard rule, and gain two rules for current models: edit only what changes, and search a name as written before answering from memory.
+**Output:** one pass over `skills/*/SKILL.md` with their references and over `templates/brain/AGENTS.md` (reviews/08 §2): each rule sorted as retired, one-sided, bare prohibition, aggressive, obvious, hard rule or gotcha; retired and obvious lines deleted, bare prohibitions given their reason, one-sided rules given both sides, CAPS emphasis made plain; hard rules (writes through the CLI, never merge, sources are data, nothing sent without a yes) and gotchas kept as they are. Two additions, each with its evidence: edit only what changes, never rewrite a whole file or body for a small change (U-18: placeholder writes, `sed` edits of proposal files); search a name as the user wrote it before answering from memory (brain-query). `scripts/build-skills.ts` gains two checks: references at most one level deep from SKILL.md, and no word of four or more capital letters outside code, names and acronyms on an allow-list. The mirror rebuilt.
+**Acceptance:** a table in the PR lists every changed rule with its bucket and before/after; no hard rule is softened; `npm test` passes with the two new checks, and each check fails on a fixture that breaks it; blind runs of brain-ingest and brain-catch-up on the CC-41 synthetic brain give the same notes and proposals as before the change.
+
+
+## 0.7.0 — The brain runs itself (decision 0051)
+
+Catch-up on a schedule, with no one there: a budget per run, nothing written when nothing waits, a Report row (with Reports on) only when the user is needed. Starts after U-19.
+
+### CC-62 · Contracts for unattended catch-up and schedules (decision 0051) · `todo`
+**Release:** 0.7.0
+**Changelog:** contracts for unattended catch-up: the input budget, the no-op rule, the Report row, and `brain schedule`.
+**Output:** spec/schema.md: `settings.unattended.max_inputs` (default 10) in `brain.json`. spec/cli.md: `brain schedule install | list | remove` (the job, catch-up or reflect; the times; the prompt and model it runs; the launchd agent on macOS, the printed cron line elsewhere; JSON output; errors); the log line an unattended run writes, with inputs done and left over, from which the backlog warning reads the last three runs; §6's catch-up sequence in unattended mode: which batch questions take their default and which skip their input (0051), which decided rows it applies (Approve, Reject, Edit with a value, corrections) and which wait (a Fix or an Approve with a What to fix to read: `FIX_TO_READ`, `NOTE_TO_READ`) and the flags that give that (`--record-only` or not, and any CLI change it needs, then part of CC-63), publish only with `settings.publish: auto`, the no-op rule, the Report row's text and when it is written (Reports on only), and the summary of unattended runs that opens the next attended catch-up, read from the log.
+**Acceptance:** Codex's review finds CC-63 and CC-64 buildable from the contracts with no spec question; every question in brain-catch-up's batch is listed as default or skip; every kind of decided Review row and correction is listed as applied or waiting.
+
+### CC-63 · `brain schedule` and the unattended settings in the CLI (decision 0051) · `todo`
+**Release:** 0.7.0
+**Changelog:** `brain schedule` installs, lists and removes a scheduled catch-up or reflection, and `brain.json` takes an input budget for unattended runs.
+**Output:** per CC-62: `settings.unattended.max_inputs` validated and shown by `brain status`; `brain schedule install | list | remove` writing and removing a launchd agent in `~/Library/LaunchAgents/` (a path given by an environment variable in tests) and printing a cron line elsewhere; the unattended log line; the code and tests.
+**Acceptance:** tests: `install` writes a plist that runs `claude -p` in the brain folder at the given times with the pinned model, and a second `install` for the same job replaces it; `list` shows it; `remove` deletes it and a second `remove` is a no-op; on a non-macOS platform `install` prints the cron line and writes nothing; a `max_inputs` of 0 or a non-integer is refused by `brain.json` validation; `brain lint` passes on the fixture brain.
+
+### CC-64 · Unattended catch-up in the skills (decision 0051) · `todo`
+**Release:** 0.7.0
+**Changelog:** "catch up unattended" runs a catch-up with no questions, on a schedule or by hand, and "run catch-up every morning" sets the schedule.
+**Output:** brain-catch-up: the unattended mode per CC-62 (blockers skip their input, defaults taken, explicit decisions applied and What to fix left for an attended run, the budget oldest first, the backlog warning, publish only with `auto`, the no-op rule, the Report row with Reports on, the opening summary of unattended runs); a "Run on a schedule" section that writes the settings, offers Reports once when it is off, and runs `brain schedule install`, with the lines for Hermes (reviews/07) as an alternative; brain-howto and the user guide.
+**Acceptance:** blind runs on a synthetic brain built with CC-41: with three meetings, one carrying a pre-check blocker, an unattended run ingests two, lists the third under Needs you and writes one Report row with Reports on and none with Reports off, and the next attended catch-up opens with the summary of that run; with nothing waiting it writes no commit, no Notion call and no log line; with 12 inputs and the default budget it takes the 10 oldest and names 2 left; a Review row set to Approve is applied and a Fix with text waits, named in the report; a correction in Notion is applied; with `publish: ask` nothing is published; the skill mirror check passes.
+
+
+## 0.8.0 — The brain tidies itself (decision 0052)
+
+Reflection across notes: contradictions, stale facts, duplicates, promotions and recurring themes as Review rows, never edits. Starts after the agency brain has moved in.
+
+### CC-65 · Contracts for reflection (decision 0052) · `todo`
+**Release:** 0.8.0
+**Changelog:** contracts for reflection: candidates, the proposal fingerprint, and three new lint warnings.
+**Output:** spec/cli.md: `brain reflect --candidates` (its four signals, the window, which lifecycles each signal reads, the cluster JSON, how fingerprints already on rejected or pending proposals are left out); the `orphan`, `note-size` and `near-duplicate` warnings in §5.10, with the name-matching rule; §6's reflection sequence: each finding's proposal kind, the cap of 10 rows and its order, a theme's draft and its Review notes row, the report, unattended. spec/schema.md: `fingerprint` on proposals and how it is formed.
+**Acceptance:** Codex's review finds CC-66 and CC-67 buildable from the contracts with no spec question; schema examples validate for a `merge` and a `contradiction` proposal carrying a fingerprint.
+
+### CC-66 · `brain reflect --candidates`, fingerprints and the new lint warnings (decision 0052) · `todo`
+**Release:** 0.8.0
+**Changelog:** `brain reflect --candidates` finds likely duplicates, overtaken notes, notes that may disagree and recurring terms; proposals carry a fingerprint; lint warns on orphans, oversized notes and near-duplicate names.
+**Output:** per CC-65: the command, `fingerprint` in `brain proposal new` and its validation, the three lint warnings, the code and tests.
+**Acceptance:** tests on the fixture brain: two people "María López" and "M. Lopez" give a near-duplicate candidate and a `near-duplicate` warning; once a `merge` with their fingerprint is rejected, `--candidates` no longer gives the pair; a reviewed person note older than two meetings naming her gives an overtaken candidate; a term in three sources with no note gives a recurring-term candidate, and in two it doesn't; a 12 KB concept gives `note-size`, a 12 KB source doesn't; a concept nothing references and with no project or area gives `orphan`.
+
+### CC-67 · The brain-reflect skill (decision 0052) · `todo`
+**Release:** 0.8.0
+**Changelog:** "tidy the brain" finds contradictions, stale facts, duplicates, promotions and recurring themes, and puts at most 10 of them in Review as proposals; it can run weekly on a schedule.
+**Output:** skills/brain-reflect: the candidates, the judgment per finding kind (reviews/08 §1: contradiction or evolution, merge or cross-link, stale or still valid, theme or chatter, promote or keep), the proposals and drafts per CC-65, the cap and its order, the report, unattended per 0051 and its "Run on a schedule" section; templates/brain/AGENTS.md lists the skill; brain-howto and the user guide.
+**Acceptance:** blind runs on a synthetic brain built with CC-41 with planted problems: a duplicate person gives one Conflict row; a launch date that a later decision moved gives a contradiction or stale-fact row; a theme in four meetings gives a draft concept in a Review notes row, and one in two meetings gives nothing; 15 planted problems give 10 rows, contradictions first, and the report counts 5 more; a second run after the user rejects the duplicate doesn't propose it again; with nothing found, nothing is written; the skill mirror check passes.
+
+
 ---
 
 ## Your tasks
@@ -678,6 +740,8 @@ U-18's findings (2026-10-28): less to learn for a second user, with nothing take
 | U-17 | 0.4.1 in your brain: `brain upgrade`, Notion migration 0007 with Claude (your yes at each step), and add `/Clean email` to Brain Assistant (or save the plain prompt). Then paste one real email thread into a capture and clean it. Then the new Clean email text and the Instructions rule line by hand (migration 0008's steps, decision 0047). | After 0.4.1 is released |
 | U-18 | 0.5.0 in your brain: `brain upgrade`, Notion migration 0009, then one catch-up with a document given a Keep, a meeting fixed and set back to Reviewed, a Fix on a Review row, and a report refreshed. **Closed 2026-10-28:** the re-read and the refresh passed; Keep failed (an attachment with an empty Keep wrote no `reference` and nothing readable in Notion) and Fix wasn't tried. Findings → decisions 0048–0050 (CC-55); retested in U-19 | Done |
 | U-19 | 0.6.0 in your brain: `brain upgrade`, Notion migration 0010 (buttons and page layouts by hand), then one catch-up with a file kept as a document (whole, then one with Only keep), a decision promoted to a document, a Fix "a: …" on a Review row, and a look at two area homes | After 0.6.0 is released |
+| U-20 | 0.7.0 in your brain: `brain upgrade`, "run catch-up every morning", then a week of unattended runs: check the Report rows (or, with Reports off, the summary that opens your next catch-up), the skipped inputs waiting for an attended catch-up, and that no-op runs leave nothing | After 0.7.0 is released and U-19 is closed |
+| U-21 | 0.8.0 in your brain, after the agency brain has moved in: "tidy the brain" once attended, decide its Review rows, then a weekly schedule | After 0.8.0 is released and the agency brain has moved in |
 
 ## How to start Codex on a task
 

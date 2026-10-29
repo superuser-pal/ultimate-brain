@@ -22,6 +22,7 @@ It would orchestrate the existing skills in one guided flow:
 6. **First run:** walk through one real ingest and one query, end to end, and show where to review.
 7. **Link code repos** with `brain link`.
 
+**Setup pattern (reviews/08, 2026-10-29):** read what the brain and Notion already know first and show it for overrides; check each connector (Notion MCP, converters, Hermes) with a read-only call instead of asking whether it is set up, reporting found and working / found but failing / not found; ask only the gaps; end by scheduling the catch-up (0051) rather than telling the user to.
 **Ties to:** capability profiles (decision 0030) choose the interview questions, examples and views; findings 3 and 4 from the dogfood.
 **Why:** the first real setup took a long session of manual steps (init, MCP access, sync before ingest, filling Date and Attendees). A second user won't get through that alone.
 **Revisit:** before the second user.
@@ -83,13 +84,13 @@ Composable profiles (client work, meeting-heavy work, research, writing, learnin
 ## Maintenance and quality
 
 ### Contradiction and staleness reports
-A semantic lint across notes. **Source:** vision, synthesis §3.3 (Review 5).
+A semantic lint across notes. **Source:** vision, synthesis §3.3 (Review 5). **Decided in 0052 (2026-10-29), planned for 0.8.0:** `brain-reflect` writes contradictions and stale facts as Review rows.
 
 ### Correction sweep command
-One correction propagated to every restatement of the fact. **Source:** synthesis §3.2 (v1 has the manual correction flow).
+One correction propagated to every restatement of the fact. **Source:** synthesis §3.2 (v1 has the manual correction flow). **Partly in 0052 (0.8.0):** reflection proposes a fix for a stale restatement it finds; a sweep run right after one correction stays here.
 
 ### Dedup audit
-Finds likely duplicate notes and people and writes `merge` proposals. **Source:** synthesis §3.3.
+Finds likely duplicate notes and people and writes `merge` proposals. **Source:** synthesis §3.3. **Decided in 0052 (2026-10-29), planned for 0.8.0:** reflection's near-duplicate candidates and the `near-duplicate` lint warning.
 
 ### Two CLI loose ends
 Noted on 2026-10-23, left out of 0.6.0 by the user: an applied fact doesn't refresh a summary that states it, and `brain report --help` with no subcommand exits 2 instead of showing help. **Target:** the next patch that touches the CLI.
@@ -134,10 +135,10 @@ Noted on 2026-10-23, left out of 0.6.0 by the user: an applied fact doesn't refr
 **Changes:** decisions/0015 (Notion via MCP only). Add a small API client for bulk publishing and for unattended runs where MCP auth is not available headless. **Trigger:** publishing becomes slow or costly through agent turns, or schedulers need Notion access. **Evidence (2026-10-15, CC-15):** one publish took 35 MCP calls and about 4 minutes. Decision 0037 batches MCP writes first; a CLI that holds a Notion token changes how credentials are trusted and needs its own grill.
 
 ### Schedulers
-Unattended ingest and sync with n8n or Hermes. **Source:** vision. **Next step:** a scheduled "catch up" (decision 0037), once a manual catch-up runs without stopping for questions.
+Unattended ingest and sync with n8n or Hermes. **Source:** vision. **Decided in 0051 (2026-10-29), planned for 0.7.0:** catch-up runs unattended on defaults with a budget per run, and `brain schedule install` sets a local `claude -p` schedule. Still here: n8n, and Claude Code's cloud schedules (no drop folder, linked repos or local Notion MCP on a fresh clone; unchecked).
 
 ### Hermes as an always-on brain operator
-**Raised by the user on 2026-10-22 (U-15 grill).** Hermes (Nous Research's Hermes Agent) would run the brain next to Claude Code and Codex: scheduled catch-ups, captures and answers from a phone. It would not build the product (0044). **Why:** the brain pays back only when it runs regularly; an operator that runs on its own makes the habit bar ("every meeting ingested within 2 working days") automatic. **Open:** whether it can run the shared skills and the CLI unattended, its Notion access, how a scheduled catch-up asks its one batch of questions, and how it answers short questions fast (see "Retrieval index over Markdown"). **CC-50 (reviews/07-hermes-and-search.md, 2026-10-23):** Hermes loads the brain's skills from `.agents/skills/` after `hermes skills trust`, runs scheduled jobs in the brain folder with `AGENTS.md`, reaches Notion through MCP, and no command the skills run needs its approval; a reply to a scheduled delivery can continue the run. Missing on our side: catch-up has no unattended mode, the skills were tested only on Claude models, and brain-connect-notion has no Hermes setup lines. **Next step:** decide the unattended catch-up (two turns: post the batch, run on the reply; or one turn on defaults), then an attended trial on the user's brain with a Claude model pinned. Ties to "Schedulers" and "Adapters for more agent platforms".
+**Raised by the user on 2026-10-22 (U-15 grill).** Hermes (Nous Research's Hermes Agent) would run the brain next to Claude Code and Codex: scheduled catch-ups, captures and answers from a phone. It would not build the product (0044). **Why:** the brain pays back only when it runs regularly; an operator that runs on its own makes the habit bar ("every meeting ingested within 2 working days") automatic. **Open:** whether it can run the shared skills and the CLI unattended, its Notion access, how a scheduled catch-up asks its one batch of questions, and how it answers short questions fast (see "Retrieval index over Markdown"). **CC-50 (reviews/07-hermes-and-search.md, 2026-10-23):** Hermes loads the brain's skills from `.agents/skills/` after `hermes skills trust`, runs scheduled jobs in the brain folder with `AGENTS.md`, reaches Notion through MCP, and no command the skills run needs its approval; a reply to a scheduled delivery can continue the run. Missing on our side: catch-up has no unattended mode, the skills were tested only on Claude models, and brain-connect-notion has no Hermes setup lines. **Decided in 0051 (2026-10-29):** one turn on defaults, which works with any scheduler; local `claude -p` is supported first and Hermes is documented as possible. **Next step:** a trial of Hermes on the user's brain with a Claude model pinned, after 0.7.0; the two-turn shape (post the batch, run on the reply) stays here for it. Ties to "Schedulers" and "Adapters for more agent platforms".
 
 ### ~~Public source for the Claude Code plugin~~
 Resolved by decision 0038: the plugin is retired, and the skills reach Claude Code through the npm package (`brain init`, `brain upgrade`). Still open for other users: findings go to the private product repo's issues. **Revisit:** before the second user.
