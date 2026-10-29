@@ -29,7 +29,10 @@ The brain pays back only when it runs regularly, and today every catch-up waits 
 
 ### Where the run reports
 - **The usual short report goes into the operation log** (0045's counts: notes read, duration).
-- **One Inbox Report row** ("Catch-up 29 Oct: 2 meetings in, 1 needs you") **only when something needs the user or failed.** A run that went well and needs nothing writes no row.
+- **One Inbox Report row** ("Catch-up 29 Oct: 2 meetings in, 1 needs you") **only when something needs the user or failed, and only when the Reports module is on.** A run that went well and needs nothing writes no row.
+- **With Reports off (the default, 0048), no row:** what needs the user already waits where they would act on it (a skipped meeting stays Reviewed, a skipped Inbox row stays Ready, a Fix stays in Review). The next attended catch-up opens with a summary of the unattended runs since the last one, read from the log: "Since last time: 4 scheduled runs, 6 inputs in, 1 skipped, 1 Fix waiting, 1 failed: Notion login". The core space gains nothing.
+- **When the user sets a schedule with Reports off,** the skill offers once: "Turn on Reports to get a row in the Inbox when a scheduled run needs you?"
+- **A Notion failure** (an expired MCP login) can't be reported in Notion at all; it is in the log and in that opening summary.
 - **A step that fails is logged and the run goes on** with the next input, as attended catch-up already does with a blocked input.
 
 ### Schedules
@@ -42,6 +45,7 @@ The brain pays back only when it runs regularly, and today every catch-up waits 
 - **Amends 0037:** catch-up asks one batch of questions **when the user is there**; on a schedule it asks none.
 - **Amends 0003:** "Unattended runs may only add notes and flag; they never apply proposals" becomes: unattended runs add notes and flag, apply only the user's explicit decisions (Approve, Reject, Edit with a value, corrections), and never interpret a What to fix or decide anything themselves. `--record-only` stays for runs that must not apply at all.
 - **Refines 0045:** a Fix still means "apply it, corrected as I wrote in What to fix", and is applied by the next attended catch-up; an unattended run leaves it as it is and names it in the report.
+- **Keeps 0048:** the Report row is part of the Reports module; the core space is unchanged.
 - **Keeps 0043:** the 5-minute bar is unchanged for attended runs.
 - **New settings:** `settings.unattended.max_inputs`. **New CLI:** `brain schedule install | list | remove`.
 - **The setup pattern that reads first, probes connectors and asks only the gaps** goes into the v2 Onboarding suite, not into 0.7.0.

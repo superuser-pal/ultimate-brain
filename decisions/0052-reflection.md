@@ -33,7 +33,7 @@ The vision's "wow" is a brain that maintains and synthesizes itself. Today every
 
 ### Runs on demand or weekly, unattended
 - **Unattended (0051) it is safe as it is:** it only adds proposals and drafts. A weekly schedule is the suggested one ("every Monday at 8").
-- **The same rules as unattended catch-up:** no findings means no commit, no Notion write and no log line; one Inbox Report row only when something needs the user or failed; publishing only with `settings.publish: auto`.
+- **The same rules as unattended catch-up:** no findings means no commit, no Notion write and no log line; one Inbox Report row only when something needs the user or failed and Reports is on, otherwise the summary that opens the next attended catch-up; publishing only with `settings.publish: auto`.
 - **The report** is like catch-up's: counts per kind, what needs the user, the next action.
 - **A light pass inside catch-up,** limited to the notes that run touched, comes later, once the volume of rows is known. Not now: a pass over the whole brain would break the 5-minute bar (0043).
 
