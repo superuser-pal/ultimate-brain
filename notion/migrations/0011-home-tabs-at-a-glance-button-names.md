@@ -1,6 +1,6 @@
 # 0011 · Home's Areas and Inbox tabs, At a glance, button names
 
-**Design change:** CC-68 (#143, #144, #145, #146; docs/notion-space-design.md §3.1, §3.15, §5). **Applies to:** spaces that ran migration 0010 (release 0.6.0). A space migrated from an earlier release runs 0010, then this one.
+**Design change:** CC-68, decision 0053 (#143, #144, #145, #146; docs/notion-space-design.md §3.1, §3.15, §5). **Applies to:** spaces that ran migration 0010 (release 0.6.0). A space migrated from an earlier release runs 0010, then this one.
 
 Nothing here changes what the brain reads or writes: it reads the boxes the buttons tick, never the buttons, and At a glance is Notion-only. Run it whenever you like.
 
@@ -15,6 +15,7 @@ Who does each step:
 |---|---|
 | Add the formula **At a glance** to Areas, with the expression in [Prompt 4](../prompts/04-formula-rollup.md) (with Tasks, or without it) | agent; if the API refuses the expression, paste it by hand (property → Edit property → Formula) |
 | Description: At a glance "Owner: you." (derived, Notion-only) | agent |
+| Description of Refresh asked on the Inbox: "Owner: you, through the Refresh report button on a Report row. Waiting for the brain; it clears it." | agent |
 
 ## 2 · Home: the Areas and Inbox tabs (#143, #146)
 
@@ -52,9 +53,10 @@ Avoid a name equal to, or one letter from, another property: Report, Documents, 
 | Areas | Type, At a glance | To review, Meetings to review, Due |
 
 ## Verify
-- [ ] Areas has At a glance: an area with one pending Review row shows "1 to review"; an area with nothing waiting shows "all clear".
+- [ ] Areas has At a glance, and hovering over it shows "Owner: you.".
+- [ ] At a glance on a test area: one pending Review row shows "1 to review"; add two meetings Not Reviewed dated today or earlier: "1 to review · 2 meetings"; (Tasks) add a task due today, not Done: "1 to review · 2 meetings · 1 due"; resolve the Review row: "2 meetings · 1 due" (a 0 is left out); with nothing waiting: "all clear". Without the Tasks module, the formula has no due part (the expression without Tasks in Prompt 4). Delete the test rows.
 - [ ] Nothing sits above Home's two columns; "What's on today?" has the tabs Areas (first), then Tasks (Tasks module), Meetings, Projects, and Inbox (last).
 - [ ] The Areas tab shows "How are my areas?", one line per area with Name and At a glance, and (Tasks) "What's due across areas?" below it.
 - [ ] The Inbox tab shows "What's in my inbox?" with Name, Kind and Brain Status only; Knowledge's Inbox tab has only "What came in?".
-- [ ] Each button shows one name on the left and a different label on the button; clicking Keep as document still ticks Document asked and sets Ready, Refresh report still ticks Refresh asked, Promote to document still ticks Promote asked.
+- [ ] If you renamed the buttons: Inbox has button properties Keep and Update, Decisions and Concepts a button property Promote, and no property in those databases is named the same as, or one letter from, another (Report, Documents, Refresh asked). If you kept your own names, each still differs from its label. Each button shows one name on the left and a different label on the button; clicking Keep as document still ticks Document asked and sets Ready, Refresh report still ticks Refresh asked, Promote to document still ticks Promote asked.
 - [ ] The page layouts of Inbox, Decisions, Concepts and Areas match section 4.
