@@ -702,7 +702,7 @@ Catch-up on a schedule, with no one there: a budget per run, nothing written whe
 
 Tidy capture, Write up and Refresh report run Brain Assistant at once inside Notion; the catch-up imports only the wording the user accepted. Buttons don't wake Claude Code or Codex and don't replace the 0.7.0 schedules.
 
-### CC-69 · Plan 0.7.1: decision 0054 and its tasks · `review`
+### CC-69 · Plan 0.7.1: decision 0054 and its tasks · `done` (#149)
 **Release:** 0.7.1
 **Changelog:** decision 0054 plans 0.7.1: buttons that run Brain Assistant in Notion (Tidy capture, Write up, Refresh report), with only accepted wording coming back to the brain.
 **Output:** decision 0054, accepted by the user in a grill with Codex on 2026-10-29 and handed to Claude Code to record (amends 0035, 0049, 0043 and 0045; refines 0048, 0053 and 0051; keeps 0003, 0015 and 0052); tasks CC-70 to CC-73 and U-22; docs/vision.md's runner line; docs/v2-ideas.md "Notion-triggered runs"; the status banner. U-19 and CC-61 unchanged.
@@ -722,7 +722,7 @@ Tidy capture, Write up and Refresh report run Brain Assistant at once inside Not
 
 ### CC-72 · Accepted wording and appendices in the CLI (decision 0054) · `todo`
 **Release:** 0.7.1
-**Changelog:** the CLI reads the wording you accepted in Notion into the Git Document or report exactly, proposes a Related knowledge appendix, and never overwrites a pending draft on publish.
+**Changelog:** the CLI reads the wording you accepted in Notion into the Git Document or report exactly, supports Related knowledge appendix proposals, and never overwrites a pending draft on publish.
 **Output:** per CC-70 (spec/cli.md, spec/schema.md): `sync plan` items for accepted promoted Documents and accepted refreshes, with the stale and conflict cases; the conversion of the accepted blocks; the appendix proposal and its apply; `sync render` keeping pending drafts, revisions and proposed refreshes; the code and tests.
 **Acceptance:** tests on the fixture brain: an accepted Write up goes into the Git Document byte for byte; a body edited after acceptance gives no import and a stale item; a pending revision blocks the import; an approved appendix is appended after the accepted wording, which stays unchanged; a publish over a row with a pending proposed refresh keeps it; a Refresh report click queues no full refresh; `brain lint` passes on every result.
 
