@@ -32,6 +32,18 @@ test("skill validation and mirroring catch the usual mistakes", async (context) 
     "skills/brain-bad/SKILL.md: body is empty",
   ]);
 
+  await skill("brain-loud", "---\nname: brain-loud\ndescription: Shouts.\n---\nYou MUST read the JSON. `NEVER` in code is fine.\n\n```\nALWAYS here too\n```\n");
+  await skill("brain-deep", "---\nname: brain-deep\ndescription: Nests.\n---\nSee [a](references/a.md).\n");
+  await mkdir(join(source, "brain-deep", "references"));
+  await writeFile(join(source, "brain-deep", "references", "a.md"), "Then [b](b.md), back to [the skill](../SKILL.md), [the web](https://example.com).\n");
+  await writeFile(join(source, "brain-deep", "references", "b.md"), "Deep.\n");
+  assert.deepEqual((await validateSkills(source)).slice(-2), [
+    "skills/brain-deep/references/a.md: links to references/b.md, which SKILL.md doesn't link to (references are one level deep)",
+    "skills/brain-loud/SKILL.md: capitals for emphasis (MUST); write it plainly, or put code in backticks",
+  ]);
+  await rm(join(source, "brain-deep"), { recursive: true });
+  await rm(join(source, "brain-loud"), { recursive: true });
+
   await buildMirror(source, mirror);
   assert.deepEqual(await mirrorDrift(source, mirror), []);
   await writeFile(join(source, "brain-good", "SKILL.md"), "---\nname: brain-good\ndescription: Changed.\n---\n# Good\n");
