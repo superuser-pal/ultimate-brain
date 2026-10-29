@@ -45,8 +45,64 @@ export async function validateSkills(source = SOURCE): Promise<string[]> {
     if (typeof attributes.description !== "string" || attributes.description.trim() === "") problems.push(`${where}: description is required`);
     else if (attributes.description.length > 1024) problems.push(`${where}: description is over 1024 characters`);
     if (body.trim() === "") problems.push(`${where}: body is empty`);
+    problems.push(...(await textProblems(join(source, name), body)));
   }
   return problems;
+}
+
+/** Words of four or more capitals allowed outside code: acronyms and file names, never emphasis (CC-61). */
+export const CAPS_ALLOWED = new Set(["AGENTS", "CHANGELOG", "HTML", "JSON", "NNNN", "README", "SKILL", "YYYY"]);
+const CAPS = /\b[A-Z]{4,}\b/g;
+const LINK = /\]\(([^)\s]+)\)/g;
+
+/**
+ * Two style checks over a skill's Markdown (CC-61). Every file a skill links to is linked from SKILL.md itself, so an
+ * agent reaches any reference in one step; references may link to each other. And no word of four or more capitals
+ * outside code: CAPS emphasis makes current models over-apply a rule.
+ */
+async function textProblems(dir: string, skillBody: string): Promise<string[]> {
+  const problems: string[] = [];
+  const name = dir.split(/[\\/]/).pop();
+  const files = new Map<string, string>([["SKILL.md", skillBody]]);
+  for (const [path, content] of await snapshot(dir)) if (path !== "SKILL.md" && path.endsWith(".md")) files.set(path, content);
+  const fromSkill = new Set(localLinks("SKILL.md", skillBody));
+  for (const [path, content] of files) {
+    for (const target of localLinks(path, content)) {
+      if (target !== "SKILL.md" && !fromSkill.has(target) && (await exists(join(dir, target)))) {
+        problems.push(`skills/${name}/${path}: links to ${target}, which SKILL.md doesn't link to (references are one level deep)`);
+      }
+    }
+    const prose = content.replace(/^(```|~~~)[^\n]*\n[\s\S]*?^\1[^\n]*$/gm, "").replace(/`[^`\n]*`/g, "");
+    const shouted = [...new Set([...prose.matchAll(CAPS)].map((match) => match[0]).filter((word) => !CAPS_ALLOWED.has(word)))];
+    if (shouted.length > 0) problems.push(`skills/${name}/${path}: capitals for emphasis (${shouted.join(", ")}); write it plainly, or put code in backticks`);
+  }
+  return problems;
+}
+
+/** Targets of a file's relative links, resolved against the skill folder; external links and anchors are skipped. */
+function localLinks(from: string, content: string): string[] {
+  const base = from.includes("/") ? from.slice(0, from.lastIndexOf("/")) : "";
+  const links: string[] = [];
+  for (const [, href] of content.matchAll(LINK)) {
+    const target = href.split("#")[0];
+    if (target === "" || /^[a-z]+:/i.test(target) || target.startsWith("/")) continue;
+    const parts: string[] = base === "" ? [] : base.split("/");
+    for (const part of target.split("/")) {
+      if (part === "..") parts.pop();
+      else if (part !== ".") parts.push(part);
+    }
+    links.push(parts.join("/"));
+  }
+  return links;
+}
+
+async function exists(path: string): Promise<boolean> {
+  try {
+    await readFile(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Files that differ between `skills/` and the mirror (paths relative to each root). */
