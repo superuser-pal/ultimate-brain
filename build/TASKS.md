@@ -658,7 +658,7 @@ U-18's findings (2026-10-28): less to learn for a second user, with nothing take
 ### CC-60 · Plan 0.6.1 to 0.8.0: decisions 0051 and 0052 and their tasks · `review`
 **Release:** 0.6.1
 **Changelog:** decisions 0051 (unattended catch-up and schedules) and 0052 (reflection) plan 0.7.0 and 0.8.0, from a review of two third-party vault skills.
-**Output:** reviews/08 (two third-party vault skills, an unattended "operator" and an audit with a "reflection" pass, read against the product; ideas only, no text copied); decisions 0051 and 0052, agreed with the user in a grill on 2026-10-29 (0051 amends 0003 and 0037, keeps 0043); tasks CC-61 to CC-67, U-20 and U-21; docs/v2-ideas.md: Schedulers, Hermes, Contradiction and staleness reports, Dedup audit and Correction sweep point to 0051 and 0052, and the Onboarding suite gains the read-first, probe-the-connectors, ask-the-gaps setup; the status banner.
+**Output:** reviews/08 (two third-party vault skills, an unattended "operator" and an audit with a "reflection" pass, read against the product; ideas only, no text copied); decisions 0051 and 0052, agreed with the user in a grill on 2026-10-29 (0051 amends 0003 and 0037, refines 0045, keeps 0043); tasks CC-61 to CC-67, U-20 and U-21; docs/v2-ideas.md: Schedulers, Hermes, Contradiction and staleness reports, Dedup audit and Correction sweep point to 0051 and 0052, and the Onboarding suite gains the read-first, probe-the-connectors, ask-the-gaps setup; the status banner.
 **Acceptance:** the user approves decisions 0051 and 0052; each task below names its part of them and its acceptance; Codex's review finds CC-62 and CC-65 scoped so that their contracts can be written without a new question to the user.
 
 ### CC-61 · Audit the skills and the brain AGENTS template for current models · `todo`
@@ -741,7 +741,7 @@ Reflection across notes: contradictions, stale facts, duplicates, promotions and
 | U-18 | 0.5.0 in your brain: `brain upgrade`, Notion migration 0009, then one catch-up with a document given a Keep, a meeting fixed and set back to Reviewed, a Fix on a Review row, and a report refreshed. **Closed 2026-10-28:** the re-read and the refresh passed; Keep failed (an attachment with an empty Keep wrote no `reference` and nothing readable in Notion) and Fix wasn't tried. Findings → decisions 0048–0050 (CC-55); retested in U-19 | Done |
 | U-19 | 0.6.0 in your brain: `brain upgrade`, Notion migration 0010 (buttons and page layouts by hand), then one catch-up with a file kept as a document (whole, then one with Only keep), a decision promoted to a document, a Fix "a: …" on a Review row, and a look at two area homes | After 0.6.0 is released |
 | U-20 | 0.7.0 in your brain: `brain upgrade`, "run catch-up every morning", then a week of unattended runs: check the Report rows, the skipped inputs waiting for an attended catch-up, and that no-op runs leave nothing | After 0.7.0 is released and U-19 is closed |
-| U-21 | 0.8.0 in your brain, after the agency brain has moved in: "tidy the brain" once attended, decide its Review rows, then a weekly schedule | After 0.8.0 is released |
+| U-21 | 0.8.0 in your brain, after the agency brain has moved in: "tidy the brain" once attended, decide its Review rows, then a weekly schedule | After 0.8.0 is released and the agency brain has moved in |
 
 ## How to start Codex on a task
 
