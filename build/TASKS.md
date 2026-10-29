@@ -5,7 +5,7 @@
 **Rules:** see "Multi-agent rules" in [AGENTS.md](../AGENTS.md). Update only your own rows.
 
 > **2026-10-28 — Status: 0.5.0 is released and in the user's brain. U-18 is closed: the re-read and the report refresh passed, Keep failed and Fix wasn't tried. Its findings, decided in a grill on 2026-10-28, are decisions 0048 (modules, simpler rows, buttons), 0049 (Documents) and 0050 (area homes), planned as 0.6.0 (CC-55 to CC-59) with one Notion migration, 0010. The agency brain moves in after 0.6.0.**
-> - **2026-10-29, CC-60 (planning):** two third-party vault skills reviewed (reviews/08) and grilled with the user: decision 0051 (unattended catch-up and schedules) and 0052 (reflection), both Proposed. Plan: 0.6.1 skills audit (CC-61), 0.7.0 the brain runs itself (CC-62 to CC-64, U-20, after U-19), 0.8.0 the brain tidies itself (CC-65 to CC-67, U-21, after the agency brain moves in). Order before them unchanged: release 0.6.0, `brain upgrade` and migration 0010, U-19.
+> - **2026-10-29, CC-60 (planning):** two third-party vault skills reviewed (reviews/08) and grilled with the user: decisions 0051 (unattended catch-up and schedules) and 0052 (reflection), Accepted 2026-10-29 (#147). Plan: 0.6.1 skills audit (CC-61), 0.7.0 the brain runs itself (CC-62 to CC-64, U-20, after U-19), 0.8.0 the brain tidies itself (CC-65 to CC-67, U-21, after the agency brain moves in). Order before them unchanged: release 0.6.0, `brain upgrade` and migration 0010, U-19.
 > - **Claude Code builds, Codex reviews (decision 0044, CC-39):** from 2026-10-21 every task is Claude Code's; the open Codex tasks became CX-39 → CC-40, CX-33 → CC-41, CX-37 → CC-42, CX-38 → CC-43.
 > - **Merging (decision 0040):** the user merges on the GitHub PR page, with the PR's `merge-ready` status in view; `merge.mjs` is optional; agents never merge. `main-guard` fails only on a commit that came from no PR.
 > - **0.4.0 (released 2026-10-21):** theme (CC-35): the brain gives back (decisions 0041–0043). Its Notion checks (the 5-minute bar, the Full text box, Ask → Report) are closed in U-15.
@@ -655,7 +655,7 @@ U-18's findings (2026-10-28): less to learn for a second user, with nothing take
 
 ## 0.6.1 — Skills for current models
 
-### CC-60 · Plan 0.6.1 to 0.8.0: decisions 0051 and 0052 and their tasks · `review`
+### CC-60 · Plan 0.6.1 to 0.8.0: decisions 0051 and 0052 and their tasks · `done` (#147)
 **Release:** 0.6.1
 **Changelog:** decisions 0051 (unattended catch-up and schedules) and 0052 (reflection) plan 0.7.0 and 0.8.0, from a review of two third-party vault skills.
 **Output:** reviews/08 (two third-party vault skills, an unattended "operator" and an audit with a "reflection" pass, read against the product; ideas only, no text copied); decisions 0051 and 0052, agreed with the user in a grill on 2026-10-29 (0051 amends 0003 and 0037, refines 0045, keeps 0043); tasks CC-61 to CC-67, U-20 and U-21; docs/v2-ideas.md: Schedulers, Hermes, Contradiction and staleness reports, Dedup audit and Correction sweep point to 0051 and 0052, and the Onboarding suite gains the read-first, probe-the-connectors, ask-the-gaps setup; the status banner.

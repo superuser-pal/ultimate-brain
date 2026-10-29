@@ -1,6 +1,6 @@
 # 0052 — Reflection: the brain finds its own contradictions, duplicates and stale facts
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-10-29
 
 ## Context
