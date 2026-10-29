@@ -38,7 +38,7 @@ It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md)
 
 **Job:** see in ten seconds what you have to do today, then what the brain needs from you.
 
-Nothing sits above the two columns (#143).
+Nothing sits above the two columns (#143, decision 0053).
 **Left column:** navigation, then a small heading "Needs you" with two short lists (views 1–2).
 **Right column:** the buttons in a row, then "What's on today?" as a tabs block (views 0, 0b, 3–5, 5b), then "What did the brain take in?" as a second tabs block (views 6–7).
 
