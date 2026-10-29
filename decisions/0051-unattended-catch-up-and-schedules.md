@@ -2,6 +2,7 @@
 
 **Status:** Proposed
 **Date:** 2026-10-29
+**Amends:** 0003, 0037
 
 ## Context
 The brain pays back only when it runs regularly, and today every catch-up waits for the user to say "catch up" and then for their answers (0037). reviews/07 found that Hermes, or any scheduler, could run the brain's skills, and that the one piece missing on our side is **an unattended mode for catch-up**. reviews/08 read a third-party vault "operator" that runs on cron with no questions: budgets per run with the rest queued, a run with nothing to do that writes nothing, a fixed report, failures logged and skipped, and a setup that schedules the run itself. The user agreed the shape below in a grill on 2026-10-29.
@@ -11,7 +12,10 @@ The brain pays back only when it runs regularly, and today every catch-up waits 
 - **The same skill, started with "catch up unattended"** (the prompt a schedule runs). It runs the read-only pass as today, then, instead of asking:
   - **An input with a blocker** (a pre-check question, a sync conflict, a What to fix it can't read, a likely new version) is **skipped whole** and listed under Needs you. It waits for the next attended catch-up; nothing is lost.
   - **A choice with a default** takes it: every attachment and repo file selected, keep as document **no**, Ask rows answered with a report. The identities question is skipped.
-- **0003 holds:** an unattended run may record the user's decisions but never applies them. `sync apply` and `brain apply` run with `--record-only`; the user's decided Review rows are applied by the next attended catch-up, and corrections wait for it too. New notes as drafts, proposals, sources and Documents are additions and go in as usual.
+- **It applies the user's explicit decisions, and interprets none (amends 0003):**
+  - **Applied:** a Review row the user set to Approve or Reject, an Edit with a value, and the user's corrections in Notion (a Status, a note set to Reviewed). The user decided them word for word; the run only carries them out, so an approval on Tuesday shows in the notes and Briefs on Wednesday morning.
+  - **Waits for the next attended catch-up:** a Fix whose What to fix needs reading ("a: March, and drop c"), and an Approve whose What to fix narrows it ("all except b"): turning words into changes is the agent's judgment, which nobody would check. The report says "1 Fix waiting for you".
+  - **Never:** an unattended run decides nothing itself. New notes as drafts, proposals, sources and Documents are additions and go in as usual.
 - **Publish only when `settings.publish` is `auto`.** With `ask` (the default), an unattended run commits and pushes (`settings.push`) and leaves the publish to the next attended run.
 - **The 5-minute bar (0043) is for attended runs.** An unattended run has a budget instead.
 
@@ -36,7 +40,8 @@ The brain pays back only when it runs regularly, and today every catch-up waits 
 
 ## Consequences
 - **Amends 0037:** catch-up asks one batch of questions **when the user is there**; on a schedule it asks none.
-- **Keeps 0003 and 0043:** unattended runs record, never apply; the 5-minute bar is unchanged for attended runs.
+- **Amends 0003:** "Unattended runs may only add notes and flag; they never apply proposals" becomes: unattended runs add notes and flag, apply only the user's explicit decisions (Approve, Reject, Edit with a value, corrections), and never interpret a What to fix or decide anything themselves. `--record-only` stays for runs that must not apply at all.
+- **Keeps 0043:** the 5-minute bar is unchanged for attended runs.
 - **New settings:** `settings.unattended.max_inputs`. **New CLI:** `brain schedule install | list | remove`.
 - **The setup pattern that reads first, probes connectors and asks only the gaps** goes into the v2 Onboarding suite, not into 0.7.0.
 - **Built in 0.7.0** (CC-62 to CC-64), after U-19 has shown 0.6.0's catch-up is stable; tried on the user's brain in U-20.
