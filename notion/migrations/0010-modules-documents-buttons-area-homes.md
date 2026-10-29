@@ -11,6 +11,8 @@ Who does each step:
 
 Renaming a database, a property or an option keeps its id, its values and every view that uses it.
 
+**Then run [0011](0011-home-tabs-at-a-glance-button-names.md):** it moves Home's area lines and the Inbox view into tabs, adds the At a glance formula, and gives the buttons a property name that differs from their label (#143–#146).
+
 **No default Tasks database** (you skipped it, or map your own)? Leave out the Due formula, "What's due across areas?" and the area home's Today tab, or build them over your own tasks database ([modules/tasks.md](../modules/tasks.md)).
 
 ## 1 · References becomes Documents (0049)

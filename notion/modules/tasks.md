@@ -26,7 +26,7 @@ Action items from meetings, and your own from documents, emails and captures, be
 
 **Notion AI**:
 1. On **Ultimate Brain**, create a page "Tasks" right after "Home". Then, on that page, paste [Prompt 7g](../prompts/07g-tasks.md).
-2. On **Home**: [Prompt 7a](../prompts/07a-home.md)'s `[Tasks]` lines only (the Due column and "What's due across areas?", and the "Tasks" tab of "What's on today?"), with "Add only these. Don't change anything else."
+2. On **Home**: [Prompt 7a](../prompts/07a-home.md)'s `[Tasks]` lines only ("What's due across areas?" in the Areas tab, and the "Tasks" tab of "What's on today?"), with "Add only these. Don't change anything else."
 3. On each template in turn: the `[Tasks]` lines of [Prompt 6](../prompts/06-templates.md) for Areas ("Today" in "What needs me here?", "What's on my plate here?"), Projects ("What's on my plate here?") and Meetings (the toggle "Tasks"), with "Add only these. Don't change anything else."
 
 **By hand:** add Tasks to the Tier 1 navigation on System ([Prompt 8](../prompts/08-navigation.md)), if you use it.
@@ -38,4 +38,4 @@ Action items from meetings, and your own from documents, emails and captures, be
 
 ## Turning it off
 
-The brain stops creating tasks and lists action items in its report instead. Your tasks stay where they are. You may hide: the Tasks page and its navigation link, Home's Tasks tab, Due column and "What's due across areas?", and the Tasks views on area, project and meeting pages.
+The brain stops creating tasks and lists action items in its report instead. Your tasks stay where they are. You may hide: the Tasks page and its navigation link, Home's Tasks tab and "What's due across areas?" in its Areas tab, and the Tasks views on area, project and meeting pages.

@@ -32,8 +32,6 @@ On this page ("Knowledge") add one tab per numbered item you have. In each tab p
 [Orgs]    - Table "Which clients do I have?": Relationship is Client and Lifecycle is not Archived; sort Name; show Name, People, Projects.
 [Orgs]    - Table "Who else do we work with?": Relationship is not Client and Lifecycle is not Archived; sort Name; group by Relationship; show Name, Relationship, People.
 6. Tab "Inbox" (database "Inbox"):
-   - List "What's in my inbox?": Brain Status is New or Ready; sort Created ascending; show Name, Kind, Brain Status, Project, Created.
-[Documents]    - In "What's in my inbox?", also show Only keep and Document asked.
    - Table "What came in?": Brain Status is Done; sort Created descending; show Name, Kind, Summary, Project.
 [Knowledge]    - In "What came in?", also show Decisions and Concepts.
 

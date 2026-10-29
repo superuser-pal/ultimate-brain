@@ -38,19 +38,20 @@ It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md)
 
 **Job:** see in ten seconds what you have to do today, then what the brain needs from you.
 
-**Top, across the page:** one line per area (view 0, decision 0050), then *(Tasks)* "What's due across areas?" (view 0b).
+Nothing sits above the two columns (#143, decision 0053).
 **Left column:** navigation, then a small heading "Needs you" with two short lists (views 1–2).
-**Right column:** the buttons in a row, then "What's on today?" as a tabs block (views 3–5), then "What did the brain take in?" as a second tabs block (views 6–7).
+**Right column:** the buttons in a row, then "What's on today?" as a tabs block (views 0, 0b, 3–5, 5b), then "What did the brain take in?" as a second tabs block (views 6–7).
 
 | # | Tab | View name | Database | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|---|
-| 0 | — | How are my areas? | Areas | List | Archived is unchecked | Name | Name, To review, Meetings to review, *(Tasks)* Due | Your areas at a glance: "Day job · 3 to review · 1 meeting". Open one for its home (0050) |
-| 0b | — | What's due across areas? *(Tasks)* | Tasks | List, 5 rows | Status is not Done · Due is on or before today | Due, ascending | Name, Area, Due | Due today or overdue, in every area |
+| 0 | Areas | How are my areas? | Areas | List | Archived is unchecked | Name | Name, At a glance | Your areas, each line readable on its own: "Day job · 3 to review · 1 meeting", or "all clear" (#145). Open one for its home (0050). The first tab |
+| 0b | Areas | What's due across areas? *(Tasks)* | Tasks | List, 5 rows | Status is not Done · Due is on or before today | Due, ascending | Name, Area, Due | Due today or overdue, in every area |
 | 1 | — | What's waiting for you? | Review | List, grouped by Type (counts shown), 5 rows per group | State is Pending | Created time, descending | Name, About Page | Where reviewing starts (0045): one Review Notes row per meeting or document, plus the other changes. On a Review Notes row, About Page opens the meeting or Inbox row it came from; on the others, the note it changes; click a row to decide it in the Review Space |
 | 2 | — | Which minutes need review? | Meetings | List, 5 rows | Brain Status is Not Reviewed · Date is on or before today | Date, descending | Name | Minutes to check before the brain may ingest them. Upcoming meetings stay out |
 | 3 | Tasks *(Tasks)* | What's due today? | Tasks | List | Status is To Do or Doing · Due is on or before today | Due, ascending | Name, Project, Due | Today's work, overdue first |
 | 4 | Meetings | Which meetings are today? | Meetings | List | Date is today | Date, ascending | Name, Date, Project | Today's meetings, with time and project |
 | 5 | Projects | What's active? | Projects | Gallery (small cards) | Status is Active · Archived is unchecked | Priority (High→Low), then Name | Name, Countdown, *(Orgs)* Client, *(Tasks)* Task Progress | What you're working on, and how far along each is |
+| 5b | Inbox | What's in my inbox? | Inbox | List | Brain Status is New or Ready | Created, ascending | Name, Kind, Brain Status | Rows waiting for the brain, oldest first: set one Ready when it can be taken in. The last tab; the buttons and the boxes they tick are on each row's page (#146) |
 | 6 | Came in | What came in lately? | Inbox | List, 10 rows | Brain Status is Done | Created, descending | Name, Kind, Project | The Brain feed (0043): every document, email, capture and report the brain took in, newest first |
 | 7 | Meetings | Which meetings did it take in? | Meetings | List, 10 rows | Brain Status is Ingested | Ingested At, descending | Name, Date, Project | The meetings the brain ingested, newest first. Together with view 6, everything the brain did |
 
@@ -186,7 +187,6 @@ Above the tabs, a gray line: "Approving makes these notes trusted: they appear i
 | People | Who's disputed? | List | Lifecycle is Disputed | Name | — | Name, Summary | People records you marked as wrong |
 | Orgs *(Orgs)* | Which clients do I have? | Table | Relationship is Client · Lifecycle is not Archived | Name | — | Name, People, Projects | Your clients with their contacts and projects |
 | Orgs *(Orgs)* | Who else do we work with? | Table | Relationship is not Client · Lifecycle is not Archived | Name | Relationship | Name, Relationship, People | Prospects, partners and suppliers |
-| Inbox | What's in my inbox? | List | Brain Status is New or Ready | Created, ascending | — | Name, Kind, Brain Status, Project, Created, *(Documents)* Only keep, Document asked | Rows waiting for the brain, oldest first. Set Ready when one can be taken in: the brain takes in only Ready rows (0048). Set Project so the ingest doesn't ask; set Skipped for anything the brain shouldn't touch |
 | Inbox | What came in? | Table | Brain Status is Done | Created, descending | — | Name, Kind, Summary, Project, *(Knowledge)* Decisions, Concepts | History: every document, email and capture the brain took in, and what it made from each |
 
 There is no Notes database on purpose: notes typed there would never reach the brain. Quick notes go to the Inbox, and notes about a record go in its "My notes" toggle.
@@ -222,28 +222,30 @@ Notion lets you shape how each database page opens. Set it once per database: op
 
 **The rule** (decision 0048; docs/notion-space-design.md §3.15): what you act on is **pinned in the heading**; what the brain wrote comes next, in the property group; system fields (Brain ID, Last Synced, State, the Review Kind, timestamps) are **hidden**. Relations the template already shows as linked views (meetings, tasks, questions) stay in the panel, out of the way. A property of a module you left off isn't there: skip it.
 
-**Buttons** (decision 0048) are properties too, so they go in the heading with the box they tick. The API can't create them; add each by hand: database `•••` → Properties → **New property** → **Button**, action **Edit property** on **This page**:
+**Buttons** (decision 0048) are properties too, so they go in the heading; the box each one ticks goes at the top of the property group (#144). The API can't create them; add each by hand: database `•••` → Properties → **New property** → **Button**, action **Edit property** on **This page**:
 
-| Button | Database | Action | Module |
-|---|---|---|---|
-| Keep as document | Inbox | Document asked → checked; Brain Status → Ready | Documents |
-| Refresh | Inbox | Refresh asked → checked (the brain acts on it only on a Report row) | Reports |
-| Promote to document | Decisions, Concepts | Promote asked → checked | Documents (and Knowledge) |
+| Property name | Button label | Database | Action | Module |
+|---|---|---|---|---|
+| Keep | Keep as document | Inbox | Document asked → checked; Brain Status → Ready | Documents |
+| Update | Refresh report | Inbox | Refresh asked → checked (the brain acts on it only on a Report row) | Reports |
+| Promote | Promote to document | Decisions, Concepts | Promote asked → checked | Documents (and Knowledge) |
+
+The name and the label differ, so the layout doesn't show the same text twice (#144); the brain reads only the boxes.
 
 | Database | Heading (in order) | Property group: where · order | Hidden | Backlinks | Why |
 |---|---|---|---|---|---|
-| Areas | Type, To review, Due, Meetings to review | Panel · Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Decisions, Questions, Concepts, Documents, Inbox, Tasks, Review, Lifecycle, Archived | Brain ID, Last Synced | Off | The area's home (0050): its counts in the heading, everything else in its views |
+| Areas | Type, At a glance | Panel · To review, Meetings to review, Due, Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Decisions, Questions, Concepts, Documents, Inbox, Tasks, Review, Lifecycle, Archived | Brain ID, Last Synced | Off | The area's home (0050): its counts as one line in the heading, everything else in its views |
 | Goals | Status, Progress, Countdown | Panel · Deadline, Why, Area, Key Results, Projects, Summary, Lifecycle, Archived | Brain ID, Last Synced | Off | Progress and status at a glance |
 | Key Results | Progress, Current, Target | Main · Goal, Kind, Start, Unit, Done, Due | — | Off | No body; you edit Current in the heading |
 | Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Goal, People, Summary, Lifecycle, Archived, Meetings, Decisions, Questions, Concepts, Documents, Inbox, Tasks | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel |
 | Meetings | Brain Status, Date, Project | Panel · Attendees, Area, Decisions, Questions, Tasks, Review Items | Brain ID, Ingested At | Off | Brain Status is the one field you change per meeting |
 | People | Role, Org | Panel · Email, Projects, Meetings, Sources, Summary, Lifecycle | Brain ID, Last Synced | On hover | Who they are and where they work |
 | Orgs | Relationship, Website | Panel · Meetings via projects, People, Projects, Summary, Lifecycle | Brain ID, Last Synced | On hover | — |
-| Decisions | Promote to document, Promote asked, Lifecycle | Panel · Assessment, Date, Project, Area, Decided In, Supersedes, Superseded By, Sources, Documents, Summary | Brain ID, Last Synced | Show always | The body is brain-written; backlinks show supersede chains and mentions |
+| Decisions | Promote, Lifecycle | Panel · Promote asked, Assessment, Date, Project, Area, Decided In, Supersedes, Superseded By, Sources, Documents, Summary | Brain ID, Last Synced | Show always | The body is brain-written; backlinks show supersede chains and mentions |
 | Questions | Status, Kind, Project | Panel · Area, Raised In, Sources, Summary, Lifecycle | Brain ID, Last Synced, Created time | Off | You set Status |
 | Review | Your call, What to fix, About Page | Main · Type, Now, Proposed, Why, About, Area, Source Meeting | Kind, State, Brain ID, Created time, Last edited time | Off | No body; read Now, Proposed and Why, then decide in the heading |
-| Inbox | Keep as document, Document asked, Refresh, Refresh asked, Brain Status, Project, Area, Only keep | Main · Kind, Summary, What to fix, Decisions, Questions, Concepts, Documents, People, Tasks, Ask, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
-| Concepts | Promote to document, Promote asked, Lifecycle | Panel · Project, Area, Sources, Documents, Summary | Brain ID, Last Synced, Created time | Show always | The body is brain-written |
+| Inbox | Keep, Update, Brain Status, Project, Area | Main · Document asked, Refresh asked, Only keep, Kind, Summary, What to fix, Decisions, Questions, Concepts, Documents, People, Tasks, Ask, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
+| Concepts | Promote, Lifecycle | Panel · Promote asked, Project, Area, Sources, Documents, Summary | Brain ID, Last Synced, Created time | Show always | The body is brain-written |
 | Documents | Lifecycle, Project, Area, Sources | Panel · From decision, From concept, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |
 | Tasks | Status, Due | Panel · Project, Area, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
 

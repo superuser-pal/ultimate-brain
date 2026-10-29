@@ -10,7 +10,7 @@ Ask the brain a question in the Inbox and get a living report on the project's o
 |---|---|
 | Inbox: add **Refresh asked** (checkbox) and **What to fix** (text) | agent |
 | Inbox: a relation of the Inbox to itself, "Ask" ↔ "Report" (a report row's Ask, an Ask row's Report) | agent |
-| Descriptions: Refresh asked "Owner: you, through the Refresh button on a Report row. Waiting for the brain; it clears it."; What to fix "Owner: you. On a Report row: what the report gets wrong; the brain clears it."; Ask and Report "Owner: brain." | agent |
+| Descriptions: Refresh asked "Owner: you, through the Refresh report button on a Report row. Waiting for the brain; it clears it."; What to fix "Owner: you. On a Report row: what the report gets wrong; the brain clears it."; Ask and Report "Owner: brain." | agent |
 
 ### 2 · Views and the Ask button
 
@@ -21,18 +21,18 @@ Ask the brain a question in the Inbox and get a living report on the project's o
 >
 > Don't change anything else.
 
-### 3 · The Refresh button and the layout
+### 3 · The Refresh report button and the layout
 
 **By hand** (the API can't create buttons or edit page layouts):
-1. **Inbox → Refresh:** open Inbox as a full page → `•••` → Properties → **New property** → **Button**, named "Refresh". Action **Edit property** on **This page**: Refresh asked → checked. It shows on every row; the brain acts on it only on a Report row.
-2. **Page layout** (open any Inbox row → **Customize layout**): pin Refresh and Refresh asked next to Brain Status ([views-guide.md](../views-guide.md) §9).
+1. **Inbox → Update:** open Inbox as a full page → `•••` → Properties → **New property** → **Button**, named "Update", with the label "Refresh report". Action **Edit property** on **This page**: Refresh asked → checked. It shows on every row; the brain acts on it only on a Report row.
+2. **Page layout** (open any Inbox row → **Customize layout**): pin Update next to Brain Status, and put Refresh asked at the top of the property group ([views-guide.md](../views-guide.md) §9).
 
 ### Verify
 - [ ] `brain modules` shows `reports` on.
 - [ ] **Ask the brain** on Home creates an Inbox row with Kind Ask and Brain Status New.
 - [ ] After the next catch-up, the Ask row is Done and links a Report row, which shows under "Reports" on its project's page.
-- [ ] Clicking **Refresh** on that Report row ticks Refresh asked; the next catch-up rewrites the report and clears the box.
+- [ ] Clicking **Refresh report** on that Report row ticks Refresh asked; the next catch-up rewrites the report and clears the box.
 
 ## Turning it off
 
-The brain stops answering Ask rows and refreshing reports, and no longer publishes reports to Notion; "report on …" in chat still works and answers in chat. You may hide: the Ask the brain button on Home, the "Reports" headings on project and area pages, and Refresh, Refresh asked and What to fix in the Inbox layout.
+The brain stops answering Ask rows and refreshing reports, and no longer publishes reports to Notion; "report on …" in chat still works and answers in chat. You may hide: the Ask the brain button on Home, the "Reports" headings on project and area pages, and the Update button, Refresh asked and What to fix in the Inbox layout.

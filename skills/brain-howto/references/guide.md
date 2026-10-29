@@ -28,13 +28,13 @@ The navigation on the left of every page lists the Spaces. Each one has tabs tha
 
 | Space | Use it to | Tabs |
 |---|---|---|
-| **Home** | Start your day | Buttons (Quick capture, Ask the brain, New meeting, New project) · "What's on today?" (Tasks, Meetings, Projects) · "Needs you": decisions waiting and minutes to review · "What did the brain take in?" (Came in, Meetings) |
+| **Home** | Start your day | Buttons (Quick capture, Ask the brain, New meeting, New project) · "What's on today?" (Areas: one line per area, like "Agency · 4 to review · 1 meeting", or "all clear"; Tasks; Meetings; Projects; Inbox: captures New or Ready) · "Needs you": decisions waiting and minutes to review · "What did the brain take in?" (Came in, Meetings) |
 | **Tasks** | Do the work | Today · Upcoming · No date · Waiting On · Someday · Done |
 | **Meetings** | Prepare meetings and get minutes into the brain | Upcoming · To review · Ready for the brain · Ingested this week · Calendar |
 | **Projects** | Keep projects moving | Active · By area · Deadlines · Gone quiet |
 | **Plan** | Check that your work serves your goals | Goals · Key results · Areas · Projects by goal |
 | **Review** | Decide on the changes the brain proposes | Needs my decision · Sources disagree · Approved recently · Rejected |
-| **Knowledge** | Find what the brain knows, and everything that came in | Decisions · Questions · Concepts · Documents · People · Orgs · Inbox (What's in my inbox?: captures New or Ready · What came in?: everything ingested, with what it produced) |
+| **Knowledge** | Find what the brain knows, and everything that came in | Decisions · Questions · Concepts · Documents · People · Orgs · Inbox (What came in?: everything ingested, with what it produced; the captures still waiting are in Home's Inbox tab) |
 | **Archive** (under System) | Find finished and archived records | One tab per database |
 
 **Area pages** collect everything for one area: its goals, projects, tasks, meetings, decisions and open questions in views, and its people and clients as lists at the top. The brain adds a **Brief** toggle at the end: the area's projects with their status, and its recent decisions and open questions. Open one from Plan → Areas.
@@ -139,7 +139,7 @@ A rejected change can come back if a later meeting says the same thing again.
 - **The minutes are wrong** (a misheard name, a wrong date): fix the minutes on the meeting page, then set Brain Status back to **Reviewed**. The next catch-up reads the meeting again and proposes only what changed, in one Review row. The same goes for a capture: fix its text and set its Brain Status to **Ready**.
 - **The minutes are right, but the brain read them wrong** (the wrong project, a suggestion taken as a decision): on the Review row, set Your call to **Fix** and say what's wrong in What to fix ("c is a suggestion, not a decision", "a belongs to Acme app"). If the row was already approved, tell your agent what's wrong, or set the note's Lifecycle to **Disputed**.
 
-**How do I refresh a report?** Click **Refresh** on the Report row in the Inbox (it ticks **Refresh asked**), then "catch up": the brain rewrites that report in place, as of today, and unticks the box. Or say "refresh the Acme launch report". A new **Ask the brain** row always makes a new report. The earlier versions stay in the brain's history.
+**How do I refresh a report?** Click **Refresh report** on the Report row in the Inbox (it ticks **Refresh asked**), then "catch up": the brain rewrites that report in place, as of today, and unticks the box. Or say "refresh the Acme launch report". A new **Ask the brain** row always makes a new report. The earlier versions stay in the brain's history.
 
 **A report says something wrong?** Write it in the Report row's **What to fix** ("Lucía left Acme in June"). The mistake lives in the notes the report rests on, so the next catch-up turns it into Review rows on those notes. Once you approve them, it refreshes the report.
 
@@ -185,7 +185,7 @@ Every Inbox row moves through **Brain Status**: **New → Ready → Done**.
 | Button | On | Ticks | The brain then |
 |---|---|---|---|
 | **Keep as document** | Inbox rows | Document asked (and sets the row to Ready) | Keeps the row's file, or its text when it has no file, as a **Document**: the whole of it, or only what you wrote in **Only keep** ("just the requirements table") |
-| **Refresh** | Report rows | Refresh asked | Rewrites the report as of today |
+| **Refresh report** | Report rows | Refresh asked | Rewrites the report as of today |
 | **Promote to document** | Decisions, Concepts | Promote asked | Makes a Document from the note, linked both ways, whose text is yours to edit from then on |
 
 **Documents** (the Documents module). A Document is a page you read, linked to its source, project and area:
@@ -201,14 +201,14 @@ The brain still reads every input for decisions, questions and people, whether o
 
 | You want to add | Do this |
 |---|---|
-| A quick thought, link or idea | **Quick capture** on Home. It lands in Knowledge → Inbox as **Ready**. Set its **Project** if you know it, so the agent doesn't ask. A row you create by hand starts as **New**: set it to Ready when it's ready. Then "catch up" (or "process my inbox") |
+| A quick thought, link or idea | **Quick capture** on Home. It lands in the Inbox (Home → What's on today? → Inbox) as **Ready**. Set its **Project** if you know it, so the agent doesn't ask. A row you create by hand starts as **New**: set it to Ready when it's ready. Then "catch up" (or "process my inbox") |
 | A meeting | **New meeting** on Home, or let Notion AI create it when it starts taking notes |
 | A project, area, goal, person or org | Create the row in Notion (**New project** on Home for projects). The next sync imports it into the brain |
 | A document (PDF, Word, PowerPoint, Excel, saved HTML page, image) | Put it in your drop folder and tell your agent "process my drop folder". It lists the files and asks once which to take, and, with Documents on, whether to **keep each as a document**: "no" (the default: the brain only reads it), "all", or "only the requirements" ("The Inbox and its buttons"). A new version of a document later proposes only the lines that changed. Then, each ingested file moves to `processed/` inside the folder, so what's left at the top is what the brain hasn't read yet. Or name one file: "ingest this PDF: ~/Documents/brain-dropbox/proposal.pdf". Word, PowerPoint, Excel and HTML files need MarkItDown installed once: `pipx install 'markitdown[all]'` |
 | A web page | Give your agent the link: "ingest this page: https://…". For a page behind a login, save it as a PDF in your drop folder instead |
 | A file from your phone | Attach it to a **Quick capture** (or to the meeting page), with Project set if you know it. To keep the file itself as a Document, click **Keep as document** (and write in **Only keep** if you want just a part). The row is Ready; the next catch-up reads the file with the row. Files on project and area pages are not read |
 | A repo's knowledge (decisions, docs, changelog) | "link the repo at ~/code/acme-api to the area Clients, files decisions/** and docs/*.md". Each catch-up then reads the files changed since the last one; the first time, it asks which to take. The brain never writes to the repo |
-| A question for a full report | **Ask the brain** on Home: type the question as the Name ("Where do we stand with the Acme launch?"). The next catch-up answers with a **Report** row in the Inbox, linked from yours, and on the project's or area's page under **Reports**. To bring it up to date later, click **Refresh** on it ("Correcting what came in"). Needs the Reports module |
+| A question for a full report | **Ask the brain** on Home: type the question as the Name ("Where do we stand with the Acme launch?"). The next catch-up answers with a **Report** row in the Inbox, linked from yours, and on the project's or area's page under **Reports**. To bring it up to date later, click **Refresh report** on it ("Correcting what came in"). Needs the Reports module |
 | An email, chat thread or note | Paste it into a **Quick capture** (keep who sent it and when). For a thread, run **`/Clean email`** on the page: Brain Assistant gives each message a heading with names and date ("Tomás Vidal → Lucía Fernández · 3 Dec 2026"), its own text word for word below it, and a divider before the next, newest first. It drops addresses, signatures, disclaimers, quoted copies and Teams, Zoom or Meet blocks, and rewrites the page right away (the page history keeps the original), asking first only when something is truly unclear. Then set the row to **Ready** and "catch up". Or paste it straight to your agent: "ingest this email" |
 | A task | Add it in Tasks. Action items from meetings, and your own from documents, emails and captures, are created for you |
 
