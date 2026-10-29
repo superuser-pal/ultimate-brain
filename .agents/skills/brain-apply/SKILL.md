@@ -108,10 +108,10 @@ In a catch-up these are decided in its read-only pass and confirmed in its one b
    - **Fixes:** every correction you read and applied, repeated back with its letter and row ("Acme launch review, a: launch set to 2027-03, not 2027-02"; "c: Use Contentful now belongs to Acme app"), so the user can check you read them right.
    - **Check:** each item or proposal closed as stale, with the note's current value; each deferred row, with what it holds; each failure with its reason in a few words; each What to fix the user should look at again; each change proposed from What to fix. Only things the user can act on: a note the render skipped because it has nothing to publish (its type has no database, or nothing changed) is not a finding.
 
-   A run with nothing applied stops at three lines. Never ids, file paths, commands or commit names.
+   A run with nothing applied stops at three lines. Never ids, file paths, commands or commit names: the user reads the report to act in Notion or chat, where those mean nothing.
 
 ## Don'ts
 
-- **Don't apply anything the user didn't decide in this chat or in Notion.**
+- **Don't apply anything the user didn't decide in this chat or in Notion.** The user's decision is what makes a change to existing knowledge trusted (decision 0003). An undecided proposal stays open, and the report says how many are waiting.
 - **Don't edit notes or proposal files directly** (`sed`, a text editor, a script; U-18) to "help" a proposal along, nor to mark one applied. If a proposal is wrong, the user rejects or fixes it, and `brain sync apply` or `brain apply` writes the result.
 - **Don't re-run `apply` after a failure** without changing the input. Apply is atomic per item, and the failed item is unchanged; fix the cause first.
