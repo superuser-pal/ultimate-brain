@@ -1,0 +1,47 @@
+# 0051 — Unattended catch-up and schedules
+
+**Status:** Proposed
+**Date:** 2026-10-29
+
+## Context
+The brain pays back only when it runs regularly, and today every catch-up waits for the user to say "catch up" and then for their answers (0037). reviews/07 found that Hermes, or any scheduler, could run the brain's skills, and that the one piece missing on our side is **an unattended mode for catch-up**. reviews/08 read a third-party vault "operator" that runs on cron with no questions: budgets per run with the rest queued, a run with nothing to do that writes nothing, a fixed report, failures logged and skipped, and a setup that schedules the run itself. The user agreed the shape below in a grill on 2026-10-29.
+
+## Decision
+### Catch-up can run unattended, in one turn, on defaults
+- **The same skill, started with "catch up unattended"** (the prompt a schedule runs). It runs the read-only pass as today, then, instead of asking:
+  - **An input with a blocker** (a pre-check question, a sync conflict, a What to fix it can't read, a likely new version) is **skipped whole** and listed under Needs you. It waits for the next attended catch-up; nothing is lost.
+  - **A choice with a default** takes it: every attachment and repo file selected, keep as document **no**, Ask rows answered with a report. The identities question is skipped.
+- **0003 holds:** an unattended run may record the user's decisions but never applies them. `sync apply` and `brain apply` run with `--record-only`; the user's decided Review rows are applied by the next attended catch-up, and corrections wait for it too. New notes as drafts, proposals, sources and Documents are additions and go in as usual.
+- **Publish only when `settings.publish` is `auto`.** With `ask` (the default), an unattended run commits and pushes (`settings.push`) and leaves the publish to the next attended run.
+- **The 5-minute bar (0043) is for attended runs.** An unattended run has a budget instead.
+
+### A budget of inputs per run
+- **`settings.unattended.max_inputs`, default 10:** meetings, Inbox rows and files together, oldest first. The rest is named in the report and waits for the next run.
+- **Why 10:** a typical target user gets about 5–8 inputs a day (2–4 meetings, 2–5 captures), a heavy one about 15. Twice a day, 10 covers the heavy case; once a day, the typical one. The cap mainly guards the first run after a schedule is turned on, which can find dozens of inputs waiting.
+- **Backlog warning:** when inputs were left over in 3 unattended runs in a row (read from the operation log), the report says "Backlog growing: run more often or raise the budget."
+
+### A run with nothing to do writes nothing
+- **No commit, no Notion write, no log line** when nothing is waiting, so a schedule leaves no noise.
+
+### Where the run reports
+- **The usual short report goes into the operation log** (0045's counts: notes read, duration).
+- **One Inbox Report row** ("Catch-up 29 Oct: 2 meetings in, 1 needs you") **only when something needs the user or failed.** A run that went well and needs nothing writes no row.
+- **A step that fails is logged and the run goes on** with the next input, as attended catch-up already does with a blocked input.
+
+### Schedules
+- **The skill's "Run on a schedule" section** (brain-catch-up, and brain-reflect, 0052) writes the settings and installs the schedule when the user says "run catch-up every morning".
+- **`brain schedule install`** writes the scheduler entry, so nobody writes a launchd file by hand: on macOS a launchd agent that runs `claude -p "<prompt>"` in the brain folder at the chosen times; elsewhere it prints the cron line. `brain schedule list` and `brain schedule remove` go with it.
+- **Supported first: local `claude -p`.** It is the only scheduler that sees every input: the drop folder, linked repos and the user's local Notion MCP. Hermes is documented as possible (reviews/07). Claude Code's cloud schedules run on a fresh clone without those, and stay out until checked.
+- **A schedule pins a Claude model:** the skills are tested on Claude models only (reviews/07).
+
+## Consequences
+- **Amends 0037:** catch-up asks one batch of questions **when the user is there**; on a schedule it asks none.
+- **Keeps 0003 and 0043:** unattended runs record, never apply; the 5-minute bar is unchanged for attended runs.
+- **New settings:** `settings.unattended.max_inputs`. **New CLI:** `brain schedule install | list | remove`.
+- **The setup pattern that reads first, probes connectors and asks only the gaps** goes into the v2 Onboarding suite, not into 0.7.0.
+- **Built in 0.7.0** (CC-62 to CC-64), after U-19 has shown 0.6.0's catch-up is stable; tried on the user's brain in U-20.
+
+## Evidence
+- reviews/07-hermes-and-search.md §2 ("What the product would need", item 1).
+- reviews/08-operator-and-optimizer.md §1 (Operator), §2.
+- docs/v2-ideas.md: "Schedulers", "Hermes as an always-on brain operator".
