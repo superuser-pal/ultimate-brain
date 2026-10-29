@@ -2,7 +2,7 @@
 
 **Status:** Proposed
 **Date:** 2026-10-29
-**Amends:** 0003, 0037
+**Amends:** 0003, 0037 · **Refines:** 0045
 
 ## Context
 The brain pays back only when it runs regularly, and today every catch-up waits for the user to say "catch up" and then for their answers (0037). reviews/07 found that Hermes, or any scheduler, could run the brain's skills, and that the one piece missing on our side is **an unattended mode for catch-up**. reviews/08 read a third-party vault "operator" that runs on cron with no questions: budgets per run with the rest queued, a run with nothing to do that writes nothing, a fixed report, failures logged and skipped, and a setup that schedules the run itself. The user agreed the shape below in a grill on 2026-10-29.
@@ -41,6 +41,7 @@ The brain pays back only when it runs regularly, and today every catch-up waits 
 ## Consequences
 - **Amends 0037:** catch-up asks one batch of questions **when the user is there**; on a schedule it asks none.
 - **Amends 0003:** "Unattended runs may only add notes and flag; they never apply proposals" becomes: unattended runs add notes and flag, apply only the user's explicit decisions (Approve, Reject, Edit with a value, corrections), and never interpret a What to fix or decide anything themselves. `--record-only` stays for runs that must not apply at all.
+- **Refines 0045:** a Fix still means "apply it, corrected as I wrote in What to fix", and is applied by the next attended catch-up; an unattended run leaves it as it is and names it in the report.
 - **Keeps 0043:** the 5-minute bar is unchanged for attended runs.
 - **New settings:** `settings.unattended.max_inputs`. **New CLI:** `brain schedule install | list | remove`.
 - **The setup pattern that reads first, probes connectors and asks only the gaps** goes into the v2 Onboarding suite, not into 0.7.0.
