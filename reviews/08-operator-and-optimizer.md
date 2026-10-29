@@ -54,7 +54,7 @@ Its operating rules: every finding ships a fix; semantic fixes are walked one by
 | Baalda rules (`move_note`, `.context/`, checkpoints) | both | Reject | Stable ids already solve note identity; Git is our checkpoint |
 
 ## 3. Integration
-- **Unattended catch-up (0051):** a flag on the existing catch-up, not a new skill. Questions become skips listed under Needs you; the user's explicit decisions are applied, a What to fix waits for an attended run; publishing needs `settings.publish: auto`; a budget of inputs per run; no commit, Notion write or log line when nothing is waiting; a Report row in the Inbox only when something needs the user or failed. `brain schedule install` writes the local scheduler entry.
+- **Unattended catch-up (0051):** a flag on the existing catch-up, not a new skill. Questions become skips listed under Needs you; the user's explicit decisions are applied, a What to fix waits for an attended run; publishing needs `settings.publish: auto`; a budget of inputs per run; no commit, Notion write or log line when nothing is waiting; a Report row in the Inbox only when something needs the user or failed (Reports module on; otherwise a summary at the next attended catch-up). `brain schedule install` writes the local scheduler entry.
 - **Reflection (0052):** a `brain-reflect` skill over `brain reflect --candidates`, like brain-query over `brain query --candidates`. Proposals go to Review as Conflict or Review notes rows (0048's three kinds stay three).
 - **Skills audit (CC-61):** a one-time pass over `skills/` and `templates/brain/AGENTS.md`, plus mechanical checks in `scripts/build-skills.ts`.
 
