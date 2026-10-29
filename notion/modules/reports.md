@@ -21,17 +21,17 @@ Ask the brain a question in the Inbox and get a living report on the project's o
 >
 > Don't change anything else.
 
-### 3 · The Refresh button and the layout
+### 3 · The Refresh report button and the layout
 
 **By hand** (the API can't create buttons or edit page layouts):
-1. **Inbox → Refresh:** open Inbox as a full page → `•••` → Properties → **New property** → **Button**, named "Refresh". Action **Edit property** on **This page**: Refresh asked → checked. It shows on every row; the brain acts on it only on a Report row.
-2. **Page layout** (open any Inbox row → **Customize layout**): pin Refresh and Refresh asked next to Brain Status ([views-guide.md](../views-guide.md) §9).
+1. **Inbox → Update:** open Inbox as a full page → `•••` → Properties → **New property** → **Button**, named "Update", with the label "Refresh report". Action **Edit property** on **This page**: Refresh asked → checked. It shows on every row; the brain acts on it only on a Report row.
+2. **Page layout** (open any Inbox row → **Customize layout**): pin Update next to Brain Status, and put Refresh asked at the top of the property group ([views-guide.md](../views-guide.md) §9).
 
 ### Verify
 - [ ] `brain modules` shows `reports` on.
 - [ ] **Ask the brain** on Home creates an Inbox row with Kind Ask and Brain Status New.
 - [ ] After the next catch-up, the Ask row is Done and links a Report row, which shows under "Reports" on its project's page.
-- [ ] Clicking **Refresh** on that Report row ticks Refresh asked; the next catch-up rewrites the report and clears the box.
+- [ ] Clicking **Refresh report** on that Report row ticks Refresh asked; the next catch-up rewrites the report and clears the box.
 
 ## Turning it off
 

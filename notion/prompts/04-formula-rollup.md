@@ -18,6 +18,8 @@ Ignore the module names in square brackets at the start of lines.
 10. In "Areas", add a formula property "To review" that returns the number of pages in the relation "Review" whose State is Pending.
 11. In "Areas", add a formula property "Meetings to review" that returns the number of pages in the relation "Meetings" whose Brain Status is Not Reviewed and whose Date is today or earlier.
 [Tasks] 12. In "Areas", add a formula property "Due" that returns the number of pages in the relation "Tasks" whose Status is not Done and whose Due is today or earlier.
+13. In "Areas", add a formula property "At a glance" that returns text joining, with " · ", "<n> to review" from To review and "<n> meeting" (or "<n> meetings") from Meetings to review, leaving out any part whose number is 0, and returning "all clear" when every part is 0.
+[Tasks] In "At a glance", also join "<n> due" from Due, after the meetings part, left out when 0.
 Do not change or add any other property.
 ```
 
@@ -58,11 +60,27 @@ prop("Meetings").filter(current.prop("Brain Status") == "Not Reviewed" and !empt
 prop("Tasks").filter(current.prop("Status") != "Done" and !empty(current.prop("Due")) and dateBetween(current.prop("Due"), today(), "days") <= 0).length()
 ```
 
+Areas At a glance (#145): the line Home shows next to each area's name, "4 to review · 1 meeting" or "all clear". With Tasks:
+
+```text
+lets(r, prop("To review"), m, prop("Meetings to review"), d, prop("Due"),
+  parts, [if(r > 0, format(r) + " to review", ""), if(m > 0, format(m) + if(m == 1, " meeting", " meetings"), ""), if(d > 0, format(d) + " due", "")].filter(current != ""),
+  if(parts.length() == 0, "all clear", parts.join(" · ")))
+```
+
+Without Tasks:
+
+```text
+lets(r, prop("To review"), m, prop("Meetings to review"),
+  parts, [if(r > 0, format(r) + " to review", ""), if(m > 0, format(m) + if(m == 1, " meeting", " meetings"), "")].filter(current != ""),
+  if(parts.length() == 0, "all clear", parts.join(" · ")))
+```
+
 Mapping your own tasks database? Build Task Progress and Due over your own Tasks relation and status property ([modules/tasks.md](../modules/tasks.md)).
 
 ## Verify
 - [ ] (Planning) Create a test goal with two key results: a Number one (Start 4, Current 6, Target 10) shows 33%; a Milestone one with Done checked shows 100%. The goal's Progress shows 67%.
 - [ ] (Planning) Give the test goal a Deadline 10 days from today: Countdown shows "10 days left". Set Status to Achieved: Countdown is empty.
 - [ ] (Tasks) Create a test project with two tasks, one Done: Task Progress shows 50%.
-- [ ] In Review, a test row with Kind Answer shows Type "Answer"; Kind Merge shows "Conflict". In Areas, link that row to a test area: To review shows 1.
+- [ ] In Review, a test row with Kind Answer shows Type "Answer"; Kind Merge shows "Conflict". In Areas, link that row to a test area: To review shows 1 and At a glance shows "1 to review"; unlink it: At a glance shows "all clear".
 - [ ] Delete the test goal, key results, project, tasks, Review row and area.

@@ -28,7 +28,7 @@ A space is a **core** plus the **modules** you chose at onboarding. You can turn
 | **Knowledge** | Decisions, Questions, Concepts | the Decisions, Questions and Concepts tabs of Knowledge; "What have we decided here?", "What's still open here?" and "What do we know?" (Decisions, Concepts) on project and area pages | on |
 | **Orgs** | Orgs | the Orgs tab of Knowledge; Client on Projects, Org on People; "Clients via projects" on area pages | on |
 | **Documents** | Documents (was References) | the Documents tab of Knowledge and of "What do we know?"; Keep as document and Only keep on the Inbox; Promote to document on Decisions and Concepts | off |
-| **Reports** | none: Ask and Report rows on the Inbox | the Ask the brain button on Home; Refresh and What to fix on the Inbox; "Reports" on project and area pages | off |
+| **Reports** | none: Ask and Report rows on the Inbox | the Ask the brain button on Home; the Refresh report button, Refresh asked and What to fix on the Inbox; "Reports" on project and area pages | off |
 | **Tasks** | Tasks, or your own tasks database (0018) | the Tasks Space; "What's on my plate here?" on project and area pages; Home's "What's on today?" Tasks tab, its "due" counts and "Due across areas" | off |
 | **Planning** | Goals, Key Results | the Plan Space; Goal on Projects; "What am I working toward here?" on area pages | off |
 
@@ -110,6 +110,7 @@ Ongoing responsibilities (clients, health, learning…).
 | To review | Formula: the Review rows with State Pending, counted | You (derived, Notion-only; Home's per-area line, 0050) |
 | Due | Formula: the Tasks not Done with Due today or earlier, counted (Tasks module) | You (derived, Notion-only, 0050) |
 | Meetings to review | Formula: the Meetings with Brain Status Not Reviewed and Date today or earlier, counted | You (derived, Notion-only, 0050) |
+| At a glance | Formula: the three counts as one line, "4 to review · 1 meeting · 2 due", leaving out each count that is 0 and each module that is off, or "all clear" (#145) | You (derived, Notion-only; what Home shows next to the area's name) |
 | Archived | Checkbox | You |
 | People via projects | Rollup: Projects → People, show original | You (derived, Notion-only) |
 | Clients via projects | Rollup: Projects → Client, show original | You (derived, Notion-only) |
@@ -223,7 +224,7 @@ Created by the brain only.
 | Decided In | Relation → Meetings | Brain |
 | Supersedes | Relation → Decisions (self, two-way "Superseded By") | Brain |
 | Sources | Relation → Inbox (two-way with Decisions) | Brain (filled from the Inbox side) |
-| Promote to document | Button: ticks Promote asked | You (Documents module, 0048, 0049) |
+| Promote | Button labelled **Promote to document**: ticks Promote asked | You (Documents module, 0048, 0049) |
 | Promote asked | Checkbox | You, through the button: "waiting for the brain". The brain creates a Document seeded from this decision and clears it |
 | Documents | Relation → Documents (two-way with From decision) | Brain (filled from the Documents side) |
 
@@ -270,8 +271,8 @@ Everything that came into the brain except meetings, which have their own databa
 | Property | Type | Owner |
 |---|---|---|
 | Name | Title | You on a capture; Brain on a row it creates |
-| Keep as document | Button: ticks Document asked and sets Brain Status to Ready | You (Documents module, 0048, 0049) |
-| Refresh | Button, on a Report row: ticks Refresh asked | You (Reports module, 0048) |
+| Keep | Button labelled **Keep as document**: ticks Document asked and sets Brain Status to Ready | You (Documents module, 0048, 0049) |
+| Update | Button labelled **Refresh report**, on a Report row: ticks Refresh asked | You (Reports module, 0048) |
 | Kind | Select: Capture, File, Email, Chat, Note, Ask, Report | System, written only when empty, so a Kind you choose stands (0048). File was Document before 0.6.0 (0049). **Ask** is yours: a question for the brain (Reports module, 0043) |
 | Summary | Text | Brain: one line on what it taught; on a row the brain skipped, why ("Skipped: same as …") |
 | Decisions | Relation → Decisions (two-way with Sources) | Brain |
@@ -322,7 +323,7 @@ Ideas, methods and definitions the brain learned, mostly from documents (0037). 
 | Project | Relation → Projects (two-way with Concepts) | Brain |
 | Area | Relation → Areas (two-way with Concepts) | Brain |
 | Sources | Relation → Inbox (two-way with Concepts) | Brain (filled from the Inbox side) |
-| Promote to document | Button: ticks Promote asked | You (Documents module, 0048, 0049) |
+| Promote | Button labelled **Promote to document**: ticks Promote asked | You (Documents module, 0048, 0049) |
 | Promote asked | Checkbox | You, through the button: "waiting for the brain"; the brain clears it |
 | Documents | Relation → Documents (two-way with From concept) | Brain (filled from the Documents side) |
 | Created time | Created time | System (Notion fills it; "Recent" view) |
@@ -351,15 +352,15 @@ Plus the common properties. Page body: the kept text (brain-written), or, on a p
 
 ### 3.15 Buttons and page layouts (0048)
 
-**Every action you ask of the brain is a button** at the top of the row's page. The API can't see a click, so each button ticks a checkbox on the same row, which stays visible next to it as "waiting for the brain"; the brain unticks it once it has acted. The Notion API can't create button properties (they are response-only in its schema), so buttons are always added by hand.
+**Every action you ask of the brain is a button** at the top of the row's page. The API can't see a click, so each button ticks a checkbox on the same row, which shows in the property group as "waiting for the brain"; the brain unticks it once it has acted. The Notion API can't create button properties (they are response-only in its schema), so buttons are always added by hand.
 
-| Button | Database | Ticks | Also | Module |
-|---|---|---|---|---|
-| Keep as document | Inbox | Document asked | sets Brain Status to Ready | Documents |
-| Refresh | Inbox (Report rows) | Refresh asked | — | Reports |
-| Promote to document | Decisions, Concepts | Promote asked | — | Documents |
+| Button property | Label | Database | Ticks | Also | Module |
+|---|---|---|---|---|---|
+| Keep | Keep as document | Inbox | Document asked | sets Brain Status to Ready | Documents |
+| Update | Refresh report | Inbox (Report rows) | Refresh asked | — | Reports |
+| Promote | Promote to document | Decisions, Concepts | Promote asked | — | Documents |
 
-Each checkbox has its own name, because Notion can't give a button and another property the same name.
+**A button's property name and its label differ** (#144): the page layout shows the name on the left and the label on the button, so the same text would show twice. The names are short and clash with no other property (not Report, Documents or Refresh asked). The brain never reads a button, only the checkbox it ticks, so a space that names its buttons otherwise works the same. Each checkbox has its own name, because Notion can't give a button and another property the same name.
 
 Archived and Done (on a milestone) stay checkboxes: they describe a state, not a request.
 
@@ -367,12 +368,15 @@ Archived and Done (on a milestone) stay checkboxes: they describe a state, not a
 
 | Database | Pinned at the top | Collapsed |
 |---|---|---|
-| Inbox | Keep as document and Document asked, Refresh and Refresh asked (on Report rows), Brain Status, Project, Area, Only keep | Brain ID, Last Synced, Created |
+| Inbox | Keep, Update (on Report rows), Brain Status, Project, Area | Brain ID, Last Synced, Created |
 | Review | Your call, What to fix, About Page | Kind, State, Brain ID, Created time, Last edited time |
-| Decisions | Promote to document and Promote asked, Lifecycle | Brain ID, Last Synced |
-| Concepts | Promote to document and Promote asked, Lifecycle | Brain ID, Last Synced, Created time |
+| Decisions | Promote, Lifecycle | Brain ID, Last Synced |
+| Concepts | Promote, Lifecycle | Brain ID, Last Synced, Created time |
 | Documents | Lifecycle, Project, Area, Sources | Brain ID, Last Synced, Created time, Last edited time |
-| Areas, Goals, Projects, People, Orgs, Questions, Meetings | the "You" properties of §3 | Brain ID, Last Synced, Ingested At |
+| Areas | Type, At a glance | Brain ID, Last Synced |
+| Goals, Projects, People, Orgs, Questions, Meetings | the "You" properties of §3 | Brain ID, Last Synced, Ingested At |
+
+**The boxes a button ticks, and Only keep, are not pinned** (#144): they sit at the top of the property group. The button already says what it does, and the box is only the brain's to clear.
 
 ---
 
@@ -416,13 +420,13 @@ Each Space: the synced Spaces navigation in a narrow left column, then one tabs 
 
 | Space | Job | Tabs (view) |
 |---|---|---|
-| **Home** | Start of day: your areas, then your work | Top: **one line per area** (0050): a linked view of Areas (not Archived) showing Name, To review, Due (Tasks module) and Meetings to review, e.g. "Day job · 3 to review · 2 due · 1 meeting"; the counts are the Areas formulas of §3.1. Then "Due across areas" (Tasks due today or overdue, Tasks module). Left: navigation, then "Needs you": a muted line "Start here: approving makes the brain's notes trusted." and "What's waiting for you?" (Review, Pending, grouped by **Type** with counts, 0048) and "Which minutes need review?" (Meetings, Not Reviewed, held today or earlier), 5 rows each. Right: buttons Quick capture (→ Inbox, Kind Capture, Brain Status **Ready**, 0048), Ask the brain (→ Inbox, Kind Ask, Brain Status New; Reports module), New meeting, New project; then "What's on today?" with tabs Tasks (due today or overdue; Tasks module) · Meetings (today) · Projects (Active); then "What did the brain take in?" (the Brain feed, 0043) with tabs Came in (Inbox, Done, newest first, 10 rows) · Meetings (Brain Status Ingested, newest Ingested At first, 10 rows) |
+| **Home** | Start of day: your areas, then your work | Left: navigation, then "Needs you": a muted line "Start here: approving makes the brain's notes trusted." and "What's waiting for you?" (Review, Pending, grouped by **Type** with counts, 0048) and "Which minutes need review?" (Meetings, Not Reviewed, held today or earlier), 5 rows each. Right: buttons Quick capture (→ Inbox, Kind Capture, Brain Status **Ready**, 0048), Ask the brain (→ Inbox, Kind Ask, Brain Status New; Reports module), New meeting, New project; then "What's on today?" with tabs **Areas** (one line per area, 0050: a linked view of Areas, not Archived, showing Name and At a glance, e.g. "Day job · 3 to review · 1 meeting · 2 due"; below it "What's due across areas?", Tasks due today or overdue, Tasks module; #143) · Tasks (due today or overdue; Tasks module) · Meetings (today) · Projects (Active) · **Inbox** ("What's in my inbox?": New or Ready, oldest first, showing Name, Kind, Brain Status; #146); then "What did the brain take in?" (the Brain feed, 0043) with tabs Came in (Inbox, Done, newest first, 10 rows) · Meetings (Brain Status Ingested, newest Ingested At first, 10 rows) |
 | **Tasks** (Tasks module) | Do the work | Today · Upcoming (by day) · No date · Waiting On · Someday · Done (by week) |
 | **Meetings** | Prepare, review minutes, track ingestion | Upcoming · To review · Ready for the brain · Ingested this week · Calendar |
 | **Projects** | Run projects | Active (board by Status) · By area · Deadlines (timeline) · Gone quiet |
 | **Plan** (Planning module) | Areas → goals → key results → projects | Goals · Key results (by goal) · Areas (the way into each Area page) · Projects by goal |
 | **Review** | Decide on proposals | A muted line above the views: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. To correct something, pick Fix in Your call and say what's wrong in What to fix." (0043, 0045). A decided row leaves Review 30 days after the decision; the brain keeps it in Git (0045) · Needs my decision (with a Type column: From source, Conflict, Answer; Kind hidden, 0048) · Sources disagree · Approved recently · Rejected. Review stays one queue for every area; each area home has its own "Review waiting" tab (0050) |
-| **Knowledge** | Navigate what the brain knows | Decisions (Recent, Current, Provisional, Superseded, Disputed) · Questions (Open questions, Open risks, Answered) · Concepts (Recent, By project, Drafts) · Documents (What did we keep?, 0045, 0049) · People (by org, Disputed) · Orgs (Clients, Others) · Inbox (What's in my inbox?: New or Ready, oldest first · History: Done, newest first). Each tab follows its module |
+| **Knowledge** | Navigate what the brain knows | Decisions (Recent, Current, Provisional, Superseded, Disputed) · Questions (Open questions, Open risks, Answered) · Concepts (Recent, By project, Drafts) · Documents (What did we keep?, 0045, 0049) · People (by org, Disputed) · Orgs (Clients, Others) · Inbox (What came in?: Done, newest first; the rows still waiting are Home's Inbox tab). Each tab follows its module |
 | **Archive** (under System) | Find what's finished | One tab per database of your modules: Projects (Done or Archived) · Goals (Achieved, Dropped or Archived) · Areas · Decisions · Questions · Concepts · Documents · People · Orgs (Archived) |
 
 Every view, with its filters, sort and properties, is in [notion/views-guide.md](../notion/views-guide.md) and Prompts 7a–7h.

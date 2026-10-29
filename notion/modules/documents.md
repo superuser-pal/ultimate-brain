@@ -26,16 +26,15 @@ Keep a document, or part of one, as a page you can read, linked to its source, p
 > - Areas template: the same, with "Area is this page", also showing Project.
 > - Knowledge: add a tab "Documents" with a linked view of "Documents", List, named "What did we keep?": Lifecycle is not Archived; sort Last edited time descending; show Name, Project, Summary. Put it after the Concepts tab, or after Decisions if there is none.
 > - Archive: add a tab "Documents" with a linked view of "Documents", List, named "Which documents are archived?": Lifecycle is Archived; sort Name; show Name, Project.
-> - Knowledge, tab Inbox, view "What's in my inbox?": also show Only keep and Document asked.
 >
 > Hide each view's database title. Don't change anything else.
 
 ### 4 · Buttons and page layouts
 
 **By hand** (the API can't create buttons or edit page layouts):
-1. **Inbox → Keep as document:** open Inbox as a full page → `•••` → Properties → **New property** → **Button**, named "Keep as document". Action **Edit property** on **This page**: Document asked → checked; Brain Status → Ready.
-2. **Decisions → Promote to document** (with Knowledge on): a Button property "Promote to document", action **Edit property** on **This page**: Promote asked → checked. The same on **Concepts**.
-3. **Page layouts** (open any row → **Customize layout**): Inbox pins Keep as document, Document asked and Only keep next to Brain Status, Project and Area; Decisions and Concepts pin Promote to document and Promote asked next to Lifecycle; Documents pins Lifecycle, Project, Area, Sources, and collapses Brain ID, Last Synced, Created time and Last edited time ([views-guide.md](../views-guide.md) §9).
+1. **Inbox → Keep:** open Inbox as a full page → `•••` → Properties → **New property** → **Button**, named "Keep", with the label "Keep as document". Action **Edit property** on **This page**: Document asked → checked; Brain Status → Ready.
+2. **Decisions → Promote** (with Knowledge on): a Button property named "Promote", with the label "Promote to document", action **Edit property** on **This page**: Promote asked → checked. The same on **Concepts**.
+3. **Page layouts** (open any row → **Customize layout**): Inbox pins Keep next to Brain Status, Project and Area, and puts Document asked and Only keep at the top of the property group; Decisions and Concepts pin Promote next to Lifecycle, with Promote asked at the top of the property group; Documents pins Lifecycle, Project, Area, Sources, and collapses Brain ID, Last Synced, Created time and Last edited time ([views-guide.md](../views-guide.md) §9).
 
 ### Verify
 - [ ] Brain Data holds a Documents database with its relations; `brain modules` shows `documents` on with nothing missing.
