@@ -53,7 +53,9 @@ export async function validateSkills(source = SOURCE): Promise<string[]> {
 /** Words of four or more capitals allowed outside code: acronyms and file names, never emphasis (CC-61). */
 export const CAPS_ALLOWED = new Set(["AGENTS", "CHANGELOG", "HTML", "JSON", "NNNN", "README", "SKILL", "YYYY"]);
 const CAPS = /\b[A-Z]{4,}\b/g;
-const LINK = /\]\(([^)\s]+)\)/g;
+const INLINE_LINK = /\]\(\s*<?([^)\s>]+)>?(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*\)/g;
+const LINK_DEFINITION = /^ {0,3}\[[^\]]+\]:\s*<?([^\s>]+)>?/gm;
+const CODE_SPAN = /(?<!`)(`+)(?!`)[\s\S]*?(?<!`)\1(?!`)/g;
 
 /**
  * Two style checks over a skill's Markdown (CC-61). Every file a skill links to is linked from SKILL.md itself, so an
@@ -65,25 +67,69 @@ async function textProblems(dir: string, skillBody: string): Promise<string[]> {
   const name = dir.split(/[\\/]/).pop();
   const files = new Map<string, string>([["SKILL.md", skillBody]]);
   for (const [path, content] of await snapshot(dir)) if (path !== "SKILL.md" && path.endsWith(".md")) files.set(path, content);
-  const fromSkill = new Set(localLinks("SKILL.md", skillBody));
+  const fromSkill = new Set(localLinks("SKILL.md", prose(skillBody)));
   for (const [path, content] of files) {
-    for (const target of localLinks(path, content)) {
+    const text = prose(content);
+    for (const target of localLinks(path, text)) {
       if (target !== "SKILL.md" && !fromSkill.has(target) && (await exists(join(dir, target)))) {
         problems.push(`skills/${name}/${path}: links to ${target}, which SKILL.md doesn't link to (references are one level deep)`);
       }
     }
-    const prose = content.replace(/^(```|~~~)[^\n]*\n[\s\S]*?^\1[^\n]*$/gm, "").replace(/`[^`\n]*`/g, "");
-    const shouted = [...new Set([...prose.matchAll(CAPS)].map((match) => match[0]).filter((word) => !CAPS_ALLOWED.has(word)))];
+    const shouted = [...new Set([...text.matchAll(CAPS)].map((match) => match[0]).filter((word) => !CAPS_ALLOWED.has(word)))];
     if (shouted.length > 0) problems.push(`skills/${name}/${path}: capitals for emphasis (${shouted.join(", ")}); write it plainly, or put code in backticks`);
   }
   return problems;
+}
+
+/**
+ * Markdown with its code removed, as CommonMark reads code: fenced blocks (fences indented up to three spaces past the
+ * enclosing list item), indented blocks (four spaces past it, after a blank line, so a list item's continuation stays
+ * prose), and code spans of any backtick length. Line by line; enough for skill files, not a full parser.
+ */
+export function prose(content: string): string {
+  const kept: string[] = [];
+  let fence: { char: string; length: number } | undefined;
+  let listIndent = 0;
+  let previousBlank = true;
+  let inIndentedCode = false;
+  for (const line of content.split("\n")) {
+    const indent = line.replace(/\t/g, "    ").search(/\S/);
+    if (fence !== undefined) {
+      const close = line.trimStart().match(/^(`+|~+)\s*$/);
+      if (close !== null && close[1][0] === fence.char && close[1].length >= fence.length) fence = undefined;
+      continue;
+    }
+    if (indent === -1) {
+      kept.push("");
+      previousBlank = true;
+      continue;
+    }
+    if (inIndentedCode && indent >= listIndent + 4) continue;
+    inIndentedCode = false;
+    if (previousBlank && indent >= listIndent + 4) {
+      inIndentedCode = true;
+      continue;
+    }
+    const open = line.trimStart().match(/^(`{3,}|~{3,})/);
+    if (open !== null && indent < listIndent + 4) {
+      fence = { char: open[1][0], length: open[1].length };
+      previousBlank = false;
+      continue;
+    }
+    const item = line.match(/^(\s*)([-*+]|\d{1,9}[.)])(\s+)\S/);
+    if (item !== null) listIndent = item[1].length + item[2].length + Math.min(item[3].length, 4);
+    else if (previousBlank && indent < listIndent) listIndent = 0;
+    kept.push(line);
+    previousBlank = false;
+  }
+  return kept.join("\n").replace(CODE_SPAN, "");
 }
 
 /** Targets of a file's relative links, resolved against the skill folder; external links and anchors are skipped. */
 function localLinks(from: string, content: string): string[] {
   const base = from.includes("/") ? from.slice(0, from.lastIndexOf("/")) : "";
   const links: string[] = [];
-  for (const [, href] of content.matchAll(LINK)) {
+  for (const [, href] of [...content.matchAll(INLINE_LINK), ...content.matchAll(LINK_DEFINITION)]) {
     const target = href.split("#")[0];
     if (target === "" || /^[a-z]+:/i.test(target) || target.startsWith("/")) continue;
     const parts: string[] = base === "" ? [] : base.split("/");
