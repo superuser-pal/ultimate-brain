@@ -1,6 +1,6 @@
 # 0053 — Home's Areas and Inbox tabs, readable area counts, button names
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-10-29
 **Amends:** 0048 (button label, page layouts), 0050 (where Home's area lines sit)
 
