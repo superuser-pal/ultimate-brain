@@ -38,7 +38,7 @@ The "wow" is that it maintains and synthesizes itself. Tasks and project managem
 | Action items | Written to the user's Notion tasks database with a link back; Markdown keeps only the reference |
 | Agent memory | Global preferences, clients, decisions live in the brain. Repo-specific conventions stay in that repo's CLAUDE.md / AGENTS.md |
 | Access from other repos | v1: global skill/CLI (query + propose). Later: MCP server |
-| Runner | v1: on demand. Later: n8n or Hermes Agent (Nous). Notion agents rejected on cost |
+| Runner | v1: on demand. Later: n8n or Hermes Agent (Nous). Notion agents: optional, bounded and measured, for deliberate button clicks only (decision 0054, 2026-10-29; was "rejected on cost") |
 | Privacy | Everything flows (Git, Notion, cloud LLMs) in v1. Sensitivity tiers later |
 
 ## Permanent rules (never, from brief)
