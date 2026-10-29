@@ -10,7 +10,7 @@
 > - **Merging (decision 0040):** the user merges on the GitHub PR page, with the PR's `merge-ready` status in view; `merge.mjs` is optional; agents never merge. `main-guard` fails only on a commit that came from no PR.
 > - **0.4.0 (released 2026-10-21):** theme (CC-35): the brain gives back (decisions 0041–0043). Its Notion checks (the 5-minute bar, the Full text box, Ask → Report) are closed in U-15.
 > - **Review order (CC-27):** the done commit comes before the verdict; the reviewer posts `Review (<agent>): pass at <sha>` last.
-> - **Untriaged `dogfood` issues:** 0 (#137 → CC-59).
+> - **Untriaged `dogfood` issues:** 0 (#143–#146 → CC-68, 2026-10-29; #137 → CC-59).
 > - **Earlier:** v1 waves 1–4 below; dogfood findings 1–24 in the Wave 4 table.
 
 ## Why this split
@@ -668,7 +668,11 @@ U-18's findings (2026-10-28): less to learn for a second user, with nothing take
 **Acceptance:** a table in the PR lists every changed rule with its bucket and before/after; no hard rule is softened; `npm test` passes with the two new checks, and each check fails on a fixture that breaks it; blind runs of brain-ingest and brain-catch-up on the CC-41 synthetic brain give the same notes and proposals as before the change.
 
 
-## 0.7.0 — The brain runs itself (decision 0051)
+### CC-68 · Notion fixes from migration 0010 (#143, #144, #145, #146) · `in progress`
+**Release:** 0.6.1
+**Changelog:** Home shows your areas and your Inbox as tabs, each area's counts read as one line ("4 to review · 1 meeting", or "all clear"), and buttons get a name apart from their label; Notion migration 0011.
+**Output:** from the user's run of migration 0010 (dogfood #143–#146, triaged 2026-10-29 with the user): Home's "How are my areas?" and "What's due across areas?" move from the top of the page into a first tab "Areas" of "What's on today?" (#143); button properties named Keep, Update and Promote, apart from their labels Keep as document, Refresh report and Promote to document, and the boxes they tick, with Only keep, at the top of the property group instead of the heading (#144); an Areas formula At a glance that joins the counts into one line, leaving out zeros and modules that are off, "all clear" when nothing waits, shown by "How are my areas?" and pinned on area pages (#145); "What's in my inbox?" moves from Knowledge to a last tab "Inbox" on Home, showing Name, Kind and Brain Status (#146). In docs/notion-space-design.md, notion/views-guide.md, prompts 04, 07a and 07f, notion/modules/documents.md, reports.md and tasks.md, and the user guide; notion/migrations/0011 for spaces already on 0010, and a pointer to it from 0010. No CLI change: the CLI reads the boxes, never the buttons.
+**Acceptance:** the four issues' "What should happen" each met in the design, the views guide and the prompts, which agree with each other; migration 0011 names every change with who does it, and its Verify list covers each; no file outside notion/migrations names "Keep as document", "Refresh" or "Promote to document" as a property rather than a label; the CLI's tests pass unchanged; the skill mirror check passes. (decision 0051)
 
 Catch-up on a schedule, with no one there: a budget per run, nothing written when nothing waits, a Report row (with Reports on) only when the user is needed. Starts after U-19.
 
