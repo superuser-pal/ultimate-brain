@@ -125,6 +125,27 @@ test("sync apply --skip-conflicted skips dependent creates transitively, whateve
   ]);
 });
 
+test("sync apply --skip-conflicted skips a dependent create that names no id of its own", async (context) => {
+  const dir = await fixtureCopy(context);
+  const orgPage = "c1000000-0000-4000-8000-000000000004";
+  const plan = {
+    as_of: NOW,
+    create: [
+      { type: "person", title: "Ana Ruiz", lifecycle: "draft", frontmatter: { summary: "Ana Ruiz", org: "org-5h2k8q1w", notion: "c1000000-0000-4000-8000-000000000005", sources: ["notion:c1000000-0000-4000-8000-000000000005"] }, body: "" },
+      { type: "org", id: "org-5h2k8q1w", title: "Globex", lifecycle: "draft", frontmatter: { summary: "Globex", notion: orgPage, sources: [`notion:${orgPage}`] }, body: "" },
+    ],
+    updates: [], corrections: [], decisions: [],
+    conflicts: [{ database: "orgs", page_id: orgPage, brain_id: null, code: "UNRESOLVED_RELATION", message: "Globex names an unknown parent" }],
+    ignored: [],
+  };
+  const result = await run(dir, ["sync", "apply", "--skip-conflicted"], plan);
+  assert.equal(result.code, 0, result.stdout);
+  assert.deepEqual(result.json.data.create.map((item: any) => [item.id, item.result, item.reason]), [
+    [undefined, "skipped", "ROW_CONFLICTED"],
+    ["org-5h2k8q1w", "skipped", "ROW_CONFLICTED"],
+  ]);
+});
+
 const REPORT_BODY = [
   "## Where it stands", "Launch is set for February, per [the auth decision](../knowledge/decisions/2026-12-03-use-supabase-for-auth.md).",
   "## Timeline", "- 2026-12-03: auth chosen.",
