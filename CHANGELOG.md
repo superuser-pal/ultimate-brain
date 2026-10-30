@@ -2,6 +2,12 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.6.1 — 2026-10-30
+
+- CC-60 (#147): decisions 0051 (unattended catch-up and schedules) and 0052 (reflection) plan 0.7.0 and 0.8.0, from a review of two third-party vault skills.
+- CC-61 (#150): the skills and the brain's agent rules drop leftover emphasis and bare rules, give the reason for each hard rule, and gain two rules for current models: edit only what changes, and search a name as written before answering from memory.
+- CC-68 (#148): Home shows your areas and your Inbox as tabs, each area's counts read as one line ("4 to review · 1 meeting", or "all clear"), and buttons get a name apart from their label; Notion migration 0011.
+
 ## 0.6.0 — 2026-10-28
 
 - CC-55 (#138): decisions 0048 (modules, three Inbox states, three kinds of Review row, buttons and page layouts), 0049 (Documents: keep a file as a page, promote a note) and 0050 (area homes) plan 0.6.0.
