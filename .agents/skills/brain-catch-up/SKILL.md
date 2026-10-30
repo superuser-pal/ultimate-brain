@@ -95,9 +95,9 @@ For each input, publishing waits for step 4 below. **Skipped, not asked:** an in
 
 ## Unattended: "catch up unattended"
 
-The prompt a schedule runs (see "Run on a schedule"), or the user by hand. Nobody is there to ask, so every question of step 2 takes its default or skips its input, and the run goes on (decision 0051). It carries out what the user already decided word for word and reads no text of theirs, because turning their words into changes is judgment nobody would check. The 5-minute bar is for attended runs; a budget of inputs replaces it.
+The prompt a schedule runs (see "Run on a schedule"), or the user by hand. Nobody is there to ask, so every question of step 2 takes its default or skips its input, and the run goes on (decision 0051). It carries out what the user already decided word for word and interprets no text of theirs, because turning their words into changes is judgment nobody would check. It may quote a What to fix as written (in a report, to say what waits); it never works out what it means or acts on it. The 5-minute bar is for attended runs; a budget of inputs replaces it.
 
-Do the read-only pass (step 1), but never read a What to fix: skip step 3, and in step 9 only note that a `report_fixes` item exists, without working out the proposals its text would become (its report and its refresh then wait, below). Then:
+Do the read-only pass (step 1), but never interpret a What to fix: skip step 3, and in step 9 only note that a `report_fixes` item exists, without working out the proposals its text would become (its report and its refresh then wait, below). Then:
 
 1. **Nothing waiting and nothing failed: stop.** No commit, no Notion write, no log line, no report. A schedule that runs twice a day must leave no noise.
 2. **Take each question's answer from this table** instead of asking:
