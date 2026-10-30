@@ -239,6 +239,21 @@ Brain Assistant reads; your agent in Claude Code or Codex writes. To get somethi
 
 ---
 
+## Run catch-up on a schedule
+
+Say "run catch-up every morning" (or "twice a day", "on weekdays") and the agent sets it up with you: the times, the Claude model to pin, and what a scheduled run may use. On a Mac it installs a background job; on other systems it gives you a line to add with `crontab -e`. The job runs `claude -p "catch up unattended"` in your brain folder, so your computer has to be on and Claude Code signed in at that time.
+
+**What a scheduled run does.** It takes in what is waiting, up to 10 inputs a run, oldest first (change it with "raise the scheduled budget to 20"), and the rest waits for the next run. It carries out the decisions you already made word for word: Approve or Reject with nothing written in What to fix, and your edits in Notion. It never reads your words for you: a **Fix**, an Approve with a note in What to fix ("all except b"), and a What to fix on a report all wait for your next "catch up", because turning words into changes is a judgment nobody would check. A meeting or capture that needs a question answered stays where it is (the meeting Reviewed, the row Ready). A run with nothing waiting writes nothing.
+
+**Where you find out what it did.**
+- Your next **"catch up"** opens with one line: "Since last time: 4 scheduled runs, 6 inputs in, 1 skipped, 1 Fix waiting, 1 failed: Notion login". It also warns "Backlog growing" when three runs in a row left inputs over: run it more often or raise the budget.
+- With **Reports** on and **publish: auto**, a run that needs you or failed also adds one row to the Inbox ("Catch-up 29 Oct: 2 in, 1 needs you"). A run that went well adds nothing.
+- With publish **ask** (the default), a scheduled run commits and pushes but publishes nothing to Notion; your next catch-up publishes. Say "publish automatically" to change that.
+
+**Check or stop it:** "what is scheduled?" lists it, "stop the scheduled catch-up" removes it, and asking again with other times replaces it. If Claude Code's login to Notion expires, scheduled runs can't read Notion: that shows as a failure in the summary, and signing in again fixes it.
+
+---
+
 ## What to say to your agent
 
 Run these in Claude Code or Codex, from your brain's folder.
@@ -246,6 +261,7 @@ Run these in Claude Code or Codex, from your brain's folder.
 | You want to | Say |
 |---|---|
 | Do everything that's waiting: decided reviews, reviewed meetings, new captures, the drop folder | "catch up". It asks all its questions once at the start, then finishes |
+| Have it run by itself | "run catch-up every morning" (or "twice a day", "on weekdays"); "what is scheduled?"; "stop the scheduled catch-up" |
 | Get reviewed meetings into the brain | "ingest my reviewed meetings" |
 | Ingest a file, web page, email or chat | "ingest this PDF: <path>", "ingest this page: <url>", "ingest this email" (then paste it) |
 | Process quick captures | "process my inbox" |

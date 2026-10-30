@@ -55,7 +55,7 @@ Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come 
    - **Ignored:** e.g. `NOT_CORRECTABLE`. "You changed a decision's Assessment in Notion; that can't be changed by editing. Use a proposal or tell me what's wrong." `MODULE_OFF` (a row of a module that is off) and `RETIRED` (a Full text box from before 0.6.0) need no line.
 
    Corrections and Review decisions change the brain. If there are any, confirm with the user before applying, unless they already asked for exactly this sync.
-6. **Apply.** Run `brain sync apply --input plan.json`. For an unattended run, add `--record-only`, which skips corrections and records decisions without applying them (0003). Read each item's `result`. Report every `failed` item with its `reason`.
+6. **Apply.** Run `brain sync apply --input plan.json`. For an unattended catch-up, add `--skip-conflicted`: a row with a conflict is left whole until the user answers it, and the user's other decisions and corrections are applied (0051). `--record-only` is for a run that must not apply anything at all: it skips corrections and records decisions without applying them (0003). Read each item's `result`. Report every `failed` item with its `reason`.
 7. **Rebuild:** run `brain index`, `brain views`, then `brain lint`. If lint reports an error in a file this run changed, stop and report; don't commit.
 8. **Commit:** `sync: <n> new, <n> corrections, <n> decisions from Notion`.
 

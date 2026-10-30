@@ -49,7 +49,7 @@ Each operation has a skill; follow it end to end:
 7. **Dated, not "current".** Write facts as timeless, dated ("as of 2026-12-03"), or as pointers ("status: see Notion"). Volatile status (task state, project status, priority) lives in Notion.
 8. **Cite canonical notes.** `index.md` and the views are navigation; cite the note or source they point to.
 9. **Answering is read-only.** Answering the user's questions from the brain writes nothing; save an answer to the brain only when the user asks. A report the user asks for is stored as a dated view in `reports/` and published, never as knowledge: it is never ingested or cited as a source (decision 0043).
-10. **Unattended runs add, never apply.** With no user present, an agent may add drafts and proposals; applying proposals waits for the user.
+10. **Unattended runs add, and apply only what you decided word for word.** With no user present, an agent adds drafts and proposals and carries out decisions you already made (Approve, Reject, your edits in Notion); it never reads a What to fix, a Fix or an "all except …", and never decides anything itself. Those wait for an attended run.
 
 ## Reading notes
 
