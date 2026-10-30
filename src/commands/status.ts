@@ -10,6 +10,7 @@ import { describeErrors, loadSchemas } from "../lib/schemas.ts";
 import { isRecord } from "../lib/input.ts";
 import { databaseId, modulesOf } from "../lib/modules.ts";
 import { expandPath, linkedRepos, workTreeTop } from "../lib/repos.ts";
+import { unattendedRuns } from "../lib/runs.ts";
 
 const NOTE_TYPES = ["area", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "goal", "memory", "reference"];
 const PROPOSAL_STATUSES = ["pending", "approved", "edited", "rejected", "applied", "closed"];
@@ -68,6 +69,7 @@ export const statusCommand: Command = {
       notion,
       modules: modulesOf(brain!.config),
       settings,
+      unattended: await unattendedRuns(brain!.root),
       repos,
       index_stale: currentIndex !== index,
       views_stale: viewStale,
@@ -88,9 +90,14 @@ function readNotion(config: Record<string, unknown>): { configured: string[]; mi
   return { configured, missing, tasks_database: typeof tasks.database === "string" && tasks.database !== "" };
 }
 
-function readSettings(config: Record<string, unknown>): { publish: string; push: string } {
-  const settings = config.settings;
-  return { publish: isRecord(settings) && settings.publish === "auto" ? "auto" : "ask", push: isRecord(settings) && settings.push === "remind" ? "remind" : "auto" };
+function readSettings(config: Record<string, unknown>): { publish: string; push: string; unattended: { max_inputs: number } } {
+  const settings = isRecord(config.settings) ? config.settings : {};
+  const unattended = isRecord(settings.unattended) ? settings.unattended : {};
+  return {
+    publish: settings.publish === "auto" ? "auto" : "ask",
+    push: settings.push === "remind" ? "remind" : "auto",
+    unattended: { max_inputs: typeof unattended.max_inputs === "number" ? unattended.max_inputs : 10 },
+  };
 }
 
 async function findLastLogLine(root: string): Promise<string | null> {

@@ -12,20 +12,33 @@ export const syncPlanCommand: Command = {
 };
 
 export const syncApplyCommand: Command = {
-  name: "sync apply", usage: "brain sync apply --input <plan|-> [--record-only] [--dry-run] [--json]", summary: "Apply a sync plan using atomic per-item writes.", options: { input: "string", "record-only": "boolean", "dry-run": "boolean" }, maxPositionals: 0, needsBrain: true,
-  async run({ args, brain, now }) { const input = args.options.input as string | undefined; if (input === undefined) throw new BrainError("USAGE", "sync apply needs --input"); const workspace = await Workspace.open(brain!); const data = applyPlan(workspace, parsePlan(await readJsonInput(input, "sync apply")), now, args.options["record-only"] === true); const warnings = lintWarnings(workspace.warnings()); const dryRun = args.options["dry-run"] === true; if (!dryRun) await workspace.commit(data.log as [], now); const { log: _log, ...output } = data; const failed = Number((data.summary as Record<string, unknown>).failed ?? 0); return { data: { dry_run: dryRun, ...output }, warnings, exitCode: failed > 0 ? 1 : 0, human: `${failed} failed items\n` }; },
+  name: "sync apply", usage: "brain sync apply --input <plan|-> [--record-only] [--skip-conflicted] [--dry-run] [--json]", summary: "Apply a sync plan using atomic per-item writes.", options: { input: "string", "record-only": "boolean", "skip-conflicted": "boolean", "dry-run": "boolean" }, maxPositionals: 0, needsBrain: true,
+  async run({ args, brain, now }) { const input = args.options.input as string | undefined; if (input === undefined) throw new BrainError("USAGE", "sync apply needs --input"); const workspace = await Workspace.open(brain!); const data = applyPlan(workspace, parsePlan(await readJsonInput(input, "sync apply")), now, args.options["record-only"] === true, args.options["skip-conflicted"] === true); const warnings = lintWarnings(workspace.warnings()); const dryRun = args.options["dry-run"] === true; if (!dryRun) await workspace.commit(data.log as [], now); const { log: _log, ...output } = data; const failed = Number((data.summary as Record<string, unknown>).failed ?? 0); return { data: { dry_run: dryRun, ...output }, warnings, exitCode: failed > 0 ? 1 : 0, human: `${failed} failed items\n` }; },
 };
 
 export const syncRenderCommand: Command = {
-  name: "sync render", usage: "brain sync render (--changed | --ids <id>[,<id>…]) [--plan <plan.json>] [--json]", summary: "Render Notion payloads without writing.", options: { changed: "boolean", ids: "string", plan: "string" }, maxPositionals: 0, needsBrain: true,
+  name: "sync render", usage: "brain sync render (--changed | --ids <id>[,<id>…]) [--plan <plan.json> [--skip-conflicted]] [--json]", summary: "Render Notion payloads without writing.", options: { changed: "boolean", ids: "string", plan: "string", "skip-conflicted": "boolean" }, maxPositionals: 0, needsBrain: true,
   async run({ args, brain, now }) {
     const changed = args.options.changed === true; const idsText = args.options.ids as string | undefined;
     if (changed === (idsText !== undefined)) throw new BrainError("USAGE", "provide exactly one of --changed or --ids");
     const workspace = await Workspace.open(brain!); const ids = idsText === undefined ? undefined : idsText.split(",").map((id) => id.trim()).filter(Boolean);
     if (ids !== undefined) for (const id of ids) if (workspace.get(id) === undefined) throw new BrainError("UNKNOWN_ID", `No note with id ${id}`);
-    const held = new Map<string, Set<string>>(); const planPath = args.options.plan as string | undefined;
-    if (planPath !== undefined) for (const item of parsePlan(await readJsonInput(planPath, "sync render")).conflicts) if (item.code === "BOTH_CHANGED" && typeof item.brain_id === "string" && typeof item.property === "string") { const set = held.get(item.brain_id) ?? new Set<string>(); set.add(item.property); held.set(item.brain_id, set); }
-    const data = render(workspace, now, ids, held); return { data: { items: data.items, errors: data.errors }, warnings: data.warnings, exitCode: data.errors.length > 0 ? 1 : 0, human: `${data.items.length} payloads\n` };
+    const held = new Map<string, Set<string>>(); const planPath = args.options.plan as string | undefined; const skipConflicted = args.options["skip-conflicted"] === true;
+    if (skipConflicted && planPath === undefined) throw new BrainError("USAGE", "--skip-conflicted needs --plan");
+    const plan = planPath === undefined ? undefined : parsePlan(await readJsonInput(planPath, "sync render"));
+    if (plan !== undefined) for (const item of plan.conflicts) if (item.code === "BOTH_CHANGED" && typeof item.brain_id === "string" && typeof item.property === "string") { const set = held.get(item.brain_id) ?? new Set<string>(); set.add(item.property); held.set(item.brain_id, set); }
+    const data = render(workspace, now, ids, held);
+    // --skip-conflicted (cli §5.14.4, 0051): a conflicted row, and a report with a What to fix nobody has read, are held back whole.
+    const withheld = new Map<string, string>(); const conflictedPages = new Set<string>();
+    if (skipConflicted && plan !== undefined) {
+      for (const item of plan.conflicts) { if (typeof item.brain_id === "string") withheld.set(item.brain_id, "ROW_CONFLICTED"); conflictedPages.add(String(item.page_id)); }
+      for (const item of plan.report_fixes) if (!withheld.has(item.report)) withheld.set(item.report, "FIX_WAITING");
+    }
+    const skipped: Array<{ id: string; reason: string }> = []; const items = data.items.filter((item) => {
+      const reason = withheld.get(item.id) ?? (item.page_id !== null && conflictedPages.has(item.page_id) ? "ROW_CONFLICTED" : undefined);
+      if (reason === undefined) return true; skipped.push({ id: item.id, reason }); return false;
+    });
+    return { data: { items, errors: data.errors, skipped }, warnings: data.warnings, exitCode: data.errors.length > 0 ? 1 : 0, human: `${items.length} payloads\n` };
   },
 };
 
