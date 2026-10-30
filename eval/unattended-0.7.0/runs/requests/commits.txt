@@ -1,3 +1,2 @@
 log: catch up (unattended)
 publish: catch up
-sync: 0 new, 0 corrections, 0 decisions from Notion (1 conflict, 1 report fix waiting)

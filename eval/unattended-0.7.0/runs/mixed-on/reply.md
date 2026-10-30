@@ -1,24 +1,30 @@
-Done: 1 Review decision applied · 1 Notion edit taken · 2 meetings ingested · 3 new notes · 22 pages published
-Needs you: 1 Fix waiting (Budget: 95000) · 1 meeting skipped (Acme budget call has no Date) · 6 Review rows to decide · the Concepts database isn't set up (Knowledge is on: say "connect the brain to Notion") · no drop folder set (say where it is)
-Next: give the Acme budget call a Date in Notion, then say "catch up" while you're here so the Fix gets read
+I finished the unattended catch-up. All 23 Notion writes went to `writes.md`: 22 page writes plus one Inbox Report row.
 
-**This run (unattended):** 2 inputs taken in, 0 left, 1 skipped, 1 waiting, 0 failed. I added a "Catch-up 30 Oct: 2 in, 2 need you" Report row to the Inbox. Every Notion write is listed in `mixed-on-sim/writes.md`.
+```
+Done: 2 applied · 2 meetings ingested · 3 new notes · 2 Review rows · 22 pages published
+Needs you: 1 Fix waiting (Budget: 95000) · 1 meeting skipped (Acme budget call has no date) · 2 Review rows to decide · Concepts is on but its database isn't set up: say "set up concepts"
+Next: decide in Notion, then "catch up"
+```
 
 **What came in**
-- **Acme design review (10 Dec):** the team will use the new grid for all pages. It's a small choice, so it stays a line in the meeting rather than its own decision note. Action item: Carlos Ruiz sends the design tokens by 2026-12-17.
-- **Acme content check-in (12 Dec):** the case studies go out two weeks after launch, also a line in the meeting. New open question: *Who approves the German copy of the Acme website?* (Maria López raised it). Action item: Maria López confirms the blog topics by 2026-12-19.
+- **Acme design review (10 Dec 2026):** the team will use the new grid for all pages. That's too small for its own decision note, so it's a line in the meeting note, plus a proposed dated line on Acme website.
+- **Acme content check-in (12 Dec 2026):** case studies will be published two weeks after launch, handled the same way as the grid decision. One new open question: *Who approves the German copy?*, raised by Maria López.
 
 **What changed**
-- Acme website launch date: 2027-02 → 2027-03 (you approved "Launch: March").
-- Maria López's role: Product Manager → Product lead (your edit in Notion).
+- Acme website launch date changed from 2027-02 to 2027-03 (you approved "Launch: March").
+- Maria López's role changed from Product Manager to Product lead, from your edit in Notion.
+- Both meetings are now set to Ingested in Notion.
 
-**Waiting for you**
-- **Budget: 95000:** you set it to Fix with "a: 90000 EUR, not 95000". An unattended run doesn't read your fix text, so it waits for a run where you're here, and nothing from that row was applied or published.
+**Fixes waiting** (I don't interpret these without you)
+- Budget: 95000, Fix: "a: 90000 EUR, not 95000". The budget stays 80000 EUR for now.
 
 **Check**
-- You changed the Assessment of "Use Supabase for auth" to Contested in Notion. Editing that field in Notion doesn't change the brain: use a proposal or tell me what's wrong.
-- Two action items didn't become tasks because the Tasks module is off: Carlos's design tokens (2026-12-17) and Maria's blog topics (2026-12-19).
-- I left out each meeting's Notion last-edited time from its saved minutes because the simulated data didn't include it.
-- Some older notes weren't in Notion yet (Carlos Ruiz, "Use Firebase for auth", two older Review rows), so this publish created their pages too.
+- **Contested Assessment:** you set "Use Supabase for auth" to Contested in Notion. Editing that field doesn't change the brain. Use a proposal, or tell me what's wrong.
+- **Action items without tasks:** these didn't become tasks because the Tasks module is off.
+  - Carlos Ruiz sends the design tokens by 2026-12-17.
+  - Maria López confirms the blog topics by 2026-12-19.
+- **Acme budget call:** it stays Reviewed until it has a Date. It also says "Keep the budget as it is", which is relevant to the Fix above.
+- **Run problem, now fixed:** my first working folder in `/tmp` turned out to be used by another process, which overwrote my plan file. The first apply ran on that file: Maria's role correction went in with the same value, and the Launch approval failed. I rebuilt the plan in a private folder and reapplied, and both changes are now correct. No wrong data was written.
+- **Notion pages assumed:** the simulated pages gave me no blocks to read. I assumed the Acme website and Clients pages have the template's Brief and Decision log toggles when writing those sections.
 
-Lint shows no errors. All 5 commits are local and not pushed because the repo has no remote.
+All the work is in 5 commits, and lint is clean. The push failed because the repo has no remote, so those 5 commits are only local.

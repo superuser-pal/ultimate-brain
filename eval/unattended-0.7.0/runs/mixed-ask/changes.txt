@@ -6,7 +6,7 @@ M	index.md
 A	knowledge/meetings/2026-12-10-acme-design-review.md
 A	knowledge/meetings/2026-12-12-acme-content-check-in.md
 M	knowledge/people/maria-lopez.md
-A	knowledge/questions/who-approves-the-german-copy.md
+A	knowledge/questions/who-approves-the-acme-german-copy.md
 M	log/2026-10.md
 M	projects/acme-website/brief.md
 M	projects/acme-website/project.md

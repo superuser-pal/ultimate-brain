@@ -1,23 +1,28 @@
-I applied what you'd already decided in Notion and took in two reviewed meetings. Nothing was published to Notion and `writes.md` is still empty, because `settings.publish` is `ask` and an unattended run only publishes when it's `auto`.
+The unattended catch-up finished. It applied 2 of your Notion changes and ingested 2 meetings; 1 meeting and 1 Fix are waiting for you. Nothing was published to Notion, so `writes.md` is empty.
 
 ```
-Done: 1 approval applied · 1 Notion edit applied · 2 meetings ingested · 3 new notes (draft)
-Needs you: 1 Fix waiting (budget) · 1 meeting skipped (no date) · nothing published (publish is "ask") · Knowledge is on but its Concepts database isn't set up: say "set up concepts"
-Next: say "catch up" to publish, read the Fix and decide the new Review rows
+Done: 2 applied · 2 meetings ingested · 3 new notes · 2 Review notes rows written
+Needs you: 1 Fix waiting (Budget: 95000) · 1 meeting skipped (Acme budget call, no date) · Concepts is on but its database isn't set up: say "connect the brain to Notion" · Drop folder not set: say where it is · nothing published (publish is "ask") · not pushed: no remote, 5 commits are local
+Next: say "catch up" to answer the Fix and publish
 ```
+
+**What I applied (exactly as you decided in Notion)**
+- **Launch: March:** you approved it, so the Acme website launch date changed from 2027-02 to 2027-03.
+- **Maria López's role:** your Notion edit changed it from Product Manager to Product lead.
 
 **What came in**
-- **Launch date (your approval):** the Acme website launch moves from 2027-02 to 2027-03.
-- **Maria López's role (your edit in Notion):** changed from Product Manager to Product lead, effective 2026-12-13.
-- **Acme design review, 2026-12-10:** the team will use the new grid for all pages. I kept this as a line in the meeting note rather than a separate decision note, because it's easy to reverse.
-- **Acme content check-in, 2026-12-12:** case studies will be published two weeks after launch, also kept as a line in the meeting note. Maria López asked who approves the German copy, and I created an open-question note for it.
+- **Acme design review (10 Dec):** the team agreed to use the new grid for all pages. That's a small, easy-to-reverse choice, so it's a line in the meeting note, not its own decision note. Action item: Carlos Ruiz sends the design tokens by 2026-12-17.
+- **Acme content check-in (12 Dec):**
+  - The team agreed to publish the case studies two weeks after launch. That's a line in the meeting note.
+  - New open question: *Who approves the Acme German copy?* (raised by Maria López).
+  - Action item: Maria López confirms the blog topics by 2026-12-19.
 
-Each meeting has its own Review row with its new notes. Both rows will reach Notion at the next publish.
+**What waits for your reading.** An unattended run doesn't interpret what you write in What to fix.
+- **Budget: 95000:** you chose Fix and wrote *"a: 90000 EUR, not 95000"*. The proposal stays pending and the row is untouched until you run an attended catch-up.
 
 **Check**
-- **Acme budget call:** it has no Date in Notion, so I skipped it and it stays Reviewed. Add the date and the next run will take it in.
-- **Budget Fix:** your note on that Review row says "a: 90000 EUR, not 95000". Unattended runs don't read fix notes, so it waits for an attended catch-up. That row was left out entirely.
-- **"Use Supabase for auth":** someone changed its Assessment to Contested in Notion. That field can't be changed by editing the page. Use a proposal or tell me what's wrong, and I'll raise the contradiction.
-- **Action items:** these didn't become tasks because the Tasks module is off. Carlos Ruiz sends the design tokens by 2026-12-17, and Maria López confirms the blog topics by 2026-12-19.
-
-There's no Report row in the Inbox, since that needs `publish: auto`. The push failed because there's no git remote; the 4 commits are saved locally.
+- **Acme budget call** was skipped because its Date is empty. It stays Reviewed. Its minutes say "Keep the budget as it is", which bears on the pending budget Fix.
+- **Your Assessment edit:** you set "Use Supabase for auth" to Contested in Notion. Editing that field can't change it. Use a proposal or tell me what's wrong.
+- **Action items:** the 2 above didn't become Notion tasks because the Tasks module is off.
+- **Meeting times:** Notion's last-edited times for the two meetings weren't in the simulated data, so their sources have no edit time recorded.
+- **Not published:** the new notes and Review rows are only in the brain. With publish set to `ask`, an unattended run publishes nothing and writes no Report row. To let scheduled runs publish on their own, the setting is `brain config set settings.publish '"auto"'`.
