@@ -40,6 +40,56 @@ export async function appendLog(root: string, now: Date, entries: readonly LogEn
   return path;
 }
 
+export interface ParsedLogLine {
+  timestamp: string;
+  op: string;
+  id: string;
+  title: string;
+  pairs: Record<string, string>;
+}
+
+/** Read one line written by formatLogLine (spec/cli.md §3.9); null for anything else. */
+export function parseLogLine(line: string): ParsedLogLine | null {
+  const head = /^- (\S+) ([a-z][a-z0-9-]*) (\S+) /.exec(line);
+  if (head === null) return null;
+  let position = head[0].length;
+  const title = readQuoted(line, position);
+  if (title === null) return null;
+  position = title.end;
+  const pairs: Record<string, string> = {};
+  while (position < line.length) {
+    const key = /^ ([^\s=]+)=/.exec(line.slice(position));
+    if (key === null) return null;
+    position += key[0].length;
+    if (line[position] === '"') {
+      const value = readQuoted(line, position);
+      if (value === null) return null;
+      pairs[key[1]!] = value.text;
+      position = value.end;
+    } else {
+      const end = line.indexOf(" ", position);
+      pairs[key[1]!] = line.slice(position, end === -1 ? line.length : end);
+      position = end === -1 ? line.length : end;
+    }
+  }
+  return { timestamp: head[1]!, op: head[2]!, id: head[3]!, title: title.text, pairs };
+}
+
+function readQuoted(line: string, start: number): { text: string; end: number } | null {
+  if (line[start] !== '"') return null;
+  let text = "";
+  for (let index = start + 1; index < line.length; index += 1) {
+    const char = line[index]!;
+    if (char === '"') return { text, end: index + 1 };
+    if (char === "\\") {
+      const next = line[index + 1];
+      text += next === "n" ? "\n" : next === "r" ? "\r" : (next ?? "");
+      index += 1;
+    } else text += char;
+  }
+  return null;
+}
+
 function quote(value: string): string {
   const escaped = value
     .replaceAll("\\", "\\\\")
