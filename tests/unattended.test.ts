@@ -125,6 +125,23 @@ test("sync apply --skip-conflicted skips dependent creates transitively, whateve
   ]);
 });
 
+test("a create depends on another through relations targets too: skipped under --skip-conflicted, DEPENDENCY_FAILED when the other fails", async (context) => {
+  const dir = await fixtureCopy(context);
+  const orgPage = "c1000000-0000-4000-8000-000000000008";
+  const person = { type: "person", id: "per-9k4m2n7q", title: "Cy Mora", lifecycle: "draft", frontmatter: { summary: "Cy Mora", relations: [{ type: "about", target: "org-5h2k8q1w" }], notion: "c1000000-0000-4000-8000-000000000009", sources: ["notion:c1000000-0000-4000-8000-000000000009"] }, body: "" };
+  const org = { type: "org", id: "org-5h2k8q1w", title: "Globex", lifecycle: "draft", frontmatter: { summary: "Globex", notion: orgPage, sources: [`notion:${orgPage}`] }, body: "" };
+  const conflicts = [{ database: "orgs", page_id: orgPage, brain_id: null, code: "UNRESOLVED_RELATION", message: "Globex names an unknown parent" }];
+  const skipped = await run(dir, ["sync", "apply", "--skip-conflicted"], { as_of: NOW, create: [person, org], updates: [], corrections: [], decisions: [], conflicts, ignored: [] });
+  assert.equal(skipped.code, 0, skipped.stdout);
+  assert.deepEqual(skipped.json.data.create.map((item: any) => [item.id, item.result, item.reason]), [["per-9k4m2n7q", "skipped", "ROW_CONFLICTED"], ["org-5h2k8q1w", "skipped", "ROW_CONFLICTED"]]);
+
+  // Without the flag: an org whose id is already in use fails, and the person that points at it fails with it.
+  const taken = { ...org, id: "org-6d1f9z3k" };
+  const dependent = { ...person, frontmatter: { ...person.frontmatter, relations: [{ type: "about", target: "org-6d1f9z3k" }] } };
+  const failed = await run(dir, ["sync", "apply"], { as_of: NOW, create: [taken, dependent], updates: [], corrections: [], decisions: [], conflicts: [], ignored: [] });
+  assert.deepEqual(failed.json.data.create.map((item: any) => [item.id, item.result, item.reason]), [["org-6d1f9z3k", "failed", "ID_IN_USE"], ["per-9k4m2n7q", "failed", "DEPENDENCY_FAILED"]]);
+});
+
 test("sync apply --skip-conflicted does not take an id in free text for a dependency", async (context) => {
   const dir = await fixtureCopy(context);
   const orgPage = "c1000000-0000-4000-8000-000000000006";

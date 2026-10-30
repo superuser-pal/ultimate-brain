@@ -310,6 +310,14 @@ function deferredPair(note: Note, other: Note | undefined, id: string): boolean 
   return (note.attributes.deferred_from === other.id && excluded(other)) || (other.attributes.deferred_from === note.id && excluded(note));
 }
 
+/** Every note id a note's frontmatter references, by the fields lint's `missing-ref` checks, plus `relations` targets and `timeline` sources (spec/cli.md §5.14.3). */
+export function referencedIds(attributes: Record<string, unknown>): string[] {
+  const values: unknown[] = Object.entries(attributes).filter(([key]) => REFERENCE_KEYS.has(key)).map(([, value]) => value);
+  for (const relation of list(attributes.relations)) values.push(record(relation).target);
+  for (const entry of list(attributes.timeline)) values.push(record(entry).source);
+  return values.flatMap((value) => collectIds(value));
+}
+
 function collectIds(value: unknown, out: string[] = []): string[] {
   if (typeof value === "string") {
     if (ID.test(value)) out.push(value);
