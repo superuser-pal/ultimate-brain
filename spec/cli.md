@@ -948,8 +948,10 @@ Errors: `INPUT_UNREADABLE`, `INPUT_INVALID` (unknown database key, bad value sha
 #### 5.14.3 `brain sync apply`
 
 ```text
-brain sync apply --input <plan|-> [--record-only] [--dry-run]
+brain sync apply --input <plan|-> [--record-only] [--skip-conflicted] [--dry-run]
 ```
+
+**`--skip-conflicted`** (0051, the unattended catch-up, §6.1) skips a conflicted row whole: an item belongs to a row with a conflict in the plan when its note id (`create` `id`, `updates` `id`, `corrections` `target`, `decisions` `proposal`) equals a conflict's `brain_id`, or its page id (`create` `frontmatter.notion`) equals a conflict's `page_id`. Such an item is not executed: its result is `skipped`, reason `ROW_CONFLICTED`, and a `create` whose relations point at a skipped create is skipped the same way. Without the flag, a conflict blocks only its own property, as before.
 
 With `--record-only` (a run that must not apply at all, 0003; an unattended catch-up runs without it, 0051), only additions run: `create`, `updates` and recording `decisions` (as `apply --record-only`); `corrections` are skipped and reported.
 
@@ -1323,10 +1325,10 @@ Runs a skill on a schedule, with nobody there, through local Claude Code (`claud
 **Elsewhere** (`UB_SCHEDULE_PLATFORM` overrides `process.platform` in tests), `install` writes nothing and returns one cron line per time (with `--days`, the days in cron's numbering on the same line), for the user to add with `crontab -e`:
 
 ```text
-0 7 * * * cd '/Users/rodrigo/brain' && PATH='…' '/usr/local/bin/claude' -p 'catch up unattended' --model claude-sonnet-5-5 >> "$HOME/.ultimate-brain/logs/eu.ultimate-brain.brain-3f9a2c1d.catch-up.log" 2>&1
+0 7 * * * mkdir -p "$HOME/.ultimate-brain/logs" && cd '/Users/rodrigo/brain' && PATH='…' '/usr/local/bin/claude' -p 'catch up unattended' --model claude-sonnet-5-5 >> "$HOME/.ultimate-brain/logs/eu.ultimate-brain.brain-3f9a2c1d.catch-up.log" 2>&1
 ```
 
-Paths are single-quoted, with `'` written as `'\''`. `list` and `remove` manage no cron lines: they return `[]` and `removed: false` with the warning `SCHEDULE_NOT_MANAGED` ("cron lines are yours: crontab -l").
+The line creates its log folder first, so it runs on a machine where it doesn't exist yet. Paths are single-quoted, with `'` written as `'\''`. `list` and `remove` manage no cron lines: they return `[]` and `removed: false` with the warning `SCHEDULE_NOT_MANAGED` ("cron lines are yours: crontab -l").
 
 ```sh
 brain schedule install catch-up --at 07:00,13:00 --days mon,tue,wed,thu,fri --model claude-sonnet-5-5 --json
@@ -1367,27 +1369,32 @@ A run never leaves lint errors it introduced: if `lint` reports new errors after
 
 The skill brain-catch-up, started by the prompt `catch up unattended` (a schedule, §5.21, or the user by hand). It is **Catch up** above, in one turn, with nobody to ask: the read-only pass runs as usual, then each question of the batch takes its default or skips its input, and the run goes on. It applies the user's explicit decisions, interprets no text the user wrote, and decides nothing itself (0003 as amended by 0051). The 5-minute bar (0043) doesn't apply; the budget does.
 
-**Sequence.** read-only pass (as **Catch up**; a failed read, such as an expired Notion login, is a failure: the parts that need it are skipped, the rest goes on) → if nothing is waiting and nothing failed, stop: **no commit, no Notion call, no log line** → `proposal backlog` → `sync apply --input plan.json` (without `--record-only`) → the inputs within the budget, oldest first, each as **Ingest one meeting** or **Ingest a …** → `note new` per `document_requests` and `promote_requests` → with Reports on, `report new` with `refresh` per `refresh_requests` and **Report** per Ask row → `views` → with `settings.publish: auto`, `sync render --changed` + MCP → `sync record` → commit, and the boxes cleared → with Reports on and something for the user (below), the Report row → `log catch-up - mode=unattended …` (§3.9) → commit → push per `settings.push`.
+**Sequence.** read-only pass (as **Catch up**; a failed read, such as an expired Notion login, is a failure: the parts that need it are skipped, the rest goes on) → if nothing is waiting and nothing failed, stop: **no commit, no Notion call, no log line** → `proposal backlog` → `sync apply --input plan.json --skip-conflicted` (without `--record-only`) → the inputs within the budget, oldest first, each as **Ingest one meeting** or **Ingest a …** → `note new` per `document_requests` and `promote_requests` → with Reports on, `report new` with `refresh` per report to refresh (the table below: `refresh_requests` and the reports whose fixes are all decided) and **Report** per Ask row → `views` → with `settings.publish: auto`, `sync render --changed` + MCP → `sync record` → commit, and the boxes cleared → with Reports on and something for the user (below), the Report row → `log catch-up - mode=unattended …` (§3.9) → commit → push per `settings.push`.
 
 **Every question of the batch** (brain-catch-up, "One batch of questions"):
 
 | Question | Unattended |
 |---|---|
-| A sync conflict (`BOTH_CHANGED`, `MISSING_REQUIRED`, `UNRESOLVED_RELATION`, `UNKNOWN_BRAIN_ID`, `NOTION_ID_MISMATCH`, `REQUIRED_EMPTY`) | **skip**: the row stays as it is (`sync apply` never executes a conflict); named under Needs you |
+| A sync conflict (`BOTH_CHANGED`, `MISSING_REQUIRED`, `UNRESOLVED_RELATION`, `UNKNOWN_BRAIN_ID`, `NOTION_ID_MISMATCH`, `REQUIRED_EMPTY`) | **skip** the whole row: `--skip-conflicted` leaves its other corrections, updates and decisions unapplied (`ROW_CONFLICTED`), and the skill drops any `document_requests`, `promote_requests`, `refresh_requests` or `report_fixes` item with that `page_id`; named under Needs you |
 | What to fix on a Review row (`NOTE_TO_READ`, `FIX_TO_READ`, `FIX_WITHOUT_TEXT`) | **skip**: waits for an attended run (table below) |
 | A meeting's pre-check blocker | **skip** the meeting: it stays Reviewed |
 | An Inbox row's pre-check blocker | **skip** the row: it stays Ready, with its attachments |
 | A capture that repeats a source the brain has | **default**: skipped, set to Done with "Skipped: same as <title>" when the run publishes; without a publish it stays Ready and is skipped again |
+| "Which parts matter?" for a long attachment (on a Ready row or a Reviewed meeting) | **skip** the row or meeting whole, with its attachments: it stays Ready or Reviewed |
 | A likely new version (of a meeting, a row or a file) | **skip** the input: it waits in its place (the meeting Reviewed, the row Ready, the file in the queue) |
 | Pending proposals in chat (no Review database) | **default**: left pending |
-| The drop-folder list, and "keep as document?" | **default**: every file taken, none kept as a document |
-| Attachments, and a linked repo's files when there are more than 10 | **default**: all of them |
+| No `Drop folder:` line in AGENTS.md (the path question, and the offer to add the line) | **skip** the drop folder; Needs you says "Drop folder not set: say where it is" |
+| The drop-folder list, and "keep as document?" | **default**: every readable file taken, none kept as a document; a file already in the brain, or the same file as another, moved to `processed/` as attended; a file that can't be read stays, named under Check |
+| "Which parts matter?" for a long drop-folder file (sources.md, "The drop folder", step 2) | **skip** the file: it stays in the queue |
+| Attachments | **default**: all of them |
+| A linked repo with more than 10 changed files (which to take, and whether the rest is skipped for good) | **skip** the repo: never taken unattended (sources.md, "Linked repos", step 1); no `repo record` |
 | *(Reports)* An Ask row: "Report on …?" | **default**: yes, a new report |
+| *(Reports)* A Report row to refresh: Refresh asked ticked (`refresh_requests`), or a report whose last `fixes` entry lists only proposals now applied, rejected or closed and whose `generated_at` is older than the last of those decisions (brain-catch-up, step 1.9) | **default**: yes, refreshed |
 | *(Reports)* A report's What to fix and the proposals it becomes | **skip**: waits for an attended run, like a Review row's What to fix |
 | The identities question | **skip**: asked again at the next attended catch-up |
 | "Publish to Notion at the end?" | **default** from `settings.publish`: `auto` publishes; `ask` publishes nothing and leaves it to the next attended run |
 
-A request that asks no question runs as attended: a re-read, a `document_requests` item (with Only keep, its `part` Document goes to review in a `review_notes`), a `promote_requests` item, a `refresh_requests` item, the backlog rows. An input whose ingest raises a new question during the run is skipped, as attended (brain-catch-up step 3).
+A request that asks no question runs as attended: a re-read, a `document_requests` item (with Only keep, its `part` Document goes to review in a `review_notes`), a `promote_requests` item, the backlog rows. An input whose ingest raises a new question during the run is skipped, as attended (brain-catch-up step 3).
 
 **Every kind of decided Review row and Notion edit** (`sync plan`, §5.14.2):
 
@@ -1406,13 +1413,13 @@ A request that asks no question runs as attended: a re-read, a `document_request
 
 0051 also lists "an Edit with a value" as applied. Since migration 0009 a Review row has no such option (Edit became Fix, whose What to fix needs reading), so nothing of that kind reaches an unattended run: an `edit` with a `value` is passed to `brain apply` only in chat, by an attended run.
 
-**The budget.** `settings.unattended.max_inputs` (default 10, schema §12) counts inputs: each Reviewed meeting, each Ready Inbox row (its attachments with it), each drop-folder file and each linked repo with changes (all its files, then `repo record`). They are taken oldest first, by the meeting's Date, the row's created time, the file's modified time, the repo's oldest new commit. Skipped inputs don't count; failed ones do. A source that an earlier unattended run already wrote but didn't publish (`note new --dry-run` reports `DUPLICATE_SOURCE`) is not an input again: it waits for the publish. The inputs beyond the budget are `left`, named in the report ("4 more wait for the next run"), and taken by the next run. Requests (Documents, promotions, refreshes, Ask rows, the backlog) aren't inputs and aren't counted. When `brain status` gives `unattended.backlog: true`, the report says "Backlog growing: run more often or raise the budget".
+**The budget.** `settings.unattended.max_inputs` (default 10, schema §12) counts inputs: each Reviewed meeting, each Ready Inbox row (its attachments with it), each drop-folder file and each changed file of a linked repo (with at most 10, above). They are taken oldest first, by the meeting's Date, the row's created time, the drop-folder file's modified time, the repo file's `committed_at`. Skipped inputs don't count; failed ones do. A repo whose files didn't all fit gets no `repo record`: the next run lists them again, and the ones already in skip as `DUPLICATE_SOURCE` (sources.md, "Linked repos", step 4). An input whose source the brain already has (`note new --dry-run` reports `DUPLICATE_SOURCE`: a repo file taken by an earlier run, or a row an earlier run wrote but didn't publish) is not an input again and isn't counted; a row or meeting waits for the publish. The inputs beyond the budget are `left`, named in the report ("4 more wait for the next run"), and taken by the next run. Requests (Documents, promotions, refreshes, Ask rows, the backlog) aren't inputs and aren't counted. When `brain status` gives `unattended.backlog: true`, the report says "Backlog growing: run more often or raise the budget".
 
 **A step that fails** is logged in the run's `failures` and the run goes on with the next input. A lint error in a file the run wrote stops the run there, as attended, and is a failure.
 
 **What needs the user** is the skipped inputs, the `waiting` rows and fixes, the conflicts, and the failures. The report is the attended three lines (Done, Needs you, Next) with What came in and Check, written:
 - **in the log line** (§3.9), always, unless the run was a no-op;
-- **in one Inbox Report row**, only with Reports on (`modules.reports`) and when something needs the user or failed. The skill creates it through the MCP, whatever `settings.publish` says, since it is the run's message, not a publish of knowledge: Name `Catch-up <D Mon>: <n> in, <n> need you` (`, <n> failed` added when one did; "1 meeting in, 1 needs you"), Kind = Report, Brain Status = Done, no Brain ID, the report as its body. It is not a note and has no file in Git; its facts are in the log line. A Refresh asked or What to fix on it is ignored (`NOT_A_REPORT`, §5.14.2). A Notion failure can't write it; the log line still holds the run;
-- with Reports off, nowhere else: what needs the user waits where they act on it (the meeting Reviewed, the row Ready, the Fix in Review).
+- **in one Inbox Report row**, only with Reports on (`modules.reports`), with `settings.publish: auto` (an unattended run with `ask` writes nothing to Notion, 0051), and when something needs the user or failed. The skill creates it through the MCP in the publish step: Name `Catch-up <D Mon>: <n> in, <n> need you` (`, <n> failed` added when one did; "1 meeting in, 1 needs you"), Kind = Report, Brain Status = Done, no Brain ID, the report as its body. It is not a note and has no file in Git; its facts are in the log line. A Refresh asked or What to fix on it is ignored (`NOT_A_REPORT`, §5.14.2). A Notion failure can't write it; the log line still holds the run;
+- with Reports off or `publish: ask`, nowhere else: what needs the user waits where they act on it (the meeting Reviewed, the row Ready, the Fix in Review), and the next attended catch-up opens with the summary below. The skill's "Run on a schedule" section says so when it sets a schedule (CC-64): a Report row needs Reports on and `publish: auto`.
 
 **The next attended catch-up** opens with the summary of the unattended runs since the last attended one, from `brain status` `unattended.catch_up` (§5.2), before its batch: "Since last time: 4 scheduled runs, 6 inputs in, 1 skipped, 1 Fix waiting, 1 failed: Notion login". Nothing when `catch_up` is `null`. Its own log line has no `mode`, which starts the count again.
