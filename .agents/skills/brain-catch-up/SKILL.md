@@ -97,7 +97,7 @@ For each input, publishing waits for step 4 below. **Skipped, not asked:** an in
 
 The prompt a schedule runs (see "Run on a schedule"), or the user by hand. Nobody is there to ask, so every question of step 2 takes its default or skips its input, and the run goes on (decision 0051). It carries out what the user already decided word for word and reads no text of theirs, because turning their words into changes is judgment nobody would check. The 5-minute bar is for attended runs; a budget of inputs replaces it.
 
-Do the read-only pass (step 1), but skip its step 3: a What to fix is never read here. Then:
+Do the read-only pass (step 1), but never read a What to fix: skip step 3, and in step 9 only note that a `report_fixes` item exists, without working out the proposals its text would become (its report and its refresh then wait, below). Then:
 
 1. **Nothing waiting and nothing failed: stop.** No commit, no Notion write, no log line, no report. A schedule that runs twice a day must leave no noise.
 2. **Take each question's answer from this table** instead of asking:
@@ -115,7 +115,7 @@ Do the read-only pass (step 1), but skip its step 3: a What to fix is never read
    | *(Reports)* A Report row to refresh (Refresh asked, or a report whose fixes are all decided) | **Default**: refreshed, unless it has a What to fix waiting |
    | "Publish to Notion at the end?" | **Default** from `settings.publish`: `auto` publishes, `ask` publishes nothing |
 
-3. **Apply only what was decided word for word.** `sync apply --input plan.json --skip-conflicted`, without `--record-only`:
+3. **Drop what belongs to a conflicted page, then apply only what was decided word for word.** First remove from `plan.json` every `document_requests`, `promote_requests`, `refresh_requests` and `report_fixes` item whose `page_id` is the `page_id` of a conflict: that row is skipped whole, so it makes no Document, promotion or refresh, and its box stays ticked for the next attended run. Then `sync apply --input plan.json --skip-conflicted`, without `--record-only`:
 
    | In the plan | Unattended |
    |---|---|
@@ -123,6 +123,7 @@ Do the read-only pass (step 1), but skip its step 3: a What to fix is never read
    | A property the user changed in Notion (Key Facts, Role, Name, Summary, Why, Deadline, Area, Goal, Client, Org, People), Lifecycle, Status, Priority, Dates and the other fields theirs | **Applied** |
    | A row the user created in Notion (area, goal, project, person, org) | **Applied**: an addition |
    | Approve or Reject with What to fix, a Fix, a Fix with no text, a What to fix on a report | **Waits**: counted, and named ("1 Fix waiting for you") |
+   | An `ignored` item (`NOT_CORRECTABLE`, `NOT_A_REPORT`, `MODULE_OFF`, …) | Nothing is done, as in an attended run, and a change the user made that the brain can't take (`NOT_CORRECTABLE`) goes under **Check** with the same line brain-sync step 5 gives, so it doesn't disappear from the report |
 
 4. **The budget.** Take at most `settings.unattended.max_inputs` inputs (default 10), oldest first: each Reviewed meeting by its date, each Ready Inbox row (its attachments go with it) by when it was created, each drop-folder file by when it was modified, each changed repo file by its commit date. Skipped inputs don't count; failed ones do. An input the brain already has (`DUPLICATE_SOURCE`, for instance one an earlier run wrote but couldn't publish) is not an input again. The rest is `left`: name them ("4 more wait for the next run") and leave them as they are. Requests (Documents, promotions, refreshes, Ask rows, the backlog) aren't inputs.
 5. **Run steps 3 and 4** with these changes: no chat decisions; a step that fails is logged and the run goes on with the next input; a lint error in a file this run wrote still stops the run. Publish only with `settings.publish: auto`, using `sync render --changed --plan plan.json --skip-conflicted`: a conflicted row and a report with a What to fix waiting come back in `skipped` and stay as they are. With `ask`, commit and push (per `settings.push`) and leave the publish to the next attended run.
