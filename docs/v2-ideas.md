@@ -84,13 +84,13 @@ Composable profiles (client work, meeting-heavy work, research, writing, learnin
 ## Maintenance and quality
 
 ### Contradiction and staleness reports
-A semantic lint across notes. **Source:** vision, synthesis §3.3 (Review 5). **Decided in 0052 (2026-10-29), planned for 0.8.0:** `brain-reflect` writes contradictions and stale facts as Review rows.
+A semantic lint across notes. **Source:** vision, synthesis §3.3 (Review 5). **Decided in 0052 (2026-10-29), planned for 0.9.0 after [0055](../decisions/0055-domains-capture-and-review.md):** `brain-reflect` writes contradictions and stale facts as Review rows.
 
 ### Correction sweep command
-One correction propagated to every restatement of the fact. **Source:** synthesis §3.2 (v1 has the manual correction flow). **Partly in 0052 (0.8.0):** reflection proposes a fix for a stale restatement it finds; a sweep run right after one correction stays here.
+One correction propagated to every restatement of the fact. **Source:** synthesis §3.2 (v1 has the manual correction flow). **Partly in 0052 (0.9.0, moved by [0055](../decisions/0055-domains-capture-and-review.md)):** reflection proposes a fix for a stale restatement it finds; a sweep run right after one correction stays here.
 
 ### Dedup audit
-Finds likely duplicate notes and people and writes `merge` proposals. **Source:** synthesis §3.3. **Decided in 0052 (2026-10-29), planned for 0.8.0:** reflection's near-duplicate candidates and the `near-duplicate` lint warning.
+Finds likely duplicate notes and people and writes `merge` proposals. **Source:** synthesis §3.3. **Decided in 0052 (2026-10-29), planned for 0.9.0 after [0055](../decisions/0055-domains-capture-and-review.md):** reflection's near-duplicate candidates and the `near-duplicate` lint warning.
 
 ### Two CLI loose ends
 Noted on 2026-10-23, left out of 0.6.0 by the user: an applied fact doesn't refresh a summary that states it, and `brain report --help` with no subcommand exits 2 instead of showing help. **Target:** the next patch that touches the CLI.

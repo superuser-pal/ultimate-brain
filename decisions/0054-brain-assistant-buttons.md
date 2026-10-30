@@ -4,6 +4,8 @@
 **Date:** 2026-10-29
 **Amends:** 0035 (what Brain Assistant may edit), 0049 (a promoted Document's body comes back to Git), 0043 and 0045 (how a report is refreshed) · **Refines:** 0048 and 0053 (buttons), 0051 (what an unattended run imports) · **Keeps:** 0003, 0015, 0052
 
+**Later amendment:** [0055](0055-domains-capture-and-review.md), accepted 2026-10-30, leaves this decision's 0.7.1 scope unchanged, extends exact accepted wording to Review in 0.8.0, and moves reflection to 0.9.0. References below to an unchanged 0.8.0 reflection release describe the original plan.
+
 ## Context
 Notion now lets a button send a message to an agent. The user confirmed that a button can target **Brain Assistant**, our Notion Custom Agent (0035); Notion's button, database-button and automation help pages didn't yet describe the "send message to agent" action when this was researched (Evidence). The user grilled the idea with Codex on 2026-10-29 and accepted the scope below ("yes, log this"), for release 0.7.1. It builds on an open thread from the same day: a promoted Document is only a seed, and what the user writes in it never comes back to Git.
 

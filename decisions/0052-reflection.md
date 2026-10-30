@@ -3,6 +3,8 @@
 **Status:** Accepted
 **Date:** 2026-10-29
 
+**Release amendment:** [0055](0055-domains-capture-and-review.md), accepted 2026-10-30, moves reflection (CC-65 to CC-67, U-21) from 0.8.0 to 0.9.0, after the new Review and source-selection flow. The original release wording below is historical; the reflection behavior otherwise stands, subject to 0055's excluded-evidence rules.
+
 ## Context
 The vision's "wow" is a brain that maintains and synthesizes itself. Today every check is local: `brain lint` sees one file's frontmatter and links, and ingest compares a new source with the ~8 notes it loads (0013). Nothing looks across the brain for two notes that disagree, two people that are one person, or a reviewed fact that later meetings have overtaken. docs/v2-ideas.md holds these as "Contradiction and staleness reports", "Dedup audit" and "Correction sweep". reviews/08 read a third-party audit whose "reflection" pass does exactly this over the curated notes and the last 30 days of session notes, with five kinds of finding. The user agreed the shape below in a grill on 2026-10-29.
 
