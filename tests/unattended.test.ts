@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { access, chmod, mkdir, mkdtemp, readdir, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { test, type TestContext } from "node:test";
 
 import { runCli } from "../src/cli.ts";
@@ -100,6 +101,30 @@ test("sync apply --skip-conflicted skips a conflicted row whole and the creates 
   assert.equal(applied.json.data.corrections[0].result, "applied", "without the flag a conflict blocks only its own property");
 });
 
+test("sync apply --skip-conflicted skips dependent creates transitively, whatever their order in the plan", async (context) => {
+  const dir = await fixtureCopy(context);
+  const orgPage = "c1000000-0000-4000-8000-000000000003";
+  const page = (n: number) => `c1000000-0000-4000-8000-00000000001${n}`;
+  const plan = {
+    as_of: NOW,
+    create: [
+      { type: "project", id: "prj-7q2w4e6r", title: "Globex site", lifecycle: "draft", frontmatter: { summary: "Globex site", area: "area-2m7c4h8n", people: ["per-8t5y3w1k"], notion: page(1), sources: [`notion:${page(1)}`] }, body: "" },
+      { type: "person", id: "per-8t5y3w1k", title: "Ana Ruiz", lifecycle: "draft", frontmatter: { summary: "Ana Ruiz", org: "org-5h2k8q1w", notion: page(2), sources: [`notion:${page(2)}`] }, body: "" },
+      { type: "org", id: "org-5h2k8q1w", title: "Globex", lifecycle: "draft", frontmatter: { summary: "Globex", notion: orgPage, sources: [`notion:${orgPage}`] }, body: "" },
+    ],
+    updates: [], corrections: [], decisions: [],
+    conflicts: [{ database: "orgs", page_id: orgPage, brain_id: null, code: "UNRESOLVED_RELATION", message: "Globex names an unknown parent" }],
+    ignored: [],
+  };
+  const result = await run(dir, ["sync", "apply", "--skip-conflicted"], plan);
+  assert.equal(result.code, 0, result.stdout);
+  assert.deepEqual(result.json.data.create.map((item: any) => [item.id, item.result, item.reason]), [
+    ["prj-7q2w4e6r", "skipped", "ROW_CONFLICTED"],
+    ["per-8t5y3w1k", "skipped", "ROW_CONFLICTED"],
+    ["org-5h2k8q1w", "skipped", "ROW_CONFLICTED"],
+  ]);
+});
+
 const REPORT_BODY = [
   "## Where it stands", "Launch is set for February, per [the auth decision](../knowledge/decisions/2026-12-03-use-supabase-for-auth.md).",
   "## Timeline", "- 2026-12-03: auth chosen.",
@@ -160,9 +185,14 @@ test("sync plan: a Report row with no Brain ID holds no report (NOT_A_REPORT)", 
   const dir = await fixtureCopy(context);
   await setConfig(dir, (config) => { config.notion.databases.inbox = INBOX; });
   const page = "d1000000-0000-4000-8000-000000000001";
-  const plan = (await run(dir, ["sync", "plan"], { as_of: NOW, rows: [{ database: "inbox", page_id: page, last_edited: NOW, properties: { Kind: "Report", "Refresh asked": true, "What to fix": "wrong date" } }] })).json.data;
+  // The snapshot shape of §5.14.1: Brain ID (empty here), Refresh asked and What to fix, no Kind.
+  const snapshot = { as_of: NOW, rows: [{ database: "inbox", page_id: page, last_edited: NOW, properties: { "Brain ID": "", "Refresh asked": true, "What to fix": "wrong date" } }] };
+  const plan = (await run(dir, ["sync", "plan"], snapshot)).json.data;
   assert.deepEqual(plan.ignored.map((item: any) => [item.page_id, item.reason, item.property]), [[page, "NOT_A_REPORT", "Refresh asked"], [page, "NOT_A_REPORT", "What to fix"]]);
   assert.deepEqual([plan.refresh_requests, plan.report_fixes], [[], []]);
+  assert.equal((await run(dir, ["modules", "off", "reports"])).code, 0);
+  const off = (await run(dir, ["sync", "plan"], snapshot)).json.data;
+  assert.deepEqual(off.ignored.map((item: any) => [item.reason, item.property]), [["MODULE_OFF", "Refresh asked"], ["MODULE_OFF", "What to fix"]]);
 });
 
 // --- brain schedule --------------------------------------------------------------------------------
@@ -174,8 +204,30 @@ async function scheduleEnv(context: TestContext, platform = "darwin") {
   await mkdir(bin);
   await writeFile(join(bin, "claude"), "#!/bin/sh\n");
   await chmod(join(bin, "claude"), 0o755);
+  // A launchctl spy on PATH: the override must keep every call away from it.
+  const spied = join(root, "launchctl-called");
+  await writeFile(join(bin, "launchctl"), `#!/bin/sh\necho "$@" >> '${spied}'\n`);
+  await chmod(join(bin, "launchctl"), 0o755);
   const agents = join(root, "LaunchAgents");
-  return { agents, bin, env: { PATH: bin, UB_LAUNCH_AGENTS_DIR: agents, UB_SCHEDULE_PLATFORM: platform } as NodeJS.ProcessEnv, home: root };
+  return { agents, bin, spied, env: { PATH: bin, UB_LAUNCH_AGENTS_DIR: agents, UB_SCHEDULE_PLATFORM: platform } as NodeJS.ProcessEnv, home: root };
+}
+
+/** Every file under the brain, hidden ones and .git included, with a hash of its content. */
+async function tree(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  for (const entry of await readdir(dir, { withFileTypes: true, recursive: true })) {
+    if (!entry.isFile()) continue;
+    const path = join(entry.parentPath, entry.name);
+    out.push(`${relative(dir, path)} ${createHash("sha256").update(await readFile(path)).digest("hex")}`);
+  }
+  return out.sort();
+}
+
+const absent = (path: string) => access(path).then(() => false, () => true);
+
+function intervals(plist: string): string[] {
+  return [...plist.matchAll(/<dict>\s*<key>Hour<\/key>\s*<integer>(\d+)<\/integer>\s*<key>Minute<\/key>\s*<integer>(\d+)<\/integer>(?:\s*<key>Weekday<\/key>\s*<integer>(\d+)<\/integer>)?\s*<\/dict>/g)]
+    .map((match) => `${match[1]}:${match[2]}${match[3] === undefined ? "" : ` day ${match[3]}`}`);
 }
 
 async function schedule(dir: string, args: string[], env: NodeJS.ProcessEnv, home: string) {
@@ -186,7 +238,8 @@ async function schedule(dir: string, args: string[], env: NodeJS.ProcessEnv, hom
 
 test("schedule install writes a launchd agent that runs claude -p in the brain at the given times with the pinned model; list and remove", async (context) => {
   const dir = await fixtureCopy(context);
-  const { agents, bin, env, home } = await scheduleEnv(context);
+  const { agents, bin, spied, env, home } = await scheduleEnv(context);
+  const before = await tree(dir);
   const installed = await schedule(dir, ["install", "catch-up", "--at", "13:00,07:00", "--days", "fri,mon", "--model", "claude-sonnet-5-5"], env, home);
   assert.equal(installed.code, 0, JSON.stringify(installed.json));
   const data = installed.json.data;
@@ -199,24 +252,53 @@ test("schedule install writes a launchd agent that runs claude -p in the brain a
   assert.match(plist, new RegExp(`<key>Label</key>\\s*<string>${data.label.replaceAll(".", "\\.")}</string>`));
   assert.match(plist, /<key>ProgramArguments<\/key>\s*<array>\s*<string>[^<]*\/claude<\/string>\s*<string>-p<\/string>\s*<string>catch up unattended<\/string>\s*<string>--model<\/string>\s*<string>claude-sonnet-5-5<\/string>/);
   assert.ok(plist.includes(`<key>WorkingDirectory</key>\n  <string>${await realpath(dir)}</string>`), "runs in the brain folder");
-  assert.equal((plist.match(/<key>Weekday<\/key>/g) ?? []).length, 4, "two times on two days");
-  assert.match(plist, /<key>Hour<\/key>\s*<integer>7<\/integer>\s*<key>Minute<\/key>\s*<integer>0<\/integer>\s*<key>Weekday<\/key>\s*<integer>1<\/integer>/);
+  assert.deepEqual(intervals(plist), ["7:0 day 1", "7:0 day 5", "13:0 day 1", "13:0 day 5"], "each time on each day, in order");
   assert.match(plist, /<key>RunAtLoad<\/key>\s*<false\/>/);
 
   const again = await schedule(dir, ["install", "catch-up", "--at", "08:30", "--model", "claude-opus-5-5"], env, home);
   assert.equal(again.json.data.replaced, true);
+  const replaced = await readFile(data.path, "utf8");
+  assert.deepEqual(intervals(replaced), ["8:30"], "the replacement has the new time and no days");
+  assert.match(replaced, /<string>--model<\/string>\s*<string>claude-opus-5-5<\/string>/);
+  assert.equal(replaced.includes("claude-sonnet-5-5"), false);
   const listed = await schedule(dir, ["list"], env, home);
   assert.deepEqual(listed.json.data.schedules, [{ job: "catch-up", label: data.label, path: data.path, times: ["08:30"], days: null, model: "claude-opus-5-5", prompt: "catch up unattended" }]);
 
   assert.equal((await schedule(dir, ["remove", "catch-up"], env, home)).json.data.removed, true);
   assert.equal((await schedule(dir, ["remove", "catch-up"], env, home)).json.data.removed, false, "a second remove is a no-op");
   assert.deepEqual((await schedule(dir, ["list"], env, home)).json.data.schedules, []);
-  assert.equal((await run(dir, ["lint"])).json.data.errors, 0, "schedule writes nothing in the brain");
+  assert.deepEqual(await tree(dir), before, "schedule writes nothing in the brain");
+  assert.equal(await absent(spied), true, "launchctl is never called under UB_LAUNCH_AGENTS_DIR");
+  assert.equal(await absent(join(home, "Library", "Logs")), true, "no log folder is made under UB_LAUNCH_AGENTS_DIR");
+});
+
+test("schedule install refuses a plist or log folder inside the brain, links followed, and writes nothing (OUTSIDE_ROOT)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { env, home, spied } = await scheduleEnv(context);
+  const before = await tree(dir);
+  const args = ["install", "catch-up", "--at", "07:00", "--model", "claude-sonnet-5-5"];
+  assert.equal((await schedule(dir, args, { ...env, UB_LAUNCH_AGENTS_DIR: join(dir, ".agents-schedules") }, home)).json.error?.code, "OUTSIDE_ROOT");
+  const link = join(home, "agents-link");
+  await symlink(dir, link);
+  assert.equal((await schedule(dir, args, { ...env, UB_LAUNCH_AGENTS_DIR: join(link, "LaunchAgents") }, home)).json.error?.code, "OUTSIDE_ROOT", "through a symbolic link");
+  assert.equal((await schedule(dir, args, env, dir)).json.error?.code, "OUTSIDE_ROOT", "a home inside the brain puts the log folder there");
+  assert.deepEqual(await tree(dir), before);
+  assert.equal(await absent(spied), true);
+});
+
+test("schedule install makes a relative PATH entry absolute", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { bin, env, home } = await scheduleEnv(context);
+  const installed = await schedule(dir, ["install", "catch-up", "--at", "07:00", "--model", "claude-sonnet-5-5", "--dry-run"], { ...env, PATH: relative(process.cwd(), bin) }, home);
+  assert.equal(installed.code, 0, JSON.stringify(installed.json));
+  assert.equal(installed.json.data.command[0], join(bin, "claude"));
+  assert.equal(installed.json.data.written, false, "a dry run writes nothing");
 });
 
 test("schedule install elsewhere prints the cron line and writes nothing", async (context) => {
   const dir = await fixtureCopy(context);
-  const { agents, env, home } = await scheduleEnv(context, "linux");
+  const { agents, env, home, spied } = await scheduleEnv(context, "linux");
+  const before = await tree(dir);
   const installed = await schedule(dir, ["install", "catch-up", "--at", "07:00", "--days", "sat,sun", "--model", "claude-sonnet-5-5"], env, home);
   assert.equal(installed.code, 0, JSON.stringify(installed.json));
   assert.deepEqual([installed.json.data.path, installed.json.data.written], [null, false]);
@@ -225,6 +307,10 @@ test("schedule install elsewhere prints the cron line and writes nothing", async
   await assert.rejects(readFile(agents), "no LaunchAgents folder was made");
   const listed = await schedule(dir, ["list"], env, home);
   assert.deepEqual([listed.json.data.schedules, listed.json.warnings[0].code], [[], "SCHEDULE_NOT_MANAGED"]);
+  assert.equal((await schedule(dir, ["remove", "catch-up"], env, home)).json.data.removed, false);
+  assert.deepEqual(await tree(dir), before, "nothing written in the brain");
+  assert.equal(await absent(spied), true);
+  assert.equal(await absent(join(home, ".ultimate-brain")), true, "nothing written outside it either");
 });
 
 test("schedule install refuses a bad job, time, day or model, a missing claude, and reflect without its skill", async (context) => {

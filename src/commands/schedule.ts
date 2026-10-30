@@ -1,8 +1,8 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, constants, lstat, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { access, constants, lstat, mkdir, readdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { basename, delimiter, dirname, join } from "node:path";
+import { basename, delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 
 import type { Command, CommandContext, Warning } from "../lib/command.ts";
@@ -73,19 +73,21 @@ export const scheduleInstallCommand: Command = {
 
     const agents = agentsDir(context);
     const file = join(agents, `${label}.plist`);
+    const logs = join(home(context), "Library", "Logs", "ultimate-brain");
+    await refuseInside(root, agents);
+    await refuseInside(root, logs);
     await refuseLink(file);
     const replaced = await exists(file);
     const warnings: Warning[] = [];
     let loaded = false;
     if (!dryRun) {
-      const logs = join(home(context), "Library", "Logs", "ultimate-brain");
       await mkdir(agents, { recursive: true });
       if (!testing(env)) await mkdir(logs, { recursive: true });
       await writeFile(file, plist(label, entry, command, path, join(logs, `${label}.log`)));
       if (!testing(env)) {
-        await launchctl(["bootout", `gui/${process.getuid?.() ?? 0}/${label}`]).catch(() => undefined);
+        await launchctl(env, ["bootout", `gui/${process.getuid?.() ?? 0}/${label}`]).catch(() => undefined);
         try {
-          await launchctl(["bootstrap", `gui/${process.getuid?.() ?? 0}`, file]);
+          await launchctl(env, ["bootstrap", `gui/${process.getuid?.() ?? 0}`, file]);
           loaded = true;
         } catch (error) {
           warnings.push({ code: "SCHEDULE_NOT_LOADED", message: `launchctl bootstrap failed: ${error instanceof Error ? error.message : String(error)}` });
@@ -142,9 +144,10 @@ export const scheduleRemoveCommand: Command = {
     const label = labelFor(context.brain!.root, job);
     if (platformOf(env) !== "darwin") return { data: { job, label, path: null, removed: false }, warnings: [notManaged()], human: "cron lines are yours: crontab -e\n" };
     const file = join(agentsDir(context), `${label}.plist`);
+    await refuseInside(context.brain!.root, dirname(file));
     await refuseLink(file);
     if (!(await exists(file))) return { data: { job, label, path: file, removed: false }, human: `${job} was not scheduled\n` };
-    if (!testing(env)) await launchctl(["bootout", `gui/${process.getuid?.() ?? 0}/${label}`]).catch(() => undefined);
+    if (!testing(env)) await launchctl(env, ["bootout", `gui/${process.getuid?.() ?? 0}/${label}`]).catch(() => undefined);
     await rm(file);
     return { data: { job, label, path: file, removed: true }, human: `Removed the ${job} schedule\n` };
   },
@@ -236,7 +239,7 @@ function agentsDir(context: CommandContext): string {
 
 async function which(name: string, path: string | undefined): Promise<string | null> {
   for (const dir of (path ?? "").split(delimiter).filter(Boolean)) {
-    const candidate = join(dir, name);
+    const candidate = resolve(dir, name);
     try {
       await access(candidate, constants.X_OK);
       return candidate;
@@ -264,6 +267,29 @@ async function refuseLink(file: string): Promise<void> {
   }
 }
 
-async function launchctl(args: readonly string[]): Promise<void> {
-  await promisify(execFile)("launchctl", [...args]);
+async function launchctl(env: NodeJS.ProcessEnv, args: readonly string[]): Promise<void> {
+  await promisify(execFile)((await which("launchctl", env.PATH)) ?? "/bin/launchctl", [...args]);
+}
+
+/** A schedule writes nothing in the brain (spec/cli.md §5.21): refuse a folder that resolves inside it, links followed. */
+async function refuseInside(root: string, folder: string): Promise<void> {
+  const brain = await realpath(root);
+  let existing = resolve(folder);
+  const rest: string[] = [];
+  for (;;) {
+    try {
+      existing = await realpath(existing);
+      break;
+    } catch {
+      const parent = dirname(existing);
+      if (parent === existing) break;
+      rest.unshift(basename(existing));
+      existing = parent;
+    }
+  }
+  const target = join(existing, ...rest);
+  const inside = relative(brain, target);
+  if (!isAbsolute(inside) && inside !== ".." && !inside.startsWith(`..${sep}`)) {
+    throw new BrainError("OUTSIDE_ROOT", `${folder} is inside the brain; a schedule writes nothing there`);
+  }
 }
