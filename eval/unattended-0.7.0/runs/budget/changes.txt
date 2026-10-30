@@ -1,0 +1,11 @@
+M	log/2026-10.md
+A	sources/files/2026-12-01-supplier-note-1-document.md
+A	sources/files/2026-12-02-supplier-note-2-document.md
+A	sources/files/2026-12-03-supplier-note-3-document.md
+A	sources/files/2026-12-04-supplier-note-4-document.md
+A	sources/files/2026-12-05-supplier-note-5-document.md
+A	sources/files/2026-12-06-supplier-note-6-document.md
+A	sources/files/2026-12-07-supplier-note-7-document.md
+A	sources/files/2026-12-08-supplier-note-8-document.md
+A	sources/files/2026-12-09-supplier-note-9-document.md
+A	sources/files/2026-12-10-supplier-note-10-document.md
