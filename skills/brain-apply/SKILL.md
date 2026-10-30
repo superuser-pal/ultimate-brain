@@ -13,7 +13,7 @@ Run every CLI command as `brain <command> --brain <brain> --json`. Exit 1 means 
 
 - **Chat:** the user wants to decide here ("what needs my decision?", "approve the budget change"). Use this, or when Notion is not configured.
 - **Notion:** the user decided in the Notion Review queue ("apply my reviews"), and `brain status` shows `review` among `notion.configured`.
-- **Unattended** (a scheduled or background run, nobody in the chat): Notion mode with `--record-only`. Decisions are recorded but **never applied** (0003); the next attended run applies them.
+- **Unattended** (a scheduled catch-up, nobody in the chat): Notion mode, applying only what the user decided word for word: Approve or Reject with an empty What to fix. A decision with text in What to fix (a Fix, or "all except b") stays in its row for an attended run, because turning words into changes is judgment nobody would check (decisions 0003, 0051). `--record-only` is for a run that must not apply anything at all.
 
 ## Chat mode
 
@@ -56,7 +56,7 @@ Run every CLI command as `brain <command> --brain <brain> --json`. Exit 1 means 
    - `decisions`: what will be applied;
    - `conflicts`: `NOTE_TO_READ` is an Approve or Reject with text in What to fix, and `FIX_TO_READ` a Fix with its text: read each as "Reading What to fix" below says. `FIX_WITHOUT_TEXT` is a Fix with What to fix empty: the user says what's wrong in Notion (or here);
    - `ignored`: e.g. `ALREADY_TERMINAL`. Nothing to do.
-3. **Apply.** Run `brain sync apply --input <plan file>`, adding `--record-only` when unattended. Then apply the decisions you resolved from What to fix with `brain apply --input <file>` (unattended: leave `NOTE_TO_READ` and `FIX_TO_READ` rows for an attended run).
+3. **Apply.** Run `brain sync apply --input <plan file>`, adding `--record-only` only for a run that must not apply anything (an unattended catch-up adds `--skip-conflicted` instead, see brain-catch-up). Then apply the decisions you resolved from What to fix with `brain apply --input <file>` (unattended: leave `NOTE_TO_READ` and `FIX_TO_READ` rows for an attended run).
 4. Continue with **Finish** below.
 
 ## Reading What to fix
