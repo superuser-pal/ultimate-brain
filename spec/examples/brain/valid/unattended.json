@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "owner": {
+    "name": "Alex"
+  },
+  "budgets": {
+    "ingest_max_notes": 8
+  },
+  "modules": {
+    "knowledge": true,
+    "orgs": true,
+    "documents": false,
+    "reports": false,
+    "tasks": false,
+    "planning": false
+  },
+  "notion": {
+    "databases": {
+      "areas": "",
+      "projects": "",
+      "meetings": "",
+      "people": "",
+      "review": "",
+      "inbox": "",
+      "decisions": "",
+      "questions": "",
+      "concepts": "",
+      "orgs": "",
+      "documents": ""
+    },
+    "tasks": {
+      "database": "",
+      "properties": {
+        "title": "Name"
+      },
+      "new_task_status": "To Do"
+    }
+  },
+  "settings": {
+    "unattended": {
+      "max_inputs": 10
+    }
+  }
+}
