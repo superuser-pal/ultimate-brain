@@ -263,10 +263,11 @@ function planInbox(workspace: Workspace, row: SnapshotRow, out: SyncPlan): void 
     if (typeof text === "string" && text.trim() !== "" && text !== last?.text) out.report_fixes.push({ page_id: row.page_id, report: note.id, text });
   }
   // An unattended run's Report row has no Brain ID and holds no report (cli §5.14.2, §6.1).
-  if ((typeof brainId !== "string" || brainId === "") && property(row.properties, "Kind") === "Report") {
-    if (property(row.properties, "Refresh asked") === true || property(row.properties, "Refresh") === true) out.ignored.push(ignoredRow(row, "NOT_A_REPORT", "Refresh asked"));
+  if (typeof brainId !== "string" || brainId === "") {
+    const reason = modules.reports ? "NOT_A_REPORT" : "MODULE_OFF";
+    if (property(row.properties, "Refresh asked") === true || property(row.properties, "Refresh") === true) out.ignored.push(ignoredRow(row, reason, "Refresh asked"));
     const text = property(row.properties, "What to fix");
-    if (typeof text === "string" && text.trim() !== "") out.ignored.push(ignoredRow(row, "NOT_A_REPORT", "What to fix"));
+    if (typeof text === "string" && text.trim() !== "") out.ignored.push(ignoredRow(row, reason, "What to fix"));
   }
   if (property(row.properties, "Document asked") !== true) return;
   if (!modules.documents) { out.ignored.push(ignoredRow(row, "MODULE_OFF", "Document asked")); return; }
@@ -435,7 +436,13 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
   // --skip-conflicted (cli §5.14.3, 0051): a row with a conflict is skipped whole, and so is a create that depends on a skipped one.
   const conflictedIds = new Set(skipConflicted ? input.conflicts.map((item) => item.brain_id).filter((id): id is string => typeof id === "string") : []);
   const conflictedPages = new Set(skipConflicted ? input.conflicts.map((item) => item.page_id) : []);
+  // The skip closure is computed before any create runs, so a dependent create is skipped whatever its place in the plan.
   const skippedCreates = new Set<string>();
+  if (skipConflicted) {
+    const pageOf = (item: SyncPlan["create"][number]) => (isRecord(item.frontmatter) ? item.frontmatter.notion : undefined);
+    for (const item of input.create) { const page = pageOf(item); if (item.id !== undefined && (conflictedIds.has(item.id) || (typeof page === "string" && conflictedPages.has(page)))) skippedCreates.add(item.id); }
+    for (let grew = true; grew;) { grew = false; for (const item of input.create) if (item.id !== undefined && !skippedCreates.has(item.id) && references(item.frontmatter).some((id) => skippedCreates.has(id))) { skippedCreates.add(item.id); grew = true; } }
+  }
   const rowSkipped = { result: "skipped", reason: "ROW_CONFLICTED", changed: [] as string[] };
   const plan: SyncPlan = { ...input, updates: [], corrections: [], decisions: [] };
   const skippedUpdates: Array<Record<string, unknown>> = []; const skippedCorrections: Array<Record<string, unknown>> = []; const skippedDecisions: Array<Record<string, unknown>> = [];
@@ -445,10 +452,7 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
   for (let index = 0; index < plan.create.length; index += 1) {
     const item = plan.create[index]!; const checkpoint = workspace.checkpoint();
     const page = isRecord(item.frontmatter) ? item.frontmatter.notion : undefined;
-    if (skipConflicted && ((item.id !== undefined && conflictedIds.has(item.id)) || (typeof page === "string" && conflictedPages.has(page)) || references(item.frontmatter).some((id) => skippedCreates.has(id)))) {
-      if (item.id !== undefined) skippedCreates.add(item.id);
-      create.push({ id: item.id, ...rowSkipped }); continue;
-    }
+    if (skipConflicted && ((item.id !== undefined && skippedCreates.has(item.id)) || (typeof page === "string" && conflictedPages.has(page)))) { create.push({ id: item.id, ...rowSkipped }); continue; }
     try {
       if (item.id !== undefined && workspace.get(item.id) !== undefined) throw new Error("ID_IN_USE");
       const depends = references(item.frontmatter).some((id) => dependencyFailures.has(id));
