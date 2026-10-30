@@ -443,7 +443,7 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
     const skippedIds = new Set<string>();
     const skip = (index: number) => { skippedAt.add(index); const id = input.create[index]!.id; if (id !== undefined) skippedIds.add(id); };
     input.create.forEach((item, index) => { const page = isRecord(item.frontmatter) ? item.frontmatter.notion : undefined; if ((item.id !== undefined && conflictedIds.has(item.id)) || (typeof page === "string" && conflictedPages.has(page))) skip(index); });
-    for (let grew = true; grew;) { grew = false; input.create.forEach((item, index) => { if (!skippedAt.has(index) && references(item.frontmatter).some((id) => skippedIds.has(id))) { skip(index); grew = true; } }); }
+    for (let grew = true; grew;) { grew = false; input.create.forEach((item, index) => { if (!skippedAt.has(index) && relationsOf(item.frontmatter).some((id) => skippedIds.has(id))) { skip(index); grew = true; } }); }
   }
   const rowSkipped = { result: "skipped", reason: "ROW_CONFLICTED", changed: [] as string[] };
   const plan: SyncPlan = { ...input, updates: [], corrections: [], decisions: [] };
@@ -456,7 +456,7 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
     if (skippedAt.has(index)) { create.push({ id: item.id, ...rowSkipped }); continue; }
     try {
       if (item.id !== undefined && workspace.get(item.id) !== undefined) throw new Error("ID_IN_USE");
-      const depends = references(item.frontmatter).some((id) => dependencyFailures.has(id));
+      const depends = relationsOf(item.frontmatter).some((id) => dependencyFailures.has(id));
       if (depends) throw new Error("DEPENDENCY_FAILED");
       const staged = stageNotes(workspace, [item], () => `/create/${index}`, { now, lifecycle: String((item as unknown as Record<string, unknown>).lifecycle ?? "draft") });
       assertStagedValid(workspace, staged.pointers);
@@ -483,6 +483,9 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
   return { create, updates, corrections: correctionsOut, decisions: decisionsOut, document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...updates, ...correctionsOut, ...decisionsOut].map((item) => ({ ...item }))), log };
 }
 
+/** The ids a create's relation fields name (cli §5.14.3): free text such as a summary never counts. */
+function relationsOf(frontmatter: unknown): string[] { return isRecord(frontmatter) ? CREATE_RELATIONS.flatMap((field) => references(frontmatter[field])) : []; }
+const CREATE_RELATIONS = ["area", "goal", "client", "org", "people", "projects"];
 function references(value: unknown): string[] { if (Array.isArray(value)) return value.flatMap(references); if (isRecord(value)) return Object.values(value).flatMap(references); return typeof value === "string" && /^(area|gol|prj|per|org|mtg|dec|que|con|ref|src|mem)-/.test(value) ? [value] : []; }
 function summarize(items: readonly Record<string, unknown>[]): Record<string, number> { const result: Record<string, number> = { applied: 0, closed: 0, recorded: 0, corrected: 0, skipped: 0, failed: 0 }; for (const item of items) if (typeof item.result === "string" && Object.hasOwn(result, item.result)) result[item.result] += 1; return result; }
 

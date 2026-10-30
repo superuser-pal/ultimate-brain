@@ -125,6 +125,27 @@ test("sync apply --skip-conflicted skips dependent creates transitively, whateve
   ]);
 });
 
+test("sync apply --skip-conflicted does not take an id in free text for a dependency", async (context) => {
+  const dir = await fixtureCopy(context);
+  const orgPage = "c1000000-0000-4000-8000-000000000006";
+  const plan = {
+    as_of: NOW,
+    create: [
+      { type: "person", id: "per-9k4m2n7p", title: "Bea Lima", lifecycle: "draft", frontmatter: { summary: "org-5h2k8q1w", notion: "c1000000-0000-4000-8000-000000000007", sources: ["notion:c1000000-0000-4000-8000-000000000007"] }, body: "" },
+      { type: "org", id: "org-5h2k8q1w", title: "Globex", lifecycle: "draft", frontmatter: { summary: "Globex", notion: orgPage, sources: [`notion:${orgPage}`] }, body: "" },
+    ],
+    updates: [], corrections: [], decisions: [],
+    conflicts: [{ database: "orgs", page_id: orgPage, brain_id: null, code: "UNRESOLVED_RELATION", message: "Globex names an unknown parent" }],
+    ignored: [],
+  };
+  const result = await run(dir, ["sync", "apply", "--skip-conflicted"], plan);
+  assert.equal(result.code, 0, result.stdout);
+  assert.deepEqual(result.json.data.create.map((item: any) => [item.id, item.result, item.reason]), [
+    ["per-9k4m2n7p", "applied", undefined],
+    ["org-5h2k8q1w", "skipped", "ROW_CONFLICTED"],
+  ]);
+});
+
 test("sync apply --skip-conflicted skips a dependent create that names no id of its own", async (context) => {
   const dir = await fixtureCopy(context);
   const orgPage = "c1000000-0000-4000-8000-000000000004";
