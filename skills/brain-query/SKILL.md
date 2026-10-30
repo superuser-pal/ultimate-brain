@@ -18,6 +18,7 @@ If `brain` is not found (`command not found`), install it with `npm install -g u
 ## Procedure
 
 1. **Search.** Run `brain query --candidates "<the question, in the user's words>" --json`.
+   - **Search a name as the user wrote it** (a person, client, project) before answering from memory, even when you think you know who they mean: the brain may hold that spelling with other facts, or a person you've never heard of with the same first name.
    - Add `--types decision` (or `person`, `project`, `question`, …) when the question is clearly about one kind of note.
    - Read each candidate's `title`, `summary`, `assessment`, `lifecycle` and `snippets`. **Usually this is enough to choose what to open.**
    - **Search matches whole words from their start.** If the top candidates miss, search again with abbreviations expanded or reversed ("PM" ↔ "product manager", "CMS" ↔ "content management"), with a person's other names, or with the client's name.
@@ -87,6 +88,6 @@ A report gathers everything the brain knows about one subject, as of today: "rep
 ## Don'ts
 
 - **Don't answer from `index.md` or the project views alone.** They're for navigation; cite the canonical note they point to (AGENTS.md rule 8).
-- **Don't present a superseded or contested value as current.**
-- **Don't read the whole brain.** Search, then open a few notes.
-- **Don't edit anything,** including a "fix" you notice. Report it instead; the user can change it through a proposal or in Notion.
+- **Don't present a superseded or contested value as current.** The user acts on what you call current. Give the current value, and name the old one as history or both disputed values as contested.
+- **Don't read the whole brain.** It fills your context and buries the notes that answer. Search, then open a few notes; open more only when the ones you read point to them.
+- **Don't edit anything,** including a "fix" you notice: answering is read-only (AGENTS.md rule 9), so a question never changes what the brain holds. Report it instead; the user can change it through a proposal or in Notion.

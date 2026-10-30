@@ -32,6 +32,40 @@ test("skill validation and mirroring catch the usual mistakes", async (context) 
     "skills/brain-bad/SKILL.md: body is empty",
   ]);
 
+  await skill(
+    "brain-loud",
+    [
+      "---\nname: brain-loud\ndescription: Shouts.\n---",
+      "You MUST read the JSON. `NEVER` in code is fine, and so is ``a ` STOP``.",
+      "",
+      "```\nALWAYS in a fence\n```",
+      "",
+      "Run:",
+      "",
+      "    echo NEVER indented code",
+      "",
+      "1. A step:",
+      "   ```sh\n   echo HALT in an indented fence\n   ```",
+      "   Its continuation says WAIT.",
+      "",
+    ].join("\n"),
+  );
+  await skill("brain-deep", "---\nname: brain-deep\ndescription: Nests.\n---\nSee [a][a] and [c](references/c.md).\n\n[a]: references/a.md\n");
+  await mkdir(join(source, "brain-deep", "references"));
+  const reference = (file: string, text: string) => writeFile(join(source, "brain-deep", "references", file), text);
+  await reference("a.md", "Then [b](b.md), back to [the skill](../SKILL.md), [the web](https://example.com).\n");
+  await reference("b.md", "Deep, by reference: [d][d].\n\n[d]: d.md\n");
+  await reference("c.md", "An example, not a link:\n\n```md\nSee [e](e.md).\n```\n");
+  await reference("d.md", "Deeper.\n");
+  await reference("e.md", "Only in an example.\n");
+  assert.deepEqual((await validateSkills(source)).slice(-3), [
+    "skills/brain-deep/references/a.md: links to references/b.md, which SKILL.md doesn't link to (references are one level deep)",
+    "skills/brain-deep/references/b.md: links to references/d.md, which SKILL.md doesn't link to (references are one level deep)",
+    "skills/brain-loud/SKILL.md: capitals for emphasis (MUST, WAIT); write it plainly, or put code in backticks",
+  ]);
+  await rm(join(source, "brain-deep"), { recursive: true });
+  await rm(join(source, "brain-loud"), { recursive: true });
+
   await buildMirror(source, mirror);
   assert.deepEqual(await mirrorDrift(source, mirror), []);
   await writeFile(join(source, "brain-good", "SKILL.md"), "---\nname: brain-good\ndescription: Changed.\n---\n# Good\n");
