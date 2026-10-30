@@ -262,6 +262,12 @@ function planInbox(workspace: Workspace, row: SnapshotRow, out: SyncPlan): void 
     const last = (Array.isArray(note.attributes.fixes) ? note.attributes.fixes : []).filter(isRecord).at(-1);
     if (typeof text === "string" && text.trim() !== "" && text !== last?.text) out.report_fixes.push({ page_id: row.page_id, report: note.id, text });
   }
+  // An unattended run's Report row has no Brain ID and holds no report (cli §5.14.2, §6.1).
+  if ((typeof brainId !== "string" || brainId === "") && property(row.properties, "Kind") === "Report") {
+    if (property(row.properties, "Refresh asked") === true || property(row.properties, "Refresh") === true) out.ignored.push(ignoredRow(row, "NOT_A_REPORT", "Refresh asked"));
+    const text = property(row.properties, "What to fix");
+    if (typeof text === "string" && text.trim() !== "") out.ignored.push(ignoredRow(row, "NOT_A_REPORT", "What to fix"));
+  }
   if (property(row.properties, "Document asked") !== true) return;
   if (!modules.documents) { out.ignored.push(ignoredRow(row, "MODULE_OFF", "Document asked")); return; }
   if (typeof brainId !== "string" || brainId === "") { out.ignored.push(ignoredRow(row, "NOT_INGESTED", "Document asked")); return; }
@@ -422,12 +428,27 @@ export function parsePlan(input: unknown): SyncPlan {
   return { ...p, document_requests: p.document_requests ?? [], promote_requests: p.promote_requests ?? [], refresh_requests: p.refresh_requests ?? [], report_fixes: p.report_fixes ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
 }
 
-export function applyPlan(workspace: Workspace, plan: SyncPlan, now: Date, recordOnly: boolean): Record<string, unknown> {
+export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, recordOnly: boolean, skipConflicted = false): Record<string, unknown> {
   const create: Array<Record<string, unknown>> = [];
   const updates: Array<Record<string, unknown>> = [];
   const dependencyFailures = new Set<string>();
+  // --skip-conflicted (cli §5.14.3, 0051): a row with a conflict is skipped whole, and so is a create that depends on a skipped one.
+  const conflictedIds = new Set(skipConflicted ? input.conflicts.map((item) => item.brain_id).filter((id): id is string => typeof id === "string") : []);
+  const conflictedPages = new Set(skipConflicted ? input.conflicts.map((item) => item.page_id) : []);
+  const skippedCreates = new Set<string>();
+  const rowSkipped = { result: "skipped", reason: "ROW_CONFLICTED", changed: [] as string[] };
+  const plan: SyncPlan = { ...input, updates: [], corrections: [], decisions: [] };
+  const skippedUpdates: Array<Record<string, unknown>> = []; const skippedCorrections: Array<Record<string, unknown>> = []; const skippedDecisions: Array<Record<string, unknown>> = [];
+  for (const update of input.updates) if (conflictedIds.has(String(update.id))) skippedUpdates.push({ id: update.id, ...rowSkipped }); else plan.updates.push(update);
+  for (const correction of input.corrections) if (conflictedIds.has(correction.target)) skippedCorrections.push({ target: correction.target, field: correction.field, ...rowSkipped }); else plan.corrections.push(correction);
+  for (const decision of input.decisions) if (conflictedIds.has(decision.proposal)) skippedDecisions.push({ proposal: decision.proposal, action: decision.action, ...rowSkipped }); else plan.decisions.push(decision);
   for (let index = 0; index < plan.create.length; index += 1) {
     const item = plan.create[index]!; const checkpoint = workspace.checkpoint();
+    const page = isRecord(item.frontmatter) ? item.frontmatter.notion : undefined;
+    if (skipConflicted && ((item.id !== undefined && conflictedIds.has(item.id)) || (typeof page === "string" && conflictedPages.has(page)) || references(item.frontmatter).some((id) => skippedCreates.has(id)))) {
+      if (item.id !== undefined) skippedCreates.add(item.id);
+      create.push({ id: item.id, ...rowSkipped }); continue;
+    }
     try {
       if (item.id !== undefined && workspace.get(item.id) !== undefined) throw new Error("ID_IN_USE");
       const depends = references(item.frontmatter).some((id) => dependencyFailures.has(id));
@@ -452,7 +473,9 @@ export function applyPlan(workspace: Workspace, plan: SyncPlan, now: Date, recor
     ...updates.filter((item) => item.result === "applied").map((item) => ({ op: "sync-update", id: String(item.id), title: String(workspace.get(String(item.id))?.attributes.title ?? item.id) })),
     ...(correctionApply?.log ?? []), ...(decisionApply.log ?? []),
   ];
-  return { create, updates, corrections, decisions: decisionResult, document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...updates, ...corrections, ...decisionResult].map((item) => ({ ...item }))), log };
+  updates.push(...skippedUpdates);
+  const correctionsOut = [...corrections, ...skippedCorrections] as Array<Record<string, unknown>>; const decisionsOut = [...decisionResult, ...skippedDecisions] as Array<Record<string, unknown>>;
+  return { create, updates, corrections: correctionsOut, decisions: decisionsOut, document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...updates, ...correctionsOut, ...decisionsOut].map((item) => ({ ...item }))), log };
 }
 
 function references(value: unknown): string[] { if (Array.isArray(value)) return value.flatMap(references); if (isRecord(value)) return Object.values(value).flatMap(references); return typeof value === "string" && /^(area|gol|prj|per|org|mtg|dec|que|con|ref|src|mem)-/.test(value) ? [value] : []; }
