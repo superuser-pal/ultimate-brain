@@ -484,7 +484,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
   "schema_version": 1,
   "owner": { "name": "Rodrigo", "person": "per-3h8w2n6c" },
   "budgets": { "ingest_max_notes": 8 },
-  "settings": { "publish": "ask", "push": "auto" },
+  "settings": { "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } },
   "modules": { "knowledge": true, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true },
   "repos": [
     { "name": "acme-api", "path": "~/code/acme-api", "area": "area-2m7c4h8n",
@@ -511,6 +511,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 **Settings** (0037, 0038), read by the skills; the CLI only validates them:
 - `publish`: `ask` (default) asks before each publish to Notion; `auto` publishes after each run without asking.
 - `push`: `auto` (default) pushes the brain after a run's commits; `remind` leaves it to you, and the report says how many commits are not pushed.
+- `unattended.max_inputs` (0051): how many inputs one unattended run takes in, oldest first; an integer of at least 1, default 10. The rest waits for the next run (cli.md §6.1). `unattended` absent, or `max_inputs` absent from it, means 10.
 
 **Modules** (0048): the optional parts of the space. Core (Inbox, Meetings, Projects, Areas, People, Review) is always on and has no key.
 
