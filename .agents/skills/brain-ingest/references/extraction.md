@@ -131,7 +131,7 @@ Fact keys are lowercase `snake_case` and stable: `launch_date`, `budget`, `deadl
 
 - Every claim stays on the note of the thing it is about. Carlos's new role goes on Carlos, not on the project. A client's budget goes on the project, not on the client contact.
 - Copy names, numbers, dates and quotes exactly as written. "February 2027" stays "February 2027" in prose; in `facts`, convert only to the schema's form (`2027-02`) and keep the prose verbatim.
-- Never merge two statements into one claim, and never extend a statement beyond what was said.
+- Never merge two statements into one claim, and never extend a statement beyond what was said: each claim must trace to the words of its source. What you conclude from two statements is a separate sentence marked `^[inferred]`.
 
 ## Provenance (decision 0004)
 

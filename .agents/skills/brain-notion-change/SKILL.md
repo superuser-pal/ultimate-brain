@@ -70,4 +70,4 @@ Migrations run once each, in number order (notion/migrations/README.md). The fil
    - templates and views;
    - display formats: percent on Progress, a date range on Dates, time on Last Synced.
 
-**Never change anything in Notion while checking.**
+**Never change anything in Notion while checking.** A fix made here skips the product repo, where structure changes first (decision 0022), and the user's yes. Report the fix; make it in Change mode or with the migration.

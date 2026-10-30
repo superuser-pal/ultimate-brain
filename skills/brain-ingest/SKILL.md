@@ -64,7 +64,7 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
 
    **A re-read** analyses only the changed lines, and a changed line **corrects** what the old line said (decision 0045, U-18): propose to replace the old statement (references/extraction.md "Re-reads": an `update_fact` for a fact, else an `add_to_note` worded as a correction), never to add the new wording as a second claim next to the old one, and never mark the pair ambiguous.
 
-7. **Write new notes.** Write **one** `brain note new` batch containing the source, the meeting, new people, new decisions and new questions (shapes in [references/cli-inputs.md](references/cli-inputs.md) §2).
+7. **Write new notes.** Write **one** `brain note new` batch containing the source, the meeting, new people, new decisions and new questions (shapes in [references/cli-inputs.md](references/cli-inputs.md) §2; a complete batch in [references/example-batch.json](references/example-batch.json)).
    1. **Get ids** with `brain id new <type> --count <n>`, so the notes can reference each other by id. The meeting lists its `decisions` and `questions`, and each decision's `decided_in` and each question's `raised_in` names the meeting, so the pair is consistent.
    2. **Get paths:** run the batch with `--dry-run`, with bodies that contain **no links** between notes of this batch. Read each note's `path` from the result. Never guess a path: long titles are shortened, and taken names get `-2`.
    3. **Add the links** between batch notes using those paths (relative to each note's own folder), then run `brain note new` for real.
@@ -116,7 +116,7 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
     - **Check:** every assumption the user should verify: a date taken from today or from a month only, a fact marked ambiguous, a name left unlinked, a part of a document not analysed.
     - **Action items** that didn't become tasks.
 
-    Never include mechanics: ids, file paths, commands, commit names, or counts already on the Done line. In Markdown-only mode, the action items always appear, since there is no task database.
+    Never include mechanics: ids, file paths, commands, commit names, or counts already on the Done line. The user reads the report to check the knowledge, not the run. In Markdown-only mode, the action items always appear, since there is no task database.
 
 ## Stop conditions
 
