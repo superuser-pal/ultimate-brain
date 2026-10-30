@@ -8,6 +8,7 @@ import { generateId, TYPE_PREFIX } from "./ids.ts";
 import { assertStagedValid, checkNoteInput, stageNotes, type NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 import { splitParts } from "./parts.ts";
+import { referencedIds } from "./lint.ts";
 import { loadSchemas } from "./schemas.ts";
 import { formatDate, formatTimestamp, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
@@ -483,10 +484,8 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
   return { create, updates, corrections: correctionsOut, decisions: decisionsOut, document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...updates, ...correctionsOut, ...decisionsOut].map((item) => ({ ...item }))), log };
 }
 
-/** The ids a create's relation fields name (cli §5.14.3): free text such as a summary never counts. */
-function relationsOf(frontmatter: unknown): string[] { return isRecord(frontmatter) ? CREATE_RELATIONS.flatMap((field) => references(frontmatter[field])) : []; }
-const CREATE_RELATIONS = ["area", "goal", "client", "org", "people", "projects"];
-function references(value: unknown): string[] { if (Array.isArray(value)) return value.flatMap(references); if (isRecord(value)) return Object.values(value).flatMap(references); return typeof value === "string" && /^(area|gol|prj|per|org|mtg|dec|que|con|ref|src|mem)-/.test(value) ? [value] : []; }
+/** The ids a create references (cli §5.14.3): free text such as a summary never counts. */
+function relationsOf(frontmatter: unknown): string[] { return isRecord(frontmatter) ? referencedIds(frontmatter) : []; }
 function summarize(items: readonly Record<string, unknown>[]): Record<string, number> { const result: Record<string, number> = { applied: 0, closed: 0, recorded: 0, corrected: 0, skipped: 0, failed: 0 }; for (const item of items) if (typeof item.result === "string" && Object.hasOwn(result, item.result)) result[item.result] += 1; return result; }
 
 export interface RenderItem { id: string; type: string; database: string; database_id: string; page_id: string | null; action: "create" | "update" | "trash"; properties: Record<string, unknown>; body: string | null; sections: Record<string, string> | null; pending_relations: Array<Record<string, unknown>>; published: Record<string, unknown> }
