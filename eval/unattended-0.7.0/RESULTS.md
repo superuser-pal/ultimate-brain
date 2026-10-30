@@ -1,0 +1,14 @@
+# Unattended catch-up for 0.7.0: blind run results
+
+CC-64 acceptance (decision 0051). Four fresh `claude -p "catch up unattended"` sessions on 2026-10-30, each in its own brain built with `scripts/blind-brain.mjs brain-acme <dir>`, the CLI of the CC-64 branch through a `brain` shim, no MCP servers, no git remote, the user away. `proposal backlog` ran first in every brain, so the one-time backlog rows don't count as work. [setup.py](setup.py) builds the four brains and the simulated Notion files; [run.sh](run.sh) starts the runs. Where a run reads Notion, it reads a file in the shape the tools return (`snapshot.json`, `meetings.json`); where it would write to Notion, it appends a line to `writes.md`. A real Notion connection is U-20.
+
+| Run | Setup | Result |
+|---|---|---|
+| **Nothing waiting** | the brain after the backlog rows | No commit, no log line, no report: `git log` and the working tree are unchanged. It said what it checked and what waits for the user (3 pending proposals, no Notion, no drop folder) in its reply only. |
+| **12 inputs, default budget** | a drop folder of 12 notes, modified hours apart | Ingested the 10 oldest, named note-11 and note-12 as left over, moved the 10 to `processed/`. Log line: `catch-up - "" mode=unattended inputs=10 left=2 skipped=0 waiting=0 failed=0 report=no …`. `brain status` then reports `unattended.catch_up` with 1 run, 10 inputs, 2 left. |
+| **Mixed, Reports on, publish auto** | 3 Reviewed meetings (one with an empty Date), a Review row set to Approve, one set to Fix with text, Maria's Role changed in Notion | Ingested the 2 meetings, skipped the one with no date (still Reviewed), applied the Approve (launch date 2027-02 → 2027-03) and the Role correction, left the Fix untouched and named it ("1 Fix waiting"), published 24 pages, and wrote **one** Report row, "Catch-up 30 Oct: 2 in, 2 need you". Log line `inputs=2 left=0 skipped=1 waiting=1 failed=0 report=yes`. |
+| **Mixed, Reports off, publish ask** | the same, with Reports off and publish `ask` | The same ingests, Approve and correction, the same skip and the same waiting Fix; **nothing written to Notion** (`writes.md` empty) and no Report row. Log line `… report=no`. |
+
+**The next attended "catch up"** on the last brain opened with "Since last time: 1 scheduled run, 2 inputs in, 1 skipped, 1 Fix waiting", then its batch: the Fix read as a question with a default, the undated meeting as a question, the identities question, and the publish question. It was stopped after the batch (the test only needed the opening).
+
+**Expected, not gaps:** the push failed in every run (no remote); the fixture's `brain.json` predates the `inbox` and `concepts` keys (it has `capture_inbox`, and no `concepts`), so a run wrote its Inbox row against `capture_inbox` and named "Concepts is on but its database isn't set up".
