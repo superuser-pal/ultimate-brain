@@ -61,6 +61,19 @@
             "remind"
           ],
           "default": "auto"
+        },
+        "unattended": {
+          "description": "Unattended catch-up (decision 0051, spec/schema.md §12, cli.md §6.1).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_inputs": {
+              "description": "Inputs one unattended run takes in, oldest first.",
+              "type": "integer",
+              "minimum": 1,
+              "default": 10
+            }
+          }
         }
       }
     },
