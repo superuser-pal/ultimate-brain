@@ -680,7 +680,7 @@ U-18's findings (2026-10-28): less to learn for a second user, with nothing take
 
 Catch-up on a schedule, with no one there: a budget per run, nothing written when nothing waits, a Report row (with Reports on) only when the user is needed. Building doesn't wait for U-19: the user runs the acceptance tasks (U-19 to U-22) at the end (2026-10-29).
 
-### CC-62 · Contracts for unattended catch-up and schedules (decision 0051) · `review`
+### CC-62 · Contracts for unattended catch-up and schedules (decision 0051) · `done` (#151)
 **Release:** 0.7.0
 **Changelog:** contracts for unattended catch-up: the input budget, the no-op rule, the Report row, and `brain schedule`.
 **Output:** spec/schema.md: `settings.unattended.max_inputs` (default 10) in `brain.json`. spec/cli.md: `brain schedule install | list | remove` (the job, catch-up or reflect; the times; the prompt and model it runs; the launchd agent on macOS, the printed cron line elsewhere; JSON output; errors); the log line an unattended run writes, with inputs done and left over, from which the backlog warning reads the last three runs; §6's catch-up sequence in unattended mode: which batch questions take their default and which skip their input (0051), which decided rows it applies (Approve, Reject, Edit with a value, corrections) and which wait (a Fix or an Approve with a What to fix to read: `FIX_TO_READ`, `NOTE_TO_READ`) and the flags that give that (`--record-only` or not, and any CLI change it needs, then part of CC-63), publish only with `settings.publish: auto`, the no-op rule, the Report row's text and when it is written (Reports on only), and the summary of unattended runs that opens the next attended catch-up, read from the log.
