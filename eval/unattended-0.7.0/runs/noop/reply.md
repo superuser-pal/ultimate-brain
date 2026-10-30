@@ -1,13 +1,9 @@
-I ran the unattended catch-up. Nothing was waiting, so it stopped without writing anything: no commit, no log line, no Notion write and no push.
+I ran the unattended catch-up and nothing was waiting, so it stopped without writing anything. There's no commit, log line or report, and the working tree is still clean at `aa51017`. That's what the skill says to do so scheduled runs don't add noise.
 
-What the check found:
-- **Notion:** none of its databases are set up, so there were no reviewed meetings, Inbox rows, Review decisions, report requests or edits to bring in. A scheduled run doesn't publish anyway, because publishing is set to ask first.
-- **Linked repos:** none.
-- **Drop folder:** not set. There is no `Drop folder:` line under "My rules" in `AGENTS.md`.
-- **Older notes waiting for Review rows:** none.
-- **Pending proposals:** 3. An unattended run can't decide these, so they're untouched.
+What the read-only pass found:
+- **Notion:** no databases are set up, so there were no meetings, Inbox rows, Review decisions or reports to pull, and nothing to publish.
+- **Linked repos:** none. **Drop folder:** none set.
+- **Backlog:** nothing to write.
+- **Left for your next attended catch-up:** 3 pending proposals and the question about which names and emails are you. Unattended runs never decide these.
 
-**Needs you, when you're back:**
-- Decide the 3 pending proposals by saying "what needs my decision".
-- Connect the brain to Notion by saying "connect the brain to Notion".
-- If you use a drop folder, tell me where it is.
+When you're back, say "what needs my decision" to go through the 3 proposals in chat, or "connect the brain to Notion" to set up Notion.
