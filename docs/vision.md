@@ -21,6 +21,7 @@ The "wow" is that it maintains and synthesizes itself. Tasks and project managem
 - **Target:** technical users already running Claude Code or Codex. Semi-technical (follows a setup guide, avoids Git) is a stretch goal.
 - **Daily experience:** agents use the brain without the user looking; capture is effortless. The user reviews in Notion a few times a week and asks on demand.
 - **Scope:** any life area, personal or professional, organized with PARA.
+- **Planned in 0.8.0 ([0055](../decisions/0055-domains-capture-and-review.md)):** optional Domains, off by default, group Areas around PARA; selected subjects and items determine what enters the brain, and editable Review shows the exact changes the user accepts. Reflection follows in 0.9.0.
 - **Capture sources (priority):** 1) agent sessions, 2) Notion AI meeting notes, 3) URLs and docs, 4) Notion quick captures. Email, Slack, Teams later via MCP.
 
 ## Architecture decisions
