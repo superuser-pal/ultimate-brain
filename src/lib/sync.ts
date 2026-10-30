@@ -437,11 +437,13 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
   const conflictedIds = new Set(skipConflicted ? input.conflicts.map((item) => item.brain_id).filter((id): id is string => typeof id === "string") : []);
   const conflictedPages = new Set(skipConflicted ? input.conflicts.map((item) => item.page_id) : []);
   // The skip closure is computed before any create runs, so a dependent create is skipped whatever its place in the plan.
-  const skippedCreates = new Set<string>();
+  // It is by position in the plan, so a create that names no id of its own (cli §5.5) is covered too; only an id can be referred to.
+  const skippedAt = new Set<number>();
   if (skipConflicted) {
-    const pageOf = (item: SyncPlan["create"][number]) => (isRecord(item.frontmatter) ? item.frontmatter.notion : undefined);
-    for (const item of input.create) { const page = pageOf(item); if (item.id !== undefined && (conflictedIds.has(item.id) || (typeof page === "string" && conflictedPages.has(page)))) skippedCreates.add(item.id); }
-    for (let grew = true; grew;) { grew = false; for (const item of input.create) if (item.id !== undefined && !skippedCreates.has(item.id) && references(item.frontmatter).some((id) => skippedCreates.has(id))) { skippedCreates.add(item.id); grew = true; } }
+    const skippedIds = new Set<string>();
+    const skip = (index: number) => { skippedAt.add(index); const id = input.create[index]!.id; if (id !== undefined) skippedIds.add(id); };
+    input.create.forEach((item, index) => { const page = isRecord(item.frontmatter) ? item.frontmatter.notion : undefined; if ((item.id !== undefined && conflictedIds.has(item.id)) || (typeof page === "string" && conflictedPages.has(page))) skip(index); });
+    for (let grew = true; grew;) { grew = false; input.create.forEach((item, index) => { if (!skippedAt.has(index) && references(item.frontmatter).some((id) => skippedIds.has(id))) { skip(index); grew = true; } }); }
   }
   const rowSkipped = { result: "skipped", reason: "ROW_CONFLICTED", changed: [] as string[] };
   const plan: SyncPlan = { ...input, updates: [], corrections: [], decisions: [] };
@@ -451,8 +453,7 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
   for (const decision of input.decisions) if (conflictedIds.has(decision.proposal)) skippedDecisions.push({ proposal: decision.proposal, action: decision.action, ...rowSkipped }); else plan.decisions.push(decision);
   for (let index = 0; index < plan.create.length; index += 1) {
     const item = plan.create[index]!; const checkpoint = workspace.checkpoint();
-    const page = isRecord(item.frontmatter) ? item.frontmatter.notion : undefined;
-    if (skipConflicted && ((item.id !== undefined && skippedCreates.has(item.id)) || (typeof page === "string" && conflictedPages.has(page)))) { create.push({ id: item.id, ...rowSkipped }); continue; }
+    if (skippedAt.has(index)) { create.push({ id: item.id, ...rowSkipped }); continue; }
     try {
       if (item.id !== undefined && workspace.get(item.id) !== undefined) throw new Error("ID_IN_USE");
       const depends = references(item.frontmatter).some((id) => dependencyFailures.has(id));
