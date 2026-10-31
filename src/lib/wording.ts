@@ -25,7 +25,7 @@ export interface AcceptedWording {
   verified?: { fingerprint: string; page_edited_at: string };
 }
 export type HeldReason = "UNACCEPTED_DRAFT" | "UNCONVERTIBLE_BLOCK" | "NO_BASELINE";
-export type WaitingReason = "REVISION_PENDING" | "REFRESH_PENDING" | "EDITED_AFTER_ACCEPTANCE" | "GIT_CHANGED" | "UNCONVERTIBLE_BLOCK" | "INVALID_REPORT_SHAPE" | "ACCEPTANCE_UNDATED" | "NO_BASELINE";
+export type WaitingReason = "EMPTY_BODY" | "REVISION_PENDING" | "REFRESH_PENDING" | "EDITED_AFTER_ACCEPTANCE" | "GIT_CHANGED" | "UNCONVERTIBLE_BLOCK" | "INVALID_REPORT_SHAPE" | "ACCEPTANCE_UNDATED" | "NO_BASELINE";
 
 export interface WordingPlan {
   accepted_wording: AcceptedWording[];
@@ -66,6 +66,9 @@ export function planWording(workspace: Workspace, asOf: string, pageId: string, 
   const pending = w.pending_revision ? "REVISION_PENDING" as const : w.pending_refresh ? "REFRESH_PENDING" as const : undefined;
   // 2: the body cannot be converted, so N is unknown: fail closed.
   if (w.unconvertible || w.body_markdown === null) { if (w.accepted) waiting("UNCONVERTIBLE_BLOCK"); else out.wording_held.push({ ...ref, reason: "UNCONVERTIBLE_BLOCK" }); return; }
+  // An emptied page is not wording to import; text the converter did not end with one newline is not its output (cli §5.14.7): fail closed.
+  if (w.accepted && w.body_markdown.trim() === "") { waiting("EMPTY_BODY"); return; }
+  if (w.body_markdown !== "" && !w.body_markdown.endsWith("\n")) { if (w.accepted) waiting("UNCONVERTIBLE_BLOCK"); else out.wording_held.push({ ...ref, reason: "UNCONVERTIBLE_BLOCK" }); return; }
   // 3: an acceptance with no time has no order against the edits.
   if (w.accepted && w.accepted_at === null) { waiting("ACCEPTANCE_UNDATED"); return; }
   // 4, 5: a pending proposal; an unresolved one blocks acceptance.
@@ -73,7 +76,7 @@ export function planWording(workspace: Workspace, asOf: string, pageId: string, 
   // 6, 7: every validation of an acceptance comes before any shortcut that consumes it.
   if (w.accepted && minute(w.page_edited_at) > minute(w.accepted_at!)) { waiting("EDITED_AFTER_ACCEPTANCE"); return; }
   if (w.accepted && kind === "report") {
-    const links = reportLinks(workspace, w.body_markdown);
+    const links = reportLinks(workspace, w.body_markdown, true);
     if (!hasReportShape(w.body_markdown) || links.broken.length > 0) { waiting("INVALID_REPORT_SHAPE"); return; }
   }
   const markdown = w.body_markdown;
