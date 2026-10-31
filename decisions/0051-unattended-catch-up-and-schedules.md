@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-10-29
 **Amends:** 0003, 0037 · **Refines:** 0045
+**Later amendment:** [0058](0058-acceptance-is-current-as-of-the-click-minute.md), 2026-10-31, says what "exact and current" accepted wording means for an unattended import.
 
 ## Context
 The brain pays back only when it runs regularly, and today every catch-up waits for the user to say "catch up" and then for their answers (0037). reviews/07 found that Hermes, or any scheduler, could run the brain's skills, and that the one piece missing on our side is **an unattended mode for catch-up**. reviews/08 read a third-party vault "operator" that runs on cron with no questions: budgets per run with the rest queued, a run with nothing to do that writes nothing, a fixed report, failures logged and skipped, and a setup that schedules the run itself. The user agreed the shape below in a grill on 2026-10-29.
