@@ -530,9 +530,10 @@ function applyWording(workspace: Workspace, items: readonly AcceptedWording[], n
     const fail = (reason: string) => results.push({ ...head, result: "failed", reason, changed: [] });
     if (note === undefined) { fail("UNKNOWN_ID"); continue; }
     if ((item.kind === "report") !== isReport(note) || (item.kind === "document" && !(note.type === "reference" && note.attributes.origin === "promoted"))) { fail("KIND_MISMATCH"); continue; }
-    if (item.verified === undefined || item.verified.fingerprint !== item.fingerprint || item.fingerprint !== textHash(item.markdown)) { fail("UNVERIFIED"); continue; }
+    if (note.attributes.notion !== undefined && note.attributes.notion !== item.page_id) { fail("NOTION_ID_MISMATCH"); continue; }
+    if (item.verified === undefined || item.verified.fingerprint !== item.fingerprint || item.verified.page_edited_at !== item.page_edited_at || item.fingerprint !== textHash(item.markdown)) { fail("UNVERIFIED"); continue; }
     if (textHash(gitBodyOf(note)) !== item.base) { fail("GIT_CHANGED"); continue; }
-    if (item.kind === "report" && (!hasReportShape(item.markdown) || reportLinks(workspace, item.markdown).broken.length > 0)) { fail("INVALID_REPORT_SHAPE"); continue; }
+    if (item.kind === "report" && (!hasReportShape(item.markdown) || reportLinks(workspace, item.markdown, true).broken.length > 0)) { fail("INVALID_REPORT_SHAPE"); continue; }
     const checkpoint = workspace.checkpoint();
     try {
       const doc = workspace.edit(note);
@@ -541,7 +542,7 @@ function applyWording(workspace: Workspace, items: readonly AcceptedWording[], n
       const source = `notion:${item.page_id}`;
       const sources = Array.isArray(a.sources) ? a.sources : [];
       if (!sources.includes(source)) a.sources = [...sources, source];
-      if (item.kind === "report") a.generated_from = reportLinks(workspace, item.markdown).linked.sort(compareCodePoints);
+      if (item.kind === "report") a.generated_from = reportLinks(workspace, item.markdown, true).linked.sort(compareCodePoints);
       a.updated = formatDate(now);
       workspace.save(note.path, doc);
       const edited = workspace.get(note.id)!;

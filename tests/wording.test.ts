@@ -393,3 +393,57 @@ test("a row-8 clear is dropped when its baseline update failed or its note is go
   const applied = await run(dir, ["sync", "apply"], gone);
   assert.deepEqual(applied.json.data.clear_accepted.map((item: { note: string }) => item.note), [document.id]);
 });
+
+test("an emptied accepted page waits instead of failing the whole plan; text without a final newline fails closed", async (context) => {
+  const dir = await fixtureCopy(context);
+  const document = await promotedDocument(dir);
+  const emptied = await plan(dir, [documentRow(wording({ body_markdown: "" }))]);
+  assert.deepEqual(emptied.accepted_wording, []);
+  assert.deepEqual(emptied.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "EMPTY_BODY" }]);
+  const unterminated = await plan(dir, [documentRow(wording({ body_markdown: "No newline at the end" }))]);
+  assert.equal(unterminated.wording_waiting[0].reason, "UNCONVERTIBLE_BLOCK");
+  const draft = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null, body_markdown: "No newline at the end" }))]);
+  assert.deepEqual(draft.wording_held, [{ page_id: PAGE, note: document.id, reason: "UNCONVERTIBLE_BLOCK" }]);
+});
+
+test("an acceptance younger than two minutes is not unattended_ok; --record-only skips the import but keeps the baseline update", async (context) => {
+  const dir = await fixtureCopy(context);
+  const document = await promotedDocument(dir);
+  const young = await plan(dir, [documentRow(wording({ accepted_at: "2026-12-10T10:04:00Z", page_edited_at: "2026-12-10T10:04:00Z" }))]);
+  assert.equal(young.accepted_wording[0].unattended_ok, false);
+  const old = await plan(dir, [documentRow(wording())]);
+  assert.equal(old.accepted_wording[0].unattended_ok, true);
+  const item = old.accepted_wording[0];
+  item.verified = { fingerprint: item.fingerprint, page_edited_at: item.page_edited_at };
+  const recordOnly = await run(dir, ["sync", "apply", "--record-only"], old);
+  assert.equal(recordOnly.json.data.accepted_wording[0].reason, "RECORD_ONLY");
+  assert.equal(await bodyOf(dir, document.path), `\n${SEED}`);
+});
+
+test("module off: a Document with wording is ignored; the apply refuses a page id that is not the note's own", async (context) => {
+  const dir = await fixtureCopy(context);
+  const document = await promotedDocument(dir);
+  const planned = await plan(dir, [documentRow(wording())]);
+  const item = planned.accepted_wording[0];
+  item.verified = { fingerprint: item.fingerprint, page_edited_at: item.page_edited_at };
+  item.page_id = "0f0f0f0f-1111-4222-8333-444455556666";
+  const mismatch = await run(dir, ["sync", "apply"], planned);
+  assert.equal(mismatch.json.data.accepted_wording[0].reason, "NOTION_ID_MISMATCH");
+  const stale = { ...planned.accepted_wording[0], page_id: PAGE, verified: { fingerprint: item.fingerprint, page_edited_at: "2026-12-10T10:09:00Z" } };
+  const changed = await run(dir, ["sync", "apply"], { ...planned, accepted_wording: [stale] });
+  assert.equal(changed.json.data.accepted_wording[0].reason, "UNVERIFIED");
+  const configPath = join(dir, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  config.modules = { documents: false };
+  await writeFile(configPath, JSON.stringify(config, null, 2));
+  const off = await plan(dir, [documentRow(wording())]);
+  assert.deepEqual(off.accepted_wording, []);
+  assert.equal(off.ignored[0].reason, "MODULE_OFF");
+  void document;
+});
+
+test("report new still accepts a notion-page link as before; only the wording import resolves mentions", async (context) => {
+  const dir = await fixtureCopy(context);
+  const created = await run(dir, ["report", "new"], { title: "Login: mentions", question: "Where does it stand?", body: REPORT.replace("Alex.", "[Someone](notion-page:11111111-2222-4333-8444-555566667777).") });
+  assert.equal(created.code, 0, created.stdout);
+});
