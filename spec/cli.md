@@ -1140,7 +1140,7 @@ Brain Assistant can write a Document's or a report's body inside Notion (buttons
 | `accepted` | the Accept control is on |
 | `accepted_at` | when it was set (ISO UTC) |
 | `body_markdown` | the page body converted to Markdown by the rule below, **excluding** any proposed-revision block and any proposed-refresh section |
-| `body_edited_at` | the latest `last_edited_time` among the page's body blocks (not properties) |
+| `body_edited_at` | the latest `last_edited_time` among the page's body blocks (not properties). If the skill cannot read a time per block, it passes the page's own `last_edited_time` instead: any later edit, even of a property, then reads as an edit after acceptance. That errs toward **not importing**, never toward importing edited text |
 | `pending_revision` | a *Proposed revision* block is on the page (Write up) |
 | `pending_refresh` | a *Proposed refresh · based on Notion* section is on the page (Refresh report) |
 
