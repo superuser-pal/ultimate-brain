@@ -1131,6 +1131,8 @@ Stores what the skill published. Input: `{ "records": [ { "id": "per-3h8w2n6c", 
 `data` = `{ "records": [ { "id": "…", "result": "recorded"|"failed", "reason"?: "…", "changed": ["…"] } ] }`. Exit 1 if any failed.
 
 
+> **0.8.0 (decision 0055):** the plan items for selected captures, exclusion cleanup and per-item Review decisions are specified in [capture-and-review.md](capture-and-review.md) §4, §5 and §7 and added here by CC-78 and CC-79.
+
 #### 5.14.7 Accepted wording from Notion (0054)
 
 Brain Assistant can write a Document's or a report's body inside Notion (buttons *Write up* and *Refresh report*). Only wording the user **accepted exactly** comes back to Git; this section is the whole mechanism. The Notion side (the controls and their names) is in docs/notion-space-design.md §3.17; here is what the CLI reads and does.

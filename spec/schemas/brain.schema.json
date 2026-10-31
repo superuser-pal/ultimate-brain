@@ -105,6 +105,11 @@
         "planning": {
           "type": "boolean",
           "default": false
+        },
+        "domains": {
+          "type": "boolean",
+          "default": false,
+          "description": "Optional Domains around PARA (decision 0055, spec/capture-and-review.md §1). Off unless true, even in a brain whose `modules` block is absent (where every other module is on)."
         }
       }
     },
@@ -270,6 +275,10 @@
                 "status",
                 "select"
               ]
+            },
+            "wont_do_status": {
+              "type": "string",
+              "description": "The Tasks status option meaning closed without doing it (decision 0055, spec/capture-and-review.md §2). Absent: \"Won't Do\"."
             }
           },
           "allOf": [
