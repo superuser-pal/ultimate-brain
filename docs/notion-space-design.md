@@ -272,7 +272,7 @@ Everything that came into the brain except meetings, which have their own databa
 |---|---|---|
 | Name | Title | You on a capture; Brain on a row it creates |
 | Keep | Button labelled **Keep as document**: ticks Document asked and sets Brain Status to Ready | You (Documents module, 0048, 0049) |
-| Update | Button labelled **Refresh report**, on a Report row: ticks Refresh asked | You (Reports module, 0048) |
+| Update | Button labelled **Refresh report**, on a Report row: sends a message to Brain Assistant (0.8.0, 0054; before that it ticked Refresh asked) | You (Reports module, 0048) |
 | Kind | Select: Capture, File, Email, Chat, Note, Ask, Report | System, written only when empty, so a Kind you choose stands (0048). File was Document before 0.6.0 (0049). **Ask** is yours: a question for the brain (Reports module, 0043) |
 | Summary | Text | Brain: one line on what it taught; on a row the brain skipped, why ("Skipped: same as …") |
 | Decisions | Relation → Decisions (two-way with Sources) | Brain |
@@ -357,7 +357,7 @@ Plus the common properties. Page body: the kept text (brain-written), or, on a p
 | Button property | Label | Database | Ticks | Also | Module |
 |---|---|---|---|---|---|
 | Keep | Keep as document | Inbox | Document asked | sets Brain Status to Ready | Documents |
-| Update | Refresh report | Inbox (Report rows) | Refresh asked | — | Reports |
+| Update | Refresh report | Inbox (Report rows) | none: Send message to Brain Assistant (0.8.0, §3.17) | — | Reports |
 | Promote | Promote to document | Decisions, Concepts | Promote asked | — | Documents |
 
 **A button's property name and its label differ** (#144): the page layout shows the name on the left and the label on the button, so the same text would show twice. The names are short and clash with no other property (not Report, Documents or Refresh asked). The brain never reads a button, only the checkbox it ticks, so a space that names its buttons otherwise works the same. Each checkbox has its own name, because Notion can't give a button and another property the same name.
@@ -368,7 +368,7 @@ Archived and Done (on a milestone) stay checkboxes: they describe a state, not a
 
 | Database | Pinned at the top | Collapsed |
 |---|---|---|
-| Inbox | Keep, Update (on Report rows), Brain Status, Project, Area | Brain ID, Last Synced, Created |
+| Inbox | Keep, Update (on Report rows), Tidy, Accept, Brain Status, Project, Area | Brain ID, Last Synced, Created |
 | Review | Your call, What to fix, About Page | Kind, State, Brain ID, Created time, Last edited time |
 | Decisions | Promote, Lifecycle | Brain ID, Last Synced |
 | Concepts | Promote, Lifecycle | Brain ID, Last Synced, Created time |

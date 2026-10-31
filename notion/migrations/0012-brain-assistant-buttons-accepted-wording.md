@@ -26,7 +26,7 @@ Skip a row for a module you have off. **Module states:** with Documents off, ski
 Open the agent **Brain Assistant** ([../brain-assistant.md](../brain-assistant.md) has the texts):
 1. **Tools and access:** give it **edit** access to the **Documents** database (it already has Meetings and Inbox). Leave view access elsewhere.
 2. **Instructions:** replace them with the block under "Instructions" in brain-assistant.md (the edit rule now lists Write up and Refresh report and says what a button's message carries; the Accepted rule is new). Re-link each *[@…]* with a real @mention.
-3. **Skills database "Brain Assistant Skills":** change **Tidy capture** (Brain Status New only; a button's message carries the confirmation) and add the pages **Write up** and **Refresh report**, each with the Description and body from brain-assistant.md. Keep **Use automatically** on.
+3. **Skills database "Brain Assistant Skills":** change **Tidy capture** (Brain Status New only; a button's message carries the confirmation) and add the pages **Write up** (Documents module) and **Refresh report** (Reports module), each with the Description and body from brain-assistant.md; skip a page for a module you have off. Keep **Use automatically** on.
 
 ## 3 · Buttons (by hand)
 
@@ -48,7 +48,7 @@ Open any row as a full page → `•••` → **Customize layout**. The full t
 
 | Database | Heading, in order | Move to the top of the property group |
 |---|---|---|
-| Inbox | Keep, Update, Tidy, Accept, Brain Status, Project, Area | Document asked, Refresh asked, Accepted, Accepted at, Only keep |
+| Inbox | Keep *(Documents)*, Update and Accept *(Reports)*, Tidy, Brain Status, Project, Area | Document asked, Refresh asked, Accepted, Accepted at, Only keep |
 | Documents | Write, Accept, Lifecycle, Project, Area, Sources | Accepted, Accepted at |
 
 ## 5 · The "How it works" page (by hand)
@@ -65,8 +65,8 @@ The first catch-up after this reads each published Document and report body from
 - [ ] The skills database has the pages Write up and Refresh report, and Tidy capture says Brain Status New only.
 - [ ] **Tidy capture** on a test Inbox row (Kind Capture, Brain Status New, a few messy lines of made-up text) rewrites the text below the title and changes no property: Brain Status is still New.
 - [ ] (Documents) **Write up** on a promoted Document gives Purpose, Main content, Open questions and Sources and changes no property; edit a sentence and click it again: your edit is kept and a toggle "Proposed revision" is added.
-- [ ] (Documents) **Accept write-up** (after you delete the toggle) ticks Accepted and sets Accepted at to now; editing the page afterwards, then "catch up", lists it as needing a new accept.
-- [ ] (Reports) **Refresh report** on a test Report row adds one toggle "Proposed refresh · based on Notion" at the end (its first line holds the date) and ticks nothing; a second click replaces only that toggle. Refresh asked is still unticked. The toggle holds the six H2 sections of a report (Where it stands … Gaps) under a dated first line.
+- [ ] (Documents) **Accept write-up** (after you delete the toggle) ticks Accepted and sets Accepted at to now; wait until the next minute, edit the page, then "catch up": it lists the row as needing a new accept (an edit in the same minute as the click cannot be noticed, decision 0058).
+- [ ] (Reports) **Refresh report** on a test Report row adds one toggle "Proposed refresh · based on Notion" at the end and ticks nothing; a second click replaces only that toggle. Refresh asked is still unticked. The toggle holds the six H2 sections of a report (Where it stands … Gaps) with nothing above the first, and "Where it stands" starting with "As of <date>".
 - [ ] (Reports) **Accept refresh**, after you replace the report text with the toggle's contents and delete the toggle, ticks Accepted and sets Accepted at to now; the next catch-up shows the change and takes it in once you say yes.
 - [ ] Ticking **Refresh asked** by hand still queues a full refresh; it waits while the toggle is on the page.
 - [ ] A button whose message has no page reference makes Brain Assistant stop and say so.

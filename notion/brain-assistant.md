@@ -158,7 +158,7 @@ Don't make any fix. Read only.
 Goal: make this capture clear enough for the brain to file.
 Source: this page only. It must be a page in the Inbox database inside [@Brain Data] with Kind Capture and Brain Status New; otherwise stop and tell me (a Ready row may already be taken in by the brain, and rows the brain created and Done captures are a record of what came in).
 
-0. When the Tidy capture button sent this message, my confirmation is in it: do steps 1 and 2 and replace the text without asking. The row must have Brain Status New; if it is Ready or Done, stop and tell me (the row stays New while you work, and I set Ready afterwards).
+0. When the Tidy capture button sent this message, my confirmation is in it: do steps 1 and 2, replace the text without asking, skip steps 3 and 4, and reply in two lines: that you tidied it, and (only if you saw unrelated ideas in it) one line suggesting how to split it. The row must have Brain Status New; if it is Ready or Done, stop and tell me (the row stays New while you work, and I set Ready afterwards).
 1. Rewrite the text below the title as clear sentences or bullets. Keep every name, number, date, link and quote exactly. Add no facts.
 2. Say which projects, people, orgs or decisions it mentions, so I can check the brain will recognise them.
 3. If it holds unrelated ideas, suggest how to split it.
@@ -198,7 +198,7 @@ Goal: turn this promoted Document into a clear write-up from what the brain alre
 Source: this page only, and the brain pages it links in Notion (its Decision or Concept, its Project and Area, linked Documents, Sources). It must be a page in the Documents database inside [@Brain Data] with From decision or From concept set; otherwise stop and tell me. No external research, unless my message asks for it.
 
 1. Read this Document and every brain page it links. Add nothing from outside them.
-2. Decide which run this is. It is a REPEAT if the first block of the body is a callout whose text starts with "Purpose:" and the body has H2 headings "Main content" and "Sources" (this is what the write-up below produces; the seed never has them). If the body has only some of these, treat it as a repeat too: never overwrite text that may be mine. Otherwise it is the FIRST write-up: replace the whole body with the write-up below. For a repeat: leave my wording exactly as it is and add one toggle block titled "Proposed revision" at the end, holding the new write-up; if a "Proposed revision" toggle is already there, replace only what is inside it.
+2. Decide which run this is. It is a REPEAT if the first block of the body is a callout whose text starts with "Purpose:" and the body has H2 headings "Main content" and "Sources" (this is what the write-up below produces; the seed never has them). If the body has only some of these, treat it as a repeat too: never overwrite text that may be mine. Otherwise it is the FIRST write-up: write the write-up below as the new body, and move whatever the body held before (the seed, or text I wrote by hand) into one toggle "Previous text" at the very end, unchanged, so nothing I wrote is lost. For a repeat: leave my wording exactly as it is and add one toggle block titled "Proposed revision" at the end, holding the new write-up; if a "Proposed revision" toggle is already there, replace only what is inside it.
 3. The write-up has four parts, in order, in native Notion blocks:
    - Purpose: one short callout whose text starts with "Purpose:", as the first block.
    - Main content: an H2 heading "Main content", then concise prose and lists; a toggle for supporting detail.
@@ -207,7 +207,7 @@ Source: this page only, and the brain pages it links in Notion (its Decision or 
 4. Every claim names the page it came from, with a link. Say so where the pages are silent; never fill a gap by guessing.
 5. Never change the title, any property (Accepted and Accepted at included), the Decision or Concept page, a Review row, or my text outside the Proposed revision toggle on a repeat.
 
-My message carries my confirmation. When done, reply in two lines: what you wrote ("first write-up" or "proposed revision") and what I do next: "Edit it as you like, then click Accept write-up."
+My message carries my confirmation. When done, reply in at most three lines: what you wrote ("first write-up" or "proposed revision"); if Accepted is ticked on this page, that this edit cancels the acceptance (click Accept again after editing); and what I do next: "Edit it as you like, delete the Previous text toggle when you no longer need it, then click Accept write-up." The page history keeps every earlier version.
 ```
 
 ### Refresh report
@@ -219,10 +219,10 @@ Source: this page only, and the pages in [@Brain Data] that bear on its subject:
 
 1. Read the report and the pages it links. Search Brain Data for pages that bear on the same subject and are not linked yet, newer ones first.
 2. Add ONE toggle block at the end of the page with exactly the title "Proposed refresh · based on Notion" (no date in the title). If that toggle already exists, replace only what is inside it; leave everything else on the page exactly as it is.
-3. Inside the toggle, first a line "Proposed <today's date>, based on the pages in Notion", then write the whole proposed report with exactly the six sections of a report, as H2 headings, in this order: Where it stands, Timeline, Decisions in force, Open questions and risks, People involved, Gaps. Timeline oldest first. Link every line to the page it rests on; mark a line that rests on a note I haven't reviewed with "(not reviewed)". Say in Gaps what the pages do not cover.
+3. Inside the toggle, write the whole proposed report with exactly the six sections of a report, as H2 headings, in this order: Where it stands, Timeline, Decisions in force, Open questions and risks, People involved, Gaps. Timeline oldest first. Link every line to the page it rests on; mark a line that rests on a note I haven't reviewed with "(not reviewed)". Say in Gaps what the pages do not cover. Start the "Where it stands" text with "As of <today's date>, from the pages in Notion:", so the date travels with the text and nothing sits above the first section.
 4. Never change the report's current text, the title, any property (Refresh asked, What to fix, Accepted and Accepted at included), or any page other than this one.
 
-My message carries my confirmation. When done, reply in two lines: what changed in the toggle (new, or replaced) and what I do next: "Replace the report text with what is in the toggle, delete the toggle, then click Accept refresh."
+My message carries my confirmation. When done, reply in at most three lines: what changed in the toggle (new, or replaced); if Accepted is ticked on this page, that this edit cancels the acceptance (click Accept again after replacing the text); and what I do next: "Replace the report text with what is in the toggle, delete the toggle, then click Accept refresh."
 ```
 
 **Without a Custom Agent** (plans without Business or Enterprise): save the same text as a personal skill, or paste it into Notion AI while the capture is open (decision 0045).
