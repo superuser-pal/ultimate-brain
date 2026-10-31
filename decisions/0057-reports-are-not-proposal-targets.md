@@ -11,7 +11,7 @@ Decision 0054 says that when the user accepts a refreshed report, useful additio
 - **A report is never a proposal target,** and its accepted text never becomes evidence for a new note (0054, unchanged).
 - **For a Document, nothing changes:** the Related knowledge appendix is an `add_to_note` proposal on the Document (0054).
 - **For a report,** the catch-up **names** useful knowledge that only Git has ("Not in the accepted refresh: …") and offers a full refresh. The user decides; nothing is proposed or written.
-- **A full refresh** (Refresh asked) rebuilds the report in Git as before. Its body reaches Notion only when no accepted, pending or unaccepted wording is waiting on that report (cli.md §5.14.7); otherwise it waits and the user is told to resolve the Notion text first.
+- **A full refresh** (Refresh asked) runs as before, **unless** accepted, pending or unaccepted wording is waiting on that report (cli.md §5.14.7): then the refresh itself waits, Refresh asked stays ticked, and the user is told to resolve the Notion text first.
 
 ## Consequences
 - cli.md §5.14.7 and §6.1 say so. 0054's other rules stand.
