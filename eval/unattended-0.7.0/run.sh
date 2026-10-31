@@ -12,12 +12,14 @@
 # note or a proposal), report-rows.txt (how many unattended Report rows its Notion writes hold) and writes.md (what it would
 # have written to Notion).
 #
-# A scenario whose `claude -p` exits with an error, or whose reply says a limit was hit, is INCOMPLETE: it is listed at the
-# end and the script exits 1, so a run cut short is never taken for a reproduction.
+# A scenario is INCOMPLETE, listed at the end with the script exiting 1, when its `claude -p` exited with an error or its
+# reply says a limit was hit, when anything its collection needs is missing (the brain, its baseline commit, its reply, its
+# saved exit status: a collect-only run on a machine that never ran it) or when a collection command fails. So an empty or
+# partial set of traces is never taken for a reproduction. tests/eval-runner.test.mjs covers these cases.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 B="${UB_EVAL_DIR:-/tmp/ub-eval-0.7.0}"
-OUT="$HERE/runs"
+OUT="${UB_EVAL_OUT:-$HERE/runs}"
 export UB_EVAL_DIR="$B"
 SCENARIOS=(noop noop-connected budget mixed-on mixed-reports-off mixed-ask requests)
 if [ $# -gt 0 ]; then SCENARIOS=("$@"); fi
@@ -59,15 +61,30 @@ if [ -z "$COLLECT_ONLY" ]; then
   wait
 fi
 
+collect() { # name: the traces of one scenario; returns 1 on anything missing or failed
+  local s="$1" d="$B/$1" o="$OUT/$1" base rc
+  [ -f "$B/$s.base" ] && [ -d "$d/.git" ] && [ -f "$o/reply.md" ] || { echo "no earlier run of $s to collect (brain, baseline or reply missing)" >&2; return 1; }
+  base="$(cat "$B/$s.base")"
+  git -C "$d" cat-file -e "$base^{commit}" 2>/dev/null || { echo "$s: baseline commit $base is not in its brain" >&2; return 1; }
+  git -C "$d" log --format='%s' "$base"..HEAD > "$o/commits.txt" || return 1
+  git -C "$d" diff --name-status "$base" HEAD > "$o/changes.all" || return 1
+  grep -v -e ' index.md$' -e ' log/' "$o/changes.all" > "$o/changes.txt" || true
+  rm -f "$o/changes.all"
+  cat "$d"/log/*.md 2>/dev/null | grep -h 'catch-up' > "$o/log.txt" || true  # no log folder is a legitimate empty result
+  brain status --brain "$d" --json | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin)['data']['unattended']))" > "$o/status.txt" || return 1
+  git -C "$d" grep -n -e '90000 EUR' -e 'left Acme in June' -- . ':(exclude).agents' ':(exclude).claude' ':(exclude)AGENTS.md' > "$o/fix-text.txt"
+  rc=$?; [ "$rc" -le 1 ] || return 1  # 1 means no match, which is the good result; more is a failure
+  if [ -f "$B/$s-sim/writes.md" ]; then
+    cp "$B/$s-sim/writes.md" "$o/writes.md" || return 1
+    grep -c -E 'Catch-up [0-9]+ [A-Z][a-z]+:' "$B/$s-sim/writes.md" > "$o/report-rows.txt"
+    rc=$?; [ "$rc" -le 1 ] || return 1
+  fi
+  return 0
+}
+
+incomplete=()
 for s in "${SCENARIOS[@]}"; do
-  d="$B/$s"; o="$OUT/$s"; base="$(cat "$B/$s.base")"; mkdir -p "$o"
-  git -C "$d" log --format='%s' "$base"..HEAD > "$o/commits.txt"
-  git -C "$d" diff --name-status "$base" HEAD | grep -v -e ' index.md$' -e ' log/' > "$o/changes.txt" || true
-  grep -h 'catch-up' "$d"/log/*.md > "$o/log.txt" 2>/dev/null || true
-  brain status --brain "$d" --json | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin)['data']['unattended']))" > "$o/status.txt"
-  git -C "$d" grep -n -e '90000 EUR' -e 'left Acme in June' -- . ':(exclude).agents' ':(exclude).claude' ':(exclude)AGENTS.md' > "$o/fix-text.txt" || true
-  [ -f "$B/$s-sim/writes.md" ] && { grep -c -E 'Catch-up [0-9]+ [A-Z][a-z]+:' "$B/$s-sim/writes.md" > "$o/report-rows.txt" || true; }
-  [ -f "$B/$s-sim/writes.md" ] && cp "$B/$s-sim/writes.md" "$o/writes.md"
+  collect "$s" || incomplete+=("$s (collection failed)")
 done
 
 # The next attended catch-up opens with what the scheduled runs did. It is stopped after its batch of questions.
@@ -80,13 +97,15 @@ case " ${SCENARIOS[*]} " in
     fi
     ;;
 esac
-redact
+[ -d "$OUT" ] && redact
 
-incomplete=()
-for s in "${SCENARIOS[@]}" attended-opening; do
-  [ -f "$OUT/$s/reply.md" ] || continue
+names=("${SCENARIOS[@]}")
+case " ${SCENARIOS[*]} " in *" mixed-ask "*) names+=(attended-opening);; esac
+for s in "${names[@]}"; do
   code="$(cat "$B/exit/$s" 2>/dev/null || echo missing)"
-  if [ "$code" != "0" ] || grep -q -i -e 'session limit' -e 'usage limit' -e 'rate limit' "$OUT/$s/reply.md"; then incomplete+=("$s (claude exit $code)"); fi
+  if [ ! -f "$OUT/$s/reply.md" ]; then incomplete+=("$s (no reply)")
+  elif [ "$code" != "0" ]; then incomplete+=("$s (claude exit $code)")
+  elif grep -q -i -e 'session limit' -e 'usage limit' -e 'rate limit' "$OUT/$s/reply.md"; then incomplete+=("$s (a limit was hit)"); fi
 done
 if [ ${#incomplete[@]} -gt 0 ]; then
   echo "INCOMPLETE, run these again: ${incomplete[*]}" >&2
