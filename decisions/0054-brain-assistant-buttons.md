@@ -5,6 +5,7 @@
 **Amends:** 0035 (what Brain Assistant may edit), 0049 (a promoted Document's body comes back to Git), 0043 and 0045 (how a report is refreshed) · **Refines:** 0048 and 0053 (buttons), 0051 (what an unattended run imports) · **Keeps:** 0003, 0015, 0052
 
 **Release amendment:** [0056](0056-buttons-move-into-0-8-0.md), 2026-10-31, moves this decision's tasks from 0.7.1 to 0.8.0; "0.7.1" below is historical.
+**Acceptance amendment:** [0057](0057-reports-are-not-proposal-targets.md) (reports are not proposal targets) and [0058](0058-acceptance-is-current-as-of-the-click-minute.md) (what "accepted exactly" means), 2026-10-31.
 **Later amendment:** [0055](0055-domains-capture-and-review.md), accepted 2026-10-30, leaves this decision's 0.7.1 scope unchanged, extends exact accepted wording to Review in 0.8.0, and moves reflection to 0.9.0. References below to an unchanged 0.8.0 reflection release describe the original plan.
 
 ## Context
