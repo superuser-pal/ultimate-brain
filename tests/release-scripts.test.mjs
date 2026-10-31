@@ -56,7 +56,7 @@ test("release 0.3.x retains its hand-written changelog gate", (t) => {
     esac`,
     gh: `case "$1 $2" in
       "repo view") printf owner/repo ;;
-      "api repos/owner/repo/commits/abcdef/check-runs") printf 'completed\\tsuccess\\n' ;;
+      "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tcompleted\\tfailure\\nCI\\tpush\\tcompleted\\tsuccess\\n' ;;
     esac`,
     npm: "exit 0",
   });
@@ -83,7 +83,7 @@ test("release 0.4.0 generates task-row changelog entries and skips dropped tasks
     esac`,
     gh: `case "$1 $2" in
       "repo view") printf owner/repo ;;
-      "api repos/owner/repo/commits/abcdef/check-runs") printf 'completed\\tsuccess\\n' ;;
+      "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tcompleted\\tfailure\\nCI\\tpush\\tcompleted\\tsuccess\\n' ;;
     esac`,
     npm: "exit 0",
   });
@@ -107,7 +107,7 @@ test("release 0.4.0 replaces a hand-written unreleased section", (t) => {
     esac`,
     gh: `case "$1 $2" in
       "repo view") printf owner/repo ;;
-      "api repos/owner/repo/commits/abcdef/check-runs") printf 'completed\\tsuccess\\n' ;;
+      "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tcompleted\\tfailure\\nCI\\tpush\\tcompleted\\tsuccess\\n' ;;
     esac`,
     npm: "exit 0",
   });
@@ -133,7 +133,7 @@ test("release 0.4.0 inserts a generated section below the changelog intro", (t) 
     esac`,
     gh: `case "$1 $2" in
       "repo view") printf owner/repo ;;
-      "api repos/owner/repo/commits/abcdef/check-runs") printf 'completed\\tsuccess\\n' ;;
+      "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tcompleted\\tfailure\\nCI\\tpush\\tcompleted\\tsuccess\\n' ;;
     esac`,
     npm: "exit 0",
   });
@@ -165,7 +165,7 @@ test("release 0.4.0 refuses missing task-row changelog data and invalid done suf
       esac`,
       gh: `case "$1 $2" in
         "repo view") printf owner/repo ;;
-        "api repos/owner/repo/commits/abcdef/check-runs") printf 'completed\\tsuccess\\n' ;;
+        "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tcompleted\\tfailure\\nCI\\tpush\\tcompleted\\tsuccess\\n' ;;
       esac`,
       npm: "exit 0",
     });
@@ -191,7 +191,7 @@ test("release pushes its annotated tag through --follow-tags", (t) => {
   const path = fakeCommands(root, {
     gh: `case "$1" in
       "repo view") printf owner/repo ;;
-      api) printf 'completed\\tsuccess\\n' ;;
+      api) printf 'CI\\tpush\\tcompleted\\tsuccess\\n' ;;
     esac`,
     npm: "exit 0",
   });
@@ -388,6 +388,17 @@ test("CI passes with skipped jobs, but not with a failure, a running job or noth
   assert.equal(checksPassed("completed\tsuccess\nin_progress\t\n"), false);
   assert.equal(checksPassed("completed\tskipped\n"), false);
   assert.equal(checksPassed(""), false);
+});
+
+test("the release gate reads only the newest push run of the CI workflow", async () => {
+  const { ciWorkflowPassed } = await import("../scripts/common.mjs");
+  assert.equal(ciWorkflowPassed("CI\tpush\tcompleted\tsuccess\n"), true);
+  assert.equal(ciWorkflowPassed("merge-ready\tissue_comment\tcompleted\tfailure\nCI\tpush\tcompleted\tsuccess\n"), true);
+  assert.equal(ciWorkflowPassed("CI\tpush\tcompleted\tfailure\n"), false);
+  assert.equal(ciWorkflowPassed("CI\tpush\tin_progress\t\n"), false);
+  assert.equal(ciWorkflowPassed("CI\tpush\tcompleted\tsuccess\nCI\tpush\tcompleted\tfailure\n"), true);
+  assert.equal(ciWorkflowPassed("merge-ready\tissue_comment\tcompleted\tsuccess\n"), false);
+  assert.equal(ciWorkflowPassed(""), false);
 });
 
 test("merge dry-run accepts a PR whose push-only job was skipped", (t) => {

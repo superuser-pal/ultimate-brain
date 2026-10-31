@@ -55,6 +55,16 @@ export function checksPassed(tsv) {
     && runs.every(([status, conclusion]) => status === "completed" && ["success", "skipped", "neutral"].includes(conclusion));
 }
 
+/**
+ * True when the newest `push` run of the `CI` workflow on a commit finished green. `tsv` is one `name\tevent\tstatus\tconclusion` line per workflow
+ * run, newest first. Other workflows (`merge-ready` runs on comments and attaches to main's HEAD) do not count.
+ */
+export function ciWorkflowPassed(tsv) {
+  const runs = tsv.split("\n").filter(Boolean).map((line) => line.split("\t"));
+  const latest = runs.find(([name, event]) => name === "CI" && event === "push");
+  return latest !== undefined && latest[2] === "completed" && latest[3] === "success";
+}
+
 export function packageVersion() {
   const file = resolve(ROOT, "package.json");
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")).version : undefined;
