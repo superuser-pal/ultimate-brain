@@ -49,6 +49,15 @@ A copy of the inputs in spec/cli.md §5.14, so the skill works from inside a bra
   ```
   *(Documents)* A decision or concept row also carries `Promote asked` (its other properties as usual). True becomes a `promote_requests` item `{ "page_id", "note", "existing"? }`.
 
+  ```json
+  { "database": "documents", "page_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d", "last_edited": "2026-12-10T10:00:00Z",
+    "properties": { "Brain ID": "ref-5k8m2q7w" },
+    "wording": { "accepted": true, "accepted_at": "2026-12-10T10:00:00Z", "page_edited_at": "2026-12-10T10:00:00Z",
+                 "body_markdown": "> Purpose: decide the login.\n\n## Main content\n\nEmail login only.\n",
+                 "unconvertible": false, "pending_revision": false, "pending_refresh": false } }
+  ```
+  *(Documents, Reports)* A promoted Document, or a Report row (Brain ID a `vw-` report), may carry a `wording` object (the rules are under "Accepted wording" in SKILL.md): `accepted`, `accepted_at` (null when empty), `page_edited_at` (the page's own `last_edited_time`), `body_markdown` (the body converted as the SKILL says, without any Proposed revision toggle or Proposed refresh toggle; `null` when `unconvertible`), `unconvertible`, `pending_revision`, `pending_refresh`. All seven keys are required. It becomes `accepted_wording`, `wording_waiting`, `wording_held` and `clear_accepted` items.
+
   Every other row of a configured database is sent with every property you read, as the `people` row above.
 - `properties`: the Notion property names exactly, with normalized values:
 
@@ -64,7 +73,7 @@ A copy of the inputs in spec/cli.md §5.14, so the skill works from inside a bra
 
 ## Plan (input to `brain sync apply` and `brain sync render --plan`)
 
-The `data` object of the `sync plan` reply, unchanged. Not the whole reply.
+The `data` object of the `sync plan` reply. Not the whole reply. The one edit you make: each `accepted_wording` item gets a `verified` key, `{ "fingerprint": "<its fingerprint>", "page_edited_at": "<its page_edited_at>" }`, after you re-read its page just before applying (SKILL.md, "Accepted wording"). Add nothing else.
 
 ## Record (input to `brain sync record`)
 
@@ -76,5 +85,5 @@ The `data` object of the `sync plan` reply, unchanged. Not the whole reply.
 ```
 
 - One record per page actually written. `synced_at` is required.
-- `published`: the render item's `published`, unchanged.
+- `published`: the render item's `published`. For a Document or report body you just wrote, add `"@notion_body": "sha256:<hex>"`: the hash of the Markdown you read back from the page right after writing it (SKILL.md, "Accepted wording", step 6).
 - `tasks` (meetings and sources): the new task page ids.
