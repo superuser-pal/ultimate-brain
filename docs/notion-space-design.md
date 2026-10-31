@@ -393,10 +393,35 @@ A button can use the action **send message to** an agent and pick Brain Assistan
 **The button contract (normative for CC-71):** every Brain Assistant button's message (1) names the skill to run, (2) references the row with `@` to the current page, (3) carries the confirmation, and (4) says what the agent must not touch. A button without the row reference is not a valid Brain Assistant button: the agent cannot tell which row was clicked.
 
 **Not verified yet (do not rely on these):**
-- Write up on a promoted Document and Refresh report on a Report row (only Tidy capture on an Inbox row was tried).
+- Refresh report on a Report row. The user reported (2026-10-31, not recorded in detail) that a second button test "edits the right body"; taken here as Write up on a promoted Document. Tidy capture on an Inbox row is the one with a recorded message and result.
 - Whether a click runs unattended after the user leaves the page, and the credits one click uses (U-22, in the 0.8.0 acceptance run, measures them).
 - Whether the Notion agent reports a last-edited time for each body block, not only for the page. The accepted-wording rule (cli.md §5.14.7: a body edit after `accepted_at` invalidates the acceptance) assumes it can; if it cannot, §5.14.7 needs a fallback before CC-72.
 - Notion AI (instead of the Custom Agent) as the target. Not tested; a Custom Agent is scoped to Brain Data (0035), which Notion AI is not.
+
+### 3.17 The three Brain Assistant buttons, Write up format and accepting wording (0054)
+
+Added in 0.8.0 (CC-71 builds them; migration 0012). Each button follows the contract in §3.16: its message names the skill, references the row with `@`, carries the confirmation, and says what not to touch. Clicking one is a deliberate act; nothing here runs on a property change or a schedule.
+
+| Button | On | Message asks Brain Assistant to | May edit | Never |
+|---|---|---|---|---|
+| **Tidy capture** | Inbox rows of Kind Capture, Brain Status New or Ready | rewrite the body as clear text, keeping every name, number, date, link and quote | the row's body | the Name, any property (Brain Status stays New; the user sets Ready), a Review row |
+| **Write up** | Documents, **promoted** Documents only (`origin: promoted`) | develop the body from the Document and the brain pages it links in Notion | the Document's body | the original Decision or Concept, any property, a Review row, external research unless the message asks for it |
+| **Refresh report** | Report rows | search the relevant brain pages in Notion beyond the report's current links and **append** one section "Proposed refresh · based on Notion", dated and cited | the report's body, by appending that section | the existing report text, any property, *Refresh asked* |
+
+Keep as document and Promote to document stay checkbox buttons that the catch-up acts on (no Notion AI step). A Document only exists to Write up after the next catch-up has created it.
+
+**Write up format.** Purpose → Main content → Open questions → Sources, as native Notion blocks: a one-line purpose in a callout, headings, concise prose and lists, linked citations, a toggle for supporting detail, open questions visible. The first Write up develops the seeded text. A **repeat** Write up keeps the user's wording and appends one block headed **Proposed revision** (a toggle, marked with that exact heading) holding the new wording; the user adopts it by editing it into the body and deleting the block, or discards it by deleting the block. A repeat **Refresh report** replaces only the previous "Proposed refresh · based on Notion" section.
+
+**Accepting.** Documents and Report rows gain two properties, **Accepted** (checkbox) and **Accepted at** (date and time), and one button:
+- on a Document, **Accept write-up**; on a report, **Accept refresh**. The button sets Accepted to checked and Accepted at to now (a Notion button can edit these properties; no AI is involved).
+- For a report, the user accepts by first moving the proposed section's text into the report body (replacing the old text) and deleting the "Proposed refresh" heading, then clicking **Accept refresh**.
+- **An unresolved Proposed revision or Proposed refresh block blocks acceptance**: a checked Accepted with such a block on the page is not imported (cli.md §5.14.7, rows 3 and 4).
+- **Any later edit of the body invalidates the acceptance**: the user clicks Accept again. Nothing else is needed; the catch-up sees `Accepted at` older than the body's last edit and lists the row under Needs you.
+- To withdraw an acceptance the user unticks Accepted.
+
+**What Brain Assistant may edit (amends 0035).** Besides Check minutes, Tidy capture and Clean email: Write up, on the body of a promoted Document, and Refresh report, appending its proposed section to a Report row's body. Still never a property, a Review row, a Decision's or Concept's page, or a brain-written section of any other page (CC-71 writes this into the Instructions).
+
+**Where each case ends (the table in cli.md §5.14.7 is normative).** A Document or report body can be seeded, drafted by Write up, carry a pending proposal, be accepted, be edited after acceptance, or differ from Git; each has one outcome there. This section only defines the controls the user sees.
 
 ## 4. Templates (contextual workspaces, Easlo pattern)
 
