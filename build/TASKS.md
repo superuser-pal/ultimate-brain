@@ -720,13 +720,13 @@ A small patch before the larger 0.8.0: the process fixes land first. The Brain A
 ### CC-84 · The release gate counts only the CI workflow's checks · `todo`
 **Release:** 0.7.1
 **Changelog:** the release gate looks only at the CI workflow's checks, so an unrelated failing check no longer blocks a release.
-**Output:** scripts/release.mjs and docs/releasing.md: select the checks by workflow name, with a test; state what happens when the workflow has no run on the commit.
-**Acceptance:** a test with one failing check from another workflow and a green CI workflow lets the gate pass; a failing CI check blocks it; a commit with no CI run blocks it with a clear message.
+**Output:** scripts/release.mjs (it reads every check run on HEAD and `checksPassed` in scripts/common.mjs requires all of them to be green, so a failing check from outside the CI workflow blocks a release) and docs/releasing.md: keep only the CI workflow's check runs, with a test. How to tell them apart (the check-run's app and name, or the workflow run behind it) is the first thing to settle in the task.
+**Acceptance:** a test with one failing check from another source and a green CI workflow lets the gate pass; a failing CI check blocks it; a commit with no CI check run still blocks it, as today.
 
 ### CC-85 · merge-ready accepts the Codex pass only from the owner's account · `todo`
 **Release:** 0.7.1
 **Changelog:** the merge-ready status accepts "Review (Codex): pass at <sha>" only from the repo owner's account.
-**Output:** the merge-ready check and docs/releasing.md (decision 0040): compare the comment's author to the owner login; a test for each case.
+**Output:** `hasOtherAgentPass` in scripts/common.mjs (used by merge-ready and merge), which today matches the `Review (Codex): pass at <sha>` text in any review or comment whatever its author, and docs/releasing.md (decision 0040): also require the author's login (`user.login` in the API items) to be the repo owner's; a test for each case.
 **Acceptance:** a pass comment by another account leaves merge-ready red; the owner's pass at the current head turns it green; a pass for an older head stays red.
 
 ### CC-86 · Plan the buttons' move into 0.8.0 (decision 0056) · `review`
