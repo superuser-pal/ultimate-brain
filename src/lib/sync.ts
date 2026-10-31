@@ -442,11 +442,18 @@ export function parsePlan(input: unknown): SyncPlan {
     if (item.lifecycle !== undefined && typeof item.lifecycle !== "string") problems.push({ pointer: `/create/${index}/lifecycle`, message: "must be a lifecycle string" });
   });
   // The wording lists are executed or echoed, so their items must have the specified shape (cli §5.14.7).
-  const textKeys: Record<string, string[]> = { accepted_wording: ["page_id", "kind", "note", "fingerprint", "markdown", "base"], wording_waiting: ["page_id", "note", "reason"], wording_held: ["page_id", "note", "reason"], clear_accepted: ["page_id", "note", "accepted_at"] };
+  const textKeys: Record<string, string[]> = { accepted_wording: ["page_id", "kind", "note", "fingerprint", "markdown", "base"], wording_waiting: ["page_id", "note", "reason"], wording_held: ["page_id", "note", "reason"], clear_accepted: ["page_id", "note", "accepted_at", "page_edited_at"] };
   for (const [key, required] of Object.entries(textKeys)) (Array.isArray(p[key]) ? p[key] as unknown[] : []).forEach((item, index) => {
     const at = `/${key}/${index}`;
     if (!isRecord(item)) { problems.push({ pointer: at, message: "must be an object" }); return; }
     for (const name of required) if (typeof item[name] !== "string" || item[name] === "") problems.push({ pointer: `${at}/${name}`, message: "must be a non-empty string" });
+    if (key === "accepted_wording") {
+      if (item.kind !== "document" && item.kind !== "report") problems.push({ pointer: `${at}/kind`, message: "must be document or report" });
+      for (const name of ["accepted_at", "page_edited_at"]) if (!isTimestamp(item[name])) problems.push({ pointer: `${at}/${name}`, message: "must be an ISO 8601 UTC timestamp" });
+      if (typeof item.unattended_ok !== "boolean") problems.push({ pointer: `${at}/unattended_ok`, message: "must be true or false" });
+      if (!isRecord(item.diff) || typeof item.diff.added !== "number" || typeof item.diff.removed !== "number") problems.push({ pointer: `${at}/diff`, message: "must be { added, removed }" });
+    }
+    if (key === "clear_accepted") for (const name of ["accepted_at", "page_edited_at"]) if (!isTimestamp(item[name])) problems.push({ pointer: `${at}/${name}`, message: "must be an ISO 8601 UTC timestamp" });
     if (key === "accepted_wording" && item.verified !== undefined && (!isRecord(item.verified) || typeof item.verified.fingerprint !== "string" || typeof item.verified.page_edited_at !== "string")) problems.push({ pointer: `${at}/verified`, message: "must be { fingerprint, page_edited_at }" });
   });
   assertNoProblems(problems);
@@ -506,7 +513,7 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
   ];
   updates.push(...skippedUpdates);
   const correctionsOut = [...corrections, ...skippedCorrections] as Array<Record<string, unknown>>; const decisionsOut = [...decisionResult, ...skippedDecisions] as Array<Record<string, unknown>>;
-  return { create, updates, corrections: correctionsOut, decisions: decisionsOut, document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, accepted_wording: wording.results, wording_waiting: plan.wording_waiting, wording_held: plan.wording_held, clear_accepted: plan.clear_accepted.filter((item) => !conflictedIds.has(item.note) && !conflictedPages.has(item.page_id)), conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...wording.results, ...updates, ...correctionsOut, ...decisionsOut].map((item) => ({ ...item }))), log };
+  return { create, updates, corrections: correctionsOut, decisions: decisionsOut, document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, accepted_wording: wording.results, wording_waiting: plan.wording_waiting, wording_held: plan.wording_held, clear_accepted: plan.clear_accepted.filter((item) => !conflictedIds.has(item.note) && !conflictedPages.has(item.page_id) && !updates.some((update) => update.id === item.note && update.result === "failed") && workspace.get(item.note) !== undefined), conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...wording.results, ...updates, ...correctionsOut, ...decisionsOut].map((item) => ({ ...item }))), log };
 }
 
 /**
@@ -522,6 +529,7 @@ function applyWording(workspace: Workspace, items: readonly AcceptedWording[], n
     const note = workspace.get(item.note);
     const fail = (reason: string) => results.push({ ...head, result: "failed", reason, changed: [] });
     if (note === undefined) { fail("UNKNOWN_ID"); continue; }
+    if ((item.kind === "report") !== isReport(note) || (item.kind === "document" && !(note.type === "reference" && note.attributes.origin === "promoted"))) { fail("KIND_MISMATCH"); continue; }
     if (item.verified === undefined || item.verified.fingerprint !== item.fingerprint || item.fingerprint !== textHash(item.markdown)) { fail("UNVERIFIED"); continue; }
     if (textHash(gitBodyOf(note)) !== item.base) { fail("GIT_CHANGED"); continue; }
     if (item.kind === "report" && (!hasReportShape(item.markdown) || reportLinks(workspace, item.markdown).broken.length > 0)) { fail("INVALID_REPORT_SHAPE"); continue; }
