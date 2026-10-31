@@ -28,7 +28,7 @@ A space is a **core** plus the **modules** you chose at onboarding. You can turn
 | **Knowledge** | Decisions, Questions, Concepts | the Decisions, Questions and Concepts tabs of Knowledge; "What have we decided here?", "What's still open here?" and "What do we know?" (Decisions, Concepts) on project and area pages | on |
 | **Orgs** | Orgs | the Orgs tab of Knowledge; Client on Projects, Org on People; "Clients via projects" on area pages | on |
 | **Documents** | Documents (was References) | the Documents tab of Knowledge and of "What do we know?"; Keep as document and Only keep on the Inbox; Promote to document on Decisions and Concepts | off |
-| **Reports** | none: Ask and Report rows on the Inbox | the Ask the brain button on Home; the Refresh report button, Refresh asked and What to fix on the Inbox; "Reports" on project and area pages | off |
+| **Reports** | none: Ask and Report rows on the Inbox | the Ask the brain button on Home; the Refresh report button (a Brain Assistant message, §3.17), Refresh asked and What to fix on the Inbox; "Reports" on project and area pages | off |
 | **Tasks** | Tasks, or your own tasks database (0018) | the Tasks Space; "What's on my plate here?" on project and area pages; Home's "What's on today?" Tasks tab, its "due" counts and "Due across areas" | off |
 | **Planning** | Goals, Key Results | the Plan Space; Goal on Projects; "What am I working toward here?" on area pages | off |
 
@@ -272,7 +272,7 @@ Everything that came into the brain except meetings, which have their own databa
 |---|---|---|
 | Name | Title | You on a capture; Brain on a row it creates |
 | Keep | Button labelled **Keep as document**: ticks Document asked and sets Brain Status to Ready | You (Documents module, 0048, 0049) |
-| Update | Button labelled **Refresh report**, on a Report row: ticks Refresh asked | You (Reports module, 0048) |
+| Update | Button labelled **Refresh report**, on a Report row: sends a message to Brain Assistant (0.8.0, 0054; before that it ticked Refresh asked) | You (Reports module, 0048) |
 | Kind | Select: Capture, File, Email, Chat, Note, Ask, Report | System, written only when empty, so a Kind you choose stands (0048). File was Document before 0.6.0 (0049). **Ask** is yours: a question for the brain (Reports module, 0043) |
 | Summary | Text | Brain: one line on what it taught; on a row the brain skipped, why ("Skipped: same as …") |
 | Decisions | Relation → Decisions (two-way with Sources) | Brain |
@@ -287,7 +287,7 @@ Everything that came into the brain except meetings, which have their own databa
 | Only keep | Text | You: when only part should be kept ("the requirements table and the deadlines"). Empty = the whole input (0049; was Keep) |
 | Report | Relation → Inbox (two-way with Ask) | Brain: on an Ask row, the report that answers it |
 | Ask | Relation → Inbox (two-way with Report) | Brain: on a Report row, the questions it answers |
-| Refresh asked | Checkbox | You, on a Report row, through the Refresh report button, property Update (was the Refresh checkbox before 0.6.0): rewrite it with what the brain knows now; the brain clears it (0045) |
+| Refresh asked | Checkbox | You, on a Report row, ticked by hand since 0.8.0 (the Refresh report button now messages Brain Assistant, §3.17; before that it ticked this box): rewrite the report with what the brain knows now; the brain clears it (0045) |
 | What to fix | Text | You, on a Report row: what the report gets wrong; the brain turns it into Review rows, clears it, and refreshes the report once you approve them (0045) |
 | Tasks | Relation → Tasks (two-way with Source) | You |
 | Brain ID | Text | System (the source's id, `src-…`) |
@@ -357,7 +357,7 @@ Plus the common properties. Page body: the kept text (brain-written), or, on a p
 | Button property | Label | Database | Ticks | Also | Module |
 |---|---|---|---|---|---|
 | Keep | Keep as document | Inbox | Document asked | sets Brain Status to Ready | Documents |
-| Update | Refresh report | Inbox (Report rows) | Refresh asked | — | Reports |
+| Update | Refresh report | Inbox (Report rows) | none: Send message to Brain Assistant (0.8.0, §3.17) | — | Reports |
 | Promote | Promote to document | Decisions, Concepts | Promote asked | — | Documents |
 
 **A button's property name and its label differ** (#144): the page layout shows the name on the left and the label on the button, so the same text would show twice. The names are short and clash with no other property (not Report, Documents or Refresh asked). The brain never reads a button, only the checkbox it ticks, so a space that names its buttons otherwise works the same. Each checkbox has its own name, because Notion can't give a button and another property the same name.
@@ -368,7 +368,7 @@ Archived and Done (on a milestone) stay checkboxes: they describe a state, not a
 
 | Database | Pinned at the top | Collapsed |
 |---|---|---|
-| Inbox | Keep, Update (on Report rows), Brain Status, Project, Area | Brain ID, Last Synced, Created |
+| Inbox | Keep, Update (on Report rows), Tidy, Accept, Brain Status, Project, Area | Brain ID, Last Synced, Created |
 | Review | Your call, What to fix, About Page | Kind, State, Brain ID, Created time, Last edited time |
 | Decisions | Promote, Lifecycle | Brain ID, Last Synced |
 | Concepts | Promote, Lifecycle | Brain ID, Last Synced, Created time |
@@ -480,7 +480,7 @@ Each Space: the synced Spaces navigation in a narrow left column, then one tabs 
 
 Every view, with its filters, sort and properties, is in [notion/views-guide.md](../notion/views-guide.md) and Prompts 7a–7h.
 
-**Brain Assistant** is a Notion Custom Agent for daily use ([notion/brain-assistant.md](../notion/brain-assistant.md)): Instructions with the rules, and eight skills (Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Clean email). Its Tools and access hold only Brain Data, How it works and its skills database, so same-named databases elsewhere in the workspace can't be confused. It reads and answers; only Check minutes, Tidy capture and Clean email may edit, and only the page text you own (0035, 0045). How-to questions are answered from the "How it works" page, a copy of the user guide.
+**Brain Assistant** is a Notion Custom Agent for daily use ([notion/brain-assistant.md](../notion/brain-assistant.md)): Instructions with the rules, and ten skills (Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Clean email, Write up, Refresh report). Its Tools and access hold only Brain Data, How it works and its skills database, so same-named databases elsewhere in the workspace can't be confused. It reads and answers; only Check minutes, Tidy capture, Clean email, Write up and Refresh report may edit (the last two from their buttons, §3.17), and only the page text you own (0035, 0045). How-to questions are answered from the "How it works" page, a copy of the user guide.
 
 ---
 
