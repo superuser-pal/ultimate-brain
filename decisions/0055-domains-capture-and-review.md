@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-10-30
 **Amends:** 0043 (minutes format), 0045 (Review presentation and corrections), 0048 (modules and Review controls), 0052 (release placement only)
+**Release amendment:** [0056](0056-buttons-move-into-0-8-0.md), 2026-10-31, builds 0054's buttons in 0.8.0 too; 0.7.1 becomes a small patch.
 **Refines:** 0003, 0007, 0018, 0021, 0032, 0050, 0051, 0054
 
 ## Context
