@@ -717,7 +717,7 @@ A small patch before the larger 0.8.0: the process fixes land first. The Brain A
 **Output:** scripts/release.mjs (it reads every check run on HEAD and `checksPassed` in scripts/common.mjs requires all of them to be green, so a failing check from outside the CI workflow blocks a release) and docs/releasing.md: keep only the CI workflow's check runs, with a test. How to tell them apart (the check-run's app and name, or the workflow run behind it) is the first thing to settle in the task.
 **Acceptance:** a test with one failing check from another source and a green CI workflow lets the gate pass; a failing CI check blocks it; a commit with no CI check run still blocks it, as today.
 
-### CC-85 · merge-ready accepts the Codex pass only from the owner's account · `review`
+### CC-85 · merge-ready accepts the Codex pass only from the owner's account · `done` (#158)
 **Release:** 0.7.1
 **Changelog:** the merge-ready status accepts "Review (Codex): pass at <sha>" only from the repo owner's account.
 **Output:** `hasOtherAgentPass` in scripts/common.mjs (used by merge-ready and merge): the `Review (<agent>): pass at <sha>` text counts only when the review or comment's `user.login` is the repo owner's (both agents post through that account); docs/releasing.md says so. Evidence it holds today: Codex's pass on PR #154 and Claude Code's passes on PRs #91, #94 and #99 were all posted by the owner's account (`superuser-pal`, association OWNER). This is an operational assumption: if an agent ever posts through its own account, the gate must be changed by a new task, not worked around.
