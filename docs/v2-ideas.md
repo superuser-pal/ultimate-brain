@@ -1,13 +1,28 @@
 # v2 Backlog
 
-Everything deliberately deferred from v1, in one place. Each entry names what it would change and, where known, when to revisit it. Nothing here is scheduled; pick from it after the v1 dogfood (U-05).
+Deferred ideas and their current disposition. [Decision 0061](../decisions/0061-roadmap-and-launch-boundary.md) sets the launch boundary: feature work ends at 0.14.0, then productisation, translation and the funnel lead to 1.0. Entries below retain historical context; the disposition table and decision govern current placement. Issues/dogfood may produce fixes without silently reopening feature scope.
+
+| Disposition | Items |
+|---|---|
+| Already delivered; retained as history | Basic document ingestion and Notion attachments, local unattended scheduling, area homes and retired-plugin cleanup |
+| 0.8.0 | Selected transcript/voice capture, Domains, editable Review and explicit Waiting On; broader ownership of other people's Tasks remains deferred |
+| 0.9.0 ([0059](../decisions/0059-shared-skills-and-connected-workflows.md)) | Shared skill source, standard/connected workflows, setup/adoption and update coordination |
+| 0.10.0 | Contradiction/staleness/dedup reflection under 0052; later in-catch-up reflection remains deferred |
+| 0.11.0 ([0060](../decisions/0060-hermes-operator-and-learning.md)) | Native Hermes operator, private Telegram, scoped learning, prepared handoffs and recoverable schedules |
+| 0.12.0 | Shared Claude Code/Codex memory loop and reliable cited retrieval; evaluate before selecting ranking/index changes |
+| 0.13.0 | Weekly digest/review and targeted correction propagation |
+| 0.14.0 | Full onboarding, diagnostics, selected seeding and minimal per-area tracking preferences; rich capability profiles remain deferred |
+| Launch readiness | Product packaging, guidance/templates, translation, funnel, fresh-user acceptance and common-failure recovery; no new feature milestone |
+| Post-1.0, evidence-gated | New connected sources, extra converters, richer fact/relationship models and profiles, person/client outputs, research dossiers, MCP, OKF, advanced search infrastructure, direct Notion API, Notion webhooks, n8n/cloud scheduling, worker execution, extra hosts/channels/agents, broad sensitivity tiers and multi-user/hosting |
+
+Confirmed defects and essential recovery/integrity work belong in the release that needs them or a patch. Revalidate the two CLI loose ends below before scheduling. Basic retention/removal and capture-consent requirements are prerequisites when an integration needs them, not blanket permission to add a pre-launch feature release.
 
 Sources folded in: docs/vision.md "v2", synthesis/synthesis.md §3.3, decisions 0008, 0010, 0011, 0015, 0028, 0030, the CC-12 dogfood (2026-10-13), and reviews/06-okf-and-gbrain.md (2026-10-19). Open v1 fixes stay in build/TASKS.md (dogfood table); rejected ideas stay in synthesis §3.4.
 
 ## Onboarding and getting knowledge in
 
 ### Onboarding suite
-**Not scheduled:** moved out of 0.4.0 on 2026-10-20 (no second user yet; 0.4.0 is about payback, CC-35). The owner's identities and finding 3 shipped in 0.3.0 (CC-26).
+**Now 0.14.0 under 0061.** Previously moved out of 0.4.0 on 2026-10-20 (no second user yet; CC-35). The owner's identities and finding 3 shipped in 0.3.0 (CC-26). Reuse 0.9.0 project adoption and 0.11.0 Hermes setup rather than building duplicate flows.
 
 **Adds:** a `brain-onboard` skill (or agent) that interviews a new user and populates the brain and Notion, so a new brain is useful on day one instead of empty.
 
@@ -74,9 +89,9 @@ Relations such as `about` and `related_to` as reviewable links. **Changes:** dec
 ### Per-area "What to track" (purpose) sections
 **Changes:** extraction in the meeting ingest (v1 uses the generic list from the schema for every meeting).
 
-Optional small section inside each area note (e.g. `areas/clients.md`: "budget, deadlines, decisions, owners, risks, scope changes"), editable in Notion. If present, the ingest focuses extraction on those fields; if absent, the generic list applies. Origin: llm_wiki `purpose.md` (Review 5).
+**Minimal preferences planned for 0.14.0 under 0061.** Optional small section inside each area note (e.g. `areas/clients.md`: "budget, deadlines, decisions, owners, risks, scope changes"), editable in Notion. If present, the ingest focuses extraction on those fields; if absent, the generic list applies. Origin: llm_wiki `purpose.md` (Review 5).
 
-**Why later:** only pays off for long, noisy meetings, area-specific facts (health follow-ups, sales objections), or fields the generic list doesn't cover. **Target:** v2 or v3. **Trigger to revisit:** an area's meetings repeatedly produce trivial review rows or miss facts you care about.
+**Why:** pays off for long, noisy meetings, area-specific facts or fields the generic list doesn't cover. Keep the 0.14.0 implementation within the stable schema; richer domain-specific profiles remain post-1.0.
 
 ### Capability profiles
 Composable profiles (client work, meeting-heavy work, research, writing, learning, personal planning) that tailor onboarding, extraction, views and optional note types on top of the same core schema. **Source:** decision 0030. **Revisit:** with the onboarding suite.
@@ -84,13 +99,13 @@ Composable profiles (client work, meeting-heavy work, research, writing, learnin
 ## Maintenance and quality
 
 ### Contradiction and staleness reports
-A semantic lint across notes. **Source:** vision, synthesis §3.3 (Review 5). **Decided in 0052 (2026-10-29), planned for 0.9.0 after [0055](../decisions/0055-domains-capture-and-review.md):** `brain-reflect` writes contradictions and stale facts as Review rows.
+A semantic lint across notes. **Source:** vision, synthesis §3.3 (Review 5). **Decided in 0052; now 0.10.0 under [0061](../decisions/0061-roadmap-and-launch-boundary.md):** `brain-reflect` writes contradictions and stale facts as Review rows.
 
 ### Correction sweep command
-One correction propagated to every restatement of the fact. **Source:** synthesis §3.2 (v1 has the manual correction flow). **Partly in 0052 (0.9.0, moved by [0055](../decisions/0055-domains-capture-and-review.md)):** reflection proposes a fix for a stale restatement it finds; a sweep run right after one correction stays here.
+One correction propagated to affected restatements through reviewable changes. **Source:** synthesis §3.2. Reflection in 0.10.0 proposes a fix for a stale restatement it finds; **0.13.0 under 0061** adds the targeted sweep after a correction. Preserve independently supported claims; no blind global replacement.
 
 ### Dedup audit
-Finds likely duplicate notes and people and writes `merge` proposals. **Source:** synthesis §3.3. **Decided in 0052 (2026-10-29), planned for 0.9.0 after [0055](../decisions/0055-domains-capture-and-review.md):** reflection's near-duplicate candidates and the `near-duplicate` lint warning.
+Finds likely duplicate notes and people and writes `merge` proposals. **Source:** synthesis §3.3. **Decided in 0052; now 0.10.0 under 0061:** reflection's near-duplicate candidates and the `near-duplicate` lint warning.
 
 ### Two CLI loose ends
 Noted on 2026-10-23, left out of 0.6.0 by the user: an applied fact doesn't refresh a summary that states it, and `brain report --help` with no subcommand exits 2 instead of showing help. **Target:** the next patch that touches the CLI.
@@ -101,10 +116,10 @@ Noted on 2026-10-23, left out of 0.6.0 by the user: an applied fact doesn't refr
 ## New flows and outputs
 
 - **Owners on Tasks:** an optional owner mapping on the user's Tasks database, so other people's action items become tasks too; today they stay in the meeting text, because a task with no owner would show as the user's. The Tasks database is the user's (0018). **Source:** U-13, decision 0043.
-- **Weekly digest:** decisions, open questions and what changed. **Source:** vision, synthesis.
+- **Weekly digest (0.13.0, 0061):** decisions, open questions and what changed, with a concise weekly-review flow. **Source:** vision, synthesis.
 - **Person and client profiles,** generated from the notes. **Source:** vision.
 - **Topic research dossiers:** draft, then merge into the brain. **Source:** vision, synthesis (Review 1).
-- **Agent-memory loop:** agents propose memories and the user promotes them to knowledge. `memories/` already exists. Includes Stop-hook memory capture. **Source:** vision, 0008, 0009.
+- **Agent-memory loop (0.12.0, 0061):** Claude Code/Codex propose memories and the user promotes them to knowledge, reusing 0.11.0's shared Hermes learning boundary. `memories/` already exists. Includes session-end capture where supported and explicit fallbacks. **Source:** vision, 0008, 0009.
 
 ### Area homes
 **Decided in 0050 (2026-10-28), built in 0.6.0 (CC-56 to CC-59).** **Target: 0.6.0, designed before the agency brain moves in** (raised by the user on 2026-10-22). With one area, the Spaces work unfiltered. The agency brain and the product repo (0042) bring at least three areas: the user's day-job area, the agency and Ultimate Brain. Every view would then need an area filter. **Shape agreed:** each Area page becomes that area's home. Its template gains the missing tabs (today's tasks, meetings, Review waiting, Inbox), next to its existing "What do we know?" and "What's still open here?" tabs. Today's Home becomes the top level: one line per area with its counts, plus everything due across areas. A new area is one page from the template, with no copy of the Spaces and no migration per area. **Resolved in 0050:** Review stays one queue with a per-area tab; Home shows per-area counts first.
@@ -141,6 +156,8 @@ Unattended ingest and sync with n8n or Hermes. **Source:** vision. **Decided in 
 **Raised 2026-10-29 (decision 0054).** 0.7.1 uses Notion's "send message to agent" only from deliberate button clicks, running Brain Assistant inside Notion. Left here: a bridge from a Notion button or automation to a local or Hermes catch-up (a webhook action, https://www.notion.com/help/webhook-actions); event-driven triggers (a property change, a new row, a schedule), which official docs didn't confirm for that action; and replacing the 0.7.0 schedules with Notion triggers. **Revisit:** after U-22 measures what the buttons cost.
 
 ### Hermes as an always-on brain operator
+**Now planned for 0.11.0 under [0060](../decisions/0060-hermes-operator-and-learning.md).** The paragraph below records the earlier investigation; unattended catch-up has since shipped in 0.7.0. The new milestone includes native operation, private Telegram, scoped learning and prepared handoffs; external worker execution and supervision remain post-1.0.
+
 **Raised by the user on 2026-10-22 (U-15 grill).** Hermes (Nous Research's Hermes Agent) would run the brain next to Claude Code and Codex: scheduled catch-ups, captures and answers from a phone. It would not build the product (0044). **Why:** the brain pays back only when it runs regularly; an operator that runs on its own makes the habit bar ("every meeting ingested within 2 working days") automatic. **Open:** whether it can run the shared skills and the CLI unattended, its Notion access, how a scheduled catch-up asks its one batch of questions, and how it answers short questions fast (see "Retrieval index over Markdown"). **CC-50 (reviews/07-hermes-and-search.md, 2026-10-23):** Hermes loads the brain's skills from `.agents/skills/` after `hermes skills trust`, runs scheduled jobs in the brain folder with `AGENTS.md`, reaches Notion through MCP, and no command the skills run needs its approval; a reply to a scheduled delivery can continue the run. Missing on our side: catch-up has no unattended mode, the skills were tested only on Claude models, and brain-connect-notion has no Hermes setup lines. **Decided in 0051 (2026-10-29):** one turn on defaults, which works with any scheduler; local `claude -p` is supported first and Hermes is documented as possible. **Next step:** a trial of Hermes on the user's brain with a Claude model pinned, after 0.7.0; the two-turn shape (post the batch, run on the reply) stays here for it. Ties to "Schedulers" and "Adapters for more agent platforms".
 
 ### ~~Public source for the Claude Code plugin~~
