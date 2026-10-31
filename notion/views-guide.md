@@ -227,10 +227,24 @@ Notion lets you shape how each database page opens. Set it once per database: op
 | Property name | Button label | Database | Action | Module |
 |---|---|---|---|---|
 | Keep | Keep as document | Inbox | Document asked → checked; Brain Status → Ready | Documents |
-| Update | Refresh report | Inbox | Refresh asked → checked (the brain acts on it only on a Report row) | Reports |
+| Update | Refresh report | Inbox | Send message to Brain Assistant (0054; before 0.8.0: Refresh asked → checked). Refresh asked is now ticked by hand to queue a full refresh | Reports |
+| Tidy | Tidy capture | Inbox | Send message to Brain Assistant | core |
+| Write | Write up | Documents | Send message to Brain Assistant | Documents |
+| Accept | Accept write-up | Documents | Accepted → checked; Accepted at → now | Documents |
+| Accept | Accept refresh | Inbox | Accepted → checked; Accepted at → now (the brain acts on it only on a Report row) | Reports |
 | Promote | Promote to document | Decisions, Concepts | Promote asked → checked | Documents (and Knowledge) |
 
-The name and the label differ, so the layout doesn't show the same text twice (#144); the brain reads only the boxes.
+The name and the label differ, so the layout doesn't show the same text twice (#144). The brain reads the boxes the checkbox buttons tick (and Accepted and Accepted at), never a button.
+
+**The Brain Assistant buttons (decision 0054)** use the action **Send message to** → Brain Assistant. The page a button sits on is not identified implicitly (verified for Tidy capture on a test Inbox row; that nothing else is passed is an inference, and the Write up and Refresh report messages are not yet run, docs/notion-space-design.md §3.16), so each message names the skill, references the row with an @ mention of **This page**, carries your confirmation and says what not to touch (verified on a test row, docs/notion-space-design.md §3.16). Type `@` and pick the current page where `@This page` is shown below:
+
+| Button | Message |
+|---|---|
+| Tidy capture | `Run your Tidy capture skill on this Inbox page: @This page. I confirm: replace the text below the title with the rewrite, as the skill says. Do not change the title, Brain Status or any property.` |
+| Write up | `Run your Write up skill on this Documents page: @This page. I confirm: do it as the skill says. Do not change any property, the Decision or Concept page, or any other page.` |
+| Refresh report | `Run your Refresh report skill on this Report row: @This page. I confirm: add or replace the Proposed refresh toggle as the skill says. Do not change the report's text outside it, or any property.` |
+
+A message without the page reference makes Brain Assistant stop and say so. The two Accept buttons use **Edit property** on **This page**: Accepted → checked and Accepted at → Now.
 
 | Database | Heading (in order) | Property group: where · order | Hidden | Backlinks | Why |
 |---|---|---|---|---|---|
@@ -244,9 +258,9 @@ The name and the label differ, so the layout doesn't show the same text twice (#
 | Decisions | Promote, Lifecycle | Panel · Promote asked, Assessment, Date, Project, Area, Decided In, Supersedes, Superseded By, Sources, Documents, Summary | Brain ID, Last Synced | Show always | The body is brain-written; backlinks show supersede chains and mentions |
 | Questions | Status, Kind, Project | Panel · Area, Raised In, Sources, Summary, Lifecycle | Brain ID, Last Synced, Created time | Off | You set Status |
 | Review | Your call, What to fix, About Page | Main · Type, Now, Proposed, Why, About, Area, Source Meeting | Kind, State, Brain ID, Created time, Last edited time | Off | No body; read Now, Proposed and Why, then decide in the heading |
-| Inbox | Keep, Update, Brain Status, Project, Area | Main · Document asked, Refresh asked, Only keep, Kind, Summary, What to fix, Decisions, Questions, Concepts, Documents, People, Tasks, Ask, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
+| Inbox | Keep, Update, Tidy, Accept, Brain Status, Project, Area | Main · Document asked, Refresh asked, Accepted, Accepted at, Only keep, Kind, Summary, What to fix, Decisions, Questions, Concepts, Documents, People, Tasks, Ask, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
 | Concepts | Promote, Lifecycle | Panel · Promote asked, Project, Area, Sources, Documents, Summary | Brain ID, Last Synced, Created time | Show always | The body is brain-written |
-| Documents | Lifecycle, Project, Area, Sources | Panel · From decision, From concept, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |
+| Documents | Write, Accept, Lifecycle, Project, Area, Sources | Panel · Accepted, Accepted at, From decision, From concept, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |
 | Tasks | Status, Due | Panel · Project, Area, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
 
 **Hide system properties everywhere.** Brain ID, Last Synced, Created time and Last edited time are plumbing (owner "system"). Hide them in every view and layout, except where a view lists one to show (for example Last edited time in "Which projects have gone quiet?"). Don't delete them, because the brain matches records by Brain ID.
