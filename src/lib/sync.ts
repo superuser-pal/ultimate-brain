@@ -442,7 +442,7 @@ export function parsePlan(input: unknown): SyncPlan {
     if (item.lifecycle !== undefined && typeof item.lifecycle !== "string") problems.push({ pointer: `/create/${index}/lifecycle`, message: "must be a lifecycle string" });
   });
   // The wording lists are executed or echoed, so their items must have the specified shape (cli §5.14.7).
-  const textKeys: Record<string, string[]> = { accepted_wording: ["page_id", "kind", "note", "fingerprint", "markdown", "base"], wording_waiting: ["page_id", "note", "reason"], wording_held: ["page_id", "note", "reason"], clear_accepted: ["page_id", "note"] };
+  const textKeys: Record<string, string[]> = { accepted_wording: ["page_id", "kind", "note", "fingerprint", "markdown", "base"], wording_waiting: ["page_id", "note", "reason"], wording_held: ["page_id", "note", "reason"], clear_accepted: ["page_id", "note", "accepted_at"] };
   for (const [key, required] of Object.entries(textKeys)) (Array.isArray(p[key]) ? p[key] as unknown[] : []).forEach((item, index) => {
     const at = `/${key}/${index}`;
     if (!isRecord(item)) { problems.push({ pointer: at, message: "must be an object" }); return; }
