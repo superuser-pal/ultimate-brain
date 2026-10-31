@@ -736,8 +736,8 @@ Tidy capture, Write up and Refresh report run Brain Assistant at once inside Not
 ### CC-83 · Neutral examples in the spec ahead of making the repo public · `review`
 **Release:** 0.7.1
 **Changelog:** the spec's examples use a neutral owner name and paths instead of the author's.
-**Output:** spec/cli.md and spec/schema.md: the example owner "Rodrigo" becomes the fixture's "Alex", and the example paths `/Users/rodrigo/…` become `/Users/alex/…` (the `brain init` example and output, the `brain status` example, the `brain.json` example, the `brain schedule` cron line and plist path). The LICENSE's copyright line stays. The audit behind it (full history, every PR, issue and comment, 2026-10-31) found no secrets and no personal identifiers beyond these examples, the author's commit email on every commit, and two old history lines with a local path; history is not rewritten (the user's decision on 2026-10-31).
-**Acceptance:** `git grep -i -E "rodrigo|canoteran"` finds only the LICENSE's copyright line; `npm test` passes (the spec examples still validate); the leak check passes.
+**Output:** spec/cli.md and spec/schema.md: the example owner name becomes the fixture's "Alex", and the example home-folder paths become `/Users/alex/…` (the `brain init` example and output, the `brain status` example, the `brain.json` example, the `brain schedule` cron line and plist path). The LICENSE's copyright line stays. The audit behind it (full history, every PR, issue and comment, 2026-10-31) found no secrets and no personal identifiers beyond those examples, the author's commit email on every commit, and two old history lines with a local path; history is not rewritten (the user's decision on 2026-10-31).
+**Acceptance:** a case-insensitive search of the tracked files (not `node_modules`, not the lockfile) for the author's first name and for the local username finds only the LICENSE's copyright line (the PR body gives the command, so this row doesn't repeat the strings); `npm test` passes (the spec examples still validate); the leak check passes.
 
 ## 0.8.0 — The brain tidies itself (decision 0052)
 
