@@ -472,10 +472,16 @@ test("merge dry-run refuses a pass naming another commit", (t) => {
   assert.match(result.stderr, /other agent/);
 });
 
-test("merge dry-run refuses a pass posted by an account other than the repo owner", (t) => {
+test("merge dry-run refuses a pass posted by another account", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, '[[{"user":{"login":"someone-else"},"body":"Review (Claude Code): pass at abcdef0"},{"body":"Review (Claude Code): pass at abcdef0"}]]');
+  const path = mergeReviewPath(root, '[[{"user":{"login":"someone-else"},"body":"Review (Claude Code): pass at abcdef0"}]]');
+  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
+
+test("merge dry-run refuses a pass posted by a comment with no recorded user", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = mergeReviewPath(root, '[[{"body":"Review (Claude Code): pass at abcdef0"}]]');
   const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /other agent/);

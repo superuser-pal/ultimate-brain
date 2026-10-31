@@ -71,7 +71,7 @@ export function contentAt(repo, path, ref) {
 
 /**
  * True when the other agent posted `Review (<agent>): pass at <sha>` naming `head` (decision 0038). `author` is the branch prefix.
- * Only the repo owner's account counts: both agents post through it, so a comment from anyone else is no review.
+ * Only the repo owner's account counts: both agents post through it (Codex on #154, Claude Code on #91, #94 and #99), so a comment from anyone else is no review. An operational assumption (build/TASKS.md, CC-85).
  */
 export function hasOtherAgentPass(repo, pr, head, author) {
   const endpoint = [`repos/${repo}/pulls/${pr}/reviews`, `repos/${repo}/issues/${pr}/comments`];
