@@ -236,7 +236,7 @@ Notion lets you shape how each database page opens. Set it once per database: op
 
 The name and the label differ, so the layout doesn't show the same text twice (#144). The brain reads the boxes the checkbox buttons tick (and Accepted and Accepted at), never a button.
 
-**The Brain Assistant buttons (decision 0054)** use the action **Send message to** → Brain Assistant. A button passes only its message, so each message names the skill, references the row with an @ mention of **This page**, carries your confirmation and says what not to touch (verified on a test row, docs/notion-space-design.md §3.16). Type `@` and pick the current page where `@This page` is shown below:
+**The Brain Assistant buttons (decision 0054)** use the action **Send message to** → Brain Assistant. The page a button sits on is not identified implicitly (verified on a test row; that nothing else is passed is an inference, docs/notion-space-design.md §3.16), so each message names the skill, references the row with an @ mention of **This page**, carries your confirmation and says what not to touch (verified on a test row, docs/notion-space-design.md §3.16). Type `@` and pick the current page where `@This page` is shown below:
 
 | Button | Message |
 |---|---|

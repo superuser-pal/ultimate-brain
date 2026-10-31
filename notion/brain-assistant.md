@@ -198,12 +198,12 @@ Goal: turn this promoted Document into a clear write-up from what the brain alre
 Source: this page only, and the brain pages it links in Notion (its Decision or Concept, its Project and Area, linked Documents, Sources). It must be a page in the Documents database inside [@Brain Data] with From decision or From concept set; otherwise stop and tell me. No external research, unless my message asks for it.
 
 1. Read this Document and every brain page it links. Add nothing from outside them.
-2. Decide which run this is. If the body still reads as the seed (a summary line, a blank line, then the note's text, with no heading "Purpose"), this is the first write-up: replace the whole body with the write-up below. Otherwise this is a repeat: leave my wording exactly as it is and add one toggle block titled "Proposed revision" at the end, holding the new write-up; if a "Proposed revision" toggle is already there, replace only what is inside it.
+2. Decide which run this is. It is a REPEAT if the first block of the body is a callout whose text starts with "Purpose:" and the body has H2 headings "Main content" and "Sources" (this is what the write-up below produces; the seed never has them). If the body has only some of these, treat it as a repeat too: never overwrite text that may be mine. Otherwise it is the FIRST write-up: replace the whole body with the write-up below. For a repeat: leave my wording exactly as it is and add one toggle block titled "Proposed revision" at the end, holding the new write-up; if a "Proposed revision" toggle is already there, replace only what is inside it.
 3. The write-up has four parts, in order, in native Notion blocks:
-   - Purpose: one short callout.
-   - Main content: headings, concise prose and lists; a toggle for supporting detail.
-   - Open questions: visible, a list; say what the pages do not settle.
-   - Sources: a list of links to the brain pages you used.
+   - Purpose: one short callout whose text starts with "Purpose:", as the first block.
+   - Main content: an H2 heading "Main content", then concise prose and lists; a toggle for supporting detail.
+   - Open questions: an H2 heading "Open questions", then a visible list; say what the pages do not settle.
+   - Sources: an H2 heading "Sources", then a list of links to the brain pages you used.
 4. Every claim names the page it came from, with a link. Say so where the pages are silent; never fill a gap by guessing.
 5. Never change the title, any property (Accepted and Accepted at included), the Decision or Concept page, a Review row, or my text outside the Proposed revision toggle on a repeat.
 
@@ -218,8 +218,8 @@ Goal: propose an up-to-date version of this report, using the brain pages in Not
 Source: this page only, and the pages in [@Brain Data] that bear on its subject: its Project and Area, newer Decisions, Questions, Concepts and Documents, People and Meetings, and the pages its text already links. It must be a Report row (Kind Report) in the Inbox database inside Brain Data; otherwise stop and tell me. No external research, unless my message asks for it.
 
 1. Read the report and the pages it links. Search Brain Data for pages that bear on the same subject and are not linked yet, newer ones first.
-2. Add ONE toggle block at the end of the page titled "Proposed refresh · based on Notion · <today's date>". If a toggle with that start already exists, replace only what is inside it; leave everything else on the page exactly as it is.
-3. Inside the toggle, write the whole proposed report with exactly the six sections of a report, as H2 headings, in this order: Where it stands, Timeline, Decisions in force, Open questions and risks, People involved, Gaps. Timeline oldest first. Link every line to the page it rests on; mark a line that rests on a note I haven't reviewed with "(not reviewed)". Say in Gaps what the pages do not cover.
+2. Add ONE toggle block at the end of the page with exactly the title "Proposed refresh · based on Notion" (no date in the title). If that toggle already exists, replace only what is inside it; leave everything else on the page exactly as it is.
+3. Inside the toggle, first a line "Proposed <today's date>, based on the pages in Notion", then write the whole proposed report with exactly the six sections of a report, as H2 headings, in this order: Where it stands, Timeline, Decisions in force, Open questions and risks, People involved, Gaps. Timeline oldest first. Link every line to the page it rests on; mark a line that rests on a note I haven't reviewed with "(not reviewed)". Say in Gaps what the pages do not cover.
 4. Never change the report's current text, the title, any property (Refresh asked, What to fix, Accepted and Accepted at included), or any page other than this one.
 
 My message carries my confirmation. When done, reply in two lines: what changed in the toggle (new, or replaced) and what I do next: "Replace the report text with what is in the toggle, delete the toggle, then click Accept refresh."
