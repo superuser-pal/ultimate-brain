@@ -482,7 +482,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 ```json
 {
   "schema_version": 1,
-  "owner": { "name": "Rodrigo", "person": "per-3h8w2n6c" },
+  "owner": { "name": "Alex", "person": "per-3h8w2n6c" },
   "budgets": { "ingest_max_notes": 8 },
   "settings": { "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } },
   "modules": { "knowledge": true, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true },

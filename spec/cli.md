@@ -238,7 +238,7 @@ Creates a brain from `templates/brain/` (CC-02, CX-03).
 7. With `--set-default`: write `~/.config/ultimate-brain/config.json` = `{"brain": "<abs path>"}`, replacing any existing one (its old value is reported).
 
 ```sh
-brain init ~/brain --owner "Rodrigo" --set-default --json
+brain init ~/brain --owner "Alex" --set-default --json
 ```
 ```json
 { "ok": true, "command": "init", "brain": "/Users/me/brain", "warnings": [],
@@ -266,7 +266,7 @@ Read-only health summary; the first call of every skill.
 ```json
 { "data": {
     "schema_version": 1,
-    "owner": "Rodrigo",
+    "owner": "Alex",
     "notes": { "area": 2, "project": 3, "person": 7, "org": 2, "meeting": 12, "decision": 9, "question": 4, "concept": 1, "source": 12, "view": 6, "goal": 1, "memory": 0, "reference": 1 },
     "proposals": { "pending": 3, "approved": 0, "edited": 0, "rejected": 0, "applied": 14, "closed": 2 },
     "notion": { "configured": ["areas", "goals", "projects", "meetings", "people", "orgs", "decisions", "questions", "review"], "missing": ["key_results", "inbox", "concepts", "documents"], "tasks_database": true },
@@ -1325,7 +1325,7 @@ Runs a skill on a schedule, with nobody there, through local Claude Code (`claud
 **Elsewhere** (`UB_SCHEDULE_PLATFORM` overrides `process.platform` in tests), `install` writes nothing and returns one cron line per time (with `--days`, the days in cron's numbering on the same line), for the user to add with `crontab -e`:
 
 ```text
-0 7 * * * mkdir -p "$HOME/.ultimate-brain/logs" && cd '/Users/rodrigo/brain' && PATH='…' '/usr/local/bin/claude' -p 'catch up unattended' --model claude-sonnet-5-5 >> "$HOME/.ultimate-brain/logs/eu.ultimate-brain.brain-3f9a2c1d.catch-up.log" 2>&1
+0 7 * * * mkdir -p "$HOME/.ultimate-brain/logs" && cd '/Users/alex/brain' && PATH='…' '/usr/local/bin/claude' -p 'catch up unattended' --model claude-sonnet-5-5 >> "$HOME/.ultimate-brain/logs/eu.ultimate-brain.brain-3f9a2c1d.catch-up.log" 2>&1
 ```
 
 The line creates its log folder first, so it runs on a machine where it doesn't exist yet. Paths are single-quoted, with `'` written as `'\''`. `list` and `remove` manage no cron lines: they return `[]` and `removed: false` with the warning `SCHEDULE_NOT_MANAGED` ("cron lines are yours: crontab -l").
@@ -1336,7 +1336,7 @@ brain schedule install catch-up --at 07:00,13:00 --days mon,tue,wed,thu,fri --mo
 ```json
 { "data": {
     "job": "catch-up", "label": "eu.ultimate-brain.brain-3f9a2c1d.catch-up", "platform": "darwin",
-    "path": "/Users/rodrigo/Library/LaunchAgents/eu.ultimate-brain.brain-3f9a2c1d.catch-up.plist",
+    "path": "/Users/alex/Library/LaunchAgents/eu.ultimate-brain.brain-3f9a2c1d.catch-up.plist",
     "times": ["07:00", "13:00"], "days": ["mon", "tue", "wed", "thu", "fri"], "model": "claude-sonnet-5-5",
     "prompt": "catch up unattended", "command": ["/usr/local/bin/claude", "-p", "catch up unattended", "--model", "claude-sonnet-5-5"],
     "written": true, "replaced": false, "loaded": true, "cron": null, "dry_run": false
