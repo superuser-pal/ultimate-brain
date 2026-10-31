@@ -714,8 +714,8 @@ A small patch before the larger 0.8.0: the process fixes land first. The Brain A
 ### CC-84 · The release gate counts only the CI workflow's checks · `review`
 **Release:** 0.7.1
 **Changelog:** the release gate looks only at the CI workflow's checks, so an unrelated failing check no longer blocks a release.
-**Output:** scripts/release.mjs and `ciWorkflowPassed` in scripts/common.mjs: the gate read every check run on HEAD, and `merge-ready` runs on PR comments attach to main's HEAD, so a red one blocked a release. It now asks the Actions API for the workflow runs of HEAD and requires the newest `push` run named `CI` to be completed and successful; docs/releasing.md says so. `merge.mjs` keeps `checksPassed` (it reads a PR head's own checks).
-**Acceptance:** `ciWorkflowPassed` tests: a green CI push run passes even next to a failed `merge-ready` run; a failed or running CI run blocks; a `merge-ready` run alone, or no run, blocks; `npm test` passes.
+**Output:** scripts/release.mjs and `ciWorkflowPassed` in scripts/common.mjs: the gate read every check run on HEAD, and `merge-ready` runs on PR comments attach to main's HEAD, so a red one blocked a release. It now asks the Actions API for the workflow runs of HEAD and requires the newest `push` run named `CI` **on the `main` branch** to be completed and successful (a run for a tag or another branch at the same SHA skips `main-guard`, which runs only for `refs/heads/main`, so it must not stand in for main's run: on the 0.7.0 commit a newer green `CI` run for tag `v0.7.0` sat above a failed one for `main`); docs/releasing.md says so. `merge.mjs` keeps `checksPassed` (it reads a PR head's own checks).
+**Acceptance:** `ciWorkflowPassed` tests: a green CI push run passes even next to a failed `merge-ready` run; a failed or running CI run blocks; a newer green `CI` push run for a tag or another branch above a failed `main` run blocks (regression); a `merge-ready` run alone, or no run, blocks; `npm test` passes.
 
 ### CC-85 · merge-ready accepts the Codex pass only from the owner's account · `todo`
 **Release:** 0.7.1

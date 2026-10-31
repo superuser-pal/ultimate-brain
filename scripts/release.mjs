@@ -28,7 +28,7 @@ else {
     if (rowChangelog && donePrNumbers(task.suffix) === undefined) failures.push(`${task.id} has an invalid done suffix`);
   }
   const repo = tryCommand("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
-  const runs = repo.ok ? tryCommand("gh", ["api", `repos/${repo.stdout}/actions/runs?head_sha=${command("git", ["rev-parse", "HEAD"])}&per_page=100`, "--jq", ".workflow_runs[] | [.name,.event,.status,.conclusion] | @tsv"]) : repo;
+  const runs = repo.ok ? tryCommand("gh", ["api", `repos/${repo.stdout}/actions/runs?head_sha=${command("git", ["rev-parse", "HEAD"])}&per_page=100`, "--jq", ".workflow_runs[] | [.name,.event,.head_branch,.status,.conclusion] | @tsv"]) : repo;
   if (!runs.ok || !ciWorkflowPassed(runs.stdout)) failures.push("CI is not green on HEAD");
   for (const [program, args] of [["npm", ["test"]], ["npm", ["run", "typecheck"]], ["npm", ["run", "test:package"]]]) {
     const result = tryCommand(program, args, { stdio: "inherit" });
