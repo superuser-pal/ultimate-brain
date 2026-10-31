@@ -81,7 +81,7 @@ test("an accepted Write up goes into the Git Document byte for byte, after the s
   // The next plan finds Notion and Git level, and asks the skill to clear Accepted.
   const next = await plan(dir, [documentRow(wording())]);
   assert.deepEqual(next.accepted_wording, []);
-  assert.deepEqual(next.clear_accepted, [{ page_id: PAGE, note: document.id }]);
+  assert.deepEqual(next.clear_accepted, [{ page_id: PAGE, note: document.id, accepted_at: "2026-12-10T10:00:00Z" }]);
 });
 
 test("a body edited after acceptance gives no import, even when the edit made Notion equal Git", async (context) => {
@@ -144,7 +144,7 @@ test("Git changing alone is no conflict; both changing is GIT_CHANGED; a Git bod
   const gitOnly = await plan(dir, [documentRow(wording({ body_markdown: SEED }))]);
   assert.deepEqual(gitOnly.wording_waiting, []);
   assert.deepEqual(gitOnly.accepted_wording, []);
-  assert.deepEqual(gitOnly.clear_accepted, [{ page_id: PAGE, note: document.id }]);
+  assert.deepEqual(gitOnly.clear_accepted, [{ page_id: PAGE, note: document.id, accepted_at: "2026-12-10T10:00:00Z" }]);
   const both = await plan(dir, [documentRow(wording())]);
   assert.equal(both.wording_waiting[0].reason, "GIT_CHANGED");
 });
@@ -327,7 +327,7 @@ test("a malformed wording item in a plan is refused as input, not as a crash", a
   const dir = await fixtureCopy(context);
   await promotedDocument(dir);
   const base = { as_of: NOW, create: [], updates: [], corrections: [], decisions: [], conflicts: [], ignored: [] };
-  for (const bad of [{ accepted_wording: [null] }, { accepted_wording: [{ page_id: PAGE, kind: "document", note: "ref-00000000", fingerprint: "x", markdown: 7, base: "y" }] }, { accepted_wording: [{ page_id: PAGE, kind: "document", note: "ref-00000000", fingerprint: "x", markdown: "m", base: "y", verified: "yes" }] }, { clear_accepted: ["x"] }]) {
+  for (const bad of [{ accepted_wording: [null] }, { accepted_wording: [{ page_id: PAGE, kind: "document", note: "ref-00000000", fingerprint: "x", markdown: 7, base: "y" }] }, { accepted_wording: [{ page_id: PAGE, kind: "document", note: "ref-00000000", fingerprint: "x", markdown: "m", base: "y", verified: "yes" }] }, { clear_accepted: ["x"] }, { clear_accepted: [{ page_id: PAGE, note: "ref-00000000" }] }]) {
     const result = await run(dir, ["sync", "apply"], { ...base, ...bad });
     assert.equal(result.code, 4, result.stdout);
     assert.equal(result.json.error.code, "INPUT_INVALID");
@@ -338,10 +338,10 @@ test("--skip-conflicted does not echo a clear_accepted entry for a conflicted ro
   const dir = await fixtureCopy(context);
   const document = await promotedDocument(dir);
   const planned = await plan(dir, [documentRow(wording({ body_markdown: SEED }))]); // level: accepted, nothing to import
-  assert.deepEqual(planned.clear_accepted, [{ page_id: PAGE, note: document.id }]);
+  assert.deepEqual(planned.clear_accepted, [{ page_id: PAGE, note: document.id, accepted_at: "2026-12-10T10:00:00Z" }]);
   planned.conflicts.push({ database: "documents", page_id: PAGE, brain_id: document.id, code: "BOTH_CHANGED", message: "x" });
   const skipped = await run(dir, ["sync", "apply", "--skip-conflicted"], planned);
   assert.deepEqual(skipped.json.data.clear_accepted, []);
   const attended = await run(dir, ["sync", "apply"], planned);
-  assert.deepEqual(attended.json.data.clear_accepted, [{ page_id: PAGE, note: document.id }]);
+  assert.deepEqual(attended.json.data.clear_accepted, [{ page_id: PAGE, note: document.id, accepted_at: "2026-12-10T10:00:00Z" }]);
 });
