@@ -204,7 +204,7 @@ A **Document** (0049): something the user wants to keep as a readable page and r
 | `promoted` | Promote on a decision or concept (0049) | seeded from the note: its summary, a blank line, then its body; `projects`, `area` and `sources` copied from it | the note's `lifecycle` when promoted | **you** |
 
 - **A brain-owned body** (`whole`, `part`) changes only through proposals: an `update_body` (§11), usually inside the `review_notes` of the source that brought a new version (§4 source, "Versions"). It is never rebuilt from the source.
-- **A promoted body is yours.** The brain writes it once, when the page is created in Notion, and never again: an `update_body` on it is refused, and later edits live in Notion, like "My notes". The file keeps the seed. The decision or concept stays as it is; the two are linked both ways in Notion (§14).
+- **A promoted body is yours.** The brain writes it once, when the page is created in Notion, and never again: an `update_body` on it is refused, and later edits live in Notion, like "My notes". The file keeps the seed **until the user accepts wording in Notion** (0054): then `sync apply` replaces the body with that text exactly (cli.md §5.14.7), the only way a promoted body changes in Git, and approved `add_to_note` appendices follow it. The decision or concept stays as it is; the two are linked both ways in Notion (§14).
 - One source may give several Documents: the whole text once, and any number of parts.
 
 ### source · `sources/<notion|files|text>/YYYY-MM-DD-<slug>.md` · Notion: Inbox (every kind except `minutes`, 0037)
@@ -597,6 +597,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 | Areas · Brief toggle | the area's `area_brief` view (§16.3, 0041) |
 | Concepts · Area, Project | `area`, `projects` |
 | Documents · Area, Project, page body | `area`, `projects`, the body (0045, 0049). A `promoted` Document's body is sent on create only: after that it is yours |
+| Documents, Reports · Accepted, Accepted at | yours (0054): the accept control (*Accept write-up* on a Document, accepting the proposed refresh on a report) sets Accepted and Accepted at. Never compared or corrected; read only by `sync plan`'s accepted-wording rules (cli.md §5.14.7); the skill unticks Accepted and clears Accepted at after the wording is imported. The page body of a `promoted` Document or of a report stays Notion's until accepted wording is imported exactly; after that `notion_published["@content"]` holds its fingerprint |
 | Documents · From decision, From concept | a `promoted` Document's `promoted_from` (two-way with Decisions · Documents and Concepts · Documents, which Notion fills, 0049) |
 | Decisions, Concepts · Promote asked | yours (a checkbox, ticked by the Promote to document button): ask for a promoted Document. The brain clears it once it has acted (0048, 0049) |
 | Decisions, Questions, Concepts, Documents, People · Sources | inverse of the Inbox relations below (Notion fills it) |

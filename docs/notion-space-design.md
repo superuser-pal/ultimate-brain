@@ -380,6 +380,51 @@ Archived and Done (on a milestone) stay checkboxes: they describe a state, not a
 
 ---
 
+### 3.16 Buttons that message Brain Assistant (0054): what a button passes
+
+A button can use the action **send message to** an agent and pick Brain Assistant. Tried by the user on 2026-10-31 on a test Inbox row (synthetic text); the plan level was not recorded.
+
+**Verified (by that test):**
+- **The page or row a button sits on is not identified implicitly.** With a message that referenced nothing, Brain Assistant replied that it was not triggered from a page or database and that the chat context showed no page being viewed. *Inference, not tested:* the button passes only its message text; that nothing else is passed is not established by this test.
+- **The message can reference the row it sits on:** the button's message editor offers `@` and a reference to the current page. With that reference in the message, Brain Assistant acted on the right row.
+- **End to end for Tidy capture on an Inbox row:** with the message "Run your Tidy capture skill on this Inbox page: @[this row]. I confirm: …replace the text below the title with the rewrite. Do not change the title, Brain Status or any property", Brain Assistant rewrote the body of that row, asked no question, and changed no property.
+- **Brain Assistant applies its own rules to a message:** asked, in the first test, what it could edit, it answered that it edits page text only for Clean Email, and for Tidy Capture and Check Minutes "after your confirmation". A button's message therefore carries the confirmation the skill needs (the Instructions' edit rule is amended in 0.8.0, CC-71, 0054).
+
+**The button contract (normative for CC-71):** every Brain Assistant button's message (1) names the skill to run, (2) references the row with `@` to the current page, (3) carries the confirmation, and (4) says what the agent must not touch. A button without the row reference is not a valid Brain Assistant button: the agent cannot tell which row was clicked.
+
+**Not verified yet (do not rely on these):**
+- Refresh report on a Report row. The user reported (2026-10-31, not recorded in detail) that a second button test "edits the right body"; taken here as Write up on a promoted Document. Tidy capture on an Inbox row is the one with a recorded message and result.
+- Whether a click runs unattended after the user leaves the page, and the credits one click uses (U-22, in the 0.8.0 acceptance run, measures them).
+- Per-block edit times. The accepted-wording rule (cli.md §5.14.7) does not need them: it uses the **page's own** last-edited time, which also moves when a block is deleted, and treats a property edit after the click as an edit (it errs toward not importing). Notion rounds that time to the minute, so an edit in the same minute as the click and before the first read is a known limit, recorded in decision 0058: an attended catch-up shows the full replacement text as a diff before importing, and an unattended run imports only an acceptance at least 2 minutes old.
+- Notion AI (instead of the Custom Agent) as the target. Not tested; a Custom Agent is scoped to Brain Data (0035), which Notion AI is not.
+
+### 3.17 The three Brain Assistant buttons, Write up format and accepting wording (0054)
+
+Added in 0.8.0 (CC-71 builds them; migration 0012). Each button follows the contract in §3.16: its message names the skill, references the row with `@`, carries the confirmation, and says what not to touch. Clicking one is a deliberate act; nothing here runs on a property change or a schedule.
+
+| Button | On | Message asks Brain Assistant to | May edit | Never |
+|---|---|---|---|---|
+| **Tidy capture** | Inbox rows of Kind Capture, Brain Status **New** only (the row stays New while Brain Assistant works, so a catch-up cannot take it in half-rewritten; the user sets Ready afterwards, 0054) | rewrite the body as clear text, keeping every name, number, date, link and quote | the row's body | the Name, any property (Brain Status stays New; the user sets Ready), a Review row |
+| **Write up** | Documents, **promoted** Documents only (`origin: promoted`) | develop the body from the Document and the brain pages it links in Notion | the Document's body | the original Decision or Concept, any property, a Review row, external research unless the message asks for it |
+| **Refresh report** | Report rows | search the relevant brain pages in Notion beyond the report's current links and **append** one section "Proposed refresh · based on Notion", dated and cited | the report's body, by appending that section | the existing report text, any property, *Refresh asked* |
+
+Keep as document and Promote to document stay checkbox buttons that the catch-up acts on (no Notion AI step). A Document only exists to Write up after the next catch-up has created it.
+
+**Write up format.** Purpose → Main content → Open questions → Sources, as native Notion blocks: a one-line purpose in a callout, headings, concise prose and lists, linked citations, a toggle for supporting detail, open questions visible. The first Write up develops the seeded text. A **repeat** Write up keeps the user's wording and appends one block headed **Proposed revision** (a toggle, marked with that exact heading) holding the new wording; the user adopts it by editing it into the body and deleting the block, or discards it by deleting the block. A repeat **Refresh report** replaces only the previous "Proposed refresh · based on Notion" section.
+
+**Accepting.** Documents and Report rows gain two properties, **Accepted** (checkbox) and **Accepted at** (date and time), and one button:
+- on a Document, **Accept write-up**; on a report, **Accept refresh**. The button sets Accepted to checked and Accepted at to now (a Notion button can edit these properties; no AI is involved).
+- For a report, the user accepts by first moving the proposed section's text into the report body (replacing the old text) and deleting the "Proposed refresh" heading, then clicking **Accept refresh**.
+- **An unresolved Proposed revision or Proposed refresh block blocks acceptance**: a checked Accepted with such a block on the page is not imported (cli.md §5.14.7, rows 4 and 5).
+- **Any edit of the page in a later minute than the click invalidates the acceptance** (an edit inside the click's own minute is the known limit of decision 0058), deleting a paragraph included: the user clicks Accept again. The catch-up sees `Accepted at` older than the page's last edit and lists the row under Needs you. The skill re-reads the page just before importing, so an edit made after the catch-up began also stops the import.
+- **The catch-up shows what it will import** (the full replacement text as a diff against Git) and imports after you say yes; an unattended run imports only an acceptance at least 2 minutes old. An edit made in the same minute as your Accept click, before the first read, cannot be detected: a known limit (decision 0058).
+- **After the catch-up imports the wording it unticks Accepted and clears Accepted at** (like the other request boxes): the acceptance was consumed, and a later edit is an ordinary draft, which a publish never overwrites.
+- To withdraw an acceptance the user unticks Accepted.
+
+**What Brain Assistant may edit (amends 0035).** Besides Check minutes, Tidy capture and Clean email: Write up, on the body of a promoted Document, and Refresh report, appending its proposed section to a Report row's body. Still never a property, a Review row, a Decision's or Concept's page, or a brain-written section of any other page (CC-71 writes this into the Instructions).
+
+**Where each case ends (the table in cli.md §5.14.7 is normative).** A Document or report body can be seeded, drafted by Write up, carry a pending proposal, be accepted, be edited after acceptance, or differ from Git; each has one outcome there. This section only defines the controls the user sees.
+
 ## 4. Templates (contextual workspaces, Easlo pattern)
 
 Each template is the default for its database. Every linked view sits under an H3 heading named by the question it answers, with the database title hidden, and is filtered to "this page". Where a block has tabs, they follow the record's life (now → later → done). The table is the intent; [Prompt 6](../notion/prompts/06-templates.md) is the exact definition and wins where they differ. The live snapshot is [notion/templates.md](../notion/templates.md).
