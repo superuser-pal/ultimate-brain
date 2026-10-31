@@ -385,7 +385,7 @@ Archived and Done (on a milestone) stay checkboxes: they describe a state, not a
 A button can use the action **send message to** an agent and pick Brain Assistant. Tried by the user on 2026-10-31 on a test Inbox row (synthetic text); the plan level was not recorded.
 
 **Verified (by that test):**
-- **A button passes only the text of its message.** With a message that referenced nothing, Brain Assistant replied that it was not triggered from a page or database and that the chat context showed no page being viewed. The page or row the button sits on is **not** passed implicitly.
+- **The page or row a button sits on is not identified implicitly.** With a message that referenced nothing, Brain Assistant replied that it was not triggered from a page or database and that the chat context showed no page being viewed. *Inference, not tested:* the button passes only its message text; that nothing else is passed is not established by this test.
 - **The message can reference the row it sits on:** the button's message editor offers `@` and a reference to the current page. With that reference in the message, Brain Assistant acted on the right row.
 - **End to end for Tidy capture on an Inbox row:** with the message "Run your Tidy capture skill on this Inbox page: @[this row]. I confirm: …replace the text below the title with the rewrite. Do not change the title, Brain Status or any property", Brain Assistant rewrote the body of that row, asked no question, and changed no property.
 - **Brain Assistant applies its own rules to a message:** asked, in the first test, what it could edit, it answered that it edits page text only for Clean Email, and for Tidy Capture and Check Minutes "after your confirmation". A button's message therefore carries the confirmation the skill needs (the Instructions' edit rule is amended in 0.8.0, CC-71, 0054).
@@ -395,7 +395,7 @@ A button can use the action **send message to** an agent and pick Brain Assistan
 **Not verified yet (do not rely on these):**
 - Refresh report on a Report row. The user reported (2026-10-31, not recorded in detail) that a second button test "edits the right body"; taken here as Write up on a promoted Document. Tidy capture on an Inbox row is the one with a recorded message and result.
 - Whether a click runs unattended after the user leaves the page, and the credits one click uses (U-22, in the 0.8.0 acceptance run, measures them).
-- Whether the Notion agent reports a last-edited time for each body block, not only for the page. The accepted-wording rule (cli.md §5.14.7: a body edit after `accepted_at` invalidates the acceptance) assumes it can; if it cannot, §5.14.7 needs a fallback before CC-72.
+- Per-block edit times. The accepted-wording rule (cli.md §5.14.7) does not need them: it uses the **page's own** last-edited time, which also moves when a block is deleted, and treats a property edit after the click as an edit (it errs toward not importing). Notion rounds that time to the minute, so an edit in the same minute as the click is covered only by the re-read before apply.
 - Notion AI (instead of the Custom Agent) as the target. Not tested; a Custom Agent is scoped to Brain Data (0035), which Notion AI is not.
 
 ### 3.17 The three Brain Assistant buttons, Write up format and accepting wording (0054)
@@ -404,7 +404,7 @@ Added in 0.8.0 (CC-71 builds them; migration 0012). Each button follows the cont
 
 | Button | On | Message asks Brain Assistant to | May edit | Never |
 |---|---|---|---|---|
-| **Tidy capture** | Inbox rows of Kind Capture, Brain Status New or Ready | rewrite the body as clear text, keeping every name, number, date, link and quote | the row's body | the Name, any property (Brain Status stays New; the user sets Ready), a Review row |
+| **Tidy capture** | Inbox rows of Kind Capture, Brain Status **New** only (the row stays New while Brain Assistant works, so a catch-up cannot take it in half-rewritten; the user sets Ready afterwards, 0054) | rewrite the body as clear text, keeping every name, number, date, link and quote | the row's body | the Name, any property (Brain Status stays New; the user sets Ready), a Review row |
 | **Write up** | Documents, **promoted** Documents only (`origin: promoted`) | develop the body from the Document and the brain pages it links in Notion | the Document's body | the original Decision or Concept, any property, a Review row, external research unless the message asks for it |
 | **Refresh report** | Report rows | search the relevant brain pages in Notion beyond the report's current links and **append** one section "Proposed refresh · based on Notion", dated and cited | the report's body, by appending that section | the existing report text, any property, *Refresh asked* |
 
@@ -416,7 +416,8 @@ Keep as document and Promote to document stay checkbox buttons that the catch-up
 - on a Document, **Accept write-up**; on a report, **Accept refresh**. The button sets Accepted to checked and Accepted at to now (a Notion button can edit these properties; no AI is involved).
 - For a report, the user accepts by first moving the proposed section's text into the report body (replacing the old text) and deleting the "Proposed refresh" heading, then clicking **Accept refresh**.
 - **An unresolved Proposed revision or Proposed refresh block blocks acceptance**: a checked Accepted with such a block on the page is not imported (cli.md §5.14.7, rows 3 and 4).
-- **Any later edit of the body invalidates the acceptance**: the user clicks Accept again. Nothing else is needed; the catch-up sees `Accepted at` older than the body's last edit and lists the row under Needs you.
+- **Any later edit of the page invalidates the acceptance**, deleting a paragraph included: the user clicks Accept again. The catch-up sees `Accepted at` older than the page's last edit and lists the row under Needs you. The skill re-reads the page just before importing, so an edit made after the catch-up began also stops the import.
+- **After the catch-up imports the wording it unticks Accepted and clears Accepted at** (like the other request boxes): the acceptance was consumed, and a later edit is an ordinary draft, which a publish never overwrites.
 - To withdraw an acceptance the user unticks Accepted.
 
 **What Brain Assistant may edit (amends 0035).** Besides Check minutes, Tidy capture and Clean email: Write up, on the body of a promoted Document, and Refresh report, appending its proposed section to a Report row's body. Still never a property, a Review row, a Decision's or Concept's page, or a brain-written section of any other page (CC-71 writes this into the Instructions).
