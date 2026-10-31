@@ -1135,7 +1135,7 @@ Stores what the skill published. Input: `{ "records": [ { "id": "per-3h8w2n6c", 
 
 Brain Assistant can write a Document's or a report's body inside Notion (buttons *Write up* and *Refresh report*). Only wording the user **accepted exactly** comes back to Git; this section is the whole mechanism. The Notion side (the controls and their names) is in docs/notion-space-design.md §3.17; here is what the CLI reads and does.
 
-**Which rows the skill snapshots.** In addition to §5.14.1's selection, with Documents on the skill snapshots the `documents` rows with `origin: promoted` and, with Reports on, the Report rows (`inbox` rows of Kind Report with a `vw-` Brain ID), **when** their **Accepted** box is ticked **or** the page's last edit is later than the note's `last_synced` (a filter Notion's query takes on the page's own edit time). Other rows are not read, so a quiet brain costs nothing. A snapshot row that carries these fields has:
+**Which rows the skill snapshots.** In addition to §5.14.1's selection, the skill enumerates the candidates **from Git, then queries Notion once**: the candidates are the brain's promoted Documents (`type: reference`, `origin: promoted`, with Documents on) and, with Reports on, its reports (`view_kind: report`), read from the brain index. Let **since** = the earliest `last_synced` among the candidates; if any candidate has no `last_synced` (never published, or a baseline lost), there is no `since`. The skill queries the Documents database, and the Inbox rows of Kind Report, for rows where **Accepted** is ticked **or** the page's last edit is later than `since` (no filter at all when there is no `since`), and keeps those whose Brain ID is a candidate. The filter is deliberately wide: a row read without need is harmless, because the comparison below decides per note; a row never read could hide a pending draft. A candidate the query did not return is not in the snapshot, which means its page was not edited since `since` and holds nothing to import or hold. A snapshot row that carries these fields has:
 
 | Field | Meaning |
 |---|---|
@@ -1163,12 +1163,12 @@ The usual `conflicts` and `ignored` stay as they are.
 | # | State | Result |
 |---|---|---|
 | 1 | Document with Documents off, or report with Reports off | `ignored` `MODULE_OFF`; nothing else |
-| 2 | `accepted` false, `pending_revision` or `pending_refresh` | `wording_waiting` `REVISION_PENDING`/`REFRESH_PENDING`; nothing imported |
-| 3 | `accepted` false, N = S | nothing: the body is the seed, or already in step |
-| 4 | `accepted` false, N ≠ S | `wording_held`: an unaccepted draft; nothing imported, render must not overwrite it |
-| 5 | `accepted` true and a pending proposal | `wording_waiting` with that reason: **an unresolved proposal blocks acceptance** (0054) |
-| 6 | `accepted` true, edited after acceptance (including a deleted block) | `wording_waiting` `EDITED_AFTER_ACCEPTANCE`: an edit invalidates the acceptance; the user clicks Accept again |
-| 7 | `accepted` true, an unconvertible block | `wording_waiting` `UNCONVERTIBLE_BLOCK` |
+| 2 | the body has a block of an unconvertible kind (N cannot be computed), accepted or not | accepted: `wording_waiting` `UNCONVERTIBLE_BLOCK`. Not accepted: `wording_held`. Either way nothing is imported and render must not overwrite the body (**fail closed**: when N is unknown, the page is treated as holding a draft) |
+| 3 | `accepted` false, `pending_revision` or `pending_refresh` | `wording_waiting` `REVISION_PENDING`/`REFRESH_PENDING`; nothing imported |
+| 4 | `accepted` false, N = S | nothing: the body is the seed, or already in step |
+| 5 | `accepted` false, N ≠ S | `wording_held`: an unaccepted draft; nothing imported, render must not overwrite it |
+| 6 | `accepted` true and a pending proposal | `wording_waiting` with that reason: **an unresolved proposal blocks acceptance** (0054) |
+| 7 | `accepted` true, edited after acceptance (including a deleted block) | `wording_waiting` `EDITED_AFTER_ACCEPTANCE`: an edit invalidates the acceptance; the user clicks Accept again |
 | 8 | `accepted` true, a report whose `markdown` does not have the six `##` sections of §16.4 in order, or links that do not resolve to notes | `wording_waiting` `INVALID_REPORT_SHAPE` |
 | 9 | `accepted` true, N = G | already in step: `updates` sets S = N; the skill clears Accepted (below) |
 | 10 | `accepted` true, N = S, G ≠ S | Notion is unchanged since it last matched; Git alone changed (for example an approved Related knowledge appendix). Nothing to import, **not a conflict**; the skill clears Accepted |
@@ -1188,7 +1188,7 @@ An acceptance is therefore honored only when it is explicit (`accepted`), curren
 
 **Related knowledge appendix (Documents).** After an `accepted_wording` import into a Document, the skill may search canonical knowledge and propose useful additions. This is an ordinary proposal (0003): `brain proposal new --kind add_to_note --target <ref-…>` with `content` = a `## Related knowledge` section, one list item per note, each `[title](path)` with the reason it helps, and `why` naming the Document. Approving it appends the section after the accepted wording by the `add_to_note` rule (schema §11.2), which leaves the accepted text unchanged; rejecting it changes nothing. The Document keeps being a note whose accepted body is Git's (schema §3, promoted bodies). A change to any other existing note is a separate proposal.
 
-**Reports are derived outputs and not proposal targets (§11 refuses a view target).** A report's accepted text never becomes evidence for a new note. For useful knowledge that only Git has (not in the accepted refresh), the skill **names it to the user** in its report ("Not in the accepted refresh: …") and offers a full refresh; it makes no proposal on the report. A full refresh (Refresh asked, §5.18) rebuilds the report from Git and Notion as before, and replaces the accepted text only through the same acceptance path.
+**Reports are derived outputs and not proposal targets (§11 refuses a view target; decision 0057).** A report's accepted text never becomes evidence for a new note. For useful knowledge that only Git has (not in the accepted refresh), the skill **names it to the user** in its report ("Not in the accepted refresh: …") and offers a full refresh; it makes no proposal on the report. A full refresh (Refresh asked, §5.18) rewrites the report in Git as before; its body is sent to Notion only when no `wording_waiting`, `wording_held` or `accepted_wording` row names that report (`WORDING_PENDING` otherwise), so it never overwrites Notion text the user has not resolved. The user resolves it by accepting or discarding the Notion text; the next run then sends the refreshed body.
 
 **Errors:** none new; `INPUT_INVALID` for a snapshot row whose `accepted_at` or `page_edited_at` is not an ISO time, or for an `accepted_wording` item without `verified` fields in `sync apply` input (`UNVERIFIED` per item).
 
@@ -1457,6 +1457,8 @@ The skill brain-catch-up, started by the prompt `catch up unattended` (a schedul
 | *(Reports)* An Ask row: "Report on …?" | **default**: yes, a new report |
 | *(Reports)* A Report row to refresh: Refresh asked ticked (`refresh_requests`), or a report whose last `fixes` entry lists only proposals now applied, rejected or closed and whose `generated_at` is older than the last of those decisions (brain-catch-up, step 1.9) | **default**: yes, refreshed, unless the same report has a `report_fixes` item (previous row): then it waits, its Refresh asked box still ticked |
 | *(Reports)* A report's What to fix and the proposals it becomes (`report_fixes`) | **skip** the report whole: the fix waits for an attended run, like a Review row's What to fix, and the report isn't refreshed meanwhile, whether its refresh was asked or due (next row) |
+| *(Reports, Documents)* Accepted wording whose acceptance is current (`accepted_wording`, §5.14.7) | **default**: imported, after the skill's re-read confirms it is unchanged |
+| *(Reports, Documents)* Any other wording row (`wording_waiting`, `wording_held`) | **skip**: nothing is imported, and the body is not published over; `wording_waiting` rows are named in the report |
 | The identities question | **skip**: asked again at the next attended catch-up |
 | "Publish to Notion at the end?" | **default** from `settings.publish`: `auto` publishes; `ask` publishes nothing and leaves it to the next attended run |
 
