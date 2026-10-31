@@ -717,11 +717,11 @@ A small patch before the larger 0.8.0: the process fixes land first. The Brain A
 **Output:** scripts/release.mjs (it reads every check run on HEAD and `checksPassed` in scripts/common.mjs requires all of them to be green, so a failing check from outside the CI workflow blocks a release) and docs/releasing.md: keep only the CI workflow's check runs, with a test. How to tell them apart (the check-run's app and name, or the workflow run behind it) is the first thing to settle in the task.
 **Acceptance:** a test with one failing check from another source and a green CI workflow lets the gate pass; a failing CI check blocks it; a commit with no CI check run still blocks it, as today.
 
-### CC-85 · merge-ready accepts the Codex pass only from the owner's account · `todo`
+### CC-85 · merge-ready accepts the Codex pass only from the owner's account · `review`
 **Release:** 0.7.1
 **Changelog:** the merge-ready status accepts "Review (Codex): pass at <sha>" only from the repo owner's account.
-**Output:** `hasOtherAgentPass` in scripts/common.mjs (used by merge-ready and merge), which today matches the `Review (Codex): pass at <sha>` text in any review or comment whatever its author, and docs/releasing.md (decision 0040): also require the author's login (`user.login` in the API items) to be the repo owner's; a test for each case.
-**Acceptance:** a pass comment by another account leaves merge-ready red; the owner's pass at the current head turns it green; a pass for an older head stays red.
+**Output:** `hasOtherAgentPass` in scripts/common.mjs (used by merge-ready and merge): the `Review (<agent>): pass at <sha>` text counts only when the review or comment's `user.login` is the repo owner's (both agents post through that account); docs/releasing.md says so. Evidence it holds today: every pass on PR #154 came from the owner's account.
+**Acceptance:** a pass posted by another account, or by no recorded user, leaves merge and merge-ready refusing; the owner's pass at the current head is accepted; a pass naming an older head is still refused; `npm test` passes.
 
 ## 0.8.0 — Buttons, Domains, selection and Review (decisions 0054, 0055, 0056)
 

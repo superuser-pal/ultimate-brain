@@ -220,7 +220,7 @@ test("merge dry-run requires a green, mergeable PR and does not merge it", (t) =
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/commits/abcdef0/check-runs") printf 'completed\\tsuccess\\n' ;;
       "api repos/owner/repo/contents/build/TASKS.md?ref=abcdef0") printf '%s' '${taskRows("### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n")}' ;;
-      "api repos/owner/repo/pulls/12/reviews") printf '%s' '[[{"body":"Review (Claude Code): pass at abcdef0"}]]' ;;
+      "api repos/owner/repo/pulls/12/reviews") printf '%s' '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at abcdef0"}]]' ;;
       "pr merge") exit 99 ;;
     esac`,
   });
@@ -399,7 +399,7 @@ test("merge dry-run accepts a PR whose push-only job was skipped", (t) => {
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/commits/abcdef0/check-runs") printf 'completed\\tsuccess\\ncompleted\\tskipped\\n' ;;
       "api repos/owner/repo/contents/build/TASKS.md?ref=abcdef0") printf '%s' '${taskRows("### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n")}' ;;
-      "api repos/owner/repo/pulls/12/reviews") printf '%s' '[[{"body":"Review (Claude Code): pass at abcdef0"}]]' ;;
+      "api repos/owner/repo/pulls/12/reviews") printf '%s' '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at abcdef0"}]]' ;;
       "pr merge") exit 99 ;;
     esac`,
   });
@@ -424,7 +424,7 @@ function mergeReviewPath(root, review, task = "### CX-1 · One · `done` (#12)\n
 test("merge dry-run accepts a fresh pass from the other agent", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, '[[{"body":"Review (Claude Code): pass at abcdef0"}]]');
+  const path = mergeReviewPath(root, '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at abcdef0"}]]');
   const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
   assert.equal(result.status, 0, result.stderr);
 });
@@ -434,7 +434,7 @@ test("merge dry-run accepts every valid done-suffix form that names its PR", (t)
     const root = temporaryRoot();
     t.after(() => rmSync(root, { recursive: true, force: true }));
     const task = `### CX-1 · One · \`done\` ${suffix}\n**Release:** 0.4.0\n**Changelog:** One\n`;
-    const path = mergeReviewPath(root, '[[{"body":"Review (Claude Code): pass at abcdef0"}]]', task);
+    const path = mergeReviewPath(root, '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at abcdef0"}]]', task);
     const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
     assert.equal(result.status, 0, result.stderr);
   }
@@ -447,7 +447,7 @@ test("merge dry-run refuses a task in review or a suffix for another PR", (t) =>
   ]) {
     const root = temporaryRoot();
     t.after(() => rmSync(root, { recursive: true, force: true }));
-    const path = mergeReviewPath(root, '[[{"body":"Review (Claude Code): pass at abcdef0"}]]', task);
+    const path = mergeReviewPath(root, '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at abcdef0"}]]', task);
     const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
     assert.equal(result.status, 1);
     assert.match(result.stderr, /not `done` \(#12\)/);
@@ -457,7 +457,7 @@ test("merge dry-run refuses a task in review or a suffix for another PR", (t) =>
 test("merge dry-run refuses a pass from the same agent", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, '[[{"body":"Review (Codex): pass at abcdef0"}]]');
+  const path = mergeReviewPath(root, '[[{"user":{"login":"owner"},"body":"Review (Codex): pass at abcdef0"}]]');
   const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /other agent/);
@@ -466,7 +466,16 @@ test("merge dry-run refuses a pass from the same agent", (t) => {
 test("merge dry-run refuses a pass naming another commit", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, '[[{"body":"Review (Claude Code): pass at deadbee"}]]');
+  const path = mergeReviewPath(root, '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at deadbee"}]]');
+  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /other agent/);
+});
+
+test("merge dry-run refuses a pass posted by an account other than the repo owner", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = mergeReviewPath(root, '[[{"user":{"login":"someone-else"},"body":"Review (Claude Code): pass at abcdef0"},{"body":"Review (Claude Code): pass at abcdef0"}]]');
   const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /other agent/);
@@ -530,7 +539,7 @@ function mergeabilityPath(root, states) {
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/commits/abcdef0/check-runs") printf 'completed\\tsuccess\\n' ;;
       "api repos/owner/repo/contents/build/TASKS.md?ref=abcdef0") printf '%s' '${taskRows("### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n")}' ;;
-      "api repos/owner/repo/pulls/12/reviews") printf '%s' '[[{"body":"Review (Claude Code): pass at abcdef0"}]]' ;;
+      "api repos/owner/repo/pulls/12/reviews") printf '%s' '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at abcdef0"}]]' ;;
       "api repos/owner/repo/issues/12/comments") printf '%s' '[]' ;;
     esac`,
   });
@@ -601,7 +610,7 @@ test("main-guard fails a commit that came from no PR", (t) => {
   assert.match(result.stderr, new RegExp(`main-guard rejected: ${after}`));
 });
 
-function mergeReadyPath(root, { task = "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n", body = "- [x] checked", review = '[[{"body":"Review (Claude Code): pass at abcdef0"}]]', base = "main" } = {}) {
+function mergeReadyPath(root, { task = "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n", body = "- [x] checked", review = '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at abcdef0"}]]', base = "main" } = {}) {
   return fakeCommands(root, {
     gh: `case "$1 $2" in
       "pr view") printf '%s' '{"baseRefName":"${base}","headRefName":"codex/CX-1-one","headRefOid":"abcdef0","title":"CX-1: One","body":"${body}"}' ;;
