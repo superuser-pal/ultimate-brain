@@ -24,12 +24,13 @@ export interface AcceptedWording {
   /** Written by the skill after it re-reads the page just before apply (cli §5.14.7, "Verify before apply"). */
   verified?: { fingerprint: string; page_edited_at: string };
 }
+export type HeldReason = "UNACCEPTED_DRAFT" | "UNCONVERTIBLE_BLOCK" | "NO_BASELINE";
 export type WaitingReason = "REVISION_PENDING" | "REFRESH_PENDING" | "EDITED_AFTER_ACCEPTANCE" | "GIT_CHANGED" | "UNCONVERTIBLE_BLOCK" | "INVALID_REPORT_SHAPE" | "ACCEPTANCE_UNDATED" | "NO_BASELINE";
 
 export interface WordingPlan {
   accepted_wording: AcceptedWording[];
   wording_waiting: Array<{ page_id: string; note: string; reason: WaitingReason }>;
-  wording_held: Array<{ page_id: string; note: string }>;
+  wording_held: Array<{ page_id: string; note: string; reason: HeldReason }>;
   clear_accepted: Array<{ page_id: string; note: string }>;
   updates: Array<Record<string, unknown>>;
 }
@@ -38,8 +39,8 @@ const UNATTENDED_AGE_MS = 2 * 60 * 1000;
 
 export function textHash(text: string): string { return `sha256:${createHash("sha256").update(text, "utf8").digest("hex")}`; }
 
-/** The Git body as the wording rules see it: without the blank line the file format puts before it. */
-export function gitBodyOf(note: Note): string { return note.body.replace(/^\n+/, ""); }
+/** The Git body as the wording rules see it: without the one newline the file format puts before it (content that starts with blank lines keeps them). */
+export function gitBodyOf(note: Note): string { return note.body.startsWith("\n") ? note.body.slice(1) : note.body; }
 
 export function parseWording(value: unknown, pointer: string, problems: InputProblem[]): Wording | undefined {
   if (!isRecord(value)) { problems.push({ pointer, message: "must be an object" }); return undefined; }
@@ -63,7 +64,7 @@ export function planWording(workspace: Workspace, asOf: string, pageId: string, 
   const waiting = (reason: WaitingReason) => out.wording_waiting.push({ ...ref, reason });
   const pending = w.pending_revision ? "REVISION_PENDING" as const : w.pending_refresh ? "REFRESH_PENDING" as const : undefined;
   // 2: the body cannot be converted, so N is unknown: fail closed.
-  if (w.unconvertible || w.body_markdown === null) { if (w.accepted) waiting("UNCONVERTIBLE_BLOCK"); else out.wording_held.push(ref); return; }
+  if (w.unconvertible || w.body_markdown === null) { if (w.accepted) waiting("UNCONVERTIBLE_BLOCK"); else out.wording_held.push({ ...ref, reason: "UNCONVERTIBLE_BLOCK" }); return; }
   // 3: an acceptance with no time has no order against the edits.
   if (w.accepted && w.accepted_at === null) { waiting("ACCEPTANCE_UNDATED"); return; }
   // 4, 5: a pending proposal; an unresolved one blocks acceptance.
@@ -86,8 +87,8 @@ export function planWording(workspace: Workspace, asOf: string, pageId: string, 
     return;
   }
   // 9: no common baseline: no comparison is made.
-  if (sn === undefined || sg === undefined) { if (w.accepted) waiting("NO_BASELINE"); else out.wording_held.push(ref); return; }
-  if (!w.accepted) { if (n !== sn) out.wording_held.push(ref); return; } // 10, 11
+  if (sn === undefined || sg === undefined) { if (w.accepted) waiting("NO_BASELINE"); else out.wording_held.push({ ...ref, reason: "NO_BASELINE" }); return; }
+  if (!w.accepted) { if (n !== sn) out.wording_held.push({ ...ref, reason: "UNACCEPTED_DRAFT" }); return; } // 10, 11
   if (n === sn) { out.clear_accepted.push(ref); return; } // 12: nothing to import
   if (g !== sg) { waiting("GIT_CHANGED"); return; } // 14
   const added = lineDiff(git, markdown);
