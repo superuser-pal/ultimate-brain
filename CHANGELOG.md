@@ -2,6 +2,12 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.7.0 — 2026-10-31
+
+- CC-62 (#151): contracts for unattended catch-up: the input budget, the no-op rule, the Report row, and `brain schedule`.
+- CC-63 (#152): `brain schedule` installs, lists and removes a scheduled catch-up or reflection, and `brain.json` takes an input budget for unattended runs.
+- CC-64 (#153): "catch up unattended" runs a catch-up with no questions, on a schedule or by hand, and "run catch-up every morning" sets the schedule.
+
 ## 0.6.1 — 2026-10-30
 
 - CC-60 (#147): decisions 0051 (unattended catch-up and schedules) and 0052 (reflection) plan 0.7.0 and 0.8.0, from a review of two third-party vault skills.
