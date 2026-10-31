@@ -8,9 +8,9 @@ Ask the brain a question in the Inbox and get a living report on the project's o
 
 | Change | Who |
 |---|---|
-| Inbox: add **Refresh asked** (checkbox) and **What to fix** (text) | agent |
+| Inbox: add **Refresh asked** (checkbox), **What to fix** (text), **Accepted** (checkbox) and **Accepted at** (date, with time) | agent |
 | Inbox: a relation of the Inbox to itself, "Ask" ↔ "Report" (a report row's Ask, an Ask row's Report) | agent |
-| Descriptions: Refresh asked "Owner: you, through the Refresh report button on a Report row. Waiting for the brain; it clears it."; What to fix "Owner: you. On a Report row: what the report gets wrong; the brain clears it."; Ask and Report "Owner: brain." | agent |
+| Descriptions: Refresh asked "Owner: you, ticked by hand to queue a full refresh from the brain's notes. Waiting for the brain; it clears it."; What to fix "Owner: you. On a Report row: what the report gets wrong; the brain clears it."; Ask and Report "Owner: brain." | agent |
 
 ### 2 · Views and the Ask button
 
@@ -24,14 +24,16 @@ Ask the brain a question in the Inbox and get a living report on the project's o
 ### 3 · The Refresh report button and the layout
 
 **By hand** (the API can't create buttons or edit page layouts):
-1. **Inbox → Update:** open Inbox as a full page → `•••` → Properties → **New property** → **Button**, named "Update", with the label "Refresh report". Action **Edit property** on **This page**: Refresh asked → checked. It shows on every row; the brain acts on it only on a Report row.
-2. **Page layout** (open any Inbox row → **Customize layout**): pin Update next to Brain Status, and put Refresh asked at the top of the property group ([views-guide.md](../views-guide.md) §9).
+0. **Since 0.8.0 (0054)** the Update button no longer ticks Refresh asked: it sends a message to Brain Assistant (the Refresh report message in [views-guide.md](../views-guide.md) §9). To queue the old full refresh from Git, tick **Refresh asked** by hand. Add a Button property "Accept" with the label "Accept refresh": **Edit property** on **This page**: Accepted → checked, Accepted at → Now.
+1. **Inbox → Update:** open Inbox as a full page → `•••` → Properties → **New property** → **Button**, named "Update", with the label "Refresh report". Action **Send message to** Brain Assistant, with the Refresh report message of [views-guide.md](../views-guide.md) §9 (before 0.8.0 the action was **Edit property**: Refresh asked → checked). It shows on every row; Brain Assistant acts on it only on a Report row.
+2. **Page layout** (open any Inbox row → **Customize layout**): pin Update and Accept next to Brain Status, and put Refresh asked, Accepted and Accepted at at the top of the property group ([views-guide.md](../views-guide.md) §9).
 
 ### Verify
 - [ ] `brain modules` shows `reports` on.
 - [ ] **Ask the brain** on Home creates an Inbox row with Kind Ask and Brain Status New.
 - [ ] After the next catch-up, the Ask row is Done and links a Report row, which shows under "Reports" on its project's page.
-- [ ] Clicking **Refresh report** on that Report row ticks Refresh asked; the next catch-up rewrites the report and clears the box.
+- [ ] Ticking **Refresh asked** by hand queues a full refresh: the next catch-up rewrites the report and clears the box (it waits while a Proposed refresh or unaccepted edit is on the page).
+- [ ] Clicking **Refresh report** adds one toggle "Proposed refresh · based on Notion" at the end of the page and ticks nothing; a second click replaces only that toggle. After you replace the report text with its contents, delete the toggle and click **Accept refresh**, the next catch-up shows the change and imports it.
 
 ## Turning it off
 
