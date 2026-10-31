@@ -12,6 +12,8 @@
 > - **0.4.0 (released 2026-10-21):** theme (CC-35): the brain gives back (decisions 0041–0043). Its Notion checks (the 5-minute bar, the Full text box, Ask → Report) are closed in U-15.
 > - **Review order (CC-27):** the done commit comes before the verdict; the reviewer posts `Review (<agent>): pass at <sha>` last.
 > - **2026-10-29, CC-69 (planning):** decision 0054 (buttons that run Brain Assistant: Tidy capture, Write up, Refresh report), accepted by the user in a grill with Codex, plans 0.7.1 (CC-70 to CC-73, U-22).
+> - **2026-10-31, CC-86 (planning):** decision [0056](../decisions/0056-buttons-move-into-0-8-0.md) moves the Brain Assistant buttons (CC-70 to CC-73, U-22) from 0.7.1 into 0.8.0; 0.7.1 becomes CC-83 to CC-85.
+> - **2026-10-30, CC-74 (planning):** decision [0055](../decisions/0055-domains-capture-and-review.md), accepted in the user's grill, assigns optional Domains, Won't Do, voice capture, subject selection and editable Review to **0.8.0** (CC-74 to CC-82, U-23). Reflection (CC-65 to CC-67, U-21) moves to **0.9.0**; 0.7.0 and 0.7.1 keep their scope (decision [0056](../decisions/0056-buttons-move-into-0-8-0.md), 2026-10-31, later moved the buttons into 0.8.0 and left 0.7.1 as CC-83 to CC-85). This supersedes the earlier release order above; user acceptance runs remain deferred until the builds are ready. The user explicitly asked Codex to record CC-74 while Claude Code was busy; implementation ownership otherwise stays with Claude Code, and CC-74 needs independent review.
 > - **Untriaged `dogfood` issues:** 0 (#143–#146 → CC-68, 2026-10-29; #137 → CC-59).
 > - **Earlier:** v1 waves 1–4 below; dogfood findings 1–24 in the Wave 4 table.
 
@@ -699,39 +701,9 @@ Catch-up on a schedule, with no one there: a budget per run, nothing written whe
 **Acceptance:** blind runs on a synthetic brain built with CC-41: with three meetings, one carrying a pre-check blocker, an unattended run ingests two, lists the third under Needs you and writes one Report row with Reports on and none with Reports off, and the next attended catch-up opens with the summary of that run; with nothing waiting (found by the read-only pass, which reads Notion) it writes no commit, no Notion write and no log line, in a brain with Notion not configured and in a connected, empty workspace; with 12 inputs and the default budget it takes the 10 oldest and names 2 left; a Review row set to Approve is applied and a Fix with text waits, named in the report; a correction in Notion is applied, and a change the brain can't take is named under Check; a Promote request on a page with a conflict makes no Document, and a report with a What to fix waiting is not refreshed; with Reports off and `publish: auto` no Report row is written; with `publish: ask` nothing is published; the skill mirror check passes.
 
 
-## 0.7.1 — Buttons that run Brain Assistant (decision 0054)
+## 0.7.1 — Neutral spec examples and release-gate fixes (decision 0056)
 
-Tidy capture, Write up and Refresh report run Brain Assistant at once inside Notion; the catch-up imports only the wording the user accepted. Buttons don't wake Claude Code or Codex and don't replace the 0.7.0 schedules.
-
-### CC-69 · Plan 0.7.1: decision 0054 and its tasks · `done` (#149)
-**Release:** 0.7.1
-**Changelog:** decision 0054 plans 0.7.1: buttons that run Brain Assistant in Notion (Tidy capture, Write up, Refresh report), with only accepted wording coming back to the brain.
-**Output:** decision 0054, accepted by the user in a grill with Codex on 2026-10-29 and handed to Claude Code to record (amends 0035, 0049, 0043 and 0045; refines 0048, 0053 and 0051; keeps 0003, 0015 and 0052); tasks CC-70 to CC-73 and U-22; docs/vision.md's runner line; docs/v2-ideas.md "Notion-triggered runs"; the status banner. U-19 and CC-61 unchanged.
-**Acceptance:** each task below names its part of 0054 and its acceptance; 0054's Evidence separates what official docs verify, what is inferred and what the user confirmed; Codex's review finds CC-70 scoped so that its contracts can be written without a new question to the user.
-
-### CC-70 · Contracts for the Brain Assistant buttons (decision 0054) · `todo`
-**Release:** 0.7.1
-**Changelog:** contracts for the Brain Assistant buttons: what each button sends and may edit, how accepted wording is recorded and checked, and how a publish keeps what is pending in Notion.
-**Output:** first, verify on a test page what a button's "send message to agent" action passes to Brain Assistant (the page, the database, the text) and how the skill it should run is named; record the result, marked verified, in docs/notion-space-design.md. Then docs/notion-space-design.md: the Tidy capture, Write up and Refresh report buttons, which databases and rows each appears on, and the Brain Assistant edit permissions (0035 as amended); the Write up format and its proposed-revision block; how acceptance is recorded against the exact accepted text (an Accept write-up or accept-refresh control, its property, and what invalidates it), and how a pending revision blocks it. spec/cli.md and spec/schema.md: what `sync plan` reads for an accepted promoted Document and an accepted refresh, the stale and conflict cases (body changed after acceptance, Git Document changed since), the Notion-blocks-to-Markdown conversion for the accepted text, the Related knowledge appendix proposal and its apply rule (appends, keeps the accepted wording), `sync render` keeping pending drafts, revisions and proposed refreshes, Refresh report never queuing the old full refresh, and unattended runs (0051) importing only exact, explicit, current acceptance.
-**Acceptance:** Codex's review finds CC-71, CC-72 and CC-73 buildable from the contracts with no spec question; every case of a Document or report body (seeded, drafted, revision pending, accepted, edited after acceptance, changed in Git) has its outcome in a table.
-
-### CC-71 · Brain Assistant skills, buttons, layouts and Notion migration 0012 (decision 0054) · `todo`
-**Release:** 0.7.1
-**Changelog:** Tidy capture, Write up and Refresh report run Brain Assistant from a button in Notion; Notion migration 0012 adds them.
-**Output:** per CC-70: notion/brain-assistant.md (the Write up skill; Tidy capture and Refresh report as button-run skills; the Instructions' edit rule as amended); the build prompts, notion/modules/ and the views guide (the buttons, the accept control, the layouts); notion/migrations/0012 for spaces on 0011; the user guide (each button, accepting wording, what the catch-up does with it).
-**Acceptance:** migration 0012 names every change with who does it, and its Verify list covers each; on a test space, Write up on a promoted Document gives Purpose, Main content, Open questions and Sources and touches no property; a second Write up keeps the user's edit and appends a marked revision; Refresh report appends one "Proposed refresh · based on Notion" section and a second click replaces only it; Tidy capture leaves the row New and its properties unchanged.
-
-### CC-72 · Accepted wording and appendices in the CLI (decision 0054) · `todo`
-**Release:** 0.7.1
-**Changelog:** the CLI reads the wording you accepted in Notion into the Git Document or report exactly, supports Related knowledge appendix proposals, and never overwrites a pending draft on publish.
-**Output:** per CC-70 (spec/cli.md, spec/schema.md): `sync plan` items for accepted promoted Documents and accepted refreshes, with the stale and conflict cases; the conversion of the accepted blocks; the appendix proposal and its apply; `sync render` keeping pending drafts, revisions and proposed refreshes; the code and tests.
-**Acceptance:** tests on the fixture brain: an accepted Write up goes into the Git Document byte for byte; a body edited after acceptance gives no import and a stale item; a pending revision blocks the import; an approved appendix is appended after the accepted wording, which stays unchanged; a publish over a row with a pending proposed refresh keeps it; a Refresh report click queues no full refresh; `brain lint` passes on every result.
-
-### CC-73 · Catch-up imports accepted wording and proposes related knowledge (decision 0054) · `todo`
-**Release:** 0.7.1
-**Changelog:** catch-up takes in the Documents and report refreshes you accepted in Notion and proposes related knowledge to add, citing why each item helps.
-**Output:** per CC-70: brain-catch-up and brain-sync (read accepted wording, import it, search canonical knowledge for a Related knowledge appendix and propose it with a citation and a reason per item, propose changes to other notes separately, unattended per 0051 as refined); brain-query (reports stay derived, never evidence); the skill mirror.
-**Acceptance:** blind runs on a synthetic brain built with CC-41: an accepted Write up is imported exactly and one Related knowledge proposal follows with a reason per item; an edited-after-acceptance Document is listed under Needs you, not imported; an accepted refresh replaces the report's text and a Git-only addition becomes a separate proposal; an unattended run imports an accepted Document and leaves an unaccepted one alone; the skill mirror check passes.
+A small patch before the larger 0.8.0: the process fixes land first. The Brain Assistant buttons (decision 0054) moved to 0.8.0.
 
 ### CC-83 · Neutral examples in the spec ahead of making the repo public · `done` (#154)
 **Release:** 0.7.1
@@ -739,24 +711,132 @@ Tidy capture, Write up and Refresh report run Brain Assistant at once inside Not
 **Output:** spec/cli.md and spec/schema.md: the example owner name becomes the fixture's "Alex", and the example home-folder paths become `/Users/alex/…` (the `brain init` example and output, the `brain status` example, the `brain.json` example, the `brain schedule` cron line and plist path). The LICENSE's copyright line stays. The audit behind it (full history, every PR, issue and comment, 2026-10-31) found no secrets and no personal identifiers beyond those examples, the author's commit email on every commit, and two old history lines with a local path; history is not rewritten (the user's decision on 2026-10-31).
 **Acceptance:** a case-insensitive search of the tracked files (not `node_modules`, not the lockfile) for the author's first name and for the local username finds only the LICENSE's copyright line (the PR body gives the command, so this row doesn't repeat the strings); `npm test` passes (the spec examples still validate); the leak check passes.
 
-## 0.8.0 — The brain tidies itself (decision 0052)
+### CC-84 · The release gate counts only the CI workflow's checks · `todo`
+**Release:** 0.7.1
+**Changelog:** the release gate looks only at the CI workflow's checks, so an unrelated failing check no longer blocks a release.
+**Output:** scripts/release.mjs (it reads every check run on HEAD and `checksPassed` in scripts/common.mjs requires all of them to be green, so a failing check from outside the CI workflow blocks a release) and docs/releasing.md: keep only the CI workflow's check runs, with a test. How to tell them apart (the check-run's app and name, or the workflow run behind it) is the first thing to settle in the task.
+**Acceptance:** a test with one failing check from another source and a green CI workflow lets the gate pass; a failing CI check blocks it; a commit with no CI check run still blocks it, as today.
 
-Reflection across notes: contradictions, stale facts, duplicates, promotions and recurring themes as Review rows, never edits. Starts after the agency brain has moved in.
+### CC-85 · merge-ready accepts the Codex pass only from the owner's account · `todo`
+**Release:** 0.7.1
+**Changelog:** the merge-ready status accepts "Review (Codex): pass at <sha>" only from the repo owner's account.
+**Output:** `hasOtherAgentPass` in scripts/common.mjs (used by merge-ready and merge), which today matches the `Review (Codex): pass at <sha>` text in any review or comment whatever its author, and docs/releasing.md (decision 0040): also require the author's login (`user.login` in the API items) to be the repo owner's; a test for each case.
+**Acceptance:** a pass comment by another account leaves merge-ready red; the owner's pass at the current head turns it green; a pass for an older head stays red.
+
+## 0.8.0 — Buttons, Domains, selection and Review (decisions 0054, 0055, 0056)
+
+Optional Domains around PARA; Won't Do closes work without claiming completion; voice captures and subject-based minutes expose what will enter the brain; Review shows editable, attributable changes with independent decisions. Builds the buttons' exact accepted-wording mechanism (CC-72) first within this release (decision 0056), and the Review flow (CC-79) reuses it. Decision 0055 records the agreed behavior; contracts and Notion feasibility come before implementation.
+
+### CC-69 · Plan the buttons: decision 0054 and its tasks · `done` (#149)
+**Release:** 0.8.0
+**Changelog:** decision 0054 plans buttons that run Brain Assistant in Notion (Tidy capture, Write up, Refresh report), with only accepted wording coming back to the brain.
+**Output:** decision 0054, accepted by the user in a grill with Codex on 2026-10-29 and handed to Claude Code to record (amends 0035, 0049, 0043 and 0045; refines 0048, 0053 and 0051; keeps 0003, 0015 and 0052); tasks CC-70 to CC-73 and U-22; docs/vision.md's runner line; docs/v2-ideas.md "Notion-triggered runs"; the status banner. U-19 and CC-61 unchanged.
+**Acceptance:** each task below names its part of 0054 and its acceptance; 0054's Evidence separates what official docs verify, what is inferred and what the user confirmed; Codex's review finds CC-70 scoped so that its contracts can be written without a new question to the user.
+
+### CC-86 · Plan the buttons' move into 0.8.0 (decision 0056) · `review`
+**Release:** 0.8.0
+**Changelog:** decision 0056 builds the Brain Assistant buttons in 0.8.0 with Domains and editable Review; 0.7.1 becomes a small patch.
+**Output:** decision 0056, accepted by the user on 2026-10-31; CC-70 to CC-73 and CC-69 retargeted to 0.8.0; CC-84 and CC-85 written up under 0.7.1; the 0.8.0 order below; amendment pointers in 0054 and 0055. No code and no live Notion edits.
+**Acceptance:** 0054's and 0055's scopes and acceptance are unchanged apart from release placement; 0.7.1 holds only CC-83 to CC-85 and every task of 0.8.0 names its prerequisite; no personal brain data.
+
+### CC-74 · Plan 0.8.0 capture and Review, move reflection to 0.9.0 (decision 0055) · `review`
+**Release:** 0.8.0
+**Changelog:** decision 0055 plans optional Domains, Won't Do, selected capture and editable Review for 0.8.0, moving reflection to 0.9.0.
+**Output:** decision 0055, accepted in the user's grill on 2026-10-30 and recorded by Codex at the user's explicit request as a one-task exception to 0044; tasks CC-75 to CC-82 and U-23; CC-65 to CC-67 and U-21 retargeted to 0.9.0; current roadmap references and pointers from 0052 and 0054, retaining their historical text. No implementation, live Notion edits or change to the scope of 0.7.0/0.7.1 as of 2026-10-30 (decision 0056 later moved CC-70 to CC-73 from 0.7.1 into 0.8.0).
+**Acceptance:** independent review finds all agreed defaults and safeguards in 0055, with no personal brain data; each implementation task names its output and evidence; reflection's task IDs and changelog lines remain intact at release 0.9.0; 0.7.0 and 0.7.1 task definitions remain unchanged as of 2026-10-30 (decision 0056 later retargeted CC-69 to CC-73). Codex does not self-review this authorship exception.
+
+**Order (0056):** CC-70, then CC-75 (contracts) and CC-71/CC-72 in parallel, then CC-73 (after CC-72), CC-76 to CC-78, CC-79 (after CC-72), CC-80, CC-81, CC-82. Notion migrations: 0012 (buttons), then 0013.
+
+### CC-70 · Contracts for the Brain Assistant buttons (decision 0054) · `todo`
+**Release:** 0.8.0
+**Changelog:** contracts for the Brain Assistant buttons: what each button sends and may edit, how accepted wording is recorded and checked, and how a publish keeps what is pending in Notion.
+**Output:** first, verify on a test page what a button's "send message to agent" action passes to Brain Assistant (the page, the database, the text) and how the skill it should run is named; record the result, marked verified, in docs/notion-space-design.md. Then docs/notion-space-design.md: the Tidy capture, Write up and Refresh report buttons, which databases and rows each appears on, and the Brain Assistant edit permissions (0035 as amended); the Write up format and its proposed-revision block; how acceptance is recorded against the exact accepted text (an Accept write-up or accept-refresh control, its property, and what invalidates it), and how a pending revision blocks it. spec/cli.md and spec/schema.md: what `sync plan` reads for an accepted promoted Document and an accepted refresh, the stale and conflict cases (body changed after acceptance, Git Document changed since), the Notion-blocks-to-Markdown conversion for the accepted text, the Related knowledge appendix proposal and its apply rule (appends, keeps the accepted wording), `sync render` keeping pending drafts, revisions and proposed refreshes, Refresh report never queuing the old full refresh, and unattended runs (0051) importing only exact, explicit, current acceptance.
+**Acceptance:** Codex's review finds CC-71, CC-72 and CC-73 buildable from the contracts with no spec question; every case of a Document or report body (seeded, drafted, revision pending, accepted, edited after acceptance, changed in Git) has its outcome in a table.
+
+### CC-71 · Brain Assistant skills, buttons, layouts and Notion migration 0012 (decision 0054) · `todo`
+**Release:** 0.8.0
+**Changelog:** Tidy capture, Write up and Refresh report run Brain Assistant from a button in Notion; Notion migration 0012 adds them.
+**Output:** per CC-70: notion/brain-assistant.md (the Write up skill; Tidy capture and Refresh report as button-run skills; the Instructions' edit rule as amended); the build prompts, notion/modules/ and the views guide (the buttons, the accept control, the layouts); notion/migrations/0012 for spaces on 0011; the user guide (each button, accepting wording, what the catch-up does with it).
+**Acceptance:** migration 0012 names every change with who does it, and its Verify list covers each; on a test space, Write up on a promoted Document gives Purpose, Main content, Open questions and Sources and touches no property; a second Write up keeps the user's edit and appends a marked revision; Refresh report appends one "Proposed refresh · based on Notion" section and a second click replaces only it; Tidy capture leaves the row New and its properties unchanged.
+
+### CC-72 · Accepted wording and appendices in the CLI (decision 0054) · `todo`
+**Release:** 0.8.0
+**Changelog:** the CLI reads the wording you accepted in Notion into the Git Document or report exactly, supports Related knowledge appendix proposals, and never overwrites a pending draft on publish.
+**Output:** per CC-70 (spec/cli.md, spec/schema.md): `sync plan` items for accepted promoted Documents and accepted refreshes, with the stale and conflict cases; the conversion of the accepted blocks; the appendix proposal and its apply; `sync render` keeping pending drafts, revisions and proposed refreshes; the code and tests.
+**Acceptance:** tests on the fixture brain: an accepted Write up goes into the Git Document byte for byte; a body edited after acceptance gives no import and a stale item; a pending revision blocks the import; an approved appendix is appended after the accepted wording, which stays unchanged; a publish over a row with a pending proposed refresh keeps it; a Refresh report click queues no full refresh; `brain lint` passes on every result.
+
+### CC-73 · Catch-up imports accepted wording and proposes related knowledge (decision 0054) · `todo`
+**Release:** 0.8.0
+**Changelog:** catch-up takes in the Documents and report refreshes you accepted in Notion and proposes related knowledge to add, citing why each item helps.
+**Output:** needs CC-70 (contracts) and CC-72 (the CLI that reads accepted wording), per CC-70: brain-catch-up and brain-sync (read accepted wording, import it, search canonical knowledge for a Related knowledge appendix and propose it with a citation and a reason per item, propose changes to other notes separately, unattended per 0051 as refined); brain-query (reports stay derived, never evidence); the skill mirror.
+**Acceptance:** blind runs on a synthetic brain built with CC-41: an accepted Write up is imported exactly and one Related knowledge proposal follows with a reason per item; an edited-after-acceptance Document is listed under Needs you, not imported; an accepted refresh replaces the report's text and a Git-only addition becomes a separate proposal; an unattended run imports an accepted Document and leaves an unaccepted one alone; the skill mirror check passes.
+
+### CC-75 · Contracts and Notion feasibility for Domains, selection and Review (decision 0055) · `todo`
+**Release:** 0.8.0
+**Changelog:** contracts define optional Domains, source selections, exact per-item Review acceptance and the Notion interactions that support them.
+**Output:** after CC-70, spec/schema.md, spec/cli.md, JSON schemas and docs/notion-space-design.md: Domain note/config/module/Area relation, optional Org link and navigation; Won't Do mappings, progress and zero-active-scope behavior; stable subject/item and source-passage identities, inheritance/explicit overrides, confirmation, selected-extract versions, repeat ingestion, re-inclusion and unmappable selections; exclusions across evidence, retrieval, reflection, pending proposals, Documents and derived outputs; reconciliation with independently supported knowledge and affected Tasks; Review body layout, target links, per-item decisions, exact acceptance and base checks, partial/reject/defer outcomes, correction attribution, request-revision state, missing sections, pending-edit preservation and legacy Fix migration; owner-only tasks and explicit Waiting On; module-off and unattended tables. Verify on synthetic Notion pages what recording/transcription and editable per-item controls actually support, and document a supported fallback; do not assume native per-section buttons or tooltip capabilities. Specify migration 0013 after 0012.
+**Acceptance:** CC-76 to CC-82 are buildable from the contracts without inventing product behavior; tables cover untouched defaults, parent and item overrides, unconfirmed/confirmed inputs, excluded shared context, stale selections, source/base changes, exclusion after ingestion, partial Review decisions and unattended handling; feasibility distinguishes verified behavior from planned mechanisms. A material Notion limitation that changes the agreed experience returns to the user before dependent implementation.
+
+### CC-76 · Optional Domains in the CLI and onboarding (decision 0055) · `todo`
+**Release:** 0.8.0
+**Changelog:** optional Domains group Areas around PARA, with onboarding support and no required reclassification of existing brains.
+**Output:** per CC-75: Domain schema/CLI support, config and module defaults, import/publish/index/query links, at most one optional Domain per Area, consistent Document/Project grouping through Areas and optional Org link; brain-connect-notion module checklist and switching steps; tests and skill mirror. Notion database creation and layouts follow CC-81.
+**Acceptance:** synthetic new and upgraded brains leave Domains off by default; enabling creates the agreed grouping without requiring Orgs or Documents; an Area can have one Domain or none and contradictory assignments are refused; shared knowledge remains reusable; disabling preserves notes and databases and stops Domain operations; lint and skill mirror checks pass.
+
+### CC-77 · Won't Do in Tasks, due views and progress (decision 0055) · `todo`
+**Release:** 0.8.0
+**Changelog:** Won't Do closes Tasks without counting them as completed, removes them from due work and shows dropped scope separately.
+**Output:** per CC-75: Tasks status mapping and connection checks, default and external-database guidance, Notion design/build/module prompts, all relevant active/overdue/reminder filters and formulas, completion/dropped counts and non-dropped progress denominator; migration 0013's task-status steps, user guide and appropriate fixture checks. Retain the task reference model of 0018.
+**Acceptance:** synthetic due and overdue Won't Do tasks contribute no active count or reminder; eight Done and two Won't Do display eight completed and two dropped with no false achievement from dropped work; zero-active-scope follows the contract; reopening restores active behavior; an external Tasks database is handled without a forced unrelated status rename.
+
+### CC-78 · Selected source extracts and exclusion reconciliation in the CLI (decision 0055) · `todo`
+**Release:** 0.8.0
+**Changelog:** subject and item selections limit canonical source extracts, and later exclusions reconcile previous contributions without silent deletion.
+**Output:** per CC-75: selection metadata and confirmation, stable passage mapping, selected-extract source versions, deterministic defaults/overrides, dedup and re-read behavior, evidence eligibility in query/index/derived outputs and the future reflection contract; exclusion reconciliation candidates, affected task references and suppression of older excluded evidence; tests. No rewriting immutable historical sources or full-transcript fallback for an unmappable selection.
+**Acceptance:** synthetic inputs with included and excluded subjects/items store and retrieve only eligible passages; changing a global summary cannot leak an excluded subject; an unmappable selection blocks its input; repeat ingestion is idempotent; exclusions after ingestion suppress evidence immediately, propose affected corrections and preserve independently supported claims; affected Tasks are surfaced without silent cancellation; old source versions remain immutable and re-inclusion follows the contract.
+
+### CC-79 · Editable Review bodies and exact per-item acceptance in the CLI (decision 0055) · `todo`
+**Release:** 0.8.0
+**Changelog:** Review shows complete changes in the page body and applies independently accepted edits with source and user attribution preserved.
+**Output:** after CC-72 and per CC-75: Review rendering with stable sections, target/source links and current/proposed content; exact per-item acceptance and canonical base checks; partial decisions, lifecycle effects for new drafts, explicit reject/defer, Request revision, pending-edit preservation, correction attribution, missing-section handling, legacy decisions/instructions and deterministic unattended application; tests.
+**Acceptance:** one accepted edited section applies exactly while another remains pending; new draft acceptance reviews the draft and existing-note acceptance applies its proposal; a requested revision cannot apply before acceptance; later proposal edits or canonical base changes invalidate acceptance; publish preserves pending edits; source and user-corrected values retain separate attribution; missing sections never delete targets or imply approval; legacy Fix instructions survive upgrade; repeated application is a no-op.
+
+### CC-80 · Voice capture, subject summaries and the new Review flow in skills (decision 0055) · `todo`
+**Release:** 0.8.0
+**Changelog:** captures and meeting summaries group highlights and actions by subject, honor visible inclusion defaults and guide exact Review decisions.
+**Output:** per CC-75 and implementations CC-78/CC-79: brain-ingest, brain-apply, brain-catch-up, brain-sync, brain-query and relevant references; the minutes prompt, Brain Assistant capture behavior, user guide/howto and skill mirror. Owner identities stay configured; only explicit owner commitments become Tasks, with an explicit Waiting On choice for others. Preserve transcript wording, meaningful subject detail, source references, confirmation gates and exact-vs-instruction distinctions. Follow 0054's accepted-wording boundaries rather than granting general Review editing to Brain Assistant.
+**Acceptance:** blind synthetic runs preserve highlights, subjects, decisions and commitments without empty or invented risk sections; an ambiguous owner or tentative idea creates no Task; another person's commitment creates Waiting On only on request; untouched defaults wait for Reviewed/Ready, then ingest without per-item questions; subject/item exclusions reach every output; no durable knowledge is a valid no-op; unattended runs never confirm sources or interpret revision instructions; mirror checks pass.
+
+### CC-81 · Notion templates, guidance and migration 0013 (decision 0055) · `todo`
+**Release:** 0.8.0
+**Changelog:** Notion templates expose selected subjects, optional Domains and guided Review bodies, with migration 0013 preserving existing content and decisions.
+**Output:** needs CC-75 and CC-71 (migration 0012), per CC-75: docs/notion-space-design.md, templates, build/module prompts, Brain Assistant guidance and migration 0013 after 0012; optional Domain database/navigation and Area relation; voice capture and minutes subject layouts with inclusion controls, visible inherited defaults and Ready/Reviewed notices; Review target/evidence sections, Creates/Changes/action assistance and supported explanatory descriptions; integrate CC-77 task changes. Document by-hand steps and verified recording/transcription fallback. Preserve existing pending bodies, decisions and legacy correction instructions.
+**Acceptance:** migration lists who performs each step and verifies it on synthetic pages; Domains remain optional; the voice template starts New and leaves ingestion to Ready; meeting summaries show the agreed default notice and editable subject/item selection without a second confirmation dialog; Review explains each action without relying on hover text; pending old rows survive; module-off pages omit unavailable sections; both fresh setup and upgrade use supported Notion controls.
+
+### CC-82 · End-to-end acceptance for selected capture and editable Review (decision 0055) · `todo`
+**Release:** 0.8.0
+**Changelog:** end-to-end acceptance verifies Domains, dropped Tasks, selected source capture and exact partial Review decisions across attended and unattended runs.
+**Output:** after CC-76 to CC-81: a synthetic CC-41 brain and acceptance evidence covering a mixed-subject meeting, a voice/transcript capture, optional Domains, owner/other commitments, Won't Do progress, partial accepted edits, revision requests, stale acceptance, post-ingest exclusions, legacy rows and module-off behavior; package/type/skill checks and documented remaining human recording/layout checks for U-23. Use synthetic inputs only.
+**Acceptance:** the full flow confirms defaults once, stores no excluded passages in new active brain material, creates only authorized Tasks and applies only exact current decisions; reconciliation preserves independent claims and surfaces task impacts; pending edits survive publish and no-op reruns duplicate nothing; all automated checks pass and U-23 has reproducible human checks rather than unverified capability claims.
+
+## 0.9.0 — The brain tidies itself (decision 0052; moved by 0055)
+
+Reflection across notes: contradictions, stale facts, duplicates, promotions and recurring themes as Review rows, never edits. Starts after the agency brain has moved in and 0.8.0's Review and evidence-selection contracts are in place. Candidates must respect 0055's excluded-evidence rules.
 
 ### CC-65 · Contracts for reflection (decision 0052) · `todo`
-**Release:** 0.8.0
+**Release:** 0.9.0
 **Changelog:** contracts for reflection: candidates, the proposal fingerprint, and three new lint warnings.
 **Output:** spec/cli.md: `brain reflect --candidates` (its four signals, the window, which lifecycles each signal reads, the cluster JSON, how fingerprints already on rejected or pending proposals are left out); the `orphan`, `note-size` and `near-duplicate` warnings in §5.10, with the name-matching rule; §6's reflection sequence: each finding's proposal kind, the cap of 10 rows and its order, a theme's draft and its Review notes row, the report, unattended. spec/schema.md: `fingerprint` on proposals and how it is formed.
 **Acceptance:** Codex's review finds CC-66 and CC-67 buildable from the contracts with no spec question; schema examples validate for a `merge` and a `contradiction` proposal carrying a fingerprint.
 
 ### CC-66 · `brain reflect --candidates`, fingerprints and the new lint warnings (decision 0052) · `todo`
-**Release:** 0.8.0
+**Release:** 0.9.0
 **Changelog:** `brain reflect --candidates` finds likely duplicates, overtaken notes, notes that may disagree and recurring terms; proposals carry a fingerprint; lint warns on orphans, oversized notes and near-duplicate names.
 **Output:** per CC-65: the command, `fingerprint` in `brain proposal new` and its validation, the three lint warnings, the code and tests.
 **Acceptance:** tests on the fixture brain: two people "María López" and "M. Lopez" give a near-duplicate candidate and a `near-duplicate` warning; once a `merge` with their fingerprint is rejected, `--candidates` no longer gives the pair; a reviewed person note older than two meetings naming her gives an overtaken candidate; a term in three sources with no note gives a recurring-term candidate, and in two it doesn't; a 12 KB concept gives `note-size`, a 12 KB source doesn't; a concept nothing references and with no project or area gives `orphan`.
 
 ### CC-67 · The brain-reflect skill (decision 0052) · `todo`
-**Release:** 0.8.0
+**Release:** 0.9.0
 **Changelog:** "tidy the brain" finds contradictions, stale facts, duplicates, promotions and recurring themes, and puts at most 10 of them in Review as proposals; it can run weekly on a schedule.
 **Output:** skills/brain-reflect: the candidates, the judgment per finding kind (reviews/08 §1: contradiction or evolution, merge or cross-link, stale or still valid, theme or chatter, promote or keep), the proposals and drafts per CC-65, the cap and its order, the report, unattended per 0051 and its "Run on a schedule" section; templates/brain/AGENTS.md lists the skill; brain-howto and the user guide.
 **Acceptance:** blind runs on a synthetic brain built with CC-41 with planted problems: a duplicate person gives one Conflict row; a launch date that a later decision moved gives a contradiction or stale-fact row; a theme in four meetings gives a draft concept in a Review notes row, and one in two meetings gives nothing; 15 planted problems give 10 rows, contradictions first, and the report counts 5 more; a second run after the user rejects the duplicate doesn't propose it again; with nothing found, nothing is written; the skill mirror check passes.
@@ -789,8 +869,9 @@ Reflection across notes: contradictions, stale facts, duplicates, promotions and
 | U-18 | 0.5.0 in your brain: `brain upgrade`, Notion migration 0009, then one catch-up with a document given a Keep, a meeting fixed and set back to Reviewed, a Fix on a Review row, and a report refreshed. **Closed 2026-10-28:** the re-read and the refresh passed; Keep failed (an attachment with an empty Keep wrote no `reference` and nothing readable in Notion) and Fix wasn't tried. Findings → decisions 0048–0050 (CC-55); retested in U-19 | Done |
 | U-19 | 0.6.0 in your brain: `brain upgrade`, Notion migration 0010 (buttons and page layouts by hand), then one catch-up with a file kept as a document (whole, then one with Only keep), a decision promoted to a document, a Fix "a: …" on a Review row, and a look at two area homes | After 0.6.0 is released; deferred on 2026-10-29: the U tasks run at the end, after the builds |
 | U-20 | 0.7.0 in your brain: `brain upgrade`, "run catch-up every morning", then a week of unattended runs: check the Report rows (or, with Reports off, the summary that opens your next catch-up), the skipped inputs waiting for an attended catch-up, and that no-op runs leave nothing | After 0.7.0 is released and U-19 is closed |
-| U-21 | 0.8.0 in your brain, after the agency brain has moved in: "tidy the brain" once attended, decide its Review rows, then a weekly schedule | After 0.8.0 is released and the agency brain has moved in |
-| U-22 | 0.7.1 in your brain: `brain upgrade`, Notion migration 0012, then use Tidy capture, Write up (twice, accepting once) and Refresh report on real pages, run a catch-up, and note the Notion AI credits each click used | After 0.7.1 is released |
+| U-21 | 0.9.0 in your brain, after the agency brain has moved in: "tidy the brain" once attended, decide its Review rows, then a weekly schedule; verify excluded material supplies no evidence | After 0.9.0 is released and the agency brain has moved in |
+| U-22 | 0.8.0 buttons in your brain: `brain upgrade`, Notion migration 0012, then use Tidy capture, Write up (twice, accepting once) and Refresh report on real pages, run a catch-up, and note the Notion AI credits each click used | After 0.8.0 is released, with U-23 |
+| U-23 | 0.8.0 in your brain: upgrade and migration 0013; try Domains off and on, a Won't Do task, a voice capture, a multi-subject meeting with one item and one subject kept in meeting only, an exact edited partial Review acceptance and a revision request; exclude previously ingested material and check reconciliation, source attribution and independently supported knowledge | After 0.8.0 is released and U-22 is closed; run the acceptance checks after the planned builds |
 
 ## How to start Codex on a task
 
