@@ -711,11 +711,11 @@ A small patch before the larger 0.8.0: the process fixes land first. The Brain A
 **Output:** spec/cli.md and spec/schema.md: the example owner name becomes the fixture's "Alex", and the example home-folder paths become `/Users/alex/…` (the `brain init` example and output, the `brain status` example, the `brain.json` example, the `brain schedule` cron line and plist path). The LICENSE's copyright line stays. The audit behind it (full history, every PR, issue and comment, 2026-10-31) found no secrets and no personal identifiers beyond those examples, the author's commit email on every commit, and two old history lines with a local path; history is not rewritten (the user's decision on 2026-10-31).
 **Acceptance:** a case-insensitive search of the tracked files (not `node_modules`, not the lockfile) for the author's first name and for the local username finds only the LICENSE's copyright line (the PR body gives the command, so this row doesn't repeat the strings); `npm test` passes (the spec examples still validate); the leak check passes.
 
-### CC-84 · The release gate counts only the CI workflow's checks · `todo`
+### CC-84 · The release gate counts only the CI workflow's checks · `review`
 **Release:** 0.7.1
 **Changelog:** the release gate looks only at the CI workflow's checks, so an unrelated failing check no longer blocks a release.
-**Output:** scripts/release.mjs (it reads every check run on HEAD and `checksPassed` in scripts/common.mjs requires all of them to be green, so a failing check from outside the CI workflow blocks a release) and docs/releasing.md: keep only the CI workflow's check runs, with a test. How to tell them apart (the check-run's app and name, or the workflow run behind it) is the first thing to settle in the task.
-**Acceptance:** a test with one failing check from another source and a green CI workflow lets the gate pass; a failing CI check blocks it; a commit with no CI check run still blocks it, as today.
+**Output:** scripts/release.mjs and `ciWorkflowPassed` in scripts/common.mjs: the gate read every check run on HEAD, and `merge-ready` runs on PR comments attach to main's HEAD, so a red one blocked a release. It now asks the Actions API for the workflow runs of HEAD and requires the newest `push` run named `CI` to be completed and successful; docs/releasing.md says so. `merge.mjs` keeps `checksPassed` (it reads a PR head's own checks).
+**Acceptance:** `ciWorkflowPassed` tests: a green CI push run passes even next to a failed `merge-ready` run; a failed or running CI run blocks; a `merge-ready` run alone, or no run, blocks; `npm test` passes.
 
 ### CC-85 · merge-ready accepts the Codex pass only from the owner's account · `todo`
 **Release:** 0.7.1

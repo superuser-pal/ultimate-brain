@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { checksPassed, command, donePrNumbers, fail, isPrerelease, ROOT, taskEntries, tryCommand } from "./common.mjs";
+import { ciWorkflowPassed, command, donePrNumbers, fail, isPrerelease, ROOT, taskEntries, tryCommand } from "./common.mjs";
 
 const [version, flag] = process.argv.slice(2);
 const dryRun = flag === "--dry-run";
@@ -28,8 +28,8 @@ else {
     if (rowChangelog && donePrNumbers(task.suffix) === undefined) failures.push(`${task.id} has an invalid done suffix`);
   }
   const repo = tryCommand("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
-  const checks = repo.ok ? tryCommand("gh", ["api", `repos/${repo.stdout}/commits/${command("git", ["rev-parse", "HEAD"])}/check-runs`, "--paginate", "--jq", ".check_runs[] | [.status,.conclusion] | @tsv"]) : repo;
-  if (!checks.ok || !checksPassed(checks.stdout)) failures.push("CI is not green on HEAD");
+  const runs = repo.ok ? tryCommand("gh", ["api", `repos/${repo.stdout}/actions/runs?head_sha=${command("git", ["rev-parse", "HEAD"])}&per_page=100`, "--jq", ".workflow_runs[] | [.name,.event,.status,.conclusion] | @tsv"]) : repo;
+  if (!runs.ok || !ciWorkflowPassed(runs.stdout)) failures.push("CI is not green on HEAD");
   for (const [program, args] of [["npm", ["test"]], ["npm", ["run", "typecheck"]], ["npm", ["run", "test:package"]]]) {
     const result = tryCommand(program, args, { stdio: "inherit" });
     if (!result.ok) failures.push(`${program} ${args.join(" ")} failed`);

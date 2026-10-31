@@ -29,7 +29,7 @@ node scripts/release.mjs 0.4.0
 `release.mjs` (CX-27) refuses, and changes nothing, unless all of these hold:
 
 1. It runs in the main checkout, on `main`, with a clean tree, level with `origin/main`.
-2. CI passed on that commit.
+2. The `CI` workflow passed on that commit (its newest `push` run). Other workflows, such as a red `merge-ready` run that attached to `main` after a PR comment, do not block a release.
 3. For 0.4.0 and later: every task of the release that isn't `dropped` has a non-empty `**Changelog:**` line and a `done` (#N) heading. For 0.3.x: `CHANGELOG.md` has a `## 0.3.1` entry.
 4. `npm test`, `npm run typecheck` and `npm run test:package` pass.
 5. Every task with `**Release:** 0.4.0` is `done`.
