@@ -476,7 +476,7 @@ Each Space: the synced Spaces navigation in a narrow left column, then one tabs 
 
 Every view, with its filters, sort and properties, is in [notion/views-guide.md](../notion/views-guide.md) and Prompts 7a–7h.
 
-**Brain Assistant** is a Notion Custom Agent for daily use ([notion/brain-assistant.md](../notion/brain-assistant.md)): Instructions with the rules, and eight skills (Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Clean email). Its Tools and access hold only Brain Data, How it works and its skills database, so same-named databases elsewhere in the workspace can't be confused. It reads and answers; only Check minutes, Tidy capture and Clean email may edit, and only the page text you own (0035, 0045). How-to questions are answered from the "How it works" page, a copy of the user guide.
+**Brain Assistant** is a Notion Custom Agent for daily use ([notion/brain-assistant.md](../notion/brain-assistant.md)): Instructions with the rules, and ten skills (Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Clean email, Write up, Refresh report). Its Tools and access hold only Brain Data, How it works and its skills database, so same-named databases elsewhere in the workspace can't be confused. It reads and answers; only Check minutes, Tidy capture, Clean email, Write up and Refresh report may edit (the last two from their buttons, §3.17), and only the page text you own (0035, 0045). How-to questions are answered from the "How it works" page, a copy of the user guide.
 
 ---
 
