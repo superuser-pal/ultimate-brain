@@ -1,0 +1,4 @@
+log: catch up (unattended)
+ingest: Acme content check-in 2026-12-12 (3 new, 1 proposal)
+ingest: Acme design review 2026-12-10 (2 new, 1 proposal)
+sync: 0 new, 1 correction, 1 decision from Notion
