@@ -959,6 +959,7 @@ Executes a plan from `sync plan`, in this order:
 1. **`create`**, per item with the `note new` rules (except that `lifecycle` comes from the item). An item whose relations point at a create that failed also fails (`DEPENDENCY_FAILED`). Logs `sync-create`.
 2. **`updates`**: sets `notion`, `lifecycle`, `notion_fields` and the listed S values. Logs `sync-update`.
 3. **`corrections`**, then **`decisions`**, with the `brain apply` rules. After a correction succeeds, S for its `property` is set to the Notion value, since Notion already shows it.
+4. **`accepted_wording`** (0054, §5.14.7): the accepted Document or report text, imported exactly. Logs `sync-wording`.
 
 `sync apply` never writes `last_synced` (only `sync record` does). `conflicts` and `ignored` are not executed; they are echoed for the skill to report.
 
@@ -1127,6 +1128,60 @@ Stores what the skill published. Input: `{ "records": [ { "id": "per-3h8w2n6c", 
 
 `data` = `{ "records": [ { "id": "…", "result": "recorded"|"failed", "reason"?: "…", "changed": ["…"] } ] }`. Exit 1 if any failed.
 
+
+#### 5.14.7 Accepted wording from Notion (0054)
+
+Brain Assistant can write a Document's or a report's body inside Notion (buttons *Write up* and *Refresh report*). Only wording the user **accepted exactly** comes back to Git; this section is the whole mechanism. The Notion side (the controls and their names) is in docs/notion-space-design.md; here is what the CLI reads and does.
+
+**What the skill adds to a snapshot row** (databases `documents` and `inbox` rows whose Brain ID is a `vw-` report; the skill reads them through the MCP; `plan` is still read-only and never reads Notion itself):
+
+| Field | Meaning |
+|---|---|
+| `accepted` | the Accept control is on |
+| `accepted_at` | when it was set (ISO UTC) |
+| `body_markdown` | the page body converted to Markdown by the rule below, **excluding** any proposed-revision block and any proposed-refresh section |
+| `body_edited_at` | the latest `last_edited_time` among the page's body blocks (not properties) |
+| `pending_revision` | a *Proposed revision* block is on the page (Write up) |
+| `pending_refresh` | a *Proposed refresh · based on Notion* section is on the page (Refresh report) |
+
+A snapshot without these fields (taken by an older skill) is read as `accepted: false`: nothing is imported, nothing breaks.
+
+**Blocks to Markdown (normative, for `body_markdown`).** Paragraph → the text; heading 1/2/3 → `#`/`##`/`###`; bulleted and numbered list items → `- ` / `1. ` (nesting by two spaces); to-do → `- [ ]`/`- [x]`; quote → `> `; callout → `> ` plus its icon and text on one line; toggle → a `<details><summary>…</summary>` block with its children; code → a fenced block with its language; divider → `---`; link → `[text](url)`; bold, italic, strikethrough and inline code → `**`, `*`, `~~`, `` ` ``. Page and database mentions become `[title](notion-page:<page id>)`. A block the table doesn't name (embed, synced block, table, column) makes the row `UNCONVERTIBLE_BLOCK` (below): never guessed. Blocks are joined by one blank line; the result ends with one `\n`. The same text always gives the same Markdown, so the fingerprint is stable.
+
+**Fingerprint.** `sha256:<hex>` of `body_markdown` as UTF-8. The Git side keeps `notion_published["@content"]` = the fingerprint of the body as last sent or imported; this is S for the comparison below. (A promoted Document's body is sent once, on create, §5.14.4; after that Notion and Git bodies are only reconciled by this section.)
+
+**Plan output.** `sync plan` gains three arrays:
+- `accepted_wording`: `{ "page_id": "…", "kind": "document"|"report", "note": "ref-…"|"vw-…", "accepted_at": "…", "fingerprint": "sha256:…", "markdown": "…", "base": "sha256:…" }`, where `base` is S (`@content`) when the page's text was last in step with Git.
+- `wording_waiting`: `{ "page_id": "…", "note": "…", "reason": "REVISION_PENDING"|"REFRESH_PENDING"|"EDITED_AFTER_ACCEPTANCE"|"GIT_CHANGED"|"UNCONVERTIBLE_BLOCK"|"MODULE_OFF" }`, rows with `accepted: true` that are **not** imported, and rows with a pending proposal that must not be overwritten.
+- the usual `conflicts`/`ignored` stay as they are; a `wording_waiting` row is **not** also a conflict.
+
+**Outcome per state of a Document or report body (normative; the first matching row wins):**
+
+| # | State in Notion and Git | Result |
+|---|---|---|
+| 1 | Document with Documents off, or report with Reports off | `ignored` `MODULE_OFF`; no `wording_waiting` |
+| 2 | `accepted` false, no pending proposal | nothing (the body is the user's, or still seeded) |
+| 3 | `accepted` false, `pending_revision` or `pending_refresh` | `wording_waiting` `REVISION_PENDING`/`REFRESH_PENDING`; nothing imported; render holds the body back (below) |
+| 4 | `accepted` true and `pending_revision`/`pending_refresh` | `wording_waiting` with that reason: **an unresolved proposal blocks acceptance** (0054) |
+| 5 | `accepted` true, `body_edited_at` later than `accepted_at` | `wording_waiting` `EDITED_AFTER_ACCEPTANCE`: an edit **invalidates** the acceptance; the user accepts again |
+| 6 | `accepted` true, a block of an unconvertible kind | `wording_waiting` `UNCONVERTIBLE_BLOCK` |
+| 7 | `accepted` true, the note's body hash in Git ≠ S (`@content`), and `markdown` hashes to something other than the Git body | `wording_waiting` `GIT_CHANGED`: Git changed since Notion last matched it; the skill shows both and asks (attended), or leaves it (unattended) |
+| 8 | `accepted` true, `markdown` equals the Git body | `accepted_wording` is **not** emitted; `updates` sets S to the fingerprint (already in step) |
+| 9 | `accepted` true, none of the above | `accepted_wording` |
+
+An acceptance is therefore honored only when it is explicit (`accepted`), current (nothing in the body is newer than `accepted_at`), unambiguous (no pending proposal) and not in conflict with Git. `accepted_at` is the user's click; a later change to a property does not touch `body_edited_at`.
+
+**`sync apply`.** After `corrections` and `decisions`, step 4 executes each `accepted_wording` item: the target's body becomes `markdown` **exactly** (byte for byte; `Source: notion:<page_id>` is added to `sources` if missing; no other field changes; the note's `lifecycle` and `updated` follow the usual write rules), `notion_published["@content"]` becomes `fingerprint`, and the log gets `sync-wording`. Preconditions are re-checked: if the body hash in Git is no longer `base` (or S), the item is `failed` `GIT_CHANGED` and nothing is written. The result is `applied`, with `changed: ["body"]`. A `--record-only` run skips these items and reports them (0003). `--skip-conflicted` skips an item whose note is named by a conflict, as for the other items. **Unattended runs (0051)** execute `accepted_wording` as-is: the plan already contains only explicit, exact, current acceptance, so there is nothing to interpret; every `wording_waiting` row is named in the report and left alone.
+
+**`sync render --plan <plan>`.** The skill passes the same run's plan:
+- a note named by a `wording_waiting` row is left out of `items` and listed in `skipped` with reason `WORDING_PENDING`: a publish never overwrites a pending draft, a proposed revision or a proposed refresh (0054);
+- a note named by an `accepted_wording` item is also held back (`WORDING_PENDING`) until `sync apply` has imported it, so a stale Git body is never pushed over accepted wording;
+- a `promoted` Document's body is still sent on `create` only (§5.14.4); a report's body on `update` is sent only when B of `@content` ≠ S **and** no `wording_waiting` row names it.
+- **Refresh report** (the button) never ticks *Refresh asked*; `refresh_requests` (the old queued full refresh) are produced only by that checkbox. The button therefore cannot set off a full refresh that would overwrite pending or accepted wording; if both a `refresh_requests` item and a `wording_waiting`/`accepted_wording` row name the same report, the refresh waits (`skipped`, reason `WORDING_PENDING`).
+
+**Related knowledge appendix.** After an `accepted_wording` import, the skill may search canonical knowledge and propose useful additions. This is an ordinary proposal (0003): `brain proposal new --kind add_to_note --target <ref-…>` with `content` = a `## Related knowledge` section, one list item per note, each `[title](path)` with the reason it helps, and `why` naming the Document. Approving it appends the section after the accepted wording by the `add_to_note` rule (schema §11.2), which leaves the accepted text unchanged; rejecting it changes nothing. A change to any other existing note is a separate proposal. **Reports are derived outputs:** a report's accepted text never becomes evidence for a new note, and a Git-only addition to a report is proposed as a separate proposal, not merged into the accepted text.
+
+**Errors:** none new; `INPUT_INVALID` for a snapshot row whose `accepted_at` or `body_edited_at` is not an ISO time.
 
 ### 5.15 `brain upgrade`
 
