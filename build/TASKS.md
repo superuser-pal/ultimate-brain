@@ -733,6 +733,12 @@ Tidy capture, Write up and Refresh report run Brain Assistant at once inside Not
 **Output:** per CC-70: brain-catch-up and brain-sync (read accepted wording, import it, search canonical knowledge for a Related knowledge appendix and propose it with a citation and a reason per item, propose changes to other notes separately, unattended per 0051 as refined); brain-query (reports stay derived, never evidence); the skill mirror.
 **Acceptance:** blind runs on a synthetic brain built with CC-41: an accepted Write up is imported exactly and one Related knowledge proposal follows with a reason per item; an edited-after-acceptance Document is listed under Needs you, not imported; an accepted refresh replaces the report's text and a Git-only addition becomes a separate proposal; an unattended run imports an accepted Document and leaves an unaccepted one alone; the skill mirror check passes.
 
+### CC-83 · Neutral examples in the spec ahead of making the repo public · `review`
+**Release:** 0.7.1
+**Changelog:** the spec's examples use a neutral owner name and paths instead of the author's.
+**Output:** spec/cli.md and spec/schema.md: the example owner "Rodrigo" becomes the fixture's "Alex", and the example paths `/Users/rodrigo/…` become `/Users/alex/…` (the `brain init` example and output, the `brain status` example, the `brain.json` example, the `brain schedule` cron line and plist path). The LICENSE's copyright line stays. The audit behind it (full history, every PR, issue and comment, 2026-10-31) found no secrets and no personal identifiers beyond these examples, the author's commit email on every commit, and two old history lines with a local path; history is not rewritten (the user's decision on 2026-10-31).
+**Acceptance:** `git grep -i -E "rodrigo|canoteran"` finds only the LICENSE's copyright line; `npm test` passes (the spec examples still validate); the leak check passes.
+
 ## 0.8.0 — The brain tidies itself (decision 0052)
 
 Reflection across notes: contradictions, stale facts, duplicates, promotions and recurring themes as Review rows, never edits. Starts after the agency brain has moved in.
