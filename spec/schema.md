@@ -597,6 +597,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 | Areas · Brief toggle | the area's `area_brief` view (§16.3, 0041) |
 | Concepts · Area, Project | `area`, `projects` |
 | Documents · Area, Project, page body | `area`, `projects`, the body (0045, 0049). A `promoted` Document's body is sent on create only: after that it is yours |
+| Documents, Reports · Accepted, Accepted at | yours (0054): the accept control (*Accept write-up* on a Document, accepting the proposed refresh on a report) sets Accepted and Accepted at. Never compared or corrected; read only by `sync plan`'s accepted-wording rules (cli.md §5.14.7). The page body of a `promoted` Document or of a report stays Notion's until accepted wording is imported exactly; after that `notion_published["@content"]` holds its fingerprint |
 | Documents · From decision, From concept | a `promoted` Document's `promoted_from` (two-way with Decisions · Documents and Concepts · Documents, which Notion fills, 0049) |
 | Decisions, Concepts · Promote asked | yours (a checkbox, ticked by the Promote to document button): ask for a promoted Document. The brain clears it once it has acted (0048, 0049) |
 | Decisions, Questions, Concepts, Documents, People · Sources | inverse of the Inbox relations below (Notion fills it) |
