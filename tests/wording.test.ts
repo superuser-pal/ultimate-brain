@@ -116,11 +116,11 @@ test("fail closed: no acceptance time, no baseline, an unconvertible block, an u
   assert.equal(undated.wording_waiting[0].reason, "ACCEPTANCE_UNDATED");
   assert.deepEqual(undated.clear_accepted, []);
   const unconvertibleDraft = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null, body_markdown: null, unconvertible: true }))]);
-  assert.deepEqual(unconvertibleDraft.wording_held, [{ page_id: PAGE, note: document.id }]);
+  assert.deepEqual(unconvertibleDraft.wording_held, [{ page_id: PAGE, note: document.id, reason: "UNCONVERTIBLE_BLOCK" }]);
   const unconvertibleAccepted = await plan(dir, [documentRow(wording({ body_markdown: null, unconvertible: true }))]);
   assert.equal(unconvertibleAccepted.wording_waiting[0].reason, "UNCONVERTIBLE_BLOCK");
   const draft = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null }))]);
-  assert.deepEqual(draft.wording_held, [{ page_id: PAGE, note: document.id }]);
+  assert.deepEqual(draft.wording_held, [{ page_id: PAGE, note: document.id, reason: "UNACCEPTED_DRAFT" }]);
   assert.deepEqual(draft.accepted_wording, []);
   // No baseline: nothing is imported and nothing is claimed to conflict.
   const file = join(dir, document.path);
@@ -131,7 +131,7 @@ test("fail closed: no acceptance time, no baseline, an unconvertible block, an u
   assert.equal(lost.wording_waiting[0].reason, "NO_BASELINE");
   assert.deepEqual(lost.accepted_wording, []);
   const lostDraft = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null }))]);
-  assert.equal(lostDraft.wording_held.length, 1);
+  assert.deepEqual(lostDraft.wording_held, [{ page_id: PAGE, note: document.id, reason: "NO_BASELINE" }]);
 });
 
 test("Git changing alone is no conflict; both changing is GIT_CHANGED; a Git body that moved after the plan fails the apply", async (context) => {
@@ -229,7 +229,7 @@ test("a publish keeps a pending proposed refresh and an unaccepted report draft;
   assert.deepEqual(held.json.data.skipped, [{ id: report.id, reason: "WORDING_PENDING" }]);
 
   const draft = await plan(dir, [reportRow(page, wording({ accepted: false, accepted_at: null, body_markdown: REPORT.replace("On track.", "A draft of mine.") }), { "Brain ID": report.id })]);
-  assert.deepEqual(draft.wording_held, [{ page_id: page, note: report.id }]);
+  assert.deepEqual(draft.wording_held, [{ page_id: page, note: report.id, reason: "UNACCEPTED_DRAFT" }]);
   await writeFile(planFile, JSON.stringify(draft));
   const kept = await run(dir, ["sync", "render", "--ids", report.id, "--plan", planFile]);
   assert.deepEqual(kept.json.data.skipped, [{ id: report.id, reason: "WORDING_PENDING" }]);
@@ -265,4 +265,83 @@ test("a snapshot row with a malformed wording object is refused", async (context
   const bad = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [documentRow({ accepted: "yes", accepted_at: "tomorrow", page_edited_at: "now" })] });
   assert.notEqual(bad.code, 0);
   assert.match(bad.stdout, /wording/);
+});
+
+test("a report row on another Notion page than the report's is a mismatch, not wording", async (context) => {
+  const dir = await fixtureCopy(context);
+  const report = await publishedReport(dir);
+  const planned = await plan(dir, [reportRow("0f0f0f0f-1111-4222-8333-444455556666", wording(), { "Brain ID": report.id })]);
+  assert.deepEqual(planned.accepted_wording, []);
+  assert.equal(planned.conflicts[0].code, "NOTION_ID_MISMATCH");
+});
+
+test("a Notion mention in a report resolves to the note published as that page; an unknown one is refused", async (context) => {
+  const dir = await fixtureCopy(context);
+  const report = await publishedReport(dir);
+  const page = "5c4d3e2f-1a0b-4c9d-8e7f-6a5b4c3d2e1f";
+  const knownPage = "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d"; // Maria López's page in the fixture
+  const withMention = (id: string) => REPORT.replace("Alex.", `[Maria](notion-page:${id}).`);
+  const unknown = await plan(dir, [reportRow(page, wording({ body_markdown: withMention("11111111-2222-4333-8444-555566667777") }), { "Brain ID": report.id })]);
+  assert.equal(unknown.wording_waiting[0].reason, "INVALID_REPORT_SHAPE");
+  const file = join(dir, "knowledge/people/maria-lopez.md");
+  const maria = parseFrontmatter(await readFile(file, "utf8"));
+  maria.attributes.notion = knownPage;
+  await writeFile(file, serializeFrontmatter(maria));
+  const known = await plan(dir, [reportRow(page, wording({ body_markdown: withMention(knownPage) }), { "Brain ID": report.id })]);
+  assert.equal(known.accepted_wording.length, 1);
+  const item = known.accepted_wording[0];
+  item.verified = { fingerprint: item.fingerprint, page_edited_at: item.page_edited_at };
+  assert.equal((await run(dir, ["sync", "apply"], known)).code, 0);
+  assert.deepEqual(parseFrontmatter(await readFile(join(dir, report.path), "utf8")).attributes.generated_from, ["per-3h8w2n6c"]);
+});
+
+test("accepted text that starts with blank lines round-trips: the next Notion edit is not a false GIT_CHANGED", async (context) => {
+  const dir = await fixtureCopy(context);
+  const document = await promotedDocument(dir);
+  const leading = `\n\n${ACCEPTED}`;
+  const planned = await plan(dir, [documentRow(wording({ body_markdown: leading }))]);
+  const item = planned.accepted_wording[0];
+  item.verified = { fingerprint: item.fingerprint, page_edited_at: item.page_edited_at };
+  assert.equal((await run(dir, ["sync", "apply"], planned)).code, 0);
+  assert.equal(await bodyOf(dir, document.path), `\n${leading}`);
+  // The user edits and accepts again in Notion; Git has not moved, so this is a plain import.
+  const again = await plan(dir, [documentRow(wording({ body_markdown: `${leading}More.\n`, accepted_at: "2026-12-10T10:02:00Z", page_edited_at: "2026-12-10T10:02:00Z" }))]);
+  assert.deepEqual(again.wording_waiting, []);
+  assert.equal(again.accepted_wording.length, 1);
+});
+
+test("a never-published Document that already equals Notion gets its baselines recorded", async (context) => {
+  const dir = await fixtureCopy(context);
+  const document = await promotedDocument(dir);
+  const file = join(dir, document.path);
+  const stored = parseFrontmatter(await readFile(file, "utf8"));
+  delete stored.attributes.notion_published;
+  await writeFile(file, serializeFrontmatter(stored));
+  const planned = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null, body_markdown: SEED }))]);
+  assert.deepEqual(planned.wording_waiting, []);
+  assert.deepEqual(planned.wording_held, []);
+  assert.deepEqual(planned.updates.find((update: { id: string }) => update.id === document.id)?.published, { "@notion_body": textHash(SEED), "@git_body": textHash(SEED) });
+});
+
+test("a malformed wording item in a plan is refused as input, not as a crash", async (context) => {
+  const dir = await fixtureCopy(context);
+  await promotedDocument(dir);
+  const base = { as_of: NOW, create: [], updates: [], corrections: [], decisions: [], conflicts: [], ignored: [] };
+  for (const bad of [{ accepted_wording: [null] }, { accepted_wording: [{ page_id: PAGE, kind: "document", note: "ref-00000000", fingerprint: "x", markdown: 7, base: "y" }] }, { accepted_wording: [{ page_id: PAGE, kind: "document", note: "ref-00000000", fingerprint: "x", markdown: "m", base: "y", verified: "yes" }] }, { clear_accepted: ["x"] }]) {
+    const result = await run(dir, ["sync", "apply"], { ...base, ...bad });
+    assert.equal(result.code, 4, result.stdout);
+    assert.equal(result.json.error.code, "INPUT_INVALID");
+  }
+});
+
+test("--skip-conflicted does not echo a clear_accepted entry for a conflicted row", async (context) => {
+  const dir = await fixtureCopy(context);
+  const document = await promotedDocument(dir);
+  const planned = await plan(dir, [documentRow(wording({ body_markdown: SEED }))]); // level: accepted, nothing to import
+  assert.deepEqual(planned.clear_accepted, [{ page_id: PAGE, note: document.id }]);
+  planned.conflicts.push({ database: "documents", page_id: PAGE, brain_id: document.id, code: "BOTH_CHANGED", message: "x" });
+  const skipped = await run(dir, ["sync", "apply", "--skip-conflicted"], planned);
+  assert.deepEqual(skipped.json.data.clear_accepted, []);
+  const attended = await run(dir, ["sync", "apply"], planned);
+  assert.deepEqual(attended.json.data.clear_accepted, [{ page_id: PAGE, note: document.id }]);
 });

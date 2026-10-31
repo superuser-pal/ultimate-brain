@@ -27,11 +27,15 @@ export function hasReportShape(body: string): boolean {
 
 /** The notes a report body links to (relative links from `reports/`), and the targets that name no note. */
 export function reportLinks(workspace: Workspace, body: string): { linked: string[]; broken: string[] } {
+  const byPage = new Map(workspace.notes.filter((note) => typeof note.attributes.notion === "string").map((note) => [String(note.attributes.notion).replaceAll("-", "").toLowerCase(), note.id]));
   const byPath = new Map(workspace.notes.map((note) => [note.path, note.id]));
   const linked = new Set<string>();
   const broken: string[] = [];
   for (const match of body.matchAll(/\]\(\s*<?([^)\s>]+)>?\s*\)/g)) {
     const target = match[1]!;
+    // A Notion mention converted from a block (cli §5.14.7) names the note published as that page.
+    const mention = /^notion-page:([0-9a-f-]+)$/i.exec(target)?.[1];
+    if (mention !== undefined) { const id = byPage.get(mention.replaceAll("-", "").toLowerCase()); if (id === undefined) broken.push(target); else linked.add(id); continue; }
     if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) continue;
     let decoded = target.split(/[?#]/)[0]!;
     try { decoded = decodeURIComponent(decoded); } catch { /* keep as written */ }
