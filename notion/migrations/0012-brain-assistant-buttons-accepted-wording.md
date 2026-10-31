@@ -19,7 +19,7 @@ Who does each step:
 | Descriptions of Accepted and Accepted at in both databases: "Owner: you, through the Accept write-up or Accept refresh button. The brain clears it once it has taken the accepted text in." | agent |
 | Description of Refresh asked on the Inbox: "Owner: you, ticked by hand to queue a full refresh from the brain's notes. Waiting for the brain; it clears it." | agent |
 
-Skip a row for a module you have off.
+Skip a row for a module you have off. **Module states:** with Documents off, skip every Documents row in sections 1 to 4 and the Write up and Accept write-up checks; with Reports off, skip the Inbox Accepted and Accepted at, the Update and Accept buttons, the Refresh report skill and the report checks. Tidy capture (Inbox, core) and the Instructions apply either way.
 
 ## 2 · Brain Assistant (by hand, in Notion)
 
@@ -60,13 +60,14 @@ Replace its text with `skills/brain-howto/references/guide.md` as it is in 0.8.0
 The first catch-up after this reads each published Document and report body from Notion. One published before 0.8.0 has no stored baseline, so the catch-up holds it and, if you are there, shows Notion's text and the brain's and asks which to keep; nothing is overwritten until you answer. See cli.md §5.14.7, row 9.
 
 ## Verify
-- [ ] Documents and Inbox have Accepted and Accepted at; hovering shows "Owner: you, through the Accept …"; Refresh asked's description says it is ticked by hand.
-- [ ] Brain Assistant has edit access to Documents; its Instructions list Write up and Refresh report in the edit rule, and say a button's message carries the confirmation and the page.
+- [ ] Documents (Documents module) and Inbox (Reports module) have Accepted and Accepted at; hovering shows "Owner: you, through the Accept …"; Refresh asked's description says it is ticked by hand.
+- [ ] Brain Assistant has edit access to Documents (skip with Documents off); its Instructions list Write up and Refresh report in the edit rule, and say a button's message carries the confirmation and the page.
 - [ ] The skills database has the pages Write up and Refresh report, and Tidy capture says Brain Status New only.
 - [ ] **Tidy capture** on a test Inbox row (Kind Capture, Brain Status New, a few messy lines of made-up text) rewrites the text below the title and changes no property: Brain Status is still New.
-- [ ] **Write up** on a promoted Document gives Purpose, Main content, Open questions and Sources and changes no property; edit a sentence and click it again: your edit is kept and a toggle "Proposed revision" is added.
-- [ ] **Accept write-up** (after you delete the toggle) ticks Accepted and sets Accepted at to now; editing the page afterwards, then "catch up", lists it as needing a new accept.
-- [ ] **Refresh report** on a test Report row adds one toggle "Proposed refresh · based on Notion · <date>" at the end and ticks nothing; a second click replaces only that toggle. Refresh asked is still unticked.
+- [ ] (Documents) **Write up** on a promoted Document gives Purpose, Main content, Open questions and Sources and changes no property; edit a sentence and click it again: your edit is kept and a toggle "Proposed revision" is added.
+- [ ] (Documents) **Accept write-up** (after you delete the toggle) ticks Accepted and sets Accepted at to now; editing the page afterwards, then "catch up", lists it as needing a new accept.
+- [ ] (Reports) **Refresh report** on a test Report row adds one toggle "Proposed refresh · based on Notion" at the end (its first line holds the date) and ticks nothing; a second click replaces only that toggle. Refresh asked is still unticked. The toggle holds the six H2 sections of a report (Where it stands … Gaps) under a dated first line.
+- [ ] (Reports) **Accept refresh**, after you replace the report text with the toggle's contents and delete the toggle, ticks Accepted and sets Accepted at to now; the next catch-up shows the change and takes it in once you say yes.
 - [ ] Ticking **Refresh asked** by hand still queues a full refresh; it waits while the toggle is on the page.
 - [ ] A button whose message has no page reference makes Brain Assistant stop and say so.
 - [ ] The Inbox and Documents layouts match section 4; "How it works" matches the guide.

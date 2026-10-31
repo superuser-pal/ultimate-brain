@@ -10,7 +10,7 @@ Ask the brain a question in the Inbox and get a living report on the project's o
 |---|---|
 | Inbox: add **Refresh asked** (checkbox), **What to fix** (text), **Accepted** (checkbox) and **Accepted at** (date, with time) | agent |
 | Inbox: a relation of the Inbox to itself, "Ask" ↔ "Report" (a report row's Ask, an Ask row's Report) | agent |
-| Descriptions: Refresh asked "Owner: you, through the Refresh report button on a Report row. Waiting for the brain; it clears it."; What to fix "Owner: you. On a Report row: what the report gets wrong; the brain clears it."; Ask and Report "Owner: brain." | agent |
+| Descriptions: Refresh asked "Owner: you, ticked by hand to queue a full refresh from the brain's notes. Waiting for the brain; it clears it."; What to fix "Owner: you. On a Report row: what the report gets wrong; the brain clears it."; Ask and Report "Owner: brain." | agent |
 
 ### 2 · Views and the Ask button
 

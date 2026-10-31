@@ -28,7 +28,7 @@ A space is a **core** plus the **modules** you chose at onboarding. You can turn
 | **Knowledge** | Decisions, Questions, Concepts | the Decisions, Questions and Concepts tabs of Knowledge; "What have we decided here?", "What's still open here?" and "What do we know?" (Decisions, Concepts) on project and area pages | on |
 | **Orgs** | Orgs | the Orgs tab of Knowledge; Client on Projects, Org on People; "Clients via projects" on area pages | on |
 | **Documents** | Documents (was References) | the Documents tab of Knowledge and of "What do we know?"; Keep as document and Only keep on the Inbox; Promote to document on Decisions and Concepts | off |
-| **Reports** | none: Ask and Report rows on the Inbox | the Ask the brain button on Home; the Refresh report button, Refresh asked and What to fix on the Inbox; "Reports" on project and area pages | off |
+| **Reports** | none: Ask and Report rows on the Inbox | the Ask the brain button on Home; the Refresh report button (a Brain Assistant message, §3.17), Refresh asked and What to fix on the Inbox; "Reports" on project and area pages | off |
 | **Tasks** | Tasks, or your own tasks database (0018) | the Tasks Space; "What's on my plate here?" on project and area pages; Home's "What's on today?" Tasks tab, its "due" counts and "Due across areas" | off |
 | **Planning** | Goals, Key Results | the Plan Space; Goal on Projects; "What am I working toward here?" on area pages | off |
 
@@ -287,7 +287,7 @@ Everything that came into the brain except meetings, which have their own databa
 | Only keep | Text | You: when only part should be kept ("the requirements table and the deadlines"). Empty = the whole input (0049; was Keep) |
 | Report | Relation → Inbox (two-way with Ask) | Brain: on an Ask row, the report that answers it |
 | Ask | Relation → Inbox (two-way with Report) | Brain: on a Report row, the questions it answers |
-| Refresh asked | Checkbox | You, on a Report row, through the Refresh report button, property Update (was the Refresh checkbox before 0.6.0): rewrite it with what the brain knows now; the brain clears it (0045) |
+| Refresh asked | Checkbox | You, on a Report row, ticked by hand since 0.8.0 (the Refresh report button now messages Brain Assistant, §3.17; before that it ticked this box): rewrite the report with what the brain knows now; the brain clears it (0045) |
 | What to fix | Text | You, on a Report row: what the report gets wrong; the brain turns it into Review rows, clears it, and refreshes the report once you approve them (0045) |
 | Tasks | Relation → Tasks (two-way with Source) | You |
 | Brain ID | Text | System (the source's id, `src-…`) |
