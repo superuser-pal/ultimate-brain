@@ -382,13 +382,13 @@ Archived and Done (on a milestone) stay checkboxes: they describe a state, not a
 
 ### 3.16 Buttons that message Brain Assistant (0054): what a button passes
 
-A button can use the action **send message to** an agent and pick Brain Assistant. Tried by the user on 2026-10-31, in a Notion workspace on a Business-level plan, on a test Inbox row (synthetic text).
+A button can use the action **send message to** an agent and pick Brain Assistant. Tried by the user on 2026-10-31 on a test Inbox row (synthetic text); the plan level was not recorded.
 
 **Verified (by that test):**
 - **A button passes only the text of its message.** With a message that referenced nothing, Brain Assistant replied that it was not triggered from a page or database and that the chat context showed no page being viewed. The page or row the button sits on is **not** passed implicitly.
 - **The message can reference the row it sits on:** the button's message editor offers `@` and a reference to the current page. With that reference in the message, Brain Assistant acted on the right row.
 - **End to end for Tidy capture on an Inbox row:** with the message "Run your Tidy capture skill on this Inbox page: @[this row]. I confirm: …replace the text below the title with the rewrite. Do not change the title, Brain Status or any property", Brain Assistant rewrote the body of that row, asked no question, and changed no property.
-- **Brain Assistant applies its own rules to a message:** asked without a confirmation in the message, it said it edits page text only "after your confirmation" and changed nothing. A button's message therefore carries the confirmation the skill needs (the Instructions' edit rule is amended in 0.8.0, CC-71, 0054).
+- **Brain Assistant applies its own rules to a message:** asked, in the first test, what it could edit, it answered that it edits page text only for Clean Email, and for Tidy Capture and Check Minutes "after your confirmation". A button's message therefore carries the confirmation the skill needs (the Instructions' edit rule is amended in 0.8.0, CC-71, 0054).
 
 **The button contract (normative for CC-71):** every Brain Assistant button's message (1) names the skill to run, (2) references the row with `@` to the current page, (3) carries the confirmation, and (4) says what the agent must not touch. A button without the row reference is not a valid Brain Assistant button: the agent cannot tell which row was clicked.
 
