@@ -32,7 +32,7 @@ export interface WordingPlan {
   wording_waiting: Array<{ page_id: string; note: string; reason: WaitingReason }>;
   wording_held: Array<{ page_id: string; note: string; reason: HeldReason }>;
   /** `accepted_at` is the acceptance being consumed: the skill clears Accepted only if the page still shows it (cli §5.14.7). */
-  clear_accepted: Array<{ page_id: string; note: string; accepted_at: string; page_edited_at: string }>;
+  clear_accepted: Array<{ page_id: string; note: string; accepted_at: string; page_edited_at: string; fingerprint: string }>;
   updates: Array<Record<string, unknown>>;
 }
 
@@ -84,13 +84,13 @@ export function planWording(workspace: Workspace, asOf: string, pageId: string, 
   // 8: Notion equals Git: already in step.
   if (n === g) {
     if (sn !== n || sg !== g) out.updates.push({ id: note.id, published: { "@notion_body": n, "@git_body": g } });
-    if (w.accepted) out.clear_accepted.push({ ...ref, accepted_at: w.accepted_at!, page_edited_at: w.page_edited_at });
+    if (w.accepted) out.clear_accepted.push({ ...ref, accepted_at: w.accepted_at!, page_edited_at: w.page_edited_at, fingerprint: n });
     return;
   }
   // 9: no common baseline: no comparison is made.
   if (sn === undefined || sg === undefined) { if (w.accepted) waiting("NO_BASELINE"); else out.wording_held.push({ ...ref, reason: "NO_BASELINE" }); return; }
   if (!w.accepted) { if (n !== sn) out.wording_held.push({ ...ref, reason: "UNACCEPTED_DRAFT" }); return; } // 10, 11
-  if (n === sn) { out.clear_accepted.push({ ...ref, accepted_at: w.accepted_at!, page_edited_at: w.page_edited_at }); return; } // 12: nothing to import
+  if (n === sn) { out.clear_accepted.push({ ...ref, accepted_at: w.accepted_at!, page_edited_at: w.page_edited_at, fingerprint: n }); return; } // 12: nothing to import
   if (g !== sg) { waiting("GIT_CHANGED"); return; } // 14
   const added = lineDiff(git, markdown);
   out.accepted_wording.push({ ...ref, kind, accepted_at: w.accepted_at!, page_edited_at: w.page_edited_at, fingerprint: n, markdown, base: sg, unattended_ok: Date.parse(asOf) - Date.parse(w.accepted_at!) >= UNATTENDED_AGE_MS, diff: { added: added.filter((line) => line.startsWith("+ ")).length, removed: added.filter((line) => line.startsWith("- ")).length } });

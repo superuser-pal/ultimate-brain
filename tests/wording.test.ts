@@ -81,7 +81,7 @@ test("an accepted Write up goes into the Git Document byte for byte, after the s
   // The next plan finds Notion and Git level, and asks the skill to clear Accepted.
   const next = await plan(dir, [documentRow(wording())]);
   assert.deepEqual(next.accepted_wording, []);
-  assert.deepEqual(next.clear_accepted, [{ page_id: PAGE, note: document.id, accepted_at: "2026-12-10T10:00:00Z", page_edited_at: "2026-12-10T10:00:00Z" }]);
+  assert.deepEqual(next.clear_accepted, [{ page_id: PAGE, note: document.id, accepted_at: "2026-12-10T10:00:00Z", page_edited_at: "2026-12-10T10:00:00Z", fingerprint: textHash(ACCEPTED) }]);
 });
 
 test("a body edited after acceptance gives no import, even when the edit made Notion equal Git", async (context) => {
@@ -144,7 +144,7 @@ test("Git changing alone is no conflict; both changing is GIT_CHANGED; a Git bod
   const gitOnly = await plan(dir, [documentRow(wording({ body_markdown: SEED }))]);
   assert.deepEqual(gitOnly.wording_waiting, []);
   assert.deepEqual(gitOnly.accepted_wording, []);
-  assert.deepEqual(gitOnly.clear_accepted, [{ page_id: PAGE, note: document.id, accepted_at: "2026-12-10T10:00:00Z", page_edited_at: "2026-12-10T10:00:00Z" }]);
+  assert.deepEqual(gitOnly.clear_accepted, [{ page_id: PAGE, note: document.id, accepted_at: "2026-12-10T10:00:00Z", page_edited_at: "2026-12-10T10:00:00Z", fingerprint: textHash(SEED) }]);
   const both = await plan(dir, [documentRow(wording())]);
   assert.equal(both.wording_waiting[0].reason, "GIT_CHANGED");
 });
@@ -338,12 +338,12 @@ test("--skip-conflicted does not echo a clear_accepted entry for a conflicted ro
   const dir = await fixtureCopy(context);
   const document = await promotedDocument(dir);
   const planned = await plan(dir, [documentRow(wording({ body_markdown: SEED }))]); // level: accepted, nothing to import
-  assert.deepEqual(planned.clear_accepted, [{ page_id: PAGE, note: document.id, accepted_at: "2026-12-10T10:00:00Z", page_edited_at: "2026-12-10T10:00:00Z" }]);
+  assert.deepEqual(planned.clear_accepted, [{ page_id: PAGE, note: document.id, accepted_at: "2026-12-10T10:00:00Z", page_edited_at: "2026-12-10T10:00:00Z", fingerprint: textHash(SEED) }]);
   planned.conflicts.push({ database: "documents", page_id: PAGE, brain_id: document.id, code: "BOTH_CHANGED", message: "x" });
   const skipped = await run(dir, ["sync", "apply", "--skip-conflicted"], planned);
   assert.deepEqual(skipped.json.data.clear_accepted, []);
   const attended = await run(dir, ["sync", "apply"], planned);
-  assert.deepEqual(attended.json.data.clear_accepted, [{ page_id: PAGE, note: document.id, accepted_at: "2026-12-10T10:00:00Z", page_edited_at: "2026-12-10T10:00:00Z" }]);
+  assert.deepEqual(attended.json.data.clear_accepted, [{ page_id: PAGE, note: document.id, accepted_at: "2026-12-10T10:00:00Z", page_edited_at: "2026-12-10T10:00:00Z", fingerprint: textHash(SEED) }]);
 });
 
 test("a malformed Notion mention is unresolved; a report item must match its note's kind", async (context) => {
@@ -362,15 +362,20 @@ test("a malformed Notion mention is unresolved; a report item must match its not
   assert.match(await bodyOf(dir, report.path), /On track/);
 });
 
-test("Adopt Notion: an item built from a no-baseline row is imported like any accepted wording and records both baselines", async (context) => {
+test("Adopt Notion: from an accepted no-baseline row, the skill's item is imported like any accepted wording and records both baselines; an unaccepted one is not adoptable", async (context) => {
   const dir = await fixtureCopy(context);
   const document = await promotedDocument(dir);
   const file = join(dir, document.path);
   const stored = parseFrontmatter(await readFile(file, "utf8"));
   delete stored.attributes.notion_published;
   await writeFile(file, serializeFrontmatter(stored));
-  const row = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null }))]);
-  assert.deepEqual(row.wording_held, [{ page_id: PAGE, note: document.id, reason: "NO_BASELINE" }]);
+  // Unaccepted: held, with no acceptance time to build an item from. The user must click Accept first.
+  const unaccepted = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null }))]);
+  assert.deepEqual(unaccepted.wording_held, [{ page_id: PAGE, note: document.id, reason: "NO_BASELINE" }]);
+  assert.deepEqual(unaccepted.accepted_wording, []);
+  // Accepted: waiting NO_BASELINE; the snapshot's own accepted_at goes into the skill's item.
+  const accepted = await plan(dir, [documentRow(wording())]);
+  assert.deepEqual(accepted.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "NO_BASELINE" }]);
   const adopt = { page_id: PAGE, kind: "document", note: document.id, accepted_at: "2026-12-10T10:00:00Z", page_edited_at: "2026-12-10T10:00:00Z", fingerprint: textHash(ACCEPTED), markdown: ACCEPTED, base: textHash(SEED), unattended_ok: false, diff: { added: 1, removed: 1 }, verified: { fingerprint: textHash(ACCEPTED), page_edited_at: "2026-12-10T10:00:00Z" } };
   const applied = await run(dir, ["sync", "apply"], { as_of: NOW, create: [], updates: [], corrections: [], decisions: [], conflicts: [], ignored: [], accepted_wording: [adopt] });
   assert.equal(applied.code, 0, applied.stdout);
@@ -384,7 +389,7 @@ test("a row-8 clear is dropped when its baseline update failed or its note is go
   const document = await promotedDocument(dir);
   const planned = await plan(dir, [documentRow(wording({ body_markdown: SEED }))]);
   assert.equal(planned.clear_accepted.length, 1);
-  const gone = { ...planned, updates: [{ id: "ref-00000000", published: { "@notion_body": "x" } }], clear_accepted: [{ page_id: PAGE, note: "ref-00000000", accepted_at: "2026-12-10T10:00:00Z", page_edited_at: "2026-12-10T10:00:00Z" }, ...planned.clear_accepted] };
+  const gone = { ...planned, updates: [{ id: "ref-00000000", published: { "@notion_body": "x" } }], clear_accepted: [{ page_id: PAGE, note: "ref-00000000", accepted_at: "2026-12-10T10:00:00Z", page_edited_at: "2026-12-10T10:00:00Z", fingerprint: textHash(SEED) }, ...planned.clear_accepted] };
   const applied = await run(dir, ["sync", "apply"], gone);
   assert.deepEqual(applied.json.data.clear_accepted.map((item: { note: string }) => item.note), [document.id]);
 });
