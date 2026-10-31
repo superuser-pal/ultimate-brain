@@ -717,11 +717,11 @@ A small patch before the larger 0.8.0: the process fixes land first. The Brain A
 **Output:** scripts/release.mjs and `ciWorkflowPassed` in scripts/common.mjs: the gate read every check run on HEAD, and `merge-ready` runs on PR comments attach to main's HEAD, so a red one blocked a release. It now asks the Actions API for the workflow runs of HEAD and requires the newest `push` run named `CI` **on the `main` branch** to be completed and successful (a run for a tag or another branch at the same SHA skips `main-guard`, which runs only for `refs/heads/main`, so it must not stand in for main's run: on the 0.7.0 commit a newer green `CI` run for tag `v0.7.0` sat above a failed one for `main`); docs/releasing.md says so. `merge.mjs` keeps `checksPassed` (it reads a PR head's own checks).
 **Acceptance:** `ciWorkflowPassed` tests: a green CI push run passes even next to a failed `merge-ready` run; a failed or running CI run blocks; a newer green `CI` push run for a tag or another branch above a failed `main` run blocks (regression); a `merge-ready` run alone, or no run, blocks; `npm test` passes.
 
-### CC-85 · merge-ready accepts the Codex pass only from the owner's account · `todo`
+### CC-85 · merge-ready accepts the Codex pass only from the owner's account · `done` (#158)
 **Release:** 0.7.1
 **Changelog:** the merge-ready status accepts "Review (Codex): pass at <sha>" only from the repo owner's account.
-**Output:** `hasOtherAgentPass` in scripts/common.mjs (used by merge-ready and merge), which today matches the `Review (Codex): pass at <sha>` text in any review or comment whatever its author, and docs/releasing.md (decision 0040): also require the author's login (`user.login` in the API items) to be the repo owner's; a test for each case.
-**Acceptance:** a pass comment by another account leaves merge-ready red; the owner's pass at the current head turns it green; a pass for an older head stays red.
+**Output:** `hasOtherAgentPass` in scripts/common.mjs (used by merge-ready and merge): the `Review (<agent>): pass at <sha>` text counts only when the review or comment's `user.login` is the repo owner's (both agents post through that account); docs/releasing.md says so. Evidence it holds today: Codex's pass on PR #154 and Claude Code's passes on PRs #91, #94 and #99 were all posted by the owner's account (`superuser-pal`, association OWNER). This is an operational assumption: if an agent ever posts through its own account, the gate must be changed by a new task, not worked around.
+**Acceptance:** a pass posted by another account, or by no recorded user, leaves merge and merge-ready refusing; the owner's pass at the current head is accepted; a pass naming an older head is still refused; `npm test` passes.
 
 ## 0.8.0 — Buttons, Domains, selection and Review (decisions 0054, 0055, 0056)
 
