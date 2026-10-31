@@ -13,7 +13,7 @@
 > - **Review order (CC-27):** the done commit comes before the verdict; the reviewer posts `Review (<agent>): pass at <sha>` last.
 > - **2026-10-29, CC-69 (planning):** decision 0054 (buttons that run Brain Assistant: Tidy capture, Write up, Refresh report), accepted by the user in a grill with Codex, plans 0.7.1 (CC-70 to CC-73, U-22).
 > - **2026-10-31, CC-86 (planning):** decision [0056](../decisions/0056-buttons-move-into-0-8-0.md) moves the Brain Assistant buttons (CC-70 to CC-73, U-22) from 0.7.1 into 0.8.0; 0.7.1 becomes CC-83 to CC-85.
-> - **2026-10-30, CC-74 (planning):** decision [0055](../decisions/0055-domains-capture-and-review.md), accepted in the user's grill, assigns optional Domains, Won't Do, voice capture, subject selection and editable Review to **0.8.0** (CC-74 to CC-82, U-23). Reflection (CC-65 to CC-67, U-21) moves to **0.9.0**; 0.7.0 and 0.7.1 keep their scope. This supersedes the earlier release order above; user acceptance runs remain deferred until the builds are ready. The user explicitly asked Codex to record CC-74 while Claude Code was busy; implementation ownership otherwise stays with Claude Code, and CC-74 needs independent review.
+> - **2026-10-30, CC-74 (planning):** decision [0055](../decisions/0055-domains-capture-and-review.md), accepted in the user's grill, assigns optional Domains, Won't Do, voice capture, subject selection and editable Review to **0.8.0** (CC-74 to CC-82, U-23). Reflection (CC-65 to CC-67, U-21) moves to **0.9.0**; 0.7.0 and 0.7.1 keep their scope (decision [0056](../decisions/0056-buttons-move-into-0-8-0.md), 2026-10-31, later moved the buttons into 0.8.0 and left 0.7.1 as CC-83 to CC-85). This supersedes the earlier release order above; user acceptance runs remain deferred until the builds are ready. The user explicitly asked Codex to record CC-74 while Claude Code was busy; implementation ownership otherwise stays with Claude Code, and CC-74 needs independent review.
 > - **Untriaged `dogfood` issues:** 0 (#143–#146 → CC-68, 2026-10-29; #137 → CC-59).
 > - **Earlier:** v1 waves 1–4 below; dogfood findings 1–24 in the Wave 4 table.
 
@@ -705,12 +705,6 @@ Catch-up on a schedule, with no one there: a budget per run, nothing written whe
 
 A small patch before the larger 0.8.0: the process fixes land first. The Brain Assistant buttons (decision 0054) moved to 0.8.0.
 
-### CC-69 · Plan the buttons: decision 0054 and its tasks · `done` (#149)
-**Release:** 0.8.0
-**Changelog:** decision 0054 plans buttons that run Brain Assistant in Notion (Tidy capture, Write up, Refresh report), with only accepted wording coming back to the brain.
-**Output:** decision 0054, accepted by the user in a grill with Codex on 2026-10-29 and handed to Claude Code to record (amends 0035, 0049, 0043 and 0045; refines 0048, 0053 and 0051; keeps 0003, 0015 and 0052); tasks CC-70 to CC-73 and U-22; docs/vision.md's runner line; docs/v2-ideas.md "Notion-triggered runs"; the status banner. U-19 and CC-61 unchanged.
-**Acceptance:** each task below names its part of 0054 and its acceptance; 0054's Evidence separates what official docs verify, what is inferred and what the user confirmed; Codex's review finds CC-70 scoped so that its contracts can be written without a new question to the user.
-
 ### CC-83 · Neutral examples in the spec ahead of making the repo public · `done` (#154)
 **Release:** 0.7.1
 **Changelog:** the spec's examples use a neutral owner name and paths instead of the author's.
@@ -729,23 +723,29 @@ A small patch before the larger 0.8.0: the process fixes land first. The Brain A
 **Output:** `hasOtherAgentPass` in scripts/common.mjs (used by merge-ready and merge), which today matches the `Review (Codex): pass at <sha>` text in any review or comment whatever its author, and docs/releasing.md (decision 0040): also require the author's login (`user.login` in the API items) to be the repo owner's; a test for each case.
 **Acceptance:** a pass comment by another account leaves merge-ready red; the owner's pass at the current head turns it green; a pass for an older head stays red.
 
+## 0.8.0 — Buttons, Domains, selection and Review (decisions 0054, 0055, 0056)
+
+Optional Domains around PARA; Won't Do closes work without claiming completion; voice captures and subject-based minutes expose what will enter the brain; Review shows editable, attributable changes with independent decisions. Builds the buttons' exact accepted-wording mechanism (CC-72) first within this release (decision 0056), and the Review flow (CC-79) reuses it. Decision 0055 records the agreed behavior; contracts and Notion feasibility come before implementation.
+
+### CC-69 · Plan the buttons: decision 0054 and its tasks · `done` (#149)
+**Release:** 0.8.0
+**Changelog:** decision 0054 plans buttons that run Brain Assistant in Notion (Tidy capture, Write up, Refresh report), with only accepted wording coming back to the brain.
+**Output:** decision 0054, accepted by the user in a grill with Codex on 2026-10-29 and handed to Claude Code to record (amends 0035, 0049, 0043 and 0045; refines 0048, 0053 and 0051; keeps 0003, 0015 and 0052); tasks CC-70 to CC-73 and U-22; docs/vision.md's runner line; docs/v2-ideas.md "Notion-triggered runs"; the status banner. U-19 and CC-61 unchanged.
+**Acceptance:** each task below names its part of 0054 and its acceptance; 0054's Evidence separates what official docs verify, what is inferred and what the user confirmed; Codex's review finds CC-70 scoped so that its contracts can be written without a new question to the user.
+
 ### CC-86 · Plan the buttons' move into 0.8.0 (decision 0056) · `review`
 **Release:** 0.8.0
 **Changelog:** decision 0056 builds the Brain Assistant buttons in 0.8.0 with Domains and editable Review; 0.7.1 becomes a small patch.
 **Output:** decision 0056, accepted by the user on 2026-10-31; CC-70 to CC-73 and CC-69 retargeted to 0.8.0; CC-84 and CC-85 written up under 0.7.1; the 0.8.0 order below; amendment pointers in 0054 and 0055. No code and no live Notion edits.
 **Acceptance:** 0054's and 0055's scopes and acceptance are unchanged apart from release placement; 0.7.1 holds only CC-83 to CC-85 and every task of 0.8.0 names its prerequisite; no personal brain data.
 
-## 0.8.0 — Buttons, Domains, selection and Review (decisions 0054, 0055, 0056)
-
-Optional Domains around PARA; Won't Do closes work without claiming completion; voice captures and subject-based minutes expose what will enter the brain; Review shows editable, attributable changes with independent decisions. Builds after 0.7.1's exact accepted-wording mechanism. Decision 0055 records the agreed behavior; contracts and Notion feasibility come before implementation.
-
 ### CC-74 · Plan 0.8.0 capture and Review, move reflection to 0.9.0 (decision 0055) · `review`
 **Release:** 0.8.0
 **Changelog:** decision 0055 plans optional Domains, Won't Do, selected capture and editable Review for 0.8.0, moving reflection to 0.9.0.
-**Output:** decision 0055, accepted in the user's grill on 2026-10-30 and recorded by Codex at the user's explicit request as a one-task exception to 0044; tasks CC-75 to CC-82 and U-23; CC-65 to CC-67 and U-21 retargeted to 0.9.0; current roadmap references and pointers from 0052 and 0054, retaining their historical text. No implementation, live Notion edits or change to the scope of 0.7.0/0.7.1.
-**Acceptance:** independent review finds all agreed defaults and safeguards in 0055, with no personal brain data; each implementation task names its output and evidence; reflection's task IDs and changelog lines remain intact at release 0.9.0; 0.7.0 and 0.7.1 task definitions remain unchanged. Codex does not self-review this authorship exception.
+**Output:** decision 0055, accepted in the user's grill on 2026-10-30 and recorded by Codex at the user's explicit request as a one-task exception to 0044; tasks CC-75 to CC-82 and U-23; CC-65 to CC-67 and U-21 retargeted to 0.9.0; current roadmap references and pointers from 0052 and 0054, retaining their historical text. No implementation, live Notion edits or change to the scope of 0.7.0/0.7.1 as of 2026-10-30 (decision 0056 later moved CC-70 to CC-73 from 0.7.1 into 0.8.0).
+**Acceptance:** independent review finds all agreed defaults and safeguards in 0055, with no personal brain data; each implementation task names its output and evidence; reflection's task IDs and changelog lines remain intact at release 0.9.0; 0.7.0 and 0.7.1 task definitions remain unchanged as of 2026-10-30 (decision 0056 later retargeted CC-69 to CC-73). Codex does not self-review this authorship exception.
 
-**Order (0056):** CC-70, then CC-75 (contracts) and CC-71/CC-72 in parallel, then CC-73, CC-76 to CC-78, CC-79 (after CC-72), CC-80, CC-81, CC-82. Notion migrations: 0012 (buttons), then 0013.
+**Order (0056):** CC-70, then CC-75 (contracts) and CC-71/CC-72 in parallel, then CC-73 (after CC-72), CC-76 to CC-78, CC-79 (after CC-72), CC-80, CC-81, CC-82. Notion migrations: 0012 (buttons), then 0013.
 
 ### CC-70 · Contracts for the Brain Assistant buttons (decision 0054) · `todo`
 **Release:** 0.8.0
@@ -768,7 +768,7 @@ Optional Domains around PARA; Won't Do closes work without claiming completion; 
 ### CC-73 · Catch-up imports accepted wording and proposes related knowledge (decision 0054) · `todo`
 **Release:** 0.8.0
 **Changelog:** catch-up takes in the Documents and report refreshes you accepted in Notion and proposes related knowledge to add, citing why each item helps.
-**Output:** per CC-70: brain-catch-up and brain-sync (read accepted wording, import it, search canonical knowledge for a Related knowledge appendix and propose it with a citation and a reason per item, propose changes to other notes separately, unattended per 0051 as refined); brain-query (reports stay derived, never evidence); the skill mirror.
+**Output:** needs CC-70 (contracts) and CC-72 (the CLI that reads accepted wording), per CC-70: brain-catch-up and brain-sync (read accepted wording, import it, search canonical knowledge for a Related knowledge appendix and propose it with a citation and a reason per item, propose changes to other notes separately, unattended per 0051 as refined); brain-query (reports stay derived, never evidence); the skill mirror.
 **Acceptance:** blind runs on a synthetic brain built with CC-41: an accepted Write up is imported exactly and one Related knowledge proposal follows with a reason per item; an edited-after-acceptance Document is listed under Needs you, not imported; an accepted refresh replaces the report's text and a Git-only addition becomes a separate proposal; an unattended run imports an accepted Document and leaves an unaccepted one alone; the skill mirror check passes.
 
 ### CC-75 · Contracts and Notion feasibility for Domains, selection and Review (decision 0055) · `todo`
@@ -810,7 +810,7 @@ Optional Domains around PARA; Won't Do closes work without claiming completion; 
 ### CC-81 · Notion templates, guidance and migration 0013 (decision 0055) · `todo`
 **Release:** 0.8.0
 **Changelog:** Notion templates expose selected subjects, optional Domains and guided Review bodies, with migration 0013 preserving existing content and decisions.
-**Output:** per CC-75: docs/notion-space-design.md, templates, build/module prompts, Brain Assistant guidance and migration 0013 after 0012; optional Domain database/navigation and Area relation; voice capture and minutes subject layouts with inclusion controls, visible inherited defaults and Ready/Reviewed notices; Review target/evidence sections, Creates/Changes/action assistance and supported explanatory descriptions; integrate CC-77 task changes. Document by-hand steps and verified recording/transcription fallback. Preserve existing pending bodies, decisions and legacy correction instructions.
+**Output:** needs CC-75 and CC-71 (migration 0012), per CC-75: docs/notion-space-design.md, templates, build/module prompts, Brain Assistant guidance and migration 0013 after 0012; optional Domain database/navigation and Area relation; voice capture and minutes subject layouts with inclusion controls, visible inherited defaults and Ready/Reviewed notices; Review target/evidence sections, Creates/Changes/action assistance and supported explanatory descriptions; integrate CC-77 task changes. Document by-hand steps and verified recording/transcription fallback. Preserve existing pending bodies, decisions and legacy correction instructions.
 **Acceptance:** migration lists who performs each step and verifies it on synthetic pages; Domains remain optional; the voice template starts New and leaves ingestion to Ready; meeting summaries show the agreed default notice and editable subject/item selection without a second confirmation dialog; Review explains each action without relying on hover text; pending old rows survive; module-off pages omit unavailable sections; both fresh setup and upgrade use supported Notion controls.
 
 ### CC-82 · End-to-end acceptance for selected capture and editable Review (decision 0055) · `todo`
