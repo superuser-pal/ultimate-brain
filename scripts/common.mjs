@@ -55,6 +55,17 @@ export function checksPassed(tsv) {
     && runs.every(([status, conclusion]) => status === "completed" && ["success", "skipped", "neutral"].includes(conclusion));
 }
 
+/**
+ * True when the newest `push` run of the `CI` workflow on branch `main` finished green. `tsv` is one `name\tevent\tbranch\tstatus\tconclusion` line per
+ * workflow run, newest first. Other workflows (`merge-ready` runs on comments and attaches to main's HEAD) and runs for a tag or another branch at the same
+ * SHA do not count: `main-guard` runs only for `refs/heads/main`.
+ */
+export function ciWorkflowPassed(tsv) {
+  const runs = tsv.split("\n").filter(Boolean).map((line) => line.split("\t"));
+  const latest = runs.find(([name, event, branch]) => name === "CI" && event === "push" && branch === "main");
+  return latest !== undefined && latest[3] === "completed" && latest[4] === "success";
+}
+
 export function packageVersion() {
   const file = resolve(ROOT, "package.json");
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")).version : undefined;
