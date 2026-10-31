@@ -116,7 +116,7 @@ Each type must live in its folder (lint error otherwise). A `view` lives inside 
 
 ## 4. Note types
 
-> **0.8.0 additions (decision 0055), specified in [capture-and-review.md](capture-and-review.md):** the optional `domain` note type and `area.domain` (§1), the Won't Do task status (§2), selected-extract sources with `extract`, `extract_of`, `extract_version`, `transcript_hash` and `selection` (§4.5), eligible evidence and suppressed passages (§5), and per-item decisions in a proposal (`item_id`, `item_decisions`, §7). Their fields are added to this file by CC-76, CC-78 and CC-79 with the code that reads them.
+> **0.8.0 additions (decision 0055), specified in [capture-and-review.md](capture-and-review.md):** the optional `domain` note type and `area.domain` (§1), the Won't Do task status (§2), selected-extract sources with `extract`, `extract_of`, `extract_version`, `transcript_hash`, `selection` and per-paragraph `passage_hash` (§4.5), passage references on claims (`passage`, `^[src-…#¶n:hash]`, §5.1), and per-item decisions in a proposal (`item_id`, `item_decisions`, §7). Their fields are added to this file by CC-76, CC-78 and CC-79 with the code that reads them.
 
 Each row lists fields **in addition to** §3. "Notion" names the database the type is mirrored to ([notion-space-design.md](../docs/notion-space-design.md) §3).
 

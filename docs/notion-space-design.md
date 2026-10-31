@@ -425,6 +425,10 @@ Keep as document and Promote to document stay checkbox buttons that the catch-up
 
 **Where each case ends (the table in cli.md §5.14.7 is normative).** A Document or report body can be seeded, drafted by Write up, carry a pending proposal, be accepted, be edited after acceptance, or differ from Git; each has one outcome there. This section only defines the controls the user sees.
 
+### 3.18 Domains, selected capture and editable Review (0.8.0, decision 0055)
+
+The contract is [spec/capture-and-review.md](../spec/capture-and-review.md). For the Notion space it adds: the optional Domains database and Areas · Domain relation (§1), the Won't Do status and progress display (§2), the voice/ramble Inbox template (§3), typed `Selection:` tokens on summaries (§4), Review rows with item sections, `Decision:` tokens, the Submit decisions and Submit and accept all buttons, and the Decided, Decided at and Accept all properties (§7). **Every mechanism there is planned and unverified** until the user's tests T1 to T7 (§9) are recorded here as verified.
+
 ## 4. Templates (contextual workspaces, Easlo pattern)
 
 Each template is the default for its database. Every linked view sits under an H3 heading named by the question it answers, with the database title hidden, and is filtered to "this page". Where a block has tabs, they follow the record's life (now → later → done). The table is the intent; [Prompt 6](../notion/prompts/06-templates.md) is the exact definition and wins where they differ. The live snapshot is [notion/templates.md](../notion/templates.md).
