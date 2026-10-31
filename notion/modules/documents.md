@@ -14,9 +14,10 @@ Keep a document, or part of one, as a page you can read, linked to its source, p
 | Change | Who |
 |---|---|
 | Inbox: add **Document asked** (checkbox) and **Only keep** (text) | agent |
+| Documents: add **Accepted** (checkbox) and **Accepted at** (date, with time) (0054) | agent |
 | Decisions and Concepts (with Knowledge on): add **Promote asked** (checkbox) | agent |
 | Two-way relations: Inbox "Documents" ↔ Documents "Sources"; Documents "Project" ↔ Projects "Documents"; Documents "Area" ↔ Areas "Documents"; with Knowledge on, Documents "From decision" ↔ Decisions "Documents" and Documents "From concept" ↔ Concepts "Documents" | agent |
-| Descriptions per [Prompt 5](../prompts/05-ownership.md): Document asked "Owner: you, through the Keep as document button. Waiting for the brain; it clears it."; Only keep "Owner: you. Only this part is kept as a Document ('the requirements table'); empty = the whole input."; Promote asked "Owner: you, through the Promote to document button. Waiting for the brain; it clears it."; on Documents, Brain ID, Last Synced, Created time and Last edited time "Owner: system. Do not edit.", Lifecycle "Owner: you.", the rest "Owner: brain." | agent |
+| Descriptions per [Prompt 5](../prompts/05-ownership.md): Document asked "Owner: you, through the Keep as document button. Waiting for the brain; it clears it."; Only keep "Owner: you. Only this part is kept as a Document ('the requirements table'); empty = the whole input."; Promote asked "Owner: you, through the Promote to document button. Waiting for the brain; it clears it."; Accepted and Accepted at "Owner: you, through the Accept write-up button. The brain clears them once it has taken the accepted text in."; on Documents, Brain ID, Last Synced, Created time and Last edited time "Owner: system. Do not edit.", Lifecycle "Owner: you.", the rest "Owner: brain." | agent |
 | Record the database id: `brain config set notion.databases.documents '"<id>"'` | agent |
 
 ### 3 · Views
@@ -34,7 +35,8 @@ Keep a document, or part of one, as a page you can read, linked to its source, p
 **By hand** (the API can't create buttons or edit page layouts):
 1. **Inbox → Keep:** open Inbox as a full page → `•••` → Properties → **New property** → **Button**, named "Keep", with the label "Keep as document". Action **Edit property** on **This page**: Document asked → checked; Brain Status → Ready.
 2. **Decisions → Promote** (with Knowledge on): a Button property named "Promote", with the label "Promote to document", action **Edit property** on **This page**: Promote asked → checked. The same on **Concepts**.
-3. **Page layouts** (open any row → **Customize layout**): Inbox pins Keep next to Brain Status, Project and Area, and puts Document asked and Only keep at the top of the property group; Decisions and Concepts pin Promote next to Lifecycle, with Promote asked at the top of the property group; Documents pins Lifecycle, Project, Area, Sources, and collapses Brain ID, Last Synced, Created time and Last edited time ([views-guide.md](../views-guide.md) §9).
+3. **Documents → Write and Accept** (0054): a Button property named "Write" with the label "Write up", action **Send message to** Brain Assistant, with the Write up message in [views-guide.md](../views-guide.md) §9; and a Button property named "Accept" with the label "Accept write-up", action **Edit property** on **This page**: Accepted → checked, Accepted at → Now. Brain Assistant needs its Write up skill and edit access to Documents ([brain-assistant.md](../brain-assistant.md)).
+4. **Page layouts** (open any row → **Customize layout**): Inbox pins Keep next to Brain Status, Project and Area, and puts Document asked and Only keep at the top of the property group; Decisions and Concepts pin Promote next to Lifecycle, with Promote asked at the top of the property group; Documents pins Write, Accept, Lifecycle, Project, Area, Sources and puts Accepted and Accepted at at the top of the property group, and collapses Brain ID, Last Synced, Created time and Last edited time ([views-guide.md](../views-guide.md) §9).
 
 ### Verify
 - [ ] Brain Data holds a Documents database with its relations; `brain modules` shows `documents` on with nothing missing.
@@ -42,6 +44,7 @@ Keep a document, or part of one, as a page you can read, linked to its source, p
 - [ ] (Knowledge) Clicking **Promote to document** on a decision ticks Promote asked.
 - [ ] Knowledge has a Documents tab; a new project has a Documents view under "What do we know?".
 - [ ] After the next catch-up, the row's Document asked is cleared and its Documents relation lists the new page.
+- [ ] (Brain Assistant) **Write up** on a promoted Document gives Purpose, Main content, Open questions and Sources and changes no property; a second click keeps your edit and adds a toggle "Proposed revision". **Accept write-up** ticks Accepted and sets Accepted at; after the next catch-up shows the text and you confirm, the Git Document holds the text and the box is cleared.
 
 ## Turning it off
 

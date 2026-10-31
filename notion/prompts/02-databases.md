@@ -21,11 +21,12 @@ On the page "Brain Data", create these full-page databases with exactly these pr
 10. "Review": Name (title), Kind (select: Update Fact, Add To Note, Update Body, Add Link, Supersede, Contradiction, Merge, New Item, Review Notes, Answer), About (text), About Page (url), Now (text), Proposed (text), Why (text), Your call (select: Approve, Reject, Fix), What to fix (text), State (select: Pending, Applied, Closed; default Pending), Brain ID (text), Created time (created time), Last edited time (last edited time).
 11. "Inbox": Name (title), Kind (select: Capture, File, Email, Chat, Note, Ask, Report; default Capture), Summary (text), Brain Status (select: New, Ready, Done; default New), Brain ID (text), Last Synced (date), Created (created time).
 [Documents] Also in "Inbox": Document asked (checkbox), Only keep (text).
-[Reports] Also in "Inbox": Refresh asked (checkbox), What to fix (text).
+[Reports] Also in "Inbox": Refresh asked (checkbox), What to fix (text), Accepted (checkbox), Accepted at (date, with time).
 [Tasks] 12. "Tasks": Name (title), Status (status: To Do, Doing, Waiting On, Someday, Done; put Waiting On and Someday in any group except Complete), Due (date), Brain ID (text), Last edited time (last edited time).
 [Knowledge] 13. "Concepts": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time).
 [Knowledge] [Documents] Also in "Concepts": Promote asked (checkbox).
 [Documents] 14. "Documents": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time), Last edited time (last edited time).
+[Documents] Also in "Documents": Accepted (checkbox), Accepted at (date, with time).
 ```
 
 ## Verify

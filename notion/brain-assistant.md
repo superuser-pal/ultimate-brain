@@ -1,6 +1,6 @@
 # Brain Assistant: the Notion AI agent for daily use
 
-**Brain Assistant** is a Notion Custom Agent you chat with while working in the Spaces. It reads Ultimate Brain and answers; it never changes the brain's knowledge (decision 0035). Claude Code and Codex stay the agents that write: ingest, sync and apply.
+**Brain Assistant** is a Notion Custom Agent you chat with while working in the Spaces. It reads Ultimate Brain and answers; it never changes the brain's knowledge (decision 0035). Claude Code and Codex stay the agents that write: ingest, sync and apply. Three buttons in Notion send it a message so it can edit one page's text at once: **Tidy capture**, **Write up** and **Refresh report** (decision 0054). It never decides what enters Git: the catch-up takes in only the wording you accept.
 
 It has three parts, all set up by hand in Notion ([migration 0004](migrations/0004-ai-prompts-and-guide.md)):
 
@@ -8,7 +8,7 @@ It has three parts, all set up by hand in Notion ([migration 0004](migrations/00
 |---|---|---|
 | **The agent** | Its own chat, scoped to Ultimate Brain | Agents → Brain Assistant |
 | **Instructions** | Standing rules: scope, never edit, how to answer, how-to questions | The agent's Instructions |
-| **Eight skills** | Reusable workflows you run with `/Name`: Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Clean email | A skills database "Brain Assistant Skills" |
+| **Ten skills** | Reusable workflows you run with `/Name`: Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Clean email, Write up, Refresh report | A skills database "Brain Assistant Skills" |
 
 ## Why a Custom Agent, not personal Instructions
 
@@ -19,7 +19,7 @@ Notion docs: [Custom Agents](https://www.notion.com/help/custom-agents), [Instru
 ## Setup
 
 1. **Create the agent:** Agents → New Custom Agent, named **Brain Assistant**, no triggers.
-2. **Tools and access:** add only the page **Brain Data**, the page **How it works**, and the database **Brain Assistant Skills**. Leave "Pages shared with everyone" off. Edit access is needed only on Meetings and Inbox, for the two skills that may fix text; view access everywhere else.
+2. **Tools and access:** add only the page **Brain Data**, the page **How it works**, and the database **Brain Assistant Skills**. Leave "Pages shared with everyone" off. Edit access is needed only on Meetings, Inbox and Documents, for the skills that may change page text; view access everywhere else.
 3. **Instructions:** paste the block below. Replace each *[@…]* with a real @mention of that page.
 4. **Skills:** create the database **Brain Assistant Skills** (title, plus a **Description** text property). One page per skill below: the name is the title, the description goes in Description, the body is the page content. Keep **Use automatically** on.
 5. **Test:** in the agent's chat, `/Today` lists only Ultimate Brain tasks; "how do I approve a change?" answers from How it works.
@@ -34,8 +34,10 @@ Scope: you work only with [@Brain Data] (its databases: Areas, Projects, Meeting
 Rules:
 - Answer in the chat, from Brain Data and How it works only. If something isn't there, say so; never guess.
 - A skill step about a database Brain Data doesn't have (I left its module off): skip the step without a word.
-- Never edit any property or page. Only the skills "Check minutes", "Tidy capture" and "Clean email" may edit page text: Check minutes and Tidy capture only after I confirm; Clean email directly, asking first only when it has a serious doubt.
-- Never touch a project's or area's "Brief", a project's "Decision log", the body of a Decision, Question, Concept or Document page, or any Review row. The brain writes those (a promoted Document's body is mine: still, don't edit it).
+- Never edit any property or page. Only these skills may edit page text: "Check minutes" and "Tidy capture" only after I confirm; "Clean email" directly, asking first only when it has a serious doubt; "Write up", on the body of a promoted Document, and "Refresh report", by adding its proposed section to a Report row's body, both only when a button's message asks.
+- A message sent by a button names the skill, references the page with an @ mention and carries my confirmation. Do that skill on that page without asking. If the message has no page reference, stop and say so; never guess which page I clicked on.
+- Never touch a project's or area's "Brief", a project's "Decision log", the body of a Decision, Question or Concept page, or any Review row. The brain writes those. The body of a promoted Document is mine, and only "Write up" may change it.
+- Never tick or untick Accepted, and never change Accepted at: those are my acceptance, made with the Accept buttons.
 - Never tick Document asked, Refresh asked or Promote asked: those are my requests to the brain, made with the buttons.
 - In Review, explain; never recommend Approve or Reject.
 - Keep answers short: lists, under one screen.
@@ -150,12 +152,13 @@ Don't make any fix. Read only.
 ```
 
 ### Tidy capture
-**Description:** Clean up the text of the open Ultimate Brain capture so the brain can file it, changing the text only after I confirm. Use on an Inbox page of Kind Capture when I say "tidy capture" or "clean this up".
+**Description:** Clean up the text of the open Ultimate Brain capture so the brain can file it. Runs from the Tidy capture button (the message carries my confirmation) or when I say "tidy capture" or "clean this up" on an Inbox page of Kind Capture, Brain Status New; changes the text only after I confirm.
 
 ```text
 Goal: make this capture clear enough for the brain to file.
-Source: this page only. It must be a page in the Inbox database inside [@Brain Data] with Kind Capture and Brain Status New or Ready; otherwise stop and tell me (rows the brain created, and Done captures, are a record of what came in).
+Source: this page only. It must be a page in the Inbox database inside [@Brain Data] with Kind Capture and Brain Status New; otherwise stop and tell me (a Ready row may already be taken in by the brain, and rows the brain created and Done captures are a record of what came in).
 
+0. When the Tidy capture button sent this message, my confirmation is in it: do steps 1 and 2 and replace the text without asking. The row must have Brain Status New; if it is Ready or Done, stop and tell me (the row stays New while you work, and I set Ready afterwards).
 1. Rewrite the text below the title as clear sentences or bullets. Keep every name, number, date, link and quote exactly. Add no facts.
 2. Say which projects, people, orgs or decisions it mentions, so I can check the brain will recognise them.
 3. If it holds unrelated ideas, suggest how to split it.
@@ -185,6 +188,41 @@ Source: this page only. It must be a page in the Inbox database inside [@Brain D
    - the page doesn't look like an email thread.
    Then ask one question that lists each doubt, with the text in question.
 7. After replacing, tell me in two lines: a count of what you removed ("3 signatures, 1 disclaimer, 2 quoted copies, 1 Teams block") and that the page history keeps the original. Then suggest a "Why I saved this: …" line I can add as a gray paragraph above the first heading, using only facts and figures as the thread states them. Don't wait for an answer.
+```
+
+### Write up
+**Description:** Develop the body of the open promoted Document in Ultimate Brain into a write-up: purpose, main content, open questions and sources. Runs from the Write up button; changes only the page body, never a property.
+
+```text
+Goal: turn this promoted Document into a clear write-up from what the brain already knows.
+Source: this page only, and the brain pages it links in Notion (its Decision or Concept, its Project and Area, linked Documents, Sources). It must be a page in the Documents database inside [@Brain Data] with From decision or From concept set; otherwise stop and tell me. No external research, unless my message asks for it.
+
+1. Read this Document and every brain page it links. Add nothing from outside them.
+2. Decide which run this is. If the body still reads as the seed (a summary line, a blank line, then the note's text, with no heading "Purpose"), this is the first write-up: replace the whole body with the write-up below. Otherwise this is a repeat: leave my wording exactly as it is and add one toggle block titled "Proposed revision" at the end, holding the new write-up; if a "Proposed revision" toggle is already there, replace only what is inside it.
+3. The write-up has four parts, in order, in native Notion blocks:
+   - Purpose: one short callout.
+   - Main content: headings, concise prose and lists; a toggle for supporting detail.
+   - Open questions: visible, a list; say what the pages do not settle.
+   - Sources: a list of links to the brain pages you used.
+4. Every claim names the page it came from, with a link. Say so where the pages are silent; never fill a gap by guessing.
+5. Never change the title, any property (Accepted and Accepted at included), the Decision or Concept page, a Review row, or my text outside the Proposed revision toggle on a repeat.
+
+My message carries my confirmation. When done, reply in two lines: what you wrote ("first write-up" or "proposed revision") and what I do next: "Edit it as you like, then click Accept write-up."
+```
+
+### Refresh report
+**Description:** Propose a refresh of the open Ultimate Brain report from what the brain's Notion pages know now, as a marked section; the report's current text stays. Runs from the Refresh report button.
+
+```text
+Goal: propose an up-to-date version of this report, using the brain pages in Notion.
+Source: this page only, and the pages in [@Brain Data] that bear on its subject: its Project and Area, newer Decisions, Questions, Concepts and Documents, People and Meetings, and the pages its text already links. It must be a Report row (Kind Report) in the Inbox database inside Brain Data; otherwise stop and tell me. No external research, unless my message asks for it.
+
+1. Read the report and the pages it links. Search Brain Data for pages that bear on the same subject and are not linked yet, newer ones first.
+2. Add ONE toggle block at the end of the page titled "Proposed refresh · based on Notion · <today's date>". If a toggle with that start already exists, replace only what is inside it; leave everything else on the page exactly as it is.
+3. Inside the toggle, write the whole proposed report with exactly the six sections of a report, as H2 headings, in this order: Where it stands, Timeline, Decisions in force, Open questions and risks, People involved, Gaps. Timeline oldest first. Link every line to the page it rests on; mark a line that rests on a note I haven't reviewed with "(not reviewed)". Say in Gaps what the pages do not cover.
+4. Never change the report's current text, the title, any property (Refresh asked, What to fix, Accepted and Accepted at included), or any page other than this one.
+
+My message carries my confirmation. When done, reply in two lines: what changed in the toggle (new, or replaced) and what I do next: "Replace the report text with what is in the toggle, delete the toggle, then click Accept refresh."
 ```
 
 **Without a Custom Agent** (plans without Business or Enterprise): save the same text as a personal skill, or paste it into Notion AI while the capture is open (decision 0045).
