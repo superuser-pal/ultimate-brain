@@ -733,13 +733,13 @@ Optional Domains around PARA; Won't Do closes work without claiming completion; 
 **Output:** decision 0054, accepted by the user in a grill with Codex on 2026-10-29 and handed to Claude Code to record (amends 0035, 0049, 0043 and 0045; refines 0048, 0053 and 0051; keeps 0003, 0015 and 0052); tasks CC-70 to CC-73 and U-22; docs/vision.md's runner line; docs/v2-ideas.md "Notion-triggered runs"; the status banner. U-19 and CC-61 unchanged.
 **Acceptance:** each task below names its part of 0054 and its acceptance; 0054's Evidence separates what official docs verify, what is inferred and what the user confirmed; Codex's review finds CC-70 scoped so that its contracts can be written without a new question to the user.
 
-### CC-86 · Plan the buttons' move into 0.8.0 (decision 0056) · `review`
+### CC-86 · Plan the buttons' move into 0.8.0 (decision 0056) · `done` (#156)
 **Release:** 0.8.0
 **Changelog:** decision 0056 builds the Brain Assistant buttons in 0.8.0 with Domains and editable Review; 0.7.1 becomes a small patch.
 **Output:** decision 0056, accepted by the user on 2026-10-31; CC-70 to CC-73 and CC-69 retargeted to 0.8.0; CC-84 and CC-85 written up under 0.7.1; the 0.8.0 order below; amendment pointers in 0054 and 0055. No code and no live Notion edits.
 **Acceptance:** 0054's and 0055's scopes and acceptance are unchanged apart from release placement; 0.7.1 holds only CC-83 to CC-85 and every task of 0.8.0 names its prerequisite; no personal brain data.
 
-### CC-74 · Plan 0.8.0 capture and Review, move reflection to 0.9.0 (decision 0055) · `review`
+### CC-74 · Plan 0.8.0 capture and Review, move reflection to 0.9.0 (decision 0055) · `done` (#156)
 **Release:** 0.8.0
 **Changelog:** decision 0055 plans optional Domains, Won't Do, selected capture and editable Review for 0.8.0, moving reflection to 0.9.0.
 **Output:** decision 0055, accepted in the user's grill on 2026-10-30 and recorded by Codex at the user's explicit request as a one-task exception to 0044; tasks CC-75 to CC-82 and U-23; CC-65 to CC-67 and U-21 retargeted to 0.9.0; current roadmap references and pointers from 0052 and 0054, retaining their historical text. No implementation, live Notion edits or change to the scope of 0.7.0/0.7.1 as of 2026-10-30 (decision 0056 later moved CC-70 to CC-73 from 0.7.1 into 0.8.0).
@@ -747,7 +747,7 @@ Optional Domains around PARA; Won't Do closes work without claiming completion; 
 
 **Order (0056):** CC-70, then CC-75 (contracts) and CC-71/CC-72 in parallel, then CC-73 (after CC-72), CC-76 to CC-78, CC-79 (after CC-72), CC-80, CC-81, CC-82. Notion migrations: 0012 (buttons), then 0013.
 
-### CC-70 · Contracts for the Brain Assistant buttons (decision 0054) · `todo`
+### CC-70 · Contracts for the Brain Assistant buttons (decision 0054) · `in progress`
 **Release:** 0.8.0
 **Changelog:** contracts for the Brain Assistant buttons: what each button sends and may edit, how accepted wording is recorded and checked, and how a publish keeps what is pending in Notion.
 **Output:** first, verify on a test page what a button's "send message to agent" action passes to Brain Assistant (the page, the database, the text) and how the skill it should run is named; record the result, marked verified, in docs/notion-space-design.md. Then docs/notion-space-design.md: the Tidy capture, Write up and Refresh report buttons, which databases and rows each appears on, and the Brain Assistant edit permissions (0035 as amended); the Write up format and its proposed-revision block; how acceptance is recorded against the exact accepted text (an Accept write-up or accept-refresh control, its property, and what invalidates it), and how a pending revision blocks it. spec/cli.md and spec/schema.md: what `sync plan` reads for an accepted promoted Document and an accepted refresh, the stale and conflict cases (body changed after acceptance, Git Document changed since), the Notion-blocks-to-Markdown conversion for the accepted text, the Related knowledge appendix proposal and its apply rule (appends, keeps the accepted wording), `sync render` keeping pending drafts, revisions and proposed refreshes, Refresh report never queuing the old full refresh, and unattended runs (0051) importing only exact, explicit, current acceptance.
