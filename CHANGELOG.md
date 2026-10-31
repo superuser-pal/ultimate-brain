@@ -2,6 +2,12 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.7.1 — 2026-10-31
+
+- CC-83 (#154): the spec's examples use a neutral owner name and paths instead of the author's.
+- CC-84 (#157): the release gate looks only at the CI workflow's checks, so an unrelated failing check no longer blocks a release.
+- CC-85 (#158): the merge-ready status accepts "Review (Codex): pass at <sha>" only from the repo owner's account.
+
 ## 0.7.0 — 2026-10-31
 
 - CC-62 (#151): contracts for unattended catch-up: the input budget, the no-op rule, the Report row, and `brain schedule`.
