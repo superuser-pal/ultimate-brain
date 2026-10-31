@@ -34,6 +34,8 @@ export const syncRenderCommand: Command = {
       for (const item of plan.conflicts) { if (typeof item.brain_id === "string") withheld.set(item.brain_id, "ROW_CONFLICTED"); conflictedPages.add(String(item.page_id)); }
       for (const item of plan.report_fixes) if (!withheld.has(item.report)) withheld.set(item.report, "FIX_WAITING");
     }
+    // A note whose Notion text is unresolved is never overwritten (cli §5.14.7, 0054): a pending proposal, an unaccepted draft, or accepted wording not yet imported.
+    if (plan !== undefined) for (const item of [...plan.wording_waiting, ...plan.wording_held, ...plan.accepted_wording]) if (!withheld.has(item.note)) withheld.set(item.note, "WORDING_PENDING");
     const skipped: Array<{ id: string; reason: string }> = []; const items = data.items.filter((item) => {
       const reason = withheld.get(item.id) ?? (item.page_id !== null && conflictedPages.has(item.page_id) ? "ROW_CONFLICTED" : undefined);
       if (reason === undefined) return true; skipped.push({ id: item.id, reason }); return false;

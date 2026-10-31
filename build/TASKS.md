@@ -759,7 +759,7 @@ Optional Domains around PARA; Won't Do closes work without claiming completion; 
 **Output:** per CC-70: notion/brain-assistant.md (the Write up skill; Tidy capture and Refresh report as button-run skills; the Instructions' edit rule as amended); the build prompts, notion/modules/ and the views guide (the buttons, the accept control, the layouts); notion/migrations/0012 for spaces on 0011; the user guide (each button, accepting wording, what the catch-up does with it).
 **Acceptance:** migration 0012 names every change with who does it, and its Verify list covers each; on a test space, Write up on a promoted Document gives Purpose, Main content, Open questions and Sources and touches no property; a second Write up keeps the user's edit and appends a marked revision; Refresh report appends one "Proposed refresh · based on Notion" section and a second click replaces only it; Tidy capture leaves the row New and its properties unchanged.
 
-### CC-72 · Accepted wording and appendices in the CLI (decision 0054) · `in progress`
+### CC-72 · Accepted wording and appendices in the CLI (decision 0054) · `review`
 **Release:** 0.8.0
 **Changelog:** the CLI reads the wording you accepted in Notion into the Git Document or report exactly, supports Related knowledge appendix proposals, and never overwrites a pending draft on publish.
 **Output:** per CC-70 (spec/cli.md, spec/schema.md): `sync plan` items for accepted promoted Documents and accepted refreshes, with the stale and conflict cases; the conversion of the accepted blocks; the appendix proposal and its apply; `sync render` keeping pending drafts, revisions and proposed refreshes; the code and tests.

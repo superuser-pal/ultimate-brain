@@ -16,6 +16,8 @@ import { lineDiff } from "./diff.ts";
 import type { LogEntry } from "./log.ts";
 import { databaseId, moduleForDatabase, modulesOf, typeIsOn } from "./modules.ts";
 import { bodyHash, bodyOf } from "./proposals.ts";
+import { hasReportShape, reportLinks } from "./report-body.ts";
+import { gitBodyOf, parseWording, planWording, textHash, type AcceptedWording, type Wording, type WordingPlan } from "./wording.ts";
 
 const DATABASES = ["areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "concepts", "documents", "review", "inbox"] as const;
 const CREATABLE = new Set(["areas", "goals", "projects", "people", "orgs"]);
@@ -34,8 +36,13 @@ export interface SyncPlan {
   /** Decision and concept rows whose Promote box is ticked (0049); the skill writes a promoted Document for each. */
   promote_requests: Array<{ page_id: string; note: string; existing?: string }>;
   /** Report rows whose Refresh box is ticked, and their new What to fix texts (0045); the skill runs `report new` / `report fix`. */
-  refresh_requests: Array<{ page_id: string; report: string }>;
+  refresh_requests: Array<{ page_id: string; report: string; wording_blocked?: true }>;
   report_fixes: Array<{ page_id: string; report: string; text: string }>;
+  /** Accepted Document and report wording to import exactly, and the rows that wait or are held (cli §5.14.7, 0054). */
+  accepted_wording: AcceptedWording[];
+  wording_waiting: WordingPlan["wording_waiting"];
+  wording_held: WordingPlan["wording_held"];
+  clear_accepted: WordingPlan["clear_accepted"];
   conflicts: Array<Record<string, unknown>>;
   ignored: Array<Record<string, unknown>>;
 }
@@ -71,7 +78,7 @@ function conflict(row: SnapshotRow, code: string, message: string, propertyName?
   };
 }
 
-interface SnapshotRow { database: string; page_id: string; last_edited: string; properties: Record<string, unknown> }
+interface SnapshotRow { database: string; page_id: string; last_edited: string; properties: Record<string, unknown>; wording?: Wording }
 interface Snapshot { as_of: string; rows: SnapshotRow[] }
 
 /** Validates the skill-normalized snapshot without accepting arbitrary MCP-shaped input. */
@@ -84,7 +91,8 @@ export function parseSnapshot(input: unknown): Snapshot {
   (Array.isArray(record.rows) ? record.rows : []).forEach((value, index) => {
     const p = `/rows/${index}`;
     if (!isRecord(value)) return problems.push({ pointer: p, message: "must be an object" });
-    problems.push(...unknownKeys(value, ["database", "page_id", "last_edited", "properties"], p));
+    problems.push(...unknownKeys(value, ["database", "page_id", "last_edited", "properties", "wording"], p));
+    if (value.wording !== undefined) value.wording = parseWording(value.wording, `${p}/wording`, problems);
     if (value.database === "references") value.database = "documents"; // read as documents (0049)
     if (!DATABASES.includes(value.database as typeof DATABASES[number])) problems.push({ pointer: `${p}/database`, message: "is not a sync database" });
     if (typeof value.page_id !== "string" || value.page_id === "") problems.push({ pointer: `${p}/page_id`, message: "must be a non-empty string" });
@@ -97,7 +105,7 @@ export function parseSnapshot(input: unknown): Snapshot {
 
 /** Compute the deterministic, no-network Notion pull plan (cli §5.14.2). */
 export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
-  const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], decisions: [], document_requests: [], promote_requests: [], refresh_requests: [], report_fixes: [], conflicts: [], ignored: [] };
+  const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], decisions: [], document_requests: [], promote_requests: [], refresh_requests: [], report_fixes: [], accepted_wording: [], wording_waiting: [], wording_held: [], clear_accepted: [], conflicts: [], ignored: [] };
   const createsByPage = new Map<string, { id: string; type: string }>();
   for (const row of snapshot.rows) if (CREATABLE.has(row.database) && blank(property(row.properties, "Brain ID"))) {
     const existing = noteByNotion(workspace, row.page_id);
@@ -124,8 +132,12 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
     // A create whose publish failed has no Brain ID in Notion yet; treat the row as if it had it (cli §5.14.2).
     const known = typeof brainId === "string" && brainId !== "" ? row : { ...row, properties: { ...row.properties, "Brain ID": note.id } };
     planExisting(workspace, snapshot.as_of, known, note, result);
+    if (row.database === "documents" && row.wording !== undefined && note.type === "reference" && note.attributes.origin === "promoted") planWording(workspace, snapshot.as_of, row.page_id, note, row.wording, result);
     if ((row.database === "decisions" || row.database === "concepts") && property(row.properties, "Promote asked") === true) planPromote(workspace, row, note, modules.documents, result);
   }
+  // A queued full refresh waits while Notion text for that report is unresolved (cli §5.14.7).
+  const wordingNotes = new Set([...result.accepted_wording, ...result.wording_waiting, ...result.wording_held].map((item) => item.note));
+  for (const request of result.refresh_requests) if (wordingNotes.has(request.report)) request.wording_blocked = true;
   sortPlan(result);
   return result;
 }
@@ -259,6 +271,7 @@ function planInbox(workspace: Workspace, row: SnapshotRow, out: SyncPlan): void 
   if (note !== undefined && isReport(note)) {
     if (!modules.reports) { out.ignored.push(ignoredRow(row, "MODULE_OFF")); return; }
     if (property(row.properties, "Refresh asked") === true || property(row.properties, "Refresh") === true) out.refresh_requests.push({ page_id: row.page_id, report: note.id });
+    if (row.wording !== undefined) planWording(workspace, out.as_of, row.page_id, note, row.wording, out);
     const text = property(row.properties, "What to fix");
     const last = (Array.isArray(note.attributes.fixes) ? note.attributes.fixes : []).filter(isRecord).at(-1);
     if (typeof text === "string" && text.trim() !== "" && text !== last?.text) out.report_fixes.push({ page_id: row.page_id, report: note.id, text });
@@ -332,7 +345,7 @@ function planKeyResult(workspace: Workspace, asOf: string, row: SnapshotRow, out
 
 function sortPlan(plan: SyncPlan): void {
   const order = (item: Record<string, unknown>) => [String(DATABASES.indexOf(String(item.database) as typeof DATABASES[number])).padStart(2, "0"), String(item.page_id ?? item.id), String(item.field ?? item.property ?? "")].join("\u0000");
-  for (const values of [plan.create, plan.updates, plan.corrections, plan.decisions, plan.document_requests, plan.promote_requests, plan.refresh_requests, plan.report_fixes, plan.conflicts, plan.ignored]) values.sort((a, b) => order(a as Record<string, unknown>).localeCompare(order(b as Record<string, unknown>)));
+  for (const values of [plan.create, plan.updates, plan.corrections, plan.decisions, plan.document_requests, plan.promote_requests, plan.refresh_requests, plan.report_fixes, plan.accepted_wording, plan.wording_waiting, plan.wording_held, plan.clear_accepted, plan.conflicts, plan.ignored]) values.sort((a, b) => order(a as Record<string, unknown>).localeCompare(order(b as Record<string, unknown>)));
 }
 
 function notionFields(database: string, p: Record<string, unknown>, asOf: string): Record<string, unknown> {
@@ -415,8 +428,8 @@ export function parseKeyFacts(value: unknown): Record<string, unknown> {
 /** Input validation and execution for `sync apply`. */
 export function parsePlan(input: unknown): SyncPlan {
   if (!isRecord(input)) assertNoProblems([{ pointer: "", message: "must be an object" }]);
-  const p = input as Record<string, unknown>; const problems = unknownKeys(p, ["as_of", "create", "updates", "corrections", "decisions", "document_requests", "promote_requests", "refresh_requests", "report_fixes", "conflicts", "ignored"], "");
-  for (const key of ["document_requests", "promote_requests", "refresh_requests", "report_fixes"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
+  const p = input as Record<string, unknown>; const problems = unknownKeys(p, ["as_of", "create", "updates", "corrections", "decisions", "document_requests", "promote_requests", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "conflicts", "ignored"], "");
+  for (const key of ["document_requests", "promote_requests", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   if (!isTimestamp(p.as_of)) problems.push({ pointer: "/as_of", message: "must be an ISO 8601 UTC timestamp" });
   for (const key of ["create", "updates", "corrections", "decisions", "conflicts", "ignored"]) if (!Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   (Array.isArray(p.create) ? p.create : []).forEach((item, index) => {
@@ -427,7 +440,7 @@ export function parsePlan(input: unknown): SyncPlan {
     if (item.lifecycle !== undefined && typeof item.lifecycle !== "string") problems.push({ pointer: `/create/${index}/lifecycle`, message: "must be a lifecycle string" });
   });
   assertNoProblems(problems);
-  return { ...p, document_requests: p.document_requests ?? [], promote_requests: p.promote_requests ?? [], refresh_requests: p.refresh_requests ?? [], report_fixes: p.report_fixes ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
+  return { ...p, document_requests: p.document_requests ?? [], promote_requests: p.promote_requests ?? [], refresh_requests: p.refresh_requests ?? [], report_fixes: p.report_fixes ?? [], accepted_wording: p.accepted_wording ?? [], wording_waiting: p.wording_waiting ?? [], wording_held: p.wording_held ?? [], clear_accepted: p.clear_accepted ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
 }
 
 export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, recordOnly: boolean, skipConflicted = false): Record<string, unknown> {
@@ -474,14 +487,54 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
   const decisionApply = applyAll(workspace, { corrections: [], decisions: plan.decisions }, { now, recordOnly });
   const decisionResult = decisionApply.decisions;
   for (const correction of corrections) if (correction.result === "applied") { const note = workspace.get(correction.target); const input = plan.corrections.find((item) => item.target === correction.target && item.field === correction.field); if (note !== undefined && input !== undefined && "property" in input) { const doc = workspace.edit(note); doc.attributes.notion_published = { ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), [String((input as unknown as Record<string, unknown>).property)]: (input as unknown as Record<string, unknown>).notion_value }; workspace.save(note.path, doc); } }
+  const wording = applyWording(workspace, plan.accepted_wording, now, recordOnly, conflictedIds, conflictedPages);
   const log: LogEntry[] = [
     ...create.filter((item) => item.result === "applied").map((item) => ({ op: "sync-create", id: String(item.id), title: String(workspace.get(String(item.id))?.attributes.title ?? item.id) })),
     ...updates.filter((item) => item.result === "applied").map((item) => ({ op: "sync-update", id: String(item.id), title: String(workspace.get(String(item.id))?.attributes.title ?? item.id) })),
     ...(correctionApply?.log ?? []), ...(decisionApply.log ?? []),
+    ...wording.log,
   ];
   updates.push(...skippedUpdates);
   const correctionsOut = [...corrections, ...skippedCorrections] as Array<Record<string, unknown>>; const decisionsOut = [...decisionResult, ...skippedDecisions] as Array<Record<string, unknown>>;
-  return { create, updates, corrections: correctionsOut, decisions: decisionsOut, document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...updates, ...correctionsOut, ...decisionsOut].map((item) => ({ ...item }))), log };
+  return { create, updates, corrections: correctionsOut, decisions: decisionsOut, document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, accepted_wording: wording.results, wording_waiting: plan.wording_waiting, wording_held: plan.wording_held, clear_accepted: plan.clear_accepted, conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...wording.results, ...updates, ...correctionsOut, ...decisionsOut].map((item) => ({ ...item }))), log };
+}
+
+/**
+ * Step 4 of `sync apply` (cli §5.14.3, §5.14.7, 0054): imports each verified accepted Document or report text exactly.
+ * An item without a matching `verified` fingerprint, or whose Git body moved since the plan, writes nothing.
+ */
+function applyWording(workspace: Workspace, items: readonly AcceptedWording[], now: Date, recordOnly: boolean, conflictedIds: ReadonlySet<string>, conflictedPages: ReadonlySet<unknown>): { results: Array<Record<string, unknown>>; log: LogEntry[] } {
+  const results: Array<Record<string, unknown>> = []; const log: LogEntry[] = [];
+  for (const item of items) {
+    const head = { id: item.note, page_id: item.page_id };
+    if (recordOnly) { results.push({ ...head, result: "skipped", reason: "RECORD_ONLY", changed: [] }); continue; }
+    if (conflictedIds.has(item.note) || conflictedPages.has(item.page_id)) { results.push({ ...head, result: "skipped", reason: "ROW_CONFLICTED", changed: [] }); continue; }
+    const note = workspace.get(item.note);
+    const fail = (reason: string) => results.push({ ...head, result: "failed", reason, changed: [] });
+    if (note === undefined) { fail("UNKNOWN_ID"); continue; }
+    if (item.verified === undefined || item.verified.fingerprint !== item.fingerprint || item.fingerprint !== textHash(item.markdown)) { fail("UNVERIFIED"); continue; }
+    if (textHash(gitBodyOf(note)) !== item.base) { fail("GIT_CHANGED"); continue; }
+    if (item.kind === "report" && (!hasReportShape(item.markdown) || reportLinks(workspace, item.markdown).broken.length > 0)) { fail("INVALID_REPORT_SHAPE"); continue; }
+    const checkpoint = workspace.checkpoint();
+    try {
+      const doc = workspace.edit(note);
+      doc.body = `\n${item.markdown}`;
+      const a = doc.attributes;
+      const source = `notion:${item.page_id}`;
+      const sources = Array.isArray(a.sources) ? a.sources : [];
+      if (!sources.includes(source)) a.sources = [...sources, source];
+      if (item.kind === "report") a.generated_from = reportLinks(workspace, item.markdown).linked.sort(compareCodePoints);
+      a.updated = formatDate(now);
+      workspace.save(note.path, doc);
+      const edited = workspace.get(note.id)!;
+      a.notion_published = { ...(isRecord(a.notion_published) ? a.notion_published : {}), "@notion_body": item.fingerprint, "@git_body": item.fingerprint, "@content": renderedContent(edited, workspace).hash ?? item.fingerprint };
+      workspace.save(note.path, doc);
+      const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT");
+      results.push({ ...head, result: "applied", changed: workspace.changedSince(checkpoint) });
+      log.push({ op: "sync-wording", id: note.id, title: String(a.title ?? note.id) });
+    } catch { workspace.restore(checkpoint); fail("INVALID_RESULT"); }
+  }
+  return { results, log };
 }
 
 /** The ids a create references (cli §5.14.3): free text such as a summary never counts. */
@@ -519,6 +572,8 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     // A promoted Document's body is yours once its page exists (0049): sent on create only.
     if (note.type === "reference" && note.attributes.origin === "promoted" && !isCreate) { content.body = null; delete rendered["@content"]; if (Object.hasOwn(published, "@content")) rendered["@content"] = published["@content"]; content.hash = undefined; }
     const contentChanged = content.hash !== undefined && !isDeepStrictEqual(content.hash, published["@content"]);
+    // The Git body at this publish, the SG baseline of cli §5.14.7 (the skill adds @notion_body after it re-reads the page).
+    if ((note.type === "reference" && note.attributes.origin === "promoted" && isCreate) || (isReport(note) && (isCreate || contentChanged))) rendered["@git_body"] = textHash(gitBodyOf(note));
     // A report (0045): a refresh sends the body once and clears Refresh; a new fix clears What to fix.
     let reportDue = false;
     if (isReport(note)) {

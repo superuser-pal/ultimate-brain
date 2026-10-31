@@ -1,5 +1,3 @@
-import { posix } from "node:path";
-
 import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { serializeNewFile } from "../lib/frontmatter.ts";
@@ -9,9 +7,7 @@ import { compareCodePoints } from "../lib/notes.ts";
 import { slugify } from "../lib/paths.ts";
 import { formatDate, formatTimestamp } from "../lib/time.ts";
 import { Workspace } from "../lib/workspace.ts";
-
-/** The six sections of a report, in order (spec/schema.md §16.4). */
-const SECTIONS = ["Where it stands", "Timeline", "Decisions in force", "Open questions and risks", "People involved", "Gaps"];
+import { hasReportShape, REPORT_SECTIONS as SECTIONS, reportLinks } from "../lib/report-body.ts";
 
 /** `brain report new --input <file|->` (spec/cli.md §5.18, 0043). */
 export const reportNewCommand: Command = {
@@ -36,8 +32,7 @@ export const reportNewCommand: Command = {
     assertNoProblems(problems);
 
     const body = `${(item.body as string).replace(/\r\n?/g, "\n").replace(/^\n+/, "").replace(/\n*$/, "")}\n`;
-    const headings = sectionHeadings(body);
-    if (!body.startsWith("## ") || headings.length !== SECTIONS.length || headings.some((heading, index) => heading !== SECTIONS[index])) {
+    if (!hasReportShape(body)) {
       assertNoProblems([{ pointer: "/body", message: `must be exactly the ## sections ${SECTIONS.join(", ")}, in order, with nothing before the first` }]);
     }
 
@@ -53,18 +48,9 @@ export const reportNewCommand: Command = {
     if (typeof item.area === "string") known("/area", item.area, "area");
 
     // Every relative link must name a note; generated_from lists them (spec/schema.md §16.4).
-    const byPath = new Map(workspace.notes.map((note) => [note.path, note.id]));
-    const linked = new Set<string>();
-    const broken: InputProblem[] = [];
-    for (const match of body.matchAll(/\]\(\s*<?([^)\s>]+)>?\s*\)/g)) {
-      const target = match[1]!;
-      if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) continue;
-      let decoded = target.split(/[?#]/)[0]!;
-      try { decoded = decodeURIComponent(decoded); } catch { /* keep as written */ }
-      const id = byPath.get(posix.normalize(posix.join("reports", decoded)));
-      if (id === undefined) broken.push({ pointer: "/body", message: `link ${target} doesn't resolve to a note` });
-      else linked.add(id);
-    }
+    const { linked: linkedIds, broken: brokenTargets } = reportLinks(workspace, body);
+    const linked = new Set(linkedIds);
+    const broken: InputProblem[] = brokenTargets.map((target) => ({ pointer: "/body", message: `link ${target} doesn't resolve to a note` }));
     assertNoProblems(broken);
 
     const date = formatDate(now);
@@ -112,19 +98,6 @@ export const reportNewCommand: Command = {
 };
 
 /** The `##` headings outside fenced code, in order. */
-function sectionHeadings(body: string): string[] {
-  const headings: string[] = [];
-  let fence: string | undefined;
-  for (const line of body.split("\n")) {
-    const open = /^\s{0,3}(`{3,}|~{3,})/.exec(line)?.[1];
-    if (fence !== undefined) { if (open !== undefined && open[0] === fence[0] && open.length >= fence.length) fence = undefined; continue; }
-    if (open !== undefined) { fence = open; continue; }
-    const heading = /^## (.+?)\s*$/.exec(line)?.[1];
-    if (heading !== undefined) headings.push(heading);
-  }
-  return headings;
-}
-
 /** `brain report fix <vw-id> --text <text> --proposals <ids>` (spec/cli.md §5.18, 0045). */
 export const reportFixCommand: Command = {
   name: "report fix",
