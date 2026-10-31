@@ -21,7 +21,7 @@ The "wow" is that it maintains and synthesizes itself. Tasks and project managem
 - **Target:** technical users already running Claude Code or Codex. Semi-technical (follows a setup guide, avoids Git) is a stretch goal.
 - **Daily experience:** agents use the brain without the user looking; capture is effortless. The user reviews in Notion a few times a week and asks on demand.
 - **Scope:** any life area, personal or professional, organized with PARA.
-- **Planned in 0.8.0 ([0055](../decisions/0055-domains-capture-and-review.md)):** optional Domains, off by default, group Areas around PARA; selected subjects and items determine what enters the brain, and editable Review shows the exact changes the user accepts. Reflection follows in 0.9.0.
+- **Planned in 0.8.0 ([0055](../decisions/0055-domains-capture-and-review.md)):** optional Domains, off by default, group Areas around PARA; selected subjects and items determine what enters the brain, and editable Review shows the exact changes the user accepts. Reflection follows in 0.10.0 ([0061](../decisions/0061-roadmap-and-launch-boundary.md)).
 - **Capture sources (priority):** 1) agent sessions, 2) Notion AI meeting notes, 3) URLs and docs, 4) Notion quick captures. Email, Slack, Teams later via MCP.
 
 ## Architecture decisions
@@ -57,11 +57,15 @@ The "wow" is that it maintains and synthesizes itself. Tasks and project managem
 
 **Success criterion:** for 2 weeks, every Notion meeting note is ingested with one command; Claude or Codex in any repo answers "what did we decide with client X and why?" with a citation to the meeting; Notion shows a project page and decision log the user trusts.
 
-## v2 (deferred, not rejected)
+## Roadmap to launch (decision 0061)
 
-The full, current backlog is [v2-ideas.md](v2-ideas.md). Summary:
+After 0.8.0: **0.9.0** separates shared skill source and adds explicitly connected workflows ([0059](../decisions/0059-shared-skills-and-connected-workflows.md)); **0.10.0** adds reflection; **0.11.0** integrates Hermes as a native operator/coordinator with scoped learning ([0060](../decisions/0060-hermes-operator-and-learning.md)); **0.12.0** adds cross-agent memory continuity and reliable cited retrieval; **0.13.0** adds weekly knowledge payback and targeted correction propagation; **0.14.0** makes onboarding and adoption repeatable.
 
-Agent-memory proposal loop, optional retrieval index over Markdown (GBrain or a local index; see decisions/0008), OKF export and alignment (reviews/06), topic research dossiers, person/client profiles, weekly digest, contradiction and staleness reports, schedulers (n8n / Hermes), email/Slack/Teams ingestion, privacy tiers, MCP server, multi-user/teams, hosted product, embeddings / vector search.
+**Feature work ends at 0.14.0.** Productisation, translation and the acquisition/onboarding funnel then lead to **1.0.0**. Release candidates, or an explicitly scoped preparation version if needed, address launch readiness. Issues and dogfood still produce fixes; they do not silently expand feature scope. Each human-led development session for 0.9.0 onward starts with a grilling scope review and confirmed shared understanding. See [0061](../decisions/0061-roadmap-and-launch-boundary.md) and [build/TASKS.md](../build/TASKS.md).
+
+## Post-1.0 (deferred, not rejected)
+
+The [backlog](v2-ideas.md) distinguishes the committed milestones above from post-1.0 candidates: new email/Slack/Teams connectors, topic dossiers and person/client profiles, rich fact/relationship modelling, MCP access, OKF export/alignment, advanced retrieval infrastructure and sensitivity tiers, external worker execution, extra platforms/schedulers, multi-user/teams and hosting. None has a promised pre-launch version.
 
 ## How to evaluate reference repos
 
