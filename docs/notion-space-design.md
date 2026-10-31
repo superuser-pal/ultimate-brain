@@ -395,7 +395,7 @@ A button can use the action **send message to** an agent and pick Brain Assistan
 **Not verified yet (do not rely on these):**
 - Refresh report on a Report row. The user reported (2026-10-31, not recorded in detail) that a second button test "edits the right body"; taken here as Write up on a promoted Document. Tidy capture on an Inbox row is the one with a recorded message and result.
 - Whether a click runs unattended after the user leaves the page, and the credits one click uses (U-22, in the 0.8.0 acceptance run, measures them).
-- Per-block edit times. The accepted-wording rule (cli.md §5.14.7) does not need them: it uses the **page's own** last-edited time, which also moves when a block is deleted, and treats a property edit after the click as an edit (it errs toward not importing). Notion rounds that time to the minute, so an edit in the same minute as the click is covered only by the re-read before apply.
+- Per-block edit times. The accepted-wording rule (cli.md §5.14.7) does not need them: it uses the **page's own** last-edited time, which also moves when a block is deleted, and treats a property edit after the click as an edit (it errs toward not importing). Notion rounds that time to the minute, so an edit in the same minute as the click and before the first read is a known limit: an attended catch-up shows a +/- preview before importing, and an unattended run imports only an acceptance at least 2 minutes old (cli.md §5.14.7).
 - Notion AI (instead of the Custom Agent) as the target. Not tested; a Custom Agent is scoped to Brain Data (0035), which Notion AI is not.
 
 ### 3.17 The three Brain Assistant buttons, Write up format and accepting wording (0054)
@@ -417,6 +417,7 @@ Keep as document and Promote to document stay checkbox buttons that the catch-up
 - For a report, the user accepts by first moving the proposed section's text into the report body (replacing the old text) and deleting the "Proposed refresh" heading, then clicking **Accept refresh**.
 - **An unresolved Proposed revision or Proposed refresh block blocks acceptance**: a checked Accepted with such a block on the page is not imported (cli.md §5.14.7, rows 3 and 6).
 - **Any later edit of the page invalidates the acceptance**, deleting a paragraph included: the user clicks Accept again. The catch-up sees `Accepted at` older than the page's last edit and lists the row under Needs you. The skill re-reads the page just before importing, so an edit made after the catch-up began also stops the import.
+- **The catch-up shows what it will import** (lines added and removed, first and last lines) and imports after you say yes; an unattended run imports only an acceptance at least 2 minutes old.
 - **After the catch-up imports the wording it unticks Accepted and clears Accepted at** (like the other request boxes): the acceptance was consumed, and a later edit is an ordinary draft, which a publish never overwrites.
 - To withdraw an acceptance the user unticks Accepted.
 

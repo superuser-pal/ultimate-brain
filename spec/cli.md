@@ -1153,12 +1153,12 @@ A snapshot row without these fields (taken by an older skill) is read as `accept
 **Three hashes.** `sha256:<hex>` of UTF-8 text. For a row: **N** = the hash of `body_markdown` (Notion now); **S** = `notion_published["@content"]` (what Notion and Git last matched on: the body as last sent or imported); **G** = the hash of the note's body in Git now. The comparison is the three-way rule of §5.14 on bodies. (A promoted Document's body is sent once, on create, §5.14.4; a report's body is sent by render on a refresh.)
 
 **Plan output.** `sync plan` gains three arrays:
-- `accepted_wording`: `{ "page_id": "…", "kind": "document"|"report", "note": "ref-…"|"vw-…", "accepted_at": "…", "page_edited_at": "…", "fingerprint": "<N>", "markdown": "…", "base": "<S>" }`.
+- `accepted_wording`: `{ "page_id": "…", "kind": "document"|"report", "note": "ref-…"|"vw-…", "accepted_at": "…", "page_edited_at": "…", "fingerprint": "<N>", "markdown": "…", "base": "<S>", "unattended_ok": true|false, "diff": { "added": 12, "removed": 3 } }`. `unattended_ok` is true when `as_of` − `accepted_at` is at least 2 minutes; `diff` is the count of lines added and removed compared with the Git body (a line diff, for the preview).
 - `wording_waiting`: `{ "page_id": "…", "note": "…", "reason": "REVISION_PENDING"|"REFRESH_PENDING"|"EDITED_AFTER_ACCEPTANCE"|"GIT_CHANGED"|"UNCONVERTIBLE_BLOCK"|"INVALID_REPORT_SHAPE" }`: rows that need the user (accepted but blocked, or a pending proposal). Named in the report; never also a conflict.
 - `wording_held`: `{ "page_id": "…", "note": "…" }`: rows whose Notion body differs from S and was **not** accepted (an unaccepted draft). Nothing for the user to do; only render reads it (below). Not listed in Needs you.
 The usual `conflicts` and `ignored` stay as they are.
 
-**Outcome per state of a Document or report body (normative; the first matching row wins).** "Edited after acceptance" means `page_edited_at` is later than `accepted_at`, both taken to the minute (an edit in the same minute as the click cannot be told from the click's own write; that is a known limit, covered by the fresh check below).
+**Outcome per state of a Document or report body (normative; the first matching row wins).** "Edited after acceptance" means `page_edited_at` is later than `accepted_at`, both taken to the minute (an edit in the same minute as the click cannot be told from the click's own write, because Notion rounds times to the minute. This is a **known limit**: it is bounded by the preview and the age rule below, not removed).
 
 | # | State | Result |
 |---|---|---|
@@ -1176,6 +1176,8 @@ The usual `conflicts` and `ignored` stay as they are.
 | 12 | `accepted` true, N ≠ S, G ≠ S, N ≠ G | both changed: `wording_waiting` `GIT_CHANGED`; the skill shows both and asks (attended), or leaves it (unattended) |
 
 An acceptance is therefore honored only when it is explicit (`accepted`), current (the page was not edited after the click), unambiguous (no pending proposal), valid (it converts, and a report keeps its shape) and not in conflict with Git.
+
+**Binding to the exact text (decision of 2026-10-31).** The click cannot capture the text, so an edit made in the click's own minute and before the first read is not detectable. It is bounded in two ways: **attended**, the skill shows the user, for each `accepted_wording` item, the `diff` counts and the first and last lines of the text and imports it only after the user says yes (a no leaves it accepted and unchanged, listed as skipped); **unattended**, the skill imports an item only when `unattended_ok` is true, and names the others as waiting (`TOO_FRESH`). The report of an unattended import says that same-minute edits are a known limit.
 
 **Verify before apply.** `sync apply` cannot read Notion, so the skill, immediately before it executes the `accepted_wording` items, **re-reads each page** (Accepted, Accepted at, page edit time, pending blocks, body) and recomputes N. If anything differs from the plan (the user edited, unticked Accepted or added a proposal since the snapshot), the skill drops that item and names it under Needs you as `CHANGED_SINCE_PLAN`. It passes the surviving items to `sync apply` with `verified: { "fingerprint": "<N>", "page_edited_at": "…" }`. `sync apply` fails an `accepted_wording` item with `UNVERIFIED` when `verified` is missing or its `fingerprint` differs from the item's. This holds for unattended runs too.
 
@@ -1457,7 +1459,7 @@ The skill brain-catch-up, started by the prompt `catch up unattended` (a schedul
 | *(Reports)* An Ask row: "Report on …?" | **default**: yes, a new report |
 | *(Reports)* A Report row to refresh: Refresh asked ticked (`refresh_requests`), or a report whose last `fixes` entry lists only proposals now applied, rejected or closed and whose `generated_at` is older than the last of those decisions (brain-catch-up, step 1.9) | **default**: yes, refreshed, unless the same report has a `report_fixes` item (previous row): then it waits, its Refresh asked box still ticked |
 | *(Reports)* A report's What to fix and the proposals it becomes (`report_fixes`) | **skip** the report whole: the fix waits for an attended run, like a Review row's What to fix, and the report isn't refreshed meanwhile, whether its refresh was asked or due (next row) |
-| *(Reports, Documents)* Accepted wording whose acceptance is current (`accepted_wording`, §5.14.7) | **default**: imported, after the skill's re-read confirms it is unchanged |
+| *(Reports, Documents)* Accepted wording whose acceptance is current (`accepted_wording`, §5.14.7) | **default**: imported when `unattended_ok` (accepted at least 2 minutes before the snapshot) and the skill's re-read confirms it is unchanged; otherwise **waits** (`TOO_FRESH`) |
 | *(Reports, Documents)* Any other wording row (`wording_waiting`, `wording_held`) | **skip**: nothing is imported, and the body is not published over; `wording_waiting` rows are named in the report |
 | The identities question | **skip**: asked again at the next attended catch-up |
 | "Publish to Notion at the end?" | **default** from `settings.publish`: `auto` publishes; `ask` publishes nothing and leaves it to the next attended run |
