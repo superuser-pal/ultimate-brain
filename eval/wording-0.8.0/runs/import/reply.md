@@ -1,30 +1,37 @@
-Done: 1 accepted write-up imported · 1 related-knowledge proposal · 20 pages published to Notion · nothing else was waiting
-Needs you: 4 Review rows (Login page related knowledge, From Acme kickoff, From Acme sync, Acme mobile app relaunch)
-Next: decide those rows in Notion, then "catch up"
+Done: 1 accepted write-up imported · 1 Related knowledge proposal · 17 Notion pages published · Accepted cleared on the Login page
+Needs you: 4 pending Review rows to decide · no drop folder set (tell me its path if you use one) · your Notion identities aren't recorded (`owner.person` is empty)
+Next: decide the Review rows in Notion, then "catch up"
 
 **What came in**
-- **Login page** (a promoted Document): I imported your accepted write-up exactly as written (+12 −2 lines). I checked the page again just before importing and nothing had changed since you accepted it. The old body was:
+- **Login page** (Document, promoted from *Use Supabase for auth*): I imported the write-up you accepted exactly as written (+12 −2 lines). The old body was:
+  ```diff
+  -## Why
+  -We need one login for the website and the app.
+  +> 💡 Purpose: decide how people sign in to the Acme website.
+  +## Main content
+  +Email login only for launch; social login after launch.
+  +## Open questions
+  +- Who owns the password-reset emails?
+  +## Sources
+  +- [Use Supabase for auth](../decisions/2026-12-03-use-supabase-for-auth.md)
   ```
-  ## Why
-
-  We need one login for the website and the app.
-  ```
-  It is now the Purpose callout, then "Main content" (*Email login only for launch; social login after launch.*), "Open questions" (*Who owns the password-reset emails?*) and "Sources" (a link to *Use Supabase for auth*). Accepted and Accepted at are now cleared on the page.
+  I checked the page again just before importing and it hadn't changed. In Notion, Accepted is now unticked and Accepted at is cleared.
 
 **What changed**
-- **New proposal: "Login page: related knowledge".** If you approve it, a `## Related knowledge` section is added after your text. It points to the Acme website project (launch 2027-02), *Use Firebase for auth* (the choice Supabase replaced on 2026-12-03), *Row-level security*, and the Acme sync of 3 Dec.
-- **Publish:** 20 page writes in three passes.
-  - Created in Notion: Carlos Ruiz, Use Firebase for auth, Use Supabase for auth, Row-level security, and the Review rows "From Acme kickoff", "From Acme sync" and "Login page: related knowledge".
-  - Updated: the Clients area, the Acme website project (Brief and Decision log), Maria López, Acme, the mobile-app question, both meetings' relations, and four existing Review rows.
-  - Accepted was cleared on Login page. Every write is in `writes.md` (21 lines).
-- **Commits:** `documents: import accepted wording (1)`, the related-knowledge proposal, `publish: catch up`, `log: catch up`. Lint shows 0 errors. The push did nothing because there's no remote; all 4 commits are only local.
+- New proposal *Login page: related knowledge*. It would add a "Related knowledge" section after your text, listing:
+  - *Use Firebase for auth* (the earlier choice, superseded on 2026-12-03)
+  - *Acme sync* (the meeting where the switch was agreed)
+  - *Row-level security*
+  - the *Acme website* project
+- The publish wrote 17 pages, many of which the brain had never published before:
+  - new pages: Carlos Ruiz, both auth decisions, Row-level security, and three Review rows (the two meeting Review notes rows and the new proposal)
+  - updates: the Clients area and Acme website project Briefs (and the project's Decision log), Maria, Acme, the mobile-app question, both meetings' relations, and four Review rows
+- Every Notion write is one line in `import-sim/writes.md`. New pages got made-up page ids, and those are what the brain recorded.
 
 **Check**
-- **Pages created during publish:** the simulation gives no page ids back, so I made up deterministic ones and recorded them. A real run would record the ids Notion returns.
-- **Project Brief and Decision log:** the simulation has no file for the project page, so I couldn't check its toggle headings first. The writes to "Brief" and "Decision log" assume the template's toggles are there.
-- **Two lint warnings:** the Login page note uses `origin` and `promoted_from`, and the reference schema doesn't declare either. The CLI writes both itself, so this looks like a product bug.
-- **Missing step in the catch-up skill:** its Related knowledge step doesn't say a proposal needs `source`. The CLI refused the proposal until I gave one; I used the Document's Notion page (`notion:e2000000-…0101`).
-
-Nothing else was waiting: no meetings, Inbox rows, Ask or Report rows, drop folder, linked repos, backlog or conflicts.
-
-Those last two Check items are product issues worth filing as a dogfood issue on `superuser-pal/ultimate-brain`. I haven't filed anything; say if you want me to draft it.
+- There was nothing else to take in: no Review decisions, meetings, Inbox rows, reports or backlog.
+- I skipped the identities question, which is the default. A blanket "yes" doesn't tell me which identities are yours, so it comes up again next catch-up.
+- The Login page Document is still a `draft`, and the Supabase decision and Carlos are drafts too.
+- The brain's dates are in December 2026 but the clock says 2026-11-01, so this run's notes and commits are dated 2026-11-01.
+- The two log lines this run wrote (publish and catch-up) contain an empty `""` field, so their entries look incomplete.
+- Not pushed: there's no git remote. The 3 commits are local.

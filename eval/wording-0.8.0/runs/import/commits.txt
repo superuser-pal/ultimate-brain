@@ -1,4 +1,3 @@
 log: catch up
 publish: catch up
-documents: related knowledge proposal for Login page
 documents: import accepted wording (1)

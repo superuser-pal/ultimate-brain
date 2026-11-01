@@ -1,5 +1,5 @@
-M	_proposals/2026-10-31-from-acme-kickoff-1-new-note.md
-M	_proposals/2026-10-31-from-acme-sync-3-new-notes.md
+M	_proposals/2026-11-01-from-acme-kickoff-1-new-note.md
+M	_proposals/2026-11-01-from-acme-sync-3-new-notes.md
 M	_proposals/2026-12-03-acme-launch-jan-feb.md
 M	_proposals/2026-12-03-acme-mobile-app-relaunch.md
 M	_proposals/2026-12-03-maria-lopez-role-designer-pm.md
@@ -15,5 +15,5 @@ M	knowledge/orgs/acme.md
 M	knowledge/people/carlos-ruiz.md
 M	knowledge/people/maria-lopez.md
 M	knowledge/questions/who-owns-the-acme-mobile-app.md
-M	log/2026-10.md
+M	log/2026-11.md
 M	projects/acme-website/project.md
