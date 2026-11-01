@@ -1,0 +1,39 @@
+=== _proposals/2026-11-01-login-page-related-knowledge.md
+---
+id: prp-7g8h2vgw
+type: proposal
+title: "Login page: related knowledge"
+created: 2026-11-01
+updated: 2026-11-01
+kind: add_to_note
+target: ref-jjcqtp65
+content: |-
+  ## Related knowledge
+
+  - [Acme sync](../meetings/2026-12-03-acme-sync.md): the 3 Dec meeting where the team agreed to switch auth to Supabase.
+  - [Use Firebase for auth](../decisions/2026-10-01-use-firebase-for-auth.md): the original auth choice, superseded by Supabase; context for why the login changed.
+  - [Row-level security](../concepts/row-level-security.md): Supabase's per-row access rules, used for auth-aware queries behind the login.
+  - [Acme website](../../projects/acme-website/project.md): the project this login page belongs to.
+why: Notes the brain holds that bear on the Login page Document, accepted in Notion and adopted this run.
+source: notion:<id 1>
+status: pending
+notion: <id 2>
+notion_published:
+  Name: "Login page: related knowledge"
+  Kind: Add To Note
+  About: Login page (ref-jjcqtp65)
+  About Page: https://www.notion.so/<id 3>
+  Source Meeting: []
+  Now: null
+  Proposed: |-
+    ## Related knowledge
+
+    - Acme sync: the 3 Dec meeting where the team agreed to switch auth to Supabase.
+    - Use Firebase for auth: the original auth choice, superseded by Supabase; context for why the login changed.
+    - Row-level security: Supabase's per-row access rules, used for auth-aware queries behind the login.
+    - Acme website: the project this login page belongs to.
+  Why: Notes the brain holds that bear on the Login page Document, accepted in Notion and adopted this run.
+  Area: []
+  State: Pending
+  Brain ID: prp-7g8h2vgw
+---

@@ -1,0 +1,37 @@
+=== _proposals/2026-11-01-login-page-related-knowledge.md
+---
+id: prp-72px7rs8
+type: proposal
+title: "Login page: related knowledge"
+created: 2026-11-01
+updated: 2026-11-01
+kind: add_to_note
+target: ref-69y657mt
+content: |
+  ## Related knowledge
+
+  - [Acme website](../../projects/acme-website/project.md): the project this login is for; its launch is planned for 2027-02, the "launch" the email-only login is scoped to.
+  - [Row-level security](../concepts/row-level-security.md): how Supabase applies auth-aware access rules per row, relevant once people are signed in.
+  - [Use Firebase for auth](../decisions/2026-10-01-use-firebase-for-auth.md): the earlier auth choice, superseded by Supabase on 2026-12-03; background for why the login is built on Supabase.
+why: Notes in the brain that bear on the Login page Document, which you accepted in Notion.
+source: notion:<id 1>
+status: pending
+notion: <id 2>
+notion_published:
+  Name: "Login page: related knowledge"
+  Kind: Add To Note
+  About: Login page (ref-69y657mt)
+  About Page: https://www.notion.so/<id 3>
+  Source Meeting: []
+  Now: null
+  Proposed: |
+    ## Related knowledge
+
+    - Acme website: the project this login is for; its launch is planned for 2027-02, the "launch" the email-only login is scoped to.
+    - Row-level security: how Supabase applies auth-aware access rules per row, relevant once people are signed in.
+    - Use Firebase for auth: the earlier auth choice, superseded by Supabase on 2026-12-03; background for why the login is built on Supabase.
+  Why: Notes in the brain that bear on the Login page Document, which you accepted in Notion.
+  Area: []
+  State: Pending
+  Brain ID: prp-72px7rs8
+---

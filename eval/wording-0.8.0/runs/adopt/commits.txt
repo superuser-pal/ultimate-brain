@@ -1,0 +1,4 @@
+log: catch up
+publish: catch up
+documents: import accepted wording (1)
+sync: adopt Notion text for Login page (no baseline)
