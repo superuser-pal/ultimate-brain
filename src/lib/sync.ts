@@ -540,8 +540,9 @@ function applyWording(workspace: Workspace, items: readonly AcceptedWording[], n
       doc.body = `\n${item.markdown}`;
       const a = doc.attributes;
       const source = `notion:${item.page_id}`;
+      // A report is a view, which declares no `sources`; its `notion` already names the page. Only a Document records the page it was accepted from.
       const sources = Array.isArray(a.sources) ? a.sources : [];
-      if (!sources.includes(source)) a.sources = [...sources, source];
+      if (item.kind === "document" && !sources.includes(source)) a.sources = [...sources, source];
       if (item.kind === "report") a.generated_from = reportLinks(workspace, item.markdown, true).linked.sort(compareCodePoints);
       a.updated = formatDate(now);
       workspace.save(note.path, doc);
@@ -554,6 +555,12 @@ function applyWording(workspace: Workspace, items: readonly AcceptedWording[], n
     } catch { workspace.restore(checkpoint); fail("INVALID_RESULT"); }
   }
   return { results, log };
+}
+
+/** A record's `@`-prefixed key with a null value removes that key: an invalidated body baseline (cli §5.14.6, 0054). A null on an ordinary property is a real empty baseline and stays. */
+function withClearedBaselines(merged: Record<string, unknown>, incoming: Record<string, unknown>): Record<string, unknown> {
+  const cleared = new Set(Object.entries(incoming).filter(([key, value]) => key.startsWith("@") && value === null).map(([key]) => key));
+  return Object.fromEntries(Object.entries(merged).filter(([key]) => !cleared.has(key)));
 }
 
 /** The ids a create references (cli §5.14.3): free text such as a summary never counts. */
@@ -897,6 +904,6 @@ function tasksConfig(workspace: Workspace): { database: string; properties: Reco
 
 export function record(workspace: Workspace, input: unknown): Record<string, unknown> {
   if (!isRecord(input) || !Array.isArray(input.records)) throw new BrainError("INPUT_INVALID", "record input needs a records list"); const records: Array<Record<string, unknown>> = [];
-  for (const entry of input.records) { if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note); if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = { ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }; if ((note.type !== "view" || isReport(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && error.message === "NOTION_ID_MISMATCH" ? "NOTION_ID_MISMATCH" : "INVALID_RESULT", changed: [] }); } }
+  for (const entry of input.records) { if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note); if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && error.message === "NOTION_ID_MISMATCH" ? "NOTION_ID_MISMATCH" : "INVALID_RESULT", changed: [] }); } }
   return { records };
 }
