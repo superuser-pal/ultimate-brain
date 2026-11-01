@@ -1,5 +1,5 @@
 diff --git a/knowledge/references/login-page.md b/knowledge/references/login-page.md
-index 4d18c2b..c4a3d97 100644
+index d24d111..0e808a4 100644
 --- a/knowledge/references/login-page.md
 +++ b/knowledge/references/login-page.md
 @@ -4,17 +4,28 @@ type: reference

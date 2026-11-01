@@ -1,37 +1,23 @@
-Done: 1 accepted write-up imported · 1 Related knowledge proposal · 17 Notion pages published · Accepted cleared on the Login page
-Needs you: 4 pending Review rows to decide · no drop folder set (tell me its path if you use one) · your Notion identities aren't recorded (`owner.person` is empty)
+Done: 1 accepted write-up imported (Login page) · 20 page writes to Notion · 1 Related knowledge proposal · Accepted cleared on the Login page
+Needs you: 6 Review rows waiting for your decision (2 Review notes rows, 4 proposals) · your names and email addresses aren't recorded yet · no drop folder is set · push failed: there's no git remote, so 4 commits aren't pushed
 Next: decide the Review rows in Notion, then "catch up"
 
 **What came in**
-- **Login page** (Document, promoted from *Use Supabase for auth*): I imported the write-up you accepted exactly as written (+12 −2 lines). The old body was:
-  ```diff
-  -## Why
-  -We need one login for the website and the app.
-  +> 💡 Purpose: decide how people sign in to the Acme website.
-  +## Main content
-  +Email login only for launch; social login after launch.
-  +## Open questions
-  +- Who owns the password-reset emails?
-  +## Sources
-  +- [Use Supabase for auth](../decisions/2026-12-03-use-supabase-for-auth.md)
-  ```
-  I checked the page again just before importing and it hadn't changed. In Notion, Accepted is now unticked and Accepted at is cleared.
+- **Login page** (Document): I imported your accepted write-up exactly as written (+12 −3 lines). It replaces the old "Why" section with Purpose, Main content ("Email login only for launch; social login after launch."), Open questions ("Who owns the password-reset emails?") and a Sources link to *Use Supabase for auth*. I re-checked the page just before importing and again before clearing Accepted, and it hadn't changed.
+- There were no meetings, Inbox captures, Ask rows, report refreshes, Document or Promote requests, linked repos or sync conflicts.
 
 **What changed**
-- New proposal *Login page: related knowledge*. It would add a "Related knowledge" section after your text, listing:
-  - *Use Firebase for auth* (the earlier choice, superseded on 2026-12-03)
-  - *Acme sync* (the meeting where the switch was agreed)
-  - *Row-level security*
-  - the *Acme website* project
-- The publish wrote 17 pages, many of which the brain had never published before:
-  - new pages: Carlos Ruiz, both auth decisions, Row-level security, and three Review rows (the two meeting Review notes rows and the new proposal)
-  - updates: the Clients area and Acme website project Briefs (and the project's Decision log), Maria, Acme, the mobile-app question, both meetings' relations, and four Review rows
-- Every Notion write is one line in `import-sim/writes.md`. New pages got made-up page ids, and those are what the brain recorded.
+- I wrote one new proposal on the Login page, "Login page: related knowledge". If you approve it, it adds a `## Related knowledge` section after your text with three links:
+  - *Acme website*: its 2027-02 launch is the "launch" the page refers to.
+  - *Row-level security*: how Supabase controls what a signed-in user can read or write.
+  - *Use Firebase for auth*: the earlier auth choice, superseded on 2026-12-03.
+- **Published:** the setup had left several notes unpublished, so this run wrote 20 pages to Notion. That covers Carlos Ruiz, both auth decisions, Row-level security, the Review rows, the Clients and Acme website Briefs and Decision log, and the meetings' links to their decisions and attendees. All of them are recorded in the brain and logged in `import-sim/writes.md`, plus the line that unticks Accepted.
 
 **Check**
-- There was nothing else to take in: no Review decisions, meetings, Inbox rows, reports or backlog.
-- I skipped the identities question, which is the default. A blanket "yes" doesn't tell me which identities are yours, so it comes up again next catch-up.
-- The Login page Document is still a `draft`, and the Supabase decision and Carlos are drafts too.
-- The brain's dates are in December 2026 but the clock says 2026-11-01, so this run's notes and commits are dated 2026-11-01.
-- The two log lines this run wrote (publish and catch-up) contain an empty `""` field, so their entries look incomplete.
-- Not pushed: there's no git remote. The 3 commits are local.
+- **Your names and email addresses:** I skipped this question because a "yes" doesn't tell me which ones to record. Next catch-up will ask again.
+- **Drop folder:** there's no "Drop folder:" line in AGENTS.md, so I didn't look for one.
+- **Dates:** this computer's clock says 2026-11-01, but the Notion data is from 2026-12-14. So the Login page now shows `updated: 2026-11-01`, earlier than its `created: 2026-12-14`, and the "Last Synced" dates sent to Notion are 2026-11-01. It's harmless, but the dates look odd.
+- **Drafts:** the Login page and several published notes (the Supabase decision, Carlos Ruiz, Row-level security) are still drafts you haven't reviewed.
+- **Page IDs:** the IDs for newly created Notion pages (`e2000000-…-0000000002xx`) are made up, because there were no real Notion tools in this session.
+
+Commits: `sync … 1 accepted wording imported`, `documents: import accepted wording (1)`, `publish: catch up`, `log: catch up` (the run took 109 s and read 5 notes in full). Lint shows no errors. Publishing is already set to `auto`.

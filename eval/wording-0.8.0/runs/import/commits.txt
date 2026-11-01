@@ -1,3 +1,4 @@
 log: catch up
 publish: catch up
 documents: import accepted wording (1)
+sync: 0 new, 0 corrections, 0 decisions from Notion; 1 accepted wording imported

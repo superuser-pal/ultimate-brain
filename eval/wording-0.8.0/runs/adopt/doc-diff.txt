@@ -1,0 +1,37 @@
+diff --git a/knowledge/references/login-page.md b/knowledge/references/login-page.md
+index 5541725..3a8b9ad 100644
+--- a/knowledge/references/login-page.md
++++ b/knowledge/references/login-page.md
+@@ -4,15 +4,28 @@ type: reference
+ title: Login page
+ summary: Login page.
+ lifecycle: draft
++sources: [notion:<id 1>]
+ created: 2026-12-14
+-updated: 2026-12-14
++updated: 2026-11-01
+ origin: promoted
+ promoted_from: dec-7k2m9q4x
+ notion: <id 1>
+ notion_published:
+-  "@content": "sha256:c8a3df365a638f7e08e09a89014d9a905d6069423ecd7393923e05e57bc3bb30"
++  "@content": sha256:25f32da6cc1d1c0c48de98f45c2aa25e8ebad889b1f1e80b7d8ffa7a902ea321
++  "@notion_body": sha256:0fbd62d72dac0fd7093f6e2bf343a0d02b4d052bd85f7ec85dbcd0e592f22ba9
++  "@git_body": sha256:0fbd62d72dac0fd7093f6e2bf343a0d02b4d052bd85f7ec85dbcd0e592f22ba9
+ ---
+ 
+-## Why
++> 💡 Purpose: decide how people sign in to the Acme website.
+ 
+-We need one login for the website and the app.
++## Main content
++
++Email login only for launch; social login after launch.
++
++## Open questions
++
++- Who owns the password-reset emails?
++
++## Sources
++
++- [Use Supabase for auth](../decisions/2026-12-03-use-supabase-for-auth.md)

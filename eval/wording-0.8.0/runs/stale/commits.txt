@@ -1,3 +1,2 @@
 log: catch up
-publish: catch up (log)
 publish: catch up
