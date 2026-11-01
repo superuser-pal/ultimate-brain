@@ -278,6 +278,7 @@
             },
             "wont_do_status": {
               "type": "string",
+              "minLength": 1,
               "description": "The Tasks status option meaning closed without doing it (decision 0055, spec/capture-and-review.md §2). Absent: \"Won't Do\"."
             }
           },

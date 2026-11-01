@@ -11,6 +11,7 @@ import { isRecord, readJsonInput } from "../lib/input.ts";
 import { databaseId, modulesOf } from "../lib/modules.ts";
 import { expandPath, linkedRepos, workTreeTop } from "../lib/repos.ts";
 import { unattendedRuns } from "../lib/runs.ts";
+import { normalizeTimestamp } from "../lib/time.ts";
 
 const NOTE_TYPES = ["area", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "goal", "memory", "reference"];
 const PROPOSAL_STATUSES = ["pending", "approved", "edited", "rejected", "applied", "closed"];
@@ -23,7 +24,7 @@ export const statusCommand: Command = {
   options: { "tasks-schema": "string" },
   maxPositionals: 0,
   needsBrain: true,
-  async run({ args, brain, environment }) {
+  async run({ args, brain, environment, now }) {
     const schemas = loadSchemas();
     if (!schemas.brain(brain!.config)) {
       throw new BrainError("BRAIN_CONFIG_INVALID", `brain.json fails schema: ${describeErrors(schemas.brain.errors).join("; ")}`);
@@ -59,7 +60,7 @@ export const statusCommand: Command = {
 
     const notion = readNotion(brain!.config);
     const snapshotPath = args.options["tasks-schema"] as string | undefined;
-    const taskNote = snapshotPath === undefined ? null : tasksStatusNote(brain!.config, await readJsonInput(snapshotPath, "status"));
+    const taskNote = snapshotPath === undefined ? null : tasksStatusNote(brain!.config, await readJsonInput(snapshotPath, "status"), now);
     const settings = readSettings(brain!.config);
     const lastLog = await findLastLogLine(brain!.root);
     const repos = await Promise.all(linkedRepos(brain!.config).map(async (repo) => ({ name: repo.name, area: repo.area, commit: repo.commit, found: (await workTreeTop(expandPath(repo.path, environment.homeDirectory))) !== null })));
@@ -121,11 +122,11 @@ async function findLastLogLine(root: string): Promise<string | null> {
   return null;
 }
 
-function tasksStatusNote(config: Record<string, unknown>, input: unknown): string | null {
+function tasksStatusNote(config: Record<string, unknown>, input: unknown, now: Date): string | null {
   const notion = isRecord(config.notion) ? config.notion : {};
   const tasks = isRecord(notion.tasks) ? notion.tasks : {};
   const properties = isRecord(tasks.properties) ? tasks.properties : {};
-  if (!isRecord(input) || Object.keys(input).some((key) => !["database", "property", "as_of", "options"].includes(key)) || input.database !== tasks.database || input.property !== properties.status || typeof input.as_of !== "string" || !/^\d{4}-\d{2}-\d{2}T/.test(input.as_of) || Number.isNaN(Date.parse(input.as_of)) || !Array.isArray(input.options) || !input.options.every((option) => typeof option === "string")) {
+  if (!isRecord(input) || Object.keys(input).some((key) => !["database", "property", "as_of", "options"].includes(key)) || typeof input.database !== "string" || input.database === "" || input.database !== tasks.database || typeof input.property !== "string" || input.property === "" || input.property !== properties.status || normalizeTimestamp(input.as_of) === undefined || Date.parse(String(input.as_of)) > now.getTime() || !Array.isArray(input.options) || !input.options.every((option) => typeof option === "string")) {
     throw new BrainError("INPUT_INVALID", "Tasks schema snapshot is invalid or does not match the configured database and status property");
   }
   const option = typeof tasks.wont_do_status === "string" ? tasks.wont_do_status : "Won't Do";
