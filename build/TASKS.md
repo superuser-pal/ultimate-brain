@@ -804,10 +804,11 @@ Optional Domains around PARA; Won't Do closes work without claiming completion; 
 **Output:** per CC-75: Domain schema/CLI support, config and module defaults, import/publish/index/query links, at most one optional Domain per Area, consistent Document/Project grouping through Areas and optional Org link; brain-connect-notion module checklist and switching steps; tests and skill mirror. Notion database creation and layouts follow CC-81.
 **Acceptance:** synthetic new and upgraded brains leave Domains off by default; enabling creates the agreed grouping without requiring Orgs or Documents; an Area can have one Domain or none and contradictory assignments are refused; shared knowledge remains reusable; disabling preserves notes and databases and stops Domain operations; lint and skill mirror checks pass.
 
-### CC-77 · Won't Do in Tasks, due views and progress (decision 0055) · `todo`
+### CC-77 · Won't Do in Tasks, due views and progress (decision 0055) · `in progress`
 **Release:** 0.8.0
 **Changelog:** Won't Do closes Tasks without counting them as completed, removes them from due work and shows dropped scope separately.
 **Output:** per CC-75: Tasks status mapping and connection checks, default and external-database guidance, Notion design/build/module prompts, all relevant active/overdue/reminder filters and formulas, completion/dropped counts and non-dropped progress denominator; migration 0013's task-status steps, user guide and appropriate fixture checks. Retain the task reference model of 0018.
+**Spec decision:** The user chose a skill-supplied Notion schema snapshot for the offline status diagnostic; see spec/cli.md §5.2.
 **Acceptance:** synthetic due and overdue Won't Do tasks contribute no active count or reminder; eight Done and two Won't Do display eight completed and two dropped with no false achievement from dropped work; zero-active-scope follows the contract; reopening restores active behavior; an external Tasks database is handled without a forced unrelated status rename.
 
 ### CC-78 · Selected source extracts and exclusion reconciliation in the CLI (decision 0055) · `todo`
