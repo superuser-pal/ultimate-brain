@@ -1120,7 +1120,7 @@ brain sync record --input <file|->
 Stores what the skill published. Input: `{ "records": [ { "id": "per-3h8w2n6c", "notion": "6a7b…", "synced_at": "2026-12-05T09:01:10Z", "published": { … }, "tasks": ["…"] } ] }`.
 
 - `notion`: set if absent; if present and different → item `failed`, `NOTION_ID_MISMATCH`.
-- `published` (the render item's `published`): merged into `notion_published`, key by key. **A value of `null` removes that key** (0054): after a body is published but its read-back failed, the skill records `"@notion_body": null`, so the old baseline of a previously published page is dropped and the next plan finds the page without a baseline (row 9) instead of comparing a new `@git_body` with an old `@notion_body`.
+- `published` (the render item's `published`): merged into `notion_published`, key by key. **A value of `null` on a key that starts with `@` removes that key** (0054; a `null` on an ordinary property is a real empty baseline and is kept, as in the `Summary: null` example of §5.14.2): after a body is published but its read-back failed, the skill records `"@notion_body": null`, so the old baseline of a previously published page is dropped and the next plan finds the page without a baseline (row 9) instead of comparing a new `@git_body` with an old `@notion_body`.
 - `synced_at` → `last_synced` (knowledge notes and sources), the time of the last publish.
 - `tasks` (meetings and sources): appended to the note's `tasks`, deduped, order kept.
 - A source record changes only these system fields (schema §4: its body and content fields stay as captured). `@full_text` is merged like any other key.
