@@ -1,0 +1,38 @@
+diff --git a/reports/2026-12-14-acme-launch-where-we-stand.md b/reports/2026-12-14-acme-launch-where-we-stand.md
+index e980cd4..4ce3e00 100644
+--- a/reports/2026-12-14-acme-launch-where-we-stand.md
++++ b/reports/2026-12-14-acme-launch-where-we-stand.md
+@@ -7,19 +7,28 @@ projects: [prj-9x4t1b7e]
+ question: Where does the Acme launch stand?
+ generated_from: []
+ generated_at: 2026-12-14T09:00:00Z
++sources: [notion:<id 1>]
+ created: 2026-12-14
+-updated: 2026-12-14
++updated: 2026-10-31
+ notion: <id 1>
++last_synced: 2026-10-31T16:32:44Z
+ notion_published:
+-  "@content": "sha256:9ce59662915362784a0c67b9ca4d4454f92bf7e2eca47da2e6e97ea06a74431f"
+-  "@notion_body": "sha256:9ce59662915362784a0c67b9ca4d4454f92bf7e2eca47da2e6e97ea06a74431f"
+-  "@git_body": "sha256:9ce59662915362784a0c67b9ca4d4454f92bf7e2eca47da2e6e97ea06a74431f"
++  "@content": sha256:72ddcc5f148eb83551124edefb5aab474a36befa1eea363e7e0b707af914bd94
++  "@notion_body": sha256:72ddcc5f148eb83551124edefb5aab474a36befa1eea363e7e0b707af914bd94
++  "@git_body": sha256:72ddcc5f148eb83551124edefb5aab474a36befa1eea363e7e0b707af914bd94
+   "@fixes": 0
++  Name: "Acme launch: where we stand"
++  Kind: Report
++  Project: [<id 2>]
++  Area: []
++  Ask: []
++  Brain Status: Done
++  Brain ID: vw-b6bybt5p
+ ---
+ 
+ ## Where it stands
+ 
+-Launch is set for February.
++As of 2026-12-14, from the pages in Notion: launch is set for February and the login work has started.
+ 
+ ## Timeline
+ 

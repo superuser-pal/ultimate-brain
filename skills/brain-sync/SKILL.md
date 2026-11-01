@@ -75,7 +75,7 @@ Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come 
     - **`sections` (areas, decision 0041):** the "Brief" toggle; a page without one gets it appended at the **end** of the page, then filled.
     - **How to write a section:** through the **block API only**, never the Markdown page update, which flattens toggles (decision 0043): the brain-ingest skill's references/notion.md, "Writing a section through the MCP".
     - **`"mode"` on a property:** `"add"` adds pages and keeps the existing ones. `"if_empty"` writes only to an empty property: read the property first, and leave it as it is when it holds anything. It is on Meeting and Inbox relations, and on an Inbox row's **Kind**, so a Kind the user chose stands (decision 0048). Never write a meeting's Name, Date or body (0007).
-    - **`pending_relations`:** these point to notes not published yet. Publish those first, record them, then render again.
+    - **`pending_relations`:** these point to notes not published yet. Publish those first, record them, then render again, **with the same `--plan plan.json`** (a render without it does not hold back a page whose Notion text is waiting).
 11. **Record:** run `brain sync record` with `{ "records": [ … ] }`, one record per page written: `{ "id", "notion": <page id>, "synced_at": <now>, "published": <the item's published> }` (references/formats.md). Record only what you actually wrote. If a write failed, leave it out; the next render produces it again.
 12. **Log** with `brain log publish - pages=<n>` (`sync record` does not log), then **commit:** `publish: <n> pages to Notion`. After the run's last commit, push per `settings.push` (the brain's AGENTS.md, "Write path").
 13. **Report** in three lines (decision 0037):

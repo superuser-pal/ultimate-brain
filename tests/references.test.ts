@@ -440,3 +440,12 @@ test("acceptance: a Review row from a project's meeting with no area of its own 
   const [item] = (await run(dir, ["sync", "render", "--ids", "prp-4n8c2w7t"])).json.data.items;
   assert.deepEqual(item.properties.Area, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] });
 });
+
+test("lint: a promoted Document's origin and promoted_from are declared keys, not unknown-key warnings", async (context) => {
+  const dir = await fixtureCopy(context);
+  const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Declared keys", frontmatter: { summary: "A page for the decision.", origin: "promoted", promoted_from: "dec-7k2m9q4x" }, body: "## Why\nBecause.\n" }] });
+  assert.equal(created.code, 0, created.stdout);
+  const lint = await run(dir, ["lint"]);
+  assert.equal(lint.code, 0, lint.stdout);
+  assert.deepEqual(lint.json.data.issues.filter((issue: { rule: string }) => issue.rule === "unknown-key"), []);
+});
