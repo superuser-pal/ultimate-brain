@@ -1,6 +1,6 @@
 ---
 name: brain-connect-notion
-description: Connect the brain to the user's Notion space after it was built from the notion/ prompts. Gives the agent access to Notion, finds the Brain Data page and its databases, checks each has the properties the brain reads and writes, stores their ids in brain.json, maps the Tasks database and records the owner's identities. Also lists and switches the optional modules (Knowledge, Orgs, Documents, Reports, Tasks, Planning), walking the user through a module's Notion steps when it is turned on. Changes nothing in Notion itself. Use when the user says "connect the brain to Notion", "which modules do I have?", "turn on documents", "turn planning off", after building the Notion space, when Notion is unreachable, or when a skill reports a Notion database is not configured or a module is off.
+description: Connect the brain to the user's Notion space after it was built from the notion/ prompts. Gives the agent access to Notion, finds the Brain Data page and its databases, checks each has the properties the brain reads and writes, stores their ids in brain.json, maps the Tasks database and records the owner's identities. Also lists and switches the optional modules (Domains, Knowledge, Orgs, Documents, Reports, Tasks, Planning), walking the user through a module's Notion steps when it is turned on. Changes nothing in Notion itself. Use when the user says "connect the brain to Notion", "which modules do I have?", "turn on documents", "turn planning off", after building the Notion space, when Notion is unreachable, or when a skill reports a Notion database is not configured or a module is off.
 ---
 
 # Connect the brain to Notion
@@ -16,6 +16,7 @@ Run CLI commands as `brain <command> --brain <brain> --json`. If `brain` is not 
    ```
    Core (always on): Inbox, Meetings, Projects, Areas, People, Review
    [x] Knowledge: Decisions, Questions, Concepts
+   [ ] Domains: group Areas by work or life context
    [x] Orgs: client and partner organizations
    [ ] Documents: keep a document, or part of one, as a page
    [ ] Reports: ask the brain in the Inbox, get a report you can refresh
@@ -38,6 +39,7 @@ Run CLI commands as `brain <command> --brain <brain> --json`. If `brain` is not 
    | Projects | `projects` |
    | Meetings | `meetings` |
    | People | `people` |
+   | Domains | `domains` |
    | Orgs | `orgs` |
    | Decisions | `decisions` |
    | Questions | `questions` |

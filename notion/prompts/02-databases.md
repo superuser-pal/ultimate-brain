@@ -27,6 +27,7 @@ On the page "Brain Data", create these full-page databases with exactly these pr
 [Knowledge] [Documents] Also in "Concepts": Promote asked (checkbox).
 [Documents] 14. "Documents": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time), Last edited time (last edited time).
 [Documents] Also in "Documents": Accepted (checkbox), Accepted at (date, with time).
+[Domains] Create "Domains": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Archived (checkbox), Brain ID (text), Last Synced (date).
 ```
 
 ## Verify

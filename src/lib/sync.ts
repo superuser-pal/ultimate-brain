@@ -19,11 +19,11 @@ import { bodyHash, bodyOf } from "./proposals.ts";
 import { hasReportShape, reportLinks } from "./report-body.ts";
 import { gitBodyOf, parseWording, planWording, textHash, type AcceptedWording, type Wording, type WordingPlan } from "./wording.ts";
 
-const DATABASES = ["areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "concepts", "documents", "review", "inbox"] as const;
-const CREATABLE = new Set(["areas", "goals", "projects", "people", "orgs"]);
-const TYPE_FOR_DATABASE: Record<string, string> = { areas: "area", goals: "goal", projects: "project", people: "person", orgs: "org", decisions: "decision", questions: "question", concepts: "concept", documents: "reference", review: "proposal" };
-const DATABASE_FOR_TYPE: Record<string, string> = { area: "areas", goal: "goals", project: "projects", person: "people", org: "orgs", decision: "decisions", question: "questions", concept: "concepts", reference: "documents", source: "inbox", meeting: "meetings", proposal: "review" };
-const PUBLISHED_TYPES = new Set(["area", "goal", "project", "person", "org", "decision", "question", "concept", "reference", "source", "meeting", "proposal"]);
+const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "concepts", "documents", "review", "inbox"] as const;
+const CREATABLE = new Set(["domains", "areas", "goals", "projects", "people", "orgs"]);
+const TYPE_FOR_DATABASE: Record<string, string> = { domains: "domain", areas: "area", goals: "goal", projects: "project", people: "person", orgs: "org", decisions: "decision", questions: "question", concepts: "concept", documents: "reference", review: "proposal" };
+const DATABASE_FOR_TYPE: Record<string, string> = { domain: "domains", area: "areas", goal: "goals", project: "projects", person: "people", org: "orgs", decision: "decisions", question: "questions", concept: "concepts", reference: "documents", source: "inbox", meeting: "meetings", proposal: "review" };
+const PUBLISHED_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "decision", "question", "concept", "reference", "source", "meeting", "proposal"]);
 
 export interface SyncPlan {
   as_of: string;
@@ -117,6 +117,10 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
     // A database whose module is off is not read at all (cli §5.14.2, 0048).
     const module = moduleForDatabase(row.database);
     if (module !== null && !modules[module]) { result.ignored.push(ignoredRow(row, "MODULE_OFF")); continue; }
+    if (row.database === "areas" && Object.hasOwn(row.properties, "Domain")) {
+      if (!modules.domains) result.ignored.push(ignoredRow(row, "MODULE_OFF", "Domain"));
+      else if (Array.isArray(row.properties.Domain) && row.properties.Domain.length > 1) { result.conflicts.push(conflict(row, "MULTIPLE_DOMAINS", "Area has more than one Domain", "Domain", row.properties.Domain)); continue; }
+    }
     if (row.database === "key_results") { planKeyResult(workspace, snapshot.as_of, row, result); continue; }
     if (row.database === "inbox") { planInbox(workspace, row, result); continue; }
     const brainId = property(row.properties, "Brain ID");
@@ -165,6 +169,8 @@ function createFromRow(workspace: Workspace, asOf: string, row: SnapshotRow, cre
   const facts: Record<string, unknown> = {};
   const timeline: Record<string, unknown>[] = [];
   const fact = (name: string, value: unknown) => { if (value !== undefined && value !== null) { facts[name] = value; timeline.push({ field: name, value, from: row.last_edited.slice(0, 10), learned: asOf.slice(0, 10), source: `notion:${row.page_id}`, assessment: "accepted" }); } };
+  if (type === "area" && modulesOf(workspace.config).domains) frontmatter.domain = valueOfPage(property(row.properties, "Domain"), "Domain");
+  if (type === "domain" && modulesOf(workspace.config).orgs) frontmatter.org = valueOfPage(property(row.properties, "Org"), "Org");
   if (type === "goal") { frontmatter.why = property(row.properties, "Why"); frontmatter.area = valueOfPage(property(row.properties, "Area"), "Area"); fact("deadline", dateValue(property(row.properties, "Deadline"))); }
   if (type === "project") { frontmatter.area = valueOfPage(property(row.properties, "Area"), "Area"); frontmatter.goal = valueOfPage(property(row.properties, "Goal"), "Goal"); frontmatter.client = valueOfPage(property(row.properties, "Client"), "Client"); frontmatter.people = valueOfPage(property(row.properties, "People"), "People", true); Object.assign(facts, parseKeyFacts(property(row.properties, "Key Facts"))); }
   if (type === "person") { frontmatter.org = valueOfPage(property(row.properties, "Org"), "Org"); fact("role", property(row.properties, "Role")); }
@@ -351,7 +357,7 @@ function sortPlan(plan: SyncPlan): void {
 }
 
 function notionFields(database: string, p: Record<string, unknown>, asOf: string): Record<string, unknown> {
-  const mapping: Record<string, Record<string, string>> = { areas: { Type: "type", Archived: "archived" }, goals: { Status: "status", Progress: "progress", Archived: "archived" }, projects: { Status: "status", Priority: "priority", Dates: "dates", Archived: "archived" }, people: { Email: "email" }, orgs: { Relationship: "relationship", Website: "website" }, questions: { Status: "status" } };
+  const mapping: Record<string, Record<string, string>> = { domains: { Archived: "archived" }, areas: { Type: "type", Archived: "archived" }, goals: { Status: "status", Progress: "progress", Archived: "archived" }, projects: { Status: "status", Priority: "priority", Dates: "dates", Archived: "archived" }, people: { Email: "email" }, orgs: { Relationship: "relationship", Website: "website" }, questions: { Status: "status" } };
   const fields: Record<string, unknown> = { as_of: asOf };
   for (const [name, key] of Object.entries(mapping[database] ?? {})) if (Object.hasOwn(p, name) && p[name] !== null) fields[key] = p[name];
   return fields;
@@ -359,14 +365,14 @@ function notionFields(database: string, p: Record<string, unknown>, asOf: string
 
 function brainProperties(database: string): Array<[string, string]> {
   const common: Array<[string, string]> = [["Name", "title"], ["Summary", "summary"], ["Lifecycle", "lifecycle"]];
-  const extras: Record<string, Array<[string, string]>> = { goals: [["Why", "why"], ["Deadline", "facts.deadline"], ["Area", "area"]], projects: [["Key Facts", "facts"], ["Area", "area"], ["Goal", "goal"], ["Client", "client"], ["People", "people"]], people: [["Role", "facts.role"], ["Org", "org"]], decisions: [["Assessment", "assessment"], ["Project", "projects"], ["Area", "derived_area"]], questions: [["Kind", "kind"], ["Project", "projects"], ["Area", "derived_area"]], concepts: [["Project", "concept_projects"], ["Area", "concept_area"]], documents: [["Project", "reference_projects"], ["Area", "reference_area"]] };
+  const extras: Record<string, Array<[string, string]>> = { areas: [["Domain", "domain"]], domains: [["Org", "org"]], goals: [["Why", "why"], ["Deadline", "facts.deadline"], ["Area", "area"]], projects: [["Key Facts", "facts"], ["Area", "area"], ["Goal", "goal"], ["Client", "client"], ["People", "people"]], people: [["Role", "facts.role"], ["Org", "org"]], decisions: [["Assessment", "assessment"], ["Project", "projects"], ["Area", "derived_area"]], questions: [["Kind", "kind"], ["Project", "projects"], ["Area", "derived_area"]], concepts: [["Project", "concept_projects"], ["Area", "concept_area"]], documents: [["Project", "reference_projects"], ["Area", "reference_area"]] };
   return [...common, ...(extras[database] ?? [])];
 }
 
 function convertedValue(workspace: Workspace, row: SnapshotRow, name: string, value: unknown, conflicts: Array<Record<string, unknown>>): unknown {
   if (name === "Lifecycle") return normalizeLifecycle(value);
   if (name === "Deadline") return dateValue(value);
-  if (["Area", "Goal", "Client", "Org", "People"].includes(name)) return relationIds(workspace, value, conflicts, row, name);
+  if (["Domain", "Area", "Goal", "Client", "Org", "People"].includes(name)) return relationIds(workspace, value, conflicts, row, name);
   if (name === "Key Facts") return parseKeyFacts(value);
   return value;
 }
@@ -374,12 +380,12 @@ function convertedValue(workspace: Workspace, row: SnapshotRow, name: string, va
 /** A Notion value in the brain's form: brain ids for relations (one id for single references), YYYY-MM-DD dates, lowercase lifecycle. */
 function brainValue(workspace: Workspace, row: SnapshotRow, name: string, brainField: string, conflicts: Array<Record<string, unknown>>): unknown {
   const value = convertedValue(workspace, row, name, row.properties[name], conflicts);
-  return Array.isArray(value) && ["area", "goal", "client", "org"].includes(brainField) ? value[0] ?? null : value;
+  return Array.isArray(value) && ["domain", "area", "goal", "client", "org"].includes(brainField) ? value[0] ?? null : value;
 }
 
 /** True when a relation field links a note that has no Notion page yet: render leaves it out, so B alone would hide it. */
 function linksUnpublished(workspace: Workspace, note: Note, brainField: string): boolean {
-  if (!["area", "goal", "client", "org", "people"].includes(brainField)) return false;
+  if (!["domain", "area", "goal", "client", "org", "people"].includes(brainField)) return false;
   const raw = note.attributes[brainField]; const ids = Array.isArray(raw) ? raw : raw === undefined || raw === null ? [] : [raw];
   return ids.some((id) => typeof workspace.get(String(id))?.attributes.notion !== "string");
 }
@@ -389,6 +395,8 @@ function linksUnpublished(workspace: Workspace, note: Note, brainField: string):
 function offRelations(config: Record<string, unknown>, database: string): Set<string> {
   const on = modulesOf(config);
   const off = new Set<string>();
+  if (!on.domains && database === "areas") off.add("Domain");
+  if (!on.orgs && database === "domains") off.add("Org");
   if (!on.orgs && database === "projects") off.add("Client");
   if (!on.orgs && database === "people") off.add("Org");
   if (!on.planning && database === "projects") off.add("Goal");
@@ -411,8 +419,8 @@ function readBrainField(note: Note, field: string): unknown {
   if (field.startsWith("facts.")) return isRecord(note.attributes.facts) ? note.attributes.facts[field.slice(6)] ?? null : null;
   return note.attributes[field] ?? null;
 }
-function correctable(field: string): boolean { return ["title", "summary", "why", "area", "goal", "client", "org", "people"].includes(field) || field.startsWith("facts."); }
-function optionalReference(field: string): boolean { return ["goal", "client", "org"].includes(field); }
+function correctable(field: string): boolean { return ["title", "summary", "why", "domain", "area", "goal", "client", "org", "people"].includes(field) || field.startsWith("facts."); }
+function optionalReference(field: string): boolean { return ["domain", "goal", "client", "org"].includes(field); }
 const LIFECYCLES = ["draft", "reviewed", "disputed", "archived"];
 function normalizeLifecycle(value: unknown): unknown { return typeof value === "string" ? value.toLowerCase() : value; }
 function dateValue(value: unknown): unknown { return isRecord(value) && typeof value.start === "string" ? value.start.slice(0, 10) : value; }
@@ -659,6 +667,8 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
   if (note.type === "meeting") { Object.assign(values, { Decisions: relationPages(a.decisions, workspace), Questions: relationPages(a.questions, workspace), Attendees: relationPages(a.attendees, workspace), Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Brain Status": "Ingested", "Ingested At": dateOutput(a.created), "Brain ID": note.id }); return values; }
   if (note.type === "source") return sourceValues(note, workspace);
   common();
+  if (note.type === "area") Object.assign(values, { Domain: relationPages(a.domain === undefined ? [] : [a.domain], workspace) });
+  if (note.type === "domain") Object.assign(values, { Org: relationPages(a.org === undefined ? [] : [a.org], workspace) });
   if (note.type === "goal") Object.assign(values, { Why: a.why ?? null, Deadline: dateOutput(isRecord(a.facts) ? a.facts.deadline : undefined), Area: relationPages(a.area === undefined ? [] : [a.area], workspace) });
   if (note.type === "project") Object.assign(values, { "Key Facts": keyFactsText(a.facts, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), Goal: relationPages(a.goal === undefined ? [] : [a.goal], workspace), Client: relationPages(a.client === undefined ? [] : [a.client], workspace), People: relationPages(a.people, workspace) });
   if (note.type === "person") Object.assign(values, { Role: isRecord(a.facts) ? a.facts.role ?? null : null, Org: relationPages(a.org === undefined ? [] : [a.org], workspace) });
@@ -720,9 +730,9 @@ function sourceValues(note: Note, workspace: Workspace): Record<string, unknown>
 }
 
 function notionProperty(name: string, value: unknown, note: Note, workspace: Workspace, pending: Array<Record<string, unknown>>): unknown {
-  const relation = ["Area", "Goal", "Client", "People", "Org", "Project", "Decided In", "Raised In", "Supersedes", "Decisions", "Questions", "Concepts", "Documents", "Attendees", "From decision", "From concept"].includes(name);
+  const relation = ["Domain", "Area", "Goal", "Client", "People", "Org", "Project", "Decided In", "Raised In", "Supersedes", "Decisions", "Questions", "Concepts", "Documents", "Attendees", "From decision", "From concept"].includes(name);
   if (relation) {
-    const sourceField: Record<string, string> = { Area: "area", Goal: "goal", Client: "client", People: "people", Org: "org", Project: "projects", "Decided In": "decided_in", "Raised In": "raised_in", Decisions: "decisions", Questions: "questions", Attendees: "attendees" };
+    const sourceField: Record<string, string> = { Domain: "domain", Area: "area", Goal: "goal", Client: "client", People: "people", Org: "org", Project: "projects", "Decided In": "decided_in", "Raised In": "raised_in", Decisions: "decisions", Questions: "questions", Attendees: "attendees" };
     const raw = name === "Area" && note.type === "proposal" ? reviewArea(note.attributes, workspace)
       : name === "From decision" || name === "From concept" ? (Array.isArray(value) && note.attributes.promoted_from !== undefined && String(note.attributes.promoted_from).startsWith(name === "From decision" ? "dec-" : "con-") ? [note.attributes.promoted_from] : [])
       : name === "Area" && (note.type === "decision" || note.type === "question") ? projectAreas(note.attributes.projects, workspace) : name === "Supersedes" ? (Array.isArray(note.attributes.relations) ? note.attributes.relations.filter(isRecord).filter((item) => item.type === "supersedes").map((item) => item.target) : []) : note.type === "source" ? sourceRelationIds(note, name, workspace) : note.attributes[sourceField[name] ?? ""];

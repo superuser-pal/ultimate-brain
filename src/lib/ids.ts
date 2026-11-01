@@ -4,6 +4,7 @@ export const ID_ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz";
 
 export const ID_PREFIXES = [
   "area",
+  "dom",
   "gol",
   "prj",
   "per",
@@ -51,6 +52,7 @@ export function generateId(
 /** ID prefix of each note type (spec/schema.md §1). */
 export const TYPE_PREFIX: Readonly<Record<string, IdPrefix>> = {
   area: "area",
+  domain: "dom",
   goal: "gol",
   project: "prj",
   person: "per",

@@ -18,6 +18,7 @@
     "type": {
       "enum": [
         "area",
+        "domain",
         "goal",
         "project",
         "person",
@@ -56,6 +57,10 @@
       "then": {
         "$ref": "#/$defs/area"
       }
+    },
+    {
+      "if": { "properties": { "type": { "const": "domain" } } },
+      "then": { "$ref": "#/$defs/domain" }
     },
     {
       "if": {
@@ -209,8 +214,9 @@
     },
     "id": {
       "type": "string",
-      "pattern": "^(area|gol|prj|per|org|mtg|dec|que|con|ref|src|mem|prp|vw)-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+      "pattern": "^(area|dom|gol|prj|per|org|mtg|dec|que|con|ref|src|mem|prp|vw)-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
     },
+    "domainId": { "type": "string", "pattern": "^dom-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
     "areaId": {
       "type": "string",
       "pattern": "^area-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
@@ -282,7 +288,7 @@
           "pattern": "^notion-edit$"
         },
         {
-          "pattern": "^(area|gol|prj|per|org|mtg|dec|que|con|src|mem)-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+          "pattern": "^(area|dom|gol|prj|per|org|mtg|dec|que|con|src|mem)-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
         }
       ]
     },
@@ -466,6 +472,13 @@
         }
       }
     },
+    "domain": {
+      "allOf": [{ "$ref": "#/$defs/knowledge" }],
+      "properties": {
+        "org": { "$ref": "#/$defs/orgId" },
+        "notion_fields": { "properties": { "archived": { "type": "boolean" } } }
+      }
+    },
     "area": {
       "allOf": [
         {
@@ -473,6 +486,7 @@
         }
       ],
       "properties": {
+        "domain": { "$ref": "#/$defs/domainId" },
         "notion_fields": {
           "properties": {
             "type": {

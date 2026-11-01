@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { BrainError } from "./errors.ts";
+import { modulesOf } from "./modules.ts";
 import { serializeNewFile } from "./frontmatter.ts";
 import { generateId, TYPE_PREFIX } from "./ids.ts";
 import { assertNoProblems, escapePointer, isRecord, unknownKeys, type InputProblem } from "./input.ts";
@@ -39,7 +40,7 @@ export interface StagedNotes {
 }
 
 const ITEM_KEYS = ["type", "id", "title", "file_date", "frontmatter", "body"];
-const KNOWLEDGE_TYPES = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
+const KNOWLEDGE_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 const NEW_NOTE_TYPES = new Set([...KNOWLEDGE_TYPES, "source"]);
 const FORBIDDEN_KEYS = ["id", "type", "title", "created", "updated", "lifecycle"];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -107,6 +108,7 @@ export function stageNotes(
   pointerOf: (index: number) => string,
   options: StageOptions,
 ): StagedNotes {
+  if (!modulesOf(workspace.config).domains && items.some((item) => item.type === "domain")) throw new BrainError("MODULE_OFF", "The Domains module is off: brain modules on domains");
   const existing = workspace.ids();
   const seen = new Set<string>();
   const clashes: InputProblem[] = [];
