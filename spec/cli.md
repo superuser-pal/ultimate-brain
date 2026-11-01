@@ -161,7 +161,7 @@ Batch commands (`note new`, `proposal new`, `apply`, `sync apply`) also report *
 
 ### 3.7 What counts as a note
 
-The CLI scans these folders under the brain root: `areas/` (with `areas/briefs/`), `goals/`, `projects/`, `archive/`, `knowledge/`, `sources/`, `reports/`, `memories/`, `_proposals/`. Every `*.md` file there must have frontmatter with an `id` (lint error `not-a-note` otherwise). Files elsewhere (root `AGENTS.md`, `CLAUDE.md`, `README.md`, `index.md`, `log/`, dot-folders) are not notes.
+The CLI scans these folders under the brain root: `areas/` (with `areas/briefs/`), `domains/`, `goals/`, `projects/`, `archive/`, `knowledge/`, `sources/`, `reports/`, `memories/`, `_proposals/`. Every `*.md` file there must have frontmatter with an `id` (lint error `not-a-note` otherwise). Files elsewhere (root `AGENTS.md`, `CLAUDE.md`, `README.md`, `index.md`, `log/`, dot-folders) are not notes.
 
 ### 3.8 Slugs and paths for new files
 
@@ -280,7 +280,7 @@ Read-only health summary; the first call of every skill.
 } }
 ```
 
-`notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `concepts`, `documents` (0045, 0049; a `references` key is reported as `documents`). `modules` (0048) has every module key, filled in as schema §12 says: all `true` when the block is absent, else each absent key at its default. `notes` counts every type, `reference` included (0045). A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } }`. `unattended` (0051) sums the unattended catch-up lines (§3.9) written since the last attended `catch-up` line, across the month files: `since` is that attended line's timestamp (`null` when there is none), `runs` the unattended lines after it, `inputs` and `failed` their sums, `failures` their reasons in order without repeats, and `left`, `skipped`, `waiting` and `last` (its timestamp) from the latest one, since an input still skipped is counted again by every run. `catch_up` is `null` when no unattended line follows the last attended one. `backlog` is `true` when the last three unattended catch-up lines, attended or not in between, each have `left` above 0. The attended catch-up opens with this summary (§6.1). `repos` lists `brain.json` `repos` in order (empty when absent): `found` is whether `path` is a Git working tree. `views_stale` includes area briefs. Exit 0 even when stale.
+`notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `concepts`, `documents` (0045, 0049; a `references` key is reported as `documents`). `modules` (0048) has every module key, filled in as schema §12 says: all `true` except Domains when the block is absent, else each absent key at its default. `notes` counts every type, `reference` included (0045). A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } }`. `unattended` (0051) sums the unattended catch-up lines (§3.9) written since the last attended `catch-up` line, across the month files: `since` is that attended line's timestamp (`null` when there is none), `runs` the unattended lines after it, `inputs` and `failed` their sums, `failures` their reasons in order without repeats, and `left`, `skipped`, `waiting` and `last` (its timestamp) from the latest one, since an input still skipped is counted again by every run. `catch_up` is `null` when no unattended line follows the last attended one. `backlog` is `true` when the last three unattended catch-up lines, attended or not in between, each have `left` above 0. The attended catch-up opens with this summary (§6.1). `repos` lists `brain.json` `repos` in order (empty when absent): `found` is whether `path` is a Git working tree. `views_stale` includes area briefs. Exit 0 even when stale.
 
 ### 5.3 `brain config`
 
@@ -908,7 +908,8 @@ Read-only. Compares each row with the brain and returns a plan. Notes are matche
 
 | Database | Notion-owned → `notion_fields` | Correctable brain-owned → correction `field` |
 |---|---|---|
-| areas | Type → `type`, Archived → `archived` | Name → `title`, Summary → `summary` |
+| domains | Archived → `archived` | Name → `title`, Summary → `summary`, Org → `org` |
+| areas | Type → `type`, Archived → `archived` | Name → `title`, Summary → `summary`, Domain → `domain` |
 | goals | Status → `status`, Progress → `progress`, Archived → `archived`, Key Results → `key_results` | Name, Summary, Why → `why`, Deadline → `facts.deadline`, Area → `area` |
 | projects | Status → `status`, Priority → `priority`, Dates → `dates`, Archived → `archived` | Name, Summary, Key Facts → `facts.<key>` (§5.14.4), Area → `area`, Goal → `goal`, Client (first) → `client`, People → `people` |
 | people | Email → `email` | Name, Summary, Role → `facts.role`, Org (first) → `org` |
@@ -1234,7 +1235,7 @@ Brings the product-owned files of an existing brain up to the installed version 
 
    Folders in `.agents/skills/` or `.claude/skills/` that the package does not ship are the user's own and are left alone.
 4. **Retired plugin (0038).** If `.claude/settings.json` exists, remove the key `ultimate-brain@ultimate-brain` from `enabledPlugins` and the key `ultimate-brain` from `extraKnownMarketplaces`; an object left empty is removed. Other keys are kept in order, and the file is written as JSON with 2-space indent and a trailing newline (`updated`). A file left as `{}` is deleted (`removed`). A file that is not valid JSON is left alone (`skipped`) with warning `SETTINGS_UNPARSEABLE`. Nothing to remove → no change.
-5. **Renamed `brain.json` keys (0037).** If `notion.databases` has `capture_inbox`: when `inbox` is absent or empty, rename the key to `inbox` in place (same position, same value, an empty `inbox` removed); when `inbox` already holds an id, just remove `capture_inbox`. Every other key and value is kept in order, and the file is written as JSON with 2-space indent and a trailing newline (`updated`). A `brain.json` that is not valid JSON is left alone (`skipped`) with warning `BRAIN_JSON_UNPARSEABLE`. No `capture_inbox` → no change. The same rule renames `references` to `documents` (0049). Then, if `brain.json` has no `modules` block, it is added after `settings` (or after `budgets` when there is no `settings`) with every key `true`, so a brain made before 0.6.0 keeps every module on (schema §12, 0048).
+5. **Renamed `brain.json` keys (0037).** If `notion.databases` has `capture_inbox`: when `inbox` is absent or empty, rename the key to `inbox` in place (same position, same value, an empty `inbox` removed); when `inbox` already holds an id, just remove `capture_inbox`. Every other key and value is kept in order, and the file is written as JSON with 2-space indent and a trailing newline (`updated`). A `brain.json` that is not valid JSON is left alone (`skipped`) with warning `BRAIN_JSON_UNPARSEABLE`. No `capture_inbox` → no change. The same rule renames `references` to `documents` (0049). Then, if `brain.json` has no `modules` block, it is added after `settings` (or after `budgets` when there is no `settings`) with every key `true` except Domains, so a brain made before 0.6.0 keeps its earlier modules on (schema §12, 0048).
 6. Log `- <timestamp> upgrade - "<package version>" files=<n>` when anything changed. `--dry-run` writes and logs nothing and reports the same `files`.
 7. **Lint** the brain (§5.10) and report the counts in `lint`. Lint findings never stop the upgrade: it only wrote product-owned files. With `--dry-run`, lint reads the **planned** tree: every `created`, `updated` or `removed` file as the upgrade would leave it, everything else (including `skipped` files) as it is on disk. So a dry run reports what would remain after the upgrade: `product-file` is silent for drift the upgrade repairs, and still reports an `AGENTS.md` left `skipped` for missing markers.
 8. **Commit and push**, when anything changed and the brain is a Git repository: stage exactly the paths in `files` whose `action` is `created`, `updated` or `removed`, plus the log file step 6 appended to (`log/<YYYY-MM>.md`). Never stage a `skipped` path or anything else in the working tree. Commit `upgrade: ultimate brain <version>`, then `git push` if the current branch has an upstream. No upstream → warning `PUSH_SKIPPED`. A push that fails → warning `PUSH_FAILED` with Git's message; the commit stays, and the exit code is still 0. A failed commit (no identity) → warning `GIT_COMMIT_SKIPPED`, files kept. Not a Git repository → no commit, no warning.
@@ -1341,7 +1342,7 @@ brain modules on <module>
 brain modules off <module>
 ```
 
-Lists or switches the optional modules of schema §12: `knowledge`, `orgs`, `documents`, `reports`, `tasks`, `planning`. Core has no switch.
+Lists or switches the optional modules of schema §12: `domains`, `knowledge`, `orgs`, `documents`, `reports`, `tasks`, `planning`. Core has no switch.
 
 **`brain modules`** writes nothing:
 ```json
@@ -1352,9 +1353,9 @@ Lists or switches the optional modules of schema §12: `knowledge`, `orgs`, `doc
     { "name": "tasks", "on": false, "default": false, "databases": [], "missing": ["tasks"] }
 ] } }
 ```
-One item per module, in the order above. `on` follows schema §12 (all `true` when the block is absent). `databases` lists the module's `notion.databases` keys; `missing` lists those whose id is empty, and `tasks` when `notion.tasks.database` is empty. So the skill knows which Notion steps a module still needs before it can work.
+One item per module, in the order above. `on` follows schema §12 (all `true` except Domains when the block is absent). `databases` lists the module's `notion.databases` keys; `missing` lists those whose id is empty, and `tasks` when `notion.tasks.database` is empty. So the skill knows which Notion steps a module still needs before it can work.
 
-**`on` / `off`** set `modules.<module>` to `true` or `false` in `brain.json`. When the block is absent it is written first with every key `true` (as `brain upgrade` does), then the switch is applied. `brain.json` is validated and written as JSON with 2-space indent and a trailing newline. Nothing else changes: no note, no Notion page, no database id. Switching a module to the state it is already in writes nothing (`changed: false`). Logs `modules - "<module>" state=on|off` when it changes. `data` = `{ "module": "documents", "on": true, "changed": true, "missing": ["documents"] }`.
+**`on` / `off`** set `modules.<module>` to `true` or `false` in `brain.json`. When the block is absent it is written first with every key `true` except Domains (as `brain upgrade` does), then the switch is applied. `brain.json` is validated and written as JSON with 2-space indent and a trailing newline. Nothing else changes: no note, no Notion page, no database id. Switching a module to the state it is already in writes nothing (`changed: false`). Logs `modules - "<module>" state=on|off` when it changes. `data` = `{ "module": "documents", "on": true, "changed": true, "missing": ["documents"] }`.
 
 Turning a module on in Notion is the skill's job, with the user: it follows the module's steps in `notion/modules/<module>.md` (Notion AI prompts for its databases, buttons and layouts by hand, then `config set` for each id), and the next catch-up uses the module. Turning one off deletes nothing (schema §12).
 
@@ -1501,3 +1502,7 @@ A request that asks no question runs as attended: a re-read, a `document_request
 - with Reports off or `publish: ask`, nowhere else: what needs the user waits where they act on it (the meeting Reviewed, the row Ready, the Fix in Review), and the next attended catch-up opens with the summary below. The skill's "Run on a schedule" section says so when it sets a schedule (CC-64): a Report row needs Reports on and `publish: auto`.
 
 **The next attended catch-up** opens with the summary of the unattended runs since the last attended one, from `brain status` `unattended.catch_up` (§5.2), before its batch: "Since last time: 4 scheduled runs, 6 inputs in, 1 skipped, 1 Fix waiting, 1 failed: Notion login". Nothing when `catch_up` is `null`. Its own log line has no `mode`, which starts the count again.
+
+### Domains (0055)
+
+Domains use `dom-` ids and `domains/<slug>.md`. When Domains is off, sync ignores Domain rows and Area · Domain with `MODULE_OFF`, and render omits them. When on, Area · Domain is a correctable optional single relation: multiple values conflict as `MULTIPLE_DOMAINS` and hold the whole row. Domain · Org follows the Orgs module. Lint checks the types of both relations and reports `DOCUMENT_DOMAIN_MISMATCH` when a Document’s Area and a linked Project’s Area have different Domains.

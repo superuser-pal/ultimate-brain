@@ -487,13 +487,13 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
   "owner": { "name": "Alex", "person": "per-3h8w2n6c" },
   "budgets": { "ingest_max_notes": 8 },
   "settings": { "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } },
-  "modules": { "knowledge": true, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true },
+  "modules": { "domains": false, "knowledge": true, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true },
   "repos": [
     { "name": "acme-api", "path": "~/code/acme-api", "area": "area-2m7c4h8n",
       "patterns": ["decisions/**", "docs/vision.md", "CHANGELOG.md"], "commit": "" }
   ],
   "notion": {
-    "databases": { "areas": "", "goals": "", "key_results": "", "projects": "", "meetings": "",
+    "databases": { "domains": "", "areas": "", "goals": "", "key_results": "", "projects": "", "meetings": "",
                    "people": "", "orgs": "", "decisions": "", "questions": "", "review": "", "inbox": "",
                    "concepts": "", "documents": "" },
     "tasks": {
@@ -519,6 +519,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 
 | Key | Default | Databases (`notion.databases` keys) and what else it covers |
 |---|---|---|
+| `domains` | `false` | `domains` |
 | `knowledge` | `true` | `decisions`, `questions`, `concepts` |
 | `orgs` | `true` | `orgs` |
 | `documents` | `false` | `documents` (0049) |
@@ -526,7 +527,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 | `tasks` | `false` | `notion.tasks` |
 | `planning` | `false` | `goals`, `key_results` |
 
-- **`modules` absent:** every module is on. That is every brain made before 0.6.0; `brain upgrade` writes the block with every key `true` (cli.md §5.15). **A key absent from a present block** takes its default. New brains get the block from onboarding.
+- **`modules` absent:** every module except Domains is on; Domains is off. That is every brain made before 0.6.0; `brain upgrade` writes the block with every key `true` except Domains (cli.md §5.15). **A key absent from a present block** takes its default. New brains get the block from onboarding.
 - **A module off** means the CLI neither reads nor writes Notion for it: `sync plan` ignores its databases' rows, `sync render` publishes none of its notes and leaves out the relations to them, `sync tasks` refuses with `MODULE_OFF`, and reports are not published (cli.md §5.14, §5.20). It is off even when its database ids are set. **Nothing is deleted:** the notes stay in Git and are still indexed, linted and listed; Notion keeps its databases and rows. Turning it on again publishes what changed meanwhile.
 - **A module on with an empty database id** behaves as today: its notes are skipped with `DATABASE_NOT_CONFIGURED`.
 - Written by `brain modules` (cli.md §5.20) and `brain config`.
@@ -674,3 +675,7 @@ Written by `brain report new` from the skill's text; no `@generated` markers. Th
 A section with nothing renders `- None`. Each line that rests on a `draft` note ends with ` *(not reviewed)*`. Links are relative to the report file, as for every view. `generated_from` lists every note the body links to, sorted.
 
 **Refreshing (0045).** A refresh rewrites the same file: the six sections from what the brain knows now, a new `generated_at` and `generated_from`. The path, id, `question` and `notion` stay. "Where it stands" is as of the new date.
+
+### Domains (0055)
+
+A `domain` is a knowledge note with id prefix `dom-`, stored in `domains/`. Its optional scalar `org` names an Org; `notion_fields.archived` is boolean. An Area may have one optional scalar `domain` naming a Domain. Projects and Documents derive their Domain through their Area. `modules.domains` defaults to false even when the modules block is absent.
