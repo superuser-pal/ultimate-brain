@@ -85,5 +85,5 @@ The `data` object of the `sync plan` reply. Not the whole reply. The one edit yo
 ```
 
 - One record per page actually written. `synced_at` is required.
-- `published`: the render item's `published`. For a Document or report body you just wrote, add `"@notion_body": "sha256:<hex>"`: the hash of the Markdown you read back from the page right after writing it (SKILL.md, "Accepted wording", step 6).
+- `published`: the render item's `published`. For a Document or report body you just wrote, add `"@notion_body": "sha256:<hex>"`: the hash of the Markdown you read back from the page right after writing it (SKILL.md, "Accepted wording", step 6); if the read-back failed, `"@notion_body": null`, which removes the old baseline.
 - `tasks` (meetings and sources): the new task page ids.
