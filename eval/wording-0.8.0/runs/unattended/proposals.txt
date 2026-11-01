@@ -1,39 +1,19 @@
-=== _proposals/2026-10-31-login-page-related-knowledge.md
+=== _proposals/2026-11-01-login-page-related-knowledge.md
 ---
-id: prp-tsn9p1wd
+id: prp-1jyts5tf
 type: proposal
 title: "Login page: related knowledge"
-created: 2026-10-31
-updated: 2026-10-31
+created: 2026-11-01
+updated: 2026-11-01
 kind: add_to_note
-target: ref-rc5qd4cp
-content: |
+target: ref-3khrdfr4
+content: |-
   ## Related knowledge
 
-  - [Use Supabase for auth](../decisions/2026-12-03-use-supabase-for-auth.md): the decision this page was promoted from; sign-in runs on Supabase as of 2026-12-03.
-  - [Use Firebase for auth](../decisions/2026-10-01-use-firebase-for-auth.md): the earlier auth choice it replaced, superseded on 2026-12-03.
-  - [Row-level security](../concepts/row-level-security.md): how Supabase applies auth-aware access rules per row.
-  - [Acme website](../../projects/acme-website/project.md): the project the login page belongs to.
-why: Related knowledge for the Login page Document, whose accepted write-up was imported
+  - [Use Firebase for auth](../decisions/2026-10-01-use-firebase-for-auth.md): the earlier auth choice, superseded by Supabase on 2026-12-03.
+  - [Row-level security](../concepts/row-level-security.md): how Supabase applies per-row access rules to auth-aware queries.
+  - [Acme sync, 3 Dec](../meetings/2026-12-03-acme-sync.md): the meeting where the switch to Supabase auth was agreed.
+why: Notes in the brain that bear on the Login page Document (its decision, the one it replaced, and the concept it relies on).
 source: notion:<id 1>
 status: pending
-notion: <id 2>
-notion_published:
-  Name: "Login page: related knowledge"
-  Kind: Add To Note
-  About: Login page (ref-rc5qd4cp)
-  About Page: https://www.notion.so/<id 3>
-  Source Meeting: []
-  Now: null
-  Proposed: |
-    ## Related knowledge
-
-    - Use Supabase for auth: the decision this page was promoted from; sign-in runs on Supabase as of 2026-12-03.
-    - Use Firebase for auth: the earlier auth choice it replaced, superseded on 2026-12-03.
-    - Row-level security: how Supabase applies auth-aware access rules per row.
-    - Acme website: the project the login page belongs to.
-  Why: Related knowledge for the Login page Document, whose accepted write-up was imported
-  Area: []
-  State: Pending
-  Brain ID: prp-tsn9p1wd
 ---

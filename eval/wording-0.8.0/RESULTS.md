@@ -1,0 +1,18 @@
+# Accepted wording for 0.8.0: blind run results
+
+CC-73 acceptance (decisions 0054, 0057, 0058). Two rounds of four fresh `claude -p` sessions on 2026-10-31 and 2026-11-01, each in its own brain built with `scripts/blind-brain.mjs brain-acme <dir>`, the CLI of the CC-73 branch through a `brain` shim, no MCP servers, no git remote. Notion is simulated: the Documents and report rows, each page's blocks and the answers of the other databases are files the agent reads; its Notion writes are lines in `writes.md`. The snapshot does **not** carry the `wording` objects: building them from the pages is the skill's job.
+
+**To reproduce:** `npm run build`, then `eval/wording-0.8.0/run.sh` (or `run.sh import stale` for some). [setup.py](setup.py) builds every brain and its simulated Notion under `$UB_EVAL_DIR` (default `/tmp/ub-eval-0.8.0`).
+
+**Not a review.** These runs test the skill text; they are not a Codex review, and the model that ran them is the model that wrote the skills.
+
+| Run (`runs/<name>`) | Setup | What the traces show (second round, on the fixed skills) |
+|---|---|---|
+| **import** | a promoted Document accepted in Notion at 08:50 (the page's last edit is the click), "catch up" with the user answering yes in advance | The Document's body is the accepted text exactly (`doc-diff.txt`: the Purpose callout and the three H2 sections), `sources` gets the page, both baselines are recorded, Accepted is cleared on the page after a re-read. One `add_to_note` proposal "Login page: related knowledge" lists four notes, each with the reason it helps, and names its `source`. |
+| **stale** | the same, but the page was edited at 08:57, after the 08:50 click | Nothing imported (`doc-diff.txt` is empty); the reply puts the Document under Needs you ("edited after you accepted: click Accept write-up again") and leaves Accepted ticked; `writes.md` holds no write to the Document's page, so the hold on its publish applied through the whole run. |
+| **report** | a published report whose accepted refresh replaces its first section's text | The report body is the accepted text exactly; no proposal is written; the reply names knowledge only the brain has ("Not in the accepted refresh: …") and offers a full refresh; Accepted is cleared. |
+| **unattended** | two Documents: one accepted at 08:50 (run at 09:00), one not accepted and edited at 08:55 | The accepted one is imported (with its Related knowledge proposal); the unaccepted one is untouched in Git and has no write to its page. |
+
+**What the first round found, now fixed** (the first round's traces were replaced by the second's): the Related knowledge proposal had no `source` and the CLI refused it (the skill now names it); a re-render after pending relations dropped `--plan` and wrote a properties-only update to a page whose text was waiting (every render now carries it); parallel sessions shared a fixed temp folder and overwrote one plan (the skill now says `mktemp -d`); importing a report added a `sources` key its view type does not declare (CLI fixed, spec updated); lint warned that a promoted Document's own `origin` and `promoted_from` were unknown keys, a bug already on `main` (schema reader fixed, test added).
+
+**Notes.** The push failed in every run (no remote). The unattended run's Report row says "1 failed" and, in its own words, that the Related knowledge proposal had not reached Notion at the time it wrote the row: an ordering point inside that run's publish, not a wording rule; worth a look when this is run for real (U-22). The fixture's dates are in December and the machine's clock is not: the runs follow the snapshot's `as_of`, so some `updated` dates read earlier than `created`.

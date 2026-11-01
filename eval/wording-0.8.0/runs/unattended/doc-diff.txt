@@ -1,5 +1,5 @@
 diff --git a/knowledge/references/login-page.md b/knowledge/references/login-page.md
-index 2b529e3..a93372e 100644
+index b1a407e..acdcbb6 100644
 --- a/knowledge/references/login-page.md
 +++ b/knowledge/references/login-page.md
 @@ -4,17 +4,28 @@ type: reference
@@ -9,7 +9,7 @@ index 2b529e3..a93372e 100644
 +sources: [notion:<id 1>]
  created: 2026-12-14
 -updated: 2026-12-14
-+updated: 2026-10-31
++updated: 2026-11-01
  origin: promoted
  promoted_from: dec-7k2m9q4x
  notion: <id 1>
