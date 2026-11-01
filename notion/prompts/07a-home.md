@@ -7,6 +7,7 @@ Home leads with your own work; the brain's queues sit small in the left column, 
 First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md)).
 
 ```text
+[Tasks] When mapping your own Tasks database, substitute its mapped status property and Done and Won't Do option names in every Tasks filter below.
 Ignore the module names in square brackets at the start of lines.
 On this page ("Home"):
 

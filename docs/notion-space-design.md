@@ -301,7 +301,7 @@ Decisions, Questions, Concepts, Documents and People together are **Produced**: 
 **Ask and Report (0043, Reports module):** add a row with Kind = Ask and your question as its Name ("Everything about the Acme launch since August"). The next catch-up answers it with a new row, Kind = Report, linked to your Ask row, which becomes Done. The report has Where it stands, Timeline (oldest first, each line linked), Decisions in force, Open questions and risks, People involved, and Gaps; lines resting on notes you haven't reviewed are marked *(not reviewed)*. A report is **living** (0045): one per subject, shown on the project and area pages under "Reports". Click **Refresh report** to have it rewritten with a new date; write in **What to fix** what it gets wrong. It is never ingested back. The brain doesn't read Inbox rows back except to take in Ready rows and act on the buttons, so an edit to Summary or Produced stays in Notion until the brain's own value changes.
 
 ### 3.12 Tasks (default, only if you have no tasks system)
-Minimal, so the brain can send action items (0018). If you already have a tasks database, skip it and map yours in `brain.json`.
+Minimal, so the brain can send action items (0018). If you already have a tasks database, skip it and map yours in `brain.json`. Add Won't Do by hand in the Complete group (T8 is unverified); for an external database map the existing closed-without-doing option instead. On upgrade, replace the old numeric Task Progress rollup with the text formula and update due views in migration 0013 (CC-81); custom numeric filters or sorts on the old rollup need adjustment.
 
 | Property | Type | Notes |
 |---|---|---|
