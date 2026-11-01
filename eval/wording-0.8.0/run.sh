@@ -15,7 +15,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 B="${UB_EVAL_DIR:-/tmp/ub-eval-0.8.0}"
 OUT="${UB_EVAL_OUT:-$HERE/runs}"
 export UB_EVAL_DIR="$B"
-SCENARIOS=(import stale report unattended)
+SCENARIOS=(import stale report unattended changed revision adopt)
 if [ $# -gt 0 ]; then SCENARIOS=("$@"); fi
 COLLECT_ONLY="${COLLECT_ONLY:-}"
 if [ -z "$COLLECT_ONLY" ]; then
@@ -25,10 +25,11 @@ export PATH="$B/bin:$PATH"
 mkdir -p "$OUT" "$B/exit"
 
 sim() {
-  echo "Notion isn't connected in this session and no Notion tools exist. Treat these files as the Notion tools' answers: $B/$1-sim/documents.json is the result of querying the Documents database (each row: page_id, last_edited_time, properties Brain ID, Accepted, Accepted at); $B/$1-sim/reports.json is the same for the Inbox rows of Kind Report; $B/$1-sim/pages/<page_id>.json is one page: its properties, its last_edited_time and its blocks (type, text, link); $B/$1-sim/snapshot.json holds the rows of the other configured databases (none to take in here). There are no meetings, Inbox captures or Ask rows. Wherever the skill would write to Notion with its tools (update a page, set or clear a property), append one line saying exactly what you would write to $B/$1-sim/writes.md and treat the write as done; a page you read back after a write is the same file as before. There is no git remote."
+  echo "Notion isn't connected in this session and no Notion tools exist. Treat these files as the Notion tools' answers: $B/$1-sim/documents.json is the result of querying the Documents database (each row: page_id, last_edited_time, properties Brain ID, Accepted, Accepted at); $B/$1-sim/reports.json is the same for the Inbox rows of Kind Report; $B/$1-sim/pages/<page_id>.json is one page: its properties, its last_edited_time and its blocks (type, text, link); $B/$1-sim/snapshot.json holds the rows of the other configured databases (none to take in here). There are no meetings, Inbox captures or Ask rows. Wherever the skill would write to Notion with its tools (update a page, set or clear a property), append one line saying exactly what you would write to $B/$1-sim/writes.md and treat the write as done; a page you read back after a write is the same file as before. When you read a page again just before applying or clearing (not the first read), read $1-sim/pages/<page_id>.reread.json instead if that file exists. There is no git remote."
 }
 HERE_USER="The user is here and answers yes to every question of the batch in advance (import what was accepted, publish). Do not stop to ask; do the whole catch-up."
 AWAY="The user is away and cannot be asked anything."
+ADOPT="For a row with no baseline, the user chooses to adopt the text from Notion."
 claude_in() { # name, dir, prompt, outfile
   (cd "$2" && claude -p "$3" --permission-mode bypassPermissions --strict-mcp-config --mcp-config "$B/no-mcp.json" --add-dir "$B" > "$4" 2>&1; echo $? > "$B/exit/$1")
 }
@@ -48,7 +49,7 @@ if [ -z "$COLLECT_ONLY" ]; then
   for s in "${SCENARIOS[@]}"; do rm -rf "${OUT:?}/$s" "$B/exit/$s"; git -C "$B/$s" rev-parse HEAD > "$B/$s.base"; done
   for s in "${SCENARIOS[@]}"; do
     mkdir -p "$OUT/$s"
-    if [ "$s" = "unattended" ]; then P="catch up unattended. $AWAY $(sim "$s")"; else P="catch up. $HERE_USER $(sim "$s")"; fi
+    if [ "$s" = "unattended" ]; then P="catch up unattended. $AWAY $(sim "$s")"; elif [ "$s" = "adopt" ]; then P="catch up. $HERE_USER $ADOPT $(sim "$s")"; else P="catch up. $HERE_USER $(sim "$s")"; fi
     claude_in "$s" "$B/$s" "$P" "$OUT/$s/reply.md" &
   done
   wait

@@ -449,3 +449,14 @@ test("lint: a promoted Document's origin and promoted_from are declared keys, no
   assert.equal(lint.code, 0, lint.stdout);
   assert.deepEqual(lint.json.data.issues.filter((issue: { rule: string }) => issue.rule === "unknown-key"), []);
 });
+
+test("lint: a key no type declares is still an unknown-key warning on a reference (negative control)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Stray key", frontmatter: { summary: "A page.", origin: "promoted", promoted_from: "dec-7k2m9q4x" }, body: "Text.\n" }] });
+  assert.equal(created.code, 0, created.stdout);
+  const file = join(dir, created.json.data.created[0].path);
+  await writeFile(file, (await readFile(file, "utf8")).replace("\n---\n", "\nstray_key: x\n---\n"));
+  const lint = await run(dir, ["lint"]);
+  const unknown = lint.json.data.issues.filter((issue: { rule: string }) => issue.rule === "unknown-key").map((issue: { message: string }) => issue.message);
+  assert.ok(unknown.some((message: string) => message.includes("stray_key")), lint.stdout);
+});
