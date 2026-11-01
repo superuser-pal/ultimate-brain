@@ -111,12 +111,14 @@ def report_blocks(text):
     return out
 
 
-def sim(name, documents=(), reports=(), pages=None):
+def sim(name, documents=(), reports=(), pages=None, rereads=None):
+    """`rereads`: page id -> the page as it is when the skill reads it again just before applying (a change between plan and apply)."""
     s = B / f"{name}-sim"; (s / "pages").mkdir(parents=True, exist_ok=True)
     (s / "documents.json").write_text(json.dumps(list(documents), indent=1))
     (s / "reports.json").write_text(json.dumps(list(reports), indent=1))
     (s / "snapshot.json").write_text(json.dumps({"as_of": NOW, "rows": []}, indent=1))
     for pid, page in (pages or {}).items(): (s / "pages" / f"{pid}.json").write_text(json.dumps(page, indent=1))
+    for pid, page_ in (rereads or {}).items(): (s / "pages" / f"{pid}.reread.json").write_text(json.dumps(page_, indent=1))
     (s / "writes.md").write_text("")
 
 
@@ -156,7 +158,37 @@ def scenario_unattended():
         pages={pa: page(blocks(ACCEPTED_DOC), "2026-12-14T08:50:00.000Z"), pb: page(draft, "2026-12-14T08:55:00.000Z", accepted=False, accepted_at=None)})
 
 
-SCENARIOS = {"import": scenario_import, "stale": scenario_stale, "report": scenario_report, "unattended": scenario_unattended}
+def strip_baselines(path):
+    t = path.read_text()
+    path.write_text("".join(l for l in t.splitlines(keepends=True) if '"@notion_body"' not in l and '"@git_body"' not in l))
+
+
+def scenario_changed():
+    """The page changes between the plan and the apply: the second read (pages/<id>.reread.json) shows a later edit."""
+    d = make("changed"); did, p = promoted(d, "Login page", "dec-7k2m9q4x", uid(101))
+    git(d, "add", "-A"); git(d, "commit", "-qm", "setup: promoted Document published")
+    later = blocks(ACCEPTED_DOC); later[2]["text"] += " Also: magic links."
+    sim("changed", documents=[doc_row(p, did, True, "2026-12-14T08:50:00.000Z", "2026-12-14T08:50:00.000Z")],
+        pages={p: page(blocks(ACCEPTED_DOC), "2026-12-14T08:50:00.000Z")}, rereads={p: page(later, "2026-12-14T08:52:00.000Z")})
+
+
+def scenario_revision():
+    """Accepted, but a Proposed revision toggle is still on the page: an unresolved proposal blocks acceptance."""
+    d = make("revision"); did, p = promoted(d, "Login page", "dec-7k2m9q4x", uid(101))
+    git(d, "add", "-A"); git(d, "commit", "-qm", "setup: promoted Document published")
+    withtoggle = blocks(ACCEPTED_DOC) + [{"type": "toggle", "text": "Proposed revision", "children": [{"type": "paragraph", "text": "A newer draft from Write up, not yet adopted."}]}]
+    sim("revision", documents=[doc_row(p, did, True, "2026-12-14T08:50:00.000Z", "2026-12-14T08:50:00.000Z")], pages={p: page(withtoggle, "2026-12-14T08:50:00.000Z")})
+
+
+def scenario_adopt():
+    """A Document published before 0.8.0 (no baselines), accepted; the user chooses to adopt the text from Notion."""
+    d = make("adopt"); did, p = promoted(d, "Login page", "dec-7k2m9q4x", uid(101))
+    strip_baselines(next((d / "knowledge/references").glob("*.md")))
+    git(d, "add", "-A"); git(d, "commit", "-qm", "setup: promoted Document published before 0.8.0 (no baselines)")
+    sim("adopt", documents=[doc_row(p, did, True, "2026-12-14T08:50:00.000Z", "2026-12-14T08:50:00.000Z")], pages={p: page(blocks(ACCEPTED_DOC), "2026-12-14T08:50:00.000Z")})
+
+
+SCENARIOS = {"import": scenario_import, "stale": scenario_stale, "report": scenario_report, "unattended": scenario_unattended, "changed": scenario_changed, "revision": scenario_revision, "adopt": scenario_adopt}
 
 if __name__ == "__main__":
     kind = sys.argv[1] if len(sys.argv) > 1 else ""
