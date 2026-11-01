@@ -808,7 +808,7 @@ Optional Domains around PARA; Won't Do closes work without claiming completion; 
 **Release:** 0.8.0
 **Changelog:** Won't Do closes Tasks without counting them as completed, removes them from due work and shows dropped scope separately.
 **Output:** per CC-75: Tasks status mapping and connection checks, default and external-database guidance, Notion design/build/module prompts, all relevant active/overdue/reminder filters and formulas, completion/dropped counts and non-dropped progress denominator; migration 0013's task-status steps, user guide and appropriate fixture checks. Retain the task reference model of 0018.
-**Spec decision:** The user chose a skill-supplied Notion schema snapshot for the offline status diagnostic; see spec/cli.md §5.2.
+**Spec decision:** The user chose a skill-supplied Notion schema snapshot for the offline status diagnostic; see spec/cli.md §5.2. **CC-81 input:** migration 0013 must add the status by hand, replace the existing Task Progress rollup with the text formula, and update existing due views; warn that user-created numeric filters or sorts on the old rollup need adjustment.
 **Acceptance:** synthetic due and overdue Won't Do tasks contribute no active count or reminder; eight Done and two Won't Do display eight completed and two dropped with no false achievement from dropped work; zero-active-scope follows the contract; reopening restores active behavior; an external Tasks database is handled without a forced unrelated status rename.
 
 ### CC-78 · Selected source extracts and exclusion reconciliation in the CLI (decision 0055) · `todo`

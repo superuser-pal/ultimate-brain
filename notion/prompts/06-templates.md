@@ -5,6 +5,7 @@ Paste into Notion AI. Before: [Prompt 5](05-ownership.md). Next: [Prompt 7](07-s
 Each template is the database's default. Every linked view sits under an H3 heading named by the question it answers, has its database title hidden, and shows only rows related to the page (docs/notion-space-design.md §4). Where a block lists several views, they appear as view tabs on that one linked view. On project pages, the brain writes only inside the "Brief" and "Decision log" toggle headings (decision 0026), and on area pages inside "Brief" (decision 0041). First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md)); a tag can sit in front of an indented line, so keep the indent after it. Existing space? Use the migrations instead ([migration 0010](../migrations/0010-modules-documents-buttons-area-homes.md) for the area home).
 
 ```text
+[Tasks] When mapping your own Tasks database, substitute its mapped status property and Done and Won't Do option names in every Tasks filter below.
 Ignore the module names in square brackets at the start of lines.
 Create a default page template for each database below. Each item "Heading: database (views)" means: an H3 heading with exactly that text, then a linked view of that database filtered to the current page, with the database title hidden; when views are listed, add them as separate views of that one linked view, in that order, with those names. Do not add callouts or any other content.
 
