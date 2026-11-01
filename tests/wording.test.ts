@@ -449,3 +449,19 @@ test("report new still accepts a notion-page link as before; only the wording im
   const created = await run(dir, ["report", "new"], { title: "Login: mentions", question: "Where does it stand?", body: REPORT.replace("Alex.", "[Someone](notion-page:11111111-2222-4333-8444-555566667777).") });
   assert.equal(created.code, 0, created.stdout);
 });
+
+test("sync record: a null in published removes the old baseline, so a refreshed report whose read-back failed is held (row 9)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const report = await publishedReport(dir);
+  const page = "5c4d3e2f-1a0b-4c9d-8e7f-6a5b4c3d2e1f";
+  const recordFile = join(dir, "..", "record.json");
+  await writeFile(recordFile, JSON.stringify({ records: [{ id: report.id, notion: page, synced_at: NOW, published: { "@git_body": textHash("refreshed\n"), "@notion_body": null } }] }));
+  const recorded = await brain(["sync", "record", "--input", recordFile, "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(recorded.code, 0, recorded.stdout);
+  const published = parseFrontmatter(await readFile(join(dir, report.path), "utf8")).attributes.notion_published as Record<string, unknown>;
+  assert.equal(Object.hasOwn(published, "@notion_body"), false, "the old baseline is gone");
+  assert.equal(published["@git_body"], textHash("refreshed\n"));
+  // The next plan has no baseline for the report: held (unaccepted) or waiting NO_BASELINE (accepted), never compared with the old one.
+  const draft = await plan(dir, [reportRow(page, wording({ accepted: false, accepted_at: null, body_markdown: REPORT.replace("On track.", "Another text.") }), { "Brain ID": report.id })]);
+  assert.deepEqual(draft.wording_held, [{ page_id: page, note: report.id, reason: "NO_BASELINE" }]);
+});
