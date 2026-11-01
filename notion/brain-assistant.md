@@ -127,7 +127,7 @@ Source: the Goals, Key Results, Projects, Tasks, Meetings and Decisions database
 3. Goals: each Active goal with Progress and Countdown. Flag Progress under 25% with under 30 days left.
 4. Projects: Active projects with Countdown Overdue, and Active projects not edited in 30 days.
 5. Waiting On: tasks with Status Waiting On, oldest first.
-6. Next week: tasks due and meetings dated in the next 7 days.
+6. Next week: tasks due and meetings dated in the next 7 days. Exclude Done and the mapped Won't Do status from tasks and reminders.
 
 Output: six sections, then "Focus next week:" with three items.
 Read only. Don't edit anything.

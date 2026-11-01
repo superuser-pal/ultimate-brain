@@ -22,7 +22,7 @@ In the right column add, in one row:
 
 Below them, a heading 3 "What's on today?" and a tabs block:
 5b. Tab "Areas", first: a linked view of "Areas", List, named "How are my areas?": filter Archived is unchecked; sort Name; show Name, At a glance.
-[Tasks] In the same tab, below it, a linked view of "Tasks", List, at most 5 rows, named "What's due across areas?": filter Status is not Done and Due is on or before today; sort Due ascending; show Name, Area, Due.
+[Tasks] In the same tab, below it, a linked view of "Tasks", List, at most 5 rows, named "What's due across areas?": filter Status is not Done and Status is not Won't Do and Due is on or before today; sort Due ascending; show Name, Area, Due.
 [Tasks] 6. Tab "Tasks": linked view of "Tasks", List, named "What's due today?": filter Status is To Do or Doing and Due is on or before today; sort Due ascending; show Name, Project, Due.
 7. Tab "Meetings": linked view of "Meetings", List, named "Which meetings are today?": filter Date is today; sort Date ascending; show Name, Date, Project.
 8. Tab "Projects": linked view of "Projects", Gallery with small cards, named "What's active?": filter Status is Active and Archived is unchecked; sort Priority then Name; show Name, Countdown.
