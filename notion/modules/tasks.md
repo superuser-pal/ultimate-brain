@@ -20,7 +20,8 @@ Action items from meetings, and your own from documents, emails and captures, be
 | Map it: the default database sets `notion.tasks.database` and `status_type` `"status"`; your own gets a mapping you approve (brain-connect-notion, step 5) | agent |
 
 **Notion AI**, on **Brain Data** (formulas over the new relation, [Prompt 4](../prompts/04-formula-rollup.md) items 5 and 12, with the hand-pasted Due formula there if Notion AI gets it wrong):
-> In "Projects", add a rollup property "Task Progress" over the relation "Tasks", property "Status", calculated as Percent per group, group Complete, shown as a percentage. In "Areas", add a formula property "Due" that returns the number of pages in the relation "Tasks" whose Status is not Done and whose Due is today or earlier. Don't change anything else.
+Use the Task Progress and Due formulas in [Prompt 4](../prompts/04-formula-rollup.md), substituting your mapped relation, property and status names. Add the Won't Do status option by hand in Complete. Set `notion.tasks.wont_do_status` to its name (default `Won't Do`); do not rename unrelated statuses. Done and Won't Do are excluded from due views and reminders. Won't Do can be reopened.
+
 
 ### 3 · Pages and views
 

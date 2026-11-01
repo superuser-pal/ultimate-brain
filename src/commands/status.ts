@@ -7,10 +7,11 @@ import { buildIndex } from "../lib/index-builder.ts";
 import { lintBrain } from "../lib/lint.ts";
 import { scanNotes } from "../lib/notes.ts";
 import { describeErrors, loadSchemas } from "../lib/schemas.ts";
-import { isRecord } from "../lib/input.ts";
+import { isRecord, readJsonInput } from "../lib/input.ts";
 import { databaseId, modulesOf } from "../lib/modules.ts";
 import { expandPath, linkedRepos, workTreeTop } from "../lib/repos.ts";
 import { unattendedRuns } from "../lib/runs.ts";
+import { normalizeTimestamp } from "../lib/time.ts";
 
 const NOTE_TYPES = ["domain", "area", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "goal", "memory", "reference"];
 const PROPOSAL_STATUSES = ["pending", "approved", "edited", "rejected", "applied", "closed"];
@@ -18,12 +19,12 @@ const PROPOSAL_STATUSES = ["pending", "approved", "edited", "rejected", "applied
 /** `brain status` (spec/cli.md §5.2). */
 export const statusCommand: Command = {
   name: "status",
-  usage: "brain status [--json]",
+  usage: "brain status [--tasks-schema <file|->] [--json]",
   summary: "Show a read-only health summary for this brain.",
-  options: {},
+  options: { "tasks-schema": "string" },
   maxPositionals: 0,
   needsBrain: true,
-  async run({ brain, environment }) {
+  async run({ args, brain, environment, now }) {
     const schemas = loadSchemas();
     if (!schemas.brain(brain!.config)) {
       throw new BrainError("BRAIN_CONFIG_INVALID", `brain.json fails schema: ${describeErrors(schemas.brain.errors).join("; ")}`);
@@ -58,6 +59,8 @@ export const statusCommand: Command = {
     const viewStale = issues.filter((issue) => issue.rule === "view-stale").map((issue) => issue.path);
 
     const notion = readNotion(brain!.config);
+    const snapshotPath = args.options["tasks-schema"] as string | undefined;
+    const taskNote = snapshotPath === undefined ? null : tasksStatusNote(brain!.config, await readJsonInput(snapshotPath, "status"), now);
     const settings = readSettings(brain!.config);
     const lastLog = await findLastLogLine(brain!.root);
     const repos = await Promise.all(linkedRepos(brain!.config).map(async (repo) => ({ name: repo.name, area: repo.area, commit: repo.commit, found: (await workTreeTop(expandPath(repo.path, environment.homeDirectory))) !== null })));
@@ -67,6 +70,7 @@ export const statusCommand: Command = {
       notes: noteCounts,
       proposals: proposalCounts,
       notion,
+      tasks_status_note: taskNote,
       modules: modulesOf(brain!.config),
       settings,
       unattended: await unattendedRuns(brain!.root),
@@ -75,7 +79,7 @@ export const statusCommand: Command = {
       views_stale: viewStale,
       last_log: lastLog,
     };
-    return { data, human: `Owner: ${data.owner}\nNotes: ${notes.length}\n` };
+    return { data, human: `Owner: ${data.owner}\nNotes: ${notes.length}\n${taskNote === null ? "" : `${taskNote}\n`}` };
   },
 };
 
@@ -116,4 +120,15 @@ async function findLastLogLine(root: string): Promise<string | null> {
     }
   }
   return null;
+}
+
+function tasksStatusNote(config: Record<string, unknown>, input: unknown, now: Date): string | null {
+  const notion = isRecord(config.notion) ? config.notion : {};
+  const tasks = isRecord(notion.tasks) ? notion.tasks : {};
+  const properties = isRecord(tasks.properties) ? tasks.properties : {};
+  if (!isRecord(input) || Object.keys(input).some((key) => !["database", "property", "as_of", "options"].includes(key)) || typeof input.database !== "string" || input.database === "" || input.database !== tasks.database || typeof input.property !== "string" || input.property === "" || input.property !== properties.status || normalizeTimestamp(input.as_of) === undefined || Date.parse(String(input.as_of)) > now.getTime() || !Array.isArray(input.options) || !input.options.every((option) => typeof option === "string")) {
+    throw new BrainError("INPUT_INVALID", "Tasks schema snapshot is invalid or does not match the configured database and status property");
+  }
+  const option = typeof tasks.wont_do_status === "string" ? tasks.wont_do_status : "Won't Do";
+  return modulesOf(config).tasks && !input.options.includes(option) ? `Tasks status option "${option}" was absent in the Notion schema snapshot as of ${input.as_of}.` : null;
 }

@@ -17,6 +17,8 @@ If `brain` is not found (`command not found`), install it with `npm install -g u
 
 ## Procedure
 
+Tasks with the mapped `notion.tasks.wont_do_status` (default "Won't Do") are dropped, not open work. Mention them only when asked about dropped or closed work; distinguish them from completed tasks.
+
 1. **Search.** Run `brain query --candidates "<the question, in the user's words>" --json`.
    - **Search a name as the user wrote it** (a person, client, project) before answering from memory, even when you think you know who they mean: the brain may hold that spelling with other facts, or a person you've never heard of with the same first name.
    - Add `--types decision` (or `person`, `project`, `question`, …) when the question is clearly about one kind of note.

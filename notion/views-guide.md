@@ -45,7 +45,7 @@ Nothing sits above the two columns (#143, decision 0053).
 | # | Tab | View name | Database | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|---|
 | 0 | Areas | How are my areas? | Areas | List | Archived is unchecked | Name | Name, At a glance | Your areas, each line readable on its own: "Day job · 3 to review · 1 meeting", or "all clear" (#145). Open one for its home (0050). The first tab |
-| 0b | Areas | What's due across areas? *(Tasks)* | Tasks | List, 5 rows | Status is not Done · Due is on or before today | Due, ascending | Name, Area, Due | Due today or overdue, in every area |
+| 0b | Areas | What's due across areas? *(Tasks)* | Tasks | List, 5 rows | Status is not Done · Status is not Won't Do · Due is on or before today | Due, ascending | Name, Area, Due | Due today or overdue, in every area |
 | 1 | — | What's waiting for you? | Review | List, grouped by Type (counts shown), 5 rows per group | State is Pending | Created time, descending | Name, About Page | Where reviewing starts (0045): one Review Notes row per meeting or document, plus the other changes. On a Review Notes row, About Page opens the meeting or Inbox row it came from; on the others, the note it changes; click a row to decide it in the Review Space |
 | 2 | — | Which minutes need review? | Meetings | List, 5 rows | Brain Status is Not Reviewed · Date is on or before today | Date, descending | Name | Minutes to check before the brain may ingest them. Upcoming meetings stay out |
 | 3 | Tasks *(Tasks)* | What's due today? | Tasks | List | Status is To Do or Doing · Due is on or before today | Due, ascending | Name, Project, Due | Today's work, overdue first |

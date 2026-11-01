@@ -258,7 +258,7 @@ Errors: `TARGET_NOT_EMPTY`, `ALREADY_A_BRAIN`, `BRAIN_IS_PRODUCT_REPO`, `OUTSIDE
 ### 5.2 `brain status`
 
 ```text
-brain status
+brain status [--tasks-schema <file|->]
 ```
 
 Read-only health summary; the first call of every skill.
@@ -270,6 +270,7 @@ Read-only health summary; the first call of every skill.
     "notes": { "area": 2, "project": 3, "person": 7, "org": 2, "meeting": 12, "decision": 9, "question": 4, "concept": 1, "source": 12, "view": 6, "goal": 1, "memory": 0, "reference": 1 },
     "proposals": { "pending": 3, "approved": 0, "edited": 0, "rejected": 0, "applied": 14, "closed": 2 },
     "notion": { "configured": ["areas", "goals", "projects", "meetings", "people", "orgs", "decisions", "questions", "review"], "missing": ["key_results", "inbox", "concepts", "documents"], "tasks_database": true },
+    "tasks_status_note": null,
     "settings": { "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } },
     "modules": { "knowledge": true, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true },
     "unattended": { "catch_up": { "since": "2026-12-01T18:02:00Z", "runs": 4, "inputs": 6, "failed": 1, "failures": ["Notion login"], "left": 0, "skipped": 1, "waiting": 1, "last": "2026-12-03T07:00:00Z" }, "backlog": false },
@@ -281,6 +282,8 @@ Read-only health summary; the first call of every skill.
 ```
 
 `notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `concepts`, `documents` (0045, 0049; a `references` key is reported as `documents`). `modules` (0048) has every module key, filled in as schema §12 says: all `true` except Domains when the block is absent, else each absent key at its default. `notes` counts every type, `reference` included (0045). A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } }`. `unattended` (0051) sums the unattended catch-up lines (§3.9) written since the last attended `catch-up` line, across the month files: `since` is that attended line's timestamp (`null` when there is none), `runs` the unattended lines after it, `inputs` and `failed` their sums, `failures` their reasons in order without repeats, and `left`, `skipped`, `waiting` and `last` (its timestamp) from the latest one, since an input still skipped is counted again by every run. `catch_up` is `null` when no unattended line follows the last attended one. `backlog` is `true` when the last three unattended catch-up lines, attended or not in between, each have `left` above 0. The attended catch-up opens with this summary (§6.1). `repos` lists `brain.json` `repos` in order (empty when absent): `found` is whether `path` is a Git working tree. `views_stale` includes area briefs. Exit 0 even when stale.
+
+**Tasks status diagnostic (0055).** `brain status --tasks-schema <file|->` accepts a skill-supplied JSON snapshot `{ "database": "<mapped database id>", "property": "<mapped status property name>", "as_of": "<ISO timestamp>", "options": ["To Do", "Done", "Won't Do"] }`. The skill obtains it from Notion during connection; the CLI stays offline. The database and property must be non-empty and match the configured mapping; timestamps must be valid UTC timestamps no later than the command clock. Malformed, future-dated or mismatched snapshots fail `INPUT_INVALID`. When the Tasks module is on, the snapshot lacks `notion.tasks.wont_do_status` (default `Won't Do`), `data.tasks_status_note` contains a non-error string identifying the missing option and snapshot time. It is `null` without a snapshot, when Tasks is off, or when the option is present. The check sees names only and cannot verify the Complete group. A snapshot is a point-in-time observation, not a promise of current Notion state.
 
 ### 5.3 `brain config`
 

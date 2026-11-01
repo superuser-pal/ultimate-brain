@@ -5,6 +5,7 @@ Paste into Notion AI. Before: [Prompt 5](05-ownership.md). Next: [Prompt 7](07-s
 Each template is the database's default. Every linked view sits under an H3 heading named by the question it answers, has its database title hidden, and shows only rows related to the page (docs/notion-space-design.md §4). Where a block lists several views, they appear as view tabs on that one linked view. On project pages, the brain writes only inside the "Brief" and "Decision log" toggle headings (decision 0026), and on area pages inside "Brief" (decision 0041). First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md)); a tag can sit in front of an indented line, so keep the indent after it. Existing space? Use the migrations instead ([migration 0010](../migrations/0010-modules-documents-buttons-area-homes.md) for the area home).
 
 ```text
+[Tasks] When mapping your own Tasks database, substitute its mapped status property and Done and Won't Do option names in every Tasks filter below.
 Ignore the module names in square brackets at the start of lines.
 Create a default page template for each database below. Each item "Heading: database (views)" means: an H3 heading with exactly that text, then a linked view of that database filtered to the current page, with the database title hidden; when views are listed, add them as separate views of that one linked view, in that order, with those names. Do not add callouts or any other content.
 
@@ -12,7 +13,7 @@ Create a default page template for each database below. Each item "Heading: data
 [Domains]   Show the Domain relation on the area home.
   First a toggle heading 2 "Brief" containing one empty paragraph.
   "What needs me here?": a tabs block with these tabs, each holding one linked view filtered to this area, with the database title hidden:
-[Tasks]     tab "Today": Tasks where Area is this page, Status is not Done and Due is on or before today, sorted Due ascending, showing Name, Project, Due.
+[Tasks]     tab "Today": Tasks where Area is this page, Status is not Done and Status is not Won't Do and Due is on or before today, sorted Due ascending, showing Name, Project, Due.
     tab "Meetings": Meetings where Area is this page, Brain Status is Not Reviewed and Date is on or before today, sorted Date descending, showing Name, Date, Project.
     tab "Review waiting": Review where Area is this page and State is Pending, grouped by Type, sorted Created time ascending, showing Name, Your call, What to fix.
     tab "Inbox": Inbox where Area is this page and Brain Status is New or Ready, sorted Created ascending, showing Name, Kind, Brain Status.
