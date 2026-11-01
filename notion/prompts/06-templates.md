@@ -11,7 +11,7 @@ Create a default page template for each database below. Each item "Heading: data
 - Areas (the area's home, decision 0050):
   First a toggle heading 2 "Brief" containing one empty paragraph.
   "What needs me here?": a tabs block with these tabs, each holding one linked view filtered to this area, with the database title hidden:
-[Tasks]     tab "Today": Tasks where Area is this page, Status is not Done and Due is on or before today, sorted Due ascending, showing Name, Project, Due.
+[Tasks]     tab "Today": Tasks where Area is this page, Status is not Done and Status is not Won't Do and Due is on or before today, sorted Due ascending, showing Name, Project, Due.
     tab "Meetings": Meetings where Area is this page, Brain Status is Not Reviewed and Date is on or before today, sorted Date descending, showing Name, Date, Project.
     tab "Review waiting": Review where Area is this page and State is Pending, grouped by Type, sorted Created time ascending, showing Name, Your call, What to fix.
     tab "Inbox": Inbox where Area is this page and Brain Status is New or Ready, sorted Created ascending, showing Name, Kind, Brain Status.

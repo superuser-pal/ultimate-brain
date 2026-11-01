@@ -219,6 +219,7 @@ The brain still reads every input for decisions, questions and people, whether o
 
 **Tasks:**
 - New tasks from the brain start as **To Do**.
+- Choose **Won't Do** for work you have dropped. It leaves due views and reminders and stays available to reopen; it is counted separately from completed work. Project progress excludes dropped tasks from its denominator and shows no percentage when no active scope remains.
 - **Doing**, **Waiting On**, **Someday** and **Done** are for you; the brain never reads them.
 - A task without a due date shows in Tasks → No date.
 

@@ -108,7 +108,7 @@ Ongoing responsibilities (clients, health, learning…).
 | Tasks | Relation → Tasks (two-way with Area) | You |
 | Review | Relation → Review (two-way with Area) | Brain (0050) |
 | To review | Formula: the Review rows with State Pending, counted | You (derived, Notion-only; Home's per-area line, 0050) |
-| Due | Formula: the Tasks not Done with Due today or earlier, counted (Tasks module) | You (derived, Notion-only, 0050) |
+| Due | Formula: the Tasks neither Done nor Won't Do with Due today or earlier, counted (Tasks module) | You (derived, Notion-only, 0050) |
 | Meetings to review | Formula: the Meetings with Brain Status Not Reviewed and Date today or earlier, counted | You (derived, Notion-only, 0050) |
 | At a glance | Formula: the three counts as one line, "4 to review · 1 meeting · 2 due", leaving out each count that is 0 and each module that is off, or "all clear" (#145) | You (derived, Notion-only; what Home shows next to the area's name) |
 | Archived | Checkbox | You |
@@ -166,7 +166,7 @@ Notion-owned entirely (0020). Not mirrored as brain notes; the brain snapshots t
 | Key Facts | Text | Brain: current key facts, e.g. "Budget: 80000 EUR · Launch date: 2027-02" (format in spec/cli.md §5.14.4) |
 | Archived | Checkbox | You |
 | Countdown | Formula: days to the end of Dates ("23 days left", "Overdue"); empty when Dates is empty or Status is Done | You (derived, Notion-only) |
-| Task Progress | Rollup: Tasks → Status, percent per group Complete, shown as % | You (derived, Notion-only) |
+| Task Progress | Formula: completed and dropped counts separately, with completed / (total − dropped); zero active scope shows no percentage (0055) | You (derived, Notion-only) |
 | Last edited time | Last edited time | System (Notion fills it; "gone quiet" view) |
 
 Page body: toggle headings **Brief** and **Decision log** (brain-written, 0026), then the template's linked views and "My notes".
@@ -306,7 +306,7 @@ Minimal, so the brain can send action items (0018). If you already have a tasks 
 | Property | Type | Notes |
 |---|---|---|
 | Name | Title | |
-| Status | Status: To Do, Doing, Waiting On, Someday, Done | The brain sets `new_task_status` on create and never reads it back. Waiting On and Someday sit in any group except Complete and are Notion-only |
+| Status | Status: To Do, Doing, Waiting On, Someday, Done, Won't Do | The brain sets `new_task_status` on create and never reads it back. Waiting On and Someday sit in any group except Complete and are Notion-only |
 | Due | Date | |
 | Project | Relation → Projects | |
 | Area | Relation → Areas | |
@@ -435,7 +435,7 @@ Each template is the default for its database. Every linked view sits under an H
 
 | Database | Template body |
 |---|---|
-| Areas | **The area's home (0050).** "Brief" toggle heading (brain-written, 0041) · "What needs me here?" with tabs Today (Tasks due today or earlier, not Done) · Meetings (to review, held today or earlier) · Review waiting (Review where Area is this page and State is Pending, grouped by Type) · Inbox (where Area is this page and Brain Status is New or Ready) · "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What have we decided here?" (Decisions: Current, Superseded) · "What's still open here?" (Questions: Open questions, Open risks, Answered) · "What came in?" (Inbox where Area is this page, newest first) · "What do we know?" (tabs Decisions, Concepts and Documents where Area is this page) · "Reports" (Inbox where Area is this page and Kind is Report, 0045) · "My notes". People and Clients show as the "via projects" rollups in the page header (0034). Each part follows its module (§1, 0050): Today and "What's on my plate here?" with Tasks; "What am I working toward here?" with Planning; "What have we decided here?", "What's still open here?" and the Decisions and Concepts tabs with Knowledge; the Documents tab with Documents; "Reports" with Reports; Clients via projects with Orgs. A new area is one page from this template |
+| Areas | **The area's home (0050).** "Brief" toggle heading (brain-written, 0041) · "What needs me here?" with tabs Today (Tasks due today or earlier, neither Done nor Won't Do) · Meetings (to review, held today or earlier) · Review waiting (Review where Area is this page and State is Pending, grouped by Type) · Inbox (where Area is this page and Brain Status is New or Ready) · "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What have we decided here?" (Decisions: Current, Superseded) · "What's still open here?" (Questions: Open questions, Open risks, Answered) · "What came in?" (Inbox where Area is this page, newest first) · "What do we know?" (tabs Decisions, Concepts and Documents where Area is this page) · "Reports" (Inbox where Area is this page and Kind is Report, 0045) · "My notes". People and Clients show as the "via projects" rollups in the page header (0034). Each part follows its module (§1, 0050): Today and "What's on my plate here?" with Tasks; "What am I working toward here?" with Planning; "What have we decided here?", "What's still open here?" and the Decisions and Concepts tabs with Knowledge; the Documents tab with Documents; "Reports" with Reports; Clients via projects with Orgs. A new area is one page from this template |
 | Goals | "How are the key results moving?" (Key Results: Open, Done) · "Which projects serve it?" (Projects) · "My notes" |
 | Projects | A muted line "Brief and Decision log are written by the brain. Add your own notes in My notes." · "Brief" toggle heading (brain-written) · "Decision log" toggle heading (brain-written) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What's still open here?" (Questions, Open) · "Who's involved?" (People) · "What came in?" (Inbox where Project is this page, newest first) · "What do we know?" (tabs Decisions, Concepts and Documents where Project is this page) · "Reports" (Inbox where Project is this page and Kind is Report, sorted by Created descending, 0045, #137) · "My notes". Parts follow their modules as on Areas |
 | Meetings | Unchanged from the hand-reworked template (see notion/templates.md): "Before marking Reviewed" checklist callout, ending with the gray line "Check the minutes, fix them, then set Brain Status to Reviewed. Fixed them after the brain took them in? Set Reviewed again: it reads only what changed." (0045) · Notion AI meeting notes block · "My notes" · toggles Decisions, Questions, Tasks |

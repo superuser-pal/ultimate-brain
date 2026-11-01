@@ -30,6 +30,7 @@ On the page "Brain Data", create these full-page databases with exactly these pr
 ```
 
 ## Verify
+- [ ] (Tasks) Add Won't Do by hand in the Complete status group.
 - [ ] "Brain Data" holds one database per numbered line you kept, and nothing else: 14 with every module, 6 with Core alone (Areas, Projects, Meetings, People, Review, Inbox).
 - [ ] Every property name is spelled exactly as above, including capitals and spaces ("Brain ID", "Last Synced", "Document asked", "Only keep"). The brain finds properties by name.
 - [ ] Select options match exactly, in that order. Brain Status in Meetings defaults to Not Reviewed; State in Review defaults to Pending; Kind in Inbox defaults to Capture; Brain Status in Inbox defaults to New.
