@@ -28,4 +28,9 @@ test("a Document spanning two Domains is informational, and unclassified Areas a
   const issues = lintBrain({ root, notes, problems: [], brainConfig: config, indexMarkdown: undefined });
   assert.equal(issues.find((issue) => issue.rule === "DOCUMENT_DOMAIN_MISMATCH")?.severity, "info");
   assert.equal(issues.some((issue) => issue.path === "areas/none.md" && issue.message.includes("domain")), false);
+  notes[0]!.attributes.lifecycle = "archived";
+  notes[5]!.attributes.area = "area-33333333";
+  const noProjectDomain = lintBrain({ root, notes, problems: [], brainConfig: config, indexMarkdown: undefined });
+  assert.equal(noProjectDomain.find((issue) => issue.rule === "DOMAIN_ARCHIVED")?.severity, "info");
+  assert.equal(noProjectDomain.find((issue) => issue.rule === "DOCUMENT_DOMAIN_MISMATCH")?.severity, "info");
 });

@@ -207,3 +207,14 @@ test("Area Domain changes in Notion produce a correctable single relation", asyn
   assert.equal(plan.code, 0, plan.stdout);
   assert.deepEqual(plan.json.data.corrections.map((item: { field: string; value: string }) => [item.field, item.value]), [["domain", "dom-12345678"]]);
 });
+
+test("Domains off still plans other Area corrections", async (context) => {
+  const dir = await fixtureCopy(context);
+  const areaPath = join(dir, "areas", "clients.md");
+  const area = await readFile(areaPath, "utf8");
+  await writeFile(areaPath, area.replace("last_synced:", "notion_published:\n  Name: Clients\nlast_synced:"));
+  const snapshot = await writeInput(dir, { as_of: NOW, rows: [{ database: "areas", page_id: "1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d", last_edited: NOW, properties: { "Brain ID": "area-2m7c4h8n", Name: "Customers", Domain: ["unknown-page"] } }] });
+  const plan = await brain(["sync", "plan", "--input", snapshot, "--brain", dir, "--json"]);
+  assert.deepEqual(plan.json.data.corrections.map((item: { field: string; value: string }) => [item.field, item.value]), [["title", "Customers"]]);
+  assert.ok(plan.json.data.ignored.some((item: { property?: string; reason: string }) => item.property === "Domain" && item.reason === "MODULE_OFF"));
+});
