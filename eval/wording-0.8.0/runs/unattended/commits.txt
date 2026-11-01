@@ -1,4 +1,4 @@
 log: catch up (unattended)
 publish: catch up
-documents: Login page related knowledge proposal
 documents: import accepted wording (1)
+sync: import accepted wording for Login page

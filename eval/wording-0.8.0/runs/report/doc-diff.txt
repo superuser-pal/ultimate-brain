@@ -1,5 +1,5 @@
 diff --git a/reports/2026-12-14-acme-launch-where-we-stand.md b/reports/2026-12-14-acme-launch-where-we-stand.md
-index 4845a48..e7ed48e 100644
+index d8c6001..04de997 100644
 --- a/reports/2026-12-14-acme-launch-where-we-stand.md
 +++ b/reports/2026-12-14-acme-launch-where-we-stand.md
 @@ -8,18 +8,18 @@ question: Where does the Acme launch stand?
