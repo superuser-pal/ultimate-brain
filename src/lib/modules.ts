@@ -1,11 +1,12 @@
 import { isRecord } from "./input.ts";
 
 /** The optional modules of spec/schema.md §12 (decision 0048), in contract order. */
-export const MODULES = ["knowledge", "orgs", "documents", "reports", "tasks", "planning"] as const;
+export const MODULES = ["domains", "knowledge", "orgs", "documents", "reports", "tasks", "planning"] as const;
 
 export type ModuleName = (typeof MODULES)[number];
 
 export const MODULE_DEFAULTS: Readonly<Record<ModuleName, boolean>> = {
+  domains: false,
   knowledge: true,
   orgs: true,
   documents: false,
@@ -16,6 +17,7 @@ export const MODULE_DEFAULTS: Readonly<Record<ModuleName, boolean>> = {
 
 /** The `notion.databases` keys each module owns. Reports and Tasks own none (Tasks uses `notion.tasks`). */
 export const MODULE_DATABASES: Readonly<Record<ModuleName, readonly string[]>> = {
+  domains: ["domains"],
   knowledge: ["decisions", "questions", "concepts"],
   orgs: ["orgs"],
   documents: ["documents"],
@@ -25,6 +27,7 @@ export const MODULE_DATABASES: Readonly<Record<ModuleName, readonly string[]>> =
 };
 
 const MODULE_FOR_TYPE: Readonly<Record<string, ModuleName>> = {
+  domain: "domains",
   decision: "knowledge",
   question: "knowledge",
   concept: "knowledge",
@@ -37,10 +40,10 @@ export function isModuleName(value: string): value is ModuleName {
   return (MODULES as readonly string[]).includes(value);
 }
 
-/** Which modules are on: every module when the block is absent, else each absent key at its default. */
+/** Which modules are on: every module except Domains when the block is absent, else each absent key at its default. */
 export function modulesOf(config: Record<string, unknown>): Record<ModuleName, boolean> {
   const block = config.modules;
-  if (!isRecord(block)) return Object.fromEntries(MODULES.map((name) => [name, true])) as Record<ModuleName, boolean>;
+  if (!isRecord(block)) return Object.fromEntries(MODULES.map((name) => [name, name !== "domains"])) as Record<ModuleName, boolean>;
   return Object.fromEntries(MODULES.map((name) => [name, typeof block[name] === "boolean" ? block[name] : MODULE_DEFAULTS[name]])) as Record<ModuleName, boolean>;
 }
 

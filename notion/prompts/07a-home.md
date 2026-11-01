@@ -37,6 +37,7 @@ Below that, a heading 3 "What did the brain take in?" and two tabs:
 Put these two in their own tabs block.
 
 Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included, and hide its database title. In every view hide the properties "Brain ID", "Last Synced", "Created time" and "Last edited time" unless the view lists them under show. Show only the properties listed. Leave the navigation column as it is. Do not add other content.
+[Domains] Group the Areas view by Domain, including a "No domain" group.
 ```
 
 ## Verify

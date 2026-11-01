@@ -168,6 +168,7 @@
             "areas": {
               "$ref": "#/$defs/dbId"
             },
+            "domains": { "$ref": "#/$defs/dbId" },
             "goals": {
               "$ref": "#/$defs/dbId"
             },

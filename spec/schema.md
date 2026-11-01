@@ -36,6 +36,7 @@ Decisions referenced: 0001–0005, 0008–0011, 0013, 0017, 0018, 0020, 0021, 00
 | `org` | org | | `mem` | memory |
 | `mtg` | meeting | | `prp` | proposal |
 | `vw` | view | | `ref` | reference |
+| `dom` | domain | | | |
 
 The prefix is fixed at creation even if `type` later changes; `type` is the truth.
 
@@ -49,6 +50,7 @@ The prefix is fixed at creation even if `type` later changes; `type` is the trut
 ├── brain.json                   §11
 ├── index.md                     GENERATED §12
 ├── log/YYYY-MM.md               GENERATED §12
+├── domains/<slug>.md            type: domain
 ├── areas/<slug>.md              type: area
 ├── areas/briefs/<slug>.md       type: view, view_kind area_brief (GENERATED, 0041)
 ├── goals/<slug>.md              type: goal
@@ -122,8 +124,15 @@ Each row lists fields **in addition to** §3. "Notion" names the database the ty
 
 ### area · `areas/` · Notion: Areas
 An ongoing responsibility (e.g. "Clients", "Health").
+- `domain`: optional scalar `dom-` ID, naming at most one Domain (0055).
 - `notion_fields`: `type` (`Business`·`Personal`), `archived` (bool).
 - Body: description; optional "What to track" section is v2 (docs/v2-ideas.md).
+
+### domain · `domains/` · Notion: Domains (0055)
+A work or life context that groups Areas; distinct from an Org.
+- `org`: optional scalar `org-` ID, naming an Org.
+- `notion_fields.archived`: optional boolean.
+- Body: description. With Domains off, notes remain in Git and are still indexed and linted.
 
 ### goal · `goals/` · Notion: Goals (0020)
 | Field | Type | Req | Owner |
@@ -487,13 +496,13 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
   "owner": { "name": "Alex", "person": "per-3h8w2n6c" },
   "budgets": { "ingest_max_notes": 8 },
   "settings": { "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } },
-  "modules": { "knowledge": true, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true },
+  "modules": { "domains": false, "knowledge": true, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true },
   "repos": [
     { "name": "acme-api", "path": "~/code/acme-api", "area": "area-2m7c4h8n",
       "patterns": ["decisions/**", "docs/vision.md", "CHANGELOG.md"], "commit": "" }
   ],
   "notion": {
-    "databases": { "areas": "", "goals": "", "key_results": "", "projects": "", "meetings": "",
+    "databases": { "domains": "", "areas": "", "goals": "", "key_results": "", "projects": "", "meetings": "",
                    "people": "", "orgs": "", "decisions": "", "questions": "", "review": "", "inbox": "",
                    "concepts": "", "documents": "" },
     "tasks": {
@@ -519,6 +528,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 
 | Key | Default | Databases (`notion.databases` keys) and what else it covers |
 |---|---|---|
+| `domains` | `false` | `domains` |
 | `knowledge` | `true` | `decisions`, `questions`, `concepts` |
 | `orgs` | `true` | `orgs` |
 | `documents` | `false` | `documents` (0049) |
@@ -526,7 +536,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 | `tasks` | `false` | `notion.tasks` |
 | `planning` | `false` | `goals`, `key_results` |
 
-- **`modules` absent:** every module is on. That is every brain made before 0.6.0; `brain upgrade` writes the block with every key `true` (cli.md §5.15). **A key absent from a present block** takes its default. New brains get the block from onboarding.
+- **`modules` absent:** every module except Domains is on; Domains is off. That is every brain made before 0.6.0; `brain upgrade` writes the block with every key `true` except Domains (cli.md §5.15). **A key absent from a present block** takes its default. New brains get the block from onboarding.
 - **A module off** means the CLI neither reads nor writes Notion for it: `sync plan` ignores its databases' rows, `sync render` publishes none of its notes and leaves out the relations to them, `sync tasks` refuses with `MODULE_OFF`, and reports are not published (cli.md §5.14, §5.20). It is off even when its database ids are set. **Nothing is deleted:** the notes stay in Git and are still indexed, linted and listed; Notion keeps its databases and rows. Turning it on again publishes what changed meanwhile.
 - **A module on with an empty database id** behaves as today: its notes are skipped with `DATABASE_NOT_CONFIGURED`.
 - Written by `brain modules` (cli.md §5.20) and `brain config`.

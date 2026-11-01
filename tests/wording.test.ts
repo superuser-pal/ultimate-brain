@@ -252,7 +252,9 @@ test("an accepted refreshed report is imported exactly and keeps its six section
   const applied = await run(dir, ["sync", "apply"], planned);
   assert.equal(applied.code, 0, applied.stdout);
   assert.equal(await bodyOf(dir, report.path), `\n${refreshed}`);
-  assert.equal((await run(dir, ["lint"])).code, 0);
+  const reportLint = await run(dir, ["lint"]);
+  assert.equal(reportLint.code, 0);
+  assert.deepEqual(reportLint.json.data.issues.filter((issue: { rule: string; path: string }) => issue.rule === "unknown-key" && issue.path === report.path), [], "an imported report gains no key its view type does not declare");
 
   const broken = await plan(dir, [reportRow(page, wording({ body_markdown: "## Where it stands\n\nOnly this.\n" }), { "Brain ID": report.id })]);
   assert.equal(broken.wording_waiting[0].reason, "INVALID_REPORT_SHAPE");
@@ -446,4 +448,38 @@ test("report new still accepts a notion-page link as before; only the wording im
   const dir = await fixtureCopy(context);
   const created = await run(dir, ["report", "new"], { title: "Login: mentions", question: "Where does it stand?", body: REPORT.replace("Alex.", "[Someone](notion-page:11111111-2222-4333-8444-555566667777).") });
   assert.equal(created.code, 0, created.stdout);
+});
+
+test("sync record: a null in published removes the old baseline, so a refreshed report whose read-back failed is held (row 9)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const report = await publishedReport(dir);
+  const page = "5c4d3e2f-1a0b-4c9d-8e7f-6a5b4c3d2e1f";
+  const recordFile = join(dir, "..", "record.json");
+  await writeFile(recordFile, JSON.stringify({ records: [{ id: report.id, notion: page, synced_at: NOW, published: { "@git_body": textHash("refreshed\n"), "@notion_body": null } }] }));
+  const recorded = await brain(["sync", "record", "--input", recordFile, "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(recorded.code, 0, recorded.stdout);
+  const published = parseFrontmatter(await readFile(join(dir, report.path), "utf8")).attributes.notion_published as Record<string, unknown>;
+  assert.equal(Object.hasOwn(published, "@notion_body"), false, "the old baseline is gone");
+  assert.equal(published["@git_body"], textHash("refreshed\n"));
+  // The next plan has no baseline for the report: held (unaccepted) or waiting NO_BASELINE (accepted), never compared with the old one.
+  const draft = await plan(dir, [reportRow(page, wording({ accepted: false, accepted_at: null, body_markdown: REPORT.replace("On track.", "Another text.") }), { "Brain ID": report.id })]);
+  assert.deepEqual(draft.wording_held, [{ page_id: page, note: report.id, reason: "NO_BASELINE" }]);
+});
+
+test("sync record: a null on an ordinary property is kept as a real empty baseline; only an @-key with null is removed", async (context) => {
+  const dir = await fixtureCopy(context);
+  const report = await publishedReport(dir);
+  const file = join(dir, report.path);
+  const stored = parseFrontmatter(await readFile(file, "utf8"));
+  (stored.attributes.notion_published as Record<string, unknown>)["Summary"] = null;
+  await writeFile(file, serializeFrontmatter(stored));
+  const recordFile = join(dir, "..", "record2.json");
+  await writeFile(recordFile, JSON.stringify({ records: [{ id: report.id, notion: "5c4d3e2f-1a0b-4c9d-8e7f-6a5b4c3d2e1f", synced_at: NOW, published: { "@notion_body": null, "Name": "Renamed" } }] }));
+  const recorded = await brain(["sync", "record", "--input", recordFile, "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(recorded.code, 0, recorded.stdout);
+  const published = parseFrontmatter(await readFile(file, "utf8")).attributes.notion_published as Record<string, unknown>;
+  assert.equal(Object.hasOwn(published, "@notion_body"), false);
+  assert.equal(Object.hasOwn(published, "Summary"), true, "the empty Summary baseline survives an unrelated record");
+  assert.equal(published["Summary"], null);
+  assert.equal(published["Name"], "Renamed");
 });

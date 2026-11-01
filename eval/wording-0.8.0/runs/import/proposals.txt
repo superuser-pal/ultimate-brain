@@ -1,0 +1,37 @@
+=== _proposals/2026-11-01-login-page-related-knowledge.md
+---
+id: prp-b60jq8jr
+type: proposal
+title: "Login page: related knowledge"
+created: 2026-11-01
+updated: 2026-11-01
+kind: add_to_note
+target: ref-snd7jsdr
+content: |-
+  ## Related knowledge
+
+  - [Acme website](../../projects/acme-website/project.md): the project this login is for; its launch date (2027-02) is the "launch" that email-only login is planned for.
+  - [Row-level security](../concepts/row-level-security.md): how Supabase decides which rows a signed-in user can read or write.
+  - [Use Firebase for auth](../decisions/2026-10-01-use-firebase-for-auth.md): the earlier auth choice, superseded by Supabase on 2026-12-03.
+why: The Login page Document (accepted in Notion) cites only the Supabase decision; these notes give its project, launch date and auth history.
+source: notion:<id 1>
+status: pending
+notion: <id 2>
+notion_published:
+  Name: "Login page: related knowledge"
+  Kind: Add To Note
+  About: Login page (ref-snd7jsdr)
+  About Page: https://www.notion.so/<id 3>
+  Source Meeting: []
+  Now: null
+  Proposed: |-
+    ## Related knowledge
+
+    - Acme website: the project this login is for; its launch date (2027-02) is the "launch" that email-only login is planned for.
+    - Row-level security: how Supabase decides which rows a signed-in user can read or write.
+    - Use Firebase for auth: the earlier auth choice, superseded by Supabase on 2026-12-03.
+  Why: The Login page Document (accepted in Notion) cites only the Supabase decision; these notes give its project, launch date and auth history.
+  Area: []
+  State: Pending
+  Brain ID: prp-b60jq8jr
+---
