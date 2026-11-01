@@ -3,9 +3,10 @@
   "owner": { "name": "Owner" },
   "budgets": { "ingest_max_notes": 8 },
   "settings": { "publish": "ask", "push": "auto" },
-  "modules": { "knowledge": true, "orgs": true, "documents": false, "reports": false, "tasks": false, "planning": false },
+  "modules": { "domains": false, "knowledge": true, "orgs": true, "documents": false, "reports": false, "tasks": false, "planning": false },
   "notion": {
     "databases": {
+      "domains": "",
       "areas": "",
       "goals": "",
       "key_results": "",

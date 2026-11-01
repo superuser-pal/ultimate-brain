@@ -6,6 +6,7 @@ import { parseFrontmatter, type Frontmatter } from "./frontmatter.ts";
 /** Folders whose `.md` files must all be notes (spec/cli.md §3.7). */
 export const NOTE_FOLDERS = [
   "areas",
+  "domains",
   "goals",
   "projects",
   "archive",

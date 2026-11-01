@@ -10,7 +10,7 @@ import { sourceFolder } from "./paths.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
 
-export type Severity = "error" | "warning";
+export type Severity = "error" | "warning" | "info";
 
 export interface Issue {
   severity: Severity;
@@ -34,10 +34,10 @@ export interface LintInput {
   plannedProductFiles?: ReadonlyMap<string, string | null>;
 }
 
-const ID = /^(area|gol|prj|per|org|mtg|dec|que|con|ref|src|mem|prp|vw)-[0-9abcdefghjkmnpqrstvwxyz]{8}$/;
+const ID = /^(area|dom|gol|prj|per|org|mtg|dec|que|con|ref|src|mem|prp|vw)-[0-9abcdefghjkmnpqrstvwxyz]{8}$/;
 /** Frontmatter keys whose values are references (spec/schema.md §3–§11); `relations` and `timeline` are handled by shape. */
 const REFERENCE_KEYS = new Set([
-  "area", "goal", "client", "org", "projects", "people", "attendees", "decided_in", "raised_in", "deciders",
+  "domain", "area", "goal", "client", "org", "projects", "people", "attendees", "decided_in", "raised_in", "deciders",
   "source", "sources", "decisions", "questions", "answer", "target", "supersedes", "merge_into", "project",
   "generated_from", "facts", "notes", "answer_note", "links", "attached_to", "changes", "replaces", "deferred_from", "promoted_from",
 ]);
@@ -50,6 +50,7 @@ const VIEW_FOLDERS: Readonly<Record<string, RegExp>> = {
 
 /** Where each type must live (spec/schema.md §2). */
 const FOLDERS: Readonly<Record<string, RegExp>> = {
+  domain: /^domains\/[^/]+\.md$/,
   area: /^areas\/[^/]+\.md$/,
   goal: /^(archive\/)?goals\/[^/]+\.md$/,
   project: /^(archive\/)?projects\/[^/]+\/project\.md$/,
@@ -66,8 +67,8 @@ const FOLDERS: Readonly<Record<string, RegExp>> = {
   proposal: /^_proposals\/[^/]+\.md$/,
 };
 
-const KNOWLEDGE = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
-const UNDATED = new Set(["area", "goal", "project", "person", "org", "question", "concept", "reference"]);
+const KNOWLEDGE = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
+const UNDATED = new Set(["domain", "area", "goal", "project", "person", "org", "question", "concept", "reference"]);
 const FRESHNESS_WORDS = /\b(currently|now|at the moment|this week|recently|soon)\b/i;
 const HAS_DATE = /\b\d{4}-\d{2}(-\d{2})?\b/;
 const MEMORY_REACH: Readonly<Record<string, string | null>> = { general: null, area: "areas", project: "projects", stack: "stacks" };
@@ -134,6 +135,21 @@ export function lintBrain(input: LintInput): Issue[] {
       for (const key of Object.keys(a)) if (!known.has(key)) warn("unknown-key", lineOfKey(note, key), `${note.type} does not declare "${key}"`);
     }
 
+    if (note.type === "area" && typeof a.domain === "string" && byId.has(a.domain) && byId.get(a.domain)?.type !== "domain") err("domain-type", lineOfKey(note, "domain"), `${a.domain} is not a Domain`);
+    if (note.type === "area" && typeof a.domain === "string") {
+      const domain = byId.get(a.domain);
+      const fields = domain?.attributes.notion_fields;
+      if (domain?.type === "domain" && (domain.attributes.lifecycle === "archived" || record(fields).archived === true)) add("info", "DOMAIN_ARCHIVED", note.path, lineOfKey(note, "domain"), note.id, `${a.domain} is archived`);
+    }
+    if (note.type === "domain" && typeof a.org === "string" && byId.has(a.org) && byId.get(a.org)?.type !== "org") err("org-type", lineOfKey(note, "org"), `${a.org} is not an Org`);
+    if (note.type === "reference" && typeof a.area === "string") {
+      const ownDomain = byId.get(a.area)?.attributes.domain;
+      for (const id of list(a.projects)) {
+        const projectArea = byId.get(String(id))?.attributes.area;
+        const projectDomain = byId.get(String(projectArea))?.attributes.domain;
+        if (ownDomain !== projectDomain && (ownDomain !== undefined || projectDomain !== undefined)) add("info", "DOCUMENT_DOMAIN_MISMATCH", note.path, lineOfKey(note, "area"), note.id, `Document Area and Project ${String(id)} have different Domains`);
+      }
+    }
     // References and links
     const references: Array<[string, unknown]> = Object.entries(a).filter(([key]) => REFERENCE_KEYS.has(key));
     for (const relation of list(a.relations)) references.push(["relations", record(relation).target]);

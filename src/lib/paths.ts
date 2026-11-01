@@ -42,6 +42,7 @@ export function sourceFolder(sourceKey: unknown): "notion" | "files" | "text" {
 function layout(type: string, slug: string, date: string, sourceKey?: unknown): { path: string; claim: string } {
   const file = (path: string) => ({ path, claim: path });
   switch (type) {
+    case "domain": return file(`domains/${slug}.md`);
     case "area": return file(`areas/${slug}.md`);
     case "goal": return file(`goals/${slug}.md`);
     case "project": return { path: `projects/${slug}/project.md`, claim: `projects/${slug}` };
