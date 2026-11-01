@@ -36,6 +36,7 @@ Decisions referenced: 0001–0005, 0008–0011, 0013, 0017, 0018, 0020, 0021, 00
 | `org` | org | | `mem` | memory |
 | `mtg` | meeting | | `prp` | proposal |
 | `vw` | view | | `ref` | reference |
+| `dom` | domain | | | |
 
 The prefix is fixed at creation even if `type` later changes; `type` is the truth.
 
@@ -49,6 +50,7 @@ The prefix is fixed at creation even if `type` later changes; `type` is the trut
 ├── brain.json                   §11
 ├── index.md                     GENERATED §12
 ├── log/YYYY-MM.md               GENERATED §12
+├── domains/<slug>.md            type: domain
 ├── areas/<slug>.md              type: area
 ├── areas/briefs/<slug>.md       type: view, view_kind area_brief (GENERATED, 0041)
 ├── goals/<slug>.md              type: goal
@@ -122,8 +124,15 @@ Each row lists fields **in addition to** §3. "Notion" names the database the ty
 
 ### area · `areas/` · Notion: Areas
 An ongoing responsibility (e.g. "Clients", "Health").
+- `domain`: optional scalar `dom-` ID, naming at most one Domain (0055).
 - `notion_fields`: `type` (`Business`·`Personal`), `archived` (bool).
 - Body: description; optional "What to track" section is v2 (docs/v2-ideas.md).
+
+### domain · `domains/` · Notion: Domains (0055)
+A work or life context that groups Areas; distinct from an Org.
+- `org`: optional scalar `org-` ID, naming an Org.
+- `notion_fields.archived`: optional boolean.
+- Body: description. With Domains off, notes remain in Git and are still indexed and linted.
 
 ### goal · `goals/` · Notion: Goals (0020)
 | Field | Type | Req | Owner |
@@ -675,7 +684,3 @@ Written by `brain report new` from the skill's text; no `@generated` markers. Th
 A section with nothing renders `- None`. Each line that rests on a `draft` note ends with ` *(not reviewed)*`. Links are relative to the report file, as for every view. `generated_from` lists every note the body links to, sorted.
 
 **Refreshing (0045).** A refresh rewrites the same file: the six sections from what the brain knows now, a new `generated_at` and `generated_from`. The path, id, `question` and `notion` stay. "Where it stands" is as of the new date.
-
-### Domains (0055)
-
-A `domain` is a knowledge note with id prefix `dom-`, stored in `domains/`. Its optional scalar `org` names an Org; `notion_fields.archived` is boolean. An Area may have one optional scalar `domain` naming a Domain. Projects and Documents derive their Domain through their Area. `modules.domains` defaults to false even when the modules block is absent.
