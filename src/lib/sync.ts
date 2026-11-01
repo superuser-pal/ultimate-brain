@@ -540,8 +540,9 @@ function applyWording(workspace: Workspace, items: readonly AcceptedWording[], n
       doc.body = `\n${item.markdown}`;
       const a = doc.attributes;
       const source = `notion:${item.page_id}`;
+      // A report is a view, which declares no `sources`; its `notion` already names the page. Only a Document records the page it was accepted from.
       const sources = Array.isArray(a.sources) ? a.sources : [];
-      if (!sources.includes(source)) a.sources = [...sources, source];
+      if (item.kind === "document" && !sources.includes(source)) a.sources = [...sources, source];
       if (item.kind === "report") a.generated_from = reportLinks(workspace, item.markdown, true).linked.sort(compareCodePoints);
       a.updated = formatDate(now);
       workspace.save(note.path, doc);

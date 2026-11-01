@@ -252,7 +252,9 @@ test("an accepted refreshed report is imported exactly and keeps its six section
   const applied = await run(dir, ["sync", "apply"], planned);
   assert.equal(applied.code, 0, applied.stdout);
   assert.equal(await bodyOf(dir, report.path), `\n${refreshed}`);
-  assert.equal((await run(dir, ["lint"])).code, 0);
+  const reportLint = await run(dir, ["lint"]);
+  assert.equal(reportLint.code, 0);
+  assert.deepEqual(reportLint.json.data.issues.filter((issue: { rule: string; path: string }) => issue.rule === "unknown-key" && issue.path === report.path), [], "an imported report gains no key its view type does not declare");
 
   const broken = await plan(dir, [reportRow(page, wording({ body_markdown: "## Where it stands\n\nOnly this.\n" }), { "Brain ID": report.id })]);
   assert.equal(broken.wording_waiting[0].reason, "INVALID_REPORT_SHAPE");
