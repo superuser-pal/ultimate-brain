@@ -1,0 +1,35 @@
+import assert from "node:assert/strict";
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { test } from "node:test";
+import { brain, fixtureCopy } from "./helpers.ts";
+
+test("status checks a mapped Tasks option from an offline snapshot", async (context) => {
+  const root = await fixtureCopy(context);
+  const configPath = join(root, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  const snapshot = { database: config.notion.tasks.database, property: config.notion.tasks.properties.status, as_of: "2026-11-01T12:00:00Z", options: ["To Do", "Done"] };
+  const path = join(root, "tasks-schema.json");
+  await writeFile(path, JSON.stringify(snapshot));
+  let result = await brain(["status", "--brain", root, "--tasks-schema", path, "--json"]);
+  assert.equal(result.code, 0);
+  assert.match(result.json.data.tasks_status_note, /Won't Do.*2026-11-01/);
+  snapshot.options.push("Won't Do");
+  await writeFile(path, JSON.stringify(snapshot));
+  result = await brain(["status", "--brain", root, "--tasks-schema", path, "--json"]);
+  assert.equal(result.json.data.tasks_status_note, null);
+  config.notion.tasks.wont_do_status = "Dropped";
+  await writeFile(configPath, JSON.stringify(config));
+  result = await brain(["status", "--brain", root, "--tasks-schema", path, "--json"]);
+  assert.match(result.json.data.tasks_status_note, /Dropped/);
+  config.modules = { tasks: false };
+  await writeFile(configPath, JSON.stringify(config));
+  result = await brain(["status", "--brain", root, "--tasks-schema", path, "--json"]);
+  assert.equal(result.json.data.tasks_status_note, null);
+  result = await brain(["status", "--brain", root, "--json"]);
+  assert.equal(result.json.data.tasks_status_note, null);
+  snapshot.database = "other";
+  await writeFile(path, JSON.stringify(snapshot));
+  result = await brain(["status", "--brain", root, "--tasks-schema", path, "--json"]);
+  assert.equal(result.json.error.code, "INPUT_INVALID");
+});
