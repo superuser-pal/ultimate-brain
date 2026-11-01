@@ -1,6 +1,7 @@
 ---
 id: area-2m7c4h8n
 type: area
+domain: dom-12345678
 title: Clients
 summary: Paid client work for the consulting business.
 lifecycle: reviewed

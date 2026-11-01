@@ -11,6 +11,7 @@ You never edit the Markdown by hand. You work in Notion and talk to your agent.
 
 | Module | Adds | On for a new brain |
 |---|---|---|
+| **Domains** | Group Areas by work or life context | no |
 | **Knowledge** | Decisions, Questions, Concepts | yes |
 | **Orgs** | Client and partner organizations | yes |
 | **Documents** | A document, or part of one, kept as a page you can read | no |

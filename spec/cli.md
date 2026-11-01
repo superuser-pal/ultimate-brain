@@ -644,7 +644,7 @@ Validates the brain against schema §15 (CX-05). With paths (relative to the bra
 } }
 ```
 
-Issues are sorted by `path`, `line`, `rule`, then `message`. `line` is 1-based: the line of the offending frontmatter key or body line, or 1 when not locatable. `id` is `null` when the file has no readable id.
+Issues have severity `error`, `warning`, or `info`. Information is listed in `issues` but is counted as neither an error nor a warning, and does not make `--strict` fail. Domains remain linted even while their module is off. Issues are sorted by `path`, `line`, `rule`, then `message`. `line` is 1-based: the line of the offending frontmatter key or body line, or 1 when not locatable. `id` is `null` when the file has no readable id.
 
 | Rule | Sev | Schema §15 item |
 |---|---|---|
