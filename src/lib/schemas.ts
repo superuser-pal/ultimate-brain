@@ -16,7 +16,7 @@ export interface SchemaSet {
 }
 
 const KNOWLEDGE_TYPES = new Set([
-  "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory",
+  "domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory",
 ]);
 
 let cached: SchemaSet | undefined;
@@ -33,7 +33,11 @@ export function loadSchemas(): SchemaSet {
   ajv.addSchema(proposal);
   ajv.addSchema(brain);
 
-  const keys = (schema: JsonObject | undefined): string[] => Object.keys(schema?.properties ?? {});
+  // A type may declare its own keys inside `allOf` (a Document's origin and promoted_from do), so those count as declared too.
+  const keys = (schema: JsonObject | undefined): string[] => [
+    ...Object.keys(schema?.properties ?? {}),
+    ...(Array.isArray(schema?.allOf) ? (schema.allOf as JsonObject[]).flatMap((part) => Object.keys(part.properties ?? {})) : []),
+  ];
   const known = new Map<string, Set<string>>();
   for (const type of [...KNOWLEDGE_TYPES, "source", "view"]) {
     const set = new Set([...keys(note), ...keys(note.$defs?.[type])]);

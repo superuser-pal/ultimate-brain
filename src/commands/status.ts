@@ -13,7 +13,7 @@ import { expandPath, linkedRepos, workTreeTop } from "../lib/repos.ts";
 import { unattendedRuns } from "../lib/runs.ts";
 import { normalizeTimestamp } from "../lib/time.ts";
 
-const NOTE_TYPES = ["area", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "goal", "memory", "reference"];
+const NOTE_TYPES = ["domain", "area", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "goal", "memory", "reference"];
 const PROPOSAL_STATUSES = ["pending", "approved", "edited", "rejected", "applied", "closed"];
 
 /** `brain status` (spec/cli.md §5.2). */
@@ -87,7 +87,7 @@ function readNotion(config: Record<string, unknown>): { configured: string[]; mi
   const notion = config.notion as Record<string, unknown>;
   const configured: string[] = [];
   const missing: string[] = [];
-  for (const key of ["areas", "goals", "key_results", "projects", "meetings", "people", "orgs", "decisions", "questions", "review", "inbox", "concepts", "documents"]) {
+  for (const key of ["domains", "areas", "goals", "key_results", "projects", "meetings", "people", "orgs", "decisions", "questions", "review", "inbox", "concepts", "documents"]) {
     (databaseId(config, key) !== "" ? configured : missing).push(key);
   }
   const tasks = notion.tasks as Record<string, unknown>;

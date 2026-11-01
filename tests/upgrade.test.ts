@@ -181,7 +181,7 @@ test("upgrade renames references to documents and writes a modules block with ev
   const upgraded = JSON.parse(await readFile(configPath, "utf8"));
   assert.deepEqual(upgraded.notion.databases, { review: "review-id", documents: "refs-id", inbox: "inbox-id" });
   assert.deepEqual(Object.keys(upgraded), ["schema_version", "owner", "budgets", "settings", "modules", "notion"]);
-  assert.deepEqual(upgraded.modules, { knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: true });
+  assert.deepEqual(upgraded.modules, { domains: false, knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: true });
 
   // A present block is the user's: a second upgrade leaves brain.json alone.
   upgraded.modules.reports = false;

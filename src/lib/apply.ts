@@ -79,9 +79,9 @@ const FIX_KEYS = ["value", "change", "note", "field", "link"];
 /** Reference fields a merge leaves alone: the meeting side of a persisted pair (spec/schema.md §11.2). */
 const PAIR_FIELDS = new Set(["decisions", "questions", "decided_in", "raised_in"]);
 /** Corrections change knowledge notes only: sources are immutable and proposals are records. */
-const KNOWLEDGE_TYPES = new Set(["area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
+const KNOWLEDGE_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 const REFERENCE_FIELDS = [
-  "area", "areas", "goal", "client", "org", "projects", "people", "attendees", "deciders", "source", "sources",
+  "domain", "area", "areas", "goal", "client", "org", "projects", "people", "attendees", "deciders", "source", "sources",
   "answer", "project", "generated_from", "facts",
 ];
 
@@ -222,7 +222,7 @@ function applyCorrection(workspace: Workspace, correction: Correction, today: st
   const known = loadSchemas().knownKeys(note.type);
   const correctable = KNOWLEDGE_TYPES.has(note.type) && factKey !== undefined
     ? known?.has("facts") === true
-    : KNOWLEDGE_TYPES.has(note.type) && ["title", "summary", "why", "area", "goal", "client", "org", "people"].includes(correction.field) && known?.has(correction.field) === true;
+    : KNOWLEDGE_TYPES.has(note.type) && ["title", "summary", "why", "domain", "area", "goal", "client", "org", "people"].includes(correction.field) && known?.has(correction.field) === true;
   if (!correctable) throw new ItemFailure("FIELD_NOT_CORRECTABLE", `${correction.field} cannot be corrected on a ${note.type}`);
 
   const current = factKey === undefined ? attributes[correction.field] : record(attributes.facts)[factKey];
@@ -422,7 +422,7 @@ function corrected(workspace: Workspace, p: Record<string, unknown>, fixes: Arra
 }
 
 /** Fields a fix may set on a note listed by a review_notes: those a correction may set, and projects (spec/schema.md §11.3). */
-const NOTE_FIX_FIELDS = ["title", "summary", "why", "area", "goal", "client", "org", "people", "projects"];
+const NOTE_FIX_FIELDS = ["title", "summary", "why", "domain", "area", "goal", "client", "org", "people", "projects"];
 
 /**
  * Write the excluded items of an applied review_notes as one new pending review_notes (spec/schema.md
