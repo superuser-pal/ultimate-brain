@@ -25,6 +25,7 @@ A space is a **core** plus the **modules** you chose at onboarding. You can turn
 | Module | Databases | What it adds to the Spaces and templates | Default |
 |---|---|---|---|
 | **Core** | Inbox, Meetings, Projects, Areas, People, Review | Home, Meetings, Projects, Review; the Inbox tab of Knowledge; area homes' Meetings, Review waiting and Inbox tabs | always on |
+| **Domains** | Domains | group Areas by work or life context; Areas can have one Domain or none | off |
 | **Knowledge** | Decisions, Questions, Concepts | the Decisions, Questions and Concepts tabs of Knowledge; "What have we decided here?", "What's still open here?" and "What do we know?" (Decisions, Concepts) on project and area pages | on |
 | **Orgs** | Orgs | the Orgs tab of Knowledge; Client on Projects, Org on People; "Clients via projects" on area pages | on |
 | **Documents** | Documents (was References) | the Documents tab of Knowledge and of "What do we know?"; Keep as document and Only keep on the Inbox; Promote to document on Decisions and Concepts | off |

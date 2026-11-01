@@ -9,6 +9,7 @@ Ignore the module names in square brackets at the start of lines.
 Create a default page template for each database below. Each item "Heading: database (views)" means: an H3 heading with exactly that text, then a linked view of that database filtered to the current page, with the database title hidden; when views are listed, add them as separate views of that one linked view, in that order, with those names. Do not add callouts or any other content.
 
 - Areas (the area's home, decision 0050):
+[Domains]   Show the Domain relation on the area home.
   First a toggle heading 2 "Brief" containing one empty paragraph.
   "What needs me here?": a tabs block with these tabs, each holding one linked view filtered to this area, with the database title hidden:
 [Tasks]     tab "Today": Tasks where Area is this page, Status is not Done and Due is on or before today, sorted Due ascending, showing Name, Project, Due.

@@ -47,6 +47,8 @@ In the databases on "Brain Data", add these two-way relations. Use exactly these
 [Tasks] - Tasks "Source" ↔ Inbox "Tasks"
 
 Do not create any other relations.
+[Domains] Create two-way Areas "Domain" ↔ Domains "Areas". Set Areas · Domain to Limit: 1 page by hand.
+[Domains] [Orgs] Create Domains "Org" ↔ Orgs "Domains".
 ```
 
 ## Verify
