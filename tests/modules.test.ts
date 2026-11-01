@@ -22,7 +22,7 @@ test("a new brain starts with the onboarding defaults, and modules lists what ea
   const list = await brain(["modules", "--brain", target, "--json"], root);
   assert.equal(list.code, 0, list.stdout);
   assert.deepEqual(list.json.data.modules.map((module: { name: string; on: boolean }) => [module.name, module.on]), [
-    ["knowledge", true], ["orgs", true], ["documents", false], ["reports", false], ["tasks", false], ["planning", false],
+    ["domains", false], ["knowledge", true], ["orgs", true], ["documents", false], ["reports", false], ["tasks", false], ["planning", false],
   ]);
   const byName = Object.fromEntries(list.json.data.modules.map((module: { name: string }) => [module.name, module]));
   assert.deepEqual(byName.knowledge.missing, ["decisions", "questions", "concepts"]);
@@ -30,7 +30,7 @@ test("a new brain starts with the onboarding defaults, and modules lists what ea
   assert.deepEqual(byName.reports.missing, []);
 
   const status = await brain(["status", "--brain", target, "--json"], root);
-  assert.deepEqual(status.json.data.modules, { knowledge: true, orgs: true, documents: false, reports: false, tasks: false, planning: false });
+  assert.deepEqual(status.json.data.modules, { domains: false, knowledge: true, orgs: true, documents: false, reports: false, tasks: false, planning: false });
   assert.ok(status.json.data.notion.missing.includes("documents"));
 });
 
@@ -65,13 +65,13 @@ test("a brain without a modules block has every module on; switching one writes 
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
 
   const status = await brain(["status", "--brain", target, "--json"], root);
-  assert.deepEqual(status.json.data.modules, { knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: true });
+  assert.deepEqual(status.json.data.modules, { domains: false, knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: true });
 
   const off = await brain(["modules", "off", "planning", "--brain", target, "--now", NOW, "--json"], root);
   assert.equal(off.code, 0, off.stdout);
   const after = JSON.parse(await readFile(configPath, "utf8"));
   assert.deepEqual(Object.keys(after), ["schema_version", "owner", "budgets", "settings", "modules", "notion"]);
-  assert.deepEqual(after.modules, { knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: false });
+  assert.deepEqual(after.modules, { domains: false, knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: false });
 });
 
 test("a present block with a key left out takes that module's default (schema §12)", async (context) => {
@@ -81,7 +81,7 @@ test("a present block with a key left out takes that module's default (schema §
   config.modules = { documents: true };
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
   const status = await brain(["status", "--brain", target, "--json"], root);
-  assert.deepEqual(status.json.data.modules, { knowledge: true, orgs: true, documents: true, reports: false, tasks: false, planning: false });
+  assert.deepEqual(status.json.data.modules, { domains: false, knowledge: true, orgs: true, documents: true, reports: false, tasks: false, planning: false });
 });
 
 test("modules refuses core, an unknown module and a switch without one", async (context) => {
@@ -146,3 +146,64 @@ async function writeInput(dir: string, value: unknown): Promise<string> {
   await writeFile(file, JSON.stringify(value));
   return file;
 }
+
+test("Domains default off and retain notes and Area relations across switching", async (context) => {
+  const dir = await fixtureCopy(context);
+  const note = { notes: [{ type: "domain", id: "dom-12345678", title: "Context", frontmatter: { summary: "Context" }, body: "" }] };
+  const input = await writeInput(dir, note);
+  const off = await brain(["note", "new", "--input", input, "--brain", dir, "--json"]);
+  assert.equal(off.json.error.code, "MODULE_OFF");
+  assert.equal((await brain(["modules", "on", "domains", "--brain", dir, "--now", NOW, "--json"])).code, 0);
+  const created = await brain(["note", "new", "--input", input, "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(created.code, 0, created.stdout);
+  assert.equal(created.json.data.created[0].path, "domains/context.md");
+  const planInput = await writeInput(dir, { as_of: NOW, rows: [{ database: "areas", page_id: "e1000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { Name: "New area", Domain: ["a", "b"] } }] });
+  const plan = await brain(["sync", "plan", "--input", planInput, "--brain", dir, "--json"]);
+  assert.equal(plan.json.data.conflicts[0].code, "MULTIPLE_DOMAINS");
+  assert.deepEqual(plan.json.data.create, []);
+  assert.equal((await brain(["modules", "off", "domains", "--brain", dir, "--now", NOW, "--json"])).code, 0);
+  const ignored = await brain(["sync", "plan", "--input", planInput, "--brain", dir, "--json"]);
+  assert.ok(ignored.json.data.ignored.some((row: { property?: string; reason: string }) => row.property === "Domain" && row.reason === "MODULE_OFF"));
+  const rendered = await brain(["sync", "render", "--ids", "dom-12345678", "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(rendered.json.data.errors[0].reason, "MODULE_OFF");
+});
+
+test("Area Domain renders as a relation and is omitted while Domains is off", async (context) => {
+  const dir = await fixtureCopy(context);
+  const configPath = join(dir, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  config.modules = { domains: true };
+  config.notion.databases.domains = "a1000000-0000-4000-8000-00000000000d";
+  await writeFile(configPath, JSON.stringify(config));
+  const input = await writeInput(dir, { notes: [{ type: "domain", id: "dom-12345678", title: "Context", frontmatter: { summary: "Context", notion: "a1000000-0000-4000-8000-00000000000e" }, body: "" }] });
+  const made = await brain(["note", "new", "--input", input, "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(made.code, 0, made.stdout);
+  const areaPath = join(dir, "areas", "clients.md");
+  const area = await readFile(areaPath, "utf8");
+  await writeFile(areaPath, area.replace("type: area\n", "type: area\ndomain: dom-12345678\n"));
+  let rendered = await brain(["sync", "render", "--ids", "area-2m7c4h8n", "--brain", dir, "--now", NOW, "--json"]);
+  assert.deepEqual(rendered.json.data.items[0].properties.Domain, { type: "relation", value: ["a1000000-0000-4000-8000-00000000000e"] });
+  config.modules.domains = false;
+  await writeFile(configPath, JSON.stringify(config));
+  rendered = await brain(["sync", "render", "--ids", "area-2m7c4h8n", "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(rendered.json.data.items[0].properties.Domain, undefined);
+  assert.match(await readFile(areaPath, "utf8"), /domain: dom-12345678/);
+});
+
+test("Area Domain changes in Notion produce a correctable single relation", async (context) => {
+  const dir = await fixtureCopy(context);
+  const configPath = join(dir, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  config.modules = { domains: true };
+  await writeFile(configPath, JSON.stringify(config));
+  const domainPage = "a1000000-0000-4000-8000-00000000000e";
+  const input = await writeInput(dir, { notes: [{ type: "domain", id: "dom-12345678", title: "Context", frontmatter: { summary: "Context", notion: domainPage }, body: "" }] });
+  assert.equal((await brain(["note", "new", "--input", input, "--brain", dir, "--now", NOW, "--json"])).code, 0);
+  const areaPath = join(dir, "areas", "clients.md");
+  const area = await readFile(areaPath, "utf8");
+  await writeFile(areaPath, area.replace("last_synced:", "notion_published:\n  Domain: []\nlast_synced:"));
+  const snapshot = await writeInput(dir, { as_of: NOW, rows: [{ database: "areas", page_id: "1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d", last_edited: NOW, properties: { "Brain ID": "area-2m7c4h8n", Domain: [domainPage] } }] });
+  const plan = await brain(["sync", "plan", "--input", snapshot, "--brain", dir, "--json"]);
+  assert.equal(plan.code, 0, plan.stdout);
+  assert.deepEqual(plan.json.data.corrections.map((item: { field: string; value: string }) => [item.field, item.value]), [["domain", "dom-12345678"]]);
+});

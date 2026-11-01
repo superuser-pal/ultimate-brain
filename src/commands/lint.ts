@@ -37,7 +37,7 @@ export const lintCommand: Command = {
     const matches = (path: string) => path === "brain.json" || filters.some((filter) => path === filter || path.startsWith(`${filter}/`));
     const issues = filters.length === 0 ? all : all.filter((issue) => matches(issue.path));
     const errors = issues.filter((issue) => issue.severity === "error").length;
-    const warnings = issues.length - errors;
+    const warnings = issues.filter((issue) => issue.severity === "warning").length;
     const failed = errors > 0 || (args.options.strict === true && warnings > 0);
 
     const human = issues.length === 0

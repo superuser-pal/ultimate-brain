@@ -16,7 +16,7 @@ export interface SchemaSet {
 }
 
 const KNOWLEDGE_TYPES = new Set([
-  "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory",
+  "domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory",
 ]);
 
 let cached: SchemaSet | undefined;
