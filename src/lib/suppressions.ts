@@ -15,7 +15,11 @@ export function loadSuppressions(root: string): Loaded {
   const dir = join(root, "_suppressions");
   const loaded: Loaded = { suppressions: [], restores: [], problems: [] };
   let names: string[] = [];
-  try { names = readdirSync(dir).filter((name) => name.endsWith(".json")).sort(); } catch { return loaded; }
+  try { names = readdirSync(dir).filter((name) => name.endsWith(".json")).sort(); } catch (error) {
+    // Only a genuinely absent directory means "no records"; any other failure must surface (fail closed).
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") loaded.problems.push(`_suppressions: unreadable directory (${(error as NodeJS.ErrnoException).code ?? "error"})`);
+    return loaded;
+  }
   for (const name of names) {
     try {
       const value = JSON.parse(readFileSync(join(dir, name), "utf8")) as { input?: unknown; records?: unknown };
@@ -91,46 +95,69 @@ const CONTENT = /^(?!#{1,6}\s|<!--|\s*$)/;
 export function restrictionOf(note: Note, context: Context): Restriction {
   const result = NONE();
   if (note.type === "proposal" || note.type === "view") return result;
-  if (note.type === "source") { result.whole = restrictedSources(context).has(note.id); return result; }
   const active = new Set(context.suppressions.filter((entry) => entry.status === "active").map((entry) => entry.input));
-  if (active.size === 0) return result;
+  const pending = (context.awaitingRestore?.size ?? 0) > 0;
+  if (note.type === "source") {
+    result.whole = restrictedSources(context).has(note.id);
+    if (!result.whole && pending && note.attributes.extract === true) {
+      // The latest extract holds a re-included paragraph that waits for Restore: its text is not returned (capture-and-review §4.6).
+      const input = note.attributes.extract_of;
+      const lines = note.body.split(/\r?\n/);
+      let hidden = false;
+      lines.forEach((text, index) => {
+        const marker = /^<!-- passage ¶(\d+) item [^>]*-->$/.exec(text);
+        if (marker !== null) hidden = context.awaitingRestore!.has(`${String(input)}|${String(note.attributes.transcript_hash)}|${marker[1]}`);
+        if (hidden) result.lines.add(index);
+      });
+    }
+    return result;
+  }
+  if (active.size === 0 && !pending) return result;
   const sources = (Array.isArray(note.attributes.sources) ? note.attributes.sources : []).filter((value): value is string => typeof value === "string");
   const cleared = Array.isArray(note.attributes.lineage_cleared) ? (note.attributes.lineage_cleared as string[]) : [];
   const claim = { entries: [], lineage_cleared: cleared };
   const required = new Set<string>();
-  for (const id of sources) {
+  const addLineage = (id: string) => {
     const lineage = lineageOf(id, context.sources);
     if (lineage === null) for (const input of active) required.add(input);
     else if (active.has(lineage)) required.add(lineage);
-  }
+  };
+  // Provenance comes from the note's `sources` and from every claim's own reference: a citation absent from `sources` still counts.
+  sources.forEach(addLineage);
+  const bodyLines = note.body.split(/\r?\n/).map((text) => ({ text, refs: [...text.matchAll(PASSAGE_REF)] }));
+  for (const line of bodyLines) for (const ref of line.refs) addLineage(ref[1] ?? "");
 
   // Timeline entries and the facts they support (a fact with no live accepted entry is not returned or rendered).
   const timeline = Array.isArray(note.attributes.timeline) ? (note.attributes.timeline as Record<string, unknown>[]) : [];
   timeline.forEach((entry, index) => {
     if (typeof entry.source !== "string") return;
     const passage = typeof entry.passage === "string" ? /^(src-[0-9a-z]{8})#¶(\d+):([0-9a-f]{8})$/.exec(entry.passage) : null;
+    addLineage(passage?.[1] ?? entry.source);
     const entries = [{ source: passage?.[1] ?? entry.source, ...(passage === null ? {} : { passage: { n: Number(passage[2]), hash: passage[3]! } }) }];
     if (!eligible({ ...claim, entries }, context)) result.timeline.add(index);
   });
   const facts = note.attributes.facts !== null && typeof note.attributes.facts === "object" ? (note.attributes.facts as Record<string, unknown>) : {};
+  let unsupportedFact = false;
   for (const [key, value] of Object.entries(facts)) {
     const support = timeline.flatMap((entry, index) => entry.field === key && entry.assessment === "accepted" && String(entry.value) === String(value) ? [index] : []);
-    if (support.length > 0 && support.every((index) => result.timeline.has(index))) result.facts.add(key);
+    if (support.length === 0) unsupportedFact = true;
+    else if (support.every((index) => result.timeline.has(index))) result.facts.add(key);
   }
 
+  // Passage references are judged claim by claim, whatever the note-level sources say.
+  for (const [index, line] of bodyLines.entries()) {
+    if (line.refs.length === 0) continue;
+    const entries = line.refs.map((match) => ({ source: match[1] ?? "", passage: { n: Number(match[2]), hash: match[3] ?? "" } }));
+    if (!eligible({ ...claim, entries }, context)) result.lines.add(index);
+  }
   if (required.size === 0) return result;
   const resolved = { ...context, suppressions: context.suppressions.filter((entry) => required.has(entry.input)) };
   const released = noteReleased({ lineage_cleared: cleared }, resolved);
-  let cited = false;
-  for (const [index, text] of note.body.split(/\r?\n/).entries()) {
-    const entries = [...text.matchAll(PASSAGE_REF)].map((match) => ({ source: match[1] ?? "", passage: { n: Number(match[2]), hash: match[3] ?? "" } }));
-    if (entries.length > 0) {
-      cited = true;
-      if (!eligible({ ...claim, entries }, context)) result.lines.add(index);
-    // Text with no passage reference cannot be mapped to a claim: it fails closed until the note is resolved for each input (§5.1).
-    } else if (CONTENT.test(text) && !released) result.lines.add(index);
-  }
-  if (!cited && !released && result.lines.size > 0) result.whole = true;
+  if (released) return result;
+  // Text that cannot be mapped to a claim (a body line with no passage reference, a fact no accepted timeline entry supports) fails
+  // closed: the note rests on a changed input and is restricted whole until it is resolved for that input (§5.1).
+  const unmapped = bodyLines.some((line) => line.refs.length === 0 && CONTENT.test(line.text));
+  if (unmapped || unsupportedFact) result.whole = true;
   return result;
 }
 
@@ -141,6 +168,8 @@ export function eligibleNote(note: Note, context: Context): Note | null {
   if (restriction.lines.size === 0 && restriction.timeline.size === 0 && restriction.facts.size === 0) return note;
   const body = note.body.split(/(\r?\n)/).map((text, index) => index % 2 === 0 && restriction.lines.has(index / 2) ? " ".repeat(text.length) : text).join("");
   const attributes = { ...note.attributes };
+  // A partly restricted note's one-line summary may carry the excluded text: it is not returned.
+  if (restriction.lines.size > 0 || restriction.timeline.size > 0) delete attributes.summary;
   if (Array.isArray(attributes.timeline)) attributes.timeline = attributes.timeline.filter((_, index) => !restriction.timeline.has(index));
   if (attributes.facts !== null && typeof attributes.facts === "object") attributes.facts = Object.fromEntries(Object.entries(attributes.facts).filter(([key]) => !restriction.facts.has(key)));
   return { ...note, body, attributes };

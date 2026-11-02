@@ -59,6 +59,11 @@ export function isLive(entry: Entry, claim: Claim, context: Context): boolean {
     const cleared = new Set(claim.lineage_cleared ?? []);
     return [...active].every((input) => cleared.has(input));
   }
+  // A passage a later version holds again stays restricted until Restore, even after the suppression that removed it was reconciled.
+  if (entry.passage !== undefined) {
+    const held = latestExtract(lineage, context.sources);
+    if (held !== undefined && (context.awaitingRestore?.has(`${lineage}|${held.transcript_hash}|${entry.passage.n}`) ?? false)) return false;
+  }
   if (!active.has(lineage)) return true;
   if (entry.passage === undefined) return false; // an older full copy or a whole source of a changed input
   const latest = latestExtract(lineage, context.sources);
