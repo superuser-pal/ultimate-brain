@@ -131,3 +131,27 @@ test("the first extract of an input ingested in full replaces it and restricts i
   const status = await brain(["status", "--brain", dir, "--json"]);
   assert.equal(status.json.data.suppressions.active, 1);
 });
+
+test("Tasks are bound to the item that authorized them, carried to the next version, and never rebound", async (context) => {
+  const dir = await gitBrain(context);
+  const v1 = await extract(dir, SUMMARY("Meeting only"), TRANSCRIPT);
+  const id = v1.json.data.created[0] as string;
+  const input = async (name: string, value: unknown) => { const path = join(dir, "..", name); await writeFile(path, JSON.stringify(value)); return path; };
+  const rendered = await brain(["sync", "tasks", "--source", id, "--input", await input("tasks.json", { items: [{ title: "Send contract", item: "s3.i1" }] }), "--brain", dir, "--json"]);
+  assert.equal(rendered.code, 0, rendered.stdout);
+  assert.equal(rendered.json.data.items[0].item, "s3.i1", "the item id is echoed on the payload");
+  const unknown = await brain(["sync", "tasks", "--source", id, "--input", await input("bad.json", { items: [{ title: "x", item: "s9.i9" }] }), "--brain", dir, "--json"]);
+  assert.equal(unknown.json.error.code, "INPUT_INVALID");
+  const record = async (taskItems: unknown, tasks: string[]) => brain(["sync", "record", "--input", await input("rec.json", { records: [{ id, synced_at: NOW, tasks, task_items: taskItems }] }), "--brain", dir, "--json"]);
+  const ok = await record({ "s3.i1": "6a7b0000-0000-4000-8000-000000000001" }, ["6a7b0000-0000-4000-8000-000000000001"]);
+  assert.equal(ok.json.data.records[0].result, "recorded", ok.stdout);
+  assert.ok((await readFile(join(dir, v1.json.data.path), "utf8")).includes("6a7b0000-0000-4000-8000-000000000001"));
+  git(dir, "add", "-A"); git(dir, "commit", "-q", "-m", "tasks");
+  assert.equal((await record({ "s3.i1": "6a7b0000-0000-4000-8000-000000000002" }, ["6a7b0000-0000-4000-8000-000000000002"])).json.data.records[0].reason, "TASK_ITEM_EXISTS");
+  assert.equal((await record({ "s9.i9": "6a7b0000-0000-4000-8000-000000000003" }, ["6a7b0000-0000-4000-8000-000000000003"])).json.data.records[0].reason, "INVALID_RESULT", "an item outside the selection");
+  assert.equal((await record({ "s1.i1": "6a7b0000-0000-4000-8000-000000000004" }, [])).json.data.records[0].reason, "INVALID_RESULT", "a Task page not in the record's tasks");
+  git(dir, "checkout", "--", ".");
+  const v2 = await extract(dir, SUMMARY("Use in brain"), TRANSCRIPT, "--previous", id);
+  assert.equal(v2.code, 0, v2.stdout);
+  assert.ok((await readFile(join(dir, v2.json.data.path), "utf8")).includes("s3.i1: 6a7b0000-0000-4000-8000-000000000001"), "task_items is carried forward");
+});
