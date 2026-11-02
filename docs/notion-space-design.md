@@ -398,7 +398,7 @@ A button can use the action **send message to** an agent and pick Brain Assistan
 
 **The button contract (normative for CC-71):** every Brain Assistant button's message (1) names the skill to run, (2) references the row with `@` to the current page, (3) carries the confirmation, and (4) says what the agent must not touch. A button without the row reference is not a valid Brain Assistant button: the agent cannot tell which row was clicked.
 
-**Tested (T4, 2026-11-02):** the connection returns one page-level last-edited time, no per-block times; it moved after an edit and **not after a deletion**. What the old note below assumed about deletions is wrong; CC-89 replaces it.
+**Tested (T4, 2026-11-02):** the connection returns one page-level last-edited time, no per-block times; it moved after an edit and **not after a deletion**. The rule below no longer assumes deletions are detected (decision 0062).
 
 **Not verified yet (do not rely on these):**
 - Refresh report on a Report row. The user reported (2026-10-31, not recorded in detail) that a second button test "edits the right body"; taken here as Write up on a promoted Document. Tidy capture on an Inbox row is the one with a recorded message and result.
@@ -423,7 +423,7 @@ Keep as document and Promote to document stay checkbox buttons that the catch-up
 - on a Document, **Accept write-up**; on a report, **Accept refresh**. The button sets Accepted to checked and Accepted at to now (a Notion button can edit these properties; no AI is involved).
 - For a report, the user accepts by first moving the proposed section's text into the report body (replacing the old text) and deleting the "Proposed refresh" heading, then clicking **Accept refresh**.
 - **An unresolved Proposed revision or Proposed refresh block blocks acceptance**: a checked Accepted with such a block on the page is not imported (cli.md §5.14.7, rows 4 and 5).
-- **Any edit of the page in a later minute than the click invalidates the acceptance** (an edit inside the click's own minute is the known limit of decision 0058), the user clicks Accept again. The catch-up sees `Accepted at` older than the page's last edit and lists the row under Needs you. **Deleting a paragraph is not reliably detected** (T4, 2026-11-02: the page time did not move); CC-89 settles the signal. The skill re-reads the page just before importing, so an edit made after the catch-up began also stops the import.
+- **Any edit of the page in a later minute than the click invalidates the acceptance** (an edit inside the click's own minute is the known limit of decision 0058), the user clicks Accept again. The catch-up sees `Accepted at` older than the page's last edit and lists the row under Needs you. **Deleting a paragraph is not detected** (T4, 2026-11-02: the page time did not move; decision 0062). To change an accepted text, edit it and click Accept again. The skill re-reads the page just before importing, so an edit made after the catch-up began also stops the import.
 - **The catch-up shows what it will import** (the full replacement text as a diff against Git) and imports after you say yes; an unattended run imports only an acceptance at least 2 minutes old. An edit made in the same minute as your Accept click, before the first read, cannot be detected: a known limit (decision 0058).
 - **After the catch-up imports the wording it unticks Accepted and clears Accepted at** (like the other request boxes): the acceptance was consumed, and a later edit is an ordinary draft, which a publish never overwrites.
 - To withdraw an acceptance the user unticks Accepted.
@@ -439,7 +439,7 @@ The contract is [spec/capture-and-review.md](../spec/capture-and-review.md). For
 - **Verified:** voice recording and transcript reading (T1); typed tokens survive edits and regeneration, though a paragraph may turn into a bulleted item (T2); a button sets two checkboxes and a date-time in one click (T3; that the time equals the click minute was not recorded); the Areas · Domain relation can be limited to 1 page, by hand (T7).
 - **Anchors (T6):** 9 of 10 items passed; the repair of the failing item was not run. Notion writes straight quotes where curly were asked, adds unnumbered action items, and may merge topics into one transcript paragraph. The transcript is in the meeting block's Transcript section.
 - **Per-section select (T5):** readable by an agent, but two clicks. Typed tokens remain the supported control.
-- **Does not work (T4):** the page's last-edited time does not move when a block is **deleted**. Do not rely on it to detect deletions; the accepted-wording and selection checks need another signal (task CC-89).
+- **Does not work (T4):** the page's last-edited time does not move when a block is **deleted**. The brain does not watch ingested pages for deletions (decision 0062). To change what it holds, edit the tokens and set the meeting back to Reviewed, or ask the assistant.
 - **By hand, always (T8):** the API ignores putting an option in the Complete group (it lands in To-do and sets a default option) and ignores the relation limit, both with a 200. Add Won't Do and the limit in the UI, and read back after any schema write.
 
 ## 4. Templates (contextual workspaces, Easlo pattern)
