@@ -11,6 +11,8 @@ export interface SourceInfo {
   id: string; extract_of?: string; source_key?: string; replaces?: string;
   /** For an extract version: the passages it holds, as `${n}:${hash}`. */
   passages?: string[]; transcript_hash?: string; extract_version?: number;
+  /** A meeting standing for its source (lineage only): never a version of anything. */
+  derived?: boolean;
 }
 
 /** `note` is the claim's note: a Restore is accepted per claim, not per passage (capture-and-review §5.2). */
@@ -42,21 +44,49 @@ export function lineageOf(id: string, sources: Map<string, SourceInfo>): string 
   return null;
 }
 
-function activeInputs(suppressions: Suppression[]): Set<string> {
-  return new Set(suppressions.filter((entry) => entry.status === "active").map((entry) => entry.input));
+interface Derived { active: Set<string>; latest: Map<string, SourceInfo>; restricted: Set<string> }
+const derivedCache = new WeakMap<Context, Derived>();
+
+/** Computed once per context (O(sources)): the active inputs, the latest extract of each input and the sources no retrieval may return. */
+function derived(context: Context): Derived {
+  const cached = derivedCache.get(context);
+  if (cached !== undefined) return cached;
+  const active = new Set(context.suppressions.filter((entry) => entry.status === "active").map((entry) => entry.input));
+  const real = [...context.sources.values()].filter((info) => info.derived !== true);
+  const replaced = new Set(real.flatMap((info) => (info.replaces === undefined ? [] : [info.replaces])));
+  const latest = new Map<string, SourceInfo>();
+  for (const info of real) {
+    if (info.extract_of === undefined || replaced.has(info.id)) continue;
+    const held = latest.get(info.extract_of);
+    if (held === undefined || (info.extract_version ?? 0) > (held.extract_version ?? 0)) latest.set(info.extract_of, info);
+  }
+  // Every version of an input but its latest extract, and every full copy of it, holds text that a later version may have excluded: none
+  // is returned, whether or not the cleanup was reconciled (the text itself stays in Git, 0032).
+  const restricted = new Set<string>();
+  for (const info of real) {
+    const lineage = lineageOf(info.id, context.sources);
+    const head = lineage === null ? undefined : latest.get(lineage);
+    if (head !== undefined && head.id !== info.id) restricted.add(info.id);
+  }
+  const result = { active, latest, restricted };
+  derivedCache.set(context, result);
+  return result;
 }
 
-/** The latest extract version of an input: the source nobody `replaces`, among the extracts of that input. */
-function latestExtract(input: string, sources: Map<string, SourceInfo>): SourceInfo | undefined {
-  const versions = [...sources.values()].filter((entry) => entry.extract_of === input);
-  const replaced = new Set(versions.map((entry) => entry.replaces));
-  return versions.find((entry) => !replaced.has(entry.id));
+/** The latest extract of every input. */
+export function latestExtracts(context: Context): Map<string, SourceInfo> {
+  return derived(context).latest;
+}
+
+/** The latest extract version of an input (the highest `extract_version` nobody replaces). */
+export function latestOf(input: string, context: Context): SourceInfo | undefined {
+  return derived(context).latest.get(input);
 }
 
 /** Whether one provenance entry is live. Fail closed: unknown lineage is never live while any suppression is active, unless every
  *  active suppression's input is in the note's `lineage_cleared` (§5.1). */
 export function isLive(entry: Entry, claim: Claim, context: Context): boolean {
-  const active = activeInputs(context.suppressions);
+  const { active } = derived(context);
   const lineage = lineageOf(entry.source, context.sources);
   if (lineage === null) {
     const cleared = new Set(claim.lineage_cleared ?? []);
@@ -65,7 +95,7 @@ export function isLive(entry: Entry, claim: Claim, context: Context): boolean {
   if (entry.passage !== undefined) {
     // A passage of an extract is live only while the latest version of its input holds it: reconciling a cleanup never makes an
     // excluded passage eligible again. A passage the latest version holds again waits for the Restore of this claim.
-    const latest = latestExtract(lineage, context.sources);
+    const latest = latestOf(lineage, context);
     const source = context.sources.get(entry.source);
     if (latest === undefined || source === undefined || source.transcript_hash !== latest.transcript_hash) return false;
     if (!(latest.passages ?? []).includes(`${entry.passage.n}:${entry.passage.hash}`)) return false;
@@ -87,18 +117,10 @@ export function eligible(claim: Claim, context: Context): boolean {
  *  cleanup item for this note, or its lineage established as independent. A later suppression restricts the note again. */
 export function noteReleased(note: { lineage_cleared?: string[] }, context: Context, resolved: Set<string> = new Set()): boolean {
   const cleared = new Set([...(note.lineage_cleared ?? []), ...resolved]);
-  return [...activeInputs(context.suppressions)].every((input) => cleared.has(input));
+  return [...derived(context).active].every((input) => cleared.has(input));
 }
 
 /** Source ids whose text is suppressed in full, so retrieval skips them: the older versions and non-extract copies of a changed input. */
 export function restrictedSources(context: Context): Set<string> {
-  // Every version of an input but its latest extract, and every full copy of it, holds text that a later version may have
-  // excluded: none is returned, whether or not the cleanup was reconciled (the text itself stays in Git, 0032).
-  const result = new Set<string>();
-  for (const info of context.sources.values()) {
-    const lineage = lineageOf(info.id, context.sources);
-    const latest = lineage === null ? undefined : latestExtract(lineage, context.sources);
-    if (latest !== undefined && latest.id !== info.id) result.add(info.id);
-  }
-  return result;
+  return derived(context).restricted;
 }

@@ -34,7 +34,7 @@ export function cleanupPlan(notes: readonly Note[], loaded: Loaded, input: strin
 
   for (const note of notes) {
     if (note.type === "source" || note.type === "proposal" || note.type === "view") continue;
-    const cited = (Array.isArray(note.attributes.sources) ? note.attributes.sources : []).filter((value): value is string => typeof value === "string");
+    const cited = [...(Array.isArray(note.attributes.sources) ? note.attributes.sources : []), ...(typeof note.attributes.source === "string" ? [note.attributes.source] : [])].filter((value): value is string => typeof value === "string");
     const lineages = cited.map((id) => (context.sources.has(id) || !id.includes(":") ? lineageOf(id, context.sources) : id));
     const restriction = restrictionOf(note, context);
     // A note belongs to this input's cleanup when it lists it as a source, or when any of its claims is restricted (a citation in the body

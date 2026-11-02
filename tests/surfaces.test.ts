@@ -287,3 +287,62 @@ test("an unreadable record shape fails closed", async (context) => {
   await writeFile(join(dir, "_suppressions/x.json"), JSON.stringify({ input: "x", records: [{ version: 1, passages: [null], status: "active" }] }));
   assert.equal((await ask(dir, "anything")).json.error.code, "SUPPRESSIONS_UNREADABLE");
 });
+
+test("a meeting's required source field is provenance too", async (context) => {
+  const { dir, id } = await seeded(context, () => "placeholder\n");
+  const meeting = join(dir, "knowledge/meetings", (await (await import("node:fs/promises")).readdir(join(dir, "knowledge/meetings")))[0]!);
+  const text = await readFile(meeting, "utf8");
+  await writeFile(meeting, text.replace(/^sources:.*\n/m, "").replace(/^source: .*$/m, `source: ${id}`).replace(/\n---\n/, "\n---\n") + "\nPricing is zebrafish95k kiwi.\n");
+  commit(dir, "meeting from the extract");
+  const before = (await ask(dir, "kiwi")).json.data.candidates as unknown[];
+  assert.equal(before.length, 1);
+  assert.equal((await extract(dir, "Meeting only", "--previous", id)).code, 0);
+  assert.equal(((await ask(dir, "kiwi")).json.data.candidates as unknown[]).length, 0, "text of a meeting resting on the excluded input is not returned");
+});
+
+test("a partly restricted note loses its summary and aliases, and so does one that rests on a changed input", async (context) => {
+  const { dir, id } = await seeded(context, (src, h) => `Contract goes Friday. ^[${src}#¶3:${h.get(3)}]\n`);
+  const text = await readFile(join(dir, CONCEPT), "utf8");
+  const bare = text.replace(/^summary: .*\n/m, "").replace(/^aliases:\n(?:  - .*\n)+/m, "").replace(/^aliases: .*\n/m, "");
+  await writeFile(join(dir, CONCEPT), bare.replace(/\n---\n/, "\nsummary: Pricing is zebrafish95k\naliases:\n  - pricingalias\n---\n"));
+  commit(dir, "summary");
+  assert.equal((await ask(dir, "pricingalias")).json.data.candidates.length, 1);
+  assert.equal((await extract(dir, "Meeting only", "--previous", id)).code, 0);
+  assert.equal((await ask(dir, "pricingalias")).json.data.candidates.length, 0, "the alias no longer ranks the note");
+  const found = (await ask(dir, "Friday")).json.data.candidates as { summary: string | null }[];
+  assert.equal(found[0]?.summary, null, "the summary may come from the excluded paragraph");
+});
+
+test("recover never overwrites a path the user changed after the interrupted operation, and an unreadable journal is named", async (context) => {
+  const dir = await gitBrain(context);
+  const tracked = "knowledge/concepts/row-level-security.md";
+  const original = await readFile(join(dir, tracked), "utf8");
+  await mkdir(join(dir, "_journal"), { recursive: true });
+  const { createHash } = await import("node:crypto");
+  const ours = `${original}\nfrom the operation\n`;
+  await writeFile(join(dir, "_journal/op-aaaa0001.json"), JSON.stringify({ op: "op-aaaa0001", written: NOW, entries: [{ path: tracked, hash: createHash("sha256").update(ours).digest("hex"), new: false }] }));
+  await writeFile(join(dir, tracked), `${original}\nUSER EDIT\n`);
+  const refused = await brain(["recover", "--brain", dir, "--json"]);
+  assert.equal(refused.json.error.code, "RECOVERY_NEEDED");
+  assert.match(refused.json.error.message, /changed after the interrupted operation/);
+  assert.ok((await readFile(join(dir, tracked), "utf8")).includes("USER EDIT"), "the edit is kept");
+  await writeFile(join(dir, tracked), ours);
+  assert.deepEqual((await brain(["recover", "--brain", dir, "--json"])).json.data.recovered, [{ op: "op-aaaa0001", action: "restored" }]);
+  assert.equal(await readFile(join(dir, tracked), "utf8"), original);
+  await mkdir(join(dir, "_journal"), { recursive: true });
+  await writeFile(join(dir, "_journal/op-bbbb0002.json"), "{ nope");
+  const corrupt = await brain(["recover", "--brain", dir, "--json"]);
+  assert.equal(corrupt.json.error.code, "RECOVERY_NEEDED");
+  assert.match(corrupt.json.error.message, /op-bbbb0002\.json/);
+});
+
+test("lint flags a damaged suppression record and extract refuses a page that is not the latest", async (context) => {
+  const { dir, id } = await seeded(context, (src, h) => `Pricing ${src}. ^[${src}#¶2:${h.get(2)}]\n`);
+  const v2 = await extract(dir, "Meeting only", "--previous", id);
+  assert.equal(v2.code, 0, v2.stdout);
+  const stale = await extract(dir, "Use in brain", "--previous", id);
+  assert.match(stale.stdout, /NOT_LATEST/);
+  await writeFile(join(dir, `_suppressions/${PAGE}.json`), "{ broken");
+  const lint = await brain(["lint", "--brain", dir, "--json"]);
+  assert.ok(lint.json.data.issues.some((i: { rule: string; severity: string }) => i.rule === "suppression-record" && i.severity === "error"));
+});

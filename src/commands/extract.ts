@@ -87,7 +87,7 @@ export const sourceExtractCommand: Command = {
 
     await assertCleanTree(brain!.root);
     const op = newOpId();
-    const entries: JournalEntry[] = workspace.changedPaths.map((path) => ({ path, hash: null, new: workspace.isNew(path) }));
+    const entries: JournalEntry[] = workspace.changedPaths.map((path) => ({ path, hash: sha(workspace.stagedContent(path) ?? ""), new: workspace.isNew(path) }));
     if (suppression !== null) entries.push({ path: suppressionPath, hash: sha(suppression), new: !workspace.exists(suppressionPath) });
     await writeJournal(brain!.root, { op, written: now.toISOString(), entries });
     try {
