@@ -24,6 +24,8 @@ export const EXIT_CODES = {
   OUTSIDE_ROOT: 5,
   BRAIN_DIRTY: 5,
   WRITE_CONFLICT: 5,
+  RECOVERY_NEEDED: 5,
+  DIRTY_TREE: 5,
   INTERNAL: 10,
 } as const;
 

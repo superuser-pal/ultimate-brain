@@ -1,6 +1,7 @@
 import { parseArgs, type OptionSpec, type ParsedArgs } from "./args.ts";
 import { openBrain, type Brain } from "./brain.ts";
 import { BrainError, exitCodeFor } from "./errors.ts";
+import { journalExists } from "./journal.ts";
 import { resolveNow } from "./time.ts";
 
 export interface OutputWriter {
@@ -87,6 +88,8 @@ export async function runCommand(
         homeDirectory: environment.homeDirectory,
       }, command.allowInvalidBrainConfig);
       brainRoot = brain.root;
+      // An unrecovered journal means a multi-file write stopped half way: every command refuses until `brain recover` ran (capture-and-review §7.11).
+      if (command.name !== "recover" && journalExists(brain.root)) throw new BrainError("RECOVERY_NEEDED", "An interrupted operation left a journal: run `brain recover` first");
     }
 
     const result = await command.run({ args, brain, now, environment });
