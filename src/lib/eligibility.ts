@@ -72,8 +72,10 @@ export function isLive(entry: Entry, claim: Claim, context: Context): boolean {
     const key = `${lineage}|${latest.transcript_hash}|${entry.passage.n}`;
     return !(context.awaitingRestore?.has(key) ?? false) || (claim.note !== undefined && (context.restored?.has(`${key}|${claim.note}`) ?? false));
   }
-  if (!active.has(lineage)) return true;
-  return false; // an older full copy or a whole source of a changed input
+  // A whole source of an input that was ever suppressed (an older version, a full copy) is not live, reconciled or not, unless the note was
+  // marked independent of that input (`lineage_cleared`, the cleanup row's Keep).
+  if (claim.lineage_cleared?.includes(lineage)) return true;
+  return !context.suppressions.some((entry) => entry.input === lineage);
 }
 
 /** A claim is eligible if it has at least one live entry; otherwise it is restricted (§5.1). */

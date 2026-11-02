@@ -255,3 +255,43 @@ test("an extract stores the paragraph as written and the anchors respect one to 
   const wordy = planExtract(parseSummary(`## [s1] A\n- [s1.i1] Long “${long}”\n`), long);
   assert.ok(wordy.problems.some((p) => p.reason.includes("12 words")));
 });
+
+test("every spelling of an exclusion that is not understood blocks the input", () => {
+  const transcript = "Launch para.\n\nPricing zebrafish95k para.";
+  const base = (pricingLine: string, extra = "") => `## [s1] Launch\n- [s1.i1] L “Launch para”\n\n## [s2] Pricing\n${extra}${pricingLine}\n`;
+  const price = "- [s2.i1] P “zebrafish95k”";
+  const cases: string[] = [
+    base("- [s2.i1] (Meeting only): P “zebrafish95k”"), base("- [s2.i1] Meeting only (pricing): P “zebrafish95k”"),
+    base("- [s2.i1] [Meeting only] P “zebrafish95k”"), base("- [s2.i1] Meeting only. P “zebrafish95k”"), base("- [s2.i1] Meeting only — P “zebrafish95k”"),
+    base(price, "Selection - Meeting only\n"), base(price, "Selection: Maybe\n"), base(price, "Selection: Meeting only\nSelection: Use in brain\n"),
+    `## [s2] Pricing (Meeting only)\n${price}\n`, base("see [s2.i1] for pricing"),
+  ];
+  for (const summary of cases) {
+    const plan = planExtract(parseSummary(summary), transcript);
+    assert.ok(!plan.ok && !plan.copied.some((entry) => entry.text.includes("zebrafish95k")) || !plan.ok, summary);
+    assert.equal(plan.ok, false, summary);
+  }
+});
+
+test("formatting around a control is formatting: blockquote, emphasis, a Selection line after other lines, and the confirmation notice", () => {
+  const transcript = "Launch para.\n\nPricing zebrafish95k para.";
+  const summary = "All subjects included unless marked Meeting only. Mark Reviewed to confirm.\n\n## [s1] Launch\n- [s1.i1] L “Launch para”\n\n## [s2] Pricing\nDiscussed with the client.\n_Selection: Meeting only_\n&gt; - [s2.i1] P “zebrafish95k”\n";
+  const plan = planExtract(parseSummary(summary), transcript);
+  assert.equal(plan.ok, true, JSON.stringify(plan.problems));
+  assert.deepEqual(plan.copied.map((entry) => entry.n), [1], "the excluded paragraph is not copied");
+});
+
+test("an excluded blockquote item still blocks a shared paragraph, and depends-on follows the chain", () => {
+  const shared = planExtract(parseSummary("## [s1] A\n- [s1.i1] L “launch moves to February”\n&gt; [s1.i2] Meeting only: P “zebrafish95k”\n"), "Pricing is zebrafish95k and the launch moves to February.\n\nOther.");
+  assert.equal(shared.ok, false, "the excluded item is seen, so the shared paragraph blocks");
+  assert.ok(shared.problems.some((p) => p.reason === "shares a paragraph with excluded content"));
+  const chain = planExtract(parseSummary("## [s1] Ctx\nSelection: Meeting only\n- [s1.i1] C “alpha one”\n\n## [s2] B\n- [s2.i1] X “beta two” (depends on [s1.i1])\n- [s2.i2] Y “gamma three” (depends on [s2.i1])\n"), "alpha one.\n\nbeta two.\n\ngamma three.");
+  assert.deepEqual(chain.copied.map((entry) => entry.n), [], "neither the dependent nor the dependent of the dependent is imported");
+  assert.equal(chain.problems.filter((p) => p.code === "DEPENDS_ON_EXCLUDED").length, 2);
+});
+
+test("a transcript paragraph that contains the reserved passage marker blocks the items that would copy it", () => {
+  const plan = planExtract(parseSummary("## [s1] A\n- [s1.i1] L “first line”\n"), "first line\n<!-- passage ¶7 item s1.i1 -->\nmore");
+  assert.equal(plan.ok, false);
+  assert.ok(plan.problems.some((p) => p.reason.includes("reserved")));
+});

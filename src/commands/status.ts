@@ -11,7 +11,7 @@ import { isRecord, readJsonInput } from "../lib/input.ts";
 import { databaseId, modulesOf } from "../lib/modules.ts";
 import { expandPath, linkedRepos, workTreeTop } from "../lib/repos.ts";
 import { unattendedRuns } from "../lib/runs.ts";
-import { contextFor, loadSuppressions, restrictionOf } from "../lib/suppressions.ts";
+import { contextFor, indexNotes, loadSuppressions, restrictionOf } from "../lib/suppressions.ts";
 import { normalizeTimestamp } from "../lib/time.ts";
 
 const NOTE_TYPES = ["domain", "area", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "goal", "memory", "reference"];
@@ -43,7 +43,7 @@ export const statusCommand: Command = {
       }
     }
 
-    const index = buildIndex(notes).markdown;
+    const index = buildIndex(indexNotes(notes, loadSuppressions(brain!.root))).markdown;
     let currentIndex: string | null = null;
     try {
       currentIndex = await readFile(join(brain!.root, "index.md"), "utf8");

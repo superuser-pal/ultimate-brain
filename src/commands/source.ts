@@ -3,7 +3,7 @@ import { BrainError } from "../lib/errors.ts";
 import { lineDiff } from "../lib/diff.ts";
 import { cleanupPlan } from "../lib/cleanup.ts";
 import { buildExtractPlan } from "../lib/extract.ts";
-import { requireSuppressions } from "../lib/suppressions.ts";
+import { contextFor, requireSuppressions, restrictionOf } from "../lib/suppressions.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { readFile } from "node:fs/promises";
 
@@ -40,7 +40,15 @@ export const sourceDiffCommand: Command = {
     if (typeof replaces !== "string") invalid(`${id} has no replaces: it is the first version`);
     const earlier = workspace.get(replaces as string);
     if (earlier === undefined) throw new BrainError("UNKNOWN_ID", `No note with id ${String(replaces)}`);
-    const lines = lineDiff(earlier.body, note.body);
+    // Excluded text is never shown, not even as a diff: a restricted source contributes only its passage markers, and restricted lines are removed.
+    const context = contextFor(workspace.notes, requireSuppressions(brain!.root));
+    const visible = (source: typeof note): string => {
+      const restriction = restrictionOf(source, context);
+      const rows = source.body.split(/\r?\n/);
+      if (restriction.whole) return rows.filter((row) => /^<!-- passage ¶\d+ item [^>]*-->$/.test(row)).join("\n");
+      return rows.filter((_, index) => !restriction.lines.has(index)).join("\n");
+    };
+    const lines = lineDiff(visible(earlier), visible(note));
     const diff = lines.join("\n");
     return {
       data: { id: note.id, replaces: earlier.id, removed: lines.filter((line) => line.startsWith("- ")).length, added: lines.filter((line) => line.startsWith("+ ")).length, diff },

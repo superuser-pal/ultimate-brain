@@ -287,7 +287,7 @@ Read-only health summary; the first call of every skill.
 
 `notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `concepts`, `documents` (0045, 0049; a `references` key is reported as `documents`). `modules` (0048) has every module key, filled in as schema §12 says: all `true` except Domains when the block is absent, else each absent key at its default. `notes` counts every type, `reference` included (0045). A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } }`. `unattended` (0051) sums the unattended catch-up lines (§3.9) written since the last attended `catch-up` line, across the month files: `since` is that attended line's timestamp (`null` when there is none), `runs` the unattended lines after it, `inputs` and `failed` their sums, `failures` their reasons in order without repeats, and `left`, `skipped`, `waiting` and `last` (its timestamp) from the latest one, since an input still skipped is counted again by every run. `catch_up` is `null` when no unattended line follows the last attended one. `backlog` is `true` when the last three unattended catch-up lines, attended or not in between, each have `left` above 0. The attended catch-up opens with this summary (§6.1). `repos` lists `brain.json` `repos` in order (empty when absent): `found` is whether `path` is a Git working tree. `views_stale` includes area briefs. Exit 0 even when stale.
 
-**Suppressions (0055).** `suppressions` counts the records of `_suppressions/` (capture-and-review §5.3) that are `active` and `reconciled`, the knowledge notes with a restricted statement or restricted whole (`restricted_notes`), those restricted whole because their text cannot be mapped to passages or their lineage is unknown (`unresolved_lineage`), and lists any unreadable record under `problems`.
+**Suppressions (0055).** `suppressions` counts the records of `_suppressions/` (capture-and-review §5.3) that are `active` and `reconciled`, the knowledge notes with a restricted statement or restricted whole (`restricted_notes`), those restricted whole (`unresolved_lineage`: their text cannot be mapped to passages, or their lineage is unknown), and lists any unreadable record under `problems`.
 
 **Tasks status diagnostic (0055).** `brain status --tasks-schema <file|->` accepts a skill-supplied JSON snapshot `{ "database": "<mapped database id>", "property": "<mapped status property name>", "as_of": "<ISO timestamp>", "options": ["To Do", "Done", "Won't Do"] }`. The skill obtains it from Notion during connection; the CLI stays offline. The database and property must be non-empty and match the configured mapping; timestamps must be valid UTC timestamps no later than the command clock. Malformed, future-dated or mismatched snapshots fail `INPUT_INVALID`. When the Tasks module is on, the snapshot lacks `notion.tasks.wont_do_status` (default `Won't Do`), `data.tasks_status_note` contains a non-error string identifying the missing option and snapshot time. It is `null` without a snapshot, when Tasks is off, or when the option is present. The check sees names only and cannot verify the Complete group. A snapshot is a point-in-time observation, not a promise of current Notion state.
 
@@ -611,6 +611,8 @@ Regenerates `index.md` exactly as schema §13 specifies (CX-04). `--check` write
 - `written`: the file was rewritten (only when its bytes change). `stale`: `index.md` is still out of date after the command, so it is `true` only with `--check`.
 - Scan warnings: `UNPARSEABLE`, `NOT_A_NOTE` (no frontmatter, or no `id`), `UNREADABLE`, `SKIPPED_SYMLINK` (symbolic links are not followed), `DUPLICATE_ID`. A leading byte-order mark is ignored.
 
+**Restricted evidence (0055, capture-and-review §5.1).** `index.md` and the JSON index describe a restricted note without its `summary` and facts (it stays listed: it may be independently supported); a partly restricted note loses its summary. `brain lint` and `brain status` compute `index-stale` the same way. A damaged suppression record fails the command with `SUPPRESSIONS_UNREADABLE`.
+
 ### 5.9 `brain views`
 
 ```text
@@ -684,6 +686,7 @@ Issues have severity `error`, `warning`, or `info`. Information is listed in `is
 | `review-notes` | error | a `review_notes` lists a note that isn't a knowledge note, or a note another `review_notes` also lists (0041), unless one excluded it and the other has `deferred_from` = that one (0045) |
 | `source-replaces` | error | a source's `replaces` names a note that isn't a source (a missing id is `missing-ref`), or a source two others replace (0045) |
 | `unknown-lineage` | warning | a knowledge note's `sources` names a source or meeting whose input cannot be determined (no `source_key`, `extract_of` or meeting `source`): its evidence is never live while any suppression is active (0055, capture-and-review §5.1) |
+| `suppression-record` | error | a file of `_suppressions/` (or the folder) cannot be read or is malformed (0055, capture-and-review §5.3); retrieval commands refuse with `SUPPRESSIONS_UNREADABLE` |
 | `extract-passages` | error | an extract source's `passages` does not list the `<!-- passage ¶n -->` paragraphs of its body in order, or a paragraph no longer matches its 8-hex hash (0055, capture-and-review §4.5) |
 | `passage-ref` | error | a `^[src-…#¶n:hash]` in a note body names a source that is not an extract, a passage it does not hold, or the wrong hash; or a note lists an extract in `sources` but cites none of its passages (0055, capture-and-review §5.1) |
 | `update-body` | error | an `update_body` proposal, or an `update_body` entry of a `review_notes`'s `changes`, whose target isn't a `reference` (0045) or is a `promoted` one (0049) |
@@ -1358,6 +1361,8 @@ Read-only. For a source with `replaces`, the line diff of its body against the b
 
 Example: old `A, B, A`, new `A, A, B` gives `- B` then `+ B`. `data` = `{ "id": "src-…", "replaces": "src-…", "removed": <n>, "added": <n>, "diff": "<the lines, joined by \n>" }`. The ingest reads it to propose only what changed. `INPUT_INVALID` when the source has no `replaces`; `UNKNOWN_ID` for a missing id.
 
+**Restricted evidence (0055).** The diff never shows text that a suppression restricts: an older version or full copy of an input with an extract contributes only its `<!-- passage ¶n … -->` markers, and restricted lines are removed from the version it compares. A damaged suppression record fails the command with `SUPPRESSIONS_UNREADABLE`.
+
 ### 5.20 `brain modules` (0048)
 
 ```text
@@ -1557,7 +1562,7 @@ Domains use `dom-` ids and `domains/<slug>.md`. When Domains is off, sync ignore
 brain recover
 ```
 
-Finishes or rolls back each interrupted journaled write, oldest first. For `_journal/<op>.json`: if a commit with the trailer `Op: <op>` exists, the work is kept and only the journal is deleted (`committed`); otherwise each listed path goes back to the last commit (`git checkout -- <path>`), each listed new path is removed, and the journal is deleted last (`restored`, reported as `RECOVERED <op>`). Every step is idempotent, so an interrupted recovery is run again. Restoring puts both the index and the worktree back to the last commit (`git restore --source=HEAD --staged --worktree`), so a commit that failed after `git add` leaves nothing staged; new paths are unstaged and removed. If a step fails the journal is kept and every command keeps refusing with `RECOVERY_NEEDED`. `data` = `{ recovered: [{ op, action }] }`; an empty list when there is nothing to do.
+Finishes or rolls back each interrupted journaled write, oldest first. For `_journal/<op>.json`: if a commit with the trailer `Op: <op>` exists, the work is kept and only the journal is deleted (`committed`); otherwise each listed path goes back to the last commit (`git restore --source=HEAD --staged --worktree -- <path>`), each listed new path is removed, and the journal is deleted last (`restored`, reported as `RECOVERED <op>`). Every step is idempotent, so an interrupted recovery is run again. Restoring puts both the index and the worktree back to the last commit (`git restore --source=HEAD --staged --worktree`), so a commit that failed after `git add` leaves nothing staged; new paths are unstaged and removed. If a step fails the journal is kept and every command keeps refusing with `RECOVERY_NEEDED`. `data` = `{ recovered: [{ op, action }] }`; an empty list when there is nothing to do.
 
 ### 5.25 `brain source cleanup-plan` (0055, capture-and-review §5.2)
 
