@@ -430,14 +430,26 @@ const NOTE_FIX_FIELDS = ["title", "summary", "why", "domain", "area", "goal", "c
  */
 function defer(workspace: Workspace, id: string, p: Record<string, unknown>, exclude: Array<Record<string, unknown>>, today: string): string {
   const notes = list(p.notes).filter((note) => exclude.some((entry) => isNoteExclude(entry) && entry.note === note));
-  const links = reviewLinks(p).filter((link) => exclude.some((entry) => sameLink(link, entry)));
-  const changes = list(p.changes).filter((_change, index) => exclude.some((entry) => entry.change === index));
+  const allLinks = reviewLinks(p);
+  const linkIndexes = allLinks.map((_link, index) => index).filter((index) => exclude.some((entry) => sameLink(allLinks[index]!, entry)));
+  const changeIndexes = list(p.changes).map((_change, index) => index).filter((index) => exclude.some((entry) => entry.change === index));
+  const links = linkIndexes.map((index) => allLinks[index]!);
+  const changes = changeIndexes.map((index) => list(p.changes)[index]);
   const source = String(p.source);
+  // A deferred item keeps its immutable id: it lives on in the new proposal under the same id, with its reference re-indexed (capture-and-review §7.6).
+  const oldItems = list(p.items) as Array<{ item_id: string; kind: string; ref: unknown }>;
+  const idOf = (kind: string, ref: unknown) => oldItems.find((entry) => entry.kind === kind && entry.ref === ref)?.item_id;
+  const items = oldItems.length === 0 ? undefined : [
+    ...changeIndexes.map((original, index) => ({ item_id: idOf("change", original), kind: "change", ref: index })),
+    ...notes.map((note) => ({ item_id: idOf("note", note), kind: "note", ref: note })),
+    ...linkIndexes.map((original, index) => ({ item_id: idOf("link", original), kind: "link", ref: index })),
+  ];
   const fields = {
     kind: "review_notes",
     title: reviewTitle(workspace, source, changes.length, notes.length, links.length, "Deferred from"),
     notes, links,
     ...(changes.length === 0 ? {} : { changes }),
+    ...(items === undefined ? {} : { items }),
     deferred_from: id,
     why: p.why,
     source,
