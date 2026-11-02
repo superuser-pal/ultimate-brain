@@ -472,7 +472,12 @@ export function parsePlan(input: unknown): SyncPlan {
   (Array.isArray(p.review_decisions) ? p.review_decisions : []).forEach((item, index) => {
     const at = `/review_decisions/${index}`;
     if (!isRecord(item) || typeof item.proposal !== "string" || typeof item.page_id !== "string" || !isTimestamp(item.decided_at) || !Array.isArray(item.items)) { problems.push({ pointer: at, message: "must be { proposal, page_id, decided_at, items }" }); return; }
-    (item.items as unknown[]).forEach((entry, position) => { if (!isRecord(entry) || typeof entry.item_id !== "string" || !["accept", "reject", "defer"].includes(String(entry.decision)) || (entry.decision === "accept" && (typeof entry.proposed !== "string" || entry.proposed === ""))) problems.push({ pointer: `${at}/items/${position}`, message: "must be { item_id, decision, proposed } with the final wording for an accept" }); });
+    (item.items as unknown[]).forEach((entry, position) => {
+      const hex = (value: unknown) => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
+      const wording = isRecord(entry) && entry.decision === "accept";
+      if (!isRecord(entry) || typeof entry.item_id !== "string" || !["accept", "reject", "defer"].includes(String(entry.decision)) || !hex(entry.proposed_hash) || !hex(entry.snapshot_hash) || !hex(entry.base_hash) || (wording && (typeof entry.proposed !== "string" || entry.proposed.trim() === ""))) problems.push({ pointer: `${at}/items/${position}`, message: "must be { item_id, decision, proposed_hash, snapshot_hash, base_hash } with the final wording for an accept" });
+      else if (entry.verified !== undefined && (!isRecord(entry.verified) || !hex(entry.verified.snapshot_hash) || !hex(entry.verified.proposed_hash))) problems.push({ pointer: `${at}/items/${position}/verified`, message: "must be { snapshot_hash, proposed_hash }" });
+    });
   });
   for (const key of ["review_held", "review_revisions"]) (Array.isArray(p[key]) ? p[key] as unknown[] : []).forEach((item, index) => { if (!isRecord(item) || typeof item.proposal !== "string" || typeof item.page_id !== "string" || (key === "review_revisions" && typeof item.item_id !== "string") || (key === "review_held" && typeof item.reason !== "string")) problems.push({ pointer: `/${key}/${index}`, message: "has the wrong shape" }); });
   (Array.isArray(p.create) ? p.create : []).forEach((item, index) => {
@@ -547,6 +552,7 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
   for (const correction of corrections) if (correction.result === "applied") { const note = workspace.get(correction.target); const input = plan.corrections.find((item) => item.target === correction.target && item.field === correction.field); if (note !== undefined && input !== undefined && "property" in input) { const doc = workspace.edit(note); doc.attributes.notion_published = { ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), [String((input as unknown as Record<string, unknown>).property)]: (input as unknown as Record<string, unknown>).notion_value }; workspace.save(note.path, doc); } }
   // Review decisions of the new layout (capture-and-review §7.5 to §7.7), item by item, after the 0045 decisions and before wording.
   const reviewable = plan.review_decisions.filter((item) => !conflictedIds.has(item.proposal) && !conflictedPages.has(item.page_id));
+  const reviewSkipped = plan.review_decisions.filter((item) => !reviewable.includes(item)).flatMap((item) => item.items.map((entry) => ({ proposal: item.proposal, item_id: entry.item_id, decision: entry.decision, result: "skipped", reason: "ROW_CONFLICTED" })));
   const review = recordOnly ? { results: reviewable.flatMap((item) => item.items.map((entry) => ({ proposal: item.proposal, item_id: entry.item_id, decision: entry.decision, result: "skipped", reason: "RECORD_ONLY" }))), log: [] as LogEntry[] } : applyReviewDecisions(workspace, reviewable, now);
   const wording = applyWording(workspace, plan.accepted_wording, now, recordOnly, conflictedIds, conflictedPages);
   const log: LogEntry[] = [
@@ -557,7 +563,7 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
   ];
   updates.push(...skippedUpdates);
   const correctionsOut = [...corrections, ...skippedCorrections] as Array<Record<string, unknown>>; const decisionsOut = [...decisionResult, ...skippedDecisions] as Array<Record<string, unknown>>;
-  return { create, updates, corrections: correctionsOut, decisions: decisionsOut, review_results: review.results, document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, accepted_wording: wording.results, wording_waiting: plan.wording_waiting, wording_held: plan.wording_held, clear_accepted: plan.clear_accepted.filter((item) => !conflictedIds.has(item.note) && !conflictedPages.has(item.page_id) && !updates.some((update) => update.id === item.note && update.result === "failed") && workspace.get(item.note) !== undefined), conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...wording.results, ...updates, ...correctionsOut, ...decisionsOut].map((item) => ({ ...item }))), log };
+  return { create, updates, corrections: correctionsOut, decisions: decisionsOut, review_results: [...review.results, ...reviewSkipped], document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, accepted_wording: wording.results, wording_waiting: plan.wording_waiting, wording_held: plan.wording_held, clear_accepted: plan.clear_accepted.filter((item) => !conflictedIds.has(item.note) && !conflictedPages.has(item.page_id) && !updates.some((update) => update.id === item.note && update.result === "failed") && workspace.get(item.note) !== undefined), conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...wording.results, ...updates, ...correctionsOut, ...decisionsOut, ...review.results, ...reviewSkipped].map((item) => ({ ...item }))), log };
 }
 
 /**

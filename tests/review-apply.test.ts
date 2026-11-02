@@ -177,3 +177,72 @@ test("an edited link names one note; a name that matches none is refused and not
   assert.deepEqual(bad.results.map((r) => r.reason), ["LINK_VALUE_UNKNOWN"]);
   assert.deepEqual(await errors(dir), []);
 });
+
+test("a note deferred twice follows its chain: the second deferral works and nothing is lost", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids } = await published(dir);
+  const first = await submit(dir, id, decide(body, ids[2]!, "Defer"));
+  const b = first.results.find((r) => r.item_id === ids[2])!.deferred_to!;
+  const pageB = "6a7b0000-0000-4000-8000-0000000000bb";
+  const [render] = (await run(dir, ["sync", "render", "--ids", b])).json.data.items;
+  assert.equal((await run(dir, ["sync", "record"], { records: [{ id: b, notion: pageB, synced_at: NOW, published: render.published }] })).json.data.records[0].result, "recorded");
+  const rowB = { database: "review", page_id: pageB, last_edited: AFTER, properties: { "Brain ID": b, State: "Pending" }, review: { decided: true, decided_at: NOW, accept_all: false, page_edited_at: NOW, body_markdown: decide(render.body as string, ids[2]!, "Defer") } };
+  const plan = (await run(dir, ["sync", "plan"], { as_of: AFTER, rows: [rowB] }, AFTER)).json.data;
+  for (const d of plan.review_decisions) for (const item of d.items) item.verified = { snapshot_hash: item.snapshot_hash, proposed_hash: item.proposed_hash };
+  const applied = await run(dir, ["sync", "apply"], plan, AFTER);
+  const result = applied.json.data.review_results[0];
+  assert.equal(result.result, "deferred", applied.stdout);
+  const c = await attributes(dir, await pathOf(dir, result.deferred_to));
+  assert.equal(c.status, "pending");
+  assert.deepEqual(c.items.map((item: any) => item.item_id), [ids[2]], "the item keeps the id it was born with");
+  assert.equal((await attributes(dir, await pathOf(dir, b))).status, "closed");
+  assert.deepEqual(await errors(dir), []);
+});
+
+test("the accepted wording is bound to its hashes: a doctored plan applies nothing", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids } = await published(dir);
+  const page = decide(body, ids[0]!, "Accept");
+  const forged = await submit(dir, id, page, (plan) => { plan.review_decisions[0].items[0].proposed = "HACKED"; plan.review_decisions[0].items[0].edited = true; });
+  assert.deepEqual(forged.results.map((r) => r.reason), ["WORDING_NOT_BOUND"]);
+  const blank = await submit(dir, id, page, (plan) => { plan.review_decisions[0].items[0].proposed = "   "; });
+  assert.equal(blank.applied.json.error.code, "INPUT_INVALID", "blank wording is refused by the plan check");
+  const stripped = await submit(dir, id, page, (plan) => { const item = plan.review_decisions[0].items[0]; delete item.snapshot_hash; delete item.proposed_hash; item.verified = {}; item.proposed = "FORGED"; });
+  assert.equal(stripped.applied.json.error.code, "INPUT_INVALID");
+  const nulled = await submit(dir, id, page, (plan) => { plan.review_decisions[0].items[0].verified = null; });
+  assert.equal(nulled.applied.json.error.code, "INPUT_INVALID");
+  assert.equal((await attributes(dir, "projects/acme-website/project.md")).facts.launch_date, "2027-02", "nothing was written");
+  // Whether the user edited is read from the hashes, not from a flag in the plan.
+  const edited = await submit(dir, id, page.replace("2027-03", "2027-09"), (plan) => { delete plan.review_decisions[0].items[0].edited; });
+  assert.deepEqual(edited.results.map((r) => r.result), ["applied"]);
+  const entries = ((await attributes(dir, "projects/acme-website/project.md")).timeline as Array<Record<string, any>>).filter((e) => e.field === "launch_date");
+  assert.ok(entries.some((e) => e.value === "2027-09" && e.source === `user-correction:${id}`), "the edit is attributed to the user");
+});
+
+test("two accepted additions to one note both apply", async (context) => {
+  const dir = await fixtureCopy(context);
+  const created = await run(dir, ["proposal", "new"], { proposals: [
+    { kind: "review_notes", source: SYNC, notes: [] },
+    { kind: "add_to_note", title: "A", target: CONCEPT, content: "First addition.", why: "w", source: SYNC },
+    { kind: "add_to_note", title: "B", target: CONCEPT, content: "Second addition.", why: "w", source: SYNC },
+  ] });
+  const id = created.json.data.created[0].id as string;
+  const [item] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  await run(dir, ["sync", "record"], { records: [{ id, notion: PAGE, synced_at: NOW, published: item.published }] });
+  const ids = [...(item.body as string).matchAll(/^## \[[a-z]+ · (it-[0-9a-z]{8})\]/gm)].map((m) => m[1]!);
+  const { results } = await submit(dir, id, decide(decide(item.body as string, ids[0]!, "Accept"), ids[1]!, "Accept"));
+  assert.deepEqual(results.map((r) => r.result), ["applied", "applied"]);
+  const text = await readFile(join(dir, await pathOf(dir, CONCEPT)), "utf8");
+  assert.ok(text.includes("First addition.") && text.includes("Second addition."));
+  assert.equal((await attributes(dir, await pathOf(dir, id))).status, "applied");
+});
+
+test("a draft that is no longer a draft is not accepted, and no decision is recorded", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids, draft } = await published(dir);
+  const file = join(dir, draft.path);
+  await writeFile(file, (await readFile(file, "utf8")).replace("lifecycle: draft", "lifecycle: archived"));
+  const { results } = await submit(dir, id, decide(body, ids[2]!, "Accept"));
+  assert.deepEqual(results.map((r) => [r.result, r.reason]), [["skipped", "NOT_A_DRAFT"]]);
+  assert.equal((await attributes(dir, await pathOf(dir, id))).item_decisions, undefined);
+});

@@ -260,7 +260,7 @@ export function lintBrain(input: LintInput): Issue[] {
         const listed = byId.get(String(id));
         if (listed !== undefined && !KNOWLEDGE.has(listed.type)) err("review-notes", lineOfKey(note, "notes"), `${String(id)} is a ${listed.type}, not a knowledge note`);
         // A deferred row lists again the notes the row it came from excluded (0045).
-        const others = (reviewedBy.get(String(id)) ?? []).filter((other) => other !== note.id && !deferredPair(note, byId.get(other), String(id)));
+        const others = (reviewedBy.get(String(id)) ?? []).filter((other) => other !== note.id && !deferredPair(note, byId.get(other), String(id), byId));
         if (others.length > 0) err("review-notes", lineOfKey(note, "notes"), `${String(id)} is also listed by ${others.join(", ")}`);
       }
     }
@@ -386,13 +386,23 @@ function proposalStatusProblem(a: Record<string, unknown>): string | null {
 }
 
 /** A deferred row and the row whose excluded note it took over (spec/schema.md §15, 0045). */
-function deferredPair(note: Note, other: Note | undefined, id: string): boolean {
+function deferredPair(note: Note, other: Note | undefined, id: string, byId: ReadonlyMap<string, Note>): boolean {
   if (other === undefined) return false;
-  // Left out of a 0045 approval ("all except c"), or deferred item by item (capture-and-review §7.6): the note moved to the other proposal.
+  // Left out of a 0045 approval ("all except c"), or deferred item by item (capture-and-review §7.6): the note moved to the proposal that came from it.
   const excluded = (proposal: Note, to: Note) => list(record(proposal.attributes.decision).exclude).some((entry) => record(entry).note === id)
     || list(proposal.attributes.item_decisions).map(record).some((decision) => decision.state === "deferred" && decision.deferred_to === to.id
       && list(proposal.attributes.items).map(record).some((item) => item.item_id === decision.item_id && item.kind === "note" && item.ref === id));
-  return (note.attributes.deferred_from === other.id && excluded(other, note)) || (other.attributes.deferred_from === note.id && excluded(note, other));
+  // A note can be deferred again from the proposal it was deferred to: follow the chain, every hop having moved this note.
+  const descends = (child: Note, ancestor: Note): boolean => {
+    for (let current: Note = child, hops = 0; hops < 50; hops += 1) {
+      const parent = typeof current.attributes.deferred_from === "string" ? byId.get(current.attributes.deferred_from) : undefined;
+      if (parent === undefined || !excluded(parent, current)) return false;
+      if (parent === ancestor) return true;
+      current = parent;
+    }
+    return false;
+  };
+  return descends(note, other) || descends(other, note);
 }
 
 /** Every note id a note's frontmatter references, by the fields lint's `missing-ref` checks, plus `relations` targets and `timeline` sources (spec/cli.md §5.14.3). */
