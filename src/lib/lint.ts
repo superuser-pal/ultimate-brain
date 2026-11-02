@@ -170,7 +170,8 @@ export function lintBrain(input: LintInput): Issue[] {
       const line = bodyStart + index;
       if (raw.includes("[[")) err("wikilink", line, "use a relative Markdown link, not [[wikilinks]] (0002)");
       for (const match of raw.matchAll(/\^\[([^\]]*)\]/g)) {
-        if (match[1] !== "inferred" && match[1] !== "ambiguous") err("unknown-marker", line, `^[${match[1]}] is not a provenance marker (0004)`);
+        // `^[src-…#¶n:hash]` is the passage reference of a claim written from an extract (0055, capture-and-review §5.1).
+        if (match[1] !== "inferred" && match[1] !== "ambiguous" && !/^src-[0-9a-z]{8}#¶\d+:[0-9a-f]{8}$/.test(match[1] ?? "")) err("unknown-marker", line, `^[${match[1]}] is not a provenance marker (0004)`);
       }
       for (const target of linkTargets(raw)) {
         if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) continue;
@@ -271,6 +272,7 @@ export function lintBrain(input: LintInput): Issue[] {
         if (reference?.type === "reference" && reference.attributes.origin === "promoted") err("update-body", lineOfKey(note, a.kind === "update_body" ? "target" : "changes"), `update_body targets ${reference.id}, a promoted Document, whose body is yours (0049)`);
       }
     }
+    if (note.type === "proposal" && a.item_decisions !== undefined && !Array.isArray(a.items)) err("proposal-items", lineOfKey(note, "item_decisions"), "item_decisions without items: a decision needs an item to name");
     if (note.type === "proposal" && Array.isArray(a.items)) {
       // The items of a review_notes: one immutable id per note, link and change, each resolving (capture-and-review §7.2).
       const notes = list(a.notes).map(String), links = list(a.links), changes = list(a.changes);

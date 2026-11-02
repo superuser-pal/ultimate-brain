@@ -153,11 +153,12 @@ export function stageProposals(
       // Every independently decidable item gets an immutable id now, in the order the row lists them: changes, notes, links (spec/schema.md §11.3).
       const taken = new Set<string>();
       const links = review.links.map(({ fields }) => ({ target: fields.target, field: fields.field, value: fields.after }));
+      const fresh = () => { const id = generateItemId(taken); taken.add(id); return id; };
       const items = [
-        ...changes.map((_, index) => ({ item_id: generateItemId(taken), kind: "change", ref: index })),
-        ...notes.map((note) => ({ item_id: generateItemId(taken), kind: "note", ref: note })),
-        ...links.map((_, index) => ({ item_id: generateItemId(taken), kind: "link", ref: index })),
-      ].map((item) => { taken.add(item.item_id); return item; });
+        ...changes.map((_, index) => ({ item_id: fresh(), kind: "change", ref: index })),
+        ...notes.map((note) => ({ item_id: fresh(), kind: "note", ref: note })),
+        ...links.map((_, index) => ({ item_id: fresh(), kind: "link", ref: index })),
+      ];
       const fields: Record<string, unknown> = {
         kind: "review_notes",
         title: review.item.title ?? reviewTitle(workspace, source, changes.length, notes.length, review.links.length),
