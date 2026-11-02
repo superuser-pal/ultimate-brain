@@ -109,6 +109,11 @@ export class Workspace {
       .sort(compareCodePoints);
   }
 
+  /** The staged content of a path (what `commit` will write), or undefined when nothing is staged there. */
+  stagedContent(path: string): string | undefined {
+    return this.staged.get(path)?.content;
+  }
+
   /** Paths with staged writes, sorted. */
   get changedPaths(): string[] {
     return [...this.staged.keys()].sort(compareCodePoints);

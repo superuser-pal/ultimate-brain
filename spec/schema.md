@@ -178,6 +178,7 @@ A work or life context that groups Areas; distinct from an Org.
 |---|---|---|---|
 | `date` | date | ✔ | brain |
 | `assessment` | enum §8 | ✔ | brain |
+| `passage` | `src-…#¶n:<8 hex>` | | the passage of a selected extract the entry rests on (0055, capture-and-review §5.1); present on a claim written from an extract |
 | `decided_in` | ID (`mtg-`) | | brain |
 | `deciders` | list of IDs (`per-`) | | brain |
 | `valid_from` | date | | brain; defaults to `date` when absent (0005) |
@@ -233,6 +234,12 @@ Immutable snapshot of input. **Its body and the fields above `summary` in the ta
 | `repo_path` | the file's path in that repo, forward slashes | as `repo` |
 | `commit` | the full commit hash (40 hex) the file was read at | as `repo` |
 | `attached_to` | the `src-` id of the Inbox row's or meeting's source this file was attached to in Notion (0042) | only with a `file:` key; must name an existing source without `attached_to` |
+| `extract` | `true` on a selected extract of a Notion input: the body holds only the selected paragraphs (0055, [capture-and-review.md](capture-and-review.md) §4.5) | |
+| `extract_of` | the Notion page id of the full input; the full text stays in Notion | ✔ with `extract` |
+| `extract_version` | integer ≥ 1; a new version `replaces` the one before | ✔ with `extract` |
+| `transcript_hash` | sha256 hex (64) of the normalized transcript paragraphs | ✔ with `extract` |
+| `selection` | list of `{id, effective, explicit}` for every subject and item; `effective` and `explicit` are `use` or `meeting only`, `explicit` also `null` | ✔ with `extract` |
+| `passages` | list of `{n, hash, items}` for each paragraph in the body: its number, an 8-hex check hash and the item ids that cite it | ✔ with `extract` |
 | `replaces` | the `src-` id of the earlier version of this input: a corrected meeting or Inbox row read again, or a new version of a document (0045) | must name an existing source that no other source replaces |
 | `only_keep` | string: what the user asked to keep as a Document when only part ("the requirements table and the deadlines"), from the Inbox row's Only keep, the drop folder's question or the user's words (0049). Absent = the whole input, when a Document is asked for at all | only on a `document`, `email`, `chat` or `note` source, attached files included (an attached file takes its row's Only keep) |
 | `keep` | the same, written before 0.6.0 (0045); read as `only_keep`. Never written again | as `only_keep` |

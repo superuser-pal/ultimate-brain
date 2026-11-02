@@ -7,6 +7,9 @@ import { buildIndex } from "./index-builder.ts";
 import { compareCodePoints, type Note, type ScanProblem } from "./notes.ts";
 import { rangesProblem, splitParts } from "./parts.ts";
 import { sourceFolder } from "./paths.ts";
+import { extractPassages, PASSAGE_REF, passageHash } from "./selection.ts";
+import { lineageOf } from "./eligibility.ts";
+import { contextFor, eligibleNotes, indexNotes, loadSuppressions } from "./suppressions.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
 
@@ -80,6 +83,7 @@ export function lintBrain(input: LintInput): Issue[] {
   const add = (severity: Severity, rule: string, path: string, line: number, id: string | null, message: string) =>
     issues.push({ severity, rule, path, line, id, message });
 
+  for (const message of loadSuppressions(input.root).problems) add("error", "suppression-record", "_suppressions", 1, null, message);
   for (const problem of input.problems) {
     if (problem.code === "NOT_A_NOTE") add("error", "not-a-note", problem.path, 1, null, problem.message);
     if (problem.code === "UNPARSEABLE" || problem.code === "UNREADABLE") add("error", "unparseable", problem.path, 1, null, problem.message);
@@ -89,6 +93,8 @@ export function lintBrain(input: LintInput): Issue[] {
     add("error", "brain-config", "brain.json", 1, null, describeErrors(schemas.brain.errors).join("; "));
   }
 
+  let lineageContext: ReturnType<typeof contextFor> | undefined;
+  let viewNotes: Note[] | undefined; // the notes a view may render once suppressions apply (capture-and-review §5.1)
   const byId = new Map<string, Note>();
   const pathsById = new Map<string, string[]>();
   for (const note of input.notes) {
@@ -189,7 +195,8 @@ export function lintBrain(input: LintInput): Issue[] {
       const project = byId.get(String(a.view_kind === "area_brief" ? a.area : a.project));
       const range = generatedBlockRange(note.body);
       if (project?.type === (a.view_kind === "area_brief" ? "area" : "project") && range !== undefined) {
-        const derived = deriveView(project, a.view_kind as ViewKind, input.notes);
+        viewNotes ??= eligibleNotes(input.notes, loadSuppressions(input.root));
+        const derived = deriveView(project, a.view_kind as ViewKind, viewNotes);
         const generatedFrom = Array.isArray(a.generated_from) ? a.generated_from : [];
         if (note.body.slice(range.start, range.end) !== derived.generatedBlock || !sameStringList(generatedFrom, derived.generatedFrom)) {
           warn("view-stale", 1, "generated block is out of date; run brain views");
@@ -274,6 +281,41 @@ export function lintBrain(input: LintInput): Issue[] {
       const others = (replacedBy.get(a.replaces) ?? []).filter((other) => other !== note.id);
       if (others.length > 0) err("source-replaces", lineOfKey(note, "replaces"), `${a.replaces} is also replaced by ${others.join(", ")}`);
     }
+    if (note.type === "source" && a.extract === true) {
+      // The passages list and the body's markers agree, and each check hash matches its paragraph (capture-and-review §4.5).
+      const found = extractPassages(note.body);
+      const listed = list(a.passages) as { n?: number; hash?: string }[];
+      if (found.map((entry) => entry.n).join() !== listed.map((entry) => entry.n).join()) err("extract-passages", lineOfKey(note, "passages"), "passages does not list the paragraphs of the body, in order");
+      for (const entry of found) {
+        const hash = listed.find((candidate) => candidate.n === entry.n)?.hash;
+        if (hash !== undefined && hash !== passageHash(entry.text)) err("extract-passages", lineOfKey(note, "passages"), `¶${entry.n} no longer matches its hash; extracts are immutable`);
+      }
+    }
+    if (note.type !== "source" && note.type !== "proposal" && note.type !== "view") {
+      // A source whose input cannot be determined (a meeting with no source, a source chain with no key) is a data defect:
+      // it is never live while any suppression is active (capture-and-review §5.1).
+      lineageContext ??= contextFor(input.notes, { suppressions: [] });
+      for (const id of list(a.sources).map(String)) {
+        const cited = byId.get(id);
+        if ((cited?.type === "source" || cited?.type === "meeting") && lineageOf(id, lineageContext.sources) === null) warn("unknown-lineage", lineOfKey(note, "sources"), `${id} has no determinable input (no source_key, extract_of or source)`);
+      }
+    }
+    if (note.type !== "source" && note.type !== "proposal") {
+      // A passage reference names an existing extract passage with the right hash; a note citing an extract carries one (§5.1).
+      const cited = new Set<string>();
+      for (const match of note.body.matchAll(PASSAGE_REF)) {
+        const [, id, n, hash] = match;
+        cited.add(id ?? "");
+        const target = byId.get(id ?? "");
+        if (target === undefined) continue; // a missing id is reported as missing-ref where it is declared
+        const entry = target.attributes.extract === true ? list(target.attributes.passages).find((candidate) => (candidate as { n?: number }).n === Number(n)) as { hash?: string } | undefined : undefined;
+        if (entry === undefined) err("passage-ref", 1, `${id}#¶${n} is not a passage of an extract`);
+        else if (entry.hash !== hash) err("passage-ref", 1, `${id}#¶${n} has the hash ${entry.hash}, not ${hash}`);
+      }
+      for (const source of list(a.sources).map(String)) {
+        if (byId.get(source)?.attributes.extract === true && !cited.has(source)) err("passage-ref", lineOfKey(note, "sources"), `${source} is an extract: cite its passages with ^[${source}#¶n:hash]`);
+      }
+    }
     if (note.type === "source" && Array.isArray(a.notion_parts)) {
       const problem = rangesProblem(a.notion_parts, splitParts(note.body).parts.length);
       if (problem !== null) err("notion-parts", lineOfKey(note, "notion_parts"), problem);
@@ -288,7 +330,7 @@ export function lintBrain(input: LintInput): Issue[] {
     }
   }
 
-  if (input.indexMarkdown !== undefined && input.indexMarkdown !== buildIndex(input.notes).markdown) {
+  if (input.indexMarkdown !== undefined && input.indexMarkdown !== buildIndex(indexNotes(input.notes, loadSuppressions(input.root))).markdown) {
     add("warning", "index-stale", "index.md", 1, null, "index.md is out of date; run brain index");
   }
 
