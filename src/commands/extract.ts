@@ -7,6 +7,8 @@ import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
 import { assertCleanTree, commitWithOp, newOpId, recoverAll, removeJournal, sha, writeJournal, type JournalEntry } from "../lib/journal.ts";
 import { assertNoProblems } from "../lib/input.ts";
 import { checkNoteInput, stageNotes, type NoteInput } from "../lib/note-new.ts";
+import { loadSuppressions } from "../lib/suppressions.ts";
+import { stageViews, viewTargets } from "../lib/views-write.ts";
 import { Workspace } from "../lib/workspace.ts";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -58,21 +60,27 @@ export const sourceExtractCommand: Command = {
     // The suppression record: appended exactly when something is suppressed or for a full-copy transition (cli §5.23).
     const suppressionPath = `_suppressions/${page}.json`;
     let suppression: string | null = null;
+    let appended: Record<string, unknown> | undefined;
     if (plan.previous !== undefined && (plan.previous.suppressed.length > 0 || plan.previous.kind === "full")) {
       let existing: { input: string; records: unknown[] } = { input: page, records: [] };
       try { existing = JSON.parse(await readFile(`${brain!.root}/${suppressionPath}`, "utf8")); } catch { /* none yet */ }
       const oldHash = previous?.attributes.transcript_hash;
-      existing.records.push({
+      appended = {
         version, written: now.toISOString().replace(/\.\d{3}Z$/, "Z"),
         passages: plan.previous.suppressed.map((n) => ({ extract_of: page, transcript_hash: String(oldHash), n })),
         full_copies: plan.previous.full_copies, status: "active",
-      });
+      };
+      existing.records.push(appended);
       suppression = `${JSON.stringify(existing, null, 2)}\n`;
     }
 
+    // The regenerated views render only eligible evidence, in the same operation (capture-and-review §5.1).
+    const suppressions = [...loadSuppressions(brain!.root).suppressions, ...(appended === undefined ? [] : [{ ...(appended as object), input: page } as never])];
+    const views = stageViews(workspace, viewTargets(workspace.notes.filter((note) => note.type === "project"), workspace.notes.filter((note) => note.type === "area")), now, false, suppressions);
+    if (views.errors.length > 0) throw new BrainError("INPUT_INVALID", `A view has invalid markers: ${views.errors.map((entry) => entry.path).join(", ")}`);
     const errors = workspace.newErrors(workspace.changedPaths);
     if (errors.length > 0) throw new BrainError("INPUT_INVALID", `The extract fails lint: ${errors.map((issue) => `${issue.rule}: ${issue.message}`).join("; ")}`);
-    const data = { result: "WRITTEN", created: [created.id], path: created.path, suppression: suppression === null ? null : suppressionPath, views: [] as string[], version };
+    const data = { result: "WRITTEN", created: [created.id], path: created.path, suppression: suppression === null ? null : suppressionPath, views: [...views.created, ...views.written], version };
     if (args.options["dry-run"] === true) return { data: { ...data, result: "DRY_RUN" }, human: "dry run: nothing written\n" };
 
     await assertCleanTree(brain!.root);

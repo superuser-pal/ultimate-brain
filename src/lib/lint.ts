@@ -8,6 +8,7 @@ import { compareCodePoints, type Note, type ScanProblem } from "./notes.ts";
 import { rangesProblem, splitParts } from "./parts.ts";
 import { sourceFolder } from "./paths.ts";
 import { extractPassages, PASSAGE_REF, passageHash } from "./selection.ts";
+import { eligibleNotes, loadSuppressions } from "./suppressions.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
 
@@ -90,6 +91,7 @@ export function lintBrain(input: LintInput): Issue[] {
     add("error", "brain-config", "brain.json", 1, null, describeErrors(schemas.brain.errors).join("; "));
   }
 
+  let viewNotes: Note[] | undefined; // the notes a view may render once suppressions apply (capture-and-review §5.1)
   const byId = new Map<string, Note>();
   const pathsById = new Map<string, string[]>();
   for (const note of input.notes) {
@@ -190,7 +192,8 @@ export function lintBrain(input: LintInput): Issue[] {
       const project = byId.get(String(a.view_kind === "area_brief" ? a.area : a.project));
       const range = generatedBlockRange(note.body);
       if (project?.type === (a.view_kind === "area_brief" ? "area" : "project") && range !== undefined) {
-        const derived = deriveView(project, a.view_kind as ViewKind, input.notes);
+        viewNotes ??= eligibleNotes(input.notes, loadSuppressions(input.root).suppressions);
+        const derived = deriveView(project, a.view_kind as ViewKind, viewNotes);
         const generatedFrom = Array.isArray(a.generated_from) ? a.generated_from : [];
         if (note.body.slice(range.start, range.end) !== derived.generatedBlock || !sameStringList(generatedFrom, derived.generatedFrom)) {
           warn("view-stale", 1, "generated block is out of date; run brain views");
