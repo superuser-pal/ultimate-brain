@@ -190,7 +190,7 @@ export function stageNotes(
       const duplicateByKey =
         attributes.replaces === undefined && typeof sourceKey === "string" && (sourceKey.startsWith("file:") || attributes.kind === "capture");
       const duplicate = workspace.notes.find((note) =>
-        note.type === "source" && (note.attributes.content_hash === hash || (duplicateByKey && note.attributes.source_key === sourceKey)),
+        attributes.extract !== true && note.type === "source" && (note.attributes.content_hash === hash || (duplicateByKey && note.attributes.source_key === sourceKey)),
       );
       if (duplicate !== undefined) {
         result.skipped.push({ input_index: index, reason: "DUPLICATE_SOURCE", existing: duplicate.id });

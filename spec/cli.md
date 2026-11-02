@@ -14,7 +14,7 @@ The CLI does the **deterministic** work: IDs, file writes, validation, index, vi
 
 Rules for every command:
 - **No network.** The CLI never calls Notion or any other service. Notion data enters only as JSON files written by a skill.
-- **No Git, except `init`, `upgrade` and `repo`.** Commands write files; the skill commits. `init` creates the repository and its first commit, `upgrade` commits its own files (§5.15), and `repo` reads a linked repo with read-only Git commands (§5.16, 0042).
+- **No Git, except `init`, `upgrade`, `repo`, `source extract` and `recover`.** Commands write files; the skill commits. `source extract` and `recover` commit and restore their own journaled files (§5.23, §5.24). `init` creates the repository and its first commit, `upgrade` commits its own files (§5.15), and `repo` reads a linked repo with read-only Git commands (§5.16, 0042).
 - **No LLM.** Same input and same brain give the same output, except for new random IDs and the clock (see `--now`).
 - **Writes only inside the brain**, except `init` (the new brain folder, and the global config file with `--set-default`) and `link` (three files in the target repo).
 
@@ -140,6 +140,8 @@ Failure:
 | `WRITE_CONFLICT` | 5 | a file appeared at a path the command was creating, after it read the brain (another writer). Nothing is kept (§3.6); re-run the command |
 | `CLAUDE_NOT_FOUND` | 3 | `schedule install` found no `claude` executable on `PATH` to schedule (0051, §5.21) |
 | `SKILL_MISSING` | 3 | `schedule install` for a job whose skill the brain doesn't have (`reflect` before brain-reflect is installed, 0052) |
+| `RECOVERY_NEEDED` | 5 | an interrupted multi-file write left `_journal/<op>.json`: every command except `recover` refuses until `brain recover` ran (capture-and-review §7.11) |
+| `DIRTY_TREE` | 5 | `source extract` found the brain not a Git work tree, or with uncommitted changes and no journal |
 | `INTERNAL` | 10 | unexpected failure |
 
 Batch commands (`note new`, `proposal new`, `apply`, `sync apply`) also report **per-item** results with their own `reason` codes, listed under each command.
@@ -1544,3 +1546,11 @@ A request that asks no question runs as attended: a re-read, a `document_request
 ### Domains (0055)
 
 Domains use `dom-` ids and `domains/<slug>.md`. When Domains is off, sync ignores Domain rows and Area · Domain with `MODULE_OFF`, and render omits them. When on, Area · Domain is a correctable optional single relation: multiple values conflict as `MULTIPLE_DOMAINS` and hold the whole row. Domain · Org follows the Orgs module. Lint checks the types of both relations and reports `DOCUMENT_DOMAIN_MISMATCH` when a Document’s Area and a linked Project’s Area have different Domains.
+
+### 5.24 `brain recover` (0055, capture-and-review §7.11)
+
+```text
+brain recover
+```
+
+Finishes or rolls back each interrupted journaled write, oldest first. For `_journal/<op>.json`: if a commit with the trailer `Op: <op>` exists, the work is kept and only the journal is deleted (`committed`); otherwise each listed path goes back to the last commit (`git checkout -- <path>`), each listed new path is removed, and the journal is deleted last (`restored`, reported as `RECOVERED <op>`). Every step is idempotent, so an interrupted recovery is run again. If a step fails the journal is kept and every command keeps refusing with `RECOVERY_NEEDED`. `data` = `{ recovered: [{ op, action }] }`; an empty list when there is nothing to do.

@@ -1,0 +1,133 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { test, type TestContext } from "node:test";
+
+import { brain, fixtureCopy } from "./helpers.ts";
+
+const NOW = "2026-12-10T09:00:00Z";
+const PAGE = "11111111-2222-4333-8444-555555555555";
+const TRANSCRIPT = "The launch moves to February.\n\nPricing is 95k, keep it between us.\n\nMaria sends the contract on Friday.";
+const SUMMARY = (pricing: "Use in brain" | "Meeting only") => `## [s1] Launch\n- [s1.i1] Launch moves “The launch moves to February”\n\n## [s2] Pricing\nSelection: ${pricing}\n- [s2.i1] Price “keep it between us”\n\n## [s3] Contract\n- [s3.i1] Contract “sends the contract on Friday”\n`;
+
+const git = (dir: string, ...args: string[]) => execFileSync("git", args, { cwd: dir, encoding: "utf8" });
+
+async function gitBrain(context: TestContext) {
+  const dir = await fixtureCopy(context);
+  git(dir, "init", "-q");
+  git(dir, "config", "user.email", "t@example.com");
+  git(dir, "config", "user.name", "T");
+  git(dir, "add", "-A");
+  git(dir, "commit", "-q", "-m", "fixture");
+  return dir;
+}
+
+async function extract(dir: string, summary: string, transcript: string, ...extra: string[]) {
+  await writeFile(join(dir, "..", "s.md"), summary);
+  await writeFile(join(dir, "..", "t.md"), transcript);
+  return brain(["source", "extract", "--page", PAGE, "--title", "Launch sync", "--date", "2026-12-10", "--summary", join(dir, "..", "s.md"), "--transcript", join(dir, "..", "t.md"), "--brain", dir, "--now", NOW, "--json", ...extra]);
+}
+
+test("source extract writes the extract as one committed operation and removes the journal", async (context) => {
+  const dir = await gitBrain(context);
+  const first = await extract(dir, SUMMARY("Meeting only"), TRANSCRIPT);
+  assert.equal(first.code, 0, first.stdout);
+  assert.equal(first.json.data.result, "WRITTEN");
+  assert.equal(first.json.data.version, 1);
+  assert.equal(first.json.data.suppression, null, "a first version suppresses nothing");
+  const file = await readFile(join(dir, first.json.data.path), "utf8");
+  assert.ok(file.includes("Maria sends the contract") && !file.includes("95k"), "only the selected paragraphs");
+  assert.ok(git(dir, "log", "-1", "--format=%B").includes(`Op: ${first.json.data.op}`), "the commit carries the Op trailer");
+  assert.equal(existsSync(join(dir, "_journal")), false, "the journal is gone");
+  assert.equal(git(dir, "status", "--porcelain").trim(), "");
+  assert.equal((await brain(["lint", "--brain", dir, "--json"])).json.data.issues.filter((i: { rule: string }) => i.rule === "extract-passages").length, 0);
+  const again = await extract(dir, SUMMARY("Meeting only"), TRANSCRIPT, "--previous", first.json.data.created[0]);
+  assert.equal(again.json.data.result, "UNCHANGED");
+  assert.equal(git(dir, "log", "--oneline").trim().split("\n").length, 2, "UNCHANGED commits nothing");
+});
+
+test("a later version suppresses removed paragraphs in an append-only record and never edits the earlier record", async (context) => {
+  const dir = await gitBrain(context);
+  const v1 = await extract(dir, SUMMARY("Use in brain"), TRANSCRIPT);
+  assert.equal(v1.code, 0, v1.stdout);
+  const v2 = await extract(dir, SUMMARY("Meeting only"), TRANSCRIPT, "--previous", v1.json.data.created[0]);
+  assert.equal(v2.code, 0, v2.stdout);
+  assert.equal(v2.json.data.version, 2);
+  assert.equal(v2.json.data.suppression, `_suppressions/${PAGE}.json`);
+  const record = JSON.parse(await readFile(join(dir, `_suppressions/${PAGE}.json`), "utf8"));
+  assert.equal(record.records.length, 1);
+  assert.deepEqual(record.records[0].passages.map((p: { n: number }) => p.n), [2]);
+  assert.equal(record.records[0].status, "active");
+  const v3 = await extract(dir, SUMMARY("Meeting only").replace("[s3.i1] Contract “sends the contract on Friday”", "[s3.i1] Contract “The launch moves to February”"), TRANSCRIPT, "--previous", v2.json.data.created[0]);
+  assert.equal(v3.code, 0, v3.stdout);
+  const after = JSON.parse(await readFile(join(dir, `_suppressions/${PAGE}.json`), "utf8"));
+  assert.equal(after.records.length, 2, "the second suppression is appended");
+  assert.deepEqual(after.records[0], record.records[0], "the earlier record is untouched");
+  const status = await brain(["status", "--brain", dir, "--json"]);
+  assert.equal(status.json.data.suppressions.active, 2);
+});
+
+test("a blocked input, a dirty tree and a missing --previous write nothing", async (context) => {
+  const dir = await gitBrain(context);
+  const blocked = await extract(dir, SUMMARY("Meeting only").replace("“keep it between us”", "“not there”"), TRANSCRIPT);
+  assert.equal(blocked.code, 4);
+  assert.equal(git(dir, "status", "--porcelain").trim(), "");
+  await writeFile(join(dir, "stray.txt"), "x");
+  const dirty = await extract(dir, SUMMARY("Meeting only"), TRANSCRIPT);
+  assert.equal(dirty.json.error.code, "DIRTY_TREE");
+  git(dir, "add", "-A");
+  git(dir, "commit", "-q", "-m", "stray");
+  const ok = await extract(dir, SUMMARY("Meeting only"), TRANSCRIPT);
+  assert.equal(ok.code, 0, ok.stdout);
+  const missing = await extract(dir, SUMMARY("Meeting only"), TRANSCRIPT);
+  assert.match(missing.stdout, /PREVIOUS_REQUIRED/);
+});
+
+test("an interrupted write leaves a journal: every command refuses until recover rolls it back", async (context) => {
+  const dir = await gitBrain(context);
+  const tracked = "knowledge/concepts/row-level-security.md";
+  const original = await readFile(join(dir, tracked), "utf8");
+  await writeFile(join(dir, tracked), `${original}\nhalf written\n`);
+  await writeFile(join(dir, "sources/notion/2026-12-10-new.md"), "---\nid: src-halfhalf\n---\n");
+  await mkdir(join(dir, "_journal"), { recursive: true });
+  await writeFile(join(dir, "_journal/op-deadbeef.json"), JSON.stringify({ op: "op-deadbeef", written: NOW, entries: [{ path: tracked, hash: null, new: false }, { path: "sources/notion/2026-12-10-new.md", hash: null, new: true }] }));
+  const refused = await brain(["status", "--brain", dir, "--json"]);
+  assert.equal(refused.json.error.code, "RECOVERY_NEEDED");
+  const recovered = await brain(["recover", "--brain", dir, "--json"]);
+  assert.equal(recovered.code, 0, recovered.stdout);
+  assert.deepEqual(recovered.json.data.recovered, [{ op: "op-deadbeef", action: "restored" }]);
+  assert.equal(await readFile(join(dir, tracked), "utf8"), original);
+  assert.equal(existsSync(join(dir, "sources/notion/2026-12-10-new.md")), false);
+  assert.equal(existsSync(join(dir, "_journal")), false);
+  assert.equal((await brain(["status", "--brain", dir, "--json"])).code, 0);
+  assert.equal((await brain(["recover", "--brain", dir, "--json"])).json.data.recovered.length, 0, "recover is idempotent");
+});
+
+test("recover only clears the journal when the Op commit exists", async (context) => {
+  const dir = await gitBrain(context);
+  const tracked = "knowledge/concepts/row-level-security.md";
+  await writeFile(join(dir, tracked), `${await readFile(join(dir, tracked), "utf8")}\ncommitted\n`);
+  git(dir, "commit", "-q", "-am", "work\n\nOp: op-cafe0001");
+  await mkdir(join(dir, "_journal"), { recursive: true });
+  await writeFile(join(dir, "_journal/op-cafe0001.json"), JSON.stringify({ op: "op-cafe0001", written: NOW, entries: [{ path: tracked, hash: null, new: false }] }));
+  const run = await brain(["recover", "--brain", dir, "--json"]);
+  assert.deepEqual(run.json.data.recovered, [{ op: "op-cafe0001", action: "committed" }]);
+  assert.ok((await readFile(join(dir, tracked), "utf8")).includes("committed"), "committed work is kept");
+});
+
+test("the first extract of an input ingested in full replaces it and restricts its claims through an active record", async (context) => {
+  const dir = await gitBrain(context);
+  const page = "3c4d5e6f-7a8b-4c0d-9e2f-3a4b5c6d7e8f";
+  await writeFile(join(dir, "..", "s.md"), SUMMARY("Meeting only"));
+  await writeFile(join(dir, "..", "t.md"), TRANSCRIPT);
+  const run = await brain(["source", "extract", "--page", page, "--title", "Acme sync", "--date", "2026-12-10", "--summary", join(dir, "..", "s.md"), "--transcript", join(dir, "..", "t.md"), "--previous", "src-7w3c9k5m", "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  assert.equal(run.json.data.version, 1);
+  const record = JSON.parse(await readFile(join(dir, `_suppressions/${page}.json`), "utf8"));
+  assert.deepEqual(record.records[0].full_copies, ["src-7w3c9k5m"]);
+  assert.deepEqual(record.records[0].passages, []);
+  const status = await brain(["status", "--brain", dir, "--json"]);
+  assert.equal(status.json.data.suppressions.active, 1);
+});
