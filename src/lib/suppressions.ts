@@ -29,6 +29,8 @@ export async function loadSuppressions(root: string): Promise<{ suppressions: Su
 export function contextFor(notes: readonly Note[], suppressions: Suppression[], awaitingRestore?: Set<string>): Context {
   const sources = new Map<string, SourceInfo>();
   for (const note of notes) {
+    // A meeting derives from its source: a claim citing the meeting has that source's lineage.
+    if (note.type === "meeting" && typeof note.attributes.source === "string") sources.set(note.id, { id: note.id, replaces: note.attributes.source });
     if (note.type !== "source") continue;
     const a = note.attributes;
     const passages = Array.isArray(a.passages) ? (a.passages as { n: number; hash: string }[]).map((entry) => `${entry.n}:${entry.hash}`) : undefined;
@@ -55,7 +57,8 @@ export function restrictionOf(note: Note, context: Context): Restriction {
   const sources = (Array.isArray(note.attributes.sources) ? note.attributes.sources : []).filter((value): value is string => typeof value === "string");
   const cleared = Array.isArray(note.attributes.lineage_cleared) ? (note.attributes.lineage_cleared as string[]) : [];
   const claim = { entries: [], lineage_cleared: cleared };
-  const lineages = sources.map((id) => lineageOf(id, context.sources));
+  // A source key written in place of an id (`url:…`, `file:…`) is its own input.
+  const lineages = sources.map((id) => context.sources.has(id) || !id.includes(":") ? lineageOf(id, context.sources) : id);
   const required = new Set<string>();
   for (const lineage of lineages) {
     if (lineage === null) for (const input of active) required.add(input);

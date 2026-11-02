@@ -32,6 +32,7 @@ export function lineageOf(id: string, sources: Map<string, SourceInfo>): string 
     if (current.extract_of !== undefined) return current.extract_of;
     const key = NOTION_KEY.exec(current.source_key ?? "");
     if (key !== null) return key[1] ?? null;
+    if (current.source_key !== undefined && current.replaces === undefined) return current.source_key; // a file, url or text source is its own input
   }
   return null;
 }

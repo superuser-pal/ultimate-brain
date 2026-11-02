@@ -105,3 +105,13 @@ test("brain status counts suppressions, restricted notes and unreadable records"
   assert.deepEqual(run.json.data.suppressions.problems, ["_suppressions/broken.json: unreadable"]);
   assert.equal(run.json.data.suppressions.unresolved_lineage, 0, "no fixture note rests on page-a");
 });
+
+test("a file or url source is its own input, and a meeting takes its source's lineage", () => {
+  const map = new Map<string, SourceInfo>([
+    source({ id: "src-file", source_key: "file:sha256:abc" }),
+    source({ id: "mtg-1", replaces: "src-full1" }),
+    ...sources,
+  ]);
+  assert.equal(lineageOf("src-file", map), "file:sha256:abc");
+  assert.equal(lineageOf("mtg-1", map), M1);
+});
