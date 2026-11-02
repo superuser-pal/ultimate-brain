@@ -15,6 +15,8 @@ export interface ReviewItem {
   held: boolean;
   /** `proposed_hash` is over the canonical proposed text (what a parser reads back after `unescapeSection`); `base_hash` over what it was proposed against. */
   proposed_hash: string; base_hash: string;
+  /** What the target holds in Git now, hashed the same way: a plan compares it with the `base_hash` recorded at render (a difference is `base_changed`, §7.5). */
+  current_base_hash: string;
   target: Note | undefined; section: string; rendered_hash: string;
 }
 
@@ -86,31 +88,31 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
   const stored = (Array.isArray(a.items) ? a.items : []).filter(record);
   stored.forEach((entry, index) => {
     const itemId = String(entry.item_id);
-    let item: Pick<ReviewItem, "kind" | "heading" | "current" | "proposed" | "editable" | "why" | "effect" | "target" | "held"> & { base: string };
+    let item: Pick<ReviewItem, "kind" | "heading" | "current" | "proposed" | "editable" | "why" | "effect" | "target" | "held"> & { base: string; now: string };
     if (entry.kind === "note") {
       const view = seen(workspace.get(String(entry.ref)));
-      item = { kind: "creates", heading: `Creates: ${titleOf(entry.ref, workspace)}`, current: null, proposed: canon(view.body), editable: true, why: String(a.why ?? ""), effect: EFFECT.creates!, target: view.note, held: view.held, base: base(view.note !== undefined, bodyHash(workspace.get(String(entry.ref))?.body ?? "")) };
+      item = { kind: "creates", heading: `Creates: ${titleOf(entry.ref, workspace)}`, current: null, proposed: canon(view.body), editable: true, why: String(a.why ?? ""), effect: EFFECT.creates!, target: view.note, held: view.held, base: base(view.note !== undefined, bodyHash(workspace.get(String(entry.ref))?.body ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(entry.ref))?.body ?? "")) };
     } else if (entry.kind === "link") {
       const link = links[Number(entry.ref)] ?? {};
       const view = seen(typeof link.target === "string" ? workspace.get(link.target) : undefined);
       const field = String(link.field);
       const values = view.note !== undefined && Array.isArray(view.note.attributes[field]) ? (view.note.attributes[field] as unknown[]) : [];
       const current = values.map((value) => titleOf(value, workspace)).join(", ");
-      item = { kind: "changes", heading: `Changes: ${titleOf(link.target, workspace)}`, current: `${label(field)}: ${current || "(none)"}`, proposed: canon(titleOf(link.value, workspace)), editable: true, why: String(a.why ?? ""), effect: EFFECT.add_link!, target: view.note, held: view.held, base: base(view.note !== undefined, [...values.map(String)].sort()) };
+      item = { kind: "changes", heading: `Changes: ${titleOf(link.target, workspace)}`, current: `${label(field)}: ${current || "(none)"}`, proposed: canon(titleOf(link.value, workspace)), editable: true, why: String(a.why ?? ""), effect: EFFECT.add_link!, target: view.note, held: view.held, base: base(view.note !== undefined, [...values.map(String)].sort()), now: base(view.note !== undefined, [...values.map(String)].sort()) };
     } else {
       const change = changes[Number(entry.ref)] ?? {};
       const view = seen(typeof change.target === "string" ? workspace.get(change.target) : undefined);
       const targetTitle = titleOf(change.target, workspace);
       const why = String(change.why ?? a.why ?? "");
       if (change.kind === "update_fact") {
-        item = { kind: "changes", heading: `Changes: ${label(String(change.field))} on ${targetTitle}`, current: change.before === undefined ? "(new)" : String(change.before), proposed: canon(String(change.after ?? "")), editable: true, why, effect: EFFECT.update_fact!, target: view.note, held: view.held, base: base(view.note !== undefined, change.before === undefined ? null : String(change.before)) };
+        item = { kind: "changes", heading: `Changes: ${label(String(change.field))} on ${targetTitle}`, current: change.before === undefined ? "(new)" : String(change.before), proposed: canon(String(change.after ?? "")), editable: true, why, effect: EFFECT.update_fact!, target: view.note, held: view.held, base: base(view.note !== undefined, change.before === undefined ? null : String(change.before)), now: base(view.note !== undefined, (() => { const facts = view.note?.attributes.facts; const value = facts !== null && typeof facts === "object" ? (facts as Record<string, unknown>)[String(change.field)] : undefined; return value === undefined ? null : String(value); })()) };
       } else if (change.kind === "update_body") {
         const existing = canon(view.body);
         const lines = view.note === undefined ? 0 : lineDiff(view.note.body, String(change.content ?? "")).length;
-        item = { kind: "changes", heading: `Changes: ${targetTitle}`, current: `${lines} line${lines === 1 ? "" : "s"} change. The text now in the note:\n${existing === "" ? "(empty)" : existing}`, proposed: canon(String(change.content ?? "")), editable: true, why, effect: EFFECT.update_body!, target: view.note, held: view.held, base: base(view.note !== undefined, String(change.before_hash ?? "")) };
+        item = { kind: "changes", heading: `Changes: ${targetTitle}`, current: `${lines} line${lines === 1 ? "" : "s"} change. The text now in the note:\n${existing === "" ? "(empty)" : existing}`, proposed: canon(String(change.content ?? "")), editable: true, why, effect: EFFECT.update_body!, target: view.note, held: view.held, base: base(view.note !== undefined, String(change.before_hash ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")) };
       } else {
         const tail = canon(view.body).split("\n").filter((line) => line !== "").slice(-5).join("\n");
-        item = { kind: "changes", heading: `Changes: ${targetTitle}`, current: `The end of the note now (the text is appended after it):\n${tail === "" ? "(empty)" : tail}`, proposed: canon(String(change.content ?? "")), editable: true, why, effect: EFFECT.add_to_note!, target: view.note, held: view.held, base: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")) };
+        item = { kind: "changes", heading: `Changes: ${targetTitle}`, current: `The end of the note now (the text is appended after it):\n${tail === "" ? "(empty)" : tail}`, proposed: canon(String(change.content ?? "")), editable: true, why, effect: EFFECT.add_to_note!, target: view.note, held: view.held, base: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")) };
       }
     }
     const letter = itemLetter(index);
@@ -130,7 +132,7 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
         `**What Accept does:** ${item.effect}`,
         "Decision: Pending",
       ]).join("\n");
-    result.push({ item_id: itemId, letter, kind: item.kind, heading: item.heading, current: item.held ? null : item.current, proposed: item.held ? "" : item.proposed, editable: !item.held && item.editable, why: whyLine, effect: item.held ? EFFECT.held! : item.effect, held: item.held, target: item.target, proposed_hash: sha(item.held ? "" : item.proposed), base_hash: sha(item.base), section, rendered_hash: sha(section) });
+    result.push({ item_id: itemId, letter, kind: item.kind, heading: item.heading, current: item.held ? null : item.current, proposed: item.held ? "" : item.proposed, editable: !item.held && item.editable, why: whyLine, effect: item.held ? EFFECT.held! : item.effect, held: item.held, target: item.target, proposed_hash: sha(item.held ? "" : item.proposed), base_hash: sha(item.base), current_base_hash: sha(item.now), section, rendered_hash: sha(section) });
   });
   return result;
 }
@@ -162,3 +164,61 @@ export function renderReview(proposal: Note, workspace: Workspace): ReviewRender
   const body = [FIRST_USE, "", "## Review summary", summary, "", ...items.flatMap((item) => [item.section, ""])].join("\n").replace(/\n+$/, "\n");
   return { items, body, summary, summary_hash: `sha256:${sha(summary)}` };
 }
+
+// ── Reading the page back (capture-and-review §7.3) ──────────────────────────────────────────────
+
+export const DECISIONS = ["pending", "accept", "reject", "defer", "request revision"] as const;
+export type Token = (typeof DECISIONS)[number];
+
+export interface ParsedSection {
+  item_id: string;
+  /** The Proposed toggle's children, unescaped and canonical; null when the toggle is missing or holds a block the skill could not convert. */
+  proposed: string | null;
+  /** The `Decision:` token, or null when the line is missing or is not one of the five (UNREADABLE). */
+  decision: Token | null;
+  decision_text: string | null;
+  revision_request: string | null;
+  /** The section as read, canonical: what `snapshot_hash` is over. */
+  section: string;
+  /** More than one section carries this id, so none of them can be trusted. */
+  duplicate: boolean;
+}
+
+/** A block the skill could not turn into Markdown (cli §5.14.7); inside the Proposed toggle it makes the item UNREADABLE. */
+export const UNCONVERTIBLE = "<!-- unconvertible block -->";
+
+/** Split a Review page into its item sections and read each (the inverse of `renderReview`). Sections are located by the `## [letter · it-id]` heading only. */
+export function parseReviewPage(markdown: string): Map<string, ParsedSection> {
+  const lines = markdown.replace(/\r\n?/g, "\n").split("\n");
+  const heads: Array<{ index: number; id: string }> = [];
+  lines.forEach((line, index) => { const match = /^## \[[a-z]+ · (it-[0-9a-z]{8})\]/.exec(line); if (match !== null) heads.push({ index, id: match[1]! }); });
+  const result = new Map<string, ParsedSection>();
+  heads.forEach((head, position) => {
+    const block = lines.slice(head.index, position + 1 < heads.length ? heads[position + 1]!.index : lines.length);
+    const opened = block.findIndex((line, index) => /^<details>\s*$/.test(line.trim()) && /^<summary>\s*Proposed final wording\s*<\/summary>\s*$/i.test((block[index + 1] ?? "").trim()));
+    let proposed: string | null = null;
+    let after = block;
+    if (opened >= 0) {
+      const closed = block.findIndex((line, index) => index > opened + 1 && line.trim() === "</details>");
+      if (closed > opened) {
+        const children = block.slice(opened + 2, closed).join("\n");
+        proposed = children.includes(UNCONVERTIBLE) ? null : canon(unescapeSection(children));
+        after = block.slice(closed + 1);
+      }
+    }
+    // The Decision and Revision lines are read outside the toggle, so proposed text can never set them.
+    const decisionLine = after.find((line) => /^\s*Decision:/i.test(line));
+    const text = decisionLine === undefined ? null : decisionLine.replace(/^\s*Decision:\s*/i, "").trim();
+    const normalized = text === null ? null : text.replace(/\s+/g, " ").toLowerCase();
+    const decision = normalized !== null && (DECISIONS as readonly string[]).includes(normalized) ? (normalized as Token) : null;
+    const revisionLine = after.find((line) => /^\s*Revision request:/i.test(line));
+    const revision = revisionLine === undefined ? null : revisionLine.replace(/^\s*Revision request:\s*/i, "").trim();
+    const entry: ParsedSection = { item_id: head.id, proposed, decision, decision_text: text, revision_request: revision === "" ? null : revision, section: canon(block.join("\n")), duplicate: result.has(head.id) };
+    if (result.has(head.id)) result.get(head.id)!.duplicate = true;
+    if (!result.has(head.id)) result.set(head.id, entry);
+  });
+  return result;
+}
+
+export const sectionHash = (section: string): string => sha(canon(section));
+export const textSha = sha;
