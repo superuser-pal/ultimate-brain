@@ -150,13 +150,13 @@ export function stageProposals(
       const source = String(review.item.source);
       // Changes are stored in render order: every update_fact, then update_body, then add_to_note (spec/schema.md §11.3).
       const changes = [...review.changes].sort((a, b) => CHANGE_KINDS.indexOf(String(a.change.kind)) - CHANGE_KINDS.indexOf(String(b.change.kind)) || a.index - b.index);
-      // Every independently decidable item gets an immutable id now, in render order: notes, links, changes (capture-and-review §7.2).
+      // Every independently decidable item gets an immutable id now, in the order the row lists them: changes, notes, links (spec/schema.md §11.3).
       const taken = new Set<string>();
       const links = review.links.map(({ fields }) => ({ target: fields.target, field: fields.field, value: fields.after }));
       const items = [
+        ...changes.map((_, index) => ({ item_id: generateItemId(taken), kind: "change", ref: index })),
         ...notes.map((note) => ({ item_id: generateItemId(taken), kind: "note", ref: note })),
         ...links.map((_, index) => ({ item_id: generateItemId(taken), kind: "link", ref: index })),
-        ...changes.map((_, index) => ({ item_id: generateItemId(taken), kind: "change", ref: index })),
       ].map((item) => { taken.add(item.item_id); return item; });
       const fields: Record<string, unknown> = {
         kind: "review_notes",

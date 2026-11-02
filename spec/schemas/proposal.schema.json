@@ -416,7 +416,7 @@
       }
     },
     "items": {
-      "description": "review_notes only (0055, capture-and-review §7.2): the independently decidable items, in render order (notes, links, changes). `item_id` is immutable. Absent on a proposal written before 0.8.0, which keeps the 0045 behavior (§7.9).",
+      "description": "review_notes only (0055, capture-and-review §7.2): the independently decidable items, in the order the Review row lists them (changes, notes, links; spec/schema.md §11.3). `item_id` is immutable. Absent on a proposal written before 0.8.0, which keeps the 0045 behavior (§7.9).",
       "type": "array",
       "minItems": 1,
       "items": {
