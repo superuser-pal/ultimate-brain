@@ -155,3 +155,22 @@ test("Tasks are bound to the item that authorized them, carried to the next vers
   assert.equal(v2.code, 0, v2.stdout);
   assert.ok((await readFile(join(dir, v2.json.data.path), "utf8")).includes("s3.i1: 6a7b0000-0000-4000-8000-000000000001"), "task_items is carried forward");
 });
+
+test("views leave out notes resting on a suppressed input, and the writer regenerates them in the same operation", async (context) => {
+  const dir = await gitBrain(context);
+  const page = "3c4d5e6f-7a8b-4c0d-9e2f-3a4b5c6d7e8f";
+  const before = await brain(["views", "--check", "--brain", dir, "--json"]);
+  assert.equal(before.code, 0, "views start current");
+  const log = "projects/acme-website/decision-log.md";
+  const logBefore = await readFile(join(dir, log), "utf8");
+  assert.ok(logBefore.includes("Use Firebase for auth") && logBefore.includes("Use Supabase for auth"));
+  await writeFile(join(dir, "..", "s.md"), SUMMARY("Meeting only"));
+  await writeFile(join(dir, "..", "t.md"), TRANSCRIPT);
+  const run = await brain(["source", "extract", "--page", page, "--title", "Acme sync", "--date", "2026-12-10", "--summary", join(dir, "..", "s.md"), "--transcript", join(dir, "..", "t.md"), "--previous", "src-7w3c9k5m", "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  assert.ok(run.json.data.views.includes(log), "the writer regenerated the decision log");
+  const logAfter = await readFile(join(dir, log), "utf8");
+  assert.ok(logAfter.length < logBefore.length, "a decision resting on the suppressed input is left out");
+  assert.equal(git(dir, "status", "--porcelain").trim(), "", "extract, record and views are one commit");
+  assert.equal((await brain(["views", "--check", "--brain", dir, "--json"])).code, 0, "and the views are current");
+});

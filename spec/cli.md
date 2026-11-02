@@ -632,6 +632,8 @@ Regenerates `brief.md` and `decision-log.md` for every project (in `projects/` a
 
 `--project` rebuilds only that project's two views, `--area` only that area's brief. `--check`: writes nothing, lists what would change in `written`/`created`, exit 1 if any. Errors: `UNKNOWN_ID` (`--project`, `--area`).
 
+**Restricted evidence (0055, capture-and-review §5.1).** Views render only eligible evidence: with an active suppression in `_suppressions/`, a note that rests only on a suppressed passage, or on a changed input it cannot map (or of unknown lineage), is left out, and a restricted statement is removed from its note's text before rendering. `brain lint` computes `view-stale` the same way, so a suppression makes the affected views stale until `brain views` or `brain source extract` regenerates them.
+
 ### 5.10 `brain lint`
 
 ```text

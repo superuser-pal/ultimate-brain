@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { eligible, lineageOf, noteReleased, type Context, type SourceInfo, type Suppression } from "./eligibility.ts";
@@ -6,16 +6,16 @@ import type { Note } from "./notes.ts";
 import { PASSAGE_REF } from "./selection.ts";
 
 /** Suppression records live in `_suppressions/<input id>.json` (capture-and-review §5.3, cli §5.23). */
-export async function loadSuppressions(root: string): Promise<{ suppressions: Suppression[]; problems: string[] }> {
+export function loadSuppressions(root: string): { suppressions: Suppression[]; problems: string[] } {
   const dir = join(root, "_suppressions");
   const suppressions: Suppression[] = [];
   const problems: string[] = [];
   let names: string[] = [];
-  try { names = (await readdir(dir)).filter((name) => name.endsWith(".json")).sort(); } catch { return { suppressions, problems }; }
+  try { names = readdirSync(dir).filter((name) => name.endsWith(".json")).sort(); } catch { return { suppressions, problems }; }
   for (const name of names) {
     try {
       // An append-only list of per-version records (cli §5.23); each is active until its own cleanup is resolved.
-      const value = JSON.parse(await readFile(join(dir, name), "utf8")) as { input?: unknown; records?: unknown };
+      const value = JSON.parse(readFileSync(join(dir, name), "utf8")) as { input?: unknown; records?: unknown };
       const records = Array.isArray(value.records) ? (value.records as Partial<Suppression>[]) : null;
       const valid = typeof value.input === "string" && records !== null
         && records.every((record) => Number.isInteger(record.version) && Array.isArray(record.passages) && (record.status === "active" || record.status === "reconciled"));
@@ -79,4 +79,17 @@ export function restrictionOf(note: Note, context: Context): Restriction {
   // Text that cannot be mapped to claims fails closed: restricted whole until each relevant suppression is resolved for this note.
   if (!cited) return noteReleased({ lineage_cleared: cleared }, { ...context, suppressions: context.suppressions.filter((entry) => required.has(entry.input)) }) ? NONE : { whole: true, lines };
   return { whole: false, lines };
+}
+
+/** The notes a derived view may render: restricted notes are left out and restricted statements removed (§5.1, "left out at the next views run"). */
+export function eligibleNotes(notes: readonly Note[], suppressions: Suppression[]): Note[] {
+  if (!suppressions.some((entry) => entry.status === "active")) return [...notes];
+  const context = contextFor(notes, suppressions);
+  return notes.flatMap((note) => {
+    const restriction = restrictionOf(note, context);
+    if (restriction.whole) return [];
+    if (restriction.lines.size === 0) return [note];
+    const body = note.body.split(/(\r?\n)/).map((text, index) => index % 2 === 0 && restriction.lines.has(index / 2) ? "" : text).join("");
+    return [{ ...note, body }];
+  });
 }
