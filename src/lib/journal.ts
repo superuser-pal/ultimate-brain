@@ -73,10 +73,13 @@ export async function recoverAll(root: string): Promise<Recovered[]> {
     try {
       if (await commitExists(root, journal.op)) { await removeJournal(root, journal.op); done.push({ op: journal.op, action: "committed" }); continue; }
       for (const entry of journal.entries) {
+        // Restore index and worktree to the last commit: after a failed `git commit` the path may be staged, and a plain
+        // `git checkout -- <path>` would restore the staged version, not HEAD.
         if (entry.new) {
+          await git(root, ["rm", "-q", "--cached", "--ignore-unmatch", "--", entry.path]);
           await rm(join(root, entry.path), { force: true });
           await pruneEmpty(root, dirname(entry.path));
-        } else await git(root, ["checkout", "--", entry.path]);
+        } else await git(root, ["restore", "--source=HEAD", "--staged", "--worktree", "--", entry.path]);
       }
       await removeJournal(root, journal.op);
       done.push({ op: journal.op, action: "restored" });

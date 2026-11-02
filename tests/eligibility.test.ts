@@ -81,7 +81,8 @@ test("brain query leaves out restricted statements and notes resting on a suppre
   const concept = join(dir, "knowledge/concepts/row-level-security.md");
   const original = await read(concept, "utf8");
   const withSources = original.replace(/\nsources:[^\n]*\n/, "\n").replace(/\n---\n/, `\nsources:\n  - src-ex2a3b4c\n---\n`);
-  await write(concept, `${withSources}\nZebra pricing statement. ^[src-ex2a3b4c#¶2:deadbeef]\nZebra kept statement. ^[src-ex2a3b4c#¶1:${hash}]\n`);
+  // Only marked statements: unmarked prose would restrict the whole note (capture-and-review §5.1).
+  await write(concept, `${withSources.split("\n---\n")[0]}\n---\nZebra pricing statement. ^[src-ex2a3b4c#¶2:deadbeef]\nZebra kept statement. ^[src-ex2a3b4c#¶1:${hash}]\n`);
   const ask = async () => (await brain(["query", "--candidates", "zebra", "--brain", dir, "--json"])).json.data.candidates as { id: string; snippets: { text: string }[] }[];
   assert.equal((await ask()).length, 1, "no suppression: the note is a candidate");
   await mkdir(join(dir, "_suppressions"), { recursive: true });

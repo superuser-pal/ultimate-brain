@@ -49,14 +49,79 @@ test("an older extract version or full copy of an excluded paragraph is no longe
   assert.deepEqual(after.filter((c) => c.id === id || c.id.startsWith("con-")), [], "neither the older source nor the claim resting on it");
 });
 
-test("unmarked prose in a note that rests on an excluded paragraph fails closed, marked live statements stay", async (context) => {
-  const { dir, id, h } = await seeded(context, (src, hh) => `Unmarked pricing prose yak.\n\nContract goes Friday yak. ^[${src}#¶3:${hh.get(3)}]\n\nPricing yak. ^[${src}#¶2:${hh.get(2)}]\n`);
+test("unmapped prose restricts the whole note, while a note of marked statements keeps its live ones", async (context) => {
+  const { dir, id } = await seeded(context, (src, h) => `Unmarked pricing prose yak.\n\nContract goes Friday yak. ^[${src}#¶3:${h.get(3)}]\n\nPricing yak. ^[${src}#¶2:${h.get(2)}]\n`);
   assert.equal((await extract(dir, "Meeting only", "--previous", id)).code, 0);
-  const quoted = ((await ask(dir, "yak")).json.data.candidates as { snippets: { text: string }[] }[]).flatMap((c) => c.snippets.map((s) => s.text)).join("|");
-  assert.ok(quoted.includes("Contract goes Friday"), "the live marked statement stays");
-  assert.ok(!quoted.includes("Unmarked pricing prose"), "unmapped text is restricted");
-  assert.ok(!quoted.includes("Pricing yak"), "the suppressed statement is restricted");
-  void h;
+  assert.equal((await ask(dir, "yak")).json.data.candidates.length, 0, "a note with unmapped text is restricted whole, marked lines included");
+});
+
+test("a note of marked statements keeps the live ones and loses its summary when partly restricted", async (context) => {
+  const { dir, id } = await seeded(context, (src, h) => `Contract goes Friday yak. ^[${src}#¶3:${h.get(3)}]\n\nPricing yak. ^[${src}#¶2:${h.get(2)}]\n`);
+  assert.equal((await extract(dir, "Meeting only", "--previous", id)).code, 0);
+  const found = (await ask(dir, "yak")).json.data.candidates as { summary: string | null; snippets: { text: string }[] }[];
+  const quoted = found.flatMap((c) => c.snippets.map((s) => s.text)).join("|");
+  assert.ok(quoted.includes("Contract goes Friday") && !quoted.includes("Pricing yak"));
+  assert.equal(found[0]?.summary, null, "the summary may carry the excluded text, so it is not returned");
+});
+
+test("an unsupported fact on a note that rests on a changed input restricts the note", async (context) => {
+  const { dir, id } = await seeded(context, (src, h) => `Pricing ${src}. ^[${src}#¶3:${h.get(3)}]\n`);
+  const text = await readFile(join(dir, CONCEPT), "utf8");
+  await writeFile(join(dir, CONCEPT), text.replace(/\n---\n/, "\nfacts:\n  budget: capybara-77\n---\n"));
+  commit(dir, "fact without timeline");
+  assert.equal((await ask(dir, "capybara")).json.data.candidates.length, 1);
+  assert.equal((await extract(dir, "Meeting only", "--previous", id)).code, 0);
+  assert.equal((await ask(dir, "capybara")).json.data.candidates.length, 0, "a fact no accepted timeline entry supports is unmapped");
+});
+
+test("a citation absent from the note's sources list is still judged claim by claim", async (context) => {
+  const { dir, id, h } = await seeded(context, () => "placeholder\n");
+  const text = await readFile(join(dir, CONCEPT), "utf8");
+  // sources names only an independent input; the body cites the extract that will be suppressed.
+  await writeFile(join(dir, CONCEPT), text.replace(/\nsources:\n  - [^\n]*\n/, "\nsources:\n  - src-2k6m9p3t\n").replace("placeholder", `Pricing gecko. ^[${id}#¶2:${h.get(2)}]`));
+  commit(dir, "mixed sources");
+  assert.equal((await ask(dir, "gecko")).json.data.candidates.length, 1);
+  assert.equal((await extract(dir, "Meeting only", "--previous", id)).code, 0);
+  assert.equal((await ask(dir, "gecko")).json.data.candidates.length, 0);
+});
+
+test("re-inclusion after the exclusion was reconciled stays restricted until Restore, in query, views and the cleanup plan", async (context) => {
+  const { dir, id } = await seeded(context, (src, h) => `Pricing ibis. ^[${src}#¶2:${h.get(2)}]\n`);
+  const v2 = await extract(dir, "Meeting only", "--previous", id);
+  const path = join(dir, `_suppressions/${PAGE}.json`);
+  const record = JSON.parse(await readFile(path, "utf8"));
+  record.records[0].status = "reconciled";
+  await writeFile(path, JSON.stringify(record, null, 2));
+  commit(dir, "reconcile");
+  const v3 = await extract(dir, "Use in brain", "--previous", v2.json.data.created[0]);
+  assert.equal(v3.code, 0, v3.stdout);
+  assert.equal((await ask(dir, "ibis")).json.data.candidates.length, 0, "the claim waits for Restore although no suppression is active");
+  const sources = (await ask(dir, "zebrafish95k", "--types", "source")).json.data.candidates as { id: string }[];
+  assert.ok(!sources.some((c) => c.id === v3.json.data.created[0]), "the latest extract does not return the re-included text");
+  const plan = await brain(["source", "cleanup-plan", "--page", PAGE, "--brain", dir, "--json"]);
+  assert.equal(plan.json.data.restore.length, 1, "the cleanup plan lists the Restore");
+  const views = await brain(["views", "--check", "--brain", dir, "--json"]);
+  assert.equal(views.code, 0, "views are current");
+  record.records.push({ kind: "restore", extract_version: 3, passages: [{ n: 2 }], written: NOW });
+  await writeFile(path, JSON.stringify(record, null, 2));
+  assert.equal((await ask(dir, "ibis")).json.data.candidates.length, 1, "restored");
+});
+
+test("a suppression directory that cannot be read fails closed", async (context) => {
+  const dir = await gitBrain(context);
+  await writeFile(join(dir, "_suppressions"), "not a directory");
+  const run = await ask(dir, "anything");
+  assert.equal(run.json.error.code, "SUPPRESSIONS_UNREADABLE");
+});
+
+test("a failed commit rolls back index and worktree to the last commit", async (context) => {
+  const dir = await gitBrain(context);
+  await writeFile(join(dir, ".git/hooks/pre-commit"), "#!/bin/sh\nexit 1\n", { mode: 0o755 });
+  const failed = await extract(dir, "Use in brain");
+  assert.notEqual(failed.code, 0);
+  assert.equal(git(dir, "status", "--porcelain").trim(), "", "nothing staged, nothing left in the worktree");
+  assert.equal(git(dir, "diff", "--cached", "--name-only").trim(), "");
+  assert.equal((await ask(dir, "anything")).code, 0, "no journal is left behind");
 });
 
 test("a timeline entry and the fact it supports resting on an excluded paragraph are neither returned nor rendered", async (context) => {
