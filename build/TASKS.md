@@ -850,7 +850,7 @@ Optional Domains around PARA; Won't Do closes work without claiming completion; 
 ### CC-88 · Record Notion tests T1 to T8 as verified (decision 0055) · `in progress`
 **Release:** 0.8.0
 **Changelog:** records the user's Notion feasibility tests T1 to T8 for selected capture and editable Review, including that deleting a block does not move the page's edit time.
-**Output:** spec/capture-and-review.md §9 (status, mechanism table, new §9.4 results) and docs/notion-space-design.md (§3.18, the by-hand Won't Do note, the per-block-times note) updated with the user's 2026-11-02 results on synthetic pages. No code. It also specifies the parser tolerance for the formats T6 observed and adds a short check T3b before CC-79/CC-81. The T4 failure contradicts cli §5.14.7 and decision 0058; they are not edited here and CC-89 handles it.
+**Output:** spec/capture-and-review.md §9 (status, mechanism table, new §9.4 results) and docs/notion-space-design.md (§3.18, the by-hand Won't Do note, the per-block-times note) updated with the user's 2026-11-02 results on synthetic pages. No code. It also specifies the parser tolerance for the formats T6 observed (unnumbered lines block the input) and records check T3b as passed (user-reported). The T4 failure contradicts cli §5.14.7 and decision 0058; they are not edited here and CC-89 handles it.
 **Acceptance:** each of T1 to T8 has its result and consequence recorded; no mechanism is left described as unverified that was tested; no unverified claim is added; the T4 contradiction is stated; no personal data or Notion ids from a real brain.
 
 ### CC-89 · Detect deleted blocks after acceptance and selection (T4, decisions 0055, 0058) · `todo`
