@@ -388,8 +388,11 @@ function proposalStatusProblem(a: Record<string, unknown>): string | null {
 /** A deferred row and the row whose excluded note it took over (spec/schema.md §15, 0045). */
 function deferredPair(note: Note, other: Note | undefined, id: string): boolean {
   if (other === undefined) return false;
-  const excluded = (proposal: Note) => list(record(proposal.attributes.decision).exclude).some((entry) => record(entry).note === id);
-  return (note.attributes.deferred_from === other.id && excluded(other)) || (other.attributes.deferred_from === note.id && excluded(note));
+  // Left out of a 0045 approval ("all except c"), or deferred item by item (capture-and-review §7.6): the note moved to the other proposal.
+  const excluded = (proposal: Note, to: Note) => list(record(proposal.attributes.decision).exclude).some((entry) => record(entry).note === id)
+    || list(proposal.attributes.item_decisions).map(record).some((decision) => decision.state === "deferred" && decision.deferred_to === to.id
+      && list(proposal.attributes.items).map(record).some((item) => item.item_id === decision.item_id && item.kind === "note" && item.ref === id));
+  return (note.attributes.deferred_from === other.id && excluded(other, note)) || (other.attributes.deferred_from === note.id && excluded(note, other));
 }
 
 /** Every note id a note's frontmatter references, by the fields lint's `missing-ref` checks, plus `relations` targets and `timeline` sources (spec/cli.md §5.14.3). */

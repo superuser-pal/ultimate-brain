@@ -13,6 +13,8 @@ export interface ItemDecision {
   item_id: string; decision: "accept" | "reject" | "defer";
   /** The exact final wording to apply: the Proposed toggle as read (null for a rejection or deferral). */
   proposed: string | null; proposed_hash: string; rendered_proposed_hash: string | null; base_hash: string; snapshot_hash: string; edited: boolean;
+  /** Set by the skill after it re-reads the page just before applying (capture-and-review §7.3): `sync apply` refuses an item whose hashes moved. */
+  verified?: { snapshot_hash: string; proposed_hash: string };
 }
 export interface ReviewDecision { proposal: string; page_id: string; decided_at: string; decided_by: "notion"; page_edited_at: string; unattended_ok: boolean; accept_all: boolean; items: ItemDecision[] }
 export interface ReviewHeld { proposal: string; page_id: string; item_id: string | null; reason: string }
