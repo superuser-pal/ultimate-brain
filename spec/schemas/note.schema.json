@@ -988,6 +988,89 @@
           "type": "string",
           "minLength": 1
         },
+        "extract": {
+          "description": "A selected extract of a Notion input: only the selected paragraphs (0055, capture-and-review §4.5).",
+          "const": true
+        },
+        "extract_of": {
+          "description": "The Notion page id of the full input; its full text stays in Notion.",
+          "type": "string",
+          "minLength": 1
+        },
+        "extract_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "transcript_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "page_fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "selection": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "effective",
+              "explicit"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^s[0-9]+(\\.i[0-9]+)?$"
+              },
+              "effective": {
+                "enum": [
+                  "use",
+                  "meeting only"
+                ]
+              },
+              "explicit": {
+                "enum": [
+                  "use",
+                  "meeting only",
+                  null
+                ]
+              }
+            }
+          }
+        },
+        "passages": {
+          "description": "One entry per paragraph in the body: its number, an 8-hex check hash and the items that cite it.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "n",
+              "hash",
+              "items"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "n": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "hash": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}$"
+              },
+              "items": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
         "notion_text": {
           "enum": [
             "digest",
@@ -1156,6 +1239,59 @@
                 "pattern": "^file:"
               }
             }
+          }
+        },
+        {
+          "description": "An extract carries all of its fields; only extract sources carry them (0055, capture-and-review §4.5).",
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "extract"
+                ]
+              },
+              {
+                "required": [
+                  "extract_of"
+                ]
+              },
+              {
+                "required": [
+                  "extract_version"
+                ]
+              },
+              {
+                "required": [
+                  "transcript_hash"
+                ]
+              },
+              {
+                "required": [
+                  "page_fingerprint"
+                ]
+              },
+              {
+                "required": [
+                  "selection"
+                ]
+              },
+              {
+                "required": [
+                  "passages"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "extract",
+              "extract_of",
+              "extract_version",
+              "transcript_hash",
+              "page_fingerprint",
+              "selection",
+              "passages"
+            ]
           }
         },
         {
