@@ -102,7 +102,8 @@ test("re-inclusion after the exclusion was reconciled stays restricted until Res
   assert.equal(plan.json.data.restore.length, 1, "the cleanup plan lists the Restore");
   const views = await brain(["views", "--check", "--brain", dir, "--json"]);
   assert.equal(views.code, 0, "views are current");
-  record.records.push({ kind: "restore", extract_version: 3, passages: [{ n: 2 }], written: NOW });
+  const noteId = /^id: (.+)$/m.exec(await readFile(join(dir, CONCEPT), "utf8"))![1]!;
+  record.records.push({ kind: "restore", extract_version: 3, items: [{ note: noteId, n: 2 }], written: NOW });
   await writeFile(path, JSON.stringify(record, null, 2));
   assert.equal((await ask(dir, "ibis")).json.data.candidates.length, 1, "restored");
 });
@@ -144,9 +145,10 @@ test("a re-included paragraph stays restricted until a Restore record names it",
   const v3 = await extract(dir, "Use in brain", "--previous", v2.json.data.created[0]);
   assert.equal(v3.code, 0, v3.stdout);
   assert.equal((await ask(dir, "narwhal")).json.data.candidates.length, 0, "re-included but not yet restored");
+  const noteId = /^id: (.+)$/m.exec(await readFile(join(dir, CONCEPT), "utf8"))![1]!;
   const path = join(dir, `_suppressions/${PAGE}.json`);
   const record = JSON.parse(await readFile(path, "utf8"));
-  record.records.push({ kind: "restore", extract_version: 3, passages: [{ n: 2 }], written: NOW });
+  record.records.push({ kind: "restore", extract_version: 3, items: [{ note: noteId, n: 2 }], written: NOW });
   await writeFile(path, JSON.stringify(record, null, 2));
   assert.equal((await ask(dir, "narwhal")).json.data.candidates.length, 1, "restored");
   void h;
@@ -185,4 +187,43 @@ test("a statement resting on a different, unchanged input stays eligible beside 
   const quoted = ((await ask(dir, "hedgehog")).json.data.candidates as { snippets: { text: string }[] }[]).flatMap((c) => c.snippets.map((s) => s.text)).join("|");
   assert.ok(quoted.includes("Hedgehog independent"), "the independently supported statement stays");
   assert.ok(!quoted.includes("Hedgehog pricing"), "the suppressed one does not");
+});
+
+test("a reconciled exclusion does not make the excluded passage, its old source or its fact eligible again", async (context) => {
+  const { dir, id, h } = await seeded(context, (src, hh) => `Pricing lemur. ^[${src}#¶2:${hh.get(2)}]\n`);
+  const text = await readFile(join(dir, CONCEPT), "utf8");
+  await writeFile(join(dir, CONCEPT), text.replace(/\n---\n/, `\nfacts:\n  budget: wombat-31\ntimeline:\n  - field: budget\n    value: wombat-31\n    from: 2026-12-10\n    learned: 2026-12-10\n    source: ${id}\n    passage: ${id}#¶2:${h.get(2)}\n    assessment: accepted\n---\n`));
+  commit(dir, "fact");
+  assert.equal((await extract(dir, "Meeting only", "--previous", id)).code, 0);
+  const path = join(dir, `_suppressions/${PAGE}.json`);
+  const record = JSON.parse(await readFile(path, "utf8"));
+  record.records[0].status = "reconciled";
+  await writeFile(path, JSON.stringify(record, null, 2));
+  commit(dir, "reconcile");
+  assert.equal((await ask(dir, "lemur")).json.data.candidates.length, 0, "the claim stays restricted");
+  assert.equal((await ask(dir, "wombat")).json.data.candidates.length, 0, "and so does the fact");
+  assert.equal(((await ask(dir, "zebrafish95k", "--types", "source")).json.data.candidates as unknown[]).length, 0, "the old source text is not returned");
+  assert.equal((await brain(["views", "--check", "--brain", dir, "--json"])).code, 0);
+});
+
+test("a Restore is accepted per claim: restoring one note leaves another note on the same passage restricted", async (context) => {
+  const { dir, id } = await seeded(context, (src, h) => `Pricing heron. ^[${src}#¶2:${h.get(2)}]\n`);
+  // A second note cites the same paragraph.
+  const second = "knowledge/decisions/2026-12-03-use-supabase-for-auth.md";
+  const original = await readFile(join(dir, second), "utf8");
+  const head = original.split("\n---\n")[0]!.replace(/\nsources:[^\n]*(\n  - [^\n]*)*/, `\nsources: [${id}]`);
+  const h2 = (await hashes(dir, (await brain(["query", "--candidates", "zebrafish95k", "--types", "source", "--brain", dir, "--json"])).json.data.candidates[0].path)).get(2)!;
+  await writeFile(join(dir, second), `${head}\n---\nPricing heron too. ^[${id}#¶2:${h2}]\n`);
+  commit(dir, "second claim");
+  const v2 = await extract(dir, "Meeting only", "--previous", id);
+  const v3 = await extract(dir, "Use in brain", "--previous", v2.json.data.created[0]);
+  assert.equal(v3.code, 0, v3.stdout);
+  assert.equal((await ask(dir, "heron")).json.data.candidates.length, 0, "both claims wait for Restore");
+  const noteId = /^id: (.+)$/m.exec(await readFile(join(dir, CONCEPT), "utf8"))![1]!;
+  const path = join(dir, `_suppressions/${PAGE}.json`);
+  const record = JSON.parse(await readFile(path, "utf8"));
+  record.records.push({ kind: "restore", extract_version: 3, items: [{ note: noteId, n: 2 }], written: NOW });
+  await writeFile(path, JSON.stringify(record, null, 2));
+  const found = (await ask(dir, "heron")).json.data.candidates as { id: string }[];
+  assert.deepEqual(found.map((c) => c.id), [noteId], "only the restored claim is returned");
 });
