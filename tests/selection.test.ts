@@ -100,3 +100,37 @@ test("drift: tokens, text-only, stale and none", () => {
   assert.equal(classifyDrift(before, before, hash, "other").kind, "stale");
   assert.notEqual(pageFingerprint(before, hash), pageFingerprint(parseSummary(SUMMARY.replace("Pricing figure", "The price")), hash));
 });
+
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { brain, fixtureCopy } from "./helpers.ts";
+
+const EXTRACT = {
+  extract: true, extract_of: "11111111-2222-4333-8444-555555555555", extract_version: 1,
+  transcript_hash: "a".repeat(64), page_fingerprint: "b".repeat(64),
+  selection: [{ id: "s1", effective: "use", explicit: null }, { id: "s1.i1", effective: "use", explicit: null }],
+  passages: [{ n: 1, hash: "0123abcd", items: ["s1.i1"] }],
+};
+
+let counter = 0;
+async function create(dir: string, frontmatter: Record<string, unknown>) {
+  counter += 1;
+  const file = join(dir, "..", "extract.json");
+  await writeFile(file, JSON.stringify({ notes: [{ type: "source", title: "Launch sync (extract)", file_date: "2026-12-10", frontmatter: { source_key: "notion:11111111-2222-4333-8444-555555555555", ...frontmatter }, body: `<!-- passage ¶1 item s1.i1 -->\nThe launch moves to February ${counter}.\n` }] }));
+  return brain(["note", "new", "--input", file, "--brain", dir, "--now", "2026-12-10T09:00:00Z", "--json"]);
+}
+
+test("an extract source is written with all its fields, in order, and an incomplete one is refused", async (context) => {
+  const dir = await fixtureCopy(context);
+  const run = await create(dir, EXTRACT);
+  assert.equal(run.code, 0, run.stdout);
+  const path = run.json.data.created[0].path as string;
+  const file = await readFile(join(dir, path), "utf8");
+  assert.match(file, /source_key: notion:[^\n]+\n(?:[a-z_]+: [^\n]+\n)*?extract: true\nextract_of: [^\n]+\nextract_version: 1\ntranscript_hash:/);
+  const { selection, ...partial } = EXTRACT;
+  assert.ok(selection.length > 0);
+  const bad = await create(dir, partial);
+  assert.notEqual(bad.code, 0, "an extract without its selection is invalid");
+  const plain = await create(dir, { extract_of: EXTRACT.extract_of });
+  assert.notEqual(plain.code, 0, "extract fields come together");
+});
