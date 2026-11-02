@@ -102,10 +102,12 @@ export function rankCandidates(
   tokens: readonly string[],
   types: ReadonlySet<string>,
   context: QueryContext,
+  eligible?: (note: Note) => Note | null,
 ): QueryCandidate[] {
   return notes
     .filter((note) => types.has(note.type))
-    .map((note) => ({ candidate: candidateFor(note, tokens, context), updated: stringValue(note.attributes.updated) ?? "" }))
+    // Restricted evidence is neither scored nor quoted (capture-and-review §5.1); statements are blanked, not removed, so line numbers hold.
+    .flatMap((note) => { const kept = eligible === undefined ? note : eligible(note); return kept === null ? [] : [kept]; })    .map((note) => ({ candidate: candidateFor(note, tokens, context), updated: stringValue(note.attributes.updated) ?? "" }))
     .filter((entry): entry is { candidate: QueryCandidate; updated: string } => entry.candidate !== null)
     .sort((left, right) => right.candidate.score - left.candidate.score
       || compareCodePoints(right.updated, left.updated)
