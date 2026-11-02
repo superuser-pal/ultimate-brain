@@ -251,6 +251,7 @@ Immutable snapshot of input. **Its body and the fields above `summary` in the ta
 | `notion` | the Inbox row's page id (system). For a `capture`, the id in its `notion:` key | |
 | `notion_published`, `last_synced` | as §3.2 (system) | |
 | `tasks` | list of Notion task page ids created from the source's owner action items (system, cli.md §5.14.5) | |
+| `task_items` | on an extract: map `{<item id>: <Notion task page id>}`, the Task each item authorized (system, written by `sync record`, capture-and-review §4.8) | |
 
 **Kinds (0032):** `minutes` is a meeting (Notion or a minutes file); `document` a converted file or a web page fetched by URL (0036); `email` and `chat` pasted threads; `note` text the user wrote or pasted; `capture` an Inbox row the user created: its `source_key` must be `notion:<row page id>` (the JSON Schema enforces it), and its `notion`, once recorded, is that same id. The body is the text verbatim, as the ingest skill defines it per kind; for a file, the converter's output.
 
