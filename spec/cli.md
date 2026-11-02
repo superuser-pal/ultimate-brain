@@ -682,6 +682,7 @@ Issues have severity `error`, `warning`, or `info`. Information is listed in `is
 | `notion-parts` | error | a source's `notion_parts` names a part above its body's part count (schema §4) |
 | `review-notes` | error | a `review_notes` lists a note that isn't a knowledge note, or a note another `review_notes` also lists (0041), unless one excluded it and the other has `deferred_from` = that one (0045) |
 | `source-replaces` | error | a source's `replaces` names a note that isn't a source (a missing id is `missing-ref`), or a source two others replace (0045) |
+| `unknown-lineage` | warning | a knowledge note's `sources` names a source or meeting whose input cannot be determined (no `source_key`, `extract_of` or meeting `source`): its evidence is never live while any suppression is active (0055, capture-and-review §5.1) |
 | `extract-passages` | error | an extract source's `passages` does not list the `<!-- passage ¶n -->` paragraphs of its body in order, or a paragraph no longer matches its 8-hex hash (0055, capture-and-review §4.5) |
 | `passage-ref` | error | a `^[src-…#¶n:hash]` in a note body names a source that is not an extract, a passage it does not hold, or the wrong hash; or a note lists an extract in `sources` but cites none of its passages (0055, capture-and-review §5.1) |
 | `update-body` | error | an `update_body` proposal, or an `update_body` entry of a `review_notes`'s `changes`, whose target isn't a `reference` (0045) or is a `promoted` one (0049) |
@@ -1556,3 +1557,16 @@ brain recover
 ```
 
 Finishes or rolls back each interrupted journaled write, oldest first. For `_journal/<op>.json`: if a commit with the trailer `Op: <op>` exists, the work is kept and only the journal is deleted (`committed`); otherwise each listed path goes back to the last commit (`git checkout -- <path>`), each listed new path is removed, and the journal is deleted last (`restored`, reported as `RECOVERED <op>`). Every step is idempotent, so an interrupted recovery is run again. If a step fails the journal is kept and every command keeps refusing with `RECOVERY_NEEDED`. `data` = `{ recovered: [{ op, action }] }`; an empty list when there is nothing to do.
+
+### 5.25 `brain source cleanup-plan` (0055, capture-and-review §5.2)
+
+```text
+brain source cleanup-plan --page <notion-page-id>
+```
+
+Read-only. Lists what an input's **active** suppressions (`_suppressions/<page>.json`, §5.23) restrict and what stays, for the exclusion cleanup row. The Review row, its item decisions (Remove, Keep, Restore) and their apply are CC-79. `data` = `{ input, latest_extract, notes: [{ note, path, whole, reason, restricted: [{line, text}], kept: [{line, text}] }], restore: [{ note, line, passage }], tasks: [{ task, item, reason }], documents: [{ note, sources }] }`.
+- `notes`: every knowledge note that rests on the input (by lineage, `unknown` lineage included) and has a restricted statement or is restricted whole. `reason` is `passages` (a statement cites a suppressed passage), `unmapped text` (no passage references, restricted whole) or `unknown lineage`. `kept` lists the statements with a passage reference that stay eligible, so the row shows what is **independently supported**.
+- `restore`: statements citing a passage that an earlier suppression removed and the latest version holds again.
+- `tasks`: Tasks (`tasks` of the input's versions) whose item is no longer selected (`item no longer selected`) or that no item can be tied to (`unknown item`, e.g. made from a full copy). The brain never cancels or deletes a Task.
+- `documents`: Documents (`reference`) made from the input's sources, for Remove or Keep.
+

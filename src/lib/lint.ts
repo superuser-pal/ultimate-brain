@@ -8,7 +8,8 @@ import { compareCodePoints, type Note, type ScanProblem } from "./notes.ts";
 import { rangesProblem, splitParts } from "./parts.ts";
 import { sourceFolder } from "./paths.ts";
 import { extractPassages, PASSAGE_REF, passageHash } from "./selection.ts";
-import { eligibleNotes, loadSuppressions } from "./suppressions.ts";
+import { lineageOf } from "./eligibility.ts";
+import { contextFor, eligibleNotes, loadSuppressions } from "./suppressions.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
 
@@ -91,6 +92,7 @@ export function lintBrain(input: LintInput): Issue[] {
     add("error", "brain-config", "brain.json", 1, null, describeErrors(schemas.brain.errors).join("; "));
   }
 
+  let lineageContext: ReturnType<typeof contextFor> | undefined;
   let viewNotes: Note[] | undefined; // the notes a view may render once suppressions apply (capture-and-review §5.1)
   const byId = new Map<string, Note>();
   const pathsById = new Map<string, string[]>();
@@ -286,6 +288,15 @@ export function lintBrain(input: LintInput): Issue[] {
       for (const entry of found) {
         const hash = listed.find((candidate) => candidate.n === entry.n)?.hash;
         if (hash !== undefined && hash !== passageHash(entry.text)) err("extract-passages", lineOfKey(note, "passages"), `¶${entry.n} no longer matches its hash; extracts are immutable`);
+      }
+    }
+    if (note.type !== "source" && note.type !== "proposal" && note.type !== "view") {
+      // A source whose input cannot be determined (a meeting with no source, a source chain with no key) is a data defect:
+      // it is never live while any suppression is active (capture-and-review §5.1).
+      lineageContext ??= contextFor(input.notes, []);
+      for (const id of list(a.sources).map(String)) {
+        const cited = byId.get(id);
+        if ((cited?.type === "source" || cited?.type === "meeting") && lineageOf(id, lineageContext.sources) === null) warn("unknown-lineage", lineOfKey(note, "sources"), `${id} has no determinable input (no source_key, extract_of or source)`);
       }
     }
     if (note.type !== "source" && note.type !== "proposal") {
