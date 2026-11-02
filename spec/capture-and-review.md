@@ -227,18 +227,18 @@ A short first-use explanation sits at the top. Tooltips (if Notion has them, §9
 
 ## 9. Notion mechanisms and feasibility
 
-**9.1 Status.** None is verified.
+**9.1 Status.** T1 to T8 were run by the user on 2026-11-02 and are recorded in §9.4 and docs/notion-space-design.md §3.18. The Status column below shows the result.
 
 | Mechanism | Used for | Status |
 |---|---|---|
-| M1 · typed text tokens edited in place (`Selection:`, `Decision:`, `Revision request:`) | §4.3, §7.3 | the **planned** interaction (the agreed controls are not assumed to exist natively, 0055); deterministic parse, **unverified** until T2 |
-| M2 · a row button: Edit property → checkboxes + Now | Submit decisions, Submit and accept all | the same action as 0054's Accept buttons; **not verified** (T3) |
-| M3 · page `last_edited_time` through the MCP | invalidation, drift scan (§4.8, §7.3) | **not verified** (T4) |
+| M1 · typed text tokens edited in place (`Selection:`, `Decision:`, `Revision request:`) | §4.3, §7.3 | the **planned** interaction (the agreed controls are not assumed to exist natively, 0055); deterministic parse; **verified (T2)**: text and case survive edits and regeneration, but a paragraph may become a bulleted list item, so the parser reads the text of the line, not its block type |
+| M2 · a row button: Edit property → checkboxes + Now | Submit decisions, Submit and accept all | the same action as 0054's Accept buttons; **verified (T3)**: three properties change on one click |
+| M3 · page `last_edited_time` through the MCP | invalidation, drift scan (§4.8, §7.3) | **partly verified, fails (T4)**: the MCP returns one page-level time that moved after an edit but **not after a deletion**; see §9.4 |
 | M4 · toggle blocks | Transcript, Previous proposal | planned |
-| M5 · native recording / transcription | voice capture | **unknown** (T1); fallback §3.2 |
+| M5 · native recording / transcription | voice capture | **verified (T1)**; fallback §3.2 stays for brains without it |
 | M6 · native per-section buttons, per-item select controls, tooltips | nicer controls | **not assumed**; M1 is the supported interaction |
-| M7 · the generator writing ids, verbatim anchors and `depends on` | §4.1 | **unverified AI behavior** (T6) |
-| M8 · the API creating status options and groups; a relation limit | §2.3, §10 | **believed** not possible (T7, T8); stated as by-hand steps until checked |
+| M7 · the generator writing ids, verbatim anchors and `depends on` | §4.1 | **verified at 9 of 10 (T6)**, with the format caveats of §9.4 |
+| M8 · the API creating status options and groups; a relation limit | §2.3, §10 | **verified not possible (T8)**; the relation limit can be set by hand (T7); both stay by-hand steps |
 
 **9.2 Tests for the user, on synthetic pages, with pass criteria.** Record each answer in docs/notion-space-design.md.
 - **T1 · Recording.** Pass: Notion records and transcribes a 30-second voice note on a throwaway Inbox page, the transcript lands as readable blocks, and Brain Assistant or the MCP can read them. Else: fallback §3.2.
@@ -251,6 +251,16 @@ A short first-use explanation sits at the top. Tooltips (if Notion has them, §9
 - **T8 · API limits.** Through the integration, can a status option be added to a Tasks status property and placed in the Complete group? Can a relation limit be set? Expected no to both (§10 says by hand); any yes moves the step to the agent.
 
 **9.3 If a test fails.** T1 → transcripts are pasted or dropped. T2 or T3 → the Review decision interaction needs another mechanism: **material, returns to the user before CC-79/CC-80/CC-81**. T4 → treat any later page edit as an edit (already allowed in cli §5.14.7); the drift scan then reads every ingested extract's page each run. T6 → the anchors move to a skill step (the skill, not Notion AI, drafts the items and quotes the transcript) — also material, returns to the user. T5, T7 → bonus/guard only. **Gating:** CC-79 needs T2, T3, T4; CC-80 needs T1, T2, T6; CC-81 needs all.
+
+**9.4 Results (user, 2026-11-02, synthetic pages).**
+- **T1 pass.** The transcript lands as readable blocks and an agent quoted its first sentence.
+- **T2 pass.** Five different edits of each token: the agent read the exact text each time; text and capitalization survived a Notion AI regeneration; paragraphs became bulleted list items (block formatting, not token text). This verifies the tested rewrite, not an automatic meeting-summary retry.
+- **T3 pass.** One click set both checkboxes and the date-time.
+- **T4 FAIL.** The MCP returns a page-level content time only (none per paragraph). It advanced after an edit but **not after deleting a paragraph**, also after a reload. Consequence: the claim of cli §5.14.7 and decision 0058 that a deleted block moves the page time is **not true through this connection**. A deletion after Accept (or after a selection was confirmed) would go unseen by the time check. This is material for the exact-wording guarantee and returns to the user; CC-89 proposes the fix. Until then, §4.8 and §7.3 must not rely on the time alone for deletions.
+- **T5 partial.** An agent can read a per-section select, but it takes two clicks. One button per choice is a possible one-click alternative, untested. M1 stays.
+- **T6 pass at 9 of 10.** The one miss had a 14-word quote (limit 12). Caveats: straight quotes inside curly braces instead of curly quotes; four unnumbered action items added; Notion merged two topics into one transcript paragraph (each quote still occurs in exactly one paragraph); the recording altered a source detail (29 March became 19 March), so anchors prove fidelity to the transcript, not to the speech. The transcript lives in the Transcript section of the meeting block and the MCP reads it with its meeting-transcript tool. The parser accepts straight and curly quotes and ignores unnumbered items.
+- **T7 pass.** The relation can be limited to 1 page, by hand.
+- **T8 pass for the plan.** `update-a-data-source` returned 200 and ignored the Complete-group placement (the new option landed in To-do and `default_option` changed from null to Not started unasked); the relation limit was dropped silently. Rule: a 200 is not proof; read the data source back after any schema write.
 
 ## 10. Migration 0013 (specified here, written by CC-81)
 
