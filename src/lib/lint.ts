@@ -7,6 +7,7 @@ import { buildIndex } from "./index-builder.ts";
 import { compareCodePoints, type Note, type ScanProblem } from "./notes.ts";
 import { rangesProblem, splitParts } from "./parts.ts";
 import { sourceFolder } from "./paths.ts";
+import { extractPassages, PASSAGE_REF, passageHash } from "./selection.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
 
@@ -273,6 +274,32 @@ export function lintBrain(input: LintInput): Issue[] {
       if (replaced !== undefined && replaced.type !== "source") err("source-replaces", lineOfKey(note, "replaces"), `replaces ${a.replaces}, a ${replaced.type}, not a source`);
       const others = (replacedBy.get(a.replaces) ?? []).filter((other) => other !== note.id);
       if (others.length > 0) err("source-replaces", lineOfKey(note, "replaces"), `${a.replaces} is also replaced by ${others.join(", ")}`);
+    }
+    if (note.type === "source" && a.extract === true) {
+      // The passages list and the body's markers agree, and each check hash matches its paragraph (capture-and-review §4.5).
+      const found = extractPassages(note.body);
+      const listed = list(a.passages) as { n?: number; hash?: string }[];
+      if (found.map((entry) => entry.n).join() !== listed.map((entry) => entry.n).join()) err("extract-passages", lineOfKey(note, "passages"), "passages does not list the paragraphs of the body, in order");
+      for (const entry of found) {
+        const hash = listed.find((candidate) => candidate.n === entry.n)?.hash;
+        if (hash !== undefined && hash !== passageHash(entry.text)) err("extract-passages", lineOfKey(note, "passages"), `¶${entry.n} no longer matches its hash; extracts are immutable`);
+      }
+    }
+    if (note.type !== "source" && note.type !== "proposal") {
+      // A passage reference names an existing extract passage with the right hash; a note citing an extract carries one (§5.1).
+      const cited = new Set<string>();
+      for (const match of note.body.matchAll(PASSAGE_REF)) {
+        const [, id, n, hash] = match;
+        cited.add(id ?? "");
+        const target = byId.get(id ?? "");
+        if (target === undefined) continue; // a missing id is reported as missing-ref where it is declared
+        const entry = target.attributes.extract === true ? list(target.attributes.passages).find((candidate) => (candidate as { n?: number }).n === Number(n)) as { hash?: string } | undefined : undefined;
+        if (entry === undefined) err("passage-ref", 1, `${id}#¶${n} is not a passage of an extract`);
+        else if (entry.hash !== hash) err("passage-ref", 1, `${id}#¶${n} has the hash ${entry.hash}, not ${hash}`);
+      }
+      for (const source of list(a.sources).map(String)) {
+        if (byId.get(source)?.attributes.extract === true && !cited.has(source)) err("passage-ref", lineOfKey(note, "sources"), `${source} is an extract: cite its passages with ^[${source}#¶n:hash]`);
+      }
     }
     if (note.type === "source" && Array.isArray(a.notion_parts)) {
       const problem = rangesProblem(a.notion_parts, splitParts(note.body).parts.length);

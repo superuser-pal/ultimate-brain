@@ -25,6 +25,22 @@ export function normalize(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
+/** The 8-hex check hash of a paragraph's normalized text (§4.5). */
+export function passageHash(text: string): string {
+  return sha(normalize(text)).slice(0, 8);
+}
+
+/** The passages of an extract body: each `<!-- passage ¶n item … -->` marker with the paragraph text after it. */
+export function extractPassages(body: string): { n: number; text: string }[] {
+  const parts = body.split(/<!-- passage ¶(\d+) item [^>]*-->\n/);
+  const result: { n: number; text: string }[] = [];
+  for (let index = 1; index < parts.length; index += 2) result.push({ n: Number(parts[index]), text: normalize(parts[index + 1] ?? "") });
+  return result;
+}
+
+/** A passage reference beside a statement: `^[src-…#¶n:<hash>]` (§5.1). */
+export const PASSAGE_REF = /\^\[(src-[0-9a-z]{8})#¶(\d+):([0-9a-f]{8})\]/g;
+
 function sha(text: string): string {
   return createHash("sha256").update(text).digest("hex");
 }
