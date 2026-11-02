@@ -233,3 +233,25 @@ test("an unnumbered excluded line cannot leak through an included item sharing i
   assert.equal(plan.ok, false, "the input is blocked, so the command returns no body");
   assert.ok(plan.problems.some((p) => p.code === "UNNUMBERED_LINE"));
 });
+
+test("a malformed exclusion token blocks the input instead of defaulting to inclusion", () => {
+  for (const token of ["Meetng only:", "Meeting-only:", "Private:", "Use in brian:"]) {
+    const summary = parseSummary(`## [s1] A\n- [s1.i1] ${token} secret “secret”\n`);
+    const plan = planExtract(summary, "A paragraph with a secret inside.");
+    assert.equal(plan.ok, false, token);
+    assert.ok(plan.problems.some((p) => p.code === "SELECTION_UNREADABLE"), token);
+  }
+  const fine = planExtract(parseSummary("## [s1] A\n- [s1.i1] Decision: ship it “a secret inside”\n"), "A paragraph with a secret inside.");
+  assert.equal(fine.ok, true, "an ordinary prefix is text");
+});
+
+test("an extract stores the paragraph as written and the anchors respect one to three and twelve words", () => {
+  const plan = planExtract(parseSummary("## [s1] A\n- [s1.i1] Two lines “first line”\n"), "first line\nsecond line\n\nanother paragraph");
+  assert.equal(plan.copied[0]?.text, "first line\nsecond line", "line breaks are kept");
+  assert.ok(extractBody(plan).includes("first line\nsecond line"));
+  const many = planExtract(parseSummary("## [s1] A\n- [s1.i1] Four “one” “two” “three” “four”\n"), "one two three four");
+  assert.ok(many.problems.some((p) => p.reason.includes("one to three")));
+  const long = "a b c d e f g h i j k l m";
+  const wordy = planExtract(parseSummary(`## [s1] A\n- [s1.i1] Long “${long}”\n`), long);
+  assert.ok(wordy.problems.some((p) => p.reason.includes("12 words")));
+});

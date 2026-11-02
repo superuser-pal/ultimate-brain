@@ -1,7 +1,7 @@
 import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { scanNotes } from "../lib/notes.ts";
-import { contextFor, loadSuppressions, restrictionOf } from "../lib/suppressions.ts";
+import { contextFor, eligibleNote, requireSuppressions } from "../lib/suppressions.ts";
 import { queryContext, queryTypes, queryWords, rankCandidates } from "../lib/query.ts";
 
 /** `brain query --candidates <question>` (spec/cli.md §5.13). */
@@ -23,9 +23,8 @@ export const queryCommand: Command = {
       queryContext(args.options.repo as string | undefined),
       scanNotes(brain!.root),
     ]);
-    const { suppressions } = await loadSuppressions(brain!.root);
-    const eligibility = contextFor(scanned.notes, suppressions);
-    const candidates = rankCandidates(scanned.notes, tokens, queryTypes(args.options.types as string | undefined), context, (note) => restrictionOf(note, eligibility)).slice(0, limit);
+    const eligibility = contextFor(scanned.notes, requireSuppressions(brain!.root));
+    const candidates = rankCandidates(scanned.notes, tokens, queryTypes(args.options.types as string | undefined), context, (note) => eligibleNote(note, eligibility)).slice(0, limit);
 
     return {
       data: { query: question, tokens, context, candidates },

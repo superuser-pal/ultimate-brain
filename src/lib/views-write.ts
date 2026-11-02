@@ -3,8 +3,7 @@ import { serializeNewFile } from "./frontmatter.ts";
 import { generateId } from "./ids.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 import { formatDate, formatTimestamp } from "./time.ts";
-import type { Suppression } from "./eligibility.ts";
-import { eligibleNotes, loadSuppressions } from "./suppressions.ts";
+import { eligibleNote, eligibleNotes, contextFor, requireSuppressions, type Loaded } from "./suppressions.ts";
 import { areaBriefPath, deriveView, generatedBlockRange, projectViewPath, type ViewKind } from "./views.ts";
 import type { Workspace } from "./workspace.ts";
 
@@ -20,8 +19,10 @@ export function viewTargets(projects: Note[], areas: Note[]): ViewTarget[] {
 }
 
 /** Stage the regenerated views; render only eligible evidence, so no derived view shows a restricted claim (capture-and-review §5.1). */
-export function stageViews(workspace: Workspace, targets: ViewTarget[], now: Date, check: boolean, suppressions?: Suppression[]): StagedViews {
-  const notes = eligibleNotes(workspace.notes, suppressions ?? loadSuppressions(workspace.root).suppressions);
+export function stageViews(workspace: Workspace, targets: ViewTarget[], now: Date, check: boolean, loaded?: Loaded): StagedViews {
+  const state = loaded ?? requireSuppressions(workspace.root);
+  const notes = eligibleNotes(workspace.notes, state);
+  const context = contextFor(workspace.notes, state);
   const written: string[] = [];
   const created: string[] = [];
   const unchanged: string[] = [];
@@ -31,7 +32,9 @@ export function stageViews(workspace: Workspace, targets: ViewTarget[], now: Dat
   for (const { owner: project, kind, path } of targets) {
     {
       const existing = workspace.notes.find((note) => note.path === path);
-      const derived = deriveView(project, kind, notes);
+      // The owner is rendered from its eligible form too: a restricted project or area never contributes its facts.
+      const owner = eligibleNote(project, context) ?? { ...project, attributes: { ...project.attributes, facts: {}, timeline: [] } };
+      const derived = deriveView(owner, kind, notes);
       if (existing === undefined && workspace.exists(path)) {
         errors.push({ path, reason: "MARKERS_INVALID" });
         continue;

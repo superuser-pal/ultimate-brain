@@ -3,7 +3,7 @@ import { BrainError } from "../lib/errors.ts";
 import { lineDiff } from "../lib/diff.ts";
 import { cleanupPlan } from "../lib/cleanup.ts";
 import { buildExtractPlan } from "../lib/extract.ts";
-import { loadSuppressions } from "../lib/suppressions.ts";
+import { requireSuppressions } from "../lib/suppressions.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { readFile } from "node:fs/promises";
 
@@ -83,7 +83,7 @@ export const sourceCleanupPlanCommand: Command = {
     const page = args.options.page as string | undefined;
     if (page === undefined) throw new BrainError("USAGE", "Give --page <notion-page-id>");
     const workspace = await Workspace.open(brain!);
-    const plan = cleanupPlan(workspace.notes, loadSuppressions(brain!.root).suppressions, page);
+    const plan = cleanupPlan(workspace.notes, requireSuppressions(brain!.root), page);
     return { data: plan, human: `${plan.notes.length} note(s), ${plan.tasks.length} Task(s), ${plan.documents.length} Document(s) affected\n` };
   },
 };

@@ -10,7 +10,7 @@ export type Entry = { source: string; passage?: { n: number; hash: string } };
 export interface SourceInfo {
   id: string; extract_of?: string; source_key?: string; replaces?: string;
   /** For an extract version: the passages it holds, as `${n}:${hash}`. */
-  passages?: string[]; transcript_hash?: string;
+  passages?: string[]; transcript_hash?: string; extract_version?: number;
 }
 
 export interface Claim { entries: Entry[]; lineage_cleared?: string[]; context_excluded?: boolean }
@@ -26,6 +26,8 @@ const NOTION_KEY = /^notion:(.+)$/;
 
 /** The input (Notion page) a source came from: `extract_of`, the `source_key`, or through the `replaces` chain (§5.1). Null = unknown lineage. */
 export function lineageOf(id: string, sources: Map<string, SourceInfo>): string | null {
+  // A source key written in place of an id (`url:…`, `file:…`, `notion:…`) is its own input.
+  if (!sources.has(id) && id.includes(":")) return NOTION_KEY.exec(id)?.[1] ?? id;
   const seen = new Set<string>();
   for (let current = sources.get(id); current !== undefined && !seen.has(current.id); current = current.replaces === undefined ? undefined : sources.get(current.replaces)) {
     seen.add(current.id);

@@ -194,7 +194,7 @@ export function lintBrain(input: LintInput): Issue[] {
       const project = byId.get(String(a.view_kind === "area_brief" ? a.area : a.project));
       const range = generatedBlockRange(note.body);
       if (project?.type === (a.view_kind === "area_brief" ? "area" : "project") && range !== undefined) {
-        viewNotes ??= eligibleNotes(input.notes, loadSuppressions(input.root).suppressions);
+        viewNotes ??= eligibleNotes(input.notes, loadSuppressions(input.root));
         const derived = deriveView(project, a.view_kind as ViewKind, viewNotes);
         const generatedFrom = Array.isArray(a.generated_from) ? a.generated_from : [];
         if (note.body.slice(range.start, range.end) !== derived.generatedBlock || !sameStringList(generatedFrom, derived.generatedFrom)) {
@@ -293,7 +293,7 @@ export function lintBrain(input: LintInput): Issue[] {
     if (note.type !== "source" && note.type !== "proposal" && note.type !== "view") {
       // A source whose input cannot be determined (a meeting with no source, a source chain with no key) is a data defect:
       // it is never live while any suppression is active (capture-and-review §5.1).
-      lineageContext ??= contextFor(input.notes, []);
+      lineageContext ??= contextFor(input.notes, { suppressions: [] });
       for (const id of list(a.sources).map(String)) {
         const cited = byId.get(id);
         if ((cited?.type === "source" || cited?.type === "meeting") && lineageOf(id, lineageContext.sources) === null) warn("unknown-lineage", lineOfKey(note, "sources"), `${id} has no determinable input (no source_key, extract_of or source)`);

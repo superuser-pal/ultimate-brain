@@ -7,7 +7,7 @@ import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
 import { assertCleanTree, commitWithOp, newOpId, recoverAll, removeJournal, sha, writeJournal, type JournalEntry } from "../lib/journal.ts";
 import { assertNoProblems } from "../lib/input.ts";
 import { checkNoteInput, stageNotes, type NoteInput } from "../lib/note-new.ts";
-import { loadSuppressions } from "../lib/suppressions.ts";
+import { requireSuppressions } from "../lib/suppressions.ts";
 import { stageViews, viewTargets } from "../lib/views-write.ts";
 import { Workspace } from "../lib/workspace.ts";
 
@@ -31,6 +31,7 @@ export const sourceExtractCommand: Command = {
     const read = async (path: string): Promise<string> => {
       try { return (await readFile(path, "utf8")).replace(/\r\n/g, "\n"); } catch { throw new BrainError("INPUT_INVALID", `Cannot read ${path}`, [{ pointer: "", message: `Cannot read ${path}` }]); }
     };
+    const state = requireSuppressions(brain!.root);
     const workspace = await Workspace.open(brain!);
     const plan = buildExtractPlan(workspace.notes, { page, summary: await read(summaryPath), transcript: await read(transcriptPath), previous: opt("previous") });
     if (!plan.ok) throw new BrainError("INPUT_INVALID", `The input is blocked: ${plan.problems.map((problem) => `${problem.code} ${problem.id ?? ""} ${problem.reason}`).join("; ")}`, plan.problems.map((problem) => ({ pointer: "", message: `${problem.code} ${problem.id ?? ""} ${problem.reason}` })));
@@ -63,7 +64,8 @@ export const sourceExtractCommand: Command = {
     let appended: Record<string, unknown> | undefined;
     if (plan.previous !== undefined && (plan.previous.suppressed.length > 0 || plan.previous.kind === "full")) {
       let existing: { input: string; records: unknown[] } = { input: page, records: [] };
-      try { existing = JSON.parse(await readFile(`${brain!.root}/${suppressionPath}`, "utf8")); } catch { /* none yet */ }
+      // Only a missing file means "no record yet"; anything unreadable was refused above (requireSuppressions) and is never replaced.
+      if (workspace.exists(suppressionPath)) existing = JSON.parse(await readFile(`${brain!.root}/${suppressionPath}`, "utf8"));
       const oldHash = previous?.attributes.transcript_hash;
       appended = {
         version, written: now.toISOString().replace(/\.\d{3}Z$/, "Z"),
@@ -75,8 +77,8 @@ export const sourceExtractCommand: Command = {
     }
 
     // The regenerated views render only eligible evidence, in the same operation (capture-and-review §5.1).
-    const suppressions = [...loadSuppressions(brain!.root).suppressions, ...(appended === undefined ? [] : [{ ...(appended as object), input: page } as never])];
-    const views = stageViews(workspace, viewTargets(workspace.notes.filter((note) => note.type === "project"), workspace.notes.filter((note) => note.type === "area")), now, false, suppressions);
+    const loaded = { ...state, suppressions: [...state.suppressions, ...(appended === undefined ? [] : [{ ...(appended as object), input: page } as never])] };
+    const views = stageViews(workspace, viewTargets(workspace.notes.filter((note) => note.type === "project"), workspace.notes.filter((note) => note.type === "area")), now, false, loaded);
     if (views.errors.length > 0) throw new BrainError("INPUT_INVALID", `A view has invalid markers: ${views.errors.map((entry) => entry.path).join(", ")}`);
     const errors = workspace.newErrors(workspace.changedPaths);
     if (errors.length > 0) throw new BrainError("INPUT_INVALID", `The extract fails lint: ${errors.map((issue) => `${issue.rule}: ${issue.message}`).join("; ")}`);

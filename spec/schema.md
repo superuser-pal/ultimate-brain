@@ -178,6 +178,7 @@ A work or life context that groups Areas; distinct from an Org.
 |---|---|---|---|
 | `date` | date | ✔ | brain |
 | `assessment` | enum §8 | ✔ | brain |
+| `passage` | `src-…#¶n:<8 hex>` | | the passage of a selected extract the entry rests on (0055, capture-and-review §5.1); present on a claim written from an extract |
 | `decided_in` | ID (`mtg-`) | | brain |
 | `deciders` | list of IDs (`per-`) | | brain |
 | `valid_from` | date | | brain; defaults to `date` when absent (0005) |

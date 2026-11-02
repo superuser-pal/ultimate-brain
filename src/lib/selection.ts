@@ -14,7 +14,8 @@ export interface Problem { code: SelectionCode; id: string | null; reason: strin
 /** A list line without an id: never an item, never imported, always listed (capture-and-review §4.1, parser tolerance). */
 export interface Unnumbered { subject: string | null; text: string }
 export interface Summary { subjects: Subject[]; items: Item[]; problems: Problem[]; lines: string[]; unnumbered: Unnumbered[] }
-export interface Paragraph { n: number; text: string; hash: string }
+/** `text` is whitespace-normalized (for matching and hashing); `raw` is the paragraph as written, which is what an extract stores and a preview shows. */
+export interface Paragraph { n: number; text: string; raw: string; hash: string }
 
 const SUBJECT = /^(?:#{1,6}\s*)?\[(s\d+)\]\s*(.*)$/;
 const ITEM = /^(?:[-*+]\s+|\d+[.)]\s+)?\[(s\d+\.i\d+)\]\s*(.*)$/;
@@ -52,6 +53,26 @@ function selectionOf(raw: string): Selection | null {
   return value === "use in brain" ? "use" : value === "meeting only" ? "meeting only" : null;
 }
 
+const TOKENS = ["meeting only", "use in brain"];
+const TOKEN_WORDS = /\b(meeting|brain|only|private|confidential|exclude|excluded|secret|skip)\b/i;
+
+function distance(left: string, right: string): number {
+  const row = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let i = 1; i <= left.length; i += 1) {
+    let diagonal = row[0]!; row[0] = i;
+    for (let j = 1; j <= right.length; j += 1) { const above = row[j]!; row[j] = Math.min(row[j]! + 1, row[j - 1]! + 1, diagonal + (left[i - 1] === right[j - 1] ? 0 : 1)); diagonal = above; }
+  }
+  return row[right.length]!;
+}
+
+/** An item that starts like a selection token but is not one (`Meetng only:`) must block, never default to inclusion (§4.3). */
+function looksLikeToken(rest: string): boolean {
+  const prefix = /^([A-Za-z][A-Za-z _-]{1,30}?)\s*:/.exec(rest);
+  if (prefix === null || /^track\b/i.test(prefix[1]!)) return false;
+  const word = normalize(prefix[1]!.replace(/[-_]/g, " ")).toLowerCase();
+  return TOKEN_WORDS.test(word) || TOKENS.some((token) => distance(word, token) <= 3);
+}
+
 /** Reads the summary text: subject headings, `Selection:` lines and item lines (§4.1, §4.3). Bullets and straight quotes are tolerated (T2, T6). */
 export function parseSummary(markdown: string): Summary {
   const subjects: Subject[] = [];
@@ -81,7 +102,7 @@ export function parseSummary(markdown: string): Summary {
       const anchors = [...rest.matchAll(QUOTE)].map((match) => normalize(match[1] ?? ""));
       const text = normalize(rest.replace(QUOTE, ""));
       items.push({ id: item[1] ?? "", subject: current?.id ?? null, explicit, waiting_on: waiting !== null, text, anchors, depends_on: dependsOn, line });
-      if (token === null && /^(meeting|use)[a-z ]*:/i.test(rest)) problems.push({ code: "SELECTION_UNREADABLE", id: item[1] ?? null, reason: `unreadable item token: ${rest.slice(0, 40)}` });
+      if (token === null && looksLikeToken(rest)) problems.push({ code: "SELECTION_UNREADABLE", id: item[1] ?? null, reason: `unreadable item token: ${rest.slice(0, 40)}` });
     } else if (subject !== null) {
       lines.push(line);
       current = { id: subject[1] ?? "", title: normalize(subject[2] ?? ""), selection: "use", raw: null };
@@ -110,8 +131,8 @@ export function parseSummary(markdown: string): Summary {
 
 /** Numbers the transcript paragraphs from ¶1 (§4.2); blank lines separate them. */
 export function paragraphs(transcript: string): { paragraphs: Paragraph[]; transcript_hash: string } {
-  const list = transcript.split(/\n\s*\n/).map(normalize).filter((text) => text !== "")
-    .map((text, index) => ({ n: index + 1, text, hash: sha(text).slice(0, 8) }));
+  const list = transcript.split(/\n\s*\n/).map((raw) => raw.replace(/^\s+|\s+$/g, "")).filter((raw) => raw !== "")
+    .map((raw, index) => { const text = normalize(raw); return { n: index + 1, text, raw, hash: sha(text).slice(0, 8) }; });
   return { paragraphs: list, transcript_hash: sha(list.map((entry) => entry.text).join("\n\n")) };
 }
 
@@ -148,6 +169,8 @@ export function planExtract(summary: Summary, transcript: string): Plan {
   for (const item of summary.items) {
     const found: number[] = [];
     if (item.anchors.length === 0) { broken.add(item.id); problems.push({ code: "SELECTION_UNMAPPABLE", id: item.id, reason: "no anchor" }); }
+    if (item.anchors.length > 3) { broken.add(item.id); problems.push({ code: "SELECTION_UNMAPPABLE", id: item.id, reason: `${item.anchors.length} anchors: one to three allowed` }); }
+    for (const anchor of item.anchors) if (anchor.split(" ").length > 12) { broken.add(item.id); problems.push({ code: "SELECTION_UNMAPPABLE", id: item.id, reason: `anchor longer than 12 words: ${anchor.slice(0, 40)}…` }); }
     for (const anchor of item.anchors) {
       const hits = paras.filter((entry) => entry.text.includes(anchor));
       if (hits.length === 1) found.push(hits[0]?.n ?? 0);
@@ -193,7 +216,7 @@ export function planExtract(summary: Summary, transcript: string): Plan {
     const list = citers.get(entry.n) ?? [];
     if (list.length === 0) continue;
     const useful = list.filter((mapping) => mapping.imported);
-    if (useful.length === list.length) copied.push({ n: entry.n, text: entry.text, hash: entry.hash, items: list.map((mapping) => mapping.item) });
+    if (useful.length === list.length) copied.push({ n: entry.n, text: entry.raw, hash: entry.hash, items: list.map((mapping) => mapping.item) });
     else if (useful.length > 0) { // fail closed: a paragraph shared with excluded content is not copied
       const excluded = list.filter((mapping) => !mapping.imported).map((mapping) => mapping.item);
       for (const mapping of useful) {
