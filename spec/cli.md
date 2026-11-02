@@ -474,6 +474,8 @@ Errors: `INPUT_INVALID`, `UNKNOWN_ID`, `BEFORE_MISMATCH`.
 { "data": { "proposals": [ { "id": "prp-3c8v1n5x", "kind": "update_fact", "status": "pending", "title": "Acme launch: Jan → Feb", "target": "prj-9x4t1b7e", "field": "launch_date", "before": "2027-01", "after": "2027-02", "from": "2026-12-03", "why": "…", "source": "mtg-8c4n2p7w", "created": "2026-12-03", "updated": "2026-12-03", "path": "_proposals/2026-12-03-acme-launch-jan-feb.md" } ] } }
 ```
 
+**Item ids (0055).** A new `review_notes` is written with `items` (schema §11): every note, link and change gets one immutable `it-` id when the proposal is created, in render order. The ids are never recomputed, so a deferral, a regeneration or a re-render cannot move a decision onto another item. `brain lint` checks them (`proposal-items`).
+
 ### 5.7 `brain apply`
 
 ```text
@@ -687,6 +689,7 @@ Issues have severity `error`, `warning`, or `info`. Information is listed in `is
 | `source-replaces` | error | a source's `replaces` names a note that isn't a source (a missing id is `missing-ref`), or a source two others replace (0045) |
 | `unknown-lineage` | warning | a knowledge note's `sources` names a source or meeting whose input cannot be determined (no `source_key`, `extract_of` or meeting `source`): its evidence is never live while any suppression is active (0055, capture-and-review §5.1) |
 | `suppression-record` | error | a file of `_suppressions/` (or the folder) cannot be read or is malformed (0055, capture-and-review §5.3); retrieval commands refuse with `SUPPRESSIONS_UNREADABLE` |
+| `proposal-items` | error | a `review_notes` `items` list that does not give every note, link and change exactly one immutable `it-` id, an item that refers to something the proposal does not hold, or an `item_decisions` entry that names no item or repeats one (0055, capture-and-review §7.2) |
 | `extract-passages` | error | an extract source's `passages` does not list the `<!-- passage ¶n -->` paragraphs of its body in order, or a paragraph no longer matches its 8-hex hash (0055, capture-and-review §4.5) |
 | `passage-ref` | error | a `^[src-…#¶n:hash]` in a note body names a source that is not an extract, a passage it does not hold, or the wrong hash; or a note lists an extract in `sources` but cites none of its passages (0055, capture-and-review §5.1) |
 | `update-body` | error | an `update_body` proposal, or an `update_body` entry of a `review_notes`'s `changes`, whose target isn't a `reference` (0045) or is a `promoted` one (0049) |

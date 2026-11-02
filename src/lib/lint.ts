@@ -271,6 +271,28 @@ export function lintBrain(input: LintInput): Issue[] {
         if (reference?.type === "reference" && reference.attributes.origin === "promoted") err("update-body", lineOfKey(note, a.kind === "update_body" ? "target" : "changes"), `update_body targets ${reference.id}, a promoted Document, whose body is yours (0049)`);
       }
     }
+    if (note.type === "proposal" && Array.isArray(a.items)) {
+      // The items of a review_notes: one immutable id per note, link and change, each resolving (capture-and-review §7.2).
+      const notes = list(a.notes).map(String), links = list(a.links), changes = list(a.changes);
+      const seenIds = new Set<string>(), covered = new Set<string>();
+      for (const entry of list(a.items) as Array<{ item_id?: string; kind?: string; ref?: unknown }>) {
+        if (typeof entry.item_id !== "string" || seenIds.has(entry.item_id)) err("proposal-items", lineOfKey(note, "items"), `item id ${String(entry.item_id)} is missing or used twice`);
+        else seenIds.add(entry.item_id);
+        const key = `${entry.kind}:${String(entry.ref)}`;
+        const resolves = entry.kind === "note" ? notes.includes(String(entry.ref)) : entry.kind === "link" ? Number.isInteger(entry.ref) && (entry.ref as number) < links.length : entry.kind === "change" && Number.isInteger(entry.ref) && (entry.ref as number) < changes.length;
+        if (!resolves) err("proposal-items", lineOfKey(note, "items"), `item ${String(entry.item_id)} refers to ${key}, which this proposal does not hold`);
+        if (covered.has(key)) err("proposal-items", lineOfKey(note, "items"), `${key} has two items`);
+        covered.add(key);
+      }
+      const expected = [...notes.map((id) => `note:${id}`), ...links.map((_, index) => `link:${index}`), ...changes.map((_, index) => `change:${index}`)];
+      for (const key of expected) if (!covered.has(key)) err("proposal-items", lineOfKey(note, "items"), `${key} has no item`);
+      const decided = new Set<string>();
+      for (const decision of list(a.item_decisions) as Array<{ item_id?: string }>) {
+        if (typeof decision.item_id !== "string" || !seenIds.has(decision.item_id)) err("proposal-items", lineOfKey(note, "item_decisions"), `a decision names ${String(decision.item_id)}, which is not an item`);
+        else if (decided.has(decision.item_id)) err("proposal-items", lineOfKey(note, "item_decisions"), `${decision.item_id} is decided twice`);
+        else decided.add(decision.item_id);
+      }
+    }
     if (note.type === "reference" && typeof a.promoted_from === "string") {
       const from = byId.get(a.promoted_from);
       if (from !== undefined && from.type !== "decision" && from.type !== "concept") err("promoted-from", lineOfKey(note, "promoted_from"), `promoted_from names ${a.promoted_from}, a ${from.type}, not a decision or concept (0049)`);

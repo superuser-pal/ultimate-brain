@@ -415,6 +415,40 @@
         "$ref": "#/$defs/change"
       }
     },
+    "items": {
+      "description": "review_notes only (0055, capture-and-review §7.2): the independently decidable items, in render order (notes, links, changes). `item_id` is immutable. Absent on a proposal written before 0.8.0, which keeps the 0045 behavior (§7.9).",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["item_id", "kind", "ref"],
+        "additionalProperties": false,
+        "properties": {
+          "item_id": { "type": "string", "pattern": "^it-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
+          "kind": { "enum": ["note", "link", "change"] },
+          "ref": { "description": "A note id (kind note) or an index into links or changes.", "anyOf": [{ "type": "integer", "minimum": 0 }, { "$ref": "note.schema.json#/$defs/id" }] }
+        }
+      }
+    },
+    "item_decisions": {
+      "description": "review_notes only: decided items, written in the same commit as their write set (capture-and-review §7.6).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["item_id", "decision", "decided_at", "decided_by"],
+        "additionalProperties": false,
+        "properties": {
+          "item_id": { "type": "string", "pattern": "^it-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
+          "decision": { "enum": ["accept", "reject", "defer"] },
+          "decided_at": { "$ref": "note.schema.json#/$defs/timestamp" },
+          "decided_by": { "enum": ["notion", "chat"] },
+          "proposed_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "base_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "snapshot_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "state": { "enum": ["applied", "closed", "deferred"] }
+        }
+      }
+    },
     "deferred_from": {
       "type": "string",
       "pattern": "^prp-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
@@ -1326,6 +1360,16 @@
           {
             "required": [
               "dropped"
+            ]
+          },
+          {
+            "required": [
+              "items"
+            ]
+          },
+          {
+            "required": [
+              "item_decisions"
             ]
           }
         ]
