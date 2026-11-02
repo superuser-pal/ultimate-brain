@@ -9,7 +9,7 @@ import { rangesProblem, splitParts } from "./parts.ts";
 import { sourceFolder } from "./paths.ts";
 import { extractPassages, PASSAGE_REF, passageHash } from "./selection.ts";
 import { lineageOf } from "./eligibility.ts";
-import { contextFor, eligibleNotes, loadSuppressions } from "./suppressions.ts";
+import { contextFor, eligibleNotes, indexNotes, loadSuppressions } from "./suppressions.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
 
@@ -83,6 +83,7 @@ export function lintBrain(input: LintInput): Issue[] {
   const add = (severity: Severity, rule: string, path: string, line: number, id: string | null, message: string) =>
     issues.push({ severity, rule, path, line, id, message });
 
+  for (const message of loadSuppressions(input.root).problems) add("error", "suppression-record", "_suppressions", 1, null, message);
   for (const problem of input.problems) {
     if (problem.code === "NOT_A_NOTE") add("error", "not-a-note", problem.path, 1, null, problem.message);
     if (problem.code === "UNPARSEABLE" || problem.code === "UNREADABLE") add("error", "unparseable", problem.path, 1, null, problem.message);
@@ -329,7 +330,7 @@ export function lintBrain(input: LintInput): Issue[] {
     }
   }
 
-  if (input.indexMarkdown !== undefined && input.indexMarkdown !== buildIndex(input.notes).markdown) {
+  if (input.indexMarkdown !== undefined && input.indexMarkdown !== buildIndex(indexNotes(input.notes, loadSuppressions(input.root))).markdown) {
     add("warning", "index-stale", "index.md", 1, null, "index.md is out of date; run brain index");
   }
 

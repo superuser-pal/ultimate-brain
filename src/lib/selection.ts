@@ -54,6 +54,10 @@ function selectionOf(raw: string): Selection | null {
 }
 
 const TOKENS = ["meeting only", "use in brain"];
+const TOKEN_PHRASE = /meeting[\s-]*only|use[\s-]+in[\s-]+(?:the[\s-]+)?brain/i;
+const NOTICE = /^all subjects included unless marked meeting only\.?\s*mark (?:reviewed|ready) to confirm\.?$/i;
+const SELECTION_WORD = /\bselection\b/i;
+const ID_IN_LINE = /\[s\d+(?:\.i\d+)?\]/i;
 const TOKEN_WORDS = /\b(meeting|brain|only|private|confidential|exclude|excluded|secret|skip)\b/i;
 
 function distance(left: string, right: string): number {
@@ -81,10 +85,10 @@ export function parseSummary(markdown: string): Summary {
   const lines: string[] = [];
   const unnumbered: Unnumbered[] = [];
   let current: Subject | null = null;
-  let heading = false;
   for (const rawLine of markdown.split("\n")) {
-    const line = normalize(rawLine.replace(/\*\*/g, ""));
-    if (line === "") continue;
+    // Blockquote markers, emphasis around the whole line and HTML-escaped `>` are formatting, not content.
+    const line = normalize(rawLine.replace(/&gt;/g, ">").replace(/\*\*/g, "")).replace(/^(?:>\s*)+/, "").replace(/^[_*]+\s*|\s*[_*]+$/g, "").trim();
+    if (line === "" || NOTICE.test(line)) continue; // the confirmation notice of §4.4 mentions the token and is not a control
     const subject = SUBJECT.exec(line);
     const item = ITEM.exec(line);
     const choice = SELECTION_LINE.exec(line);
@@ -102,21 +106,24 @@ export function parseSummary(markdown: string): Summary {
       const anchors = [...rest.matchAll(QUOTE)].map((match) => normalize(match[1] ?? ""));
       const text = normalize(rest.replace(QUOTE, ""));
       items.push({ id: item[1] ?? "", subject: current?.id ?? null, explicit, waiting_on: waiting !== null, text, anchors, depends_on: dependsOn, line });
-      if (token === null && looksLikeToken(rest)) problems.push({ code: "SELECTION_UNREADABLE", id: item[1] ?? null, reason: `unreadable item token: ${rest.slice(0, 40)}` });
+      if ((token === null && looksLikeToken(rest)) || TOKEN_PHRASE.test(text)) problems.push({ code: "SELECTION_UNREADABLE", id: item[1] ?? null, reason: `unreadable item token: ${rest.slice(0, 40)}` });
     } else if (subject !== null) {
       lines.push(line);
       current = { id: subject[1] ?? "", title: normalize(subject[2] ?? ""), selection: "use", raw: null };
       subjects.push(current);
-      heading = true;
-    } else if (choice !== null && current !== null && heading) {
+      if (TOKEN_PHRASE.test(current.title)) problems.push({ code: "SELECTION_UNREADABLE", id: current.id, reason: `a selection token in a subject title is not a control: ${current.title.slice(0, 40)}` });
+    } else if (choice !== null && current !== null) {
+      // The subject's control may follow other lines of the subject, but there is only one.
       lines.push(line);
       const value = selectionOf(choice[1] ?? "");
+      if (current.raw !== null) problems.push({ code: "SELECTION_UNREADABLE", id: current.id, reason: "two Selection lines for one subject" });
       current.raw = normalize(choice[1] ?? "");
       if (value === null) problems.push({ code: "SELECTION_UNREADABLE", id: current.id, reason: `unreadable selection: ${current.raw}` });
       else current.selection = value;
-      heading = false;
     } else {
-      heading = false;
+      // Anything else that looks like a control or carries an item id must block: an exclusion that is not understood is never inclusion.
+      if (SELECTION_WORD.test(line) || TOKEN_PHRASE.test(line)) problems.push({ code: "SELECTION_UNREADABLE", id: current?.id ?? null, reason: `unreadable selection control: ${line.slice(0, 60)}` });
+      else if (ID_IN_LINE.test(line)) problems.push({ code: "SELECTION_UNREADABLE", id: current?.id ?? null, reason: `a line with an id that is not an item: ${line.slice(0, 60)}` });
       const bullet = /^(?:[-*+]|\d+[.)])\s+(.+)$/.exec(line);
       if (bullet !== null) unnumbered.push({ subject: current?.id ?? null, text: bullet[1] ?? "" });
     }
@@ -200,7 +207,14 @@ export function planExtract(summary: Summary, transcript: string): Plan {
   };
   const mappings: Mapping[] = summary.items.map((item) => {
     const effectiveSel = effectiveOf(item, subjects);
-    const excludedContext = item.depends_on.filter((target) => (byId.has(target) || subjects.has(target)) && effective(target) === "meeting only");
+    // Context is excluded when a dependency is excluded, or itself depends (however far back) on excluded context (§4.7, fail closed).
+    const reaches = (target: string, seen: Set<string>): boolean => {
+      if (seen.has(target)) return false;
+      seen.add(target);
+      if (!(byId.has(target) || subjects.has(target))) return false;
+      return effective(target) === "meeting only" || (byId.get(target)?.depends_on ?? []).some((next) => reaches(next, seen));
+    };
+    const excludedContext = item.depends_on.filter((target) => reaches(target, new Set([item.id])));
     let imported = effectiveSel === "use";
     let contextExcluded = false;
     if (imported && excludedContext.length > 0) {
@@ -216,7 +230,10 @@ export function planExtract(summary: Summary, transcript: string): Plan {
     const list = citers.get(entry.n) ?? [];
     if (list.length === 0) continue;
     const useful = list.filter((mapping) => mapping.imported);
-    if (useful.length === list.length) copied.push({ n: entry.n, text: entry.raw, hash: entry.hash, items: list.map((mapping) => mapping.item) });
+    if (useful.length > 0 && /<!--\s*passage\b/i.test(entry.raw)) {
+      // The extract format reserves this marker: a paragraph that contains it cannot be stored faithfully, so its items block (never altered or guessed).
+      for (const mapping of useful) { broken.add(mapping.item); problems.push({ code: "SELECTION_UNMAPPABLE", id: mapping.item, reason: `¶${entry.n} contains the reserved text "<!-- passage"` }); }
+    } else if (useful.length === list.length) copied.push({ n: entry.n, text: entry.raw, hash: entry.hash, items: list.map((mapping) => mapping.item) });
     else if (useful.length > 0) { // fail closed: a paragraph shared with excluded content is not copied
       const excluded = list.filter((mapping) => !mapping.imported).map((mapping) => mapping.item);
       for (const mapping of useful) {

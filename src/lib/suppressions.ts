@@ -25,8 +25,8 @@ export function loadSuppressions(root: string): Loaded {
       const value = JSON.parse(readFileSync(join(dir, name), "utf8")) as { input?: unknown; records?: unknown };
       const records = Array.isArray(value.records) ? (value.records as Record<string, unknown>[]) : null;
       const valid = typeof value.input === "string" && records !== null && records.every((record) => record.kind === "restore"
-        ? Number.isInteger(record.extract_version) && Array.isArray(record.items)
-        : Number.isInteger(record.version) && Array.isArray(record.passages) && (record.status === "active" || record.status === "reconciled"));
+        ? Number.isInteger(record.extract_version) && Array.isArray(record.items) && (record.items as unknown[]).every((item) => item !== null && typeof item === "object" && typeof (item as { note?: unknown }).note === "string" && Number.isInteger((item as { n?: unknown }).n))
+        : Number.isInteger(record.version) && Array.isArray(record.passages) && (record.passages as unknown[]).every((passage) => passage !== null && typeof passage === "object" && Number.isInteger((passage as { n?: unknown }).n)) && (record.status === "active" || record.status === "reconciled"));
       if (!valid) { loaded.problems.push(`_suppressions/${name}: not a suppression record`); continue; }
       for (const record of records!) {
         if (record.kind === "restore") loaded.restores.push({ input: value.input as string, extract_version: record.extract_version as number, items: record.items as Restore["items"] });
@@ -78,12 +78,17 @@ export function contextFor(notes: readonly Note[], loaded: Pick<Loaded, "suppres
   for (const [input, info] of latest) {
     const version = info.extract_version ?? 0;
     const removed = new Set(loaded.suppressions.filter((entry) => entry.input === input && entry.version < version).flatMap((entry) => entry.passages.map((passage) => `${passage.transcript_hash}|${passage.n}`)));
-    for (const entry of (loaded.restores ?? []).filter((candidate) => candidate.input === input && candidate.extract_version === version)) {
-      for (const item of entry.items) restored.add(`${input}|${info.transcript_hash}|${item.n}|${item.note}`);
-    }
     for (const entry of info.passages!) {
       const n = entry.split(":")[0]!;
       if (removed.has(`${info.transcript_hash}|${n}`)) awaiting.add(`${input}|${info.transcript_hash}|${n}`);
+    }
+    // A Restore accepted at an earlier version still stands for a later version that holds the passage, unless a suppression removed the
+    // passage again after it (then it must be restored anew).
+    for (const entry of (loaded.restores ?? []).filter((candidate) => candidate.input === input && candidate.extract_version <= version)) {
+      for (const item of entry.items) {
+        const removedAfter = loaded.suppressions.some((s) => s.input === input && s.version > entry.extract_version && s.version <= version && s.passages.some((p) => p.n === item.n && p.transcript_hash === info.transcript_hash));
+        if (!removedAfter) restored.add(`${input}|${info.transcript_hash}|${item.n}|${item.note}`);
+      }
     }
   }
   return { sources, suppressions: loaded.suppressions, awaitingRestore: awaiting, restored };
@@ -91,7 +96,9 @@ export function contextFor(notes: readonly Note[], loaded: Pick<Loaded, "suppres
 
 export interface Restriction { whole: boolean; lines: Set<number>; timeline: Set<number>; facts: Set<string> }
 const NONE = (): Restriction => ({ whole: false, lines: new Set(), timeline: new Set(), facts: new Set() });
-const CONTENT = /^(?!#{1,6}\s|<!--|\s*$)/;
+// Only an empty line is structure: a heading or a comment can carry excluded text, so it counts as unmapped content.
+const CONTENT = /^(?!\s*$)/;
+const CONTENT_LENIENT = /^(?!#{1,6}\s|<!--|\s*$)/;
 
 /** What of a note a retrieval surface must not use while suppressions are active (§5.1). Body line numbers are 0-based. */
 export function restrictionOf(note: Note, context: Context): Restriction {
@@ -118,10 +125,11 @@ export function restrictionOf(note: Note, context: Context): Restriction {
   const cleared = Array.isArray(note.attributes.lineage_cleared) ? (note.attributes.lineage_cleared as string[]) : [];
   const claim = { entries: [], lineage_cleared: cleared, note: note.id };
   const required = new Set<string>();
+  const ever = new Set(context.suppressions.map((entry) => entry.input));
   const addLineage = (id: string) => {
     const lineage = lineageOf(id, context.sources);
     if (lineage === null) for (const input of active) required.add(input);
-    else if (active.has(lineage)) required.add(lineage);
+    else if (ever.has(lineage)) required.add(lineage); // reconciled or active: a reconciled cleanup does not free text it left in place
   };
   // Provenance comes from the note's `sources` and from every claim's own reference: a citation absent from `sources` still counts.
   sources.forEach(addLineage);
@@ -152,12 +160,16 @@ export function restrictionOf(note: Note, context: Context): Restriction {
     if (!eligible({ ...claim, entries }, context)) result.lines.add(index);
   }
   if (required.size === 0) return result;
-  const resolved = { ...context, suppressions: context.suppressions.filter((entry) => required.has(entry.input)) };
-  const released = noteReleased({ lineage_cleared: cleared }, resolved);
-  if (released) return result;
+  const activeNeeded = [...required].filter((input) => active.has(input));
+  const resolved = { ...context, suppressions: context.suppressions.filter((entry) => activeNeeded.includes(entry.input)) };
+  const releasedActive = activeNeeded.length === 0 || noteReleased({ lineage_cleared: cleared }, resolved);
+  const releasedAll = [...required].every((input) => cleared.includes(input));
   // Text that cannot be mapped to a claim (a body line with no passage reference, a fact no accepted timeline entry supports) fails
-  // closed: the note rests on a changed input and is restricted whole until it is resolved for that input (§5.1).
-  const unmapped = bodyLines.some((line) => line.refs.length === 0 && CONTENT.test(line.text));
+  // closed: the note rests on a changed input and is restricted whole until it is resolved for that input (§5.1). While a suppression
+  // is active a heading or comment counts as text; once the cleanup is reconciled a corrected note keeps its headings.
+  const strict = activeNeeded.length > 0 && !releasedActive;
+  if (!strict && releasedAll) return result;
+  const unmapped = bodyLines.some((line) => line.refs.length === 0 && (strict ? CONTENT : CONTENT_LENIENT).test(line.text));
   if (unmapped || unsupportedFact) result.whole = true;
   return result;
 }
@@ -180,4 +192,21 @@ export function eligibleNote(note: Note, context: Context): Note | null {
 export function eligibleNotes(notes: readonly Note[], loaded: Pick<Loaded, "suppressions"> & Partial<Pick<Loaded, "restores">>): Note[] {
   const context = contextFor(notes, loaded);
   return notes.flatMap((note) => { const kept = eligibleNote(note, context); return kept === null ? [] : [kept]; });
+}
+
+/** The notes the index may describe: a restricted note stays listed (it may be independently supported) but without its summary or facts, and a
+ *  partly restricted note loses what may carry excluded text (capture-and-review §5.1, "Indexes"). */
+export function indexNotes(notes: readonly Note[], loaded: Pick<Loaded, "suppressions"> & Partial<Pick<Loaded, "restores">>): Note[] {
+  const context = contextFor(notes, loaded);
+  return notes.map((note) => {
+    const restriction = restrictionOf(note, context);
+    if (restriction.whole) {
+      const attributes = { ...note.attributes };
+      delete attributes.summary;
+      if ("facts" in attributes) attributes.facts = {};
+      if ("timeline" in attributes) attributes.timeline = [];
+      return { ...note, attributes, body: "" };
+    }
+    return eligibleNote(note, context) ?? note;
+  });
 }

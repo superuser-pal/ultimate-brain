@@ -10,6 +10,8 @@ import { contextFor, restrictionOf, type Loaded } from "./suppressions.ts";
 export interface CleanupNote {
   note: string; path: string; whole: boolean; reason: "passages" | "unmapped text" | "unknown lineage";
   restricted: { line: number; text: string }[]; kept: { line: number; text: string }[];
+  /** Timeline entries (0-based index) and fact keys that are not returned or rendered. */
+  restricted_timeline: number[]; restricted_facts: string[];
 }
 export interface CleanupPlan {
   input: string; latest_extract: string | null;
@@ -34,9 +36,12 @@ export function cleanupPlan(notes: readonly Note[], loaded: Loaded, input: strin
     if (note.type === "source" || note.type === "proposal" || note.type === "view") continue;
     const cited = (Array.isArray(note.attributes.sources) ? note.attributes.sources : []).filter((value): value is string => typeof value === "string");
     const lineages = cited.map((id) => (context.sources.has(id) || !id.includes(":") ? lineageOf(id, context.sources) : id));
-    const touches = lineages.includes(input) || lineages.includes(null) || cited.some((id) => chainIds.has(id));
-    if (!touches) continue;
     const restriction = restrictionOf(note, context);
+    // A note belongs to this input's cleanup when it lists it as a source, or when any of its claims is restricted (a citation in the body
+    // or a timeline entry may name an input the `sources` list leaves out).
+    const touches = lineages.includes(input) || lineages.includes(null) || cited.some((id) => chainIds.has(id))
+      || restriction.whole || restriction.lines.size > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0;
+    if (!touches) continue;
     const lines = note.body.split(/\r?\n/);
     const restricted: CleanupNote["restricted"] = [];
     const kept: CleanupNote["kept"] = [];
@@ -46,8 +51,8 @@ export function cleanupPlan(notes: readonly Note[], loaded: Loaded, input: strin
       (restriction.lines.has(index) ? restricted : kept).push({ line: index + 1, text: text.trim().slice(0, 200) });
       for (const ref of refs) if (context.awaitingRestore?.has(`${input}|${String(latest?.attributes.transcript_hash)}|${ref[2]}`) && !context.restored?.has(`${input}|${String(latest?.attributes.transcript_hash)}|${ref[2]}|${note.id}`) && latestPassages.has(`${ref[2]}:${ref[3]}`)) result.restore.push({ note: note.id, line: index + 1, passage: `${ref[1]}#¶${ref[2]}:${ref[3]}` });
     });
-    if (restriction.whole || restricted.length > 0) {
-      result.notes.push({ note: note.id, path: note.path, whole: restriction.whole, reason: restriction.whole ? (lineages.includes(null) ? "unknown lineage" : "unmapped text") : "passages", restricted, kept });
+    if (restriction.whole || restricted.length > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0) {
+      result.notes.push({ note: note.id, path: note.path, whole: restriction.whole, reason: restriction.whole ? (lineages.includes(null) ? "unknown lineage" : "unmapped text") : "passages", restricted, kept, restricted_timeline: [...restriction.timeline], restricted_facts: [...restriction.facts] });
     }
     if (note.type === "reference" && cited.some((id) => chainIds.has(id))) result.documents.push({ note: note.id, sources: cited.filter((id) => chainIds.has(id)) });
   }

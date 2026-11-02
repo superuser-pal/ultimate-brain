@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 
@@ -226,4 +226,64 @@ test("a Restore is accepted per claim: restoring one note leaves another note on
   await writeFile(path, JSON.stringify(record, null, 2));
   const found = (await ask(dir, "heron")).json.data.candidates as { id: string }[];
   assert.deepEqual(found.map((c) => c.id), [noteId], "only the restored claim is returned");
+});
+
+test("source diff and the index never show excluded text", async (context) => {
+  const { dir, id } = await seeded(context, (src, h) => `Pricing ${src}. ^[${src}#¶2:${h.get(2)}]\n`);
+  const text = await readFile(join(dir, CONCEPT), "utf8");
+  await writeFile(join(dir, CONCEPT), text.replace(/\n---\n/, "\nsummary: Pricing is zebrafish95k\n---\n").replace(/^summary: .*\n(?=[\s\S]*^summary: )/m, ""));
+  commit(dir, "summary");
+  const v2 = await extract(dir, "Meeting only", "--previous", id);
+  assert.equal(v2.code, 0, v2.stdout);
+  const diff = await brain(["source", "diff", v2.json.data.created[0], "--brain", dir, "--json"]);
+  assert.equal(diff.code, 0, diff.stdout);
+  assert.ok(!JSON.stringify(diff.json.data).includes("zebrafish95k"), "no excluded text in the diff");
+  const built = await brain(["index", "--brain", dir, "--json"]);
+  assert.equal(built.code, 0, built.stdout);
+  assert.ok(!(await readFile(join(dir, "index.md"), "utf8")).includes("zebrafish95k"), "the index lists the note without its summary");
+  assert.ok(!JSON.stringify(built.json.data).includes("zebrafish95k"));
+  assert.equal((await brain(["index", "--check", "--brain", dir, "--json"])).code, 0, "lint and status agree the index is current");
+});
+
+test("after a reconciled exclusion a claim citing the old version without a passage stays restricted, unless marked independent", async (context) => {
+  const { dir, id } = await seeded(context, () => "Pricing is zebrafish95k kiwi.\n");
+  const text = await readFile(join(dir, CONCEPT), "utf8");
+  void text;
+  assert.equal((await extract(dir, "Meeting only", "--previous", id)).code, 0);
+  const path = join(dir, `_suppressions/${PAGE}.json`);
+  const record = JSON.parse(await readFile(path, "utf8"));
+  record.records[0].status = "reconciled";
+  await writeFile(path, JSON.stringify(record, null, 2));
+  commit(dir, "reconcile");
+  assert.equal((await ask(dir, "kiwi")).json.data.candidates.length, 0, "a reconciled cleanup does not free the old text");
+  const note = await readFile(join(dir, CONCEPT), "utf8");
+  await writeFile(join(dir, CONCEPT), note.replace(/\n---\n/, `\nlineage_cleared:\n  - ${PAGE}\n---\n`));
+  assert.equal((await ask(dir, "kiwi")).json.data.candidates.length, 1, "Keep (lineage_cleared) releases it");
+});
+
+test("a Restore stays valid for a later version that holds the passage, until a new exclusion removes it again", async (context) => {
+  const { dir, id } = await seeded(context, (src, h) => `Pricing tapir. ^[${src}#¶2:${h.get(2)}]\n`);
+  const v2 = await extract(dir, "Meeting only", "--previous", id);
+  const v3 = await extract(dir, "Use in brain", "--previous", v2.json.data.created[0]);
+  const noteId = /^id: (.+)$/m.exec(await readFile(join(dir, CONCEPT), "utf8"))![1]!;
+  const path = join(dir, `_suppressions/${PAGE}.json`);
+  const record = JSON.parse(await readFile(path, "utf8"));
+  record.records.push({ kind: "restore", extract_version: 3, items: [{ note: noteId, n: 2 }], written: NOW });
+  await writeFile(path, JSON.stringify(record, null, 2));
+  commit(dir, "restore");
+  // A mapping-only version (an item id renamed) leaves paragraphs unchanged.
+  await writeFile(join(dir, "..", "s.md"), SUMMARY("Use in brain").replace("[s3.i1]", "[s3.i9]"));
+  const v4 = await brain(["source", "extract", "--page", PAGE, "--title", "Launch sync", "--date", "2026-12-10", "--summary", join(dir, "..", "s.md"), "--transcript", join(dir, "..", "t.md"), "--previous", v3.json.data.created[0], "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(v4.code, 0, v4.stdout);
+  assert.equal((await ask(dir, "tapir")).json.data.candidates.length, 1, "the Restore carries to v4");
+  const v5 = await extract(dir, "Meeting only", "--previous", v4.json.data.created[0]);
+  assert.equal(v5.code, 0, v5.stdout);
+  assert.equal((await ask(dir, "tapir")).json.data.candidates.length, 0, "excluded again");
+});
+
+test("an unreadable record shape fails closed", async (context) => {
+  const dir = await gitBrain(context);
+  await mkdir(join(dir, "_suppressions"), { recursive: true });
+  await writeFile(join(dir, "_suppressions/x.json"), JSON.stringify({ input: "x", records: [{ version: 1, passages: [null], status: "active" }] }));
+  assert.equal((await ask(dir, "anything")).json.error.code, "SUPPRESSIONS_UNREADABLE");
 });

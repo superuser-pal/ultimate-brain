@@ -5,6 +5,7 @@ import type { Command, Warning } from "../lib/command.ts";
 import { atomicWriteFile } from "../lib/fs-safe.ts";
 import { buildIndex } from "../lib/index-builder.ts";
 import { scanNotes } from "../lib/notes.ts";
+import { indexNotes, requireSuppressions } from "../lib/suppressions.ts";
 
 /** `brain index [--check]` (spec/cli.md §5.8, spec/schema.md §13). */
 export const indexCommand: Command = {
@@ -18,7 +19,7 @@ export const indexCommand: Command = {
     const root = brain!.root;
     const check = args.options.check === true;
     const { notes, problems } = await scanNotes(root);
-    const built = buildIndex(notes);
+    const built = buildIndex(indexNotes(notes, requireSuppressions(root)));
 
     const warnings: Warning[] = [
       ...problems.map((problem) => ({ code: problem.code, message: `${problem.path}: ${problem.message}`, path: problem.path })),
