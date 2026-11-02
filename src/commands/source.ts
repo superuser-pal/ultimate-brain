@@ -1,7 +1,9 @@
 import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { lineDiff } from "../lib/diff.ts";
+import { cleanupPlan } from "../lib/cleanup.ts";
 import { buildExtractPlan } from "../lib/extract.ts";
+import { loadSuppressions } from "../lib/suppressions.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { readFile } from "node:fs/promises";
 
@@ -66,5 +68,22 @@ export const sourceExtractPlanCommand: Command = {
     const workspace = await Workspace.open(brain!);
     const data = buildExtractPlan(workspace.notes, { page, summary: await read(summaryPath), transcript: await read(transcriptPath), previous: args.options.previous as string | undefined });
     return { data, human: data.ok ? `${data.passages.length} paragraph(s) would enter the extract; write ${data.write_required ? "required" : "not required"}\n` : `blocked: ${data.problems.map((problem) => `${problem.code} ${problem.id ?? ""} ${problem.reason}`).join("; ")}\n` };
+  },
+};
+
+/** `brain source cleanup-plan` (spec/cli.md §5.25, capture-and-review §5.2): what an input's suppressions restrict and what stays. Read-only. */
+export const sourceCleanupPlanCommand: Command = {
+  name: "source cleanup-plan",
+  usage: "brain source cleanup-plan --page <notion-page-id> [--json]",
+  summary: "List the notes, Tasks and Documents affected by an input's active suppressions, and the claims that stay. Read-only.",
+  options: { page: "string" },
+  maxPositionals: 0,
+  needsBrain: true,
+  async run({ args, brain }) {
+    const page = args.options.page as string | undefined;
+    if (page === undefined) throw new BrainError("USAGE", "Give --page <notion-page-id>");
+    const workspace = await Workspace.open(brain!);
+    const plan = cleanupPlan(workspace.notes, loadSuppressions(brain!.root).suppressions, page);
+    return { data: plan, human: `${plan.notes.length} note(s), ${plan.tasks.length} Task(s), ${plan.documents.length} Document(s) affected\n` };
   },
 };

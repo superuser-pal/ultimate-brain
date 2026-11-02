@@ -174,3 +174,39 @@ test("views leave out notes resting on a suppressed input, and the writer regene
   assert.equal(git(dir, "status", "--porcelain").trim(), "", "extract, record and views are one commit");
   assert.equal((await brain(["views", "--check", "--brain", dir, "--json"])).code, 0, "and the views are current");
 });
+
+test("cleanup-plan lists restricted claims, the claims that stay, Tasks of excluded items and Documents", async (context) => {
+  const dir = await gitBrain(context);
+  const v1 = await extract(dir, SUMMARY("Use in brain"), TRANSCRIPT);
+  const id = v1.json.data.created[0] as string;
+  const hashes = new Map<number, string>();
+  for (const m of (await readFile(join(dir, v1.json.data.path), "utf8")).matchAll(/- n: (\d+)\n\s+hash: ([0-9a-f]{8})/g)) hashes.set(Number(m[1]), m[2]!);
+  const concept = join(dir, "knowledge/concepts/row-level-security.md");
+  const original = await readFile(concept, "utf8");
+  const withSource = original.replace(/\nsources:[^\n]*\n/, "\n").replace(/\n---\n/, `\nsources:\n  - ${id}\n---\n`);
+  await writeFile(concept, `${withSource}\nPricing was 95k. ^[${id}#¶2:${hashes.get(2)}]\nThe contract goes Friday. ^[${id}#¶3:${hashes.get(3)}]\n`);
+  const task = "6a7b0000-0000-4000-8000-000000000009";
+  const rec = join(dir, "..", "rec.json");
+  await writeFile(rec, JSON.stringify({ records: [{ id, synced_at: NOW, tasks: [task], task_items: { "s2.i1": task } }] }));
+  assert.equal((await brain(["sync", "record", "--input", rec, "--brain", dir, "--json"])).json.data.records[0].result, "recorded");
+  git(dir, "add", "-A"); git(dir, "commit", "-q", "-m", "claims");
+  const v2 = await extract(dir, SUMMARY("Meeting only"), TRANSCRIPT, "--previous", id);
+  assert.equal(v2.code, 0, v2.stdout);
+  const plan = await brain(["source", "cleanup-plan", "--page", PAGE, "--brain", dir, "--json"]);
+  assert.equal(plan.code, 0, plan.stdout);
+  const entry = plan.json.data.notes.find((n: { note: string }) => n.note.startsWith("con-"));
+  assert.ok(entry.restricted.some((r: { text: string }) => r.text.includes("95k")), "the pricing claim is restricted");
+  assert.ok(entry.kept.some((r: { text: string }) => r.text.includes("Friday")), "the independently supported claim stays");
+  assert.deepEqual(plan.json.data.tasks, [{ task, item: "s2.i1", reason: "item no longer selected" }]);
+  assert.equal(plan.json.data.latest_extract, v2.json.data.created[0]);
+});
+
+test("lint warns when a note cites a meeting whose input cannot be determined", async (context) => {
+  const dir = await gitBrain(context);
+  const clean = await brain(["lint", "--brain", dir, "--json"]);
+  assert.equal(clean.json.data.issues.filter((i: { rule: string }) => i.rule === "unknown-lineage").length, 0);
+  const meeting = join(dir, "knowledge/meetings", (await (await import("node:fs/promises")).readdir(join(dir, "knowledge/meetings")))[0]!);
+  await writeFile(meeting, (await readFile(meeting, "utf8")).replace(/^source: .*\n/m, ""));
+  const run = await brain(["lint", "--brain", dir, "--json"]);
+  assert.ok(run.json.data.issues.some((i: { rule: string; severity: string }) => i.rule === "unknown-lineage" && i.severity === "warning"));
+});
