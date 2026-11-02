@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { classifyDrift, extractBody, pageFingerprint, paragraphs, parseSummary, planExtract } from "../src/lib/selection.ts";
+import { classifyDrift, extractBody, passageHash, pageFingerprint, paragraphs, parseSummary, planExtract } from "../src/lib/selection.ts";
 
 const TRANSCRIPT = [
   "We start with the launch plan and agree the launch moves to February.",
@@ -115,8 +115,10 @@ const EXTRACT = {
 let counter = 0;
 async function create(dir: string, frontmatter: Record<string, unknown>) {
   counter += 1;
+  const text = `The launch moves to February ${counter}.`;
+  const passages = Array.isArray(frontmatter.passages) ? [{ n: 1, hash: passageHash(text), items: ["s1.i1"] }] : undefined;
   const file = join(dir, "..", "extract.json");
-  await writeFile(file, JSON.stringify({ notes: [{ type: "source", title: "Launch sync (extract)", file_date: "2026-12-10", frontmatter: { source_key: "notion:11111111-2222-4333-8444-555555555555", ...frontmatter }, body: `<!-- passage ¶1 item s1.i1 -->\nThe launch moves to February ${counter}.\n` }] }));
+  await writeFile(file, JSON.stringify({ notes: [{ type: "source", title: "Launch sync (extract)", file_date: "2026-12-10", frontmatter: { source_key: "notion:11111111-2222-4333-8444-555555555555", ...frontmatter, ...(passages === undefined ? {} : { passages }) }, body: `<!-- passage ¶1 item s1.i1 -->\n${text}\n` }] }));
   return brain(["note", "new", "--input", file, "--brain", dir, "--now", "2026-12-10T09:00:00Z", "--json"]);
 }
 
@@ -133,4 +135,31 @@ test("an extract source is written with all its fields, in order, and an incompl
   assert.notEqual(bad.code, 0, "an extract without its selection is invalid");
   const plain = await create(dir, { extract_of: EXTRACT.extract_of });
   assert.notEqual(plain.code, 0, "extract fields come together");
+});
+
+import { readdir } from "node:fs/promises";
+
+test("lint checks an extract's passages and the passage references that cite it", async (context) => {
+  const dir = await fixtureCopy(context);
+  const run = await create(dir, EXTRACT);
+  const path = run.json.data.created[0].path as string;
+  const id = run.json.data.created[0].id as string;
+  const real = /\n\s+hash: ([0-9a-f]{8})\n/.exec(await readFile(join(dir, path), "utf8"))?.[1] ?? "";
+  const lintRules = async () => {
+    const out = await brain(["lint", "--brain", dir, "--json"]);
+    return (out.json.data.issues as { rule: string; message: string }[]).filter((issue) => issue.rule === "extract-passages" || issue.rule === "passage-ref");
+  };
+  assert.deepEqual(await lintRules(), []);
+  const concept = join(dir, "knowledge/concepts", (await readdir(join(dir, "knowledge/concepts")))[0] as string);
+  const original = await readFile(concept, "utf8");
+  await writeFile(concept, original.replace(/\n$/, "") + `\n\nA statement. ^[${id}#¶1:${real}]\n`);
+  assert.deepEqual(await lintRules(), []);
+  await writeFile(concept, original.replace(/\n$/, "") + `\n\nA statement. ^[${id}#¶1:00000000]\n`);
+  assert.match((await lintRules())[0]?.message ?? "", /has the hash/);
+  await writeFile(concept, original.replace(/\n$/, "") + `\n\nA statement. ^[${id}#¶9:00000000]\n`);
+  assert.match((await lintRules())[0]?.message ?? "", /not a passage/);
+  await writeFile(concept, original);
+  const file = await readFile(join(dir, path), "utf8");
+  await writeFile(join(dir, path), file.replace("hash: 0123abcd", "hash: x").replace(/passages:[\s\S]*?\n(?=\w+:|---)/, "passages:\n  - n: 2\n    hash: 0123abcd\n    items:\n      - s1.i1\n"));
+  assert.ok((await lintRules()).some((issue) => issue.rule === "extract-passages"));
 });
