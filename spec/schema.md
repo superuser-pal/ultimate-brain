@@ -236,7 +236,7 @@ Immutable snapshot of input. **Its body and the fields above `summary` in the ta
 | `extract` | `true` on a selected extract of a Notion input: the body holds only the selected paragraphs (0055, [capture-and-review.md](capture-and-review.md) §4.5) | |
 | `extract_of` | the Notion page id of the full input; the full text stays in Notion | ✔ with `extract` |
 | `extract_version` | integer ≥ 1; a new version `replaces` the one before | ✔ with `extract` |
-| `transcript_hash`, `page_fingerprint` | sha256 hex (64) of the normalized transcript paragraphs, and of the mapping-relevant page text with that hash (§4.8) | ✔ with `extract` |
+| `transcript_hash` | sha256 hex (64) of the normalized transcript paragraphs | ✔ with `extract` |
 | `selection` | list of `{id, effective, explicit}` for every subject and item; `effective` and `explicit` are `use` or `meeting only`, `explicit` also `null` | ✔ with `extract` |
 | `passages` | list of `{n, hash, items}` for each paragraph in the body: its number, an 8-hex check hash and the item ids that cite it | ✔ with `extract` |
 | `replaces` | the `src-` id of the earlier version of this input: a corrected meeting or Inbox row read again, or a new version of a document (0045) | must name an existing source that no other source replaces |

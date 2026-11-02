@@ -77,7 +77,7 @@ test("brain query leaves out restricted statements and notes resting on a suppre
   const page = "11111111-2222-4333-8444-555555555555";
   // The fixture already has sources and concepts: add an extract source, a suppression and a concept citing it.
   const src = join(dir, "sources/notion/2026-12-10-extract.md");
-  await write(src, `---\nid: src-ex2a3b4c\ntype: source\ntitle: Launch extract\nsource_key: notion:${page}\nkind: minutes\nextract: true\nextract_of: ${page}\nextract_version: 2\ntranscript_hash: ${"a".repeat(64)}\npage_fingerprint: ${"b".repeat(64)}\nselection:\n  - id: s1\n    effective: use\n    explicit: null\npassages:\n  - n: 1\n    hash: ${hash}\n    items:\n      - s1.i1\ncontent_hash: sha256:${"0".repeat(64)}\ncaptured: 2026-12-10T09:00:00Z\n---\n<!-- passage ¶1 item s1.i1 -->\n${text}\n`);
+  await write(src, `---\nid: src-ex2a3b4c\ntype: source\ntitle: Launch extract\nsource_key: notion:${page}\nkind: minutes\nextract: true\nextract_of: ${page}\nextract_version: 2\ntranscript_hash: ${"a".repeat(64)}\nselection:\n  - id: s1\n    effective: use\n    explicit: null\npassages:\n  - n: 1\n    hash: ${hash}\n    items:\n      - s1.i1\ncontent_hash: sha256:${"0".repeat(64)}\ncaptured: 2026-12-10T09:00:00Z\n---\n<!-- passage ¶1 item s1.i1 -->\n${text}\n`);
   const concept = join(dir, "knowledge/concepts/row-level-security.md");
   const original = await read(concept, "utf8");
   const withSources = original.replace(/\nsources:[^\n]*\n/, "\n").replace(/\n---\n/, `\nsources:\n  - src-ex2a3b4c\n---\n`);
@@ -85,7 +85,7 @@ test("brain query leaves out restricted statements and notes resting on a suppre
   const ask = async () => (await brain(["query", "--candidates", "zebra", "--brain", dir, "--json"])).json.data.candidates as { id: string; snippets: { text: string }[] }[];
   assert.equal((await ask()).length, 1, "no suppression: the note is a candidate");
   await mkdir(join(dir, "_suppressions"), { recursive: true });
-  await write(join(dir, "_suppressions", `${page}.json`), JSON.stringify({ input: page, version: 2, passages: [{ extract_of: page, transcript_hash: "a".repeat(64), n: 2 }], status: "active" }));
+  await write(join(dir, "_suppressions", `${page}.json`), JSON.stringify({ input: page, records: [{ version: 2, passages: [{ extract_of: page, transcript_hash: "a".repeat(64), n: 2 }], full_copies: [], status: "active" }] }));
   const after = await ask();
   assert.equal(after.length, 1);
   const quoted = after[0]?.snippets.map((snippet) => snippet.text).join("|") ?? "";
@@ -98,10 +98,11 @@ test("brain status counts suppressions, restricted notes and unreadable records"
   const clean = await brain(["status", "--brain", dir, "--json"]);
   assert.deepEqual(clean.json.data.suppressions, { active: 0, reconciled: 0, restricted_notes: 0, unresolved_lineage: 0, problems: [] });
   await mkdir(join(dir, "_suppressions"), { recursive: true });
-  await write(join(dir, "_suppressions", "page-a.json"), JSON.stringify({ input: "page-a", version: 2, passages: [], status: "active" }));
+  await write(join(dir, "_suppressions", "page-a.json"), JSON.stringify({ input: "page-a", records: [{ version: 2, passages: [], status: "active" }, { version: 3, passages: [], status: "reconciled" }] }));
   await write(join(dir, "_suppressions", "broken.json"), "{");
   const run = await brain(["status", "--brain", dir, "--json"]);
   assert.equal(run.json.data.suppressions.active, 1);
+  assert.equal(run.json.data.suppressions.reconciled, 1, "each record keeps its own status");
   assert.deepEqual(run.json.data.suppressions.problems, ["_suppressions/broken.json: unreadable"]);
   assert.equal(run.json.data.suppressions.unresolved_lineage, 0, "no fixture note rests on page-a");
 });

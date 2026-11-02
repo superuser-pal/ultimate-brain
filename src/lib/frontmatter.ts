@@ -31,12 +31,12 @@ const TYPE_FIELDS: Readonly<Record<string, readonly string[]>> = {
   meeting: ["date", "attendees", "source", "decisions", "questions", "tasks"],
   decision: ["date", "assessment", "decided_in", "deciders", "valid_from", "valid_until"],
   question: ["kind", "raised_in", "answer"],
-  source: ["source_key", "kind", "file_name", "converter", "content_hash", "captured", "origin_edited", "repo", "repo_path", "commit", "attached_to", "extract", "extract_of", "extract_version", "transcript_hash", "page_fingerprint", "selection", "passages"],
+  source: ["source_key", "kind", "file_name", "converter", "content_hash", "captured", "origin_edited", "repo", "repo_path", "commit", "attached_to", "extract", "extract_of", "extract_version", "transcript_hash", "selection", "passages"],
   view: ["view_kind", "project", "area", "projects", "question", "asked_in", "generated_from", "generated_at"],
   memory: ["scope", "areas", "projects", "stacks", "confidence", "origin"],
 };
 /** A source's system fields, last and in this order (spec/cli.md §3.6.5). */
-const SOURCE_SYSTEM = ["notion_text", "notion_parts", "notion_text_requested", "notion", "last_synced", "notion_published", "tasks"];
+const SOURCE_SYSTEM = ["notion_text", "notion_parts", "notion_text_requested", "notion", "last_synced", "notion_published", "tasks", "task_items"];
 /** Proposal key order: the spec/schema.md §11 example, then its table. */
 const PROPOSAL_ORDER = [
   "id", "type", "title", "created", "updated", "kind", "target", "field", "links", "notes", "answer", "answer_note", "before", "after", "from",

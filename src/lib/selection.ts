@@ -211,38 +211,3 @@ export function planExtract(summary: Summary, transcript: string): Plan {
 export function extractBody(plan: Plan): string {
   return plan.copied.map((entry) => `<!-- passage ¶${entry.n} item ${entry.items.join(",")} -->\n${entry.text}`).join("\n\n") + "\n";
 }
-
-/** sha256 of the mapping-relevant page text plus the transcript hash (§4.8). */
-export function pageFingerprint(summary: Summary, transcriptHash: string): string {
-  return sha(`${summary.lines.join("\n")}\n${transcriptHash}`);
-}
-
-export type Drift =
-  | { kind: "none" }
-  | { kind: "stale"; reason: string }
-  | { kind: "text" }
-  | { kind: "tokens"; changes: { id: string; from: Selection; to: Selection }[] };
-
-/** Classifies a re-read page against the one stored in the latest extract (§4.8 steps 1, 1b, 2, 3). */
-export function classifyDrift(before: Summary, after: Summary, beforeHash: string, afterHash: string): Drift {
-  if (beforeHash !== afterHash) return { kind: "stale", reason: "transcript_hash differs" };
-  const shape = (summary: Summary) => JSON.stringify({
-    subjects: summary.subjects.map((entry) => entry.id),
-    items: summary.items.map((entry) => [entry.id, entry.subject, entry.anchors, entry.depends_on, entry.waiting_on]),
-  });
-  if (shape(before) !== shape(after)) return { kind: "stale", reason: "an id, anchor or dependency differs" };
-  const bs = new Map(before.subjects.map((entry) => [entry.id, entry]));
-  const as = new Map(after.subjects.map((entry) => [entry.id, entry]));
-  const bi = new Map(before.items.map((entry) => [entry.id, entry]));
-  const changes: { id: string; from: Selection; to: Selection }[] = [];
-  for (const subject of after.subjects) {
-    const from = bs.get(subject.id)?.selection ?? "use";
-    if (from !== subject.selection) changes.push({ id: subject.id, from, to: subject.selection });
-  }
-  for (const item of after.items) {
-    const from = bi.get(item.id)?.explicit ?? null;
-    if (from !== item.explicit) changes.push({ id: item.id, from: effectiveOf(bi.get(item.id) as Item, bs), to: effectiveOf(item, as) });
-  }
-  if (changes.length > 0) return { kind: "tokens", changes };
-  return before.lines.join("\n") === after.lines.join("\n") ? { kind: "none" } : { kind: "text" };
-}

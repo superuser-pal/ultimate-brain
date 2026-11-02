@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { classifyDrift, extractBody, passageHash, pageFingerprint, paragraphs, parseSummary, planExtract } from "../src/lib/selection.ts";
+import { extractBody, passageHash, paragraphs, parseSummary, planExtract } from "../src/lib/selection.ts";
 
 const TRANSCRIPT = [
   "We start with the launch plan and agree the launch moves to February.",
@@ -88,18 +88,6 @@ test("paragraphs are numbered, identical paragraphs are two passages, and re-rea
   assert.equal(paragraphs("One.\n\nOne.\n\nTwo.").transcript_hash, a.transcript_hash);
 });
 
-test("drift: tokens, text-only, stale and none", () => {
-  const hash = paragraphs(TRANSCRIPT).transcript_hash;
-  const before = parseSummary(SUMMARY);
-  assert.deepEqual(classifyDrift(before, parseSummary(SUMMARY), hash, hash), { kind: "none" });
-  const tokens = classifyDrift(before, parseSummary(SUMMARY.replace("Selection: Meeting only", "Selection: Use in brain")), hash, hash);
-  assert.equal(tokens.kind, "tokens");
-  assert.deepEqual(tokens.kind === "tokens" && tokens.changes.map((c) => c.id), ["s2", "s2.i1", "s2.i2"].slice(0, 1));
-  assert.equal(classifyDrift(before, parseSummary(SUMMARY.replace("Pricing figure", "The price")), hash, hash).kind, "text");
-  assert.equal(classifyDrift(before, parseSummary(SUMMARY.replace("“Pricing is 95k”", "“keep it between us”")), hash, hash).kind, "stale");
-  assert.equal(classifyDrift(before, before, hash, "other").kind, "stale");
-  assert.notEqual(pageFingerprint(before, hash), pageFingerprint(parseSummary(SUMMARY.replace("Pricing figure", "The price")), hash));
-});
 
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -107,7 +95,7 @@ import { brain, fixtureCopy } from "./helpers.ts";
 
 const EXTRACT = {
   extract: true, extract_of: "11111111-2222-4333-8444-555555555555", extract_version: 1,
-  transcript_hash: "a".repeat(64), page_fingerprint: "b".repeat(64),
+  transcript_hash: "a".repeat(64),
   selection: [{ id: "s1", effective: "use", explicit: null }, { id: "s1.i1", effective: "use", explicit: null }],
   passages: [{ n: 1, hash: "0123abcd", items: ["s1.i1"] }],
 };
@@ -164,31 +152,70 @@ test("lint checks an extract's passages and the passage references that cite it"
   assert.ok((await lintRules()).some((issue) => issue.rule === "extract-passages"));
 });
 
+const PAGE = "11111111-2222-4333-8444-555555555555";
+
 test("source extract-plan reports the copied paragraphs, blocks an unmappable input and compares with a previous extract", async (context) => {
   const dir = await fixtureCopy(context);
   const summary = join(dir, "..", "summary.md");
   const transcript = join(dir, "..", "transcript.md");
-  await writeFile(transcript, TRANSCRIPT.replace("and also the offsite is booked", "and nothing else"));
+  const body = TRANSCRIPT.replace("and also the offsite is booked", "and nothing else");
+  await writeFile(transcript, body);
   const text = `## [s1] Launch\nSelection: Use in brain\n- [s1.i1] Launch moves “the launch moves to February”\n\n## [s2] Pricing\nSelection: Meeting only\n- [s2.i1] Price “keep it between us”\n`;
   await writeFile(summary, text);
-  const run = await brain(["source", "extract-plan", "--summary", summary, "--transcript", transcript, "--brain", dir, "--json"]);
+  const plan = (previous?: string) => brain(["source", "extract-plan", "--page", PAGE, "--summary", summary, "--transcript", transcript, ...(previous === undefined ? [] : ["--previous", previous]), "--brain", dir, "--json"]);
+  const run = await plan();
   assert.equal(run.code, 0, run.stdout);
   assert.equal(run.json.data.ok, true);
+  assert.equal(run.json.data.write_required, true, "a first version is always written");
   assert.deepEqual(run.json.data.passages.map((p: { n: number }) => p.n), [1]);
   assert.ok(!run.json.data.body.includes("95k"));
   await writeFile(summary, text.replace("“keep it between us”", "“not in the transcript”"));
-  const blocked = await brain(["source", "extract-plan", "--summary", summary, "--transcript", transcript, "--brain", dir, "--json"]);
+  const blocked = await plan();
   assert.equal(blocked.json.data.ok, false);
   assert.equal(blocked.json.data.body, null);
-  const made = await create(dir, { ...EXTRACT, transcript_hash: run.json.data.transcript_hash, page_fingerprint: run.json.data.page_fingerprint, selection: run.json.data.selection });
-  assert.equal(made.code, 0, made.stdout);
   await writeFile(summary, text);
-  const same = await brain(["source", "extract-plan", "--summary", summary, "--transcript", transcript, "--previous", made.json.data.created[0].id, "--brain", dir, "--json"]);
-  assert.equal(same.json.data.previous.state, "unchanged");
+  const made = await create(dir, { ...EXTRACT, transcript_hash: run.json.data.transcript_hash, selection: run.json.data.selection });
+  assert.equal(made.code, 0, made.stdout);
+  const id = made.json.data.created[0].id as string;
+  const omitted = await plan();
+  assert.notEqual(omitted.code, 0);
+  assert.match(omitted.stdout, /PREVIOUS_REQUIRED/);
+  const same = await plan(id);
+  assert.equal(same.json.data.write_required, false, "nothing differs: UNCHANGED");
+  assert.equal(same.json.data.previous.kind, "extract");
   await writeFile(summary, text.replace("Selection: Meeting only", "Selection: Use in brain"));
-  const moved = await brain(["source", "extract-plan", "--summary", summary, "--transcript", transcript, "--previous", made.json.data.created[0].id, "--brain", dir, "--json"]);
-  assert.equal(moved.json.data.previous.state, "tokens");
+  const moved = await plan(id);
+  assert.deepEqual(moved.json.data.previous.added, [2]);
+  assert.equal(moved.json.data.write_required, true);
   assert.deepEqual(moved.json.data.previous.selection_changes.map((c: { id: string }) => c.id).sort(), ["s2", "s2.i1"]);
+  await writeFile(summary, text.replace("[s1.i1]", "[s1.i9]"));
+  const renamed = await plan(id);
+  assert.deepEqual(renamed.json.data.previous.suppressed, [], "same paragraphs");
+  assert.equal(renamed.json.data.write_required, true, "a regenerated item id is a mapping-only change that is still written");
+  await writeFile(summary, text);
+  await writeFile(transcript, `${body}\n\nA new closing paragraph.`);
+  const changed = await plan(id);
+  assert.equal(changed.json.data.previous.transcript_changed, true);
+  assert.deepEqual(changed.json.data.previous.suppressed, [1]);
+  assert.deepEqual(changed.json.data.previous.added, [1]);
+  const wrong = await brain(["source", "extract-plan", "--page", "other-page", "--summary", summary, "--transcript", transcript, "--previous", id, "--brain", dir, "--json"]);
+  assert.match(wrong.stdout, /WRONG_INPUT/);
+});
+
+test("extract-plan on an input ingested in full: --previous is required, a full copy always writes, and Tasks are listed as legacy", async (context) => {
+  const dir = await fixtureCopy(context);
+  const summary = join(dir, "..", "summary.md");
+  const transcript = join(dir, "..", "transcript.md");
+  await writeFile(transcript, TRANSCRIPT);
+  await writeFile(summary, "## [s1] Launch\nSelection: Meeting only\n- [s1.i1] Launch moves “the launch moves to February”\n");
+  const page = "3c4d5e6f-7a8b-4c0d-9e2f-3a4b5c6d7e8f";
+  const run = (previous?: string) => brain(["source", "extract-plan", "--page", page, "--summary", summary, "--transcript", transcript, ...(previous === undefined ? [] : ["--previous", previous]), "--brain", dir, "--json"]);
+  assert.match((await run()).stdout, /PREVIOUS_REQUIRED/, "an existing full copy cannot be bypassed");
+  const full = await run("src-7w3c9k5m");
+  assert.equal(full.code, 0, full.stdout);
+  assert.equal(full.json.data.previous.kind, "full");
+  assert.equal(full.json.data.write_required, true, "even with every item excluded the transition is written");
+  assert.deepEqual(full.json.data.previous.full_copies, ["src-7w3c9k5m"]);
 });
 
 test("a list line without an id is listed as unnumbered and never imported", () => {

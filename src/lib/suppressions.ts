@@ -5,7 +5,7 @@ import { eligible, lineageOf, noteReleased, type Context, type SourceInfo, type 
 import type { Note } from "./notes.ts";
 import { PASSAGE_REF } from "./selection.ts";
 
-/** Suppression records live in `_suppressions/<input id>.json` (capture-and-review §5.3). */
+/** Suppression records live in `_suppressions/<input id>.json` (capture-and-review §5.3, cli §5.23). */
 export async function loadSuppressions(root: string): Promise<{ suppressions: Suppression[]; problems: string[] }> {
   const dir = join(root, "_suppressions");
   const suppressions: Suppression[] = [];
@@ -14,10 +14,13 @@ export async function loadSuppressions(root: string): Promise<{ suppressions: Su
   try { names = (await readdir(dir)).filter((name) => name.endsWith(".json")).sort(); } catch { return { suppressions, problems }; }
   for (const name of names) {
     try {
-      const value = JSON.parse(await readFile(join(dir, name), "utf8")) as Partial<Suppression>;
-      const valid = typeof value.input === "string" && Number.isInteger(value.version) && Array.isArray(value.passages) && (value.status === "active" || value.status === "reconciled");
-      if (valid) suppressions.push(value as Suppression);
-      else problems.push(`_suppressions/${name}: not a suppression record`);
+      // An append-only list of per-version records (cli §5.23); each is active until its own cleanup is resolved.
+      const value = JSON.parse(await readFile(join(dir, name), "utf8")) as { input?: unknown; records?: unknown };
+      const records = Array.isArray(value.records) ? (value.records as Partial<Suppression>[]) : null;
+      const valid = typeof value.input === "string" && records !== null
+        && records.every((record) => Number.isInteger(record.version) && Array.isArray(record.passages) && (record.status === "active" || record.status === "reconciled"));
+      if (!valid) problems.push(`_suppressions/${name}: not a suppression record`);
+      else for (const record of records!) suppressions.push({ ...(record as Suppression), input: value.input as string });
     } catch {
       problems.push(`_suppressions/${name}: unreadable`);
     }
