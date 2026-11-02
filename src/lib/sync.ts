@@ -888,7 +888,12 @@ export function renderTasks(workspace: Workspace, targetId: string, input: unkno
       }
     } else if (config.properties.meeting !== "") put("meeting", "relation", [target.attributes.notion]); else put("meeting_url", "url", target.attributes.notion === undefined ? undefined : `https://www.notion.so/${String(target.attributes.notion).replaceAll("-", "")}`);
     put("brain_id", "rich_text", target.id);
-    return { database_id: config.database, properties, pending_relations };
+    const itemId = isRecord(item) ? item.item : undefined;
+    if (itemId !== undefined) {
+      const items = (Array.isArray(target.attributes.selection) ? target.attributes.selection : []).map((entry) => (isRecord(entry) ? entry.id : undefined));
+      if (target.attributes.extract !== true || typeof itemId !== "string" || !items.includes(itemId)) throw new BrainError("INPUT_INVALID", `${String(itemId)} is not an item of the extract`, [{ pointer: `/items/${index}/item`, message: "must be an item id of the extract's selection" }]);
+    }
+    return { database_id: config.database, properties, pending_relations, ...(itemId === undefined ? {} : { item: itemId }) };
   });
   return { items: tasks };
 }
@@ -912,8 +917,22 @@ function taskProjects(workspace: Workspace, meeting: Note | undefined, value: un
 function publishedPages(value: unknown, workspace: Workspace): string[] { return (Array.isArray(value) ? value : []).map((id) => workspace.get(String(id))?.attributes.notion).filter((id): id is string => typeof id === "string"); }
 function tasksConfig(workspace: Workspace): { database: string; properties: Record<string, string>; new_task_status: string; status_type: "status" | "select" } { if (!loadSchemas().brain(workspace.config)) throw new BrainError("BRAIN_CONFIG_INVALID", "brain.json fails its schema"); const notion = workspace.config.notion as Record<string, unknown>; const tasks = notion.tasks as Record<string, unknown>; if (typeof tasks.database !== "string" || tasks.database === "") throw new BrainError("BRAIN_CONFIG_INVALID", "Tasks database is not configured"); return { database: tasks.database as string, properties: tasks.properties as Record<string, string>, new_task_status: tasks.new_task_status as string, status_type: tasks.status_type === "status" ? "status" : "select" }; }
 
+/** `task_items` of a record (cli §5.14.6, 0055): item id to Notion task page id, on an extract source only. */
+function bindTaskItems(note: Note, attributes: Record<string, unknown>, value: unknown, recordTasks: unknown): void {
+  if (!isRecord(value) || note.type !== "source" || attributes.extract !== true) throw new Error("INVALID_RESULT");
+  const items = new Set((Array.isArray(attributes.selection) ? attributes.selection : []).map((entry) => (isRecord(entry) ? entry.id : undefined)));
+  const known = new Set([...(Array.isArray(recordTasks) ? recordTasks : []), ...(Array.isArray(attributes.tasks) ? attributes.tasks : [])]);
+  const current = isRecord(attributes.task_items) ? { ...attributes.task_items } : {};
+  for (const [item, task] of Object.entries(value)) {
+    if (!items.has(item) || typeof task !== "string" || !known.has(task)) throw new Error("INVALID_RESULT");
+    if (current[item] !== undefined && current[item] !== task) throw new Error("TASK_ITEM_EXISTS");
+    current[item] = task;
+  }
+  attributes.task_items = current;
+}
+
 export function record(workspace: Workspace, input: unknown): Record<string, unknown> {
   if (!isRecord(input) || !Array.isArray(input.records)) throw new BrainError("INPUT_INVALID", "record input needs a records list"); const records: Array<Record<string, unknown>> = [];
-  for (const entry of input.records) { if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note); if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && error.message === "NOTION_ID_MISMATCH" ? "NOTION_ID_MISMATCH" : "INVALID_RESULT", changed: [] }); } }
+  for (const entry of input.records) { if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note); if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; if (entry.task_items !== undefined) bindTaskItems(note, doc.attributes, entry.task_items, entry.tasks); workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && (error.message === "NOTION_ID_MISMATCH" || error.message === "TASK_ITEM_EXISTS") ? error.message : "INVALID_RESULT", changed: [] }); } }
   return { records };
 }
