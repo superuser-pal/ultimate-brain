@@ -102,20 +102,12 @@ export function rankCandidates(
   tokens: readonly string[],
   types: ReadonlySet<string>,
   context: QueryContext,
-  restrict?: (note: Note) => { whole: boolean; lines: ReadonlySet<number> },
+  eligible?: (note: Note) => Note | null,
 ): QueryCandidate[] {
   return notes
     .filter((note) => types.has(note.type))
-    .flatMap((note) => {
-      // Restricted evidence is neither scored nor quoted (capture-and-review §5.1). Lines are blanked, not removed, so line numbers hold.
-      const restriction = restrict?.(note);
-      if (restriction === undefined) return [note];
-      if (restriction.whole) return [];
-      if (restriction.lines.size === 0) return [note];
-      const body = note.body.split(/(\r?\n)/).map((text, index) => index % 2 === 0 && restriction.lines.has(index / 2) ? " ".repeat(text.length) : text).join("");
-      return [{ ...note, body }];
-    })
-    .map((note) => ({ candidate: candidateFor(note, tokens, context), updated: stringValue(note.attributes.updated) ?? "" }))
+    // Restricted evidence is neither scored nor quoted (capture-and-review §5.1); statements are blanked, not removed, so line numbers hold.
+    .flatMap((note) => { const kept = eligible === undefined ? note : eligible(note); return kept === null ? [] : [kept]; })    .map((note) => ({ candidate: candidateFor(note, tokens, context), updated: stringValue(note.attributes.updated) ?? "" }))
     .filter((entry): entry is { candidate: QueryCandidate; updated: string } => entry.candidate !== null)
     .sort((left, right) => right.candidate.score - left.candidate.score
       || compareCodePoints(right.updated, left.updated)

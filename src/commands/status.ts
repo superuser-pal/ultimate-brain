@@ -65,8 +65,8 @@ export const statusCommand: Command = {
     const settings = readSettings(brain!.config);
     const lastLog = await findLastLogLine(brain!.root);
     const repos = await Promise.all(linkedRepos(brain!.config).map(async (repo) => ({ name: repo.name, area: repo.area, commit: repo.commit, found: (await workTreeTop(expandPath(repo.path, environment.homeDirectory))) !== null })));
-    const loaded = await loadSuppressions(brain!.root);
-    const eligibility = contextFor(notes, loaded.suppressions);
+    const loaded = loadSuppressions(brain!.root);
+    const eligibility = contextFor(notes, loaded);
     const restrictions = notes.map((note) => restrictionOf(note, eligibility));
     const suppressions = {
       active: loaded.suppressions.filter((entry) => entry.status === "active").length,

@@ -1,8 +1,8 @@
-import { lineageOf, type Suppression } from "./eligibility.ts";
+import { lineageOf } from "./eligibility.ts";
 import { chainOf } from "./extract.ts";
 import type { Note } from "./notes.ts";
 import { PASSAGE_REF } from "./selection.ts";
-import { contextFor, restrictionOf } from "./suppressions.ts";
+import { contextFor, restrictionOf, type Loaded } from "./suppressions.ts";
 
 // The data of the exclusion cleanup row (capture-and-review §5.2): what a suppression restricts and what stays. Read-only.
 // The Review row, its item decisions and their apply are CC-79.
@@ -20,8 +20,9 @@ export interface CleanupPlan {
   documents: { note: string; sources: string[] }[];
 }
 
-export function cleanupPlan(notes: readonly Note[], suppressions: Suppression[], input: string): CleanupPlan {
-  const context = contextFor(notes, suppressions);
+export function cleanupPlan(notes: readonly Note[], loaded: Loaded, input: string): CleanupPlan {
+  const suppressions = loaded.suppressions;
+  const context = contextFor(notes, loaded);
   const sources = notes.filter((note) => note.type === "source" && (note.attributes.extract_of === input || note.attributes.source_key === `notion:${input}`));
   const latest = sources.filter((source) => source.attributes.extract === true && !sources.some((other) => other.attributes.replaces === source.id)).at(-1);
   const result: CleanupPlan = { input, latest_extract: latest?.id ?? null, notes: [], restore: [], tasks: [], documents: [] };
