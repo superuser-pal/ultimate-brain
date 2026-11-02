@@ -252,3 +252,24 @@ test("render: a Review row whose meeting has no Notion page lists it as pending"
   assert.deepEqual(item!.pending_relations.find((relation: { property: string }) => relation.property === "Source Meeting"), { property: "Source Meeting", ids: [SYNC] });
   assert.deepEqual(item!.published["Source Meeting"], [], "as for other relations, only published pages are recorded as sent");
 });
+
+test("a new review_notes gives every note, link and change one immutable item id, and lint checks them", async (context) => {
+  const dir = await fixtureCopy(context);
+  const created = await run(dir, ["proposal", "new"], { proposals: reviewInput });
+  const path = created.json.data.created[0].path as string;
+  const row = await attributes(dir, path);
+  const items = row.items as Array<{ item_id: string; kind: string; ref: unknown }>;
+  assert.deepEqual(items.map((item) => [item.kind, item.ref]), [["note", DECISION], ["note", QUESTION], ["link", 0], ["link", 1]]);
+  assert.equal(new Set(items.map((item) => item.item_id)).size, items.length, "ids are unique");
+  assert.ok(items.every((item) => /^it-[0-9abcdefghjkmnpqrstvwxyz]{8}$/.test(item.item_id)));
+  assert.deepEqual(await lintErrors(dir), []);
+  // A broken reference, a repeated id and a decision naming no item are lint errors.
+  const text = await readFile(join(dir, path), "utf8");
+  const [first, second] = items;
+  await writeFile(join(dir, path), text.replace(second!.item_id, first!.item_id));
+  assert.ok(((await lintErrors(dir)) as Array<{ rule: string }>).some((issue) => issue.rule === "proposal-items"));
+  await writeFile(join(dir, path), text.replace(/ref: 1\b/, "ref: 7"));
+  assert.ok(((await lintErrors(dir)) as Array<{ rule: string; message: string }>).some((issue) => issue.rule === "proposal-items" && /does not hold/.test(issue.message)));
+  await writeFile(join(dir, path), text.replace(/\n---\n/, "\nitem_decisions:\n  - item_id: it-00000000\n    decision: accept\n    decided_at: 2026-12-10T09:00:00Z\n    decided_by: chat\n---\n"));
+  assert.ok(((await lintErrors(dir)) as Array<{ rule: string; message: string }>).some((issue) => issue.rule === "proposal-items" && /not an item/.test(issue.message)));
+});

@@ -425,6 +425,8 @@ notion: 7c6b…
 | `before_hash` | `sha256:<64 hex>` | for `update_body` | the target's body hash when the proposal was written (the source hash rule of §4); the stale check |
 | `deferred_from` | ID (`prp-`) | | a `review_notes` holding the items the user left out of an approved one ("all except e"): that proposal's id (0045, §11.3) |
 | `dropped` | list of `{change: <index>, reason: stale}` | system, set by apply | the changes of an applied `review_notes` that were not applied because their target changed first (§11.3) |
+| `items` | list of `{item_id, kind: note·link·change, ref}` | `review_notes` written from 0.8.0 on | the independently decidable items in render order (notes, links, changes), one immutable `it-` id each (capture-and-review §7.2). `ref` is the note id, or the index into `links` or `changes`. Absent on a proposal written before 0.8.0, which keeps its 0045 behavior (§7.9) |
+| `item_decisions` | list of `{item_id, decision: accept·reject·defer, decided_at, decided_by, proposed_hash?, base_hash?, snapshot_hash?, state?}` | `review_notes`, system | decided items, one per item, written in the same commit as their write set (capture-and-review §7.6) |
 | `answer` | string | for `answer` | the answer in a sentence |
 | `answer_note` | ID | | for `answer`: the note that holds the answer, usually a decision the same ingest created |
 | `before` / `after` | string, number or date | `after` for `update_fact` (and an old single `add_link`); both for `contradiction` | `before` = current value at proposal time (absent if the fact is new) |
