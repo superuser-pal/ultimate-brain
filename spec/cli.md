@@ -791,6 +791,8 @@ Returns ranked candidate notes for the query skill (CX-11); the skill reads them
 
 `assessment` and `date` are `null` when the type has none. Snippets: up to 3 body lines with a match, trimmed to 200 characters. Superseded notes are returned, not hidden; the skill labels them. Errors: `USAGE`.
 
+**Restricted evidence (0055, capture-and-review §5.1).** With an active suppression in `_suppressions/` (capture-and-review §5.3), a knowledge note resting on a suppressed passage is not scored or quoted where it is restricted: a body line whose `^[src-…#¶n:hash]` references are all not live is blanked (line numbers hold), and a note that cites no passage but lists a source of a changed input, or of unknown lineage, in `sources` is left out whole until it is resolved for that input (`lineage_cleared`). Unreadable suppression files are ignored here and reported by `brain status`.
+
 ### 5.14 `brain sync …` (Notion helpers, CX-10)
 
 The sync, apply and ingest skills read and write Notion through the MCP. These commands do the deterministic parts. Flow of one `brain sync` skill run:
