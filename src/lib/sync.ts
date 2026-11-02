@@ -17,6 +17,7 @@ import type { LogEntry } from "./log.ts";
 import { databaseId, moduleForDatabase, modulesOf, typeIsOn } from "./modules.ts";
 import { bodyHash, bodyOf } from "./proposals.ts";
 import { renderReview } from "./review-body.ts";
+import { parseReviewPageInput, planReviewRow, type ItemDecision, type ReviewDecision, type ReviewHeld, type ReviewPage, type ReviewRevision } from "./review-plan.ts";
 import { hasReportShape, reportLinks } from "./report-body.ts";
 import { gitBodyOf, parseWording, planWording, textHash, type AcceptedWording, type Wording, type WordingPlan } from "./wording.ts";
 
@@ -46,6 +47,12 @@ export interface SyncPlan {
   clear_accepted: WordingPlan["clear_accepted"];
   /** Review rows whose Notion page holds edits or decisions that must not be overwritten (capture-and-review §7.10): render withholds them. */
   review_pending: Array<{ proposal: string; page_id: string }>;
+  /** Decisions read off Review rows of the new layout, per item with the exact final wording (capture-and-review §7.3); applied by `sync apply`. */
+  review_decisions: ReviewDecision[];
+  /** Items and rows that were not read or not applied, and why (BASE_CHANGED, UNREADABLE_DECISION, HELD_SOURCE_EXCLUDED, EDITED_AFTER_DECIDED, …). */
+  review_held: ReviewHeld[];
+  /** Items the user asked to revise: the attended skill drafts a new proposal; an unattended run never reads the instruction. */
+  review_revisions: ReviewRevision[];
   conflicts: Array<Record<string, unknown>>;
   ignored: Array<Record<string, unknown>>;
 }
@@ -81,7 +88,7 @@ function conflict(row: SnapshotRow, code: string, message: string, propertyName?
   };
 }
 
-interface SnapshotRow { database: string; page_id: string; last_edited: string; properties: Record<string, unknown>; wording?: Wording }
+interface SnapshotRow { database: string; page_id: string; last_edited: string; properties: Record<string, unknown>; wording?: Wording; review?: ReviewPage }
 interface Snapshot { as_of: string; rows: SnapshotRow[] }
 
 /** Validates the skill-normalized snapshot without accepting arbitrary MCP-shaped input. */
@@ -94,8 +101,9 @@ export function parseSnapshot(input: unknown): Snapshot {
   (Array.isArray(record.rows) ? record.rows : []).forEach((value, index) => {
     const p = `/rows/${index}`;
     if (!isRecord(value)) return problems.push({ pointer: p, message: "must be an object" });
-    problems.push(...unknownKeys(value, ["database", "page_id", "last_edited", "properties", "wording"], p));
+    problems.push(...unknownKeys(value, ["database", "page_id", "last_edited", "properties", "wording", "review"], p));
     if (value.wording !== undefined) value.wording = parseWording(value.wording, `${p}/wording`, problems);
+    if (value.review !== undefined) value.review = parseReviewPageInput(value.review, `${p}/review`, problems);
     if (value.database === "references") value.database = "documents"; // read as documents (0049)
     if (!DATABASES.includes(value.database as typeof DATABASES[number])) problems.push({ pointer: `${p}/database`, message: "is not a sync database" });
     if (typeof value.page_id !== "string" || value.page_id === "") problems.push({ pointer: `${p}/page_id`, message: "must be a non-empty string" });
@@ -108,7 +116,7 @@ export function parseSnapshot(input: unknown): Snapshot {
 
 /** Compute the deterministic, no-network Notion pull plan (cli §5.14.2). */
 export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
-  const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], decisions: [], document_requests: [], promote_requests: [], refresh_requests: [], report_fixes: [], accepted_wording: [], wording_waiting: [], wording_held: [], clear_accepted: [], review_pending: [], conflicts: [], ignored: [] };
+  const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], decisions: [], document_requests: [], promote_requests: [], refresh_requests: [], report_fixes: [], accepted_wording: [], wording_waiting: [], wording_held: [], clear_accepted: [], review_pending: [], review_decisions: [], review_held: [], review_revisions: [], conflicts: [], ignored: [] };
   const createsByPage = new Map<string, { id: string; type: string }>();
   for (const row of snapshot.rows) if (CREATABLE.has(row.database) && blank(property(row.properties, "Brain ID"))) {
     const existing = noteByNotion(workspace, row.page_id);
@@ -223,7 +231,12 @@ function planExisting(workspace: Workspace, asOf: string, row: SnapshotRow, note
     out.corrections.push({ target: note.id, field: brainField, value: value ?? null, observed_at: row.last_edited, property: name, notion_value: value ?? null } as Correction & Record<string, unknown>);
   }
   if (Object.keys(updates).length > 1) out.updates.push(updates);
-  if (row.database === "review") planDecision(row, note, out);
+  if (row.database === "review") {
+    // A proposal with item ids (0055) is read by the Review planner; one written before 0.8.0 keeps the 0045 rules (capture-and-review §7.9).
+    // The layout is the one the Notion page was rendered in: a row published before the item sections existed has no `@review` record.
+    if (note.type === "proposal" && Array.isArray(note.attributes.items) && isRecord(note.attributes.notion_published) && isRecord(note.attributes.notion_published["@review"])) planReviewState(workspace, asOf, row, note, out);
+    else planDecision(row, note, out);
+  }
 }
 
 /** Key Facts are one Notion text property but independently-owned facts (cli §5.14.2). */
@@ -244,6 +257,15 @@ function planKeyFacts(row: SnapshotRow, note: Note, published: Record<string, un
   }
   for (const key of Object.keys(stored)) if (!Object.hasOwn(notion, key)) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: note.id, property: `Key Facts/${key}`, reason: "FACT_REMOVAL_NOT_SUPPORTED" }); converged = false; }
   if (converged && !sameValue(text, published?.["Key Facts"])) updates.published = { ...(isRecord(updates.published) ? updates.published : {}), "Key Facts": text };
+}
+
+/** A Review row of the new layout (cli §5.14.2, capture-and-review §7.3): the same gates as `planDecision`, then the item-level planner. */
+function planReviewState(workspace: Workspace, asOf: string, row: SnapshotRow, proposal: Note, out: SyncPlan): void {
+  if (property(row.properties, "State") !== "Pending") return;
+  if (["applied", "closed"].includes(String(proposal.attributes.status))) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: proposal.id, reason: "ALREADY_TERMINAL" }); return; }
+  planReviewRow(workspace, row, row.review, proposal, asOf, out,
+    (action) => { out.decisions.push({ proposal: proposal.id, action, decided_at: row.last_edited, decided_by: "notion" }); },
+    (code, message) => { out.conflicts.push(conflict(row, code, message)); });
 }
 
 function planDecision(row: SnapshotRow, proposal: Note, out: SyncPlan): void {
@@ -441,8 +463,8 @@ export function parseKeyFacts(value: unknown): Record<string, unknown> {
 /** Input validation and execution for `sync apply`. */
 export function parsePlan(input: unknown): SyncPlan {
   if (!isRecord(input)) assertNoProblems([{ pointer: "", message: "must be an object" }]);
-  const p = input as Record<string, unknown>; const problems = unknownKeys(p, ["as_of", "create", "updates", "corrections", "decisions", "document_requests", "promote_requests", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "conflicts", "ignored"], "");
-  for (const key of ["document_requests", "promote_requests", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
+  const p = input as Record<string, unknown>; const problems = unknownKeys(p, ["as_of", "create", "updates", "corrections", "decisions", "document_requests", "promote_requests", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "review_decisions", "review_held", "review_revisions", "conflicts", "ignored"], "");
+  for (const key of ["document_requests", "promote_requests", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "review_decisions", "review_held", "review_revisions"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   if (!isTimestamp(p.as_of)) problems.push({ pointer: "/as_of", message: "must be an ISO 8601 UTC timestamp" });
   for (const key of ["create", "updates", "corrections", "decisions", "conflicts", "ignored"]) if (!Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   (Array.isArray(p.review_pending) ? p.review_pending : []).forEach((item, index) => { if (!isRecord(item) || typeof item.proposal !== "string" || typeof item.page_id !== "string") problems.push({ pointer: `/review_pending/${index}`, message: "must be { proposal, page_id }" }); });
@@ -469,7 +491,7 @@ export function parsePlan(input: unknown): SyncPlan {
     if (key === "accepted_wording" && item.verified !== undefined && (!isRecord(item.verified) || typeof item.verified.fingerprint !== "string" || typeof item.verified.page_edited_at !== "string")) problems.push({ pointer: `${at}/verified`, message: "must be { fingerprint, page_edited_at }" });
   });
   assertNoProblems(problems);
-  return { ...p, document_requests: p.document_requests ?? [], promote_requests: p.promote_requests ?? [], refresh_requests: p.refresh_requests ?? [], report_fixes: p.report_fixes ?? [], accepted_wording: p.accepted_wording ?? [], wording_waiting: p.wording_waiting ?? [], wording_held: p.wording_held ?? [], clear_accepted: p.clear_accepted ?? [], review_pending: p.review_pending ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
+  return { ...p, document_requests: p.document_requests ?? [], promote_requests: p.promote_requests ?? [], refresh_requests: p.refresh_requests ?? [], report_fixes: p.report_fixes ?? [], accepted_wording: p.accepted_wording ?? [], wording_waiting: p.wording_waiting ?? [], wording_held: p.wording_held ?? [], clear_accepted: p.clear_accepted ?? [], review_pending: p.review_pending ?? [], review_decisions: p.review_decisions ?? [], review_held: p.review_held ?? [], review_revisions: p.review_revisions ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
 }
 
 export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, recordOnly: boolean, skipConflicted = false): Record<string, unknown> {
