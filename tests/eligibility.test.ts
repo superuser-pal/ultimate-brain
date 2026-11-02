@@ -92,3 +92,16 @@ test("brain query leaves out restricted statements and notes resting on a suppre
   assert.ok(quoted.includes("kept"), "the live passage statement is still quoted");
   assert.ok(!quoted.includes("pricing"), "the suppressed passage statement is not quoted");
 });
+
+test("brain status counts suppressions, restricted notes and unreadable records", async (context) => {
+  const dir = await fixtureCopy(context);
+  const clean = await brain(["status", "--brain", dir, "--json"]);
+  assert.deepEqual(clean.json.data.suppressions, { active: 0, reconciled: 0, restricted_notes: 0, unresolved_lineage: 0, problems: [] });
+  await mkdir(join(dir, "_suppressions"), { recursive: true });
+  await write(join(dir, "_suppressions", "page-a.json"), JSON.stringify({ input: "page-a", version: 2, passages: [], status: "active" }));
+  await write(join(dir, "_suppressions", "broken.json"), "{");
+  const run = await brain(["status", "--brain", dir, "--json"]);
+  assert.equal(run.json.data.suppressions.active, 1);
+  assert.deepEqual(run.json.data.suppressions.problems, ["_suppressions/broken.json: unreadable"]);
+  assert.equal(run.json.data.suppressions.unresolved_lineage, 0, "no fixture note rests on page-a");
+});

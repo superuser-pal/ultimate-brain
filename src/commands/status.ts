@@ -11,6 +11,7 @@ import { isRecord, readJsonInput } from "../lib/input.ts";
 import { databaseId, modulesOf } from "../lib/modules.ts";
 import { expandPath, linkedRepos, workTreeTop } from "../lib/repos.ts";
 import { unattendedRuns } from "../lib/runs.ts";
+import { contextFor, loadSuppressions, restrictionOf } from "../lib/suppressions.ts";
 import { normalizeTimestamp } from "../lib/time.ts";
 
 const NOTE_TYPES = ["domain", "area", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "goal", "memory", "reference"];
@@ -64,6 +65,16 @@ export const statusCommand: Command = {
     const settings = readSettings(brain!.config);
     const lastLog = await findLastLogLine(brain!.root);
     const repos = await Promise.all(linkedRepos(brain!.config).map(async (repo) => ({ name: repo.name, area: repo.area, commit: repo.commit, found: (await workTreeTop(expandPath(repo.path, environment.homeDirectory))) !== null })));
+    const loaded = await loadSuppressions(brain!.root);
+    const eligibility = contextFor(notes, loaded.suppressions);
+    const restrictions = notes.map((note) => restrictionOf(note, eligibility));
+    const suppressions = {
+      active: loaded.suppressions.filter((entry) => entry.status === "active").length,
+      reconciled: loaded.suppressions.filter((entry) => entry.status === "reconciled").length,
+      restricted_notes: restrictions.filter((entry) => entry.whole || entry.lines.size > 0).length,
+      unresolved_lineage: restrictions.filter((entry) => entry.whole).length,
+      problems: loaded.problems,
+    };
     const data = {
       schema_version: brain!.config.schema_version,
       owner: (brain!.config.owner as Record<string, unknown>).name,
@@ -77,6 +88,7 @@ export const statusCommand: Command = {
       repos,
       index_stale: currentIndex !== index,
       views_stale: viewStale,
+      suppressions,
       last_log: lastLog,
     };
     return { data, human: `Owner: ${data.owner}\nNotes: ${notes.length}\n${taskNote === null ? "" : `${taskNote}\n`}` };
