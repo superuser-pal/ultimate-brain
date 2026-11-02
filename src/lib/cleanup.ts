@@ -44,7 +44,7 @@ export function cleanupPlan(notes: readonly Note[], loaded: Loaded, input: strin
       const refs = [...text.matchAll(PASSAGE_REF)];
       if (refs.length === 0) return;
       (restriction.lines.has(index) ? restricted : kept).push({ line: index + 1, text: text.trim().slice(0, 200) });
-      for (const ref of refs) if (context.awaitingRestore?.has(`${input}|${String(latest?.attributes.transcript_hash)}|${ref[2]}`) && latestPassages.has(`${ref[2]}:${ref[3]}`)) result.restore.push({ note: note.id, line: index + 1, passage: `${ref[1]}#¶${ref[2]}:${ref[3]}` });
+      for (const ref of refs) if (context.awaitingRestore?.has(`${input}|${String(latest?.attributes.transcript_hash)}|${ref[2]}`) && !context.restored?.has(`${input}|${String(latest?.attributes.transcript_hash)}|${ref[2]}|${note.id}`) && latestPassages.has(`${ref[2]}:${ref[3]}`)) result.restore.push({ note: note.id, line: index + 1, passage: `${ref[1]}#¶${ref[2]}:${ref[3]}` });
     });
     if (restriction.whole || restricted.length > 0) {
       result.notes.push({ note: note.id, path: note.path, whole: restriction.whole, reason: restriction.whole ? (lineages.includes(null) ? "unknown lineage" : "unmapped text") : "passages", restricted, kept });

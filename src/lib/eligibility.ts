@@ -13,13 +13,16 @@ export interface SourceInfo {
   passages?: string[]; transcript_hash?: string; extract_version?: number;
 }
 
-export interface Claim { entries: Entry[]; lineage_cleared?: string[]; context_excluded?: boolean }
+/** `note` is the claim's note: a Restore is accepted per claim, not per passage (capture-and-review §5.2). */
+export interface Claim { entries: Entry[]; lineage_cleared?: string[]; context_excluded?: boolean; note?: string }
 
 export interface Context {
   sources: Map<string, SourceInfo>;
   suppressions: Suppression[];
   /** Passage keys `${extract_of}|${transcript_hash}|${n}` that are re-included and wait for their Restore item (§5.2). */
   awaitingRestore?: Set<string>;
+  /** Accepted Restores, `${extract_of}|${transcript_hash}|${n}|${note id}`: one per claim. */
+  restored?: Set<string>;
 }
 
 const NOTION_KEY = /^notion:(.+)$/;
@@ -59,18 +62,18 @@ export function isLive(entry: Entry, claim: Claim, context: Context): boolean {
     const cleared = new Set(claim.lineage_cleared ?? []);
     return [...active].every((input) => cleared.has(input));
   }
-  // A passage a later version holds again stays restricted until Restore, even after the suppression that removed it was reconciled.
   if (entry.passage !== undefined) {
-    const held = latestExtract(lineage, context.sources);
-    if (held !== undefined && (context.awaitingRestore?.has(`${lineage}|${held.transcript_hash}|${entry.passage.n}`) ?? false)) return false;
+    // A passage of an extract is live only while the latest version of its input holds it: reconciling a cleanup never makes an
+    // excluded passage eligible again. A passage the latest version holds again waits for the Restore of this claim.
+    const latest = latestExtract(lineage, context.sources);
+    const source = context.sources.get(entry.source);
+    if (latest === undefined || source === undefined || source.transcript_hash !== latest.transcript_hash) return false;
+    if (!(latest.passages ?? []).includes(`${entry.passage.n}:${entry.passage.hash}`)) return false;
+    const key = `${lineage}|${latest.transcript_hash}|${entry.passage.n}`;
+    return !(context.awaitingRestore?.has(key) ?? false) || (claim.note !== undefined && (context.restored?.has(`${key}|${claim.note}`) ?? false));
   }
   if (!active.has(lineage)) return true;
-  if (entry.passage === undefined) return false; // an older full copy or a whole source of a changed input
-  const latest = latestExtract(lineage, context.sources);
-  const source = context.sources.get(entry.source);
-  if (latest === undefined || source === undefined || source.transcript_hash !== latest.transcript_hash) return false;
-  if (!(latest.passages ?? []).includes(`${entry.passage.n}:${entry.passage.hash}`)) return false;
-  return !(context.awaitingRestore?.has(`${lineage}|${latest.transcript_hash}|${entry.passage.n}`) ?? false);
+  return false; // an older full copy or a whole source of a changed input
 }
 
 /** A claim is eligible if it has at least one live entry; otherwise it is restricted (§5.1). */
@@ -87,11 +90,13 @@ export function noteReleased(note: { lineage_cleared?: string[] }, context: Cont
 
 /** Source ids whose text is suppressed in full, so retrieval skips them: the older versions and non-extract copies of a changed input. */
 export function restrictedSources(context: Context): Set<string> {
-  const active = activeInputs(context.suppressions);
+  // Every version of an input but its latest extract, and every full copy of it, holds text that a later version may have
+  // excluded: none is returned, whether or not the cleanup was reconciled (the text itself stays in Git, 0032).
   const result = new Set<string>();
   for (const info of context.sources.values()) {
     const lineage = lineageOf(info.id, context.sources);
-    if (lineage !== null && active.has(lineage) && latestExtract(lineage, context.sources)?.id !== info.id) result.add(info.id);
+    const latest = lineage === null ? undefined : latestExtract(lineage, context.sources);
+    if (latest !== undefined && latest.id !== info.id) result.add(info.id);
   }
   return result;
 }

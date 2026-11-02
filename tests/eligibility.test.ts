@@ -22,8 +22,11 @@ test("lineage follows extract_of, source_key and the replaces chain; unknown is 
   assert.equal(lineageOf("src-orphan", sources), null);
 });
 
-test("with no suppression every claim is eligible", () => {
-  assert.equal(eligible({ entries: [{ source: "src-ex1v1", passage: { n: 2, hash: "bbbbbbbb" } }] }, context([])), true);
+test("a passage is live only while the latest version of its input holds it, suppression record or not", () => {
+  assert.equal(eligible({ entries: [{ source: "src-ex1v2", passage: { n: 1, hash: "aaaaaaaa" } }] }, context([])), true);
+  assert.equal(eligible({ entries: [{ source: "src-ex1v1", passage: { n: 2, hash: "bbbbbbbb" } }] }, context([])), false, "dropped by v2");
+  assert.equal(eligible({ entries: [{ source: "src-ex1v1", passage: { n: 2, hash: "bbbbbbbb" } }] }, context([suppress(M1, "reconciled")])), false, "a reconciled cleanup does not make it live");
+  assert.equal(eligible({ entries: [{ source: "src-full1" }] }, context([])), true, "a whole source of an input nobody suppressed stays eligible");
 });
 
 test("a claim on a suppressed passage is restricted, one on a kept passage is live, and an older full copy does not rescue it", () => {
@@ -62,7 +65,7 @@ test("release is per note and per active suppression; a reconciled suppression n
 
 test("older versions and full copies of a changed input are restricted as sources; the latest extract is not", () => {
   assert.deepEqual([...restrictedSources(context([suppress(M1)]))].sort(), ["src-ex1v1", "src-full1"]);
-  assert.equal(restrictedSources(context([])).size, 0);
+  assert.deepEqual([...restrictedSources(context([suppress(M1, "reconciled")]))].sort(), ["src-ex1v1", "src-full1"], "reconciling does not bring the old text back");
 });
 
 import { mkdir, readFile as read, writeFile as write } from "node:fs/promises";
