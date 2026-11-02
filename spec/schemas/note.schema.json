@@ -1005,10 +1005,6 @@
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         },
-        "page_fingerprint": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
-        },
         "selection": {
           "type": "array",
           "items": {
@@ -1069,6 +1065,14 @@
                 }
               }
             }
+          }
+        },
+        "task_items": {
+          "description": "On an extract: the Notion task page each item authorized (system, 0055).",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
           }
         },
         "notion_text": {
@@ -1267,11 +1271,6 @@
               },
               {
                 "required": [
-                  "page_fingerprint"
-                ]
-              },
-              {
-                "required": [
                   "selection"
                 ]
               },
@@ -1288,7 +1287,6 @@
               "extract_of",
               "extract_version",
               "transcript_hash",
-              "page_fingerprint",
               "selection",
               "passages"
             ]
