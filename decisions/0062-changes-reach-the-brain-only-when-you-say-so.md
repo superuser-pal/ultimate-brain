@@ -14,6 +14,7 @@ Test T4 (2026-11-02) showed that Notion's page edit time does not move when a bl
 - **Deleting text in Notion is not a request.** If you delete a block and say nothing, the brain keeps what it has. The docs say so.
 - **Accepted wording.** An edit in a later minute than the click still invalidates the acceptance, as in 0058. A deletion is not guaranteed to do so. The skill still re-reads the page just before it saves the wording (verify before apply), and an attended run still shows the full text. A deletion between the click and the first read is a known limit, like the same-minute edit.
 
+- **Accepted limit: the render gap.** Before the brain replaces a Notion body or changes a report, it reads the page and compares hashes. The read and the write are two separate steps, so text you add in the short time between them can be overwritten. The user accepted this on 2026-11-02 and did not require a mechanism that closes it.
 - **Earlier proposals not adopted.** A stored first-read baseline with full-page comparisons, and a content hash approved in chat as a witness for accepted Document and report wording and for edited Review proposals, were put to the user and **not adopted** (2026-11-02, "drop it"). Unattended runs import accepted wording as 0058 allows, with the limits above stated in the report; edited Review proposals keep the base checks of capture-and-review section 7.3 and no chat witness.
 
 ## Consequences
