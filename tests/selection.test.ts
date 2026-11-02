@@ -195,7 +195,14 @@ test("a list line without an id is listed as unnumbered and never imported", () 
   const summary = parseSummary("## [s1] Launch\n- [s1.i1] Launch moves “the launch moves to February”\n- Maria to send the contract by Friday\n");
   assert.deepEqual(summary.unnumbered, [{ subject: "s1", text: "Maria to send the contract by Friday" }]);
   const plan = planExtract(summary, TRANSCRIPT);
-  assert.equal(plan.ok, true);
   assert.equal(plan.unnumbered.length, 1);
-  assert.equal(plan.copied.every((entry) => !entry.text.includes("Friday")), true);
+  assert.equal(plan.ok, false, "an unnumbered line blocks the input");
+  assert.equal(plan.problems.find((p) => p.code === "UNNUMBERED_LINE")?.id, null);
+});
+
+test("an unnumbered excluded line cannot leak through an included item sharing its paragraph", () => {
+  const summary = parseSummary("## [s1] Launch\n- [s1.i1] Launch moves “the launch moves to February”\n- Keep the pricing between us (Meeting only)\n");
+  const plan = planExtract(summary, "Pricing is 95k, keep it between us, and the launch moves to February.");
+  assert.equal(plan.ok, false, "the input is blocked, so the command returns no body");
+  assert.ok(plan.problems.some((p) => p.code === "UNNUMBERED_LINE"));
 });

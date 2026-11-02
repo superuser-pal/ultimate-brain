@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 // Subject/item selection and passage mapping (capture-and-review §4.1 to §4.8). Pure functions: no I/O, no AI-authored numbers.
 
 export type Selection = "use" | "meeting only";
-export type SelectionCode = "SELECTION_UNREADABLE" | "SELECTION_UNMAPPABLE" | "DEPENDS_ON_EXCLUDED";
+export type SelectionCode = "SELECTION_UNREADABLE" | "SELECTION_UNMAPPABLE" | "DEPENDS_ON_EXCLUDED" | "UNNUMBERED_LINE";
 
 export interface Subject { id: string; title: string; selection: Selection; raw: string | null }
 export interface Item {
@@ -139,6 +139,8 @@ function effectiveOf(item: Item, subjects: Map<string, Subject>): Selection {
 export function planExtract(summary: Summary, transcript: string): Plan {
   const { paragraphs: paras } = paragraphs(transcript);
   const problems = [...summary.problems];
+  // An unnumbered line can be neither selected nor excluded and has no anchors, so it could leak through a shared paragraph: it blocks the input (§4.2).
+  for (const line of summary.unnumbered) problems.push({ code: "UNNUMBERED_LINE", id: null, reason: `list line without an id: ${line.text.slice(0, 80)}` });
   const subjects = new Map(summary.subjects.map((entry) => [entry.id, entry]));
   const byId = new Map(summary.items.map((entry) => [entry.id, entry]));
   const passages = new Map<string, number[]>();
