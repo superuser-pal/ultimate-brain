@@ -288,6 +288,9 @@
           "pattern": "^notion-edit$"
         },
         {
+          "pattern": "^user-correction:prp-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+        },
+        {
           "pattern": "^(area|dom|gol|prj|per|org|mtg|dec|que|con|src|mem)-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
         }
       ]

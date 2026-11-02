@@ -458,7 +458,7 @@ function defer(workspace: Workspace, id: string, p: Record<string, unknown>, exc
 }
 
 /** Apply a proposal's kind to its targets. Returns a message when the proposal is stale. */
-function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPath: string, V: unknown, D: string, today: string, exclude: Array<{ field: string; value: unknown }> = []): string | null {
+export function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPath: string, V: unknown, D: string, today: string, exclude: Array<{ field: string; value: unknown }> = [], correctedBy?: string): string | null {
   const kind = String(p.kind);
   if (kind === "new_item") {
     stageNewItem(workspace, p.note as NoteInput, proposalPath, new Date(`${today}T00:00:00Z`));
@@ -481,7 +481,9 @@ function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPat
 
   switch (kind) {
     case "update_fact":
-      setFact(a, field, V ?? p.after, String(p.from), D, String(p.source));
+      // The user edited the proposed value and accepted it (capture-and-review §7.7): the source keeps its own claim, the correction is attributed to the user.
+      if (correctedBy !== undefined && V !== undefined && !isDeepStrictEqual(V, p.after)) setFactCorrected(a, field, V, p.after, String(p.from), D, String(p.source), correctedBy);
+      else setFact(a, field, V ?? p.after, String(p.from), D, String(p.source));
       break;
     case "contradiction":
       if (V === undefined) contest(a, field, p.after, String(p.from), D, String(p.source));
@@ -614,6 +616,20 @@ function setFact(a: Record<string, unknown>, field: string, value: unknown, from
     ...list(a.timeline).map((entry) =>
       isRecord(entry) && entry.field === field && entry.assessment === "accepted" ? entryWith(entry, { until: from, assessment: "superseded" }) : entry),
     timelineEntry(field, value, from, learned, source, "accepted"),
+  ];
+  a.facts = { ...record(a.facts), [field]: value };
+}
+
+/**
+ * A fact the user corrected before accepting (capture-and-review §7.7): the current value is the user's; the timeline keeps what the source
+ * said (superseded, never rewritten, never attributed to the user) and adds the user's value with its own source, `user-correction:<proposal>`.
+ */
+function setFactCorrected(a: Record<string, unknown>, field: string, value: unknown, original: unknown, from: string, learned: string, source: string, proposal: string): void {
+  a.timeline = [
+    ...list(a.timeline).map((entry) =>
+      isRecord(entry) && entry.field === field && entry.assessment === "accepted" ? entryWith(entry, { until: from, assessment: "superseded" }) : entry),
+    entryWith(timelineEntry(field, original, from, learned, source, "superseded"), { until: from }),
+    timelineEntry(field, value, from, learned, `user-correction:${proposal}`, "accepted"),
   ];
   a.facts = { ...record(a.facts), [field]: value };
 }
