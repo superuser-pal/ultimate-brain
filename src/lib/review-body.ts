@@ -29,11 +29,15 @@ const titleOf = (value: unknown, workspace: Workspace): string => (typeof value 
 
 /** Canonical text: LF endings, NFC, no trailing blanks on a line, no blank edges. Notion strips what this strips, so a hash over it is stable across a round trip. */
 export function canon(text: string): string {
-  return text.replace(/\r\n?/g, "\n").normalize("NFC").split("\n").map((line) => line.replace(/[ \t]+$/g, "")).join("\n").replace(/^\n+|\n+$/g, "");
+  const lines = text.replace(/\r\n?/g, "\n").normalize("NFC").split("\n").map((line) => line.replace(/[ \t]+$/g, ""));
+  // Whitespace that every non-empty line shares is layout (Notion indents toggle children), not text.
+  const filled = lines.filter((line) => line !== "");
+  const shared = filled.length === 0 ? "" : filled.map((line) => /^[ \t]*/.exec(line)![0]).reduce((common, indent) => { let i = 0; while (i < common.length && i < indent.length && common[i] === indent[i]) i += 1; return common.slice(0, i); });
+  return lines.map((line) => (line.startsWith(shared) ? line.slice(shared.length) : line)).join("\n").replace(/^\n+|\n+$/g, "");
 }
 
 // A line of proposed text must never be mistaken for the page's own structure: a section heading, a toggle tag, a Decision or Revision line.
-const STRUCTURAL = /^\\*(?:## \[|<\/?details|<summary|Decision:|Revision request:)/i;
+const STRUCTURAL = /^[\s\\]*(?:## \[|<\/?details|<summary|Decision:|Revision request:)/i;
 
 /** Escape the lines of free text that imitate the page structure by a leading backslash (reversible with `unescapeSection`). */
 export function escapeSection(text: string): string {
@@ -42,7 +46,7 @@ export function escapeSection(text: string): string {
 
 /** The inverse of `escapeSection`: what a parser applies to the children of the Proposed toggle before it hashes or applies them. */
 export function unescapeSection(text: string): string {
-  return text.split("\n").map((line) => (STRUCTURAL.test(line) && line.startsWith("\\") ? line.slice(1) : line)).join("\n");
+  return text.split("\n").map((line) => (line.startsWith("\\") && STRUCTURAL.test(line.slice(1)) ? line.slice(1) : line)).join("\n");
 }
 
 /** a, b, … z, then aa, ab, … (display only: the `it-` id is the key). */
@@ -201,19 +205,25 @@ export function parseReviewPage(markdown: string): Map<string, ParsedSection> {
     if (opened >= 0) {
       const closed = block.findIndex((line, index) => index > opened + 1 && line.trim() === "</details>");
       if (closed > opened) {
-        const children = block.slice(opened + 2, closed).join("\n");
+        const rows = block.slice(opened + 2, closed);
+        // Notion may hand the children back indented: the whitespace every non-empty line shares is layout, not text.
+        const filled = rows.filter((row) => row.trim() !== "");
+        const shared = filled.length === 0 ? "" : filled.map((row) => /^[ \t]*/.exec(row)![0]).reduce((common, indent) => { let i = 0; while (i < common.length && i < indent.length && common[i] === indent[i]) i += 1; return common.slice(0, i); });
+        const children = rows.map((row) => (row.startsWith(shared) ? row.slice(shared.length) : row)).join("\n");
         proposed = children.includes(UNCONVERTIBLE) ? null : canon(unescapeSection(children));
         after = block.slice(closed + 1);
       }
     }
     // The Decision and Revision lines are read outside the toggle, so proposed text can never set them.
-    const decisionLine = after.find((line) => /^\s*Decision:/i.test(line));
+    const decisionLines = after.filter((line) => /^\s*Decision:/i.test(line));
+    const revisionLines = after.filter((line) => /^\s*Revision request:/i.test(line));
+    // Two Decision (or Revision request) lines are ambiguous: neither is read.
+    const decisionLine = decisionLines.length === 1 ? decisionLines[0] : undefined;
     const text = decisionLine === undefined ? null : decisionLine.replace(/^\s*Decision:\s*/i, "").trim();
     const normalized = text === null ? null : text.replace(/\s+/g, " ").toLowerCase();
     const decision = normalized !== null && (DECISIONS as readonly string[]).includes(normalized) ? (normalized as Token) : null;
-    const revisionLine = after.find((line) => /^\s*Revision request:/i.test(line));
-    const revision = revisionLine === undefined ? null : revisionLine.replace(/^\s*Revision request:\s*/i, "").trim();
-    const entry: ParsedSection = { item_id: head.id, proposed, decision, decision_text: text, revision_request: revision === "" ? null : revision, section: canon(block.join("\n")), duplicate: result.has(head.id) };
+    const revision = revisionLines.length !== 1 ? null : revisionLines[0]!.replace(/^\s*Revision request:\s*/i, "").trim();
+    const entry: ParsedSection = { item_id: head.id, proposed, decision: revisionLines.length > 1 ? null : decision, decision_text: text, revision_request: revision === "" ? null : revision, section: canon(block.join("\n")), duplicate: result.has(head.id) };
     if (result.has(head.id)) result.get(head.id)!.duplicate = true;
     if (!result.has(head.id)) result.set(head.id, entry);
   });

@@ -47,7 +47,6 @@ export function planReviewRow(
 ): void {
   const id = proposal.id;
   const published = (() => { const p = proposal.attributes.notion_published; const r = isRecord(p) && isRecord(p["@review"]) ? p["@review"] : undefined; return isRecord(r) && isRecord(r.items) ? r.items : {}; })() as Record<string, { rendered_hash?: string; proposed_hash?: string; base_hash?: string; held?: boolean }>;
-  const current = new Map(reviewItems(proposal, workspace).map((item) => [item.item_id, item]));
   const sections = review?.body_markdown == null ? undefined : parseReviewPage(review.body_markdown);
   const hold = (item: string | null, reason: string) => out.review_held.push({ proposal: id, page_id: row.page_id, item_id: item, reason });
 
@@ -59,7 +58,9 @@ export function planReviewRow(
       const section = sections.get(entry.item_id);
       if (section === undefined) continue;
       const edited = section.proposed !== null && published[entry.item_id]?.proposed_hash !== undefined && textSha(section.proposed) !== published[entry.item_id]!.proposed_hash;
-      if (edited || (section.decision !== null && section.decision !== "pending") || section.decision === null || section.revision_request !== null) pending = true;
+      // A structure the parser cannot read (no toggle, an unconvertible block) is also something to keep: the render must not overwrite it.
+      const broken = section.proposed === null && published[entry.item_id]?.proposed_hash !== undefined;
+      if (edited || broken || (section.decision !== null && section.decision !== "pending") || section.decision === null || section.revision_request !== null) pending = true;
     }
   }
   if (pending || review?.decided === true) out.review_pending.push({ proposal: id, page_id: row.page_id });
@@ -81,22 +82,31 @@ export function planReviewRow(
   if (review.body_markdown === null || sections === undefined) { hold(null, "BODY_UNREADABLE"); return; }
   if (minute(review.page_edited_at) > minute(review.decided_at)) { hold(null, "EDITED_AFTER_DECIDED"); return; }
 
+  // Read lazily: a damaged suppression record must not stop the plan of rows that are not being read (it fails closed when one is).
+  const current = new Map(reviewItems(proposal, workspace).map((item) => [item.item_id, item]));
+  const done = new Set((Array.isArray(proposal.attributes.item_decisions) ? proposal.attributes.item_decisions : []).filter(isRecord).map((entry) => String(entry.item_id)));
   const decision: ReviewDecision = { proposal: id, page_id: row.page_id, decided_at: review.decided_at, decided_by: "notion", page_edited_at: review.page_edited_at, unattended_ok: Date.parse(asOf) - Date.parse(review.decided_at) >= 2 * 60000, accept_all: review.accept_all, items: [] };
   for (const entry of itemStates) {
     const item = current.get(entry.item_id);
     const section = sections.get(entry.item_id);
-    if (item === undefined) continue;
+    if (item === undefined || done.has(entry.item_id)) continue; // an item already decided is never decided again, and its missing section is not news
     if (section === undefined) { hold(entry.item_id, "MISSING_SECTION"); continue; } // never an implicit decision
     if (section.duplicate) { hold(entry.item_id, "DUPLICATE_SECTION"); continue; }
     if (section.decision === null) { hold(entry.item_id, "UNREADABLE_DECISION"); continue; }
     let token: Token = section.decision;
-    if (token === "pending" && review.accept_all) token = "accept"; // Submit and accept all: explicit tokens win
+    // Submit and accept all, or a row-level Approve or Reject, decides the items still on Pending; explicit tokens win (§7.3, §7.6).
+    // An item with a typed revision request is not eligible: it waits.
+    if (token === "pending" && section.revision_request !== null && (review.accept_all || call === "approve" || call === "reject")) { hold(entry.item_id, "REVISION_PENDING"); continue; }
+    if (token === "pending" && review.accept_all) token = "accept";
+    else if (token === "pending" && call === "approve") token = "accept";
+    else if (token === "pending" && call === "reject") token = "reject";
     if (token === "pending") continue;
     if (token === "request revision") { out.review_revisions.push({ proposal: id, page_id: row.page_id, item_id: entry.item_id, instruction: section.revision_request }); continue; }
     const stored = published[entry.item_id];
     if (token === "accept") {
       if (item.held || stored?.held === true) { hold(entry.item_id, "HELD_SOURCE_EXCLUDED"); continue; }
-      if (section.proposed === null) { hold(entry.item_id, "UNREADABLE_PROPOSED"); continue; }
+      // Empty, missing or unreadable wording is never applied and never read as a deletion (§7.11).
+      if (section.proposed === null || section.proposed === "") { hold(entry.item_id, "UNREADABLE_PROPOSED"); continue; }
       if (stored?.base_hash === undefined) { hold(entry.item_id, "NO_BASELINE"); continue; }
       if (stored.base_hash !== item.current_base_hash) { hold(entry.item_id, "BASE_CHANGED"); continue; }
     }

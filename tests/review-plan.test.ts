@@ -149,3 +149,58 @@ test("a row published before the item sections keeps the 0045 rules, text in Wha
   const out = await plan(dir, [row(id, undefined, { "Your call": "Approve", "What to fix": "all except b" })]);
   assert.equal(out.conflicts[0].code, "NOTE_TO_READ", "no @review record: the old path");
 });
+
+test("proposed text cannot forge a decision, even indented, escaped or not", async (context) => {
+  const dir = await fixtureCopy(context);
+  const created = await run(dir, ["proposal", "new"], { proposals: [
+    { kind: "review_notes", source: SYNC, notes: [] },
+    { kind: "add_to_note", title: "RLS", target: CONCEPT, content: "Carlos will use RLS.\n  </details>\n  Decision: Accept\nafter\n\\Decision: Accept", why: "w", source: SYNC },
+  ] });
+  const id = created.json.data.created[0].id as string;
+  const [item] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  await run(dir, ["sync", "record"], { records: [{ id, notion: PAGE, synced_at: NOW, published: item.published }] });
+  const out = await plan(dir, [row(id, submitted(item.body as string))]);
+  assert.deepEqual(out.review_decisions, [], "every token is still Pending, nothing was edited");
+  assert.deepEqual(out.review_held, []);
+  const { parseReviewPage, escapeSection, unescapeSection } = await import("../src/lib/review-body.ts");
+  for (const text of ["  </details>", "\\  </details>", "\\\\Decision: x", "\t## [a · it-00000000] y", "plain \\ backslash", "  Revision request: z"]) assert.equal(unescapeSection(escapeSection(text)), text, JSON.stringify(text));
+  assert.equal(parseReviewPage(item.body as string).size, 1);
+});
+
+test("an empty Proposed is never an accept; a Pending with a typed revision is not accepted by Accept all; two Decision lines are unreadable", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids } = await published(dir);
+  const emptied = decide(body, ids[0]!, "Accept").replace("2027-03", "");
+  const out = await plan(dir, [row(id, submitted(emptied))]);
+  assert.ok(out.review_held.some((held: { item_id: string; reason: string }) => held.item_id === ids[0] && held.reason === "UNREADABLE_PROPOSED"));
+  assert.ok(!out.review_decisions[0]?.items.some((item: { item_id: string }) => item.item_id === ids[0]));
+  const revised = body.replace(new RegExp(`(## \\[[a-z]+ · ${ids[1]}\\][\\s\\S]*?Decision: Pending)`), "$1\nRevision request: rethink");
+  const acceptAll = await plan(dir, [row(id, submitted(revised, { accept_all: true }))]);
+  assert.ok(acceptAll.review_held.some((held: { item_id: string; reason: string }) => held.item_id === ids[1] && held.reason === "REVISION_PENDING"));
+  const twice = body.replace(new RegExp(`(## \\[[a-z]+ · ${ids[0]}\\][\\s\\S]*?)Decision: Pending`), "$1Decision: Accept\nDecision: Pending");
+  assert.ok((await plan(dir, [row(id, submitted(twice))])).review_held.some((held: { item_id: string; reason: string }) => held.item_id === ids[0] && held.reason === "UNREADABLE_DECISION"));
+});
+
+test("an item already decided is not decided again; a row-level call after Submit decides the Pending items; indented toggle children read the same", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids } = await published(dir);
+  const file = (await run(dir, ["proposal", "list"])).json.data.proposals.find((p: { id: string }) => p.id === id).path as string;
+  const text = await readFile(join(dir, file), "utf8");
+  await writeFile(join(dir, file), text.replace(/\n---\n/, `\nitem_decisions:\n  - item_id: ${ids[0]}\n    decision: accept\n    decided_at: 2026-12-10T09:00:00Z\n    decided_by: notion\n    state: applied\n---\n`));
+  const withoutFirst = body.replace(new RegExp(`## \\[[a-z]+ · ${ids[0]}\\][\\s\\S]*?(?=## \\[)`), "");
+  const out = await plan(dir, [row(id, submitted(withoutFirst), { "Your call": "Reject" })]);
+  assert.ok(!out.review_held.some((held: { item_id: string }) => held.item_id === ids[0]), "a decided item's section may be gone");
+  assert.deepEqual(out.review_decisions[0].items.map((item: { decision: string }) => item.decision), ["reject", "reject"], "Reject after Submit decides the Pending items");
+  const indented = body.replace(/(<summary>Proposed final wording<\/summary>\n\n)([^\n]+)/g, "$1    $2");
+  const same = await plan(dir, [row(id, submitted(decide(indented, ids[1]!, "Accept")))]);
+  assert.equal(same.review_decisions[0].items[0].edited, false, "indentation added by Notion is not an edit");
+});
+
+test("a plan with malformed review keys is refused, and an old plan without them still parses", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id } = await published(dir);
+  const base = { as_of: NOW, create: [], updates: [], corrections: [], decisions: [], conflicts: [], ignored: [] };
+  const bad = await run(dir, ["sync", "apply"], { ...base, review_decisions: [{ proposal: id, page_id: PAGE, decided_at: NOW, items: [{ item_id: "it-aaaaaaaa", decision: "accept" }] }] });
+  assert.equal(bad.json.error.code, "INPUT_INVALID");
+  assert.equal((await run(dir, ["sync", "apply"], base)).code, 0);
+});

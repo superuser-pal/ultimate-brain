@@ -468,6 +468,12 @@ export function parsePlan(input: unknown): SyncPlan {
   if (!isTimestamp(p.as_of)) problems.push({ pointer: "/as_of", message: "must be an ISO 8601 UTC timestamp" });
   for (const key of ["create", "updates", "corrections", "decisions", "conflicts", "ignored"]) if (!Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   (Array.isArray(p.review_pending) ? p.review_pending : []).forEach((item, index) => { if (!isRecord(item) || typeof item.proposal !== "string" || typeof item.page_id !== "string") problems.push({ pointer: `/review_pending/${index}`, message: "must be { proposal, page_id }" }); });
+  (Array.isArray(p.review_decisions) ? p.review_decisions : []).forEach((item, index) => {
+    const at = `/review_decisions/${index}`;
+    if (!isRecord(item) || typeof item.proposal !== "string" || typeof item.page_id !== "string" || !isTimestamp(item.decided_at) || !Array.isArray(item.items)) { problems.push({ pointer: at, message: "must be { proposal, page_id, decided_at, items }" }); return; }
+    (item.items as unknown[]).forEach((entry, position) => { if (!isRecord(entry) || typeof entry.item_id !== "string" || !["accept", "reject", "defer"].includes(String(entry.decision)) || (entry.decision === "accept" && (typeof entry.proposed !== "string" || entry.proposed === ""))) problems.push({ pointer: `${at}/items/${position}`, message: "must be { item_id, decision, proposed } with the final wording for an accept" }); });
+  });
+  for (const key of ["review_held", "review_revisions"]) (Array.isArray(p[key]) ? p[key] as unknown[] : []).forEach((item, index) => { if (!isRecord(item) || typeof item.proposal !== "string" || typeof item.page_id !== "string" || (key === "review_revisions" && typeof item.item_id !== "string") || (key === "review_held" && typeof item.reason !== "string")) problems.push({ pointer: `/${key}/${index}`, message: "has the wrong shape" }); });
   (Array.isArray(p.create) ? p.create : []).forEach((item, index) => {
     if (!isRecord(item)) { problems.push({ pointer: `/create/${index}`, message: "must be an object" }); return; }
     problems.push(...unknownKeys(item, ["type", "id", "title", "file_date", "frontmatter", "body", "lifecycle"], `/create/${index}`));
