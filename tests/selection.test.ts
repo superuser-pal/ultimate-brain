@@ -190,3 +190,12 @@ test("source extract-plan reports the copied paragraphs, blocks an unmappable in
   assert.equal(moved.json.data.previous.state, "tokens");
   assert.deepEqual(moved.json.data.previous.selection_changes.map((c: { id: string }) => c.id).sort(), ["s2", "s2.i1"]);
 });
+
+test("a list line without an id is listed as unnumbered and never imported", () => {
+  const summary = parseSummary("## [s1] Launch\n- [s1.i1] Launch moves “the launch moves to February”\n- Maria to send the contract by Friday\n");
+  assert.deepEqual(summary.unnumbered, [{ subject: "s1", text: "Maria to send the contract by Friday" }]);
+  const plan = planExtract(summary, TRANSCRIPT);
+  assert.equal(plan.ok, true);
+  assert.equal(plan.unnumbered.length, 1);
+  assert.equal(plan.copied.every((entry) => !entry.text.includes("Friday")), true);
+});

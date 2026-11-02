@@ -11,7 +11,9 @@ export interface Item {
   text: string; anchors: string[]; depends_on: string[]; line: string;
 }
 export interface Problem { code: SelectionCode; id: string | null; reason: string; with?: string[] }
-export interface Summary { subjects: Subject[]; items: Item[]; problems: Problem[]; lines: string[] }
+/** A list line without an id: never an item, never imported, always listed (capture-and-review §4.1, parser tolerance). */
+export interface Unnumbered { subject: string | null; text: string }
+export interface Summary { subjects: Subject[]; items: Item[]; problems: Problem[]; lines: string[]; unnumbered: Unnumbered[] }
 export interface Paragraph { n: number; text: string; hash: string }
 
 const SUBJECT = /^(?:#{1,6}\s*)?\[(s\d+)\]\s*(.*)$/;
@@ -56,6 +58,7 @@ export function parseSummary(markdown: string): Summary {
   const items: Item[] = [];
   const problems: Problem[] = [];
   const lines: string[] = [];
+  const unnumbered: Unnumbered[] = [];
   let current: Subject | null = null;
   let heading = false;
   for (const rawLine of markdown.split("\n")) {
@@ -91,14 +94,18 @@ export function parseSummary(markdown: string): Summary {
       if (value === null) problems.push({ code: "SELECTION_UNREADABLE", id: current.id, reason: `unreadable selection: ${current.raw}` });
       else current.selection = value;
       heading = false;
-    } else heading = false;
+    } else {
+      heading = false;
+      const bullet = /^(?:[-*+]|\d+[.)])\s+(.+)$/.exec(line);
+      if (bullet !== null) unnumbered.push({ subject: current?.id ?? null, text: bullet[1] ?? "" });
+    }
   }
   const seen = new Set<string>();
   for (const id of [...subjects.map((entry) => entry.id), ...items.map((entry) => entry.id)]) {
     if (seen.has(id)) problems.push({ code: "SELECTION_UNMAPPABLE", id, reason: "duplicate id" });
     seen.add(id);
   }
-  return { subjects, items, problems, lines };
+  return { subjects, items, problems, lines, unnumbered };
 }
 
 /** Numbers the transcript paragraphs from ¶1 (§4.2); blank lines separate them. */
@@ -118,6 +125,7 @@ export interface Plan {
   copied: { n: number; text: string; hash: string; items: string[] }[];
   uncovered: number;
   problems: Problem[];
+  unnumbered: Unnumbered[];
   /** True when nothing blocks the input; otherwise no extract may be written (never a full-transcript fallback). */
   ok: boolean;
 }
@@ -194,7 +202,7 @@ export function planExtract(summary: Summary, transcript: string): Plan {
   }
   const covered = new Set(citers.keys());
   const ok = problems.every((problem) => problem.code === "DEPENDS_ON_EXCLUDED");
-  return { mappings, copied: ok ? copied : copied.filter((entry) => entry.items.every((id) => !broken.has(id))), uncovered: paras.filter((entry) => !covered.has(entry.n)).length, problems, ok };
+  return { mappings, copied: ok ? copied : copied.filter((entry) => entry.items.every((id) => !broken.has(id))), uncovered: paras.filter((entry) => !covered.has(entry.n)).length, problems, unnumbered: summary.unnumbered, ok };
 }
 
 /** The extract body: only the selected paragraphs, in transcript order, each marked (§4.5). */

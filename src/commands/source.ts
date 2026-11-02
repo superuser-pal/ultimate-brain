@@ -94,7 +94,7 @@ export const sourceExtractPlanCommand: Command = {
       ok: plan.ok, transcript_hash: hash, page_fingerprint: fingerprint, selection, problems: plan.problems,
       passages: plan.copied.map((entry) => ({ n: entry.n, hash: entry.hash, items: entry.items })),
       copied: plan.copied.map((entry) => ({ n: entry.n, text: entry.text, items: entry.items })),
-      uncovered: plan.uncovered, body: plan.ok ? extractBody(plan) : null,
+      unnumbered: plan.unnumbered, uncovered: plan.uncovered, body: plan.ok ? extractBody(plan) : null,
       ...(previous === undefined ? {} : { previous }),
     };
     return { data, human: plan.ok ? `${plan.copied.length} paragraph(s) would enter the extract; ${plan.uncovered} covered by no item\n` : `blocked: ${plan.problems.map((problem) => `${problem.code} ${problem.id ?? ""} ${problem.reason}`).join("; ")}\n` };
