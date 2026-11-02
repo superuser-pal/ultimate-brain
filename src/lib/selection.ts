@@ -54,9 +54,22 @@ function selectionOf(raw: string): Selection | null {
 }
 
 const TOKENS = ["meeting only", "use in brain"];
-const TOKEN_PHRASE = /meeting[\s-]*only|use[\s-]+in[\s-]+(?:the[\s-]+)?brain/i;
-const NOTICE = /^all subjects included unless marked meeting only\.?\s*mark (?:reviewed|ready) to confirm\.?$/i;
-const SELECTION_WORD = /\bselection\b/i;
+const NOTICE_TEXT = /all\s+subjects\s+included\s+unless\s+marked\s+meeting\s+only\.?\s*mark\s+(?:reviewed|ready)(?:\s*\(\s*inbox:\s*ready\s*\))?\s+to\s+confirm\.?/gi;
+const LEAD = /^[\s[({"'“”‘’*_>•–—-]+/;
+const PHRASE_START = /^(?:meeting[\s-]*only|use[\s-]+in[\s-]+(?:the[\s-]+)?brain)/i;
+const PHRASE_BRACKETED = /[[({][^\])}]*(?:meeting[\s-]*only|use[\s-]+in[\s-]+(?:the[\s-]+)?brain)[^\])}]*[\])}]/i;
+
+/** Text that is shaped like a selection control without being one: it must block, never default to inclusion (§4.3). Prose that mentions
+ *  the words further into a sentence ("share notes from the meeting only with Bob") is not a control. */
+function controlLike(text: string): boolean {
+  const body = text.replace(LEAD, "");
+  return PHRASE_START.test(body) || PHRASE_BRACKETED.test(text) || /^selection\b/i.test(body);
+}
+
+/** A word that mixes Latin letters with Cyrillic or Greek ones (`Meetіng` with a Cyrillic і) is a look-alike spelling of a control. */
+function mixedScript(text: string): boolean {
+  return text.replace(QUOTE, " ").split(/\s+/).slice(0, 8).some((word) => /\p{Script=Latin}/u.test(word) && /[\p{Script=Cyrillic}\p{Script=Greek}]/u.test(word));
+}
 const ID_IN_LINE = /\[s\d+(?:\.i\d+)?\]/i;
 const TOKEN_WORDS = /\b(meeting|brain|only|private|confidential|exclude|excluded|secret|skip)\b/i;
 
@@ -85,10 +98,13 @@ export function parseSummary(markdown: string): Summary {
   const lines: string[] = [];
   const unnumbered: Unnumbered[] = [];
   let current: Subject | null = null;
-  for (const rawLine of markdown.split("\n")) {
+  // NFKC folds full-width forms; zero-width and format characters inside words are removed; the §4.4 notice (with an icon, in a callout, or
+  // wrapped over lines) is not a control.
+  const cleaned = markdown.normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "").replace(NOTICE_TEXT, "");
+  for (const rawLine of cleaned.split("\n")) {
     // Blockquote markers, emphasis around the whole line and HTML-escaped `>` are formatting, not content.
     const line = normalize(rawLine.replace(/&gt;/g, ">").replace(/\*\*/g, "")).replace(/^(?:>\s*)+/, "").replace(/^[_*]+\s*|\s*[_*]+$/g, "").trim();
-    if (line === "" || NOTICE.test(line)) continue; // the confirmation notice of §4.4 mentions the token and is not a control
+    if (line === "" || /^[^\p{L}\p{N}\[]*$/u.test(line)) continue; // empty, or only an icon / rule left of the notice
     const subject = SUBJECT.exec(line);
     const item = ITEM.exec(line);
     const choice = SELECTION_LINE.exec(line);
@@ -106,12 +122,12 @@ export function parseSummary(markdown: string): Summary {
       const anchors = [...rest.matchAll(QUOTE)].map((match) => normalize(match[1] ?? ""));
       const text = normalize(rest.replace(QUOTE, ""));
       items.push({ id: item[1] ?? "", subject: current?.id ?? null, explicit, waiting_on: waiting !== null, text, anchors, depends_on: dependsOn, line });
-      if ((token === null && looksLikeToken(rest)) || TOKEN_PHRASE.test(text)) problems.push({ code: "SELECTION_UNREADABLE", id: item[1] ?? null, reason: `unreadable item token: ${rest.slice(0, 40)}` });
+      if ((token === null && looksLikeToken(rest)) || controlLike(text) || mixedScript(rest)) problems.push({ code: "SELECTION_UNREADABLE", id: item[1] ?? null, reason: `unreadable item token: ${rest.slice(0, 40)}` });
     } else if (subject !== null) {
       lines.push(line);
       current = { id: subject[1] ?? "", title: normalize(subject[2] ?? ""), selection: "use", raw: null };
       subjects.push(current);
-      if (TOKEN_PHRASE.test(current.title)) problems.push({ code: "SELECTION_UNREADABLE", id: current.id, reason: `a selection token in a subject title is not a control: ${current.title.slice(0, 40)}` });
+      if (controlLike(current.title) || mixedScript(current.title)) problems.push({ code: "SELECTION_UNREADABLE", id: current.id, reason: `a selection token in a subject title is not a control: ${current.title.slice(0, 40)}` });
     } else if (choice !== null && current !== null) {
       // The subject's control may follow other lines of the subject, but there is only one.
       lines.push(line);
@@ -122,11 +138,18 @@ export function parseSummary(markdown: string): Summary {
       else current.selection = value;
     } else {
       // Anything else that looks like a control or carries an item id must block: an exclusion that is not understood is never inclusion.
-      if (SELECTION_WORD.test(line) || TOKEN_PHRASE.test(line)) problems.push({ code: "SELECTION_UNREADABLE", id: current?.id ?? null, reason: `unreadable selection control: ${line.slice(0, 60)}` });
+      if (controlLike(line) || mixedScript(line)) problems.push({ code: "SELECTION_UNREADABLE", id: current?.id ?? null, reason: `unreadable selection control: ${line.slice(0, 60)}` });
       else if (ID_IN_LINE.test(line)) problems.push({ code: "SELECTION_UNREADABLE", id: current?.id ?? null, reason: `a line with an id that is not an item: ${line.slice(0, 60)}` });
       const bullet = /^(?:[-*+]|\d+[.)])\s+(.+)$/.exec(line);
       if (bullet !== null) unnumbered.push({ subject: current?.id ?? null, text: bullet[1] ?? "" });
     }
+  }
+  // An item belongs to the subject its id names (`[s2.i1]` is s2's). Placed under another subject, or before its own heading, it would
+  // silently take the wrong parent's selection (a block dragged in Notion), so it blocks.
+  const subjectIds = new Set(subjects.map((entry) => entry.id));
+  for (const entry of items) {
+    const named = `s${/^s(\d+)\./i.exec(entry.id)?.[1] ?? "?"}`;
+    if (entry.subject !== null ? named !== entry.subject : subjectIds.has(named)) problems.push({ code: "SELECTION_UNREADABLE", id: entry.id, reason: `item ${entry.id} is not under its subject ${named}` });
   }
   const seen = new Set<string>();
   for (const id of [...subjects.map((entry) => entry.id), ...items.map((entry) => entry.id)]) {

@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { eligible, lineageOf, noteReleased, restrictedSources, type Context, type SourceInfo, type Suppression } from "./eligibility.ts";
+import { eligible, latestExtracts, lineageOf, noteReleased, restrictedSources, type Context, type SourceInfo, type Suppression } from "./eligibility.ts";
 import { BrainError } from "./errors.ts";
 import type { Note } from "./notes.ts";
 import { PASSAGE_REF } from "./selection.ts";
@@ -51,7 +51,7 @@ export function contextFor(notes: readonly Note[], loaded: Pick<Loaded, "suppres
   const sources = new Map<string, SourceInfo>();
   for (const note of notes) {
     // A meeting derives from its source: a claim citing the meeting has that source's lineage.
-    if (note.type === "meeting" && typeof note.attributes.source === "string") sources.set(note.id, { id: note.id, replaces: note.attributes.source });
+    if (note.type === "meeting" && typeof note.attributes.source === "string") sources.set(note.id, { id: note.id, replaces: note.attributes.source, derived: true });
     if (note.type !== "source") continue;
     const a = note.attributes;
     const passages = Array.isArray(a.passages) ? (a.passages as { n: number; hash: string }[]).map((entry) => `${entry.n}:${entry.hash}`) : undefined;
@@ -69,16 +69,12 @@ export function contextFor(notes: readonly Note[], loaded: Pick<Loaded, "suppres
   const restored = new Set<string>();
   // Re-inclusion is derived from the persisted records: a passage the latest version holds again that an earlier suppression removed stays
   // restricted until a Restore record for that version names it (capture-and-review §4.6, §5.2).
-  const latest = new Map<string, SourceInfo>();
-  for (const info of sources.values()) {
-    if (info.extract_of === undefined || info.passages === undefined) continue;
-    const replaced = [...sources.values()].some((other) => other.replaces === info.id);
-    if (!replaced) latest.set(info.extract_of, info);
-  }
+  const context: Context = { sources, suppressions: loaded.suppressions, awaitingRestore: awaiting, restored };
+  const latest = latestExtracts(context);
   for (const [input, info] of latest) {
     const version = info.extract_version ?? 0;
     const removed = new Set(loaded.suppressions.filter((entry) => entry.input === input && entry.version < version).flatMap((entry) => entry.passages.map((passage) => `${passage.transcript_hash}|${passage.n}`)));
-    for (const entry of info.passages!) {
+    for (const entry of info.passages ?? []) {
       const n = entry.split(":")[0]!;
       if (removed.has(`${info.transcript_hash}|${n}`)) awaiting.add(`${input}|${info.transcript_hash}|${n}`);
     }
@@ -91,11 +87,12 @@ export function contextFor(notes: readonly Note[], loaded: Pick<Loaded, "suppres
       }
     }
   }
-  return { sources, suppressions: loaded.suppressions, awaitingRestore: awaiting, restored };
+  return context;
 }
 
-export interface Restriction { whole: boolean; lines: Set<number>; timeline: Set<number>; facts: Set<string> }
-const NONE = (): Restriction => ({ whole: false, lines: new Set(), timeline: new Set(), facts: new Set() });
+/** `summary`: the note rests on a changed input and is not resolved for it, so its frontmatter summary (which may come from excluded text) is not returned. */
+export interface Restriction { whole: boolean; lines: Set<number>; timeline: Set<number>; facts: Set<string>; summary: boolean }
+const NONE = (): Restriction => ({ whole: false, lines: new Set(), timeline: new Set(), facts: new Set(), summary: false });
 // Only an empty line is structure: a heading or a comment can carry excluded text, so it counts as unmapped content.
 const CONTENT = /^(?!\s*$)/;
 const CONTENT_LENIENT = /^(?!#{1,6}\s|<!--|\s*$)/;
@@ -121,7 +118,8 @@ export function restrictionOf(note: Note, context: Context): Restriction {
     }
     return result;
   }
-  const sources = (Array.isArray(note.attributes.sources) ? note.attributes.sources : []).filter((value): value is string => typeof value === "string");
+  // Provenance is `sources`, and for a meeting its required `source` field too (schema §3).
+  const sources = [...(Array.isArray(note.attributes.sources) ? note.attributes.sources : []), ...(typeof note.attributes.source === "string" ? [note.attributes.source] : [])].filter((value): value is string => typeof value === "string");
   const cleared = Array.isArray(note.attributes.lineage_cleared) ? (note.attributes.lineage_cleared as string[]) : [];
   const claim = { entries: [], lineage_cleared: cleared, note: note.id };
   const required = new Set<string>();
@@ -161,6 +159,7 @@ export function restrictionOf(note: Note, context: Context): Restriction {
   }
   if (required.size === 0) return result;
   const activeNeeded = [...required].filter((input) => active.has(input));
+  result.summary = [...required].some((input) => !cleared.includes(input));
   const resolved = { ...context, suppressions: context.suppressions.filter((entry) => activeNeeded.includes(entry.input)) };
   const releasedActive = activeNeeded.length === 0 || noteReleased({ lineage_cleared: cleared }, resolved);
   const releasedAll = [...required].every((input) => cleared.includes(input));
@@ -178,11 +177,12 @@ export function restrictionOf(note: Note, context: Context): Restriction {
 export function eligibleNote(note: Note, context: Context): Note | null {
   const restriction = restrictionOf(note, context);
   if (restriction.whole) return null;
-  if (restriction.lines.size === 0 && restriction.timeline.size === 0 && restriction.facts.size === 0) return note;
+  if (restriction.lines.size === 0 && restriction.timeline.size === 0 && restriction.facts.size === 0 && !restriction.summary) return note;
   const body = note.body.split(/(\r?\n)/).map((text, index) => index % 2 === 0 && restriction.lines.has(index / 2) ? " ".repeat(text.length) : text).join("");
   const attributes = { ...note.attributes };
   // A partly restricted note's one-line summary may carry the excluded text: it is not returned.
-  if (restriction.lines.size > 0 || restriction.timeline.size > 0) delete attributes.summary;
+  // Aliases rank a note by text the user may have excluded; both go for a note that is only partly returned.
+  if (restriction.summary || restriction.lines.size > 0 || restriction.timeline.size > 0) { delete attributes.summary; delete attributes.aliases; }
   if (Array.isArray(attributes.timeline)) attributes.timeline = attributes.timeline.filter((_, index) => !restriction.timeline.has(index));
   if (attributes.facts !== null && typeof attributes.facts === "object") attributes.facts = Object.fromEntries(Object.entries(attributes.facts).filter(([key]) => !restriction.facts.has(key)));
   return { ...note, body, attributes };

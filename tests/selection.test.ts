@@ -295,3 +295,44 @@ test("a transcript paragraph that contains the reserved passage marker blocks th
   assert.equal(plan.ok, false);
   assert.ok(plan.problems.some((p) => p.reason.includes("reserved")));
 });
+
+test("look-alike and invisible characters in a control cannot turn an exclusion into inclusion", () => {
+  const transcript = "Public para.\n\nSecret words here.";
+  const cases = [
+    "## [s1] Public\n- [s1.i1] P “Public para”\n\n## [s2] Private\n- [s2.i1] Meetіng only: S “Secret words”\n", // Cyrillic і
+    "## [s1] Public\n- [s1.i1] P “Public para”\n\n## [s2] Private\nSеlection: Meetіng only\n- [s2.i1] S “Secret words”\n", // Cyrillic е and і
+  ];
+  for (const summary of cases) {
+    const plan = planExtract(parseSummary(summary), transcript);
+    assert.equal(plan.ok, false, summary);
+  }
+  // Zero-width characters and full-width forms are removed or folded, so the control is read as written: the paragraph stays out.
+  for (const summary of [
+    "## [s1] Public\n- [s1.i1] P “Public para”\n\n## [s2] Private\n- [s2.i1] Meeting​ only: S “Secret words”\n",
+    "## [s1] Public\n- [s1.i1] P “Public para”\n\n## [s2] Private\nSel​ection: Meet​ing only\n- [s2.i1] S “Secret words”\n",
+    "## [s1] Public\n- [s1.i1] P “Public para”\n\n## [s2] Private\nSelection： Meeting only\n- [s2.i1] S “Secret words”\n",
+  ]) {
+    const plan = planExtract(parseSummary(summary), transcript);
+    assert.deepEqual(plan.copied.map((entry) => entry.n), plan.ok ? [1] : [], summary);
+    assert.ok(!plan.copied.some((entry) => entry.text.includes("Secret")), summary);
+  }
+});
+
+test("an item belongs to the subject its id names", () => {
+  const transcript = "Public para.\n\nSecret words here.";
+  const moved = "## [s1] Public\n- [s1.i1] P “Public para”\n- [s2.i1] M “Secret words”\n\n## [s2] Private\nSelection: Meeting only\n";
+  assert.equal(planExtract(parseSummary(moved), transcript).ok, false, "an item under another subject blocks");
+  const before = "- [s2.i1] M “Secret words”\n\n## [s1] Public\n- [s1.i1] P “Public para”\n\n## [s2] Private\nSelection: Meeting only\n";
+  assert.equal(planExtract(parseSummary(before), transcript).ok, false, "an item before its own heading blocks");
+});
+
+test("the confirmation notice, with a callout icon or wrapped, is not a control, and ordinary prose is not blocked", () => {
+  const transcript = "Launch para.\n\nVendor selection finishes Friday.";
+  for (const notice of ["💡 All subjects included unless marked Meeting only. Mark Reviewed to confirm.", "> 💡 All subjects included unless marked Meeting only.\n> Mark Reviewed (Inbox: Ready) to confirm.", "<aside>\nAll subjects included unless marked Meeting only. Mark Ready to confirm.\n</aside>"]) {
+    const summary = `${notice}\n\n## [s1] Launch\nWe agreed the vendor selection will finish Friday.\n- [s1.i1] L “Launch para”\n- [s1.i2] V “Vendor selection finishes Friday”\n`;
+    const plan = planExtract(parseSummary(summary), transcript);
+    assert.equal(plan.ok, true, `${notice}: ${JSON.stringify(plan.problems)}`);
+  }
+  const prose = planExtract(parseSummary("## [s1] A\n- [s1.i1] Share notes from the meeting only with Bob “Launch para”\n"), "Launch para.");
+  assert.equal(prose.ok, true, "a phrase in the middle of a sentence is prose");
+});
