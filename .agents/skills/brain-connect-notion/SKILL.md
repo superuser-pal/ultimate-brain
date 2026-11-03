@@ -16,7 +16,7 @@ Run CLI commands as `brain <command> --brain <brain> --json`. If `brain` is not 
    ```
    Core (always on): Inbox, Meetings, Projects, Areas, People, Review
    [x] Knowledge: Decisions, Questions, Concepts
-   [ ] Domains: group Areas by work or life context
+   [ ] Domains: group Areas by work or life context (its database is in every space)
    [x] Orgs: client and partner organizations
    [ ] Documents: keep a document, or part of one, as a page
    [ ] Reports: ask the brain in the Inbox, get a report you can refresh
@@ -49,7 +49,7 @@ Run CLI commands as `brain <command> --brain <brain> --json`. If `brain` is not 
    | Documents (called References before migration 0010) | `documents` |
    | Tasks | `notion.tasks.database` (below) |
 
-   A missing database is reported, not invented. A missing database of a module that is on is the module's Notion steps still to do ("Turning a module on" below); the brain works without it, and the skills that need it say so.
+   A missing database is reported, not invented. **Domains** is expected in every space, with the module on or off (decision 0065): when it is missing, the space predates 0.8.1, so name `notion/migrations/0014-domains-database-in-every-space.md` (run with `brain-notion-change`). A missing database of a module that is on is the module's Notion steps still to do ("Turning a module on" below); the brain works without it, and the skills that need it say so.
 3. **Check each database** (read-only). Retrieve the database, then its data source (current Notion API: a database has `data_sources`, and its properties live on the data source). Check that every property in docs/notion-space-design.md §3 for that database exists with the right type: relations point to the right database, and selects have the listed options.
    - Report each difference as `Database · Property: expected …, found …`.
    - Report two select options that share an id (it has happened after adding an option through Notion AI), and suggest deleting and re-adding the option by hand.
