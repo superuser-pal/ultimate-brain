@@ -1,6 +1,6 @@
 # 0065 — The Domains database is in every Notion space
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-11-03
 **Amends:** 0055 (how Domains reach Notion)
 **Keeps:** 0048 (modules, nothing deleted when off), 0022 (structure changes in the repo first)
