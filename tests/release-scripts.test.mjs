@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
@@ -307,6 +307,89 @@ test("task start --from stacks a task whose row exists only on that branch (deci
   assert.match(missing.stderr, /Cannot read build\/TASKS.md on origin\/claude\/CC-9-none/);
   const usage = run("task.mjs", ["done", "CC-2", "--from", "claude/CC-1-below"], { root });
   assert.match(usage.stderr, /Usage/);
+});
+
+/** A repository with an origin at `parent/origin.git`, holding `tasks` as build/TASKS.md on main. */
+function taskRepository(tasks) {
+  const parent = mkdtempSync(join(tmpdir(), "ultimate-brain-task-"));
+  const root = join(parent, "repo");
+  mkdirSync(join(root, "build"), { recursive: true });
+  writeFileSync(join(root, "package.json"), '{"name":"fixture","version":"0.0.0"}\n');
+  writeFileSync(join(root, "package-lock.json"), '{"name":"fixture","lockfileVersion":3,"packages":{}}\n');
+  writeFileSync(join(root, "build/TASKS.md"), tasks);
+  command(root, ["init", "-b", "main"]);
+  command(root, ["config", "user.email", "tests@example.test"]);
+  command(root, ["config", "user.name", "Tests"]);
+  command(root, ["add", "."]);
+  command(root, ["commit", "-m", "fixture"]);
+  const bare = join(parent, "origin.git");
+  execFileSync("git", ["init", "--bare", bare]);
+  command(root, ["remote", "add", "origin", bare]);
+  command(root, ["push", "-u", "origin", "main"]);
+  return { parent, root, path: fakeCommands(root, { npm: "exit 0" }) };
+}
+
+test("task start --new writes a new task's row at the end of its release section", (t) => {
+  const { parent, root, path } = taskRepository("# Plan\n\n## 1.2.0 — Old\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n**Changelog:** Old\n\n## 1.3.0 — Next\n\nIntro.\n\n## Your tasks\n");
+  t.after(() => rmSync(parent, { recursive: true, force: true }));
+  const result = run("task.mjs", ["start", "CC-2", "--new", "Add a thing", "--release", "1.3.0"], { root, env: { PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  const worktree = join(parent, "ub-CC-2");
+  assert.equal(command(worktree, ["branch", "--show-current"]).trim(), "claude/CC-2-add-a-thing");
+  assert.equal(readFileSync(join(worktree, "build/TASKS.md"), "utf8"),
+    "# Plan\n\n## 1.2.0 — Old\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n**Changelog:** Old\n\n## 1.3.0 — Next\n\nIntro.\n\n### CC-2 · Add a thing · `in progress`\n**Release:** 1.3.0\n**Changelog:**\n**Output:**\n**Acceptance:**\n\n## Your tasks\n");
+  assert.match(result.stderr, /Fill in the \*\*Changelog:\*\*/);
+  assert.equal(command(worktree, ["config", "--get", "core.hooksPath"]).trim(), ".githooks");
+});
+
+test("task start --new creates a missing release section in version order", (t) => {
+  for (const [release, expected] of [
+    ["1.2.1", "## 1.2.0\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n\n## 1.2.1\n\n### CC-2 · New · `in progress`\n**Release:** 1.2.1\n**Changelog:**\n**Output:**\n**Acceptance:**\n\n## 1.3.0\n\n## Your tasks\n"],
+    ["1.4.0", "## 1.2.0\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n\n## 1.3.0\n\n## 1.4.0\n\n### CC-2 · New · `in progress`\n**Release:** 1.4.0\n**Changelog:**\n**Output:**\n**Acceptance:**\n\n## Your tasks\n"],
+  ]) {
+    const { parent, root, path } = taskRepository("## 1.2.0\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n\n## 1.3.0\n\n## Your tasks\n");
+    t.after(() => rmSync(parent, { recursive: true, force: true }));
+    const result = run("task.mjs", ["start", "CC-2", "--new", "New", "--release", release], { root, env: { PATH: path } });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(join(parent, "ub-CC-2", "build/TASKS.md"), "utf8"), expected);
+  }
+});
+
+test("task start --new refuses an existing id and incomplete flags", (t) => {
+  const { parent, root, path } = taskRepository("### CC-1 · Old · `todo`\n**Release:** 1.2.0\n");
+  t.after(() => rmSync(parent, { recursive: true, force: true }));
+  const existing = run("task.mjs", ["start", "CC-1", "--new", "Again", "--release", "1.2.0"], { root, env: { PATH: path } });
+  assert.match(existing.stderr, /CC-1 already exists on origin\/main/);
+  for (const args of [["--new", "No release"], ["--release", "1.2.0"], ["--new", "Bad", "--release", "next"], ["--new", "A · B", "--release", "1.2.0"], ["--new", "x", "--new", "y"]]) {
+    assert.match(run("task.mjs", ["start", "CC-2", ...args], { root, env: { PATH: path } }).stderr, /Usage/);
+  }
+  assert.match(run("task.mjs", ["done", "CC-1", "--release", "1.2.0"], { root }).stderr, /Usage/);
+  assert.equal(existsSync(join(parent, "ub-CC-2")), false);
+});
+
+test("task clean removes merged task worktrees and keeps open, fresh and dirty ones", (t) => {
+  const { parent, root, path } = taskRepository("### CC-1 · Merged · `todo`\n**Release:** 1.2.0\n\n### CC-2 · Open · `todo`\n**Release:** 1.2.0\n\n### CC-3 · Fresh · `todo`\n**Release:** 1.2.0\n\n### CC-4 · Dirty · `todo`\n**Release:** 1.2.0\n");
+  t.after(() => rmSync(parent, { recursive: true, force: true }));
+  for (const id of ["CC-1", "CC-2", "CC-3", "CC-4"]) assert.equal(run("task.mjs", ["start", id], { root, env: { PATH: path } }).status, 0);
+  for (const id of ["CC-1", "CC-2", "CC-4"]) {
+    const worktree = join(parent, `ub-${id}`);
+    writeFileSync(join(worktree, `${id}.txt`), `${id}\n`);
+    command(worktree, ["add", "."]);
+    command(worktree, ["commit", "-m", `${id}: work`]);
+  }
+  command(join(parent, "ub-CC-3"), ["checkout", "--", "build/TASKS.md"]);
+  writeFileSync(join(parent, "ub-CC-4", "CC-4.txt"), "changed\n");
+  command(root, ["merge", "--no-ff", "-m", "Merge CC-1", "claude/CC-1-merged"]);
+  command(root, ["merge", "--no-ff", "-m", "Merge CC-4", "claude/CC-4-dirty"]);
+  command(root, ["push", "origin", "main"]);
+  const result = run("task.mjs", ["clean"], { root, env: { PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /^Removed claude\/CC-1-merged$/m);
+  assert.match(result.stderr, /Kept claude\/CC-4-dirty: uncommitted changes/);
+  assert.equal(existsSync(join(parent, "ub-CC-1")), false);
+  for (const id of ["CC-2", "CC-3", "CC-4"]) assert.equal(existsSync(join(parent, `ub-${id}`)), true, id);
+  assert.doesNotMatch(command(root, ["branch", "--list"]), /CC-1-merged/);
+  assert.match(run("task.mjs", ["clean", "CC-1"], { root }).stderr, /Usage/);
 });
 
 test("task start refuses unknown and non-todo tasks", (t) => {
