@@ -45,15 +45,16 @@ In the databases on "Brain Data", add these two-way relations. Use exactly these
 [Tasks] - Tasks "Area" ↔ Areas "Tasks"
 [Tasks] - Tasks "Meeting" ↔ Meetings "Tasks"
 [Tasks] - Tasks "Source" ↔ Inbox "Tasks"
+- Areas "Domain" ↔ Domains "Areas" (limit Areas' side to one page)
+[Orgs] - Domains "Org" ↔ Orgs "Domains"
 
 Do not create any other relations.
-[Domains] Create two-way Areas "Domain" ↔ Domains "Areas". Set Areas · Domain to Limit: 1 page by hand.
-[Domains] [Orgs] Create Domains "Org" ↔ Orgs "Domains".
 ```
 
 ## Verify
 - [ ] Open each database: both sides of every relation exist, with the names above.
 - [ ] Each relation is two-way: linking a Project to an Area in Projects shows the Project in that Area's "Projects".
 - [ ] Review "Area" is limited to one page.
+- [ ] Areas "Domain" is limited to one page. Notion AI may skip the limit: set it by hand (the relation's settings → Limit: 1 page).
 - [ ] (Knowledge) Decisions has both "Supersedes" and "Superseded By", pointing at Decisions itself.
 - [ ] No other relations were created.
