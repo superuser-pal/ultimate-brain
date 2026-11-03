@@ -14,10 +14,13 @@ Each operation has a skill; follow it end to end:
 |---|---|
 | connect the brain to Notion (after building the space) | `brain-connect-notion` |
 | catch up: do everything that's waiting (decided reviews, reviewed meetings, the Inbox and its attachments, the drop folder, linked repos, reports asked for) | `brain-catch-up` |
-| ingest one input: reviewed minutes, a document, a web page, a pasted email or note, the Inbox, the drop folder, a linked repo; link a repo | `brain-ingest` |
+| ingest one input: reviewed minutes, a document, a web page, a pasted email or note, the Inbox, the drop folder, a linked repo | `brain-ingest` |
 | apply decisions from the Notion Review queue | `brain-apply` |
 | pull Notion edits and new rows, republish notes | `brain-sync` |
 | answer a question from the brain, or write a report on a subject | `brain-query` |
+| link a repo with its kit, show, change or unlink a link, check its health, show its tasks, start a new repo | `brain-repos` |
+| track and run the work in a folder, standard or connected to a Notion Project or Area: set it up, run a session, pause or end it | `brain-workflow` |
+| take an existing project's plans and tasks (a Markdown plan, issues, Notion tasks) into a connected workflow | `brain-workflow-adopt` |
 | learn how the system works ("how do I…", "why didn't…") | `brain-howto` |
 | change the Notion structure (databases, properties, views) | `brain-notion-change`; structure is changed in the product repo first, never edited directly in Notion (0022) |
 
