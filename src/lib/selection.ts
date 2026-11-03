@@ -13,12 +13,22 @@ export interface Item {
 export interface Problem { code: SelectionCode; id: string | null; reason: string; with?: string[] }
 /** A list line without an id: never an item, never imported, always listed (capture-and-review §4.1, parser tolerance). */
 export interface Unnumbered { subject: string | null; text: string }
-export interface Summary { subjects: Subject[]; items: Item[]; problems: Problem[]; lines: string[]; unnumbered: Unnumbered[] }
+/** A line of a Quick follow-ups group: stays in Notion, never an item, never imported, never a blocker (decision 0067, capture-and-review §4.1). */
+export interface Quick { subject: string | null; id: string | null; text: string; done: boolean }
+/** The fields of a Scope toggle and what is wrong with them; a Scope problem holds back the item's Task, never the input (decision 0067). */
+export interface Scope { item: string | null; done_when: string | null; due: string | null; project: string | null; notes: string | null; problems: string[] }
+export interface Summary { subjects: Subject[]; items: Item[]; problems: Problem[]; lines: string[]; unnumbered: Unnumbered[]; quick: Quick[]; scopes: Scope[] }
 /** `text` is whitespace-normalized (for matching and hashing); `raw` is the paragraph as written, which is what an extract stores and a preview shows. */
 export interface Paragraph { n: number; text: string; raw: string; hash: string }
 
 const SUBJECT = /^(?:#{1,6}\s*)?\[(s\d+)\]\s*(.*)$/;
-const ITEM = /^(?:[-*+]\s+|\d+[.)]\s+)?\[(s\d+\.i\d+)\]\s*(.*)$/;
+const ITEM = /^(?:[-*+]\s+|\d+[.)]\s+)?(?:\[[ xX]\]\s+)?\[(s\d+\.i\d+)\]\s*(.*)$/;
+const TODO = /^[-*+]\s+\[([ xX])\]\s+(.*)$/;
+const GROUP = /^#{0,6}\s*(quick follow[- ]?ups|tasks|my actions)\s*:?$/i;
+const SCOPE_FIELDS: Record<string, "done_when" | "due" | "project" | "notes"> = { "done when": "done_when", due: "due", project: "project", notes: "notes" };
+const SCOPE_LABELS = { done_when: "Done when", due: "Due", project: "Project", notes: "Notes" } as const;
+const SCOPE_FIELD = /^(?:[-*+]\s+)?(done when|due|project|notes)\s*:\s*(.*)$/i;
+const ABSENT = /^(?:none|n\/a|-|—)?$/i;
 const SELECTION_LINE = /^(?:[-*+]\s+)?selection\s*:\s*(.*)$/i;
 const QUOTE = /[“"]([^“”"]+)[”"]/g;
 const DEPENDS = /\(\s*depends on\s+((?:\[[^\]]+\](?:\s*,\s*)?)+)\s*\)\s*$/i;
@@ -102,14 +112,89 @@ export function parseSummary(markdown: string): Summary {
   const problems: Problem[] = [];
   const lines: string[] = [];
   const unnumbered: Unnumbered[] = [];
+  const quick: Quick[] = [];
+  const scopes: Scope[] = [];
+  const quickIds: string[] = [];
   let current: Subject | null = null;
+  // Decision 0067: the group the line is in, the item line a Scope would belong to, and the open toggles (true for a Scope).
+  let group: "quick" | "other" | null = null;
+  let lastItem: string | null = null;
+  const toggles: boolean[] = [];
+  let scope: { entry: Scope; field: keyof typeof SCOPE_LABELS | null; seen: Set<string> } | null = null;
+  const scoped = new Set<string>();
   // NFKC folds full-width forms; zero-width and format characters inside words are removed; the §4.4 notice (with an icon, in a callout, or
   // wrapped over lines) is not a control.
   const cleaned = markdown.normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "").replace(NOTICE_TEXT, "");
   for (const rawLine of cleaned.split("\n")) {
     // Blockquote markers, emphasis around the whole line and HTML-escaped `>` are formatting, not content.
-    const line = normalize(rawLine.replace(/&gt;/g, ">").replace(/\*\*/g, "")).replace(/^(?:>\s*)+/, "").replace(/^[_*]+\s*|\s*[_*]+$/g, "").trim();
+    let line = normalize(rawLine.replace(/&gt;/g, ">").replace(/\*\*/g, "")).replace(/^(?:>\s*)+/, "").replace(/^[_*]+\s*|\s*[_*]+$/g, "").trim();
     if (line === "" || /^[^\p{L}\p{N}\[]*$/u.test(line)) continue; // empty, or only an icon / rule left of the notice
+    // Toggles (cli §5.14.7: `<details><summary>…</summary> … </details>`). Only a Scope toggle is read differently; other toggles' lines are read as before.
+    const open = /^<details>\s*(.*)$/i.exec(line);
+    if (open !== null) {
+      toggles.push(false);
+      const rest = open[1] ?? "";
+      if (rest === "") continue;
+      line = rest;
+    }
+    const summaryTag = /^<summary>\s*(.*?)\s*<\/summary>\s*(.*)$/i.exec(line);
+    if (summaryTag !== null && toggles.length > 0 && !toggles.includes(true)) {
+      if (normalize((summaryTag[1] ?? "").replace(/[*_`]/g, "")).toLowerCase() === "scope") {
+        toggles[toggles.length - 1] = true;
+        if (group !== "quick") {
+          const entry: Scope = { item: lastItem, done_when: null, due: null, project: null, notes: null, problems: [] };
+          if (lastItem === null) entry.problems.push("a Scope with no item line directly above it");
+          else if (scoped.has(lastItem)) entry.problems.push(`a second Scope for ${lastItem}`);
+          else scoped.add(lastItem);
+          scopes.push(entry);
+          scope = { entry, field: null, seen: new Set() };
+        }
+      }
+      if ((summaryTag[2] ?? "") === "") continue;
+      line = summaryTag[2] ?? "";
+    }
+    if (/^<\/details>$/i.test(line)) {
+      if (toggles.pop() === true) scope = null;
+      continue;
+    }
+    if (toggles.includes(true)) {
+      // Inside a Scope: fields, never items, unnumbered lines or controls. Inside a Scope in Quick follow-ups: nothing.
+      if (scope === null) continue;
+      const field = SCOPE_FIELD.exec(line);
+      if (field !== null) {
+        const key = SCOPE_FIELDS[(field[1] ?? "").toLowerCase()]!;
+        if (scope.seen.has(key)) { scope.entry.problems.push(`${SCOPE_LABELS[key]} given twice`); scope.field = null; continue; }
+        scope.seen.add(key);
+        scope.field = key;
+        const value = normalize(field[2] ?? "");
+        if (ABSENT.test(value)) continue;
+        if (key === "due" && !isDate(value)) { scope.entry.problems.push(`Due is not a date (YYYY-MM-DD): ${value}`); continue; }
+        scope.entry[key] = value;
+      } else if (scope.field === null) {
+        if (scope.seen.size === 0) scope.entry.problems.push(`text before the first field: ${line.slice(0, 60)}`);
+      } else if (scope.field !== "due") {
+        const key = scope.field;
+        scope.entry[key] = scope.entry[key] === null ? line : `${scope.entry[key]}\n${line}`;
+      }
+      continue;
+    }
+    const groupLine = GROUP.exec(line.replace(/[*_]/g, "").trim());
+    if (groupLine !== null) {
+      group = /^quick/i.test(groupLine[1] ?? "") ? "quick" : "other";
+      lastItem = null;
+      continue;
+    }
+    if (line.startsWith("#")) { group = null; lastItem = null; }
+    if (group === "quick" && !line.startsWith("#")) {
+      // Every line of a Quick follow-ups group is a quick line, whatever its shape: listed, never read as an item or a control.
+      const quickItem = ITEM.exec(line);
+      const todo = TODO.exec(line);
+      const bullet = /^(?:[-*+]|\d+[.)])\s+(.+)$/.exec(line);
+      if (quickItem !== null) { quick.push({ subject: current?.id ?? null, id: quickItem[1] ?? null, text: quickItem[2] ?? "", done: /^[-*+]\s+\[[xX]\]/.test(line) }); quickIds.push(quickItem[1] ?? ""); }
+      else if (todo !== null) quick.push({ subject: current?.id ?? null, id: null, text: todo[2] ?? "", done: (todo[1] ?? " ") !== " " });
+      else if (bullet !== null) quick.push({ subject: current?.id ?? null, id: null, text: bullet[1] ?? "", done: false });
+      continue;
+    }
     const subject = SUBJECT.exec(line);
     const item = ITEM.exec(line);
     const choice = SELECTION_LINE.exec(line);
@@ -127,10 +212,13 @@ export function parseSummary(markdown: string): Summary {
       const anchors = [...rest.matchAll(QUOTE)].map((match) => normalize(match[1] ?? ""));
       const text = normalize(rest.replace(QUOTE, ""));
       items.push({ id: item[1] ?? "", subject: current?.id ?? null, explicit, waiting_on: waiting !== null, text, anchors, depends_on: dependsOn, line });
+      lastItem = item[1] ?? null;
       if ((token === null && looksLikeToken(rest)) || controlLike(text) || mixedScript(rest)) problems.push({ code: "SELECTION_UNREADABLE", id: item[1] ?? null, reason: `unreadable item token: ${rest.slice(0, 40)}` });
     } else if (subject !== null) {
       lines.push(line);
       current = { id: subject[1] ?? "", title: normalize(subject[2] ?? ""), selection: "use", raw: null };
+      group = null;
+      lastItem = null;
       subjects.push(current);
       if (controlLike(current.title) || mixedScript(current.title)) problems.push({ code: "SELECTION_UNREADABLE", id: current.id, reason: `a selection token in a subject title is not a control: ${current.title.slice(0, 40)}` });
     } else if (choice !== null && current !== null) {
@@ -157,11 +245,18 @@ export function parseSummary(markdown: string): Summary {
     if (entry.subject !== null ? named !== entry.subject : subjectIds.has(named)) problems.push({ code: "SELECTION_UNREADABLE", id: entry.id, reason: `item ${entry.id} is not under its subject ${named}` });
   }
   const seen = new Set<string>();
-  for (const id of [...subjects.map((entry) => entry.id), ...items.map((entry) => entry.id)]) {
+  for (const id of [...subjects.map((entry) => entry.id), ...items.map((entry) => entry.id), ...quickIds]) {
     if (seen.has(id)) problems.push({ code: "SELECTION_UNMAPPABLE", id, reason: "duplicate id" });
     seen.add(id);
   }
-  return { subjects, items, problems, lines, unnumbered };
+  return { subjects, items, problems, lines, unnumbered, quick, scopes };
+}
+
+/** A calendar date written `YYYY-MM-DD` that exists (2026-02-30 does not). */
+function isDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
 /** Numbers the transcript paragraphs from ¶1 (§4.2); blank lines separate them. */
@@ -176,12 +271,33 @@ export interface Mapping {
   passages: number[]; imported: boolean; context_excluded: boolean;
 }
 
+export interface Quote { item: string; anchor: string | null; result: "shortened" | "unplaced"; stretches?: string[]; reason: string }
+
+/** The paragraphs that hold an anchor's longest stretches of 6 to 12 words found in exactly one paragraph, then the same on the words left on
+ *  each side (§4.2 rule 2), so a quote joining two sentences is placed in both. */
+function stretches(words: string[], paras: Paragraph[]): { text: string; n: number }[] {
+  for (let length = Math.min(12, words.length); length >= 6; length -= 1) {
+    for (let start = 0; start + length <= words.length; start += 1) {
+      const text = words.slice(start, start + length).join(" ");
+      const hits = paras.filter((entry) => entry.text.includes(text));
+      if (hits.length === 1) return [...stretches(words.slice(0, start), paras), { text, n: hits[0]!.n }, ...stretches(words.slice(start + length), paras)];
+    }
+  }
+  return [];
+}
+
 export interface Plan {
   mappings: Mapping[];
   copied: { n: number; text: string; hash: string; items: string[] }[];
   uncovered: number;
   problems: Problem[];
   unnumbered: Unnumbered[];
+  /** An included item's quotes placed by a stretch or not placed (decision 0067, §4.2 rules 2 and 3): reported, never a blocker. */
+  quotes: Quote[];
+  /** Included items with no placed quote: not imported. */
+  unplaced_items: string[];
+  quick: Quick[];
+  scopes: Scope[];
   /** True when nothing blocks the input; otherwise no extract may be written (never a full-transcript fallback). */
   ok: boolean;
 }
@@ -199,21 +315,32 @@ export function planExtract(summary: Summary, transcript: string): Plan {
   for (const line of summary.unnumbered) problems.push({ code: "UNNUMBERED_LINE", id: null, reason: `list line without an id: ${line.text.slice(0, 80)}` });
   const subjects = new Map(summary.subjects.map((entry) => [entry.id, entry]));
   const byId = new Map(summary.items.map((entry) => [entry.id, entry]));
+  // A quick line stays in Notion, outside the brain: depending on it is depending on excluded context (decision 0067, §4.7).
+  const quickIds = new Set(summary.quick.flatMap((line) => line.id === null ? [] : [line.id]));
   const passages = new Map<string, number[]>();
   const broken = new Set<string>();
+  const quotes: Quote[] = [];
+  const unplaced: string[] = [];
   for (const item of summary.items) {
     const found: number[] = [];
-    if (item.anchors.length === 0) { broken.add(item.id); problems.push({ code: "SELECTION_UNMAPPABLE", id: item.id, reason: "no anchor" }); }
-    if (item.anchors.length > 3) { broken.add(item.id); problems.push({ code: "SELECTION_UNMAPPABLE", id: item.id, reason: `${item.anchors.length} anchors: one to three allowed` }); }
-    for (const anchor of item.anchors) if (anchor.split(" ").length > 12) { broken.add(item.id); problems.push({ code: "SELECTION_UNMAPPABLE", id: item.id, reason: `anchor longer than 12 words: ${anchor.slice(0, 40)}…` }); }
+    // Decision 0067: a quote problem blocks only an excluded item, whose paragraphs must be known to keep them out (§4.2 rule 4).
+    const included = effectiveOf(item, subjects) === "use";
+    if (item.anchors.length === 0) {
+      if (included) quotes.push({ item: item.id, anchor: null, result: "unplaced", reason: "no quote" });
+      else { broken.add(item.id); problems.push({ code: "SELECTION_UNMAPPABLE", id: item.id, reason: "no anchor" }); }
+    }
     for (const anchor of item.anchors) {
       const hits = paras.filter((entry) => entry.text.includes(anchor));
-      if (hits.length === 1) found.push(hits[0]?.n ?? 0);
-      else { broken.add(item.id); problems.push({ code: "SELECTION_UNMAPPABLE", id: item.id, reason: hits.length === 0 ? `anchor not in the transcript: ${anchor}` : `anchor in ${hits.length} paragraphs: ${anchor}` }); }
+      if (hits.length === 1) { found.push(hits[0]?.n ?? 0); continue; }
+      if (!included) { broken.add(item.id); problems.push({ code: "SELECTION_UNMAPPABLE", id: item.id, reason: hits.length === 0 ? `anchor not in the transcript: ${anchor}` : `anchor in ${hits.length} paragraphs: ${anchor}` }); continue; }
+      const parts = hits.length === 0 ? stretches(anchor.split(" "), paras) : [];
+      if (parts.length > 0) { found.push(...parts.map((part) => part.n)); quotes.push({ item: item.id, anchor, result: "shortened", stretches: parts.map((part) => part.text), reason: "not found word for word" }); }
+      else quotes.push({ item: item.id, anchor, result: "unplaced", reason: hits.length === 0 ? "not in the transcript" : `in ${hits.length} paragraphs` });
     }
+    if (included && found.length === 0) unplaced.push(item.id);
     passages.set(item.id, [...new Set(found)].sort((a, b) => a - b));
     for (const target of item.depends_on) {
-      if (!byId.has(target) && !subjects.has(target)) { broken.add(item.id); problems.push({ code: "SELECTION_UNMAPPABLE", id: item.id, reason: `depends on unknown id ${target}` }); }
+      if (!byId.has(target) && !subjects.has(target) && !quickIds.has(target)) { broken.add(item.id); problems.push({ code: "SELECTION_UNMAPPABLE", id: item.id, reason: `depends on unknown id ${target}` }); }
     }
   }
   for (const item of summary.items) { // a cycle among items makes the items concerned unmappable
@@ -239,11 +366,12 @@ export function planExtract(summary: Summary, transcript: string): Plan {
     const reaches = (target: string, seen: Set<string>): boolean => {
       if (seen.has(target)) return false;
       seen.add(target);
+      if (quickIds.has(target)) return true;
       if (!(byId.has(target) || subjects.has(target))) return false;
       return effective(target) === "meeting only" || (byId.get(target)?.depends_on ?? []).some((next) => reaches(next, seen));
     };
     const excludedContext = item.depends_on.filter((target) => reaches(target, new Set([item.id])));
-    let imported = effectiveSel === "use";
+    let imported = effectiveSel === "use" && !unplaced.includes(item.id); // an included item with no placed quote has no passage (§4.2 rule 3)
     let contextExcluded = false;
     if (imported && excludedContext.length > 0) {
       if (item.explicit === "use") contextExcluded = true;
@@ -272,7 +400,7 @@ export function planExtract(summary: Summary, transcript: string): Plan {
   }
   const covered = new Set(citers.keys());
   const ok = problems.every((problem) => problem.code === "DEPENDS_ON_EXCLUDED");
-  return { mappings, copied: ok ? copied : copied.filter((entry) => entry.items.every((id) => !broken.has(id))), uncovered: paras.filter((entry) => !covered.has(entry.n)).length, problems, unnumbered: summary.unnumbered, ok };
+  return { mappings, copied: ok ? copied : copied.filter((entry) => entry.items.every((id) => !broken.has(id))), uncovered: paras.filter((entry) => !covered.has(entry.n)).length, problems, unnumbered: summary.unnumbered, quotes, unplaced_items: unplaced, quick: summary.quick, scopes: summary.scopes, ok };
 }
 
 /** The extract body: only the selected paragraphs, in transcript order, each marked (§4.5). */
