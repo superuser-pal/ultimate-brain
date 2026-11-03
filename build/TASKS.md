@@ -132,10 +132,10 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 **Acceptance:** tests on synthetic repos: the kit's valid and invalid examples; a repo with no kit behaves as under 0042; the kit is written only with the confirmation the spec names, and never by a read; tracked-in-repo tasks produce the rollup and connected ones don't; unlinking keeps the repo's sources and notes; the health check reports each of its three cases; the starter passes its own kit validation; existing tests pass.
 **Spec note (CC-99, #186):** on 2026-11-03 the user chose that CC-102 also builds the `brain workflow` commands of spec/connected-workflows.md §12, and its schema changes (§6.3): `src/commands/workflow*` and their tests, per that spec, are part of this task.
 
-### CC-103 · Workflow settings in Notion and migration 0015 (decision 0059) · `todo`
+### CC-103 · Workflow settings in Notion and migration 0015 (decision 0059) · `done` (#188)
 **Release:** 0.9.0
-**Changelog:** Projects and Areas get Workflow settings in Notion (tracking, logging level, destinations) and one dated summary of progress, pending publication and decisions needed; migration 0015 adds them.
-**Output:** per spec/connected-workflows.md (CC-99): docs/notion-space-design.md, the build prompts and templates, notion/migrations/0015 (who does each step, a Verify list), brain-connect-notion where it must find them. Product files only; never the user's space.
+**Changelog:** Projects and Areas get Workflow settings in Notion (tracking, work type, logging level and logged artifacts), with one dated summary of progress, pending publication and decisions needed on the page; migration 0015 adds them.
+**Output:** per spec/connected-workflows.md (CC-99): docs/notion-space-design.md, the build prompts and templates, notion/migrations/0015 (who does each step, a Verify list), brain-connect-notion where it must find them. Product files only; never the user's space. Built: docs/notion-space-design.md §2 (ownership and the Workflow, Work record and `Repo tasks · <repo>` toggles), §3.1, §3.4, §3.15, §3.19 and §4; Prompts 2, 5 and 6; notion/views-guide.md §9; notion/migrations/0015-workflow-settings-on-projects-and-areas.md and its README row; brain-connect-notion step 3; tests/notion-workflow-settings.test.ts holds the spec, design, prompts, layouts, migration and skill to the same names and options.
 **Acceptance:** migration 0015 lists who does each step and has a Verify list; the prompts, templates and design agree on every property name and option; the skill mirror check and the leak check pass.
 
 ### CC-104 · Adoption, connected-workflow and repo-linking skills (decisions 0059, 0066) · `todo`

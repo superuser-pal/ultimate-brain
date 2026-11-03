@@ -2,7 +2,7 @@
 
 Paste into Notion AI. Before: [Prompt 5](05-ownership.md). Next: [Prompt 7](07-spaces-views.md).
 
-Each template is the database's default. Every linked view sits under an H3 heading named by the question it answers, has its database title hidden, and shows only rows related to the page (docs/notion-space-design.md §4). Where a block lists several views, they appear as view tabs on that one linked view. On project pages, the brain writes only inside the "Brief" and "Decision log" toggle headings (decision 0026), and on area pages inside "Brief" (decision 0041). First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md)); a tag can sit in front of an indented line, so keep the indent after it. Existing space? Use the migrations instead ([migration 0010](../migrations/0010-modules-documents-buttons-area-homes.md) for the area home).
+Each template is the database's default. Every linked view sits under an H3 heading named by the question it answers, has its database title hidden, and shows only rows related to the page (docs/notion-space-design.md §4). Where a block lists several views, they appear as view tabs on that one linked view. On project pages, the brain writes only inside the "Brief" and "Decision log" toggle headings (decision 0026), and on area pages inside "Brief" (decision 0041); for connected work and linked repos it also appends "Workflow" and "Repo tasks · <repo>" toggles itself, so no template holds them (decision 0059). First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md)); a tag can sit in front of an indented line, so keep the indent after it. Existing space? Use the migrations instead ([migration 0010](../migrations/0010-modules-documents-buttons-area-homes.md) for the area home).
 
 ```text
 [Tasks] When mapping your own Tasks database, substitute its mapped status property and Done and Won't Do option names in every Tasks filter below.
@@ -33,7 +33,7 @@ Create a default page template for each database below. Each item "Heading: data
 [Planning]   "Which projects serve it?": Projects where Goal is this page, showing Name, Status, Countdown.
 [Planning]   Then a toggle "My notes".
 - Projects:
-  First a gray paragraph: "Brief and Decision log are written by the brain. Add your own notes in My notes."
+  First a gray paragraph: "The brain writes only inside its toggles: Brief and Decision log, and Workflow or Repo tasks when you connect work or link a repo. Add your own notes in My notes."
   A toggle heading 2 "Brief" containing one empty paragraph; a toggle heading 2 "Decision log" containing one empty paragraph.
 [Tasks]   "What's on my plate here?": Tasks where Project is this page (views: "Open" Status is To Do or Doing; "Waiting On" Status is Waiting On; "Done" Status is Done), showing Name, Due, Status.
   "Which meetings?": Meetings where Project is this page (views: "Upcoming" Date on or after today, Date ascending; "Past" Date before today, Date descending), showing Name, Date, Brain Status.
@@ -69,7 +69,7 @@ Set each of these templates as the database default, except the Inbox "Voice not
 ```
 
 ## Verify
-- [ ] Create a new Project: the gray hint line comes first, then "Brief" and "Decision log" as **toggle** headings (with an arrow), then a headed view for each line you kept, and "My notes". Delete the test project.
+- [ ] Create a new Project: the gray hint line ("The brain writes only inside its toggles: …") comes first, then "Brief" and "Decision log" as **toggle** headings (with an arrow), then a headed view for each line you kept, and "My notes". Delete the test project.
 - [ ] Create a new Area: it starts with a "Brief" toggle heading, then "What needs me here?" with its tabs (Today only with Tasks), then a headed view for each line you kept, and its page header shows the "via projects" rollups (set in the page layout, [views-guide.md](../views-guide.md) §9). Delete the test area.
 - [ ] No template shows a view of a database you left out.
 - [ ] No template has a callout that prints "[Summary]", "[Role]" or "Why".
