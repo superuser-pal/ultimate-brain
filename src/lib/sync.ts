@@ -944,7 +944,11 @@ export function renderTasks(workspace: Workspace, targetId: string, input: unkno
     const properties: Record<string, unknown> = {};
     const pending_relations: Array<Record<string, unknown>> = [];
     const put = (key: string, type: string, value: unknown) => { const name = config.properties[key]; if (typeof name === "string" && name !== "") properties[name] = { type, value }; };
-    put("title", "title", item.title); put("status", config.status_type, config.new_task_status); if (item.due !== undefined) put("due", "date", dateOutput(item.due)); if (!sourceMode && item.owner !== undefined) put("owner", "person_name", item.owner);
+    if (item.status !== undefined && item.status !== "waiting_on") throw new BrainError("INPUT_INVALID", "a task status can only be waiting_on", [{ pointer: `/items/${index}/status`, message: "must be waiting_on, or absent" }]);
+    // Waiting On (capture-and-review §6): someone else's commitment, tracked only when the item says so; the owner is their name.
+    const waiting = item.status === "waiting_on";
+    if (waiting && (typeof item.owner !== "string" || item.owner.trim() === "")) throw new BrainError("INPUT_INVALID", "a Waiting On task needs the owner's name", [{ pointer: `/items/${index}/owner`, message: "must be the name of the person you wait on" }]);
+    put("title", "title", item.title); put("status", config.status_type, waiting ? config.waiting_on_status : config.new_task_status); if (item.due !== undefined) put("due", "date", dateOutput(item.due)); if ((!sourceMode || waiting) && item.owner !== undefined) put("owner", "person_name", item.owner);
     const projectProperty = config.properties.project;
     if (typeof projectProperty === "string" && projectProperty !== "") {
       const unpublished = projects.filter((id) => typeof workspace.get(id)?.attributes.notion !== "string");
@@ -987,7 +991,7 @@ function taskProjects(workspace: Workspace, meeting: Note | undefined, value: un
   return projects;
 }
 function publishedPages(value: unknown, workspace: Workspace): string[] { return (Array.isArray(value) ? value : []).map((id) => workspace.get(String(id))?.attributes.notion).filter((id): id is string => typeof id === "string"); }
-function tasksConfig(workspace: Workspace): { database: string; properties: Record<string, string>; new_task_status: string; status_type: "status" | "select" } { if (!loadSchemas().brain(workspace.config)) throw new BrainError("BRAIN_CONFIG_INVALID", "brain.json fails its schema"); const notion = workspace.config.notion as Record<string, unknown>; const tasks = notion.tasks as Record<string, unknown>; if (typeof tasks.database !== "string" || tasks.database === "") throw new BrainError("BRAIN_CONFIG_INVALID", "Tasks database is not configured"); return { database: tasks.database as string, properties: tasks.properties as Record<string, string>, new_task_status: tasks.new_task_status as string, status_type: tasks.status_type === "status" ? "status" : "select" }; }
+function tasksConfig(workspace: Workspace): { database: string; properties: Record<string, string>; new_task_status: string; waiting_on_status: string; status_type: "status" | "select" } { if (!loadSchemas().brain(workspace.config)) throw new BrainError("BRAIN_CONFIG_INVALID", "brain.json fails its schema"); const notion = workspace.config.notion as Record<string, unknown>; const tasks = notion.tasks as Record<string, unknown>; if (typeof tasks.database !== "string" || tasks.database === "") throw new BrainError("BRAIN_CONFIG_INVALID", "Tasks database is not configured"); return { database: tasks.database as string, properties: tasks.properties as Record<string, string>, new_task_status: tasks.new_task_status as string, waiting_on_status: typeof tasks.waiting_on_status === "string" ? tasks.waiting_on_status : "Waiting On", status_type: tasks.status_type === "status" ? "status" : "select" }; }
 
 /** `task_items` of a record (cli §5.14.6, 0055): item id to Notion task page id, on an extract source only. */
 function bindTaskItems(note: Note, attributes: Record<string, unknown>, value: unknown, recordTasks: unknown): void {

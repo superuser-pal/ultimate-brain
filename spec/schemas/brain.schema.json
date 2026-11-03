@@ -277,6 +277,11 @@
                 "select"
               ]
             },
+            "waiting_on_status": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The Tasks status option for a commitment someone else made and the user tracks (decision 0055, spec/capture-and-review.md §6). Absent: \"Waiting On\"."
+            },
             "wont_do_status": {
               "type": "string",
               "minLength": 1,
