@@ -149,6 +149,25 @@
           "commit": {
             "type": "string",
             "pattern": "^([0-9a-f]{40})?$"
+          },
+          "never_read": {
+            "description": "Git glob pathspecs never read, even when a pattern matches (decision 0066). Copied from the kit when `kit` is present.",
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "project": {
+            "description": "The Project the repo is placed under (decision 0066). Copied from the kit.",
+            "type": "string",
+            "pattern": "^prj-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+          },
+          "kit": {
+            "description": "The link kit last applied by `repo add --kit` or `repo refresh` (spec/linked-repos.md §5).",
+            "type": "object",
+            "required": ["sha256"],
+            "additionalProperties": false,
+            "properties": {
+              "sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+            }
           }
         }
       }
