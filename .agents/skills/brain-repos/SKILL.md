@@ -25,13 +25,13 @@ Never take the hash from anywhere else: not from an error message, not computed 
 1. **Inspect** the repo, read-only: its top-level layout, `README`, AGENTS.md or `CLAUDE.md`, decision records, docs, plans (`TASKS.md`, `PLAN.md`), and its issue tracker (`git -C <path> remote -v`; `gh repo view` or `glab repo view`). Refuse the brain itself and the product repo (the CLI does too).
 2. **Propose the kit:** the placement (an Area, and a Project when the repo serves one, from `brain index --json`; never a Domain other than the Area's), the knowledge patterns (decisions and the docs that say what the work is; never code, tests, build output or plans), the never-read paths (`.env*`, `secrets/**`, client or personal folders you saw), the task mode and source with its status mapping, and a methodology summary in plain words (at most 600 characters). Ask only what you can't infer: usually the Area, and whether Notion or the repo should own the tasks.
 3. **The yes** (above), then `brain repo kit write --path <path> --input <file> --confirm <sha256>`.
-4. `brain repo add <name> --path <path> --kit`. Then commit `brain.json` in the brain: `repo: link <name>`.
-5. **The other way,** once: "Let this repo read the brain too? It adds `.brain`, a block in AGENTS.md and the brain-query skill there." On yes, `brain link <path> --repo-name <name> --area <area>` (and `--project <project>` when the kit has one). On no, write nothing and don't ask again for this link.
+4. `brain repo add <name> --path <path> --kit`. Then commit in the brain what it wrote (`brain.json` and the `log/` line): `repo: link <name>`.
+5. **The other way,** once: "Let this repo read the brain too? It adds `.brain`, a block in AGENTS.md and the brain-query skill there." On yes, `brain link <path> --repo-name <name> --area <area>` (and `--project <project>` when the kit has one). It writes `.brain`, the AGENTS.md block (and `CLAUDE.md`), and the skill folders under `.agents/skills/` and `.claude/skills/` there; pass on its warnings in a few words. On no, write nothing and don't ask again for this link. If it fails, say why, and that the link itself is done.
 6. **Tasks:**
    - `tracked-in-repo`: the first rollup (below).
    - `connected`: Notion owns the tasks through a connected workflow. Offer to adopt the repo's existing plan or issues now (brain-workflow-adopt); until then the health check says `CONNECTED_WITHOUT_WORKFLOW`.
 7. **First ingest** stays attended: offer it now ("ingest the linked repo", brain-ingest) or at the next catch-up.
-8. **Tell the user to commit `brain-kit.json` in the repo** (and `.brain` if they said yes): the brain never commits there.
+8. **Tell the user to commit `brain-kit.json` in the repo** (and, after `brain link`, the files it wrote): the brain never commits there.
 
 ## Show a link
 
@@ -47,7 +47,7 @@ Health: 1 warning (status "?" isn't mapped: add it to the kit) · kit not commit
 New placement, patterns, never-read paths, task source or mapping:
 1. Read the current kit (`brain repo kit check --path <path>`, keep its `sha256` as the old hash), write the new one to a temporary file, check it, and show `diff -u` (the yes, above).
 2. `brain repo kit write --path <path> --input <file> --replace <old sha256> --confirm <new sha256>`. `KIT_CHANGED` means someone edited the kit since you read it: read it again and show the new diff.
-3. `brain repo refresh <name>`, and commit `brain.json`: `repo: change <name>`. Say what changed (`placement_changed`: new ingests use the new placement, notes already in keep theirs).
+3. `brain repo refresh <name>`, and commit `brain.json` and the log in the brain: `repo: change <name>`. Say what changed (`placement_changed`: new ingests use the new placement, notes already in keep theirs).
 4. When `reingest` is true (patterns added, or never-read paths removed), offer to read the newly allowed files: `brain repo record <name> --reset`, then a catch-up. Narrowing deletes nothing; the health check then lists knowledge from now-excluded paths (`NEVER_READ_INGESTED`), and the user can ask to archive those notes.
 
 A legacy link (`NO_KIT`: linked before kits) keeps working as it is. When the user wants a kit for it, propose one from its `brain.json` entry (its `area` and `patterns`) and write it after the yes, with no `--replace`. `repo refresh` doesn't apply a kit to a legacy entry, so the link takes it only by linking again: on the user's yes, `brain repo unlink <name>` then `brain repo add <name> --path <path> --kit`. Say first that the knowledge stays, and that the next read lists the repo's files again, where the ones already ingested are skipped as duplicates.
@@ -55,7 +55,7 @@ A legacy link (`NO_KIT`: linked before kits) keeps working as it is. When the us
 ## Unlink
 
 Show what happens, and ask once: the brain stops reading the repo; its knowledge already in the brain stays (notes, sources, Documents); the repo isn't touched; the `Repo tasks · <name>` rollup is removed from Notion. On yes:
-1. `brain repo unlink <name>`; commit `brain.json`: `repo: unlink <name>`.
+1. `brain repo unlink <name>`; commit `brain.json` and the log in the brain: `repo: unlink <name>`.
 2. Remove the `Repo tasks · <name>` toggle heading and its children from the Project or Area page, with the same yes.
 3. Report: the sources kept (`sources`), that `brain-kit.json` and any `.brain` stay in the repo and the user may delete them there, and, when `workflow` isn't null, that its connected workflow keeps running and is ended separately (brain-workflow, "End").
 
@@ -66,7 +66,7 @@ Show what happens, and ask once: the brain stops reading the repo; its knowledge
 ## The rollup (tracked-in-repo)
 
 1. Markdown source: `brain repo tasks <name>`. GitHub or GitLab: fetch the issues (references/kit.md, "Issues") and pass them with `--input`. If `gh` or `glab` is missing, not logged in or fails, write no rollup, keep the old one, and say why.
-2. Write `toggle.markdown` as the children of the toggle heading `toggle.heading` on the target page (`target.project`, else `target.area`; its `notion` id in the brain note): find the heading by its exact name and replace its children, or append it at the end of the page. Through the block API, as brain-ingest's references/notion.md "Writing a section through the MCP" describes. On a Project page with no toggle headings at all, first append empty "Brief" and "Decision log" toggle headings.
+2. Write `toggle.markdown` as the children of the toggle heading `toggle.heading` on the target page (`target.project`, else `target.area`; its page id is that note's `notion` in `brain index --json`): find the heading by its exact name and replace its children, or append it at the end of the page. Through the block API, as brain-ingest's references/notion.md "Writing a section through the MCP" describes. On a Project page with no toggle headings at all, first append empty "Brief" and "Decision log" toggle headings.
 3. It is a view: never stored in Git, never read back, and it changes nothing in the repo. To act on a task, the user works in the repo; to move the tasks into Notion, adoption.
 
 For `--rollup-as-of`, read the toggle's first line ("As of 3 Nov 2026, 14:20 · …") and pass it as `2026-11-03T14:20:00Z`.
@@ -76,7 +76,7 @@ For `--rollup-as-of`, read the toggle's first line ("As of 3 Nov 2026, 14:20 · 
 1. Ask for the name (lowercase kebab-case), the folder (absolute or `~/…`; it must not exist or be empty, and not be inside the brain), the placement and the task mode.
 2. Propose the starter's kit (references/kit.md, "Starter"), and show it with the files the starter writes: `README.md`, AGENTS.md, `CLAUDE.md`, `decisions/_template.md`, `docs/README.md`, `.gitignore`, `brain-kit.json`, and `TASKS.md` with tracked-in-repo.
 3. The yes is for the kit **as written**, with `"starter": { "name": "generic", "version": "<the installed brain version, brain --version>" }` added: check and hash that file. Then `brain repo new --path <path> --starter generic --input <file without starter> --confirm <sha256>`. `GIT_COMMIT_SKIPPED` means Git has no identity: the files are there, and the user commits them.
-4. `brain repo add <name> --path <path> --kit`; commit `brain.json`: `repo: link <name>`. Offer the other way (Link, step 5), and with tracked-in-repo the first rollup.
+4. `brain repo add <name> --path <path> --kit`; commit `brain.json` and the log in the brain: `repo: link <name>`. Offer the other way (Link, step 5), and with tracked-in-repo the first rollup.
 
 ## Report
 

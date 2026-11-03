@@ -18,7 +18,7 @@ Read Notion and the folder, then pass:
 ```
 
 - `read_at`: the time you read Notion (UTC).
-- `destination`: the Project or Area page (its `notion` id in the brain note) and its four Workflow properties **as Notion shows their labels**; `null` for an empty select, `[]` for empty Log artifacts.
+- `destination`: the Project or Area page (its page id is the destination note's `notion` in `brain index --json`) and its four Workflow properties **as Notion shows their labels**; `null` for an empty select, `[]` for empty Log artifacts.
 - `tasks`: **every** task of the Tasks database related to the destination (its Project relation for a Project, its Area relation for an Area), whatever its Brain ID; plus, by a Brain ID query, each workflow item whose page isn't related any more. Follow `next_cursor` to the end. `edited` is the page's `last_edited_time`; `archived` and `in_trash` as the API gives them. Send an archived or trashed page too.
 - `documents`: the Documents pages of the workflow's artifacts that have a `note` (query the Documents database by Brain ID), with `last_edited_time`.
 - `artifacts`: for each artifact whose `location.path` still exists in the folder, the hash of its bytes: `shasum -a 256 <file>`, written `sha256:<hex>`. Leave out a missing file.
@@ -33,13 +33,13 @@ For each id in `ops`, read it (`brain workflow show <wf>`, `ops[]`), then:
 2. The call, by `kind` (below). After a write, read the page back; a value that isn't there isn't written again: the next reconcile handles it.
 3. The outcome:
    - success: `op state … --state done --page <page id>` (the page for `create_task` and `publish_artifact`; give it for every kind);
-   - a temporary error (`network`, `rate_limited`, `server`): retry up to 3 times, after 2 s, 8 s and 30 s, each with `in_flight` first; after that, `--state pending`. It is tried again in a later reconcile;
+   - a temporary error (`network`, `rate_limited`, `server`): retry up to 3 times, after 2 s, 8 s and 30 s, each with `in_flight` first and, for a create, the Brain ID lookup first (a hit ends the retries: `done` with that page); after that, `--state pending`. It is tried again in a later reconcile;
    - a lasting error (`validation`, `permission`, `missing_property`, `upload_unsupported`, `other`): `--state failed --error '{ "code": "validation", "message": "<the API message, short>", "lasting": true }'` at once. It stays in the records and is tried again at the next run's `reconcile --start`; after 3 failed runs it is asked "retry or drop?".
 
 Never drop an operation yourself: only the user's "drop" does (`--state dropped`). Never delete a record or an operation file.
 
 **`create_task`** (target `wi-`):
-1. **Look up first:** query the Tasks database for Brain ID = the item's id. A hit means an earlier attempt created it: use that page (`done --page <it>`), never a second one.
+1. **Look up first, before every attempt** (a retry too: a call that timed out may still have created the page): query the Tasks database for Brain ID = the item's id. A hit means an earlier attempt created it: use that page (`done --page <it>`), never a second one.
 2. Otherwise `brain workflow render <wf> --item <wi>`. `payload` is in the form of `brain sync tasks` (`database_id`, `properties` with each property's `type` and `value`, `pending_relations`): create the page in that database with those properties, typed as given. Leave out `pending_relations` (they are pages that don't exist yet).
 3. Write the **Work record** toggle (below) with `toggle.markdown`.
 
