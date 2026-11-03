@@ -281,3 +281,60 @@ test("source extract-plan returns the quick lines, the Scopes and the quote repo
   assert.ok(!data.body.includes("Send Maria") && !data.body.includes("Done when"), "quick lines and Scopes never enter the extract");
   assert.deepEqual(data.selection.map((entry: { id: string }) => entry.id), ["s1", "s0.i1", "s0.i2", "s1.i1", "s1.i2", "s1.i3"]);
 });
+
+test("fail closed: a Quick follow-ups group never swallows a Selection line or an excluded item", () => {
+  const selection = planExtract(parseSummary(`## [s1] Small talk
+### Quick follow-ups
+Selection: Meeting only
+- [ ] Reply to Bob
+- [s1.i1] Holiday "holiday plans in Lisbon"
+
+## [s2] Launch
+- [s2.i1] Trip "Alice mentioned her holiday plans"
+`), TRANSCRIPT);
+  assert.equal(selection.ok, false, "the subject's exclusion is read, so the shared paragraph blocks");
+  assert.ok(selection.problems.some((problem) => problem.id === "s2.i1" && problem.reason === "shares a paragraph with excluded content"));
+  const moved = planExtract(parseSummary(`## [s1] Launch
+### Quick follow-ups
+- [s1.i1] Meeting only: Holiday "holiday plans in Lisbon"
+### Tasks
+- [s1.i2] Trip "Alice mentioned her holiday plans"
+`), TRANSCRIPT);
+  assert.equal(moved.ok, false, "an excluded line moved into Quick follow-ups still keeps its paragraph out");
+  assert.deepEqual(moved.copied, []);
+  assert.equal(moved.quick[0]?.id, "s1.i1");
+});
+
+test("a Quick follow-ups group ends at a section label, so later items are not swallowed", () => {
+  const plan = planExtract(parseSummary(`## [s1] Launch
+**Quick follow-ups**
+- [ ] Reply to Bob
+**Other commitments**
+- [s1.i1] Maria sends the plan "she will send the revised plan by Friday"
+Open questions:
+- [s1.i2] Venue? "book the venue for the launch event"
+`), TRANSCRIPT);
+  assert.equal(plan.ok, true, JSON.stringify(plan.problems));
+  assert.deepEqual(plan.quick.map((line) => line.text), ["Reply to Bob"]);
+  assert.deepEqual(plan.mappings.map((mapping) => mapping.item), ["s1.i1", "s1.i2"]);
+});
+
+test("fail closed: an unclosed Scope ends at the next structural line, which is read as usual", () => {
+  const plan = planExtract(parseSummary(`## [s1] Launch
+### Tasks
+- [s1.i1] Book the venue "book the venue for the launch event"
+<details><summary>Scope</summary>
+Due: 2026-12-17
+
+## [s2] Small talk
+Selection: Meeting only
+- [s2.i1] Holiday "holiday plans in Lisbon"
+
+## [s3] Trip
+- [s3.i1] Trip "Alice mentioned her holiday plans"
+`), TRANSCRIPT);
+  assert.equal(plan.ok, false);
+  assert.ok(plan.problems.some((problem) => problem.id === "s3.i1" && problem.reason === "shares a paragraph with excluded content"));
+  assert.equal(plan.scopes[0]?.due, "2026-12-17");
+  assert.deepEqual(plan.mappings.map((mapping) => [mapping.item, mapping.effective]), [["s1.i1", "use"], ["s2.i1", "meeting only"], ["s3.i1", "use"]]);
+});

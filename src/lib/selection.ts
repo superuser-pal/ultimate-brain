@@ -17,14 +17,17 @@ export interface Unnumbered { subject: string | null; text: string }
 export interface Quick { subject: string | null; id: string | null; text: string; done: boolean }
 /** The fields of a Scope toggle and what is wrong with them; a Scope problem holds back the item's Task, never the input (decision 0067). */
 export interface Scope { item: string | null; done_when: string | null; due: string | null; project: string | null; notes: string | null; problems: string[] }
-export interface Summary { subjects: Subject[]; items: Item[]; problems: Problem[]; lines: string[]; unnumbered: Unnumbered[]; quick: Quick[]; scopes: Scope[] }
+/** `quickItems` are the quick lines that carry an id, read like items: one whose effective selection is `meeting only` still keeps its paragraphs out (fail closed). */
+export interface Summary { subjects: Subject[]; items: Item[]; problems: Problem[]; lines: string[]; unnumbered: Unnumbered[]; quick: Quick[]; quickItems: Item[]; scopes: Scope[] }
 /** `text` is whitespace-normalized (for matching and hashing); `raw` is the paragraph as written, which is what an extract stores and a preview shows. */
 export interface Paragraph { n: number; text: string; raw: string; hash: string }
 
 const SUBJECT = /^(?:#{1,6}\s*)?\[(s\d+)\]\s*(.*)$/;
 const ITEM = /^(?:[-*+]\s+|\d+[.)]\s+)?(?:\[[ xX]\]\s+)?\[(s\d+\.i\d+)\]\s*(.*)$/;
 const TODO = /^[-*+]\s+\[([ xX])\]\s+(.*)$/;
-const GROUP = /^#{0,6}\s*(quick follow[- ]?ups|tasks|my actions)\s*:?$/i;
+const GROUP = /^#{0,6}\s*(quick follow[- ]?ups|tasks|my actions)\s*(?:\([^)]*\))?\s*:?$/i;
+/** The other section names of the minutes format: a heading or a label line with one of them ends a group (§4.1). */
+const SECTION = /^#{0,6}\s*(highlights|decisions|other commitments|open questions|concerns raised|attendees|projects|commitments|ideas to explore)\s*(?:\([^)]*\))?\s*:?$/i;
 const SCOPE_FIELDS: Record<string, "done_when" | "due" | "project" | "notes"> = { "done when": "done_when", due: "due", project: "project", notes: "notes" };
 const SCOPE_LABELS = { done_when: "Done when", due: "Due", project: "Project", notes: "Notes" } as const;
 const SCOPE_FIELD = /^(?:[-*+]\s+)?(done when|due|project|notes)\s*:\s*(.*)$/i;
@@ -114,7 +117,7 @@ export function parseSummary(markdown: string): Summary {
   const unnumbered: Unnumbered[] = [];
   const quick: Quick[] = [];
   const scopes: Scope[] = [];
-  const quickIds: string[] = [];
+  const quickItems: Item[] = [];
   let current: Subject | null = null;
   // Decision 0067: the group the line is in, the item line a Scope would belong to, and the open toggles (true for a Scope).
   let group: "quick" | "other" | null = null;
@@ -157,6 +160,13 @@ export function parseSummary(markdown: string): Summary {
       if (toggles.pop() === true) scope = null;
       continue;
     }
+    const bare = line.replace(/[*_]/g, "").trim();
+    // Fail closed: a structural line ends a Scope that was never closed, and is read as usual, so a Scope cannot swallow a subject, a
+    // Selection line or an item.
+    if (toggles.includes(true) && (line.startsWith("#") || SUBJECT.test(line) || ITEM.test(line) || SELECTION_LINE.test(line) || GROUP.test(bare) || SECTION.test(bare))) {
+      while (toggles.includes(true)) toggles.pop();
+      scope = null;
+    }
     if (toggles.includes(true)) {
       // Inside a Scope: fields, never items, unnumbered lines or controls. Inside a Scope in Quick follow-ups: nothing.
       if (scope === null) continue;
@@ -178,25 +188,25 @@ export function parseSummary(markdown: string): Summary {
       }
       continue;
     }
-    const groupLine = GROUP.exec(line.replace(/[*_]/g, "").trim());
+    const groupLine = GROUP.exec(bare);
     if (groupLine !== null) {
       group = /^quick/i.test(groupLine[1] ?? "") ? "quick" : "other";
       lastItem = null;
       continue;
     }
-    if (line.startsWith("#")) { group = null; lastItem = null; }
-    if (group === "quick" && !line.startsWith("#")) {
-      // Every line of a Quick follow-ups group is a quick line, whatever its shape: listed, never read as an item or a control.
-      const quickItem = ITEM.exec(line);
+    if (line.startsWith("#") || SECTION.test(bare)) { group = null; lastItem = null; }
+    const item = ITEM.exec(line);
+    if (group === "quick") {
+      // A to-do or bullet of a Quick follow-ups group is a quick line: listed, never an item, an unnumbered line or a blocker. A line with an
+      // id is a quick line too, but is still read like an item below (fail closed: an excluded one keeps its paragraphs out); a Selection
+      // line and any other line are read as usual.
       const todo = TODO.exec(line);
       const bullet = /^(?:[-*+]|\d+[.)])\s+(.+)$/.exec(line);
-      if (quickItem !== null) { quick.push({ subject: current?.id ?? null, id: quickItem[1] ?? null, text: quickItem[2] ?? "", done: /^[-*+]\s+\[[xX]\]/.test(line) }); quickIds.push(quickItem[1] ?? ""); }
-      else if (todo !== null) quick.push({ subject: current?.id ?? null, id: null, text: todo[2] ?? "", done: (todo[1] ?? " ") !== " " });
-      else if (bullet !== null) quick.push({ subject: current?.id ?? null, id: null, text: bullet[1] ?? "", done: false });
-      continue;
+      if (item !== null) quick.push({ subject: current?.id ?? null, id: item[1] ?? null, text: item[2] ?? "", done: /^[-*+]\s+\[[xX]\]/.test(line) });
+      else if (todo !== null) { quick.push({ subject: current?.id ?? null, id: null, text: todo[2] ?? "", done: (todo[1] ?? " ") !== " " }); continue; }
+      else if (bullet !== null && !SELECTION_LINE.test(line)) { quick.push({ subject: current?.id ?? null, id: null, text: bullet[1] ?? "", done: false }); continue; }
     }
     const subject = SUBJECT.exec(line);
-    const item = ITEM.exec(line);
     const choice = SELECTION_LINE.exec(line);
     if (item !== null) {
       lines.push(line);
@@ -211,8 +221,9 @@ export function parseSummary(markdown: string): Summary {
       if (depends !== null) rest = rest.slice(0, depends.index).trim();
       const anchors = [...rest.matchAll(QUOTE)].map((match) => normalize(match[1] ?? ""));
       const text = normalize(rest.replace(QUOTE, ""));
-      items.push({ id: item[1] ?? "", subject: current?.id ?? null, explicit, waiting_on: waiting !== null, text, anchors, depends_on: dependsOn, line });
-      lastItem = item[1] ?? null;
+      const entry = { id: item[1] ?? "", subject: current?.id ?? null, explicit, waiting_on: waiting !== null, text, anchors, depends_on: dependsOn, line };
+      if (group === "quick") quickItems.push(entry);
+      else { items.push(entry); lastItem = item[1] ?? null; }
       if ((token === null && looksLikeToken(rest)) || controlLike(text) || mixedScript(rest)) problems.push({ code: "SELECTION_UNREADABLE", id: item[1] ?? null, reason: `unreadable item token: ${rest.slice(0, 40)}` });
     } else if (subject !== null) {
       lines.push(line);
@@ -240,16 +251,16 @@ export function parseSummary(markdown: string): Summary {
   // An item belongs to the subject its id names (`[s2.i1]` is s2's). Placed under another subject, or before its own heading, it would
   // silently take the wrong parent's selection (a block dragged in Notion), so it blocks.
   const subjectIds = new Set(subjects.map((entry) => entry.id));
-  for (const entry of items) {
+  for (const entry of [...items, ...quickItems]) {
     const named = `s${/^s(\d+)\./i.exec(entry.id)?.[1] ?? "?"}`;
     if (entry.subject !== null ? named !== entry.subject : subjectIds.has(named)) problems.push({ code: "SELECTION_UNREADABLE", id: entry.id, reason: `item ${entry.id} is not under its subject ${named}` });
   }
   const seen = new Set<string>();
-  for (const id of [...subjects.map((entry) => entry.id), ...items.map((entry) => entry.id), ...quickIds]) {
+  for (const id of [...subjects.map((entry) => entry.id), ...items.map((entry) => entry.id), ...quickItems.map((entry) => entry.id)]) {
     if (seen.has(id)) problems.push({ code: "SELECTION_UNMAPPABLE", id, reason: "duplicate id" });
     seen.add(id);
   }
-  return { subjects, items, problems, lines, unnumbered, quick, scopes };
+  return { subjects, items, problems, lines, unnumbered, quick, quickItems, scopes };
 }
 
 /** A calendar date written `YYYY-MM-DD` that exists (2026-02-30 does not). */
@@ -315,13 +326,16 @@ export function planExtract(summary: Summary, transcript: string): Plan {
   for (const line of summary.unnumbered) problems.push({ code: "UNNUMBERED_LINE", id: null, reason: `list line without an id: ${line.text.slice(0, 80)}` });
   const subjects = new Map(summary.subjects.map((entry) => [entry.id, entry]));
   const byId = new Map(summary.items.map((entry) => [entry.id, entry]));
-  // A quick line stays in Notion, outside the brain: depending on it is depending on excluded context (decision 0067, §4.7).
-  const quickIds = new Set(summary.quick.flatMap((line) => line.id === null ? [] : [line.id]));
+  // A quick line stays in Notion, outside the brain: depending on it is depending on excluded context (decision 0067, §4.7). One whose
+  // effective selection is `meeting only` is read as an excluded item, so its paragraphs stay out (fail closed).
+  const quickIds = new Set(summary.quickItems.map((entry) => entry.id));
+  const all = [...summary.items, ...summary.quickItems.filter((entry) => effectiveOf(entry, subjects) === "meeting only")];
+  for (const entry of all) byId.set(entry.id, entry);
   const passages = new Map<string, number[]>();
   const broken = new Set<string>();
   const quotes: Quote[] = [];
   const unplaced: string[] = [];
-  for (const item of summary.items) {
+  for (const item of all) {
     const found: number[] = [];
     // Decision 0067: a quote problem blocks only an excluded item, whose paragraphs must be known to keep them out (§4.2 rule 4).
     const included = effectiveOf(item, subjects) === "use";
@@ -343,7 +357,7 @@ export function planExtract(summary: Summary, transcript: string): Plan {
       if (!byId.has(target) && !subjects.has(target) && !quickIds.has(target)) { broken.add(item.id); problems.push({ code: "SELECTION_UNMAPPABLE", id: item.id, reason: `depends on unknown id ${target}` }); }
     }
   }
-  for (const item of summary.items) { // a cycle among items makes the items concerned unmappable
+  for (const item of all) { // a cycle among items makes the items concerned unmappable
     const path = new Set<string>();
     const walk = (id: string): boolean => {
       if (path.has(id)) return true;
@@ -360,7 +374,7 @@ export function planExtract(summary: Summary, transcript: string): Plan {
     const item = byId.get(id);
     return item !== undefined ? effectiveOf(item, subjects) : subjects.get(id)?.selection ?? "use";
   };
-  const mappings: Mapping[] = summary.items.map((item) => {
+  const mappings: Mapping[] = all.map((item) => {
     const effectiveSel = effectiveOf(item, subjects);
     // Context is excluded when a dependency is excluded, or itself depends (however far back) on excluded context (§4.7, fail closed).
     const reaches = (target: string, seen: Set<string>): boolean => {
