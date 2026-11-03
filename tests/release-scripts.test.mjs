@@ -42,6 +42,81 @@ function taskRows(rows) {
   return Buffer.from(rows).toString("base64");
 }
 
+/** A fake npm logged in as an owner of the package. */
+const npmOwner = 'case "$1" in whoami) printf tester ;; owner) printf "tester <tester@example.test>\\n" ;; esac';
+
+/** Fakes for a release dry run of 0.4.0 from a clean main; `ci` is the gh body for the workflow runs request. */
+function releaseDryRun(root, { npm = npmOwner, ci = "printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n'" } = {}) {
+  writeFileSync(join(root, "CHANGELOG.md"), "# Changelog\n");
+  writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n");
+  return fakeCommands(root, {
+    git: `case "$1 $2" in
+      "worktree list") printf 'worktree ${root}\\nbranch refs/heads/main\\n\\n' ;;
+      "branch --show-current") printf main ;;
+      "status --porcelain") ;;
+      "rev-parse HEAD"|"rev-parse origin/main") printf abcdef ;;
+    esac`,
+    gh: `case "$1 $2" in
+      "repo view") printf owner/repo ;;
+      "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") ${ci} ;;
+    esac`,
+    npm,
+  });
+}
+
+test("release refuses before any change when npm is not logged in as a package owner", (t) => {
+  for (const [npm, message] of [
+    ['case "$1" in whoami) echo "npm error code E401" >&2; exit 1 ;; esac', /npm is not logged in \(npm whoami: npm error code E401\); run npm login/],
+    ['case "$1" in whoami) printf other ;; owner) printf "tester <tester@example.test>\\n" ;; esac', /npm user other is not an owner of fixture \(owners: tester\)/],
+  ]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const result = run("release.mjs", ["0.4.0"], { root, env: { PATH: releaseDryRun(root, { npm }) } });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, message);
+    assert.equal(readFileSync(join(root, "package.json"), "utf8"), '{"name":"fixture","version":"0.0.0"}\n');
+  }
+});
+
+test("release accepts a package that was never published", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const npm = 'case "$1" in whoami) printf tester ;; owner) echo "npm error 404 Not Found - GET https://registry.npmjs.org/fixture" >&2; exit 1 ;; esac';
+  const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: releaseDryRun(root, { npm }) } });
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("release waits for a CI run on HEAD that is still running", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const count = join(root, "ci-count");
+  const ci = `n=$(cat '${count}' 2>/dev/null || echo 0); echo $((n + 1)) > '${count}'; if [ "$n" -lt 2 ]; then printf 'CI\\tpush\\tmain\\tin_progress\\t\\n'; else printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n'; fi`;
+  const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: releaseDryRun(root, { ci }), UB_CI_POLL_MS: "1" } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /Waiting for CI on HEAD/);
+  assert.equal(readFileSync(count, "utf8").trim(), "3");
+});
+
+test("release stops waiting for CI after its polls and refuses", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const ci = "printf 'CI\\tpush\\tmain\\tqueued\\t\\n'";
+  const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: releaseDryRun(root, { ci }), UB_CI_POLL_MS: "1", UB_CI_POLLS: "2" } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /CI is not green on HEAD \(pending\)/);
+});
+
+test("release does not wait for CI when it already refuses", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const ci = "printf 'CI\\tpush\\tmain\\tin_progress\\t\\n'";
+  const npm = 'case "$1" in whoami) exit 1 ;; esac';
+  const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: releaseDryRun(root, { ci, npm }), UB_CI_POLL_MS: "60000" } });
+  assert.equal(result.status, 1);
+  assert.doesNotMatch(result.stderr, /Waiting for CI/);
+  assert.match(result.stderr, /CI is not green on HEAD \(pending\)/);
+});
+
 test("release 0.3.x retains its hand-written changelog gate", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -58,7 +133,7 @@ test("release 0.3.x retains its hand-written changelog gate", (t) => {
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tmain\\tcompleted\\tfailure\\nCI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
     esac`,
-    npm: "exit 0",
+    npm: npmOwner,
   });
   const result = run("release.mjs", ["0.3.1", "--dry-run"], { root, env: { PATH: path } });
   assert.equal(result.status, 0, result.stderr);
@@ -85,7 +160,7 @@ test("release 0.4.0 generates task-row changelog entries and skips dropped tasks
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tmain\\tcompleted\\tfailure\\nCI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
     esac`,
-    npm: "exit 0",
+    npm: npmOwner,
   });
   const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: path } });
   assert.equal(result.status, 0, result.stderr);
@@ -109,7 +184,7 @@ test("release 0.4.0 replaces a hand-written unreleased section", (t) => {
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tmain\\tcompleted\\tfailure\\nCI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
     esac`,
-    npm: "exit 0",
+    npm: npmOwner,
   });
   const result = run("release.mjs", ["0.4.0"], { root, env: { PATH: path } });
   assert.equal(result.status, 0, result.stderr);
@@ -135,7 +210,7 @@ test("release 0.4.0 inserts a generated section below the changelog intro", (t) 
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tmain\\tcompleted\\tfailure\\nCI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
     esac`,
-    npm: "exit 0",
+    npm: npmOwner,
   });
   const result = run("release.mjs", ["0.4.0"], { root, env: { PATH: path } });
   assert.equal(result.status, 0, result.stderr);
@@ -167,7 +242,7 @@ test("release 0.4.0 refuses missing task-row changelog data and invalid done suf
         "repo view") printf owner/repo ;;
         "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tmain\\tcompleted\\tfailure\\nCI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
       esac`,
-      npm: "exit 0",
+      npm: npmOwner,
     });
     const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: path } });
     assert.equal(result.status, 1);
@@ -193,7 +268,7 @@ test("release pushes its annotated tag through --follow-tags", (t) => {
       "repo view") printf owner/repo ;;
       api) printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
     esac`,
-    npm: "exit 0",
+    npm: npmOwner,
   });
   command(root, ["init", "-b", "main"]);
   command(root, ["config", "user.email", "tests@example.test"]);
@@ -209,6 +284,36 @@ test("release pushes its annotated tag through --follow-tags", (t) => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(command(root, ["ls-remote", "--tags", "origin"]), /refs\/tags\/v1\.2\.3$/m);
   assert.equal(command(root, ["cat-file", "-t", "v1.2.3"]).trim(), "tag");
+});
+
+test("a failed publish keeps the commit and tag local and says how to finish", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  writeFileSync(join(root, "CHANGELOG.md"), "## 1.2.3 — unreleased\n");
+  writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done` (#1)\n**Release:** 1.2.3\n**Changelog:** One\n");
+  const path = fakeCommands(root, {
+    gh: `case "$1" in
+      "repo view") printf owner/repo ;;
+      api) printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
+    esac`,
+    npm: 'case "$1" in whoami) printf tester ;; owner) printf "tester <t@example.test>\\n" ;; publish) echo "npm error code E404" >&2; exit 1 ;; esac',
+  });
+  command(root, ["init", "-b", "main"]);
+  command(root, ["config", "user.email", "tests@example.test"]);
+  command(root, ["config", "user.name", "Tests"]);
+  command(root, ["add", "."]);
+  command(root, ["commit", "-m", "fixture"]);
+  const origin = `${root}-origin.git`;
+  t.after(() => rmSync(origin, { recursive: true, force: true }));
+  execFileSync("git", ["init", "--bare", origin]);
+  command(root, ["remote", "add", "origin", origin]);
+  command(root, ["push", "-u", "origin", "main"]);
+  const result = run("release.mjs", ["1.2.3"], { root, env: { PATH: path } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /npm publish failed\. The commit 1\.2\.3 and the tag v1\.2\.3 exist only here/);
+  assert.match(result.stderr, /npm publish && UB_RELEASE=1 git push --follow-tags/);
+  assert.equal(command(root, ["cat-file", "-t", "v1.2.3"]).trim(), "tag");
+  assert.doesNotMatch(command(root, ["ls-remote", "--tags", "origin"]), /v1\.2\.3/);
 });
 
 test("merge dry-run requires a green, mergeable PR and does not merge it", (t) => {
@@ -482,6 +587,8 @@ test("the release gate reads only the newest push run of the CI workflow on main
   assert.equal(ciWorkflowPassed("CI\tpush\tmain\tcompleted\tsuccess\nCI\tpush\tmain\tcompleted\tfailure\n"), true);
   assert.equal(ciWorkflowPassed("merge-ready\tissue_comment\tmain\tcompleted\tsuccess\n"), false);
   assert.equal(ciWorkflowPassed(""), false);
+  const { ciWorkflowState } = await import("../scripts/common.mjs");
+  assert.deepEqual(["", "CI\tpush\tmain\tqueued\t\n", "CI\tpush\tmain\tcompleted\tsuccess\n", "CI\tpush\tmain\tcompleted\tcancelled\n"].map(ciWorkflowState), ["missing", "pending", "success", "failure"]);
   // A newer green run for a tag or another branch must not hide main's failed run (main-guard runs only on main).
   assert.equal(ciWorkflowPassed("CI\tpush\tv0.7.0\tcompleted\tsuccess\nCI\tpush\tmain\tcompleted\tfailure\n"), false);
   assert.equal(ciWorkflowPassed("CI\tpush\tother\tcompleted\tsuccess\n"), false);

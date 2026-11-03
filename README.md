@@ -29,6 +29,7 @@ markitdown --version
 
 ```sh
 npm install -g ultimate-brain@latest
+brain --version   # check it's the version you expect before upgrading
 cd ~/brain && brain upgrade
 ```
 
