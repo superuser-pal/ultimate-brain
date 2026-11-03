@@ -1,6 +1,6 @@
 # 0061 — Feature work ends at 0.14.0, followed by launch preparation and 1.0
 
-**Status:** Accepted
+**Status:** Accepted; release order amended by [0064](0064-brain-assistant-before-reflection-hermes-after-1-0.md) (assistant 0.10.0, reflection 0.11.0, Hermes after 1.0)
 **Date:** 2026-10-31
 **Amends:** 0052, 0055, 0056 (reflection release placement); 0008 (memory loop delivery); 0030 (minimal onboarding preferences delivery)
 **Keeps:** 0038, 0039, 0040, 0044, 0046 and the permanent architecture rules
