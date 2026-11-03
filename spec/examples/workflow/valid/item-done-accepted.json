@@ -6,12 +6,12 @@
   "acceptance": [
     {
       "text": "429 after 100 requests a minute from one IP",
-      "met_at": "2026-11-04T09:12:00Z",
+      "met_at": null,
       "evidence": "test rate-limit.test.ts"
     }
   ],
-  "approved_at": null,
-  "status": "in_progress",
+  "approved_at": "2026-11-03T10:20:00Z",
+  "status": "done",
   "logging": null,
   "depends_on": [],
   "origin": {
@@ -23,11 +23,11 @@
     "branch": "feat/rate-limit",
     "pr": "https://github.com/acme/acme-api/pull/42"
   },
-  "accepted": null,
-  "claim": {
-    "by": "claude-code 2026-11-04T09:00Z",
-    "at": "2026-11-04T09:00:00Z"
+  "accepted": {
+    "at": "2026-11-05T10:00:00Z",
+    "statement": "Set to Done in Notion"
   },
+  "claim": null,
   "progress": [
     {
       "at": "2026-11-04T09:12:00Z",

@@ -36,5 +36,9 @@
   "summary": {
     "written_at": null,
     "sha256": null
-  }
+  },
+  "status_read": {
+    "Someday": "todo"
+  },
+  "needs_you": []
 }

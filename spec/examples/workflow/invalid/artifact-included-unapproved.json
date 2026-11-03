@@ -22,5 +22,6 @@
     "state": "pending",
     "at": null,
     "error": null
-  }
+  },
+  "published_sha256": null
 }

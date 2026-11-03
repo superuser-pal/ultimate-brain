@@ -33,10 +33,35 @@ How this file fits: [cli.md §5.29](cli.md) holds the commands, [schema.md §12]
 ## 2. The kit file
 
 ### 2.1 Location and format
-- `<repo root>/brain-kit.json`: UTF-8 JSON with a 2-space indent and a trailing newline. Keys are written in the order of §2.2.
+- `<repo root>/brain-kit.json`: UTF-8 JSON with a 2-space indent and a trailing newline.
+- **Key order when the hub writes it:**
+  - top level: `kit_version`, `name`, `placement`, `knowledge`, `tasks`, `methodology`, `starter`;
+  - `placement`: `area`, `domain`, `project`;
+  - `knowledge`: `patterns`, `never_read`;
+  - `tasks`: `mode`, `source`, `status_map`;
+  - `source`: `kind`, then `path`, `format`, `pattern` (markdown), `repo` (GitHub) or `project` (GitLab);
+  - `methodology`: `summary`, `files`;
+  - `starter`: `name`, `version`.
+
+  Absent keys are skipped. Lists and `status_map` keep their input order. Non-ASCII characters are written as themselves, not escaped.
 - **The hub reads it from the working tree**, not from a commit, because the kit is configuration and the user may not have committed it yet. The health check reports a kit that differs from `HEAD`, or isn't tracked, as `KIT_UNCOMMITTED` (info).
-- **Its hash** is the lowercase hex SHA-256 of the file's bytes, written `sha256:<64 hex>`. `brain.json` records the hash of the kit it last applied (§5).
+- **Its hash** is the lowercase hex SHA-256 of the file's bytes as they are on disk (or of the input's bytes for `--input`), written `sha256:<64 hex>`. A hand-edited kit is hashed as it is, never re-serialised first. `brain.json` records the hash of the kit it last applied (§5).
 - **The kit itself is never ingested**, even when a pattern matches it.
+
+### 2.1a Path patterns (normative)
+Every pattern (`patterns`, `never_read`) is a Git glob pathspec, matched as Git matches `:(glob)<pattern>`. This is what `repo changes` already passes to Git (cli.md §5.16):
+- **Anchored at the repo root.** `.env*` matches only the root's `.env` files; `**/.env*` matches them at any depth.
+- **Single segments.** `*`, `?` and `[…]` never match `/`.
+- **`**`:**
+  - a leading `**/` matches any number of folders, including none;
+  - a trailing `/**` matches everything inside;
+  - `/**/` matches zero or more folders;
+  - any other `**` is the same as `*`.
+
+  So `docs/**/*.md` matches `docs/a.md` and `docs/x/y/a.md`.
+- **Case-sensitive.**
+
+Where the CLI matches without Git (a recorded `repo_path` for `NEVER_READ_INGESTED`, `methodology.files`, the task source path), it uses one function with these rules. A test checks that this function agrees with `git ls-files -- ':(glob)<pattern>'` on a fixture tree.
 
 ### 2.2 Fields
 
@@ -79,12 +104,16 @@ How this file fits: [cli.md §5.29](cli.md) holds the commands, [schema.md §12]
 | `methodology.files` | — | Repo-relative paths of the documents that hold the methodology (e.g. `AGENTS.md`). They are read only when a pattern also matches them. |
 | `starter` | — | `{ name, version }` of the starter that created the repo (§7). Informational. |
 
-**Checks beyond the JSON Schema.** `brain repo kit check` runs them, and so does every command that reads a kit. Each one is `KIT_INVALID` with a JSON Pointer:
-- an id in `placement` doesn't exist in the hub (`/placement/area`, …);
-- `placement.project` belongs to an Area other than `placement.area`;
-- `placement.domain` is given, Domains is on, and it isn't the Area's `domain`; or the Area has no Domain;
-- a path in `methodology.files`, or the markdown `tasks.source.path`, matches `never_read`;
-- `name` differs from the `repos` entry that the kit was read for.
+**Checks beyond the JSON Schema.** `brain repo kit check` reports them as problems, and every other command that reads a kit refuses with `KIT_INVALID`. Each one has a JSON Pointer:
+- `/tasks/source/pattern`: the pattern doesn't compile as a JavaScript regular expression with the flag `u`, or has no named group `title`;
+- `/placement/area`, `/placement/project`, `/placement/domain`: the id doesn't exist in the hub;
+- `/placement/project`: the project belongs to an Area other than `placement.area`;
+- `/placement/domain`: Domains is on and the id isn't the Area's `domain`, or the Area has no Domain;
+- `/methodology/files/<n>`, `/tasks/source/path`: the path matches `never_read`;
+- `/name`, when the kit is read for an existing `repos` entry: the name differs from that entry's;
+- `/name`, when the kit is written or added for a path: an entry with this name exists for another path.
+
+The JSON Schema and the pattern check need no brain. The others need one: they run whenever a brain resolves (cli.md §4), and are skipped by `kit check` when none does.
 
 With Domains off, `placement.domain` is ignored and not checked.
 
@@ -101,10 +130,29 @@ With Domains off, `placement.domain` is ignored and not checked.
 | `gitlab` | `project`: `group/name` (subgroups allowed) | `opened`; `closed`; `label:<name>` for each label | `opened` → `todo`, `closed` → `done` |
 | `notion` | none | (connected only) | none |
 
-- **`pattern` format.** A JavaScript regular expression (flag `u`) tried on each line of the file. It must have the named group `title`; `status` and `id` are optional. A line that doesn't match is not an item, and a line longer than 2,000 characters is skipped. Without a `status` group, every item's raw status is `""`, so the kit must map `""`. Example for headings such as `### CC-12 · Write the API · \`in progress\``: `"^### (?<id>[A-Z]+-\\d+) · (?<title>.+) · \`(?<status>[^\`]+)\`$"`.
-- **Matching.** Raw statuses are matched case-insensitively after trimming. On GitHub and GitLab, an **open** issue with a `label:<name>` entry in the map takes that label's meaning (the first such label in the issue's label order); a closed issue ignores labels.
-- **Item keys.** Each item has a stable key: the `id` group when the pattern has one; GitHub `#<number>`; GitLab `#<iid>`; otherwise `line:<sha256 of the trimmed title, first 12 hex>`. Adoption uses the same keys (connected-workflows.md §11.3).
-- **A raw status that nothing maps** counts as `unmapped`. The rollup shows it, and the health check reports `STATUS_UNMAPPED` when it is given rollup data.
+**Lines that are read.** Both Markdown formats read the file line by line (LF; a trailing CR is removed). They skip every line inside a fenced code block (from a line starting with three or more backticks or tildes to the closing fence), and every line longer than 2,000 characters.
+
+**`checklist` format.**
+- An item is a line matching `^\s*[-*+] \[(.)\] (.+)$`. Indented lines are items too: nesting is ignored.
+- The raw status is the one character between the brackets, so ` ` for an open box.
+- `[]`, a bracket with more than one character, and numbered lines (`1. [ ] …`) are not items.
+- The title is the rest of the line, trimmed.
+
+**`pattern` format.**
+- A JavaScript regular expression (flag `u`) tried on each line. It must have the named group `title`; `status` and `id` are optional.
+- A line that doesn't match is not an item.
+- Without a `status` group, every item's raw status is `""`, so the kit must map `""`.
+- Example for headings such as `### CC-12 · Write the API · \`in progress\``: `"^### (?<id>[A-Z]+-\\d+) · (?<title>.+) · \`(?<status>[^\`]+)\`$"`.
+
+**GitHub.** A closed issue with no `state_reason`, or with `null`, has the raw status `closed:completed`.
+
+**Matching.**
+- Raw statuses are matched case-insensitively after trimming.
+- On GitHub and GitLab, an **open** issue with a `label:<name>` entry in the map takes that label's meaning: the first such label in the issue's label order. A closed issue ignores labels.
+
+**Item keys.** Each item has a stable key: the `id` group when the pattern has one; GitHub `#<number>`; GitLab `#<iid>`; otherwise `line:` followed by the first 12 hex characters of the SHA-256 of the trimmed title. A second item with the same key in one file gets `#2`, a third `#3`, and so on, in file order. Adoption uses the same keys (connected-workflows.md §11.3).
+
+**A raw status that nothing maps** counts as `unmapped`, with meaning `null`. The rollup shows it, and the health check reports `STATUS_UNMAPPED` when it has the task data (§6).
 
 ## 3. The one write: the kit, with the user's yes (0066)
 
@@ -120,7 +168,10 @@ With Domains off, `placement.domain` is ignored and not checked.
 
 ## 4. The read-only rollup (tracked-in-repo)
 
-- **What it is.** A short, dated summary of the repo's tasks, built by `brain repo tasks <name>` (cli.md §5.29) and written by the skill into the brain-owned toggle heading **`Repo tasks · <name>`** on the placement's Project page, or on the Area page when the kit has no project. As with the Brief, the skill appends the toggle when the page has none (docs/notion-space-design.md §2; CC-103 adds the toggle's name there). Several repos placed on one page get one toggle each.
+- **What it is.** A short, dated summary of the repo's tasks, built by `brain repo tasks <name>` (cli.md §5.29).
+- **Where it goes.** The skill writes it into the brain-owned toggle heading **`Repo tasks · <name>`** on the placement's Project page, or on the Area page when the kit has no project. Several repos placed on one page get one toggle each.
+- **How it is written.** As for the Brief (cli.md §5.14.4), the skill finds the toggle by its exact name and replaces its children, or appends it at the end of a page that has none. `sync render` never sends it and never touches it, so render code doesn't change.
+- **Notion design (CC-103).** CC-103 documents it in docs/notion-space-design.md §2, as "toggle headings named `Repo tasks · <repo>`". The migration creates nothing on existing pages.
 - **When.** It is rebuilt in each catch-up that reads the repo, and whenever the user asks ("show the repo's tasks"). It isn't stored in Git: it is a view of data the brain doesn't own, like a Notion formula.
 - **Read-only.** It changes nothing in the repo's tracker, creates no Notion task, and the brain never reads it back. To act on a task, the user works in the repo. To move a repo's tasks into Notion, the user turns it into a connected workflow through adoption (connected-workflows.md §11).
 - **Data.**
@@ -139,11 +190,23 @@ With Domains off, `placement.domain` is ignored and not checked.
   Not mapped: "{raw}" ({count}). Map it in brain-kit.json.
   ```
 
+  - Times are UTC, with English month abbreviations (`3 Nov 2026, 14:20`).
   - `{source label}` is the file path, `GitHub owner/name` or `GitLab group/name`.
   - `{percent}` = done ÷ (total − dropped), rounded to a whole number. It is left out, with its ` · `, when there are no non-dropped items (0055).
   - Open items are listed in the order in progress, in review, waiting, to do, then in source order, at most 20 in all. An issue's title is a link to its URL.
   - The `{open}` count includes unmapped items. The "Not mapped" line lists each unmapped raw status with its count.
   - With no tasks at all, the toggle says `As of … · from … · no tasks found`.
+
+### 4.1 Fetching issues (the skill)
+The skill fetches all issues, open and closed, and passes them to the CLI unchanged except for the field names below.
+- **GitHub:** `gh issue list --repo <owner/name> --state all --limit 1000 --json number,title,state,stateReason,labels,url`.
+  - `state` `OPEN`/`CLOSED` → `open`/`closed`.
+  - `stateReason` `COMPLETED`/`NOT_PLANNED` → `completed`/`not_planned`; any other value or an empty one → absent.
+  - `labels[].name` → `labels`.
+  - Pull requests are not in this list.
+- **GitLab:** `glab issue list --repo <group/name> --all --per-page 100 --page <n> --output json`, repeated for each page until one comes back empty. Fields: `iid` → `number`, `state` (`opened`/`closed`), `labels`, `web_url` → `url`.
+- **Limit.** When there are 1,000 issues or more, the skill passes the first 1,000, and the toggle's first line ends with ` · first 1000 issues`. The CLI adds that text when `items` has 1,000 entries.
+- **Failure.** When `gh` or `glab` is missing, isn't logged in, or fails, no rollup is written and the old toggle stays. The report says why.
 
 ## 5. `brain.json` `repos` (schema §12)
 
@@ -178,24 +241,83 @@ The machine's `path` and the ingest state in `commit` stay in `brain.json` only;
 | `WORKFLOW_WITHOUT_CONNECTED` | warning | a connected workflow names this repo, and the kit's mode isn't `connected` |
 | `BRAIN_LINK_STALE` | info | the repo has a `.brain` (§8) whose `project` or `area` differs from the placement |
 
+**Which checks run.**
+- **The path.** `PATH_MISSING` stops the repo's checks: only it is reported.
+- **Legacy entries** (no `kit`) get `NO_KIT`. The checks that need a kit are skipped: `KIT_*`, `PLACEMENT_ARCHIVED`, `METHODOLOGY_FILE_MISSING`, `TASK_SOURCE_MISSING`, `STATUS_UNMAPPED`, `CONNECTED_WITHOUT_WORKFLOW`, `WORKFLOW_WITHOUT_CONNECTED` and `BRAIN_LINK_STALE`. The Git checks use the entry's own `patterns` and `never_read`.
+- **`KIT_MISSING` or `KIT_INVALID`** skips the checks that read the kit's content: `KIT_CHANGED`, `KIT_UNCOMMITTED`, `PLACEMENT_ARCHIVED`, `METHODOLOGY_FILE_MISSING`, `TASK_SOURCE_MISSING`, `STATUS_UNMAPPED`, `CONNECTED_WITHOUT_WORKFLOW`, `WORKFLOW_WITHOUT_CONNECTED` and `BRAIN_LINK_STALE`. The Git checks still run on the `brain.json` copies.
+- **`STATUS_UNMAPPED`** runs only for a markdown source, or with `--input` issue data.
+- **The workflow checks** count workflows in state `connected` or `paused` whose `folder.repo` is the repo's name. `ended` workflows don't count.
+
 The exit code is 1 when any check is an error, as for `lint`.
 
 ## 7. The generic starter
 
-`brain repo new` (cli.md §5.29) starts a new repo from `templates/repo-starters/generic/` in the product package (0066). The generic starter is the only one in 0.9.0. Its files:
+`brain repo new` (cli.md §5.29) starts a new repo from `templates/repo-starters/generic/` in the product package (0066); the package's `files` list gains that folder. The generic starter is the only one in 0.9.0. The CLI task adds the folder with exactly the files below. `{name}`, `{summary}` and `{tasks}` are replaced when the repo is created; every file ends with one newline.
 
-| File | Content |
-|---|---|
-| `README.md` | `# {name}` and the `methodology.summary` |
-| `AGENTS.md` | How work is done here: record decisions in `decisions/` before acting on them; plans and notes in `docs/`; tasks in `TASKS.md` (tracked-in-repo) or in Notion (connected); never put secrets in the repo |
-| `CLAUDE.md` | `@AGENTS.md` |
-| `decisions/_template.md` | Title, Status, Date, Context, Decision, Consequences |
-| `docs/README.md` | One line: what goes here |
-| `TASKS.md` | `# Tasks` and one example line `- [ ] First task`. Written only with `tracked-in-repo` |
-| `.gitignore` | `.env*` and `secrets/` |
-| `brain-kit.json` | From the input kit, with `starter` set to `{ "name": "generic", "version": <package version> }` |
+**`README.md`**
+```text
+# {name}
 
-The starter's own kit defaults, which the skill proposes and the user may change before the write: `patterns` `["decisions/**", "docs/**", "README.md"]`, `never_read` `[".env*", "secrets/**"]`, `tasks` `tracked-in-repo` with `{ "kind": "markdown", "path": "TASKS.md", "format": "checklist" }`, and the `methodology.summary` of the starter's AGENTS.md in one sentence. The starter folder holds the kit as `brain-kit.template.json` with placeholder ids. Lint and the tests validate it with the placeholders replaced.
+{summary}
+```
+
+**`AGENTS.md`**
+```text
+# How work is done here
+
+{summary}
+
+- Record a decision in decisions/ (copy decisions/_template.md) before acting on it.
+- Plans and notes go in docs/.
+- {tasks}
+- Never put secrets in this repo: .env files and secrets/ are ignored.
+```
+
+`{tasks}` is one of:
+- tracked-in-repo: `Tasks are in TASKS.md: one line "- [ ] title" each; "[x]" when done.`
+- connected: `Tasks are in Notion, through the connected workflow.`
+- no `tasks`: `This repo tracks no tasks.`
+
+**`CLAUDE.md`**
+```text
+@AGENTS.md
+```
+
+**`decisions/_template.md`**
+```text
+# NNNN — Title
+
+**Status:** Proposed
+**Date:** YYYY-MM-DD
+
+## Context
+## Decision
+## Consequences
+```
+
+**`docs/README.md`**
+```text
+Plans, notes and documents for {name}.
+```
+
+**`TASKS.md`** (only with tracked-in-repo)
+```text
+# Tasks
+
+- [ ] First task
+```
+
+**`.gitignore`**
+```text
+.env*
+secrets/
+```
+
+**`brain-kit.json`:** the input kit, with `starter` set to `{ "name": "generic", "version": <the installed package's version> }` (the package of cli.md §5.15), written as §2.1 says.
+
+`{name}` is the kit's `name` and `{summary}` its `methodology.summary`. With tracked-in-repo, `repo new` requires the source to be `{ "kind": "markdown", "path": "TASKS.md", "format": "checklist" }` (`KIT_INVALID` otherwise), because that is the file it writes.
+
+**The kit the skill proposes**, which the user may change before the write: `patterns` `["decisions/**", "docs/**", "README.md"]`, `never_read` `[".env*", "secrets/**"]`, `tasks` tracked-in-repo with the TASKS.md checklist source, and `methodology.summary` "Record decisions in decisions/ before acting on them; plans in docs/; tasks in TASKS.md." (the end changed to match the mode).
 
 ## 8. Offering `brain link` the other way
 
@@ -212,7 +334,7 @@ After a link (or `repo new`), the skill asks once: "Let this repo read the brain
 
 ## 10. The skill (written in the skills fork, 0059)
 
-These are what the skill must do; the fork decides how it is worded. Every write is preceded by the content and the user's yes.
+The proposed name is **`brain-repos`**; the fork's approved mapping (CC-97) may rename it. These are what the skill must do; the fork decides how it is worded. Every write is preceded by the content and the user's yes.
 - **Link:** inspect the repo (top-level layout, instructions, plans, issue tracker), propose a kit (placement from the hub's Areas and Projects; patterns and never-read paths; mode and source; status mapping; methodology summary), show it, `repo kit write`, `repo add --kit`, offer §8, and, with tracked-in-repo, the first rollup. The first ingest stays attended (0042).
 - **Show:** `repo show` and `repo health`, in two lines (skill-report rule).
 - **Change:** propose the new kit as a diff, `repo kit write --replace`, `repo refresh`; when `reingest` is true, `repo record --reset` and a catch-up.
