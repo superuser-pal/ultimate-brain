@@ -163,15 +163,11 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 **Output:** steps 5 and 7 of docs/skills-migration-plan.md: isolated agent skill locations; the scenarios standard software, connected software with a PR, general work directly under an Area, and a hub with one connected and one tracked-in-repo linked repo; interruption, retry, conflict, version and update behaviours tested once; rollback exercised; brief Claude Code and Codex smoke checks; evidence in docs/acceptance-0.9.0.md.
 **Acceptance:** each scenario passes with its evidence; rollback restores the previous package and installation manifest with knowledge and configuration intact; the effective skill source is identified in each agent; no real brain is the first integration test.
 
-### CC-113 · sync apply creates notes in relation order · `done` (#195)
+### CC-112 · Quick follow-ups and scoped tasks in the minutes (decision 0067) · `done` (#198)
 **Release:** 0.9.0
-**Changelog:** `sync apply` creates new notes in relation order, so an Area whose Domain (or a Project whose Area or Org) is new in the same plan is created in one run, whatever the plan's order; a cycle among creates is reported as `RELATION_CYCLE`.
-**Output:** spec/cli.md §5.14.3 states that creates run in relation order (the referenced create first, otherwise plan order), that results stay in plan order, and what a cycle does; `applyPlan` in src/lib/sync.ts orders the creates accordingly; sync apply tests. From dogfood #192.
-**Acceptance:**
-- [ ] A plan with a new Area before its new Domain applies both in one `sync apply`, with no failure.
-- [ ] The same for a new Project before its new Org (`client`) and a new Project before its new Area.
-- [ ] Creates in a relation cycle fail `RELATION_CYCLE`, a create that depends on one fails `DEPENDENCY_FAILED`, the other creates and the rest of the plan are still applied, and the command ends (exit 1).
-- [ ] `data.create` stays in the plan's order; every existing sync apply test passes unchanged.
+**Changelog:** meeting minutes split your actions into quick follow-ups, which stay in Notion as checkboxes, and tasks with an editable Scope (done when, due, project, notes) that the ingest carries into the Notion task; a long or reworded quote no longer blocks a whole meeting (#191).
+**Output:** decision 0067 (amends 0055); spec/capture-and-review.md §3–§4 and §6 and spec/cli.md §5.22 (the Quick follow-ups and Tasks groups, the Scope toggle, which quote problems block and how the rest are reported); the parser in src/lib/selection.ts and the extract-plan output in src/lib/extract.ts, test-first; notion/minutes-format.md (prompt and "What you do with it"), a note in notion/ on pasting the new prompt; the brain-ingest references (selection, extraction, cli-inputs) and their mirror; a blind run of the new prompt on a synthetic transcript.
+**Acceptance:** tests: quick follow-up checkboxes, with or without an id, are listed and never imported, never a Task and never a blocker, while a checkbox outside a Quick follow-ups group still blocks; a Scope toggle is read into Done when, Due, Project and Notes, and a Due that is not a date or a stray Scope is reported without blocking; a long exact quote and a reworded quote with a unique 6–12-word stretch are placed; an unplaceable quote of an included item is reported and the item not imported, while the same quote on an excluded item still blocks; the 0.8 minutes fixture gives the same plan as before; a fresh Sonnet agent given only a synthetic transcript and the new prompt writes minutes that extract-plan accepts; `npm test`, typecheck, `test:package`, the skill mirror check and the leak check pass.
 
 ## 0.10.0 — The brain assistant (decision 0064)
 
