@@ -862,7 +862,7 @@ Optional Domains around PARA; Won't Do closes work without claiming completion; 
 **Output:** decision 0062 (accepted by the user, 2026-11-02, replacing the earlier hash proposal); capture-and-review §4.8 rewritten as explicit re-reads (no drift scan, no stored `SELECTION_STALE`), §4.6, §7.10 and M3 aligned; cli §5.14.7 stops claiming that a deleted block moves the page time; 0058 gets an "Amended by" pointer; docs/notion-space-design.md §3.17 says it. CC-78 drops the drift scan, the stale confirmation and `page_fingerprint`; `brain source extract-plan` is specified in cli §5.22 by this task; a render re-checks the page body by hash; CC-79 and CC-80 are no longer blocked by T4.
 **Acceptance:** no spec or doc claims that a deletion is detected through the page time; selection changes after ingestion happen only through an explicit re-read (Reviewed/Ready again or an assistant request); 0058's same-minute limit and the verify-before-apply re-read stay; no personal data.
 
-### CC-90 · Close the 0.8.0 task rows · `review`
+### CC-90 · Close the 0.8.0 task rows · `done (#175)`
 **Release:** 0.8.0
 **Changelog:** the 0.8.0 task rows are closed, so the release can run.
 **Output:** CC-78, CC-80, CC-81 and CC-82 set to `done` with their PR numbers (#170, #172, #173, #174): those PRs merged on the user's review while their rows still said `review`, as CC-79's did (#171, closed in #172). No code.
