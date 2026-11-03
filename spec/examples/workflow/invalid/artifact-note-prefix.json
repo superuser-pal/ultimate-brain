@@ -1,0 +1,27 @@
+{
+  "id": "art-2p8k4m6n",
+  "rev": 2,
+  "item": "wi-7c2m9q4x",
+  "category": "plan",
+  "title": "Rate limiting plan",
+  "format": "text",
+  "location": {
+    "path": "docs/plans/rate-limit.md"
+  },
+  "sha256": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+  "approved_at": "2026-11-03T11:00:00Z",
+  "publish": {
+    "decision": "include",
+    "by": "level",
+    "level": "full",
+    "decided_at": "2026-11-03T11:00:00Z"
+  },
+  "local_reason": null,
+  "note": "prj-4m8q2k6p",
+  "publication": {
+    "state": "pending",
+    "at": null,
+    "error": null
+  },
+  "published_sha256": null
+}

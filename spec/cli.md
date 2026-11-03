@@ -1727,3 +1727,78 @@ Every brain pins the operational skills it uses in `skills.lock.json` at its roo
 - **The schema reason** `schema: <first schema error>` gives that error as `<JSON Pointer> <message>` (`/` for the whole file), the shape `INPUT_INVALID` details use (§3.5).
 - **`HOME`** for the global checks is the command's environment variable; tests set it to a temporary folder (skills-delivery §5.2).
 - **Skills act on the state.** Skills call `brain status` first. When `state` is `invalid`, `incompatible` or `missing`, the skill stops and shows the message the guard would give.
+
+### 5.29 `brain repo` link kits, rollup and unlink (0066, linked-repos.md)
+
+```text
+brain repo kit check (--path <path> | --input <file|->) [--name <name>]
+brain repo kit write --path <path> --input <file|-> --confirm <sha256> [--replace <sha256>]
+brain repo add <name> --path <path> --kit
+brain repo refresh <name> [--dry-run]
+brain repo show <name>
+brain repo health [<name>] [--input <file|->] [--rollup-as-of <timestamp>]
+brain repo tasks <name> [--input <file|->]
+brain repo unlink <name>
+brain repo new --path <path> --starter generic --input <file|-> --confirm <sha256>
+```
+
+The model, the kit's fields and their checks, the rollup text and the health checks are in [linked-repos.md](linked-repos.md); this section holds the commands. They read linked repos with read-only Git commands (as §5.16), and they write only `brain.json` `repos`, except for `kit write` and `new`, which also write in a linked repo. Every command that reads a kit validates it against `spec/schemas/link-kit.schema.json` and runs the checks of linked-repos.md §2.2 (`KIT_INVALID`, exit 4, with `details` `{pointer, message}`).
+
+**§1's rules gain these exceptions.** `repo kit write` writes exactly one file, `<path>/brain-kit.json`. `repo new` writes the starter into a new folder, runs `git init` there and makes its first commit. They are added to "Writes only inside the brain" and "No Git" respectively. Neither ever writes another file in a linked repo, and neither ever pushes.
+
+**`repo kit check`** writes nothing. It reads `<path>/brain-kit.json`, or `--input`; exactly one of the two must be given (`USAGE`). It returns `{ kit, sha256, problems: [{pointer, message}] }`:
+- `sha256` is the hash of the bytes it read;
+- `kit` is the parsed JSON, or `null` when the bytes aren't JSON;
+- `problems` holds a JSON parse failure (pointer `""`, message `not JSON: <reason>`), every schema error, and the checks of linked-repos.md §2.2.
+
+It exits 0 even with problems: this is the command the skill uses to show them. A missing file is `KIT_MISSING` (exit 4). `--name` adds the check that `name` equals it.
+
+**`repo kit write`** writes the input kit to `<path>/brain-kit.json`, after the user's yes to that exact content (linked-repos.md §3).
+- Order of checks, all before the write:
+  1. `path` is the top of a Git working tree (`REPO_NOT_FOUND`) and isn't the brain (`REPO_IS_BRAIN`) or the product repo (`OUTSIDE_ROOT`; the product repo is recognised as in `BRAIN_IS_PRODUCT_REPO`).
+  2. The kit is valid: the schema, and every check of linked-repos.md §2.2 (`KIT_INVALID`). `kit write` needs the brain (§4) for these checks. For a repo already linked, the entry found by `path` must have the kit's `name`.
+  3. `brain-kit.json` isn't a symbolic link or a folder (`OUTSIDE_ROOT`).
+  4. An existing file needs `--replace` equal to its current hash (`KIT_EXISTS` without the flag, `KIT_CHANGED` when the hash differs); a missing file with `--replace` is `KIT_MISSING`.
+  5. `--confirm` equals the hash of the bytes it will write (linked-repos.md §3). Without it: `CONFIRMATION_REQUIRED`; a different hash: `CONFIRMATION_MISMATCH`.
+- It writes with 2-space indent, keys in linked-repos.md §2.2 order, and a trailing newline, atomically (§3.6). It never stages or commits.
+- `data` = `{ path_abs, sha256, action: created|updated|unchanged }`; `unchanged` when the bytes are the same.
+- Logs `repo-kit - "<name>" sha=<first 12 hex>`.
+
+**`repo add <name> --path <path> --kit`** links a repo from its kit. It is §5.16's `repo add` with the kit's values: `area` = `placement.area`, `patterns` = `knowledge.patterns`, `never_read` and `project` when the kit has them, and `kit: { sha256 }`. The kit's `name` must equal `<name>` (`KIT_INVALID`, pointer `/name`). `--kit` can't be combined with `--area` or `--pattern` (`USAGE`). §5.16's other checks apply unchanged. `data` = the new entry.
+
+**`repo refresh <name>`** re-reads the kit of a kit-linked repo and copies `area`, `patterns`, `never_read`, `project` and the hash into its entry. A legacy entry is `NO_KIT` (exit 4).
+- `data` = `{ name, changed, placement_changed, added_patterns, removed_patterns, added_never_read, removed_never_read, reingest }`. `changed` is false when the hash equals `kit.sha256`, and then nothing is written.
+- `reingest` is true when patterns were added or never-read paths removed: files that are now readable but older than the recorded commit are only listed after `repo record --reset` (§5.16), and the skill offers that.
+- `--dry-run` writes nothing and reports the same `data`.
+- Logs `repo-refresh - "<name>" sha=<first 12 hex>` when it writes.
+
+**`repo show <name>`** writes nothing. `data` = `{ entry, kit, kit_sha256, kit_status: current|changed|missing|invalid|none, workflow }`.
+- `kit` is `null` unless the status is `current` or `changed`.
+- `workflow` is `{ id, state }` of the workflow in state `connected` or `paused` whose `folder.repo` is this name, or `null` (connected-workflows.md §3.1 allows at most one).
+
+**`repo health [<name>]`** writes nothing. `--rollup-as-of` (with `<name>`) enables `ROLLUP_STALE`. It runs the checks of linked-repos.md §6 on one repo, or on all repos in `brain.json` order. `--input` takes the issue data of `repo tasks` for a GitHub or GitLab source, so `STATUS_UNMAPPED` can be checked; it needs `<name>`. `data` = `{ repos: [{ name, checks: [{code, severity, message, path?}] }] }`, checks in the table's order. The exit code is 1 when any check is an error.
+
+**`repo tasks <name>`** writes nothing. It builds the read-only rollup (linked-repos.md §4) of a `tracked-in-repo` repo.
+- Refusals, all exit 4: a legacy entry is `NO_KIT`, a kit whose mode is `connected` is `MODE_CONNECTED`, and a kit without `tasks` is `NO_TASKS`.
+- `markdown`: no input; the CLI reads the file at `HEAD`.
+- `github` and `gitlab`: `--input` is required (`USAGE`): `{ fetched_at, items: [{ number, title, state, state_reason?, labels: [string], url }] }`. `state` is `open` or `closed` (GitHub; `state_reason` `completed` or `not_planned`), or `opened` or `closed` (GitLab).
+- `data` = `{ name, target: { project } | { area }, as_of, counts: { todo, in_progress, waiting, review, done, dropped, unmapped }, percent, items: [{ key, title, raw, meaning, url? }], unmapped: [{ raw, count }], toggle: { heading: "Repo tasks · <name>", markdown } }`.
+  - `items` holds every item, in source order (issues in input order); an unmapped item has `meaning: null`.
+  - `percent` is `null` when there are no non-dropped items.
+  - `as_of` is `--now` for markdown, `fetched_at` for issues.
+  - The skill writes `toggle.markdown` under `toggle.heading` on the target's page.
+
+**`repo unlink <name>`** removes the entry from `repos` (the `repos` key stays, even when empty). It changes no source, note or file in the repo (linked-repos.md §9). `data` = `{ name, removed: <the entry>, sources: <the number of sources with this repo>, workflow: <as in repo show> }`. Logs `repo-unlink - "<name>"`.
+
+**`repo new`** creates a new repo from the generic starter (linked-repos.md §7).
+- `--input` is the kit, with `starter` left out (the command sets it). `--starter` accepts only `generic` (`USAGE`).
+- `path` must not exist, or must be an empty folder (`TARGET_NOT_EMPTY`), and must not be inside the brain (`OUTSIDE_ROOT`).
+- The kit is checked as for `kit write`, including `--confirm` on the bytes of the kit file it writes (with `starter` set), plus the source rule of linked-repos.md §7.
+- It writes the starter's files of linked-repos.md §7 and the kit, runs `git init`, and commits everything with `Start from the Ultimate Brain generic starter`. A commit that fails (no Git identity) gives the warning `GIT_COMMIT_SKIPPED` and keeps the files.
+- It doesn't link the repo: the skill runs `repo add --kit` next.
+- `data` = `{ path_abs, files: [path], sha256, commit }`, with `files` sorted by path and `commit` the short hash, or `null` when the commit was skipped.
+- Logs `repo-new - "<name>"`.
+
+**Changes to §5.16.** `repo changes` leaves out the files that match the entry's `never_read`, and always leaves out `brain-kit.json`. For `repo add` without `--kit`, `never_read` and `project` can't be set; they come only from a kit.
+
+New error codes, all with exit 4: `KIT_MISSING`, `KIT_INVALID`, `KIT_EXISTS`, `KIT_CHANGED`, `NO_KIT`, `MODE_CONNECTED`, `NO_TASKS`, `CONFIRMATION_REQUIRED`, `CONFIRMATION_MISMATCH`. Existing codes used: `REPO_NOT_FOUND`, `REPO_IS_BRAIN`, `OUTSIDE_ROOT`, `TARGET_NOT_EMPTY`, `UNKNOWN_ID`, `USAGE`. CC-102 adds the new codes to §3.5, the rows of §1.1 (the link skill: `repo kit check`, `repo kit write`, `repo add`, `repo refresh`, `repo show`, `repo health`, `repo tasks`, `repo unlink`, `repo new`, `link`) and §1's exceptions.

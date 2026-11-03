@@ -1,0 +1,1777 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ultimate-brain.dev/schemas/v1/workflow.schema.json",
+  "title": "Connected workflow records",
+  "description": "Records of a connected workflow (decision 0059, spec/connected-workflows.md §3, §7, §11). Each file validates against one $defs entry: workflow.json → workflow, items/*.json → item, artifacts/*.json → artifact, ops/*.json → op, adoption.json → adoption, the folder's .brain-workflow.json → pointer; the input of `workflow reconcile` → snapshot; the input of `workflow adopt preview` and `adopt apply` → adoptionInput.",
+  "$defs": {
+    "noteId": {
+      "type": "string",
+      "pattern": "^[a-z]+-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+    },
+    "wfId": {
+      "type": "string",
+      "pattern": "^wf-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+    },
+    "wiId": {
+      "type": "string",
+      "pattern": "^wi-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+    },
+    "artId": {
+      "type": "string",
+      "pattern": "^art-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+    },
+    "opId": {
+      "type": "string",
+      "pattern": "^op-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "pageId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "rev": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "meaning": {
+      "enum": [
+        "todo",
+        "in_progress",
+        "waiting",
+        "review",
+        "done",
+        "dropped"
+      ]
+    },
+    "level": {
+      "enum": [
+        "tasks_only",
+        "tasks_and_finals",
+        "full",
+        "custom"
+      ]
+    },
+    "category": {
+      "enum": [
+        "brief",
+        "plan",
+        "specification",
+        "decision",
+        "final",
+        "temporary"
+      ]
+    },
+    "publication": {
+      "type": "object",
+      "required": [
+        "state",
+        "at",
+        "error"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "enum": [
+            "local",
+            "pending",
+            "published",
+            "failed",
+            "uncertain"
+          ]
+        },
+        "at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "origin": {
+      "type": "object",
+      "required": [
+        "kind",
+        "ref",
+        "key"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "markdown",
+            "github",
+            "gitlab",
+            "notion",
+            "other"
+          ]
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "pointer": {
+      "type": "object",
+      "required": [
+        "workflow"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "workflow": {
+          "$ref": "#/$defs/wfId"
+        }
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "required": [
+        "id",
+        "rev",
+        "state",
+        "opted_in",
+        "folder",
+        "destination",
+        "settings",
+        "status_map",
+        "status_read",
+        "modules_offered",
+        "outside",
+        "needs_you",
+        "summary"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/wfId"
+        },
+        "rev": {
+          "$ref": "#/$defs/rev"
+        },
+        "state": {
+          "enum": [
+            "connected",
+            "paused",
+            "ended"
+          ]
+        },
+        "opted_in": {
+          "type": "object",
+          "required": [
+            "at",
+            "statement"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "at": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "statement": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "folder": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "repo": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+            }
+          }
+        },
+        "destination": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "project"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "project": {
+                  "$ref": "#/$defs/noteId",
+                  "pattern": "^prj-"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "area"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "area": {
+                  "$ref": "#/$defs/noteId",
+                  "pattern": "^area-"
+                }
+              }
+            }
+          ]
+        },
+        "relations": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "goal": {
+              "$ref": "#/$defs/noteId",
+              "pattern": "^gol-"
+            },
+            "people": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/noteId",
+                "pattern": "^per-"
+              }
+            },
+            "orgs": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/noteId",
+                "pattern": "^org-"
+              }
+            }
+          }
+        },
+        "settings": {
+          "type": "object",
+          "required": [
+            "work_type",
+            "logging",
+            "custom",
+            "read_at"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "work_type": {
+              "enum": [
+                "software",
+                "general"
+              ]
+            },
+            "logging": {
+              "$ref": "#/$defs/level"
+            },
+            "custom": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "brief",
+                  "plan",
+                  "specification",
+                  "decision",
+                  "final"
+                ]
+              }
+            },
+            "read_at": {
+              "$ref": "#/$defs/timestamp"
+            }
+          }
+        },
+        "status_map": {
+          "type": "object",
+          "required": [
+            "todo",
+            "in_progress",
+            "waiting",
+            "review",
+            "done",
+            "dropped"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "todo": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in_progress": {
+              "type": "string",
+              "minLength": 1
+            },
+            "waiting": {
+              "type": "string",
+              "minLength": 1
+            },
+            "review": {
+              "type": "string",
+              "minLength": 1
+            },
+            "done": {
+              "type": "string",
+              "minLength": 1
+            },
+            "dropped": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "modules_offered": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "tasks",
+              "documents"
+            ]
+          }
+        },
+        "outside": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/pageId"
+          }
+        },
+        "summary": {
+          "type": "object",
+          "required": [
+            "written_at",
+            "sha256"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "written_at": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/timestamp"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sha256": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/sha256"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "status_read": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/meaning"
+          }
+        },
+        "needs_you": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "target",
+              "question",
+              "choices",
+              "since"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Z_]+:.+$"
+              },
+              "kind": {
+                "enum": [
+                  "BOTH_CHANGED",
+                  "STATUS_UNMAPPED",
+                  "TASK_ARCHIVED",
+                  "TASK_DELETED",
+                  "UNKNOWN_TASK",
+                  "ARTIFACT_CHANGED",
+                  "DOCUMENT_BOTH_CHANGED"
+                ]
+              },
+              "target": {
+                "type": "string",
+                "minLength": 1
+              },
+              "question": {
+                "type": "string",
+                "minLength": 1
+              },
+              "choices": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "since": {
+                "$ref": "#/$defs/timestamp"
+              }
+            }
+          }
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "required": [
+        "id",
+        "rev",
+        "title",
+        "scope",
+        "acceptance",
+        "approved_at",
+        "status",
+        "logging",
+        "depends_on",
+        "progress",
+        "claim",
+        "accepted",
+        "notion",
+        "publication"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/wiId"
+        },
+        "rev": {
+          "$ref": "#/$defs/rev"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "type": "string"
+        },
+        "acceptance": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "text",
+              "met_at",
+              "evidence"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "met_at": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/timestamp"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "evidence": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "approved_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/meaning"
+        },
+        "logging": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/level"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "depends_on": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/wiId"
+          }
+        },
+        "origin": {
+          "$ref": "#/$defs/origin"
+        },
+        "links": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "branch": {
+              "type": "string",
+              "minLength": 1
+            },
+            "pr": {
+              "type": "string",
+              "pattern": "^https://"
+            }
+          }
+        },
+        "accepted": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "at",
+                "statement"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "at": {
+                  "$ref": "#/$defs/timestamp"
+                },
+                "statement": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        },
+        "claim": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "by",
+                "at"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "by": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "at": {
+                  "$ref": "#/$defs/timestamp"
+                }
+              }
+            }
+          ]
+        },
+        "progress": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "at",
+              "text"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "at": {
+                "$ref": "#/$defs/timestamp"
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "notion": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "page",
+                "title",
+                "status",
+                "read_at"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "page": {
+                  "$ref": "#/$defs/pageId"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "read_at": {
+                  "$ref": "#/$defs/timestamp"
+                }
+              }
+            }
+          ]
+        },
+        "publication": {
+          "$ref": "#/$defs/publication"
+        },
+        "declined": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "payload"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "update_task",
+                    "publish_artifact"
+                  ]
+                },
+                "payload": {
+                  "type": "object"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "done"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "anyOf": [
+              {
+                "properties": {
+                  "accepted": {
+                    "type": "object"
+                  }
+                }
+              },
+              {
+                "required": [
+                  "links"
+                ],
+                "properties": {
+                  "links": {
+                    "required": [
+                      "pr"
+                    ]
+                  },
+                  "acceptance": {
+                    "items": {
+                      "properties": {
+                        "met_at": {
+                          "$ref": "#/$defs/timestamp"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "artifact": {
+      "type": "object",
+      "required": [
+        "id",
+        "rev",
+        "item",
+        "category",
+        "title",
+        "format",
+        "location",
+        "sha256",
+        "approved_at",
+        "publish",
+        "local_reason",
+        "note",
+        "published_sha256",
+        "publication"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/artId"
+        },
+        "rev": {
+          "$ref": "#/$defs/rev"
+        },
+        "item": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/wiId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "category": {
+          "$ref": "#/$defs/category"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "format": {
+          "enum": [
+            "text",
+            "binary"
+          ]
+        },
+        "location": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "path"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(?!/)"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "url"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "pattern": "^https?://"
+                }
+              }
+            }
+          ]
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approved_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "publish": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "decision",
+                "by",
+                "level",
+                "decided_at"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "decision": {
+                  "enum": [
+                    "include",
+                    "exclude"
+                  ]
+                },
+                "by": {
+                  "enum": [
+                    "artifact",
+                    "task",
+                    "level"
+                  ]
+                },
+                "level": {
+                  "$ref": "#/$defs/level"
+                },
+                "decided_at": {
+                  "$ref": "#/$defs/timestamp"
+                }
+              }
+            }
+          ]
+        },
+        "local_reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "excluded by level",
+                "excluded by override",
+                "temporary",
+                "module off",
+                "dropped by user"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "note": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/noteId",
+              "pattern": "^(ref|dec)-"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "publication": {
+          "$ref": "#/$defs/publication"
+        },
+        "published_sha256": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "declined": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "payload"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "update_task",
+                    "publish_artifact"
+                  ]
+                },
+                "payload": {
+                  "type": "object"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "publish"
+            ],
+            "properties": {
+              "publish": {
+                "type": "object",
+                "required": [
+                  "decision"
+                ],
+                "properties": {
+                  "decision": {
+                    "const": "include"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "approved_at": {
+                "$ref": "#/$defs/timestamp"
+              },
+              "local_reason": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "publication": {
+                "properties": {
+                  "state": {
+                    "const": "local"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "local_reason": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "op": {
+      "type": "object",
+      "required": [
+        "id",
+        "rev",
+        "kind",
+        "target",
+        "payload",
+        "state",
+        "attempts",
+        "runs_failed",
+        "created_at",
+        "updated_at",
+        "last_error",
+        "result"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/opId"
+        },
+        "rev": {
+          "$ref": "#/$defs/rev"
+        },
+        "kind": {
+          "enum": [
+            "create_task",
+            "update_task",
+            "publish_artifact",
+            "mark_original"
+          ]
+        },
+        "target": {
+          "type": "string",
+          "pattern": "^(wi|art)-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+        },
+        "state": {
+          "enum": [
+            "pending",
+            "in_flight",
+            "done",
+            "failed",
+            "uncertain",
+            "dropped"
+          ]
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "created_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "updated_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "last_error": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "code",
+                "message",
+                "lasting"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "network",
+                    "rate_limited",
+                    "server",
+                    "validation",
+                    "permission",
+                    "missing_property",
+                    "upload_unsupported",
+                    "other"
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                },
+                "lasting": {
+                  "type": "boolean"
+                }
+              }
+            }
+          ]
+        },
+        "result": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "page"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "page": {
+                  "$ref": "#/$defs/pageId"
+                }
+              }
+            }
+          ]
+        },
+        "runs_failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "payload": {
+          "type": "object"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "create_task",
+                  "update_task"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "pattern": "^wi-"
+              },
+              "payload": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "status"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "status": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "brain_id": {
+                    "$ref": "#/$defs/wiId"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "mark_original"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "pattern": "^wi-"
+              },
+              "payload": {
+                "type": "object",
+                "required": [
+                  "origin",
+                  "treatment"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "origin": {
+                    "$ref": "#/$defs/origin"
+                  },
+                  "treatment": {
+                    "enum": [
+                      "mark_transferred",
+                      "close_transferred"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "publish_artifact"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "pattern": "^art-"
+              },
+              "payload": {
+                "type": "object",
+                "required": [
+                  "sha256"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "sha256": {
+                    "$ref": "#/$defs/sha256"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "failed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "last_error": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "create_task",
+                  "publish_artifact"
+                ]
+              },
+              "state": {
+                "const": "done"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "result": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "adoption": {
+      "type": "object",
+      "required": [
+        "rev",
+        "runs",
+        "map",
+        "conventions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "rev": {
+          "$ref": "#/$defs/rev"
+        },
+        "runs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "at",
+              "sources",
+              "created",
+              "updated",
+              "untouched"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "at": {
+                "$ref": "#/$defs/timestamp"
+              },
+              "sources": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "ref"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "markdown",
+                        "github",
+                        "gitlab",
+                        "notion",
+                        "other"
+                      ]
+                    },
+                    "ref": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              },
+              "created": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "updated": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "untouched": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "map": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "origin",
+              "item",
+              "treatment",
+              "marked"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "origin": {
+                "$ref": "#/$defs/origin"
+              },
+              "item": {
+                "$ref": "#/$defs/wiId"
+              },
+              "treatment": {
+                "enum": [
+                  "keep",
+                  "mark_transferred",
+                  "close_transferred"
+                ]
+              },
+              "marked": {
+                "type": "boolean"
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "origin": {
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "markdown",
+                            "notion",
+                            "other"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "treatment": {
+                      "const": "keep"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "conventions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "rule",
+              "source",
+              "choice"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "rule": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source": {
+                "type": "string",
+                "minLength": 1
+              },
+              "choice": {
+                "enum": [
+                  "keep",
+                  "adapt",
+                  "decline"
+                ]
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "choice": {
+                      "const": "adapt"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "note"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "required": [
+        "read_at",
+        "destination",
+        "tasks"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "read_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "destination": {
+          "type": "object",
+          "required": [
+            "page",
+            "workflow",
+            "work_type",
+            "logging_level",
+            "log_artifacts"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "page": {
+              "$ref": "#/$defs/pageId"
+            },
+            "workflow": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "work_type": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "logging_level": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "log_artifacts": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "page",
+              "brain_id",
+              "title",
+              "status",
+              "archived",
+              "in_trash",
+              "edited"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "page": {
+                "$ref": "#/$defs/pageId"
+              },
+              "brain_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "title": {
+                "type": "string"
+              },
+              "status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "in_trash": {
+                "type": "boolean"
+              },
+              "edited": {
+                "$ref": "#/$defs/timestamp"
+              }
+            }
+          }
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "page",
+              "brain_id",
+              "edited"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "page": {
+                "$ref": "#/$defs/pageId"
+              },
+              "brain_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "edited": {
+                "$ref": "#/$defs/timestamp"
+              }
+            }
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "sha256"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/artId"
+              },
+              "sha256": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          }
+        },
+        "marked": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/opId"
+          }
+        }
+      }
+    },
+    "adoptionInput": {
+      "type": "object",
+      "required": [
+        "sources",
+        "items",
+        "unsupported",
+        "conventions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "kind",
+              "ref"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "markdown",
+                  "github",
+                  "gitlab",
+                  "notion",
+                  "other"
+                ]
+              },
+              "ref": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "origin",
+              "title",
+              "body",
+              "raw_status",
+              "meaning",
+              "depends_on",
+              "url",
+              "brain_id"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "origin": {
+                "$ref": "#/$defs/origin"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "body": {
+                "type": "string"
+              },
+              "raw_status": {
+                "type": "string"
+              },
+              "meaning": {
+                "$ref": "#/$defs/meaning"
+              },
+              "depends_on": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^https?://"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "brain_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "unsupported": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "conventions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "rule",
+              "source"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "rule": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source": {
+                "type": "string",
+                "minLength": 1
+              },
+              "choice": {
+                "enum": [
+                  "keep",
+                  "adapt",
+                  "decline"
+                ]
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "choice": {
+                      "const": "adapt"
+                    }
+                  },
+                  "required": [
+                    "choice"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "note"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "selected": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          ]
+        },
+        "treatments": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "keep",
+              "mark_transferred",
+              "close_transferred"
+            ]
+          }
+        },
+        "status_read": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/meaning"
+          }
+        }
+      }
+    }
+  }
+}
