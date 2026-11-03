@@ -33,7 +33,10 @@ if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
   const from = flags["--from"];
   const title = flags["--new"]?.trim();
   const base = from === undefined ? "origin/main" : `origin/${from}`;
-  const rows = from === undefined && title === undefined ? { ok: true, stdout: undefined } : tryCommand("git", ["show", `${base}:build/TASKS.md`]);
+  const shown = from === undefined && title === undefined ? { ok: true, stdout: undefined } : tryCommand("git", ["show", `${base}:build/TASKS.md`]);
+  // A new id must also be unused among the done rows in build/HISTORY.md (CC-94).
+  const history = title === undefined ? undefined : tryCommand("git", ["show", `${base}:build/HISTORY.md`]);
+  const rows = shown.ok && history?.ok ? { ok: true, stdout: `${shown.stdout}\n${history.stdout}` } : shown;
   const existing = rows.ok ? taskEntries(rows.stdout).find((entry) => entry.id === id) : undefined;
   const task = title === undefined ? existing : { id, title };
   if (!rows.ok) fail(`Cannot read build/TASKS.md on ${base}: ${rows.message}`);

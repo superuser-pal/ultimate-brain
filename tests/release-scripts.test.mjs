@@ -756,6 +756,54 @@ function prFormatPath(root, baseLog, headLog) {
   });
 }
 
+/** pr-format fakes where CC-2 sits in TASKS.md on the base and the head's rows come from `headTasks` and `headHistory` (undefined: the file is missing). */
+function historyFormatPath(root, headTasks, headHistory, historyError = "gh: Not Found (HTTP 404)") {
+  const both = "### CX-1 · One · `review`\n**Release:** 0.4.0\n**Changelog:** One\n\n### CC-2 · Two · `done` (#2)\n**Release:** 0.4.0\n**Changelog:** Two\n";
+  const missing = `echo '${historyError}' >&2; exit 1`;
+  return fakeCommands(root, {
+    gh: `case "$1 $2" in
+      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"head","baseRefOid":"base","title":"CX-1: One","files":[]}' ;;
+      "repo view") printf owner/repo ;;
+      "api repos/owner/repo/contents/build/TASKS.md?ref=base") printf '%s' '${taskRows(both)}' ;;
+      "api repos/owner/repo/contents/build/TASKS.md?ref=head") printf '%s' '${taskRows(headTasks)}' ;;
+      "api repos/owner/repo/contents/build/HISTORY.md?ref=base") ${missing} ;;
+      "api repos/owner/repo/contents/build/HISTORY.md?ref=head") ${headHistory === undefined ? missing : `printf '%s' '${taskRows(headHistory)}'`} ;;
+      "api repos/owner/repo/contents/CHANGELOG.md?ref=base"|"api repos/owner/repo/contents/CHANGELOG.md?ref=head") printf '' ;;
+    esac`,
+  });
+}
+
+test("PR format accepts a task row moved from TASKS.md to HISTORY.md and rejects one dropped from both (CC-94)", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const one = "### CX-1 · One · `review`\n**Release:** 0.4.0\n**Changelog:** One\n";
+  const moved = run("pr-format.mjs", ["1"], { root, env: { PATH: historyFormatPath(root, one, "# Build history\n\n### CC-2 · Two · `done` (#2)\n**Release:** 0.4.0\n**Changelog:** Two\n") } });
+  assert.equal(moved.status, 0, moved.stderr);
+  const lostChangelog = run("pr-format.mjs", ["1"], { root, env: { PATH: historyFormatPath(root, one, "### CC-2 · Two · `done` (#2)\n**Release:** 0.4.0\n") } });
+  assert.match(lostChangelog.stderr, /loses \*\*Changelog:\*\* line\(s\): CC-2/);
+  const dropped = run("pr-format.mjs", ["1"], { root, env: { PATH: historyFormatPath(root, one, undefined) } });
+  assert.match(dropped.stderr, /loses task heading\(s\): CC-2/);
+  const unreadable = run("pr-format.mjs", ["1"], { root, env: { PATH: historyFormatPath(root, one, undefined, "gh: Bad credentials (HTTP 401)") } });
+  assert.match(unreadable.stderr, /Cannot read build\/HISTORY\.md: gh: Bad credentials/);
+});
+
+test("release and task.mjs read the rows in build/HISTORY.md (CC-94)", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = releaseDryRun(root);
+  writeFileSync(join(root, "build/HISTORY.md"), "# Build history\n\n### CX-9 · Moved · `review`\n**Release:** 0.4.0\n**Changelog:** Moved\n");
+  const refused = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: path } });
+  assert.match(refused.stderr, /CX-9 is review, not done/);
+  const { parent, root: repo, path: taskPath } = taskRepository("### CC-1 · Open · `todo`\n**Release:** 1.2.0\n");
+  t.after(() => rmSync(parent, { recursive: true, force: true }));
+  writeFileSync(join(repo, "build/HISTORY.md"), "### CC-7 · Old · `done` (#7)\n**Release:** 1.0.0\n");
+  command(repo, ["add", "."]);
+  command(repo, ["commit", "-m", "history"]);
+  command(repo, ["push", "origin", "main"]);
+  const taken = run("task.mjs", ["start", "CC-7", "--new", "Again", "--release", "1.2.0"], { root: repo, env: { PATH: taskPath } });
+  assert.match(taken.stderr, /CC-7 already exists on origin\/main/);
+});
+
 test("PR format rejects a CHANGELOG.md line lost from another task", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));

@@ -20,7 +20,19 @@ export function fail(message) {
   process.exitCode = 1;
 }
 
-export function taskEntries(tasks = readFileSync(resolve(ROOT, "build/TASKS.md"), "utf8")) {
+/** build/TASKS.md followed by build/HISTORY.md, the done releases moved out of it (CC-94), when that exists. */
+export function taskFiles() {
+  const history = resolve(ROOT, "build/HISTORY.md");
+  return readFileSync(resolve(ROOT, "build/TASKS.md"), "utf8") + (existsSync(history) ? `\n${readFileSync(history, "utf8")}` : "");
+}
+
+/** A file's text at a commit, or "" when the file is not there; for build/HISTORY.md, which older commits lack. */
+export function optionalContentAt(repo, path, ref) {
+  const result = contentAt(repo, path, ref);
+  return result.ok || !/404|Not Found/i.test(result.message) ? result : { ok: true, stdout: "" };
+}
+
+export function taskEntries(tasks = taskFiles()) {
   const entries = [];
   const pattern = /^### ((?:CC|CX)-\d+) · (.+?) · `([^`]+)`([^\n]*)\n\*\*Release:\*\* ([^\n]+)(?:\n\*\*Changelog:\*\*(.*))?$/gm;
   for (const match of tasks.matchAll(pattern)) {
