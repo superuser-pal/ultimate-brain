@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -136,6 +136,24 @@ test("upgrade reports competing copies with a warning and never refuses for them
   assert.equal(upgrade.code, 0, upgrade.stdout);
   assert.deepEqual(upgrade.json.data.skills.competing, [{ kind: "global", name: "brain-query", path: "~/.claude/skills/brain-query" }]);
   assert.ok(upgrade.json.warnings.some((warning: { code: string; message: string }) => warning.code === "SKILLS_COMPETING" && warning.message === "1 competing skill copies; see data.skills.competing and remove them."));
+});
+
+test("a failed upgrade restores every file it replaced or removed, lock included, so the last working pin stays", async (context) => {
+  const home = await temp(context);
+  const brain = await initBrain(context, await productRoot(context, A, "0.9.0"), home);
+  const before = await Promise.all([".agents/skills/brain-apply/SKILL.md", ".agents/skills/brain-old/SKILL.md", "skills.lock.json"].map((path) => readFile(join(brain, path), "utf8")));
+  // Writes run in path order: the .agents tree changes first, then a write in this read-only folder fails.
+  const locked = join(brain, ".claude/skills/brain-apply");
+  const productB = await productRoot(context, B, "0.9.1");
+  await chmod(locked, 0o555);
+  let failed;
+  try { failed = await run(["upgrade", "--brain", brain, "--now", NOW, "--json"], { product: productB, home }); } finally { await chmod(locked, 0o755); }
+  assert.notEqual(failed.code, 0);
+  assert.equal(failed.json.ok, false);
+  assert.deepEqual(await Promise.all([".agents/skills/brain-apply/SKILL.md", ".agents/skills/brain-old/SKILL.md", "skills.lock.json"].map((path) => readFile(join(brain, path), "utf8"))), before);
+  await assert.rejects(readFile(join(brain, ".agents/skills/brain-new/SKILL.md")));
+  assert.equal((await git(brain, ["status", "--porcelain"])).trim(), "");
+  assert.equal((await lockOf(brain)).snapshot.version, "1.0.0");
 });
 
 test("rollback: revert the upgrade commit and run a CLI in A's range: pinned, lint exits 0", async (context) => {
