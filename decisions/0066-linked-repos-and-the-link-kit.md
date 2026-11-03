@@ -23,7 +23,7 @@
     - **tracked in the repo:** the tasks stay in the repo, and the brain shows a read-only rollup on the Project or Area, which the 0.10.0 brain assistant reviews;
   - **methodology:** a short summary of how work is done in the repo;
   - **placement:** the Area, and optionally the Domain and the Project, that the repo belongs to.
-- **The skill writes the kit once, after the user's yes** to the content it shows. This is the one exception to 0042's rule that the brain never writes to a linked repo. After that, the hub only reads the kit.
+- **The skill writes the kit only after the user's yes** to the exact content it shows: the first write, and each later change. The CLI checks a hash of that content. The kit is the one exception to 0042's rule that the brain never writes to a linked repo; apart from those writes, the hub only reads it. The hub writes no kit in the product repo, whose contents are public.
 
 ### The skill
 - **A new skill links a repo**, shows, changes and unlinks a link, and runs a health check on it. Unlinking keeps the knowledge already ingested.
