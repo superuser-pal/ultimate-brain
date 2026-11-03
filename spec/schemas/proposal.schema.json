@@ -1096,6 +1096,13 @@
                 "minItems": 1
               }
             }
+          },
+          {
+            "description": "The exclusion cleanup row (capture-and-review §5.2): it holds only cleanup items.",
+            "required": [
+              "cleanup",
+              "items"
+            ]
           }
         ],
         "not": {
