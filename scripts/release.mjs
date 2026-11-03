@@ -1,5 +1,7 @@
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { ciWorkflowState, command, donePrNumbers, fail, isPrerelease, ROOT, sleep, taskEntries, tryCommand } from "./common.mjs";
 
 // A CI run that is queued, running or not yet created for HEAD is waited for: every 20 s, up to 10 minutes. Tests shorten both.
@@ -51,16 +53,19 @@ else {
     const result = tryCommand(program, args, { stdio: "inherit" });
     if (!result.ok) failures.push(`${program} ${args.join(" ")} failed`);
   }
+  // The skills gate runs after npm test, whose pretest regenerates the package snapshot (spec/skills-delivery.md §11.3).
+  const skills = gatesSkills(version) ? skillsGate(version, repo.ok && repo.stdout !== "" ? repo.stdout : undefined, dryRun) : { problems: [] };
+  failures.push(...skills.problems);
   if (failures.length > 0) fail(`Release refused: ${failures.join("; ")}`);
   else if (dryRun) {
-    if (rowChangelog) process.stdout.write(`${releaseSection(version, tasks, "YYYY-MM-DD")}\n`);
+    if (rowChangelog) process.stdout.write(`${releaseSection(version, tasks, "YYYY-MM-DD", skills.line)}\n`);
     process.stdout.write(`Would release ${version}${isPrerelease(version) ? " to npm@next" : ""}\n`);
   }
   else {
     command("npm", ["version", version, "--no-git-tag-version"], { stdio: "inherit" });
     const date = new Date().toISOString().slice(0, 10);
     const dated = rowChangelog
-      ? writeReleaseSection(readFileSync(resolve(ROOT, "CHANGELOG.md"), "utf8"), version, releaseSection(version, tasks, date))
+      ? writeReleaseSection(readFileSync(resolve(ROOT, "CHANGELOG.md"), "utf8"), version, releaseSection(version, tasks, date, skills.line))
       : readFileSync(resolve(ROOT, "CHANGELOG.md"), "utf8").replace(`## ${version} — unreleased`, `## ${version} — ${date}`);
     writeFileSync(resolve(ROOT, "CHANGELOG.md"), dated);
     const publishArgs = ["publish", ...(isPrerelease(version) ? ["--tag", "next"] : [])];
@@ -108,9 +113,30 @@ function usesTaskRowChangelog(version) {
   return major > 0 || minor >= 4;
 }
 
-function releaseSection(version, tasks, date) {
+/** From 0.9.0 on a release checks skill updates and records its tested skills (spec/skills-delivery.md §11); earlier ones have no package snapshot. */
+function gatesSkills(version) {
+  const [major, minor] = version.split(".").map(Number);
+  return major > 0 || minor >= 9;
+}
+
+/**
+ * Runs the skills-integration check with the release rules (§11.3): `{ problems, line }`, where `line` is the CHANGELOG's `Skills:` line (§11.1).
+ * In phase A the shipped manifest carries the released version, since prepack regenerates it.
+ */
+function skillsGate(version, repo, dryRun) {
+  const script = fileURLToPath(new URL("./skills-integration.mjs", import.meta.url));
+  const args = ["--no-warnings", "--experimental-strip-types", script, "--json", "--root", ROOT, "--release", version, ...(repo === undefined ? [] : ["--repo", repo]), ...(dryRun ? ["--dry-run"] : [])];
+  const run = spawnSync(process.execPath, args, { cwd: ROOT, encoding: "utf8" });
+  let result;
+  try { result = JSON.parse(run.stdout); } catch { return { problems: [`skills integration check failed: ${(run.stderr || run.error?.message || "no output").trim().split("\n")[0]}`] }; }
+  const tested = result.block?.tested;
+  const line = tested === undefined ? undefined : `Skills: ${tested.name} ${tested.name === "ultimate-brain" ? version : tested.version} (${tested.integrity})`;
+  return { problems: result.problems, line };
+}
+
+function releaseSection(version, tasks, date, skillsLine) {
   const lines = tasks.map((task) => `- ${task.id} (${donePrNumbers(task.suffix).map((number) => `#${number}`).join(", ")}): ${task.changelog.trim()}`);
-  return [`## ${version} — ${date}`, "", ...lines].join("\n");
+  return [`## ${version} — ${date}`, "", ...lines, ...(skillsLine === undefined ? [] : ["", skillsLine])].join("\n");
 }
 
 function writeReleaseSection(changelog, version, section) {

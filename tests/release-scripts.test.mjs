@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
+
+import { withBlock } from "../scripts/skills-integration.mjs";
+import { forkState, PRODUCT, prBody, sha, startMock, TOKEN, writePackage } from "./fixtures/github-mock.mjs";
 
 const source = resolve(import.meta.dirname, "..");
 
@@ -15,13 +18,48 @@ function temporaryRoot() {
   return root;
 }
 
+// The skills-integration check (CC-106) never reaches the real GitHub API from a test: it points at a closed port unless a test starts the mock.
+const offline = { UB_GITHUB_API: "http://127.0.0.1:65535", GH_TOKEN: TOKEN };
+
 function run(script, args, { root, env = {}, input } = {}) {
   return spawnSync(process.execPath, [join(source, "scripts", script), ...args], {
     cwd: root,
     encoding: "utf8",
     input,
-    env: { ...process.env, UB_ROOT: root, ...env },
+    env: { ...process.env, ...offline, UB_ROOT: root, ...env },
   });
+}
+
+/** `run` without blocking this process, so an in-process mock server can answer the script. */
+function runAsync(script, args, { root, env = {} } = {}) {
+  const child = spawn(process.execPath, [join(source, "scripts", script), ...args], { cwd: root, env: { ...process.env, ...offline, UB_ROOT: root, ...env } });
+  const result = { stdout: "", stderr: "" };
+  child.stdout.on("data", (chunk) => { result.stdout += chunk; });
+  child.stderr.on("data", (chunk) => { result.stderr += chunk; });
+  return new Promise((done) => child.on("close", (status) => done({ ...result, status })));
+}
+
+/**
+ * A mock GitHub API whose skills integration is current: the fork's release 1.0.0 was assessed, in a closed issue. `edit(state)` changes it.
+ * Returns the env that points the check at it.
+ */
+async function integrationMock(t, edit = () => {}) {
+  const block = {
+    format: 1,
+    tested: { name: "ultimate-brain", version: "0.9.0", integrity: `sha256-${"0".repeat(64)}` },
+    seen: { head: sha("m1"), release: "1.0.0" },
+    assessed: { commit: sha("m1"), release: "1.0.0", at: "2026-11-03T06:00:00Z" },
+    changes: [],
+    last_check: { at: "2026-11-03T06:00:00Z", status: "ok" },
+  };
+  const state = {
+    fork: forkState({ history: [{ label: "c1" }, { label: "m1", pull: { number: 1, body: prBody("none") } }], releases: [{ version: "1.0.0", at: "m1" }] }),
+    issues: [{ number: 1, title: "Skills integration: 0 open change(s)", body: withBlock("", block), labels: ["skills-integration"], state: "closed" }],
+  };
+  edit(state);
+  const mock = await startMock(state);
+  t.after(() => mock.close());
+  return { env: { UB_GITHUB_API: mock.url, GH_TOKEN: TOKEN }, mock };
 }
 
 function command(root, args) {
@@ -258,14 +296,15 @@ test("release refuses an invalid version before mutating files", (t) => {
   assert.match(result.stderr, /Usage/);
 });
 
-test("release pushes its annotated tag through --follow-tags", (t) => {
+test("release pushes its annotated tag through --follow-tags", async (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
   writeFileSync(join(root, "CHANGELOG.md"), "## 1.2.3 — unreleased\n");
   writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done` (#1)\n**Release:** 1.2.3\n**Changelog:** One\n");
+  writePackage(root);
   const path = fakeCommands(root, {
     gh: `case "$1" in
-      "repo view") printf owner/repo ;;
+      repo) printf ${PRODUCT} ;;
       api) printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
     esac`,
     npm: npmOwner,
@@ -280,20 +319,23 @@ test("release pushes its annotated tag through --follow-tags", (t) => {
   execFileSync("git", ["init", "--bare", origin]);
   command(root, ["remote", "add", "origin", origin]);
   command(root, ["push", "-u", "origin", "main"]);
-  const result = run("release.mjs", ["1.2.3"], { root, env: { PATH: path } });
+  const { env } = await integrationMock(t);
+  const result = await runAsync("release.mjs", ["1.2.3"], { root, env: { ...env, PATH: path } });
   assert.equal(result.status, 0, result.stderr);
   assert.match(command(root, ["ls-remote", "--tags", "origin"]), /refs\/tags\/v1\.2\.3$/m);
   assert.equal(command(root, ["cat-file", "-t", "v1.2.3"]).trim(), "tag");
+  assert.match(readFileSync(join(root, "CHANGELOG.md"), "utf8"), /- CX-1 \(#1\): One\n\nSkills: ultimate-brain 1\.2\.3 \(sha256-[0-9a-f]{64}\)\n/);
 });
 
-test("a failed publish keeps the commit and tag local and says how to finish", (t) => {
+test("a failed publish keeps the commit and tag local and says how to finish", async (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
   writeFileSync(join(root, "CHANGELOG.md"), "## 1.2.3 — unreleased\n");
   writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done` (#1)\n**Release:** 1.2.3\n**Changelog:** One\n");
+  writePackage(root);
   const path = fakeCommands(root, {
     gh: `case "$1" in
-      "repo view") printf owner/repo ;;
+      repo) printf ${PRODUCT} ;;
       api) printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
     esac`,
     npm: 'case "$1" in whoami) printf tester ;; owner) printf "tester <t@example.test>\\n" ;; publish) echo "npm error code E404" >&2; exit 1 ;; esac',
@@ -308,7 +350,8 @@ test("a failed publish keeps the commit and tag local and says how to finish", (
   execFileSync("git", ["init", "--bare", origin]);
   command(root, ["remote", "add", "origin", origin]);
   command(root, ["push", "-u", "origin", "main"]);
-  const result = run("release.mjs", ["1.2.3"], { root, env: { PATH: path } });
+  const { env } = await integrationMock(t);
+  const result = await runAsync("release.mjs", ["1.2.3"], { root, env: { ...env, PATH: path } });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /npm publish failed\. The commit 1\.2\.3 and the tag v1\.2\.3 exist only here/);
   assert.match(result.stderr, /npm publish && UB_RELEASE=1 git push --follow-tags/);
@@ -320,9 +363,10 @@ test("a failed publish keeps the commit and tag local and says how to finish", (
 function releaseRepository(t, root, npm) {
   writeFileSync(join(root, "CHANGELOG.md"), "## 1.2.3 — unreleased\n");
   writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done` (#1)\n**Release:** 1.2.3\n**Changelog:** One\n");
+  writePackage(root);
   const path = fakeCommands(root, {
     gh: `case "$1" in
-      "repo view") printf owner/repo ;;
+      repo) printf ${PRODUCT} ;;
       api) printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
     esac`,
     npm,
@@ -359,16 +403,142 @@ test("release refuses a version already tagged here, on origin or on npm, before
   }
 });
 
-test("a push that fails after the publish says the package is out and how to push", (t) => {
+test("a push that fails after the publish says the package is out and how to push", async (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const { path, origin } = releaseRepository(t, root, npmOwner);
   writeFileSync(join(origin, "hooks", "pre-receive"), "#!/bin/sh\nexit 1\n");
   chmodSync(join(origin, "hooks", "pre-receive"), 0o755);
-  const result = run("release.mjs", ["1.2.3"], { root, env: { PATH: path } });
+  const { env } = await integrationMock(t);
+  const result = await runAsync("release.mjs", ["1.2.3"], { root, env: { ...env, PATH: path } });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /1\.2\.3 is published on npm, but the push failed\. .*UB_RELEASE=1 git push --follow-tags/);
   assert.doesNotMatch(result.stderr, /\n\s+at /);
+});
+
+/** Fakes for a release dry run of `version` (0.9.0 on) from a clean main, with a valid package snapshot; returns the PATH. */
+function gateDryRun(root, version = "0.9.0", snapshot = {}) {
+  writeFileSync(join(root, "CHANGELOG.md"), "# Changelog\n");
+  writeFileSync(join(root, "build/TASKS.md"), `### CC-1 · One · \`done\` (#12)\n**Release:** ${version}\n**Changelog:** One\n`);
+  writePackage(root, snapshot);
+  return fakeCommands(root, {
+    git: `case "$1 $2" in
+      "worktree list") printf 'worktree ${root}\\nbranch refs/heads/main\\n\\n' ;;
+      "branch --show-current") printf main ;;
+      "status --porcelain") ;;
+      "rev-parse HEAD"|"rev-parse origin/main") printf abcdef ;;
+    esac`,
+    gh: `case "$1 $2" in
+      "repo view") printf ${PRODUCT} ;;
+      "api repos/${PRODUCT}/actions/runs?head_sha=abcdef&per_page=100") printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
+    esac`,
+    npm: npmOwner,
+  });
+}
+
+/** The fork's history after release 1.0.0 with one merged PR `m2`, and an open integration issue holding `changes` (§11.2). */
+function forkChange(state, { body, release, changes, issues = [] }) {
+  const history = [{ label: "c1" }, { label: "m1", pull: { number: 1, body: prBody("none") } }, { label: "m2", pull: { number: 2, body } }];
+  state.fork = forkState({ history, releases: [{ version: "1.0.0", at: "m1" }, ...(release === undefined ? [] : [{ version: release, at: "m2" }])] });
+  state.issues.push(...issues);
+  if (changes === undefined) return;
+  const block = parseBlockOf(state.issues[0].body);
+  state.issues[0].state = "open";
+  state.issues[0].body = withBlock("", { ...block, changes });
+}
+
+const parseBlockOf = (body) => JSON.parse(/<!-- skills-integration\n([\s\S]*?)\n-->/.exec(body)[1]);
+
+test("the release gate passes a current integration and the section ends with the tested skills (CC-106)", async (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = gateDryRun(root);
+  const { env, mock } = await integrationMock(t);
+  const result = await runAsync("release.mjs", ["0.9.0", "--dry-run"], { root, env: { ...env, PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /## 0\.9\.0 — YYYY-MM-DD\n\n- CC-1 \(#12\): One\n\nSkills: ultimate-brain 0\.9\.0 \(sha256-[0-9a-f]{64}\)\n/);
+  assert.equal(mock.requests.filter((request) => request.method !== "GET").length, 0, "a dry run writes no issue");
+});
+
+test("the release gate refuses an unclassified compatible, incompatible or unreleased change", async (t) => {
+  for (const change of [
+    { body: prBody("compatible"), release: "1.1.0" },
+    { body: prBody("coordinated", [`https://github.com/${PRODUCT}/issues/7`]), release: "2.0.0", issues: [{ number: 7, title: "Work", state: "open" }] },
+    { body: prBody("none") },
+  ]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const path = gateDryRun(root);
+    const { env } = await integrationMock(t, (state) => forkChange(state, change));
+    const result = await runAsync("release.mjs", ["0.9.0", "--dry-run"], { root, env: { ...env, PATH: path } });
+    assert.equal(result.status, 1, result.stdout);
+    assert.match(result.stderr, /Release refused: .*1 skills change\(s\) unclassified/);
+  }
+});
+
+test("the release gate passes a classified incompatible change with a linked task and blocks a dead link", async (t) => {
+  const range = { from: sha("m1"), to: sha("m2") };
+  for (const [number, expected] of [[7, 0], [99, 1]]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const path = gateDryRun(root);
+    const link = `https://github.com/${PRODUCT}/issues/${number}`;
+    const { env } = await integrationMock(t, (state) => forkChange(state, {
+      body: prBody("coordinated", [link]), release: "2.0.0", issues: [{ number: 7, title: "Rename a skill", state: "open" }],
+      changes: [{ kind: "release", release: "2.0.0", ...range, impact: "coordinated", classification: "brain-work", links: [link] }],
+    }));
+    const result = await runAsync("release.mjs", ["0.9.0", "--dry-run"], { root, env: { ...env, PATH: path } });
+    assert.equal(result.status, expected, result.stderr);
+    if (expected === 1) assert.match(result.stderr, new RegExp(`skills change\\(s\\) with an error in issue #1: dead link ${link}`));
+  }
+});
+
+test("the release gate refuses an unavailable source as status unknown", async (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = gateDryRun(root);
+  const { env } = await integrationMock(t, (state) => { state.forkDown = true; });
+  const result = await runAsync("release.mjs", ["0.9.0", "--dry-run"], { root, env: { ...env, PATH: path } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /skills integration status unknown \(GET \/repos\/example\/ultimate-brain-skills\/commits\/main: HTTP 503\)/);
+});
+
+test("the release gate refuses a package snapshot that is invalid or whose range excludes the version", async (t) => {
+  for (const [snapshot, broken, message] of [
+    [{}, true, /the package snapshot is invalid \(manifest-missing\)/],
+    [{ name: "ultimate-brain-skills", version: "1.0.0", cli: ">=0.8.0 <0.9.0", commit: sha("m1") }, false, /the package snapshot ultimate-brain-skills 1\.0\.0 excludes 0\.9\.0 \(>=0\.8\.0 <0\.9\.0\)/],
+  ]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const path = gateDryRun(root, "0.9.0", snapshot);
+    if (broken) rmSync(join(root, ".agents", "skills", "snapshot.json"));
+    const { env } = await integrationMock(t);
+    const result = await runAsync("release.mjs", ["0.9.0", "--dry-run"], { root, env: { ...env, PATH: path } });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, message);
+  }
+});
+
+test("the release gate accepts a phase A snapshot built from the previous version: prepack rebuilds it for the release", async (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = gateDryRun(root, "0.9.0", { version: "0.8.1", cli: ">=0.8.1 <0.9.0" });
+  const { env } = await integrationMock(t);
+  const result = await runAsync("release.mjs", ["0.9.0", "--dry-run"], { root, env: { ...env, PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Skills: ultimate-brain 0\.9\.0 \(/);
+});
+
+test("a release before 0.9.0 has no skills gate", async (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = gateDryRun(root, "0.8.2");
+  rmSync(join(root, ".agents", "skills", "snapshot.json"));
+  const { env, mock } = await integrationMock(t, (state) => { state.down = true; });
+  const result = await runAsync("release.mjs", ["0.8.2", "--dry-run"], { root, env: { ...env, PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stdout, /Skills:/);
+  assert.equal(mock.requests.length, 0);
 });
 
 test("release retries a CI read that failed once", (t) => {
@@ -436,6 +606,35 @@ test("task start creates an isolated worktree and marks only its task in progres
   const worktree = join(parent, "ub-CX-1");
   assert.match(readFileSync(join(worktree, "build/TASKS.md"), "utf8"), /CX-1 · Example task · `in progress`/);
   assert.equal(command(worktree, ["config", "--get", "core.hooksPath"]).trim(), ".githooks");
+});
+
+test("task start prints the skills-integration line and never blocks (CC-106)", async (t) => {
+  for (const [online, line] of [[true, "skills integration: 1 open, 1 unclassified"], [false, "skills integration: status unknown (GitHub unreachable (ECONNREFUSED))"]]) {
+    const parent = mkdtempSync(join(tmpdir(), "ultimate-brain-task-"));
+    t.after(() => rmSync(parent, { recursive: true, force: true }));
+    const root = join(parent, "repo");
+    mkdirSync(join(root, "build"), { recursive: true });
+    writeFileSync(join(root, "package.json"), '{"name":"fixture","version":"0.0.0"}\n');
+    writeFileSync(join(root, "package-lock.json"), '{"name":"fixture","lockfileVersion":3,"packages":{}}\n');
+    writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · Example task · `todo`\n**Release:** 1.2.3\n");
+    writePackage(root);
+    command(root, ["init", "-b", "main"]);
+    command(root, ["config", "user.email", "tests@example.test"]);
+    command(root, ["config", "user.name", "Tests"]);
+    command(root, ["add", "."]);
+    command(root, ["commit", "-m", "fixture"]);
+    const bare = join(parent, "origin.git");
+    execFileSync("git", ["init", "--bare", bare]);
+    command(root, ["remote", "add", "origin", bare]);
+    command(root, ["push", "-u", "origin", "main"]);
+    const path = fakeCommands(root, { npm: "exit 0" });
+    const { env, mock } = online ? await integrationMock(t, (state) => { state.issues = []; }) : { env: {}, mock: undefined };
+    const result = await runAsync("task.mjs", ["start", "CX-1"], { root, env: { ...env, GITHUB_REPOSITORY: PRODUCT, PATH: path } });
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(result.stderr.split("\n").includes(line), result.stderr);
+    assert.equal(result.stdout.trim(), join(parent, "ub-CX-1"));
+    if (mock !== undefined) assert.equal(mock.requests.filter((request) => request.method !== "GET").length, 0, "task start writes no issue");
+  }
 });
 
 test("task start --from stacks a task whose row exists only on that branch (decision 0046)", (t) => {
