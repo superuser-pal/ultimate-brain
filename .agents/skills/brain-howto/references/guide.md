@@ -238,7 +238,7 @@ The brain still reads every input for decisions, questions and people, whether o
 | A document (PDF, Word, PowerPoint, Excel, saved HTML page, image) | Put it in your drop folder and tell your agent "process my drop folder". It lists the files and asks once which to take, and, with Documents on, whether to **keep each as a document**: "no" (the default: the brain only reads it), "all", or "only the requirements" ("The Inbox and its buttons"). A new version of a document later proposes only the lines that changed. Then, each ingested file moves to `processed/` inside the folder, so what's left at the top is what the brain hasn't read yet. Or name one file: "ingest this PDF: ~/Documents/brain-dropbox/proposal.pdf". Word, PowerPoint, Excel and HTML files need MarkItDown installed once: `pipx install 'markitdown[all]'` |
 | A web page | Give your agent the link: "ingest this page: https://…". For a page behind a login, save it as a PDF in your drop folder instead |
 | A file from your phone | Attach it to a **Quick capture** (or to the meeting page), with Project set if you know it. To keep the file itself as a Document, click **Keep as document** (and write in **Only keep** if you want just a part). The row is Ready; the next catch-up reads the file with the row. Files on project and area pages are not read |
-| A repo's knowledge (decisions, docs, changelog) | "link the repo at ~/code/acme-api to the area Clients, files decisions/** and docs/*.md". Each catch-up then reads the files changed since the last one; the first time, it asks which to take. The brain never writes to the repo |
+| A repo's knowledge (decisions, docs, changelog) | "link the repo at ~/code/acme-api". The agent proposes a link kit (what to read and never read, where the repo's tasks live, its Area and Project) and writes it into the repo only after your yes ("Projects in other folders" below). Each catch-up then reads the files changed since the last one; the first time, it asks which to take. Apart from the kit, the brain never writes to the repo |
 | A question for a full report | **Ask the brain** on Home: type the question as the Name ("Where do we stand with the Acme launch?"). The next catch-up answers with a **Report** row in the Inbox, linked from yours, and on the project's or area's page under **Reports**. To bring it up to date later, click **Refresh report** on it ("Correcting what came in"). Needs the Reports module |
 | An email, chat thread or note | Paste it into a **Quick capture** (keep who sent it and when). For a thread, run **`/Clean email`** on the page: Brain Assistant gives each message a heading with names and date ("Tomás Vidal → Lucía Fernández · 3 Dec 2026"), its own text word for word below it, and a divider before the next, newest first. It drops addresses, signatures, disclaimers, quoted copies and Teams, Zoom or Meet blocks, and rewrites the page right away (the page history keeps the original), asking first only when something is truly unclear. Then set the row to **Ready** and "catch up". Or paste it straight to your agent: "ingest this email" |
 | A task | Add it in Tasks. Action items from meetings, and your own from documents, emails and captures, are created for you |
@@ -287,6 +287,33 @@ Say "run catch-up every morning" (or "twice a day", "on weekdays") and the agent
 
 ---
 
+## Projects in other folders
+
+Your work often lives outside the brain: a software repo, or a folder of documents for a workshop. Two things connect it to the brain, and you choose each one.
+
+**Linked repos** give the brain a repo's knowledge. Say "link the repo at ~/code/acme-api". The agent reads the repo and proposes a **link kit**, a small file `brain-kit.json` in the repo saying:
+- what the brain reads (decision records, docs) and what it never reads (`.env` files, secrets, client folders), even when a pattern matches;
+- where the repo's tasks live: **in the repo** (a `TASKS.md` checklist, or GitHub or GitLab issues), or **in Notion**, through a connected workflow;
+- how work is done there, in a sentence or two;
+- its Area, and its Project when it serves one.
+
+You see the whole file before it is written, and the agent writes it only after your yes, again for every later change. The kit is the only file the brain ever writes in a linked repo; you commit it there yourself. The agent then asks once whether the repo should also read the brain (it adds `.brain`, a block in AGENTS.md and the brain-query skill there).
+
+When the tasks stay in the repo, the Project or Area page gets a toggle **Repo tasks · acme-api**: a read-only count of done, open and waiting tasks, with the open ones listed. It changes nothing in the repo. "check my linked repos" finds a repo that moved, a kit that changed, a pattern that matches nothing or a rollup that is out of date, with the fix for each. "unlink acme-api" stops reading it; what the brain already learnt from it stays. "start a new repo for <project>" creates one from a simple starter (README, AGENTS.md, decisions/, docs/, `TASKS.md`), with its kit, after your yes.
+
+**Connected work** puts a folder's tasks in Notion. Nothing connects by itself: tracking stays **standard** (the folder's own issues or checklist, with no brain and no Notion needed) until you say "connect this work to Notion" in that folder. The agent asks for the gaps only:
+- the existing **Project or Area** the work belongs to;
+- the **work type**: Software (ready for review when the checks pass and a PR is open; done when it is merged and its criteria are met) or General (ready for approval when its criteria are met; done when you accept it);
+- the **logging level**, which says what besides the tasks reaches Notion: **Tasks only**, **Tasks + final outputs** (the suggestion: final deliverables once you approve them), **Full durable record** (also briefs, plans, specifications and decisions), or **Custom**. Drafts and logs stay local unless you say "publish this one"; "keep this one local" holds back a single item.
+
+These settings are the **Workflow**, **Work type**, **Logging level** and **Log artifacts** properties on the Project or Area: change them there at any time, and they apply to future work. Setting **Workflow** to Standard pauses the connection; Connected resumes it.
+
+A project that already has a plan, issues or Notion tasks is **adopted**: say "adopt this project". The agent shows one preview (what it will create, what stays where it is, how each status maps, what happens to the originals, and any of the project's rules that clash) and applies it only after your yes. Done work stays in the plan unless you ask for it. The plan file is never edited, issues are kept unless you choose to mark them transferred, and running adoption again creates nothing twice.
+
+While you work, Notion owns each task's status: what you set there wins. Each task page has a **Work record** toggle (scope, acceptance criteria, recent progress), and the Project or Area page a **Workflow** toggle with a dated summary: done, open and waiting, what isn't in Notion yet, and what needs you. If Notion is down or a write fails, the work is kept and retried in the next session without creating a second task; until then the summary says "not yet in Notion". "end the workflow" stops it for good; the history stays in the brain.
+
+---
+
 ## What to say to your agent
 
 Run these in Claude Code or Codex, from your brain's folder.
@@ -306,7 +333,10 @@ Run these in Claude Code or Codex, from your brain's folder.
 | Keep a document, or part of one, as a page | "keep the Acme brief as a document", "also keep the budget from the Acme doc" (or click **Keep as document** on its Inbox row) |
 | Turn a decision or concept into a page you write in | "promote Use Supabase for auth to a document" (or click **Promote to document** on it) |
 | Turn a module on or off | "turn on documents", "turn planning off", "which modules do I have?" |
-| Read a repo into the brain | "link the repo at <path> to the area <name>, files <patterns>" |
+| Read a repo into the brain | "link the repo at <path>"; "what is linked?", "check my linked repos", "show the repo's tasks", "change what the brain reads in <repo>", "unlink <repo>" |
+| Start a new repo for a project | "start a new repo for <project> at <path>" |
+| Track a folder's work in Notion | "connect this work to Notion" (new work), "adopt this project" (a project with a plan or issues already), from the folder of the work |
+| Work on it | "let's work on the next task", "publish the plan", "keep this one local", "end the workflow" |
 | Ask how the system works | "how do I …?", "why didn't … ?" (or ask Brain Assistant in Notion) |
 | Change the Notion structure (a property, an option, a view) | "add a property to Projects …". Structure is changed in the product first, then in Notion |
 | Check your Notion space | "check my Notion space" |
