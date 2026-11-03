@@ -19,6 +19,8 @@ If `brain` is not found (`command not found`), install it with `npm install -g u
 
 Tasks with the mapped `notion.tasks.wont_do_status` (default "Won't Do") are dropped, not open work. Mention them only when asked about dropped or closed work; distinguish them from completed tasks.
 
+Content the user excluded from the brain (a subject or item marked Meeting only, a paragraph removed in a later version of its input) is not returned: `brain query` leaves the restricted claims out, and so do the derived views. Answer from what is returned, never from memory of an excluded statement, and never quote a note body statement that carries only restricted references. Say "restricted: awaiting cleanup" only if the user asks why something is missing. Reflection and reports do not treat restricted claims as a signal or as evidence.
+
 1. **Search.** Run `brain query --candidates "<the question, in the user's words>" --json`.
    - **Search a name as the user wrote it** (a person, client, project) before answering from memory, even when you think you know who they mean: the brain may hold that spelling with other facts, or a person you've never heard of with the same first name.
    - Add `--types decision` (or `person`, `project`, `question`, …) when the question is clearly about one kind of note.
