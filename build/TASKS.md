@@ -139,7 +139,7 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 **Output:** per spec/connected-workflows.md (CC-99): docs/notion-space-design.md, the build prompts and templates, notion/migrations/0015 (who does each step, a Verify list), brain-connect-notion where it must find them. Product files only; never the user's space. Built: docs/notion-space-design.md §2 (ownership and the Workflow, Work record and `Repo tasks · <repo>` toggles), §3.1, §3.4, §3.15, §3.19 and §4; Prompts 2, 5 and 6; notion/views-guide.md §9; notion/migrations/0015-workflow-settings-on-projects-and-areas.md and its README row; brain-connect-notion step 3; tests/notion-workflow-settings.test.ts holds the spec, design, prompts, layouts, migration and skill to the same names and options.
 **Acceptance:** migration 0015 lists who does each step and has a Verify list; the prompts, templates and design agree on every property name and option; the skill mirror check and the leak check pass.
 
-### CC-104 · Adoption, connected-workflow and repo-linking skills (decisions 0059, 0066) · `todo`
+### CC-104 · Adoption, connected-workflow and repo-linking skills (decisions 0059, 0066) · `in progress`
 **Release:** 0.9.0
 **Changelog:** three new skills: adopt an existing project's plans and tasks, run work as standard or Notion-connected with the logging you chose, and link, check, unlink or start a repo from the brain.
 **Output:** per spec/connected-workflows.md and spec/linked-repos.md, on CC-102's CLI: the three skills, authored in `skills/` until CC-105 moves authorship to the fork; templates/brain/AGENTS.md lists them; brain-howto and the user guide. Blind runs in eval/.
