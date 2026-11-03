@@ -159,7 +159,7 @@ export const upgradeCommand: Command = {
         if (write) {
           changes.push({ path: LOCK, action: previous.kind === "absent" ? "created" : "updated", content: serializeLock(product.version, manifest) });
           if (old !== undefined) previousCli = old.installed_by;
-        }
+        } else unchanged += 1;
       }
     }
 
