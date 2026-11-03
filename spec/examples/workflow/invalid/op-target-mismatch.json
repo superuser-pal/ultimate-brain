@@ -3,11 +3,14 @@
   "rev": 2,
   "kind": "publish_artifact",
   "target": "wi-7c2m9q4x",
-  "payload_sha256": "sha256:efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef",
   "state": "in_flight",
   "attempts": 1,
   "created_at": "2026-11-03T10:00:00Z",
   "updated_at": "2026-11-03T10:00:05Z",
   "last_error": null,
-  "result": null
+  "result": null,
+  "payload": {
+    "sha256": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+  },
+  "runs_failed": 0
 }

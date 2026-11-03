@@ -26,7 +26,8 @@
         "key": "line:5e1a0c9b2d47"
       },
       "item": "wi-7c2m9q4x",
-      "treatment": "keep"
+      "treatment": "keep",
+      "marked": true
     },
     {
       "origin": {
@@ -35,7 +36,8 @@
         "key": "#17"
       },
       "item": "wi-9d4k2m7p",
-      "treatment": "mark_transferred"
+      "treatment": "mark_transferred",
+      "marked": false
     }
   ],
   "conventions": [
