@@ -24,13 +24,15 @@ export interface Paragraph { n: number; text: string; raw: string; hash: string 
 
 const SUBJECT = /^(?:#{1,6}\s*)?\[(s\d+)\]\s*(.*)$/;
 const ITEM = /^(?:[-*+]\s+|\d+[.)]\s+)?(?:\[[ xX]\]\s+)?\[(s\d+\.i\d+)\]\s*(.*)$/;
-const TODO = /^[-*+]\s+\[([ xX])\]\s+(.*)$/;
+const TODO = /^(?:[-*+]|\d+[.)])\s+\[([ xX])\](?:\s+(.*))?$/;
+const TICKED = /^(?:[-*+]|\d+[.)])\s+\[[xX]\]/;
+const LIST = /^(?:[-*+]|\d+[.)])\s+/;
 const GROUP = /^#{0,6}\s*(quick follow[- ]?ups|tasks|my actions)\s*(?:\([^)]*\))?\s*:?$/i;
 /** The other section names of the minutes format: a heading or a label line with one of them ends a group (§4.1). */
 const SECTION = /^#{0,6}\s*(highlights|decisions|other commitments|open questions|concerns raised|attendees|projects|commitments|ideas to explore)\s*(?:\([^)]*\))?\s*:?$/i;
 const SCOPE_FIELDS: Record<string, "done_when" | "due" | "project" | "notes"> = { "done when": "done_when", due: "due", project: "project", notes: "notes" };
 const SCOPE_LABELS = { done_when: "Done when", due: "Due", project: "Project", notes: "Notes" } as const;
-const SCOPE_FIELD = /^(?:[-*+]\s+)?(done when|due|project|notes)\s*:\s*(.*)$/i;
+const SCOPE_FIELD = /^(?:[-*+]\s+)?[*_]*(done when|due|project|notes)[*_]*\s*:[*_]*\s*(.*)$/i;
 const ABSENT = /^(?:none|n\/a|-|—)?$/i;
 const SELECTION_LINE = /^(?:[-*+]\s+)?selection\s*:\s*(.*)$/i;
 const QUOTE = /[“"]([^“”"]+)[”"]/g;
@@ -123,19 +125,33 @@ export function parseSummary(markdown: string): Summary {
   let group: "quick" | "other" | null = null;
   let lastItem: string | null = null;
   const toggles: boolean[] = [];
-  let scope: { entry: Scope; field: keyof typeof SCOPE_LABELS | null; seen: Set<string> } | null = null;
+  let scope: { entry: Scope; field: keyof typeof SCOPE_LABELS | null; seen: Set<string>; closed: boolean } | null = null;
   const scoped = new Set<string>();
   // NFKC folds full-width forms; zero-width and format characters inside words are removed; the §4.4 notice (with an icon, in a callout, or
   // wrapped over lines) is not a control.
-  const cleaned = markdown.normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "").replace(NOTICE_TEXT, "");
-  for (const rawLine of cleaned.split("\n")) {
-    // Blockquote markers, emphasis around the whole line and HTML-escaped `>` and `<` are formatting, not content.
-    let line = normalize(rawLine.replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/\*\*/g, "")).replace(/^(?:>\s*)+/, "").replace(/^[_*]+\s*|\s*[_*]+$/g, "").trim();
+  // HTML-escaped `>` and `<` are formatting; toggle tags are put on lines of their own, so a closing tag at the end of a content line closes.
+  const cleaned = markdown.normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "").replace(NOTICE_TEXT, "").replace(/&gt;/g, ">").replace(/&lt;/g, "<")
+    .replace(/<details>/gi, "\n<details>\n").replace(/<\/details>/gi, "\n</details>\n").replace(/<\/summary>/gi, "</summary>\n");
+  const rawLines = cleaned.split("\n");
+  /** Whether the toggle opened on line `from` has its closing tag further down. */
+  const closes = (from: number): boolean => {
+    let depth = 1;
+    for (let index = from + 1; index < rawLines.length; index += 1) {
+      if (/<details>/i.test(rawLines[index]!)) depth += 1;
+      else if (/<\/details>/i.test(rawLines[index]!) && (depth -= 1) === 0) return true;
+    }
+    return false;
+  };
+  let opened = -1;
+  for (const [index, rawLine] of rawLines.entries()) {
+    // Blockquote markers and emphasis around the whole line are formatting, not content; a `* ` bullet keeps its marker.
+    let line = normalize(rawLine.replace(/\*\*/g, "")).replace(/^(?:>\s*)+/, "").replace(/^[_*]+(?=\S)|(?<=\S)[_*]+$/g, "").trim();
     if (line === "" || /^[^\p{L}\p{N}\[]*$/u.test(line)) continue; // empty, or only an icon / rule left of the notice
     // Toggles (cli §5.14.7: `<details><summary>…</summary> … </details>`). Only a Scope toggle is read differently; other toggles' lines are read as before.
     const open = /^<details>\s*(.*)$/i.exec(line);
     if (open !== null) {
       toggles.push(false);
+      opened = index;
       const rest = open[1] ?? "";
       if (rest === "") continue;
       line = rest;
@@ -150,7 +166,7 @@ export function parseSummary(markdown: string): Summary {
           else if (scoped.has(lastItem)) entry.problems.push(`a second Scope for ${lastItem}`);
           else scoped.add(lastItem);
           scopes.push(entry);
-          scope = { entry, field: null, seen: new Set() };
+          scope = { entry, field: null, seen: new Set(), closed: closes(opened) };
         }
       }
       if ((summaryTag[2] ?? "") === "") continue;
@@ -161,15 +177,17 @@ export function parseSummary(markdown: string): Summary {
       continue;
     }
     const bare = line.replace(/[*_]/g, "").trim();
-    // Fail closed: a structural line ends a Scope that was never closed, and is read as usual, so a Scope cannot swallow a subject, a
-    // Selection line or an item.
-    if (toggles.includes(true) && (line.startsWith("#") || SUBJECT.test(line) || ITEM.test(line) || SELECTION_LINE.test(line) || GROUP.test(bare) || SECTION.test(bare))) {
+    // Fail closed: a heading, a subject or a Selection line ends any Scope, and is read as usual, so a Scope never hides a subject or its
+    // selection. A Scope that is never closed also ends at an item, a group or section line, or a list line that is not a field.
+    if (toggles.includes(true) && (line.startsWith("#") || SUBJECT.test(line) || SELECTION_LINE.test(line)
+      || (scope !== null && !scope.closed && (ITEM.test(line) || GROUP.test(bare) || SECTION.test(bare) || (LIST.test(line) && !SCOPE_FIELD.test(line)))))) {
       while (toggles.includes(true)) toggles.pop();
       scope = null;
     }
     if (toggles.includes(true)) {
       // Inside a Scope: fields, never items, unnumbered lines or controls. Inside a Scope in Quick follow-ups: nothing.
       if (scope === null) continue;
+      if (ITEM.test(line)) { problems.push({ code: "SELECTION_UNREADABLE", id: current?.id ?? null, reason: `an item line inside a Scope: ${line.slice(0, 60)}` }); continue; }
       const field = SCOPE_FIELD.exec(line);
       if (field !== null) {
         const key = SCOPE_FIELDS[(field[1] ?? "").toLowerCase()]!;
@@ -182,9 +200,11 @@ export function parseSummary(markdown: string): Summary {
         scope.entry[key] = value;
       } else if (scope.field === null) {
         if (scope.seen.size === 0) scope.entry.problems.push(`text before the first field: ${line.slice(0, 60)}`);
-      } else if (scope.field !== "due") {
+      } else if (scope.field === "due") scope.entry.problems.push(`Due continues on another line: ${line.slice(0, 60)}`);
+      else {
         const key = scope.field;
-        scope.entry[key] = scope.entry[key] === null ? line : `${scope.entry[key]}\n${line}`;
+        const text = line.replace(LIST, "");
+        scope.entry[key] = scope.entry[key] === null ? text : `${scope.entry[key]}\n${text}`;
       }
       continue;
     }
@@ -202,9 +222,14 @@ export function parseSummary(markdown: string): Summary {
       // line and any other line are read as usual.
       const todo = TODO.exec(line);
       const bullet = /^(?:[-*+]|\d+[.)])\s+(.+)$/.exec(line);
-      if (item !== null) quick.push({ subject: current?.id ?? null, id: item[1] ?? null, text: item[2] ?? "", done: /^[-*+]\s+\[[xX]\]/.test(line) });
-      else if (todo !== null) { quick.push({ subject: current?.id ?? null, id: null, text: todo[2] ?? "", done: (todo[1] ?? " ") !== " " }); continue; }
-      else if (bullet !== null && !SELECTION_LINE.test(line)) { quick.push({ subject: current?.id ?? null, id: null, text: bullet[1] ?? "", done: false }); continue; }
+      const text = item !== null ? null : todo !== null ? todo[2] ?? "" : bullet !== null && !SELECTION_LINE.test(line) ? bullet[1] ?? "" : null;
+      if (item !== null) quick.push({ subject: current?.id ?? null, id: item[1] ?? null, text: item[2] ?? "", done: TICKED.test(line) });
+      else if (text !== null) {
+        quick.push({ subject: current?.id ?? null, id: null, text, done: todo !== null && (todo[1] ?? " ") !== " " });
+        // Fail closed: a quick line shaped like a control (`- [ ] Selection: Meeting only`) blocks; it is never skipped.
+        if (controlLike(text) || mixedScript(text)) problems.push({ code: "SELECTION_UNREADABLE", id: current?.id ?? null, reason: `a control in Quick follow-ups: ${text.slice(0, 60)}` });
+        continue;
+      }
     }
     const subject = SUBJECT.exec(line);
     const choice = SELECTION_LINE.exec(line);
