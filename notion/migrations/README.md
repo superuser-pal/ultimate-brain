@@ -17,7 +17,7 @@ Run them in number order, once each. The `brain-notion-change` skill writes them
 <a prompt that changes only this, and says to keep everything else>
 
 ## By hand
-<steps Notion AI can't do reliably, e.g. adding a select option>. Creating a database is always one of them: the Notion API can't create databases, so a migration gives the user a Notion AI prompt for it and runs it before the agent steps that need the new database
+<steps Notion AI can't do reliably, e.g. adding a select option>. Creating a database is always one of them: the Notion MCP tools can't create databases, so a migration gives the user a Notion AI prompt for it and runs it before the agent steps that need the new database. With an integration token the agent can create it through the REST API instead (0014 shows how)
 
 ## Verify
 - [ ] …
@@ -40,3 +40,4 @@ Run them in number order, once each. The `brain-notion-change` skill writes them
 | [0011](0011-home-tabs-at-a-glance-button-names.md) | Home's Areas and Inbox tabs, the Areas formula At a glance, button property names apart from their labels, and the boxes they tick out of the page headings | #143–#146; CC-68 (release 0.6.1) |
 | [0012](0012-brain-assistant-buttons-accepted-wording.md) | Tidy capture, Write up and Refresh report buttons that message Brain Assistant, Accepted and Accepted at with the Accept buttons, Brain Assistant's edit rule and two new skills | decision 0054; CC-70, CC-71 (release 0.8.0) |
 | [0013](0013-domains-selected-capture-editable-review.md) | Review gets Decided, Decided at, Accept all, the option Request revision and the Submit buttons; the Meetings and Voice note templates; the new minutes prompt; Brain Assistant's Voice summary; Won't Do and the Task Progress formula; optional Domains | decision 0055; CC-77, CC-79–CC-81 (release 0.8.0) |
+| [0014](0014-domains-database-in-every-space.md) | The Domains database and the Areas · Domain relation (and Domains · Org with Orgs) in every space, used or not; the Domains module still decides whether the brain uses them | decision 0065; CC-96 (release 0.8.1) |

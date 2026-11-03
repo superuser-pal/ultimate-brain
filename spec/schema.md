@@ -551,6 +551,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 
 - **`modules` absent:** every module except Domains is on; Domains is off. That is every brain made before 0.6.0; `brain upgrade` writes the block with every key `true` except Domains (cli.md §5.15). **A key absent from a present block** takes its default. New brains get the block from onboarding.
 - **A module off** means the CLI neither reads nor writes Notion for it: `sync plan` ignores its databases' rows, `sync render` publishes none of its notes and leaves out the relations to them, `sync tasks` refuses with `MODULE_OFF`, and reports are not published (cli.md §5.14, §5.20). It is off even when its database ids are set. **Nothing is deleted:** the notes stay in Git and are still indexed, linted and listed; Notion keeps its databases and rows. Turning it on again publishes what changed meanwhile.
+- **The Domains database is in every Notion space** (0065), with the module on or off; `notion.databases.domains` is set whenever it exists. Like any module, Domains off means the brain neither reads nor writes it.
 - **A module on with an empty database id** behaves as today: its notes are skipped with `DATABASE_NOT_CONFIGURED`.
 - Written by `brain modules` (cli.md §5.20) and `brain config`.
 
