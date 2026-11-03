@@ -18,6 +18,11 @@ export const ID_PREFIXES = [
   "mem",
   "prp",
   "vw",
+  // Workflow record ids (spec/connected-workflows.md §1): not note ids.
+  "wf",
+  "wi",
+  "art",
+  "op",
 ] as const;
 
 export type IdPrefix = (typeof ID_PREFIXES)[number];
@@ -72,3 +77,6 @@ export const TYPE_PREFIX: Readonly<Record<string, IdPrefix>> = {
   proposal: "prp",
   view: "vw",
 };
+
+/** Workflow record prefixes that `brain id new` also takes (spec/connected-workflows.md §1). */
+export const RECORD_PREFIX: Readonly<Record<string, IdPrefix>> = { wf: "wf", wi: "wi", art: "art", op: "op" };
