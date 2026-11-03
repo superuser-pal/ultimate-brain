@@ -1,6 +1,6 @@
 # 0066 — Linked repos and the link kit
 
-**Status:** Proposed
+**Status:** Accepted (by the user, 2026-11-03)
 **Date:** 2026-11-03
 **Release:** 0.9.0
 **Amends:** 0042 (the brain writes one file in a linked repo: its link kit)
