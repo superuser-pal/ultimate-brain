@@ -192,11 +192,14 @@ With Domains off, `placement.domain` is ignored and not checked.
   Not mapped: "{raw}" ({count}). Map it in brain-kit.json.
   ```
 
-  - Times are UTC, with English month abbreviations (`3 Nov 2026, 14:20`).
+  - Times are UTC, with English month abbreviations (`3 Nov 2026, 14:20`). "As of" is `--now` for a Markdown source and the input's `fetched_at` for issues.
+  - In the counts line, a part whose count is 0 is left out with its separator, and so is the parenthesis when all four of its counts are 0 (`2 completed · 1 open (1 to do) · 67%`).
   - `{source label}` is the file path, `GitHub owner/name` or `GitLab group/name`.
   - `{percent}` = done ÷ (total − dropped), rounded to a whole number. It is left out, with its ` · `, when there are no non-dropped items (0055).
   - Open items are listed in the order in progress, in review, waiting, to do, then in source order, at most 20 in all. An issue's title is a link to its URL.
-  - The `{open}` count includes unmapped items. The "Not mapped" line lists each unmapped raw status with its count.
+  - The `{open}` count includes unmapped items, which are never listed as bullets. `…and {n} more open` counts the mapped open items beyond the 20 listed.
+  - There is one "Not mapped" line per unmapped raw status, in order of first appearance, with the raw status as written in the source (grouped case-insensitively after trimming).
+  - The text ends with one newline.
   - With no tasks at all, the toggle says `As of … · from … · no tasks found`.
 
 ### 4.1 Fetching issues (the skill)
@@ -233,8 +236,8 @@ The machine's `path` and the ingest state in `commit` stay in `brain.json` only;
 | `NO_KIT` | info | a legacy entry: the skill offers to write a kit |
 | `PLACEMENT_ARCHIVED` | warning | the Area or Project is `archived` |
 | `COMMIT_UNKNOWN` | error | the recorded `commit` isn't an ancestor of `HEAD` (rewritten history): the fix is `repo record --reset` |
-| `CHANGES_WAITING` | info | files changed since the last ingest, with their count |
-| `PATTERN_MATCHES_NOTHING` | warning | a pattern matches no file at `HEAD` (one check per pattern) |
+| `CHANGES_WAITING` | info | files that `repo changes` would list (never-read paths and the kit left out), with their count; skipped after `COMMIT_UNKNOWN` |
+| `PATTERN_MATCHES_NOTHING` | warning | a pattern matches no file at `HEAD` other than the kit (one check per pattern) |
 | `NEVER_READ_INGESTED` | warning | a source of this repo has a `repo_path` that `never_read` now matches. Nothing is removed; the user can ask to archive its notes |
 | `METHODOLOGY_FILE_MISSING` | warning | a `methodology.files` path doesn't exist at `HEAD` |
 | `TASK_SOURCE_MISSING` | error | the markdown source path doesn't exist at `HEAD` |
@@ -242,7 +245,7 @@ The machine's `path` and the ingest state in `commit` stay in `brain.json` only;
 | `CONNECTED_WITHOUT_WORKFLOW` | warning | `tasks.mode` is `connected`, and no connected workflow record names this repo (connected-workflows.md §3) |
 | `WORKFLOW_WITHOUT_CONNECTED` | warning | a connected workflow names this repo, and the kit's mode isn't `connected` |
 | `BRAIN_LINK_STALE` | info | the repo has a `.brain` (§8) whose `project` or `area` differs from the placement |
-| `ROLLUP_STALE` | warning | tracked-in-repo, with `--rollup-as-of <timestamp>` (the toggle's "As of", which the skill reads from Notion): for a markdown source, a commit touching the source file is newer than that time; for issues, the time is more than 24 hours old. Without the option, the check is skipped |
+| `ROLLUP_STALE` | warning | tracked-in-repo, with `--rollup-as-of <timestamp>` (the toggle's "As of", which the skill reads from Notion): for a markdown source, the committer time of the newest commit touching the source file is after that time; for issues, the time is more than 24 hours before `--now`. Without the option, the check is skipped |
 
 **Which checks run.**
 - **The path.** `PATH_MISSING` stops the repo's checks: only it is reported.
@@ -311,7 +314,7 @@ Plans, notes and documents for {name}.
 - [ ] First task
 ```
 
-**`.gitignore`**
+**`.gitignore`** (stored in the package as `templates/repo/generic/gitignore`, because npm leaves `.gitignore` files out of a package)
 ```text
 .env*
 secrets/
