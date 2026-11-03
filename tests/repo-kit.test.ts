@@ -1033,9 +1033,18 @@ async function newCase(context: TestContext, kit: any = NEW_KIT()) {
   const target = join(parent, "acme-api");
   const input = await inputFile(dir, scrambled(kit));
   const expectedKit = canon(withStarter(kit));
-  const create = (extra: string[], path = target, starter = "generic") =>
+  const createBare = (extra: string[], path = target, starter = "generic") =>
     run(dir, ["repo", "new", "--path", path, "--starter", starter, "--input", input, ...extra]);
-  return { dir, parent, target, input, expectedKit, confirm: hash(expectedKit), create };
+  // A synthetic identity for the starter's commit: CI has no Git user (the no-identity case uses createBare).
+  const create = async (extra: string[], path = target, starter = "generic") => {
+    const identity: Record<string, string> = { GIT_AUTHOR_NAME: "Test", GIT_AUTHOR_EMAIL: "test@example.com", GIT_COMMITTER_NAME: "Test", GIT_COMMITTER_EMAIL: "test@example.com" };
+    const saved = Object.fromEntries(Object.keys(identity).map((key) => [key, process.env[key]]));
+    Object.assign(process.env, identity);
+    try { return await createBare(extra, path, starter); } finally {
+      for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+    }
+  };
+  return { dir, parent, target, input, expectedKit, confirm: hash(expectedKit), create, createBare };
 }
 const exists = (path: string) => readFile(path).then(() => true, () => false);
 
@@ -1152,7 +1161,7 @@ test("repo new: without a Git identity the commit is skipped with GIT_COMMIT_SKI
   const keys = ["HOME", "XDG_CONFIG_HOME", "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_NOSYSTEM", "GIT_CONFIG_COUNT", "GIT_CONFIG_KEY_0", "GIT_CONFIG_VALUE_0",
     "GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL", "EMAIL"];
   const saved = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
-  const { create, target, confirm } = await newCase(context);
+  const { createBare: create, target, confirm } = await newCase(context);
   try {
     for (const key of ["GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL", "EMAIL"]) delete process.env[key];
     Object.assign(process.env, { HOME: home, XDG_CONFIG_HOME: home, GIT_CONFIG_GLOBAL: empty, GIT_CONFIG_SYSTEM: empty, GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_COUNT: "1", GIT_CONFIG_KEY_0: "user.useConfigOnly", GIT_CONFIG_VALUE_0: "true" });
