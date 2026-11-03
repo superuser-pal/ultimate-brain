@@ -318,3 +318,42 @@ test("an Accept on an item that rests only on excluded evidence closes it stale 
   assert.equal(decisions[0].state, "closed");
   assert.equal(decisions[0].reason, "source_excluded");
 });
+
+test("Request revision is recorded, the new draft replaces the stored proposal with the previous wording kept, and only that section is re-rendered", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids } = await published(dir);
+  const asked = decide(body, ids[0]!, "Request revision").replace(new RegExp(`(## \\[[a-z]+ · ${ids[0]}\\][\\s\\S]*?Decision: Request revision)`), "$1\nRevision request: make it April");
+  const { applied } = await submit(dir, id, asked);
+  assert.equal(applied.code, 0, applied.stdout);
+  assert.deepEqual(applied.json.data.revision_results.map((entry: { result: string; reason?: string }) => entry.result + (entry.reason ?? "")), ["recorded"]);
+  let proposal = await attributes(dir, await pathOf(dir, id));
+  assert.deepEqual([proposal.revisions[0].status, proposal.revisions[0].instruction, proposal.status], ["requested", "make it April", "pending"], "the item stays pending");
+  const early = await run(dir, ["proposal", "revise"], { proposal: id, item_id: ids[1], proposed: "x", previous: "y" });
+  assert.equal(early.json.error.code, "INPUT_INVALID", "an item nobody asked a revision of is not revised");
+  const revised = await run(dir, ["proposal", "revise"], { proposal: id, item_id: ids[0], proposed: "2027-04", previous: "2027-03" });
+  assert.equal(revised.code, 0, revised.stdout);
+  proposal = await attributes(dir, await pathOf(dir, id));
+  assert.equal(proposal.changes.find((change: { kind: string }) => change.kind === "update_fact").after, "2027-04");
+  assert.deepEqual([proposal.revisions[0].status, proposal.revisions[0].previous], ["drafted", "2027-03"]);
+  const [item] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  assert.deepEqual(item.item_updates.map((entry: { item_id: string; reason: string }) => [entry.item_id, entry.reason]), [[ids[0], "revision_drafted"]], "only the revised section is re-rendered");
+  const section = item.item_updates[0].section as string;
+  assert.match(section, /Proposed final wording<\/summary>\s*2027-04/);
+  assert.match(section, /Previous proposal<\/summary>\s*2027-03/);
+  assert.match(section, /Decision: Pending/);
+  assert.equal(item.body, null, "the page body is never rewritten");
+  assert.equal(Object.keys(item.review_published_after["@review"].items).length, 4);
+  assert.deepEqual(await errors(dir), []);
+});
+
+test("a changed base re-renders only the pending item whose target moved", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, ids } = await published(dir);
+  const file = await pathOf(dir, PROJECT);
+  const text = await readFile(join(dir, file), "utf8");
+  await writeFile(join(dir, file), text.replace(/^(\s+)launch_date: .*/m, "$1launch_date: 2027-02-15"));
+  const out = await run(dir, ["sync", "render", "--ids", id]);
+  const [item] = out.json.data.items;
+  assert.ok(item, out.stdout);
+  assert.deepEqual(item.item_updates.map((entry: { item_id: string; reason: string }) => [entry.item_id, entry.reason]), [[ids[0], "base_changed"]]);
+});

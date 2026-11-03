@@ -14,7 +14,7 @@ function extract(id: string, version: number, replaces: string | null, paragraph
 }
 
 /** Version 1 of an input holds a secret paragraph and a decision note cites it; `exclude` then writes version 2 without it and its suppression record. */
-export async function excludableDecision(dir: string, sync: string, project: string, withLive = false): Promise<{ note: { id: string; path: string }; exclude: () => Promise<void>; reinclude: () => Promise<void> }> {
+export async function excludableDecision(dir: string, sync: string, project: string, withLive: boolean | "unmapped" = false): Promise<{ note: { id: string; path: string }; exclude: () => Promise<void>; reinclude: () => Promise<void> }> {
   await writeFile(join(dir, "sources/notion/2026-12-10-extract-v1.md"), extract("src-ex1a3b4c", 1, null, [[1, "A live paragraph."], [2, SECRET]]));
   const created = await brain(["note", "new", "--input", await json(dir, { notes: [{ type: "decision", title: "Pricing call", frontmatter: { summary: "s", date: "2026-12-03", assessment: "accepted", projects: [project], sources: [sync] }, body: `${withLive === "unmapped" ? "An unsourced remark.\n\n" : ""}${withLive === true ? `Kept statement. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]\n\n` : ""}SECRET ${SECRET} ^[src-ex1a3b4c#¶2:${passageHash(SECRET)}]\n` }] }), "--brain", dir, "--now", "2026-12-10T09:00:00Z", "--json"]);
   assert.equal(created.code, 0, created.stdout);

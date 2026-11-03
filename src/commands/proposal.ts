@@ -2,6 +2,9 @@ import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { assertNoProblems, isRecord, readJsonInput, unknownKeys } from "../lib/input.ts";
 import { listProposals, PROPOSAL_STATUSES, stageBacklog, stageProposals } from "../lib/proposals.ts";
+import { Skip } from "../lib/review-apply.ts";
+import { reviseItem } from "../lib/review-revision.ts";
+import { formatDate } from "../lib/time.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { lintWarnings } from "../lib/warnings.ts";
 
@@ -76,5 +79,33 @@ export const proposalBacklogCommand: Command = {
     }
     const human = created.map((proposal) => `${dryRun ? "would create" : "created"} ${proposal.path}\n`).join("");
     return { data: { created, skipped: [], dry_run: dryRun }, warnings, human: human || "Nothing to write.\n" };
+  },
+};
+
+/** `brain proposal revise --input <file|->` (spec/cli.md §5.27, capture-and-review §7.8): the new draft of a revision-requested item. */
+export const proposalReviseCommand: Command = {
+  name: "proposal revise",
+  usage: "brain proposal revise --input <file|-> [--dry-run] [--json]",
+  summary: "Replace the stored proposal of a revision-requested Review item with a new draft, keeping the user's previous wording. Accepts nothing.",
+  options: { input: "string", "dry-run": "boolean" },
+  maxPositionals: 0,
+  needsBrain: true,
+  async run({ args, brain, now }) {
+    const input = await readJsonInput(args.options.input as string | undefined, "proposal revise");
+    const problems = isRecord(input) ? unknownKeys(input, ["proposal", "item_id", "proposed", "previous"], "") : [{ pointer: "", message: "must be an object" }];
+    if (isRecord(input)) for (const key of ["proposal", "item_id", "proposed", "previous"]) if (typeof input[key] !== "string") problems.push({ pointer: `/${key}`, message: "must be a string" });
+    assertNoProblems(problems);
+    const workspace = await Workspace.open(brain!);
+    const request = input as { proposal: string; item_id: string; proposed: string; previous: string };
+    try {
+      const data = reviseItem(workspace, request, now, formatDate(now));
+      const errors = workspace.newErrors();
+      if (errors.length > 0) throw new BrainError("INPUT_INVALID", `The revision fails lint: ${errors.map((issue) => `${issue.rule}: ${issue.message}`).join("; ")}`);
+      if (args.options["dry-run"] !== true) await workspace.commit([{ op: "proposal-revise", id: request.proposal, title: request.item_id }], now);
+      return { data: { ...data, result: args.options["dry-run"] === true ? "DRY_RUN" : "REVISED" }, human: `revised ${request.item_id}\n` };
+    } catch (error) {
+      if (error instanceof Skip) throw new BrainError("INPUT_INVALID", `${error.code}: ${error.message}`);
+      throw error;
+    }
   },
 };
