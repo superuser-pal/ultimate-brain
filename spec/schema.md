@@ -205,16 +205,18 @@ A **Document** (0049): something the user wants to keep as a readable page and r
 
 | Field | Type | Req |
 |---|---|---|
-| `origin` | `whole`·`part`·`promoted` | absent = `part` (written before 0.6.0); `note new` requires it (cli.md §5.5) |
+| `origin` | `whole`·`part`·`promoted`·`workflow` | absent = `part` (written before 0.6.0); `note new` requires it (cli.md §5.5) |
 | `promoted_from` | ID (`dec-` or `con-`): the note it was promoted from | ✔ with `origin: promoted`; refused otherwise |
+| `workflow` | `{ id: wf-…, artifact: art-… }`: the workflow and artifact the Document publishes (connected-workflows.md §6.3) | ✔ with `origin: workflow`; refused otherwise |
 
-`sources` is required (at least one) except on a `promoted` Document. `area` and `projects` place it.
+`sources` is required (at least one) except on a `promoted` or `workflow` Document. `area` and `projects` place it.
 
 | `origin` | Made from | Body | Lifecycle at creation | Body owner |
 |---|---|---|---|---|
 | `whole` | Keep as document with Only keep empty (0049) | the source's body, byte for byte (its converted text); `sources` = exactly that source | `reviewed`: it is the source's text, not the brain's claim, so it needs no Review | brain |
 | `part` | Keep as document with Only keep set, or a request in chat ("also keep the budget from …") | only what Only keep named, chosen by the brain: a list or a table, every figure and date as stated | `draft`, listed in the source's `review_notes` (0045) | brain |
 | `promoted` | Promote on a decision or concept (0049) | seeded from the note: its summary, a blank line, then its body; `projects`, `area` and `sources` copied from it | the note's `lifecycle` when promoted | **you** |
+| `workflow` | An approved artifact of a connected workflow (connected-workflows.md §6.3) | the artifact's text, or its file line and link; no `sources` | `reviewed`: the user approved it | brain; accepted wording returns from Notion as for `promoted` (cli.md §5.14.7) |
 
 - **A brain-owned body** (`whole`, `part`) changes only through proposals: an `update_body` (§11), usually inside the `review_notes` of the source that brought a new version (§4 source, "Versions"). It is never rebuilt from the source.
 - **A promoted body is yours.** The brain writes it once, when the page is created in Notion, and never again: an `update_body` on it is refused, and later edits live in Notion, like "My notes". The file keeps the seed **until the user accepts wording in Notion** (0054): then `sync apply` replaces the body with that text exactly (cli.md §5.14.7), the only way a promoted body changes in Git, and approved `add_to_note` appendices follow it. The decision or concept stays as it is; the two are linked both ways in Notion (§14).

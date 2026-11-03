@@ -381,7 +381,7 @@ Reconciliation runs at the start of every run, before publishing, and at complet
 - **`artifacts`** holds the current hash of each artifact file in the working folder that still exists. A missing file is left out, and that changes nothing.
 - **Values** are labels as Notion shows them (§4).
 - **The destination's settings** are mapped through §4's table:
-  - a value that differs from `settings` is copied in (routine `settings_changed`);
+  - a value that differs from `settings` is copied in (routine `settings_changed`, one per key, `target` the `wf-` id, `from` and `to` `{ <key>: value }`), and `settings.read_at` is set to the snapshot's `read_at`;
   - `workflow` Standard or empty makes the state `paused` (routine `state_changed`);
   - Connected makes a `paused` workflow `connected` again.
 
@@ -403,7 +403,7 @@ Reconciliation runs at the start of every run, before publishing, and at complet
 
 | Case | Outcome |
 |---|---|
-| An item with `notion: null` and no open operation | `create_task` |
+| An item with `notion: null`, `approved_at` set, status not `dropped`, publication not `local`, and no open operation | `create_task`, its payload with `brain_id` (a pending one gets the current payload) |
 | The item's task is archived or in the trash | Needs you `TASK_ARCHIVED` |
 | No task has the item's page id or Brain ID, and no operation is open | Needs you `TASK_DELETED` |
 | No task found, with a `create_task` open | §10.2 |
@@ -415,7 +415,7 @@ Reconciliation runs at the start of every run, before publishing, and at complet
 | A map entry whose treatment isn't `keep` and isn't yet `marked`, and whose item has `notion.page` | `mark_original`. It waits for the item's page, because the comment links to it |
 
 **Needs you**
-- **Each entry** is `{ id: "<KIND>:<target>", kind, target, question, choices, since }`.
+- **Each entry** is `{ id: "<KIND>:<target>", kind, target, question, choices, since, value? }`. `target` is the item's `wi-` id (for `STATUS_UNMAPPED` too) or the artifact's `art-` id. `value` holds what the answer acts on: Notion's title for `BOTH_CHANGED`, the unmapped option for `STATUS_UNMAPPED`, and the file's new hash for `ARTIFACT_CHANGED` and `DOCUMENT_BOTH_CHANGED`. When a later run sees a different value, the entry's `value` is updated, not duplicated.
 - **It is kept in `needs_you`**, and repeated, not duplicated, by later runs, until `workflow resolve` answers it or it no longer applies. It no longer applies when, for example, the user restored a trashed task; it is then removed and reported as routine `resolved_itself`.
 - **Its target** gets no new operation while it is open.
 
@@ -423,12 +423,12 @@ Reconciliation runs at the start of every run, before publishing, and at complet
 
 | Kind | Choices → effect |
 |---|---|
-| `BOTH_CHANGED` | `keep_mine` → `update_task` with L · `take_notion` → adopt N |
-| `STATUS_UNMAPPED` | one of the six meanings → added to `status_read` and adopted |
+| `BOTH_CHANGED` | `keep_mine` → `update_task` with L · `take_notion` → adopt N's title (`value`) at once |
+| `STATUS_UNMAPPED` | one of the six meanings → `value` added to `status_read` and adopted at once (routine as for `status_adopted`) |
 | `TASK_ARCHIVED` | `drop` → status `dropped` · `restore` → the skill restores the task in Notion; the next reconcile sees it |
 | `TASK_DELETED` | `drop` → `dropped`, with publication `local` · `recreate` → `notion` set to `null`, then `create_task` |
 | `UNKNOWN_TASK` | `adopt` → the skill runs adoption on that task (§11, origin `notion`) · `outside` → its page id is added to `outside` |
-| `ARTIFACT_CHANGED` | `approve` → `artifact put` with the new hash (§5.3) · `ignore` → nothing; the question comes back once the hash changes again |
+| `ARTIFACT_CHANGED` | `approve` → `artifact put` with the new hash (§5.3) · `ignore` → the artifact gets `declined: { kind: publish_artifact, payload: { ignored_sha256: <value> } }`; the question comes back only for a different hash |
 | `DOCUMENT_BOTH_CHANGED` | `keep_notion` → the local change is ignored, as with `ignore` · `publish_mine` → as `approve`; the Notion edit stays in Notion's history |
 
 **Routine changes** are written and listed in the report. Pending local edits are kept: a Needs you entry never drops L.
@@ -472,8 +472,8 @@ Work complete, {n} not yet in Notion.
 - **Item claims.** Before executing an item, a session claims it: `item claim <wf> <wi> --by <label>`, where the label is the agent and its start time, e.g. `claude-code 2026-11-04T09:00Z`.
   - A claim by the same label refreshes `at`.
   - Another label's claim is refused (`CLAIMED`, with its holder) unless it is **stale**: more than 2 hours after both `claim.at` and the item's last progress entry.
-  - `--take` overrides it, after the user chose to take over, and appends the progress entry `Claim taken over from <old label>`.
-  - `--release` drops the caller's own claim.
+  - `--take` overrides it, after the user chose to take over, and appends the progress entry `Claim taken over from <old label>`; taking a stale claim without `--take` appends the same entry.
+  - `--release` drops the caller's own claim; releasing another label's claim is `CLAIMED`, and releasing no claim does nothing.
   - Claiming doesn't change the status.
 - **Brain commits.** The CLI writes a workflow's records and commits them as one journaled operation (capture-and-review §7.11, cli.md §5.24), so an interrupted write is finished or rolled back by `brain recover`. Git's index lock is retried for up to 10 seconds, then the command refuses with `BRAIN_BUSY`.
 - **Notion writers.** Read-before-write alone is not a guarantee (0059). After each Notion write the skill reads the page back. When a value it wrote isn't there, it doesn't write again: the next `reconcile` sees the difference and handles it under §8.2.
@@ -546,13 +546,14 @@ The skill normalises what it found into the **adoption input**:
 
 **`brain workflow adopt preview`** compares the input with `adoption.json` and returns one preview, without writing:
 - `create`: `[{ key, title, meaning, option, selected }]` for keys not in the map, where `option` is `status_map[meaning]`;
-- `update`: `[{ key, item, changes: { title?, body? } }]` for mapped keys whose title or body changed since the last run. Never status: Notion owns it from adoption on;
-- `untouched`: `[{ key, item, reason }]`, with `reason` `unchanged` or `not selected`;
-- `missing`: `[{ key, item }]`, mapped keys that are no longer in the source, which are left alone;
+- `update`: `[{ key, item, changes: { title?, body? } }]` for mapped keys whose title or body changed since the last run, and that `selected` names when it is a list. Never status: Notion owns it from adoption on. An empty `body` changes nothing;
+- `untouched`: `[{ key, item, reason }]`, with `reason` `unchanged`, or `not selected` for a changed key that a `selected` list leaves out;
+- `missing`: `[{ key, item }]`, mapped keys of a source in the input's `sources` that are no longer in its items, which are left alone. A source not in `sources` wasn't read, so its keys aren't missing;
 - `dependencies`: `[{ key, depends_on, dropped, warnings }]`. A dependency on a `done` item is dropped. A dependency on an open item that isn't selected is a warning;
 - `originals`: `[{ key, choices, default }]` (§11.5);
 - `status_options`: the options of `notion`-origin items that are in neither `status_map` nor `status_read`, with `meaning: null`;
-- `unsupported` and `conventions`, as given.
+- `unsupported` and `conventions`, as given;
+- `warnings`: one line per selected new key with a `#n` suffix.
 
 **The default selection** is every new item whose meaning isn't `done` or `dropped`. Completed history stays where it is and isn't imported unless the user selects it. `selected` (a list of keys) replaces the default.
 
@@ -630,7 +631,7 @@ brain workflow publish-history <wf>
 
 **Common rules**
 - **Validation.** Every record a command writes is validated against `spec/schemas/workflow.schema.json` before the write (`INPUT_INVALID`, with pointers into the input).
-- **Commits.** Write commands commit their own files as one journaled operation (§10.1), with the message `workflow: <command> <wf>` and the trailer `Op: <op>`, and never push. They are added to cli.md §1's Git exceptions. They also log `workflow - "<wf>" <command>`.
+- **Commits.** Write commands commit their own files as one journaled operation (§10.1), with the message `workflow: <command> <wf>` and the trailer `Op: <op>`, and never push. They are added to cli.md §1's Git exceptions. They also log `workflow - "<wf>" command=<words>`, the command's words after `workflow` joined by `-` (`command=item-put`), so the line parses as cli.md §1.2's pairs.
 - **Journal.** Every command refuses while `_journal/` holds an operation (`RECOVERY_NEEDED`).
 - **Errors.** New error codes, all with exit 4 except `BRAIN_BUSY` (5): `STALE_RECORD`, `CLAIMED`, `NOT_APPROVED`, `DESTINATION_TAKEN`, `POINTER_EXISTS`, `WORKFLOW_NOT_FOUND`, `WORKFLOW_ENDED`, `BRAIN_BUSY`. An unknown `wf`, `wi`, `art` or `op` id is `WORKFLOW_NOT_FOUND` or `UNKNOWN_ID`.
 - **State rules:**
@@ -646,24 +647,27 @@ brain workflow publish-history <wf>
   - Checks: the destination and relations exist (`UNKNOWN_ID`); `folder.repo` is in `brain.json` `repos` (`UNKNOWN_ID`); Tasks is on and `brain_id` is mapped (§2); §3.1's refusals.
   - It writes the record and `<folder_path>/.brain-workflow.json`, its only write outside the brain (not committed). An existing pointer that names an ended or missing workflow is replaced.
   - `data` = the record.
+- **Output.** Unless stated otherwise below, a write command's `data` is the record it wrote: the workflow for `new` and `set`, the item for `item put` and `item claim`, the artifact for `artifact put`.
 - **`find`:** read-only. `data` = `{ workflows: [{ id, state, folder, destination }] }`, every state, ordered by id.
-- **`show`:** read-only. `data` = `{ workflow, items, artifacts, ops, counts: { todo, in_progress, waiting, review, done, dropped, open, percent, ops_open, ops_failed, ops_uncertain, needs_you } }`.
+- **`show`:** read-only. `data` = `{ workflow, items, artifacts, ops, counts: { todo, in_progress, waiting, review, done, dropped, open, percent, ops_open, ops_failed, ops_uncertain, needs_you } }`. `open` counts the items that are neither `done` nor `dropped`, `ops_open` every operation file (an op file exists only while it is open), and `needs_you` the entries of `needs_you`.
 - **`set`:**
   - Patches `state` (connected ↔ paused, any → ended), `settings`, `status_map`, `status_read`, `relations`, `modules_offered` and `outside`.
   - `--pointer <folder_path>` instead of `--input` rewrites the pointer for a lost one; it needs no `--rev`.
-- **`resolve`:** input `{ answers: [{ id, choice }] }`. Applies §8.2's effects, removes the answered entries, and opens the operations they need (none while paused). An unknown id or choice is `INPUT_INVALID`.
+  - `settings` is merged key by key into the saved one, and sets `settings.read_at` to `--now`.
+- **`resolve`:** input `{ answers: [{ id, choice }] }`, `data` = `{ workflow, ops: [op ids] }`. Applies §8.2's effects, removes the answered entries, and opens the operations they need (none while paused). An unknown id or choice is `INPUT_INVALID`.
 - **`item put`:**
-  - Create: no `id`, no `--rev`; the input has `title`, `scope`, `acceptance` and optional `status` (default `todo`), `logging`, `depends_on`, `links` and `approve`. The command sets `progress: []`, `notion: null`, `publication: { state: pending, … }`, `claim: null` and `accepted: null`.
+  - Create: no `id`, no `--rev`; the input has `title`, `scope`, `acceptance` and optional `status` (default `todo`), `logging`, `depends_on`, `links`, `approve` and `accepted: { statement }` (needed to create an item as `done`). The command sets `progress: []`, `notion: null`, `publication: { state: pending, … }`, `claim: null` and `accepted: null`.
   - Update: a patch, which may hold `approve: true`, `accepted: { statement }` (the command sets `at`), `progress_add: [text]` (appended with `--now`), and `publish: true` (an item whose `create_task` was dropped goes back to `pending`).
   - It enforces §5.2's `done` rule and §7.1's `approved_at` rule.
 - **`item claim`:** §10.1.
 - **`artifact put`:**
   - Create: no `id`, no `--rev`; the input has `item`, `category`, `title`, `format` and `location`.
   - Update: a patch, which may hold `approve: true` with `sha256` (the approved content's hash, required with it), `override`, and `note`.
-  - On approval it computes `publish` and `local_reason` (§5.3) and sets `publication` to `local` or `pending`. An `override` on a decided artifact replaces `publish` with `by: artifact`.
-- **`render`:** read-only. `data` = `{ payload: <the Task payload in the form of sync tasks>, toggle: { heading: "Work record", markdown } }`. It works for an item with or without a page.
+  - Before approval its `publication` is `{ state: pending, at: null, error: null }`. On approval it computes `publish` and `local_reason` (§5.3) and sets `publication` to `local` or `pending`. An `override` on a decided artifact replaces `publish` with `by: artifact`.
+- **`render`:** read-only. `data` = `{ payload: { database_id, page_id, properties, pending_relations }, the Task payload in the form of sync tasks, toggle: { heading: "Work record", markdown } }`. It works for an item with or without a page.
 - **`op state`:**
-  - Moves an operation through `pending → in_flight → done | failed | pending`, `failed → pending`, `uncertain → done | pending`, and any open state `→ dropped`. Another move is `INPUT_INVALID`.
+  - `data` = `{ op, target }`: the operation as recorded (its last state when its file was deleted) and the target record.
+  - Moves an operation through `pending → in_flight → done | failed | pending`, `failed → pending`, `uncertain → done | pending`, and any open state `→ dropped`. Another move, a missing `--page` or `--error`, or an `--error` that isn't `{ code, message, lasting }` is `INPUT_INVALID`.
   - `done` needs `--page` for `create_task` and `publish_artifact`. It records `notion` (`page`, the payload's title and status, `read_at` = now) on an item, `published_sha256` on an artifact, or `marked: true` on a map entry. It also sets the target's `publication`.
   - `failed` needs `--error` (`{ code, message, lasting }`).
   - `dropped` follows §10.3.
@@ -676,7 +680,7 @@ brain workflow publish-history <wf>
   - Without `--written`: read-only. `data` = `{ heading: "Workflow", markdown, sha256, changed }`, where `changed` is false when `sha256` equals `summary.sha256`.
   - With `--written <sha256>`: records `summary` (`written_at` = now). It is refused when the hash isn't the current render's (`STALE_RECORD`), and it needs no `--rev`.
 - **`adopt preview`:** read-only. §11.2.
-- **`adopt apply`:** §11.6. Its `--rev` is the revision of `adoption.json`, 0 before the first run.
+- **`adopt apply`:** §11.6. Its `--rev` is the revision of `adoption.json`, 0 before the first run. `data` = `{ created: [wi ids], updated: [wi ids], ops: [op ids], adoption }`.
 - **`publish-history`:** read-only. `data` = `{ artifacts: [ids] }`: the approved artifacts with `publish.decision: exclude` and `by: level` that the current level would include. The skill asks, and an accepted one gets `artifact put` with `override: include`.
 
 **Elsewhere in the CLI:**
