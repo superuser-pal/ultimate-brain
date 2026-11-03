@@ -2,6 +2,28 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.8.0 — 2026-11-03
+
+- CC-69 (#149): decision 0054 plans buttons that run Brain Assistant in Notion (Tidy capture, Write up, Refresh report), with only accepted wording coming back to the brain.
+- CC-86 (#156): decision 0056 builds the Brain Assistant buttons in 0.8.0 with Domains and editable Review; 0.7.1 becomes a small patch.
+- CC-74 (#156): decision 0055 plans optional Domains, Won't Do, selected capture and editable Review for 0.8.0, moving reflection to 0.9.0.
+- CC-70 (#159): contracts for the Brain Assistant buttons: what each button sends and may edit, how accepted wording is recorded and checked, and how a publish keeps what is pending in Notion.
+- CC-71 (#162): Tidy capture, Write up and Refresh report run Brain Assistant from a button in Notion; Notion migration 0012 adds them.
+- CC-72 (#160): the CLI reads the wording you accepted in Notion into the Git Document or report exactly, supports Related knowledge appendix proposals, and never overwrites a pending draft on publish.
+- CC-73 (#164): catch-up takes in the Documents and report refreshes you accepted in Notion and proposes related knowledge to add, citing why each item helps.
+- CC-75 (#163): contracts define optional Domains, source selections, exact per-item Review acceptance and the Notion interactions that support them.
+- CC-76 (#165, #167): optional Domains group Areas around PARA, with onboarding support and no required reclassification of existing brains.
+- CC-77 (#166): Won't Do closes Tasks without counting them as completed, removes them from due work and shows dropped scope separately.
+- CC-78 (#170): subject and item selections limit canonical source extracts, and later exclusions reconcile previous contributions without silent deletion.
+- CC-79 (#171): Review shows complete changes in the page body and applies independently accepted edits with source and user attribution preserved.
+- CC-80 (#172): captures and meeting summaries group highlights and actions by subject, honor visible inclusion defaults and guide exact Review decisions.
+- CC-81 (#173): Notion templates expose selected subjects, optional Domains and guided Review bodies, with migration 0013 preserving existing content and decisions.
+- CC-82 (#174): end-to-end acceptance verifies Domains, dropped Tasks, selected source capture and exact partial Review decisions across attended and unattended runs.
+- CC-87 (#161): records the agreed 0.9.0–0.14.0 roadmap, session-opening scope grills and feature cutoff before productisation, translation and the 1.0 launch.
+- CC-88 (#168): records the user's Notion feasibility tests T1 to T8 for selected capture and editable Review, including that deleting a block does not move the page's edit time.
+- CC-89 (#169): the brain no longer watches ingested pages for changes; a selection changes when you set the meeting back to Reviewed, and a deleted block is documented as not detected.
+- CC-90 (#175): the 0.8.0 task rows are closed, so the release can run.
+
 ## 0.7.1 — 2026-10-31
 
 - CC-83 (#154): the spec's examples use a neutral owner name and paths instead of the author's.
