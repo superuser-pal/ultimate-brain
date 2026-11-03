@@ -33,12 +33,17 @@ if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
   const from = flags["--from"];
   const title = flags["--new"]?.trim();
   const base = from === undefined ? "origin/main" : `origin/${from}`;
-  const rows = from === undefined && title === undefined ? { ok: true, stdout: undefined } : tryCommand("git", ["show", `${base}:build/TASKS.md`]);
+  const shown = from === undefined && title === undefined ? { ok: true, stdout: undefined } : tryCommand("git", ["show", `${base}:build/TASKS.md`]);
+  // A new id must also be unused among the done rows in build/HISTORY.md (CC-94).
+  const shownHistory = title === undefined ? undefined : tryCommand("git", ["show", `${base}:build/HISTORY.md`]);
+  const history = shownHistory === undefined || shownHistory.ok || !/exists on disk, but not in|does not exist in/.test(shownHistory.message) ? shownHistory : { ok: true, stdout: "" };
+  const rows = !shown.ok || history === undefined ? shown : history.ok ? { ok: true, stdout: `${shown.stdout}\n${history.stdout}` } : history;
   const existing = rows.ok ? taskEntries(rows.stdout).find((entry) => entry.id === id) : undefined;
   const task = title === undefined ? existing : { id, title };
   if (!rows.ok) fail(`Cannot read build/TASKS.md on ${base}: ${rows.message}`);
   else if (title !== undefined && existing !== undefined) fail(`${id} already exists on ${base}`);
   else if (title !== undefined && openBranches(id).length > 0) fail(`${id} is already used by ${openBranches(id).join(", ")}`);
+  else if (title !== undefined && new RegExp(`^## ${flags["--release"].replace(/[.]/g, "\\.")}(?: |$)`, "m").test(history.stdout)) fail(`${flags["--release"]} is a done release in build/HISTORY.md`);
   else if (task === undefined) fail(`Unknown task ${id}`);
   else if (action === "start" && title === undefined && task.status !== "todo") fail(`${id} is ${task.status}, not todo`);
   else if (action === "start") {

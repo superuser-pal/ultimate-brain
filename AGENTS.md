@@ -5,7 +5,7 @@ Product repo for an AI-assisted second brain: Markdown + Git canonical knowledge
 Before any work, read:
 1. [docs/vision.md](docs/vision.md): product intent and v1 scope.
 2. [synthesis/synthesis.md](synthesis/synthesis.md): the v1 design.
-3. [build/TASKS.md](build/TASKS.md): the build plan, task owners and status.
+3. [build/TASKS.md](build/TASKS.md): the build plan, task owners and status of open work. Done releases are in [build/HISTORY.md](build/HISTORY.md): read it only when a task or decision points there.
 4. The decisions your task cites in [decisions/](decisions/). Decisions are binding; to change one, propose a new decision instead of editing code around it.
 
 ## Current phase: building v1
@@ -15,7 +15,7 @@ Research is finished (`reviews/`, `synthesis/`). Since decisions 0044 and 0063:
 - **The `pr-reviewer` sub-agent** (`.claude/agents/pr-reviewer.md`, on Sonnet, fresh context) reviews every PR and builds nothing. Codex may still review when the user asks; its pass counts too.
 
 ### Multi-agent rules
-- **Tasks are in `build/TASKS.md`.** New tasks are `CC-n` (decision 0044). Claude Code sets a task to `in progress` when it starts and to `review` when the PR is ready. The reviewer edits no files.
+- **Tasks are in `build/TASKS.md`.** New tasks are `CC-n` (decision 0044). Claude Code sets a task to `in progress` when it starts and to `review` when the PR is ready. The reviewer edits no files. After a release, its section moves verbatim to `build/HISTORY.md` (the scripts read both files).
 - **One branch and one worktree per task:** `claude/<task-id>-<slug>`, from `main` or, in a stack, from the branch of the task below it, in `../ub-<task-id>` (`scripts/task.mjs start <task-id> [--from <branch>]`; a task with no row yet: `start <task-id> --new "<title>" --release <x.y.z>` writes its row, then fill in its Changelog, Output and Acceptance; `done` removes it after merge, and `clean` removes every merged one, so run it when the user says a PR is merged; decision 0046). Never create a worktree by hand: that skips the slug check and the hooks. Never edit files in the main checkout: it stays on a clean `main` and is used only to release (decision 0038).
 - **Specs are contracts.** A CLI change follows a spec on `main` or in the same PR. When the reviewer finds that code does something the spec doesn't define, it reports it on the PR, and Claude Code fixes the spec first, then the code.
 - **Review:** once the PR is open, Claude Code launches the `pr-reviewer` agent with only the PR number, worktree and head; it reviews against the acceptance criteria, the cited decisions and `spec/`, and posts its findings on the PR. After fixing them, Claude Code continues the same reviewer (SendMessage) to recheck; a new PR gets a new reviewer. A design question, or a finding still disputed after one fix round, goes to the user. Merges to `main` need the user's approval. A stack is reviewed bottom first; the user merges bottom-up, and each next PR is retargeted to `main` (`gh pr edit <N> --base main`) before it can merge (decision 0046).
@@ -49,7 +49,8 @@ Orca may launch and watch the agents; the rules above still decide branches, rol
 | `templates/brain/` | Skeleton for a new user brain | Claude Code |
 | `skills/` | Agent skills (one source for Claude Code and Codex) | Claude Code |
 | `notion/prompts/` | Notion AI prompts generated from the space design | Claude Code |
-| `build/TASKS.md` | Build plan and status | Both (own tasks only) |
+| `build/TASKS.md` | Build plan and status of open work | Claude Code |
+| `build/HISTORY.md` | Done releases, moved from TASKS.md | Claude Code |
 | `docs/`, `decisions/`, `synthesis/`, `reviews/` | Product intent, decisions, research | Claude Code (with the user) |
 | `sources/` | Clones of reviewed repos. Gitignored, untrusted: never run their code | — |
 
