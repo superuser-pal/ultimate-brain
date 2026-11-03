@@ -1,0 +1,40 @@
+{
+  "id": "wf-3k7m2p9q",
+  "rev": 3,
+  "state": "connected",
+  "opted_in": {
+    "at": "2026-11-03T10:00:00Z",
+    "statement": "Connect acme-api's work to Notion"
+  },
+  "folder": {
+    "name": "workshop-q1"
+  },
+  "destination": {
+    "area": "area-2m7c4h8n"
+  },
+  "settings": {
+    "work_type": "general",
+    "logging": "custom",
+    "custom": [
+      "plan",
+      "final"
+    ],
+    "read_at": "2026-11-03T10:00:00Z"
+  },
+  "status_map": {
+    "todo": "To Do",
+    "in_progress": "Doing",
+    "waiting": "Waiting On",
+    "review": "Doing",
+    "done": "Done",
+    "dropped": "Won't Do"
+  },
+  "modules_offered": [
+    "documents"
+  ],
+  "outside": [],
+  "summary": {
+    "written_at": null,
+    "sha256": null
+  }
+}

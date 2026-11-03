@@ -1,0 +1,26 @@
+{
+  "id": "art-5n9q3m7k",
+  "rev": 2,
+  "item": "wi-7c2m9q4x",
+  "category": "temporary",
+  "title": "Debug log",
+  "format": "text",
+  "location": {
+    "path": "docs/plans/rate-limit.md"
+  },
+  "sha256": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+  "approved_at": "2026-11-03T11:00:00Z",
+  "publish": {
+    "decision": "exclude",
+    "by": "level",
+    "level": "full",
+    "decided_at": "2026-11-03T11:00:00Z"
+  },
+  "local_reason": "temporary",
+  "note": null,
+  "publication": {
+    "state": "local",
+    "at": null,
+    "error": null
+  }
+}

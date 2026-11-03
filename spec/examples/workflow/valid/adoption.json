@@ -1,0 +1,54 @@
+{
+  "rev": 2,
+  "runs": [
+    {
+      "at": "2026-11-03T10:00:00Z",
+      "sources": [
+        {
+          "kind": "markdown",
+          "ref": "PLAN.md"
+        },
+        {
+          "kind": "github",
+          "ref": "acme/acme-api"
+        }
+      ],
+      "created": 3,
+      "updated": 0,
+      "untouched": 4
+    }
+  ],
+  "map": [
+    {
+      "origin": {
+        "kind": "markdown",
+        "ref": "PLAN.md",
+        "key": "line:5e1a0c9b2d47"
+      },
+      "item": "wi-7c2m9q4x",
+      "treatment": "keep"
+    },
+    {
+      "origin": {
+        "kind": "github",
+        "ref": "acme/acme-api",
+        "key": "#17"
+      },
+      "item": "wi-9d4k2m7p",
+      "treatment": "mark_transferred"
+    }
+  ],
+  "conventions": [
+    {
+      "rule": "Status lives in TASKS.md",
+      "source": "AGENTS.md",
+      "choice": "decline"
+    },
+    {
+      "rule": "Every task needs a PR",
+      "source": "CONTRIBUTING.md",
+      "choice": "adapt",
+      "note": "Software tasks only"
+    }
+  ]
+}
