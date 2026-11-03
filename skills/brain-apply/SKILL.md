@@ -13,7 +13,7 @@ Run every CLI command as `brain <command> --brain <brain> --json`. Exit 1 means 
 
 - **Chat:** the user wants to decide here ("what needs my decision?", "approve the budget change"). Use this, or when Notion is not configured.
 - **Notion:** the user decided in the Notion Review queue ("apply my reviews"), and `brain status` shows `review` among `notion.configured`.
-- **Unattended** (a scheduled catch-up, nobody in the chat): Notion mode, applying only what the user decided word for word: Approve or Reject with an empty What to fix. A decision with text in What to fix (a Fix, or "all except b") stays in its row for an attended run, because turning words into changes is judgment nobody would check (decisions 0003, 0051). `--record-only` is for a run that must not apply anything at all.
+- **Unattended** (a scheduled catch-up, nobody in the chat): Notion mode, applying only what the user decided word for word: Approve or Reject with an empty What to fix, and, on a row with item sections, the explicit, exact, current decisions of references/review-items.md (never revision text). A decision with text in What to fix (a Fix, or "all except b") stays in its row for an attended run, because turning words into changes is judgment nobody would check (decisions 0003, 0051). `--record-only` is for a run that must not apply anything at all.
 
 ## Chat mode
 
@@ -48,6 +48,8 @@ Run every CLI command as `brain <command> --brain <brain> --json`. Exit 1 means 
 5. Continue with **Finish** below.
 
 ## Notion mode
+
+**Rows with item sections** (rendered since migration 0013: one section per change, a `Decision:` line each, **Submit decisions**) follow [references/review-items.md](references/review-items.md), including how to verify, apply, draft a requested revision and write back. The steps below are for rows of the older layout (the Proposed property, Your call, What to fix), which keep their rules until they are terminal.
 
 1. **Read** the Review database through the Notion MCP: the rows where **Your call** is set and **State** is Pending. Normalize each row into the snapshot format of spec/cli.md §5.14.1:
    - `database: "review"`, the `page_id` and `last_edited`;

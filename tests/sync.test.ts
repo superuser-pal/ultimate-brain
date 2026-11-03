@@ -1,3 +1,4 @@
+import { writeFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -159,6 +160,27 @@ test("sync tasks renders source tasks with an Inbox backlink", async (context) =
   assert.deepEqual(run.json.data.items[0].pending_relations, [{ property: "Source", ids: [source] }]);
   assert.equal(run.json.data.items[0].properties.Owner, undefined);
   assert.equal(run.json.data.items[0].properties["Brain ID"].value, source);
+});
+
+test("sync tasks: a waiting_on item carries the Waiting On status and the other person's name; any other status is refused", async (context) => {
+  const dir = await fixtureCopy(context);
+  const config = JSON.parse(await readFile(join(dir, "brain.json"), "utf8"));
+  config.notion.tasks.properties.owner = "Owner";
+  await writeFile(join(dir, "brain.json"), JSON.stringify(config, null, 2));
+  const source = "src-4a5b6c7d";
+  const noteInput = { notes: [{ type: "source", id: source, title: "Pasted email", file_date: "2026-12-10", frontmatter: { source_key: "agent:test/email", kind: "email" }, body: "Maria will send the plan.\n" }] };
+  assert.equal((await brain(["note", "new", "--brain", dir, "--now", NOW, "--input", await input(dir, "w-source.json", noteInput), "--json"])).code, 0);
+  const run = (items: unknown[], name: string) => brain(["sync", "tasks", "--brain", dir, "--source", source, "--input", await_(name, items), "--json"]);
+  const await_ = (name: string, items: unknown[]) => { const file = join(dir, "..", name); writeFileSync(file, JSON.stringify({ items })); return file; };
+  const ok = await run([{ title: "Maria sends the plan", status: "waiting_on", owner: "Maria Lopez" }], "w1.json");
+  assert.equal(ok.code, 0, ok.stdout);
+  const properties = ok.json.data.items[0].properties;
+  assert.equal(properties.Status.value, "Waiting On");
+  assert.equal(properties.Owner.value, "Maria Lopez");
+  assert.equal((await run([{ title: "x", status: "waiting_on" }], "w2.json")).json.error.code, "INPUT_INVALID");
+  assert.equal((await run([{ title: "x", status: "done", owner: "A" }], "w3.json")).json.error.code, "INPUT_INVALID");
+  const plain = await run([{ title: "My task", owner: "Someone" }], "w4.json");
+  assert.equal(plain.json.data.items[0].properties.Owner, undefined, "without the token the owner-only rule holds");
 });
 
 test("sync tasks treats an absent source mapping as unmapped", async (context) => {
