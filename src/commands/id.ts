@@ -1,6 +1,7 @@
 import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
-import { generateId, TYPE_PREFIX } from "../lib/ids.ts";
+import { generateId, RECORD_PREFIX, TYPE_PREFIX } from "../lib/ids.ts";
+import { recordIds } from "../lib/workflow-store.ts";
 import { Workspace } from "../lib/workspace.ts";
 
 /** `brain id new <type> [--count <n>]` (spec/cli.md §5.4). */
@@ -13,7 +14,7 @@ export const idNewCommand: Command = {
   needsBrain: true,
   async run({ args, brain }) {
     const [type] = args.positionals;
-    const prefix = type === undefined ? undefined : TYPE_PREFIX[type];
+    const prefix = type === undefined ? undefined : TYPE_PREFIX[type] ?? RECORD_PREFIX[type];
     if (prefix === undefined) throw new BrainError("USAGE", `Unknown note type: ${type ?? "(missing)"}`);
 
     const rawCount = args.options.count as string | undefined;
@@ -23,7 +24,7 @@ export const idNewCommand: Command = {
     }
 
     const workspace = await Workspace.open(brain!);
-    const existing = workspace.ids();
+    const existing = new Set([...workspace.ids(), ...recordIds(brain!.root)]);
     const ids: string[] = [];
     for (let index = 0; index < count; index += 1) {
       const id = generateId(prefix, existing);

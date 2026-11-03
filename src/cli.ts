@@ -18,12 +18,13 @@ import { upgradeCommand } from "./commands/upgrade.ts";
 import { proposalBacklogCommand, proposalReviseCommand, proposalListCommand, proposalNewCommand } from "./commands/proposal.ts";
 import { reportFixCommand, reportNewCommand } from "./commands/report.ts";
 import { scheduleInstallCommand, scheduleListCommand, scheduleRemoveCommand } from "./commands/schedule.ts";
-import { repoAddCommand, repoChangesCommand, repoRecordCommand } from "./commands/repo.ts";
+import { repoAddCommand, repoChangesCommand, repoHealthCommand, repoKitCheckCommand, repoKitWriteCommand, repoNewCommand, repoRecordCommand, repoRefreshCommand, repoShowCommand, repoTasksCommand, repoUnlinkCommand } from "./commands/repo.ts";
 import { recoverCommand, sourceExtractCommand } from "./commands/extract.ts";
 import { sourceCleanupPlanCommand, sourceCleanupProposeCommand, sourceDiffCommand, sourceExtractPlanCommand, sourceFullTextCommand } from "./commands/source.ts";
 import { queryCommand } from "./commands/query.ts";
 import { syncApplyCommand, syncPlanCommand, syncRecordCommand, syncRenderCommand, syncTasksCommand } from "./commands/sync.ts";
 import { viewsCommand } from "./commands/views.ts";
+import { WORKFLOW_COMMANDS } from "./commands/workflow.ts";
 import { runCommand, type CliIo, type Command, type RunEnvironment } from "./lib/command.ts";
 import { exitCodeFor } from "./lib/errors.ts";
 import { installedProduct } from "./lib/skills.ts";
@@ -34,9 +35,9 @@ export type CommandHandler = (args: readonly string[], io: CliIo) => number | Pr
 
 /** Registered commands, in help order. */
 export const COMMANDS: readonly Command[] = [
-  initCommand, statusCommand, configGetCommand, configSetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, proposalBacklogCommand, proposalReviseCommand, proposalReviseCommand, sourceFullTextCommand, sourceDiffCommand, sourceExtractPlanCommand, sourceCleanupPlanCommand, sourceCleanupProposeCommand, sourceExtractCommand, recoverCommand, reportNewCommand, reportFixCommand, repoAddCommand, repoChangesCommand, repoRecordCommand, applyCommand,
+  initCommand, statusCommand, configGetCommand, configSetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, proposalBacklogCommand, proposalReviseCommand, proposalReviseCommand, sourceFullTextCommand, sourceDiffCommand, sourceExtractPlanCommand, sourceCleanupPlanCommand, sourceCleanupProposeCommand, sourceExtractCommand, recoverCommand, reportNewCommand, reportFixCommand, repoAddCommand, repoChangesCommand, repoRecordCommand, repoKitCheckCommand, repoKitWriteCommand, repoRefreshCommand, repoShowCommand, repoHealthCommand, repoTasksCommand, repoUnlinkCommand, repoNewCommand, applyCommand,
   syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand, viewsCommand, linkCommand, queryCommand, upgradeCommand, modulesListCommand, modulesOnCommand, modulesOffCommand,
-  scheduleInstallCommand, scheduleListCommand, scheduleRemoveCommand,
+  scheduleInstallCommand, scheduleListCommand, scheduleRemoveCommand, ...WORKFLOW_COMMANDS,
 ];
 
 export const HELP_TEXT = `Usage: brain <command> [options]
@@ -89,8 +90,8 @@ export async function runCli(args: readonly string[], options: CliOptions = {}):
   }
   for (const [name, handler] of options.commands ?? []) handlers.set(name, handler);
 
-  // Longest command path first, so "note new" wins over "note".
-  for (const words of [2, 1]) {
+  // Longest command path first, so "note new" wins over "note" and "repo kit check" over "repo kit".
+  for (const words of [3, 2, 1]) {
     const name = args.slice(0, words).join(" ");
     const handler = args.length >= words ? handlers.get(name) : undefined;
     if (handler !== undefined) return handler(args.slice(words), io);

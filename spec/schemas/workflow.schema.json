@@ -441,6 +441,11 @@
               },
               "since": {
                 "$ref": "#/$defs/timestamp"
+              },
+              "value": {
+                "description": "What the answer acts on (connected-workflows.md §8.2): Notion's title (BOTH_CHANGED), the unmapped option (STATUS_UNMAPPED), or the file's new hash (ARTIFACT_CHANGED, DOCUMENT_BOTH_CHANGED).",
+                "type": "string",
+                "minLength": 1
               }
             }
           }

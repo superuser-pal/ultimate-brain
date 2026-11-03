@@ -152,7 +152,7 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
     // A create whose publish failed has no Brain ID in Notion yet; treat the row as if it had it (cli §5.14.2).
     const known = typeof brainId === "string" && brainId !== "" ? row : { ...row, properties: { ...row.properties, "Brain ID": note.id } };
     planExisting(workspace, snapshot.as_of, known, note, result);
-    if (row.database === "documents" && row.wording !== undefined && note.type === "reference" && note.attributes.origin === "promoted") planWording(workspace, snapshot.as_of, row.page_id, note, row.wording, result);
+    if (row.database === "documents" && row.wording !== undefined && wordingDocument(note)) planWording(workspace, snapshot.as_of, row.page_id, note, row.wording, result);
     if ((row.database === "decisions" || row.database === "concepts") && property(row.properties, "Promote asked") === true) planPromote(workspace, row, note, modules.documents, result);
   }
   // A queued full refresh waits while Notion text for that report is unresolved (cli §5.14.7).
@@ -614,7 +614,7 @@ function applyWording(workspace: Workspace, items: readonly AcceptedWording[], n
     const note = workspace.get(item.note);
     const fail = (reason: string) => results.push({ ...head, result: "failed", reason, changed: [] });
     if (note === undefined) { fail("UNKNOWN_ID"); continue; }
-    if ((item.kind === "report") !== isReport(note) || (item.kind === "document" && !(note.type === "reference" && note.attributes.origin === "promoted"))) { fail("KIND_MISMATCH"); continue; }
+    if ((item.kind === "report") !== isReport(note) || (item.kind === "document" && !wordingDocument(note))) { fail("KIND_MISMATCH"); continue; }
     if (note.attributes.notion !== undefined && note.attributes.notion !== item.page_id) { fail("NOTION_ID_MISMATCH"); continue; }
     if (item.verified === undefined || item.verified.fingerprint !== item.fingerprint || item.verified.page_edited_at !== item.page_edited_at || item.fingerprint !== textHash(item.markdown)) { fail("UNVERIFIED"); continue; }
     if (textHash(gitBodyOf(note)) !== item.base) { fail("GIT_CHANGED"); continue; }
@@ -712,7 +712,8 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     if (note.type === "reference" && note.attributes.origin === "promoted" && !isCreate) { content.body = null; delete rendered["@content"]; if (Object.hasOwn(published, "@content")) rendered["@content"] = published["@content"]; content.hash = undefined; }
     const contentChanged = content.hash !== undefined && !isDeepStrictEqual(content.hash, published["@content"]);
     // The Git body at this publish, the SG baseline of cli §5.14.7 (the skill adds @notion_body after it re-reads the page).
-    if ((note.type === "reference" && note.attributes.origin === "promoted" && isCreate) || (isReport(note) && (isCreate || contentChanged))) rendered["@git_body"] = textHash(gitBodyOf(note));
+    // A workflow Document's body is the brain's, as a report's: each publish of it sets the baseline (connected-workflows.md §6.3).
+    if ((note.type === "reference" && note.attributes.origin === "promoted" && isCreate) || ((isReport(note) || (note.type === "reference" && note.attributes.origin === "workflow")) && (isCreate || contentChanged))) rendered["@git_body"] = textHash(gitBodyOf(note));
     // A report (0045): a refresh sends the body once and clears Refresh; a new fix clears What to fix.
     let reportDue = false;
     if (isReport(note)) {
@@ -1049,4 +1050,9 @@ export function record(workspace: Workspace, input: unknown): Record<string, unk
   if (!isRecord(input) || !Array.isArray(input.records)) throw new BrainError("INPUT_INVALID", "record input needs a records list"); const records: Array<Record<string, unknown>> = [];
   for (const entry of input.records) { if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note); if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; if (entry.task_items !== undefined) bindTaskItems(note, doc.attributes, entry.task_items, entry.tasks); workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && (error.message === "NOTION_ID_MISMATCH" || error.message === "TASK_ITEM_EXISTS") ? error.message : "INVALID_RESULT", changed: [] }); } }
   return { records };
+}
+
+/** A Document whose accepted wording returns from Notion (cli §5.14.7): a promoted one (0049) or a workflow's (connected-workflows.md §6.3). */
+function wordingDocument(note: Note): boolean {
+  return note.type === "reference" && (note.attributes.origin === "promoted" || note.attributes.origin === "workflow");
 }
