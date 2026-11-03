@@ -7,9 +7,9 @@ Synthetic inputs only. "Automated" means `npm test`; "U-23" means a check only t
 | Criterion (CC-82 acceptance, capture-and-review) | Evidence |
 |---|---|
 | Defaults confirmed once; only selected paragraphs enter; the opening paragraph covered by no item is listed, not copied | `tests/capture-acceptance.test.ts` step 1; `tests/selection.test.ts` |
-| No excluded passage is stored in the active brain | `capture-acceptance` steps 1 and 5 (`everyText` finds no excluded text); `tests/extract.test.ts` |
+| No excluded passage is stored in the active brain | `capture-acceptance` step 1 (`everyText` finds no text of the never-selected subject anywhere in the brain's files, `.git` excluded; the journal and the log are read). Text that was selected and later excluded stays in the earlier version, restricted, because source versions are kept (decision 0032); `tests/extract.test.ts` |
 | Same selection read again writes and commits nothing | `capture-acceptance` step 2 (`UNCHANGED`, no new commit) |
-| Tasks: owner commitment, Waiting On only with the token, excluded item creates none | `capture-acceptance` step 3; `tests/sync.test.ts` "sync tasks: a waiting_on item…" |
+| Tasks: owner commitment, Waiting On only with the token; an excluded item, an included item whose paragraph was not copied (depends on excluded context), and an item-less Task from an extract create none | `capture-acceptance` step 3; `tests/sync.test.ts` "sync tasks: a waiting_on item…" |
 | Task impacts surfaced, never cancelled | `capture-acceptance` step 6 (`cleanup.tasks` lists the Task of the excluded item; no command cancels it) |
 | Exclusion after ingestion restricts at once; the independent claim stays | `capture-acceptance` step 5; `tests/eligibility.test.ts` |
 | Reconciliation: Remove drops the restricted line only, record becomes `reconciled`, cleanup not proposed again | `capture-acceptance` step 7; `tests/cleanup-row.test.ts` |
@@ -18,10 +18,13 @@ Synthetic inputs only. "Automated" means `npm test`; "U-23" means a check only t
 | A requested revision is recorded, drafted, never applied before acceptance | `review-acceptance`; `tests/review-apply.test.ts` "Request revision is recorded…" |
 | Stale acceptance (the target moved) holds | `review-acceptance` (`BASE_CHANGED`); `tests/review-apply.test.ts` |
 | Legacy rows keep their rules next to new ones in one plan | `review-acceptance`; `tests/review-plan.test.ts` |
-| Pending edits survive publish; no-op reruns duplicate nothing | `tests/review-page.test.ts` (`REVIEW_PENDING`, flag cases); `review-acceptance` rerun; `capture-acceptance` rerun |
+| Pending edits survive publish; no-op reruns duplicate nothing | `review-acceptance` (the row with pending work is withheld whole with `REVIEW_PENDING`; the rerun commits nothing); `tests/review-page.test.ts` (flag cases); `capture-acceptance` rerun |
 | Apply is one journaled, committed operation | `tests/review-apply.test.ts` (Op trailer, dirty tree, Git failure); `tests/extract.test.ts` (recover) |
 | Excluded evidence closes an Accept stale; reports flag excluded lines; Notion payloads use the eligible form | `tests/review-apply.test.ts`; `tests/report-excluded.test.ts` |
 | Optional Domains and module-off behavior | `tests/modules.test.ts` (Domains off by default, MODULE_OFF, nothing lost); `tests/domains-lint.test.ts` |
+| Won't Do (status, due and progress) | `tests/tasks-status.test.ts` for the CLI side; the Notion display (`8 completed · 2 dropped`) is U-23 |
+| Unattended rules | `tests/unattended.test.ts` for the catch-up plan; the skills' unattended rules for selected input are instructions, U-23 |
+| Voice/transcript capture | the same extract flow with `--kind capture` (`tests/extract.test.ts`, `tests/selection.test.ts`); the Voice note template and recording are U-23 |
 | Package, types, skills and mirror | `npm run typecheck`, `npm run test:package`, `tests/skills.test.ts` |
 
 ## Not automated (U-23: you run these; steps and pass criteria are in the Notion task)

@@ -114,7 +114,7 @@ test("mixed-subject meeting → extract → Tasks → exclusion after ingestion 
   // 5. The user edits a token afterwards (Maria's item is now Meeting only) and sets Reviewed again: a new version, restriction at once.
   const second = await file(dir, "summary2.md", summary("Meeting only: "));
   const replan = await run(dir, ["source", "extract-plan", "--page", PAGE, "--summary", second, "--transcript", transcript, "--previous", extract]);
-  assert.equal(replan.json.data.previous.write_required ?? replan.json.data.write_required, true);
+  assert.equal(replan.json.data.write_required, true);
   assert.deepEqual(replan.json.data.previous.suppressed, [3]);
   settle(dir);
   const v2 = await run(dir, ["source", "extract", "--page", PAGE, "--title", "Launch sync", "--date", "2026-12-10", "--summary", second, "--transcript", transcript, "--previous", extract], undefined, AFTER);
@@ -151,4 +151,33 @@ test("mixed-subject meeting → extract → Tasks → exclusion after ingestion 
   assert.equal(git(dir, "status", "--porcelain").trim(), "");
   const lint = await run(dir, ["lint"]);
   assert.deepEqual(lint.json.data.issues.filter((issue: { severity: string }) => issue.severity === "error"), []);
+});
+
+test("a Task needs the item that authorized it, and an included item whose paragraph was not copied creates none", async (context) => {
+  const dir = await fixtureCopy(context);
+  const config = JSON.parse(await readFile(join(dir, "brain.json"), "utf8"));
+  config.notion.tasks.properties.owner = "Owner";
+  await writeFile(join(dir, "brain.json"), JSON.stringify(config, null, 2));
+  const transcript = await file(dir, "t.txt", TRANSCRIPT);
+  // s1.i1 is included but depends on s2.i1, which is Meeting only: its paragraph is not copied.
+  const text = `## [s1] Launch
+Selection: Use in brain
+[s1.i1] Book the venue. "book the venue for the launch event" (depends on [s2.i1])
+[s1.i2] Maria will send the plan. "she will send the revised plan by Friday"
+
+## [s2] Small talk
+Selection: Meeting only
+[s2.i1] Holiday plans. "${SECRET}"
+`;
+  const summaryFile = await file(dir, "s.md", text);
+  const plan = await run(dir, ["source", "extract-plan", "--page", PAGE, "--summary", summaryFile, "--transcript", transcript]);
+  assert.equal(plan.json.data.ok, true, plan.stdout);
+  assert.deepEqual(plan.json.data.copied.map((entry: { n: number }) => entry.n), [3], "only the independent item's paragraph is copied; the venue paragraph is not");
+  const written = await run(dir, ["source", "extract", "--page", PAGE, "--title", "T", "--date", "2026-12-10", "--summary", summaryFile, "--transcript", transcript]);
+  assert.equal(written.code, 0, written.stdout);
+  const extract = written.json.data.created[0] as string;
+  const refused = await run(dir, ["sync", "tasks", "--source", extract], { items: [{ title: "Book the venue", item: "s1.i1" }] });
+  assert.equal(refused.json.error.code, "INPUT_INVALID", "included in name, but none of its paragraphs is in the extract");
+  const unnamed = await run(dir, ["sync", "tasks", "--source", extract], { items: [{ title: "Book the venue" }] });
+  assert.equal(unnamed.json.error.code, "INPUT_INVALID", "a Task from an extract names its item");
 });

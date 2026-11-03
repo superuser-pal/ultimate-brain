@@ -78,7 +78,7 @@ async function submit(dir: string, id: string, body: string, mutate?: (plan: any
 // CC-82: one submission mixing a row of the new layout with a legacy row, partial decisions, a revision request, a stale base and reruns.
 test("a new-layout row and a legacy row decided together: exact partial decisions apply, a revision waits, a stale base holds, and reruns change nothing", async (context) => {
   const dir = await fixtureCopy(context);
-  const { id, body, ids } = await published(dir);
+  const { id, body, ids, draft } = await published(dir);
 
   // A legacy row: a proposal written the 0045 way, published without item sections, decided with Approve.
   const legacyCreated = await run(dir, ["proposal", "new"], { proposals: [{ kind: "update_fact", title: "Budget", target: PROJECT, field: "budget", after: "95000 EUR", why: "Raised.", source: SYNC }] });
@@ -107,11 +107,20 @@ test("a new-layout row and a legacy row decided together: exact partial decision
   assert.equal((await attributes(dir, await pathOf(dir, legacy))).status, "applied", "the legacy Approve applied as before");
   assert.equal((await attributes(dir, await pathOf(dir, id))).status, "pending", "items 2 and 3 are still pending");
   assert.deepEqual(await errors(dir), []);
+  assert.equal((await attributes(dir, draft.path)).lifecycle, "draft", "the draft whose revision was requested is untouched until it is accepted");
+
+  // The page still holds the user's pending work, so a publish withholds it whole (capture-and-review §7.10).
+  assert.ok(plan.review_pending.some((entry: { proposal: string }) => entry.proposal === id));
+  const planFile = join(dir, "..", "plan-pending.json");
+  await writeFile(planFile, JSON.stringify(plan));
+  const publish = await run(dir, ["sync", "render", "--ids", id, "--plan", planFile]);
+  assert.ok(publish.json.data.skipped.some((entry: { id: string; reason: string }) => entry.id === id && entry.reason === "REVIEW_PENDING"), publish.stdout);
 
   // Reruns change nothing, and no revision applies before it is accepted.
   const head = git(dir, "rev-parse", "HEAD");
   const again = await run(dir, ["sync", "apply"], plan, AFTER);
-  assert.ok((again.json.data.review_results as Array<{ result: string }>).every((entry) => entry.result === "skipped"), again.stdout);
+  const rerun = again.json.data.review_results as Array<{ result: string }>;
+  assert.ok(rerun.length > 0 && rerun.every((entry) => entry.result === "skipped"), again.stdout);
   assert.equal(git(dir, "rev-parse", "HEAD"), head, "a no-op rerun commits nothing");
 
   // A stale base: the target of item 3 moved after the page was rendered, so accepting it holds.

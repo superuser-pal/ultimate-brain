@@ -1,7 +1,7 @@
 import { lineageOf } from "./eligibility.ts";
 import { chainOf } from "./extract.ts";
 import type { Note } from "./notes.ts";
-import { PASSAGE_REF } from "./selection.ts";
+import { importedItems, PASSAGE_REF } from "./selection.ts";
 import { contextFor, restrictionOf, type Loaded } from "./suppressions.ts";
 
 // The data of the exclusion cleanup row (capture-and-review §5.2): what a suppression restricts and what stays. Read-only.
@@ -69,7 +69,7 @@ export function cleanupPlan(notes: readonly Note[], loaded: Loaded, input: strin
       if (typeof task !== "string" || result.tasks.some((entry) => entry.task === task)) continue;
       const item = mapped.get(task) ?? null;
       if (item === null) result.tasks.push({ task, item: null, reason: "unknown item" });
-      else if (selection.find((entry) => entry.id === item)?.effective !== "use") result.tasks.push({ task, item, reason: "item no longer selected" });
+      else if (selection.find((entry) => entry.id === item)?.effective !== "use" || !(latest !== undefined && importedItems(latest.body).has(item))) result.tasks.push({ task, item, reason: "item no longer selected" });
     }
   }
   return result;
