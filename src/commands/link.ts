@@ -1,24 +1,32 @@
-import { lstat, readdir, readFile, realpath, stat, unlink } from "node:fs/promises";
+import { lstat, readdir, readFile, realpath, rmdir, stat, unlink } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 
-import type { Command } from "../lib/command.ts";
+import type { Command, Warning } from "../lib/command.ts";
 import { isProductRepository } from "../lib/brain-path.ts";
 import { BrainError } from "../lib/errors.ts";
 import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
 import type { Note } from "../lib/notes.ts";
 import { scanNotes } from "../lib/notes.ts";
-import { assertPlainPath, listShippedSkillFiles } from "../lib/skills.ts";
+import { assertPlainPath, installedProduct } from "../lib/skills.ts";
+import { competingCopies } from "../lib/skills-competing.ts";
+import { homeOf, pinState, snapshotInvalid } from "../lib/skills-pin.ts";
+import { packageProblem, packageSnapshot, sha256, TREES, type Manifest, type SnapshotSkill } from "../lib/skills-snapshot.ts";
 
 const START = "<!-- ultimate-brain:start -->";
 const END = "<!-- ultimate-brain:end -->";
 const STACK = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+interface MarkerSkills { name: string; version: string; integrity: string; names: string[] }
 interface RepoMarker {
   repo?: string;
   project?: string;
   area?: string;
   stacks?: string[];
+  skills?: MarkerSkills;
 }
+
+/** The skills `link` installs and where their bytes come from (spec/skills-delivery.md §6.2). */
+interface LinkSource { source: "brain" | "package"; manifest: Manifest; folder: string; skills: SnapshotSkill[] }
 
 interface PlannedFile {
   path: string;
@@ -34,7 +42,7 @@ export const linkCommand: Command = {
   options: { project: "string", area: "string", stack: "list", "repo-name": "string" },
   maxPositionals: 1,
   needsBrain: true,
-  async run({ args, brain }) {
+  async run({ args, brain, environment }) {
     const [requested] = args.positionals;
     if (requested === undefined) throw new BrainError("USAGE", "brain link needs a repository path");
     const root = await openRepo(requested);
@@ -42,9 +50,14 @@ export const linkCommand: Command = {
       throw new BrainError("OUTSIDE_ROOT", "Refusing to write a brain or product repository as a consuming repository");
     }
 
+    const warnings: Warning[] = [];
+    const source = await linkSource(brain!.root, warnings);
+    const names = source.skills.map((skill) => skill.name);
     const { notes } = await scanNotes(brain!.root);
     const existingMarker = await readMarker(root);
     const marker = buildMarker(existingMarker, root, args.options, notes);
+    marker.skills = { name: source.manifest.name, version: source.manifest.version, integrity: source.manifest.integrity, names };
+    const retired = (existingMarker.value.skills?.names ?? []).filter((name) => !names.includes(name));
     const project = marker.project === undefined ? undefined : noteOf(notes, marker.project, "project");
     const area = marker.area === undefined ? undefined : noteOf(notes, marker.area, "area");
     const block = instructionBlock(project, area);
@@ -60,9 +73,13 @@ export const linkCommand: Command = {
       { path: ".brain", before: existingMarker.raw, after: `${JSON.stringify(marker, null, 2)}\n` },
       { path: "AGENTS.md", before: agents, after: agentText },
       { path: "CLAUDE.md", before: claude, after: claudeText },
-      ...await planSkill(root),
+      ...await planSkills(root, source, retired),
     ];
     await writePlan(root, planned);
+    for (const name of retired) for (const tree of TREES) await removeEmptyFolders(join(root, tree, name));
+
+    const competing = competingCopies({ treeRoot: root, names, home: homeOf(environment.env), brainRoot: brain!.root });
+    if (competing.length > 0) warnings.push({ code: "SKILLS_COMPETING", message: `${competing.length} competing skill copies; see data.skills.competing and remove them.` });
 
     const action = (file: PlannedFile): "created" | "updated" | "unchanged" | "removed" =>
       file.before === null ? "created" : file.after === null ? "removed" : file.before === file.after ? "unchanged" : "updated";
@@ -71,7 +88,9 @@ export const linkCommand: Command = {
         repo_abs: root,
         marker: { path: ".brain", written: planned[0]!.before !== planned[0]!.after, value: marker },
         files: planned.slice(1).map((file) => ({ path: file.path, action: action(file) })),
+        skills: { source: source.source, name: source.manifest.name, version: source.manifest.version, integrity: source.manifest.integrity, names, competing },
       },
+      warnings,
       human: `Linked ${root} to the brain.\n`,
     };
   },
@@ -97,7 +116,7 @@ async function readMarker(root: string): Promise<{ raw: string | null; value: Re
   } catch (error) {
     throw new BrainError("INPUT_INVALID", `.brain is not valid JSON: ${error instanceof Error ? error.message : String(error)}`);
   }
-  if (!isMarker(parsed)) throw new BrainError("INPUT_INVALID", ".brain must be an object with only repo, project, area and stacks");
+  if (!isMarker(parsed)) throw new BrainError("INPUT_INVALID", ".brain must be an object with only repo, project, area, stacks and skills");
   return { raw, value: parsed };
 }
 
@@ -106,7 +125,7 @@ function buildMarker(
   root: string,
   options: Record<string, string | boolean | string[] | undefined>,
   notes: readonly Note[],
-): { repo?: string; project?: string; area?: string; stacks?: string[] } {
+): RepoMarker {
   const marker: RepoMarker = { ...previous.value };
   marker.repo = options["repo-name"] as string | undefined ?? basename(root);
 
@@ -158,6 +177,7 @@ function orderedMarker(marker: RepoMarker): RepoMarker {
   if (marker.project !== undefined) ordered.project = marker.project;
   if (marker.area !== undefined) ordered.area = marker.area;
   if (marker.stacks !== undefined) ordered.stacks = marker.stacks;
+  if (marker.skills !== undefined) ordered.skills = marker.skills;
   return ordered;
 }
 
@@ -230,25 +250,74 @@ async function readOptional(root: string, path: string): Promise<string | null> 
   }
 }
 
-/** Product-owned query skills (decision 0029, 0038): replace changed files, remove stale ones. */
-async function planSkill(root: string): Promise<PlannedFile[]> {
-  const shipped = await listShippedSkillFiles("brain-query");
-  const planned: PlannedFile[] = [];
-  for (const prefix of [".agents/skills", ".claude/skills"]) {
-    const keep = new Set<string>();
-    await assertPlainPath(root, `${prefix}/brain-query`, "folder");
-    for (const file of shipped) {
-      const path = `${prefix}/${file.relative}`;
-      await assertPlainPath(root, path);
-      keep.add(path);
-      planned.push({ path, before: await readOptional(root, path), after: file.content.toString("utf8") });
+/**
+ * The linked skills and their source (spec/skills-delivery.md §6.2): a pinned brain's own `.agents/skills` copy, each file checked against
+ * the lock before any write; an unpinned brain's package snapshot, which must be compatible.
+ */
+async function linkSource(brainRoot: string, warnings: Warning[]): Promise<LinkSource> {
+  const product = installedProduct();
+  const pin = pinState(brainRoot, () => product.version, { drift: false });
+  if (pin.lock !== null) {
+    const manifest = pin.lock.snapshot;
+    const skills = manifest.skills.filter((skill) => skill.targets.includes("linked_repo"));
+    for (const skill of skills) {
+      for (const file of skill.files) {
+        const path = `.agents/skills/${skill.name}/${file.path}`;
+        let bytes: Buffer | null = null;
+        try { if ((await lstat(join(brainRoot, path))).isFile()) bytes = await readFile(join(brainRoot, path)); } catch { /* missing */ }
+        if (bytes === null || bytes.length !== file.bytes || sha256(bytes) !== file.sha256) {
+          throw new BrainError("SKILLS_SNAPSHOT_MISSING", `${path} differs from the pinned skills (${manifest.name} ${manifest.version}). Run brain upgrade in the brain, then brain link again.`, {
+            state: pin.state, name: manifest.name, version: manifest.version, cli: manifest.cli, running: product.version, installed_by: pin.lock.installed_by, path,
+          });
+        }
+      }
     }
-    for (const path of await listFiles(root, `${prefix}/brain-query`)) {
-      await assertPlainPath(root, path);
-      if (!keep.has(path)) planned.push({ path, before: await readOptional(root, path), after: null });
+    return { source: "brain", manifest, folder: join(brainRoot, ".agents", "skills"), skills };
+  }
+  const pkg = packageSnapshot(product.root, product.version);
+  const problem = packageProblem(pkg);
+  if (problem !== null) throw snapshotInvalid(problem, product.version);
+  warnings.push({ code: "SKILLS_UNPINNED", message: `The brain's skills are not pinned; the linked repo got the skills of ultimate-brain ${product.version}. Run brain upgrade in the brain.` });
+  return { source: "package", manifest: pkg.manifest!, folder: pkg.folder, skills: pkg.manifest!.skills.filter((skill) => skill.targets.includes("linked_repo")) };
+}
+
+/** Product-owned linked skills (decisions 0029, 0038, 0059): replace changed files, remove stale ones, and remove retired skills. */
+async function planSkills(root: string, source: LinkSource, retired: readonly string[]): Promise<PlannedFile[]> {
+  const planned: PlannedFile[] = [];
+  for (const prefix of TREES) {
+    for (const skill of source.skills) {
+      const folder = `${prefix}/${skill.name}`;
+      const keep = new Set<string>();
+      await assertPlainPath(root, folder, "folder");
+      for (const file of skill.files) {
+        const path = `${folder}/${file.path}`;
+        await assertPlainPath(root, path);
+        keep.add(path);
+        planned.push({ path, before: await readOptional(root, path), after: (await readFile(join(source.folder, skill.name, file.path))).toString("utf8") });
+      }
+      for (const path of await listFiles(root, folder)) {
+        await assertPlainPath(root, path);
+        if (!keep.has(path)) planned.push({ path, before: await readOptional(root, path), after: null });
+      }
+    }
+    for (const name of retired) {
+      const folder = `${prefix}/${name}`;
+      await assertPlainPath(root, folder, "folder");
+      for (const path of await listFiles(root, folder)) {
+        await assertPlainPath(root, path);
+        planned.push({ path, before: await readOptional(root, path), after: null });
+      }
     }
   }
   return planned.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+}
+
+/** Remove `folder` and the folders under it once they are empty. */
+async function removeEmptyFolders(folder: string): Promise<void> {
+  let entries;
+  try { entries = await readdir(folder, { withFileTypes: true }); } catch { return; }
+  for (const entry of entries) if (entry.isDirectory()) await removeEmptyFolders(join(folder, entry.name));
+  await rmdir(folder).catch(() => undefined);
 }
 
 async function listFiles(root: string, folder: string): Promise<string[]> {
@@ -291,11 +360,19 @@ async function writePlan(root: string, files: readonly PlannedFile[]): Promise<v
 
 function isMarker(value: unknown): value is RepoMarker {
   if (!isRecord(value)) return false;
-  if (!Object.keys(value).every((key) => ["repo", "project", "area", "stacks"].includes(key))) return false;
+  if (!Object.keys(value).every((key) => ["repo", "project", "area", "stacks", "skills"].includes(key))) return false;
   return (value.repo === undefined || typeof value.repo === "string")
     && (value.project === undefined || typeof value.project === "string")
     && (value.area === undefined || typeof value.area === "string")
-    && (value.stacks === undefined || Array.isArray(value.stacks));
+    && (value.stacks === undefined || Array.isArray(value.stacks))
+    && (value.skills === undefined || isMarkerSkills(value.skills));
+}
+
+/** `.brain` `skills` (skills-delivery §6.2); `names` must be skill names, since link removes the folders they name. */
+function isMarkerSkills(value: unknown): value is MarkerSkills {
+  return isRecord(value)
+    && typeof value.name === "string" && typeof value.version === "string" && typeof value.integrity === "string"
+    && Array.isArray(value.names) && value.names.every((name) => typeof name === "string" && STACK.test(name));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
