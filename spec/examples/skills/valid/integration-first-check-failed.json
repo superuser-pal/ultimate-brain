@@ -1,0 +1,16 @@
+{
+  "format": 1,
+  "tested": {
+    "name": "ultimate-brain",
+    "version": "0.9.0",
+    "integrity": "sha256-77c83c8517d9fcd0740e043b0a00a0bb8bbd7a79ec1d317e3f2d06056f08a858"
+  },
+  "seen": null,
+  "assessed": null,
+  "changes": [],
+  "last_check": {
+    "at": "2026-11-04T06:00:00Z",
+    "status": "unknown",
+    "error": "fork unreachable: HTTP 503"
+  }
+}
