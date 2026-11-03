@@ -512,7 +512,9 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
   "modules": { "domains": false, "knowledge": true, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true },
   "repos": [
     { "name": "acme-api", "path": "~/code/acme-api", "area": "area-2m7c4h8n",
-      "patterns": ["decisions/**", "docs/vision.md", "CHANGELOG.md"], "commit": "" }
+      "patterns": ["decisions/**", "docs/vision.md", "CHANGELOG.md"], "commit": "" },
+    { "name": "acme-web", "path": "~/code/acme-web", "area": "area-2m7c4h8n", "project": "prj-9x4t1b7e",
+      "patterns": ["docs/**"], "never_read": [".env*"], "commit": "", "kit": { "sha256": "sha256:<64 hex>" } }
   ],
   "notion": {
     "databases": { "domains": "", "areas": "", "goals": "", "key_results": "", "projects": "", "meetings": "",
@@ -554,7 +556,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 - **A module on with an empty database id** behaves as today: its notes are skipped with `DATABASE_NOT_CONFIGURED`.
 - Written by `brain modules` (cli.md §5.20) and `brain config`.
 
-**Repos** (0042): the linked repos the brain reads, never writes. Each has a unique `name` (lowercase kebab-case), a `path` (absolute or starting with `~/`; the machine's own clone), the `area` its knowledge belongs to (an existing `area-` id), `patterns` (non-empty list of Git glob pathspecs, relative to the repo root, e.g. `decisions/**`), and `commit`, the last commit ingested (40 hex, or `""` before the first ingest). Written by `brain repo add` and `brain repo record` (cli.md §5.16); `repos` absent means none.
+**Repos** (0042): the linked repos the brain reads, never writes. Each has a unique `name` (lowercase kebab-case), a `path` (absolute or starting with `~/`; the machine's own clone), the `area` its knowledge belongs to (an existing `area-` id), `patterns` (non-empty list of Git glob pathspecs, relative to the repo root, e.g. `decisions/**`), and `commit`, the last commit ingested (40 hex, or `""` before the first ingest). Written by `brain repo add` and `brain repo record` (cli.md §5.16); `repos` absent means none. Three optional keys come from a link kit (0066, [linked-repos.md](linked-repos.md) §5): `never_read` (Git glob pathspecs never read, even when a pattern matches; absent means none), `project` (a `prj-` id the repo is placed under) and `kit` (`{ "sha256": "sha256:<64 hex>" }`, the kit last applied). With `kit`, `area`, `patterns`, `never_read` and `project` are copies of the kit, written only by `repo add --kit` and `repo refresh`; removed by `repo unlink` (cli.md §5.29).
 
 **Databases:** `inbox` is the database formerly called Capture Inbox; a `brain.json` that still has `capture_inbox` is read as `inbox` when `inbox` is absent, and `brain upgrade` renames the key (cli.md §5.15). `concepts` holds concept notes; `documents` holds reference notes, shown as Documents (0045, 0049), and a brain without the key publishes none (warning `DATABASE_NOT_CONFIGURED`, cli.md §5.14.4). A `brain.json` that still has `references` is read as `documents` when `documents` is absent, and `brain upgrade` renames the key (cli.md §5.15).
 
