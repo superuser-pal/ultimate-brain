@@ -11,8 +11,8 @@ import { formatTimestamp } from "./time.ts";
 
 const exec = promisify(execFile);
 
-/** One `brain.json` `repos` entry (spec/schema.md §12, 0042). */
-export interface LinkedRepo { name: string; path: string; area: string; patterns: string[]; commit: string }
+/** One `brain.json` `repos` entry (spec/schema.md §12, 0042; `never_read`, `project` and `kit` from a link kit, 0066). */
+export interface LinkedRepo { name: string; path: string; area: string; patterns: string[]; never_read?: string[]; project?: string; commit: string; kit?: { sha256: string } }
 
 export interface RepoFile { path: string; status: "added" | "modified"; commit: string; committed_at: string; sha256: string; bytes: number }
 
@@ -124,6 +124,39 @@ export async function repoChanges(path: string, patterns: readonly string[], fro
   files.sort((a, b) => a.committed_at.localeCompare(b.committed_at) || (last.get(a.path)!.time - last.get(b.path)!.time) || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   deleted.sort();
   return { files, deleted };
+}
+
+/** Every file at `HEAD` (`[]` for a repo with no commits). `ls-tree` takes no glob pathspecs, so callers match with `globMatch`. */
+export async function filesAtHead(path: string): Promise<string[]> {
+  try {
+    return (await git(path, ["ls-tree", "-r", "-z", "--name-only", "HEAD"])).split("\0").filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/** A file's bytes at `HEAD`, or null when it isn't there. */
+export async function fileAtHead(path: string, file: string): Promise<Buffer | null> {
+  try {
+    return await gitBytes(path, ["cat-file", "blob", `HEAD:${file}`]);
+  } catch {
+    return null;
+  }
+}
+
+/** The committer time of the newest commit touching `file`, or null. */
+export async function lastTouched(path: string, file: string): Promise<Date | null> {
+  try {
+    const out = (await git(path, ["log", "-1", "--format=%ct", "HEAD", "--", file])).trim();
+    return out === "" ? null : new Date(Number(out) * 1000);
+  } catch {
+    return null;
+  }
+}
+
+/** Whether one file has uncommitted changes, or is untracked. */
+export async function fileDirty(path: string, file: string): Promise<boolean> {
+  return (await git(path, ["status", "--porcelain", "--", file])).trim() !== "";
 }
 
 /** Whether the working tree has uncommitted changes (tracked or untracked). */

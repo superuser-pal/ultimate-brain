@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import assert from "node:assert/strict";
-import { access, mkdir, readFile, rm, mkdtemp } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { access, cp, mkdir, readFile, rm, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -53,6 +54,16 @@ try {
     const result = await exec("npx", ["--no-install", "ultimate-brain", command, "--brain", "brain", "--json"], { cwd: temp, env });
     assert.equal(JSON.parse(result.stdout).ok, true);
   }
+  // The generic starter ships with the package and resolves from dist/ (spec/linked-repos.md §7).
+  await mkdir(join(temp, "brain", "areas"), { recursive: true });
+  await cp(join(root, "tests", "fixtures", "brain-acme", "areas", "clients.md"), join(temp, "brain", "areas", "clients.md"));
+  const kit = { kit_version: 1, name: "starter-check", placement: { area: "area-2m7c4h8n" }, knowledge: { patterns: ["decisions/**", "docs/**", "README.md"], never_read: [".env*", "secrets/**"] }, tasks: { mode: "tracked-in-repo", source: { kind: "markdown", path: "TASKS.md", format: "checklist" } }, methodology: { summary: "Record decisions in decisions/ before acting on them; plans in docs/; tasks in TASKS.md." } };
+  const written = `${JSON.stringify({ ...kit, starter: { name: "generic", version: packedVersion } }, null, 2)}\n`;
+  await writeFile(join(temp, "kit.json"), JSON.stringify(kit));
+  const confirm = `sha256:${createHash("sha256").update(written).digest("hex")}`;
+  const started = await exec("npx", ["--no-install", "ultimate-brain", "repo", "new", "--brain", "brain", "--path", join(temp, "starter"), "--starter", "generic", "--input", "kit.json", "--confirm", confirm, "--json"], { cwd: temp, env });
+  assert.deepEqual(JSON.parse(started.stdout).data.files, [".gitignore", "AGENTS.md", "CLAUDE.md", "README.md", "TASKS.md", "brain-kit.json", "decisions/_template.md", "docs/README.md"]);
+  assert.equal(await readFile(join(temp, "starter", "brain-kit.json"), "utf8"), written);
   process.stdout.write("Packed CLI initializes, pins, lints and upgrades a brain successfully.\n");
 } finally {
   if (tarball !== undefined) await rm(tarball, { force: true });
