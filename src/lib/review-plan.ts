@@ -10,7 +10,8 @@ import type { Workspace } from "./workspace.ts";
 export interface ReviewPage { decided: boolean; decided_at: string | null; accept_all: boolean; page_edited_at: string; body_markdown: string | null }
 
 export interface ItemDecision {
-  item_id: string; decision: "accept" | "reject" | "defer";
+  item_id: string; decision: "accept" | "reject" | "defer" | "stale";
+  /** `stale`: an Accept on an item that rests only on excluded evidence; `sync apply` closes it with the reason `source_excluded` (§5.1). */
   /** The exact final wording to apply: the Proposed toggle as read (null for a rejection or deferral). */
   proposed: string | null; proposed_hash: string; rendered_proposed_hash: string | null; base_hash: string; snapshot_hash: string; edited: boolean;
   /** Set by the skill after it re-reads the page just before applying (capture-and-review §7.3): `sync apply` refuses an item whose hashes moved. */
@@ -105,6 +106,10 @@ export function planReviewRow(
     if (token === "pending") continue;
     if (token === "request revision") { out.review_revisions.push({ proposal: id, page_id: row.page_id, item_id: entry.item_id, instruction: section.revision_request }); continue; }
     const stored = published[entry.item_id];
+    if (token === "accept" && item.source_excluded) {
+      decision.items.push({ item_id: entry.item_id, decision: "stale", proposed: null, proposed_hash: textSha(""), rendered_proposed_hash: stored?.proposed_hash ?? null, base_hash: item.current_base_hash, snapshot_hash: sectionHash(section.section), edited: false });
+      continue;
+    }
     if (token === "accept") {
       if (item.held || stored?.held === true) { hold(entry.item_id, "HELD_SOURCE_EXCLUDED"); continue; }
       // Empty, missing or unreadable wording is never applied and never read as a deletion (§7.11).

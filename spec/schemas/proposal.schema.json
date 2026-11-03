@@ -447,6 +447,7 @@
           "snapshot_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
           "state": { "enum": ["applied", "closed", "deferred"] },
           "deferred_to": { "type": "string", "pattern": "^prp-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
+          "reason": { "enum": ["source_excluded"] },
           "edited": { "type": "boolean" }
         }
       }

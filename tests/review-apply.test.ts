@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -300,3 +300,33 @@ async function planFile(dir: string, plan: unknown): Promise<string> {
   await writeFile(file, JSON.stringify(plan));
   return file;
 }
+
+test("an Accept on an item that rests only on excluded evidence closes it stale (source_excluded) and applies nothing", async (context) => {
+  const dir = await fixtureCopy(context);
+  const input = "11111111-2222-4333-8444-555555555555";
+  const { passageHash } = await import("../src/lib/selection.ts");
+  const secret = "Pricing was 95k.";
+  const extract = (id: string, version: number, replaces: string | null, paragraphs: Array<[number, string]>) => {
+    const body = paragraphs.map(([n, text]) => `<!-- passage ¶${n} item s1 -->\n${text}\n`).join("\n");
+    return `---\nid: ${id}\ntype: source\ntitle: Launch extract v${version}\nsource_key: notion:${input}\nkind: minutes\nextract: true\nextract_of: ${input}\nextract_version: ${version}\n${replaces === null ? "" : `replaces: ${replaces}\n`}transcript_hash: ${"a".repeat(64)}\nselection:\n  - id: s1\n    effective: use\npassages:\n${paragraphs.map(([n, text]) => `  - n: ${n}\n    hash: ${passageHash(text)}`).join("\n")}\ncaptured: 2026-12-10\ncontent_hash: ${"b".repeat(64)}\n---\n${body}`;
+  };
+  await writeFile(join(dir, "sources/notion/2026-12-10-extract-v1.md"), extract("src-ex1a3b4c", 1, null, [[1, "A live paragraph."], [2, secret]]));
+  const note = await run(dir, ["note", "new"], { notes: [{ type: "decision", title: "Pricing call", frontmatter: { summary: "s", date: "2026-12-03", assessment: "accepted", projects: [PROJECT], sources: [SYNC] }, body: `SECRET ${secret} ^[src-ex1a3b4c#¶2:${passageHash(secret)}]\n` }] });
+  assert.equal(note.code, 0, note.stdout);
+  const draft = note.json.data.created[0] as { id: string; path: string };
+  const created = await run(dir, ["proposal", "new"], { proposals: [{ kind: "review_notes", source: SYNC, notes: [draft.id] }] });
+  const id = created.json.data.created[0].id as string;
+  const [item] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  await run(dir, ["sync", "record"], { records: [{ id, notion: PAGE, synced_at: NOW, published: item.published }] });
+  const itemId = [...(item.body as string).matchAll(/^## \[[a-z]+ · (it-[0-9a-z]{8})\]/gm)][0]![1]!;
+  // Version 2 of the input drops the paragraph: the draft rests only on restricted text.
+  await writeFile(join(dir, "sources/notion/2026-12-10-extract-v2.md"), extract("src-ex2a3b4c", 2, "src-ex1a3b4c", [[1, "A live paragraph."]]));
+  await mkdir(join(dir, "_suppressions"), { recursive: true });
+  await writeFile(join(dir, "_suppressions", `${input}.json`), JSON.stringify({ input, records: [{ version: 2, passages: [{ extract_of: input, transcript_hash: "a".repeat(64), n: 2 }], full_copies: [], status: "active" }] }));
+  const { results } = await submit(dir, id, decide(item.body as string, itemId, "Accept"));
+  assert.deepEqual(results.map((entry) => [entry.item_id, entry.result, entry.reason]), [[itemId, "closed", "source_excluded"]]);
+  assert.equal((await attributes(dir, draft.path)).lifecycle, "archived", "the draft is not reviewed");
+  const decisions = (await attributes(dir, await pathOf(dir, id))).item_decisions;
+  assert.equal(decisions[0].state, "closed");
+  assert.equal(decisions[0].reason, "source_excluded");
+});
