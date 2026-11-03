@@ -33,7 +33,7 @@ export function cleanupPlan(notes: readonly Note[], loaded: Loaded, input: strin
   const latestPassages = new Set((Array.isArray(latest?.attributes.passages) ? (latest!.attributes.passages as { n: number; hash: string }[]) : []).map((entry) => `${entry.n}:${entry.hash}`));
 
   for (const note of notes) {
-    if (note.type === "source" || note.type === "proposal" || note.type === "view") continue;
+    if (note.type === "source" || note.type === "proposal" || note.type === "view" || note.attributes.lifecycle === "archived") continue;
     const cited = [...(Array.isArray(note.attributes.sources) ? note.attributes.sources : []), ...(typeof note.attributes.source === "string" ? [note.attributes.source] : [])].filter((value): value is string => typeof value === "string");
     const lineages = cited.map((id) => (context.sources.has(id) || !id.includes(":") ? lineageOf(id, context.sources) : id));
     const restriction = restrictionOf(note, context);

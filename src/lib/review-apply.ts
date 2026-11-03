@@ -163,7 +163,16 @@ function acceptItem(workspace: Workspace, proposal: Note, entry: Record<string, 
     const note = workspace.get(String(entry.ref));
     if (note === undefined) throw new Skip("UNKNOWN_ID", `No note ${String(entry.ref)}`);
     // Only a draft can be accepted: one that is already reviewed is simply recorded, any other state (archived, disputed) is not for this item to change.
-    if (note.attributes.lifecycle === "reviewed") return;
+    if (note.attributes.lifecycle === "reviewed") {
+      // Already reviewed: nothing to promote, but wording the user edited is still theirs to apply, never dropped.
+      if (planned.edited) {
+        const document = workspace.edit(note);
+        document.body = bodyOf(proposed);
+        document.attributes.updated = today;
+        workspace.save(note.path, document);
+      }
+      return;
+    }
     if (note.attributes.lifecycle !== "draft") throw new Skip("NOT_A_DRAFT", `${note.id} is ${String(note.attributes.lifecycle)}, not a draft`);
     const document = workspace.edit(note);
     if (planned.edited) document.body = bodyOf(proposed);

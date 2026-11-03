@@ -169,11 +169,12 @@ export function reconcile(workspace: Workspace, input: string, now: string): boo
   const loaded: Loaded = { suppressions: [], restores: [], problems: [] };
   const all = loadSuppressions(workspace.root);
   const mine = file.records.filter((record) => record.kind !== "restore").map((record) => ({ ...record, input, status: "active" }) as unknown as Suppression);
-  loaded.suppressions = [...all.suppressions.filter((entry) => entry.input !== input), ...mine];
+  // Only this input's records count: a note restricted by another input's suppression is that input's cleanup, not this one's (§5.3).
+  loaded.suppressions = mine;
   loaded.restores = [...all.restores.filter((entry) => entry.input !== input), ...file.records.filter((record) => record.kind === "restore").map((record) => ({ input, extract_version: record.extract_version as number, items: record.items as Array<{ note: string; n: number }> }))];
   const context = contextFor(workspace.notes, loaded);
   const open = workspace.notes.some((note) => {
-    if (note.type === "source" || note.type === "proposal" || note.type === "view") return false;
+    if (note.type === "source" || note.type === "proposal" || note.type === "view" || note.attributes.lifecycle === "archived") return false; // a removed note is resolved
     const restriction = restrictionOf(note, context);
     return restriction.whole || restriction.lines.size > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0;
   });
