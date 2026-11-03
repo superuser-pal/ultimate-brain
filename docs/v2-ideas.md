@@ -6,14 +6,14 @@ Deferred ideas and their current disposition. [Decision 0061](../decisions/0061-
 |---|---|
 | Already delivered; retained as history | Basic document ingestion and Notion attachments, local unattended scheduling, area homes and retired-plugin cleanup |
 | 0.8.0 | Selected transcript/voice capture, Domains, editable Review and explicit Waiting On; broader ownership of other people's Tasks remains deferred |
-| 0.9.0 ([0059](../decisions/0059-shared-skills-and-connected-workflows.md)) | Shared skill source, standard/connected workflows, setup/adoption and update coordination |
-| 0.10.0 | Contradiction/staleness/dedup reflection under 0052; later in-catch-up reflection remains deferred |
-| 0.11.0 ([0060](../decisions/0060-hermes-operator-and-learning.md)) | Native Hermes operator, private Telegram, scoped learning, prepared handoffs and recoverable schedules |
+| 0.9.0 ([0059](../decisions/0059-shared-skills-and-connected-workflows.md)) | Shared skill source, standard/connected workflows, setup/adoption and update coordination; linked repos with the link kit ([0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md)) |
+| 0.10.0 ([0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md)) | The brain assistant: reviews Areas, Domains, Projects and Tasks, recommends, and changes through Review rows or a yes in chat |
+| 0.11.0 | Contradiction/staleness/dedup reflection under 0052; later in-catch-up reflection remains deferred |
 | 0.12.0 | Shared Claude Code/Codex memory loop and reliable cited retrieval; evaluate before selecting ranking/index changes |
-| 0.13.0 | Weekly digest/review and targeted correction propagation |
+| 0.13.0 | Weekly digest/review and targeted correction propagation; the assistant's scheduled weekly review |
 | 0.14.0 | Full onboarding, diagnostics, selected seeding and minimal per-area tracking preferences; rich capability profiles remain deferred |
 | Launch readiness | Product packaging, guidance/templates, translation, funnel, fresh-user acceptance and common-failure recovery; no new feature milestone |
-| Post-1.0, evidence-gated | New connected sources, extra converters, richer fact/relationship models and profiles, person/client outputs, research dossiers, MCP, OKF, advanced search infrastructure, direct Notion API, Notion webhooks, n8n/cloud scheduling, worker execution, extra hosts/channels/agents, broad sensitivity tiers and multi-user/hosting |
+| Post-1.0, evidence-gated | Native Hermes operator, private Telegram, scoped learning and native schedules ([0060](../decisions/0060-hermes-operator-and-learning.md), moved by 0064); new connected sources, extra converters, richer fact/relationship models and profiles, person/client outputs, research dossiers, MCP, OKF, advanced search infrastructure, direct Notion API, Notion webhooks, n8n/cloud scheduling, worker execution, extra hosts/channels/agents, broad sensitivity tiers and multi-user/hosting |
 
 Confirmed defects and essential recovery/integrity work belong in the release that needs them or a patch. Revalidate the two CLI loose ends below before scheduling. Basic retention/removal and capture-consent requirements are prerequisites when an integration needs them, not blanket permission to add a pre-launch feature release.
 
@@ -22,7 +22,7 @@ Sources folded in: docs/vision.md "v2", synthesis/synthesis.md §3.3, decisions 
 ## Onboarding and getting knowledge in
 
 ### Onboarding suite
-**Now 0.14.0 under 0061.** Previously moved out of 0.4.0 on 2026-10-20 (no second user yet; CC-35). The owner's identities and finding 3 shipped in 0.3.0 (CC-26). Reuse 0.9.0 project adoption and 0.11.0 Hermes setup rather than building duplicate flows.
+**Now 0.14.0 under 0061.** Previously moved out of 0.4.0 on 2026-10-20 (no second user yet; CC-35). The owner's identities and finding 3 shipped in 0.3.0 (CC-26). Reuse 0.9.0 project adoption and the 0.10.0 assistant rather than building duplicate flows (0064).
 
 **Adds:** a `brain-onboard` skill (or agent) that interviews a new user and populates the brain and Notion, so a new brain is useful on day one instead of empty.
 
@@ -119,7 +119,7 @@ Noted on 2026-10-23, left out of 0.6.0 by the user: an applied fact doesn't refr
 - **Weekly digest (0.13.0, 0061):** decisions, open questions and what changed, with a concise weekly-review flow. **Source:** vision, synthesis.
 - **Person and client profiles,** generated from the notes. **Source:** vision.
 - **Topic research dossiers:** draft, then merge into the brain. **Source:** vision, synthesis (Review 1).
-- **Agent-memory loop (0.12.0, 0061):** Claude Code/Codex propose memories and the user promotes them to knowledge, reusing 0.11.0's shared Hermes learning boundary. `memories/` already exists. Includes session-end capture where supported and explicit fallbacks. **Source:** vision, 0008, 0009.
+- **Agent-memory loop (0.12.0, 0061):** Claude Code/Codex propose memories and the user promotes them to knowledge, defining the shared capture/proposal/promotion boundary itself, for a later Hermes to reuse (0064). `memories/` already exists. Includes session-end capture where supported and explicit fallbacks. **Source:** vision, 0008, 0009.
 
 ### Area homes
 **Decided in 0050 (2026-10-28), built in 0.6.0 (CC-56 to CC-59).** **Target: 0.6.0, designed before the agency brain moves in** (raised by the user on 2026-10-22). With one area, the Spaces work unfiltered. The agency brain and the product repo (0042) bring at least three areas: the user's day-job area, the agency and Ultimate Brain. Every view would then need an area filter. **Shape agreed:** each Area page becomes that area's home. Its template gains the missing tabs (today's tasks, meetings, Review waiting, Inbox), next to its existing "What do we know?" and "What's still open here?" tabs. Today's Home becomes the top level: one line per area with its counts, plus everything due across areas. A new area is one page from the template, with no copy of the Spaces and no migration per area. **Resolved in 0050:** Review stays one queue with a per-area tab; Home shows per-area counts first.
