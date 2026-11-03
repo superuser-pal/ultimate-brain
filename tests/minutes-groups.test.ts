@@ -82,7 +82,7 @@ test("a group ends at the next heading, group line or subject; a line moved into
 <details><summary>Scope</summary>
 Due: not a date
 </details>
-- Meeting only: anything here is a quick line
+- anything here is a quick line
 **Tasks**
 - [s1.i2] Launch moves to March. "launch moves to March"
 ### Open questions
@@ -94,7 +94,7 @@ Due: not a date
   assert.deepEqual(plan.quick.map((line) => [line.id, line.text]), [
     [null, "Reply to Bob"],
     ["s1.i1", "Book the venue for the launch event. \"book the venue for the launch event\""],
-    [null, "Meeting only: anything here is a quick line"],
+    [null, "anything here is a quick line"],
   ]);
   assert.deepEqual(summary.items.map((item) => item.id), ["s1.i2", "s1.i3"]);
   assert.deepEqual(plan.scopes, [], "a Scope inside Quick follow-ups is not read");
@@ -354,4 +354,74 @@ test("the blind run: minutes a fresh agent wrote from the new prompt are accepte
   assert.deepEqual(plan.quotes, []);
   assert.deepEqual(plan.quick.map((line) => line.text), ["Send Sam the link to the pilot dashboard", "Book a 15-minute call with procurement to ask the cost of the Bristol thermal printers"]);
   assert.deepEqual(plan.scopes.map((scope) => [scope.item, scope.due, scope.project, scope.problems]), [["s0.i3", "2026-12-18", "Northwind rollout", []], ["s0.i4", null, "Northwind rollout", []]]);
+});
+
+test("fail closed: a control-like to-do in Quick follow-ups blocks instead of being skipped", () => {
+  const plan = planExtract(parseSummary(`## [s1] Small talk
+### Quick follow-ups
+- [ ] Selection: Meeting only
+### Tasks
+- [s1.i1] Holiday "holiday plans in Lisbon"
+`), TRANSCRIPT);
+  assert.equal(plan.ok, false);
+  assert.equal(plan.problems[0]?.code, "SELECTION_UNREADABLE", "a blocked plan writes no body");
+});
+
+test("Scope fields: emphasis around the name, Due on one line only, and the closing tag on a content line", () => {
+  const plan = planExtract(parseSummary(`## [s1] A
+### Tasks
+- [s1.i1] Book the venue "book the venue for the launch event"
+<details><summary>Scope</summary>
+*Due:* 2026-03-01
+after lunch
+*Notes:* bring the floor plan</details>
+- [s1.i2] Launch "launch moves to March"
+<details><summary>Scope</summary>
+Due:
+2026-03-02
+</details>
+`), TRANSCRIPT);
+  assert.equal(plan.ok, true, JSON.stringify(plan.problems));
+  assert.deepEqual(plan.scopes.map((scope) => [scope.item, scope.due, scope.notes, scope.problems]), [
+    ["s1.i1", "2026-03-01", "bring the floor plan", ["Due continues on another line: after lunch"]],
+    ["s1.i2", null, null, ["Due continues on another line: 2026-03-02"]],
+  ]);
+});
+
+test("inside a closed Scope, section words are text; an item line blocks; a Selection line or subject still ends it", () => {
+  const text = (inner: string) => `## [s1] A
+### Tasks
+- [s1.i1] Book the venue "book the venue for the launch event"
+<details><summary>Scope</summary>
+Notes: first
+${inner}
+</details>
+`;
+  const words = planExtract(parseSummary(text("Open questions:\n- ask about parking")), TRANSCRIPT);
+  assert.equal(words.ok, true, JSON.stringify(words.problems));
+  assert.equal(words.scopes[0]?.notes, "first\nOpen questions:\nask about parking");
+  const item = planExtract(parseSummary(text("[s1.i9] Meeting only: Holiday \"holiday plans in Lisbon\"")), TRANSCRIPT);
+  assert.equal(item.ok, false, "an item line hidden in a Scope blocks");
+  const selection = planExtract(parseSummary(text("Selection: Meeting only")), TRANSCRIPT);
+  assert.deepEqual(selection.mappings.map((mapping) => mapping.effective), ["meeting only"], "a Selection line is never hidden by a Scope");
+});
+
+test("an unclosed Scope also ends at a list line that is not a field, which then blocks as usual", () => {
+  const plan = planExtract(parseSummary(`## [s1] A
+### Tasks
+- [s1.i1] Book the venue "book the venue for the launch event"
+<details><summary>Scope</summary>
+Due: 2026-12-17
+- [ ] stray line
+`), TRANSCRIPT);
+  assert.equal(plan.ok, false);
+  assert.deepEqual(plan.problems.map((problem) => problem.code), ["UNNUMBERED_LINE"]);
+});
+
+test("a `* ` bullet is a list line, and ticked to-dos are read in every list form", () => {
+  const stray = planExtract(parseSummary("## [s1] A\n* a line with no id\n"), TRANSCRIPT);
+  assert.deepEqual(stray.problems.map((problem) => problem.code), ["UNNUMBERED_LINE"]);
+  const plan = planExtract(parseSummary("## [s1] A\n### Quick follow-ups\n* Reply to Bob\n- [x]\n1. [x] [s1.i1] Done already\n"), TRANSCRIPT);
+  assert.equal(plan.ok, true, JSON.stringify(plan.problems));
+  assert.deepEqual(plan.quick.map((line) => [line.text, line.done]), [["Reply to Bob", false], ["", true], ["Done already", true]]);
 });
