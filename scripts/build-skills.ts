@@ -243,7 +243,6 @@ if (process.argv[1] !== undefined && pathToFileURL(process.argv[1]).href === imp
   const check = process.argv.includes("--check");
   if (process.argv.includes("--snapshot")) {
     await writeSnapshotManifest();
-    console.log("wrote .agents/skills/snapshot.json");
     process.exit(0);
   }
   const problems = await validateSkills();
