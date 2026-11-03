@@ -1614,18 +1614,97 @@ brain proposal revise --input <file|-> [--dry-run] [--json]
 
 **Re-rendering a consumed submission (capture-and-review §7.4 b).** `sync render` of a published Review row of the new layout still sends no body; besides `sections["Review summary"]` it returns `item_updates: [{ item_id, reason, section }]` for the pending items whose section the user must see changed: `revision_drafted` (the section holds the new *Proposed* and a toggle **Previous proposal**, which is never read, and `Decision: Pending`) and `base_changed` (*Current* shows what the target holds now; for an `update_fact` that is the fact's current value). An applied or closed item is never listed. `review_published_after` is the `published` value to record once **every** listed section was written (the full `@review` items map with the new hashes); the skill writes each section only if it still equals the `submitted_hash` it read, otherwise it shows a "Brain update" toggle and records nothing for that item.
 
+### 5.28 Pinned skills (0059, [skills-delivery.md](skills-delivery.md))
+
+Every brain pins the operational skills it uses in `skills.lock.json` at its root (skills-delivery §3). CC-100 builds this section. The formats, the command changes to `init`, `link`, `upgrade` and `lint`, rollback and the transition are in skills-delivery.md. CC-100 rewrites §3.5, §5.1, §5.2, §5.10, §5.12 and §5.15 to match, in the same PR as the code.
+
+**Pin guard.** Every command except `init` resolves a brain (§4). After resolution and the `RECOVERY_NEEDED` check, and before reading input or writing anything, each such command determines the brain's state (skills-delivery §3, rows 1 to 4 only).
+- **Exempt:** `status`, `lint`, `upgrade` and `recover` always run, so the user can see and repair the pin.
+- **Guarded:** every other command, including `config`, read-only commands (`query`, `log`, `proposal list`, `repo changes`, `index --check`) and every `--dry-run`. An incompatible pin means the skill calling them may expect another contract.
+- **Not affected:** `--help`, `--version`, usage errors and `RETIRED` come before resolution. `brain link` guards the resolved brain, not the linked repo.
+
+| State | Guarded command |
+|---|---|
+| `unpinned` | runs as before 0.9.0, with no warning (skills-delivery §9) |
+| `invalid` | refuses `SKILLS_PIN_INVALID` |
+| `incompatible` | refuses `SKILLS_INCOMPATIBLE` |
+| `missing` | refuses `SKILLS_SNAPSHOT_MISSING` |
+| `drift`, `pinned` | runs; drift is a lint error (`product-file`), never a stop. The guard doesn't compute it. |
+
+**Messages** (normative wording):
+- `{…}` is filled in. Paths are brain-relative; a message never contains a machine path.
+- "Newer" and "older" than the range are as skills-delivery §2.1 defines them. A version that is both gets the newer message.
+
+| Code | Message |
+|---|---|
+| `SKILLS_INCOMPATIBLE` (newer) | `This brain's skills ({name} {version}) need ultimate-brain {cli}; this CLI is {running}. Run brain upgrade to install the skills this CLI ships, or keep these skills with npm install -g ultimate-brain@{installed_by}.` |
+| `SKILLS_INCOMPATIBLE` (older) | `This brain's skills ({name} {version}) need ultimate-brain {cli}; this CLI is {running}. Install the version that pinned them: npm install -g ultimate-brain@{installed_by}.` |
+| `SKILLS_PIN_INVALID` | `skills.lock.json is invalid ({reason}). Run brain upgrade to rewrite it.` (`{reason}` per skills-delivery §3) |
+| `SKILLS_SNAPSHOT_MISSING` (guard) | `Pinned skill {skill} is missing from {tree} ({name} {version}). Run brain upgrade to restore it.` (`{tree}` is `.agents/skills` or `.claude/skills`; the first missing skill per skills-delivery §3) |
+| `SKILLS_SNAPSHOT_MISSING` (`link`) | `{path} differs from the pinned skills ({name} {version}). Run brain upgrade in the brain, then brain link again.` |
+| `SKILLS_SNAPSHOT_INVALID` | `The skills shipped with ultimate-brain {running} are unusable ({reason}). Reinstall: npm install -g ultimate-brain@{running}.` (`{reason}` = the skills-delivery §2.3 reason, `not compatible with {running} ({cli})`, or `same version, different content`) |
+| `SKILLS_DOWNGRADE` | `This brain pins {name} {pinned}; this CLI ships the older {shipped}. Install ultimate-brain@{installed_by}, or roll back as docs/releasing.md says.` |
+
+**Warnings:**
+
+| Code | Command | Message |
+|---|---|---|
+| `SKILLS_COMPETING` | `init`, `upgrade`, `link` | `{n} competing skill copies; see data.skills.competing and remove them.` |
+| `SKILLS_UNPINNED` | `link` | `The brain's skills are not pinned; the linked repo got the skills of ultimate-brain {running}. Run brain upgrade in the brain.` |
+| `SKILLS_LOCK_REPLACED` | `upgrade` | `skills.lock.json was invalid ({reason}) and was replaced.` |
+
+**`details`** of each error, with absent values left out:
+- `SKILLS_INCOMPATIBLE`, `SKILLS_PIN_INVALID`, `SKILLS_SNAPSHOT_MISSING`: `{ "state", "name", "version", "cli", "running", "installed_by", "reason", "skill", "path" }`.
+- `SKILLS_SNAPSHOT_INVALID`: `{ "reason", "running" }`.
+- `SKILLS_DOWNGRADE`: `{ "name", "pinned", "shipped", "installed_by" }`.
+
+**Error codes** (added to §3.5 by CC-100):
+
+| Code | Exit | When |
+|---|---|---|
+| `SKILLS_PIN_INVALID` | 3 | the brain's state is `invalid` |
+| `SKILLS_INCOMPATIBLE` | 3 | the brain's state is `incompatible` |
+| `SKILLS_SNAPSHOT_MISSING` | 3 | the brain's state is `missing`; for `link`, a pinned file it copies is missing or differs |
+| `SKILLS_SNAPSHOT_INVALID` | 3 | the package snapshot is invalid or excludes the running CLI (`init`, `upgrade`, `link` on an unpinned brain); or a released snapshot changed content under the same version (`upgrade`) |
+| `SKILLS_DOWNGRADE` | 5 | `upgrade` would lower the pin's version under the same snapshot name |
+
+**`brain status` gains `data.skills`** (always present):
+
+```json
+"skills": {
+  "state": "pinned",
+  "name": "ultimate-brain-skills", "version": "1.2.0", "cli": ">=0.9.0 <0.10.0",
+  "integrity": "sha256-…", "installed_by": "0.9.0", "running": "0.9.1",
+  "reason": null,
+  "package": { "name": "ultimate-brain-skills", "version": "1.3.0", "compatible": true, "reason": null },
+  "drift": [],
+  "competing": [ { "kind": "global", "name": "brain-query", "path": "~/.claude/skills/brain-query" } ]
+}
+```
+
+- **`state`** is one of skills-delivery §3's states.
+  - `unpinned` and `invalid` set `name`, `version`, `cli`, `integrity` and `installed_by` to `null`.
+  - `reason` is the invalid reason for `invalid`, the first missing `{tree}/{skill}` for `missing`, and `null` otherwise.
+- **`package`** describes the package snapshot. `name` and `version` come from its manifest when the manifest passes its schema, and are `null` otherwise. `compatible` is per skills-delivery §2.3. `reason` is the §2.3 reason when the package snapshot is invalid, and `null` otherwise.
+- **`drift`** lists, sorted, the brain-relative paths that lint's `product-file` reports for skills: a missing folder, then a missing, mismatched or unlisted file.
+  - It is computed against the lock for `pinned`, `drift`, `missing` and `incompatible`, and against the package snapshot for `unpinned`. It is empty when that package snapshot is invalid: lint's single broken-install error is reported by lint and by `package.reason`, never listed here.
+  - An unlisted folder is one entry; its contents are not listed.
+  - It is `[]` for `invalid`.
+- **`competing`** is as skills-delivery §5.3 defines it.
+- **Skills act on the state.** Skills call `brain status` first. When `state` is `invalid`, `incompatible` or `missing`, the skill stops and shows the message the guard would give.
+
 ### 5.29 `brain repo` link kits, rollup and unlink (0066, linked-repos.md)
 
 ```text
 brain repo kit check (--path <path> | --input <file|->) [--name <name>]
-brain repo kit write --path <path> --input <file|-> [--replace <sha256>]
+brain repo kit write --path <path> --input <file|-> --confirm <sha256> [--replace <sha256>]
 brain repo add <name> --path <path> --kit
 brain repo refresh <name> [--dry-run]
 brain repo show <name>
-brain repo health [<name>] [--input <file|->]
+brain repo health [<name>] [--input <file|->] [--rollup-as-of <timestamp>]
 brain repo tasks <name> [--input <file|->]
 brain repo unlink <name>
-brain repo new --path <path> --starter generic --input <file|->
+brain repo new --path <path> --starter generic --input <file|-> --confirm <sha256>
 ```
 
 The model, the kit's fields and their checks, the rollup text and the health checks are in [linked-repos.md](linked-repos.md); this section holds the commands. They read linked repos with read-only Git commands (as §5.16), and they write only `brain.json` `repos`, except for `kit write` and `new`, which also write in a linked repo. Every command that reads a kit validates it against `spec/schemas/link-kit.schema.json` and runs the checks of linked-repos.md §2.2 (`KIT_INVALID`, exit 4, with `details` `{pointer, message}`).
@@ -1645,6 +1724,7 @@ It exits 0 even with problems: this is the command the skill uses to show them. 
   2. The kit is valid: the schema, and every check of linked-repos.md §2.2 (`KIT_INVALID`). `kit write` needs the brain (§4) for these checks. For a repo already linked, the entry found by `path` must have the kit's `name`.
   3. `brain-kit.json` isn't a symbolic link or a folder (`OUTSIDE_ROOT`).
   4. An existing file needs `--replace` equal to its current hash (`KIT_EXISTS` without the flag, `KIT_CHANGED` when the hash differs); a missing file with `--replace` is `KIT_MISSING`.
+  5. `--confirm` equals the hash of the bytes it will write (linked-repos.md §3). Without it: `CONFIRMATION_REQUIRED`; a different hash: `CONFIRMATION_MISMATCH`.
 - It writes with 2-space indent, keys in linked-repos.md §2.2 order, and a trailing newline, atomically (§3.6). It never stages or commits.
 - `data` = `{ path_abs, sha256, action: created|updated|unchanged }`; `unchanged` when the bytes are the same.
 - Logs `repo-kit - "<name>" sha=<first 12 hex>`.
@@ -1661,7 +1741,7 @@ It exits 0 even with problems: this is the command the skill uses to show them. 
 - `kit` is `null` unless the status is `current` or `changed`.
 - `workflow` is `{ id, state }` of the workflow in state `connected` or `paused` whose `folder.repo` is this name, or `null` (connected-workflows.md §3.1 allows at most one).
 
-**`repo health [<name>]`** writes nothing. It runs the checks of linked-repos.md §6 on one repo, or on all repos in `brain.json` order. `--input` takes the issue data of `repo tasks` for a GitHub or GitLab source, so `STATUS_UNMAPPED` can be checked; it needs `<name>`. `data` = `{ repos: [{ name, checks: [{code, severity, message, path?}] }] }`, checks in the table's order. The exit code is 1 when any check is an error.
+**`repo health [<name>]`** writes nothing. `--rollup-as-of` (with `<name>`) enables `ROLLUP_STALE`. It runs the checks of linked-repos.md §6 on one repo, or on all repos in `brain.json` order. `--input` takes the issue data of `repo tasks` for a GitHub or GitLab source, so `STATUS_UNMAPPED` can be checked; it needs `<name>`. `data` = `{ repos: [{ name, checks: [{code, severity, message, path?}] }] }`, checks in the table's order. The exit code is 1 when any check is an error.
 
 **`repo tasks <name>`** writes nothing. It builds the read-only rollup (linked-repos.md §4) of a `tracked-in-repo` repo.
 - Refusals, all exit 4: a legacy entry is `NO_KIT`, a kit whose mode is `connected` is `MODE_CONNECTED`, and a kit without `tasks` is `NO_TASKS`.
@@ -1678,7 +1758,7 @@ It exits 0 even with problems: this is the command the skill uses to show them. 
 **`repo new`** creates a new repo from the generic starter (linked-repos.md §7).
 - `--input` is the kit, with `starter` left out (the command sets it). `--starter` accepts only `generic` (`USAGE`).
 - `path` must not exist, or must be an empty folder (`TARGET_NOT_EMPTY`), and must not be inside the brain (`OUTSIDE_ROOT`).
-- The kit is checked as for `kit write`, plus the source rule of linked-repos.md §7.
+- The kit is checked as for `kit write`, including `--confirm` on the bytes of the kit file it writes (with `starter` set), plus the source rule of linked-repos.md §7.
 - It writes the starter's files of linked-repos.md §7 and the kit, runs `git init`, and commits everything with `Start from the Ultimate Brain generic starter`. A commit that fails (no Git identity) gives the warning `GIT_COMMIT_SKIPPED` and keeps the files.
 - It doesn't link the repo: the skill runs `repo add --kit` next.
 - `data` = `{ path_abs, files: [path], sha256, commit }`, with `files` sorted by path and `commit` the short hash, or `null` when the commit was skipped.
@@ -1686,4 +1766,4 @@ It exits 0 even with problems: this is the command the skill uses to show them. 
 
 **Changes to §5.16.** `repo changes` leaves out the files that match the entry's `never_read`, and always leaves out `brain-kit.json`. For `repo add` without `--kit`, `never_read` and `project` can't be set; they come only from a kit.
 
-New error codes, all with exit 4: `KIT_MISSING`, `KIT_INVALID`, `KIT_EXISTS`, `KIT_CHANGED`, `NO_KIT`, `MODE_CONNECTED`, `NO_TASKS`. Existing codes used: `REPO_NOT_FOUND`, `REPO_IS_BRAIN`, `OUTSIDE_ROOT`, `TARGET_NOT_EMPTY`, `UNKNOWN_ID`, `USAGE`. The task that builds these commands adds the new codes to §3.5, the rows of §1.1 (the link skill: `repo kit check`, `repo kit write`, `repo add`, `repo refresh`, `repo show`, `repo health`, `repo tasks`, `repo unlink`, `repo new`, `link`) and §1's exceptions.
+New error codes, all with exit 4: `KIT_MISSING`, `KIT_INVALID`, `KIT_EXISTS`, `KIT_CHANGED`, `NO_KIT`, `MODE_CONNECTED`, `NO_TASKS`, `CONFIRMATION_REQUIRED`, `CONFIRMATION_MISMATCH`. Existing codes used: `REPO_NOT_FOUND`, `REPO_IS_BRAIN`, `OUTSIDE_ROOT`, `TARGET_NOT_EMPTY`, `UNKNOWN_ID`, `USAGE`. CC-102 adds the new codes to §3.5, the rows of §1.1 (the link skill: `repo kit check`, `repo kit write`, `repo add`, `repo refresh`, `repo show`, `repo health`, `repo tasks`, `repo unlink`, `repo new`, `link`) and §1's exceptions.

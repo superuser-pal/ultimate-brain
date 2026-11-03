@@ -25,7 +25,7 @@ A space is a **core** plus the **modules** you chose at onboarding. You can turn
 | Module | Databases | What it adds to the Spaces and templates | Default |
 |---|---|---|---|
 | **Core** | Inbox, Meetings, Projects, Areas, People, Review | Home, Meetings, Projects, Review; the Inbox tab of Knowledge; area homes' Meetings, Review waiting and Inbox tabs | always on |
-| **Domains** | Domains | group Areas by work or life context; Areas can have one Domain or none | off |
+| **Domains** | Domains (in every space, 0065) | group Areas by work or life context; Areas can have one Domain or none. The database and Areas · Domain exist with the module off; the module decides whether the brain uses them and whether pages show them | off |
 | **Knowledge** | Decisions, Questions, Concepts | the Decisions, Questions and Concepts tabs of Knowledge; "What have we decided here?", "What's still open here?" and "What do we know?" (Decisions, Concepts) on project and area pages | on |
 | **Orgs** | Orgs | the Orgs tab of Knowledge; Client on Projects, Org on People; "Clients via projects" on area pages | on |
 | **Documents** | Documents (was References) | the Documents tab of Knowledge and of "What do we know?"; Keep as document and Only keep on the Inbox; Promote to document on Decisions and Concepts | off |
@@ -33,7 +33,7 @@ A space is a **core** plus the **modules** you chose at onboarding. You can turn
 | **Tasks** | Tasks, or your own tasks database (0018) | the Tasks Space; "What's on my plate here?" on project and area pages; Home's "What's on today?" Tasks tab, its "due" counts and "Due across areas" | off |
 | **Planning** | Goals, Key Results | the Plan Space; Goal on Projects; "What am I working toward here?" on area pages | off |
 
-A part of a page that belongs to a module that is off is left out, and nothing replaces it (0050). The build prompts create only the chosen modules; each module's own steps, for turning it on later, are in [notion/modules/](../notion/modules/).
+A part of a page that belongs to a module that is off is left out, and nothing replaces it (0050). The build prompts create only the chosen modules, except the Domains database and its relations, which every space has (0065); each module's own steps, for turning it on later, are in [notion/modules/](../notion/modules/).
 
 ### What we borrow from each template
 
@@ -98,7 +98,7 @@ Ongoing responsibilities (clients, health, learning…).
 | Property | Type | Owner |
 |---|---|---|
 | Type | Select: Business, Personal | You |
-| Domain | Relation → Domains, two-way with Areas, Limit: 1 page (Domains module) | Brain; your edits are corrections |
+| Domain | Relation → Domains, two-way with Areas, Limit: 1 page (in every space, 0065; the brain reads it with the Domains module on) | Brain; your edits are corrections |
 | Goals | Relation → Goals | You |
 | Projects | Relation → Projects | You |
 | Meetings | Relation → Meetings (two-way with Area) | Brain |
@@ -119,9 +119,9 @@ Ongoing responsibilities (clients, health, learning…).
 
 Page body: a toggle heading **Brief** (brain-written, 0041: the area's projects, reviewed decisions and open questions), then the template's linked views and "My notes". The publish appends the toggle at the end of a page that has none; drag it to the top once.
 
-### Domains database (optional, 0055)
+### Domains database (0055; in every space, 0065)
 
-Name (title) and Summary (text) are brain-owned after creation; Lifecycle (select: Draft, Reviewed, Disputed, Archived) and Archived (checkbox) are yours. Brain ID (text) and Last Synced (date) are system fields. Areas is the inverse of Areas · Domain, limited on the Area side to one page by hand. Org is a correctable relation to Orgs when that module is on; Orgs · Domains is its inverse. The Domain page shows Areas and, when enabled, Org.
+Every space has it, with the Domains module on or off: the module decides only whether the brain reads and publishes Domains and whether pages show them (migration 0014 adds it to an older space). Name (title) and Summary (text) are brain-owned after creation; Lifecycle (select: Draft, Reviewed, Disputed, Archived) and Archived (checkbox) are yours. Brain ID (text) and Last Synced (date) are system fields. Areas is the inverse of Areas · Domain, limited on the Area side to one page by hand. Org is a correctable relation to Orgs, created when the space has an Orgs database; Orgs · Domains is its inverse. The Domain page shows Areas and, when enabled, Org.
 
 ### 3.2 Goals
 | Property | Type | Owner |

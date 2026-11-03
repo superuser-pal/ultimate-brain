@@ -6,14 +6,14 @@ Deferred ideas and their current disposition. [Decision 0061](../decisions/0061-
 |---|---|
 | Already delivered; retained as history | Basic document ingestion and Notion attachments, local unattended scheduling, area homes and retired-plugin cleanup |
 | 0.8.0 | Selected transcript/voice capture, Domains, editable Review and explicit Waiting On; broader ownership of other people's Tasks remains deferred |
-| 0.9.0 ([0059](../decisions/0059-shared-skills-and-connected-workflows.md)) | Shared skill source, standard/connected workflows, setup/adoption and update coordination |
-| 0.10.0 | Contradiction/staleness/dedup reflection under 0052; later in-catch-up reflection remains deferred |
-| 0.11.0 ([0060](../decisions/0060-hermes-operator-and-learning.md)) | Native Hermes operator, private Telegram, scoped learning, prepared handoffs and recoverable schedules |
+| 0.9.0 ([0059](../decisions/0059-shared-skills-and-connected-workflows.md)) | Shared skill source, standard/connected workflows, setup/adoption and update coordination; linked repos with the link kit ([0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md)) |
+| 0.10.0 ([0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md)) | The brain assistant: reviews Areas, Domains, Projects and Tasks, recommends, and changes through Review rows or a yes in chat |
+| 0.11.0 | Contradiction/staleness/dedup reflection under 0052; later in-catch-up reflection remains deferred |
 | 0.12.0 | Shared Claude Code/Codex memory loop and reliable cited retrieval; evaluate before selecting ranking/index changes |
-| 0.13.0 | Weekly digest/review and targeted correction propagation |
+| 0.13.0 | Weekly digest/review and targeted correction propagation; the assistant's scheduled weekly review |
 | 0.14.0 | Full onboarding, diagnostics, selected seeding and minimal per-area tracking preferences; rich capability profiles remain deferred |
 | Launch readiness | Product packaging, guidance/templates, translation, funnel, fresh-user acceptance and common-failure recovery; no new feature milestone |
-| Post-1.0, evidence-gated | New connected sources, extra converters, richer fact/relationship models and profiles, person/client outputs, research dossiers, MCP, OKF, advanced search infrastructure, direct Notion API, Notion webhooks, n8n/cloud scheduling, worker execution, extra hosts/channels/agents, broad sensitivity tiers and multi-user/hosting |
+| Post-1.0, evidence-gated | Native Hermes operator, private Telegram, scoped learning and native schedules ([0060](../decisions/0060-hermes-operator-and-learning.md), moved by 0064); new connected sources, extra converters, richer fact/relationship models and profiles, person/client outputs, research dossiers, MCP, OKF, advanced search infrastructure, direct Notion API, Notion webhooks, n8n/cloud scheduling, worker execution, extra hosts/channels/agents, broad sensitivity tiers and multi-user/hosting |
 
 Confirmed defects and essential recovery/integrity work belong in the release that needs them or a patch. Revalidate the two CLI loose ends below before scheduling. Basic retention/removal and capture-consent requirements are prerequisites when an integration needs them, not blanket permission to add a pre-launch feature release.
 
@@ -22,7 +22,7 @@ Sources folded in: docs/vision.md "v2", synthesis/synthesis.md §3.3, decisions 
 ## Onboarding and getting knowledge in
 
 ### Onboarding suite
-**Now 0.14.0 under 0061.** Previously moved out of 0.4.0 on 2026-10-20 (no second user yet; CC-35). The owner's identities and finding 3 shipped in 0.3.0 (CC-26). Reuse 0.9.0 project adoption and 0.11.0 Hermes setup rather than building duplicate flows.
+**Now 0.14.0 under 0061.** Previously moved out of 0.4.0 on 2026-10-20 (no second user yet; CC-35). The owner's identities and finding 3 shipped in 0.3.0 (CC-26). Reuse 0.9.0 project adoption and the 0.10.0 assistant rather than building duplicate flows (0064).
 
 **Adds:** a `brain-onboard` skill (or agent) that interviews a new user and populates the brain and Notion, so a new brain is useful on day one instead of empty.
 
@@ -99,13 +99,13 @@ Composable profiles (client work, meeting-heavy work, research, writing, learnin
 ## Maintenance and quality
 
 ### Contradiction and staleness reports
-A semantic lint across notes. **Source:** vision, synthesis §3.3 (Review 5). **Decided in 0052; now 0.10.0 under [0061](../decisions/0061-roadmap-and-launch-boundary.md):** `brain-reflect` writes contradictions and stale facts as Review rows.
+A semantic lint across notes. **Source:** vision, synthesis §3.3 (Review 5). **Decided in 0052; now 0.11.0 under [0061](../decisions/0061-roadmap-and-launch-boundary.md) as amended by 0064:** `brain-reflect` writes contradictions and stale facts as Review rows.
 
 ### Correction sweep command
-One correction propagated to affected restatements through reviewable changes. **Source:** synthesis §3.2. Reflection in 0.10.0 proposes a fix for a stale restatement it finds; **0.13.0 under 0061** adds the targeted sweep after a correction. Preserve independently supported claims; no blind global replacement.
+One correction propagated to affected restatements through reviewable changes. **Source:** synthesis §3.2. Reflection in 0.11.0 proposes a fix for a stale restatement it finds; **0.13.0 under 0061** adds the targeted sweep after a correction. Preserve independently supported claims; no blind global replacement.
 
 ### Dedup audit
-Finds likely duplicate notes and people and writes `merge` proposals. **Source:** synthesis §3.3. **Decided in 0052; now 0.10.0 under 0061:** reflection's near-duplicate candidates and the `near-duplicate` lint warning.
+Finds likely duplicate notes and people and writes `merge` proposals. **Source:** synthesis §3.3. **Decided in 0052; now 0.11.0 under 0061 as amended by 0064:** reflection's near-duplicate candidates and the `near-duplicate` lint warning.
 
 ### Two CLI loose ends
 Noted on 2026-10-23, left out of 0.6.0 by the user: an applied fact doesn't refresh a summary that states it, and `brain report --help` with no subcommand exits 2 instead of showing help. **Target:** the next patch that touches the CLI.
@@ -119,7 +119,7 @@ Noted on 2026-10-23, left out of 0.6.0 by the user: an applied fact doesn't refr
 - **Weekly digest (0.13.0, 0061):** decisions, open questions and what changed, with a concise weekly-review flow. **Source:** vision, synthesis.
 - **Person and client profiles,** generated from the notes. **Source:** vision.
 - **Topic research dossiers:** draft, then merge into the brain. **Source:** vision, synthesis (Review 1).
-- **Agent-memory loop (0.12.0, 0061):** Claude Code/Codex propose memories and the user promotes them to knowledge, reusing 0.11.0's shared Hermes learning boundary. `memories/` already exists. Includes session-end capture where supported and explicit fallbacks. **Source:** vision, 0008, 0009.
+- **Agent-memory loop (0.12.0, 0061):** Claude Code/Codex propose memories and the user promotes them to knowledge, defining the shared capture/proposal/promotion boundary itself, for a later Hermes to reuse (0064). `memories/` already exists. Includes session-end capture where supported and explicit fallbacks. **Source:** vision, 0008, 0009.
 
 ### Area homes
 **Decided in 0050 (2026-10-28), built in 0.6.0 (CC-56 to CC-59).** **Target: 0.6.0, designed before the agency brain moves in** (raised by the user on 2026-10-22). With one area, the Spaces work unfiltered. The agency brain and the product repo (0042) bring at least three areas: the user's day-job area, the agency and Ultimate Brain. Every view would then need an area filter. **Shape agreed:** each Area page becomes that area's home. Its template gains the missing tabs (today's tasks, meetings, Review waiting, Inbox), next to its existing "What do we know?" and "What's still open here?" tabs. Today's Home becomes the top level: one line per area with its counts, plus everything due across areas. A new area is one page from the template, with no copy of the Spaces and no migration per area. **Resolved in 0050:** Review stays one queue with a per-area tab; Home shows per-area counts first.
@@ -156,7 +156,7 @@ Unattended ingest and sync with n8n or Hermes. **Source:** vision. **Decided in 
 **Raised 2026-10-29 (decision 0054).** 0.7.1 uses Notion's "send message to agent" only from deliberate button clicks, running Brain Assistant inside Notion. Left here: a bridge from a Notion button or automation to a local or Hermes catch-up (a webhook action, https://www.notion.com/help/webhook-actions); event-driven triggers (a property change, a new row, a schedule), which official docs didn't confirm for that action; and replacing the 0.7.0 schedules with Notion triggers. **Revisit:** after U-22 measures what the buttons cost.
 
 ### Hermes as an always-on brain operator
-**Now planned for 0.11.0 under [0060](../decisions/0060-hermes-operator-and-learning.md).** The paragraph below records the earlier investigation; unattended catch-up has since shipped in 0.7.0. The new milestone includes native operation, private Telegram, scoped learning and prepared handoffs; external worker execution and supervision remain post-1.0.
+**Post-1.0 ([0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md); designed in [0060](../decisions/0060-hermes-operator-and-learning.md), previously planned for 0.11.0).** The paragraph below records the earlier investigation; unattended catch-up has since shipped in 0.7.0. The new milestone includes native operation, private Telegram, scoped learning and prepared handoffs; external worker execution and supervision remain post-1.0.
 
 **Raised by the user on 2026-10-22 (U-15 grill).** Hermes (Nous Research's Hermes Agent) would run the brain next to Claude Code and Codex: scheduled catch-ups, captures and answers from a phone. It would not build the product (0044). **Why:** the brain pays back only when it runs regularly; an operator that runs on its own makes the habit bar ("every meeting ingested within 2 working days") automatic. **Open:** whether it can run the shared skills and the CLI unattended, its Notion access, how a scheduled catch-up asks its one batch of questions, and how it answers short questions fast (see "Retrieval index over Markdown"). **CC-50 (reviews/07-hermes-and-search.md, 2026-10-23):** Hermes loads the brain's skills from `.agents/skills/` after `hermes skills trust`, runs scheduled jobs in the brain folder with `AGENTS.md`, reaches Notion through MCP, and no command the skills run needs its approval; a reply to a scheduled delivery can continue the run. Missing on our side: catch-up has no unattended mode, the skills were tested only on Claude models, and brain-connect-notion has no Hermes setup lines. **Decided in 0051 (2026-10-29):** one turn on defaults, which works with any scheduler; local `claude -p` is supported first and Hermes is documented as possible. **Next step:** a trial of Hermes on the user's brain with a Claude model pinned, after 0.7.0; the two-turn shape (post the batch, run on the reply) stays here for it. Ties to "Schedulers" and "Adapters for more agent platforms".
 

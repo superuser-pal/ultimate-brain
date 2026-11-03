@@ -2,6 +2,14 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.8.1 — 2026-11-03
+
+- CC-91 (#176): development only: a Claude reviewer sub-agent reviews each PR and its pass turns `merge-ready` green, so PRs no longer wait for Codex (decision 0063).
+- CC-92 (#177): development only: `task.mjs start --new` starts a task that has no row yet, and `task.mjs clean` removes every merged task worktree.
+- CC-93 (#178): `release.mjs` checks the npm login before it commits and tags, waits for CI on the release commit, and says how to finish after a failed publish; the upgrade steps install the exact version.
+- CC-94 (#179): development only: done releases move from build/TASKS.md to build/HISTORY.md, so a session reads about 24 KB of open work instead of 166 KB.
+- CC-96 (#180): every Notion space gets the Domains database and the Areas · Domain relation, used or not, so turning Domains on is a switch; migration 0014 adds them to an existing space (decision 0065).
+
 ## 0.8.0 — 2026-11-03
 
 - CC-69 (#149): decision 0054 plans buttons that run Brain Assistant in Notion (Tidy capture, Write up, Refresh report), with only accepted wording coming back to the brain.
