@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ultimate-brain.dev/schemas/v1/link-kit.schema.json",
+  "title": "Link kit (brain-kit.json)",
+  "description": "How the hub brain reads a linked repo (decision 0066, spec/linked-repos.md §2). Checks that need the brain (ids exist, placement agrees) are in linked-repos.md §2.2.",
+  "type": "object",
+  "required": ["kit_version", "name", "placement", "knowledge", "methodology"],
+  "additionalProperties": false,
+  "properties": {
+    "kit_version": { "const": 1 },
+    "name": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "placement": {
+      "type": "object",
+      "required": ["area"],
+      "additionalProperties": false,
+      "properties": {
+        "area": { "$ref": "#/$defs/id", "pattern": "^area-" },
+        "domain": { "$ref": "#/$defs/id", "pattern": "^dom-" },
+        "project": { "$ref": "#/$defs/id", "pattern": "^prj-" }
+      }
+    },
+    "knowledge": {
+      "type": "object",
+      "required": ["patterns"],
+      "additionalProperties": false,
+      "properties": {
+        "patterns": { "$ref": "#/$defs/pathspecs", "minItems": 1 },
+        "never_read": { "$ref": "#/$defs/pathspecs" }
+      }
+    },
+    "tasks": {
+      "type": "object",
+      "required": ["mode", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["connected", "tracked-in-repo"] },
+        "source": {
+          "oneOf": [
+            {
+              "type": "object", "additionalProperties": false, "required": ["kind"],
+              "properties": { "kind": { "const": "notion" } }
+            },
+            {
+              "type": "object", "additionalProperties": false, "required": ["kind", "path", "format"],
+              "properties": {
+                "kind": { "const": "markdown" },
+                "path": { "$ref": "#/$defs/repoPath" },
+                "format": { "const": "checklist" }
+              }
+            },
+            {
+              "type": "object", "additionalProperties": false, "required": ["kind", "path", "format", "pattern"],
+              "properties": {
+                "kind": { "const": "markdown" },
+                "path": { "$ref": "#/$defs/repoPath" },
+                "format": { "const": "pattern" },
+                "pattern": { "type": "string", "minLength": 1, "pattern": "\\(\\?<title>" }
+              }
+            },
+            {
+              "type": "object", "additionalProperties": false, "required": ["kind", "repo"],
+              "properties": {
+                "kind": { "const": "github" },
+                "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" }
+              }
+            },
+            {
+              "type": "object", "additionalProperties": false, "required": ["kind", "project"],
+              "properties": {
+                "kind": { "const": "gitlab" },
+                "project": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$" }
+              }
+            }
+          ]
+        },
+        "status_map": {
+          "type": "object",
+          "additionalProperties": { "enum": ["todo", "in_progress", "waiting", "review", "done", "dropped"] }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "mode": { "const": "connected" } } },
+          "then": {
+            "properties": { "source": { "properties": { "kind": { "const": "notion" } } } },
+            "not": { "required": ["status_map"] }
+          },
+          "else": {
+            "properties": { "source": { "properties": { "kind": { "enum": ["markdown", "github", "gitlab"] } } } }
+          }
+        }
+      ]
+    },
+    "methodology": {
+      "type": "object",
+      "required": ["summary"],
+      "additionalProperties": false,
+      "properties": {
+        "summary": { "type": "string", "minLength": 1, "maxLength": 600 },
+        "files": { "type": "array", "items": { "$ref": "#/$defs/repoPath" }, "uniqueItems": true }
+      }
+    },
+    "starter": {
+      "type": "object",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "const": "generic" },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z]+-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
+    "repoPath": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$)).+$" },
+    "pathspecs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+  }
+}
