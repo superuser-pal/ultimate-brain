@@ -838,7 +838,7 @@ Optional Domains around PARA; Won't Do closes work without claiming completion; 
 **Acceptance:** migration lists who performs each step and verifies it on synthetic pages; Domains remain optional; the voice template starts New and leaves ingestion to Ready; meeting summaries show the agreed default notice and editable subject/item selection without a second confirmation dialog; Review explains each action without relying on hover text; pending old rows survive; module-off pages omit unavailable sections; both fresh setup and upgrade use supported Notion controls.
 **Also (from CC-78's independent review):** `sync plan` / `sync render` publish notes to Notion and must use the eligible form of a restricted note (capture-and-review §5.1); a note published before an exclusion keeps its Notion copy until re-rendered.
 
-### CC-82 · End-to-end acceptance for selected capture and editable Review (decision 0055) · `todo`
+### CC-82 · End-to-end acceptance for selected capture and editable Review (decision 0055) · `review`
 **Release:** 0.8.0
 **Changelog:** end-to-end acceptance verifies Domains, dropped Tasks, selected source capture and exact partial Review decisions across attended and unattended runs.
 **Output:** after CC-76 to CC-81: a synthetic CC-41 brain and acceptance evidence covering a mixed-subject meeting, a voice/transcript capture, optional Domains, owner/other commitments, Won't Do progress, partial accepted edits, revision requests, stale acceptance, post-ingest exclusions, legacy rows and module-off behavior; package/type/skill checks and documented remaining human recording/layout checks for U-23. Use synthetic inputs only.
