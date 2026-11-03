@@ -50,16 +50,17 @@ test("every workflow record example passes or fails its $defs entry as labelled"
       assert.equal(validate(record), kind === "valid", `workflow/${kind}/${file}: ${JSON.stringify(validate.errors)}`);
     }
   }
-  assert.deepEqual([...defs].sort(), ["adoption", "artifact", "item", "op", "pointer", "snapshot", "workflow"]);
+  assert.deepEqual([...defs].sort(), ["adoption", "adoptionInput", "artifact", "item", "op", "pointer", "snapshot", "workflow"]);
 });
 
 test("the JSON examples written in the specs validate", async () => {
   const schemas = await ajv();
   const [kit] = await jsonBlocks("linked-repos.md");
   assert.ok(schemas.getSchema(KIT_ID)!(kit), "linked-repos.md §2.2");
-  const [workflow, item] = await jsonBlocks("connected-workflows.md");
+  const [workflow, item, , adoptionInput] = await jsonBlocks("connected-workflows.md");
   assert.ok(schemas.getSchema(`${WORKFLOW_ID}#/$defs/workflow`)!(workflow), "connected-workflows.md §3.3");
   assert.ok(schemas.getSchema(`${WORKFLOW_ID}#/$defs/item`)!(item), "connected-workflows.md §7.1");
+  assert.ok(schemas.getSchema(`${WORKFLOW_ID}#/$defs/adoptionInput`)!(adoptionInput), "connected-workflows.md §11.2");
 });
 
 test("the starter's default kit (linked-repos.md §7) is a valid kit", async () => {
