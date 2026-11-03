@@ -184,8 +184,9 @@ test("every brain.json example passes or fails its JSON Schema as labelled", asy
   }
 });
 
+// The fixture brain has no skill pin; its `skills-unpinned` info (spec/skills-delivery.md §6.4) is not what these tests check.
 const issuesFor = async (dir: string, extra: string[] = []) =>
-  (await brain(["lint", ...extra, "--brain", dir, "--json"])).json.data.issues as Array<{ rule: string; path: string; line: number }>;
+  ((await brain(["lint", ...extra, "--brain", dir, "--json"])).json.data.issues as Array<{ rule: string; path: string; line: number }>).filter((issue) => issue.rule !== "skills-unpinned");
 
 test("links: stray % never crashes; encoded names, titles, <angle> and reference links are checked", async (context) => {
   const dir = await fixtureCopy(context);

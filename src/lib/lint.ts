@@ -2,6 +2,10 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, posix } from "node:path";
 import { installedProduct } from "./skills.ts";
+import { competingCopies, competingMessage } from "./skills-competing.ts";
+import { checkedNames, incompatibleMessage, LOCK, pinState, skillDrift, type Lock, type Pin } from "./skills-pin.ts";
+import { comparePrecedence, satisfies } from "./skills-range.ts";
+import { packageSnapshot, type Manifest } from "./skills-snapshot.ts";
 
 import { buildIndex } from "./index-builder.ts";
 import { compareCodePoints, type Note, type ScanProblem } from "./notes.ts";
@@ -36,6 +40,10 @@ export interface LintInput {
   pendingPaths?: ReadonlySet<string>;
   /** Product-owned paths as an upgrade would leave them; undefined reads disk. */
   plannedProductFiles?: ReadonlyMap<string, string | null>;
+  /** The skill pin as a write leaves it (upgrade); undefined reads `skills.lock.json` (spec/skills-delivery.md §6.4). */
+  skillsLock?: Lock;
+  /** `HOME` for the global competing-copy checks (§5.2); undefined skips them. */
+  home?: string;
 }
 
 const ID = /^(area|dom|gol|prj|per|org|mtg|dec|que|con|ref|src|mem|prp|vw)-[0-9abcdefghjkmnpqrstvwxyz]{8}$/;
@@ -373,7 +381,7 @@ export function lintBrain(input: LintInput): Issue[] {
     add("warning", "index-stale", "index.md", 1, null, "index.md is out of date; run brain index");
   }
 
-  lintProductFiles(input.root, add, input.plannedProductFiles);
+  lintProductFiles(input, add);
   return issues.sort((x, y) =>
     compareCodePoints(x.path, y.path) || x.line - y.line || compareCodePoints(x.rule, y.rule) || compareCodePoints(x.message, y.message));
 }
@@ -529,35 +537,53 @@ function sameStringList(left: unknown[], right: readonly string[]): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
-function lintProductFiles(root: string, add: (severity: Severity, rule: string, path: string, line: number, id: string | null, message: string) => void, planned?: ReadonlyMap<string, string | null>): void {
+type Add = (severity: Severity, rule: string, path: string, line: number, id: string | null, message: string) => void;
+
+function lintProductFiles(input: LintInput, add: Add): void {
+  const { root, plannedProductFiles: planned } = input;
   let product;
   try { product = installedProduct(); } catch (error) { add("error", "product-file", "AGENTS.md", 1, null, `installed package not found: ${String(error)}`); return; }
   const message = `product files differ from ultimate-brain ${product.version}; run brain upgrade, or file a finding`;
-  const skills = join(product.root, ".agents/skills"); const template = join(product.root, "templates/brain/AGENTS.md");
-  if (!existsSync(skills) || !existsSync(template)) { add("error", "product-file", "AGENTS.md", 1, null, "installed package not found: missing product files"); return; }
+  const template = join(product.root, "templates/brain/AGENTS.md");
+  if (!existsSync(template)) { add("error", "product-file", "AGENTS.md", 1, null, "installed package not found: missing product files"); return; }
   const block = /<!-- ultimate-brain:rules:start\b[^>]*-->[\s\S]*?<!-- ultimate-brain:rules:end -->/.exec(readFileSync(template, "utf8"))?.[0];
   const agents = planned?.get("AGENTS.md") ?? (existsSync(join(root, "AGENTS.md")) ? readFileSync(join(root, "AGENTS.md"), "utf8") : null);
   const actual = agents?.match(/<!-- ultimate-brain:rules:start\b[^>]*-->[\s\S]*?<!-- ultimate-brain:rules:end -->/g) ?? null;
   if (block === undefined || actual?.length !== 1 || actual[0] !== block) add("error", "product-file", "AGENTS.md", 1, null, message);
-  for (const prefix of [".agents/skills", ".claude/skills"]) for (const skill of readdirSync(skills, { withFileTypes: true }).filter((entry) => entry.isDirectory() && existsSync(join(skills, entry.name, "SKILL.md")))) {
-    const target = join(root, prefix, skill.name);
-    if (!existsSync(target)) { add("error", "product-file", `${prefix}/${skill.name}`, 1, null, message); continue; }
-    const expected = productFiles(join(skills, skill.name));
-    const actual = productFiles(target).filter((file) => planned?.get(`${prefix}/${skill.name}/${file}`) !== null);
-    for (const file of expected) {
-      const path = `${prefix}/${skill.name}/${file}`;
-      const bytes = planned?.has(path) ? planned.get(path) ?? null : existsSync(join(target, file)) ? readFileSync(join(target, file), "utf8") : null;
-      if (bytes === null || Buffer.from(bytes).compare(readFileSync(join(skills, skill.name, file))) !== 0) add("error", "product-file", path, 1, null, message);
-    }
-    for (const file of actual) if (!expected.includes(file)) add("error", "product-file", `${prefix}/${skill.name}/${file}`, 1, null, message);
-  }
+  lintSkills(input, product, add);
 }
 
-function productFiles(folder: string): string[] {
-  const out: string[] = [];
-  for (const entry of readdirSync(folder, { withFileTypes: true })) {
-    if (entry.isDirectory()) for (const nested of productFiles(join(folder, entry.name))) out.push(`${entry.name}/${nested}`);
-    else if (entry.isFile()) out.push(entry.name);
+/** Skill trees against the pin, or the package while unpinned, and the pin's own rules (spec/skills-delivery.md §6.4). */
+function lintSkills(input: LintInput, product: { root: string; version: string }, add: Add): void {
+  const { root, plannedProductFiles: planned } = input;
+  const pkg = packageSnapshot(product.root, product.version);
+  const pin: Pin = input.skillsLock === undefined
+    ? pinState(root, () => product.version, { drift: false })
+    : { state: satisfies(product.version, input.skillsLock.snapshot.cli) ? "pinned" : "incompatible", lock: input.skillsLock, reason: null, missing: null };
+  let against: Manifest | null = null;
+  if (pin.state === "invalid") add("error", "skills-lock", LOCK, 1, null, `${LOCK} is invalid (${pin.reason}); run brain upgrade to rewrite it`);
+  else if (pin.state === "unpinned") {
+    add("info", "skills-unpinned", LOCK, 1, null, "skills are not pinned; run brain upgrade to pin them");
+    if (pkg.reason !== null) add("error", "product-file", "AGENTS.md", 1, null, `installed package not found: ${pkg.reason}`);
+    else against = pkg.manifest;
+  } else {
+    const lock = pin.lock!;
+    against = lock.snapshot;
+    if (pin.state === "incompatible") add("error", "skills-incompatible", LOCK, 1, null, incompatibleMessage(lock, product.version));
+    else if (pin.state === "pinned" && pkg.compatible) {
+      const shipped = pkg.manifest!;
+      if (shipped.name !== lock.snapshot.name || comparePrecedence(shipped.version, lock.snapshot.version) > 0) {
+        add("info", "skills-update-available", LOCK, 1, null, `${shipped.name} ${shipped.version} is available (pinned: ${lock.snapshot.name} ${lock.snapshot.version}); run brain upgrade`);
+      }
+    }
   }
-  return out.sort();
+  if (against !== null) {
+    const message = `product files differ from ${against.name} ${against.version}; run brain upgrade, or file a finding`;
+    for (const path of skillDrift(root, against, planned)) add("error", "product-file", path, 1, null, message);
+  }
+  const settings = planned?.has(".claude/settings.json") ? planned.get(".claude/settings.json")! : undefined;
+  for (const copy of competingCopies({ treeRoot: root, names: checkedNames(pin, pkg), home: input.home, brainRoot: root, brainSettings: settings })) {
+    if (copy.kind === "duplicate") add("error", "skill-duplicate", copy.path, 1, null, competingMessage(copy));
+    else add("warning", "skill-competing", copy.path, 1, null, competingMessage(copy));
+  }
 }
