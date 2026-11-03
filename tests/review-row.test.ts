@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
-import { brain, fixtureCopy } from "./helpers.ts";
+import { brain, fixtureCopy, withoutReviewSections } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const SYNC = "mtg-8c4n2p7w";
@@ -166,6 +166,7 @@ test("a fact changed before apply is dropped as stale; the rest of the row is ap
 
 test("render: a Review notes row letters its changes first, then notes, then links, under About/Now/Proposed", async (context) => {
   const dir = await fixtureCopy(context);
+  await withoutReviewSections(dir);
   const { row } = await ingest(dir);
   const [item] = (await run(dir, ["sync", "render", "--ids", row.id])).json.data.items;
   assert.deepEqual(item.properties.About, { type: "rich_text", value: `Acme sync (${SYNC})` });

@@ -3,7 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { brain, fixtureCopy } from "./helpers.ts";
+import { brain, fixtureCopy, withoutReviewSections } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const SYNC = "mtg-8c4n2p7w";
@@ -202,4 +202,20 @@ test("a plan with a malformed review_pending entry is refused", async (context) 
   await writeFile(planPath, JSON.stringify({ as_of: NOW, create: [], updates: [], corrections: [], decisions: [], conflicts: [], ignored: [], review_pending: [null] }));
   const out = await run(dir, ["sync", "render", "--ids", id, "--plan", planPath]);
   assert.equal(out.json.error.code, "INPUT_INVALID");
+});
+
+test("without notion.review_sections the row keeps the old layout; with it a new row is a page and its Proposed is a pointer", async (context) => {
+  const dir = await fixtureCopy(context);
+  const created = await run(dir, ["proposal", "new"], { proposals: [
+    { kind: "review_notes", source: SYNC, notes: [] },
+    { kind: "update_fact", title: "A", target: PROJECT, field: "launch_date", after: "2027-03", why: "w", source: SYNC },
+  ] });
+  const id = created.json.data.created[0].id as string;
+  const [sections] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  assert.ok(String(sections.body).includes("Proposed final wording"));
+  assert.match(sections.properties.Proposed.value, /1 change: decide each one in the page/);
+  await withoutReviewSections(dir);
+  const [old] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  assert.equal(old.body, null, "no sections without the Decided property");
+  assert.match(old.properties.Proposed.value, /2027-03/, "the old layout carries the detail");
 });

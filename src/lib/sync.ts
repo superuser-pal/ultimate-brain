@@ -212,6 +212,14 @@ function publishable(workspace: Workspace, note: Note): Note {
   return forms.get(note.id) ?? note;
 }
 
+/** Whether a Review row is rendered as a page with item sections (capture-and-review §10): the space has the Decided property (`notion.review_sections`, set by migration 0013 or a fresh setup), and the row is new or was published that way. A row published before keeps the old layout. */
+function reviewSections(workspace: Workspace, note: Note): boolean {
+  const notion = isRecord(workspace.config.notion) ? workspace.config.notion : {};
+  if (note.type !== "proposal" || !Array.isArray(note.attributes.items) || notion.review_sections !== true) return false;
+  const published = isRecord(note.attributes.notion_published) ? note.attributes.notion_published : {};
+  return typeof note.attributes.notion !== "string" || isRecord(published["@review"]);
+}
+
 function planExisting(workspace: Workspace, asOf: string, row: SnapshotRow, note: Note, out: SyncPlan): void {
   const updates: Record<string, unknown> = { id: note.id };
   if (note.attributes.notion === undefined) updates.notion = row.page_id;
@@ -667,7 +675,7 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     // the item sections belong to the user (capture-and-review §7.4, §7.10), and the hashes of what was rendered are kept in S.
     let itemUpdates: Array<{ item_id: string; reason: string; section: string }> = [];
     let publishedAfter: Record<string, unknown> | undefined;
-    if (note.type === "proposal" && Array.isArray(note.attributes.items)) {
+    if (reviewSections(workspace, note)) {
       const review = renderReview(note, workspace);
       content.body = isCreate ? review.body : null; content.sections = { "Review summary": review.summary }; content.hash = review.summary_hash; rendered["@content"] = review.summary_hash;
       const kept = isRecord(published["@review"]) && isRecord(published["@review"].items) ? published["@review"].items : undefined;
@@ -745,7 +753,7 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
       Name: reviewName(a), Kind: select(a.kind), About: targetText,
       "About Page": typeof page === "string" ? `https://www.notion.so/${page.replaceAll("-", "")}` : null,
       "Source Meeting": meeting?.type === "meeting" && typeof meeting.attributes.notion === "string" ? [meeting.attributes.notion] : [],
-      Now: reviewText(proposalBefore(a, workspace)), Proposed: proposed !== undefined ? proposed : reviewText(after ?? proposalAfter(a, workspace)),
+      Now: reviewText(proposalBefore(a, workspace)), Proposed: reviewSections(workspace, note) ? `${(a.items as unknown[]).length} ${(a.items as unknown[]).length === 1 ? "change" : "changes"}: decide each one in the page` : proposed !== undefined ? proposed : reviewText(after ?? proposalAfter(a, workspace)),
       Why: reviewText(a.why), Area: relationPages(reviewArea(a, workspace), workspace), State: select(proposalState(a.status)), "Brain ID": note.id,
     });
     return values;

@@ -2,11 +2,11 @@
 
 Paste into Notion AI **while you are on the "Review" page**, after [Prompt 6](06-templates.md). Other Spaces: [index](07-spaces-views.md). Every view, with its use case, is in [../views-guide.md](../views-guide.md).
 
-Why and Source Meeting are on each proposal's page. What to fix is in the "What needs my decision?" table: with Fix, say what's wrong in your words ("a: March"); with Approve, what to leave out ("all except b, d") (0045).
+Why and Source Meeting are on each proposal's page. A row from a source is a page with one section per change (decision 0055): edit the text in "Proposed final wording", type `Accept`, `Reject`, `Defer` or `Request revision` on the Decision line of each change, and click Submit decisions. Rows from before that keep Your call and What to fix: with Fix, say what's wrong in your words ("a: March"); with Approve, what to leave out ("all except b, d") (0045).
 
 ```text
-On this page ("Review"), first add one gray paragraph: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. To correct something, pick Fix in Your call and say what's wrong in What to fix." Then add four tabs, each a linked view of "Review":
-1. Tab "Needs my decision": Table, named "What needs my decision?": filter State is Pending; sort Created time descending; show Name, Type, Now, Proposed, Your call, What to fix.
+On this page ("Review"), first add one gray paragraph: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. Open a row to see each change in its own section: edit the text you want different, type your decision on its Decision line and click Submit decisions. Older rows: pick Fix in Your call and say what's wrong in What to fix." Then add four tabs, each a linked view of "Review":
+1. Tab "Needs my decision": Table, named "What needs my decision?": filter State is Pending; sort Created time descending; show Name, Type, Now, Proposed, Your call, What to fix, Decided.
 2. Tab "Sources disagree": Table, named "Where do sources disagree?": filter Kind is Contradiction and State is Pending; sort Created time ascending; show Name, Now, Proposed, Your call.
 3. Tab "Approved": List, named "What did I approve recently?": filter State is Applied and Last edited time is within the past month (relative date); sort Last edited time descending; show Name, Type, Proposed.
 4. Tab "Rejected": List, named "What did I reject?": filter State is Closed; sort Last edited time descending; show Name, Type.

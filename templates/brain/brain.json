@@ -5,6 +5,7 @@
   "settings": { "publish": "ask", "push": "auto" },
   "modules": { "domains": false, "knowledge": true, "orgs": true, "documents": false, "reports": false, "tasks": false, "planning": false },
   "notion": {
+    "review_sections": true,
     "databases": {
       "domains": "",
       "areas": "",

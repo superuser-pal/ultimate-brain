@@ -54,3 +54,12 @@ export async function brain(
   }
   return { code, stdout: out, stderr: stderr.join(""), json };
 }
+
+/** A brain whose Review has no Decided property yet: rows keep the old layout (Proposed with the detail, `notion.review_sections` off). */
+export async function withoutReviewSections(dir: string): Promise<void> {
+  const { readFile, writeFile } = await import("node:fs/promises");
+  const path = join(dir, "brain.json");
+  const config = JSON.parse(await readFile(path, "utf8"));
+  config.notion.review_sections = false;
+  await writeFile(path, `${JSON.stringify(config, null, 2)}\n`);
+}
