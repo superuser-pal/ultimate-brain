@@ -29,7 +29,7 @@ export function taskFiles() {
 /** A file's text at a commit, or "" when the file is not there; for build/HISTORY.md, which older commits lack. */
 export function optionalContentAt(repo, path, ref) {
   const result = contentAt(repo, path, ref);
-  return result.ok || !/404|Not Found/i.test(result.message) ? result : { ok: true, stdout: "" };
+  return result.ok || !/\(HTTP 404\)/.test(result.message) ? result : { ok: true, stdout: "" };
 }
 
 export function taskEntries(tasks = taskFiles()) {
@@ -144,7 +144,10 @@ export function readinessProblems(repo, pr, details, { skipPass = false } = {}) 
   // A stacked PR merges only once the PR below it is merged and it is retargeted to main (decision 0046).
   if (details.baseRefName !== undefined && details.baseRefName !== "main") problems.push(`base is ${details.baseRefName}: merge the PR below first, then retarget this one to main`);
   if (branch !== null) {
-    const rows = contentAt(repo, "build/TASKS.md", details.headRefOid);
+    // The row may have moved to build/HISTORY.md (CC-94), as when a PR only corrects a done row.
+    const tasks = contentAt(repo, "build/TASKS.md", details.headRefOid);
+    const history = tasks.ok ? optionalContentAt(repo, "build/HISTORY.md", details.headRefOid) : tasks;
+    const rows = history.ok ? { ok: true, stdout: `${tasks.stdout}\n${history.stdout}` } : history;
     const task = rows.ok ? taskEntries(rows.stdout).find((entry) => entry.id === branch[2]) : undefined;
     if (!rows.ok) problems.push(`cannot read PR task row: ${rows.message}`);
     else if (task?.status !== "done" || !donePrNumbers(task.suffix)?.includes(Number(pr))) {

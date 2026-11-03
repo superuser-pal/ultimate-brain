@@ -855,6 +855,8 @@ test("PR format accepts a task row moved from TASKS.md to HISTORY.md and rejects
   assert.match(dropped.stderr, /loses task heading\(s\): CC-2/);
   const unreadable = run("pr-format.mjs", ["1"], { root, env: { PATH: historyFormatPath(root, one, undefined, "gh: Bad credentials (HTTP 401)") } });
   assert.match(unreadable.stderr, /Cannot read build\/HISTORY\.md: gh: Bad credentials/);
+  const network = run("pr-format.mjs", ["1"], { root, env: { PATH: historyFormatPath(root, one, undefined, "connection reset fetching ref 404abcd") } });
+  assert.match(network.stderr, /Cannot read build\/HISTORY\.md: connection reset/);
 });
 
 test("release and task.mjs read the rows in build/HISTORY.md (CC-94)", (t) => {
@@ -872,6 +874,11 @@ test("release and task.mjs read the rows in build/HISTORY.md (CC-94)", (t) => {
   command(repo, ["push", "origin", "main"]);
   const taken = run("task.mjs", ["start", "CC-7", "--new", "Again", "--release", "1.2.0"], { root: repo, env: { PATH: taskPath } });
   assert.match(taken.stderr, /CC-7 already exists on origin\/main/);
+  writeFileSync(join(repo, "build/HISTORY.md"), "## 1.0.0 — Done\n\n### CC-7 · Old · `done` (#7)\n**Release:** 1.0.0\n");
+  command(repo, ["commit", "-qam", "history section"]);
+  command(repo, ["push", "-q", "origin", "main"]);
+  const done = run("task.mjs", ["start", "CC-8", "--new", "Late", "--release", "1.0.0"], { root: repo, env: { PATH: taskPath } });
+  assert.match(done.stderr, /1\.0\.0 is a done release in build\/HISTORY\.md/);
 });
 
 test("PR format rejects a CHANGELOG.md line lost from another task", (t) => {
@@ -972,12 +979,13 @@ test("main-guard fails a commit that came from no PR", (t) => {
   assert.match(result.stderr, new RegExp(`main-guard rejected: ${after}`));
 });
 
-function mergeReadyPath(root, { task = "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n", body = "- [x] checked", review = '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at abcdef0"}]]', base = "main" } = {}) {
+function mergeReadyPath(root, { task = "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n", body = "- [x] checked", review = '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at abcdef0"}]]', base = "main", history = "" } = {}) {
   return fakeCommands(root, {
     gh: `case "$1 $2" in
       "pr view") printf '%s' '{"baseRefName":"${base}","headRefName":"codex/CX-1-one","headRefOid":"abcdef0","title":"CX-1: One","body":"${body}"}' ;;
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/contents/build/TASKS.md?ref=abcdef0") printf '%s' '${taskRows(task)}' ;;
+      "api repos/owner/repo/contents/build/HISTORY.md?ref=abcdef0") ${history === "" ? "echo 'gh: Not Found (HTTP 404)' >&2; exit 1" : `printf '%s' '${taskRows(history)}'`} ;;
       "api repos/owner/repo/pulls/12/reviews") printf '%s' '${review}' ;;
       "api repos/owner/repo/issues/12/comments") printf '%s' '[]' ;;
       "api repos/owner/repo/statuses/abcdef0") printf '%s\n' "$@" > '${join(root, "status")}' ;;
@@ -1008,6 +1016,15 @@ test("merge-ready sets failure naming each problem, and still exits 0", (t) => {
   assert.match(status, /CX-1 is `review`, not `done` \(#12\)/);
   assert.match(status, /no pass from the other agent \(Claude Code\) at abcdef0$/m);
   assert.ok(status.split("\n").find((line) => line.startsWith("description=")).length <= "description=".length + 140);
+});
+
+test("merge-ready finds the PR's row in build/HISTORY.md (CC-94)", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = mergeReadyPath(root, { task: "### CX-2 · Other · `todo`\n**Release:** 0.9.0\n", history: "# Build history\n\n### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n" });
+  const result = run("merge-ready.mjs", ["12"], { root, env: { PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(readFileSync(join(root, "status"), "utf8"), /^state=success$/m);
 });
 
 test("merge-ready stays red on a stacked PR until its base is main (decision 0046)", (t) => {
