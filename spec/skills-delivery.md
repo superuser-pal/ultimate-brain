@@ -339,19 +339,19 @@ Phase B (CC-105) is out of this contract's acceptance. It must keep these interf
 ## 10. The fork: ultimate-brain-skills (CC-101)
 
 **What CC-101 delivers:**
-- The public repository on GitHub, created only after the user says yes (0059; grill 2026-11-03). It is a fork of the upstream repository with its history.
+- The public repository on GitHub, created only after the user says yes (0059; grill 2026-11-03). It holds the upstream repository's full Git history but isn't a GitHub fork: the account's one GitHub fork of upstream is already used by another collection, so the user chose a standalone repository (2026-11-03). `LICENSE` and `NOTICE.md` carry the attribution.
 - Its files and workflows (§10.1 to §10.5).
-  - **Bootstrap:** one commit, pushed to `main` before branch protection exists, adds every file of §10.1, `brain/` and the workflows. It is the only commit that reaches `main` without a PR, so no impact declaration applies to it.
-  - Then CC-101 applies the protection (§10.3). The push-to-`main` CI must succeed on the bootstrap commit before the first release.
-  - Every later change goes through a PR.
+  - **Creation:** the repository is created with Actions disabled, and upstream's history up to the base is pushed to `main` unchanged, so upstream's workflows never run. Then Actions is enabled and CC-101 applies the protection (§10.3).
+  - **Bootstrap:** one PR adds every file of §10.1, `brain/` and the workflows, and removes upstream's `.github/`. It declares `coordinated` with a `Product:` link to CC-101's product PR, and the user merges it. The push-to-`main` CI must succeed on its merge commit before the first release.
+  - Every change reaches `main` through a PR.
 - Its first snapshot release, `brain-v1.0.0`: `brain/` holds the product's `skills/` as on product `main` when CC-101 runs (the commit is named in the release notes as `Product-skills: <40 hex>`), and `snapshot.config.json` declares `>=0.9.0 <0.10.0`.
-- The fork's tooling is Node (≥ 22.6, the product's floor), with `ajv` as the only dependency.
+- The fork's tooling lives in `tools/`. It is Node (≥ 22.6, the product's floor), with `ajv` and `yaml` as its only dependencies (`yaml` parses skill frontmatter the way the product does).
 
 ### 10.1 Layout and attribution
 
 - **`LICENSE`:** upstream's licence file, kept verbatim with its copyright line, plus a line for the fork's own additions.
 - **`NOTICE.md`:** the upstream repository URL, a statement that the fork is derived from it, and the rule below for telling local additions from upstream content.
-- **`upstream.json`:** `{ "repository": "https://github.com/mattpocock/skills", "commit": "<40 hex>" }`, the upstream commit last merged. Initially it is upstream's default-branch head when the fork is created. Only an upstream-sync PR changes it (§10.5).
+- **`upstream.json`:** `{ "repository": "https://github.com/mattpocock/skills", "commit": "<40 hex>" }`, the upstream commit last merged. Initially it is `a496f5513d4a4cf889bc48e189e579f4b0bdf6aa`, the base CC-97's inventory compared against (the user's choice, 2026-11-03); the first upstream-sync run then proposes the upstream commits after it. Only an upstream-sync PR changes it (§10.5).
 - **Where content lives:**
   - Upstream content stays in upstream's paths.
   - Operational skills live in `brain/<name>/`.
@@ -360,11 +360,11 @@ Phase B (CC-105) is out of this contract's acceptance. It must keep these interf
 - **`snapshot.config.json`:** `{ "cli": "<range>", "linked_repo": ["brain-query"] }`, no other keys. `cli` is the declared range of the next snapshot release (§2.1 grammar). `linked_repo` lists the operational skills `brain link` installs; each must be a folder in `brain/`. PRs change it.
 - **`schemas/skills-snapshot.schema.json`:** a copy of this repo's schema. When the product changes the schema, a coordinated PR updates the copy.
 - **`.gitattributes`:** `* -text`, so the bytes in a checkout are the bytes in Git.
-- **Leak check:** no credentials, personal paths, emails or brain content anywhere (0014, 0059). The fork's CI runs a copy of this repo's `scripts/leak-check.mjs`, with its own allowlist `scripts/leak-allow.txt`. The upstream copyright line in `LICENSE` is required attribution, not personal data. It needs no allowlist entry unless a rule matches it.
+- **Leak check:** no credentials, personal paths, emails or brain content anywhere (0014, 0059). The fork's CI runs a copy of this repo's `scripts/leak-check.mjs` as `tools/leak-check.mjs`, with its own allowlist `tools/leak-allow.txt`. The upstream copyright line in `LICENSE` is required attribution, not personal data. It needs no allowlist entry unless a rule matches it.
 
 ### 10.2 Building and releasing a snapshot
 
-**Build.** A build script produces the §2 folder from Git, never from the working tree. The source is `brain/` at one commit, and the files of a skill are the Git blobs under `brain/<name>/` at that commit, as `git ls-tree -r` lists them. A symbolic link, a submodule or a folder without `SKILL.md` fails the build. The manifest takes:
+**Build.** A build script produces the §2 folder from Git, never from the working tree. The source is `brain/` at one commit, and the files of a skill are the Git blobs under `brain/<name>/` at that commit, as `git ls-tree -r` lists them. A symbolic link, a submodule, a file directly in `brain/` or a folder without `SKILL.md` fails the build. The manifest takes:
 - `name`: `ultimate-brain-skills`;
 - `version`: from the tag, or from `0.0.0-ci.<PR number>` in PR CI;
 - `cli` and the `linked_repo` targets: from `snapshot.config.json` at that commit;
@@ -385,7 +385,7 @@ The snapshot also carries `LICENSE` and `NOTICE.md` at the top level. Brains rec
 
 Otherwise it builds the snapshot, validates it (§2.3, with the fork's own implementation and the vendored schema), and creates the release:
 - asset `ultimate-brain-skills-<version>.tar.gz`, whose root holds the snapshot folder's entries;
-- release notes ending with the lines `Integrity: <integrity>`, `Tarball-SHA256: <hex>` and `CLI: <range>`.
+- release notes that start with the message of an annotated tag (`brain-v1.0.0`'s carries the `Product-skills:` line) and end with the lines `Integrity: <integrity>`, `Tarball-SHA256: <hex>` and `CLI: <range>`.
 
 Prereleases (`brain-v1.1.0-rc.1`) are marked as prereleases on GitHub.
 
