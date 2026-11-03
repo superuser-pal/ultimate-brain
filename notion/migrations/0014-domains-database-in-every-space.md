@@ -9,9 +9,15 @@ Who does each step:
 - **Notion AI:** a prompt you paste;
 - **by hand:** you, in Notion (the API ignores it with a 200: always read the result back).
 
-## 1 · The database (agent, or Notion AI)
+## 1 · The database (Notion AI, or the agent with a token)
 
-**Agent:** the Notion MCP tools can't create a database, but the REST API can: `POST https://api.notion.com/v1/databases` with `Notion-Version: 2025-09-03` and this body, using the integration token the MCP server uses (never shown in the chat):
+**Notion AI** (the default) — paste this on the Brain Data page:
+
+```text
+Create a full-page database "Domains" with: Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Archived (checkbox), Brain ID (text), Last Synced (date). Add it under Brain Data. Change nothing else.
+```
+
+**Agent, only when the brain connects through an integration token** (the local `@notionhq/notion-mcp-server` with `NOTION_TOKEN`; the hosted Notion MCP has no token to call the REST API with). The Notion MCP tools can't create a database, but the REST API can: `POST https://api.notion.com/v1/databases` with `Notion-Version: 2025-09-03`, that token (never shown in the chat) and this body:
 
 ```json
 { "parent": { "type": "page_id", "page_id": "<Brain Data page id>" },
@@ -22,13 +28,7 @@ Who does each step:
     "Archived": { "checkbox": {} }, "Brain ID": { "rich_text": {} }, "Last Synced": { "date": {} } } } }
 ```
 
-The response holds the database id and, in `data_sources`, its data source id. With the hosted Notion MCP there is no token to call the REST API with: use the Notion AI prompt instead.
-
-**Notion AI** (instead of the agent step) — paste this on the Brain Data page:
-
-```text
-Create a full-page database "Domains" with: Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Archived (checkbox), Brain ID (text), Last Synced (date). Add it under Brain Data. Change nothing else.
-```
+The response holds the database id and, in `data_sources`, its data source id.
 
 Read the database back: six properties with exactly these names, types and options.
 
@@ -52,4 +52,4 @@ Turning Domains on (Home's Areas grouped by Domain, Domain shown on area homes) 
 - [ ] Brain Data has a **Domains** database with Name, Summary, Lifecycle (Draft, Reviewed, Disputed, Archived), Archived, Brain ID and Last Synced.
 - [ ] Areas has **Domain**, two-way with Domains · **Areas**, limited to 1 page.
 - [ ] With Orgs: Domains has **Org**, two-way with Orgs · **Domains**.
-- [ ] `brain modules` lists Domains with nothing `missing`, on or off as before.
+- [ ] `brain modules --json` lists `domains` with `missing: []` and `on` unchanged (the plain output shows `missing` only for a module that is on). The relations are the two items above.
