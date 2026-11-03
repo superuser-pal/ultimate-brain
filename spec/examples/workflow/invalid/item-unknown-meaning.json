@@ -1,0 +1,48 @@
+{
+  "id": "wi-7c2m9q4x",
+  "rev": 5,
+  "title": "Add rate limiting to the public API",
+  "scope": "Limit unauthenticated requests per IP; authenticated limits unchanged.",
+  "acceptance": [
+    {
+      "text": "429 after 100 requests a minute from one IP",
+      "met_at": "2026-11-04T09:12:00Z",
+      "evidence": "test rate-limit.test.ts"
+    }
+  ],
+  "approved_at": "2026-11-03T10:20:00Z",
+  "status": "blocked",
+  "logging": null,
+  "depends_on": [],
+  "origin": {
+    "kind": "markdown",
+    "ref": "PLAN.md",
+    "key": "line:5e1a0c9b2d47"
+  },
+  "links": {
+    "branch": "feat/rate-limit",
+    "pr": "https://github.com/acme/acme-api/pull/42"
+  },
+  "accepted": null,
+  "claim": {
+    "by": "claude-code 2026-11-04T09:00Z",
+    "at": "2026-11-04T09:00:00Z"
+  },
+  "progress": [
+    {
+      "at": "2026-11-04T09:12:00Z",
+      "text": "Limiter and tests in; PR open."
+    }
+  ],
+  "notion": {
+    "page": "6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b",
+    "title": "Add rate limiting to the public API",
+    "status": "Doing",
+    "read_at": "2026-11-04T09:13:00Z"
+  },
+  "publication": {
+    "state": "published",
+    "at": "2026-11-04T09:13:00Z",
+    "error": null
+  }
+}

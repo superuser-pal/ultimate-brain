@@ -1,0 +1,46 @@
+{
+  "kit_version": 1,
+  "name": "acme-api",
+  "placement": {
+    "area": "area-2m7c4h8n",
+    "domain": "dom-5k8p2r7t",
+    "project": "prj-9x4t1b7e"
+  },
+  "knowledge": {
+    "patterns": [
+      "decisions/**",
+      "docs/**/*.md",
+      "CHANGELOG.md"
+    ],
+    "never_read": [
+      ".env*",
+      "secrets/**",
+      "docs/clients/**"
+    ]
+  },
+  "tasks": {
+    "mode": "tracked-in-repo",
+    "source": {
+      "kind": "markdown",
+      "path": "../other/TASKS.md",
+      "format": "checklist"
+    },
+    "status_map": {
+      " ": "todo",
+      "/": "in_progress",
+      "x": "done",
+      "-": "dropped"
+    }
+  },
+  "methodology": {
+    "summary": "Decisions are recorded in decisions/ before code changes; each change is a small PR reviewed before merge.",
+    "files": [
+      "AGENTS.md",
+      "docs/process.md"
+    ]
+  },
+  "starter": {
+    "name": "generic",
+    "version": "0.9.0"
+  }
+}

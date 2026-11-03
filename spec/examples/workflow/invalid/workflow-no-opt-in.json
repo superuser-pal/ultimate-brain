@@ -1,0 +1,44 @@
+{
+  "id": "wf-3k7m2p9q",
+  "rev": 3,
+  "state": "connected",
+  "folder": {
+    "name": "acme-api",
+    "repo": "acme-api"
+  },
+  "destination": {
+    "project": "prj-9x4t1b7e"
+  },
+  "relations": {
+    "goal": "gol-4h8n2m6c",
+    "people": [
+      "per-3h8w2n6c"
+    ]
+  },
+  "settings": {
+    "work_type": "software",
+    "logging": "tasks_and_finals",
+    "custom": [],
+    "read_at": "2026-11-03T10:00:00Z"
+  },
+  "status_map": {
+    "todo": "To Do",
+    "in_progress": "Doing",
+    "waiting": "Waiting On",
+    "review": "Doing",
+    "done": "Done",
+    "dropped": "Won't Do"
+  },
+  "modules_offered": [
+    "documents"
+  ],
+  "outside": [],
+  "summary": {
+    "written_at": null,
+    "sha256": null
+  },
+  "status_read": {
+    "Someday": "todo"
+  },
+  "needs_you": []
+}
