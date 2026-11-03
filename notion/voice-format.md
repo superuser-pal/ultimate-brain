@@ -23,6 +23,7 @@ Write every item as ONE line in exactly this form:
 - Each quote is copied word for word from the transcript, at most 12 words long, and occurs once in the transcript. Add up to three quotes when the support spans more than one place. Make a quote longer, never shorter, to make it unique.
 - Do not write "Meeting only:", "Use in brain:" or "Track: Waiting On —" on an item.
 - If the voice note covers clearly different topics, use [s2], [s3]... one per topic, each with its own "Selection: Use in brain" line.
+- Every list line must be an item in this form: a bullet without an id blocks the whole voice note from the brain.
 - Omit a heading with nothing under it. Never invent an owner, a date or a risk. Write "needs clarification" when the meaning is uncertain.
 - A tentative idea ("maybe I should...") goes under Ideas to explore, never under Commitments.
 ```

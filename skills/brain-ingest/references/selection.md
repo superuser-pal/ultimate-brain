@@ -12,16 +12,17 @@ Read this when the summary of a meeting or a capture has subjects and item ids (
 ## 2. Read and plan
 
 1. Read the summary and the transcript of the page through the Notion MCP (the meeting's transcript tool for a meeting; the **Transcript** toggle for a capture). Write them verbatim to two temporary files outside the brain.
-2. Is this the first read? `brain index --json`: if a source already has `extract_of` or `source_key` = `notion:<page id>`, pass `--previous <the latest source of that page>` (the extract nothing replaces; for an input ingested in full before selection, its latest non-extract source). Without it a second read stops with `PREVIOUS_REQUIRED`.
+2. Is this the first read? Look for sources of the page: `grep -l "notion:<page id>\|extract_of: <page id>" sources/*/*.md` (frontmatter `source_key`, `extract_of`). If there are any, pass `--previous <the latest one>`: the source that no other source names in `replaces` (for an input ingested in full before selection, its latest non-extract source). Without it a second read stops with `PREVIOUS_REQUIRED`; a wrong pick stops with `NOT_LATEST`.
 3. Run `brain source extract-plan --page <page id> --summary <file> --transcript <file> [--previous <src>]`. Read `data`:
    - `ok: false` → **blocker** (below). Nothing may be written.
-   - `copied`: the full text of every paragraph that would enter, with the items citing it. `uncovered`: paragraphs no item cites (they do not enter). `unnumbered`: list lines with no id (a blocker). `problems`: `DEPENDS_ON_EXCLUDED` items are listed, not blocking.
-   - with `--previous`: `transcript_changed`, `suppressed`, `added`, `selection_changes`, `legacy_tasks`, `write_required` (`false` means `UNCHANGED`: no new version; go on to Tasks, step 5).
+   - `copied`: the full text of every paragraph that would enter, with the items citing it. `uncovered`: the number of paragraphs no item cites (they do not enter). `unnumbered`: list lines with no id (a blocker). `problems`: `DEPENDS_ON_EXCLUDED` items are listed, not blocking.
+   - `write_required` (top level; `false` means `UNCHANGED`: no new version; go on to Tasks, §6);
+   - with `--previous`, under `data.previous`: `transcript_changed`, `suppressed`, `added`, `selection_changes`, `legacy_tasks`, `full_copies`.
 
 ## 3. Blockers
 
 `SELECTION_UNREADABLE` (a token spelled wrongly, a control in the wrong place), `SELECTION_UNMAPPABLE` (a quote found in no paragraph or in several, more than three, longer than twelve words, a missing `depends on` id or a cycle, or "shares a paragraph with excluded content"), `UNNUMBERED_LINE`. The input is a blocker, not a partial ingest.
-- **Attended:** show each problem with its line, and offer the **repair** for unmappable items: propose longer quotes (copied from the transcript, at most twelve words, unique) or tighter ones that cite a different paragraph, for the user to confirm in the preview. For an unnumbered line propose an id and quotes. Apply confirmed repairs to your temporary summary file only (never edit the Notion page's tokens or text), then run `extract-plan` again. For a collision between an excluded and an included item, say which two items collide; if the shared words cannot be separated, the input stays blocked.
+- **Attended:** show each problem with its line, and offer the **repair** for unmappable items: propose longer quotes (copied from the transcript, at most twelve words, unique) or tighter ones that cite a different paragraph, for the user to confirm in the preview. For an unnumbered line propose an id and quotes. Apply confirmed repairs to your temporary summary file only (never edit the Notion page's tokens or text), then run `extract-plan` again, and tell the user to fix the same lines on the Notion page (ask Brain Assistant to "check minutes"): the page keeps the old text, so the next read blocks again until they do. For a collision between an excluded and an included item, say which two items collide; if the shared words cannot be separated, the input stays blocked.
 - **Unattended:** skip the input and name it and the line under Needs you.
 
 ## 4. Preview, then write (attended)
@@ -45,10 +46,12 @@ A re-read runs the ordinary comparison on the extract's paragraphs (SKILL.md, "A
 
 ## 6. Tasks
 
+With the Tasks module off or no Tasks database configured (`brain status`), write no Task items and say nothing about them; the summary and the notes are written as usual.
+
 Only the owner's **explicit** commitments become Tasks. The owner comes from the configured identities and aliases (`brain.json` `owner`), never from a name in a prompt. Take them from numbered items that are effectively selected, of a confirmed input.
 - An ambiguous owner, "needs clarification", or a tentative idea ("we could…") → **no Task**. Say so under Check.
-- Another person's commitment → **no Task**, unless the item carries `Track: Waiting On —`. Then `brain sync tasks --source <extract> --input` takes `{ "title", "status": "waiting_on", "owner": "<their name>", "item": "s1.i3" }`; the summary's `Track` token is the user's explicit request, you never add it. Offer it once in the preview ("Maria said she will send the plan: track it? write `Track: Waiting On —` before that item") but create nothing until the token is on the page.
-- Every owner Task carries `"item": "<item id>"`. Record the Task with `brain sync record` including `task_items` (`{ "<item id>": "<Notion task page id>" }`).
+- Another person's commitment → **no Task**, unless the item carries `Track: Waiting On —`. Then `brain sync tasks --source <extract> --input` takes `{ "title", "status": "waiting_on", "owner": "<their name>", "item": "s1.i3" }`; the summary's `Track` token is the user's explicit request, you never add it. If `brain.json` `notion.tasks.properties.owner` is empty the person's name cannot be stored: tell the user, and start the title with "Waiting on <name>: " yourself. Offer it once in the preview ("Maria said she will send the plan: track it? write `Track: Waiting On —` before that item") but create nothing until the token is on the page.
+- **Selected inputs use `brain sync tasks --source <the extract's src id>`, for owner Tasks too** (`--meeting` refuses an `item`). Each item is `{ "title", "item": "s1.i3", "projects": [the meeting's or the row's project ids], "due"? }`: `--source` does not copy the meeting's projects, so pass them yourself; it sets no Meeting relation (the Task links to the extract's Inbox row). Every owner Task carries `"item": "<item id>"`. Record the Task with `brain sync record` including `task_items` (`{ "<item id>": "<Notion task page id>" }`).
 - **Never twice:** an item with an entry in `task_items` anywhere along the `replaces` chain gets no second Task. While `legacy_tasks` is not empty create **none** automatically: list the item as "possible Task" with the existing Tasks' links; an attended run creates it only after the user confirms, an unattended run skips it and names it under Needs you. Never cancel or delete a Task.
 
 ## 7. Changes after ingestion

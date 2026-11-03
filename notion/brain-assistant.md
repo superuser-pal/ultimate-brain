@@ -89,7 +89,7 @@ Goal: make the minutes on this meeting page ready for the brain.
 Source: this page only. It must be a page in the Meetings database inside [@Brain Data]; otherwise stop and tell me.
 
 1. Shape: check against notion/minutes-format.md: Attendees and Projects, the overview Highlights and My actions, then one "## [s1] <Subject>" section per subject, each with a "Selection:" line. List what is missing. A summary with no subject ids is the older format: say that nothing in it can be left out of the brain.
-2. Items: every item is one line "[s1.i1] text "quote"". List items with no id, no quote, a quote longer than 12 words, or a quote that does not occur word for word in the transcript. Do not invent or fix quotes yourself; list them for me.
+2. Items: every item (overview items are [s0.iN]) is one line "[s1.i1] text "quote"". List every bulleted or numbered line that has no id (it blocks the whole meeting) and items with no id, no quote, a quote longer than 12 words, or a quote that does not occur word for word in the transcript. Do not invent or fix quotes yourself; list them for me.
 3. List every name, number, date and amount for me to confirm.
 4. Flag actions or commitments with no owner, a tentative idea written as a commitment, and anything that reads like a guess or an invented risk.
 5. Compare the attendees and project named in the text with the Attendees and Project properties. Report differences; don't change the properties.
@@ -207,6 +207,7 @@ Write every item as ONE line in exactly this form:
 Goal: turn a pasted email thread into a clean copy the brain can read. Clean it; never summarize it.
 Source: this page only. It must be a page in the Inbox database inside [@Brain Data] with Kind Capture and Brain Status New or Ready; otherwise stop and tell me.
 
+0. If the page has a "Transcript" toggle or lines with ids like "[s1.i1]", stop and tell me: this is not an email, and rewriting would break the quotes my selections point at.
 1. Split the text into messages. Put them newest first, as a mail client shows them: the latest message at the top, the oldest at the bottom. A message with no date goes where the thread places it (a reply pasted on top is the newest).
 2. Start each message with one heading 3: <sender> → <recipients> · <date>, e.g. "Tomás Vidal → Lucía Fernández · 3 Dec 2026". Names only: no email addresses, no Cc, no Subject. Take each part only from that message's own header or quote line ("On 2 Dec, Lucía Fernández <…> wrote:" names the sender only; a reply pasted with no header takes its sender from its sign-off or signature). If the text shows only an address, keep the address. Never guess a name, recipient or date; leave out a part the text doesn't show.
 3. Under the heading, the message's own text word for word, from the greeting to the sign-off, as normal paragraphs: every name, number, date and link the sender wrote. Keep the sender's paragraphs and lists, with an empty line between paragraphs. Join lines a mail client broke in the middle of a sentence; change line breaks only, never words. Never shorten, merge or drop a sentence the sender wrote, even one about a meeting.

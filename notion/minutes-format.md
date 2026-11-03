@@ -8,16 +8,16 @@ The old eleven-heading format (Attendees, Projects, Action Items, Decisions, Ope
 Summarize the meeting transcript as structured, factual meeting notes, in exactly this shape.
 
 ## Attendees
-Full names, with their organization, team or role when mentioned.
+ONE plain line: full names separated by commas, each with their organization, team or role when mentioned. No bullets.
 
 ## Projects
-Every project the meeting touched, one per line, with the project's name as it was said.
+ONE plain line: every project the meeting touched, separated by commas, with each name as it was said. No bullets.
 
 ## Highlights
-The few things that matter most, one item per line.
+The few things that matter most. Every item is a line in the item form below, using the id [s0.i1], [s0.i2], ...
 
 ## My actions
-Only commitments the meeting owner made explicitly. One item per line.
+Only commitments the meeting owner made explicitly. Every item is a line in the item form below, continuing the [s0.iN] numbers.
 
 Then one section per substantive subject, in the order discussed:
 
@@ -31,14 +31,15 @@ Inside a subject, in this order, only the sub-headings that apply:
 ### Open questions
 ### Concerns raised   (only what the conversation supports)
 
-Number the subjects [s1], [s2], ... and write every item as ONE line in exactly this form:
+Number the subjects [s1], [s2], ... Write every item (in the overview as [s0.iN], in a subject as [sN.iM]) as ONE line in exactly this form:
 [s1.i1] <text> "<quote>"
 - The id is visible, unique in the page and never changed once written.
 - Each quote is copied word for word from the transcript, at most 12 words long, and occurs once in the transcript. Add a second or third quote (up to three) when the support spans more than one place. Make a quote longer, never shorter, to make it unique.
 - When an item only makes sense with another one, end the line with (depends on [s1.i1]).
 - Write "Track: Waiting On —" before the text only when I asked to track that person's commitment. Never write it yourself.
 - Never put "Meeting only:" or "Use in brain:" on an item yourself.
-- Under a subject heading, write the line "Selection: Use in brain" and nothing else on that line. The overview Highlights and My actions have no Selection line.
+- Under a subject heading, write the line "Selection: Use in brain" and nothing else on that line. The overview (Highlights, My actions) has no Selection line.
+- Every list line other than Attendees and Projects must be an item in this form. A bullet without an id blocks the whole meeting from the brain.
 - Put the sentence "All subjects included unless marked Meeting only. Mark Reviewed to confirm." once, under the title, before the first section.
 
 Rules:
