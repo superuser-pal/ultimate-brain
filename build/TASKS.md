@@ -169,6 +169,16 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 **Output:** decision 0067 (amends 0055); spec/capture-and-review.md §3–§4 and §6 and spec/cli.md §5.22 (the Quick follow-ups and Tasks groups, the Scope toggle, which quote problems block and how the rest are reported); the parser in src/lib/selection.ts and the extract-plan output in src/lib/extract.ts, test-first; notion/minutes-format.md (prompt and "What you do with it"), a note in notion/ on pasting the new prompt; the brain-ingest references (selection, extraction, cli-inputs) and their mirror; a blind run of the new prompt on a synthetic transcript.
 **Acceptance:** tests: quick follow-up checkboxes, with or without an id, are listed and never imported, never a Task and never a blocker, while a checkbox outside a Quick follow-ups group still blocks; a Scope toggle is read into Done when, Due, Project and Notes, and a Due that is not a date or a stray Scope is reported without blocking; a long exact quote and a reworded quote with a unique 6–12-word stretch are placed; an unplaceable quote of an included item is reported and the item not imported, while the same quote on an excluded item still blocks; the 0.8 minutes fixture gives the same plan as before; a fresh Sonnet agent given only a synthetic transcript and the new prompt writes minutes that extract-plan accepts; `npm test`, typecheck, `test:package`, the skill mirror check and the leak check pass.
 
+### CC-113 · sync apply creates notes in relation order · `done` (#195)
+**Release:** 0.9.0
+**Changelog:** `sync apply` creates new notes in relation order, so an Area whose Domain (or a Project whose Area or Org) is new in the same plan is created in one run, whatever the plan's order; a cycle among creates is reported as `RELATION_CYCLE`.
+**Output:** spec/cli.md §5.14.3 states that creates run in relation order (the referenced create first, otherwise plan order), that results stay in plan order, and what a cycle does; `applyPlan` in src/lib/sync.ts orders the creates accordingly; sync apply tests. From dogfood #192.
+**Acceptance:**
+- [ ] A plan with a new Area before its new Domain applies both in one `sync apply`, with no failure.
+- [ ] The same for a new Project before its new Org (`client`) and a new Project before its new Area.
+- [ ] Creates in a relation cycle fail `RELATION_CYCLE`, a create that depends on one fails `DEPENDENCY_FAILED`, the other creates and the rest of the plan are still applied, and the command ends (exit 1).
+- [ ] `data.create` stays in the plan's order; every existing sync apply test passes unchanged.
+
 ## 0.10.0 — The brain assistant (decision 0064)
 
 An assistant you ask, from the CLI, about the structure of your work: Areas, Domains, Projects and Tasks. It finds what's stalled, misplaced or missing, recommends, turns your thinking into captures, tasks and projects, and makes changes through Review rows, or directly after your yes in a live chat. On demand; the weekly scheduled run is CC-111 in 0.13.0. Starts after 0.9.0 is released, with its opening scope grill.
@@ -190,6 +200,12 @@ An assistant you ask, from the CLI, about the structure of your work: Areas, Dom
 **Changelog:** development only: end-to-end acceptance of the brain assistant on a synthetic brain, attended, with Review rows and chat approvals.
 **Output:** docs/acceptance-0.10.0.md: a scenario per finding kind, the Review-row path and the chat-yes path, a linked repo's rollup reviewed, Notion unreachable.
 **Acceptance:** every scenario passes with its evidence; no change happens without a Review row or a yes; the Review workload of one run stays within the cap the contracts set.
+
+### CC-115 · CI catches a PR that drops its own task row · `todo`
+**Release:** 0.10.0
+**Changelog:** development only: `pr-format` names a PR whose own task row is missing, instead of asking for a CHANGELOG.md line.
+**Output:** found on #195: merging main into the branch dropped the task's own row, and `pr-format` failed with "PR must add its task line to CHANGELOG.md", because a task with no row falls to the 0.3.x path; `merge-ready` was red but the PR was merged, and #199 restored the row. scripts/pr-format.mjs fails first with "PR has no row for its task CC-N" when the head has no row for the branch's task; scripts tests; a line in docs/releasing.md or AGENTS.md on merging main into a branch (keep every row on both sides). Ask the user whether `main` should require `merge-ready` (branch protection is off today; decision 0040).
+**Acceptance:** a scripts test: a PR head without its own task's row fails with the new message, and a 0.3.x task with no row-level Changelog still gets the old message; the user's answer on requiring `merge-ready` is recorded; `npm run test:scripts` and the leak check pass.
 
 ## 0.11.0 — The brain tidies itself (decisions 0052, 0061, 0064)
 
