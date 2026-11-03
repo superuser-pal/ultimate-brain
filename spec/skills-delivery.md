@@ -466,9 +466,9 @@ It checks the link's form only. The product repo is private, and the fork's toke
 - **Tested revision:** the snapshot the product's `main` ships, i.e. its package `snapshot.json`.
   - In phase A, `name` `ultimate-brain` and the package version.
   - In phase B, the fork's `version` and `source.commit`.
-  - Each product release records it: the release's CHANGELOG section gets one line `Skills: <name> <version> (<integrity>)`, which `release.mjs` writes (CC-106).
+  - Each product release from 0.9.0 on records it: the release's CHANGELOG section ends with one line `Skills: <name> <version> (<integrity>)`, which `release.mjs` writes (CC-106). In phase A `<version>` is the version being released: `prepack` regenerates the manifest with it, and the integrity covers the files only, so it is the same as on `main`.
 - **Assessed revision:** the newest fork revision (a released snapshot, or an unreleased `main` commit) whose impact on the product has been classified. It lives in the integration issue (§11.2), never in the package.
-- **What the fork provides for these** (CC-101): its `brain-v` releases with the notes lines of §10.2, its `main` head, and its merged PRs' bodies. The product reads them with the public GitHub REST API: `GET /repos/<owner>/ultimate-brain-skills/releases`, `…/commits/main`, `…/compare/<base>...<head>` and `…/commits/<sha>/pulls`. The fork keeps the repository name and `main`; renaming either is a coordinated change.
+- **What the fork provides for these** (CC-101): its `brain-v` releases with the notes lines of §10.2, its `main` head, and its merged PRs' bodies. The product reads them with the GitHub REST API (§11.4): `GET /repos/<owner>/ultimate-brain-skills/releases`, `…/commits/main`, `…/compare/<base>...<head>` and `…/commits/<sha>/pulls`. The fork keeps the repository name and `main`; renaming either is a coordinated change.
 
 ### 11.2 The one integration issue (CC-106)
 
@@ -488,6 +488,13 @@ It checks the link's form only. The product repo is private, and the fork's toke
     - `impact` is the strongest declaration among its merged PRs (`coordinated` > `compatible` > `none`), or `undeclared` when a PR has no valid line.
     - `links` holds the product issues or PRs, `note` the classifier's reason, and `error` a problem the check found (a dead link).
     - When the check runs again, it extends the open `unreleased` entry's `to` instead of adding another. When those commits are released, it turns the entry into a `release` entry and keeps its classification.
+  - **How the check derives `changes`** on every run (CC-106):
+    - *At or before:* commit `a` is at or before `b` when they are equal or the fork's compare API (`compare/a...b`) reports `b` `ahead`.
+    - *Segments:* from `assessed.commit` (none before the first classification), one `release` segment per non-draft `brain-v` release whose commit is not at or before the previous boundary, in version order, then one `unreleased` segment to the fork's `main` head when the head is not at or before the last boundary. The fork's first release has no `from` and no `impact`: there is nothing earlier to compare.
+    - *Carrying classification:* a segment with the same `from` and `to` as an earlier entry keeps that entry's `classification`, `links` and `note`. A segment with the same `from` but a new `to` (more commits, or a release cut at another commit) keeps `links` and `note` but is `unclassified` again, because its new commits are unassessed. An earlier `ready` or `brain-work` entry that no segment matches stays as it was. Entries at or before `assessed` are kept as they are, subject to pruning.
+    - *Impact:* the merged PRs of a segment are those of its merge commits (`commits/<sha>/pulls`; the fork merges with merge commits only, §10.3). With no merged PR the impact is `undeclared`. The `Product:` links of its `coordinated` PRs are added to the entry's `links`.
+    - *Errors* are recomputed on every run and cleared once their cause is gone: every `links` URL of the form `https://github.com/<owner>/<repo>/(issues|pull)/<n>` must name the product repo and resolve there, else `error` `dead link <url>`; and the vendored schema check (§11.3). An `unclassified` entry with an error becomes `brain-work`. A change with an `error` blocks a release (§11.3): its link is not a working linked task.
+- **Where the state lives between runs.** The open issue's block. With no open issue, the block of the most recently updated closed issue with the label, so `assessed` survives a closed issue. With neither, the check starts from `assessed` `null`. A block that doesn't parse or validate is `unknown` (error `integration block in #<n> is invalid: …`), and the check changes nothing.
   - Each entry has a `classification`:
     - `unclassified`: set by the check.
     - `ready`: deliberate upgrade possible.
@@ -495,8 +502,8 @@ It checks the link's form only. The product repo is private, and the fork's toke
     - `no-action`: reviewed, nothing to do.
   - `last_check`: `{ "at", "status": "ok"|"unknown", "error" }`.
 - **Classifying.** Claude Code classifies changes in a planning session by editing the block. It moves `assessed` forward only when every change up to that revision has a classification other than `unclassified`.
-- **Seeing a change never dismisses it.** A `brain-work` change stays listed, with its links, until its task is `done` and the product's tested revision includes it. A `ready` change stays until the tested revision includes it. A `no-action` change is dropped once `assessed` moves past it.
-- **Closing.** The issue is closed when `changes` is empty after that pruning. Otherwise it stays open, and only one issue is used:
+- **Seeing a change never dismisses it.** A `brain-work` change stays listed, with its links, until its task is `done` (every link is a closed issue, a merged PR or a commit URL, and the entry has no `error`) and the product's tested revision includes it (`to` at or before `tested.commit`; a phase A `tested` has no commit, so it includes no fork change). A `ready` change stays until the tested revision includes it. A `no-action` change is dropped once `assessed` moves past it.
+- **Closing.** The issue is closed (reason completed) when `changes` is empty after that pruning; the closed issue keeps the final block. Otherwise it stays open, and only one issue is used:
   - a second open issue with the label makes the check report `unknown` (error `two integration issues`) and change nothing;
   - with none open and a change to record, it opens one.
 
@@ -504,13 +511,15 @@ It checks the link's form only. The product repo is private, and the fork's toke
 
 | When | How | On failure |
 |---|---|---|
-| **Daily** | product workflow `skills-integration`, 06:00 UTC and on manual dispatch | `last_check.status` `unknown` with the error; the workflow fails, so GitHub notifies the owner |
-| **Start of product work** | `scripts/task.mjs start` prints one line: `skills integration: <n> open, <m> unclassified` or `skills integration: status unknown (<reason>)` | never blocks |
-| **Before a release** | `scripts/release.mjs` | refuses with the reason, when: the package snapshot is invalid or excludes the version being released; the check status is `unknown`; or a change is `unclassified`. A `brain-work` change with a linked task doesn't block. It is tracked, and blocking it would stop unrelated releases. |
+| **Daily** | product workflow `skills-integration`, 06:00 UTC and on manual dispatch | `last_check.status` `unknown` with the error, written to the open issue if there is one; the workflow fails, so GitHub notifies the owner |
+| **Start of product work** | `scripts/task.mjs start` runs the check without writing and prints one line to stderr: `skills integration: <n> open, <m> unclassified` or `skills integration: status unknown (<reason>)` | never blocks |
+| **Before a release** | `scripts/release.mjs`, for releases from 0.9.0 on (earlier ones predate the package snapshot), after `npm test` has regenerated the package snapshot; `--dry-run` runs the check without writing | refuses with the reason, when: the package snapshot is invalid or excludes the version being released (in phase A it never excludes it: `prepack` regenerates its range from the released version); the check status is `unknown`; a change is `unclassified`; or a change has an `error`. A `brain-work` change with a linked task doesn't block. It is tracked, and blocking it would stop unrelated releases. |
+
+All three run `node --experimental-strip-types scripts/skills-integration.mjs` (`--dry-run` reads only; `--json`; `--release <version>` adds the release rules; `--repo <owner/name>`, else `GITHUB_REPOSITORY`, else the `origin` remote; `--root <dir>` for the package snapshot and `spec/`). It reads the tested revision from `<root>/.agents/skills/` (an invalid package snapshot is `unknown`), and it exits 1 when the status is `unknown` or the release rules refuse. The fork is `<product owner>/ultimate-brain-skills`.
 
 For each `coordinated` fork PR merged since `assessed`, the check verifies that every `Product:` link resolves to an issue or PR in the product repo. A link that doesn't resolve is recorded as a `brain-work` change with `error`, and is never silently dropped.
 
-The check also compares the fork's `schemas/skills-snapshot.schema.json` at its `main` head with the product's `spec/schemas/skills-snapshot.schema.json`. A difference is recorded as a `brain-work` change with `error` `vendored schema differs`, and the links point to the product commit that changed the schema.
+The check also compares the fork's `schemas/skills-snapshot.schema.json` at its `main` head with the product's `spec/schemas/skills-snapshot.schema.json`, as parsed JSON (a missing copy differs). A difference is recorded as a `brain-work` change with `error` `vendored schema differs`, and the links point to the product commit that last changed the schema (`commits?path=…`). It goes on the entry whose `to` is the fork head; when every entry is at or before `assessed`, an `unreleased` entry with `from` and `to` both the head carries it.
 
 **No false current status:** a skill or report says the product is current only when `last_check.status` is `ok`, `seen.head` equals `assessed.commit`, and `changes` is empty.
 
@@ -520,7 +529,7 @@ The check also compares the fork's `schemas/skills-snapshot.schema.json` at its 
 |---|---|---|
 | Fork: release, CI checks | the fork's `GITHUB_TOKEN` | its own repository |
 | Fork: upstream sync | `UPSTREAM_SYNC_TOKEN`, a fine-grained token or GitHub App installation | the fork only; contents, pull requests, issues and workflows write. Workflows write is needed because the pushed upstream commits may touch `.github/`, even though the merge keeps the fork's version. A PR opened with `GITHUB_TOKEN` would not start the fork's CI, so the impact check would never run on it. |
-| Product: daily check, release check | the product's `GITHUB_TOKEN` (issues write); `gh` with the user's login when run locally by `task.mjs` or `release.mjs` | the product repo; the public fork read anonymously |
+| Product: daily check, release check | the product's `GITHUB_TOKEN` (`issues: write`, `contents: read`, `pull-requests: read`); locally, `GH_TOKEN`, else `GITHUB_TOKEN`, else `gh auth token` with the user's login, when run by `task.mjs` or `release.mjs` | the product repo; the public fork read with the same token (public data needs no permission, and anonymous requests share a 60-per-hour limit per address) |
 
 Credentials live only in the repositories' Actions secrets or the user's `gh` login. They are never stored in a file, an issue, a snapshot or a log. A lost credential is recovered by reauthorising (a new token in the secret), never by committing one. A missing or rejected credential is a failed check (`unknown`), never a pass.
 
@@ -577,6 +586,8 @@ Then:
 - `lint` passes;
 - an immediate `upgrade` reports `files: []`.
 
-### 12.4 CC-106 (for reference; not in CC-98's acceptance)
+### 12.4 CC-106 (product repo, mocked GitHub API, no network)
 
 The update check against a compatible change, an incompatible change, an unreleased change and an unavailable source (migration plan step 7): one integration issue throughout, `unknown` on the unavailable source, and no change dropped before it is classified.
+
+Tests run the check against a mock GitHub API (`tests/fixtures/github-mock.mjs`: the product's issues, the fork's releases, history, PRs and vendored schema) and a synthetic package snapshot; the scripts' tests point every other run at a closed local port. `tests/skills-integration.test.mjs` covers §11.2 and §11.3's check; `tests/release-scripts.test.mjs` covers the release gate, the `Skills:` line and `task.mjs start`'s line.
