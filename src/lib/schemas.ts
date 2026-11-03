@@ -11,6 +11,9 @@ export interface SchemaSet {
   note: ValidateFunction;
   proposal: ValidateFunction;
   brain: ValidateFunction;
+  /** spec/skills-delivery.md §2 and §3 (decision 0059). */
+  skillsSnapshot: ValidateFunction;
+  skillsLock: ValidateFunction;
   /** Frontmatter keys each type declares (core + knowledge + type fields). */
   knownKeys(type: string): ReadonlySet<string> | undefined;
 }
@@ -27,11 +30,15 @@ export function loadSchemas(): SchemaSet {
   const note = read("note.schema.json");
   const proposal = read("proposal.schema.json");
   const brain = read("brain.schema.json");
+  const skillsSnapshot = read("skills-snapshot.schema.json");
+  const skillsLock = read("skills-lock.schema.json");
 
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   ajv.addSchema(note);
   ajv.addSchema(proposal);
   ajv.addSchema(brain);
+  ajv.addSchema(skillsSnapshot);
+  ajv.addSchema(skillsLock);
 
   // A type may declare its own keys inside `allOf` (a Document's origin and promoted_from do), so those count as declared too.
   const keys = (schema: JsonObject | undefined): string[] => [
@@ -50,6 +57,8 @@ export function loadSchemas(): SchemaSet {
     note: ajv.getSchema(note.$id)!,
     proposal: ajv.getSchema(proposal.$id)!,
     brain: ajv.getSchema(brain.$id)!,
+    skillsSnapshot: ajv.getSchema(skillsSnapshot.$id)!,
+    skillsLock: ajv.getSchema(skillsLock.$id)!,
     knownKeys: (type) => known.get(type),
   };
   return cached;
