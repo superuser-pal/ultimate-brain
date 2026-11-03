@@ -106,7 +106,8 @@ export function reviewersFor(author) {
 
 /**
  * True when a reviewer for `author` (the branch prefix) posted `Review (<reviewer>): pass at <sha>` naming `head` (decisions 0038, 0063).
- * Only the repo owner's account counts: every agent posts through it (Codex on #154, Claude Code on #91, #94 and #99), so a comment from anyone else is no review. An operational assumption (build/TASKS.md, CC-85).
+ * Only the repo owner's account counts: every agent posts through it (Codex on #154, Claude Code on #91, #94 and #99), so a comment from anyone else is no review. An operational assumption (build/TASKS.md, CC-85):
+ * the check sees the verdict's text, not which agent wrote it (decision 0063).
  */
 export function hasOtherAgentPass(repo, pr, head, author) {
   const endpoint = [`repos/${repo}/pulls/${pr}/reviews`, `repos/${repo}/issues/${pr}/comments`];
