@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
-import { brain, fixtureCopy } from "./helpers.ts";
+import { brain, fixtureCopy, withoutReviewSections } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const SYNC = "mtg-8c4n2p7w";
@@ -208,6 +208,7 @@ async function record(dir: string, item: Record<string, any>, notion = item.page
 
 test("render: a Review notes row letters its notes, then its links, with titles for ids", async (context) => {
   const dir = await fixtureCopy(context);
+  await withoutReviewSections(dir);
   const created = await run(dir, ["proposal", "new"], { proposals: reviewInput });
   const [item] = await rendered(dir, [created.json.data.created[0].id]);
   assert.equal(item!.properties.Kind.value, "Review Notes");

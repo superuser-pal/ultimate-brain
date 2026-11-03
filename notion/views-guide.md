@@ -233,6 +233,8 @@ Notion lets you shape how each database page opens. Set it once per database: op
 | Accept | Accept write-up | Documents | Accepted → checked; Accepted at → now | Documents |
 | Accept | Accept refresh | Inbox | Accepted → checked; Accepted at → now (the brain acts on it only on a Report row) | Reports |
 | Promote | Promote to document | Decisions, Concepts | Promote asked → checked | Documents (and Knowledge) |
+| Submit | Submit decisions | Review | Decided → checked; Decided at → now (decision 0055) | core |
+| Submit all | Submit and accept all | Review | Decided → checked; Accept all → checked; Decided at → now | core |
 
 The name and the label differ, so the layout doesn't show the same text twice (#144). The brain reads the boxes the checkbox buttons tick (and Accepted and Accepted at), never a button.
 
@@ -257,7 +259,7 @@ A message without the page reference makes Brain Assistant stop and say so. The 
 | Orgs | Relationship, Website | Panel · Meetings via projects, People, Projects, Summary, Lifecycle | Brain ID, Last Synced | On hover | — |
 | Decisions | Promote, Lifecycle | Panel · Promote asked, Assessment, Date, Project, Area, Decided In, Supersedes, Superseded By, Sources, Documents, Summary | Brain ID, Last Synced | Show always | The body is brain-written; backlinks show supersede chains and mentions |
 | Questions | Status, Kind, Project | Panel · Area, Raised In, Sources, Summary, Lifecycle | Brain ID, Last Synced, Created time | Off | You set Status |
-| Review | Your call, What to fix, About Page | Main · Type, Now, Proposed, Why, About, Area, Source Meeting | Kind, State, Brain ID, Created time, Last edited time | Off | No body; read Now, Proposed and Why, then decide in the heading |
+| Review | Submit, Submit all, Your call, What to fix, About Page | Main · Decided, Decided at, Accept all, Type, Now, Proposed, Why, About, Area, Source Meeting | Kind, State, Brain ID, Created time, Last edited time | Off | A row from a source is a page with a section per change (decision 0055): decide there and click Submit. Older rows are decided in the heading (Your call, What to fix) |
 | Inbox | Keep, Update, Tidy, Accept, Brain Status, Project, Area | Main · Document asked, Refresh asked, Accepted, Accepted at, Only keep, Kind, Summary, What to fix, Decisions, Questions, Concepts, Documents, People, Tasks, Ask, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
 | Concepts | Promote, Lifecycle | Panel · Promote asked, Project, Area, Sources, Documents, Summary | Brain ID, Last Synced, Created time | Show always | The body is brain-written |
 | Documents | Write, Accept, Lifecycle, Project, Area, Sources | Panel · Accepted, Accepted at, From decision, From concept, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |

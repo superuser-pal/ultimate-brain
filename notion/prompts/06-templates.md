@@ -46,6 +46,7 @@ Create a default page template for each database below. Each item "Heading: data
   Then a toggle "My notes".
 - Meetings:
   A gray callout containing a heading 3 "Before marking Reviewed", a divider, and the to-do items "Attendees linked", "Project linked", "Minutes follow the format", "Minutes checked and corrected", then a gray line "Check the minutes, fix them, then set Brain Status to Reviewed. Fixed them after the brain took them in? Set Reviewed again: it reads only what changed."
+  A gray callout (the notice, decision 0055): "All subjects included unless marked Meeting only. Mark Reviewed to confirm." followed by a gray line "To leave a subject out, change its line to Selection: Meeting only. To leave one item out, write Meeting only: at its start. Nothing is added to the brain until you set Reviewed."
   A Notion AI meeting notes block.
   A toggle "My notes".
 [Knowledge]   A toggle "Decisions" containing a linked view of Decisions where Decided In is this page.
@@ -59,7 +60,12 @@ Create a default page template for each database below. Each item "Heading: data
 [Orgs]   "Who works there?": People where Org is this page, showing Name, Role.
 [Orgs]   "Which projects?": Projects where Client is this page, showing Name, Status, Countdown.
 [Orgs]   Then a toggle "My notes".
-Set each of these templates as the database default.
+- Inbox, a second template named "Voice note" (not the default; Brain Status New, Kind Capture; decision 0055, notion/voice-format.md):
+  A gray callout: "All subjects included unless marked Meeting only. Mark Ready to confirm. Creating the summary never creates a task." followed by a gray line "Record with your phone or Notion, paste the transcript into the Transcript toggle, then ask Brain Assistant: Voice summary."
+  A heading 2 "[s1] Voice note", the line "Selection: Use in brain", and three heading 3s "Highlights", "Commitments", "Ideas to explore", each empty.
+  A toggle "Transcript" containing one empty paragraph.
+- Review (the row's page, decision 0055): the template of a Review row created by hand only; rows written by the brain have their own body. A gray callout "Each change below is a section. Edit the text in Proposed final wording if you want it different, type your choice on its Decision line (Accept, Reject, Defer or Request revision), then click Submit decisions at the top. Submit and accept all accepts every section still on Pending. You can decide some now and the rest later." Put the buttons Submit decisions and Submit and accept all at the top of the page layout (by hand: see the buttons table in notion/views-guide.md).
+Set each of these templates as the database default, except the Inbox "Voice note", which stays a second template.
 ```
 
 ## Verify
@@ -67,4 +73,5 @@ Set each of these templates as the database default.
 - [ ] Create a new Area: it starts with a "Brief" toggle heading, then "What needs me here?" with its tabs (Today only with Tasks), then a headed view for each line you kept, and its page header shows the "via projects" rollups (set in the page layout, [views-guide.md](../views-guide.md) §9). Delete the test area.
 - [ ] No template shows a view of a database you left out.
 - [ ] No template has a callout that prints "[Summary]", "[Role]" or "Why".
-- [ ] Every template listed above is the default for its database.
+- [ ] Every template listed above is the default for its database, except the Inbox "Voice note".
+- [ ] A new Meeting shows the gray notice about Meeting only and Reviewed above the notes block. A new Inbox row from the "Voice note" template starts at Brain Status New (not Ready), has the Transcript toggle, and nothing in it is ingested until you set Ready.
