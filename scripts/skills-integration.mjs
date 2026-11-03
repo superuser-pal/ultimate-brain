@@ -328,17 +328,24 @@ export function summary(result) {
   return `skills integration: ${changes.length} open, ${changes.filter((change) => change.classification === "unclassified").length} unclassified`;
 }
 
-/** §11.3's release refusals, from a check result and the package snapshot. */
-export function releaseProblems(result, snapshotProblem) {
+/**
+ * §11.3's release rules, from a check result and the package snapshot: `{ problems, warnings }`. Only a change that may be incompatible blocks
+ * while unclassified (0059); an unclassified `compatible` or `none` change is a warning.
+ */
+export function releaseRules(result, snapshotProblem) {
   const problems = [];
+  const warnings = [];
   if (snapshotProblem !== null) problems.push(snapshotProblem);
-  if (result.status !== "ok") return [...problems, `skills integration status unknown (${result.error})`];
-  const unclassified = result.block.changes.filter((change) => change.classification === "unclassified");
-  const errors = result.block.changes.filter((change) => change.error !== undefined);
+  if (result.status !== "ok") return { problems: [...problems, `skills integration status unknown (${result.error})`], warnings };
   const where = result.issue === null ? "" : ` in issue #${result.issue}`;
-  if (unclassified.length > 0) problems.push(`${unclassified.length} skills change(s) unclassified${where}`);
+  const unclassified = result.block.changes.filter((change) => change.classification === "unclassified");
+  const harmless = unclassified.filter((change) => change.impact === "compatible" || change.impact === "none");
+  const blocking = unclassified.length - harmless.length;
+  const errors = result.block.changes.filter((change) => change.error !== undefined);
+  if (blocking > 0) problems.push(`${blocking} skills change(s) that may be incompatible are unclassified${where}`);
   if (errors.length > 0) problems.push(`skills change(s) with an error${where}: ${errors.map((change) => change.error).join("; ")}`);
-  return problems;
+  if (harmless.length > 0) warnings.push(`${harmless.length} compatible skills change(s) unclassified${where}; classify them in a planning session`);
+  return { problems, warnings };
 }
 
 function option(args, name) {
@@ -369,9 +376,9 @@ async function main(args) {
   const result = token === undefined
     ? { status: "unknown", error: "no credential (set GH_TOKEN or run gh auth login)", block: null, issue: null, written: false }
     : await runCheck({ root, repo, request: github({ token }), write: !args.includes("--dry-run") });
-  const problems = release === undefined ? [] : releaseProblems(result, releaseSnapshotProblem(root, release));
-  if (args.includes("--json")) process.stdout.write(`${JSON.stringify({ ...result, summary: summary(result), problems })}\n`);
-  else process.stdout.write(`${summary(result)}\n${problems.map((problem) => `refused: ${problem}\n`).join("")}`);
+  const { problems, warnings } = release === undefined ? { problems: [], warnings: [] } : releaseRules(result, releaseSnapshotProblem(root, release));
+  if (args.includes("--json")) process.stdout.write(`${JSON.stringify({ ...result, summary: summary(result), problems, warnings })}\n`);
+  else process.stdout.write(`${summary(result)}\n${problems.map((problem) => `refused: ${problem}\n`).join("")}${warnings.map((warning) => `warning: ${warning}\n`).join("")}`);
   if (result.status !== "ok" || problems.length > 0) process.exitCode = 1;
 }
 
