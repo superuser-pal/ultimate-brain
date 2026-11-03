@@ -1,11 +1,11 @@
 # Minutes format
 
-Paste it into Notion AI when it summarises a meeting, and use it for the "Minutes follow the format" item of the Meetings checklist (docs/notion-space-design.md §9). Every meeting summary then has the same sections, which makes the ingest more accurate (decision 0024). The ingest skill reads these headings, so change them only through the repo (decision 0022). The format is a hint, not a requirement: the ingest also reads minutes with other headings, such as Notion AI meeting notes.
+Paste it into Notion AI when it summarises a meeting, and use it for the "Minutes follow the format" item of the Meetings checklist (docs/notion-space-design.md §9). Every meeting summary then has the same shape: the overview, then one section per subject, with every item on a line of its own that carries an id and quotes from the transcript. That shape is what lets you leave a subject or an item out of the brain (decision 0055, spec/capture-and-review.md §3 and §4). The ingest skill reads it; change it only through the repo (decision 0022). A summary in another shape is still ingested whole, as before, but nothing in it can be left out, and the assistant says so.
 
-This is the user's own meeting-notes prompt, made the default with the brain's sections added (decision 0043). Attendees and Projects come first, because the ingest asks about them when the meeting's properties are empty. Decisions, Open Questions and Risks come right after the action items, so the ingest finds them in fixed places.
+The old eleven-heading format (Attendees, Projects, Action Items, Decisions, Open Questions, Risks, Meeting Purpose, Background, Current Status, Requirements and Deadlines, Other relevant topics) is replaced. Attendees and Projects still come first because the ingest asks about them when the meeting's properties are empty.
 
 ```text
-Summarize the meeting transcript as structured, factual meeting notes, using exactly these sections, in this order. Write "None" under a section when nothing applies.
+Summarize the meeting transcript as structured, factual meeting notes, in exactly this shape.
 
 ## Attendees
 Full names, with their organization, team or role when mentioned.
@@ -13,38 +13,48 @@ Full names, with their organization, team or role when mentioned.
 ## Projects
 Every project the meeting touched, one per line, with the project's name as it was said.
 
-## Action Items
-- [ ] One unchecked checkbox per follow-up.
-- Include the owner, deliverable, timing and dependencies when stated. Write "no owner" or "no date" when they weren't.
+## Highlights
+The few things that matter most, one item per line.
 
-## Decisions
-One line per decision agreed in the meeting: what was decided, and why if stated. Mark tentative ones "(tentative)".
+## My actions
+Only commitments the meeting owner made explicitly. One item per line.
 
-## Open Questions
-Questions raised but not answered, and who raised them.
+Then one section per substantive subject, in the order discussed:
 
-## Risks
-Concerns or risks mentioned, and who raised them.
+## [s1] <Subject>
+Selection: Use in brain
+Inside a subject, in this order, only the sub-headings that apply:
+### Highlights   (why it matters)
+### Decisions   (an agreement reached)
+### My actions
+### Other commitments   (what someone else said they would do)
+### Open questions
+### Concerns raised   (only what the conversation supports)
 
-## Meeting Purpose
-The objectives and the main question to resolve.
+Number the subjects [s1], [s2], ... and write every item as ONE line in exactly this form:
+[s1.i1] <text> "<quote>"
+- The id is visible, unique in the page and never changed once written.
+- Each quote is copied word for word from the transcript, at most 12 words long, and occurs once in the transcript. Add a second or third quote (up to three) when the support spans more than one place. Make a quote longer, never shorter, to make it unique.
+- When an item only makes sense with another one, end the line with (depends on [s1.i1]).
+- Write "Track: Waiting On —" before the text only when I asked to track that person's commitment. Never write it yourself.
+- Never put "Meeting only:" or "Use in brain:" on an item yourself.
+- Under a subject heading, write the line "Selection: Use in brain" and nothing else on that line. The overview Highlights and My actions have no Selection line.
+- Put the sentence "All subjects included unless marked Meeting only. Mark Reviewed to confirm." once, under the title, before the first section.
 
-## Background
-Relevant history and context.
-
-## Current Status
-Progress by workstream or team, including delays, dependencies and pending confirmations.
-
-## Requirements and Deadlines
-Criteria, responsibilities, milestones and launch considerations.
-
-## Other relevant topics
-Separate sections for handovers, availability or other context affecting the work.
-
-Use concise but detailed bullets, with nested bullets for supporting details. Bold key labels within bullets where helpful.
-Preserve names, teams, acronyms, dates, numbers and qualifications exactly as said.
-Distinguish confirmed information from expectations and open questions.
-Do not invent missing owners, deadlines or conclusions.
-Link statements to supporting transcript passages where available.
-Omit irrelevant conversation and repetition.
+Rules:
+- Omit a sub-heading with nothing under it. Write nothing under a heading you would fill with "None".
+- Never repeat a sentence in the overview and in a subject.
+- Never invent a risk, an owner, a date or a conclusion. Write "needs clarification" when the owner or the meaning is uncertain.
+- A tentative idea ("we could...") is not a commitment: leave it out of My actions and Other commitments, or put it under Open questions.
+- Preserve names, teams, acronyms, dates, numbers, qualifications and substantive context exactly as said, and keep the references to documents and sources the speakers gave.
+- Distinguish confirmed information from expectations and open questions.
+- Omit small talk and repetition. Do not mark anything "Meeting only" yourself.
 ```
+
+## What you do with it
+
+- **Leave a subject out:** change its line to `Selection: Meeting only`. Everything under it stays in Notion and stays out of the brain.
+- **Leave one item out:** write `Meeting only:` at the start of its text. **Keep one item inside an excluded subject:** write `Use in brain:` at the start.
+- **Confirm:** set the meeting to **Reviewed**. Until then nothing is ingested. Reviewed confirms what you can see on the page, no more.
+- **Change your mind later:** edit the tokens and set the meeting to Reviewed again. A deletion on its own is not a request; the brain keeps what it has until you ask (decision 0062).
+- **Track someone else's commitment:** write `Track: Waiting On —` before that item's text. Without it, only your own explicit commitments become Tasks.

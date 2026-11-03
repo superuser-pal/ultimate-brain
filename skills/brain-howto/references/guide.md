@@ -72,6 +72,19 @@ The brain only ingests meetings you marked **Reviewed**, and only when you ask: 
 
 ---
 
+## Choosing what enters the brain
+
+A meeting summary or a voice note is written as **subjects**, each with a line `Selection: Use in brain`, and **items**, one line each with an id like `[s2.i3]` and a short quote from the transcript (notion/minutes-format.md; ask Brain Assistant to "check minutes" or run "Voice summary"). Everything is included unless you mark it:
+
+- **Leave a subject out:** change its line to `Selection: Meeting only`. It stays on your Notion page and out of the brain.
+- **Leave one item out:** write `Meeting only:` at the start of the item. **Keep one inside an excluded subject:** write `Use in brain:` at the start.
+- **Confirm:** set the meeting to **Reviewed** (a voice note or capture to **Ready**). Until then nothing is ingested, and the brain never confirms for you. Reviewed confirms what you can see on the page when the next run reads it.
+- The brain keeps only the **paragraphs** of the transcript your selection includes, not the whole transcript. A paragraph shared by an included and an excluded item stays out; the agent tells you which two items collide and proposes tighter quotes.
+- **Tasks:** only your own explicit commitments become Tasks. Someone else's commitment becomes a Waiting On task only when you write `Track: Waiting On —` before that item. A vague idea ("we could…") never becomes a task.
+- **Changed your mind later?** Edit the tokens and set the meeting back to Reviewed (or the capture to Ready), or tell your agent. Deleting a line on its own is not a request: the brain keeps what it has until you ask. When something is taken out, a Review row **Exclusion cleanup** lists what already rests on it: **Remove**, **Restore** (a paragraph is back) or **Keep or Remove** for a note that cannot be tied to a passage. Rejecting it releases nothing; Tasks made from excluded content are listed for you to act on and are never cancelled by the brain.
+
+---
+
 ## Deciding in Review
 
 **What approving does:** it makes the brain's notes **trusted**. Approved notes appear in your Briefs and in the brain's answers; until then, the brain treats them as unconfirmed. Start from Home → **Needs you → What's waiting for you?**: it counts what waits, by Kind, and each row's **About Page** opens the meeting or Inbox row it came from.
@@ -103,6 +116,16 @@ Changes to what the brain already knew come first, and a changed fact is marked 
 - **Fix** with "a: March" applies everything, with a corrected.
 - **Reject** applies nothing, and archives the notes that are still Draft. Nothing is deleted.
 - If a fact changed since the row was written (you edited it in Notion, say), only that item is dropped, and the report says so. The rest applies.
+
+**Review rows with sections (after migration 0013).** A row from one input is a page: a short summary at the top, then one section per item, `## [a · it-9f2c1e44] Changes: Launch date on Acme website`, each with what the note says now, a toggle **Proposed final wording**, and a `Decision:` line.
+1. Edit the text inside **Proposed final wording** if you want it different. That exact text is what the brain writes. If you change a fact (March 15 to March 18), your value becomes current and the brain records it as your correction; the source's value stays in the history, attributed to the source.
+2. Type the decision on the `Decision:` line of each item: `Accept`, `Reject`, `Defer` or `Request revision` (write what you want on the line `Revision request:`). Leave `Pending` to decide later. Decide some items now and the rest later.
+3. Click **Submit decisions**, or **Submit and accept all** to accept every item still on Pending (items you decided explicitly keep your decision). Nothing is read before you click.
+4. Tell your agent "apply my reviews". It shows each item's action and exact text first (in an attended run), and applies only what you decided. A scheduled run applies only decisions that are explicit, exact, unchanged and at least two minutes old, and never reads a revision request.
+5. The top summary shows "3 of 5 decided: 2 applied, 1 closed, 2 waiting for you". An applied or closed status is not written into your sections. If the note changed after the item was written, the section is updated with the new text and your decision resets to Pending. A requested revision comes back as a new draft in **Proposed final wording**, with your earlier text in **Previous proposal**, and `Decision: Pending`: the brain never accepts a draft for you.
+6. Your edits are safe: the brain does not rewrite a row that has edited wording or a decision on it. If you edit a section after clicking Submit, the brain keeps your edit and shows what it would have written in a toggle "Brain update"; submit again to change it. A tiny window remains between the agent's read and its write; Notion's page history recovers an overwritten sentence, and nothing canonical is lost.
+7. An item that rests only on content you excluded is closed without applying anything, even if you accepted it.
+Rows from before the migration keep **Your call** and **What to fix** until they are done.
 
 **Three kinds of row.** Every Review row's Name says which it is:
 - **From <source>:** everything one meeting, email or document brings, lettered as above;

@@ -17,6 +17,10 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
 - **Markdown-only mode:** the user gives a minutes file (or pastes the text) plus the meeting's title, date and, if known, project. Skip every step marked *(Notion)*. Use this mode when Notion is not configured or the user asks for it.
 - **Other sources:** a document file, the drop folder, a pasted email, chat thread or note, the Inbox, a file attached in Notion, or a linked repo's changed files. Follow [references/sources.md](references/sources.md) instead of the procedure below; it says which of these steps still apply.
 
+## Selected input (decision 0055)
+
+When a meeting's summary or a capture has subjects and item ids, the user decides what enters the brain: read [references/selection.md](references/selection.md) before step 2. It replaces the source snapshot of step 3 with an **extract** (only the selected paragraphs, written by `brain source extract`), gates every input on its confirmation, and sets the rules for Tasks (yours by default, Waiting On only when the item says `Track: Waiting On —`). A summary with no ids is ingested whole by the procedure below, unchanged.
+
 ## Procedure (per meeting)
 
 1. **Check the brain.** Run `brain status`. If `index_stale` is true, run `brain index`. Note the owner name and which Notion databases are configured. If Notion is configured and the brain has no area, project or person notes at all (all three counts are 0), run the brain-sync skill first (or ask the user to): without the synced Areas, Projects and People there is nothing to match against, and the ingest would create duplicates.
@@ -114,7 +118,7 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
     **Below the three lines, the report grows with what came in** (decision 0037, amended 2026-10-18). A run that only moved counts stops at three lines. Otherwise add, per input, one line each, and leave nothing out because the list is long:
     - **What came in:** every new project, decision (with its assessment), open question and risk, every fact that changed (old → new), new people with their role, and each Document with what it keeps ("the whole file", or what Only keep named). A one-line summary of what a document or thread is about comes first. For a re-read: "Acme sync, read again: 1 change (launch 2027-02 → 2027-03)".
     - **Check:** every assumption the user should verify: a date taken from today or from a month only, a fact marked ambiguous, a name left unlinked, a part of a document not analysed.
-    - **Action items** that didn't become tasks.
+    - **Action items** that didn't become tasks. For selected input, also what references/selection.md lists under Report.
 
     Never include mechanics: ids, file paths, commands, commit names, or counts already on the Done line. The user reads the report to check the knowledge, not the run. In Markdown-only mode, the action items always appear, since there is no task database.
 
