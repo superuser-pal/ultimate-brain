@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { lstat, readdir, readFile, unlink } from "node:fs/promises";
+import { lstat, readdir, readFile, rmdir, unlink } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
 import { promisify } from "node:util";
 
@@ -11,7 +11,11 @@ import { isRecord } from "../lib/input.ts";
 import { lintBrain } from "../lib/lint.ts";
 import { modulesOf, withModules } from "../lib/modules.ts";
 import { scanNotes } from "../lib/notes.ts";
-import { assertPlainPath, installedProduct, listShippedSkillFiles } from "../lib/skills.ts";
+import { assertPlainPath, installedProduct } from "../lib/skills.ts";
+import { competingCopies } from "../lib/skills-competing.ts";
+import { homeOf, LOCK, readLock, serializeLock, snapshotInvalid, type Lock } from "../lib/skills-pin.ts";
+import { comparePrecedence } from "../lib/skills-range.ts";
+import { packageProblem, packageSnapshot, serializeManifest, TREES, type Manifest } from "../lib/skills-snapshot.ts";
 
 const exec = promisify(execFile);
 const START = /^<!-- ultimate-brain:rules:start\b[^\n]*-->$/gm;
@@ -29,7 +33,7 @@ export const upgradeCommand: Command = {
   maxPositionals: 0,
   needsBrain: true,
   allowInvalidBrainConfig: true,
-  async run({ args, brain, now }) {
+  async run({ args, brain, now, environment }) {
     const root = brain!.root;
     const product = installedProduct();
     if (product.source) throw new BrainError("UNRELEASED_BUILD", "brain upgrade requires a published ultimate-brain package");
@@ -84,25 +88,78 @@ export const upgradeCommand: Command = {
       }
     }
 
-    // Skills (decision 0029): shipped files are product-owned, inside the folders of shipped skills only.
-    const shipped = await listShippedSkillFiles();
-    const shippedPaths = new Set(shipped.map((file) => file.relative));
-    for (const prefix of [".agents/skills", ".claude/skills"]) {
-      for (const name of new Set(shipped.map((file) => file.relative.split("/")[0]!))) await assertPlainPath(root, `${prefix}/${name}`, "folder");
-      for (const file of shipped) {
-        const path = `${prefix}/${file.relative}`;
-        await assertPlainPath(root, path);
-        const existing = await readOptionalBuffer(join(root, path));
-        if (existing === null) changes.push({ path, action: "created", content: file.content });
-        else if (existing.equals(file.content)) unchanged += 1;
-        else changes.push({ path, action: "updated", content: file.content });
-      }
-      for (const name of new Set(shipped.map((file) => file.relative.split("/")[0]!))) {
-        for (const file of await listFiles(join(root, prefix, name))) {
-          const inSkills = `${name}/${file}`;
-          await assertPlainPath(root, `${prefix}/${inSkills}`);
-          if (!shippedPaths.has(inSkills)) changes.push({ path: `${prefix}/${inSkills}`, action: "removed" });
+    // Skills (decisions 0029, 0059): the package snapshot replaces the pinned one (spec/skills-delivery.md §6.3). Its refusals are
+    // decided here and raised after the BRAIN_DIRTY check, still before any write.
+    const pkg = packageSnapshot(product.root, product.version);
+    const previous = readLock(root);
+    await assertPlainPath(root, LOCK);
+    let refusal: BrainError | undefined;
+    let manifest: Manifest | undefined;
+    let from: { name: string; version: string } | null = null;
+    const retired: string[] = [];
+    /** Skill folders to prune after the writes; `true` when the folder itself goes too (a retired skill). */
+    const prune = new Map<string, boolean>();
+    let lock: Lock | undefined;
+    let previousCli: string | null = null;
+    const problem = packageProblem(pkg);
+    if (problem !== null) refusal = snapshotInvalid(problem, product.version);
+    else {
+      manifest = pkg.manifest!;
+      const old = previous.kind === "valid" ? previous.lock : undefined;
+      if (previous.kind === "invalid") warnings.push({ code: "SKILLS_LOCK_REPLACED", message: `${LOCK} was invalid (${previous.reason}) and was replaced.` });
+      if (old !== undefined) {
+        from = { name: old.snapshot.name, version: old.snapshot.version };
+        if (old.snapshot.name === manifest.name) {
+          const order = comparePrecedence(old.snapshot.version, manifest.version);
+          if (order > 0) {
+            refusal = new BrainError("SKILLS_DOWNGRADE", `This brain pins ${manifest.name} ${old.snapshot.version}; this CLI ships the older ${manifest.version}. Install ultimate-brain@${old.installed_by}, or roll back as docs/releasing.md says.`, { name: manifest.name, pinned: old.snapshot.version, shipped: manifest.version, installed_by: old.installed_by });
+          } else if (order === 0 && serializeManifest(old.snapshot) !== serializeManifest(manifest)) {
+            refusal = snapshotInvalid("same version, different content", product.version);
+          }
         }
+      }
+      if (refusal === undefined) {
+        const names = new Set(manifest.skills.map((skill) => skill.name));
+        for (const tree of TREES) {
+          for (const skill of manifest.skills) {
+            const folder = `${tree}/${skill.name}`;
+            await assertPlainPath(root, folder, "folder");
+            prune.set(folder, false);
+            const listed = new Set(skill.files.map((file) => file.path));
+            for (const file of skill.files) {
+              const path = `${folder}/${file.path}`;
+              await assertPlainPath(root, path);
+              const content = await readFile(join(pkg.folder, skill.name, file.path));
+              const existing = await readOptionalBuffer(join(root, path));
+              if (existing === null) changes.push({ path, action: "created", content });
+              else if (existing.equals(content)) unchanged += 1;
+              else changes.push({ path, action: "updated", content });
+            }
+            for (const file of await listFiles(join(root, folder))) {
+              await assertPlainPath(root, `${folder}/${file}`);
+              if (!listed.has(file)) changes.push({ path: `${folder}/${file}`, action: "removed" });
+            }
+          }
+          // A skill the old (valid) lock names and the new snapshot doesn't is retired: its product-owned folder goes, whatever it holds.
+          for (const skill of old?.snapshot.skills ?? []) {
+            if (names.has(skill.name)) continue;
+            const folder = `${tree}/${skill.name}`;
+            await assertPlainPath(root, folder, "folder");
+            if (!(await exists(join(root, folder)))) continue;
+            prune.set(folder, true);
+            for (const file of await listFiles(join(root, folder))) {
+              await assertPlainPath(root, `${folder}/${file}`);
+              changes.push({ path: `${folder}/${file}`, action: "removed" });
+            }
+          }
+        }
+        retired.push(...(old?.snapshot.skills ?? []).map((skill) => skill.name).filter((name) => !names.has(name)).sort());
+        const write = old === undefined || old.snapshot.name !== manifest.name || old.snapshot.version !== manifest.version;
+        lock = { format: 1, installed_by: write ? product.version : old!.installed_by, snapshot: manifest };
+        if (write) {
+          changes.push({ path: LOCK, action: previous.kind === "absent" ? "created" : "updated", content: serializeLock(product.version, manifest) });
+          if (old !== undefined) previousCli = old.installed_by;
+        } else unchanged += 1;
       }
     }
 
@@ -138,25 +195,26 @@ export const upgradeCommand: Command = {
     const version = product.version;
     const dryRun = args.options["dry-run"] === true;
     if (!dryRun && await gitDirty(root)) throw new BrainError("BRAIN_DIRTY", "brain has uncommitted changes");
+    if (refusal !== undefined) throw refusal;
     if (!dryRun && written.length > 0) {
-      for (const change of written) {
-        if (change.action === "removed") { await unlink(join(root, change.path)); continue; }
-        await ensureDirectory(root, dirname(change.path));
-        await atomicWriteFile(root, change.path, change.content!);
-      }
+      await writeChanges(root, written);
+      for (const [folder, self] of prune) await pruneEmpty(join(root, folder), self);
       await appendLog(root, now, [{ op: "upgrade", id: "-", title: version, pairs: [["files", written.length]] }]);
     }
     const { notes, problems } = await scanNotes(root);
     const plannedProductFiles = new Map<string, string | null>();
     for (const change of changes) if (change.action !== "skipped") plannedProductFiles.set(change.path, change.action === "removed" ? null : Buffer.from(change.content!).toString("utf8"));
-    const lint = lintBrain({ root, notes, problems, brainConfig: brain!.config, indexMarkdown: await readOptional(join(root, "index.md")), plannedProductFiles });
+    const home = homeOf(environment.env);
+    const lint = lintBrain({ root, notes, problems, brainConfig: brain!.config, indexMarkdown: await readOptional(join(root, "index.md")), plannedProductFiles, skillsLock: lock, home });
+    const competing = competingCopies({ treeRoot: root, names: manifest!.skills.map((skill) => skill.name), home, brainRoot: root, brainSettings: plannedProductFiles.get(".claude/settings.json") });
+    if (competing.length > 0) warnings.push({ code: "SKILLS_COMPETING", message: `${competing.length} competing skill copies; see data.skills.competing and remove them.` });
     let commit: string | null = null;
     let pushed = false;
     if (!dryRun && written.length > 0 && await gitRepository(root)) {
       const staged = [...written.map((change) => change.path), `log/${now.toISOString().slice(0, 7)}.md`];
       try {
         await exec("git", ["add", "--", ...staged], { cwd: root });
-        await exec("git", ["commit", "-m", `upgrade: ultimate brain ${version}`], { cwd: root });
+        await exec("git", ["commit", "-m", `upgrade: ultimate brain ${version}, skills ${manifest!.name} ${manifest!.version}`], { cwd: root });
         commit = (await exec("git", ["rev-parse", "--short", "HEAD"], { cwd: root })).stdout.trim();
       } catch {
         warnings.push({ code: "GIT_COMMIT_SKIPPED", message: "Git commit was skipped; files were kept." });
@@ -179,11 +237,46 @@ export const upgradeCommand: Command = {
     }
     return {
       warnings,
-      data: { dry_run: dryRun, dirty: dryRun ? await gitDirty(root) : undefined, version, files: changes.map(({ path, action }) => ({ path, action })), unchanged, lint: { errors: lint.filter((x) => x.severity === "error").length, warnings: lint.filter((x) => x.severity === "warning").length }, commit, pushed },
+      data: { dry_run: dryRun, dirty: dryRun ? await gitDirty(root) : undefined, version, files: changes.map(({ path, action }) => ({ path, action })), unchanged,
+        skills: { from, to: { name: manifest!.name, version: manifest!.version }, retired, previous_cli: previousCli, competing },
+        lint: { errors: lint.filter((x) => x.severity === "error").length, warnings: lint.filter((x) => x.severity === "warning").length }, commit, pushed },
       human: `${written.length} files ${dryRun ? "would change" : "changed"}, ${unchanged} unchanged\n`,
     };
   },
 };
+
+/** Apply the planned changes; when one fails, restore every file already replaced or removed and delete the created ones (cli.md §3.6). */
+async function writeChanges(root: string, written: readonly Change[]): Promise<void> {
+  const done: Array<{ change: Change; before: Buffer | null }> = [];
+  try {
+    for (const change of written) {
+      const before = change.action === "created" ? null : await readOptionalBuffer(join(root, change.path));
+      if (change.action === "removed") await unlink(join(root, change.path));
+      else {
+        await ensureDirectory(root, dirname(change.path));
+        await atomicWriteFile(root, change.path, change.content!);
+      }
+      done.push({ change, before });
+    }
+  } catch (error) {
+    for (const { change, before } of done.reverse()) {
+      if (before === null) await unlink(join(root, change.path)).catch(() => undefined);
+      else {
+        await ensureDirectory(root, dirname(change.path)).catch(() => undefined);
+        await atomicWriteFile(root, change.path, before).catch(() => undefined);
+      }
+    }
+    throw error;
+  }
+}
+
+/** Remove the empty folders under `folder` (and `folder` itself when `self`): an emptied or unlisted folder is not part of a skill. */
+async function pruneEmpty(folder: string, self: boolean): Promise<void> {
+  let entries;
+  try { entries = await readdir(folder, { withFileTypes: true }); } catch { return; }
+  for (const entry of entries) if (entry.isDirectory()) await pruneEmpty(join(folder, entry.name), true);
+  if (self) await rmdir(folder).catch(() => undefined);
+}
 
 /** The text from the rules start marker through the end marker, when exactly one well-ordered pair exists. */
 function rulesBlock(text: string): string | undefined {
