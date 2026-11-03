@@ -1,7 +1,7 @@
 name: merge-ready
 
 # Decision 0040: shows on each PR whether it is ready to merge (format, ticked boxes, task done with the PR number,
-# the other agent's pass for the head commit) as the commit status `merge-ready`. It informs; the user merges.
+# a reviewer's pass for the head commit, decision 0063) as the commit status `merge-ready`. It informs; the user merges.
 on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
