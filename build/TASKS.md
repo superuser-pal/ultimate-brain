@@ -881,7 +881,7 @@ Optional Domains around PARA; Won't Do closes work without claiming completion; 
 
 After 0.8.0. Work packages: contracts and cross-repository ownership; fork/customisation inventory; pinned packaging/install/upgrade/lint and rollback; setup/adoption; connected task/document execution and Notion settings; upstream/cross-repository update automation; three lean acceptance scenarios. Follow [the detailed migration plan](../docs/skills-migration-plan.md). Scope/decompose before starting; no current implementation is authorised by this entry.
 
-### CC-97 · Inventory the installed skills and approve their mapping (decision 0059) · `review`
+### CC-97 · Inventory the installed skills and approve their mapping (decision 0059) · `done` (#181)
 **Release:** 0.9.0
 **Changelog:** development only: an inventory of the skills Claude Code and Codex load today, compared with the pinned upstream, and the approved keep/adapt/isolate/retire mapping for the shared-skills fork.
 **Output:** steps 1–2 of docs/skills-migration-plan.md. docs/skills-inventory.md: every active skill by channel (user, project, plugin, account-synced, agent system) with its source, revision, precedence and duplicates, compared with upstream at `a496f551`, each classified as upstream as-is, reusable customisation, Sentina-specific, SEO pack, duplicate, local-only or unresolved; and the mapping the user approved, with the single future source of each retained behaviour. Sanitised: no personal paths, names, client text or credentials. A private rollback manifest (exact paths, hashes, which agent loads what) stays outside the repo. No installation changes; Sentina and SEO skills stay outside the fork (0.9.0 grill, 2026-11-03).
