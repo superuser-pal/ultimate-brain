@@ -22,11 +22,16 @@ test("link writes a canonical marker and agent instructions, then is byte-idempo
   ];
   const first = await brain(args);
   assert.equal(first.code, 0, first.stdout);
-  assert.deepEqual(first.json.data.marker, {
+  const { skills, ...value } = first.json.data.marker.value;
+  assert.deepEqual({ ...first.json.data.marker, value }, {
     path: ".brain",
     written: true,
     value: { repo: "acme-api", project: "prj-9x4t1b7e", area: "area-2m7c4h8n", stacks: ["nextjs", "supabase"] },
   });
+  // An unpinned brain links the package's skills (spec/skills-delivery.md §6.2).
+  assert.deepEqual({ name: skills.name, names: skills.names }, { name: "ultimate-brain", names: ["brain-query"] });
+  assert.deepEqual(Object.keys(first.json.data.marker.value), ["repo", "project", "area", "stacks", "skills"]);
+  assert.deepEqual(first.json.warnings.map((warning: { code: string }) => warning.code), ["SKILLS_UNPINNED"]);
   assert.deepEqual(first.json.data.files, [
     { path: "AGENTS.md", action: "created" },
     { path: "CLAUDE.md", action: "created" },
@@ -94,7 +99,8 @@ test("link preserves unspecified marker fields and validates its target and opti
 
   const run = await brain(["link", target, "--repo-name", "new-repo", ...BRAIN]);
   assert.equal(run.code, 0, run.stdout);
-  assert.deepEqual(run.json.data.marker.value, {
+  const { skills: _skills, ...kept } = run.json.data.marker.value;
+  assert.deepEqual(kept, {
     repo: "new-repo", project: "prj-9x4t1b7e", area: "area-2m7c4h8n", stacks: ["typescript"],
   });
   assert.equal(run.json.data.files[1].action, "unchanged", "CLAUDE.md already imports AGENTS.md");
