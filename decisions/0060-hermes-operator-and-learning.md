@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-10-31
-**Release:** 0.11.0
+**Release:** post-1.0 (was 0.11.0; moved by [0064](0064-brain-assistant-before-reflection-hermes-after-1-0.md))
 **Amends:** 0008 (Hermes operational learning boundary), 0051 (additional native scheduler)
 **Refines:** 0059 (third runtime compatibility and reconciliation)
 **Keeps:** 0003, 0009, 0015, 0022, 0044, 0048, 0054, 0055, 0057, 0058
