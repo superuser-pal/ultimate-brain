@@ -72,9 +72,18 @@ Every database that mirrors a brain note has three kinds of properties. Each pro
 | **You** | Operational fields | Status, Priority, Progress, Lifecycle, Archived, Brain status | Notion → brain as pointers; the brain never writes them |
 | **System** | Bridge plumbing | Brain ID, Last synced, Created time, Last edited time | Brain → Notion only (the two timestamps are filled by Notion itself). Never edit |
 
+**Workflow settings (0059)** on Projects and Areas (§3.19) are yours like Status, with one exception: the brain sets them when you connect a piece of work to Notion and when you end that connection, each time after your yes (spec/connected-workflows.md §3.1, §3.4). It never changes them otherwise.
+
 **Creation:** new rows you create in Areas, Goals, Projects, People, Orgs are imported by the next `brain sync` (0021). Rows in Decisions, Questions, Concepts, Documents and Review are created by the brain only. Inbox rows come from you (Quick capture) or from the brain (every document, email, chat or note it ingests, 0037).
 
 **Page bodies (0026, 0041, 0043):** the brain writes only inside named toggle headings: "Brief" and "Decision log" on project pages, "Brief" on area pages. It owns the whole body of Decisions, Questions and Concepts pages, of the Documents kept from an input, and of the Inbox rows it creates (a digest of what came in, and the report on a Report row; "Full text" toggles written before 0.6.0 stay). A Document promoted from a decision or concept is seeded once, then its body is yours (0049). It publishes no body for Goals, People and Orgs, and never edits Meetings (0007), a capture you wrote or an Ask row. Everything else on a page is yours, including the **"My notes"** toggle.
+
+**Workflow and rollup toggles (0059, 0066).** Three more brain-owned toggle headings, written by the skills and never by `sync render`; no template creates them, and the skill appends one at the end of the page the first time it writes it (drag it up once):
+- **Workflow** on a Project or Area page that is the destination of a connected workflow: the dated summary of progress, what is not yet in Notion and what needs you (spec/connected-workflows.md §9).
+- **Work record** on a Task page of a connected workflow, also in a mapped external Tasks database: scope, acceptance criteria, dependencies, documents and progress (spec/connected-workflows.md §6.1).
+- Toggle headings named **`Repo tasks · <repo>`** on the Project or Area page where a linked repo with tasks tracked in the repo is placed: a dated, read-only rollup of those tasks, one toggle per repo (spec/linked-repos.md §4).
+
+Each is found by its exact name and its children replaced. Before appending one to a Project page with no toggle headings at all, the skill first appends empty **Brief** and **Decision log** toggles, so the next render finds them.
 
 ---
 
@@ -116,8 +125,12 @@ Ongoing responsibilities (clients, health, learning…).
 | Archived | Checkbox | You |
 | People via projects | Rollup: Projects → People, show original | You (derived, Notion-only) |
 | Clients via projects | Rollup: Projects → Client, show original | You (derived, Notion-only) |
+| Workflow | Select: Standard, Connected. Empty = Standard (§3.19) | You (the brain sets it at workflow setup and end, with your yes) |
+| Work type | Select: Software, General (§3.19) | You (as Workflow) |
+| Logging level | Select: Tasks only, Tasks + final outputs, Full durable record, Custom. Empty = Tasks + final outputs (§3.19) | You (as Workflow) |
+| Log artifacts | Multi-select: Briefs, Plans, Specifications, Decisions, Final deliverables. Read only with Custom (§3.19) | You (as Workflow) |
 
-Page body: a toggle heading **Brief** (brain-written, 0041: the area's projects, reviewed decisions and open questions), then the template's linked views and "My notes". The publish appends the toggle at the end of a page that has none; drag it to the top once.
+Page body: a toggle heading **Brief** (brain-written, 0041: the area's projects, reviewed decisions and open questions), then the template's linked views and "My notes". The publish appends the toggle at the end of a page that has none; drag it to the top once. Connected work adds **Workflow**, and a linked repo with tasks tracked in the repo adds **`Repo tasks · <repo>`** (§2).
 
 ### Domains database (0055; in every space, 0065)
 
@@ -173,9 +186,13 @@ Notion-owned entirely (0020). Not mirrored as brain notes; the brain snapshots t
 | Archived | Checkbox | You |
 | Countdown | Formula: days to the end of Dates ("23 days left", "Overdue"); empty when Dates is empty or Status is Done | You (derived, Notion-only) |
 | Task Progress | Formula: completed and dropped counts separately, with completed / (total − dropped); zero active scope shows no percentage (0055) | You (derived, Notion-only) |
+| Workflow | Select: Standard, Connected. Empty = Standard (§3.19) | You (the brain sets it at workflow setup and end, with your yes) |
+| Work type | Select: Software, General (§3.19) | You (as Workflow) |
+| Logging level | Select: Tasks only, Tasks + final outputs, Full durable record, Custom. Empty = Tasks + final outputs (§3.19) | You (as Workflow) |
+| Log artifacts | Multi-select: Briefs, Plans, Specifications, Decisions, Final deliverables. Read only with Custom (§3.19) | You (as Workflow) |
 | Last edited time | Last edited time | System (Notion fills it; "gone quiet" view) |
 
-Page body: toggle headings **Brief** and **Decision log** (brain-written, 0026), then the template's linked views and "My notes".
+Page body: toggle headings **Brief** and **Decision log** (brain-written, 0026), then the template's linked views and "My notes". Connected work adds **Workflow**, and a linked repo with tasks tracked in the repo adds **`Repo tasks · <repo>`** (§2).
 
 ### 3.5 Meetings
 The inbound source. Your Notion AI meeting notes live here (0012, 0007).
@@ -382,6 +399,8 @@ Archived and Done (on a milestone) stay checkboxes: they describe a state, not a
 | Areas | Type, At a glance | Brain ID, Last Synced |
 | Goals, Projects, People, Orgs, Questions, Meetings | the "You" properties of §3 | Brain ID, Last Synced, Ingested At |
 
+**Workflow settings are not pinned** (§3.19): on Projects and Areas, Workflow, Work type, Logging level and Log artifacts sit at the end of the property group. You set them once per piece of work, usually through the setup chat.
+
 **The boxes a button ticks, and Only keep, are not pinned** (#144): they sit at the top of the property group. The button already says what it does, and the box is only the brain's to clear.
 
 ---
@@ -443,6 +462,23 @@ The contract is [spec/capture-and-review.md](../spec/capture-and-review.md). For
 - **Layouts and controls (CC-81).** Review gains **Decided**, **Decided at**, **Accept all** and the Your call option **Request revision** (Fix is kept), and two buttons set by hand: **Submit decisions** (Decided → checked, Decided at → now) and **Submit and accept all** (also Accept all → checked). A Review row from a source is a page: a first-use note and the brain-owned summary at the top, then a section per change (**Creates** or **Changes**, links to the target and the source, *Current*, the toggle **Proposed final wording**, *Why it matters*, *What Accept does*, `Decision:`). The explanation of each action is page text, never hover-only help; property descriptions are the only tooltip-like help used. The Proposed property is a short pointer. Meetings gain a gray notice ("All subjects included unless marked Meeting only. Mark Reviewed to confirm."); the Inbox gains a second template **Voice note** (starts at New; the user sets Ready); the minutes and voice prompts are [notion/minutes-format.md](../notion/minutes-format.md) and [notion/voice-format.md](../notion/voice-format.md); Brain Assistant gains **Voice summary**. Domains stay optional (module off by default). Migration: [0013](../notion/migrations/0013-domains-selected-capture-editable-review.md). Rendering the new Review layout is switched by the presence of the Decided property.
 - **By hand, always (T8):** the API ignores putting an option in the Complete group (it lands in To-do and sets a default option) and ignores the relation limit, both with a 200. Add Won't Do and the limit in the UI, and read back after any schema write.
 
+### 3.19 Workflow settings on Projects and Areas (0.9.0, decision 0059)
+
+The contract is [spec/connected-workflows.md](../spec/connected-workflows.md) §4. A Project or an Area can be the **destination** of a connected workflow: one working folder (a software repo or any folder) whose tasks and documents the brain publishes to Notion. The page that holds the settings is the destination; there is no destination property. Every space has the four properties on both databases, used or not; none needs a module, and they are not in `brain.json`: the skills read them by these fixed names, as they read a Project's Status.
+
+| Property | Type | Options, in this order | Empty means |
+|---|---|---|---|
+| Workflow | Select | Standard, Connected | Standard: nothing is published. A connected workflow whose destination says Standard is paused, not deleted |
+| Work type | Select | Software, General | Asked at setup. Software keeps the engineering checks; General follows clarify, plan, execute, verify and approve |
+| Logging level | Select | Tasks only, Tasks + final outputs, Full durable record, Custom | Tasks + final outputs (the suggested choice) |
+| Log artifacts | Multi-select | Briefs, Plans, Specifications, Decisions, Final deliverables | Nothing; read only when Logging level is Custom |
+
+- **What each level publishes** (0059): Tasks only, the tasks and links to deliverables kept elsewhere; Tasks + final outputs, also the approved final deliverables; Full durable record, also the approved briefs, plans, specifications and decisions; Custom, the tasks and the categories ticked in Log artifacts. Drafts and logs stay local. A per-task or per-artifact exception is asked in chat and kept in the brain's records, not here.
+- **Owner: you.** The brain sets them only at setup ("Connect this work to Notion?", after your yes) and sets Workflow back to Standard when you end the connection (§2). Changing one affects future work only; publishing older material is a separate request.
+- **Labels** are read case-insensitively. An option that isn't in the table (one you added) is read as empty and reported.
+- **No values are filled in** by the build or by migration [0015](../notion/migrations/0015-workflow-settings-on-projects-and-areas.md): every Project and Area starts as Standard.
+- **What a connected workflow writes on pages:** the **Workflow** toggle on the destination, the **Work record** toggle on each of its Task pages (§2). A connected workflow needs the Tasks module with the Brain ID property mapped, and the Documents module for any level above Tasks only; setup offers what is missing once and never turns a module on silently. It adds no Tasks property and no new database, view or Review row.
+
 ## 4. Templates (contextual workspaces, Easlo pattern)
 
 Each template is the default for its database. Every linked view sits under an H3 heading named by the question it answers, with the database title hidden, and is filtered to "this page". Where a block has tabs, they follow the record's life (now → later → done). The table is the intent; [Prompt 6](../notion/prompts/06-templates.md) is the exact definition and wins where they differ. The live snapshot is [notion/templates.md](../notion/templates.md).
@@ -452,7 +488,7 @@ Each template is the default for its database. Every linked view sits under an H
 | Areas | **The area's home (0050).** Domain is visible when the Domains module is on. "Brief" toggle heading (brain-written, 0041) · "What needs me here?" with tabs Today (Tasks due today or earlier, neither Done nor Won't Do) · Meetings (to review, held today or earlier) · Review waiting (Review where Area is this page and State is Pending, grouped by Type) · Inbox (where Area is this page and Brain Status is New or Ready) · "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What have we decided here?" (Decisions: Current, Superseded) · "What's still open here?" (Questions: Open questions, Open risks, Answered) · "What came in?" (Inbox where Area is this page, newest first) · "What do we know?" (tabs Decisions, Concepts and Documents where Area is this page) · "Reports" (Inbox where Area is this page and Kind is Report, 0045) · "My notes". People and Clients show as the "via projects" rollups in the page header (0034). Each part follows its module (§1, 0050): Today and "What's on my plate here?" with Tasks; "What am I working toward here?" with Planning; "What have we decided here?", "What's still open here?" and the Decisions and Concepts tabs with Knowledge; the Documents tab with Documents; "Reports" with Reports; Clients via projects with Orgs. A new area is one page from this template |
 | Domains | Show Areas and, when Orgs is on, Org; description and My notes. |
 | Goals | "How are the key results moving?" (Key Results: Open, Done) · "Which projects serve it?" (Projects) · "My notes" |
-| Projects | A muted line "Brief and Decision log are written by the brain. Add your own notes in My notes." · "Brief" toggle heading (brain-written) · "Decision log" toggle heading (brain-written) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What's still open here?" (Questions, Open) · "Who's involved?" (People) · "What came in?" (Inbox where Project is this page, newest first) · "What do we know?" (tabs Decisions, Concepts and Documents where Project is this page) · "Reports" (Inbox where Project is this page and Kind is Report, sorted by Created descending, 0045, #137) · "My notes". Parts follow their modules as on Areas |
+| Projects | A muted line "The brain writes only inside its toggles: Brief and Decision log, and Workflow or Repo tasks when you connect work or link a repo. Add your own notes in My notes." (0.9.0; before it: "Brief and Decision log are written by the brain. Add your own notes in My notes.") · "Brief" toggle heading (brain-written) · "Decision log" toggle heading (brain-written) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What's still open here?" (Questions, Open) · "Who's involved?" (People) · "What came in?" (Inbox where Project is this page, newest first) · "What do we know?" (tabs Decisions, Concepts and Documents where Project is this page) · "Reports" (Inbox where Project is this page and Kind is Report, sorted by Created descending, 0045, #137) · "My notes". Parts follow their modules as on Areas |
 | Meetings | Unchanged from the hand-reworked template (see notion/templates.md): "Before marking Reviewed" checklist callout, ending with the gray line "Check the minutes, fix them, then set Brain Status to Reviewed. Fixed them after the brain took them in? Set Reviewed again: it reads only what changed." (0045) · Notion AI meeting notes block · "My notes" · toggles Decisions, Questions, Tasks |
 | People | "Which meetings were they in?" (Meetings: Upcoming, Past) · "What are they working on?" (Projects) · "My notes" |
 | Orgs | "Who works there?" (People) · "Which projects?" (Projects) · "My notes". Meetings show as the "Meetings via projects" rollup in the page header |
@@ -460,6 +496,8 @@ Each template is the default for its database. Every linked view sits under an H
 | Concepts | (brain-generated body); no template needed |
 | Documents | (brain-written body, or yours on a promoted Document); no template needed |
 | Inbox | None: a capture's body is yours, and the brain writes the body of the rows it creates (§3.11) |
+
+No template creates the Workflow, Work record or `Repo tasks · <repo>` toggles: the skills append them to the pages that need them (§2).
 
 No template uses a callout to show a property: a callout can't display one, and the page layout already shows it.
 
