@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -13,7 +15,16 @@ const PROJECT = "prj-9x4t1b7e";
 const CONCEPT = "con-1s6t8e2b";
 const PAGE = "6a7b0000-0000-4000-8000-0000000000aa";
 
+const git = (dir: string, ...args: string[]) => execFileSync("git", args, { cwd: dir, encoding: "utf8" });
+/** A review apply is a journaled, committed operation (§7.11): it needs a Git brain with a clean tree. */
+function settle(dir: string) {
+  if (!existsSync(join(dir, ".git"))) { git(dir, "init", "-q"); git(dir, "config", "user.email", "t@example.com"); git(dir, "config", "user.name", "T"); }
+  git(dir, "add", "-A");
+  if (git(dir, "status", "--porcelain").trim() !== "") git(dir, "commit", "-q", "-m", "state");
+}
+
 async function run(dir: string, args: string[], input?: unknown, now = NOW) {
+  if (args[0] === "sync" && args[1] === "apply") settle(dir);
   const extra: string[] = [];
   if (input !== undefined) {
     const file = join(dir, "..", `input-${Math.random().toString(36).slice(2)}.json`);
@@ -246,3 +257,46 @@ test("a draft that is no longer a draft is not accepted, and no decision is reco
   assert.deepEqual(results.map((r) => [r.result, r.reason]), [["skipped", "NOT_A_DRAFT"]]);
   assert.equal((await attributes(dir, await pathOf(dir, id))).item_decisions, undefined);
 });
+
+test("a review apply is one journaled, committed operation: Op trailer, clean tree, and a dirty tree is refused before anything is written", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids } = await published(dir);
+  const plan = (await run(dir, ["sync", "plan"], { as_of: AFTER, rows: [row(id, decide(body, ids[2]!, "Accept"))] }, AFTER)).json.data;
+  for (const decision of plan.review_decisions) for (const item of decision.items) item.verified = { snapshot_hash: item.snapshot_hash, proposed_hash: item.proposed_hash };
+  settle(dir);
+  await writeFile(join(dir, "stray.txt"), "someone's unsaved work\n");
+  const refused = await brain(["sync", "apply", "--input", await planFile(dir, plan), "--brain", dir, "--now", AFTER, "--json"]);
+  assert.equal(refused.json.error.code, "DIRTY_TREE", refused.stdout);
+  assert.equal((await attributes(dir, await pathOf(dir, id))).status, "pending", "nothing was written");
+  assert.equal(existsSync(join(dir, "_journal")), false);
+  git(dir, "add", "-A"); git(dir, "commit", "-q", "-m", "stray");
+  const applied = await brain(["sync", "apply", "--input", await planFile(dir, plan), "--brain", dir, "--now", AFTER, "--json"]);
+  assert.equal(applied.code, 0, applied.stdout);
+  assert.match(git(dir, "log", "-1", "--format=%B"), new RegExp(`Op: ${applied.json.data.op}`));
+  assert.equal(git(dir, "status", "--porcelain").trim(), "", "the tree is clean after the operation");
+  assert.equal(existsSync(join(dir, "_journal")), false);
+});
+
+test("a Git failure after the files were written rolls the operation back at once; the retry applies the item once", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids } = await published(dir);
+  const plan = (await run(dir, ["sync", "plan"], { as_of: AFTER, rows: [row(id, decide(body, ids[2]!, "Accept"))] }, AFTER)).json.data;
+  for (const decision of plan.review_decisions) for (const item of decision.items) item.verified = { snapshot_hash: item.snapshot_hash, proposed_hash: item.proposed_hash };
+  settle(dir);
+  // Git refuses the commit (a failing hook) after the files were written.
+  await writeFile(join(dir, ".git", "hooks", "pre-commit"), "#!/bin/sh\nexit 1\n", { mode: 0o755 });
+  const failed = await brain(["sync", "apply", "--input", await planFile(dir, plan), "--brain", dir, "--now", AFTER, "--json"]);
+  assert.notEqual(failed.code, 0);
+  assert.equal(git(dir, "status", "--porcelain").trim(), "", "the failed operation was rolled back at once");
+  await rm(join(dir, ".git", "hooks", "pre-commit"));
+  const again = await brain(["sync", "apply", "--input", await planFile(dir, plan), "--brain", dir, "--now", AFTER, "--json"]);
+  assert.equal(again.code, 0, again.stdout);
+  assert.equal(again.json.data.review_results[0].result, "applied");
+  assert.equal(existsSync(join(dir, "_journal")), false);
+});
+
+async function planFile(dir: string, plan: unknown): Promise<string> {
+  const file = join(dir, "..", `plan-${Math.random().toString(36).slice(2)}.json`);
+  await writeFile(file, JSON.stringify(plan));
+  return file;
+}
