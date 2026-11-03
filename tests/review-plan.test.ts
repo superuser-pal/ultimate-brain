@@ -204,3 +204,20 @@ test("a plan with malformed review keys is refused, and an old plan without them
   assert.equal(bad.json.error.code, "INPUT_INVALID");
   assert.equal((await run(dir, ["sync", "apply"], base)).code, 0);
 });
+
+test("a Review body written by markdown on create reads back as Notion returns it with every proposed_hash unchanged (decision 0068)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids } = await published(dir);
+  // Notion's markdown read gives a toggle's children indented by a tab.
+  const notion = body.replace(/(<summary>Proposed final wording<\/summary>\n)([\s\S]*?)(\n<\/details>)/g, (_all, open: string, children: string, close: string) => open + children.split("\n").map((line) => (line === "" ? line : `\t${line}`)).join("\n") + close);
+  assert.notEqual(notion, body, "the read-back differs from the rendered text");
+  const untouched = await plan(dir, [row(id, { decided: false, decided_at: null, accept_all: false, page_edited_at: AFTER, body_markdown: notion })]);
+  assert.deepEqual(untouched.review_pending, [], "the indented read-back is not an edit");
+  const accepted = await plan(dir, [row(id, submitted(notion, { accept_all: true }))]);
+  const items = accepted.review_decisions.flatMap((entry: { items: Array<Record<string, unknown>> }) => entry.items);
+  assert.deepEqual(items.map((item: Record<string, unknown>) => item.item_id).sort(), [...ids].sort());
+  for (const item of items) {
+    assert.equal(item.proposed_hash, item.rendered_proposed_hash, String(item.item_id));
+    assert.equal(item.edited, false);
+  }
+});
