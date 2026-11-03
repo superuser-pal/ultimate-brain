@@ -694,6 +694,8 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
         rendered["@review"] = { items: kept };
         // Item sections the user must see something in (capture-and-review §7.4 b): a drafted revision or a changed base. An applied or closed status is never written into one.
         const decided = new Set((Array.isArray(note.attributes.item_decisions) ? note.attributes.item_decisions : []).filter(isRecord).map((entry) => String(entry.item_id)));
+        // A row decided the 0045 way (applied or closed with no item decisions, e.g. approved from chat) has no pending item (#196).
+        if (note.attributes.status === "applied" || note.attributes.status === "closed") for (const item of review.items) decided.add(item.item_id);
         const after: Record<string, unknown> = { ...kept };
         for (const item of review.items) {
           const stored = isRecord(kept[item.item_id]) ? kept[item.item_id] as Record<string, unknown> : undefined;
