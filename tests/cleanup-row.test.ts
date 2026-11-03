@@ -120,3 +120,13 @@ test("a paragraph a later version holds again waits for Restore: accepting it wr
   assert.deepEqual(again.results, [], "applying again is a no-op");
   assert.equal(JSON.parse(await readFile(join(dir, "_suppressions", `${INPUT}.json`), "utf8")).records.filter((record: { kind?: string }) => record.kind === "restore").length, 1);
 });
+
+test("Remove on an independence item archives the note, resolves it and reconciles the record; the cleanup is not proposed again", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { note, id, body, ids } = await setup(dir, "unmapped");
+  const { results } = await submit(dir, id, decide(body, ids[0]!, "Accept"));
+  assert.deepEqual(results.map((entry) => entry.result), ["applied"]);
+  assert.equal((await attributes(dir, note.path)).lifecycle, "archived");
+  assert.equal(JSON.parse(await readFile(join(dir, "_suppressions", `${INPUT}.json`), "utf8")).records[0].status, "reconciled");
+  assert.equal((await run(dir, ["source", "cleanup-propose", "--page", INPUT])).json.data.result, "NOTHING_TO_CLEAN");
+});

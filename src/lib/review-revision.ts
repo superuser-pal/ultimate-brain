@@ -49,6 +49,7 @@ export function reviseItem(workspace: Workspace, input: { proposal: string; item
   if (request === undefined || request.status !== "requested") throw new Skip("NO_REVISION_REQUESTED", "the user has not asked for a revision of this item");
   if (list(a.item_decisions).some((done) => record(done).item_id === input.item_id)) throw new Skip("ALREADY_DECIDED");
   if (input.proposed.trim() === "") throw new Skip("UNREADABLE_PROPOSED", "a revision cannot be empty");
+  if (["remove", "restore", "independence"].includes(String(entry.kind))) throw new Skip("REVISION_NOT_SUPPORTED", "a cleanup item has no wording to revise");
   const document = workspace.edit(proposal);
   if (entry.kind === "note") {
     const note = workspace.get(String(entry.ref));

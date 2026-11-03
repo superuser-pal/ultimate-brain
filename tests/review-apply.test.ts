@@ -357,3 +357,15 @@ test("a changed base re-renders only the pending item whose target moved", async
   assert.ok(item, out.stdout);
   assert.deepEqual(item.item_updates.map((entry: { item_id: string; reason: string }) => [entry.item_id, entry.reason]), [[ids[0], "base_changed"]]);
 });
+
+test("an edited Accept on a draft that is already reviewed applies the user's wording instead of dropping it", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids, draft } = await published(dir);
+  const file = join(dir, draft.path);
+  await writeFile(file, (await readFile(file, "utf8")).replace("lifecycle: draft", "lifecycle: reviewed"));
+  const page = decide(body, ids[2]!, "Accept");
+  const section = new RegExp(`(## \\[[a-z]+ · ${ids[2]}\\][\\s\\S]*?Proposed final wording</summary>\\n\\n)([^\\n]*)`);
+  const { results } = await submit(dir, id, page.replace(section, "$1EDITED TEXT"));
+  assert.deepEqual(results.map((entry) => entry.result), ["applied"]);
+  assert.ok((await readFile(file, "utf8")).includes("EDITED TEXT"));
+});
