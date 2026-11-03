@@ -4,7 +4,7 @@
 
 How this file fits: this file holds the lifecycle of a connected workflow, from opting in through execution, publication, reconciliation and completion, and the adoption of an existing project. [schemas/workflow.schema.json](schemas/workflow.schema.json) holds the shapes of its records. Linked repos and their task modes are in [linked-repos.md](linked-repos.md).
 - §4 and §6.1 are the Notion design that CC-103's migration builds.
-- §12 holds the commands, which the CLI task builds.
+- §12 holds the commands, which CC-102 builds with the `brain repo` commands (the user's choice, 2026-11-03).
 - The skills (CC-104, written in `skills/` until CC-105 moves authorship to the fork, 0059) follow §§2–11 and §13.
 
 When this file and the JSON Schema disagree, the JSON Schema wins and this file is fixed. Timestamps are ISO 8601 UTC and come from `--now` (cli.md §3.1).
@@ -282,7 +282,7 @@ A `publish_artifact` operation (§7.3) is carried out by the skill, in this orde
 - For a Document, step 1 writes an `update_body` proposal (0003) instead of a new note. The user's approval of the new version in the session is the approval, so the skill applies it in chat (0003, the in-session path). Step 2 then publishes the new body.
 - For a decision, step 1 writes a new decision that supersedes the old one, as a proposal approved the same way.
 
-**The CLI task's schema changes for this:**
+**CC-102's schema changes for this:**
 - `origin: workflow` and the `workflow` field in note.schema.json and schema §4: `sources` is not required, and `workflow` is required with that origin;
 - `update_body` allowed on a `workflow` Document;
 - accepted wording from Notion (cli.md §5.14.7) imported for `workflow` Documents as for `promoted` ones.
@@ -608,7 +608,7 @@ On the user's yes to the preview, `brain workflow adopt apply` takes the same in
 
 Publication then follows §6 and §10.
 
-## 12. Commands (CLI task)
+## 12. Commands (CC-102)
 
 ```text
 brain workflow new --input <file|->
