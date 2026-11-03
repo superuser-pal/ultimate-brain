@@ -24,6 +24,7 @@ import { hasReportShape, reportLinks } from "./report-body.ts";
 import { gitBodyOf, parseWording, planWording, textHash, type AcceptedWording, type Wording, type WordingPlan } from "./wording.ts";
 import { restrictedSources } from "./eligibility.ts";
 import { contextFor, publishableNote, requireSuppressions } from "./suppressions.ts";
+import { importedItems } from "./selection.ts";
 
 const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "concepts", "documents", "review", "inbox"] as const;
 const CREATABLE = new Set(["domains", "areas", "goals", "projects", "people", "orgs"]);
@@ -997,12 +998,14 @@ export function renderTasks(workspace: Workspace, targetId: string, input: unkno
     } else if (config.properties.meeting !== "") put("meeting", "relation", [target.attributes.notion]); else put("meeting_url", "url", target.attributes.notion === undefined ? undefined : `https://www.notion.so/${String(target.attributes.notion).replaceAll("-", "")}`);
     put("brain_id", "rich_text", target.id);
     const itemId = isRecord(item) ? item.item : undefined;
+    // A Task from an extract names the item that authorized it (capture-and-review §6, §4.8): without it nothing ties the Task to a selected item.
+    if (itemId === undefined && target.attributes.extract === true) throw new BrainError("INPUT_INVALID", "a Task from an extract needs the item that authorized it", [{ pointer: `/items/${index}/item`, message: "must name an item of the extract" }]);
     if (itemId !== undefined) {
       const items = (Array.isArray(target.attributes.selection) ? target.attributes.selection : []).map((entry) => (isRecord(entry) ? entry.id : undefined));
       if (target.attributes.extract !== true || typeof itemId !== "string" || !items.includes(itemId)) throw new BrainError("INPUT_INVALID", `${String(itemId)} is not an item of the extract`, [{ pointer: `/items/${index}/item`, message: "must be an item id of the extract's selection" }]);
       // Tasks come only from selected items (capture-and-review §6): an excluded item creates none.
       const entry = (Array.isArray(target.attributes.selection) ? target.attributes.selection : []).find((candidate) => isRecord(candidate) && candidate.id === itemId);
-      if (isRecord(entry) && entry.effective !== "use") throw new BrainError("INPUT_INVALID", `${String(itemId)} is excluded from the brain, so it creates no Task`, [{ pointer: `/items/${index}/item`, message: "must be an item that is included (Use in brain)" }]);
+      if (isRecord(entry) && (entry.effective !== "use" || !importedItems(target.body).has(itemId as string))) throw new BrainError("INPUT_INVALID", `${String(itemId)} is excluded from the brain or none of its paragraphs was copied, so it creates no Task`, [{ pointer: `/items/${index}/item`, message: "must be an item that is included (Use in brain)" }]);
     }
     return { database_id: config.database, properties, pending_relations, ...(itemId === undefined ? {} : { item: itemId }) };
   });

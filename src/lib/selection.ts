@@ -33,6 +33,11 @@ export function passageHash(text: string): string {
   return sha(normalize(text)).slice(0, 8);
 }
 
+/** The ids of the items whose paragraphs an extract holds (its markers `<!-- passage ¶n item a,b -->`): an item that is effectively `use` but whose paragraph was not copied is not here. */
+export function importedItems(body: string): Set<string> {
+  return new Set([...body.matchAll(/<!-- passage ¶\d+ item ([^>]*?)\s*-->/g)].flatMap((match) => (match[1] ?? "").split(",").map((id) => id.trim()).filter((id) => id !== "")));
+}
+
 /** The passages of an extract body: each `<!-- passage ¶n item … -->` marker with the paragraph text after it. */
 export function extractPassages(body: string): { n: number; text: string }[] {
   const parts = body.split(/<!-- passage ¶(\d+) item [^>]*-->\n/);
