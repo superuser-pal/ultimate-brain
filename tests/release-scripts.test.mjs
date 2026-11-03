@@ -345,6 +345,7 @@ test("task start --new writes a new task's row at the end of its release section
 test("task start --new creates a missing release section in version order", (t) => {
   for (const [release, expected] of [
     ["1.2.1", "## 1.2.0\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n\n## 1.2.1\n\n### CC-2 · New · `in progress`\n**Release:** 1.2.1\n**Changelog:**\n**Output:**\n**Acceptance:**\n\n## 1.3.0\n\n## Your tasks\n"],
+    ["1.3.0-rc.1", "## 1.2.0\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n\n## 1.3.0-rc.1\n\n### CC-2 · New · `in progress`\n**Release:** 1.3.0-rc.1\n**Changelog:**\n**Output:**\n**Acceptance:**\n\n## 1.3.0\n\n## Your tasks\n"],
     ["1.4.0", "## 1.2.0\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n\n## 1.3.0\n\n## 1.4.0\n\n### CC-2 · New · `in progress`\n**Release:** 1.4.0\n**Changelog:**\n**Output:**\n**Acceptance:**\n\n## Your tasks\n"],
   ]) {
     const { parent, root, path } = taskRepository("## 1.2.0\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n\n## 1.3.0\n\n## Your tasks\n");
@@ -360,7 +361,10 @@ test("task start --new refuses an existing id and incomplete flags", (t) => {
   t.after(() => rmSync(parent, { recursive: true, force: true }));
   const existing = run("task.mjs", ["start", "CC-1", "--new", "Again", "--release", "1.2.0"], { root, env: { PATH: path } });
   assert.match(existing.stderr, /CC-1 already exists on origin\/main/);
-  for (const args of [["--new", "No release"], ["--release", "1.2.0"], ["--new", "Bad", "--release", "next"], ["--new", "A · B", "--release", "1.2.0"], ["--new", "x", "--new", "y"]]) {
+  command(root, ["push", "-q", "origin", "main:refs/heads/claude/CC-5-open-elsewhere"]);
+  const open = run("task.mjs", ["start", "CC-5", "--new", "Clash", "--release", "1.2.0"], { root, env: { PATH: path } });
+  assert.match(open.stderr, /CC-5 is already used by origin\/claude\/CC-5-open-elsewhere/);
+  for (const args of [["--new", "No release"], ["--release", "1.2.0"], ["--new", "Bad", "--release", "next"], ["--new", "A · B", "--release", "1.2.0"], ["--new", "Two\nlines", "--release", "1.2.0"], ["--new", "A `tick`", "--release", "1.2.0"], ["--new", "x", "--new", "y"]]) {
     assert.match(run("task.mjs", ["start", "CC-2", ...args], { root, env: { PATH: path } }).stderr, /Usage/);
   }
   assert.match(run("task.mjs", ["done", "CC-1", "--release", "1.2.0"], { root }).stderr, /Usage/);
@@ -382,6 +386,8 @@ test("task clean removes merged task worktrees and keeps open, fresh and dirty o
   command(root, ["merge", "--no-ff", "-m", "Merge CC-1", "claude/CC-1-merged"]);
   command(root, ["merge", "--no-ff", "-m", "Merge CC-4", "claude/CC-4-dirty"]);
   command(root, ["push", "origin", "main"]);
+  // The user has not pulled: local main lags origin/main, so `git branch -d` would refuse.
+  command(root, ["reset", "-q", "--hard", "HEAD~2"]);
   const result = run("task.mjs", ["clean"], { root, env: { PATH: path } });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /^Removed claude\/CC-1-merged$/m);
