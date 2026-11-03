@@ -483,3 +483,22 @@ test("sync record: a null on an ordinary property is kept as a real empty baseli
   assert.equal(published["Summary"], null);
   assert.equal(published["Name"], "Renamed");
 });
+
+test("a workflow Document's accepted wording returns like a promoted one's (connected-workflows.md §6.3)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Rate limit plan", frontmatter: { summary: "The plan.", origin: "workflow", workflow: { id: "wf-3k7m2p9q", artifact: "art-2p8k4m6n" } }, body: SEED }] });
+  assert.equal(created.code, 0, created.stdout);
+  const { path } = created.json.data.created[0];
+  const file = join(dir, path);
+  const document = parseFrontmatter(await readFile(file, "utf8"));
+  const seed = gitBodyOf({ body: document.body } as never);
+  document.attributes.notion = PAGE;
+  document.attributes.notion_published = { "@content": textHash(seed), "@notion_body": textHash(seed), "@git_body": textHash(seed) };
+  await writeFile(file, serializeFrontmatter(document));
+  const planned = await plan(dir, [documentRow(wording())]);
+  assert.equal(planned.accepted_wording.length, 1);
+  planned.accepted_wording[0].verified = { fingerprint: planned.accepted_wording[0].fingerprint, page_edited_at: planned.accepted_wording[0].page_edited_at };
+  const applied = await run(dir, ["sync", "apply"], planned);
+  assert.equal(applied.json.data.accepted_wording[0].result, "applied", applied.stdout);
+  assert.equal(await bodyOf(dir, path), `\n${ACCEPTED}`);
+});
