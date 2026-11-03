@@ -9,7 +9,8 @@ import { rangesProblem, splitParts } from "./parts.ts";
 import { sourceFolder } from "./paths.ts";
 import { extractPassages, PASSAGE_REF, passageHash } from "./selection.ts";
 import { lineageOf } from "./eligibility.ts";
-import { contextFor, eligibleNotes, indexNotes, loadSuppressions } from "./suppressions.ts";
+import { reportLinks } from "./report-body.ts";
+import { contextFor, eligibleNotes, indexNotes, loadSuppressions, restrictionOf } from "./suppressions.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
 
@@ -94,6 +95,7 @@ export function lintBrain(input: LintInput): Issue[] {
   }
 
   let lineageContext: ReturnType<typeof contextFor> | undefined;
+  let reportContext: ReturnType<typeof contextFor> | undefined;
   let viewNotes: Note[] | undefined; // the notes a view may render once suppressions apply (capture-and-review §5.1)
   const byId = new Map<string, Note>();
   const pathsById = new Map<string, string[]>();
@@ -170,7 +172,8 @@ export function lintBrain(input: LintInput): Issue[] {
       const line = bodyStart + index;
       if (raw.includes("[[")) err("wikilink", line, "use a relative Markdown link, not [[wikilinks]] (0002)");
       for (const match of raw.matchAll(/\^\[([^\]]*)\]/g)) {
-        if (match[1] !== "inferred" && match[1] !== "ambiguous") err("unknown-marker", line, `^[${match[1]}] is not a provenance marker (0004)`);
+        // `^[src-…#¶n:hash]` is the passage reference of a claim written from an extract (0055, capture-and-review §5.1).
+        if (match[1] !== "inferred" && match[1] !== "ambiguous" && !/^src-[0-9a-z]{8}#¶\d+:[0-9a-f]{8}$/.test(match[1] ?? "")) err("unknown-marker", line, `^[${match[1]}] is not a provenance marker (0004)`);
       }
       for (const target of linkTargets(raw)) {
         if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) continue;
@@ -202,6 +205,18 @@ export function lintBrain(input: LintInput): Issue[] {
           warn("view-stale", 1, "generated block is out of date; run brain views");
         }
       }
+    }
+    if (note.type === "view" && a.view_kind === "report") {
+      // A line that links a note a suppression restricts rests on excluded evidence: flagged, never edited by the brain (capture-and-review §5.1).
+      reportContext ??= contextFor(input.notes, loadSuppressions(input.root));
+      const bodyStart = note.raw.split(/\r?\n/).length - note.body.split(/\r?\n/).length;
+      note.body.split(/\r?\n/).forEach((text, index) => {
+        for (const id of reportLinks({ notes: input.notes }, text, true).linked) {
+          const target = byId.get(id);
+          const restriction = target === undefined ? undefined : restrictionOf(target, reportContext!);
+          if (restriction !== undefined && (restriction.whole || restriction.lines.size > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0)) warn("report-source-excluded", bodyStart + index + 1, `(source excluded): this line links ${id}, which rests on content you excluded; the next refresh leaves it out`);
+        }
+      });
     }
     const facts = record(a.facts);
     for (const [key, value] of Object.entries(facts)) {
@@ -259,7 +274,7 @@ export function lintBrain(input: LintInput): Issue[] {
         const listed = byId.get(String(id));
         if (listed !== undefined && !KNOWLEDGE.has(listed.type)) err("review-notes", lineOfKey(note, "notes"), `${String(id)} is a ${listed.type}, not a knowledge note`);
         // A deferred row lists again the notes the row it came from excluded (0045).
-        const others = (reviewedBy.get(String(id)) ?? []).filter((other) => other !== note.id && !deferredPair(note, byId.get(other), String(id)));
+        const others = (reviewedBy.get(String(id)) ?? []).filter((other) => other !== note.id && !deferredPair(note, byId.get(other), String(id), byId));
         if (others.length > 0) err("review-notes", lineOfKey(note, "notes"), `${String(id)} is also listed by ${others.join(", ")}`);
       }
     }
@@ -269,6 +284,30 @@ export function lintBrain(input: LintInput): Issue[] {
         const reference = typeof target === "string" ? byId.get(target) : undefined;
         if (reference !== undefined && reference.type !== "reference") err("update-body", lineOfKey(note, a.kind === "update_body" ? "target" : "changes"), `update_body targets ${reference.id}, a ${reference.type}; only a reference has its body replaced (0045)`);
         if (reference?.type === "reference" && reference.attributes.origin === "promoted") err("update-body", lineOfKey(note, a.kind === "update_body" ? "target" : "changes"), `update_body targets ${reference.id}, a promoted Document, whose body is yours (0049)`);
+      }
+    }
+    if (note.type === "proposal" && a.item_decisions !== undefined && !Array.isArray(a.items)) err("proposal-items", lineOfKey(note, "item_decisions"), "item_decisions without items: a decision needs an item to name");
+    if (note.type === "proposal" && Array.isArray(a.items)) {
+      // The items of a review_notes: one immutable id per note, link and change, each resolving (capture-and-review §7.2).
+      const notes = list(a.notes).map(String), links = list(a.links), changes = list(a.changes);
+      const isRecord2 = (value: unknown): boolean => typeof value === "object" && value !== null && !Array.isArray(value);
+      const seenIds = new Set<string>(), covered = new Set<string>();
+      for (const entry of list(a.items) as Array<{ item_id?: string; kind?: string; ref?: unknown }>) {
+        if (typeof entry.item_id !== "string" || seenIds.has(entry.item_id)) err("proposal-items", lineOfKey(note, "items"), `item id ${String(entry.item_id)} is missing or used twice`);
+        else seenIds.add(entry.item_id);
+        const key = `${entry.kind}:${String(entry.ref)}${entry.kind === "restore" ? `:${String((entry as { n?: unknown }).n)}` : ""}`;
+        const resolves = ["remove", "restore", "independence"].includes(String(entry.kind)) ? isRecord2(a.cleanup) && byId.get(String(entry.ref)) !== undefined : entry.kind === "note" ? notes.includes(String(entry.ref)) : entry.kind === "link" ? Number.isInteger(entry.ref) && (entry.ref as number) < links.length : entry.kind === "change" && Number.isInteger(entry.ref) && (entry.ref as number) < changes.length;
+        if (!resolves) err("proposal-items", lineOfKey(note, "items"), `item ${String(entry.item_id)} refers to ${key}, which this proposal does not hold`);
+        if (covered.has(key)) err("proposal-items", lineOfKey(note, "items"), `${key} has two items`);
+        covered.add(key);
+      }
+      const expected = [...notes.map((id) => `note:${id}`), ...links.map((_, index) => `link:${index}`), ...changes.map((_, index) => `change:${index}`)];
+      for (const key of expected) if (!covered.has(key)) err("proposal-items", lineOfKey(note, "items"), `${key} has no item`);
+      const decided = new Set<string>();
+      for (const decision of list(a.item_decisions) as Array<{ item_id?: string }>) {
+        if (typeof decision.item_id !== "string" || !seenIds.has(decision.item_id)) err("proposal-items", lineOfKey(note, "item_decisions"), `a decision names ${String(decision.item_id)}, which is not an item`);
+        else if (decided.has(decision.item_id)) err("proposal-items", lineOfKey(note, "item_decisions"), `${decision.item_id} is decided twice`);
+        else decided.add(decision.item_id);
       }
     }
     if (note.type === "reference" && typeof a.promoted_from === "string") {
@@ -362,10 +401,23 @@ function proposalStatusProblem(a: Record<string, unknown>): string | null {
 }
 
 /** A deferred row and the row whose excluded note it took over (spec/schema.md §15, 0045). */
-function deferredPair(note: Note, other: Note | undefined, id: string): boolean {
+function deferredPair(note: Note, other: Note | undefined, id: string, byId: ReadonlyMap<string, Note>): boolean {
   if (other === undefined) return false;
-  const excluded = (proposal: Note) => list(record(proposal.attributes.decision).exclude).some((entry) => record(entry).note === id);
-  return (note.attributes.deferred_from === other.id && excluded(other)) || (other.attributes.deferred_from === note.id && excluded(note));
+  // Left out of a 0045 approval ("all except c"), or deferred item by item (capture-and-review §7.6): the note moved to the proposal that came from it.
+  const excluded = (proposal: Note, to: Note) => list(record(proposal.attributes.decision).exclude).some((entry) => record(entry).note === id)
+    || list(proposal.attributes.item_decisions).map(record).some((decision) => decision.state === "deferred" && decision.deferred_to === to.id
+      && list(proposal.attributes.items).map(record).some((item) => item.item_id === decision.item_id && item.kind === "note" && item.ref === id));
+  // A note can be deferred again from the proposal it was deferred to: follow the chain, every hop having moved this note.
+  const descends = (child: Note, ancestor: Note): boolean => {
+    for (let current: Note = child, hops = 0; hops < 50; hops += 1) {
+      const parent = typeof current.attributes.deferred_from === "string" ? byId.get(current.attributes.deferred_from) : undefined;
+      if (parent === undefined || !excluded(parent, current)) return false;
+      if (parent === ancestor) return true;
+      current = parent;
+    }
+    return false;
+  };
+  return descends(note, other) || descends(other, note);
 }
 
 /** Every note id a note's frontmatter references, by the fields lint's `missing-ref` checks, plus `relations` targets and `timeline` sources (spec/cli.md §5.14.3). */

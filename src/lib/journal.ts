@@ -7,6 +7,9 @@ import { promisify } from "node:util";
 
 import { BrainError } from "./errors.ts";
 import { atomicWriteFile, ensureDirectory } from "./fs-safe.ts";
+import type { LogEntry } from "./log.ts";
+import { formatTimestamp } from "./time.ts";
+import type { Workspace } from "./workspace.ts";
 
 // The write-ahead journal and recovery of capture-and-review §7.11 (cli §5.23, §5.24).
 
@@ -105,4 +108,29 @@ async function pruneEmpty(root: string, folder: string): Promise<void> {
   for (let current = folder; current !== "." && current !== "" && current !== DIR; current = dirname(current)) {
     try { if (readdirSync(join(root, current)).length > 0) return; await rmdir(join(root, current)); } catch { return; }
   }
+}
+
+/**
+ * Flush a workspace as one journaled operation (§7.11): the journal first, then the files and the log, then one Git commit carrying
+ * `Op: <op>`, then the journal's removal. A failure rolls back at once; if that fails too the journal stays and every command refuses.
+ */
+export async function commitJournaled(root: string, workspace: Workspace, log: readonly LogEntry[], now: Date, subject: string): Promise<string> {
+  await assertCleanTree(root);
+  const op = newOpId();
+  const entries: JournalEntry[] = workspace.changedPaths.map((path) => ({ path, hash: sha(workspace.stagedContent(path) ?? ""), new: workspace.isNew(path) }));
+  if (log.length > 0) {
+    // The log is appended, so its final content is not known beforehand: a null hash lets recovery treat it as the operation's own.
+    const logPath = `log/${formatTimestamp(now).slice(0, 7)}.md`;
+    entries.push({ path: logPath, hash: null, new: !existsSync(join(root, logPath)) });
+  }
+  await writeJournal(root, { op, written: now.toISOString(), entries });
+  try {
+    await workspace.commit(log, now);
+    await commitWithOp(root, op, entries.map((entry) => entry.path), subject);
+  } catch (error) {
+    try { await recoverAll(root); } catch { /* journal kept */ }
+    throw error instanceof BrainError ? error : new BrainError("INTERNAL", `The write failed and was rolled back: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  await removeJournal(root, op);
+  return op;
 }

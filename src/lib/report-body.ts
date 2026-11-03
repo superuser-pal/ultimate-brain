@@ -1,6 +1,6 @@
 import { posix } from "node:path";
 
-import type { Workspace } from "./workspace.ts";
+import type { Note } from "./notes.ts";
 
 /** The six sections of a report, in order (spec/schema.md §16.4). */
 export const REPORT_SECTIONS = ["Where it stands", "Timeline", "Decisions in force", "Open questions and risks", "People involved", "Gaps"];
@@ -26,7 +26,7 @@ export function hasReportShape(body: string): boolean {
 }
 
 /** The notes a report body links to (relative links from `reports/`), and the targets that name no note. */
-export function reportLinks(workspace: Workspace, body: string, resolveMentions = false): { linked: string[]; broken: string[] } {
+export function reportLinks(workspace: { notes: readonly Note[] }, body: string, resolveMentions = false): { linked: string[]; broken: string[] } {
   const byPage = new Map(workspace.notes.filter((note) => typeof note.attributes.notion === "string").map((note) => [String(note.attributes.notion).replaceAll("-", "").toLowerCase(), note.id]));
   const byPath = new Map(workspace.notes.map((note) => [note.path, note.id]));
   const linked = new Set<string>();

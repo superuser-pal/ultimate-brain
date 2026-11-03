@@ -2,6 +2,7 @@ import { readJsonInput } from "../lib/input.ts";
 import { applyPlan, buildPlan, parsePlan, parseSnapshot, record, render, renderTasks } from "../lib/sync.ts";
 import type { Command } from "../lib/command.ts";
 import { Workspace } from "../lib/workspace.ts";
+import { commitJournaled } from "../lib/journal.ts";
 import { modulesOf } from "../lib/modules.ts";
 import { BrainError } from "../lib/errors.ts";
 import { lintWarnings } from "../lib/warnings.ts";
@@ -11,9 +12,12 @@ export const syncPlanCommand: Command = {
   async run({ args, brain }) { const input = args.options.input as string | undefined; if (input === undefined) throw new BrainError("USAGE", "sync plan needs --input"); const workspace = await Workspace.open(brain!); const plan = buildPlan(workspace, parseSnapshot(await readJsonInput(input, "sync plan"))); return { data: plan, human: `${plan.create.length} creates, ${plan.updates.length} updates, ${plan.corrections.length} corrections\n` }; },
 };
 
+/** Whether a Review decision changed anything: those writes (the target and the proposal file) are one journaled operation (capture-and-review §7.11). */
+const writesReview = (data: Record<string, unknown>): boolean => (data.review_results as Array<{ result: string }>).some((entry) => ["applied", "closed", "deferred"].includes(entry.result)) || (data.revision_results as Array<{ result: string }>).some((entry) => entry.result === "recorded");
+
 export const syncApplyCommand: Command = {
   name: "sync apply", usage: "brain sync apply --input <plan|-> [--record-only] [--skip-conflicted] [--dry-run] [--json]", summary: "Apply a sync plan using atomic per-item writes.", options: { input: "string", "record-only": "boolean", "skip-conflicted": "boolean", "dry-run": "boolean" }, maxPositionals: 0, needsBrain: true,
-  async run({ args, brain, now }) { const input = args.options.input as string | undefined; if (input === undefined) throw new BrainError("USAGE", "sync apply needs --input"); const workspace = await Workspace.open(brain!); const data = applyPlan(workspace, parsePlan(await readJsonInput(input, "sync apply")), now, args.options["record-only"] === true, args.options["skip-conflicted"] === true); const warnings = lintWarnings(workspace.warnings()); const dryRun = args.options["dry-run"] === true; if (!dryRun) await workspace.commit(data.log as [], now); const { log: _log, ...output } = data; const failed = Number((data.summary as Record<string, unknown>).failed ?? 0); return { data: { dry_run: dryRun, ...output }, warnings, exitCode: failed > 0 ? 1 : 0, human: `${failed} failed items\n` }; },
+  async run({ args, brain, now }) { const input = args.options.input as string | undefined; if (input === undefined) throw new BrainError("USAGE", "sync apply needs --input"); const workspace = await Workspace.open(brain!); const data = applyPlan(workspace, parsePlan(await readJsonInput(input, "sync apply")), now, args.options["record-only"] === true, args.options["skip-conflicted"] === true); const warnings = lintWarnings(workspace.warnings()); const dryRun = args.options["dry-run"] === true; let op: string | undefined; if (!dryRun) { if (writesReview(data) && workspace.changedPaths.length > 0) op = await commitJournaled(brain!.root, workspace, data.log as [], now, "sync apply: review decisions"); else await workspace.commit(data.log as [], now); } const { log: _log, ...output } = data; const failed = Number((data.summary as Record<string, unknown>).failed ?? 0); return { data: { dry_run: dryRun, ...(op === undefined ? {} : { op }), ...output }, warnings, exitCode: failed > 0 ? 1 : 0, human: `${failed} failed items\n` }; },
 };
 
 export const syncRenderCommand: Command = {
@@ -36,6 +40,8 @@ export const syncRenderCommand: Command = {
     }
     // A note whose Notion text is unresolved is never overwritten (cli §5.14.7, 0054): a pending proposal, an unaccepted draft, or accepted wording not yet imported.
     if (plan !== undefined) for (const item of [...plan.wording_waiting, ...plan.wording_held, ...plan.accepted_wording]) if (!withheld.has(item.note)) withheld.set(item.note, "WORDING_PENDING");
+    // A Review row with edits or decisions in Notion is never rewritten (capture-and-review §7.10).
+    if (plan !== undefined) for (const item of plan.review_pending) if (!withheld.has(item.proposal)) withheld.set(item.proposal, "REVIEW_PENDING");
     const skipped: Array<{ id: string; reason: string }> = []; const items = data.items.filter((item) => {
       const reason = withheld.get(item.id) ?? (item.page_id !== null && conflictedPages.has(item.page_id) ? "ROW_CONFLICTED" : undefined);
       if (reason === undefined) return true; skipped.push({ id: item.id, reason }); return false;

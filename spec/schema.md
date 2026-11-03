@@ -101,6 +101,7 @@ Each type must live in its folder (lint error otherwise). A `view` lives inside 
 |---|---|---|---|---|
 | `summary` | string | ✔ | brain | aim for ≤200 chars (lint warning above 200, error above 400); feeds `index.md` and Notion "Summary" (0013) |
 | `lifecycle` | enum `draft`·`reviewed`·`disputed`·`archived` | ✔ | you (agents set `draft` on creation, `archived` via supersession) | 0005 |
+| `lineage_cleared` | list of input ids | | system | inputs (Notion page ids) the user marked this note independent of in the exclusion cleanup row; a second input adds to the list (capture-and-review §5.1, §5.2) |
 | `aliases` | list of strings | | brain | names used for matching ("Maria", "María López") |
 | `tags` | list of strings | | brain | lowercase kebab-case |
 | `area` | ID (`area-`) | | brain | |
@@ -331,7 +332,7 @@ timeline:
 | `from` | date or month | ✔ | when it became true (event time) |
 | `until` | date or month | | when it stopped being true |
 | `learned` | date | ✔ | when the brain learned it (transaction time) |
-| `source` | ID or source key | ✔ | evidence; `notion-edit` for your corrections in Notion (0023) |
+| `source` | ID or source key | ✔ | evidence; `notion-edit` for your corrections in Notion (0023); `user-correction:<prp id>` for a value you edited in a Review item before accepting it (0055, capture-and-review §7.7) |
 | `assessment` | enum §8 | ✔ | |
 | `note` | string | | e.g. why it is contested |
 
@@ -425,6 +426,10 @@ notion: 7c6b…
 | `before_hash` | `sha256:<64 hex>` | for `update_body` | the target's body hash when the proposal was written (the source hash rule of §4); the stale check |
 | `deferred_from` | ID (`prp-`) | | a `review_notes` holding the items the user left out of an approved one ("all except e"): that proposal's id (0045, §11.3) |
 | `dropped` | list of `{change: <index>, reason: stale}` | system, set by apply | the changes of an applied `review_notes` that were not applied because their target changed first (§11.3) |
+| `items` | list of `{item_id, kind: note·link·change, ref}` | `review_notes` written from 0.8.0 on | the independently decidable items in the order the Review row lists them (changes, notes, links, §11.3), one immutable `it-` id each (capture-and-review §7.2). `ref` is the note id, or the index into `links` or `changes`. Absent on a proposal written before 0.8.0, which keeps its 0045 behavior (§7.9) |
+| `revisions` | list of `{item_id, instruction, requested_at, status: requested·drafted, previous?, drafted_at?}` | `review_notes`, system | the Request revision of an item (capture-and-review §7.8, cli §5.27): the user's instruction, then the new draft with the user's earlier wording in `previous` |
+| `cleanup` | `{input, version?, tasks?}` | the exclusion cleanup row | marks a `review_notes` as the cleanup row of the input (capture-and-review §5.2); its `items` are `remove`, `restore` (with `n`) and `independence`, each `ref` a note id (cli §5.26) |
+| `item_decisions` | list of `{item_id, decision: accept·reject·defer, decided_at, decided_by, proposed_hash?, base_hash?, snapshot_hash?, state?}` | `review_notes`, system | decided items, one per item, written in the same commit as their write set (capture-and-review §7.6). Lint rejects them on a proposal without `items`. A deferred item keeps its `item_id` in the proposal it moves to (`ref` re-indexed); its entry has `state: deferred` and `deferred_to`. An accepted item whose wording the user edited has `edited: true`. An Accept on an item that rests only on excluded evidence is recorded as `decision: reject`, `state: closed`, `reason: source_excluded` (capture-and-review §5.1) |
 | `answer` | string | for `answer` | the answer in a sentence |
 | `answer_note` | ID | | for `answer`: the note that holds the answer, usually a decision the same ingest created |
 | `before` / `after` | string, number or date | `after` for `update_fact` (and an old single `add_link`); both for `contradiction` | `before` = current value at proposal time (absent if the fact is new) |

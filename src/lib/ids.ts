@@ -49,6 +49,11 @@ export function generateId(
   }
 }
 
+/** A Review item id, `it-` and 8 characters of the id alphabet, unique in its proposal and never recomputed (capture-and-review §7.2). */
+export function generateItemId(existing: ReadonlySet<string>, randomBytes: RandomBytes = nodeRandomBytes): string {
+  return generateId("it" as IdPrefix, existing, randomBytes);
+}
+
 /** ID prefix of each note type (spec/schema.md §1). */
 export const TYPE_PREFIX: Readonly<Record<string, IdPrefix>> = {
   area: "area",
