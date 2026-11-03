@@ -31,8 +31,8 @@
 - **Linking offers `brain link` the other way**, so that the repo can read the brain.
 
 ### Where things live
-- **The kit's schema is in `spec/`** and **the starter is in `templates/`**, both in this product repo.
-- **The skill is written in the skills fork**, under 0059.
+- **The kit's schema is in `spec/`**, and **the starter is in `templates/repo/generic/`**, both in this product repo.
+- **The skill is `brain-repos`**, one of CC-104's skills. It is written in `skills/` until CC-105 moves skill authorship to the skills fork (0059).
 
 ## Consequences
 - spec/linked-repos.md and spec/cli.md §5.29 define the kit, its JSON schema, the commands, the read-only rollup, unlinking and the health check. Only the `repos` lines of spec/schema.md §12 change.
