@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { lineDiff } from "./diff.ts";
 import type { Note } from "./notes.ts";
 import { bodyHash } from "./proposals.ts";
+import { restrictedSources } from "./eligibility.ts";
 import { contextFor, eligibleNote, requireSuppressions } from "./suppressions.ts";
 import type { Workspace } from "./workspace.ts";
 
@@ -13,6 +14,8 @@ export interface ReviewItem {
   current: string | null; proposed: string; editable: boolean; why: string; effect: string;
   /** The item rests on text a suppression restricts: only a stub is shown and it cannot be accepted (capture-and-review §5.1). */
   held: boolean;
+  /** The item rests only on restricted evidence: its source is an older version or full copy of a changed input, or the draft it creates is restricted whole. Accepting it closes it stale (§5.1). */
+  source_excluded: boolean;
   /** `proposed_hash` is over the canonical proposed text (what a parser reads back after `unescapeSection`); `base_hash` over what it was proposed against. */
   proposed_hash: string; base_hash: string;
   /** What the target holds in Git now, hashed the same way: a plan compares it with the `base_hash` recorded at render (a difference is `base_changed`, §7.5). */
@@ -87,14 +90,17 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
     return { note: visible ?? note, held: visible === null || visible.body !== note.body, body: visible === null ? "" : visible.body };
   };
   const source = typeof a.source === "string" ? workspace.get(a.source) : undefined;
+  const sourceRestricted = typeof a.source === "string" && restrictedSources(context).has(a.source);
   const sourceUrl = url(source?.attributes.notion);
   const result: ReviewItem[] = [];
   const stored = (Array.isArray(a.items) ? a.items : []).filter(record);
   stored.forEach((entry, index) => {
     const itemId = String(entry.item_id);
+    let wholeDraft = false;
     let item: Pick<ReviewItem, "kind" | "heading" | "current" | "proposed" | "editable" | "why" | "effect" | "target" | "held"> & { base: string; now: string };
     if (entry.kind === "note") {
       const view = seen(workspace.get(String(entry.ref)));
+      wholeDraft = view.held && view.body.trim() === "" && (workspace.get(String(entry.ref))?.body ?? "").trim() !== "";
       item = { kind: "creates", heading: `Creates: ${titleOf(entry.ref, workspace)}`, current: null, proposed: canon(view.body), editable: true, why: String(a.why ?? ""), effect: EFFECT.creates!, target: view.note, held: view.held, base: base(view.note !== undefined, bodyHash(workspace.get(String(entry.ref))?.body ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(entry.ref))?.body ?? "")) };
     } else if (entry.kind === "link") {
       const link = links[Number(entry.ref)] ?? {};
@@ -136,7 +142,7 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
         `**What Accept does:** ${item.effect}`,
         "Decision: Pending",
       ]).join("\n");
-    result.push({ item_id: itemId, letter, kind: item.kind, heading: item.heading, current: item.held ? null : item.current, proposed: item.held ? "" : item.proposed, editable: !item.held && item.editable, why: whyLine, effect: item.held ? EFFECT.held! : item.effect, held: item.held, target: item.target, proposed_hash: sha(item.held ? "" : item.proposed), base_hash: sha(item.base), current_base_hash: sha(item.now), section, rendered_hash: sha(section) });
+    result.push({ item_id: itemId, letter, kind: item.kind, heading: item.heading, current: item.held ? null : item.current, proposed: item.held ? "" : item.proposed, editable: !item.held && item.editable, why: whyLine, effect: item.held ? EFFECT.held! : item.effect, held: item.held, source_excluded: sourceRestricted || wholeDraft, target: item.target, proposed_hash: sha(item.held ? "" : item.proposed), base_hash: sha(item.base), current_base_hash: sha(item.now), section, rendered_hash: sha(section) });
   });
   return result;
 }

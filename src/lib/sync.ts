@@ -475,7 +475,7 @@ export function parsePlan(input: unknown): SyncPlan {
     (item.items as unknown[]).forEach((entry, position) => {
       const hex = (value: unknown) => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
       const wording = isRecord(entry) && entry.decision === "accept";
-      if (!isRecord(entry) || typeof entry.item_id !== "string" || !["accept", "reject", "defer"].includes(String(entry.decision)) || !hex(entry.proposed_hash) || !hex(entry.snapshot_hash) || !hex(entry.base_hash) || (wording && (typeof entry.proposed !== "string" || entry.proposed.trim() === ""))) problems.push({ pointer: `${at}/items/${position}`, message: "must be { item_id, decision, proposed_hash, snapshot_hash, base_hash } with the final wording for an accept" });
+      if (!isRecord(entry) || typeof entry.item_id !== "string" || !["accept", "reject", "defer", "stale"].includes(String(entry.decision)) || !hex(entry.proposed_hash) || !hex(entry.snapshot_hash) || !hex(entry.base_hash) || (wording && (typeof entry.proposed !== "string" || entry.proposed.trim() === ""))) problems.push({ pointer: `${at}/items/${position}`, message: "must be { item_id, decision, proposed_hash, snapshot_hash, base_hash } with the final wording for an accept" });
       else if (entry.verified !== undefined && (!isRecord(entry.verified) || !hex(entry.verified.snapshot_hash) || !hex(entry.verified.proposed_hash))) problems.push({ pointer: `${at}/items/${position}/verified`, message: "must be { snapshot_hash, proposed_hash }" });
     });
   });

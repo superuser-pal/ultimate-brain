@@ -50,14 +50,15 @@ export function applyReviewDecisions(workspace: Workspace, decisions: ReviewDeci
     const deferred: string[] = [];
     // What each item's target held when the submission began: two accepted items on one note must not make the second see the first's write as a base change.
     const proposalNote = workspace.get(decision.proposal);
-    const bases = new Map<string, { current_base_hash: string; held: boolean }>();
-    if (proposalNote?.type === "proposal" && Array.isArray(proposalNote.attributes.items)) for (const view of reviewItems(proposalNote, workspace)) bases.set(view.item_id, { current_base_hash: view.current_base_hash, held: view.held });
+    const bases = new Map<string, { current_base_hash: string; held: boolean; source_excluded: boolean }>();
+    if (proposalNote?.type === "proposal" && Array.isArray(proposalNote.attributes.items)) for (const view of reviewItems(proposalNote, workspace)) bases.set(view.item_id, { current_base_hash: view.current_base_hash, held: view.held, source_excluded: view.source_excluded });
     for (const item of decision.items) {
       const checkpoint = workspace.checkpoint();
       const out: ReviewItemResult = { proposal: decision.proposal, item_id: item.item_id, decision: item.decision, result: "failed" };
       try {
         const state = applyItem(workspace, decision, item, today, bases);
         out.result = state === "deferred" ? "deferred" : state === "closed" ? "closed" : "applied";
+        if (state === "closed" && item.decision !== "reject") out.reason = "source_excluded";
         if (state === "deferred") deferred.push(item.item_id);
         const errors = workspace.newErrors();
         if (errors.length > 0) throw new Error(`INVALID_RESULT: ${errors.map((issue) => `${issue.rule} ${issue.message}`).join("; ")}`);
@@ -94,7 +95,7 @@ export function applyReviewDecisions(workspace: Workspace, decisions: ReviewDeci
   return { results, log };
 }
 
-function applyItem(workspace: Workspace, decision: ReviewDecision, planned: ReviewDecision["items"][number], today: string, bases: ReadonlyMap<string, { current_base_hash: string; held: boolean }>): "applied" | "closed" | "deferred" {
+function applyItem(workspace: Workspace, decision: ReviewDecision, planned: ReviewDecision["items"][number], today: string, bases: ReadonlyMap<string, { current_base_hash: string; held: boolean; source_excluded: boolean }>): "applied" | "closed" | "deferred" {
   const proposal = workspace.get(decision.proposal);
   if (proposal === undefined || proposal.type !== "proposal") throw new Skip("UNKNOWN_ID", `No proposal ${decision.proposal}`);
   const a = proposal.attributes;
@@ -110,6 +111,16 @@ function applyItem(workspace: Workspace, decision: ReviewDecision, planned: Revi
   const view = bases.get(planned.item_id);
   if (view === undefined) throw new Skip("UNKNOWN_ITEM");
   const today_ = today;
+  // Checked before apply, even for an Accept: an item resting only on excluded evidence is closed stale and nothing is applied (§5.1).
+  if (planned.decision === "stale" || (planned.decision === "accept" && view.source_excluded)) {
+    if (!view.source_excluded) throw new Skip("NOT_EXCLUDED", "the item no longer rests on excluded evidence");
+    rejectItem(workspace, proposal, entry, today_);
+    record_(workspace, proposal.id, {
+      item_id: planned.item_id, decision: "reject", decided_at: decision.decided_at, decided_by: "notion",
+      proposed_hash: planned.proposed_hash, base_hash: planned.base_hash, snapshot_hash: planned.snapshot_hash, state: "closed", reason: "source_excluded",
+    }, decision, today_);
+    return "closed";
+  }
   if (planned.decision === "accept") {
     if (view.held) throw new Skip("HELD_SOURCE_EXCLUDED");
     const stored = record(record(record(a.notion_published)["@review"]).items)[planned.item_id] as { base_hash?: string } | undefined;
