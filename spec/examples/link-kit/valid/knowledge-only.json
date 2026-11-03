@@ -1,0 +1,15 @@
+{
+  "kit_version": 1,
+  "name": "handbook",
+  "placement": {
+    "area": "area-2m7c4h8n"
+  },
+  "knowledge": {
+    "patterns": [
+      "**/*.md"
+    ]
+  },
+  "methodology": {
+    "summary": "A handbook; no tasks."
+  }
+}
