@@ -561,17 +561,20 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
   for (const update of input.updates) if (conflictedIds.has(String(update.id))) skippedUpdates.push({ id: update.id, ...rowSkipped }); else plan.updates.push(update);
   for (const correction of input.corrections) if (conflictedIds.has(correction.target)) skippedCorrections.push({ target: correction.target, field: correction.field, ...rowSkipped }); else plan.corrections.push(correction);
   for (const decision of input.decisions) if (conflictedIds.has(decision.proposal)) skippedDecisions.push({ proposal: decision.proposal, action: decision.action, ...rowSkipped }); else plan.decisions.push(decision);
-  for (let index = 0; index < plan.create.length; index += 1) {
+  // Creates run in relation order (cli §5.14.3): the create a relation names first. Results stay in the plan's order.
+  const { order, stuck, cyclic } = relationOrder(plan.create);
+  for (const index of [...order, ...stuck]) {
     const item = plan.create[index]!; const checkpoint = workspace.checkpoint();
-    if (skippedAt.has(index)) { create.push({ id: item.id, ...rowSkipped }); continue; }
+    if (skippedAt.has(index)) { create[index] = { id: item.id, ...rowSkipped }; continue; }
+    if (stuck.includes(index)) { if (item.id !== undefined) dependencyFailures.add(item.id); create[index] = { id: item.id, result: "failed", reason: cyclic.has(index) ? "RELATION_CYCLE" : "DEPENDENCY_FAILED", changed: [] }; continue; }
     try {
       if (item.id !== undefined && workspace.get(item.id) !== undefined) throw new Error("ID_IN_USE");
       const depends = relationsOf(item.frontmatter).some((id) => dependencyFailures.has(id));
       if (depends) throw new Error("DEPENDENCY_FAILED");
       const staged = stageNotes(workspace, [item], () => `/create/${index}`, { now, lifecycle: String((item as unknown as Record<string, unknown>).lifecycle ?? "draft") });
       assertStagedValid(workspace, staged.pointers);
-      create.push({ id: staged.created[0]!.id, result: "applied", changed: staged.created.map((note) => note.path) });
-    } catch (error) { workspace.restore(checkpoint); const reason = error instanceof Error && error.message === "DEPENDENCY_FAILED" ? "DEPENDENCY_FAILED" : error instanceof Error && error.message === "ID_IN_USE" ? "ID_IN_USE" : "INVALID_RESULT"; if (item.id !== undefined) dependencyFailures.add(item.id); create.push({ id: item.id, result: "failed", reason, changed: [] }); }
+      create[index] = { id: staged.created[0]!.id, result: "applied", changed: staged.created.map((note) => note.path) };
+    } catch (error) { workspace.restore(checkpoint); const reason = error instanceof Error && error.message === "DEPENDENCY_FAILED" ? "DEPENDENCY_FAILED" : error instanceof Error && error.message === "ID_IN_USE" ? "ID_IN_USE" : "INVALID_RESULT"; if (item.id !== undefined) dependencyFailures.add(item.id); create[index] = { id: item.id, result: "failed", reason, changed: [] }; }
   }
   for (const update of plan.updates) {
     const checkpoint = workspace.checkpoint(); const id = String(update.id); const note = workspace.get(id);
@@ -650,6 +653,26 @@ function withClearedBaselines(merged: Record<string, unknown>, incoming: Record<
 
 /** The ids a create references (cli §5.14.3): free text such as a summary never counts. */
 function relationsOf(frontmatter: unknown): string[] { return isRecord(frontmatter) ? referencedIds(frontmatter) : []; }
+
+/**
+ * The order creates run in (cli §5.14.3): each after the creates whose ids its relations name, otherwise in plan order.
+ * `stuck` are the creates that never become ready, in plan order: those on a cycle (`cyclic`) and those that depend on one.
+ * A create naming its own id is no cycle.
+ */
+function relationOrder(creates: readonly SyncPlan["create"][number][]): { order: number[]; stuck: number[]; cyclic: Set<number> } {
+  const byId = new Map<string, number[]>();
+  creates.forEach((item, index) => { if (item.id !== undefined) byId.set(item.id, [...(byId.get(item.id) ?? []), index]); });
+  const needs = creates.map((item, index) => new Set(relationsOf(item.frontmatter).flatMap((id) => byId.get(id) ?? []).filter((other) => other !== index)));
+  const order: number[] = []; const done = new Set<number>();
+  for (;;) {
+    const next = needs.findIndex((deps, index) => !done.has(index) && [...deps].every((dep) => done.has(dep)));
+    if (next === -1) break;
+    order.push(next); done.add(next);
+  }
+  const stuck = needs.map((_, index) => index).filter((index) => !done.has(index));
+  const reaches = (from: number, target: number, seen: Set<number>): boolean => [...needs[from]!].some((dep) => dep === target || (!done.has(dep) && !seen.has(dep) && (seen.add(dep), reaches(dep, target, seen))));
+  return { order, stuck, cyclic: new Set(stuck.filter((index) => reaches(index, index, new Set()))) };
+}
 function summarize(items: readonly Record<string, unknown>[]): Record<string, number> { const result: Record<string, number> = { applied: 0, closed: 0, recorded: 0, corrected: 0, skipped: 0, failed: 0 }; for (const item of items) if (typeof item.result === "string" && Object.hasOwn(result, item.result)) result[item.result] += 1; return result; }
 
 export interface RenderItem { item_updates?: Array<{ item_id: string; reason: string; section: string }>; review_published_after?: Record<string, unknown>; id: string; type: string; database: string; database_id: string; page_id: string | null; action: "create" | "update" | "trash"; properties: Record<string, unknown>; body: string | null; sections: Record<string, string> | null; pending_relations: Array<Record<string, unknown>>; published: Record<string, unknown> }
