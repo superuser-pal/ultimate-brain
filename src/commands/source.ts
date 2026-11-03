@@ -1,3 +1,5 @@
+import { proposeCleanup } from "../lib/cleanup-row.ts";
+import { formatDate } from "../lib/time.ts";
 import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { lineDiff } from "../lib/diff.ts";
@@ -93,5 +95,23 @@ export const sourceCleanupPlanCommand: Command = {
     const workspace = await Workspace.open(brain!);
     const plan = cleanupPlan(workspace.notes, requireSuppressions(brain!.root), page);
     return { data: plan, human: `${plan.notes.length} note(s), ${plan.tasks.length} Task(s), ${plan.documents.length} Document(s) affected\n` };
+  },
+};
+
+/** `brain source cleanup-propose` (spec/cli.md §5.26, capture-and-review §5.2): writes the exclusion cleanup row of an input as one pending proposal. */
+export const sourceCleanupProposeCommand: Command = {
+  name: "source cleanup-propose",
+  usage: "brain source cleanup-propose --page <notion-page-id> [--json]",
+  summary: "Write the exclusion cleanup row of an input: Remove, Restore and Keep/Remove items for what its suppressions restrict.",
+  options: { page: "string" },
+  maxPositionals: 0,
+  needsBrain: true,
+  async run({ args, brain, now }) {
+    const page = args.options.page as string | undefined;
+    if (page === undefined) throw new BrainError("USAGE", "Give --page <notion-page-id>");
+    const workspace = await Workspace.open(brain!);
+    const data = proposeCleanup(workspace, page, formatDate(now));
+    if (data.result === "WRITTEN") await workspace.commit([{ op: "cleanup-propose", id: data.proposal!, title: page }], now);
+    return { data, human: `${data.result}${data.proposal === undefined ? "" : ` ${data.proposal}`}\n` };
   },
 };

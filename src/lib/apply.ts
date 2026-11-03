@@ -430,14 +430,26 @@ const NOTE_FIX_FIELDS = ["title", "summary", "why", "domain", "area", "goal", "c
  */
 function defer(workspace: Workspace, id: string, p: Record<string, unknown>, exclude: Array<Record<string, unknown>>, today: string): string {
   const notes = list(p.notes).filter((note) => exclude.some((entry) => isNoteExclude(entry) && entry.note === note));
-  const links = reviewLinks(p).filter((link) => exclude.some((entry) => sameLink(link, entry)));
-  const changes = list(p.changes).filter((_change, index) => exclude.some((entry) => entry.change === index));
+  const allLinks = reviewLinks(p);
+  const linkIndexes = allLinks.map((_link, index) => index).filter((index) => exclude.some((entry) => sameLink(allLinks[index]!, entry)));
+  const changeIndexes = list(p.changes).map((_change, index) => index).filter((index) => exclude.some((entry) => entry.change === index));
+  const links = linkIndexes.map((index) => allLinks[index]!);
+  const changes = changeIndexes.map((index) => list(p.changes)[index]);
   const source = String(p.source);
+  // A deferred item keeps its immutable id: it lives on in the new proposal under the same id, with its reference re-indexed (capture-and-review §7.6).
+  const oldItems = list(p.items) as Array<{ item_id: string; kind: string; ref: unknown }>;
+  const idOf = (kind: string, ref: unknown) => oldItems.find((entry) => entry.kind === kind && entry.ref === ref)?.item_id;
+  const items = oldItems.length === 0 ? undefined : [
+    ...changeIndexes.map((original, index) => ({ item_id: idOf("change", original), kind: "change", ref: index })),
+    ...notes.map((note) => ({ item_id: idOf("note", note), kind: "note", ref: note })),
+    ...linkIndexes.map((original, index) => ({ item_id: idOf("link", original), kind: "link", ref: index })),
+  ];
   const fields = {
     kind: "review_notes",
     title: reviewTitle(workspace, source, changes.length, notes.length, links.length, "Deferred from"),
     notes, links,
     ...(changes.length === 0 ? {} : { changes }),
+    ...(items === undefined ? {} : { items }),
     deferred_from: id,
     why: p.why,
     source,
@@ -446,7 +458,7 @@ function defer(workspace: Workspace, id: string, p: Record<string, unknown>, exc
 }
 
 /** Apply a proposal's kind to its targets. Returns a message when the proposal is stale. */
-function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPath: string, V: unknown, D: string, today: string, exclude: Array<{ field: string; value: unknown }> = []): string | null {
+export function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPath: string, V: unknown, D: string, today: string, exclude: Array<{ field: string; value: unknown }> = [], correctedBy?: string): string | null {
   const kind = String(p.kind);
   if (kind === "new_item") {
     stageNewItem(workspace, p.note as NoteInput, proposalPath, new Date(`${today}T00:00:00Z`));
@@ -469,7 +481,9 @@ function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPat
 
   switch (kind) {
     case "update_fact":
-      setFact(a, field, V ?? p.after, String(p.from), D, String(p.source));
+      // The user edited the proposed value and accepted it (capture-and-review §7.7): the source keeps its own claim, the correction is attributed to the user.
+      if (correctedBy !== undefined && V !== undefined && !isDeepStrictEqual(V, p.after)) setFactCorrected(a, field, V, p.after, String(p.from), D, String(p.source), correctedBy);
+      else setFact(a, field, V ?? p.after, String(p.from), D, String(p.source));
       break;
     case "contradiction":
       if (V === undefined) contest(a, field, p.after, String(p.from), D, String(p.source));
@@ -602,6 +616,20 @@ function setFact(a: Record<string, unknown>, field: string, value: unknown, from
     ...list(a.timeline).map((entry) =>
       isRecord(entry) && entry.field === field && entry.assessment === "accepted" ? entryWith(entry, { until: from, assessment: "superseded" }) : entry),
     timelineEntry(field, value, from, learned, source, "accepted"),
+  ];
+  a.facts = { ...record(a.facts), [field]: value };
+}
+
+/**
+ * A fact the user corrected before accepting (capture-and-review §7.7): the current value is the user's; the timeline keeps what the source
+ * said (superseded, never rewritten, never attributed to the user) and adds the user's value with its own source, `user-correction:<proposal>`.
+ */
+function setFactCorrected(a: Record<string, unknown>, field: string, value: unknown, original: unknown, from: string, learned: string, source: string, proposal: string): void {
+  a.timeline = [
+    ...list(a.timeline).map((entry) =>
+      isRecord(entry) && entry.field === field && entry.assessment === "accepted" ? entryWith(entry, { until: from, assessment: "superseded" }) : entry),
+    entryWith(timelineEntry(field, original, from, learned, source, "superseded"), { until: from }),
+    timelineEntry(field, value, from, learned, `user-correction:${proposal}`, "accepted"),
   ];
   a.facts = { ...record(a.facts), [field]: value };
 }

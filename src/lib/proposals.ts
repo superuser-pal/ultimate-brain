@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from "node:util";
 
 import { BrainError } from "./errors.ts";
 import { serializeNewFile } from "./frontmatter.ts";
-import { generateId } from "./ids.ts";
+import { generateId, generateItemId } from "./ids.ts";
 import { assertNoProblems, isRecord, unknownKeys, type InputProblem } from "./input.ts";
 import { assertStagedValid, checkNoteInput, stageNotes, type CreatedNote, type NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
@@ -150,12 +150,22 @@ export function stageProposals(
       const source = String(review.item.source);
       // Changes are stored in render order: every update_fact, then update_body, then add_to_note (spec/schema.md §11.3).
       const changes = [...review.changes].sort((a, b) => CHANGE_KINDS.indexOf(String(a.change.kind)) - CHANGE_KINDS.indexOf(String(b.change.kind)) || a.index - b.index);
+      // Every independently decidable item gets an immutable id now, in the order the row lists them: changes, notes, links (spec/schema.md §11.3).
+      const taken = new Set<string>();
+      const links = review.links.map(({ fields }) => ({ target: fields.target, field: fields.field, value: fields.after }));
+      const fresh = () => { const id = generateItemId(taken); taken.add(id); return id; };
+      const items = [
+        ...changes.map((_, index) => ({ item_id: fresh(), kind: "change", ref: index })),
+        ...notes.map((note) => ({ item_id: fresh(), kind: "note", ref: note })),
+        ...links.map((_, index) => ({ item_id: fresh(), kind: "link", ref: index })),
+      ];
       const fields: Record<string, unknown> = {
         kind: "review_notes",
         title: review.item.title ?? reviewTitle(workspace, source, changes.length, notes.length, review.links.length),
         notes,
-        links: review.links.map(({ fields }) => ({ target: fields.target, field: fields.field, value: fields.after })),
+        links,
         ...(changes.length === 0 ? {} : { changes: changes.map(({ change }) => change) }),
+        items,
         why: review.item.why ?? `What came in from ${sourceTitle(workspace, source)}`,
         source,
       };

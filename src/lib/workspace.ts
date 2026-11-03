@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { rmdir, unlink } from "node:fs/promises";
 import { join, posix } from "node:path";
 
@@ -90,6 +90,15 @@ export class Workspace {
     if (original === content) this.staged.delete(path);
     else this.staged.set(path, { content, original });
     this.notesByPath.set(path, parsed);
+  }
+
+  /** Stage a file that is not a note (a suppression record). Its content is written on `commit`, journaled with the rest. */
+  writeText(path: string, content: string): void {
+    const previous = this.staged.get(path);
+    let original: string | null | undefined = previous?.original;
+    if (previous === undefined) { try { original = readFileSync(join(this.root, path), "utf8"); } catch { original = null; } }
+    if (original === content) this.staged.delete(path);
+    else this.staged.set(path, { content, original: original ?? null });
   }
 
   checkpoint(): Checkpoint {

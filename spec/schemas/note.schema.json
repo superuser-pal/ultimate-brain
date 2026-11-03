@@ -288,6 +288,9 @@
           "pattern": "^notion-edit$"
         },
         {
+          "pattern": "^user-correction:prp-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+        },
+        {
           "pattern": "^(area|dom|gol|prj|per|org|mtg|dec|que|con|src|mem)-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
         }
       ]
@@ -413,6 +416,14 @@
           "$ref": "#/$defs/lifecycle"
         },
         "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "lineage_cleared": {
+          "description": "Inputs (Notion page ids) the user marked this note independent of, in the exclusion cleanup row: Keep, Remove or a correction (capture-and-review §5.2). A list: a second input adds to it.",
           "type": "array",
           "items": {
             "type": "string",
