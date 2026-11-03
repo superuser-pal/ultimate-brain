@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { lineDiff } from "./diff.ts";
 import type { Note } from "./notes.ts";
 import { bodyHash } from "./proposals.ts";
+import { cleanupItemView, CLEANUP_KINDS } from "./cleanup-row.ts";
 import { restrictedSources } from "./eligibility.ts";
 import { contextFor, eligibleNote, requireSuppressions } from "./suppressions.ts";
 import type { Workspace } from "./workspace.ts";
@@ -98,7 +99,10 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
     const itemId = String(entry.item_id);
     let wholeDraft = false;
     let item: Pick<ReviewItem, "kind" | "heading" | "current" | "proposed" | "editable" | "why" | "effect" | "target" | "held"> & { base: string; now: string };
-    if (entry.kind === "note") {
+    if (CLEANUP_KINDS.includes(entry.kind as never)) {
+      const view = cleanupItemView(proposal, entry, workspace);
+      item = { kind: "changes", heading: view.heading, current: view.current, proposed: canon(view.proposed), editable: view.editable, why: view.why, effect: view.effect, target: view.target, held: false, base: view.base, now: view.base };
+    } else if (entry.kind === "note") {
       const view = seen(workspace.get(String(entry.ref)));
       wholeDraft = view.held && view.body.trim() === "" && (workspace.get(String(entry.ref))?.body ?? "").trim() !== "";
       item = { kind: "creates", heading: `Creates: ${titleOf(entry.ref, workspace)}`, current: null, proposed: canon(view.body), editable: true, why: String(a.why ?? ""), effect: EFFECT.creates!, target: view.note, held: view.held, base: base(view.note !== undefined, bodyHash(workspace.get(String(entry.ref))?.body ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(entry.ref))?.body ?? "")) };

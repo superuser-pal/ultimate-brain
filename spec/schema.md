@@ -101,6 +101,7 @@ Each type must live in its folder (lint error otherwise). A `view` lives inside 
 |---|---|---|---|---|
 | `summary` | string | ✔ | brain | aim for ≤200 chars (lint warning above 200, error above 400); feeds `index.md` and Notion "Summary" (0013) |
 | `lifecycle` | enum `draft`·`reviewed`·`disputed`·`archived` | ✔ | you (agents set `draft` on creation, `archived` via supersession) | 0005 |
+| `lineage_cleared` | list of input ids | | system | inputs (Notion page ids) the user marked this note independent of in the exclusion cleanup row; a second input adds to the list (capture-and-review §5.1, §5.2) |
 | `aliases` | list of strings | | brain | names used for matching ("Maria", "María López") |
 | `tags` | list of strings | | brain | lowercase kebab-case |
 | `area` | ID (`area-`) | | brain | |
@@ -426,6 +427,7 @@ notion: 7c6b…
 | `deferred_from` | ID (`prp-`) | | a `review_notes` holding the items the user left out of an approved one ("all except e"): that proposal's id (0045, §11.3) |
 | `dropped` | list of `{change: <index>, reason: stale}` | system, set by apply | the changes of an applied `review_notes` that were not applied because their target changed first (§11.3) |
 | `items` | list of `{item_id, kind: note·link·change, ref}` | `review_notes` written from 0.8.0 on | the independently decidable items in the order the Review row lists them (changes, notes, links, §11.3), one immutable `it-` id each (capture-and-review §7.2). `ref` is the note id, or the index into `links` or `changes`. Absent on a proposal written before 0.8.0, which keeps its 0045 behavior (§7.9) |
+| `cleanup` | `{input, version?, tasks?}` | the exclusion cleanup row | marks a `review_notes` as the cleanup row of the input (capture-and-review §5.2); its `items` are `remove`, `restore` (with `n`) and `independence`, each `ref` a note id (cli §5.26) |
 | `item_decisions` | list of `{item_id, decision: accept·reject·defer, decided_at, decided_by, proposed_hash?, base_hash?, snapshot_hash?, state?}` | `review_notes`, system | decided items, one per item, written in the same commit as their write set (capture-and-review §7.6). Lint rejects them on a proposal without `items`. A deferred item keeps its `item_id` in the proposal it moves to (`ref` re-indexed); its entry has `state: deferred` and `deferred_to`. An accepted item whose wording the user edited has `edited: true`. An Accept on an item that rests only on excluded evidence is recorded as `decision: reject`, `state: closed`, `reason: source_excluded` (capture-and-review §5.1) |
 | `answer` | string | for `answer` | the answer in a sentence |
 | `answer_note` | ID | | for `answer`: the note that holds the answer, usually a decision the same ingest created |

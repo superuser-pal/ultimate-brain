@@ -422,6 +422,14 @@
             "minLength": 1
           }
         },
+        "lineage_cleared": {
+          "description": "Inputs (Notion page ids) the user marked this note independent of, in the exclusion cleanup row: Keep, Remove or a correction (capture-and-review §5.2). A list: a second input adds to it.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
         "tags": {
           "type": "array",
           "items": {
