@@ -4,6 +4,7 @@ The space is a core (Inbox, Meetings, Projects, Areas, People, Review) plus opti
 
 | Module | File | Databases |
 |---|---|---|
+| Domains | [domains.md](domains.md) | Domains (in every space, 0065: turning it on builds nothing) |
 | Knowledge | [knowledge.md](knowledge.md) | Decisions, Questions, Concepts |
 | Orgs | [orgs.md](orgs.md) | Orgs |
 | Documents | [documents.md](documents.md) | Documents |
