@@ -4,17 +4,42 @@ import { dirname, resolve } from "node:path";
 import { command, fail, ROOT, slug, taskEntries, tryCommand } from "./common.mjs";
 
 // `start <id> --from <branch>` stacks the task on another task's branch (decision 0046); its row may exist only there.
-const [action, id, ...rest] = process.argv.slice(2);
-const from = rest[0] === "--from" ? rest[1] : undefined;
-if (!/^(start|done)$/.test(action) || !/^(CC|CX)-\d+$/.test(id ?? "") || (rest.length > 0 && (action !== "start" || rest.length !== 2 || !from))) {
-  fail("Usage: node scripts/task.mjs <start|done> <CC-N|CX-N> [--from <branch>]");
+// `start <id> --new "<title>" --release <x.y.z>` starts a task that has no row yet and writes its row into the worktree.
+// `clean` removes every task worktree, and its branch, that is merged into origin/main; it keeps a worktree with uncommitted changes.
+const usage = "Usage: node scripts/task.mjs start <CC-N|CX-N> [--from <branch>] [--new <title> --release <x.y.z>] | done <CC-N|CX-N> | clean";
+const [action, ...args] = process.argv.slice(2);
+const id = action === "clean" ? undefined : args.shift();
+const flags = parseFlags(args);
+const semver = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
+if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
+  || (action !== "clean" && !/^(CC|CX)-\d+$/.test(id ?? ""))
+  || (action !== "start" && Object.keys(flags).length > 0)
+  || ((flags["--new"] === undefined) !== (flags["--release"] === undefined))
+  || (flags["--new"] !== undefined && (flags["--new"].trim() === "" || flags["--new"].includes("·") || !semver.test(flags["--release"])))) {
+  fail(usage);
+} else if (action === "clean") {
+  tryCommand("git", ["fetch", "-q", "origin"]);
+  const removed = [];
+  for (const { worktree, branch } of mergedTaskWorktrees()) {
+    if (command("git", ["status", "--porcelain"], { cwd: worktree }) !== "") process.stderr.write(`Kept ${branch}: uncommitted changes in ${worktree}\n`);
+    else {
+      command("git", ["worktree", "remove", worktree]);
+      command("git", ["branch", "-d", branch]);
+      removed.push(branch);
+    }
+  }
+  process.stdout.write(removed.length === 0 ? "No merged task worktrees\n" : `Removed ${removed.join(", ")}\n`);
 } else {
+  const from = flags["--from"];
+  const title = flags["--new"]?.trim();
   const base = from === undefined ? "origin/main" : `origin/${from}`;
-  const rows = from === undefined ? { ok: true, stdout: undefined } : tryCommand("git", ["show", `${base}:build/TASKS.md`]);
-  const task = rows.ok ? taskEntries(rows.stdout).find((entry) => entry.id === id) : undefined;
+  const rows = from === undefined && title === undefined ? { ok: true, stdout: undefined } : tryCommand("git", ["show", `${base}:build/TASKS.md`]);
+  const existing = rows.ok ? taskEntries(rows.stdout).find((entry) => entry.id === id) : undefined;
+  const task = title === undefined ? existing : { id, title };
   if (!rows.ok) fail(`Cannot read build/TASKS.md on ${base}: ${rows.message}`);
+  else if (title !== undefined && existing !== undefined) fail(`${id} already exists on ${base}`);
   else if (task === undefined) fail(`Unknown task ${id}`);
-  else if (action === "start" && task.status !== "todo") fail(`${id} is ${task.status}, not todo`);
+  else if (action === "start" && title === undefined && task.status !== "todo") fail(`${id} is ${task.status}, not todo`);
   else if (action === "start") {
     const branch = `${id.startsWith("CC-") ? "claude" : "codex"}/${id}-${slug(task.title)}`;
     const path = resolve(ROOT, "..", `ub-${id}`);
@@ -24,18 +49,20 @@ if (!/^(start|done)$/.test(action) || !/^(CC|CX)-\d+$/.test(id ?? "") || (rest.l
       command("npm", ["ci"], { cwd: path, stdio: "inherit" });
       command("git", ["config", "core.hooksPath", ".githooks"], { cwd: path });
       const tasksPath = resolve(path, "build/TASKS.md");
-      const tasks = readFileSync(tasksPath, "utf8").replace(`### ${id} · ${task.title} · \`todo\``, `### ${id} · ${task.title} · \`in progress\``);
+      const current = readFileSync(tasksPath, "utf8");
+      const tasks = title === undefined
+        ? current.replace(`### ${id} · ${task.title} · \`todo\``, `### ${id} · ${task.title} · \`in progress\``)
+        : insertRow(current, id, title, flags["--release"]);
       writeFileSync(tasksPath, tasks);
       const denylist = resolve(homedir(), ".config/ultimate-brain/denylist");
       if (!existsSync(denylist)) process.stderr.write(`Warning: denylist missing at ${denylist}\n`);
+      if (title !== undefined) process.stderr.write(`Fill in the **Changelog:**, **Output:** and **Acceptance:** lines of ${id}\n`);
       process.stdout.write(`${path}\n`);
     }
   } else {
-    const list = command("git", ["worktree", "list", "--porcelain"]);
     const branch = `${id.startsWith("CC-") ? "claude" : "codex"}/${id}-${slug(task.title)}`;
-    const blocks = list.split("\n\n").map((block) => Object.fromEntries(block.split("\n").map((line) => line.split(" ", 2))));
-    const target = blocks.find((block) => block.branch === `refs/heads/${branch}`);
-    if (target?.worktree === undefined) fail(`No worktree for ${id}`);
+    const target = taskWorktrees().find((block) => block.branch === branch);
+    if (target === undefined) fail(`No worktree for ${id}`);
     else {
       const merged = tryCommand("git", ["merge-base", "--is-ancestor", branch, "origin/main"]);
       if (!merged.ok) fail(`${branch} is not merged into origin/main`);
@@ -45,4 +72,55 @@ if (!/^(start|done)$/.test(action) || !/^(CC|CX)-\d+$/.test(id ?? "") || (rest.l
       }
     }
   }
+}
+
+/** `--name value` pairs; undefined when a flag is unknown, repeated or has no value. */
+function parseFlags(list) {
+  const result = {};
+  for (let index = 0; index < list.length; index += 2) {
+    const [name, value] = [list[index], list[index + 1]];
+    if (!["--from", "--new", "--release"].includes(name) || value === undefined || name in result) return undefined;
+    result[name] = value;
+  }
+  return result;
+}
+
+/** Worktrees on a task branch, as `{ worktree, branch }` with the branch name without `refs/heads/`. */
+function taskWorktrees() {
+  const blocks = command("git", ["worktree", "list", "--porcelain"]).split("\n\n");
+  return blocks.map((block) => Object.fromEntries(block.split("\n").map((line) => line.split(" ", 2))))
+    .filter((block) => /^refs\/heads\/(claude|codex)\/(CC|CX)-\d+-/.test(block.branch ?? ""))
+    .map((block) => ({ worktree: block.worktree, branch: block.branch.slice("refs/heads/".length) }));
+}
+
+/** Merged: reachable from origin/main but not on its first-parent line, which is where a started branch with no commits of its own sits (PRs merge with a merge commit). */
+function mergedTaskWorktrees() {
+  const mainLine = new Set(command("git", ["rev-list", "--first-parent", "origin/main"]).split("\n"));
+  return taskWorktrees().filter(({ branch }) => tryCommand("git", ["merge-base", "--is-ancestor", branch, "origin/main"]).ok
+    && !mainLine.has(command("git", ["rev-parse", branch])));
+}
+
+/**
+ * The new row goes at the end of its `## <release>` section. A missing section is created before the first release section with a later
+ * version, or after the last release section.
+ */
+function insertRow(tasks, taskId, title, release) {
+  const row = `### ${taskId} · ${title} · \`in progress\`\n**Release:** ${release}\n**Changelog:**\n**Output:**\n**Acceptance:**\n\n`;
+  const headings = [...tasks.matchAll(/^## (.*)$/gm)].map((match) => ({ offset: match.index, version: /^(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?: |$)/.exec(match[1])?.[1] }));
+  const own = headings.findIndex((heading) => heading.version === release);
+  if (own !== -1) {
+    const end = headings[own + 1]?.offset ?? tasks.length;
+    return `${tasks.slice(0, end).replace(/\n*$/, "\n\n")}${row}${tasks.slice(end)}`;
+  }
+  const later = headings.find((heading) => heading.version !== undefined && compareVersions(heading.version, release) > 0);
+  const lastRelease = headings.findLastIndex((heading) => heading.version !== undefined);
+  const at = later?.offset ?? headings[lastRelease + 1]?.offset ?? tasks.length;
+  const before = tasks.slice(0, at);
+  return `${before === "" ? "" : before.replace(/\n*$/, "\n\n")}## ${release}\n\n${row}${tasks.slice(at)}`;
+}
+
+function compareVersions(left, right) {
+  const parts = (version) => version.split("-")[0].split(".").map(Number);
+  const [a, b] = [parts(left), parts(right)];
+  return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
 }
