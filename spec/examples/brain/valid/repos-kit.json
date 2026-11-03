@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "owner": {
+    "name": "Alex"
+  },
+  "budgets": {
+    "ingest_max_notes": 8
+  },
+  "modules": {
+    "knowledge": true,
+    "orgs": true,
+    "documents": false,
+    "reports": false,
+    "tasks": false,
+    "planning": false
+  },
+  "notion": {
+    "databases": {
+      "areas": "",
+      "projects": "",
+      "meetings": "",
+      "people": "",
+      "review": "",
+      "inbox": "",
+      "decisions": "",
+      "questions": "",
+      "concepts": "",
+      "orgs": "",
+      "documents": ""
+    },
+    "tasks": {
+      "database": "",
+      "properties": {
+        "title": "Name"
+      },
+      "new_task_status": "To Do"
+    }
+  },
+  "settings": {
+    "unattended": {
+      "max_inputs": 10
+    }
+  },
+  "repos": [
+    {
+      "name": "acme-api",
+      "path": "~/code/acme-api",
+      "area": "area-2m7c4h8n",
+      "patterns": [
+        "decisions/**"
+      ],
+      "commit": ""
+    },
+    {
+      "name": "acme-web",
+      "path": "~/code/acme-web",
+      "area": "area-2m7c4h8n",
+      "patterns": [
+        "docs/**"
+      ],
+      "commit": "9f3c2b1a0d4e5f60718293a4b5c6d7e8f9012345",
+      "never_read": [
+        ".env*",
+        "docs/clients/**"
+      ],
+      "project": "prj-9x4t1b7e",
+      "kit": {
+        "sha256": "sha256:abababababababababababababababababababababababababababababababab"
+      }
+    }
+  ]
+}

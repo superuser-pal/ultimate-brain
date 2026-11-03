@@ -1,0 +1,35 @@
+{
+  "sources": [
+    {
+      "kind": "markdown",
+      "ref": "PLAN.md"
+    }
+  ],
+  "items": [
+    {
+      "origin": {
+        "kind": "markdown",
+        "ref": "PLAN.md",
+        "key": "line:5e1a0c9b2d47"
+      },
+      "title": "Add rate limiting to the public API",
+      "body": "",
+      "raw_status": "/",
+      "meaning": "in_progress",
+      "depends_on": [],
+      "url": null,
+      "brain_id": null
+    }
+  ],
+  "unsupported": [],
+  "conventions": [
+    {
+      "rule": "Status lives in TASKS.md",
+      "source": "AGENTS.md",
+      "choice": "adapt"
+    }
+  ],
+  "selected": null,
+  "treatments": {},
+  "status_read": {}
+}
