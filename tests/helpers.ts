@@ -1,12 +1,35 @@
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { cp, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TestContext } from "node:test";
 
+import { writeSnapshotManifest } from "../scripts/build-skills.ts";
 import { runCli, type CliIo } from "../src/cli.ts";
 import { setInstalledProductRootForTests } from "../src/lib/skills.ts";
 
 export const FIXTURE_BRAIN = join(import.meta.dirname, "fixtures", "brain-acme");
+const REPO = join(import.meta.dirname, "..");
+/** The mirror without the generated manifest, which a local build may have left (spec/skills-delivery.md §9). */
+const notManifest = (path: string) => !path.endsWith(`${join(".agents", "skills", "snapshot.json")}`);
+
+let packageRoot: string | undefined;
+/**
+ * The package as the published CLI sees it: package.json, the AGENTS.md template, and `.agents/skills/` with the manifest `npm run build`
+ * generates (§9). Built once per test process in a temp folder, because the checkout's mirror has no committed manifest.
+ */
+export async function testPackageRoot(): Promise<string> {
+  if (packageRoot !== undefined) return packageRoot;
+  const root = mkdtempSync(join(tmpdir(), "brain-package-"));
+  process.on("exit", () => rmSync(root, { recursive: true, force: true }));
+  cpSync(join(REPO, "package.json"), join(root, "package.json"));
+  mkdirSync(join(root, "templates", "brain"), { recursive: true });
+  cpSync(join(REPO, "templates", "brain", "AGENTS.md"), join(root, "templates", "brain", "AGENTS.md"));
+  cpSync(join(REPO, ".agents", "skills"), join(root, ".agents", "skills"), { recursive: true, filter: notManifest });
+  await writeSnapshotManifest(join(root, ".agents", "skills"), JSON.parse(readFileSync(join(REPO, "package.json"), "utf8")).version);
+  packageRoot = root;
+  return root;
+}
 
 /** Copy the fixture brain to a temp dir that is removed after the test. */
 export async function fixtureCopy(context: TestContext): Promise<string> {
@@ -16,8 +39,8 @@ export async function fixtureCopy(context: TestContext): Promise<string> {
   await cp(FIXTURE_BRAIN, brain, { recursive: true });
   // Fixtures stay product-neutral; whole-brain lint tests receive the shipped files at runtime.
   await rm(join(brain, ".agents", "skills"), { recursive: true, force: true });
-  await cp(join(import.meta.dirname, "..", ".agents", "skills"), join(brain, ".agents", "skills"), { recursive: true });
-  await cp(join(import.meta.dirname, "..", ".agents", "skills"), join(brain, ".claude", "skills"), { recursive: true });
+  await cp(join(import.meta.dirname, "..", ".agents", "skills"), join(brain, ".agents", "skills"), { recursive: true, filter: notManifest });
+  await cp(join(import.meta.dirname, "..", ".agents", "skills"), join(brain, ".claude", "skills"), { recursive: true, filter: notManifest });
   await cp(join(import.meta.dirname, "..", "templates", "brain", "AGENTS.md"), join(brain, "AGENTS.md"));
   return brain;
 }
@@ -34,10 +57,10 @@ export interface CliRun {
 export async function brain(
   args: readonly string[],
   home = tmpdir(),
-  productRoot = join(import.meta.dirname, ".."),
+  productRoot?: string,
   productSource = false,
 ): Promise<CliRun> {
-  setInstalledProductRootForTests(productRoot, productSource);
+  setInstalledProductRootForTests(productRoot ?? await testPackageRoot(), productSource);
   const stdout: string[] = [];
   const stderr: string[] = [];
   const io: CliIo = {

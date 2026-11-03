@@ -140,6 +140,11 @@ Failure:
 | `WRITE_CONFLICT` | 5 | a file appeared at a path the command was creating, after it read the brain (another writer). Nothing is kept (§3.6); re-run the command |
 | `CLAUDE_NOT_FOUND` | 3 | `schedule install` found no `claude` executable on `PATH` to schedule (0051, §5.21) |
 | `SKILL_MISSING` | 3 | `schedule install` for a job whose skill the brain doesn't have (`reflect` before brain-reflect is installed, 0052) |
+| `SKILLS_PIN_INVALID` | 3 | the brain's `skills.lock.json` is invalid (§5.28) |
+| `SKILLS_INCOMPATIBLE` | 3 | the brain's pinned skills exclude the running CLI (§5.28) |
+| `SKILLS_SNAPSHOT_MISSING` | 3 | a pinned skill's `SKILL.md` is missing from a tree; for `link`, a pinned file it copies is missing or differs (§5.28) |
+| `SKILLS_SNAPSHOT_INVALID` | 3 | the package snapshot is invalid or excludes the running CLI (`init`, `upgrade`, `link` on an unpinned brain), or a released snapshot changed content under the same version (`upgrade`) (§5.28) |
+| `SKILLS_DOWNGRADE` | 5 | `upgrade` would lower the pin's version under the same snapshot name (§5.28) |
 | `RECOVERY_NEEDED` | 5 | an interrupted multi-file write left `_journal/<op>.json`: every command except `recover` refuses until `brain recover` ran (capture-and-review §7.11) |
 | `SUPPRESSIONS_UNREADABLE` | 5 | a `_suppressions/` record cannot be read or is malformed: `query`, `views`, `source extract` and `source cleanup-plan` refuse rather than treat the brain as unrestricted, and never replace the damaged file (`status` reports it, `lint` flags it; capture-and-review §5.3) |
 | `DIRTY_TREE` | 5 | `source extract` found the brain not a Git work tree, or with uncommitted changes and no journal |
@@ -233,8 +238,9 @@ Creates a brain from `templates/brain/` (CC-02, CX-03).
 
 1. Refuse if `<path>` is the product repo (`BRAIN_IS_PRODUCT_REPO`) or already has `brain.json` (`ALREADY_A_BRAIN`, even with `--force`).
 2. If `<path>` exists and is non-empty: refuse with `TARGET_NOT_EMPTY` unless `--force`. With `--force`, template files whose path already exists are **left untouched** and listed in `skipped`; nothing is ever overwritten.
+   Then the package snapshot (skills-delivery §2.3) must be compatible with the running CLI, else `SKILLS_SNAPSHOT_INVALID` (§5.28) and nothing is written. A `<path>` that doesn't exist yet is refused before it is created.
 3. Copy the template. npm never packs files named `.gitignore`, so the template stores it as `templates/brain/gitignore` and `init` writes it to the new brain as `.gitignore` (reported in `created` under that name; a `--force` run skips it like any other existing file). Write `brain.json` from the template with `schema_version: 1` and `owner.name` = `--owner` (default: the `user.name` from `git config`, else `"Owner"`).
-   Copy the skills the package ships in `.agents/skills/` to `<path>/.agents/skills/` (Codex) and to `<path>/.claude/skills/` (Claude Code) (0029, 0038). They are product-owned and listed in `created`; with `--force`, existing files are skipped like template files.
+   Copy every skill of the package snapshot, its listed files only, to `<path>/.agents/skills/` (Codex) and to `<path>/.claude/skills/` (Claude Code) (0029, 0038, 0059); `snapshot.json` and the snapshot's optional top-level files are not copied. Write `skills.lock.json` (skills-delivery §3) with `installed_by` = the running version. All are product-owned and listed in `created`; with `--force`, existing files, the lock included, are skipped like template files, and the result can be any pin state.
 4. Run `index` (an empty index).
 5. Log `- <timestamp> init - "<owner name>" schema=1` (no machine paths in the log).
 6. Unless `--no-git`: `git init`, add all, commit `init: ultimate brain (schema v1)`, so the new brain starts clean. If Git is missing or the commit fails (no identity), keep the files, skip the commit and add warning `GIT_COMMIT_SKIPPED`.
@@ -250,13 +256,16 @@ brain init ~/brain --owner "Alex" --set-default --json
     "created": [".gitignore", "AGENTS.md", "CLAUDE.md", "brain.json", "index.md", "log/2026-12.md"],
     "skipped": [],
     "git": { "initialized": true, "committed": true },
-    "default_config": { "written": true, "path_abs": "/Users/me/.config/ultimate-brain/config.json", "previous": null }
+    "default_config": { "written": true, "path_abs": "/Users/me/.config/ultimate-brain/config.json", "previous": null },
+    "skills": { "state": "pinned", "name": "ultimate-brain", "version": "0.9.0", "competing": [] }
   } }
 ```
 
+`skills` is computed after the writes as `status` computes it (§5.28): `state`, and `name` and `version` from the lock on disk (`null` when `unpinned` or `invalid`), and `competing` for the installed snapshot's skills (skills-delivery §5.2), with warning `SKILLS_COMPETING` when it is non-empty; `init` never refuses because of it.
+
 `created` lists every file written, sorted by path, including the `.gitkeep` placeholders of the empty note folders; the example above is shortened.
 
-Errors: `TARGET_NOT_EMPTY`, `ALREADY_A_BRAIN`, `BRAIN_IS_PRODUCT_REPO`, `OUTSIDE_ROOT` (template path escapes, defensive).
+Errors: `TARGET_NOT_EMPTY`, `ALREADY_A_BRAIN`, `BRAIN_IS_PRODUCT_REPO`, `SKILLS_SNAPSHOT_INVALID`, `OUTSIDE_ROOT` (template path escapes, defensive).
 
 ### 5.2 `brain status`
 
@@ -281,9 +290,12 @@ Read-only health summary; the first call of every skill.
     "index_stale": false,
     "views_stale": ["projects/acme-website/brief.md"],
     "suppressions": { "active": 0, "reconciled": 0, "restricted_notes": 0, "unresolved_lineage": 0, "problems": [] },
-    "last_log": "- 2026-12-03T10:22:00Z ingest mtg-8c4n2p7w \"Acme sync\" created=4 proposals=3"
+    "last_log": "- 2026-12-03T10:22:00Z ingest mtg-8c4n2p7w \"Acme sync\" created=4 proposals=3",
+    "skills": { "state": "pinned", "name": "ultimate-brain", "version": "0.9.0", "…": "§5.28" }
 } }
 ```
+
+`skills` (always present, 0059) is the brain's skill pin, defined in §5.28. `status` is exempt from the pin guard, so it reports every state.
 
 `notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `concepts`, `documents` (0045, 0049; a `references` key is reported as `documents`). `modules` (0048) has every module key, filled in as schema §12 says: all `true` except Domains when the block is absent, else each absent key at its default. `notes` counts every type, `reference` included (0045). A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } }`. `unattended` (0051) sums the unattended catch-up lines (§3.9) written since the last attended `catch-up` line, across the month files: `since` is that attended line's timestamp (`null` when there is none), `runs` the unattended lines after it, `inputs` and `failed` their sums, `failures` their reasons in order without repeats, and `left`, `skipped`, `waiting` and `last` (its timestamp) from the latest one, since an input still skipped is counted again by every run. `catch_up` is `null` when no unattended line follows the last attended one. `backlog` is `true` when the last three unattended catch-up lines, attended or not in between, each have `left` above 0. The attended catch-up opens with this summary (§6.1). `repos` lists `brain.json` `repos` in order (empty when absent): `found` is whether `path` is a Git working tree. `views_stale` includes area briefs. Exit 0 even when stale.
 
@@ -659,7 +671,7 @@ Validates the brain against schema §15 (CX-05). With paths (relative to the bra
 } }
 ```
 
-Issues have severity `error`, `warning`, or `info`. Information is listed in `issues` but is counted as neither an error nor a warning, and does not make `--strict` fail. Domains remain linted even while their module is off. Issues are sorted by `path`, `line`, `rule`, then `message`. `line` is 1-based: the line of the offending frontmatter key or body line, or 1 when not locatable. `id` is `null` when the file has no readable id.
+The skill rules (`product-file` for skills, `skills-*`, `skill-*`) have `line` 1 and `id` `null`, and are reported at the path the table names; a path filter keeps them only when it matches that path. Issues have severity `error`, `warning`, or `info`. Information is listed in `issues` but is counted as neither an error nor a warning, and does not make `--strict` fail. Domains remain linted even while their module is off. Issues are sorted by `path`, `line`, `rule`, then `message`. `line` is 1-based: the line of the offending frontmatter key or body line, or 1 when not locatable. `id` is `null` when the file has no readable id.
 
 | Rule | Sev | Schema §15 item |
 |---|---|---|
@@ -695,7 +707,13 @@ Issues have severity `error`, `warning`, or `info`. Information is listed in `is
 | `passage-ref` | error | a `^[src-…#¶n:hash]` in a note body names a source that is not an extract, a passage it does not hold, or the wrong hash; or a note lists an extract in `sources` but cites none of its passages (0055, capture-and-review §5.1) |
 | `update-body` | error | an `update_body` proposal, or an `update_body` entry of a `review_notes`'s `changes`, whose target isn't a `reference` (0045) or is a `promoted` one (0049) |
 | `promoted-from` | error | a Document's `promoted_from` names a note that isn't a decision or concept (a missing id is `missing-ref`; set without `origin: promoted` is `schema`) (0049) |
-| `product-file` | error | product-owned content differs from the installed package (§5.15, 0038). One issue per case: a shipped skill's folder missing from `.agents/skills/` or `.claude/skills/` (path = the folder); a shipped file in it missing or with different bytes; a file in it the package doesn't ship; `AGENTS.md` missing, its rules markers missing, out of order or duplicated, or its block differing from the template's (path `AGENTS.md`). Folders the package doesn't ship are not checked. The message names the package version and says: run `brain upgrade`, or file a finding |
+| `product-file` | error | product-owned content differs from the installed package (§5.15, 0038) or, for skills, from the pin (0059, skills-delivery §6.4). Skills are compared against the lock (`pinned`, `drift`, `missing`, `incompatible`), against the package snapshot while `unpinned`, and not at all while `invalid`. One issue per case: a pinned skill's folder missing from `.agents/skills/` or `.claude/skills/` (path = the folder); a listed file in it missing, not a regular file or with different bytes; an entry in it the snapshot doesn't list (an unlisted folder is one issue); `AGENTS.md` missing, its rules markers missing, out of order or duplicated, or its block differing from the template's (path `AGENTS.md`; always against the package). Folders the snapshot doesn't name are not checked. The message names the snapshot (`ultimate-brain-skills 1.2.0`; `ultimate-brain <version>` for `AGENTS.md`) and says: run `brain upgrade`, or file a finding. While `unpinned`, an invalid package snapshot is the broken-install case (§5.15) |
+| `skills-lock` | error | `skills.lock.json` is invalid (§5.28): `skills.lock.json is invalid (<reason>); run brain upgrade to rewrite it` |
+| `skills-incompatible` | error | the pin excludes the running CLI: the `SKILLS_INCOMPATIBLE` message (§5.28) |
+| `skills-unpinned` | info | no `skills.lock.json`: `skills are not pinned; run brain upgrade to pin them` |
+| `skills-update-available` | info | the pin is `pinned` or `drift` (lint doesn't tell them apart) and the package snapshot is compatible and has the pin's name with a higher version, or another name: `<package name> <version> is available (pinned: <name> <version>); run brain upgrade` |
+| `skill-duplicate` | error | a folder of a tree other than `N/` whose `SKILL.md` names a checked skill `N` (skills-delivery §5.2): `<path> also defines skill <N>; remove it, the pinned copy is <tree>/<N>` |
+| `skill-competing` | warning | a global copy (`~/.claude/skills/N`, `~/.agents/skills/N`, `~/.codex/skills/N`, any entry type) or the retired plugin enabled in `~/.claude/settings.json` or the brain's `.claude/settings.json` (skills-delivery §5.2). Paths keep the literal `~/`; without `HOME` the home checks are skipped |
 | `unknown-key` | warning | frontmatter key that the type's schema does not declare: the core fields, plus the knowledge fields (knowledge types), plus the type's own fields. `why` on a person is unknown |
 | `freshness` | warning | schema §10 |
 | `summary-length` | warning | summary longer than 200 characters |
@@ -726,13 +744,13 @@ Errors: `USAGE` (bad op or key=value), `UNKNOWN_ID`.
 brain link <repo-path> [--project <id>] [--area <id>] [--stack <name>]… [--repo-name <name>]
 ```
 
-Connects a consuming repo to the brain (0006, 0009; CX-08). Allowed root: `<repo-path>`; writes only `.brain`, `AGENTS.md`, `CLAUDE.md`, `.agents/skills/brain-query/` and `.claude/skills/brain-query/` there. Refuses if `<repo-path>` is the brain or the product repo, or if any part of either `brain-query` folder is a symbolic link or the wrong file type (`OUTSIDE_ROOT`, before any write).
+Connects a consuming repo to the brain (0006, 0009; CX-08). Allowed root: `<repo-path>`; writes only `.brain`, `AGENTS.md`, `CLAUDE.md`, and the folders of the linked skills in `.agents/skills/` and `.claude/skills/` there (`brain-query` today). Refuses if `<repo-path>` is the brain or the product repo, or if any part of a linked or retired skill folder is a symbolic link or the wrong file type (`OUTSIDE_ROOT`, before any write). The brain passes the pin guard first (§5.28); the linked repo has no pin and is not guarded.
 
 1. **`.brain`** (JSON, committed with the repo; holds no machine paths):
    ```json
    { "repo": "acme-api", "project": "prj-9x4t1b7e", "area": "area-2m7c4h8n", "stacks": ["nextjs", "supabase"] }
    ```
-   `repo` = `--repo-name`, else the folder name. `stacks`: lowercase kebab-case, deduped, sorted. If `.brain` exists, options given replace their keys; others are kept. When `--project` is given without `--area`, `area` is set to that project's `area` (replacing any old value). All keys optional; `project`/`area` must exist in the brain. Written as JSON with 2-space indent, keys in the order `repo`, `project`, `area`, `stacks` (absent keys left out), and a trailing newline.
+   `repo` = `--repo-name`, else the folder name. `skills` (0059, skills-delivery §6.2) is replaced on every run: `{ "name", "version", "integrity", "names" }` of the snapshot the linked skills came from, `names` sorted; an existing `.brain` whose `skills` is not an object of three strings and a `names` list of kebab-case skill names fails `INPUT_INVALID`. `stacks`: lowercase kebab-case, deduped, sorted. If `.brain` exists, options given replace their keys; others are kept. When `--project` is given without `--area`, `area` is set to that project's `area` (replacing any old value). All keys optional; `project`/`area` must exist in the brain. Written as JSON with 2-space indent, keys in the order `repo`, `project`, `area`, `stacks`, `skills` (absent keys left out), and a trailing newline.
 2. **Instruction block** in `AGENTS.md` (created if missing). If `CLAUDE.md` exists and has no line `@AGENTS.md`, the block is also written there; if `CLAUDE.md` does not exist, it is created with the single line `@AGENTS.md`. The block sits between the lines `<!-- ultimate-brain:start -->` and `<!-- ultimate-brain:end -->`; an existing block is replaced in place, otherwise it is appended after one blank line. Nothing outside the markers changes.
 
 Block text (normative; `{…}` filled from the brain; the `- Project:` and `- Area:` lines are left out when `.brain` has no project or area, and the line before them then ends with `.` instead of `:`):
@@ -760,7 +778,11 @@ The brain is read-only from this repo. Never edit its files from here.
 <!-- ultimate-brain:end -->
 ```
 
-3. **Skill** (0029, 0038): `.agents/skills/brain-query/` and `.claude/skills/brain-query/` are written from the skills the package ships. They are product-owned: files whose bytes differ are replaced, and files no longer shipped in that folder are removed. Nothing else under `.agents/` or `.claude/` is touched. Every skill file appears in `files` with its `action` (`created`, `updated` or `unchanged`), and a removed stale file appears with `action: "removed"`, e.g. `{ "path": ".agents/skills/brain-query/SKILL.md", "action": "created" }`.
+3. **Skills** (0029, 0038, 0059; skills-delivery §6.2): the **linked skills** are the skills of the source whose `targets` include `linked_repo`.
+   - **Source.** A pinned brain (state `pinned` or `drift`): the files its lock lists, copied from the brain's `.agents/skills/<name>/`; before any write each must be a regular file with the locked bytes, and the first that isn't refuses `SKILLS_SNAPSHOT_MISSING` (§5.28) naming it. Unlisted files there and the brain's `.claude/skills` copy are ignored (lint covers them). An `unpinned` brain: the package snapshot, which must be compatible (else `SKILLS_SNAPSHOT_INVALID`), with warning `SKILLS_UNPINNED`.
+   - **Writing.** For each linked skill, `.agents/skills/<name>/` and `.claude/skills/<name>/` are product-owned: files whose bytes differ are replaced, and files the snapshot doesn't list in that folder are removed.
+   - **Retired linked skills.** A name in the previous `.brain` `skills.names` that is no longer linked has both its folders removed (each file `removed`, then the emptied folders). A `.brain` without `skills` retires nothing.
+   - Nothing else under `.agents/` or `.claude/` is touched. Every skill file appears in `files` with its `action` (`created`, `updated` or `unchanged`), and a removed file appears with `action: "removed"`, e.g. `{ "path": ".agents/skills/brain-query/SKILL.md", "action": "created" }`.
 
 Idempotent: a second run with the same options changes no bytes.
 
@@ -768,12 +790,13 @@ Idempotent: a second run with the same options changes no bytes.
 { "data": {
     "repo_abs": "/Users/me/code/acme-api",
     "marker": { "path": ".brain", "written": true, "value": { "repo": "acme-api", "project": "prj-9x4t1b7e", "area": "area-2m7c4h8n", "stacks": ["nextjs", "supabase"] } },
-    "files": [ { "path": "AGENTS.md", "action": "created" }, { "path": "CLAUDE.md", "action": "created" } ]
+    "files": [ { "path": "AGENTS.md", "action": "created" }, { "path": "CLAUDE.md", "action": "created" } ],
+    "skills": { "source": "brain", "name": "ultimate-brain", "version": "0.9.0", "integrity": "sha256-…", "names": ["brain-query"], "competing": [] }
 } }
 ```
-`action` is one of `created`, `updated`, `unchanged`, and `removed` for a stale skill file. Paths here are relative to the repo.
+`skills.source` is `brain` or `package`; `competing` (skills-delivery §5.2) covers duplicates in the linked repo's two trees, global copies of the linked skills, and the retired plugin in `~/.claude/settings.json` and the brain's `.claude/settings.json`, with warning `SKILLS_COMPETING` when non-empty. `action` is one of `created`, `updated`, `unchanged`, and `removed` for a stale skill file. Paths here are relative to the repo.
 
-Errors: `UNKNOWN_ID`, `OUTSIDE_ROOT`, `USAGE` (path missing or not a directory).
+Errors: `UNKNOWN_ID`, `OUTSIDE_ROOT`, `USAGE` (path missing or not a directory), `INPUT_INVALID` (a malformed `.brain`), the pin guard's codes (§5.28), `SKILLS_SNAPSHOT_MISSING`, `SKILLS_SNAPSHOT_INVALID`.
 
 ### 5.13 `brain query --candidates`
 
@@ -1258,32 +1281,41 @@ Brings the product-owned files of an existing brain up to the installed version 
 **The installed package** (also used by lint rule `product-file`, §5.10) is the one the running CLI belongs to, never one found on `PATH` or in the brain:
 - **Root:** start from the real path (symbolic links resolved) of the running entry module and walk up to the first folder holding a `package.json` whose `name` is `ultimate-brain`. This is the same for a global install, `npx`, the compiled `dist/` entry and a source checkout.
 - **Version:** that `package.json`'s `version`.
-- **Shipped files:** the skills are the folders in `<root>/.agents/skills/` that hold a `SKILL.md` (`README.md` at its top level is not a skill); the rules block comes from `<root>/templates/brain/AGENTS.md`.
-- **Not found** (no such `package.json`, or the skills folder or template missing or unreadable) is a broken install:
+- **Shipped files:** the skills are the **package snapshot** at `<root>/.agents/skills/` (skills-delivery §2, §9): the skills and files its `snapshot.json` lists; the rules block comes from `<root>/templates/brain/AGENTS.md`.
+- **Not found** (no such `package.json`, or the template missing or unreadable) is a broken install:
   - `brain upgrade` fails with `INTERNAL` (exit 10) before any write.
   - `brain lint` completes: it reports exactly one `product-file` error (path `AGENTS.md`, message `installed package not found: <reason>`), checks nothing else for that rule, runs every other rule as usual, and exits 1.
+- **An invalid package snapshot** (skills-delivery §2.3) makes `upgrade`, `init` and `link` on an unpinned brain refuse `SKILLS_SNAPSHOT_INVALID`; for `lint` on an unpinned brain it is the broken-install case above, with the §2.3 reason.
 - **Source checkout:** the root contains `src/cli.ts`.
 
 **Before anything is written:**
 - **Published package only.** If the installed package is a source checkout (including `npm link`), refuse with `UNRELEASED_BUILD`. Prereleases (`0.3.0-rc.1`) are published packages and are allowed.
 - **Clean brain.** If the brain is a Git repository and `git status --porcelain` prints anything, refuse with `BRAIN_DIRTY`. `--dry-run` skips this check and reports `dirty: true` instead.
 - The safety checks below.
+- **The skill pin** (0059, skills-delivery §6.3), after the checks above and in this order; `--dry-run` refuses the same way. Upgrade is exempt from the pin guard (§5.28): it is the repair path, whatever the brain's state.
+  1. The package snapshot must be compatible with the running CLI, else `SKILLS_SNAPSHOT_INVALID`.
+  2. An `invalid` lock will be replaced, with warning `SKILLS_LOCK_REPLACED`; `from` is then `null`, as for `unpinned`. Otherwise `from` is the lock's `{ name, version }`.
+  3. Same snapshot `name` and the lock's version of higher precedence → `SKILLS_DOWNGRADE`.
+  4. Same `name` and `version` but manifests not deep-equal → `SKILLS_SNAPSHOT_INVALID`, reason `same version, different content`.
+  5. Another `name` (`ultimate-brain` → `ultimate-brain-skills`) is an ordinary upgrade.
 
 **Writes:**
 1. **`AGENTS.md` rules block.** Replace everything from the line `<!-- ultimate-brain:rules:start … -->` through `<!-- ultimate-brain:rules:end -->` with the same block from `templates/brain/AGENTS.md`. Text outside the markers is kept byte for byte.
    - `AGENTS.md` missing → written from the template (`created`).
    - Markers missing, out of order or duplicated → the file is left alone (`skipped`) with warning `AGENTS_BLOCK_NOT_FOUND`; the user restores the markers or merges by hand.
 2. **`CLAUDE.md`:** written as `@AGENTS.md` only if missing. One that exists in any form (a file, or a link to `AGENTS.md`) is left alone.
-3. **Skills (0029, 0038).** For each skill the package ships in `.agents/skills/<name>/`, in **both** `.agents/skills/<name>/` (Codex) and `.claude/skills/<name>/` (Claude Code):
-   - write every shipped file whose content differs (`created` or `updated`);
-   - remove files inside that skill's folder that the package no longer ships (`removed`).
+3. **Skills (0029, 0038, 0059).** For each skill of the package snapshot, in **both** `.agents/skills/<name>/` (Codex) and `.claude/skills/<name>/` (Claude Code):
+   - write every listed file whose content differs (`created` or `updated`);
+   - remove every other file inside that skill's folder (`removed`), then its emptied folders.
 
-   Folders in `.agents/skills/` or `.claude/skills/` that the package does not ship are the user's own and are left alone.
+   **Retired skills:** a skill the old, valid lock names and the new snapshot doesn't has its folder removed from both trees: every file in it is `removed`, the user's included, and the emptied folder goes too. Without a valid old lock, folders the snapshot doesn't name are the user's own and are left alone.
+
+   3a. **`skills.lock.json`** (skills-delivery §3) is written when the lock is `unpinned` or `invalid`, or names another snapshot `name` or `version`; it gets `installed_by` = the running version and is listed in `files` (`created`, or `updated`). Otherwise it stays as it is, keeping its `installed_by`.
 4. **Retired plugin (0038).** If `.claude/settings.json` exists, remove the key `ultimate-brain@ultimate-brain` from `enabledPlugins` and the key `ultimate-brain` from `extraKnownMarketplaces`; an object left empty is removed. Other keys are kept in order, and the file is written as JSON with 2-space indent and a trailing newline (`updated`). A file left as `{}` is deleted (`removed`). A file that is not valid JSON is left alone (`skipped`) with warning `SETTINGS_UNPARSEABLE`. Nothing to remove → no change.
 5. **Renamed `brain.json` keys (0037).** If `notion.databases` has `capture_inbox`: when `inbox` is absent or empty, rename the key to `inbox` in place (same position, same value, an empty `inbox` removed); when `inbox` already holds an id, just remove `capture_inbox`. Every other key and value is kept in order, and the file is written as JSON with 2-space indent and a trailing newline (`updated`). A `brain.json` that is not valid JSON is left alone (`skipped`) with warning `BRAIN_JSON_UNPARSEABLE`. No `capture_inbox` → no change. The same rule renames `references` to `documents` (0049). Then, if `brain.json` has no `modules` block, it is added after `settings` (or after `budgets` when there is no `settings`) with every key `true` except Domains, so a brain made before 0.6.0 keeps its earlier modules on (schema §12, 0048).
 6. Log `- <timestamp> upgrade - "<package version>" files=<n>` when anything changed. `--dry-run` writes and logs nothing and reports the same `files`.
-7. **Lint** the brain (§5.10) and report the counts in `lint`. Lint findings never stop the upgrade: it only wrote product-owned files. With `--dry-run`, lint reads the **planned** tree: every `created`, `updated` or `removed` file as the upgrade would leave it, everything else (including `skipped` files) as it is on disk. So a dry run reports what would remain after the upgrade: `product-file` is silent for drift the upgrade repairs, and still reports an `AGENTS.md` left `skipped` for missing markers.
-8. **Commit and push**, when anything changed and the brain is a Git repository: stage exactly the paths in `files` whose `action` is `created`, `updated` or `removed`, plus the log file step 6 appended to (`log/<YYYY-MM>.md`). Never stage a `skipped` path or anything else in the working tree. Commit `upgrade: ultimate brain <version>`, then `git push` if the current branch has an upstream. No upstream → warning `PUSH_SKIPPED`. A push that fails → warning `PUSH_FAILED` with Git's message; the commit stays, and the exit code is still 0. A failed commit (no identity) → warning `GIT_COMMIT_SKIPPED`, files kept. Not a Git repository → no commit, no warning.
+7. **Lint** the brain (§5.10) and report the counts in `lint`; it reads the new lock. Lint findings never stop the upgrade: it only wrote product-owned files. With `--dry-run`, lint reads the **planned** tree: every `created`, `updated` or `removed` file as the upgrade would leave it, everything else (including `skipped` files) as it is on disk. So a dry run reports what would remain after the upgrade: `product-file` is silent for drift the upgrade repairs, and still reports an `AGENTS.md` left `skipped` for missing markers.
+8. **Commit and push**, when anything changed and the brain is a Git repository: stage exactly the paths in `files` whose `action` is `created`, `updated` or `removed`, plus the log file step 6 appended to (`log/<YYYY-MM>.md`). Never stage a `skipped` path or anything else in the working tree. Commit `upgrade: ultimate brain <version>, skills <snapshot name> <snapshot version>`, then `git push` if the current branch has an upstream. No upstream → warning `PUSH_SKIPPED`. A push that fails → warning `PUSH_FAILED` with Git's message; the commit stays, and the exit code is still 0. A failed commit (no identity) → warning `GIT_COMMIT_SKIPPED`, files kept. Not a Git repository → no commit, no warning.
 
 The skill a linked repo carries (`brain-query`, §5.12) is refreshed by running `brain link` there again.
 
@@ -1301,17 +1333,18 @@ brain upgrade --json
       { "path": "AGENTS.md", "action": "updated" }
     ],
     "unchanged": 14,
+    "skills": { "from": { "name": "ultimate-brain", "version": "0.2.2" }, "to": { "name": "ultimate-brain", "version": "0.2.3" }, "retired": [], "previous_cli": "0.2.2", "competing": [] },
     "lint": { "errors": 0, "warnings": 2 },
     "commit": "2c2d653",
     "pushed": true
   } }
 ```
 
-`files` lists only the files created, updated, removed or skipped, sorted by path; `unchanged` counts the rest. `commit` is the short hash, or `null` when nothing was committed; `pushed` is `false` unless a push succeeded. `--dry-run` adds `dirty` and reports `commit: null`, `pushed: false`.
+`files` lists only the files created, updated, removed or skipped, sorted by path; `unchanged` counts the rest. `skills` (skills-delivery §6.3): `to` is the package snapshot; `retired` the retired skill names, sorted; `previous_cli` the old lock's `installed_by` when step 3a wrote over a valid lock, else `null`; `competing` per skills-delivery §5.2 for the package snapshot's skills, with warning `SKILLS_COMPETING` when non-empty (never a refusal). An immediate second upgrade with the same CLI reports `files: []`. `commit` is the short hash, or `null` when nothing was committed; `pushed` is `false` unless a push succeeded. `--dry-run` adds `dirty` and reports `commit: null`, `pushed: false`.
 
-**Safety:** all checks run before the first write. `AGENTS.md`, `.agents`, `.agents/skills`, `.claude`, `.claude/skills`, `.claude/settings.json`, a shipped skill's folder, or any file in it that is a symbolic link, or a file where a folder belongs → `OUTSIDE_ROOT`, and nothing is written or removed. `brain link` checks both `brain-query` folders the same way (§5.12).
+**Safety:** all checks run before the first write. `AGENTS.md`, `skills.lock.json`, `.agents`, `.agents/skills`, `.claude`, `.claude/skills`, `.claude/settings.json`, a snapshot or retired skill's folder, or any file in it that is a symbolic link, or a file where a folder belongs → `OUTSIDE_ROOT`, and nothing is written or removed. `brain link` checks its skill folders the same way (§5.12). If a write fails part way, the files already replaced or removed are restored and the created ones deleted (§3.6), the lock included, so the last working pin stays. Undoing an upgrade is a `git revert` of its commit plus the previous CLI (`previous_cli`; docs/releasing.md, skills-delivery §8).
 
-Errors: `UNRELEASED_BUILD`, `BRAIN_DIRTY`, `OUTSIDE_ROOT`, and the brain resolution errors (§4).
+Errors: `UNRELEASED_BUILD`, `BRAIN_DIRTY`, `OUTSIDE_ROOT`, `SKILLS_SNAPSHOT_INVALID`, `SKILLS_DOWNGRADE`, and the brain resolution errors (§4).
 
 ### 5.16 `brain repo` (linked repos, 0042)
 
@@ -1654,7 +1687,7 @@ Every brain pins the operational skills it uses in `skills.lock.json` at its roo
 | `SKILLS_LOCK_REPLACED` | `upgrade` | `skills.lock.json was invalid ({reason}) and was replaced.` |
 
 **`details`** of each error, with absent values left out:
-- `SKILLS_INCOMPATIBLE`, `SKILLS_PIN_INVALID`, `SKILLS_SNAPSHOT_MISSING`: `{ "state", "name", "version", "cli", "running", "installed_by", "reason", "skill", "path" }`.
+- `SKILLS_INCOMPATIBLE`, `SKILLS_PIN_INVALID`, `SKILLS_SNAPSHOT_MISSING`: `{ "state", "name", "version", "cli", "running", "installed_by", "reason", "skill", "path" }`. `name`, `version`, `cli` and `installed_by` come from a valid lock; `reason` is the invalid reason or the first missing `{tree}/{skill}`; `skill` and `path` (`{tree}/{skill}/SKILL.md`) are set for the guard's `missing`; `link` sets `path` to the file that differs and no `skill`.
 - `SKILLS_SNAPSHOT_INVALID`: `{ "reason", "running" }`.
 - `SKILLS_DOWNGRADE`: `{ "name", "pinned", "shipped", "installed_by" }`.
 
@@ -1691,6 +1724,8 @@ Every brain pins the operational skills it uses in `skills.lock.json` at its roo
   - An unlisted folder is one entry; its contents are not listed.
   - It is `[]` for `invalid`.
 - **`competing`** is as skills-delivery §5.3 defines it.
+- **The schema reason** `schema: <first schema error>` gives that error as `<JSON Pointer> <message>` (`/` for the whole file), the shape `INPUT_INVALID` details use (§3.5).
+- **`HOME`** for the global checks is the command's environment variable; tests set it to a temporary folder (skills-delivery §5.2).
 - **Skills act on the state.** Skills call `brain status` first. When `state` is `invalid`, `incompatible` or `missing`, the skill stops and shows the message the guard would give.
 
 ### 5.29 `brain repo` link kits, rollup and unlink (0066, linked-repos.md)

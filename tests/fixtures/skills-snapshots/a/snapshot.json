@@ -1,0 +1,62 @@
+{
+  "format": 1,
+  "name": "ultimate-brain-skills",
+  "version": "1.0.0",
+  "cli": ">=0.9.0 <0.10.0",
+  "source": {
+    "repository": "https://github.com/example/ultimate-brain-skills",
+    "commit": "4444444444444444444444444444444444444444"
+  },
+  "upstream": {
+    "repository": "https://github.com/example/upstream-skills",
+    "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "integrity": "sha256-bd6cf35329b02af560aaa6c93f52cb6dfb84b21c8ba7120156adf951231e8488",
+  "skills": [
+    {
+      "name": "brain-apply",
+      "targets": [
+        "brain"
+      ],
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "c531f877e6fd6149f6956a30bf67ae2f123a09c89ef7769768ad080c2597dab1",
+          "bytes": 119
+        }
+      ]
+    },
+    {
+      "name": "brain-old",
+      "targets": [
+        "brain"
+      ],
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "9eaa7545cbda521093adf1f8f2f112c92453bedbe737d8f2c0b13c0413c33cb0",
+          "bytes": 114
+        }
+      ]
+    },
+    {
+      "name": "brain-query",
+      "targets": [
+        "brain",
+        "linked_repo"
+      ],
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "7b34c00fd0b9aef6713bb3b5465e1948990636ab31046deffe49f66817b04e8b",
+          "bytes": 158
+        },
+        {
+          "path": "references/report.md",
+          "sha256": "60727256721645138dca90a99a4603d5dc1073e0e3669a69c5d27d543f1c7e2f",
+          "bytes": 31
+        }
+      ]
+    }
+  ]
+}
