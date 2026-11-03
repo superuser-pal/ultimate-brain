@@ -9,7 +9,8 @@ import { rangesProblem, splitParts } from "./parts.ts";
 import { sourceFolder } from "./paths.ts";
 import { extractPassages, PASSAGE_REF, passageHash } from "./selection.ts";
 import { lineageOf } from "./eligibility.ts";
-import { contextFor, eligibleNotes, indexNotes, loadSuppressions } from "./suppressions.ts";
+import { reportLinks } from "./report-body.ts";
+import { contextFor, eligibleNotes, indexNotes, loadSuppressions, restrictionOf } from "./suppressions.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
 
@@ -94,6 +95,7 @@ export function lintBrain(input: LintInput): Issue[] {
   }
 
   let lineageContext: ReturnType<typeof contextFor> | undefined;
+  let reportContext: ReturnType<typeof contextFor> | undefined;
   let viewNotes: Note[] | undefined; // the notes a view may render once suppressions apply (capture-and-review §5.1)
   const byId = new Map<string, Note>();
   const pathsById = new Map<string, string[]>();
@@ -203,6 +205,18 @@ export function lintBrain(input: LintInput): Issue[] {
           warn("view-stale", 1, "generated block is out of date; run brain views");
         }
       }
+    }
+    if (note.type === "view" && a.view_kind === "report") {
+      // A line that links a note a suppression restricts rests on excluded evidence: flagged, never edited by the brain (capture-and-review §5.1).
+      reportContext ??= contextFor(input.notes, loadSuppressions(input.root));
+      const bodyStart = note.raw.split(/\r?\n/).length - note.body.split(/\r?\n/).length;
+      note.body.split(/\r?\n/).forEach((text, index) => {
+        for (const id of reportLinks({ notes: input.notes }, text, true).linked) {
+          const target = byId.get(id);
+          const restriction = target === undefined ? undefined : restrictionOf(target, reportContext!);
+          if (restriction !== undefined && (restriction.whole || restriction.lines.size > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0)) warn("report-source-excluded", bodyStart + index + 1, `(source excluded): this line links ${id}, which rests on content you excluded; the next refresh leaves it out`);
+        }
+      });
     }
     const facts = record(a.facts);
     for (const [key, value] of Object.entries(facts)) {
