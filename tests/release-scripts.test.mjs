@@ -316,6 +316,70 @@ test("a failed publish keeps the commit and tag local and says how to finish", (
   assert.doesNotMatch(command(root, ["ls-remote", "--tags", "origin"]), /v1\.2\.3/);
 });
 
+/** A real repository for release 1.2.3 with a bare origin; `npm` is the fake npm body. Returns the PATH and the origin path. */
+function releaseRepository(t, root, npm) {
+  writeFileSync(join(root, "CHANGELOG.md"), "## 1.2.3 — unreleased\n");
+  writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done` (#1)\n**Release:** 1.2.3\n**Changelog:** One\n");
+  const path = fakeCommands(root, {
+    gh: `case "$1" in
+      "repo view") printf owner/repo ;;
+      api) printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
+    esac`,
+    npm,
+  });
+  command(root, ["init", "-b", "main"]);
+  command(root, ["config", "user.email", "tests@example.test"]);
+  command(root, ["config", "user.name", "Tests"]);
+  command(root, ["add", "."]);
+  command(root, ["commit", "-m", "fixture"]);
+  const origin = `${root}-origin.git`;
+  t.after(() => rmSync(origin, { recursive: true, force: true }));
+  execFileSync("git", ["init", "--bare", origin]);
+  command(root, ["remote", "add", "origin", origin]);
+  command(root, ["push", "-u", "origin", "main"]);
+  return { path, origin };
+}
+
+test("release refuses a version already tagged here, on origin or on npm, before any change", (t) => {
+  for (const [setup, message] of [
+    [(root) => command(root, ["tag", "v1.2.3"]), /tag v1\.2\.3 already exists here/],
+    [(root) => { command(root, ["tag", "v1.2.3"]); command(root, ["push", "-q", "origin", "v1.2.3"]); command(root, ["tag", "-d", "v1.2.3"]); }, /tag v1\.2\.3 already exists on origin/],
+    [() => {}, /fixture@1\.2\.3 is already on npm/],
+  ]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const onNpm = message.source.includes("npm");
+    const { path } = releaseRepository(t, root, `case "$1" in whoami) printf tester ;; owner) printf "tester <t@example.test>\\n" ;; view) ${onNpm ? "printf 1.2.3" : "exit 1"} ;; esac`);
+    setup(root);
+    const result = run("release.mjs", ["1.2.3"], { root, env: { PATH: path } });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, message);
+    assert.equal(command(root, ["log", "-1", "--format=%s"]).trim(), "fixture");
+    assert.equal(readFileSync(join(root, "package.json"), "utf8"), '{"name":"fixture","version":"0.0.0"}\n');
+  }
+});
+
+test("a push that fails after the publish says the package is out and how to push", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const { path, origin } = releaseRepository(t, root, npmOwner);
+  writeFileSync(join(origin, "hooks", "pre-receive"), "#!/bin/sh\nexit 1\n");
+  chmodSync(join(origin, "hooks", "pre-receive"), 0o755);
+  const result = run("release.mjs", ["1.2.3"], { root, env: { PATH: path } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /1\.2\.3 is published on npm, but the push failed\. .*UB_RELEASE=1 git push --follow-tags/);
+  assert.doesNotMatch(result.stderr, /\n\s+at /);
+});
+
+test("release retries a CI read that failed once", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const count = join(root, "ci-count");
+  const ci = `n=$(cat '${count}' 2>/dev/null || echo 0); echo $((n + 1)) > '${count}'; if [ "$n" -lt 1 ]; then echo "HTTP 502" >&2; exit 1; else printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n'; fi`;
+  const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: releaseDryRun(root, { ci }), UB_CI_POLL_MS: "1" } });
+  assert.equal(result.status, 0, result.stderr);
+});
+
 test("merge dry-run requires a green, mergeable PR and does not merge it", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));

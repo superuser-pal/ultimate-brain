@@ -31,7 +31,7 @@ else {
     if (rowChangelog && task.changelog === undefined) failures.push(`${task.id} has no **Changelog:** line`);
     if (rowChangelog && donePrNumbers(task.suffix) === undefined) failures.push(`${task.id} has an invalid done suffix`);
   }
-  failures.push(...npmProblems());
+  failures.push(...npmProblems(), ...existingRelease(version));
   const repo = tryCommand("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
   const head = command("git", ["rev-parse", "HEAD"]);
   const ciState = () => {
@@ -39,8 +39,9 @@ else {
     return runs.ok ? ciWorkflowState(runs.stdout) : "unreadable";
   };
   let ci = ciState();
-  // Waiting only makes sense when nothing else already refuses the release.
-  for (let poll = 0; poll < CI_POLLS && failures.length === 0 && (ci === "pending" || ci === "missing"); poll++) {
+  // Waiting only makes sense when nothing else already refuses the release. A failed read is retried like a pending run (a transient gh error).
+  const waiting = () => ci === "pending" || ci === "missing" || (ci === "unreadable" && repo.ok);
+  for (let poll = 0; poll < CI_POLLS && failures.length === 0 && waiting(); poll++) {
     if (poll === 0) process.stderr.write("Waiting for CI on HEAD…\n");
     sleep(CI_POLL_MS);
     ci = ciState();
@@ -62,20 +63,35 @@ else {
       ? writeReleaseSection(readFileSync(resolve(ROOT, "CHANGELOG.md"), "utf8"), version, releaseSection(version, tasks, date))
       : readFileSync(resolve(ROOT, "CHANGELOG.md"), "utf8").replace(`## ${version} — unreleased`, `## ${version} — ${date}`);
     writeFileSync(resolve(ROOT, "CHANGELOG.md"), dated);
-    command("git", ["add", "package.json", "package-lock.json", "CHANGELOG.md"]);
-    command("git", ["commit", "-m", version]);
-    command("git", ["tag", "-a", `v${version}`, "-m", version]);
     const publishArgs = ["publish", ...(isPrerelease(version) ? ["--tag", "next"] : [])];
-    const published = tryCommand("npm", publishArgs, { stdio: "inherit" });
-    if (!published.ok) {
+    const staged = tryCommand("git", ["add", "package.json", "package-lock.json", "CHANGELOG.md"]);
+    const committed = staged.ok ? tryCommand("git", ["commit", "-m", version]) : staged;
+    const tagged = committed.ok ? tryCommand("git", ["tag", "-a", `v${version}`, "-m", version]) : committed;
+    if (!tagged.ok) {
+      fail(`Release stopped before publishing: ${tagged.message.split("\n")[0]}. Nothing was published or pushed.\n`
+        + `The checkout holds only this release's edits${committed.ok ? ` and the commit ${version}` : ""}; undo with: git reset --hard origin/main`);
+    }
+    else if (!tryCommand("npm", publishArgs, { stdio: "inherit" }).ok) {
       fail(`npm ${publishArgs.join(" ")} failed. The commit ${version} and the tag v${version} exist only here; don't run release.mjs again.\n`
         + `Fix the cause (npm whoami, npm login), then from this checkout run: npm ${publishArgs.join(" ")} && UB_RELEASE=1 git push --follow-tags`);
     }
-    else command("git", ["push", "--follow-tags"], { env: { ...process.env, UB_RELEASE: "1" }, stdio: "inherit" });
+    else if (!tryCommand("git", ["push", "--follow-tags"], { env: { ...process.env, UB_RELEASE: "1" }, stdio: "inherit" }).ok) {
+      fail(`${version} is published on npm, but the push failed. Fix the cause, then from this checkout run: UB_RELEASE=1 git push --follow-tags`);
+    }
   }
 }
 
 /** npm must be logged in as an owner of the package, so a publish can't fail after the commit and tag (0.8.0 did: E404 from another account). */
+/** A version that is already tagged here or on origin, or already on npm, can't be released again: the commit would be made and the tag would fail. */
+function existingRelease(version) {
+  const problems = [];
+  if (tryCommand("git", ["tag", "-l", `v${version}`]).stdout) problems.push(`tag v${version} already exists here`);
+  if (tryCommand("git", ["ls-remote", "--tags", "origin", `refs/tags/v${version}`]).stdout) problems.push(`tag v${version} already exists on origin`);
+  const name = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")).name;
+  if (tryCommand("npm", ["view", `${name}@${version}`, "version"]).stdout) problems.push(`${name}@${version} is already on npm`);
+  return problems;
+}
+
 function npmProblems() {
   const name = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")).name;
   const user = tryCommand("npm", ["whoami"]);
