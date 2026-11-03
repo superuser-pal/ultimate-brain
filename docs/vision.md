@@ -57,11 +57,11 @@ The "wow" is that it maintains and synthesizes itself. Tasks and project managem
 
 **Success criterion:** for 2 weeks, every Notion meeting note is ingested with one command; Claude or Codex in any repo answers "what did we decide with client X and why?" with a citation to the meeting; Notion shows a project page and decision log the user trusts.
 
-## Roadmap to launch (decision 0061)
+## Roadmap to launch (decisions 0061, 0064)
 
-After 0.8.0: **0.9.0** separates shared skill source and adds explicitly connected workflows ([0059](../decisions/0059-shared-skills-and-connected-workflows.md)); **0.10.0** adds reflection; **0.11.0** integrates Hermes as a native operator/coordinator with scoped learning ([0060](../decisions/0060-hermes-operator-and-learning.md)); **0.12.0** adds cross-agent memory continuity and reliable cited retrieval; **0.13.0** adds weekly knowledge payback and targeted correction propagation; **0.14.0** makes onboarding and adoption repeatable.
+After 0.8.0: **0.9.0** separates shared skill source and adds explicitly connected workflows ([0059](../decisions/0059-shared-skills-and-connected-workflows.md)); linked repos with a link kit join it; **0.10.0** adds a brain assistant that reviews your Areas, Domains, Projects and Tasks and changes them through Review or your yes ([0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md)); **0.11.0** adds reflection; **0.12.0** adds cross-agent memory continuity and reliable cited retrieval; **0.13.0** adds weekly knowledge payback, targeted correction propagation and the assistant's weekly review; **0.14.0** makes onboarding and adoption repeatable.
 
-**Feature work ends at 0.14.0.** Productisation, translation and the acquisition/onboarding funnel then lead to **1.0.0**. Release candidates, or an explicitly scoped preparation version if needed, address launch readiness. Issues and dogfood still produce fixes; they do not silently expand feature scope. Each human-led development session for 0.9.0 onward starts with a grilling scope review and confirmed shared understanding. See [0061](../decisions/0061-roadmap-and-launch-boundary.md) and [build/TASKS.md](../build/TASKS.md).
+**Feature work ends at 0.14.0.** Productisation, translation and the acquisition/onboarding funnel then lead to **1.0.0**. Release candidates, or an explicitly scoped preparation version if needed, address launch readiness. Issues and dogfood still produce fixes; they do not silently expand feature scope. Each human-led development session for 0.9.0 onward starts with a grilling scope review and confirmed shared understanding. Hermes as a native operator ([0060](../decisions/0060-hermes-operator-and-learning.md)) comes after 1.0. See [0061](../decisions/0061-roadmap-and-launch-boundary.md), [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md) and [build/TASKS.md](../build/TASKS.md).
 
 ## Post-1.0 (deferred, not rejected)
 
