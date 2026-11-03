@@ -1,6 +1,6 @@
 # 0066 — Linked repos and the link kit
 
-**Status:** Proposed
+**Status:** Accepted (by the user, 2026-11-03)
 **Date:** 2026-11-03
 **Release:** 0.9.0
 **Amends:** 0042 (the brain writes one file in a linked repo: its link kit)
@@ -23,7 +23,7 @@
     - **tracked in the repo:** the tasks stay in the repo, and the brain shows a read-only rollup on the Project or Area, which the 0.10.0 brain assistant reviews;
   - **methodology:** a short summary of how work is done in the repo;
   - **placement:** the Area, and optionally the Domain and the Project, that the repo belongs to.
-- **The skill writes the kit once, after the user's yes** to the content it shows. This is the one exception to 0042's rule that the brain never writes to a linked repo. After that, the hub only reads the kit.
+- **The skill writes the kit only after the user's yes** to the exact content it shows: the first write, and each later change. The CLI checks a hash of that content. The kit is the one exception to 0042's rule that the brain never writes to a linked repo; apart from those writes, the hub only reads it. The hub writes no kit in the product repo, whose contents are public.
 
 ### The skill
 - **A new skill links a repo**, shows, changes and unlinks a link, and runs a health check on it. Unlinking keeps the knowledge already ingested.
@@ -31,8 +31,8 @@
 - **Linking offers `brain link` the other way**, so that the repo can read the brain.
 
 ### Where things live
-- **The kit's schema is in `spec/`** and **the starter is in `templates/`**, both in this product repo.
-- **The skill is written in the skills fork**, under 0059.
+- **The kit's schema is in `spec/`**, and **the starter is in `templates/repo/generic/`**, both in this product repo.
+- **The skill is `brain-repos`**, one of CC-104's skills. It is written in `skills/` until CC-105 moves skill authorship to the skills fork (0059).
 
 ## Consequences
 - spec/linked-repos.md and spec/cli.md §5.29 define the kit, its JSON schema, the commands, the read-only rollup, unlinking and the health check. Only the `repos` lines of spec/schema.md §12 change.
