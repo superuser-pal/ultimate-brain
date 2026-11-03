@@ -1613,3 +1613,56 @@ brain proposal revise --input <file|-> [--dry-run] [--json]
 `{ proposal, item_id, proposed, previous }`. Writes the new draft of an item the user asked to revise. **Request revision is recorded by `sync apply`:** each `review_revisions` entry of the plan with an instruction becomes `revisions: [{ item_id, instruction, requested_at, status: requested }]` on the proposal (`data.revision_results`: `recorded`, or `skipped` with `UNKNOWN_ITEM`, `NO_INSTRUCTION`, `ALREADY_DECIDED`, `ALREADY_REQUESTED`, `REVISION_NOT_SUPPORTED`); the item stays pending and the write is part of the journaled operation (§5.14.3). An **unattended run never reads revision text** (0051): the skill does not put `review_revisions` into the plan it applies. `proposal revise` then replaces the item's stored proposal with `proposed` (a draft's body, a link's value, an `update_fact` value, or the text of an `update_body` / `add_to_note`), validated as for an edited accept, sets the entry `status: drafted` and keeps `previous` (the user's earlier wording from the Proposed toggle). It refuses an item with no requested revision, a decided item and a cleanup item (`INPUT_INVALID`). It accepts nothing and never changes a lifecycle.
 
 **Re-rendering a consumed submission (capture-and-review §7.4 b).** `sync render` of a published Review row of the new layout still sends no body; besides `sections["Review summary"]` it returns `item_updates: [{ item_id, reason, section }]` for the pending items whose section the user must see changed: `revision_drafted` (the section holds the new *Proposed* and a toggle **Previous proposal**, which is never read, and `Decision: Pending`) and `base_changed` (*Current* shows what the target holds now; for an `update_fact` that is the fact's current value). An applied or closed item is never listed. `review_published_after` is the `published` value to record once **every** listed section was written (the full `@review` items map with the new hashes); the skill writes each section only if it still equals the `submitted_hash` it read, otherwise it shows a "Brain update" toggle and records nothing for that item.
+
+### 5.28 Pinned skills (0059, [skills-delivery.md](skills-delivery.md))
+
+Every brain pins the operational skills it uses in `skills.lock.json` at its root (skills-delivery §3). CC-100 builds this section; the formats, the command changes to `init`, `link`, `upgrade` and `lint`, rollback and the transition are in skills-delivery.md. Sections §3.5, §5.1, §5.2, §5.10, §5.12 and §5.15 are rewritten to match by CC-100, in the same PR as the code.
+
+**Pin guard.** Every command that resolves a brain (§4) reads the pin's state (skills-delivery §3) after resolving the brain and before reading input or writing anything, except `status`, `lint`, `upgrade` and `recover`, which always run so the user can see and repair the pin. `--dry-run` and read-only commands (`query`, `log`, `proposal list`, `repo changes`, …) are guarded too: an incompatible pin means the skill calling them may expect another contract.
+
+| State | Guarded command |
+|---|---|
+| `unpinned` | runs as before 0.9.0, with no warning (skills-delivery §9) |
+| `invalid` | refuses `SKILLS_PIN_INVALID` |
+| `incompatible` | refuses `SKILLS_INCOMPATIBLE` |
+| `missing` | refuses `SKILLS_SNAPSHOT_MISSING` |
+| `drift`, `pinned` | runs; drift is a lint error (`product-file`), never a stop |
+
+The guard reads only `skills.lock.json` and stats each pinned `SKILL.md` in both trees; it never hashes files. `brain init` has no brain to guard and checks the package snapshot instead (skills-delivery §6.1).
+
+**Messages** (normative wording; `{…}` filled in; one line, no paths but `skills.lock.json`):
+- `SKILLS_INCOMPATIBLE`, CLI newer than the range: `This brain's skills ({name} {version}) need ultimate-brain {cli}; this CLI is {running}. Run brain upgrade to install the skills this CLI ships, or keep these skills with npm install -g ultimate-brain@{installed_by}.`
+- `SKILLS_INCOMPATIBLE`, CLI older than the range: `This brain's skills ({name} {version}) need ultimate-brain {cli}; this CLI is {running}. Install the version that pinned them: npm install -g ultimate-brain@{installed_by}.`
+- `SKILLS_PIN_INVALID`: `skills.lock.json is unreadable or invalid ({reason}). Run brain upgrade to rewrite it.`
+- `SKILLS_SNAPSHOT_MISSING`: `Pinned skill {skill} is missing from {.agents/skills | .claude/skills} ({name} {version}). Run brain upgrade to restore it.` (for `link`'s drift: `… differs from the pin …`)
+- `SKILLS_SNAPSHOT_INVALID`: `The skills shipped with ultimate-brain {running} are unusable ({reason}). Reinstall: npm install -g ultimate-brain@{running}.`
+- `SKILLS_DOWNGRADE`: `This brain pins {name} {pinned version}; this CLI ships the older {package version}. Install ultimate-brain@{installed_by}, or roll back as docs/releasing.md says.`
+
+`details` carries the machine-readable fields: `{ "state", "name", "version", "cli", "running", "installed_by" }` (absent ones left out).
+
+**Error codes** (added to §3.5 by CC-100):
+
+| Code | Exit | When |
+|---|---|---|
+| `SKILLS_PIN_INVALID` | 3 | `skills.lock.json` is not JSON or fails its schema |
+| `SKILLS_INCOMPATIBLE` | 3 | the running CLI version doesn't satisfy the pin's `cli` range |
+| `SKILLS_SNAPSHOT_MISSING` | 3 | a pinned `SKILL.md` is missing from a tree; for `link`, a pinned file it copies is missing or differs |
+| `SKILLS_SNAPSHOT_INVALID` | 3 | the package snapshot is invalid or excludes the running CLI (`init`, `upgrade`, `link` on an unpinned brain); or a released snapshot changed content under the same version (`upgrade`) |
+| `SKILLS_DOWNGRADE` | 5 | `upgrade` would lower the pin's version under the same snapshot name |
+
+Warnings: `SKILLS_COMPETING` (`init`, `upgrade`, `link`: a competing copy exists, skills-delivery §5), `SKILLS_UNPINNED` (`link` on an unpinned brain), `SKILLS_LOCK_REPLACED` (`upgrade` replaced an invalid lock).
+
+**`brain status` gains `data.skills`** (always present):
+
+```json
+"skills": {
+  "state": "pinned",
+  "name": "ultimate-brain-skills", "version": "1.2.0", "cli": ">=0.9.0 <0.10.0",
+  "integrity": "sha256-…", "installed_by": "0.9.0", "running": "0.9.1",
+  "package": { "name": "ultimate-brain-skills", "version": "1.3.0", "compatible": true },
+  "drift": [],
+  "competing": [ { "kind": "global", "name": "brain-query", "path": "~/.claude/skills/brain-query" } ]
+}
+```
+
+`state` is one of skills-delivery §3's states. `unpinned` and `invalid` leave `name`, `version`, `cli`, `integrity` and `installed_by` `null`. `package` describes the package snapshot (`null` when it is unreadable; `compatible` per skills-delivery §2). `drift` lists the paths that would be `product-file` errors for skills (sorted). `competing` as skills-delivery §5.3. Skills call `brain status` first; when `state` is `invalid`, `incompatible` or `missing`, the skill stops and shows the message the guard would give.

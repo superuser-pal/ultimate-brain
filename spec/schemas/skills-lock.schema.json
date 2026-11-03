@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ultimate-brain.dev/schemas/v1/skills-lock.schema.json",
+  "title": "skills.lock.json: a brain's skill pin (v1)",
+  "description": "Written by brain init and brain upgrade at the brain root; product-owned. See spec/skills-delivery.md §3 and decision 0059.",
+  "type": "object",
+  "required": ["format", "installed_by", "snapshot"],
+  "additionalProperties": false,
+  "properties": {
+    "format": { "const": 1 },
+    "installed_by": { "$ref": "skills-snapshot.schema.json#/$defs/semver" },
+    "snapshot": { "$ref": "skills-snapshot.schema.json" }
+  }
+}

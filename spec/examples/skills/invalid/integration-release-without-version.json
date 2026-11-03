@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "tested": {
+    "name": "ultimate-brain-skills",
+    "version": "1.2.0",
+    "commit": "4b1e000000000000000000000000000000000000",
+    "integrity": "sha256-77c83c8517d9fcd0740e043b0a00a0bb8bbd7a79ec1d317e3f2d06056f08a858"
+  },
+  "seen": {
+    "head": "9c2d000000000000000000000000000000000000",
+    "release": "1.3.0"
+  },
+  "assessed": {
+    "commit": "4b1e000000000000000000000000000000000000",
+    "release": "1.2.0",
+    "at": "2026-11-04T06:00:00Z"
+  },
+  "changes": [
+    {
+      "kind": "release",
+      "from": "4b1e000000000000000000000000000000000000",
+      "to": "7f3a000000000000000000000000000000000000",
+      "impact": "coordinated",
+      "classification": "brain-work",
+      "links": [
+        "https://github.com/example/ultimate-brain/issues/12"
+      ]
+    },
+    {
+      "kind": "unreleased",
+      "from": "7f3a000000000000000000000000000000000000",
+      "to": "9c2d000000000000000000000000000000000000",
+      "impact": "compatible",
+      "classification": "unclassified"
+    }
+  ],
+  "last_check": {
+    "at": "2026-11-05T06:00:00Z",
+    "status": "ok"
+  }
+}
