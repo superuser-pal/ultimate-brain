@@ -340,7 +340,10 @@ Phase B (CC-105) is out of this contract's acceptance. It must keep these interf
 
 **What CC-101 delivers:**
 - The public repository on GitHub, created only after the user says yes (0059; grill 2026-11-03). It is a fork of the upstream repository with its history.
-- Its files and workflows (§10.1 to §10.5), merged through PRs.
+- Its files and workflows (§10.1 to §10.5).
+  - **Bootstrap:** one commit, pushed to `main` before branch protection exists, adds every file of §10.1, `brain/` and the workflows. It is the only commit that reaches `main` without a PR, so no impact declaration applies to it.
+  - Then CC-101 applies the protection (§10.3). The push-to-`main` CI must succeed on the bootstrap commit before the first release.
+  - Every later change goes through a PR.
 - Its first snapshot release, `brain-v1.0.0`: `brain/` holds the product's `skills/` as on product `main` when CC-101 runs (the commit is named in the release notes as `Product-skills: <40 hex>`), and `snapshot.config.json` declares `>=0.9.0 <0.10.0`.
 - The fork's tooling is Node (≥ 22.6, the product's floor), with `ajv` as the only dependency.
 
@@ -369,7 +372,7 @@ Phase B (CC-105) is out of this contract's acceptance. It must keep these interf
 - `upstream`: `upstream.json` at that commit;
 - files and `integrity`: per §2.2.
 
-The snapshot also carries `LICENSE` and `NOTICE.md` at the top level. Brains receive only skill folders. An operational skill that contains upstream-derived text therefore carries upstream's licence notice as a file inside its own folder (listed in `files`), so the notice reaches every brain that installs it.
+The snapshot also carries `LICENSE` and `NOTICE.md` at the top level. Brains receive only skill folders. An operational skill that contains upstream-derived text therefore carries upstream's licence file verbatim as `UPSTREAM-LICENSE.md` inside its own folder (listed in `files`, not linked from `SKILL.md`), so the notice reaches every brain that installs it. `brain-v1.0.0` ships no such file: its skills are the product's own writing.
 
 **Reproducible:** building the same commit and version twice yields byte-identical `snapshot.json` (§2 serialisation) and identical files. The tarball doesn't need to be byte-identical.
 
