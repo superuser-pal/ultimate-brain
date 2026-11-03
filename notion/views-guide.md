@@ -250,10 +250,10 @@ A message without the page reference makes Brain Assistant stop and say so. The 
 
 | Database | Heading (in order) | Property group: where · order | Hidden | Backlinks | Why |
 |---|---|---|---|---|---|
-| Areas | Type, At a glance | Panel · To review, Meetings to review, Due, Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Decisions, Questions, Concepts, Documents, Inbox, Tasks, Review, Lifecycle, Archived | Brain ID, Last Synced | Off | The area's home (0050): its counts as one line in the heading, everything else in its views |
+| Areas | Type, At a glance | Panel · To review, Meetings to review, Due, Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Decisions, Questions, Concepts, Documents, Inbox, Tasks, Review, Lifecycle, Archived, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced | Off | The area's home (0050): its counts as one line in the heading, everything else in its views |
 | Goals | Status, Progress, Countdown | Panel · Deadline, Why, Area, Key Results, Projects, Summary, Lifecycle, Archived | Brain ID, Last Synced | Off | Progress and status at a glance |
 | Key Results | Progress, Current, Target | Main · Goal, Kind, Start, Unit, Done, Due | — | Off | No body; you edit Current in the heading |
-| Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Goal, People, Summary, Lifecycle, Archived, Meetings, Decisions, Questions, Concepts, Documents, Inbox, Tasks | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel |
+| Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Goal, People, Summary, Lifecycle, Archived, Meetings, Decisions, Questions, Concepts, Documents, Inbox, Tasks, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel. The Workflow settings close the panel (decision 0059) |
 | Meetings | Brain Status, Date, Project | Panel · Attendees, Area, Decisions, Questions, Tasks, Review Items | Brain ID, Ingested At | Off | Brain Status is the one field you change per meeting |
 | People | Role, Org | Panel · Email, Projects, Meetings, Sources, Summary, Lifecycle | Brain ID, Last Synced | On hover | Who they are and where they work |
 | Orgs | Relationship, Website | Panel · Meetings via projects, People, Projects, Summary, Lifecycle | Brain ID, Last Synced | On hover | — |
