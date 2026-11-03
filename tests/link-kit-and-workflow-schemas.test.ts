@@ -50,7 +50,7 @@ test("every workflow record example passes or fails its $defs entry as labelled"
       assert.equal(validate(record), kind === "valid", `workflow/${kind}/${file}: ${JSON.stringify(validate.errors)}`);
     }
   }
-  assert.deepEqual([...defs].sort(), ["adoption", "artifact", "item", "op", "pointer", "workflow"]);
+  assert.deepEqual([...defs].sort(), ["adoption", "artifact", "item", "op", "pointer", "snapshot", "workflow"]);
 });
 
 test("the JSON examples written in the specs validate", async () => {

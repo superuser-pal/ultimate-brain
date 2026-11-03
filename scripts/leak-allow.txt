@@ -49,3 +49,6 @@ spec/examples/workflow/valid/item.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
 spec/examples/workflow/invalid/item-done-no-pr-not-accepted.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
 spec/examples/workflow/valid/item-done-accepted.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
 spec/examples/workflow/valid/item-done-merged.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
+spec/examples/workflow/valid/snapshot.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
+spec/examples/workflow/invalid/snapshot-no-tasks.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
+spec/examples/workflow/valid/item-declined.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b

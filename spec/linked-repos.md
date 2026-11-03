@@ -170,7 +170,7 @@ With Domains off, `placement.domain` is ignored and not checked.
 
 - **What it is.** A short, dated summary of the repo's tasks, built by `brain repo tasks <name>` (cli.md §5.29).
 - **Where it goes.** The skill writes it into the brain-owned toggle heading **`Repo tasks · <name>`** on the placement's Project page, or on the Area page when the kit has no project. Several repos placed on one page get one toggle each.
-- **How it is written.** As for the Brief (cli.md §5.14.4), the skill finds the toggle by its exact name and replaces its children, or appends it at the end of a page that has none. `sync render` never sends it and never touches it, so render code doesn't change.
+- **How it is written.** By the toggle rule of connected-workflows.md §6.1: found by its exact name, or appended at the end of the page. `sync render` never sends it and never touches it, so render code doesn't change.
 - **Notion design (CC-103).** CC-103 documents it in docs/notion-space-design.md §2, as "toggle headings named `Repo tasks · <repo>`". The migration creates nothing on existing pages.
 - **When.** It is rebuilt in each catch-up that reads the repo, and whenever the user asks ("show the repo's tasks"). It isn't stored in Git: it is a view of data the brain doesn't own, like a Notion formula.
 - **Read-only.** It changes nothing in the repo's tracker, creates no Notion task, and the brain never reads it back. To act on a task, the user works in the repo. To move a repo's tasks into Notion, the user turns it into a connected workflow through adoption (connected-workflows.md §11).
