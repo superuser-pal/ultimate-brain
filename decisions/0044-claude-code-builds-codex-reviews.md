@@ -2,6 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-10-21
+**Amended by:** 0063 (the `pr-reviewer` sub-agent reviews; Codex optional)
 
 ## Context
 Since wave 1, Claude Code has owned the specs, skills and Notion design, and Codex the TypeScript CLI and its tests, each reviewing the other's work. On 2026-10-20 Claude Code also built CX-35, CX-32 and CX-36 at the user's request. Those kept their `codex/` branches, so the required pass came from Claude Code, the author itself. After CC-36 (#115) the user decided that Claude Code does every task from now on and Codex only reviews.
