@@ -293,9 +293,17 @@ async function compute({ root, repo, request, tested, prior, at }) {
 
 /** The impact of a segment's merged PRs and the `Product:` links of its coordinated ones. */
 async function impactOf(request, fork, segment) {
-  const compared = await request(`${fork}/compare/${segment.from}...${segment.to}?per_page=250`);
+  // The compare API pages its commits; a segment read only in part would miss PRs, so it is unknown instead.
+  const commits = [];
+  for (let page = 1; ; page += 1) {
+    const compared = await request(`${fork}/compare/${segment.from}...${segment.to}?per_page=100&page=${page}`);
+    const listed = compared.commits ?? [];
+    commits.push(...listed);
+    if (commits.length >= (compared.total_commits ?? 0)) break;
+    if (listed.length === 0 || page === 50) throw new Unknown(`compare ${segment.from.slice(0, 7)}...${segment.to.slice(0, 7)} listed ${commits.length} of ${compared.total_commits} commits`);
+  }
   const pulls = new Map();
-  for (const commit of compared.commits ?? []) {
+  for (const commit of commits) {
     if ((commit.parents ?? []).length < 2) continue; // the fork merges PRs with merge commits only (§10.3)
     for (const pull of await request(`${fork}/commits/${commit.sha}/pulls`)) if (pull.merged_at != null) pulls.set(pull.number, pull);
   }

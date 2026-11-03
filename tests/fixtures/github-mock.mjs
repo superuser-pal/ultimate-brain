@@ -19,14 +19,15 @@ export const prBody = (impact, links = []) => [`Fork change.`, "", ...(impact ==
 
 /**
  * The fork's state: `history` is its `main`, oldest first; each commit is `{ label, pull? }`, and a commit with a `pull` (`{ number, body }`)
- * is that PR's merge commit. `releases` are `{ version, at }` with `at` a history label.
+ * is that PR's merge commit, unless `plain` makes it an ordinary commit the API still associates with the PR. `releases` are `{ version, at }` with `at` a history label.
  */
 export function forkState({ history, releases = [], schema = SCHEMA }) {
   return { history: history.map((commit) => ({ ...commit, sha: sha(commit.label) })), releases: releases.map((release) => ({ ...release, commit: sha(release.at) })), schema };
 }
 
 /**
- * Starts the mock. `state` = `{ fork, issues, schemaCommit, down?, forkDown?, token? }`; `issues` are product issues and PRs:
+ * Starts the mock. `state` = `{ fork, issues, schemaCommit, down?, forkDown?, token?, comparePageCap?, compareTruncated? }` (compare pages at most
+ * `comparePageCap` commits, 100 by default; `compareTruncated` returns only the first page); `issues` are product issues and PRs:
  * `{ number, title?, body?, state?, labels?, pull_request?, updated? }`. Returns `{ url, state, requests, close }`; writes change `state.issues`.
  */
 export async function startMock(state) {
@@ -64,8 +65,11 @@ export async function startMock(state) {
           const [from, to] = [history.findIndex((commit) => commit.sha === match[1]), history.findIndex((commit) => commit.sha === match[2])];
           if (from === -1 || to === -1) return send(404, { message: "Not Found" });
           const status = from === to ? "identical" : to > from ? "ahead" : "behind";
-          const commits = to > from ? history.slice(from + 1, to + 1).map((commit) => ({ sha: commit.sha, parents: commit.pull === undefined ? [{}] : [{}, {}] })) : [];
-          return send(200, { status, commits });
+          const all = to > from ? history.slice(from + 1, to + 1).map((commit) => ({ sha: commit.sha, parents: commit.pull === undefined || commit.plain ? [{}] : [{}, {}] })) : [];
+          const perPage = Math.min(Number(url.searchParams.get("per_page") ?? 250), state.comparePageCap ?? 100);
+          const page = Number(url.searchParams.get("page") ?? 1);
+          const commits = state.compareTruncated ? all.slice(0, perPage) : all.slice((page - 1) * perPage, page * perPage);
+          return send(200, { status, total_commits: all.length, commits: page > 1 && state.compareTruncated ? [] : commits });
         }
         if (rest === "/contents/schemas/skills-snapshot.schema.json") {
           return state.fork.schema === null ? send(404, { message: "Not Found" }) : send(200, { content: Buffer.from(state.fork.schema).toString("base64"), encoding: "base64" });

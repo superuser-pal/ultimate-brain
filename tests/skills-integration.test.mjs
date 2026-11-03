@@ -108,6 +108,27 @@ test("an unreleased change: more commits extend the one entry's to and need a ne
   assert.equal(integrationIssues(mock.state).length, 1);
 });
 
+test("impact reads every page of a long segment and only its merge commits", async (t) => {
+  const plain = Array.from({ length: 120 }, (_, index) => ({ label: `p${index}` }));
+  const history = [
+    ...released,
+    { label: "x1", pull: { number: 5, body: prBody("coordinated", [`${ISSUE}/7`]) }, plain: true },
+    ...plain,
+    { label: "m2", pull: { number: 2, body: prBody("none") } },
+    { label: "m3", pull: { number: 3, body: prBody("compatible") } },
+  ];
+  const state = { fork: forkState({ history, releases: [{ version: "1.0.0", at: "m1" }] }), issues: [assessedAt(sha("m1"), "1.0.0"), { number: 7, state: "open" }] };
+  const { mock, check } = await setup(t, state);
+  const result = await check();
+  assert.equal(result.block.changes[0].impact, "compatible", "the PR on page 2 counts; the plain commit's PR does not");
+  assert.equal(result.block.changes[0].links, undefined);
+  assert.ok(mock.requests.some((request) => request.path.includes("/compare/") && request.query.includes("page=2")));
+  mock.state.compareTruncated = true;
+  const truncated = await check();
+  assert.equal(truncated.status, "unknown");
+  assert.match(truncated.error, /listed 100 of 123 commits/);
+});
+
 test("a no-action change is dropped once assessed passes it, which closes the issue; the next run starts from the closed block", async (t) => {
   const history = [...released, { label: "m2", pull: { number: 2, body: prBody("none") } }];
   const state = { fork: forkState({ history, releases: [{ version: "1.0.0", at: "m1" }] }), issues: [assessedAt(sha("m1"), "1.0.0")] };
