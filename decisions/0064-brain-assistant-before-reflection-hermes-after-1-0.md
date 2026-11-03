@@ -39,7 +39,7 @@ In the 0.9.0 scope review of 2026-11-03 the user changed the roadmap twice. They
 
 ## Consequences
 - build/TASKS.md: the 0.10.0 section becomes the assistant (CC-108 to CC-110, U-25); CC-65 to CC-67 and U-21 move to 0.11.0 with their identities; the 0.11.0 Hermes section is removed and noted as post-1.0; 0.13.0 gains CC-111 for the scheduled review; 0.9.0 is broken into CC-100 to CC-107 and U-24.
-- 0061 and 0060 get "Amended by 0064" pointers. docs/v2-ideas.md lists Hermes as post-1.0.
+- 0061, 0060 and 0052 get pointers to this decision; their bodies stay as recorded, and where 0061's table and its 0.12.0 and 0.14.0 sections name Hermes or 0.11.0, this decision's table and "Hermes after 1.0" govern. docs/vision.md and docs/v2-ideas.md follow.
 - The assistant's contracts (CC-108) come after 0.9.0's, and its opening grill refines these lines within the agreed boundary.
 
 ## Evidence

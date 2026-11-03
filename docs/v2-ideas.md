@@ -99,13 +99,13 @@ Composable profiles (client work, meeting-heavy work, research, writing, learnin
 ## Maintenance and quality
 
 ### Contradiction and staleness reports
-A semantic lint across notes. **Source:** vision, synthesis §3.3 (Review 5). **Decided in 0052; now 0.10.0 under [0061](../decisions/0061-roadmap-and-launch-boundary.md):** `brain-reflect` writes contradictions and stale facts as Review rows.
+A semantic lint across notes. **Source:** vision, synthesis §3.3 (Review 5). **Decided in 0052; now 0.11.0 under [0061](../decisions/0061-roadmap-and-launch-boundary.md) as amended by 0064:** `brain-reflect` writes contradictions and stale facts as Review rows.
 
 ### Correction sweep command
-One correction propagated to affected restatements through reviewable changes. **Source:** synthesis §3.2. Reflection in 0.10.0 proposes a fix for a stale restatement it finds; **0.13.0 under 0061** adds the targeted sweep after a correction. Preserve independently supported claims; no blind global replacement.
+One correction propagated to affected restatements through reviewable changes. **Source:** synthesis §3.2. Reflection in 0.11.0 proposes a fix for a stale restatement it finds; **0.13.0 under 0061** adds the targeted sweep after a correction. Preserve independently supported claims; no blind global replacement.
 
 ### Dedup audit
-Finds likely duplicate notes and people and writes `merge` proposals. **Source:** synthesis §3.3. **Decided in 0052; now 0.10.0 under 0061:** reflection's near-duplicate candidates and the `near-duplicate` lint warning.
+Finds likely duplicate notes and people and writes `merge` proposals. **Source:** synthesis §3.3. **Decided in 0052; now 0.11.0 under 0061 as amended by 0064:** reflection's near-duplicate candidates and the `near-duplicate` lint warning.
 
 ### Two CLI loose ends
 Noted on 2026-10-23, left out of 0.6.0 by the user: an applied fact doesn't refresh a summary that states it, and `brain report --help` with no subcommand exits 2 instead of showing help. **Target:** the next patch that touches the CLI.
@@ -156,7 +156,7 @@ Unattended ingest and sync with n8n or Hermes. **Source:** vision. **Decided in 
 **Raised 2026-10-29 (decision 0054).** 0.7.1 uses Notion's "send message to agent" only from deliberate button clicks, running Brain Assistant inside Notion. Left here: a bridge from a Notion button or automation to a local or Hermes catch-up (a webhook action, https://www.notion.com/help/webhook-actions); event-driven triggers (a property change, a new row, a schedule), which official docs didn't confirm for that action; and replacing the 0.7.0 schedules with Notion triggers. **Revisit:** after U-22 measures what the buttons cost.
 
 ### Hermes as an always-on brain operator
-**Now planned for 0.11.0 under [0060](../decisions/0060-hermes-operator-and-learning.md).** The paragraph below records the earlier investigation; unattended catch-up has since shipped in 0.7.0. The new milestone includes native operation, private Telegram, scoped learning and prepared handoffs; external worker execution and supervision remain post-1.0.
+**Post-1.0 ([0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md); designed in [0060](../decisions/0060-hermes-operator-and-learning.md), previously planned for 0.11.0).** The paragraph below records the earlier investigation; unattended catch-up has since shipped in 0.7.0. The new milestone includes native operation, private Telegram, scoped learning and prepared handoffs; external worker execution and supervision remain post-1.0.
 
 **Raised by the user on 2026-10-22 (U-15 grill).** Hermes (Nous Research's Hermes Agent) would run the brain next to Claude Code and Codex: scheduled catch-ups, captures and answers from a phone. It would not build the product (0044). **Why:** the brain pays back only when it runs regularly; an operator that runs on its own makes the habit bar ("every meeting ingested within 2 working days") automatic. **Open:** whether it can run the shared skills and the CLI unattended, its Notion access, how a scheduled catch-up asks its one batch of questions, and how it answers short questions fast (see "Retrieval index over Markdown"). **CC-50 (reviews/07-hermes-and-search.md, 2026-10-23):** Hermes loads the brain's skills from `.agents/skills/` after `hermes skills trust`, runs scheduled jobs in the brain folder with `AGENTS.md`, reaches Notion through MCP, and no command the skills run needs its approval; a reply to a scheduled delivery can continue the run. Missing on our side: catch-up has no unattended mode, the skills were tested only on Claude models, and brain-connect-notion has no Hermes setup lines. **Decided in 0051 (2026-10-29):** one turn on defaults, which works with any scheduler; local `claude -p` is supported first and Hermes is documented as possible. **Next step:** a trial of Hermes on the user's brain with a Claude model pinned, after 0.7.0; the two-turn shape (post the batch, run on the reply) stays here for it. Ties to "Schedulers" and "Adapters for more agent platforms".
 
