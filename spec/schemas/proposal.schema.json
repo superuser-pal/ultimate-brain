@@ -431,6 +431,23 @@
         }
       }
     },
+    "revisions": {
+      "description": "review_notes only (capture-and-review §7.8): a Request revision per item. `requested` holds the user's instruction; `drafted` means the stored proposal was replaced by a new draft, and `previous` keeps the wording the user had in the Proposed toggle.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["item_id", "instruction", "requested_at", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "item_id": { "type": "string", "pattern": "^it-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
+          "instruction": { "type": "string", "minLength": 1 },
+          "requested_at": { "$ref": "note.schema.json#/$defs/timestamp" },
+          "status": { "enum": ["requested", "drafted"] },
+          "previous": { "type": "string" },
+          "drafted_at": { "$ref": "note.schema.json#/$defs/timestamp" }
+        }
+      }
+    },
     "cleanup": {
       "description": "review_notes only (capture-and-review §5.2): this is the exclusion cleanup row of an input. Its items are remove, restore and independence; `tasks` lists the Tasks created from excluded content, for the user to act on in Notion.",
       "type": "object",

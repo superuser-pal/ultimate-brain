@@ -119,7 +119,7 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
       const targetTitle = titleOf(change.target, workspace);
       const why = String(change.why ?? a.why ?? "");
       if (change.kind === "update_fact") {
-        item = { kind: "changes", heading: `Changes: ${label(String(change.field))} on ${targetTitle}`, current: change.before === undefined ? "(new)" : String(change.before), proposed: canon(String(change.after ?? "")), editable: true, why, effect: EFFECT.update_fact!, target: view.note, held: view.held, base: base(view.note !== undefined, change.before === undefined ? null : String(change.before)), now: base(view.note !== undefined, (() => { const facts = view.note?.attributes.facts; const value = facts !== null && typeof facts === "object" ? (facts as Record<string, unknown>)[String(change.field)] : undefined; return value === undefined ? null : String(value); })()) };
+        item = { kind: "changes", heading: `Changes: ${label(String(change.field))} on ${targetTitle}`, current: (() => { const facts = view.note?.attributes.facts; const live = facts !== null && typeof facts === "object" ? (facts as Record<string, unknown>)[String(change.field)] : undefined; const shown = live === undefined ? change.before : live; return shown === undefined ? "(new)" : String(shown); })(), proposed: canon(String(change.after ?? "")), editable: true, why, effect: EFFECT.update_fact!, target: view.note, held: view.held, base: base(view.note !== undefined, change.before === undefined ? null : String(change.before)), now: base(view.note !== undefined, (() => { const facts = view.note?.attributes.facts; const value = facts !== null && typeof facts === "object" ? (facts as Record<string, unknown>)[String(change.field)] : undefined; return value === undefined ? null : String(value); })()) };
       } else if (change.kind === "update_body") {
         const existing = canon(view.body);
         const lines = view.note === undefined ? 0 : lineDiff(view.note.body, String(change.content ?? "")).length;
@@ -129,6 +129,7 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
         item = { kind: "changes", heading: `Changes: ${targetTitle}`, current: `The end of the note now (the text is appended after it):\n${tail === "" ? "(empty)" : tail}`, proposed: canon(String(change.content ?? "")), editable: true, why, effect: EFFECT.add_to_note!, target: view.note, held: view.held, base: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")) };
       }
     }
+    const previous = (Array.isArray(a.revisions) ? a.revisions : []).filter(record).find((revision) => revision.item_id === itemId && revision.status === "drafted" && typeof revision.previous === "string")?.previous as string | undefined;
     const letter = itemLetter(index);
     const targetUrl = url(item.target?.attributes.notion);
     const links2 = [targetUrl === null ? null : `[${canon(String(item.target?.attributes.title ?? "target")).replace(/[[\]]/g, "")}](${targetUrl})`, sourceUrl === null ? null : `[source](${sourceUrl})`].filter(Boolean).join(" · ");
@@ -142,6 +143,8 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
         ...(links2 === "" ? [] : [links2]),
         ...(item.current === null ? [] : ["**Current**", escapeSection(quote(item.current))]),
         "<details>", "<summary>Proposed final wording</summary>", "", escapeSection(item.proposed), "", "</details>",
+        // The wording the user had before asking for a revision: a toggle that is never read (§7.8).
+        ...(previous === undefined ? [] : ["<details>", "<summary>Previous proposal</summary>", "", escapeSection(canon(previous)), "", "</details>"]),
         ...(whyLine === "" ? [] : [escapeSection(`**Why it matters:** ${whyLine}`)]),
         `**What Accept does:** ${item.effect}`,
         "Decision: Pending",

@@ -20,19 +20,19 @@ export interface ReviewItemResult {
 const list = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 const record = (value: unknown): Record<string, unknown> => (isRecord(value) ? value : {});
 
-class Skip extends Error {
+export class Skip extends Error {
   readonly code: string;
   constructor(code: string, message = code) { super(message); this.code = code; }
 }
 
 /** The value of an edited fact keeps the type of the source's value when it can (a number stays a number). */
-function typed(proposed: string, original: unknown): unknown {
+export function typed(proposed: string, original: unknown): unknown {
   // Only a canonical number stays a number: `1e3`, `0x1F` and `0123` are text the user typed and are kept as typed.
   return typeof original === "number" && Number.isFinite(Number(proposed)) && String(Number(proposed)) === proposed ? Number(proposed) : proposed;
 }
 
 /** A link item names one value: a note id, or the exact title of one note (an edited link cannot be guessed). */
-function linkValue(workspace: Workspace, proposed: string, original: unknown): unknown {
+export function linkValue(workspace: Workspace, proposed: string, original: unknown): unknown {
   const text = proposed.trim();
   if (text === "" || text.includes("\n")) throw new Skip("LINK_VALUE_UNKNOWN", "a link item takes one value");
   const byId = workspace.get(text);

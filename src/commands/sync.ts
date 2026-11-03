@@ -13,7 +13,7 @@ export const syncPlanCommand: Command = {
 };
 
 /** Whether a Review decision changed anything: those writes (the target and the proposal file) are one journaled operation (capture-and-review §7.11). */
-const writesReview = (data: Record<string, unknown>): boolean => (data.review_results as Array<{ result: string }>).some((entry) => ["applied", "closed", "deferred"].includes(entry.result));
+const writesReview = (data: Record<string, unknown>): boolean => (data.review_results as Array<{ result: string }>).some((entry) => ["applied", "closed", "deferred"].includes(entry.result)) || (data.revision_results as Array<{ result: string }>).some((entry) => entry.result === "recorded");
 
 export const syncApplyCommand: Command = {
   name: "sync apply", usage: "brain sync apply --input <plan|-> [--record-only] [--skip-conflicted] [--dry-run] [--json]", summary: "Apply a sync plan using atomic per-item writes.", options: { input: "string", "record-only": "boolean", "skip-conflicted": "boolean", "dry-run": "boolean" }, maxPositionals: 0, needsBrain: true,
