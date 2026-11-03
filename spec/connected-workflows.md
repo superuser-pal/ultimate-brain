@@ -459,7 +459,7 @@ Work complete, {n} not yet in Notion.
 - The last line appears only in the state of §5.2.
 - Dates are UTC, with English month abbreviations.
 - **One summary per destination**, rewritten in place in a brain-owned toggle.
-- **`sha256`** is the hash of the markdown **without its first line**. So a summary whose only change is its date is not `changed` and is not written again, and `--written` compares that same hash.
+- **`sha256`** is the hash of the markdown with the date removed from its first line: `Updated {D Mon YYYY, HH:MM} UTC · ` is cut, and the folder and the state stay in. So a summary whose only change is its date is not `changed` and is not written again, while a pause or resume is. `--written` compares that same hash.
 - **When Notion is unavailable** (0059), the skill reports in the session, keeps everything in the records, and the toggle keeps its last confirmed date.
 
 ## 10. Writers, retries, interruption and uncertain outcomes
@@ -501,7 +501,7 @@ Work complete, {n} not yet in Notion.
 |---|---|---|
 | `create_task` | `publication: local` | Never: an item whose publication is `local` gets no operation. `TASK_DELETED`'s `recreate` (or `item put` with `"publish": true`) sets it back to `pending` |
 | `update_task` | `declined: { kind, payload }`; publication unchanged | When the payload it would build differs from `declined.payload`; `declined` is then cleared |
-| `publish_artifact` | Never published (`published_sha256` null): `local`, with `local_reason: dropped by user`. Published before: `declined: { kind, payload }`, publication unchanged | Never for `local`. With `declined`: when `sha256` differs from `declined.payload.sha256` |
+| `publish_artifact` | Never published (`published_sha256` null): `publish` becomes `{ decision: exclude, by: artifact, level: <settings.logging>, decided_at: now }`, with `local_reason: dropped by user` and publication `local`. Published before: `publish` stays `include`, `declined: { kind, payload }`, and publication is unchanged | Never for `local`, until an `override: include`. With `declined`: when a newly approved `sha256` differs from `declined.payload.sha256`, which then opens the operation and clears `declined` |
 | `mark_original` | The map entry's `treatment` becomes `keep` | Never |
 
 ## 11. Adoption of an existing project
@@ -533,10 +533,12 @@ The skill normalises what it found into the **adoption input**:
   "unsupported": [],
   "conventions": [ { "rule": "Status lives in TASKS.md", "source": "AGENTS.md" } ],
   "selected": null,
-  "treatments": {}
+  "treatments": {},
+  "status_read": {}
 }
 ```
 
+- **Its shape** is `$defs/adoptionInput` in the workflow schema, the same for `adopt preview` and `adopt apply`. Unknown keys fail. `apply` also needs a `choice` on each convention, and `status_read` for `status_options`.
 - **Keys** are unique within the input (`INPUT_INVALID` otherwise). Two Markdown lines with the same `line:` key get the suffixes `#2`, `#3` in file order (`line:5e1a0c9b2d47#2`), and the preview warns that their mapping depends on their order.
 - **`meaning`** is the item's raw status, mapped by the kit's `status_map` when the source has one, else by the skill's proposal.
 - **`brain_id`** is the Notion task's current Brain ID (origin `notion` only).

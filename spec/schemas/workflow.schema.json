@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ultimate-brain.dev/schemas/v1/workflow.schema.json",
   "title": "Connected workflow records",
-  "description": "Records of a connected workflow (decision 0059, spec/connected-workflows.md §3, §7, §11). Each file validates against one $defs entry: workflow.json → workflow, items/*.json → item, artifacts/*.json → artifact, ops/*.json → op, adoption.json → adoption, the folder's .brain-workflow.json → pointer; the input of `workflow reconcile` → snapshot.",
+  "description": "Records of a connected workflow (decision 0059, spec/connected-workflows.md §3, §7, §11). Each file validates against one $defs entry: workflow.json → workflow, items/*.json → item, artifacts/*.json → artifact, ops/*.json → op, adoption.json → adoption, the folder's .brain-workflow.json → pointer; the input of `workflow reconcile` → snapshot; the input of `workflow adopt preview` and `adopt apply` → adoptionInput.",
   "$defs": {
     "noteId": {
       "type": "string",
@@ -1582,6 +1582,193 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/opId"
+          }
+        }
+      }
+    },
+    "adoptionInput": {
+      "type": "object",
+      "required": [
+        "sources",
+        "items",
+        "unsupported",
+        "conventions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "kind",
+              "ref"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "markdown",
+                  "github",
+                  "gitlab",
+                  "notion",
+                  "other"
+                ]
+              },
+              "ref": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "origin",
+              "title",
+              "body",
+              "raw_status",
+              "meaning",
+              "depends_on",
+              "url",
+              "brain_id"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "origin": {
+                "$ref": "#/$defs/origin"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "body": {
+                "type": "string"
+              },
+              "raw_status": {
+                "type": "string"
+              },
+              "meaning": {
+                "$ref": "#/$defs/meaning"
+              },
+              "depends_on": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^https?://"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "brain_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "unsupported": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "conventions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "rule",
+              "source"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "rule": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source": {
+                "type": "string",
+                "minLength": 1
+              },
+              "choice": {
+                "enum": [
+                  "keep",
+                  "adapt",
+                  "decline"
+                ]
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "choice": {
+                      "const": "adapt"
+                    }
+                  },
+                  "required": [
+                    "choice"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "note"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "selected": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          ]
+        },
+        "treatments": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "keep",
+              "mark_transferred",
+              "close_transferred"
+            ]
+          }
+        },
+        "status_read": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/meaning"
           }
         }
       }
