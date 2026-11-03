@@ -1,0 +1,16 @@
+{
+  "read_at": "2026-11-04T09:30:00Z",
+  "destination": {
+    "page": "6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b",
+    "workflow": "Connected",
+    "work_type": "Software",
+    "logging_level": "Full durable record",
+    "log_artifacts": []
+  },
+  "artifacts": [
+    {
+      "id": "art-2p8k4m6n",
+      "sha256": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+    }
+  ]
+}

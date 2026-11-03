@@ -210,7 +210,7 @@ These are new properties on **both** Projects and Areas. Their owner is **You** 
 3. **The level** in `settings`. Recorded as `by: level`.
 
 **Afterwards:**
-- With the Documents module off, an `include` becomes `exclude` with `local_reason: module off`.
+- With the Documents module off, an `include` of any category except `decision` becomes `exclude` with `local_reason: module off`. With the Knowledge module off, a `decision` artifact does the same; a `decision` doesn't need Documents.
 - A later change of the level never changes a frozen decision. A per-artifact override can always replace it (that is how `publish-history` publishes old artifacts).
 
 **Not published:** such an artifact keeps `location` and gets `local_reason`: `excluded by level`, `excluded by override`, `temporary`, `module off` or `dropped by user`.
@@ -227,7 +227,15 @@ These are new properties on **both** Projects and Areas. Their owner is **You** 
   - brain_id: the item's `wi-` id.
 
   Unmapped properties are left out, as in `sync tasks` (cli.md §5.14.5). An adopted Notion task whose Brain ID holds another id keeps it (§11.5).
-- **Its body** has a brain-owned toggle heading **Work record**. The skill finds it by name, replaces its children, and appends it at the end of a page that has none (the cli.md §5.14.4 rule for Brief). Its text is normative:
+- **Its body** has a brain-owned toggle heading **Work record**. Its text is normative (below).
+
+**Writing a workflow or rollup toggle** (Work record, Workflow, `Repo tasks · <repo>`). The rule is normative and the same for all three:
+1. The skill finds the toggle heading by its exact name and replaces its children.
+2. When the page has none, it appends the toggle heading at the end of the page, whatever other toggles the page has.
+
+These toggles are not `sync render` sections, so cli.md §5.14.4's `SECTION_NOT_FOUND` rule for Brief and Decision log doesn't apply to them and doesn't change. That rule appends Brief and Decision log only to a page with no toggle headings at all. So before appending one of these toggles to a **Project** page with no toggle headings at all, the skill first appends empty "Brief" and "Decision log" toggle headings, which the next render fills. Otherwise the page would later be `SECTION_NOT_FOUND` for the Brief.
+
+The Work record text:
 
   ```markdown
   Scope: {scope}
@@ -348,7 +356,7 @@ A text artifact must be readable in Documents when it is published (0059).
 | `last_error` | `{ code, message, lasting }`. `code`: `network`, `rate_limited`, `server`, `validation`, `permission`, `missing_property`, `upload_unsupported` or `other` |
 | `result` | `{ page }` |
 
-- **Only `reconcile` and `adopt apply` open operations** (§8, §11.6). The skill only moves them through their states (`op state`, §12).
+- **Only `reconcile`, `adopt apply` and `resolve` open operations** (§8, §11.6, §12). The skill only moves them through their states (`op state`, §12).
 - **At most one open operation per target and kind.** When a new payload is needed and the operation is still `pending`, `reconcile` replaces the payload and keeps the id. When it is `in_flight`, nothing is replaced, and it is reported as `busy`.
 - **A `done` or `dropped` operation's file is deleted** in the same commit that records its outcome on the target. Git keeps the history.
 
@@ -367,6 +375,7 @@ Reconciliation runs at the start of every run, before publishing, and at complet
 }
 ```
 
+- **Its shape** is `$defs/snapshot` in the workflow schema. `read_at`, `destination` and `tasks` are required. `documents`, `artifacts` and `marked` (§10.2) may be left out, and then mean empty: without `artifacts` no local change is detected.
 - **`tasks`** holds **every** Task related to the destination (the workflow's and any others), plus any task found by the Brain ID of an item whose page isn't related any more.
 - **`documents`** holds the Documents of the workflow's published artifacts.
 - **`artifacts`** holds the current hash of each artifact file in the working folder that still exists. A missing file is left out, and that changes nothing.
@@ -400,9 +409,10 @@ Reconciliation runs at the start of every run, before publishing, and at complet
 | No task found, with a `create_task` open | §10.2 |
 | A task under the destination whose Brain ID isn't one of the workflow's `wi-` ids, and which is not in `outside` or `adoption.json` | Needs you `UNKNOWN_TASK` (meeting and source action items, Brain ID `mtg-` or `src-`, suggest `outside`) |
 | An approved, `include` artifact with `published_sha256 ≠ sha256` | `publish_artifact` |
-| A snapshot artifact hash ≠ `artifact.sha256` (the file changed since approval) | Needs you `ARTIFACT_CHANGED` |
-| A published Document edited after its note's `last_synced` (minute precision, the edit in a later minute, 0058), while the artifact also changed | Needs you `DOCUMENT_BOTH_CHANGED`. Without a local change, the edit is left alone; accepted wording returns through §6.3 |
-| A map entry whose treatment isn't `keep` and isn't yet `marked` | `mark_original` |
+| A snapshot artifact hash ≠ `artifact.sha256` (the file changed since approval), and its Document not edited | Needs you `ARTIFACT_CHANGED` |
+| The same, and its Document edited after the note's `last_synced` (an edit in a later minute, 0058) | Needs you `DOCUMENT_BOTH_CHANGED`, the only entry for that artifact |
+| A Document edited, with no local change | Nothing: accepted wording returns through §6.3 |
+| A map entry whose treatment isn't `keep` and isn't yet `marked`, and whose item has `notion.page` | `mark_original`. It waits for the item's page, because the comment links to it |
 
 **Needs you**
 - **Each entry** is `{ id: "<KIND>:<target>", kind, target, question, choices, since }`.
@@ -428,7 +438,7 @@ Reconciliation runs at the start of every run, before publishing, and at complet
 
 ## 9. The dated summary on the Project or Area
 
-At the end of each run, at completion, and after `workflow resolve`, the skill runs `brain workflow summary <wf>`. When `changed` is true, it writes the toggle **Workflow** on the destination's page (found by name, or appended at the end, as in §6.1), then records the write with `summary <wf> --written <sha256>`. When the Notion write fails, nothing is recorded, and the next run writes it again. The text is normative; `{…}` is filled in, and a line whose count is 0 is left out:
+At the end of each run, at completion, and after `workflow resolve`, the skill runs `brain workflow summary <wf>`. When `changed` is true, it writes the toggle **Workflow** on the destination's page (§6.1's toggle rule), then records the write with `summary <wf> --written <sha256>`. When the Notion write fails, nothing is recorded, and the next run writes it again. The text is normative; `{…}` is filled in, and a line whose count is 0 is left out:
 
 ```markdown
 Updated {D Mon YYYY, HH:MM} UTC · {folder.name} · {Connected|Paused}
@@ -449,6 +459,7 @@ Work complete, {n} not yet in Notion.
 - The last line appears only in the state of §5.2.
 - Dates are UTC, with English month abbreviations.
 - **One summary per destination**, rewritten in place in a brain-owned toggle.
+- **`sha256`** is the hash of the markdown **without its first line**. So a summary whose only change is its date is not `changed` and is not written again, and `--written` compares that same hash.
 - **When Notion is unavailable** (0059), the skill reports in the session, keeps everything in the records, and the toggle keeps its last confirmed date.
 
 ## 10. Writers, retries, interruption and uncertain outcomes
@@ -457,7 +468,7 @@ Work complete, {n} not yet in Notion.
 - **Record revisions.** Every record has `rev`.
   - Every command that **updates** a record takes `--rev <n>`, the revision the caller read. When it doesn't match, the command refuses with `STALE_RECORD` and writes nothing, and the skill reads again and retries.
   - Each write sets `rev + 1`; a created record starts at `rev: 1`.
-  - `item claim` and `op state` read and check the revision themselves, so they take no `--rev`.
+  - `item claim`, `op state`, `reconcile` and `summary --written` read and check revisions themselves, so they take no `--rev`. When a record changes between their read and their write, they refuse with `STALE_RECORD`, write nothing, and are simply run again.
 - **Item claims.** Before executing an item, a session claims it: `item claim <wf> <wi> --by <label>`, where the label is the agent and its start time, e.g. `claude-code 2026-11-04T09:00Z`.
   - A claim by the same label refreshes `at`.
   - Another label's claim is refused (`CLAIMED`, with its holder) unless it is **stale**: more than 2 hours after both `claim.at` and the item's last progress entry.
@@ -478,12 +489,20 @@ Work complete, {n} not yet in Notion.
 
 ### 10.3 Retries without duplicates
 - **Look up before creating.** Before any create, the skill queries the database for the Brain ID. A hit is used (`done` with that page), never duplicated. Updates set values, so they are idempotent.
-- **Within a run**, a temporary error (`network`, `rate_limited`, `server`) is retried up to 3 times, after 2 s, 8 s and 30 s; `attempts` counts them. Then the operation goes back to `pending`.
+- **A run** is what lies between a `reconcile --start` and the next one. The skill calls `reconcile --start` once, at the start of each run; its later calls in the same run (before publishing, at completion) have no `--start`.
+- **Within a run**, a temporary error (`network`, `rate_limited`, `server`) is retried up to 3 times, after 2 s, 8 s and 30 s. `op state … in_flight` increments `attempts`, and `reconcile --start` sets it back to 0. After the retries the operation goes back to `pending`, and a later reconcile in the same run may list it again.
 - **A lasting error** (`validation`, `permission`, `missing_property`, `upload_unsupported`, `other`) makes the operation `failed` at once, with `lasting: true`.
-- **At the next reconcile**, a `failed` operation goes back to `pending` (with `attempts: 0`) and is tried again.
-  - `runs_failed` counts the runs in which it ended `failed` (incremented by `op state … failed`).
-  - Once `runs_failed` reaches 3, `reconcile` leaves it `failed`: it shows under "Not yet in Notion" with its message and is retried only after `op state … pending`, when the user asks for a retry.
-- **An operation is never dropped silently.** Only the user's choice drops one (`op state … dropped`). The target's progress gets `Dropped: <kind>` (for an artifact, its item's progress, if any), and its publication becomes `local`; an artifact gets `local_reason: dropped by user`.
+- **Only `reconcile --start`** puts a `failed` operation back to `pending` to be tried again. A reconcile without `--start` leaves it `failed`, so a lasting error is tried once per run.
+  - `runs_failed` counts the runs in which it ended `failed`. `op state … failed` increments it.
+  - Once `runs_failed` reaches 3, `reconcile --start` leaves it `failed`. It shows under "Not yet in Notion" with its message, and in the session's Needs you batch as "retry or drop?". On "retry", the skill runs `op state … pending`, and the operation is tried in this run; on "drop", `op state … dropped`.
+- **An operation is never dropped silently.** Only the user's choice drops one (`op state … dropped`). The target's progress gets `Dropped: <kind>`; for an artifact, its item's progress gets it, if there is an item. A drop is remembered so that `reconcile` doesn't open the same operation again:
+
+| Dropped | Effect on the target | When `reconcile` opens it again |
+|---|---|---|
+| `create_task` | `publication: local` | Never: an item whose publication is `local` gets no operation. `TASK_DELETED`'s `recreate` (or `item put` with `"publish": true`) sets it back to `pending` |
+| `update_task` | `declined: { kind, payload }`; publication unchanged | When the payload it would build differs from `declined.payload`; `declined` is then cleared |
+| `publish_artifact` | Never published (`published_sha256` null): `local`, with `local_reason: dropped by user`. Published before: `declined: { kind, payload }`, publication unchanged | Never for `local`. With `declined`: when `sha256` differs from `declined.payload.sha256` |
+| `mark_original` | The map entry's `treatment` becomes `keep` | Never |
 
 ## 11. Adoption of an existing project
 
@@ -530,6 +549,7 @@ The skill normalises what it found into the **adoption input**:
 - `missing`: `[{ key, item }]`, mapped keys that are no longer in the source, which are left alone;
 - `dependencies`: `[{ key, depends_on, dropped, warnings }]`. A dependency on a `done` item is dropped. A dependency on an open item that isn't selected is a warning;
 - `originals`: `[{ key, choices, default }]` (§11.5);
+- `status_options`: the options of `notion`-origin items that are in neither `status_map` nor `status_read`, with `meaning: null`;
 - `unsupported` and `conventions`, as given.
 
 **The default selection** is every new item whose meaning isn't `done` or `dropped`. Completed history stays where it is and isn't imported unless the user selects it. `selected` (a list of keys) replaces the default.
@@ -579,8 +599,9 @@ On the user's yes to the preview, `brain workflow adopt apply` takes the same in
   - `origin`, and `depends_on` resolved to `wi-` ids;
   - `progress`: `[{ at: now, text: "Adopted from <ref> <key> as <raw_status>" }]`.
   - With origin `notion`, the item also gets `notion: { page: <key>, title, status: <the option>, read_at: now }`, and an `update_task` operation when the Brain ID is empty. Otherwise it gets a `create_task` operation.
-- **For each `update`:** the new title and scope. `approved_at` is set to now.
-- **The map:** an entry `{ origin, item, treatment, marked: false }` per new item, and a `mark_original` operation for each treatment other than `keep`. `op state … done` on that operation sets `marked: true`.
+- **For each `update`:** only the fields in `changes`: `title` → title, `body` → scope (an empty new body leaves the scope as it is). `approved_at` is set to now, since the yes to the preview approves the change. The status is never touched.
+- **Notion options:** each option of a `notion`-origin item that is in neither `status_map` nor `status_read` must have a meaning in the input's `status_read` (`{ option: meaning }`), which the preview lists as `status_options`, or the command fails with `INPUT_INVALID`. These are added to the workflow's `status_read`.
+- **The map:** an entry `{ origin, item, treatment, marked }` per new item, where `marked` is `true` for `keep` and `false` otherwise. `reconcile` opens the `mark_original` operations once the items have pages (§8.2), and `op state … done` on one sets `marked: true`.
 - **A `runs` entry** and the `conventions` with their choices.
 
 Publication then follows §6 and §10.
@@ -598,7 +619,7 @@ brain workflow item claim <wf> <wi> --by <label> [--take | --release]
 brain workflow artifact put <wf> --input <file|-> [--rev <n>]
 brain workflow render <wf> --item <wi>
 brain workflow op state <wf> <op> --state <state> [--page <id>] [--error <json>]
-brain workflow reconcile <wf> --input <snapshot>
+brain workflow reconcile <wf> --input <snapshot> [--start]
 brain workflow summary <wf> [--written <sha256>]
 brain workflow adopt preview <wf> --input <file|->
 brain workflow adopt apply <wf> --rev <n> --input <file|->
@@ -631,7 +652,7 @@ brain workflow publish-history <wf>
 - **`resolve`:** input `{ answers: [{ id, choice }] }`. Applies §8.2's effects, removes the answered entries, and opens the operations they need (none while paused). An unknown id or choice is `INPUT_INVALID`.
 - **`item put`:**
   - Create: no `id`, no `--rev`; the input has `title`, `scope`, `acceptance` and optional `status` (default `todo`), `logging`, `depends_on`, `links` and `approve`. The command sets `progress: []`, `notion: null`, `publication: { state: pending, … }`, `claim: null` and `accepted: null`.
-  - Update: a patch, which may hold `approve: true`, `accepted: { statement }` (the command sets `at`), and `progress_add: [text]`, appended with `--now`.
+  - Update: a patch, which may hold `approve: true`, `accepted: { statement }` (the command sets `at`), `progress_add: [text]` (appended with `--now`), and `publish: true` (an item whose `create_task` was dropped goes back to `pending`).
   - It enforces §5.2's `done` rule and §7.1's `approved_at` rule.
 - **`item claim`:** §10.1.
 - **`artifact put`:**
@@ -645,6 +666,7 @@ brain workflow publish-history <wf>
   - `failed` needs `--error` (`{ code, message, lasting }`).
   - `dropped` follows §10.3.
 - **`reconcile`:**
+  - With `--start`, it also begins a run (§10.3).
   - Applies §8 and §10.2 to the snapshot, writes routine changes, Needs you entries, and new or resolved operations, and returns `data` = `{ routine: [{ kind, target, from, to }], needs_you: [...], busy: [op ids], ops: [op ids] }`.
   - `routine.kind` is `status_adopted`, `title_adopted`, `settings_changed`, `state_changed`, `op_resolved` or `resolved_itself`.
   - `ops` lists the operations to run now, in the order `create_task`, `update_task`, `publish_artifact`, `mark_original`, then by target id.
@@ -667,7 +689,7 @@ The names below are proposals; the fork's approved mapping (CC-97) may rename th
 - **`brain-workflow-adopt`:** §11.
 - **The execution discipline** in every fork skill that tracks work, chosen in that mapping:
   - read the pointer: none, ended or missing → standard; paused → work locally and say how to resume; connected → continue;
-  - at the start: reconcile, ask the Needs you batch, run `ops` (§10.2, §10.3);
+  - at the start: `reconcile --start`, ask the Needs you batch, run `ops` (§10.2, §10.3);
   - before executing an item: claim it, and approve its scope and criteria when needed;
   - record progress and criteria as they happen;
   - approve artifacts as the user approves them;
