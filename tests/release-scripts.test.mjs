@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
@@ -42,6 +42,81 @@ function taskRows(rows) {
   return Buffer.from(rows).toString("base64");
 }
 
+/** A fake npm logged in as an owner of the package. */
+const npmOwner = 'case "$1" in whoami) printf tester ;; owner) printf "tester <tester@example.test>\\n" ;; esac';
+
+/** Fakes for a release dry run of 0.4.0 from a clean main; `ci` is the gh body for the workflow runs request. */
+function releaseDryRun(root, { npm = npmOwner, ci = "printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n'" } = {}) {
+  writeFileSync(join(root, "CHANGELOG.md"), "# Changelog\n");
+  writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n");
+  return fakeCommands(root, {
+    git: `case "$1 $2" in
+      "worktree list") printf 'worktree ${root}\\nbranch refs/heads/main\\n\\n' ;;
+      "branch --show-current") printf main ;;
+      "status --porcelain") ;;
+      "rev-parse HEAD"|"rev-parse origin/main") printf abcdef ;;
+    esac`,
+    gh: `case "$1 $2" in
+      "repo view") printf owner/repo ;;
+      "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") ${ci} ;;
+    esac`,
+    npm,
+  });
+}
+
+test("release refuses before any change when npm is not logged in as a package owner", (t) => {
+  for (const [npm, message] of [
+    ['case "$1" in whoami) echo "npm error code E401" >&2; exit 1 ;; esac', /npm is not logged in \(npm whoami: npm error code E401\); run npm login/],
+    ['case "$1" in whoami) printf other ;; owner) printf "tester <tester@example.test>\\n" ;; esac', /npm user other is not an owner of fixture \(owners: tester\)/],
+  ]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const result = run("release.mjs", ["0.4.0"], { root, env: { PATH: releaseDryRun(root, { npm }) } });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, message);
+    assert.equal(readFileSync(join(root, "package.json"), "utf8"), '{"name":"fixture","version":"0.0.0"}\n');
+  }
+});
+
+test("release accepts a package that was never published", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const npm = 'case "$1" in whoami) printf tester ;; owner) echo "npm error 404 Not Found - GET https://registry.npmjs.org/fixture" >&2; exit 1 ;; esac';
+  const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: releaseDryRun(root, { npm }) } });
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("release waits for a CI run on HEAD that is still running", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const count = join(root, "ci-count");
+  const ci = `n=$(cat '${count}' 2>/dev/null || echo 0); echo $((n + 1)) > '${count}'; if [ "$n" -lt 2 ]; then printf 'CI\\tpush\\tmain\\tin_progress\\t\\n'; else printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n'; fi`;
+  const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: releaseDryRun(root, { ci }), UB_CI_POLL_MS: "1" } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /Waiting for CI on HEAD/);
+  assert.equal(readFileSync(count, "utf8").trim(), "3");
+});
+
+test("release stops waiting for CI after its polls and refuses", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const ci = "printf 'CI\\tpush\\tmain\\tqueued\\t\\n'";
+  const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: releaseDryRun(root, { ci }), UB_CI_POLL_MS: "1", UB_CI_POLLS: "2" } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /CI is not green on HEAD \(pending\)/);
+});
+
+test("release does not wait for CI when it already refuses", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const ci = "printf 'CI\\tpush\\tmain\\tin_progress\\t\\n'";
+  const npm = 'case "$1" in whoami) exit 1 ;; esac';
+  const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: releaseDryRun(root, { ci, npm }), UB_CI_POLL_MS: "60000" } });
+  assert.equal(result.status, 1);
+  assert.doesNotMatch(result.stderr, /Waiting for CI/);
+  assert.match(result.stderr, /CI is not green on HEAD \(pending\)/);
+});
+
 test("release 0.3.x retains its hand-written changelog gate", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -58,7 +133,7 @@ test("release 0.3.x retains its hand-written changelog gate", (t) => {
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tmain\\tcompleted\\tfailure\\nCI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
     esac`,
-    npm: "exit 0",
+    npm: npmOwner,
   });
   const result = run("release.mjs", ["0.3.1", "--dry-run"], { root, env: { PATH: path } });
   assert.equal(result.status, 0, result.stderr);
@@ -85,7 +160,7 @@ test("release 0.4.0 generates task-row changelog entries and skips dropped tasks
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tmain\\tcompleted\\tfailure\\nCI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
     esac`,
-    npm: "exit 0",
+    npm: npmOwner,
   });
   const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: path } });
   assert.equal(result.status, 0, result.stderr);
@@ -109,7 +184,7 @@ test("release 0.4.0 replaces a hand-written unreleased section", (t) => {
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tmain\\tcompleted\\tfailure\\nCI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
     esac`,
-    npm: "exit 0",
+    npm: npmOwner,
   });
   const result = run("release.mjs", ["0.4.0"], { root, env: { PATH: path } });
   assert.equal(result.status, 0, result.stderr);
@@ -135,7 +210,7 @@ test("release 0.4.0 inserts a generated section below the changelog intro", (t) 
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tmain\\tcompleted\\tfailure\\nCI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
     esac`,
-    npm: "exit 0",
+    npm: npmOwner,
   });
   const result = run("release.mjs", ["0.4.0"], { root, env: { PATH: path } });
   assert.equal(result.status, 0, result.stderr);
@@ -167,7 +242,7 @@ test("release 0.4.0 refuses missing task-row changelog data and invalid done suf
         "repo view") printf owner/repo ;;
         "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tmain\\tcompleted\\tfailure\\nCI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
       esac`,
-      npm: "exit 0",
+      npm: npmOwner,
     });
     const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: path } });
     assert.equal(result.status, 1);
@@ -193,7 +268,7 @@ test("release pushes its annotated tag through --follow-tags", (t) => {
       "repo view") printf owner/repo ;;
       api) printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
     esac`,
-    npm: "exit 0",
+    npm: npmOwner,
   });
   command(root, ["init", "-b", "main"]);
   command(root, ["config", "user.email", "tests@example.test"]);
@@ -209,6 +284,100 @@ test("release pushes its annotated tag through --follow-tags", (t) => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(command(root, ["ls-remote", "--tags", "origin"]), /refs\/tags\/v1\.2\.3$/m);
   assert.equal(command(root, ["cat-file", "-t", "v1.2.3"]).trim(), "tag");
+});
+
+test("a failed publish keeps the commit and tag local and says how to finish", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  writeFileSync(join(root, "CHANGELOG.md"), "## 1.2.3 — unreleased\n");
+  writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done` (#1)\n**Release:** 1.2.3\n**Changelog:** One\n");
+  const path = fakeCommands(root, {
+    gh: `case "$1" in
+      "repo view") printf owner/repo ;;
+      api) printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
+    esac`,
+    npm: 'case "$1" in whoami) printf tester ;; owner) printf "tester <t@example.test>\\n" ;; publish) echo "npm error code E404" >&2; exit 1 ;; esac',
+  });
+  command(root, ["init", "-b", "main"]);
+  command(root, ["config", "user.email", "tests@example.test"]);
+  command(root, ["config", "user.name", "Tests"]);
+  command(root, ["add", "."]);
+  command(root, ["commit", "-m", "fixture"]);
+  const origin = `${root}-origin.git`;
+  t.after(() => rmSync(origin, { recursive: true, force: true }));
+  execFileSync("git", ["init", "--bare", origin]);
+  command(root, ["remote", "add", "origin", origin]);
+  command(root, ["push", "-u", "origin", "main"]);
+  const result = run("release.mjs", ["1.2.3"], { root, env: { PATH: path } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /npm publish failed\. The commit 1\.2\.3 and the tag v1\.2\.3 exist only here/);
+  assert.match(result.stderr, /npm publish && UB_RELEASE=1 git push --follow-tags/);
+  assert.equal(command(root, ["cat-file", "-t", "v1.2.3"]).trim(), "tag");
+  assert.doesNotMatch(command(root, ["ls-remote", "--tags", "origin"]), /v1\.2\.3/);
+});
+
+/** A real repository for release 1.2.3 with a bare origin; `npm` is the fake npm body. Returns the PATH and the origin path. */
+function releaseRepository(t, root, npm) {
+  writeFileSync(join(root, "CHANGELOG.md"), "## 1.2.3 — unreleased\n");
+  writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done` (#1)\n**Release:** 1.2.3\n**Changelog:** One\n");
+  const path = fakeCommands(root, {
+    gh: `case "$1" in
+      "repo view") printf owner/repo ;;
+      api) printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
+    esac`,
+    npm,
+  });
+  command(root, ["init", "-b", "main"]);
+  command(root, ["config", "user.email", "tests@example.test"]);
+  command(root, ["config", "user.name", "Tests"]);
+  command(root, ["add", "."]);
+  command(root, ["commit", "-m", "fixture"]);
+  const origin = `${root}-origin.git`;
+  t.after(() => rmSync(origin, { recursive: true, force: true }));
+  execFileSync("git", ["init", "--bare", origin]);
+  command(root, ["remote", "add", "origin", origin]);
+  command(root, ["push", "-u", "origin", "main"]);
+  return { path, origin };
+}
+
+test("release refuses a version already tagged here, on origin or on npm, before any change", (t) => {
+  for (const [setup, message] of [
+    [(root) => command(root, ["tag", "v1.2.3"]), /tag v1\.2\.3 already exists here/],
+    [(root) => { command(root, ["tag", "v1.2.3"]); command(root, ["push", "-q", "origin", "v1.2.3"]); command(root, ["tag", "-d", "v1.2.3"]); }, /tag v1\.2\.3 already exists on origin/],
+    [() => {}, /fixture@1\.2\.3 is already on npm/],
+  ]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const onNpm = message.source.includes("npm");
+    const { path } = releaseRepository(t, root, `case "$1" in whoami) printf tester ;; owner) printf "tester <t@example.test>\\n" ;; view) ${onNpm ? "printf 1.2.3" : "exit 1"} ;; esac`);
+    setup(root);
+    const result = run("release.mjs", ["1.2.3"], { root, env: { PATH: path } });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, message);
+    assert.equal(command(root, ["log", "-1", "--format=%s"]).trim(), "fixture");
+    assert.equal(readFileSync(join(root, "package.json"), "utf8"), '{"name":"fixture","version":"0.0.0"}\n');
+  }
+});
+
+test("a push that fails after the publish says the package is out and how to push", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const { path, origin } = releaseRepository(t, root, npmOwner);
+  writeFileSync(join(origin, "hooks", "pre-receive"), "#!/bin/sh\nexit 1\n");
+  chmodSync(join(origin, "hooks", "pre-receive"), 0o755);
+  const result = run("release.mjs", ["1.2.3"], { root, env: { PATH: path } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /1\.2\.3 is published on npm, but the push failed\. .*UB_RELEASE=1 git push --follow-tags/);
+  assert.doesNotMatch(result.stderr, /\n\s+at /);
+});
+
+test("release retries a CI read that failed once", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const count = join(root, "ci-count");
+  const ci = `n=$(cat '${count}' 2>/dev/null || echo 0); echo $((n + 1)) > '${count}'; if [ "$n" -lt 1 ]; then echo "HTTP 502" >&2; exit 1; else printf 'CI\\tpush\\tmain\\tcompleted\\tsuccess\\n'; fi`;
+  const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: releaseDryRun(root, { ci }), UB_CI_POLL_MS: "1" } });
+  assert.equal(result.status, 0, result.stderr);
 });
 
 test("merge dry-run requires a green, mergeable PR and does not merge it", (t) => {
@@ -309,6 +478,95 @@ test("task start --from stacks a task whose row exists only on that branch (deci
   assert.match(usage.stderr, /Usage/);
 });
 
+/** A repository with an origin at `parent/origin.git`, holding `tasks` as build/TASKS.md on main. */
+function taskRepository(tasks) {
+  const parent = mkdtempSync(join(tmpdir(), "ultimate-brain-task-"));
+  const root = join(parent, "repo");
+  mkdirSync(join(root, "build"), { recursive: true });
+  writeFileSync(join(root, "package.json"), '{"name":"fixture","version":"0.0.0"}\n');
+  writeFileSync(join(root, "package-lock.json"), '{"name":"fixture","lockfileVersion":3,"packages":{}}\n');
+  writeFileSync(join(root, "build/TASKS.md"), tasks);
+  command(root, ["init", "-b", "main"]);
+  command(root, ["config", "user.email", "tests@example.test"]);
+  command(root, ["config", "user.name", "Tests"]);
+  command(root, ["add", "."]);
+  command(root, ["commit", "-m", "fixture"]);
+  const bare = join(parent, "origin.git");
+  execFileSync("git", ["init", "--bare", bare]);
+  command(root, ["remote", "add", "origin", bare]);
+  command(root, ["push", "-u", "origin", "main"]);
+  return { parent, root, path: fakeCommands(root, { npm: "exit 0" }) };
+}
+
+test("task start --new writes a new task's row at the end of its release section", (t) => {
+  const { parent, root, path } = taskRepository("# Plan\n\n## 1.2.0 — Old\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n**Changelog:** Old\n\n## 1.3.0 — Next\n\nIntro.\n\n## Your tasks\n");
+  t.after(() => rmSync(parent, { recursive: true, force: true }));
+  const result = run("task.mjs", ["start", "CC-2", "--new", "Add a thing", "--release", "1.3.0"], { root, env: { PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  const worktree = join(parent, "ub-CC-2");
+  assert.equal(command(worktree, ["branch", "--show-current"]).trim(), "claude/CC-2-add-a-thing");
+  assert.equal(readFileSync(join(worktree, "build/TASKS.md"), "utf8"),
+    "# Plan\n\n## 1.2.0 — Old\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n**Changelog:** Old\n\n## 1.3.0 — Next\n\nIntro.\n\n### CC-2 · Add a thing · `in progress`\n**Release:** 1.3.0\n**Changelog:**\n**Output:**\n**Acceptance:**\n\n## Your tasks\n");
+  assert.match(result.stderr, /Fill in the \*\*Changelog:\*\*/);
+  assert.equal(command(worktree, ["config", "--get", "core.hooksPath"]).trim(), ".githooks");
+});
+
+test("task start --new creates a missing release section in version order", (t) => {
+  for (const [release, expected] of [
+    ["1.2.1", "## 1.2.0\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n\n## 1.2.1\n\n### CC-2 · New · `in progress`\n**Release:** 1.2.1\n**Changelog:**\n**Output:**\n**Acceptance:**\n\n## 1.3.0\n\n## Your tasks\n"],
+    ["1.3.0-rc.1", "## 1.2.0\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n\n## 1.3.0-rc.1\n\n### CC-2 · New · `in progress`\n**Release:** 1.3.0-rc.1\n**Changelog:**\n**Output:**\n**Acceptance:**\n\n## 1.3.0\n\n## Your tasks\n"],
+    ["1.4.0", "## 1.2.0\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n\n## 1.3.0\n\n## 1.4.0\n\n### CC-2 · New · `in progress`\n**Release:** 1.4.0\n**Changelog:**\n**Output:**\n**Acceptance:**\n\n## Your tasks\n"],
+  ]) {
+    const { parent, root, path } = taskRepository("## 1.2.0\n\n### CC-1 · Old · `done` (#1)\n**Release:** 1.2.0\n\n## 1.3.0\n\n## Your tasks\n");
+    t.after(() => rmSync(parent, { recursive: true, force: true }));
+    const result = run("task.mjs", ["start", "CC-2", "--new", "New", "--release", release], { root, env: { PATH: path } });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(join(parent, "ub-CC-2", "build/TASKS.md"), "utf8"), expected);
+  }
+});
+
+test("task start --new refuses an existing id and incomplete flags", (t) => {
+  const { parent, root, path } = taskRepository("### CC-1 · Old · `todo`\n**Release:** 1.2.0\n");
+  t.after(() => rmSync(parent, { recursive: true, force: true }));
+  const existing = run("task.mjs", ["start", "CC-1", "--new", "Again", "--release", "1.2.0"], { root, env: { PATH: path } });
+  assert.match(existing.stderr, /CC-1 already exists on origin\/main/);
+  command(root, ["push", "-q", "origin", "main:refs/heads/claude/CC-5-open-elsewhere"]);
+  const open = run("task.mjs", ["start", "CC-5", "--new", "Clash", "--release", "1.2.0"], { root, env: { PATH: path } });
+  assert.match(open.stderr, /CC-5 is already used by origin\/claude\/CC-5-open-elsewhere/);
+  for (const args of [["--new", "No release"], ["--release", "1.2.0"], ["--new", "Bad", "--release", "next"], ["--new", "A · B", "--release", "1.2.0"], ["--new", "Two\nlines", "--release", "1.2.0"], ["--new", "A `tick`", "--release", "1.2.0"], ["--new", "x", "--new", "y"]]) {
+    assert.match(run("task.mjs", ["start", "CC-2", ...args], { root, env: { PATH: path } }).stderr, /Usage/);
+  }
+  assert.match(run("task.mjs", ["done", "CC-1", "--release", "1.2.0"], { root }).stderr, /Usage/);
+  assert.equal(existsSync(join(parent, "ub-CC-2")), false);
+});
+
+test("task clean removes merged task worktrees and keeps open, fresh and dirty ones", (t) => {
+  const { parent, root, path } = taskRepository("### CC-1 · Merged · `todo`\n**Release:** 1.2.0\n\n### CC-2 · Open · `todo`\n**Release:** 1.2.0\n\n### CC-3 · Fresh · `todo`\n**Release:** 1.2.0\n\n### CC-4 · Dirty · `todo`\n**Release:** 1.2.0\n");
+  t.after(() => rmSync(parent, { recursive: true, force: true }));
+  for (const id of ["CC-1", "CC-2", "CC-3", "CC-4"]) assert.equal(run("task.mjs", ["start", id], { root, env: { PATH: path } }).status, 0);
+  for (const id of ["CC-1", "CC-2", "CC-4"]) {
+    const worktree = join(parent, `ub-${id}`);
+    writeFileSync(join(worktree, `${id}.txt`), `${id}\n`);
+    command(worktree, ["add", "."]);
+    command(worktree, ["commit", "-m", `${id}: work`]);
+  }
+  command(join(parent, "ub-CC-3"), ["checkout", "--", "build/TASKS.md"]);
+  writeFileSync(join(parent, "ub-CC-4", "CC-4.txt"), "changed\n");
+  command(root, ["merge", "--no-ff", "-m", "Merge CC-1", "claude/CC-1-merged"]);
+  command(root, ["merge", "--no-ff", "-m", "Merge CC-4", "claude/CC-4-dirty"]);
+  command(root, ["push", "origin", "main"]);
+  // The user has not pulled: local main lags origin/main, so `git branch -d` would refuse.
+  command(root, ["reset", "-q", "--hard", "HEAD~2"]);
+  const result = run("task.mjs", ["clean"], { root, env: { PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /^Removed claude\/CC-1-merged$/m);
+  assert.match(result.stderr, /Kept claude\/CC-4-dirty: uncommitted changes/);
+  assert.equal(existsSync(join(parent, "ub-CC-1")), false);
+  for (const id of ["CC-2", "CC-3", "CC-4"]) assert.equal(existsSync(join(parent, `ub-${id}`)), true, id);
+  assert.doesNotMatch(command(root, ["branch", "--list"]), /CC-1-merged/);
+  assert.match(run("task.mjs", ["clean", "CC-1"], { root }).stderr, /Usage/);
+});
+
 test("task start refuses unknown and non-todo tasks", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -399,6 +657,8 @@ test("the release gate reads only the newest push run of the CI workflow on main
   assert.equal(ciWorkflowPassed("CI\tpush\tmain\tcompleted\tsuccess\nCI\tpush\tmain\tcompleted\tfailure\n"), true);
   assert.equal(ciWorkflowPassed("merge-ready\tissue_comment\tmain\tcompleted\tsuccess\n"), false);
   assert.equal(ciWorkflowPassed(""), false);
+  const { ciWorkflowState } = await import("../scripts/common.mjs");
+  assert.deepEqual(["", "CI\tpush\tmain\tqueued\t\n", "CI\tpush\tmain\tcompleted\tsuccess\n", "CI\tpush\tmain\tcompleted\tcancelled\n"].map(ciWorkflowState), ["missing", "pending", "success", "failure"]);
   // A newer green run for a tag or another branch must not hide main's failed run (main-guard runs only on main).
   assert.equal(ciWorkflowPassed("CI\tpush\tv0.7.0\tcompleted\tsuccess\nCI\tpush\tmain\tcompleted\tfailure\n"), false);
   assert.equal(ciWorkflowPassed("CI\tpush\tother\tcompleted\tsuccess\n"), false);
