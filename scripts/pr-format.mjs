@@ -1,4 +1,4 @@
-import { contentAt, fail, taskEntries, tryCommand } from "./common.mjs";
+import { contentAt, fail, optionalContentAt, taskEntries, tryCommand } from "./common.mjs";
 
 const pr = process.argv[2] ?? process.env.GITHUB_REF_NAME;
 if (!/^\d+$/.test(pr ?? "")) fail("PR number is required");
@@ -14,13 +14,17 @@ else {
       const repo = tryCommand("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
       const base = repo.ok ? contentAt(repo.stdout, "build/TASKS.md", details.baseRefOid) : repo;
       const head = repo.ok ? contentAt(repo.stdout, "build/TASKS.md", details.headRefOid) : repo;
+      const baseHistory = repo.ok ? optionalContentAt(repo.stdout, "build/HISTORY.md", details.baseRefOid) : repo;
+      const headHistory = repo.ok ? optionalContentAt(repo.stdout, "build/HISTORY.md", details.headRefOid) : repo;
       const baseLog = repo.ok ? contentAt(repo.stdout, "CHANGELOG.md", details.baseRefOid) : repo;
       const headLog = repo.ok ? contentAt(repo.stdout, "CHANGELOG.md", details.headRefOid) : repo;
       if (!base.ok || !head.ok) fail(`Cannot read PR task rows: ${(base.ok ? head : base).message}`);
+      else if (!baseHistory.ok || !headHistory.ok) fail(`Cannot read build/HISTORY.md: ${(baseHistory.ok ? headHistory : baseHistory).message}`);
       else if (!baseLog.ok || !headLog.ok) fail(`Cannot read CHANGELOG.md: ${(baseLog.ok ? headLog : baseLog).message}`);
       else {
-        const baseTasks = taskEntries(base.stdout);
-        const headTasks = taskEntries(head.stdout);
+        // A row moved from TASKS.md to HISTORY.md is not lost (CC-94).
+        const baseTasks = taskEntries(`${base.stdout}\n${baseHistory.stdout}`);
+        const headTasks = taskEntries(`${head.stdout}\n${headHistory.stdout}`);
         const missingHeadings = baseTasks.filter((task) => !headTasks.some((headTask) => headTask.id === task.id)).map((task) => task.id);
         const missingChangelog = baseTasks.filter((task) => task.changelog !== undefined && headTasks.find((headTask) => headTask.id === task.id)?.changelog === undefined).map((task) => task.id);
         const headLines = changelogIds(headLog.stdout);
