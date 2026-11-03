@@ -198,15 +198,18 @@ export function eligibleNotes(notes: readonly Note[], loaded: Pick<Loaded, "supp
  *  partly restricted note loses what may carry excluded text (capture-and-review §5.1, "Indexes"). */
 export function indexNotes(notes: readonly Note[], loaded: Pick<Loaded, "suppressions"> & Partial<Pick<Loaded, "restores">>): Note[] {
   const context = contextFor(notes, loaded);
-  return notes.map((note) => {
-    const restriction = restrictionOf(note, context);
-    if (restriction.whole) {
-      const attributes = { ...note.attributes };
-      delete attributes.summary;
-      if ("facts" in attributes) attributes.facts = {};
-      if ("timeline" in attributes) attributes.timeline = [];
-      return { ...note, attributes, body: "" };
-    }
-    return eligibleNote(note, context) ?? note;
-  });
+  return notes.map((note) => publishableNote(note, context));
+}
+
+/** One note in the form a surface that is not retrieval may show: the index, and Notion (`sync plan` and `sync render`, capture-and-review §5.1). */
+export function publishableNote(note: Note, context: Context): Note {
+  const restriction = restrictionOf(note, context);
+  if (restriction.whole) {
+    const attributes = { ...note.attributes };
+    delete attributes.summary;
+    if ("facts" in attributes) attributes.facts = {};
+    if ("timeline" in attributes) attributes.timeline = [];
+    return { ...note, attributes, body: "" };
+  }
+  return eligibleNote(note, context) ?? note;
 }
