@@ -27,7 +27,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc --project tsconfig.build.json",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc --project tsconfig.build.json && node --experimental-strip-types scripts/build-skills.ts --snapshot",
     "prepack": "npm run build",
     "skills": "node --experimental-strip-types scripts/build-skills.ts && node --experimental-strip-types --test tests/skills.test.ts",
     "test:package": "node scripts/test-package.mjs",
