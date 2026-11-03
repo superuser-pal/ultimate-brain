@@ -32,3 +32,15 @@ test("a report line that links a note resting on excluded content is flagged (so
   assert.equal(issues[0].line, (await readFile(join(dir, created.json.data.path), "utf8")).split("\n").findIndex((text) => text.includes("Pricing was settled")) + 1);
   assert.ok((await readFile(join(dir, created.json.data.path), "utf8")).includes("Pricing was settled"), "the accepted report text is not edited");
 });
+
+test("sync render publishes a restricted note in its eligible form, so a copy published before the exclusion is re-rendered without the excluded text", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
+  const before = (await run(dir, ["sync", "render", "--ids", note.id])).json.data.items[0];
+  assert.ok(String(before.body).includes("95k"), "while the paragraph is live it is published");
+  await exclude();
+  const after = (await run(dir, ["sync", "render", "--ids", note.id])).json.data.items[0];
+  assert.ok(!JSON.stringify(after).includes("95k"), "the excluded text is not in the payload");
+  assert.ok(String(after.body).includes("Kept statement"), "what stays is still published");
+  assert.notEqual(after.published["@content"], before.published["@content"], "the content hash moves, so a published copy is re-rendered");
+});

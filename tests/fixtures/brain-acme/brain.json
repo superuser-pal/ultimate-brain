@@ -3,6 +3,7 @@
   "owner": { "name": "Alex Example" },
   "budgets": { "ingest_max_notes": 8 },
   "notion": {
+    "review_sections": true,
     "databases": {
       "areas": "a1000000-0000-4000-8000-000000000001",
       "goals": "a1000000-0000-4000-8000-000000000002",
