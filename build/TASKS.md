@@ -53,7 +53,7 @@ Future implementation tasks are decomposed by Claude Code after their opening sc
 
 ## 0.8.1 — Review inside the building session (decision 0063)
 
-### CC-91 · A Claude sub-agent reviews in place of Codex · `review`
+### CC-91 · A Claude sub-agent reviews in place of Codex · `done` (#176)
 **Release:** 0.8.1
 **Changelog:** development only: a Claude reviewer sub-agent reviews each PR and its pass turns `merge-ready` green, so PRs no longer wait for Codex (decision 0063).
 **Output:** decision 0063 (accepted by the user, 2026-11-03); `.claude/agents/pr-reviewer.md` (Sonnet, read-only, fixed method, posts its findings and verdict); `"model": "opus"` in `.claude/settings.json`; `merge-ready` and `merge.mjs` accept `Review (Claude reviewer): pass at <sha>` on `claude/` PRs (`reviewersFor` in scripts/common.mjs); AGENTS.md, the PR template, README and this file say who reviews; 0044 gets an "Amended by" pointer. No CLI change.
