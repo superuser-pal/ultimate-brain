@@ -479,6 +479,22 @@ test("the release gate blocks only an unclassified change that may be incompatib
   }
 });
 
+test("a release dry run writes no integration issue; a release records the change it saw", async (t) => {
+  for (const dry of [true, false]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const path = gateDryRun(root);
+    const { env, mock } = await integrationMock(t, (state) => forkChange(state, { body: prBody("compatible") }));
+    const result = await runAsync("release.mjs", ["0.9.0", ...(dry ? ["--dry-run"] : [])], { root, env: { ...env, PATH: path } });
+    const writes = mock.requests.filter((request) => request.method !== "GET");
+    if (dry) {
+      assert.equal(result.status, 0, result.stderr);
+      assert.deepEqual(writes, []);
+    }
+    else assert.deepEqual(writes.map((request) => [request.method, request.path]), [["POST", `/repos/${PRODUCT}/issues`]]);
+  }
+});
+
 test("the release gate refuses the fork's first release while it is unclassified: it has no impact to read", async (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
