@@ -37,7 +37,7 @@ node scripts/release.mjs 0.4.0
 
 Then it sets the version, writes the CHANGELOG section from the task rows (`- <id> (#N): <text>`, in build/TASKS.md order; for 0.3.x it dates the hand-written entry), commits `0.4.0`, tags `v0.4.0`, publishes and pushes the commit and tag. Check with `npm view ultimate-brain version`.
 
-**If the publish fails** (for example E404: the logged-in account isn't an owner), the commit and tag exist only in the main checkout and nothing is pushed. Don't run `release.mjs` again. Fix the cause, then run what it prints: `npm publish && UB_RELEASE=1 git push --follow-tags`.
+**If the publish fails** (for example E404: the logged-in account isn't an owner), the commit and tag exist only in the main checkout and nothing is pushed. Don't run `release.mjs` again. Fix the cause, then run what it prints: `npm publish && UB_RELEASE=1 git push --follow-tags` (for a prerelease, `npm publish --tag next && …`). If the publish worked and only the push failed, run `UB_RELEASE=1 git push --follow-tags`. A release whose tag already exists, here or on origin, or whose version is already on npm, is refused before anything changes.
 
 - **patch:** fixes only. **minor:** new commands, skill changes, new template rules. Stay below 1.0.0 until v1 is declared stable.
 - **A candidate:** `node scripts/release.mjs 0.3.0-rc.1` publishes on the `next` tag, never `latest`.
