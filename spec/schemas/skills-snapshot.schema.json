@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ultimate-brain.dev/schemas/v1/skills-snapshot.schema.json",
   "title": "snapshot.json: a released skill snapshot (v1)",
-  "description": "Manifest of an immutable operational-skill snapshot. See spec/skills-delivery.md §2 and decision 0059. Uniqueness of names and paths, sort order and integrity are checked by the reader (§2.3), not by this schema.",
+  "description": "Manifest of an immutable operational-skill snapshot. See spec/skills-delivery.md §2 and decision 0059. Sort order, uniqueness and integrity are the manifest checks of §2.3 (rules 3 and 4), not this schema.",
   "type": "object",
   "required": [
     "format",
@@ -177,6 +177,12 @@
         "properties": {
           "upstream": {
             "type": "null"
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "commit": false
+            }
           }
         }
       }

@@ -1616,9 +1616,12 @@ brain proposal revise --input <file|-> [--dry-run] [--json]
 
 ### 5.28 Pinned skills (0059, [skills-delivery.md](skills-delivery.md))
 
-Every brain pins the operational skills it uses in `skills.lock.json` at its root (skills-delivery §3). CC-100 builds this section; the formats, the command changes to `init`, `link`, `upgrade` and `lint`, rollback and the transition are in skills-delivery.md. Sections §3.5, §5.1, §5.2, §5.10, §5.12 and §5.15 are rewritten to match by CC-100, in the same PR as the code.
+Every brain pins the operational skills it uses in `skills.lock.json` at its root (skills-delivery §3). CC-100 builds this section. The formats, the command changes to `init`, `link`, `upgrade` and `lint`, rollback and the transition are in skills-delivery.md. CC-100 rewrites §3.5, §5.1, §5.2, §5.10, §5.12 and §5.15 to match, in the same PR as the code.
 
-**Pin guard.** Every command that resolves a brain (§4) reads the pin's state (skills-delivery §3) after resolving the brain and before reading input or writing anything, except `status`, `lint`, `upgrade` and `recover`, which always run so the user can see and repair the pin. `--dry-run` and read-only commands (`query`, `log`, `proposal list`, `repo changes`, …) are guarded too: an incompatible pin means the skill calling them may expect another contract.
+**Pin guard.** Every command except `init` resolves a brain (§4). After resolution and the `RECOVERY_NEEDED` check, and before reading input or writing anything, each such command determines the brain's state (skills-delivery §3, rows 1 to 4 only).
+- **Exempt:** `status`, `lint`, `upgrade` and `recover` always run, so the user can see and repair the pin.
+- **Guarded:** every other command, including `config`, read-only commands (`query`, `log`, `proposal list`, `repo changes`, `index --check`) and every `--dry-run`. An incompatible pin means the skill calling them may expect another contract.
+- **Not affected:** `--help`, `--version`, usage errors and `RETIRED` come before resolution. `brain link` guards the resolved brain, not the linked repo.
 
 | State | Guarded command |
 |---|---|
@@ -1626,31 +1629,44 @@ Every brain pins the operational skills it uses in `skills.lock.json` at its roo
 | `invalid` | refuses `SKILLS_PIN_INVALID` |
 | `incompatible` | refuses `SKILLS_INCOMPATIBLE` |
 | `missing` | refuses `SKILLS_SNAPSHOT_MISSING` |
-| `drift`, `pinned` | runs; drift is a lint error (`product-file`), never a stop |
+| `drift`, `pinned` | runs; drift is a lint error (`product-file`), never a stop. The guard doesn't compute it. |
 
-The guard reads only `skills.lock.json` and stats each pinned `SKILL.md` in both trees; it never hashes files. `brain init` has no brain to guard and checks the package snapshot instead (skills-delivery §6.1).
+**Messages** (normative wording):
+- `{…}` is filled in. Paths are brain-relative; a message never contains a machine path.
+- "Newer" and "older" than the range are as skills-delivery §2.1 defines them. A version that is both gets the newer message.
 
-**Messages** (normative wording; `{…}` filled in; one line, no paths but `skills.lock.json`):
-- `SKILLS_INCOMPATIBLE`, CLI newer than the range: `This brain's skills ({name} {version}) need ultimate-brain {cli}; this CLI is {running}. Run brain upgrade to install the skills this CLI ships, or keep these skills with npm install -g ultimate-brain@{installed_by}.`
-- `SKILLS_INCOMPATIBLE`, CLI older than the range: `This brain's skills ({name} {version}) need ultimate-brain {cli}; this CLI is {running}. Install the version that pinned them: npm install -g ultimate-brain@{installed_by}.`
-- `SKILLS_PIN_INVALID`: `skills.lock.json is unreadable or invalid ({reason}). Run brain upgrade to rewrite it.`
-- `SKILLS_SNAPSHOT_MISSING`: `Pinned skill {skill} is missing from {.agents/skills | .claude/skills} ({name} {version}). Run brain upgrade to restore it.` (for `link`'s drift: `… differs from the pin …`)
-- `SKILLS_SNAPSHOT_INVALID`: `The skills shipped with ultimate-brain {running} are unusable ({reason}). Reinstall: npm install -g ultimate-brain@{running}.`
-- `SKILLS_DOWNGRADE`: `This brain pins {name} {pinned version}; this CLI ships the older {package version}. Install ultimate-brain@{installed_by}, or roll back as docs/releasing.md says.`
+| Code | Message |
+|---|---|
+| `SKILLS_INCOMPATIBLE` (newer) | `This brain's skills ({name} {version}) need ultimate-brain {cli}; this CLI is {running}. Run brain upgrade to install the skills this CLI ships, or keep these skills with npm install -g ultimate-brain@{installed_by}.` |
+| `SKILLS_INCOMPATIBLE` (older) | `This brain's skills ({name} {version}) need ultimate-brain {cli}; this CLI is {running}. Install the version that pinned them: npm install -g ultimate-brain@{installed_by}.` |
+| `SKILLS_PIN_INVALID` | `skills.lock.json is invalid ({reason}). Run brain upgrade to rewrite it.` (`{reason}` per skills-delivery §3) |
+| `SKILLS_SNAPSHOT_MISSING` (guard) | `Pinned skill {skill} is missing from {tree} ({name} {version}). Run brain upgrade to restore it.` (`{tree}` is `.agents/skills` or `.claude/skills`; the first missing skill per skills-delivery §3) |
+| `SKILLS_SNAPSHOT_MISSING` (`link`) | `{path} differs from the pinned skills ({name} {version}). Run brain upgrade in the brain, then brain link again.` |
+| `SKILLS_SNAPSHOT_INVALID` | `The skills shipped with ultimate-brain {running} are unusable ({reason}). Reinstall: npm install -g ultimate-brain@{running}.` (`{reason}` = the skills-delivery §2.3 reason, `not compatible with {running} ({cli})`, or `same version, different content`) |
+| `SKILLS_DOWNGRADE` | `This brain pins {name} {pinned}; this CLI ships the older {shipped}. Install ultimate-brain@{installed_by}, or roll back as docs/releasing.md says.` |
 
-`details` carries the machine-readable fields: `{ "state", "name", "version", "cli", "running", "installed_by" }` (absent ones left out).
+**Warnings:**
+
+| Code | Command | Message |
+|---|---|---|
+| `SKILLS_COMPETING` | `init`, `upgrade`, `link` | `{n} competing skill copies; see data.skills.competing and remove them.` |
+| `SKILLS_UNPINNED` | `link` | `The brain's skills are not pinned; the linked repo got the skills of ultimate-brain {running}. Run brain upgrade in the brain.` |
+| `SKILLS_LOCK_REPLACED` | `upgrade` | `skills.lock.json was invalid ({reason}) and was replaced.` |
+
+**`details`** of each error, with absent values left out:
+- `SKILLS_INCOMPATIBLE`, `SKILLS_PIN_INVALID`, `SKILLS_SNAPSHOT_MISSING`: `{ "state", "name", "version", "cli", "running", "installed_by", "reason", "skill", "path" }`.
+- `SKILLS_SNAPSHOT_INVALID`: `{ "reason", "running" }`.
+- `SKILLS_DOWNGRADE`: `{ "name", "pinned", "shipped", "installed_by" }`.
 
 **Error codes** (added to §3.5 by CC-100):
 
 | Code | Exit | When |
 |---|---|---|
-| `SKILLS_PIN_INVALID` | 3 | `skills.lock.json` is not JSON or fails its schema |
-| `SKILLS_INCOMPATIBLE` | 3 | the running CLI version doesn't satisfy the pin's `cli` range |
-| `SKILLS_SNAPSHOT_MISSING` | 3 | a pinned `SKILL.md` is missing from a tree; for `link`, a pinned file it copies is missing or differs |
+| `SKILLS_PIN_INVALID` | 3 | the brain's state is `invalid` |
+| `SKILLS_INCOMPATIBLE` | 3 | the brain's state is `incompatible` |
+| `SKILLS_SNAPSHOT_MISSING` | 3 | the brain's state is `missing`; for `link`, a pinned file it copies is missing or differs |
 | `SKILLS_SNAPSHOT_INVALID` | 3 | the package snapshot is invalid or excludes the running CLI (`init`, `upgrade`, `link` on an unpinned brain); or a released snapshot changed content under the same version (`upgrade`) |
 | `SKILLS_DOWNGRADE` | 5 | `upgrade` would lower the pin's version under the same snapshot name |
-
-Warnings: `SKILLS_COMPETING` (`init`, `upgrade`, `link`: a competing copy exists, skills-delivery §5), `SKILLS_UNPINNED` (`link` on an unpinned brain), `SKILLS_LOCK_REPLACED` (`upgrade` replaced an invalid lock).
 
 **`brain status` gains `data.skills`** (always present):
 
@@ -1659,10 +1675,19 @@ Warnings: `SKILLS_COMPETING` (`init`, `upgrade`, `link`: a competing copy exists
   "state": "pinned",
   "name": "ultimate-brain-skills", "version": "1.2.0", "cli": ">=0.9.0 <0.10.0",
   "integrity": "sha256-…", "installed_by": "0.9.0", "running": "0.9.1",
-  "package": { "name": "ultimate-brain-skills", "version": "1.3.0", "compatible": true },
+  "reason": null,
+  "package": { "name": "ultimate-brain-skills", "version": "1.3.0", "compatible": true, "reason": null },
   "drift": [],
   "competing": [ { "kind": "global", "name": "brain-query", "path": "~/.claude/skills/brain-query" } ]
 }
 ```
 
-`state` is one of skills-delivery §3's states. `unpinned` and `invalid` leave `name`, `version`, `cli`, `integrity` and `installed_by` `null`. `package` describes the package snapshot (`null` when it is unreadable; `compatible` per skills-delivery §2). `drift` lists the paths that would be `product-file` errors for skills (sorted). `competing` as skills-delivery §5.3. Skills call `brain status` first; when `state` is `invalid`, `incompatible` or `missing`, the skill stops and shows the message the guard would give.
+- **`state`** is one of skills-delivery §3's states.
+  - `unpinned` and `invalid` set `name`, `version`, `cli`, `integrity` and `installed_by` to `null`.
+  - `reason` is the invalid reason for `invalid`, the first missing `{tree}/{skill}` for `missing`, and `null` otherwise.
+- **`package`** describes the package snapshot. `name` and `version` come from its manifest when the manifest passes its schema, and are `null` otherwise. `compatible` is per skills-delivery §2.3. `reason` is the §2.3 reason when the package snapshot is invalid, and `null` otherwise.
+- **`drift`** lists, sorted, the brain-relative paths that lint's `product-file` reports for skills: a missing folder, then a missing, mismatched or unlisted file.
+  - It is computed against the lock for `pinned`, `drift`, `missing` and `incompatible`, and against the package snapshot for `unpinned` (empty when that snapshot is invalid).
+  - It is `[]` for `invalid`.
+- **`competing`** is as skills-delivery §5.3 defines it.
+- **Skills act on the state.** Skills call `brain status` first. When `state` is `invalid`, `incompatible` or `missing`, the skill stops and shows the message the guard would give.
