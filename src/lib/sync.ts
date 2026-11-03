@@ -22,6 +22,7 @@ import { renderReview } from "./review-body.ts";
 import { parseReviewPageInput, planReviewRow, type ItemDecision, type ReviewDecision, type ReviewHeld, type ReviewPage, type ReviewRevision } from "./review-plan.ts";
 import { hasReportShape, reportLinks } from "./report-body.ts";
 import { gitBodyOf, parseWording, planWording, textHash, type AcceptedWording, type Wording, type WordingPlan } from "./wording.ts";
+import { restrictedSources } from "./eligibility.ts";
 import { contextFor, publishableNote, requireSuppressions } from "./suppressions.ts";
 
 const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "concepts", "documents", "review", "inbox"] as const;
@@ -200,24 +201,32 @@ function publishedBaseline(row: SnapshotRow, rendered: Record<string, unknown>):
 }
 
 /** A note as Notion may show it: a restricted note in its eligible form, so a published copy changes (and is re-rendered) once content is excluded (capture-and-review §5.1). */
-const publishForms = new WeakMap<Workspace, Map<string, Note>>();
-function publishable(workspace: Workspace, note: Note): Note {
-  let forms = publishForms.get(workspace);
-  if (forms === undefined) {
-    const loaded = requireSuppressions(workspace.root);
-    const context = contextFor(workspace.notes, loaded);
-    forms = new Map(workspace.notes.map((candidate) => [candidate.id, candidate.type === "source" || candidate.type === "proposal" ? candidate : publishableNote(candidate, context)]));
-    publishForms.set(workspace, forms);
+const publishForms = new WeakMap<Workspace, { forms: Map<string, Note>; restricted: Set<string> }>();
+function publishState(workspace: Workspace): { forms: Map<string, Note>; restricted: Set<string> } {
+  let state = publishForms.get(workspace);
+  if (state === undefined) {
+    const context = contextFor(workspace.notes, requireSuppressions(workspace.root));
+    state = {
+      forms: new Map(workspace.notes.map((candidate) => [candidate.id, candidate.type === "source" || candidate.type === "proposal" ? candidate : publishableNote(candidate, context)])),
+      restricted: restrictedSources(context),
+    };
+    publishForms.set(workspace, state);
   }
-  return forms.get(note.id) ?? note;
+  return state;
 }
+function publishable(workspace: Workspace, note: Note): Note { return publishState(workspace).forms.get(note.id) ?? note; }
+/** A proposal whose source is an older version or full copy of a changed input: its wording rests on excluded content and is not published (capture-and-review §5.1). */
+function proposalExcluded(workspace: Workspace, note: Note): boolean { return note.type === "proposal" && typeof note.attributes.source === "string" && publishState(workspace).restricted.has(note.attributes.source); }
 
-/** Whether a Review row is rendered as a page with item sections (capture-and-review §10): the space has the Decided property (`notion.review_sections`, set by migration 0013 or a fresh setup), and the row is new or was published that way. A row published before keeps the old layout. */
+/** Whether a Review row is rendered as a page with item sections (capture-and-review §10): it was published that way (`@review`), or it is not published yet and the space has the Decided property (`notion.review_sections`, set by migration 0013 or a fresh setup). A row published the old way keeps the old layout. */
+const HELD_TEXT = "Held: this rests on content you excluded from the brain, so it is not shown.";
 function reviewSections(workspace: Workspace, note: Note): boolean {
   const notion = isRecord(workspace.config.notion) ? workspace.config.notion : {};
-  if (note.type !== "proposal" || !Array.isArray(note.attributes.items) || notion.review_sections !== true) return false;
+  if (note.type !== "proposal" || !Array.isArray(note.attributes.items)) return false;
   const published = isRecord(note.attributes.notion_published) ? note.attributes.notion_published : {};
-  return typeof note.attributes.notion !== "string" || isRecord(published["@review"]);
+  // A row already published as a page stays one, whatever the flag says now; a row not yet published follows the flag.
+  if (isRecord(published["@review"])) return true;
+  return typeof note.attributes.notion !== "string" && notion.review_sections === true;
 }
 
 function planExisting(workspace: Workspace, asOf: string, row: SnapshotRow, note: Note, out: SyncPlan): void {
@@ -753,8 +762,8 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
       Name: reviewName(a), Kind: select(a.kind), About: targetText,
       "About Page": typeof page === "string" ? `https://www.notion.so/${page.replaceAll("-", "")}` : null,
       "Source Meeting": meeting?.type === "meeting" && typeof meeting.attributes.notion === "string" ? [meeting.attributes.notion] : [],
-      Now: reviewText(proposalBefore(a, workspace)), Proposed: reviewSections(workspace, note) ? `${(a.items as unknown[]).length} ${(a.items as unknown[]).length === 1 ? "change" : "changes"}: decide each one in the page` : proposed !== undefined ? proposed : reviewText(after ?? proposalAfter(a, workspace)),
-      Why: reviewText(a.why), Area: relationPages(reviewArea(a, workspace), workspace), State: select(proposalState(a.status)), "Brain ID": note.id,
+      Now: proposalExcluded(workspace, note) ? HELD_TEXT : reviewText(proposalBefore(a, workspace)), Proposed: proposalExcluded(workspace, note) ? HELD_TEXT : reviewSections(workspace, note) ? `${(a.items as unknown[]).length} ${(a.items as unknown[]).length === 1 ? "change" : "changes"}: decide each one in the page` : proposed !== undefined ? proposed : reviewText(after ?? proposalAfter(a, workspace)),
+      Why: proposalExcluded(workspace, note) ? HELD_TEXT : reviewText(a.why), Area: relationPages(reviewArea(a, workspace), workspace), State: select(proposalState(a.status)), "Brain ID": note.id,
     });
     return values;
   }

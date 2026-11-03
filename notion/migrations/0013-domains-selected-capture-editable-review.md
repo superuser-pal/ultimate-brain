@@ -4,7 +4,7 @@
 
 What changes: a meeting summary and a voice note are written as subjects and items, and you leave out what shouldn't enter the brain; a Review row from a source becomes a page with a section per change, where you edit the exact wording, decide change by change and click **Submit decisions**; **Won't Do** closes a task without counting it as done; **Domains** are an optional way to group Areas. Everything here is additive: nothing is renamed or deleted, and Review rows already written keep the old way of deciding (Your call, What to fix) until they are done.
 
-Run it after `brain upgrade` has put 0.8.0's CLI and skills in place. The brain writes the new Review layout only when `notion.review_sections` is `true` (set below, once Decided exists), so setting it back to `false` returns every new row to the old path.
+Run it after `brain upgrade` has put 0.8.0's CLI and skills in place. The brain writes a new Review row as a page with sections only when `notion.review_sections` is `true` (step 3 sets it, once Decided and the buttons exist). Setting it back to `false` returns every row **not yet published** to the old layout; a row already published as a page stays a page.
 
 Who does each step:
 - **agent:** the `brain-notion-change` skill, through the API, each with your yes;
@@ -20,7 +20,7 @@ Who does each step:
 | Descriptions: Proposed "Short pointer to what is proposed. The exact text and your decision are in the page, in each change's section."; Decided, Decided at, Accept all "Owner: you, through the Submit decisions and Submit and accept all buttons. The brain clears them once it has applied your decisions."; Your call "Shortcut for the whole row (Approve or Reject, read without Submit). To decide change by change, use the sections in the page." | agent |
 | *(Domains module)* Areas: add the relation **Domain**, two-way with Domains **Areas**; Orgs: add **Domains** (two-way, only with Orgs on) | agent |
 
-Read each property back after writing it. Skip the Domains row with Domains off (it is off by default). **Only after Decided reads back**, the agent runs `brain config set notion.review_sections true`: from then on a new Review row from a source is written as a page with sections. Until then, and for every row published before, the old layout is kept.
+Read each property back after writing it. Skip the Domains row with Domains off (it is off by default). The brain keeps the old Review layout until step 3 below is done.
 
 ## 2 · Domains (module on only)
 
@@ -41,7 +41,7 @@ Database `•••` → Properties → **New property** → **Button**, action 
 | Submit | **Submit decisions** | Decided → checked; Decided at → Now |
 | Submit all | **Submit and accept all** | Decided → checked; Accept all → checked; Decided at → Now |
 
-Page layout of Review (Customize layout): heading **Submit, Submit all, Your call, What to fix, About Page**; main group **Decided, Decided at, Accept all, Type, Now, Proposed, Why, About, Area, Source Meeting**. In the "What needs my decision?" view add the Decided column. Replace the gray paragraph above the tabs with the one in [../prompts/07e-review.md](../prompts/07e-review.md). The first-use explanation on a new row is written by the brain at the top of each page, so it needs no template; for a row you create by hand, use the Review template of [../prompts/06-templates.md](../prompts/06-templates.md).
+Page layout of Review (Customize layout): heading **Submit, Submit all, Your call, What to fix, About Page**; main group **Decided, Decided at, Accept all, Type, Now, Proposed, Why, About, Area, Source Meeting**. In the "What needs my decision?" view add the Decided column. Replace the gray paragraph above the tabs with the one in [../prompts/07e-review.md](../prompts/07e-review.md). **Last step of this section, after the buttons and the layout exist and Decided has read back:** the agent runs `brain config set notion.review_sections true`. From then on a new Review row from a source is written as a page with sections. The first-use explanation on a new row is written by the brain at the top of each page, so it needs no template; for a row you create by hand, use the Review template of [../prompts/06-templates.md](../prompts/06-templates.md).
 
 ## 4 · Templates
 
@@ -83,7 +83,7 @@ The first catch-up that finds a Review row without item sections reads it the ol
 
 ## Verify
 - [ ] Review has Decided, Decided at and Accept all, and Your call has Request revision; **Fix still exists**. Each property shows its description in the property list.
-- [ ] An **old Review row** with Your call = Fix and text in What to fix is still read as before by "apply my reviews". A row-level Fix or Request revision on a **new** row is refused with its message (`ROW_REVISION_NOT_SUPPORTED`).
+- [ ] An **old Review row** with Your call = Fix and text in What to fix is still read as before by "apply my reviews" (if you have none pending, make one: set `notion.review_sections` to `false`, write a synthetic proposal, publish it, and set it back to `true` afterwards). A row-level Fix or Request revision on a **new** row is refused with its message (`ROW_REVISION_NOT_SUPPORTED`).
 - [ ] On a test Review page (made by `sync render` from a synthetic proposal), type `Accept` on one change, `Reject` on one, `Defer` on one and `Request revision` plus a `Revision request:` line on one; click **Submit decisions**: the agent reads each token, applies the first two, moves the third to a new row, and leaves the fourth pending with a new draft and a **Previous proposal** toggle. **Submit and accept all** accepts every change still on Pending and keeps explicit tokens.
 - [ ] Each section explains its action in the page text ("What Accept does: …"), not only in a tooltip.
 - [ ] A new Meeting shows the gray notice; a new Inbox row from "Voice note" starts at **New**, not Ready; nothing from it is ingested until you set Ready.

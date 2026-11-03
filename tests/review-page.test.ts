@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
+import { excludableDecision } from "./exclusion-fixture.ts";
 import { brain, fixtureCopy, withoutReviewSections } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
@@ -218,4 +219,56 @@ test("without notion.review_sections the row keeps the old layout; with it a new
   const [old] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
   assert.equal(old.body, null, "no sections without the Decided property");
   assert.match(old.properties.Proposed.value, /2027-03/, "the old layout carries the detail");
+});
+
+test("a row already published as a page stays a page when the flag is turned off, and its revisions and base changes still reach it", async (context) => {
+  const dir = await fixtureCopy(context);
+  const created = await run(dir, ["proposal", "new"], { proposals: [
+    { kind: "review_notes", source: SYNC, notes: [] },
+    { kind: "update_fact", title: "A", target: PROJECT, field: "launch_date", after: "2027-03", why: "w", source: SYNC },
+  ] });
+  const id = created.json.data.created[0].id as string;
+  const [first] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  await run(dir, ["sync", "record"], { records: [{ id, notion: "6a7b0000-0000-4000-8000-0000000000cc", synced_at: NOW, published: first.published }] });
+  await withoutReviewSections(dir);
+  const file = join(dir, (await run(dir, ["proposal", "list"])).json.data.proposals.find((p: { id: string }) => p.id === id).path as string);
+  const project = join(dir, "projects/acme-website/project.md");
+  await writeFile(project, (await readFile(project, "utf8")).replace(/^(\s+)launch_date: .*/m, "$1launch_date: 2027-02-15"));
+  const [again] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  assert.ok(again, "the published page is still updated");
+  assert.match(again.properties.Proposed?.value ?? "1 change: decide each one in the page", /decide each one in the page/);
+  assert.equal(again.item_updates.length, 1, "the changed base reaches the page");
+  void file;
+});
+
+test("a Review row whose source is an excluded version publishes no wording, in either layout", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
+  // A change proposed from version 1 of the input, whose second version drops the paragraph.
+  const created = await run(dir, ["proposal", "new"], { proposals: [
+    { kind: "review_notes", source: "src-ex1a3b4c", notes: [] },
+    { kind: "update_fact", title: "A", target: PROJECT, field: "launch_date", after: "2027-03 (95k)", why: "Pricing was 95k per the call", source: "src-ex1a3b4c" },
+  ] });
+  assert.equal(created.code, 0, created.stdout);
+  const id = created.json.data.created[0].id as string;
+  await exclude();
+  const [page] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  assert.ok(!JSON.stringify(page).includes("95k"), "sections layout");
+  assert.match(String(page.body), /Held: /);
+  await withoutReviewSections(dir);
+  const [old] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  assert.ok(!JSON.stringify(old).includes("95k"), "old layout");
+});
+
+test("sync plan reads a published restricted note in its eligible form: no conflict, no correction", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
+  const [item] = (await run(dir, ["sync", "render", "--ids", note.id])).json.data.items;
+  await run(dir, ["sync", "record"], { records: [{ id: note.id, notion: "6a7b0000-0000-4000-8000-0000000000dd", synced_at: NOW, published: item.published }] });
+  await exclude();
+  const [after] = (await run(dir, ["sync", "render", "--ids", note.id])).json.data.items;
+  await run(dir, ["sync", "record"], { records: [{ id: note.id, notion: "6a7b0000-0000-4000-8000-0000000000dd", synced_at: NOW, published: after.published }] });
+  const row = { database: "decisions", page_id: "6a7b0000-0000-4000-8000-0000000000dd", last_edited: NOW, properties: { Name: "Pricing call", "Brain ID": note.id, Lifecycle: "Draft", ...Object.fromEntries(Object.entries(after.properties as Record<string, { value: unknown }>).map(([name, prop]) => [name, prop.value])) } };
+  const plan = (await run(dir, ["sync", "plan"], { as_of: NOW, rows: [row] })).json.data;
+  assert.deepEqual([plan.conflicts, plan.corrections], [[], []]);
 });

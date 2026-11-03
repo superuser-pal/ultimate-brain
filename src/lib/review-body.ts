@@ -129,6 +129,8 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
         item = { kind: "changes", heading: `Changes: ${targetTitle}`, current: `The end of the note now (the text is appended after it):\n${tail === "" ? "(empty)" : tail}`, proposed: canon(String(change.content ?? "")), editable: true, why, effect: EFFECT.add_to_note!, target: view.note, held: view.held, base: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")) };
       }
     }
+    // An item whose source is excluded shows no wording at all: the page is Notion's copy and the text would stay there (§5.1).
+    if (sourceRestricted) item.held = true;
     const previous = (Array.isArray(a.revisions) ? a.revisions : []).filter(record).find((revision) => revision.item_id === itemId && revision.status === "drafted" && typeof revision.previous === "string")?.previous as string | undefined;
     const letter = itemLetter(index);
     const targetUrl = url(item.target?.attributes.notion);
