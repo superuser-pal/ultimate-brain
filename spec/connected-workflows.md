@@ -5,7 +5,7 @@
 How this file fits: this file holds the lifecycle of a connected workflow, from opting in through execution, publication, reconciliation and completion, and the adoption of an existing project. [schemas/workflow.schema.json](schemas/workflow.schema.json) holds the shapes of its records. Linked repos and their task modes are in [linked-repos.md](linked-repos.md).
 - §4 and §6.1 are the Notion design that CC-103's migration builds.
 - §12 holds the commands, which the CLI task builds.
-- The skills (written in the skills fork, 0059) follow §§2–11 and §13.
+- The skills (CC-104, written in `skills/` until CC-105 moves authorship to the fork, 0059) follow §§2–11 and §13.
 
 When this file and the JSON Schema disagree, the JSON Schema wins and this file is fixed. Timestamps are ISO 8601 UTC and come from `--now` (cli.md §3.1).
 
@@ -137,7 +137,7 @@ So each project has one authoritative tracker (0059), and each linked repo has a
 
 ## 4. Workflow settings on the Project and the Area (property design)
 
-These are new properties on **both** Projects and Areas. Their owner is **You** (docs/notion-space-design.md §2): Notion owns them, and the brain writes them only at setup, with the user's yes. CC-103's migration adds them. The skills read them **by these fixed names**, as they read a Project's Status; they are not in `brain.json`.
+These are new properties on **both** Projects and Areas. Their owner is **You** (docs/notion-space-design.md §2): Notion owns them, and the brain writes them only at setup, with the user's yes. CC-103's migration 0015 adds them. There is no destination property: the Project or Area page that holds the settings is the destination. The skills read them **by these fixed names**, as they read a Project's Status; they are not in `brain.json`.
 
 | Property | Type | Options → value in the records | Empty means |
 |---|---|---|---|
@@ -684,12 +684,12 @@ brain workflow publish-history <wf>
 - `index`, `views` and `query` ignore `_workflows/`;
 - `lint` gains the error rule `workflow-record` (a record that fails its schema, or an operation, map entry or `depends_on` naming a record that doesn't exist).
 
-## 13. Skills (written in the fork, 0059)
+## 13. Skills (CC-104)
 
-The names below are proposals; the fork's approved mapping (CC-97) may rename them.
-- **`brain-workflow-setup`:** §3.1.
-- **`brain-workflow-adopt`:** §11.
-- **The execution discipline** in every fork skill that tracks work, chosen in that mapping:
+CC-104's three skills, written in `skills/` until CC-105 moves authorship to the fork (0059):
+- **`brain-workflow-adopt`:** adoption (§11).
+- **`brain-repos`:** linked repos (linked-repos.md §10).
+- **`brain-workflow`:** setup (§3.1), and running work as standard or connected. Other skills that track work hand over to it when a folder has a pointer. Its execution discipline:
   - read the pointer: none, ended or missing → standard; paused → work locally and say how to resume; connected → continue;
   - at the start: `reconcile --start`, ask the Needs you batch, run `ops` (§10.2, §10.3);
   - before executing an item: claim it, and approve its scope and criteria when needed;

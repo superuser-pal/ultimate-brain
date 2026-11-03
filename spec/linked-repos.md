@@ -160,7 +160,9 @@ With Domains off, `placement.domain` is ignored and not checked.
   - linking a repo that has no kit;
   - changing a link (a new placement, patterns, never-read paths, task source or mapping);
   - `brain repo new`, which writes the kit with the starter.
-- **The yes is for the exact content.** The skill shows the whole kit (or, for a change, a unified diff against the current file) and writes only after the user says yes to that content. The command can't see the yes; the skill is the gate, as for every other write the user approves (0003). An unattended run never writes a kit.
+- **The yes is for the exact content.** The skill shows the whole kit (or, for a change, a unified diff against the current file) and writes only after the user says yes to that content.
+- **The CLI checks the confirmation.** `repo kit write` and `repo new` require `--confirm <sha256>`: the hash of the kit bytes the user said yes to, which the skill computes from what it showed. A missing flag is `CONFIRMATION_REQUIRED`, and a hash that differs from the bytes about to be written is `CONFIRMATION_MISMATCH`. Nothing is written in either case. So a write always names the exact content that was approved, and no read path can write a kit.
+- **An unattended run never writes a kit:** it never passes `--confirm`.
 - **Concurrent edits are refused.** A change passes `--replace <sha256>`, the hash of the kit the user saw. If the file changed since then, the write is refused (`KIT_CHANGED`) and the skill shows the new diff.
 - **The hub never commits or pushes in the linked repo.** The skill tells the user to commit `brain-kit.json` there; until then the health check reports `KIT_UNCOMMITTED`.
 - **Refused targets:** the brain (`REPO_IS_BRAIN`); the product repo (`OUTSIDE_ROOT`: its contents are public, and the kit holds brain ids); a `brain-kit.json` that is a symbolic link or a folder (`OUTSIDE_ROOT`).
@@ -240,19 +242,21 @@ The machine's `path` and the ingest state in `commit` stay in `brain.json` only;
 | `CONNECTED_WITHOUT_WORKFLOW` | warning | `tasks.mode` is `connected`, and no connected workflow record names this repo (connected-workflows.md §3) |
 | `WORKFLOW_WITHOUT_CONNECTED` | warning | a connected workflow names this repo, and the kit's mode isn't `connected` |
 | `BRAIN_LINK_STALE` | info | the repo has a `.brain` (§8) whose `project` or `area` differs from the placement |
+| `ROLLUP_STALE` | warning | tracked-in-repo, with `--rollup-as-of <timestamp>` (the toggle's "As of", which the skill reads from Notion): for a markdown source, a commit touching the source file is newer than that time; for issues, the time is more than 24 hours old. Without the option, the check is skipped |
 
 **Which checks run.**
 - **The path.** `PATH_MISSING` stops the repo's checks: only it is reported.
 - **Legacy entries** (no `kit`) get `NO_KIT`. The checks that need a kit are skipped: `KIT_*`, `PLACEMENT_ARCHIVED`, `METHODOLOGY_FILE_MISSING`, `TASK_SOURCE_MISSING`, `STATUS_UNMAPPED`, `CONNECTED_WITHOUT_WORKFLOW`, `WORKFLOW_WITHOUT_CONNECTED` and `BRAIN_LINK_STALE`. The Git checks use the entry's own `patterns` and `never_read`.
 - **`KIT_MISSING` or `KIT_INVALID`** skips the checks that read the kit's content: `KIT_CHANGED`, `KIT_UNCOMMITTED`, `PLACEMENT_ARCHIVED`, `METHODOLOGY_FILE_MISSING`, `TASK_SOURCE_MISSING`, `STATUS_UNMAPPED`, `CONNECTED_WITHOUT_WORKFLOW`, `WORKFLOW_WITHOUT_CONNECTED` and `BRAIN_LINK_STALE`. The Git checks still run on the `brain.json` copies.
 - **`STATUS_UNMAPPED`** runs only for a markdown source, or with `--input` issue data.
+- **The three cases CC-102 tests:** the repo moved or missing is `PATH_MISSING`; the kit out of date is `KIT_CHANGED`; a stale rollup is `ROLLUP_STALE`.
 - **The workflow checks** count workflows in state `connected` or `paused` whose `folder.repo` is the repo's name. `ended` workflows don't count.
 
 The exit code is 1 when any check is an error, as for `lint`.
 
 ## 7. The generic starter
 
-`brain repo new` (cli.md §5.29) starts a new repo from `templates/repo-starters/generic/` in the product package (0066); the package's `files` list gains that folder. The generic starter is the only one in 0.9.0. The CLI task adds the folder with exactly the files below. `{name}`, `{summary}` and `{tasks}` are replaced when the repo is created; every file ends with one newline.
+`brain repo new` (cli.md §5.29) starts a new repo from `templates/repo/generic/` in the product package (0066); the package's `files` list gains `templates/repo`. The generic starter is the only one in 0.9.0. CC-102 adds the folder with exactly the files below. `{name}`, `{summary}` and `{tasks}` are replaced when the repo is created; every file ends with one newline.
 
 **`README.md`**
 ```text
@@ -332,12 +336,12 @@ After a link (or `repo new`), the skill asks once: "Let this repo read the brain
 - **A connected workflow isn't ended by an unlink.** The workflow runs in the repo, not in the link. The report names the workflow, and the user ends it separately (connected-workflows.md §3.4).
 - **Linking again** under the same name starts with `commit: ""`. Files ingested before are found as duplicates by `note new` (cli.md §5.16, `--reset`).
 
-## 10. The skill (written in the skills fork, 0059)
+## 10. The skill (CC-104)
 
-The proposed name is **`brain-repos`**; the fork's approved mapping (CC-97) may rename it. These are what the skill must do; the fork decides how it is worded. Every write is preceded by the content and the user's yes.
-- **Link:** inspect the repo (top-level layout, instructions, plans, issue tracker), propose a kit (placement from the hub's Areas and Projects; patterns and never-read paths; mode and source; status mapping; methodology summary), show it, `repo kit write`, `repo add --kit`, offer §8, and, with tracked-in-repo, the first rollup. The first ingest stays attended (0042).
-- **Show:** `repo show` and `repo health`, in two lines (skill-report rule).
-- **Change:** propose the new kit as a diff, `repo kit write --replace`, `repo refresh`; when `reingest` is true, `repo record --reset` and a catch-up.
+**`brain-repos`**, one of CC-104's three skills. It is written in `skills/` until CC-105 moves skill authorship to the fork (0059). These are what the skill must do; the skill decides how it is worded. Every write is preceded by the content and the user's yes.
+- **Link:** inspect the repo (top-level layout, instructions, plans, issue tracker), propose a kit (placement from the hub's Areas and Projects; patterns and never-read paths; mode and source; status mapping; methodology summary), show it, and on yes `repo kit write --confirm <its sha256>`, `repo add --kit`, offer §8, and, with tracked-in-repo, the first rollup. The first ingest stays attended (0042).
+- **Show:** `repo show` and `repo health` (with `--rollup-as-of` read from the toggle), in two lines (skill-report rule).
+- **Change:** propose the new kit as a diff, and on yes `repo kit write --replace <old> --confirm <new>`, `repo refresh`; when `reingest` is true, `repo record --reset` and a catch-up.
 - **Unlink:** §9.
 - **Health check:** `repo health`; for each error and warning, the fix in one line.
 - **New repo:** ask for the name, folder, placement and mode; show the kit and the file list; `repo new`; `repo add --kit`; offer §8.
