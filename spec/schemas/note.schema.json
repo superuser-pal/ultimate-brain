@@ -839,7 +839,7 @@
       ]
     },
     "reference": {
-      "description": "A Document (decision 0049; a reference note, decision 0045; spec/schema.md §4 reference): a source's whole text, a part the user asked to keep, or a page promoted from a decision or concept.",
+      "description": "A Document (decision 0049; a reference note, decision 0045; spec/schema.md §4 reference): a source's whole text, a part the user asked to keep, a page promoted from a decision or concept, or an artifact a connected workflow published (connected-workflows.md §6.3).",
       "allOf": [
         {
           "$ref": "#/$defs/knowledge"
@@ -850,13 +850,58 @@
               "enum": [
                 "whole",
                 "part",
-                "promoted"
+                "promoted",
+                "workflow"
               ],
-              "description": "whole: a source's converted text, verbatim; part: what Only keep named; promoted: seeded from a decision or concept. Absent: part (written before 0.6.0)."
+              "description": "whole: a source's converted text, verbatim; part: what Only keep named; promoted: seeded from a decision or concept; workflow: an artifact of a connected workflow. Absent: part (written before 0.6.0)."
             },
             "promoted_from": {
               "type": "string",
               "pattern": "^(dec|con)-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+            },
+            "workflow": {
+              "description": "The workflow and artifact this Document publishes (connected-workflows.md §6.3).",
+              "type": "object",
+              "required": [
+                "id",
+                "artifact"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^wf-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+                },
+                "artifact": {
+                  "type": "string",
+                  "pattern": "^art-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+                }
+              }
+            }
+          }
+        },
+        {
+          "description": "workflow exactly with origin: workflow.",
+          "if": {
+            "required": [
+              "origin"
+            ],
+            "properties": {
+              "origin": {
+                "const": "workflow"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "workflow"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "workflow"
+              ]
             }
           }
         },
@@ -883,12 +928,24 @@
                 "promoted_from"
               ]
             },
-            "required": [
-              "sources"
-            ],
-            "properties": {
-              "sources": {
-                "minItems": 1
+            "if": {
+              "required": [
+                "origin"
+              ],
+              "properties": {
+                "origin": {
+                  "const": "workflow"
+                }
+              }
+            },
+            "else": {
+              "required": [
+                "sources"
+              ],
+              "properties": {
+                "sources": {
+                  "minItems": 1
+                }
               }
             }
           }

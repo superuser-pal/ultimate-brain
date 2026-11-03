@@ -14,9 +14,9 @@ The CLI does the **deterministic** work: IDs, file writes, validation, index, vi
 
 Rules for every command:
 - **No network.** The CLI never calls Notion or any other service. Notion data enters only as JSON files written by a skill.
-- **No Git, except `init`, `upgrade`, `repo`, `source extract` and `recover`.** Commands write files; the skill commits. `source extract` and `recover` commit and restore their own journaled files (§5.23, §5.24). `init` creates the repository and its first commit, `upgrade` commits its own files (§5.15), and `repo` reads a linked repo with read-only Git commands (§5.16, 0042).
+- **No Git, except `init`, `upgrade`, `repo`, `source extract` and `recover`.** Commands write files; the skill commits. `source extract` and `recover` commit and restore their own journaled files (§5.23, §5.24). `init` creates the repository and its first commit, `upgrade` commits its own files (§5.15), and `repo` reads a linked repo with read-only Git commands (§5.16, 0042). `repo new` runs `git init` in the repo it creates and makes its first commit there, and never pushes (§5.29). The `workflow` write commands commit their own records under `_workflows/` as one journaled operation, and never push (connected-workflows.md §12).
 - **No LLM.** Same input and same brain give the same output, except for new random IDs and the clock (see `--now`).
-- **Writes only inside the brain**, except `init` (the new brain folder, and the global config file with `--set-default`) and `link` (three files in the target repo).
+- **Writes only inside the brain**, except `init` (the new brain folder, and the global config file with `--set-default`), `link` (three files in the target repo), `repo kit write` (`brain-kit.json` in a linked repo) and `repo new` (the new repo's folder) (§5.29, 0066), and `workflow new` and `workflow set --pointer` (the pointer `.brain-workflow.json` in the working folder, connected-workflows.md §3.2).
 
 ### 1.1 Skill commands vs CLI commands
 
@@ -33,9 +33,12 @@ Decision 0024 lists user-facing commands. Some are skills that call the CLI; som
 | catch up | skill (0037) | the calls of ingest, apply and sync, plus `proposal backlog` (once, 0041), `repo changes` and `repo record` (0042), `source diff` (re-reads, 0045). (`source full-text`, 0043, is retired in 0.6.0, 0049) |
 | turn a module on or off (0048) | skill | `modules`, `config set` |
 | `brain link` | CLI | `link` |
+| link, show, change, unlink, check or start a repo (0066) | skill `brain-repos` (CC-104) | `repo kit check`, `repo kit write`, `repo add`, `repo refresh`, `repo show`, `repo health`, `repo tasks`, `repo unlink`, `repo new`, `link`; `repo record --reset` after a change that sets `reingest` |
 | `brain upgrade` | CLI | `upgrade` |
 | `brain lint` / index | CLI | `lint`, `index` |
 | `brain notion-change` | skill (CC-11) | none |
+| run work as standard or connected (0059) | skill `brain-workflow` (CC-104) | `workflow new`, `find`, `show`, `set`, `resolve`, `item put`, `item claim`, `artifact put`, `render`, `op state`, `reconcile`, `summary`, `publish-history`; `note new`, `proposal new`, `sync render`, `sync record` for artifacts (connected-workflows.md §6.3) |
+| adopt an existing project (0059) | skill `brain-workflow-adopt` (CC-104) | `workflow adopt preview`, `workflow adopt apply`, `repo tasks` (its parsing rules), `workflow reconcile` |
 
 ---
 
@@ -136,6 +139,23 @@ Failure:
 | `REPO_IS_BRAIN` | 4 | `repo add` was given the brain itself (0042) |
 | `REPO_COMMIT_UNKNOWN` | 4 | a commit given to, or recorded for, a `repo` command doesn't exist in the repo, or isn't an ancestor of the commit it is compared with |
 | `MODULE_OFF` | 4 | a command needs a module that `brain.json` `modules` turns off (0048, schema §12): `sync tasks` with Tasks off |
+| `KIT_MISSING` | 4 | a `repo` command needs a linked repo's `brain-kit.json` and there is none; or `kit write --replace` names a kit that isn't there (§5.29) |
+| `KIT_INVALID` | 4 | a link kit fails its schema or a check of linked-repos.md §2.2; `details` lists `{pointer, message}` (§5.29) |
+| `KIT_EXISTS` | 4 | `kit write` without `--replace` found a `brain-kit.json` (§5.29) |
+| `KIT_CHANGED` | 4 | `kit write --replace` names a hash that isn't the current kit's: it changed since the user saw it (§5.29) |
+| `NO_KIT` | 4 | `repo refresh` or `repo tasks` on an entry linked without a kit (§5.29) |
+| `MODE_CONNECTED` | 4 | `repo tasks` on a repo whose tasks are connected to Notion (§5.29) |
+| `NO_TASKS` | 4 | `repo tasks` on a kit without `tasks` (§5.29) |
+| `CONFIRMATION_REQUIRED` | 4 | `kit write` or `repo new` without `--confirm` (§5.29, linked-repos.md §3) |
+| `CONFIRMATION_MISMATCH` | 4 | `--confirm` isn't the hash of the kit bytes the command would write (§5.29) |
+| `STALE_RECORD` | 4 | a workflow record changed since the caller read it (`--rev`, or a change between the command's read and write); nothing is written (connected-workflows.md §10.1) |
+| `CLAIMED` | 4 | `workflow item claim` on an item another session holds; `details` `{ holder }` (§10.1) |
+| `NOT_APPROVED` | 4 | `workflow item claim` on an item whose scope and criteria aren't approved (§7) |
+| `DESTINATION_TAKEN` | 4 | `workflow new` for a destination, or a linked repo, that an open workflow already has (§3.1) |
+| `POINTER_EXISTS` | 4 | `workflow new` in a folder whose pointer names an open workflow (§3.1) |
+| `WORKFLOW_NOT_FOUND` | 4 | a `workflow` command names no workflow in the brain (§12) |
+| `WORKFLOW_ENDED` | 4 | a `workflow` command other than `find` and `show` on an ended workflow (§12) |
+| `BRAIN_BUSY` | 5 | Git's index stayed locked for 10 seconds; run the command again (connected-workflows.md §10.1) |
 | `RETIRED` | 2 | a command retired in this version (`source full-text`, 0049); the message names what replaces it |
 | `WRITE_CONFLICT` | 5 | a file appeared at a path the command was creating, after it read the brain (another writer). Nothing is kept (§3.6); re-run the command |
 | `CLAUDE_NOT_FOUND` | 3 | `schedule install` found no `claude` executable on `PATH` to schedule (0051, §5.21) |
@@ -327,7 +347,7 @@ Errors: `INPUT_INVALID` (value not JSON, result fails schema, `schema_version`),
 brain id new <type> [--count <n>]
 ```
 
-Generates `n` (default 1, max 100) new IDs for `<type>` (schema §1 prefixes; `proposal` allowed). Each is checked against every ID in the brain and against the others in the same call, and re-rolled on collision (0017). IDs are not reserved: use them in the next write.
+Generates `n` (default 1, max 100) new IDs for `<type>` (schema §1 prefixes; `proposal` allowed). `<type>` may also be a workflow record prefix, `wf`, `wi`, `art` or `op` (connected-workflows.md §1); those IDs are also checked against the records under `_workflows/`. Each is checked against every ID in the brain and against the others in the same call, and re-rolled on collision (0017). IDs are not reserved: use them in the next write.
 
 ```json
 { "data": { "type": "decision", "ids": ["dec-3f7k9m2q", "dec-8w1c5t6h"] } }
@@ -393,9 +413,10 @@ The CLI sets `created` = `updated` = today, `lifecycle: draft` (knowledge types;
 - `origin` is absent;
 - `origin: whole` and `sources` isn't exactly one source id (`src-`), or the body isn't byte for byte that source's body (its hash isn't the source's `content_hash`);
 - `origin: promoted` and `promoted_from` doesn't name an existing decision or concept, or another `promoted` Document already names it;
-- `promoted_from` is set without `origin: promoted`.
+- `promoted_from` is set without `origin: promoted`;
+- `origin: workflow` without `workflow: { id, artifact }`, or `workflow` set with another `origin` (connected-workflows.md §6.3).
 
-The CLI writes `lifecycle: reviewed` for `origin: whole` (the source's own text needs no Review), the note's current `lifecycle` for `origin: promoted`, and `draft` otherwise. A second `whole` Document of the same source is not written: it is reported in `skipped` with reason `ALREADY_KEPT` and the existing id, like a duplicate source.
+The CLI writes `lifecycle: reviewed` for `origin: whole` (the source's own text needs no Review) and for `origin: workflow` (the user approved the artifact), the note's current `lifecycle` for `origin: promoted`, and `draft` otherwise. A second `whole` Document of the same source is not written: it is reported in `skipped` with reason `ALREADY_KEPT` and the existing id, like a duplicate source.
 
 **Source dedupe:** a source is a duplicate if an existing source, or one earlier in the same batch, has the same `content_hash`, **or** the same `source_key` when that key is `file:` (the same original file, whatever the converter produced) or the source's `kind` is `capture` (the same Inbox row, even after an edit) (0032). **A version (0045):** a source with `replaces` is compared by `content_hash` only, so a corrected capture or file can be read again; the same text is still a `DUPLICATE_SOURCE`. A duplicate is not written and is reported in `skipped` with the existing id. This is how the ingest skips minutes it has already ingested (synthesis §5 step 2). Other items in the batch that reference the skipped source's input `id` are an error, so the skill must check `skipped` with `--dry-run` first, or snapshot the source in its own batch.
 
@@ -701,6 +722,7 @@ The skill rules (`product-file` for skills, `skills-*`, `skill-*`) have `line` 1
 | `source-replaces` | error | a source's `replaces` names a note that isn't a source (a missing id is `missing-ref`), or a source two others replace (0045) |
 | `unknown-lineage` | warning | a knowledge note's `sources` names a source or meeting whose input cannot be determined (no `source_key`, `extract_of` or meeting `source`): its evidence is never live while any suppression is active (0055, capture-and-review §5.1) |
 | `report-source-excluded` | warning | a line of a report links a note that a suppression restricts (whole, or some of its lines, timeline entries or facts): flagged "(source excluded)" at that line, never edited by the brain; the next refresh is written from `brain query`, which leaves the restricted claims out (capture-and-review §5.1) |
+| `workflow-record` | error | a record under `_workflows/` that isn't readable JSON or fails its `spec/schemas/workflow.schema.json` definition, a record whose id isn't its file name, or an item's `depends_on`, an artifact's `item`, an operation's `target` or an adoption map entry naming a record that doesn't exist (connected-workflows.md §12) |
 | `suppression-record` | error | a file of `_suppressions/` (or the folder) cannot be read or is malformed (0055, capture-and-review §5.3); retrieval commands refuse with `SUPPRESSIONS_UNREADABLE` |
 | `proposal-items` | error | a `review_notes` `items` list that does not give every note, link and change exactly one immutable `it-` id, an item that refers to something the proposal does not hold, or an `item_decisions` entry that names no item or repeats one (0055, capture-and-review §7.2) |
 | `extract-passages` | error | an extract source's `passages` does not list the `<!-- passage ¶n -->` paragraphs of its body in order, or a paragraph no longer matches its 8-hex hash (0055, capture-and-review §4.5) |
@@ -1198,7 +1220,7 @@ Stores what the skill published. Input: `{ "records": [ { "id": "per-3h8w2n6c", 
 
 Brain Assistant can write a Document's or a report's body inside Notion (buttons *Write up* and *Refresh report*). Only wording the user **accepted exactly** comes back to Git; this section is the whole mechanism. The Notion side (the controls and their names) is in docs/notion-space-design.md §3.17; here is what the CLI reads and does.
 
-A Report row whose Brain ID names a report published as **another** page is a conflict `NOTION_ID_MISMATCH` (§5.14.2) and plans nothing, wording included. **Which rows the skill snapshots.** In addition to §5.14.1's selection, the skill enumerates the candidates **from Git, then queries Notion once**: the candidates are listed from the brain index (§5.8: `notes` of type `reference`, and of type `view` with `fields.view_kind` `report`) and **each candidate's file is then read** at its `path`, because the index carries neither `origin` nor `last_synced`: a reference is a candidate when its frontmatter has `origin: promoted` (with Documents on), a report when Reports is on; `since` and the baseline S come from the same frontmatter (`last_synced`, `notion_published`). A key absent in the file is a missing baseline. Let **since** = the earliest `last_synced` among the candidates, **minus 2 minutes** (Notion rounds edit times down to the minute, so a draft written seconds after a publish can carry an edit time earlier than `last_synced`); if any candidate has no `last_synced` **or no `@notion_body` or `@git_body` in `notion_published`** (never published, or a baseline lost), there is no `since`: the query then returns every existing Notion row that matches the other conditions, so a row with a lost baseline is **eligible for the table** below (a never-published candidate has no Notion row to return). The table is first-match: row 9 handles a missing S only when no earlier row matched and N ≠ G. The skill queries the Documents database, and the Inbox rows of Kind Report, for rows where **Accepted** is ticked **or** the page's last edit is at or after `since` (no filter at all when there is no `since`), **following `next_cursor` until the query is exhausted** (a page of results is never taken as the whole), and keeps those whose Brain ID is a candidate. The filter is deliberately wide: a row read without need is harmless, because the comparison below decides per note; a row never read could hide a pending draft. A candidate the query did not return is not in the snapshot, which means its page was not edited since `since` **or only had text deleted** (a deletion does not move the edit time, T4, decision 0062): it holds nothing to import, and the render guard below protects a draft that only lost text. A snapshot row that carries these fields has them in a `wording` object on the row (`{ database, page_id, last_edited, properties, wording }`; `wording` is the only new row key):
+A Report row whose Brain ID names a report published as **another** page is a conflict `NOTION_ID_MISMATCH` (§5.14.2) and plans nothing, wording included. **Which rows the skill snapshots.** In addition to §5.14.1's selection, the skill enumerates the candidates **from Git, then queries Notion once**: the candidates are listed from the brain index (§5.8: `notes` of type `reference`, and of type `view` with `fields.view_kind` `report`) and **each candidate's file is then read** at its `path`, because the index carries neither `origin` nor `last_synced`: a reference is a candidate when its frontmatter has `origin: promoted` or `origin: workflow` (with Documents on; connected-workflows.md §6.3), a report when Reports is on; `since` and the baseline S come from the same frontmatter (`last_synced`, `notion_published`). A key absent in the file is a missing baseline. Let **since** = the earliest `last_synced` among the candidates, **minus 2 minutes** (Notion rounds edit times down to the minute, so a draft written seconds after a publish can carry an edit time earlier than `last_synced`); if any candidate has no `last_synced` **or no `@notion_body` or `@git_body` in `notion_published`** (never published, or a baseline lost), there is no `since`: the query then returns every existing Notion row that matches the other conditions, so a row with a lost baseline is **eligible for the table** below (a never-published candidate has no Notion row to return). The table is first-match: row 9 handles a missing S only when no earlier row matched and N ≠ G. The skill queries the Documents database, and the Inbox rows of Kind Report, for rows where **Accepted** is ticked **or** the page's last edit is at or after `since` (no filter at all when there is no `since`), **following `next_cursor` until the query is exhausted** (a page of results is never taken as the whole), and keeps those whose Brain ID is a candidate. The filter is deliberately wide: a row read without need is harmless, because the comparison below decides per note; a row never read could hide a pending draft. A candidate the query did not return is not in the snapshot, which means its page was not edited since `since` **or only had text deleted** (a deletion does not move the edit time, T4, decision 0062): it holds nothing to import, and the render guard below protects a draft that only lost text. A snapshot row that carries these fields has them in a `wording` object on the row (`{ database, page_id, last_edited, properties, wording }`; `wording` is the only new row key):
 
 | Field | Meaning |
 |---|---|
@@ -1742,7 +1764,7 @@ brain repo unlink <name>
 brain repo new --path <path> --starter generic --input <file|-> --confirm <sha256>
 ```
 
-The model, the kit's fields and their checks, the rollup text and the health checks are in [linked-repos.md](linked-repos.md); this section holds the commands. They read linked repos with read-only Git commands (as §5.16), and they write only `brain.json` `repos`, except for `kit write` and `new`, which also write in a linked repo. Every command that reads a kit validates it against `spec/schemas/link-kit.schema.json` and runs the checks of linked-repos.md §2.2 (`KIT_INVALID`, exit 4, with `details` `{pointer, message}`).
+The model, the kit's fields and their checks, the rollup text and the health checks are in [linked-repos.md](linked-repos.md); this section holds the commands. They read linked repos with read-only Git commands (as §5.16), and they write only `brain.json` `repos`, except for `kit write` and `new`, which also write in a linked repo. Every command that reads a kit validates it against `spec/schemas/link-kit.schema.json` and runs the checks of linked-repos.md §2.2 (`KIT_INVALID`, exit 4; `details` lists every problem as `{pointer, message}`, and the message names the first). Hashes in `--confirm`, `--replace` and `data` are written `sha256:<64 hex>`.
 
 **§1's rules gain these exceptions.** `repo kit write` writes exactly one file, `<path>/brain-kit.json`. `repo new` writes the starter into a new folder, runs `git init` there and makes its first commit. They are added to "Writes only inside the brain" and "No Git" respectively. Neither ever writes another file in a linked repo, and neither ever pushes.
 
@@ -1760,27 +1782,27 @@ It exits 0 even with problems: this is the command the skill uses to show them. 
   3. `brain-kit.json` isn't a symbolic link or a folder (`OUTSIDE_ROOT`).
   4. An existing file needs `--replace` equal to its current hash (`KIT_EXISTS` without the flag, `KIT_CHANGED` when the hash differs); a missing file with `--replace` is `KIT_MISSING`.
   5. `--confirm` equals the hash of the bytes it will write (linked-repos.md §3). Without it: `CONFIRMATION_REQUIRED`; a different hash: `CONFIRMATION_MISMATCH`.
-- It writes with 2-space indent, keys in linked-repos.md §2.2 order, and a trailing newline, atomically (§3.6). It never stages or commits.
+- It writes with 2-space indent, keys in linked-repos.md §2.1 order, and a trailing newline, atomically (§3.6). It never stages or commits. Input bytes that aren't JSON are `KIT_INVALID` (pointer `""`).
 - `data` = `{ path_abs, sha256, action: created|updated|unchanged }`; `unchanged` when the bytes are the same.
 - Logs `repo-kit - "<name>" sha=<first 12 hex>`.
 
-**`repo add <name> --path <path> --kit`** links a repo from its kit. It is §5.16's `repo add` with the kit's values: `area` = `placement.area`, `patterns` = `knowledge.patterns`, `never_read` and `project` when the kit has them, and `kit: { sha256 }`. The kit's `name` must equal `<name>` (`KIT_INVALID`, pointer `/name`). `--kit` can't be combined with `--area` or `--pattern` (`USAGE`). §5.16's other checks apply unchanged. `data` = the new entry.
+**`repo add <name> --path <path> --kit`** links a repo from its kit. It is §5.16's `repo add` with the kit's values: `area` = `placement.area`, `patterns` = `knowledge.patterns`, `never_read` and `project` when the kit has them, and `kit: { sha256 }`. The kit's `name` must equal `<name>` (`KIT_INVALID`, pointer `/name`); a repo with no kit is `KIT_MISSING`. `--kit` can't be combined with `--area` or `--pattern` (`USAGE`). §5.16's other checks apply unchanged. `data` = the new entry.
 
 **`repo refresh <name>`** re-reads the kit of a kit-linked repo and copies `area`, `patterns`, `never_read`, `project` and the hash into its entry. A legacy entry is `NO_KIT` (exit 4).
-- `data` = `{ name, changed, placement_changed, added_patterns, removed_patterns, added_never_read, removed_never_read, reingest }`. `changed` is false when the hash equals `kit.sha256`, and then nothing is written.
+- `data` = `{ name, changed, placement_changed, added_patterns, removed_patterns, added_never_read, removed_never_read, reingest }`. `changed` is false when the hash equals `kit.sha256`, and then nothing is written. `placement_changed` is true when `area` or `project` differ, a project added or removed included. The four lists compare the kit with the entry, in the kit's (added) or the entry's (removed) order.
 - `reingest` is true when patterns were added or never-read paths removed: files that are now readable but older than the recorded commit are only listed after `repo record --reset` (§5.16), and the skill offers that.
 - `--dry-run` writes nothing and reports the same `data`.
 - Logs `repo-refresh - "<name>" sha=<first 12 hex>` when it writes.
 
 **`repo show <name>`** writes nothing. `data` = `{ entry, kit, kit_sha256, kit_status: current|changed|missing|invalid|none, workflow }`.
-- `kit` is `null` unless the status is `current` or `changed`.
+- `kit` is `null` unless the status is `current` or `changed`. `kit_sha256` is the hash of the file's bytes, `null` for `missing` (the file or the repo's path is gone) and `none`.
 - `workflow` is `{ id, state }` of the workflow in state `connected` or `paused` whose `folder.repo` is this name, or `null` (connected-workflows.md §3.1 allows at most one).
 
-**`repo health [<name>]`** writes nothing. `--rollup-as-of` (with `<name>`) enables `ROLLUP_STALE`. It runs the checks of linked-repos.md §6 on one repo, or on all repos in `brain.json` order. `--input` takes the issue data of `repo tasks` for a GitHub or GitLab source, so `STATUS_UNMAPPED` can be checked; it needs `<name>`. `data` = `{ repos: [{ name, checks: [{code, severity, message, path?}] }] }`, checks in the table's order. The exit code is 1 when any check is an error.
+**`repo health [<name>]`** writes nothing. `--rollup-as-of` (with `<name>`) enables `ROLLUP_STALE`. It runs the checks of linked-repos.md §6 on one repo, or on all repos in `brain.json` order. `--input` takes the issue data of `repo tasks` for a GitHub or GitLab source, so `STATUS_UNMAPPED` can be checked; it needs `<name>`. `data` = `{ repos: [{ name, checks: [{code, severity, message, path?}] }] }`, checks in the table's order; a repo with no finding has `checks: []`. `path` is the repo-relative file a check is about, when there is one. `--input` or `--rollup-as-of` without `<name>` is `USAGE`. The exit code is 1 when any check is an error.
 
 **`repo tasks <name>`** writes nothing. It builds the read-only rollup (linked-repos.md §4) of a `tracked-in-repo` repo.
 - Refusals, all exit 4: a legacy entry is `NO_KIT`, a kit whose mode is `connected` is `MODE_CONNECTED`, and a kit without `tasks` is `NO_TASKS`.
-- `markdown`: no input; the CLI reads the file at `HEAD`.
+- `markdown`: no input (`USAGE` with `--input`); the CLI reads the file at `HEAD`. A file missing at `HEAD` is `KIT_INVALID` (pointer `/tasks/source/path`). The warning `REPO_DIRTY` is given when that file has uncommitted changes, or isn't tracked.
 - `github` and `gitlab`: `--input` is required (`USAGE`): `{ fetched_at, items: [{ number, title, state, state_reason?, labels: [string], url }] }`. `state` is `open` or `closed` (GitHub; `state_reason` `completed` or `not_planned`), or `opened` or `closed` (GitLab).
 - `data` = `{ name, target: { project } | { area }, as_of, counts: { todo, in_progress, waiting, review, done, dropped, unmapped }, percent, items: [{ key, title, raw, meaning, url? }], unmapped: [{ raw, count }], toggle: { heading: "Repo tasks · <name>", markdown } }`.
   - `items` holds every item, in source order (issues in input order); an unmapped item has `meaning: null`.
@@ -1791,12 +1813,12 @@ It exits 0 even with problems: this is the command the skill uses to show them. 
 **`repo unlink <name>`** removes the entry from `repos` (the `repos` key stays, even when empty). It changes no source, note or file in the repo (linked-repos.md §9). `data` = `{ name, removed: <the entry>, sources: <the number of sources with this repo>, workflow: <as in repo show> }`. Logs `repo-unlink - "<name>"`.
 
 **`repo new`** creates a new repo from the generic starter (linked-repos.md §7).
-- `--input` is the kit, with `starter` left out (the command sets it). `--starter` accepts only `generic` (`USAGE`).
-- `path` must not exist, or must be an empty folder (`TARGET_NOT_EMPTY`), and must not be inside the brain (`OUTSIDE_ROOT`).
+- `--input` is the kit, with `starter` left out (the command sets it, replacing any given). `--starter` accepts only `generic` (`USAGE`).
+- `path` is absolute or starts with `~/` (`INPUT_INVALID`). It must not exist, or must be an empty folder (`TARGET_NOT_EMPTY`), and must not be inside the brain (`OUTSIDE_ROOT`, compared after resolving symbolic links).
 - The kit is checked as for `kit write`, including `--confirm` on the bytes of the kit file it writes (with `starter` set), plus the source rule of linked-repos.md §7.
 - It writes the starter's files of linked-repos.md §7 and the kit, runs `git init`, and commits everything with `Start from the Ultimate Brain generic starter`. A commit that fails (no Git identity) gives the warning `GIT_COMMIT_SKIPPED` and keeps the files.
 - It doesn't link the repo: the skill runs `repo add --kit` next.
-- `data` = `{ path_abs, files: [path], sha256, commit }`, with `files` sorted by path and `commit` the short hash, or `null` when the commit was skipped.
+- `data` = `{ path_abs, files: [path], sha256, commit }`, with `files` sorted by path (code points) and `commit` the short hash (`git rev-parse --short`), or `null` when the commit was skipped.
 - Logs `repo-new - "<name>"`.
 
 **Changes to §5.16.** `repo changes` leaves out the files that match the entry's `never_read`, and always leaves out `brain-kit.json`. For `repo add` without `--kit`, `never_read` and `project` can't be set; they come only from a kit.

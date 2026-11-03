@@ -14,6 +14,10 @@ export interface SchemaSet {
   /** spec/skills-delivery.md §2 and §3 (decision 0059). */
   skillsSnapshot: ValidateFunction;
   skillsLock: ValidateFunction;
+  /** spec/linked-repos.md §2 (decision 0066). */
+  linkKit: ValidateFunction;
+  /** A `$defs` entry of spec/schemas/workflow.schema.json: `workflow`, `item`, `artifact`, `op`, `adoption`, `snapshot`, `adoptionInput`, `pointer`. */
+  workflow(def: string): ValidateFunction;
   /** Frontmatter keys each type declares (core + knowledge + type fields). */
   knownKeys(type: string): ReadonlySet<string> | undefined;
 }
@@ -32,6 +36,8 @@ export function loadSchemas(): SchemaSet {
   const brain = read("brain.schema.json");
   const skillsSnapshot = read("skills-snapshot.schema.json");
   const skillsLock = read("skills-lock.schema.json");
+  const linkKit = read("link-kit.schema.json");
+  const workflow = read("workflow.schema.json");
 
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   ajv.addSchema(note);
@@ -39,6 +45,8 @@ export function loadSchemas(): SchemaSet {
   ajv.addSchema(brain);
   ajv.addSchema(skillsSnapshot);
   ajv.addSchema(skillsLock);
+  ajv.addSchema(linkKit);
+  ajv.addSchema(workflow);
 
   // A type may declare its own keys inside `allOf` (a Document's origin and promoted_from do), so those count as declared too.
   const keys = (schema: JsonObject | undefined): string[] => [
@@ -59,6 +67,8 @@ export function loadSchemas(): SchemaSet {
     brain: ajv.getSchema(brain.$id)!,
     skillsSnapshot: ajv.getSchema(skillsSnapshot.$id)!,
     skillsLock: ajv.getSchema(skillsLock.$id)!,
+    linkKit: ajv.getSchema(linkKit.$id)!,
+    workflow: (def) => ajv.getSchema(`${workflow.$id}#/$defs/${def}`)!,
     knownKeys: (type) => known.get(type),
   };
   return cached;

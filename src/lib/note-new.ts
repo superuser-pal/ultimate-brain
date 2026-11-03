@@ -86,7 +86,7 @@ export function checkNoteInput(value: unknown, pointer: string, withId = true): 
         if (value.frontmatter[key] !== undefined) at(`frontmatter/${key}`, "is retired in 0.6.0: Keep as document gives the whole text");
       }
     }
-    if (value.type === "reference" && value.frontmatter.origin === undefined) at("frontmatter/origin", "is required on a new Document: whole, part or promoted");
+    if (value.type === "reference" && value.frontmatter.origin === undefined) at("frontmatter/origin", "is required on a new Document: whole, part, promoted or workflow");
   }
   return problems;
 }
@@ -179,6 +179,8 @@ export function stageNotes(
       }
       attributes.lifecycle = "reviewed";
     }
+    // A workflow Document carries an artifact the user approved (connected-workflows.md §6.3).
+    if (item.type === "reference" && attributes.origin === "workflow") attributes.lifecycle = "reviewed";
     if (item.type === "reference" && attributes.origin === "promoted") {
       // A promoted Document stands where its note stands (0049).
       attributes.lifecycle = workspace.get(String(attributes.promoted_from))?.attributes.lifecycle ?? attributes.lifecycle;
