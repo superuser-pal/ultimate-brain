@@ -64,9 +64,10 @@ test("an explicit Use in brain under a Meeting only subject is copied when no ex
   assert.deepEqual(plan.copied.map((entry) => entry.n), [4]);
 });
 
-test("missing, ambiguous, absent-id and cyclic references make the item unmappable", () => {
+test("missing, ambiguous, absent-id and cyclic references make an excluded item unmappable", () => {
   const text = "A repeated line.\n\nA repeated line.\n\nUnique line here.";
-  const summary = parseSummary("## [s1] A\n- [s1.i1] a “A repeated line”\n- [s1.i2] b “not in transcript”\n- [s1.i3] c “Unique line here” (depends on [s9])\n- [s1.i4] d “Unique line here” (depends on [s1.i5])\n- [s1.i5] e “Unique line here” (depends on [s1.i4])\n");
+  // An included item's missing or ambiguous quote is reported, not a blocker (decision 0067; tests/minutes-groups.test.ts).
+  const summary = parseSummary("## [s1] A\nSelection: Meeting only\n- [s1.i1] a “A repeated line”\n- [s1.i2] b “not in transcript”\n- [s1.i3] c “Unique line here” (depends on [s9])\n- [s1.i4] d “Unique line here” (depends on [s1.i5])\n- [s1.i5] e “Unique line here” (depends on [s1.i4])\n");
   const reasons = planExtract(summary, text).problems.map((p) => `${p.id}:${p.reason.split(" ").slice(0, 3).join(" ")}`);
   assert.deepEqual(reasons, ["s1.i1:anchor in 2", "s1.i2:anchor not in", "s1.i3:depends on unknown", "s1.i4:depends on cycle", "s1.i5:depends on cycle"]);
 });
@@ -245,15 +246,15 @@ test("a malformed exclusion token blocks the input instead of defaulting to incl
   assert.equal(fine.ok, true, "an ordinary prefix is text");
 });
 
-test("an extract stores the paragraph as written and the anchors respect one to three and twelve words", () => {
+test("an extract stores the paragraph as written, and more than three or longer than twelve words is no blocker", () => {
   const plan = planExtract(parseSummary("## [s1] A\n- [s1.i1] Two lines “first line”\n"), "first line\nsecond line\n\nanother paragraph");
   assert.equal(plan.copied[0]?.text, "first line\nsecond line", "line breaks are kept");
   assert.ok(extractBody(plan).includes("first line\nsecond line"));
   const many = planExtract(parseSummary("## [s1] A\n- [s1.i1] Four “one” “two” “three” “four”\n"), "one two three four");
-  assert.ok(many.problems.some((p) => p.reason.includes("one to three")));
+  assert.equal(many.ok, true, "decision 0067: every quote is used");
   const long = "a b c d e f g h i j k l m";
   const wordy = planExtract(parseSummary(`## [s1] A\n- [s1.i1] Long “${long}”\n`), long);
-  assert.ok(wordy.problems.some((p) => p.reason.includes("12 words")));
+  assert.equal(wordy.ok, true, "decision 0067: a long quote that occurs once is placed");
 });
 
 test("every spelling of an exclusion that is not understood blocks the input", () => {

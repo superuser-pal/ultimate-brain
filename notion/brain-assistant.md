@@ -88,8 +88,8 @@ Never recommend Approve or Reject: the decision is mine. Read only.
 Goal: make the minutes on this meeting page ready for the brain.
 Source: this page only. It must be a page in the Meetings database inside [@Brain Data]; otherwise stop and tell me.
 
-1. Shape: check against notion/minutes-format.md: Attendees and Projects, the overview Highlights and My actions, then one "## [s1] <Subject>" section per subject, each with a "Selection:" line. List what is missing. A summary with no subject ids is the older format: say that nothing in it can be left out of the brain.
-2. Items: every item (overview items are [s0.iN]) is one line "[s1.i1] text "quote"". List every bulleted or numbered line that has no id (it blocks the whole meeting) and items with no id, no quote, a quote longer than 12 words, or a quote that does not occur word for word in the transcript. Do not invent or fix quotes yourself; list them for me.
+1. Shape: check against notion/minutes-format.md: Attendees and Projects, the overview Highlights, Quick follow-ups and Tasks, then one "## [s1] <Subject>" section per subject, each with a "Selection:" line. Every task item is followed by a "Scope" toggle with the lines Done when, Due, Project and Notes; Due is empty or a date YYYY-MM-DD. Minutes with "My actions" instead of the two groups are the earlier format and are fine. List what is missing. A summary with no subject ids is the older format: say that nothing in it can be left out of the brain.
+2. Items: every item (overview items are [s0.iN]) is one line "[s1.i1] text "quote"". Quick follow-ups are to-do checkboxes with no id: never flag them. List every other bulleted or numbered line that has no id (it blocks the whole meeting), and items with no quote, a quote longer than 12 words, or a quote that does not occur word for word in the transcript. Say which of those are under something marked Meeting only: only those block the meeting; the others only lose that quote. Also list a quick follow-up that looks like real work (a deliverable or a date someone waits on) and a task that looks like a two-minute follow-up. Do not invent or fix quotes yourself; list them for me.
 3. List every name, number, date and amount for me to confirm.
 4. Flag actions or commitments with no owner, a tentative idea written as a commitment, and anything that reads like a guess or an invented risk.
 5. Compare the attendees and project named in the text with the Attendees and Project properties. Report differences; don't change the properties.
@@ -190,7 +190,7 @@ Selection: Use in brain
 Write every item as ONE line in exactly this form:
 [s1.i1] <text> "<quote>"
 - The id is visible, unique in the page and never changed once written.
-- Each quote is copied word for word from the transcript, at most 12 words long, and occurs once in the transcript. Add up to three quotes when the support spans more than one place. Make a quote longer, never shorter, to make it unique.
+- Each quote is copied character for character from the transcript: one stretch of one sentence, 6 to 12 words, that occurs only once in the transcript. Never join two sentences into one quote, never fix grammar, never paraphrase. When the support spans more than one place, add a second or third quote (up to three) rather than one long one.
 - Do not write "Meeting only:", "Use in brain:" or "Track: Waiting On —" on an item.
 - If the voice note covers clearly different topics, use [s2], [s3]... one per topic, each with its own "Selection: Use in brain" line.
 - Omit a heading with nothing under it. Never invent an owner, a date or a risk. Write "needs clarification" when the meaning is uncertain.
