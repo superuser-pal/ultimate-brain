@@ -22,6 +22,7 @@ import { renderReview } from "./review-body.ts";
 import { parseReviewPageInput, planReviewRow, type ItemDecision, type ReviewDecision, type ReviewHeld, type ReviewPage, type ReviewRevision } from "./review-plan.ts";
 import { hasReportShape, reportLinks } from "./report-body.ts";
 import { gitBodyOf, parseWording, planWording, textHash, type AcceptedWording, type Wording, type WordingPlan } from "./wording.ts";
+import { contextFor, publishableNote, requireSuppressions } from "./suppressions.ts";
 
 const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "concepts", "documents", "review", "inbox"] as const;
 const CREATABLE = new Set(["domains", "areas", "goals", "projects", "people", "orgs"]);
@@ -198,13 +199,26 @@ function publishedBaseline(row: SnapshotRow, rendered: Record<string, unknown>):
   return Object.fromEntries(Object.keys(rendered).filter((name) => Object.hasOwn(row.properties, name)).map((name) => [name, row.properties[name]]));
 }
 
+/** A note as Notion may show it: a restricted note in its eligible form, so a published copy changes (and is re-rendered) once content is excluded (capture-and-review §5.1). */
+const publishForms = new WeakMap<Workspace, Map<string, Note>>();
+function publishable(workspace: Workspace, note: Note): Note {
+  let forms = publishForms.get(workspace);
+  if (forms === undefined) {
+    const loaded = requireSuppressions(workspace.root);
+    const context = contextFor(workspace.notes, loaded);
+    forms = new Map(workspace.notes.map((candidate) => [candidate.id, candidate.type === "source" || candidate.type === "proposal" ? candidate : publishableNote(candidate, context)]));
+    publishForms.set(workspace, forms);
+  }
+  return forms.get(note.id) ?? note;
+}
+
 function planExisting(workspace: Workspace, asOf: string, row: SnapshotRow, note: Note, out: SyncPlan): void {
   const updates: Record<string, unknown> = { id: note.id };
   if (note.attributes.notion === undefined) updates.notion = row.page_id;
   const fields = notionFields(row.database, row.properties, asOf);
   if (Object.keys(fields).length > 1 && !isDeepStrictEqual(withoutAsOf(note.attributes.notion_fields), withoutAsOf(fields))) updates.notion_fields = fields;
   const published = isRecord(note.attributes.notion_published) ? note.attributes.notion_published : undefined;
-  const rendered = renderedBrainValues(note, workspace);
+  const rendered = renderedBrainValues(publishable(workspace, note), workspace);
   const publish = (name: string, value: unknown) => { updates.published = { ...(isRecord(updates.published) ? updates.published : {}), [name]: value }; };
   const off = offRelations(workspace.config, row.database);
   for (const [name, brainField] of brainProperties(row.database)) {
@@ -642,12 +656,13 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     if (note.type === "project" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "PROJECT_NOT_IN_NOTION" }); continue; }
     const capturePage = note.type === "source" && note.attributes.kind === "capture" && typeof note.attributes.source_key === "string" && note.attributes.source_key.startsWith("notion:") ? note.attributes.source_key.slice("notion:".length) : undefined;
     if (note.type === "source" && note.attributes.kind === "capture" && (capturePage === undefined || (typeof note.attributes.notion === "string" && note.attributes.notion !== capturePage))) { errors.push({ id: note.id, reason: "NOTION_ID_MISMATCH" }); continue; }
-    const rendered = renderedBrainValues(note, workspace); const published = isRecord(note.attributes.notion_published) ? note.attributes.notion_published : {};
+    const form = publishable(workspace, note);
+    const rendered = renderedBrainValues(form, workspace); const published = isRecord(note.attributes.notion_published) ? note.attributes.notion_published : {};
     for (const name of offRelations(workspace.config, database)) delete rendered[name];
     const properties: Record<string, unknown> = {}; const pending: Array<Record<string, unknown>> = []; const heldProperties = held?.get(note.id) ?? new Set<string>();
     const isCreate = note.attributes.notion === undefined && capturePage === undefined;
     for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || !Object.hasOwn(published, name) || !sameValue(value, RENAMED_VALUES[name]?.[String(published[name])] ?? published[name]))) properties[name] = encoded; }
-    const content = renderedContent(note, workspace); if (content.hash !== undefined) rendered["@content"] = content.hash;
+    const content = renderedContent(form, workspace); if (content.hash !== undefined) rendered["@content"] = content.hash;
     // A Review row with item ids (0055): its body is written once, at create. Afterwards only the brain-owned summary at the top is sent;
     // the item sections belong to the user (capture-and-review §7.4, §7.10), and the hashes of what was rendered are kept in S.
     let itemUpdates: Array<{ item_id: string; reason: string; section: string }> = [];
