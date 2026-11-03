@@ -80,14 +80,18 @@ export function contentAt(repo, path, ref) {
   return result.ok ? { ok: true, stdout: Buffer.from(result.stdout.replace(/\s/g, ""), "base64").toString("utf8") } : result;
 }
 
+/** Who may pass a PR, by its branch prefix: never the author. A `claude/` PR is passed by Codex or by the Claude reviewer sub-agent (decision 0063). */
+export function reviewersFor(author) {
+  return author === "codex" ? ["Claude Code"] : ["Codex", "Claude reviewer"];
+}
+
 /**
- * True when the other agent posted `Review (<agent>): pass at <sha>` naming `head` (decision 0038). `author` is the branch prefix.
- * Only the repo owner's account counts: both agents post through it (Codex on #154, Claude Code on #91, #94 and #99), so a comment from anyone else is no review. An operational assumption (build/TASKS.md, CC-85).
+ * True when a reviewer for `author` (the branch prefix) posted `Review (<reviewer>): pass at <sha>` naming `head` (decisions 0038, 0063).
+ * Only the repo owner's account counts: every agent posts through it (Codex on #154, Claude Code on #91, #94 and #99), so a comment from anyone else is no review. An operational assumption (build/TASKS.md, CC-85).
  */
 export function hasOtherAgentPass(repo, pr, head, author) {
   const endpoint = [`repos/${repo}/pulls/${pr}/reviews`, `repos/${repo}/issues/${pr}/comments`];
-  const required = author === "codex" ? "Claude Code" : "Codex";
-  const verdict = new RegExp(`^Review \\(${required}\\): pass at ([0-9a-f]{7,})\\b`, "i");
+  const verdict = new RegExp(`^Review \\((?:${reviewersFor(author).join("|")})\\): pass at ([0-9a-f]{7,})\\b`, "i");
   return endpoint.some((path) => {
     const result = tryCommand("gh", ["api", path, "--paginate", "--slurp"]);
     if (!result.ok) return false;
@@ -109,7 +113,7 @@ export function sleep(ms) {
 
 /**
  * What must hold before a PR is merged, besides CI and mergeability, which GitHub shows itself (decision 0040):
- * the branch and title format, a base of `main`, every box ticked, the task `done` with this PR's number, and the other agent's pass naming the head.
+ * the branch and title format, a base of `main`, every box ticked, the task `done` with this PR's number, and a reviewer's pass naming the head.
  * `skipPass` drops the last one (`merge.mjs --reviewed-by-user`). Returns the problems, empty when ready.
  */
 export function readinessProblems(repo, pr, details, { skipPass = false } = {}) {
@@ -128,7 +132,7 @@ export function readinessProblems(repo, pr, details, { skipPass = false } = {}) 
       problems.push(`${branch[2]} is ${task === undefined ? "missing" : `\`${task.status}\`${task.suffix}`}, not \`done\` (#${pr})`);
     }
     if (!skipPass && !hasOtherAgentPass(repo, pr, details.headRefOid, branch[1])) {
-      problems.push(`no pass from the other agent (${branch[1] === "codex" ? "Claude Code" : "Codex"}) at ${String(details.headRefOid).slice(0, 7)}`);
+      problems.push(`no pass from the other agent (${reviewersFor(branch[1]).join(" or ")}) at ${String(details.headRefOid).slice(0, 7)}`);
     }
   }
   return problems;
