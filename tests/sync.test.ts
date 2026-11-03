@@ -91,16 +91,37 @@ test("sync accepts fractional-second timestamps and stores seconds precision", a
   assert.equal(run.json.data.as_of, NOW);
 });
 
-test("sync render rejects a project that was not created in Notion", async (context) => {
+test("sync render creates a project with no Notion page from the Projects template (decision 0068)", async (context) => {
   const dir = await fixtureCopy(context);
   const projectPath = join(dir, "projects/acme-website/project.md");
   const project = await readFile(projectPath, "utf8");
   await writeFile(projectPath, project.replace("notion: 2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e\n", ""));
 
-  const run = await brain(["sync", "render", "--brain", dir, "--ids", "prj-9x4t1b7e", "--json"]);
-  assert.equal(run.code, 1, run.stdout);
-  assert.deepEqual(run.json.data.items, []);
-  assert.deepEqual(run.json.data.errors, [{ id: "prj-9x4t1b7e", reason: "PROJECT_NOT_IN_NOTION" }]);
+  const run = await brain(["sync", "render", "--brain", dir, "--ids", "prj-9x4t1b7e", "--now", NOW, "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  assert.deepEqual(run.json.data.errors, []);
+  const [item] = run.json.data.items;
+  assert.equal(item.action, "create");
+  assert.equal(item.page_id, null);
+  assert.deepEqual(item.template, { type: "default" });
+  for (const name of ["Name", "Summary", "Key Facts", "Area", "Lifecycle", "Brain ID"]) assert.ok(Object.hasOwn(item.properties, name), name);
+  assert.deepEqual(Object.keys(item.sections), ["Brief", "Decision log"]);
+  assert.equal(item.body, null);
+  assert.ok(typeof item.published["@content"] === "string");
+
+  const changed = await brain(["sync", "render", "--brain", dir, "--changed", "--now", NOW, "--json"]);
+  const selected = changed.json.data.items.find((entry: { id: string }) => entry.id === "prj-9x4t1b7e");
+  assert.equal(selected?.action, "create", "--changed selects it like any unpublished note");
+  assert.ok(changed.json.data.items.filter((entry: { id: string }) => entry.id !== "prj-9x4t1b7e").every((entry: Record<string, unknown>) => !Object.hasOwn(entry, "template")), "no other item carries a template");
+});
+
+test("a project that has its Notion page renders as an update with no template", async (context) => {
+  const dir = await fixtureCopy(context);
+  const run = await brain(["sync", "render", "--brain", dir, "--ids", "prj-9x4t1b7e", "--now", NOW, "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  const [item] = run.json.data.items;
+  assert.equal(item.action, "update");
+  assert.equal(Object.hasOwn(item, "template"), false);
 });
 
 test("sync render creates Inbox and Concepts payloads from a document source", async (context) => {
