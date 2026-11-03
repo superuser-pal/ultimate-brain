@@ -15,7 +15,7 @@ Run every CLI command as `brain <command> --json` (the brain resolves from `BRAI
 
 ## 1. Which mode
 
-Read `.brain-workflow.json` in the working folder (it holds only `{ "workflow": "wf-…" }`):
+First look for `.brain-workflow.json` in the working folder, with a plain file read and no `brain` command (it holds only `{ "workflow": "wf-…" }`):
 - **No pointer:** standard (section 2). Don't run `brain` at all, and don't suggest connecting unless the user asks.
 - **A pointer:** `brain workflow show <wf>`.
   - `WORKFLOW_NOT_FOUND`, or `state: ended`: standard. Say once: "This folder's connected workflow is ended (or gone); tracking it the standard way."
@@ -31,7 +31,7 @@ Track the work where the folder already tracks it, and only there:
 - else a local Markdown plan or checklist the folder has (`TASKS.md`, `PLAN.md`, a `docs/` plan), edited in its own format;
 - else ask where the user wants the list, and offer a `TASKS.md` checklist.
 
-Follow the folder's instructions (AGENTS.md, `CLAUDE.md`, `CONTRIBUTING`). The steps by work type:
+Follow the folder's instructions (AGENTS.md, `CLAUDE.md`, `CONTRIBUTING`). "The next task" is the first open one in the tracker's order: name it in one line and start, unless the user named another. Mark progress the way the tracker can: an issue's labels or comments; in a Markdown checklist, the box (ticked only when done) plus the folder's own markers if it has any. A checklist has no "ready for approval" state: leave the box open and say in the report that it waits for approval. The steps by work type:
 - **Software:** clarify, plan, implement with tests, run the checks (tests, lint, CI), open the PR. Ready for review once the checks pass and a PR is open; done once it is merged and the acceptance criteria are met.
 - **General:** clarify, plan, execute, verify against the acceptance criteria, then ask the user to approve. Done only when the user accepts the result.
 
@@ -64,7 +64,7 @@ A **run** is one working session. Read [references/notion.md](references/notion.
    - **done:** software, when the PR is merged (`gh pr view <pr> --json state,mergedAt`) and every criterion is met, or the user accepted it; general, only on the user's acceptance, recorded as `"accepted": { "statement": "<their words>" }` with `"status": "done"`. A Notion status the user set wins, and Done there counts as their acceptance; reconcile brings it in.
 7. **Artifacts.** When the work produces a brief, plan, specification, decision, final deliverable, or a draft or log (`temporary`), record it with `artifact put` (`item`, `category`, `title`, `format`, `location`). When the user approves one, `artifact put` with `"approve": true` and the file's `sha256`. "Publish this one" or "keep this one local" is `"override": "include"` or `"exclude"`. The CLI decides what is published from the level; tell the user the result ("the plan stays local: excluded by level").
 
-**End**
+**End** (also when no item was worked on)
 8. **Reconcile again** (a fresh snapshot, no `--start`), then run the new `ops`.
 9. **Summary.** `brain workflow summary <wf>`. When `changed` is true, write its markdown into the **Workflow** toggle on the destination page, then `summary <wf> --written <sha256>`. If the Notion write fails, record nothing; the next run writes it.
 10. **Report** (section 6).
@@ -87,7 +87,7 @@ Next: say "retry" to try the contact form task again, or "drop it"
 ```
 
 - **Done:** counts only, nonzero ones. Name work status and publication status separately: "3 done, 1 not yet in Notion".
-- **Needs you:** open questions, failed or waiting publications with their reason, items waiting for the user's approval or acceptance, a Notion outage. `Needs you: nothing` when there is none.
+- **Needs you:** open questions, failed or waiting publications with their reason, items waiting for the user's approval or acceptance, a Notion outage. Open work that waits on nobody isn't listed. `Needs you: nothing` when there is none.
 - **Next:** one action or one question.
 - When every item is done or dropped but an operation is open, say **"Work complete, n not yet in Notion"**, never "complete".
 

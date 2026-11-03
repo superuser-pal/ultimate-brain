@@ -22,7 +22,7 @@ Bring the work an existing project already has into a connected workflow (decisi
    Ask which sources to take when there are several and the user didn't say.
 3. **Normalise** what you found into the adoption input: [references/input.md](references/input.md) has the format, the item keys and how each source is read. One rule matters most: **keys must be computed exactly as the reference says**, because a rerun finds already-adopted items by key.
 4. **Preview.** `brain workflow adopt preview <wf> --input <file>`. Show its result to the user in **one** message (below). Nothing is written yet.
-5. **Apply on yes.** Add the user's answers to the same input: `selected` (when they changed the selection), `treatments` (`{ "<key>": "keep" | "mark_transferred" | "close_transferred" }`, issues only), a `choice` on each convention (`keep`, `adapt` with the agreed wording in `note`, or `decline`), and `status_read` for each `status_options` entry. Then `brain workflow adopt apply <wf> --rev <n> --input <file>`, where `<n>` is the `rev` in the brain's `_workflows/<wf>/adoption.json`, or 0 when there is none. On `STALE_RECORD`, read it again and preview again.
+5. **Apply on yes.** Add the user's answers to the same input: `selected` (when they changed the selection), `treatments` (`{ "<key>": "keep" | "mark_transferred" | "close_transferred" }`, issues only), a `choice` on each convention (`keep`, `adapt` with the agreed wording in `note`, or `decline`; a rule already decided in an earlier run, in `_workflows/<wf>/adoption.json` `conventions`, keeps that choice: say so instead of asking again), and `status_read` for each `status_options` entry. Then `brain workflow adopt apply <wf> --rev <n> --input <file>`, where `<n>` is the `rev` in the brain's `_workflows/<wf>/adoption.json`, or 0 when there is none. On `STALE_RECORD`, read it again and preview again.
 6. **Publish.** Adoption opens the operations (a task for each new item; a Brain ID for adopted Notion tasks that have none). Run them now with the brain-workflow skill, section 4, "Start" (reconcile, the questions, the operations), and end with its summary.
 7. **Report** in the short form: counts, what needs the user, the next action.
 
@@ -45,4 +45,4 @@ One message, in this order, in plain words (no keys or ids unless asked):
 - **Not supported** (`unsupported`, other systems): what doesn't come across (custom fields, sprints).
 - **Warnings:** two plan lines with the same title (their mapping depends on their order).
 
-End with one question: "Apply this?", plus the choices it needs. A rerun's preview usually says "nothing new"; say so and apply only if it has creates or updates the user wants.
+End with one question: "Apply this?", plus the choices it needs. A rerun's preview usually says "nothing new": say so, and apply only if it has creates or updates the user wants. When there is nothing to apply, write nothing and give the report with nothing created.

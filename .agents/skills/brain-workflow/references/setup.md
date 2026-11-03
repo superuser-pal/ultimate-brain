@@ -34,7 +34,7 @@ spec/connected-workflows.md §2–§4. Ask only for what you can't find, and ask
 ## 2. Modules, once per workflow
 
 A connected workflow needs:
-- **the Tasks module**, with `notion.tasks.properties.brain_id` mapped: the Brain ID is how a retry finds a task it already created, so nothing is created twice. Without it, setup can't continue: offer `brain modules on tasks` (its steps are in `notion/modules/tasks.md`), and for a missing Brain ID property explain that it is a structural change the user adds by hand in Notion (decision 0022), then map it.
+- **the Tasks module** (`brain status` `modules.tasks`), with a Brain ID property mapped (a non-empty `notion.tasks.properties.brain_id` in the brain's `brain.json`, read as a file): the Brain ID is how a retry finds a task it already created, so nothing is created twice. Without it, setup can't continue: offer `brain modules on tasks` (its steps are in `notion/modules/tasks.md`), and for a missing Brain ID property explain that it is a structural change the user adds by hand in Notion (decision 0022), then map it.
 - **the Documents module**, for any level above Tasks only. If it is off, explain that published plans and deliverables are Documents, and offer `brain modules on documents`. If the user declines, hold the level to Tasks only and say so.
 
 Offer each missing module once; record it in `modules_offered` (`["documents"]`), so it isn't offered again. Never turn a module on without the user's yes.
