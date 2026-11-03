@@ -11,7 +11,10 @@ import { buildIndex } from "../lib/index-builder.ts";
 import { isProductRepository } from "../lib/brain-path.ts";
 import { appendLog } from "../lib/log.ts";
 import { scanNotes } from "../lib/notes.ts";
-import { listShippedSkillFiles } from "../lib/skills.ts";
+import { installedProduct } from "../lib/skills.ts";
+import { competingCopies } from "../lib/skills-competing.ts";
+import { homeOf, LOCK, pinState, serializeLock, snapshotInvalid } from "../lib/skills-pin.ts";
+import { packageProblem, packageSnapshot, TREES } from "../lib/skills-snapshot.ts";
 
 const exec = promisify(execFile);
 const TEMPLATE_ROOT = fileURLToPath(new URL("../../templates/brain/", import.meta.url));
@@ -35,6 +38,12 @@ export const initCommand: Command = {
     const target = resolve(requested);
     const present = await inspectTarget(target);
     if (present.kind === "file") throw new BrainError("TARGET_NOT_EMPTY", `Brain target is not a directory: ${target}`);
+    // The package snapshot must be compatible before anything is written (spec/skills-delivery.md §6.1). A target that doesn't exist
+    // yet can't hit the other refusals, so it is refused before it is created.
+    const product = installedProduct();
+    const pkg = packageSnapshot(product.root, product.version);
+    const problem = packageProblem(pkg);
+    if (problem !== null && !present.exists) throw snapshotInvalid(problem, product.version);
 
     if (!present.exists) await mkdir(target, { recursive: true });
     const root = await realpath(target);
@@ -47,6 +56,8 @@ export const initCommand: Command = {
     if (present.entries.length > 0 && args.options.force !== true) {
       throw new BrainError("TARGET_NOT_EMPTY", `Brain target is not empty: ${root}`);
     }
+    if (problem !== null) throw snapshotInvalid(problem, product.version);
+    const manifest = pkg.manifest!;
 
     const owner = args.options.owner as string | undefined ?? await defaultOwner();
     if (owner.trim() === "") throw new BrainError("USAGE", "--owner must not be empty");
@@ -66,18 +77,27 @@ export const initCommand: Command = {
       created.push(file.relative);
     }
 
-    // Product-owned skills (decision 0029, 0038); like template files, existing ones are never overwritten.
-    for (const skill of await listShippedSkillFiles()) {
-      for (const folder of [".agents/skills", ".claude/skills"]) {
-        const path = `${folder}/${skill.relative}`;
-        if (await exists(join(root, path))) {
-          skipped.push(path);
-          continue;
+    // Product-owned skills: the package snapshot's listed files, in both trees (decisions 0029, 0038, 0059); like template files,
+    // existing ones are never overwritten.
+    for (const skill of manifest.skills) {
+      for (const file of skill.files) {
+        const content = await readFile(join(pkg.folder, skill.name, file.path));
+        for (const tree of TREES) {
+          const path = `${tree}/${skill.name}/${file.path}`;
+          if (await exists(join(root, path))) {
+            skipped.push(path);
+            continue;
+          }
+          await ensureDirectory(root, dirname(path));
+          await atomicWriteFile(root, path, content);
+          created.push(path);
         }
-        await ensureDirectory(root, dirname(path));
-        await atomicWriteFile(root, path, skill.content);
-        created.push(path);
       }
+    }
+    if (await exists(join(root, LOCK))) skipped.push(LOCK);
+    else {
+      await atomicWriteFile(root, LOCK, serializeLock(product.version, manifest));
+      created.push(LOCK);
     }
 
     // The template includes an empty index, but build it rather than trusting that snapshot.
@@ -94,6 +114,9 @@ export const initCommand: Command = {
     if (!hadLog) created.push(logPath);
 
     const warnings: Warning[] = [];
+    const pin = pinState(root, () => product.version, { drift: true });
+    const competing = competingCopies({ treeRoot: root, names: manifest.skills.map((skill) => skill.name), home: homeOf(environment.env), brainRoot: root });
+    if (competing.length > 0) warnings.push({ code: "SKILLS_COMPETING", message: `${competing.length} competing skill copies; see data.skills.competing and remove them.` });
     const git = await initializeGit(root, args.options["no-git"] === true, warnings);
     let defaultConfig: { written: boolean; path_abs: string | null; previous: unknown };
     if (args.options["set-default"] === true) {
@@ -113,6 +136,7 @@ export const initCommand: Command = {
         skipped,
         git,
         default_config: defaultConfig,
+        skills: { state: pin.state, name: pin.lock?.snapshot.name ?? null, version: pin.lock?.snapshot.version ?? null, competing },
       },
       human: `Initialized Ultimate Brain at ${root}\n`,
     };

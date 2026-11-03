@@ -13,6 +13,8 @@ import { expandPath, linkedRepos, workTreeTop } from "../lib/repos.ts";
 import { unattendedRuns } from "../lib/runs.ts";
 import { contextFor, indexNotes, loadSuppressions, restrictionOf } from "../lib/suppressions.ts";
 import { normalizeTimestamp } from "../lib/time.ts";
+import { installedProduct } from "../lib/skills.ts";
+import { homeOf, statusSkills } from "../lib/skills-pin.ts";
 
 const NOTE_TYPES = ["domain", "area", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "goal", "memory", "reference"];
 const PROPOSAL_STATUSES = ["pending", "approved", "edited", "rejected", "applied", "closed"];
@@ -90,6 +92,7 @@ export const statusCommand: Command = {
       views_stale: viewStale,
       suppressions,
       last_log: lastLog,
+      skills: statusSkills(brain!.root, installedProduct(), homeOf(environment.env)),
     };
     return { data, human: `Owner: ${data.owner}\nNotes: ${notes.length}\n${taskNote === null ? "" : `${taskNote}\n`}` };
   },
