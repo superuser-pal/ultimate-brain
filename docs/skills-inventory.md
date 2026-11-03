@@ -26,7 +26,7 @@ This file is a snapshot of the skills the user's Claude Code and Codex load. It 
 
 ## 2. The customised collection against upstream
 
-The collection imported upstream (last synced to upstream v1.3), adapted it to the Sentina repos (a `.sentina/` config, Notion task lifecycle, `feat/tarea-*` branches, evidence files, a `wiki/` vault, some Spanish text), and added third-party skills. It also has `git-guardrails-claude-code`, `setup-pre-commit` and five `in-progress/` skills that aren't installed.
+The collection imported upstream (last synced to upstream v1.3), adapted it to the Sentina repos (a `.sentina/` config, Notion task lifecycle, `feat/tarea-*` branches, evidence files, a `wiki/` vault, some Spanish text), and added third-party skills. It also holds seven skills that neither agent loads, so the manifest doesn't list them: `git-guardrails-claude-code`, `setup-pre-commit`, `loop-me` and `writing-fragments` (identical to upstream), `writing-beats` and `writing-shape` (dashes only), and `chief-of-staff` (cut from about 68 lines to 28, dropping upstream's wiki-memory and sub-agent rules).
 
 Classes: **as-is** (identical to upstream); **upstream + tweaks** (cosmetic, a Sentina path, or stale/regressed text); **mixed** (a reusable part and a Sentina part); **Sentina-specific**; **third-party** (general skills from other open-source collections).
 
@@ -71,6 +71,7 @@ Licensing gaps: the collection's MIT `LICENSE` names only its owner, and it has 
 | `agent-reach` | local-only | The Agent Reach tool's installer; Codex only |
 | `orca-cli`, `orchestration` | local-only | Installed by Orca; `orchestration` reaches Claude Code through a symlink |
 | Account-synced skills (14) | local-only | Claude account |
+| `orca-native-chat:orca-chat-visuals` | local-only | Injected by Orca into its chat sessions; not on disk in a skills folder |
 | Codex system skills (5) | local-only | Bundled with Codex |
 | `n8n-mcp-skills` (15 skills) | local-only | `czlonkowski/n8n-skills` 1.27.3 at `408670d` |
 | `ultimate-brain` plugin record | duplicate (stale) | `7dddf45`, not enabled; superseded by the brain copies (0038) |
@@ -108,6 +109,6 @@ Actions: **keep** (the fork carries upstream's text), **adapt** (the fork carrie
 | The reusable parts not chosen: the Notion property-mapping recipe, the merge-base default, "stop if there's no spec", the `retro` rewrite; the collection's `chief-of-staff` rewrite | retire | None |
 | Stale `ultimate-brain` plugin record and cache | retire in step 6 | None |
 | Upstream skills not installed today (`git-guardrails-claude-code`, `setup-pre-commit`, `migrate-to-shoehorn`, `scaffold-exercises`, `in-progress/`) | keep: the fork has them as upstream's text; installed only if selected later | Fork, upstream text |
-| SEO pack, `defuddle`, `agent-reach`, the Orca skills, account-synced skills, Codex system skills, `n8n-mcp-skills`, the other plugins | untouched: step 6 removes none of them; listed so the switch can check it left them alone | Their current installers |
+| SEO pack, `defuddle`, `agent-reach`, the Orca skills (including the session-injected `orca-chat-visuals`), account-synced skills, Codex system skills, `n8n-mcp-skills`, the other plugins | untouched: step 6 removes none of them; listed so the switch can check it left them alone | Their current installers |
 
 **Approval:** approved by the user in the CC-97 grill, 2026-11-03. Their answers: reset the tweaked skills to upstream; carry only `pr`'s reusable sections; isolate the Sentina skills in a prefixed, project-scoped profile; carry the third-party skills attributed; extend upstream's router and setup; write the connected task mapping from the brain contract; leave local-only skills untouched; retire only the stale plugin.
