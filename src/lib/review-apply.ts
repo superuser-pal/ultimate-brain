@@ -1,6 +1,7 @@
 import { isDeepStrictEqual } from "node:util";
 
 import { applyKind } from "./apply.ts";
+import { acceptCleanupItem, CLEANUP_KINDS, CleanupSkip, reconcile } from "./cleanup-row.ts";
 import { isRecord } from "./input.ts";
 import type { LogEntry } from "./log.ts";
 import type { Note } from "./notes.ts";
@@ -72,6 +73,12 @@ export function applyReviewDecisions(workspace: Workspace, decisions: ReviewDeci
         if (index >= 0) deferred.splice(index, 1);
       }
       results.push(out);
+    }
+    // A cleanup row whose items left no note restricted marks its suppression records reconciled, in the same unit (§5.3).
+    const cleanupInput = record(workspace.get(decision.proposal)?.attributes.cleanup).input;
+    if (typeof cleanupInput === "string" && results.some((entry) => entry.proposal === decision.proposal && entry.result === "applied")) {
+      const checkpoint = workspace.checkpoint();
+      try { reconcile(workspace, cleanupInput, `${today}T00:00:00Z`); } catch { workspace.restore(checkpoint); }
     }
     // The deferred items of this submission move together to one new pending proposal, each under the id it had (§7.6).
     if (deferred.length > 0) {
@@ -148,6 +155,10 @@ function applyItem(workspace: Workspace, decision: ReviewDecision, planned: Revi
 function acceptItem(workspace: Workspace, proposal: Note, entry: Record<string, unknown>, planned: ReviewDecision["items"][number], today: string): void {
   const a = proposal.attributes;
   const proposed = planned.proposed!;
+  if (CLEANUP_KINDS.includes(entry.kind as never)) {
+    try { acceptCleanupItem(workspace, proposal, entry, proposed, today); } catch (error) { if (error instanceof CleanupSkip) throw new Skip(error.code, error.message); throw error; }
+    return;
+  }
   if (entry.kind === "note") {
     const note = workspace.get(String(entry.ref));
     if (note === undefined) throw new Skip("UNKNOWN_ID", `No note ${String(entry.ref)}`);

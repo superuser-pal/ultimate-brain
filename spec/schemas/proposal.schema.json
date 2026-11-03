@@ -425,9 +425,21 @@
         "additionalProperties": false,
         "properties": {
           "item_id": { "type": "string", "pattern": "^it-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
-          "kind": { "enum": ["note", "link", "change"] },
+          "kind": { "enum": ["note", "link", "change", "remove", "restore", "independence"] },
+          "n": { "description": "restore only: the paragraph number to restore.", "type": "integer", "minimum": 1 },
           "ref": { "description": "A note id (kind note) or an index into links or changes.", "anyOf": [{ "type": "integer", "minimum": 0 }, { "$ref": "note.schema.json#/$defs/id" }] }
         }
+      }
+    },
+    "cleanup": {
+      "description": "review_notes only (capture-and-review §5.2): this is the exclusion cleanup row of an input. Its items are remove, restore and independence; `tasks` lists the Tasks created from excluded content, for the user to act on in Notion.",
+      "type": "object",
+      "required": ["input"],
+      "additionalProperties": false,
+      "properties": {
+        "input": { "type": "string", "minLength": 1 },
+        "version": { "type": "integer", "minimum": 1 },
+        "tasks": { "type": "array", "items": { "type": "object" } }
       }
     },
     "item_decisions": {

@@ -290,12 +290,13 @@ export function lintBrain(input: LintInput): Issue[] {
     if (note.type === "proposal" && Array.isArray(a.items)) {
       // The items of a review_notes: one immutable id per note, link and change, each resolving (capture-and-review §7.2).
       const notes = list(a.notes).map(String), links = list(a.links), changes = list(a.changes);
+      const isRecord2 = (value: unknown): boolean => typeof value === "object" && value !== null && !Array.isArray(value);
       const seenIds = new Set<string>(), covered = new Set<string>();
       for (const entry of list(a.items) as Array<{ item_id?: string; kind?: string; ref?: unknown }>) {
         if (typeof entry.item_id !== "string" || seenIds.has(entry.item_id)) err("proposal-items", lineOfKey(note, "items"), `item id ${String(entry.item_id)} is missing or used twice`);
         else seenIds.add(entry.item_id);
-        const key = `${entry.kind}:${String(entry.ref)}`;
-        const resolves = entry.kind === "note" ? notes.includes(String(entry.ref)) : entry.kind === "link" ? Number.isInteger(entry.ref) && (entry.ref as number) < links.length : entry.kind === "change" && Number.isInteger(entry.ref) && (entry.ref as number) < changes.length;
+        const key = `${entry.kind}:${String(entry.ref)}${entry.kind === "restore" ? `:${String((entry as { n?: unknown }).n)}` : ""}`;
+        const resolves = ["remove", "restore", "independence"].includes(String(entry.kind)) ? isRecord2(a.cleanup) && byId.get(String(entry.ref)) !== undefined : entry.kind === "note" ? notes.includes(String(entry.ref)) : entry.kind === "link" ? Number.isInteger(entry.ref) && (entry.ref as number) < links.length : entry.kind === "change" && Number.isInteger(entry.ref) && (entry.ref as number) < changes.length;
         if (!resolves) err("proposal-items", lineOfKey(note, "items"), `item ${String(entry.item_id)} refers to ${key}, which this proposal does not hold`);
         if (covered.has(key)) err("proposal-items", lineOfKey(note, "items"), `${key} has two items`);
         covered.add(key);

@@ -104,6 +104,8 @@ export function planReviewRow(
     else if (token === "pending" && call === "approve") token = "accept";
     else if (token === "pending" && call === "reject") token = "reject";
     if (token === "pending") continue;
+    // A cleanup item has no new row to move to: it stays pending until it is decided (§5.2).
+    if (token === "defer" && ["remove", "restore", "independence"].includes(String(proposal.attributes.items && (proposal.attributes.items as Array<Record<string, unknown>>).find((candidate) => candidate.item_id === entry.item_id)?.kind))) { hold(entry.item_id, "DEFER_NOT_SUPPORTED"); continue; }
     if (token === "request revision") { out.review_revisions.push({ proposal: id, page_id: row.page_id, item_id: entry.item_id, instruction: section.revision_request }); continue; }
     const stored = published[entry.item_id];
     if (token === "accept" && item.source_excluded) {
