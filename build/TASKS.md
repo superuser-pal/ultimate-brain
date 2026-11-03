@@ -144,6 +144,10 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 **Changelog:** three new skills: adopt an existing project's plans and tasks, run work as standard or Notion-connected with the logging you chose, and link, check, unlink or start a repo from the brain.
 **Output:** per spec/connected-workflows.md and spec/linked-repos.md, on CC-102's CLI: the three skills, authored in `skills/` until CC-105 moves authorship to the fork; templates/brain/AGENTS.md lists them; brain-howto and the user guide. Blind runs in eval/.
 **Acceptance:** blind runs by fresh Sonnet sub-agents with no answer keys, on synthetic projects: adopting a Markdown plan shows one preview before applying and a rerun duplicates nothing; a failed publication of a connected task is kept and retried without a duplicate; linking writes the kit only after a yes and offers `brain link` the other way; standard tracking needs no brain or Notion; the skill mirror check passes.
+**Spec questions (CC-104, for the user):**
+1. A legacy link (`NO_KIT`) can get a kit file (`repo kit write`), but no command applies it to the existing entry: `repo refresh` refuses `NO_KIT` and `repo add --kit` refuses a taken name. brain-repos uses the defined path, `repo unlink` then `repo add --kit` after the user's yes, which resets `commit` so the next read lists the files again (already-ingested ones are skipped as duplicates). Should `repo refresh` adopt a kit for a legacy entry and keep its `commit`?
+2. A moved repo (`PATH_MISSING`) has no command to change an entry's `path`. brain-repos offers unlink and link again (the same reset). Should `repo refresh` (or a new option) take a new path?
+3. linked-repos.md §4 says each catch-up that reads a tracked-in-repo repo rebuilds its rollup, and brain-ingest still links with `repo add --pattern` ("link the repo at <path>"). Neither brain-catch-up nor brain-ingest is CC-104's to change beyond a hand-over line, so both still need their step: a hand-over to brain-repos in each.
 
 ### CC-105 · Brain skills authored in the fork, a pinned snapshot in the package (decision 0059) · `todo`
 **Release:** 0.9.0
