@@ -35,7 +35,8 @@ Each operation has a skill; follow it end to end:
 
 ## Product files and findings
 
-- **Product-owned files are read-only here:** this block, `.agents/skills/` and `.claude/skills/` (the skills Ultimate Brain ships). Never edit them, even to fix a bug; the next upgrade would erase the fix and the product would never learn of it. `brain lint` reports a changed one as `product-file`.
+- **Product-owned files are read-only here:** this block, `.agents/skills/` and `.claude/skills/` (the skills Ultimate Brain ships), and `skills.lock.json`. Never edit them, even to fix a bug; the next upgrade would erase the fix and the product would never learn of it. `brain lint` reports a changed one as `product-file`.
+- **Pinned skills.** `skills.lock.json` records the skill snapshot this brain uses; only `brain upgrade` changes it. When a command stops with a `SKILLS_` error, show the user its message and stop: never use another copy of a skill instead. To undo an upgrade: `git revert <upgrade commit>`, then `npm install -g ultimate-brain@<installed_by>` (the version in the restored `skills.lock.json`), then `brain lint`.
 - **When the product is wrong** (a skill step fails, the CLI misbehaves, a rule gives a bad result), finish or stop the run, then file a finding: `gh issue create --repo superuser-pal/ultimate-brain --label dogfood --template dogfood.md`. Describe it as it would happen in a made-up brain ("a meeting with two projects…"): never names, client text or note content from this brain. Show the user the issue text before filing. If `gh` is missing, give the user the text to file.
 
 ## Trust rules

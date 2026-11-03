@@ -50,9 +50,14 @@ brain --version                       # must print 0.4.0; if not: npm cache clea
 cd <your brain> && brain upgrade
 ```
 
-Run `brain upgrade` only after `brain --version` prints the new version: the old CLI upgrades to itself and changes nothing. `brain upgrade` refuses a brain with uncommitted changes, refreshes the product-owned files (the AGENTS.md rules block, `.agents/skills/`, `.claude/skills/`), runs lint, commits `upgrade: ultimate brain <version>` and pushes.
+Run `brain upgrade` only after `brain --version` prints the new version: the old CLI upgrades to itself and changes nothing. `brain upgrade` refuses a brain with uncommitted changes, refreshes the product-owned files (the AGENTS.md rules block, `.agents/skills/`, `.claude/skills/`, `skills.lock.json`), runs lint, commits `upgrade: ultimate brain <version>, skills <snapshot> <version>` and pushes. `skills.lock.json` pins the skill snapshot the brain uses, so Claude Code and Codex load the same version (decision 0059, spec/skills-delivery.md); a brain without one is pinned by its first upgrade.
 
-**To roll back:** `npm install -g ultimate-brain@<previous>`, then `git revert` the upgrade commit.
+**To roll back** an upgrade (spec/skills-delivery.md §8), in either order:
+1. In the brain: `git revert <upgrade commit>`. It restores the old `skills.lock.json` and the old skill files in one commit.
+2. `npm install -g ultimate-brain@<previous_cli>`: the `previous_cli` the upgrade reported, which is also the reverted lock's `installed_by`.
+3. `brain lint` exits 0 (info issues such as `skills-update-available` don't count).
+
+A later `brain upgrade` with the newer CLI applies the upgrade again. An older CLI refuses to lower the pin (`SKILLS_DOWNGRADE`) instead of doing it silently.
 
 ## Findings from a brain
 
