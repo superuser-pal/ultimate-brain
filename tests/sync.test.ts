@@ -269,6 +269,62 @@ test("sync apply creates a Notion-created note with its lifecycle and applies co
   assert.match(log, /sync-create org-1a2b3c4d "Globex"/);
 });
 
+// --- sync apply runs creates in relation order (cli §5.14.3, CC-113) ---------------------------
+
+const page = (n: number) => `d1130000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const fromNotion = (type: string, id: string, title: string, n: number, frontmatter: Record<string, unknown> = {}) =>
+  ({ type, id, title, lifecycle: "draft", frontmatter: { summary: title, notion: page(n), sources: [`notion:${page(n)}`], ...frontmatter }, body: "" });
+
+async function applyCreates(dir: string, create: unknown[]) {
+  const plan = { as_of: NOW, create, updates: [], corrections: [], decisions: [], conflicts: [], ignored: [] };
+  return brain(["sync", "apply", "--brain", dir, "--now", NOW, "--input", await input(dir, `plan-${Math.random().toString(36).slice(2)}.json`, plan), "--json"]);
+}
+const results = (run: { json: any }) => run.json.data.create.map((item: any) => [item.id, item.result, item.reason]);
+
+test("sync apply creates a new Area before the new Domain it names, whatever the plan's order (#192)", async (context) => {
+  const dir = await fixtureCopy(context);
+  assert.equal((await brain(["modules", "on", "domains", "--brain", dir, "--now", NOW, "--json"])).code, 0);
+  const area = fromNotion("area", "area-7b3k9m2q", "Billing", 1, { domain: "dom-4n8p2r6t" });
+  const domain = fromNotion("domain", "dom-4n8p2r6t", "Operations", 2);
+  const run = await applyCreates(dir, [area, domain]);
+  assert.equal(run.code, 0, run.stdout);
+  assert.deepEqual(results(run), [["area-7b3k9m2q", "applied", undefined], ["dom-4n8p2r6t", "applied", undefined]]);
+  assert.equal((await brain(["lint", "--brain", dir, "--json"])).json.data.errors, 0);
+});
+
+test("sync apply creates a new Project after its new Org and its new Area, whatever the plan's order", async (context) => {
+  const dir = await fixtureCopy(context);
+  const project = fromNotion("project", "prj-2c6v8x4z", "Portal", 3, { client: "org-8w2e4r6t", area: "area-3j5k7n9p" });
+  const org = fromNotion("org", "org-8w2e4r6t", "Initech", 4);
+  const area = fromNotion("area", "area-3j5k7n9p", "Partnerships", 5);
+  const run = await applyCreates(dir, [project, org, area]);
+  assert.equal(run.code, 0, run.stdout);
+  assert.deepEqual(results(run), [["prj-2c6v8x4z", "applied", undefined], ["org-8w2e4r6t", "applied", undefined], ["area-3j5k7n9p", "applied", undefined]]);
+  assert.equal((await brain(["lint", "--brain", dir, "--json"])).json.data.errors, 0);
+});
+
+test("sync apply reports creates in a relation cycle and still applies the rest", async (context) => {
+  const dir = await fixtureCopy(context);
+  const first = fromNotion("org", "org-1q3w5e7r", "Umbrella", 6, { relations: [{ type: "about", target: "org-2a4s6d8f" }] });
+  const second = fromNotion("org", "org-2a4s6d8f", "Hooli", 7, { relations: [{ type: "about", target: "org-1q3w5e7r" }] });
+  const dependent = fromNotion("person", "per-5g7h9j2k", "Dee Ortiz", 8, { org: "org-1q3w5e7r" });
+  const free = fromNotion("org", "org-6z8x2c4v", "Vandelay", 9);
+  const self = fromNotion("org", "org-7m9n3b5v", "Soylent", 10, { relations: [{ type: "about", target: "org-7m9n3b5v" }] });
+  const run = await applyCreates(dir, [dependent, first, free, second, self]);
+  assert.equal(run.code, 1, run.stdout);
+  assert.deepEqual(results(run).slice(0, 4), [
+    ["per-5g7h9j2k", "failed", "DEPENDENCY_FAILED"],
+    ["org-1q3w5e7r", "failed", "RELATION_CYCLE"],
+    ["org-6z8x2c4v", "applied", undefined],
+    ["org-2a4s6d8f", "failed", "RELATION_CYCLE"],
+  ]);
+  // A create naming its own id is no cycle: whatever lint says of it, it is not RELATION_CYCLE.
+  assert.notEqual(results(run)[4][2], "RELATION_CYCLE");
+  const log = await readFile(join(dir, "log/2026-12.md"), "utf8");
+  assert.match(log, /sync-create org-6z8x2c4v "Vandelay"/);
+  assert.doesNotMatch(log, /sync-create org-1q3w5e7r/);
+});
+
 test("sync tasks renders per-item projects, falls back to the meeting, and reports unpublished relations", async (context) => {
   const dir = await fixtureCopy(context);
   const configPath = join(dir, "brain.json");
