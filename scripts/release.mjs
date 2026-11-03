@@ -120,7 +120,7 @@ function gatesSkills(version) {
 }
 
 /**
- * Runs the skills-integration check with the release rules (§11.3): `{ problems, line }`, where `line` is the CHANGELOG's `Skills:` line (§11.1).
+ * Runs the skills-integration check with the release rules (§11.3), printing its warnings: `{ problems, line }`, where `line` is the CHANGELOG's `Skills:` line (§11.1).
  * In phase A the shipped manifest carries the released version, since prepack regenerates it.
  */
 function skillsGate(version, repo, dryRun) {
@@ -129,6 +129,7 @@ function skillsGate(version, repo, dryRun) {
   const run = spawnSync(process.execPath, args, { cwd: ROOT, encoding: "utf8" });
   let result;
   try { result = JSON.parse(run.stdout); } catch { return { problems: [`skills integration check failed: ${(run.stderr || run.error?.message || "no output").trim().split("\n")[0]}`] }; }
+  for (const warning of result.warnings ?? []) process.stderr.write(`Warning: ${warning}\n`);
   const tested = result.block?.tested;
   const line = tested === undefined ? undefined : `Skills: ${tested.name} ${tested.name === "ultimate-brain" ? version : tested.version} (${tested.integrity})`;
   return { problems: result.problems, line };

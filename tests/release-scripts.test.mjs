@@ -460,20 +460,33 @@ test("the release gate passes a current integration and the section ends with th
   assert.equal(mock.requests.filter((request) => request.method !== "GET").length, 0, "a dry run writes no issue");
 });
 
-test("the release gate refuses an unclassified compatible, incompatible or unreleased change", async (t) => {
-  for (const change of [
-    { body: prBody("compatible"), release: "1.1.0" },
-    { body: prBody("coordinated", [`https://github.com/${PRODUCT}/issues/7`]), release: "2.0.0", issues: [{ number: 7, title: "Work", state: "open" }] },
-    { body: prBody("none") },
+test("the release gate blocks only an unclassified change that may be incompatible (decision 0059)", async (t) => {
+  const refused = /Release refused: .*1 skills change\(s\) that may be incompatible are unclassified/;
+  const warned = /Warning: 1 compatible skills change\(s\) unclassified/;
+  for (const [change, status, message] of [
+    [{ body: prBody("compatible"), release: "1.1.0" }, 0, warned],
+    [{ body: prBody("coordinated", [`https://github.com/${PRODUCT}/issues/7`]), release: "2.0.0", issues: [{ number: 7, title: "Work", state: "open" }] }, 1, refused],
+    [{ body: prBody("none") }, 0, warned],
+    [{ body: prBody(undefined) }, 1, refused],
   ]) {
     const root = temporaryRoot();
     t.after(() => rmSync(root, { recursive: true, force: true }));
     const path = gateDryRun(root);
     const { env } = await integrationMock(t, (state) => forkChange(state, change));
     const result = await runAsync("release.mjs", ["0.9.0", "--dry-run"], { root, env: { ...env, PATH: path } });
-    assert.equal(result.status, 1, result.stdout);
-    assert.match(result.stderr, /Release refused: .*1 skills change\(s\) unclassified/);
+    assert.equal(result.status, status, result.stderr);
+    assert.match(result.stderr, message);
   }
+});
+
+test("the release gate refuses the fork's first release while it is unclassified: it has no impact to read", async (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = gateDryRun(root);
+  const { env } = await integrationMock(t, (state) => { state.issues = []; });
+  const result = await runAsync("release.mjs", ["0.9.0", "--dry-run"], { root, env: { ...env, PATH: path } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /1 skills change\(s\) that may be incompatible are unclassified/);
 });
 
 test("the release gate passes a classified incompatible change with a linked task and blocks a dead link", async (t) => {
