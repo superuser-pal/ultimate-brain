@@ -16,7 +16,9 @@ export interface ExtractPlan {
   selection: { id: string; effective: Selection; explicit: Selection | null }[];
   problems: Plan["problems"]; passages: { n: number; hash: string; items: string[] }[];
   copied: { n: number; text: string; items: string[] }[]; unnumbered: Plan["unnumbered"];
-  uncovered: number; body: string | null; previous?: PreviousInfo;
+  uncovered: number;
+  quotes: Plan["quotes"]; unplaced_items: string[]; quick: Plan["quick"]; scopes: Plan["scopes"];
+  body: string | null; previous?: PreviousInfo;
 }
 
 const invalid = (code: string, message: string): never => {
@@ -62,7 +64,8 @@ export function buildExtractPlan(notes: readonly Note[], input: { page: string; 
   const result: ExtractPlan = {
     ok: plan.ok, write_required: true, transcript_hash: hash, selection, problems: plan.problems, passages,
     copied: plan.copied.map((entry) => ({ n: entry.n, text: entry.text, items: entry.items })), unnumbered: plan.unnumbered,
-    uncovered: plan.uncovered, body: plan.ok ? extractBody(plan) : null,
+    uncovered: plan.uncovered, quotes: plan.quotes, unplaced_items: plan.unplaced_items, quick: plan.quick, scopes: plan.scopes,
+    body: plan.ok ? extractBody(plan) : null,
   };
   if (previousNote === undefined) return result;
 

@@ -18,6 +18,8 @@ How to read one meeting's minutes and decide what becomes a note, what becomes a
 | Projects | The meeting's `projects` when its Project property is empty (SKILL.md step 3); each item's own `projects` still comes from what it is about | `note new` |
 | Decisions | A **decision** note if it passes the decision gate; otherwise a line in the meeting body, plus a proposal if it changes a fact | `note new` / `proposal new` |
 | Action Items | Notion **tasks** (Notion mode), and a list in the meeting body. Never notes. Each item's owner, deliverable, timing and dependencies are as written | `sync tasks` |
+| Tasks, each with a Scope toggle (decision 0067) | Notion **tasks** as above; the Scope's Due and Project are the task's, its Done when and Notes its page body ([selection.md](selection.md) §6) | `sync tasks` |
+| Quick follow-ups (decision 0067: to-do checkboxes) | **Nothing.** They stay on the meeting page: no task, no note, no line in the meeting body | |
 | Facts and figures, wherever they're stated (Current Status, Requirements and Deadlines, Background, or an older Facts & numbers section) | A change to a `facts` key of an existing note → `update_fact`. A new fact about an existing note → `update_fact` with no `before`. Facts about a new note go in its frontmatter | `proposal new` / `note new` |
 | Role changes ("Maria is now PM") | `update_fact` on the person's `role` | `proposal new` |
 | Open questions | A **question** note (`kind: question`) when it matters beyond this meeting | `note new` |
