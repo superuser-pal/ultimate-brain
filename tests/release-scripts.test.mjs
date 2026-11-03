@@ -422,10 +422,11 @@ test("merge dry-run accepts a PR whose push-only job was skipped", (t) => {
   assert.match(result.stdout, /Would merge #12/);
 });
 
-function mergeReviewPath(root, review, task = "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n") {
+function mergeReviewPath(root, review, task = "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n", branch = "codex/CX-1-one") {
+  const id = /^\w+\/(\w+-\d+)-/.exec(branch)[1];
   return fakeCommands(root, {
     gh: `case "$1 $2" in
-      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"abcdef0","title":"CX-1: One","body":"- [x] checked","mergeable":"MERGEABLE","state":"OPEN"}' ;;
+      "pr view") printf '%s' '{"headRefName":"${branch}","headRefOid":"abcdef0","title":"${id}: One","body":"- [x] checked","mergeable":"MERGEABLE","state":"OPEN"}' ;;
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/commits/abcdef0/check-runs") printf 'completed\\tsuccess\\n' ;;
       "api repos/owner/repo/contents/build/TASKS.md?ref=abcdef0") printf '%s' '${taskRows(task)}' ;;
@@ -475,6 +476,36 @@ test("merge dry-run refuses a pass from the same agent", (t) => {
   const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /other agent/);
+});
+
+const claudeTask = "### CC-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n";
+
+test("a claude/ PR passes with the Claude reviewer sub-agent's verdict or Codex's (decision 0063)", (t) => {
+  for (const reviewer of ["Claude reviewer", "Codex"]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const path = mergeReviewPath(root, `[[{"user":{"login":"owner"},"body":"Review (${reviewer}): pass at abcdef0"}]]`, claudeTask, "claude/CC-1-one");
+    const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
+    assert.equal(result.status, 0, result.stderr);
+  }
+});
+
+test("a claude/ PR refuses a pass from Claude Code, its author", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = mergeReviewPath(root, '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at abcdef0"}]]', claudeTask, "claude/CC-1-one");
+  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /no pass from the other agent \(Codex or Claude reviewer\) at abcdef0/);
+});
+
+test("a codex/ PR refuses a pass from the Claude reviewer sub-agent", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = mergeReviewPath(root, '[[{"user":{"login":"owner"},"body":"Review (Claude reviewer): pass at abcdef0"}]]');
+  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /other agent \(Claude Code\)/);
 });
 
 test("merge dry-run refuses a pass naming another commit", (t) => {
