@@ -15,7 +15,7 @@ if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
   || (action !== "clean" && !/^(CC|CX)-\d+$/.test(id ?? ""))
   || (action !== "start" && Object.keys(flags).length > 0)
   || ((flags["--new"] === undefined) !== (flags["--release"] === undefined))
-  || (flags["--new"] !== undefined && (flags["--new"].trim() === "" || flags["--new"].includes("·") || !semver.test(flags["--release"])))) {
+  || (flags["--new"] !== undefined && (flags["--new"].trim() === "" || /[·`\n\r]/.test(flags["--new"]) || !semver.test(flags["--release"])))) {
   fail(usage);
 } else if (action === "clean") {
   tryCommand("git", ["fetch", "-q", "origin"]);
@@ -23,9 +23,9 @@ if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
   for (const { worktree, branch } of mergedTaskWorktrees()) {
     if (command("git", ["status", "--porcelain"], { cwd: worktree }) !== "") process.stderr.write(`Kept ${branch}: uncommitted changes in ${worktree}\n`);
     else {
-      command("git", ["worktree", "remove", worktree]);
-      command("git", ["branch", "-d", branch]);
-      removed.push(branch);
+      const result = removeMerged(worktree, branch);
+      if (result.ok) removed.push(branch);
+      else { process.stderr.write(`Kept ${branch}: ${result.message}\n`); process.exitCode = 1; }
     }
   }
   process.stdout.write(removed.length === 0 ? "No merged task worktrees\n" : `Removed ${removed.join(", ")}\n`);
@@ -38,6 +38,7 @@ if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
   const task = title === undefined ? existing : { id, title };
   if (!rows.ok) fail(`Cannot read build/TASKS.md on ${base}: ${rows.message}`);
   else if (title !== undefined && existing !== undefined) fail(`${id} already exists on ${base}`);
+  else if (title !== undefined && openBranches(id).length > 0) fail(`${id} is already used by ${openBranches(id).join(", ")}`);
   else if (task === undefined) fail(`Unknown task ${id}`);
   else if (action === "start" && title === undefined && task.status !== "todo") fail(`${id} is ${task.status}, not todo`);
   else if (action === "start") {
@@ -67,8 +68,8 @@ if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
       const merged = tryCommand("git", ["merge-base", "--is-ancestor", branch, "origin/main"]);
       if (!merged.ok) fail(`${branch} is not merged into origin/main`);
       else {
-        command("git", ["worktree", "remove", target.worktree]);
-        command("git", ["branch", "-d", branch]);
+        const result = removeMerged(target.worktree, branch);
+        if (!result.ok) fail(`Cannot remove ${branch}: ${result.message}`);
       }
     }
   }
@@ -119,8 +120,30 @@ function insertRow(tasks, taskId, title, release) {
   return `${before === "" ? "" : before.replace(/\n*$/, "\n\n")}## ${release}\n\n${row}${tasks.slice(at)}`;
 }
 
+/** Semver order of x.y.z[-pre]: a prerelease comes before its release (0.9.0-rc.1 < 0.9.0); two prereleases compare as text. */
 function compareVersions(left, right) {
-  const parts = (version) => version.split("-")[0].split(".").map(Number);
-  const [a, b] = [parts(left), parts(right)];
-  return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+  const [leftCore, leftPre] = left.split(/-(.*)/s);
+  const [rightCore, rightPre] = right.split(/-(.*)/s);
+  const [a, b] = [leftCore.split(".").map(Number), rightCore.split(".").map(Number)];
+  const core = a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+  if (core !== 0 || leftPre === rightPre) return core;
+  if (leftPre === undefined) return 1;
+  if (rightPre === undefined) return -1;
+  return leftPre < rightPre ? -1 : 1;
+}
+
+/**
+ * Removes a merged task's worktree, then its branch. Ancestry of origin/main is already proven, so the branch goes with -D: -d checks the local
+ * main, which lags origin/main until the user pulls. Gitignored files in the worktree (node_modules) go with it.
+ */
+function removeMerged(worktree, branch) {
+  const removed = tryCommand("git", ["worktree", "remove", worktree]);
+  return removed.ok ? tryCommand("git", ["branch", "-D", branch]) : removed;
+}
+
+/** Remote task branches, so open PRs, that already use `taskId`. */
+function openBranches(taskId) {
+  tryCommand("git", ["fetch", "-q", "origin"]);
+  const listed = tryCommand("git", ["branch", "-r", "--list", `origin/claude/${taskId}-*`, `origin/codex/${taskId}-*`, "--format=%(refname:short)"]);
+  return listed.ok ? listed.stdout.split("\n").filter(Boolean) : [];
 }
