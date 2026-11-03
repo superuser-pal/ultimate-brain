@@ -61,9 +61,16 @@ export function checksPassed(tsv) {
  * SHA do not count: `main-guard` runs only for `refs/heads/main`.
  */
 export function ciWorkflowPassed(tsv) {
+  return ciWorkflowState(tsv) === "success";
+}
+
+/** The newest `CI` push run on `main` in `tsv` (as for `ciWorkflowPassed`): `missing`, `pending` (not completed), `success` or `failure`. */
+export function ciWorkflowState(tsv) {
   const runs = tsv.split("\n").filter(Boolean).map((line) => line.split("\t"));
   const latest = runs.find(([name, event, branch]) => name === "CI" && event === "push" && branch === "main");
-  return latest !== undefined && latest[3] === "completed" && latest[4] === "success";
+  if (latest === undefined) return "missing";
+  if (latest[3] !== "completed") return "pending";
+  return latest[4] === "success" ? "success" : "failure";
 }
 
 export function packageVersion() {

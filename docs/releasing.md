@@ -16,7 +16,7 @@ How a change reaches a brain (decision 0038). npm is the only channel: the packa
 npm login
 ```
 
-npm requires two-factor authentication to publish. `npm publish` asks for the code in the browser.
+Log in as an **owner of the `ultimate-brain` package** (`npm owner ls ultimate-brain`), which may be a different account from your GitHub one. npm requires two-factor authentication to publish. `npm publish` asks for the code in the browser.
 
 ## Each release
 
@@ -29,12 +29,15 @@ node scripts/release.mjs 0.4.0
 `release.mjs` (CX-27) refuses, and changes nothing, unless all of these hold:
 
 1. It runs in the main checkout, on `main`, with a clean tree, level with `origin/main`.
-2. The `CI` workflow passed on that commit (its newest `push` run on `main`; a run for a tag at the same commit does not stand in, because `main-guard` runs only on `main`). Other workflows, such as a red `merge-ready` run that attached to `main` after a PR comment, do not block a release.
-3. For 0.4.0 and later: every task of the release that isn't `dropped` has a non-empty `**Changelog:**` line and a `done` (#N) heading. For 0.3.x: `CHANGELOG.md` has a `## 0.3.1` entry.
-4. `npm test`, `npm run typecheck` and `npm run test:package` pass.
-5. Every task with `**Release:** 0.4.0` is `done`.
+2. `npm whoami` names an owner of the package (`npm owner ls`), so the publish can't fail after the commit and tag are made (a package never published yet has no owners and passes).
+3. The `CI` workflow passed on that commit (its newest `push` run on `main`; a run for a tag at the same commit does not stand in, because `main-guard` runs only on `main`). A run that is queued, running or not created yet is waited for, up to 10 minutes, unless something else already refuses. Other workflows, such as a red `merge-ready` run that attached to `main` after a PR comment, do not block a release.
+4. For 0.4.0 and later: every task of the release that isn't `dropped` has a non-empty `**Changelog:**` line and a `done` (#N) heading. For 0.3.x: `CHANGELOG.md` has a `## 0.3.1` entry.
+5. `npm test`, `npm run typecheck` and `npm run test:package` pass.
+6. Every task with `**Release:** 0.4.0` is `done`.
 
 Then it sets the version, writes the CHANGELOG section from the task rows (`- <id> (#N): <text>`, in build/TASKS.md order; for 0.3.x it dates the hand-written entry), commits `0.4.0`, tags `v0.4.0`, publishes and pushes the commit and tag. Check with `npm view ultimate-brain version`.
+
+**If the publish fails** (for example E404: the logged-in account isn't an owner), the commit and tag exist only in the main checkout and nothing is pushed. Don't run `release.mjs` again. Fix the cause, then run what it prints: `npm publish && UB_RELEASE=1 git push --follow-tags` (for a prerelease, `npm publish --tag next && …`). If the publish worked and only the push failed, run `UB_RELEASE=1 git push --follow-tags`. A release whose tag already exists, here or on origin, or whose version is already on npm, is refused before anything changes.
 
 - **patch:** fixes only. **minor:** new commands, skill changes, new template rules. Stay below 1.0.0 until v1 is declared stable.
 - **A candidate:** `node scripts/release.mjs 0.3.0-rc.1` publishes on the `next` tag, never `latest`.
@@ -42,11 +45,12 @@ Then it sets the version, writes the CHANGELOG section from the task rows (`- <i
 ## Then, in each brain
 
 ```sh
-npm install -g ultimate-brain@latest
-cd ~/brain && brain upgrade
+npm install -g ultimate-brain@0.4.0   # the exact version: right after a publish, @latest can still serve the old one
+brain --version                       # must print 0.4.0; if not: npm cache clean --force, then install again
+cd <your brain> && brain upgrade
 ```
 
-`brain upgrade` refuses a brain with uncommitted changes, refreshes the product-owned files (the AGENTS.md rules block, `.agents/skills/`, `.claude/skills/`), runs lint, commits `upgrade: ultimate brain <version>` and pushes.
+Run `brain upgrade` only after `brain --version` prints the new version: the old CLI upgrades to itself and changes nothing. `brain upgrade` refuses a brain with uncommitted changes, refreshes the product-owned files (the AGENTS.md rules block, `.agents/skills/`, `.claude/skills/`), runs lint, commits `upgrade: ultimate brain <version>` and pushes.
 
 **To roll back:** `npm install -g ultimate-brain@<previous>`, then `git revert` the upgrade commit.
 
