@@ -338,3 +338,20 @@ Selection: Meeting only
   assert.equal(plan.scopes[0]?.due, "2026-12-17");
   assert.deepEqual(plan.mappings.map((mapping) => [mapping.item, mapping.effective]), [["s1.i1", "use"], ["s2.i1", "meeting only"], ["s3.i1", "use"]]);
 });
+
+test("an HTML-escaped Scope toggle is read like the toggle", () => {
+  const plan = planExtract(parseSummary("## [s1] A\n### Tasks\n- [s1.i1] Book the venue \"book the venue for the launch event\"\n&lt;details&gt;\n&lt;summary&gt;Scope&lt;/summary&gt;\nDue: 2026-12-17\n&lt;/details&gt;\n"), TRANSCRIPT);
+  assert.equal(plan.ok, true, JSON.stringify(plan.problems));
+  assert.deepEqual(plan.scopes.map((scope) => [scope.item, scope.due]), [["s1.i1", "2026-12-17"]]);
+});
+
+test("the blind run: minutes a fresh agent wrote from the new prompt are accepted whole", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const dir = new URL("./fixtures/minutes-0067/", import.meta.url);
+  // A fresh Sonnet agent given only the prompt and this synthetic transcript wrote blind-summary.md (CC-112), escaped toggles included.
+  const plan = planExtract(parseSummary(await readFile(new URL("blind-summary.md", dir), "utf8")), await readFile(new URL("transcript.md", dir), "utf8"));
+  assert.equal(plan.ok, true, JSON.stringify(plan.problems));
+  assert.deepEqual(plan.quotes, []);
+  assert.deepEqual(plan.quick.map((line) => line.text), ["Send Sam the link to the pilot dashboard", "Book a 15-minute call with procurement to ask the cost of the Bristol thermal printers"]);
+  assert.deepEqual(plan.scopes.map((scope) => [scope.item, scope.due, scope.project, scope.problems]), [["s0.i3", "2026-12-18", "Northwind rollout", []], ["s0.i4", null, "Northwind rollout", []]]);
+});

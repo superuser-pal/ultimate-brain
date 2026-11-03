@@ -129,8 +129,8 @@ export function parseSummary(markdown: string): Summary {
   // wrapped over lines) is not a control.
   const cleaned = markdown.normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "").replace(NOTICE_TEXT, "");
   for (const rawLine of cleaned.split("\n")) {
-    // Blockquote markers, emphasis around the whole line and HTML-escaped `>` are formatting, not content.
-    let line = normalize(rawLine.replace(/&gt;/g, ">").replace(/\*\*/g, "")).replace(/^(?:>\s*)+/, "").replace(/^[_*]+\s*|\s*[_*]+$/g, "").trim();
+    // Blockquote markers, emphasis around the whole line and HTML-escaped `>` and `<` are formatting, not content.
+    let line = normalize(rawLine.replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/\*\*/g, "")).replace(/^(?:>\s*)+/, "").replace(/^[_*]+\s*|\s*[_*]+$/g, "").trim();
     if (line === "" || /^[^\p{L}\p{N}\[]*$/u.test(line)) continue; // empty, or only an icon / rule left of the notice
     // Toggles (cli §5.14.7: `<details><summary>…</summary> … </details>`). Only a Scope toggle is read differently; other toggles' lines are read as before.
     const open = /^<details>\s*(.*)$/i.exec(line);
