@@ -675,7 +675,7 @@ function relationOrder(creates: readonly SyncPlan["create"][number][]): { order:
 }
 function summarize(items: readonly Record<string, unknown>[]): Record<string, number> { const result: Record<string, number> = { applied: 0, closed: 0, recorded: 0, corrected: 0, skipped: 0, failed: 0 }; for (const item of items) if (typeof item.result === "string" && Object.hasOwn(result, item.result)) result[item.result] += 1; return result; }
 
-export interface RenderItem { item_updates?: Array<{ item_id: string; reason: string; section: string }>; review_published_after?: Record<string, unknown>; id: string; type: string; database: string; database_id: string; page_id: string | null; action: "create" | "update" | "trash"; properties: Record<string, unknown>; body: string | null; sections: Record<string, string> | null; pending_relations: Array<Record<string, unknown>>; published: Record<string, unknown> }
+export interface RenderItem { template?: { type: "default" }; item_updates?: Array<{ item_id: string; reason: string; section: string }>; review_published_after?: Record<string, unknown>; id: string; type: string; database: string; database_id: string; page_id: string | null; action: "create" | "update" | "trash"; properties: Record<string, unknown>; body: string | null; sections: Record<string, string> | null; pending_relations: Array<Record<string, unknown>>; published: Record<string, unknown> }
 
 export function render(workspace: Workspace, now: Date, ids?: readonly string[], held?: ReadonlyMap<string, Set<string>>): { items: RenderItem[]; errors: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id?: string }> } {
   const selected = ids === undefined
@@ -694,7 +694,6 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     const databaseId = databaseIdFor(workspace, database); if (databaseId === "") { warnings.push({ code: "DATABASE_NOT_CONFIGURED", message: `${database} database is not configured`, id: note.id }); continue; }
     if (note.type === "proposal" && trashDue(note, now)) { items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: String(note.attributes.notion), action: "trash", properties: {}, body: null, sections: null, pending_relations: [], published: { "@trashed": formatTimestamp(now) } }); continue; }
     if (note.type === "meeting" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "MEETING_NOT_PUBLISHED" }); continue; }
-    if (note.type === "project" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "PROJECT_NOT_IN_NOTION" }); continue; }
     const capturePage = note.type === "source" && note.attributes.kind === "capture" && typeof note.attributes.source_key === "string" && note.attributes.source_key.startsWith("notion:") ? note.attributes.source_key.slice("notion:".length) : undefined;
     if (note.type === "source" && note.attributes.kind === "capture" && (capturePage === undefined || (typeof note.attributes.notion === "string" && note.attributes.notion !== capturePage))) { errors.push({ id: note.id, reason: "NOTION_ID_MISMATCH" }); continue; }
     const form = publishable(workspace, note);
@@ -718,6 +717,8 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
         rendered["@review"] = { items: kept };
         // Item sections the user must see something in (capture-and-review §7.4 b): a drafted revision or a changed base. An applied or closed status is never written into one.
         const decided = new Set((Array.isArray(note.attributes.item_decisions) ? note.attributes.item_decisions : []).filter(isRecord).map((entry) => String(entry.item_id)));
+        // A row decided the 0045 way (applied or closed with no item decisions, e.g. approved from chat) has no pending item (#196).
+        if (note.attributes.status === "applied" || note.attributes.status === "closed") for (const item of review.items) decided.add(item.item_id);
         const after: Record<string, unknown> = { ...kept };
         for (const item of review.items) {
           const stored = isRecord(kept[item.item_id]) ? kept[item.item_id] as Record<string, unknown> : undefined;
@@ -750,7 +751,8 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     // Full text (0043) is retired (0049): nothing is sent, and `@full_text` in S stays as it is.
     if (!isCreate && Object.keys(properties).length === 0 && !contentChanged && !reportDue && itemUpdates.length === 0) continue;
     if (!isCreate && note.type !== "meeting" && note.type !== "proposal") properties["Last Synced"] = { type: "date", value: { start: formatTimestamp(now), end: null } };
-    items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: typeof note.attributes.notion === "string" ? note.attributes.notion : capturePage ?? null, action: isCreate ? "create" : "update", ...(itemUpdates.length === 0 ? {} : { item_updates: itemUpdates, review_published_after: publishedAfter }), properties, body: content.body, sections: content.sections, pending_relations: pending, published: rendered });
+    // A new project's page comes from the space's default Projects template, its toggles, views and My notes (0068).
+    items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: typeof note.attributes.notion === "string" ? note.attributes.notion : capturePage ?? null, action: isCreate ? "create" : "update", ...(isCreate && note.type === "project" ? { template: { type: "default" as const } } : {}), ...(itemUpdates.length === 0 ? {} : { item_updates: itemUpdates, review_published_after: publishedAfter }), properties, body: content.body, sections: content.sections, pending_relations: pending, published: rendered });
   }
   items.sort((a, b) => DATABASES.concat(["meetings"] as never[]).indexOf(a.database as never) - DATABASES.concat(["meetings"] as never[]).indexOf(b.database as never) || compareCodePoints(a.id, b.id));
   return { items, errors, warnings };

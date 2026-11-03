@@ -54,7 +54,7 @@ The fixes were agreed with the user in a grill session on 2026-10-15. Small skil
 
 ### Amended 2026-10-18 (first real drop-folder run)
 - **The report grows with the input.** The three lines stay at the top. Below them, the report lists, uncapped: what came in (new projects, decisions, questions, risks, changed facts, new people), what to check (assumed dates, ambiguities, unlinked names) and action items that didn't become tasks. Apply reports use the same shape with **What changed** and **Check** (stale and failed proposals). Only mechanics are left out. The user's words: a big input must never come back with key details missing because of a length rule.
-- **Projects are created in Notion, never by the agent** (0021): the Projects template, with its views and "My notes", can't be applied through the API. `sync render` refuses to create one.
+- **Projects are created in Notion, never by the agent** (0021): the Projects template, with its views and "My notes", can't be applied through the API. `sync render` refuses to create one. *(Retired by 0068, 2026-11-03: the API applies the template now, so render creates a project from it.)*
 
 ### Amended 2026-10-19 (CC-22 contracts)
 Choices made while writing the 0.3.0 contracts, where the text above left the mechanism open:

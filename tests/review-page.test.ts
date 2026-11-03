@@ -272,3 +272,21 @@ test("sync plan reads a published restricted note in its eligible form: no confl
   const plan = (await run(dir, ["sync", "plan"], { as_of: NOW, rows: [row] })).json.data;
   assert.deepEqual([plan.conflicts, plan.corrections], [[], []]);
 });
+
+test("a published Review row approved from chat and applied the 0045 way lists no item_updates and leaves --changed (#196)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const id = await ingest(dir);
+  const page = "6a7b0000-0000-4000-8000-0000000000bb";
+  const [created] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  assert.equal((await run(dir, ["sync", "record"], { records: [{ id, notion: page, synced_at: NOW, published: created.published }] })).code, 0);
+  const applied = await run(dir, ["apply"], { decisions: [{ proposal: id, action: "approve", decided_at: NOW, decided_by: "chat" }] });
+  assert.equal(applied.code, 0, applied.stdout);
+  // The apply itself moved the bases (the fact now holds the proposed value), but no item is pending any more.
+  const [update] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  assert.equal(update.action, "update");
+  assert.equal(update.item_updates, undefined, JSON.stringify(update.item_updates));
+  assert.ok(String(update.sections["Review summary"]).includes("4 of 4 decided: 4 applied"));
+  assert.equal((await run(dir, ["sync", "record"], { records: [{ id, notion: page, synced_at: NOW, published: update.published }] })).code, 0);
+  const again = (await run(dir, ["sync", "render", "--changed"])).json.data.items.filter((item: { id: string }) => item.id === id);
+  assert.deepEqual(again, [], "the row is not rendered again");
+});

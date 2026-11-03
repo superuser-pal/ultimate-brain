@@ -127,7 +127,7 @@ When a meeting's summary or a capture has subjects and item ids, the user decide
 Stop and ask the user instead of guessing when:
 - **an attendee matches two people;**
 - **an attendee has the same name as a known person but a different organization or role** ("Carlos Ruiz (Northwind, CTO)" when the brain's Carlos Ruiz is at Acme). It may be a new person or a job change; ask which;
-- **the project is ambiguous:** the minutes could belong to two known projects and the meeting has no Project set. When the meeting simply has no project, link it to its area only and go on; if the Area is empty too, ask which area. Never invent a project, and never write a project note or create a project page yourself: if one seems missing, offer to create it in Notion with **New project** (which applies the template) and sync it, as in references/sources.md "Pre-check";
+- **the project is ambiguous:** the minutes could belong to two known projects and the meeting has no Project set. When the meeting simply has no project, link it to its area only and go on; if the Area is empty too, ask which area. Never invent a project: if one seems missing, ask, and on a yes write its note so the publish creates its page from the Projects template (decision 0068), as in references/sources.md "Pre-check";
 - **the minutes seem to belong to a different client than the Project property says;**
 - **you can't tell decisions from discussion** in the minutes. Other headings than notion/minutes-format.md are fine (references/extraction.md).
 
