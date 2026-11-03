@@ -179,6 +179,12 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 - [ ] Creates in a relation cycle fail `RELATION_CYCLE`, a create that depends on one fails `DEPENDENCY_FAILED`, the other creates and the rest of the plan are still applied, and the command ends (exit 1).
 - [ ] `data.create` stays in the plan's order; every existing sync apply test passes unchanged.
 
+### CC-115 · Restore CC-113's lost row and plan the own-row check · `done` (#199)
+**Release:** 0.9.0
+**Changelog:** development only: CC-113's task row, dropped by a merge of main into #195, is restored, and the own-row check is planned as CC-116 in 0.10.0.
+**Output:** this file: the CC-113 row restored verbatim from 47a4743; the CC-116 row in 0.10.0.
+**Acceptance:** the CC-113 row matches `git show 47a4743:build/TASKS.md`; CC-116 has Release 0.10.0, a Changelog, Output, Acceptance and status `todo`; no other row or Changelog line changes.
+
 ## 0.10.0 — The brain assistant (decision 0064)
 
 An assistant you ask, from the CLI, about the structure of your work: Areas, Domains, Projects and Tasks. It finds what's stalled, misplaced or missing, recommends, turns your thinking into captures, tasks and projects, and makes changes through Review rows, or directly after your yes in a live chat. On demand; the weekly scheduled run is CC-111 in 0.13.0. Starts after 0.9.0 is released, with its opening scope grill.
@@ -201,10 +207,10 @@ An assistant you ask, from the CLI, about the structure of your work: Areas, Dom
 **Output:** docs/acceptance-0.10.0.md: a scenario per finding kind, the Review-row path and the chat-yes path, a linked repo's rollup reviewed, Notion unreachable.
 **Acceptance:** every scenario passes with its evidence; no change happens without a Review row or a yes; the Review workload of one run stays within the cap the contracts set.
 
-### CC-115 · CI catches a PR that drops its own task row · `todo`
+### CC-116 · CI catches a PR that drops its own task row · `todo`
 **Release:** 0.10.0
 **Changelog:** development only: `pr-format` names a PR whose own task row is missing, instead of asking for a CHANGELOG.md line.
-**Output:** found on #195: merging main into the branch dropped the task's own row, and `pr-format` failed with "PR must add its task line to CHANGELOG.md", because a task with no row falls to the 0.3.x path; `merge-ready` was red but the PR was merged, and #199 restored the row. scripts/pr-format.mjs fails first with "PR has no row for its task CC-N" when the head has no row for the branch's task; scripts tests; a line in docs/releasing.md or AGENTS.md on merging main into a branch (keep every row on both sides). Ask the user whether `main` should require `merge-ready` (branch protection is off today; decision 0040).
+**Output:** found on #195: merging main into the branch dropped the task's own row, and `pr-format` failed with "PR must add its task line to CHANGELOG.md", because a task with no row falls to the 0.3.x path; `merge-ready` was red but the PR was merged, and CC-115 (#199) restored the row. scripts/pr-format.mjs fails first with "PR has no row for its task CC-N" when the head has no row for the branch's task; scripts tests; a line in docs/releasing.md or AGENTS.md on merging main into a branch (keep every row on both sides). Ask the user whether `main` should require `merge-ready` (branch protection is off today; decision 0040).
 **Acceptance:** a scripts test: a PR head without its own task's row fails with the new message, and a 0.3.x task with no row-level Changelog still gets the old message; the user's answer on requiring `merge-ready` is recorded; `npm run test:scripts` and the leak check pass.
 
 ## 0.11.0 — The brain tidies itself (decisions 0052, 0061, 0064)
