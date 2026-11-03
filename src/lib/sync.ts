@@ -1000,6 +1000,9 @@ export function renderTasks(workspace: Workspace, targetId: string, input: unkno
     if (itemId !== undefined) {
       const items = (Array.isArray(target.attributes.selection) ? target.attributes.selection : []).map((entry) => (isRecord(entry) ? entry.id : undefined));
       if (target.attributes.extract !== true || typeof itemId !== "string" || !items.includes(itemId)) throw new BrainError("INPUT_INVALID", `${String(itemId)} is not an item of the extract`, [{ pointer: `/items/${index}/item`, message: "must be an item id of the extract's selection" }]);
+      // Tasks come only from selected items (capture-and-review §6): an excluded item creates none.
+      const entry = (Array.isArray(target.attributes.selection) ? target.attributes.selection : []).find((candidate) => isRecord(candidate) && candidate.id === itemId);
+      if (isRecord(entry) && entry.effective !== "use") throw new BrainError("INPUT_INVALID", `${String(itemId)} is excluded from the brain, so it creates no Task`, [{ pointer: `/items/${index}/item`, message: "must be an item that is included (Use in brain)" }]);
     }
     return { database_id: config.database, properties, pending_relations, ...(itemId === undefined ? {} : { item: itemId }) };
   });
