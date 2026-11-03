@@ -20,7 +20,7 @@ Run `brain sync plan` and save its `data` as the plan file. Read:
 
 **Attended:** before applying, show each item's action, target and the **exact final text** it will write (`proposed`), and apply after a yes. A correction of a fact is attributed to the user: say "your value March 18 replaces the source's March 15".
 
-**Unattended** (0051): apply only decisions that are explicit, exact, current, with the base unchanged and `unattended_ok` true (Decided at at least 2 minutes old). Leave everything else (held items, `Request revision`, `Accept all` with an ineligible item, `base_changed`) where it is and name it under Needs you. **Never read or act on revision text.**
+**Unattended** (0051): apply only decisions that are explicit, exact, current, with the base unchanged and `unattended_ok` true (Decided at at least 2 minutes old). Leave everything else (held items, `Request revision`, `Accept all` with an ineligible item, `base_changed`) where it is and name it under Needs you. **Never read or act on revision text: remove `review_revisions` from the plan before `sync apply`** (apply would record the request), and leave the item as it is.
 
 ## 3. Verify, apply, commit
 
@@ -34,7 +34,7 @@ Run `brain sync plan` and save its `data` as the plan file. Read:
 
 The brain **never rewrites a whole Review body** after a submission.
 1. `brain sync render --changed`. For each Review row it returns the summary (`sections["Review summary"]`: replace that block's children) and, in `item_updates`, the item sections that need something the user must see: `revision_drafted` (the new wording, with the toggle **Previous proposal**) and `base_changed` (*Current* updated). An applied or closed status is never written into an item section; it is only in the summary and the State property.
-2. Write an item section only if the page's section still equals the one you read when you verified (its `submitted_hash`). If it differs (the user edited after submitting), do **not** overwrite: add beside it a toggle "Brain update" with what you would have written, keep the item's state in Git as it is, and tell the user in the summary ("<letter>: applied; you edited its section after submitting, your edit is kept: submit again to change it").
+2. Write an item section only if the page's section still equals the one you read when you verified (the section whose hash is the item's `snapshot_hash` in `review_decisions`). If it differs (the user edited after submitting), do **not** overwrite: add beside it a toggle "Brain update" with what you would have written, keep the item's state in Git as it is, and tell the user in the summary ("<letter>: applied; you edited its section after submitting, your edit is kept: submit again to change it").
 3. After the summary and the sections: record with `brain sync record`, sending `review_published_after` as `published` only for the rows whose every listed section you wrote; then clear **Decided**, **Decided at** and **Accept all** on the row, but only if the page still shows that Decided at (a newer submission wins and is read at the next run).
 4. A write that fails is completed at the next run from the proposal file.
 
