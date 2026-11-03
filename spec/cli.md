@@ -1687,7 +1687,8 @@ Every brain pins the operational skills it uses in `skills.lock.json` at its roo
   - `reason` is the invalid reason for `invalid`, the first missing `{tree}/{skill}` for `missing`, and `null` otherwise.
 - **`package`** describes the package snapshot. `name` and `version` come from its manifest when the manifest passes its schema, and are `null` otherwise. `compatible` is per skills-delivery §2.3. `reason` is the §2.3 reason when the package snapshot is invalid, and `null` otherwise.
 - **`drift`** lists, sorted, the brain-relative paths that lint's `product-file` reports for skills: a missing folder, then a missing, mismatched or unlisted file.
-  - It is computed against the lock for `pinned`, `drift`, `missing` and `incompatible`, and against the package snapshot for `unpinned` (empty when that snapshot is invalid).
+  - It is computed against the lock for `pinned`, `drift`, `missing` and `incompatible`, and against the package snapshot for `unpinned`. It is empty when that package snapshot is invalid: lint's single broken-install error is reported by lint and by `package.reason`, never listed here.
+  - An unlisted folder is one entry; its contents are not listed.
   - It is `[]` for `invalid`.
 - **`competing`** is as skills-delivery §5.3 defines it.
 - **Skills act on the state.** Skills call `brain status` first. When `state` is `invalid`, `incompatible` or `missing`, the skill stops and shows the message the guard would give.

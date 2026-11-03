@@ -78,7 +78,7 @@ Grammar: one or more comparators separated by single spaces. Each comparator is 
 
 A version **satisfies** the range when it satisfies every comparator under precedence. This is not npm's range rule: `0.9.0-rc.1` does not satisfy `>=0.9.0`, and it does satisfy `<0.10.0`. A snapshot that should accept the release candidates of 0.9.0 declares `>=0.9.0-0`. No dependency is added for this: the comparison fits in a small function with its own tests.
 
-A version is **newer than the range** when it fails a `<` or `<=` comparator, and **older than the range** when it fails a `>`, `>=` or `=` comparator.
+A version is **newer than the range** when it fails a `<` or `<=` comparator, or an `=` comparator whose version it exceeds. It is **older than the range** when it fails a `>` or `>=` comparator, or an `=` comparator whose version exceeds it.
 
 ### 2.2 Integrity
 
@@ -101,7 +101,7 @@ The failure is reported as the **reason** `<id>` or `<id>: <path>`, with the pat
 | 3 | `skills` sorted and unique by `name`; each skill's `targets` and `files` sorted and unique (`targets` by value, `files` by `path`) | `manifest-order` |
 | 4 | `integrity` equals §2.2 computed from the manifest | `integrity` |
 | 5 | each listed file exists as a regular file (not a symbolic link, folder or other type) with the listed `bytes` and `sha256` | `file-missing`, `not-a-file`, `file-mismatch` |
-| 6 | no other entry exists: at the top level only `snapshot.json`, the three optional files and the listed skill folders; inside a skill folder only the listed files and the folders on their paths. A hidden file, a symbolic link, an empty folder or a stray file all count. | `unlisted-entry` |
+| 6 | no other entry exists: at the top level only `snapshot.json`, the three optional files and the listed skill folders; inside a skill folder only the listed files and the folders on their paths. A hidden file, a symbolic link, an empty folder or a stray file all count. An unlisted folder is one entry: its contents are not listed separately. | `unlisted-entry` |
 
 Rules 1 to 4 need only the manifest. They are the **manifest checks**, also applied to the copy of the manifest inside a lock (§3).
 
@@ -218,13 +218,13 @@ These amend the cli.md sections named. The task that implements a change rewrite
   - **Pinned brain** (state `pinned` or `drift`): the files listed in the lock, copied from the brain's `.agents/skills/<name>/`. Before any write, link checks that each of those files is a regular file with the locked bytes. The first failure refuses with `SKILLS_SNAPSHOT_MISSING`, naming that file. Unlisted files in the brain's folder and the `.claude/skills` copy are ignored; lint covers them.
   - **`unpinned` brain:** the package snapshot, which must be compatible with the running CLI (else `SKILLS_SNAPSHOT_INVALID`), with warning `SKILLS_UNPINNED`.
 - **Writing:** for each linked skill, both folders in the linked repo (`.agents/skills/<name>/`, `.claude/skills/<name>/`) are written and pruned exactly as §5.12 step 3 says, against that skill's file list.
-- **Retired linked skills:** a name in the previous `.brain` `skills.names` that is no longer a linked skill has both its folders removed (each file `removed`).
+- **Retired linked skills:** a name in the previous `.brain` `skills.names` that is no longer a linked skill has both its folders removed (each file `removed`). Folders named in `skills.names` are product-owned in the linked repo, as `brain-query` is today. A `.brain` without `skills.names` (written before 0.9.0) retires nothing.
 - **`.brain` gains `skills`**, written after `stacks`:
   ```json
   "skills": { "name": "<snapshot name>", "version": "<version>", "integrity": "<integrity>", "names": ["brain-query"] }
   ```
   It is replaced on every run. `names` lists the linked skills, sorted. The `brain-query` skill compares `name` and `version` with `brain status --json` `data.skills` and, when they differ, tells the user to run `brain link` again.
-- **Output:** `data.skills` = `{ "source": "brain" | "package", "name", "version", "integrity", "names", "competing" }`, where `competing` covers `duplicate` in the linked repo's two trees and `global` for the linked skills (§5.2). Warning `SKILLS_COMPETING` when it is non-empty.
+- **Output:** `data.skills` = `{ "source": "brain" | "package", "name", "version", "integrity", "names", "competing" }`, where `competing` covers `duplicate` in the linked repo's two trees, `global` for the linked skills, and the `plugin` check (home and the brain's settings file) (§5.2). Warning `SKILLS_COMPETING` when it is non-empty.
 
 ### 6.3 `brain upgrade` (cli.md §5.15, CC-100)
 
@@ -235,13 +235,13 @@ These amend the cli.md sections named. The task that implements a change rewrite
    - `invalid`: the lock will be replaced, with warning `SKILLS_LOCK_REPLACED`, and `from` is `null`.
    - Otherwise `from` is the lock's `{ name, version }`.
 3. **Same `name`, lower version.** When the lock's snapshot has the same `name` as the package snapshot and a version of higher precedence, refuse with `SKILLS_DOWNGRADE`.
-4. **Same `name`, same `version`, different `integrity`.** A released snapshot changed, which violates immutability. Refuse with `SKILLS_SNAPSHOT_INVALID`, reason `same version, different content`.
+4. **Same `name`, same `version`, different manifest.** When the two manifests are not deep-equal (any field: `integrity`, `cli`, `source`, `upstream`, `skills`), a released snapshot changed, which violates immutability. Refuse with `SKILLS_SNAPSHOT_INVALID`, reason `same version, different content`.
 5. A **different `name`** (the switch from `ultimate-brain` to `ultimate-brain-skills`, §9) is an ordinary upgrade. No version comparison applies.
 
 **Step 3 changes:**
 - For each skill of the package snapshot, in both trees: write each listed file whose bytes differ (`created` or `updated`), and remove every other entry in that skill's folder (`removed`), as today.
 - **Retired skills:** a skill in the old (valid) lock but not in the new snapshot has its folder removed from both trees. Every file in it is listed as `removed`, including files the user added: a product folder is product-owned. The emptied folder goes too. Without a valid old lock, folders the snapshot doesn't name are left alone, as today, since the CLI can't tell a retired skill from the user's own.
-- **New step 3a:** write `skills.lock.json` when the lock is `unpinned` or `invalid`, or its snapshot differs from the package snapshot in `name`, `version` or `integrity`. Otherwise it stays unchanged, keeping its `installed_by`. A lock that is written gets `installed_by` = the running version, is listed in `files`, and is staged and committed with the other files (§5.15 step 8).
+- **New step 3a:** write `skills.lock.json` when the lock is `unpinned` or `invalid`, or its snapshot has another `name` or `version` than the package snapshot (rule 4 has already refused a changed manifest under the same version). Otherwise it stays unchanged, keeping its `installed_by`. A lock that is written gets `installed_by` = the running version, is listed in `files`, and is staged and committed with the other files (§5.15 step 8).
 
 **Output and commit:**
 - `data.skills` = `{ "from", "to": { "name", "version" }, "retired": [names, sorted], "previous_cli", "competing" }`. `previous_cli` is the old lock's `installed_by` when step 3a wrote a lock over a valid one, otherwise `null`.
@@ -328,7 +328,7 @@ CC-100 adds these three steps to docs/releasing.md and to the brain's AGENTS.md 
 - `targets`: `["brain", "linked_repo"]` for `brain-query` (the skill §5.12 writes today) and `["brain"]` for every other skill. The list lives in `scripts/build-skills.ts`.
 
 **Phase A rules:**
-- `skills/` stays the one editable source. `scripts/build-skills.ts` mirrors it to `.agents/skills/` as today. The mirror's `README.md` stays and is ignored.
+- `skills/` stays the one editable source. `scripts/build-skills.ts` mirrors it to `.agents/skills/` as today, except that entries whose name starts with `.` (such as `.DS_Store`) are neither copied nor listed, and a symbolic link in `skills/` is a validation error. The mirror's `README.md` stays and is ignored.
 - **`snapshot.json` is generated, not committed.** `npm run build` (so also `prepack`) writes it to `.agents/skills/snapshot.json`, from the mirror and `package.json`'s version. It is listed in `.gitignore`, and `build-skills.ts --check` ignores it. Tests that need a package snapshot build one in a temporary folder with the same generator.
 - **An `unpinned` brain works as before:** the guard lets every command through, lint compares against the package, and the only new output is the `skills-unpinned` info.
 - **CLIs before 0.9.0** ignore `skills.lock.json`, which is not in a note folder. If one runs `brain upgrade` on a pinned brain, it rewrites the skill files without touching the lock. The next 0.9.0+ lint reports the result as `product-file` drift, and `brain upgrade` with 0.9.0+ repairs it.
@@ -341,7 +341,7 @@ Phase B (CC-105) is out of this contract's acceptance. It must keep these interf
 **What CC-101 delivers:**
 - The public repository on GitHub, created only after the user says yes (0059; grill 2026-11-03). It is a fork of the upstream repository with its history.
 - Its files and workflows (§10.1 to §10.5), merged through PRs.
-- Its first snapshot release, `brain-v1.0.0`.
+- Its first snapshot release, `brain-v1.0.0`: `brain/` holds the product's `skills/` as on product `main` when CC-101 runs (the commit is named in the release notes as `Product-skills: <40 hex>`), and `snapshot.config.json` declares `>=0.9.0 <0.10.0`.
 - The fork's tooling is Node (≥ 22.6, the product's floor), with `ajv` as the only dependency.
 
 ### 10.1 Layout and attribution
@@ -369,7 +369,7 @@ Phase B (CC-105) is out of this contract's acceptance. It must keep these interf
 - `upstream`: `upstream.json` at that commit;
 - files and `integrity`: per §2.2.
 
-The snapshot also carries `LICENSE` and `NOTICE.md` at the top level.
+The snapshot also carries `LICENSE` and `NOTICE.md` at the top level. Brains receive only skill folders. An operational skill that contains upstream-derived text therefore carries upstream's licence notice as a file inside its own folder (listed in `files`), so the notice reaches every brain that installs it.
 
 **Reproducible:** building the same commit and version twice yields byte-identical `snapshot.json` (§2 serialisation) and identical files. The tarball doesn't need to be byte-identical.
 
@@ -390,7 +390,14 @@ Prereleases (`brain-v1.1.0-rc.1`) are marked as prereleases on GitHub.
 
 ### 10.3 The fork's CI on every PR to `main`
 
-Runs on `opened`, `edited`, `synchronize` and `reopened`, including drafts and PRs from other forks. Branch protection on `main` requires its four checks (`skills`, `names`, `snapshot`, `impact`), plus `leak`, and allows **merge commits only**:
+Runs on `opened`, `edited`, `synchronize` and `reopened`, including drafts and PRs from other forks. A push to `main` runs the same checks except `impact`, building the snapshot with version `0.0.0-main`; "CI succeeded on that commit" (§10.2) means those four check runs (`skills`, `names`, `snapshot`, `leak`) concluded `success` on it.
+
+**Branch protection** on `main` is applied by CC-101 with the user's `gh` login once the repository exists:
+- a PR is required, also for admins, so nothing reaches `main` undeclared;
+- the checks `skills`, `names`, `snapshot`, `impact` and `leak` are required;
+- **merge commits only**.
+
+The PR's evidence is the output of `gh api repos/<owner>/ultimate-brain-skills/branches/main/protection`. The checks:
 1. **`skills`:** the same frontmatter and style rules as this repo's `scripts/build-skills.ts` (name = folder, only `name` and `description`, description ≤ 1024 characters, references one level deep, no capitals for emphasis), for every skill folder in `brain/`.
 2. **`names`:** a general skill is any folder outside `brain/` holding a `SKILL.md`. Its folder name and its frontmatter `name` must both differ from every operational skill's. When an upstream sync introduces a clash, this check fails on the sync PR. The user decides whether to rename the operational skill (a `coordinated` PR) or drop the upstream skill.
 3. **`snapshot`:** builds and validates the snapshot of the PR's merge commit, with version `0.0.0-ci.<PR number>`.
@@ -402,10 +409,12 @@ Runs on `opened`, `edited`, `synchronize` and `reopened`, including drafts and P
 - Line endings are normalised to LF.
 - Each line's trailing whitespace is trimmed.
 - Lines inside fenced code blocks and HTML comments are ignored. The PR template lists the options inside a comment.
+  - A fence opens and closes with a line of up to three spaces followed by three or more backticks or tildes (CommonMark); an unclosed fence runs to the end.
+  - A comment runs from `<!--` to the next `-->`, across lines; an unclosed comment runs to the end. Hiding the declaration that way makes it missing, so the check fails.
 
 **What the body must contain:**
 - Exactly one line matching `^Brain impact: (none|compatible|coordinated)$`.
-- Any number of lines matching `^Product: https://github\.com/[^/]+/ultimate-brain/(issues|pull)/[0-9]+$`.
+- Any number of lines matching `^Product: https://github\.com/[^/]+/ultimate-brain/(issues|pull)/[0-9]+$`. With `none` or `compatible` they are allowed and ignored.
 
 **"Operational change":** the diff from the merge base to the PR head (three-dot), renames and deletions included, touches `brain/` or `snapshot.config.json`.
 
@@ -427,17 +436,25 @@ It checks the link's form only. The product repo is private, and the fork's toke
 1. Read upstream's default branch name and head through the GitHub API.
 2. **Up to date:** if the head equals `upstream.json`'s commit, or is an ancestor of `main`, stop.
 3. **Rewritten history:** if `upstream.json`'s commit is not an ancestor of the head, upstream history was rewritten. Open or update the issue (step 7) with that reason, and stop.
-4. **Rebuild the branch:** recreate the branch `upstream-sync` from `main`, merge the upstream head with `--no-ff`, and resolve `.github/**` to the fork's version. Upstream workflows never run in the fork. Then add a second commit setting `upstream.json` to the head, and force-push. The branch belongs to the workflow.
+4. **Rebuild the branch,** only when `upstream-sync` doesn't exist, or its merge's parents are not the current `main` head and the upstream head:
+   - recreate the branch `upstream-sync` from `main`;
+   - merge the upstream head with `--no-ff`;
+   - resolve `.github/**` to the fork's version, so upstream workflows never run in the fork; any other conflict is a conflict (step 6);
+   - add a second commit setting `upstream.json` to the head, and force-push.
+
+   The branch belongs to the workflow; nobody commits to it.
 5. **Open or update one PR:**
    - title `Upstream sync to <7-hex head>`;
    - the body lists upstream's commits from the recorded base to the head (`git log --oneline`, at most 50 lines, then `…and <n> more`);
    - it ends with `Brain impact: unassessed`, so the impact check fails until a person or agent sets a real value;
    - when the head is the same as the open PR's, the body is left alone, so an assessment already written stays;
-   - a PR closed without merging is not reopened; a later new head opens a new one.
+   - when no sync PR is open, one is opened, except when a person closed a PR for this same head without merging it. A PR the workflow closed (step 6) doesn't count.
 6. **Merge conflict:** push nothing, close any open sync PR with a comment pointing to the issue, and go to step 7.
 7. **The issue:** open or update one issue labelled `upstream-sync` (the label is created when absent), titled `Upstream sync conflict at <7-hex head>`. It lists the reason and the conflicting paths. The first later run that merges cleanly closes it with a comment.
 
 **Merging:** never automatic. The user merges with a merge commit, so the base stays an ancestor.
+
+**Resolving by hand** (a conflict, a `names` clash, an upstream skill to drop): a person or agent merges the upstream head on another branch, resolves it, sets `upstream.json`, and opens a PR declaring its impact. Once it is merged, the upstream head is an ancestor of `main`, so the workflow stops at step 2 and closes the issue.
 
 ## 11. Update awareness
 
@@ -489,6 +506,8 @@ It checks the link's form only. The product repo is private, and the fork's toke
 | **Before a release** | `scripts/release.mjs` | refuses with the reason, when: the package snapshot is invalid or excludes the version being released; the check status is `unknown`; or a change is `unclassified`. A `brain-work` change with a linked task doesn't block. It is tracked, and blocking it would stop unrelated releases. |
 
 For each `coordinated` fork PR merged since `assessed`, the check verifies that every `Product:` link resolves to an issue or PR in the product repo. A link that doesn't resolve is recorded as a `brain-work` change with `error`, and is never silently dropped.
+
+The check also compares the fork's `schemas/skills-snapshot.schema.json` at its `main` head with the product's `spec/schemas/skills-snapshot.schema.json`. A difference is recorded as a `brain-work` change with `error` `vendored schema differs`, and the links point to the product commit that changed the schema.
 
 **No false current status:** a skill or report says the product is current only when `last_check.status` is `ok`, `seen.head` equals `assessed.commit`, and `changes` is empty.
 
