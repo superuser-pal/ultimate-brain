@@ -1,6 +1,10 @@
 import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { ciWorkflowPassed, command, donePrNumbers, fail, isPrerelease, ROOT, taskEntries, tryCommand } from "./common.mjs";
+import { ciWorkflowState, command, donePrNumbers, fail, isPrerelease, ROOT, sleep, taskEntries, tryCommand } from "./common.mjs";
+
+// A CI run that is queued, running or not yet created for HEAD is waited for: every 20 s, up to 10 minutes. Tests shorten both.
+const CI_POLL_MS = Number(process.env.UB_CI_POLL_MS ?? 20000);
+const CI_POLLS = Number(process.env.UB_CI_POLLS ?? 30);
 
 const [version, flag] = process.argv.slice(2);
 const dryRun = flag === "--dry-run";
@@ -27,9 +31,21 @@ else {
     if (rowChangelog && task.changelog === undefined) failures.push(`${task.id} has no **Changelog:** line`);
     if (rowChangelog && donePrNumbers(task.suffix) === undefined) failures.push(`${task.id} has an invalid done suffix`);
   }
+  failures.push(...npmProblems());
   const repo = tryCommand("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
-  const runs = repo.ok ? tryCommand("gh", ["api", `repos/${repo.stdout}/actions/runs?head_sha=${command("git", ["rev-parse", "HEAD"])}&per_page=100`, "--jq", ".workflow_runs[] | [.name,.event,.head_branch,.status,.conclusion] | @tsv"]) : repo;
-  if (!runs.ok || !ciWorkflowPassed(runs.stdout)) failures.push("CI is not green on HEAD");
+  const head = command("git", ["rev-parse", "HEAD"]);
+  const ciState = () => {
+    const runs = repo.ok ? tryCommand("gh", ["api", `repos/${repo.stdout}/actions/runs?head_sha=${head}&per_page=100`, "--jq", ".workflow_runs[] | [.name,.event,.head_branch,.status,.conclusion] | @tsv"]) : repo;
+    return runs.ok ? ciWorkflowState(runs.stdout) : "unreadable";
+  };
+  let ci = ciState();
+  // Waiting only makes sense when nothing else already refuses the release.
+  for (let poll = 0; poll < CI_POLLS && failures.length === 0 && (ci === "pending" || ci === "missing"); poll++) {
+    if (poll === 0) process.stderr.write("Waiting for CI on HEAD…\n");
+    sleep(CI_POLL_MS);
+    ci = ciState();
+  }
+  if (ci !== "success") failures.push(`CI is not green on HEAD (${ci})`);
   for (const [program, args] of [["npm", ["test"]], ["npm", ["run", "typecheck"]], ["npm", ["run", "test:package"]]]) {
     const result = tryCommand(program, args, { stdio: "inherit" });
     if (!result.ok) failures.push(`${program} ${args.join(" ")} failed`);
@@ -49,9 +65,26 @@ else {
     command("git", ["add", "package.json", "package-lock.json", "CHANGELOG.md"]);
     command("git", ["commit", "-m", version]);
     command("git", ["tag", "-a", `v${version}`, "-m", version]);
-    command("npm", ["publish", ...(isPrerelease(version) ? ["--tag", "next"] : [])], { stdio: "inherit" });
-    command("git", ["push", "--follow-tags"], { env: { ...process.env, UB_RELEASE: "1" }, stdio: "inherit" });
+    const publishArgs = ["publish", ...(isPrerelease(version) ? ["--tag", "next"] : [])];
+    const published = tryCommand("npm", publishArgs, { stdio: "inherit" });
+    if (!published.ok) {
+      fail(`npm ${publishArgs.join(" ")} failed. The commit ${version} and the tag v${version} exist only here; don't run release.mjs again.\n`
+        + `Fix the cause (npm whoami, npm login), then from this checkout run: npm ${publishArgs.join(" ")} && UB_RELEASE=1 git push --follow-tags`);
+    }
+    else command("git", ["push", "--follow-tags"], { env: { ...process.env, UB_RELEASE: "1" }, stdio: "inherit" });
   }
+}
+
+/** npm must be logged in as an owner of the package, so a publish can't fail after the commit and tag (0.8.0 did: E404 from another account). */
+function npmProblems() {
+  const name = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")).name;
+  const user = tryCommand("npm", ["whoami"]);
+  if (!user.ok || user.stdout === "") return [`npm is not logged in (npm whoami: ${user.ok ? "no user" : user.message.split("\n")[0]}); run npm login`];
+  const owners = tryCommand("npm", ["owner", "ls", name]);
+  // A package that was never published has no owners yet.
+  if (!owners.ok) return /E404|404 Not Found/.test(owners.message) ? [] : [`cannot read the npm owners of ${name}: ${owners.message.split("\n")[0]}`];
+  const names = owners.stdout.split("\n").map((line) => line.split(" ")[0]);
+  return names.includes(user.stdout) ? [] : [`npm user ${user.stdout} is not an owner of ${name} (owners: ${names.filter(Boolean).join(", ")}); npm logout, then npm login as an owner`];
 }
 
 function usesTaskRowChangelog(version) {
