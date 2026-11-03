@@ -22,7 +22,7 @@ This file is a snapshot of the skills the user's Claude Code and Codex load. It 
 
 **Precedence.** In Claude Code, a personal skill overrides a project skill of the same name, and plugin skills are namespaced so they don't collide. Codex reads the repo's `.agents/skills/` and `~/.agents/skills/` together and doesn't merge same-name skills. Today no name is in both a personal and a project location, so nothing is shadowed.
 
-**One working tree for both agents.** Both personal folders symlink into a single working tree of the customised collection, a private fork of upstream. That tree is on an unmerged sync branch, one commit ahead of the fork's `main`, and has one uncommitted file (in `diagram-design`). So both agents load unreleased content. Under 0059, the switch in step 6 installs released snapshots instead.
+**One working tree for both agents.** Both personal folders symlink into a single working tree of the customised collection, a public GitHub fork of upstream (public by the user's choice, 2026-11-03; it is the account's one GitHub fork of upstream, so ultimate-brain-skills is a standalone repository). That tree is on an unmerged sync branch, one commit ahead of the fork's `main`, and has one uncommitted file (in `diagram-design`). So both agents load unreleased content. Under 0059, the switch in step 6 installs released snapshots instead.
 
 ## 2. The customised collection against upstream
 
