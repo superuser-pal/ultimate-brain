@@ -41,3 +41,9 @@ spec/examples/invalid/source-only-keep-on-minutes.md:3c4d5e6f-7a8b-4c0d-9e2f-3a4
 skills/brain-sync/references/formats.md:1e2f3a4b-5c6d-4e7f-8a9b-0c1d2e3f4a5b
 skills/brain-sync/references/formats.md:5f6a7b8c-9d0e-4f1a-8b2c-3d4e5f6a7b8c
 skills/brain-sync/references/formats.md:c3000000-0000-4000-8000-00000000000[12]
+spec/connected-workflows.md:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
+spec/examples/workflow/invalid/item-bad-id.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
+spec/examples/workflow/invalid/item-done-criterion-unmet.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
+spec/examples/workflow/invalid/item-in-progress-unapproved.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
+spec/examples/workflow/invalid/item-unknown-meaning.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
+spec/examples/workflow/valid/item.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b

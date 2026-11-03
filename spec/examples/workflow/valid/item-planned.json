@@ -1,0 +1,27 @@
+{
+  "id": "wi-7c2m9q4x",
+  "rev": 5,
+  "title": "Add rate limiting to the public API",
+  "scope": "Limit unauthenticated requests per IP; authenticated limits unchanged.",
+  "acceptance": [
+    {
+      "text": "429 after 100 requests a minute from one IP",
+      "met_at": null,
+      "evidence": null
+    }
+  ],
+  "approved_at": null,
+  "status": "todo",
+  "logging": null,
+  "depends_on": [],
+  "links": {},
+  "accepted": null,
+  "claim": null,
+  "progress": [],
+  "notion": null,
+  "publication": {
+    "state": "pending",
+    "at": null,
+    "error": null
+  }
+}
