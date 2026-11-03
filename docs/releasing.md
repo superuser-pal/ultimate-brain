@@ -34,8 +34,9 @@ node scripts/release.mjs 0.4.0
 4. For 0.4.0 and later: every task of the release that isn't `dropped` has a non-empty `**Changelog:**` line and a `done` (#N) heading. For 0.3.x: `CHANGELOG.md` has a `## 0.3.1` entry.
 5. `npm test`, `npm run typecheck` and `npm run test:package` pass.
 6. Every task with `**Release:** 0.4.0` is `done`.
+7. From 0.9.0 on, the skills-integration check passes (spec/skills-delivery.md §11.3): the package snapshot is valid and doesn't exclude the version, the check's status isn't `unknown`, and no change in the `skills-integration` issue is `unclassified` or has an `error`. Classify open changes in that issue's block first. It uses your `gh` login; `--dry-run` runs the check without writing the issue.
 
-Then it sets the version, writes the CHANGELOG section from the task rows (`- <id> (#N): <text>`, in build/TASKS.md order; for 0.3.x it dates the hand-written entry), commits `0.4.0`, tags `v0.4.0`, publishes and pushes the commit and tag. Check with `npm view ultimate-brain version`.
+Then it sets the version, writes the CHANGELOG section from the task rows (`- <id> (#N): <text>`, in build/TASKS.md order; for 0.3.x it dates the hand-written entry; from 0.9.0 the section ends with `Skills: <snapshot> <version> (<integrity>)`), commits `0.4.0`, tags `v0.4.0`, publishes and pushes the commit and tag. Check with `npm view ultimate-brain version`.
 
 **If the publish fails** (for example E404: the logged-in account isn't an owner), the commit and tag exist only in the main checkout and nothing is pushed. Don't run `release.mjs` again. Fix the cause, then run what it prints: `npm publish && UB_RELEASE=1 git push --follow-tags` (for a prerelease, `npm publish --tag next && …`). If the publish worked and only the push failed, run `UB_RELEASE=1 git push --follow-tags`. A release whose tag already exists, here or on origin, or whose version is already on npm, is refused before anything changes.
 

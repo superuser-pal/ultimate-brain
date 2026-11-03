@@ -1,0 +1,31 @@
+name: skills-integration
+
+# The daily skills-integration check (spec/skills-delivery.md §11.3, decision 0059). It keeps the one issue labelled
+# skills-integration current and fails, so GitHub notifies the owner, when the status is unknown.
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: skills-integration
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --experimental-strip-types scripts/build-skills.ts --snapshot
+      - run: node --no-warnings --experimental-strip-types scripts/skills-integration.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}

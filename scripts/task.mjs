@@ -1,6 +1,8 @@
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { command, fail, ROOT, slug, taskEntries, tryCommand } from "./common.mjs";
 
 // `start <id> --from <branch>` stacks the task on another task's branch (decision 0046); its row may exist only there.
@@ -63,6 +65,7 @@ if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
       const denylist = resolve(homedir(), ".config/ultimate-brain/denylist");
       if (!existsSync(denylist)) process.stderr.write(`Warning: denylist missing at ${denylist}\n`);
       if (title !== undefined) process.stderr.write(`Fill in the **Changelog:**, **Output:** and **Acceptance:** lines of ${id}\n`);
+      process.stderr.write(`${skillsIntegrationLine(path)}\n`);
       process.stdout.write(`${path}\n`);
     }
   } else {
@@ -78,6 +81,18 @@ if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
       }
     }
   }
+}
+
+/**
+ * The start-of-work line of the skills-integration check (spec/skills-delivery.md §11.3), run without writing against the new worktree's
+ * package snapshot. Never blocks.
+ */
+function skillsIntegrationLine(worktree) {
+  tryCommand(process.execPath, ["--experimental-strip-types", "scripts/build-skills.ts", "--snapshot"], { cwd: worktree });
+  const script = fileURLToPath(new URL("./skills-integration.mjs", import.meta.url));
+  // An unknown status exits 1 with its JSON on stdout, so the exit code is not read.
+  const result = spawnSync(process.execPath, ["--no-warnings", "--experimental-strip-types", script, "--dry-run", "--json", "--root", worktree], { cwd: worktree, encoding: "utf8" });
+  try { return JSON.parse(result.stdout).summary; } catch { return "skills integration: status unknown (the check did not run)"; }
 }
 
 /** `--name value` pairs; undefined when a flag is unknown, repeated or has no value. */
