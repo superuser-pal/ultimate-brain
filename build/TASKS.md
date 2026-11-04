@@ -203,7 +203,7 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 **Output:** decision 0069 (amends 0064); one-line 0069 pointers in docs/skills-migration-plan.md (§4) and spec/skills-delivery.md (Status); this file: the 0.9.3 row of the release table, the 0.9.0 order, and CC-105 moved to a new 0.9.3 section with release 0.9.3 and its spec-first Output; an "Amended by" pointer on 0064.
 **Acceptance:** CC-105 keeps its title, Changelog and Acceptance, with Release 0.9.3; no other row or Changelog line changes; the user accepts decision 0069; the leak check passes.
 
-### CC-128 · Renumber 0.9.x: CC-120 and CC-121 in 0.9.0 · `in progress`
+### CC-128 · Renumber 0.9.x: CC-120 and CC-121 in 0.9.0 · `done` (#206)
 **Release:** 0.9.0
 **Changelog:** development only: the tasks merged before 0.9.0 is released count as 0.9.0 (CC-120, CC-121, CC-122), a simpler Notion becomes 0.9.1 and skills from the fork 0.9.2, so each release's notes match what it ships.
 **Output:** from the user's choice on 2026-11-04 (option A): this file (the release table, CC-120 to CC-122 moved into 0.9.0 with Release 0.9.0, CC-123 to CC-127 in 0.9.1, CC-105 in 0.9.2); decisions 0069 (renamed to `…-in-0-9-2.md`), 0070 and 0071 and the pointer in 0064; migrations 0016 and 0017 and their README rows; the version notes in spec/schema.md, spec/capture-and-review.md, docs/notion-space-design.md, notion/modules/domains.md, docs/skills-migration-plan.md. Test fixtures that use these numbers as sample versions are unchanged.
