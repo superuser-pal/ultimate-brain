@@ -8,7 +8,7 @@ Paste into Notion AI **while you are on the "Plan" page**, after [Prompt 6](06-t
 On this page ("Plan") add four tabs:
 1. Tab "Goals": linked view of "Goals", Gallery with medium cards, named "What am I working toward?": filter Status is Active and Archived is unchecked; sort Deadline ascending; show Name, Progress (as a bar), Countdown, Area.
 2. Tab "Key results": linked view of "Key Results", Table, named "How are my key results moving?": filter the related Goal's Status is Active (if not possible, Done is unchecked); sort Due ascending; group by Goal; show Name, Current, Target, Unit, Progress (as a bar), Done.
-3. Tab "Areas": linked view of "Areas", Gallery with small cards, named "Which areas do I own?": filter Archived is unchecked; sort Type then Name; show Name, Type.
+3. Tab "Areas": linked view of "Areas", Gallery with small cards, named "Which areas do I own?": filter Archived is unchecked; sort Name; show Name.
 4. Tab "Projects by goal": linked view of "Projects", Board, named "Which projects serve each goal?": filter Archived is unchecked and Status is not Done; group by Goal, showing the empty group; sort Priority high to low; show Name, Status.
 
 Put the views in a tabs block (one view per tab, tab labels as given). If you can't create tabs, add them as separate views of one linked view instead.
