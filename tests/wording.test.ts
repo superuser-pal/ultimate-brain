@@ -189,10 +189,11 @@ test("an approved Related knowledge appendix goes after the accepted wording, wh
 const REPORT = "## Where it stands\n\nOn track.\n\n## Timeline\n\n- Dec 1: kickoff\n\n## Decisions in force\n\nNone.\n\n## Open questions and risks\n\nNone.\n\n## People involved\n\nAlex.\n\n## Gaps\n\nNone.\n";
 
 async function publishedReport(dir: string): Promise<{ id: string; path: string }> {
-  // The Inbox database must be configured for a report to be rendered (cli §5.14.4).
+  // The Documents database must be configured for a report to be rendered (cli §5.14.4; on the Inbox before 0.9.1, 0071).
   const configPath = join(dir, "brain.json");
   const config = JSON.parse(await readFile(configPath, "utf8"));
   config.notion.databases.inbox = "a1000000-0000-4000-8000-00000000000c";
+  config.notion.databases.documents = "d1000000-0000-4000-8000-000000000001";
   await writeFile(configPath, JSON.stringify(config, null, 2));
   const created = await run(dir, ["report", "new"], { title: "Login: where we stand", question: "Where does the login stand?", body: REPORT });
   assert.equal(created.code, 0, created.stdout);
@@ -206,7 +207,7 @@ async function publishedReport(dir: string): Promise<{ id: string; path: string 
   return { id, path };
 }
 
-const reportRow = (page: string, w: unknown, properties: Record<string, unknown> = {}) => ({ database: "inbox", page_id: page, last_edited: "2026-12-10T10:00:00Z", properties: { "Brain ID": undefined, ...properties }, wording: w });
+const reportRow = (page: string, w: unknown, properties: Record<string, unknown> = {}) => ({ database: "documents", page_id: page, last_edited: "2026-12-10T10:00:00Z", properties: { "Brain ID": undefined, ...properties }, wording: w });
 
 test("a publish keeps a pending proposed refresh and an unaccepted report draft; the Refresh report button queues no full refresh", async (context) => {
   const dir = await fixtureCopy(context);

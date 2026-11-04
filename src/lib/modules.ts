@@ -15,13 +15,16 @@ export const MODULE_DEFAULTS: Readonly<Record<ModuleName, boolean>> = {
   planning: false,
 };
 
-/** The `notion.databases` keys each module owns. Reports and Tasks own none (Tasks uses `notion.tasks`). */
+/**
+ * The `notion.databases` keys each module uses. Reports shares Documents (a report is a Documents row, 0071);
+ * `moduleForDatabase` still names Documents for it. Tasks owns none (it uses `notion.tasks`).
+ */
 export const MODULE_DATABASES: Readonly<Record<ModuleName, readonly string[]>> = {
   domains: ["domains"],
   knowledge: ["decisions", "questions", "concepts"],
   orgs: ["orgs"],
   documents: ["documents"],
-  reports: [],
+  reports: ["documents"],
   tasks: [],
   planning: ["goals", "key_results"],
 };
@@ -40,11 +43,17 @@ export function isModuleName(value: string): value is ModuleName {
   return (MODULES as readonly string[]).includes(value);
 }
 
-/** Which modules are on: every module except Domains when the block is absent, else each absent key at its default. */
-export function modulesOf(config: Record<string, unknown>): Record<ModuleName, boolean> {
+/** The switches as `brain.json` stores them: every module except Domains when the block is absent, else each absent key at its default. */
+export function storedModules(config: Record<string, unknown>): Record<ModuleName, boolean> {
   const block = config.modules;
   if (!isRecord(block)) return Object.fromEntries(MODULES.map((name) => [name, name !== "domains"])) as Record<ModuleName, boolean>;
   return Object.fromEntries(MODULES.map((name) => [name, typeof block[name] === "boolean" ? block[name] : MODULE_DEFAULTS[name]])) as Record<ModuleName, boolean>;
+}
+
+/** Which modules are on: the stored switches, with Reports off while Documents is off (schema §12, 0071). */
+export function modulesOf(config: Record<string, unknown>): Record<ModuleName, boolean> {
+  const stored = storedModules(config);
+  return { ...stored, reports: stored.reports && stored.documents };
 }
 
 /** The module a note type belongs to, or null for a core type (or one that is never published). */
