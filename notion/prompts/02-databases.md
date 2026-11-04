@@ -8,7 +8,7 @@ First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md
 Ignore the module names in square brackets at the start of lines.
 On the page "Brain Data", create these full-page databases with exactly these properties and options. Do not add any other properties. Do not create relations, formulas or buttons yet.
 
-1. "Areas": Name (title), Summary (text), Type (select: Business, Personal), Workflow (select: Standard, Connected), Work type (select: Software, General), Logging level (select: Tasks only, Tasks + final outputs, Full durable record, Custom), Log artifacts (multi-select: Briefs, Plans, Specifications, Decisions, Final deliverables), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Archived (checkbox), Brain ID (text), Last Synced (date).
+1. "Areas": Name (title), Summary (text), Workflow (select: Standard, Connected), Work type (select: Software, General), Logging level (select: Tasks only, Tasks + final outputs, Full durable record, Custom), Log artifacts (multi-select: Briefs, Plans, Specifications, Decisions, Final deliverables), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Archived (checkbox), Brain ID (text), Last Synced (date).
 [Planning] 2. "Goals": Name (title), Summary (text), Why (text), Deadline (date), Status (select: Not Started, Active, Achieved, Dropped), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Archived (checkbox), Brain ID (text), Last Synced (date).
 [Planning] 3. "Key Results": Name (title), Kind (select: Number, Milestone), Start (number), Current (number), Target (number), Unit (text), Done (checkbox), Due (date).
 4. "Projects": Name (title), Summary (text), Key Facts (text), Status (select: Planned, Active, On Hold, Done), Priority (select: High, Medium, Low), Dates (date, allow end date), Workflow (select: Standard, Connected), Work type (select: Software, General), Logging level (select: Tasks only, Tasks + final outputs, Full durable record, Custom), Log artifacts (multi-select: Briefs, Plans, Specifications, Decisions, Final deliverables), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Archived (checkbox), Brain ID (text), Last Synced (date), Last edited time (last edited time).
@@ -27,7 +27,7 @@ On the page "Brain Data", create these full-page databases with exactly these pr
 [Knowledge] [Documents] Also in "Concepts": Promote asked (checkbox).
 [Documents] 14. "Documents": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time), Last edited time (last edited time).
 [Documents] Also in "Documents": Accepted (checkbox), Accepted at (date, with time).
-15. "Domains": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Archived (checkbox), Brain ID (text), Last Synced (date).
+15. "Domains": Name (title), Summary (text), Type (select: Personal, Entrepreneurship, Professional), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Archived (checkbox), Brain ID (text), Last Synced (date).
 ```
 
 ## Verify
