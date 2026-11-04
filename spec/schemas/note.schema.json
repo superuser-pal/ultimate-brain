@@ -696,6 +696,9 @@
                 "Other"
               ]
             },
+            "archived": {
+              "type": "boolean"
+            },
             "website": {
               "type": "string"
             }

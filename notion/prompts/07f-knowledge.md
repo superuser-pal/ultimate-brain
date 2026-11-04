@@ -29,8 +29,8 @@ On this page ("Knowledge") add one tab per numbered item you have. In each tab p
 [Orgs]    - In "Who's who?", also group by Org and show Org.
    - List "Who's disputed?": Lifecycle is Disputed; sort Name; show Name, Summary.
 [Orgs] 5. Tab "Orgs" (database "Orgs"):
-[Orgs]    - Table "Which clients do I have?": Relationship is Client and Lifecycle is not Archived; sort Name; show Name, People, Projects.
-[Orgs]    - Table "Who else do we work with?": Relationship is not Client and Lifecycle is not Archived; sort Name; group by Relationship; show Name, Relationship, People.
+[Orgs]    - Table "Which clients do I have?": Relationship is Client and Archived is unchecked; sort Name; show Name, People, Projects.
+[Orgs]    - Table "Who else do we work with?": Relationship is not Client and Archived is unchecked; sort Name; group by Relationship; show Name, Relationship, People.
 6. Tab "Inbox" (database "Inbox"):
    - Table "What came in?": Brain Status is Done; sort Created descending; show Name, Kind, Summary, Project.
 [Knowledge]    - In "What came in?", also show Decisions and Concepts.
