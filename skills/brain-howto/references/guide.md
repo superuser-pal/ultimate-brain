@@ -15,7 +15,7 @@ You never edit the Markdown by hand. You work in Notion and talk to your agent.
 | **Knowledge** | Decisions, Questions, Concepts | yes |
 | **Orgs** | Client and partner organizations | yes |
 | **Documents** | A document, or part of one, kept as a page you can read | no |
-| **Reports** | Ask the brain in the Inbox, and get a report you can refresh | no |
+| **Reports** | Ask the brain in the Inbox, and get a report in Documents you can refresh (needs Documents) | no |
 | **Tasks** | Action items as Notion tasks | no |
 | **Planning** | Goals and Key Results | no |
 
@@ -165,11 +165,11 @@ A rejected change can come back if a later meeting says the same thing again.
 - **The minutes are wrong** (a misheard name, a wrong date): fix the minutes on the meeting page, then set Brain Status back to **Reviewed**. The next catch-up reads the meeting again and proposes only what changed, in one Review row. The same goes for a capture: fix its text and set its Brain Status to **Ready**.
 - **The minutes are right, but the brain read them wrong** (the wrong project, a suggestion taken as a decision): on the Review row, set Your call to **Fix** and say what's wrong in What to fix ("c is a suggestion, not a decision", "a belongs to Acme app"). If the row was already approved, tell your agent what's wrong, or set the note's Lifecycle to **Disputed**.
 
-**How do I refresh a report?** Two ways. **Click Refresh report** on the Report row in the Inbox: Brain Assistant adds one toggle at the end of the page, "Proposed refresh · based on Notion", with a new version written from the brain's Notion pages (the report's own text stays as it is, and a second click replaces only the toggle). To use it, replace the report text with what is in the toggle, delete the toggle, and click **Accept refresh**; the next "catch up" shows you what changes and takes it in. **Or** tick **Refresh asked** by hand (or say "refresh the Acme launch report") to have the brain rewrite it from its notes in Git; it waits while a proposed refresh or an unaccepted edit is on the page. A new **Ask the brain** row always makes a new report. The earlier versions stay in the brain's history.
+**How do I refresh a report?** Two ways. **Click Refresh report** on the report's page in Documents: Brain Assistant adds one toggle at the end of the page, "Proposed refresh · based on Notion", with a new version written from the brain's Notion pages (the report's own text stays as it is, and a second click replaces only the toggle). To use it, replace the report text with what is in the toggle, delete the toggle, and click **Accept**; the next "catch up" shows you what changes and takes it in. **Or** tick **Refresh asked** by hand (or say "refresh the Acme launch report") to have the brain rewrite it from its notes in Git; it waits while a proposed refresh or an unaccepted edit is on the page. A new **Ask the brain** row always makes a new report. The earlier versions stay in the brain's history.
 
-**What does accepting do?** Brain Assistant's text lives in Notion until you accept it. Click **Accept write-up** (or **Accept refresh**) when the text is final. The next catch-up compares the page with the brain, shows you exactly what will replace the brain's version, and takes it in after you say yes. Nothing is taken in while a "Proposed revision" or "Proposed refresh" toggle is still on the page, and if you edit the page after clicking Accept, click it again: an edit made in a later minute cancels the acceptance. (An edit in the same minute as your click, before the catch-up first reads the page, cannot be noticed, so leave the page alone for that minute.) A scheduled run takes in an acceptance only if it is at least two minutes old. The catch-up may also propose a "Related knowledge" list for a Document, as a Review row you approve or reject; for a report it only tells you what the brain knows that the refresh does not.
+**What does accepting do?** Brain Assistant's text lives in Notion until you accept it. Click **Accept** when the text is final. The next catch-up compares the page with the brain, shows you exactly what will replace the brain's version, and takes it in after you say yes. Nothing is taken in while a "Proposed revision" or "Proposed refresh" toggle is still on the page, and if you edit the page after clicking Accept, click it again: an edit made in a later minute cancels the acceptance. (An edit in the same minute as your click, before the catch-up first reads the page, cannot be noticed, so leave the page alone for that minute.) A scheduled run takes in an acceptance only if it is at least two minutes old. The catch-up may also propose a "Related knowledge" list for a Document, as a Review row you approve or reject; for a report it only tells you what the brain knows that the refresh does not.
 
-**A report says something wrong?** Write it in the Report row's **What to fix** ("Lucía left Acme in June"). The mistake lives in the notes the report rests on, so the next catch-up turns it into Review rows on those notes. Once you approve them, it refreshes the report.
+**A report says something wrong?** Write it in the report's **What to fix** (on its page in Documents) ("Lucía left Acme in June"). The mistake lives in the notes the report rests on, so the next catch-up turns it into Review rows on those notes. Once you approve them, it refreshes the report.
 
 ---
 
@@ -179,7 +179,7 @@ Hover over a property name to see its owner. Each description starts with "Owner
 
 | Owner | Examples | What happens when you edit it |
 |---|---|---|
-| **You** | Status, Priority, Dates, Lifecycle, Archived, Your call, What to fix, Brain Status on meetings, Project, Area, Kind and Only keep on an Inbox row, the buttons and the boxes they tick (Document asked, Promote asked; Refresh asked, ticked by hand), Accepted and Accepted at (set by the Accept buttons) | Your value stands. The brain reads it but never overwrites it; it unticks a button's box and clears a report's What to fix once it has acted on them, and sets a row it took in to Done. It fills Kind only when you left it empty |
+| **You** | Status, Priority, Dates, Lifecycle, Archived, Your call, What to fix, Brain Status on meetings, Project, Area, Kind and Only keep on an Inbox row, the buttons and the boxes they tick (Document asked, Promote asked; Refresh asked, ticked by hand), Accepted and Accepted at (set by the Accept button) | Your value stands. The brain reads it but never overwrites it; it unticks a button's box and clears a report's What to fix once it has acted on them, and sets a row it took in to Done. It fills Kind only when you left it empty |
 | **Brain** | Summary, Role, Client, Key Facts, Why, Assessment | The next sync reads your edit as a **correction**. Names, summaries and relations change in place; a key fact gets a dated history entry; judgments such as Assessment become a Review proposal |
 | **System** | Brain ID, Last Synced, Ingested At | Don't edit. The brain uses them to match records |
 
@@ -215,10 +215,10 @@ Every Inbox row moves through **Brain Status**: **New → Ready → Done**.
 | Button | On | Ticks | The brain then |
 |---|---|---|---|
 | **Keep as document** | Inbox rows | Document asked (and sets the row to Ready) | Keeps the row's file, or its text when it has no file, as a **Document**: the whole of it, or only what you wrote in **Only keep** ("just the requirements table") |
-| **Refresh report** | Report rows | nothing (it sends a message to Brain Assistant) | Proposes a refreshed version in a toggle, based on the brain's Notion pages; you accept it with **Accept refresh** |
+| **Refresh report** | Reports (Documents) | nothing (it sends a message to Brain Assistant) | Proposes a refreshed version in a toggle, based on the brain's Notion pages; you accept it with **Accept** |
 | **Tidy capture** | Inbox rows of Kind Capture, Brain Status New | nothing (it sends a message to Brain Assistant) | Rewrites the capture's text as clear sentences, keeping every name, number, date and quote; the row stays New, and you set Ready afterwards |
 | **Write up** | Documents (promoted ones) | nothing (it sends a message to Brain Assistant) | Develops the page into Purpose, Main content, Open questions and Sources, from the brain pages it links; a second click keeps your edits and adds a "Proposed revision" toggle |
-| **Accept write-up**, **Accept refresh** | Documents, Report rows | Accepted and Accepted at | Marks the page text as final. The next catch-up shows you the change against Git and, once you say yes, puts exactly that text in the brain and unticks the box |
+| **Accept** | Documents (a write-up or a report) | Accepted and Accepted at | Marks the page text as final. The next catch-up shows you the change against Git and, once you say yes, puts exactly that text in the brain and unticks the box |
 | **Promote to document** | Decisions, Concepts | Promote asked | Makes a Document from the note, linked both ways, whose text is yours to edit from then on |
 
 **Documents** (the Documents module). A Document is a page you read, linked to its source, project and area:
@@ -241,7 +241,7 @@ The brain still reads every input for decisions, questions and people, whether o
 | A web page | Give your agent the link: "ingest this page: https://…". For a page behind a login, save it as a PDF in your drop folder instead |
 | A file from your phone | Attach it to a **Quick capture** (or to the meeting page), with Project set if you know it. To keep the file itself as a Document, click **Keep as document** (and write in **Only keep** if you want just a part). The row is Ready; the next catch-up reads the file with the row. Files on project and area pages are not read |
 | A repo's knowledge (decisions, docs, changelog) | "link the repo at ~/code/acme-api". The agent proposes a link kit (what to read and never read, where the repo's tasks live, its Area and Project) and writes it into the repo only after your yes ("Projects in other folders" below). Each catch-up then reads the files changed since the last one; the first time, it asks which to take. Apart from the kit, the brain never writes to the repo |
-| A question for a full report | **Ask the brain** on Home: type the question as the Name ("Where do we stand with the Acme launch?"). The next catch-up answers with a **Report** row in the Inbox, linked from yours, and on the project's or area's page under **Reports**. To bring it up to date later, click **Refresh report** on it ("Correcting what came in"). Needs the Reports module |
+| A question for a full report | **Ask the brain** on Home: type the question as the Name ("Where do we stand with the Acme launch?"). The next catch-up answers with a report in **Documents**, linked from yours, and on the project's or area's page under **Reports**. To bring it up to date later, click **Refresh report** on it ("Correcting what came in"). Needs the Reports module (and Documents) |
 | An email, chat thread or note | Paste it into a **Quick capture** (keep who sent it and when). For a thread, run **`/Clean email`** on the page: Brain Assistant gives each message a heading with names and date ("Tomás Vidal → Lucía Fernández · 3 Dec 2026"), its own text word for word below it, and a divider before the next, newest first. It drops addresses, signatures, disclaimers, quoted copies and Teams, Zoom or Meet blocks, and rewrites the page right away (the page history keeps the original), asking first only when something is truly unclear. Then set the row to **Ready** and "catch up". Or paste it straight to your agent: "ingest this email" |
 | A task | Add it in Tasks. Action items from meetings, and your own from documents, emails and captures, are created for you |
 
@@ -267,7 +267,7 @@ The brain still reads every input for decisions, questions and people, whether o
 | `/Plan check` | Projects without goals, goals without projects, overdue items |
 | `/Tidy capture` (on a new capture in the Inbox; also the **Tidy capture** button) | A cleaner version of the capture; replaces the text after you say yes (the button carries the yes) |
 | `/Clean email` (on a new capture holding a pasted email thread) | Each message under a heading of names and date, its own text word for word, a divider between messages, newest first; no addresses, signatures, disclaimers, quoted copies or meeting blocks; rewrites the page directly and asks only on a serious doubt |
-| **Write up** and **Refresh report** (buttons, not commands) | Click them on a Document or Report row; see the buttons table above |
+| **Write up** and **Refresh report** (buttons, not commands) | Click them on a Document or a report; see the buttons table above |
 | "how do I …?" | An answer from this guide |
 
 Brain Assistant reads; your agent in Claude Code or Codex writes. To get something *into* the brain, use the phrases below.
@@ -282,7 +282,7 @@ Say "run catch-up every morning" (or "twice a day", "on weekdays") and the agent
 
 **Where you find out what it did.**
 - Your next **"catch up"** opens with one line: "Since last time: 4 scheduled runs, 6 inputs in, 1 skipped, 1 Fix waiting, 1 failed: Notion login". It also warns "Backlog growing" when three runs in a row left inputs over: run it more often or raise the budget.
-- With **Reports** on and **publish: auto**, a run that needs you or failed also adds one row to the Inbox ("Catch-up 29 Oct: 2 in, 1 needs you"). A run that went well adds nothing.
+- With **Reports** on and **publish: auto**, a run that needs you or failed also adds one row to the Inbox, of Kind Catch-up ("Catch-up 29 Oct: 2 in, 1 needs you"). A run that went well adds nothing.
 - With publish **ask** (the default), a scheduled run commits and pushes but publishes nothing to Notion; your next catch-up publishes. Say "publish automatically" to change that.
 
 **Check or stop it:** "what is scheduled?" lists it, "stop the scheduled catch-up" removes it, and asking again with other times replaces it. If Claude Code's login to Notion expires, scheduled runs can't read Notion: that shows as a failure in the summary, and signing in again fixes it.
@@ -331,7 +331,7 @@ Run these in Claude Code or Codex, from your brain's folder.
 | Apply your Review decisions | "apply my reviews" |
 | Bring Notion edits and new rows into the brain, and publish its changes | "sync with Notion" |
 | Ask what the brain knows | "what did we decide about …?", "who is …?", "when is the … launch?" |
-| Get a report on a subject: where it stands, a timeline, decisions, open questions, people and gaps | "report on the Acme launch". It includes notes you haven't reviewed, marked *(not reviewed)*, and is published as a Report row. "refresh the Acme launch report" rewrites it as of today |
+| Get a report on a subject: where it stands, a timeline, decisions, open questions, people and gaps | "report on the Acme launch". It includes notes you haven't reviewed, marked *(not reviewed)*, and is published to Documents as a report. "refresh the Acme launch report" rewrites it as of today |
 | Keep a document, or part of one, as a page | "keep the Acme brief as a document", "also keep the budget from the Acme doc" (or click **Keep as document** on its Inbox row) |
 | Turn a decision or concept into a page you write in | "promote Use Supabase for auth to a document" (or click **Promote to document** on it) |
 | Turn a module on or off | "turn on documents", "turn planning off", "which modules do I have?" |
