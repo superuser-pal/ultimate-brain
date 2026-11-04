@@ -1,6 +1,6 @@
 # 0069 — The package takes its skills from the fork in 0.9.1
 
-**Status:** Proposed
+**Status:** Accepted (by the user, 2026-11-04)
 **Date:** 2026-11-04
 **Release:** 0.9.0 (the plan), 0.9.1 (CC-105)
 **Amends:** 0064 (0.9.0 stays one release: CC-105 moves to a 0.9.1 patch release)
