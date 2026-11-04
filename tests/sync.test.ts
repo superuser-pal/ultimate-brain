@@ -104,7 +104,8 @@ test("sync render creates a project with no Notion page from the Projects templa
   assert.equal(item.action, "create");
   assert.equal(item.page_id, null);
   assert.deepEqual(item.template, { type: "default" });
-  for (const name of ["Name", "Summary", "Key Facts", "Area", "Lifecycle", "Brain ID"]) assert.ok(Object.hasOwn(item.properties, name), name);
+  for (const name of ["Name", "Summary", "Key Facts", "Area", "Brain ID"]) assert.ok(Object.hasOwn(item.properties, name), name);
+  assert.equal(Object.hasOwn(item.properties, "Lifecycle"), false, "Projects have no Lifecycle (0070)");
   assert.deepEqual(Object.keys(item.sections), ["Brief", "Decision log"]);
   assert.equal(item.body, null);
   assert.ok(typeof item.published["@content"] === "string");
@@ -456,7 +457,7 @@ test("sync render gives supersede and merge reviews titles and truncates text", 
 test("sync publishes the brain's values for a Notion-created row whose brain-owned properties are empty", async (context) => {
   const dir = await fixtureCopy(context);
   const page = "10000000-0000-4000-8000-0000000000aa";
-  const row = { database: "areas", page_id: page, last_edited: "2026-12-10T08:00:00Z", properties: { Name: "Initech", Summary: null, Lifecycle: null, "Brain ID": null, Archived: false } };
+  const row = { database: "people", page_id: page, last_edited: "2026-12-10T08:00:00Z", properties: { Name: "Ines Ortega", Summary: null, Lifecycle: null, "Brain ID": null } };
   const plan = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot.json", { as_of: NOW, rows: [row] }), "--json"]);
   assert.equal(plan.code, 0, plan.stdout);
   const planPath = await input(dir, "plan.json", plan.json.data);
@@ -465,11 +466,11 @@ test("sync publishes the brain's values for a Notion-created row whose brain-own
   const id = apply.json.data.create[0].id;
   const render = await brain(["sync", "render", "--brain", dir, "--now", NOW, "--changed", "--plan", planPath, "--json"]);
   const item = render.json.data.items.find((entry: { id: string }) => entry.id === id);
-  assert.equal(item.properties.Summary.value, "Initech");
+  assert.equal(item.properties.Summary.value, "Ines Ortega");
   assert.equal(item.properties.Lifecycle.value, "Draft");
   const record = await brain(["sync", "record", "--brain", dir, "--now", NOW, "--input", await input(dir, "record.json", { records: [{ id, notion: page, synced_at: NOW, published: item.published }] }), "--json"]);
   assert.equal(record.code, 0, record.stdout);
-  const published = { ...row, properties: { ...row.properties, Summary: "Initech", Lifecycle: "Draft", "Brain ID": id } };
+  const published = { ...row, properties: { ...row.properties, Summary: "Ines Ortega", Lifecycle: "Draft", "Brain ID": id } };
   const replan = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot2.json", { as_of: NOW, rows: [published] }), "--json"]);
   assert.deepEqual([replan.json.data.updates, replan.json.data.corrections, replan.json.data.conflicts], [[], [], []]);
   const edited = { ...published, properties: { ...published.properties, Lifecycle: "Reviewed" } };
@@ -481,7 +482,7 @@ test("sync publishes the brain's values for a Notion-created row whose brain-own
 test("sync keeps a Notion edit made before the first publish and refuses an emptied Lifecycle", async (context) => {
   const dir = await fixtureCopy(context);
   const page = "10000000-0000-4000-8000-0000000000ab";
-  const row = { database: "areas", page_id: page, last_edited: "2026-12-10T08:00:00Z", properties: { Name: "Initech", Summary: null, Lifecycle: null, "Brain ID": null, Archived: false } };
+  const row = { database: "people", page_id: page, last_edited: "2026-12-10T08:00:00Z", properties: { Name: "Ines Ortega", Summary: null, Lifecycle: null, "Brain ID": null } };
   const plan = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot.json", { as_of: NOW, rows: [row] }), "--json"]);
   const apply = await brain(["sync", "apply", "--brain", dir, "--now", NOW, "--input", await input(dir, "plan.json", plan.json.data), "--json"]);
   const id = apply.json.data.create[0].id;
@@ -493,7 +494,7 @@ test("sync keeps a Notion edit made before the first publish and refuses an empt
   assert.equal(item.properties.Summary, undefined);
   assert.equal(item.properties.Lifecycle.value, "Draft");
   await brain(["sync", "record", "--brain", dir, "--now", NOW, "--input", await input(dir, "record.json", { records: [{ id, notion: page, synced_at: NOW, published: { Lifecycle: "Draft" } }] }), "--json"]);
-  const cleared = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot3.json", { as_of: NOW, rows: [{ ...row, properties: { ...row.properties, Summary: null, Lifecycle: null, Archived: true } }] }), "--json"]);
+  const cleared = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot3.json", { as_of: NOW, rows: [{ ...row, properties: { ...row.properties, Summary: null, Lifecycle: null } }] }), "--json"]);
   assert.deepEqual(cleared.json.data.conflicts.map((item: { code: string; property: string }) => [item.code, item.property]), [["REQUIRED_EMPTY", "Lifecycle"]]);
   const applied = await brain(["sync", "apply", "--brain", dir, "--now", NOW, "--input", await input(dir, "plan3.json", cleared.json.data), "--json"]);
   assert.equal(applied.code, 0, applied.stdout);
@@ -560,9 +561,75 @@ test("sync keeps unpublished links and reports invalid Notion values before comp
   const codes = (data: { conflicts: Array<{ code: string; property: string }>; ignored: Array<{ reason: string; property: string }>; corrections: unknown[] }) => [data.conflicts.map((item) => [item.code, item.property]), data.ignored.map((item) => [item.reason, item.property]), data.corrections];
 
   assert.deepEqual(codes(await plan("people.json", [project({ People: [] })])), [[["BOTH_CHANGED", "People"]], [], []]);
-  assert.deepEqual(codes(await plan("empty.json", [project({ Lifecycle: null, Summary: "" })])), [[["REQUIRED_EMPTY", "Lifecycle"], ["REQUIRED_EMPTY", "Summary"]], [], []]);
-  assert.deepEqual(codes(await plan("unknown.json", [project({ Lifecycle: "Foo" })])), [[], [["UNKNOWN_OPTION", "Lifecycle"]], []]);
-  assert.deepEqual(codes(await plan("case.json", [project({ Lifecycle: "draft" })])).flat(), []);
+  assert.deepEqual(codes(await plan("empty.json", [project({ Summary: "" })])), [[["REQUIRED_EMPTY", "Summary"]], [], []]);
+  // A space that still has Lifecycle on Projects: the brain ignores it there (0070).
+  assert.deepEqual(codes(await plan("unknown.json", [project({ Lifecycle: "Foo" })])).flat(), []);
+  assert.deepEqual(codes(await plan("stale.json", [project({ Lifecycle: null })])).flat(), []);
   const decision = { database: "decisions", page_id: decisionPage, last_edited: "2026-12-10T08:00:00Z", properties: { "Brain ID": "dec-7k2m9q4x", Assessment: null } };
   assert.deepEqual(codes(await plan("assessment.json", [decision])), [[], [["NOT_CORRECTABLE", "Assessment"]], []]);
+});
+
+test("Domains, Areas, Goals, Projects and Orgs created in Notion are reviewed and publish no Lifecycle (0070)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const configPath = join(dir, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  config.modules = { ...config.modules, domains: true, planning: true };
+  config.notion.databases.domains = "a1000000-0000-4000-8000-00000000000d";
+  await writeFile(configPath, JSON.stringify(config));
+  const area = "1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d";
+  const rows = [
+    { database: "domains", page_id: page(41), last_edited: NOW, properties: { Name: "Venture", Summary: "Own ventures.", "Brain ID": null, Archived: false } },
+    { database: "areas", page_id: page(42), last_edited: NOW, properties: { Name: "Operations", Summary: "Running the company.", "Brain ID": null, Archived: false } },
+    { database: "goals", page_id: page(43), last_edited: NOW, properties: { Name: "Grow", Summary: "Grow.", "Brain ID": null, Why: "Runway", Area: [area], Archived: false } },
+    { database: "projects", page_id: page(44), last_edited: NOW, properties: { Name: "Portal", Summary: "A portal.", "Brain ID": null, Area: [area], Archived: false } },
+    { database: "orgs", page_id: page(45), last_edited: NOW, properties: { Name: "Globex", Summary: "A prospect.", "Brain ID": null, Relationship: "Prospect", Archived: true } },
+    { database: "people", page_id: page(46), last_edited: NOW, properties: { Name: "Ines Ortega", Summary: "An engineer.", Lifecycle: null, "Brain ID": null } },
+  ];
+  const plan = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot.json", { as_of: NOW, rows }), "--json"]);
+  assert.equal(plan.code, 0, plan.stdout);
+  assert.deepEqual(plan.json.data.create.map((item: { type: string; lifecycle: string }) => [item.type, item.lifecycle]).sort(),
+    [["area", "reviewed"], ["domain", "reviewed"], ["goal", "reviewed"], ["org", "reviewed"], ["person", "draft"], ["project", "reviewed"]]);
+  assert.equal(plan.json.data.create.find((item: { type: string }) => item.type === "org").frontmatter.notion_fields.archived, true);
+  const planPath = await input(dir, "plan.json", plan.json.data);
+  assert.equal((await brain(["sync", "apply", "--brain", dir, "--now", NOW, "--input", planPath, "--json"])).code, 0);
+  const render = await brain(["sync", "render", "--brain", dir, "--now", NOW, "--changed", "--plan", planPath, "--json"]);
+  const pages = new Set(rows.map((row) => row.page_id));
+  const published = Object.fromEntries(render.json.data.items.filter((item: { page_id: string }) => pages.has(item.page_id)).map((item: { type: string; published: Record<string, unknown> }) => [item.type, Object.hasOwn(item.published, "Lifecycle")]));
+  assert.deepEqual(published, { area: false, domain: false, goal: false, org: false, person: true, project: false });
+  assert.equal((await brain(["lint", "--brain", dir, "--json"])).json.data.errors, 0);
+});
+
+test("a project the brain retires ticks Archived once, and Archived stays yours afterwards (0070)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const path = join(dir, "projects/acme-website/project.md");
+  const document = parseFrontmatter(await readFile(path, "utf8"));
+  document.attributes.lifecycle = "archived";
+  await writeFile(path, serializeFrontmatter(document));
+  const render = async () => (await brain(["sync", "render", "--brain", dir, "--ids", "prj-9x4t1b7e", "--now", NOW, "--json"])).json.data.items[0];
+  const first = await render();
+  assert.deepEqual(first.properties.Archived, { type: "checkbox", value: true });
+  assert.equal(Object.hasOwn(first.properties, "Lifecycle"), false);
+  const record = await brain(["sync", "record", "--brain", dir, "--now", NOW, "--input", await input(dir, "record.json", { records: [{ id: "prj-9x4t1b7e", notion: first.page_id, synced_at: NOW, published: first.published }] }), "--json"]);
+  assert.equal(record.code, 0, record.stdout);
+  const settled = await render();
+  assert.ok(settled === undefined || !Object.hasOwn(settled.properties, "Archived"));
+  // You untick it in Notion: the next sync pulls archived false, and the brain doesn't tick it again.
+  const unticked = parseFrontmatter(await readFile(path, "utf8"));
+  unticked.attributes.notion_fields = { ...(unticked.attributes.notion_fields as Record<string, unknown>), archived: false };
+  await writeFile(path, serializeFrontmatter(unticked));
+  const after = await render();
+  assert.ok(after === undefined || !Object.hasOwn(after.properties, "Archived"));
+});
+
+test("note new writes a project as reviewed and a person as draft (0070)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const notes = [
+    { type: "project", id: "prj-4d6f8h2k", title: "Intranet", frontmatter: { summary: "An intranet.", area: "area-2m7c4h8n" }, body: "" },
+    { type: "person", id: "per-5g7h9j3k", title: "Dee Ortiz", frontmatter: { summary: "A designer." }, body: "" },
+  ];
+  const run = await brain(["note", "new", "--brain", dir, "--now", NOW, "--input", await input(dir, "notes.json", { notes }), "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  const lifecycle = async (file: string) => parseFrontmatter(await readFile(join(dir, file), "utf8")).attributes.lifecycle;
+  const [project, person] = run.json.data.created.map((item: { path: string }) => item.path);
+  assert.deepEqual([await lifecycle(project), await lifecycle(person)], ["reviewed", "draft"]);
 });

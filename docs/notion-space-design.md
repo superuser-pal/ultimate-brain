@@ -97,7 +97,7 @@ Up to fourteen databases, all on the backend page **Brain Data**: the six of Cor
 |---|---|---|---|
 | Name | Title | Brain (you on creation) | |
 | Summary | Text | Brain | ≤200 chars, from the note's `summary:` |
-| Lifecycle | Select: Draft, Reviewed, Disputed, Archived | You | 0005. New brain records arrive as Draft |
+| Lifecycle | Select: Draft, Reviewed, Disputed, Archived | You | 0005. New brain records arrive as Draft. **Only on People, Decisions, Questions, Concepts and Documents** (0070): rows you create (Domains, Areas, Goals, Projects, Orgs) have none, and Archived closes them |
 | Brain ID | Text | System | e.g. `prj-9x4t1b7e` (0017). Empty = not imported yet |
 | Last Synced | Date (with time) | System | |
 
@@ -133,7 +133,7 @@ Page body: a toggle heading **Brief** (brain-written, 0041: the area's projects,
 
 ### Domains database (0055; in every space, 0065)
 
-Every space has it, with the Domains module on or off: the module decides only whether the brain reads and publishes Domains and whether pages show them (migration 0014 adds it to an older space). Name (title) and Summary (text) are brain-owned after creation; Type (select: Personal, Entrepreneurship, Professional; 0.9.1, it replaced Areas · Type), Lifecycle (select: Draft, Reviewed, Disputed, Archived) and Archived (checkbox) are yours. Brain ID (text) and Last Synced (date) are system fields. Areas is the inverse of Areas · Domain, limited on the Area side to one page by hand. Org is a correctable relation to Orgs, created when the space has an Orgs database; Orgs · Domains is its inverse. The Domain page shows Areas and, when enabled, Org.
+Every space has it, with the Domains module on or off: the module decides only whether the brain reads and publishes Domains and whether pages show them (migration 0014 adds it to an older space). Name (title) and Summary (text) are brain-owned after creation; Type (select: Personal, Entrepreneurship, Professional; 0.9.1, it replaced Areas · Type) and Archived (checkbox) are yours; no Lifecycle (0070). Brain ID (text) and Last Synced (date) are system fields. Areas is the inverse of Areas · Domain, limited on the Area side to one page by hand. Org is a correctable relation to Orgs, created when the space has an Orgs database; Orgs · Domains is its inverse. The Domain page shows Areas and, when enabled, Org.
 
 ### 3.2 Goals
 | Property | Type | Owner |
@@ -232,6 +232,7 @@ Clients, partners, suppliers. One canonical entity database (your pattern's rule
 | People | Relation → People (two-way with Org) | Brain |
 | Projects | Relation → Projects (two-way with Client) | Brain |
 | Website | URL | You |
+| Archived | Checkbox (0070: Orgs have no Lifecycle; this closes one) | You |
 | Meetings via projects | Rollup: Projects → Meetings, show original | You (derived, Notion-only) |
 
 ### 3.8 Decisions

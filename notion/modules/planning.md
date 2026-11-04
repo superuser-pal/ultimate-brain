@@ -7,14 +7,14 @@ Goals and key results above your areas and projects (decisions 0020, 0048; docs/
 ### 1 · The databases
 
 **Notion AI**, on **Brain Data** (the API can't create databases):
-> In this page, create two full-page databases. "Goals": Name (title), Summary (text), Why (text), Deadline (date), Status (select: Not Started, Active, Achieved, Dropped), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Archived (checkbox), Brain ID (text), Last Synced (date). "Key Results": Name (title), Kind (select: Number, Milestone), Start (number), Current (number), Target (number), Unit (text), Done (checkbox), Due (date). Don't change anything else.
+> In this page, create two full-page databases. "Goals": Name (title), Summary (text), Why (text), Deadline (date), Status (select: Not Started, Active, Achieved, Dropped), Archived (checkbox), Brain ID (text), Last Synced (date). "Key Results": Name (title), Kind (select: Number, Milestone), Start (number), Current (number), Target (number), Unit (text), Done (checkbox), Due (date). Don't change anything else.
 
 ### 2 · Relations, formulas, descriptions
 
 | Change | Who |
 |---|---|
 | Two-way relations: Areas "Goals" ↔ Goals "Area"; Goals "Key Results" ↔ Key Results "Goal"; Goals "Projects" ↔ Projects "Goal" | agent |
-| Descriptions per [Prompt 5](../prompts/05-ownership.md): every property of Key Results "Owner: you."; Goals Status, Lifecycle, Archived, Key Results, Projects, Progress, Countdown "Owner: you."; Name, Area "Owner: you when creating, then brain."; Projects Goal "Owner: you when creating, then brain."; Brain ID and Last Synced "Owner: system. Do not edit."; the rest "Owner: brain." | agent |
+| Descriptions per [Prompt 5](../prompts/05-ownership.md): every property of Key Results "Owner: you."; Goals Status, Archived, Key Results, Projects, Progress, Countdown "Owner: you."; Name, Area "Owner: you when creating, then brain."; Projects Goal "Owner: you when creating, then brain."; Brain ID and Last Synced "Owner: system. Do not edit."; the rest "Owner: brain." | agent |
 | Record the ids: `brain config set notion.databases.goals '"<id>"'` and `brain config set notion.databases.key_results '"<id>"'` | agent |
 
 **Notion AI**, on **Brain Data**: items 1–3 of [Prompt 4](../prompts/04-formula-rollup.md) (Key Results Progress, Goals Progress and Countdown), with "Add only these. Don't change anything else." The hand-pasted Countdown formula is there if Notion AI gets it wrong.

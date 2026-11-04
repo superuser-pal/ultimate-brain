@@ -197,6 +197,8 @@ Hover over a property name to see its owner. Each description starts with "Owner
 - **Disputed:** you think it's wrong;
 - **Archived:** no longer current.
 
+Only People, Decisions, Questions, Concepts and Documents have it: the brain writes those from what it reads. Domains, Areas, Goals, Projects and Orgs are yours from the start, so they have none; close one with **Archived**.
+
 Set **Disputed** on anything wrong. The brain stops relying on it, and you can ask your agent to fix it.
 
 ---
