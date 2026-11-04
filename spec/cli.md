@@ -395,7 +395,7 @@ Writes **new** notes (lifecycle `draft`, 0003). Used by the ingest skill, by `ap
 | `frontmatter` | ✔ | every other field. Must not contain `id`, `type`, `title`, `created`, `updated`, `lifecycle`, or for sources `content_hash` |
 | `body` | ✔ | Markdown; a trailing newline is added if missing |
 
-The CLI sets `created` = `updated` = today, `lifecycle: draft` (knowledge types; a `whole` or `promoted` reference is the exception, see "Documents" below), and for sources `content_hash` (schema §4, over the body as written) and `captured` (default now). Files are laid out as §3.6.5 says. References in `frontmatter` may point to existing notes **or to other notes in the same batch**. The batch is validated as if written: schema, IDs, folder, references, and every lint error rule (§5.10) that concerns the new files. So a new decision whose `decided_in` names an *existing* meeting fails `meeting-backref`: put the meeting in the same batch, or use a `new_item` proposal, whose apply updates the meeting. Any error → `INPUT_INVALID`, with `details` pointing into the input (a reference to a missing note included), and nothing is written.
+The CLI sets `created` = `updated` = today, `lifecycle: draft` (knowledge types; `reviewed` for domain, area, goal, project and org, 0070; a `whole` or `promoted` reference is the exception, see "Documents" below), and for sources `content_hash` (schema §4, over the body as written) and `captured` (default now). Files are laid out as §3.6.5 says. References in `frontmatter` may point to existing notes **or to other notes in the same batch**. The batch is validated as if written: schema, IDs, folder, references, and every lint error rule (§5.10) that concerns the new files. So a new decision whose `decided_in` names an *existing* meeting fails `meeting-backref`: put the meeting in the same batch, or use a `new_item` proposal, whose apply updates the meeting. Any error → `INPUT_INVALID`, with `details` pointing into the input (a reference to a missing note included), and nothing is written.
 
 **Source fields (0042, 0043).** A source item is also refused (`INPUT_INVALID`) when:
 - `repo`, `repo_path` and `commit` are not all present or all absent; `repo` doesn't name an entry of `brain.json` `repos`; `commit` isn't 40 lowercase hex; or the key isn't `file:`;
@@ -946,7 +946,7 @@ Read-only. Compares each row with the brain and returns a plan. Notes are matche
 
 **Rows with empty `Brain ID`:** first, a note whose `notion` equals the row's `page_id` is that row's note (a create whose publish failed); the row is then treated as if it had that Brain ID, and the next render writes the Brain ID. Otherwise:
 - In `areas`, `goals`, `projects`, `people`, `orgs` → a `create` item (0021): a `note new` input with a pre-generated id and:
-  - `title` = Name; `summary` = Summary, or Name if empty; `lifecycle` from Lifecycle (default `draft`);
+  - `title` = Name; `summary` = Summary, or Name if empty; `lifecycle` from Lifecycle (default `draft`), and `reviewed` for areas, goals, projects, orgs and domains, which have no Lifecycle (0070);
   - `notion` = page id; `sources: ["notion:<page_id>"]`;
   - brain-owned properties mapped as in the table below, relations resolved to brain ids (other rows created in the same plan count);
   - for each fact set this way, one timeline entry `{field, value, from: <date of last_edited>, learned: <date of as_of>, source: "notion:<page_id>", assessment: accepted}`;
@@ -959,7 +959,7 @@ Read-only. Compares each row with the brain and returns a plan. Notes are matche
 **Rows with a `Brain ID`:**
 - No such note → conflict `UNKNOWN_BRAIN_ID`. The note's `notion` differs from `page_id` → conflict `NOTION_ID_MISMATCH`. The note has no `notion` → `updates` sets it.
 - **Notion-owned** properties → the type's `notion_fields` (table below), plus `as_of`. If any value differs from the stored snapshot (ignoring `as_of`) → an `updates` item with the full new `notion_fields`. Notion is the authority; no three-way comparison.
-- **Lifecycle** (yours; agents also set `draft` and `archived`) → three-way comparison; "your correction" here is an `updates` item that sets `lifecycle`.
+- **Lifecycle** (yours; agents also set `draft` and `archived`) → three-way comparison; "your correction" here is an `updates` item that sets `lifecycle`. Not read on domains, areas, goals, projects and orgs (0070): a Lifecycle still in such a database is ignored, with no conflict or `ignored` entry.
 - **Brain-owned** properties → three-way comparison; "your correction" is a `corrections` item when the property is correctable (table below), otherwise `ignored`, `NOT_CORRECTABLE`. For Key Facts, the comparison runs **per key** on the parsed texts (N, S and B each parsed as §5.14.4 says), so a change to one key never conflicts with a change to another; each key is reported as `property: "Key Facts/<key>"`. A key in S that is missing from N → `ignored`, `FACT_REMOVAL_NOT_SUPPORTED`. A Name, Summary or Lifecycle emptied in Notion → conflict `REQUIRED_EMPTY`; a Lifecycle option the brain does not know → `ignored`, `UNKNOWN_OPTION`. Lifecycle is compared case-insensitively (Notion shows `Draft`, the brain stores `draft`).
 - **Review rows** with **Your call** set and `State` = `Pending` (0045; a snapshot taken before migration 0009 has `Decision` and `Note` instead, read the same way, and the option **Edit** is read as **Fix**, so decisions made before the migration are never lost. Only reading is compatible: render sends the 0.5.0 names, see §5.14.4). The snapshot properties are `Your call` (select) and `What to fix` (text). A proposal already terminal is checked first (below), so a row whose What to fix the skill has handled never comes back:
   - **Approve** or **Reject** with an empty What to fix → a `decisions` item for `brain apply`: `action`, `decided_at` = `last_edited`, `decided_by: notion`.
@@ -976,12 +976,12 @@ Read-only. Compares each row with the brain and returns a plan. Notes are matche
 
 | Database | Notion-owned → `notion_fields` | Correctable brain-owned → correction `field` |
 |---|---|---|
-| domains | Archived → `archived` | Name → `title`, Summary → `summary`, Org → `org` |
-| areas | Type → `type`, Archived → `archived` | Name → `title`, Summary → `summary`, Domain → `domain` |
+| domains | Type → `type`, Archived → `archived` | Name → `title`, Summary → `summary`, Org → `org` |
+| areas | Archived → `archived` | Name → `title`, Summary → `summary`, Domain → `domain` |
 | goals | Status → `status`, Progress → `progress`, Archived → `archived`, Key Results → `key_results` | Name, Summary, Why → `why`, Deadline → `facts.deadline`, Area → `area` |
 | projects | Status → `status`, Priority → `priority`, Dates → `dates`, Archived → `archived` | Name, Summary, Key Facts → `facts.<key>` (§5.14.4), Area → `area`, Goal → `goal`, Client (first) → `client`, People → `people` |
 | people | Email → `email` | Name, Summary, Role → `facts.role`, Org (first) → `org` |
-| orgs | Relationship → `relationship`, Website → `website` | Name, Summary |
+| orgs | Relationship → `relationship`, Website → `website`, Archived → `archived` (0070) | Name, Summary |
 | decisions | — | Name, Summary |
 | questions | Status → `status` | Name, Summary |
 | concepts | — | Name, Summary |
@@ -1071,11 +1071,12 @@ A source with `attached_to` is never selected: it has no Inbox row (0042). Notes
 
 | Database | Properties |
 |---|---|
-| areas | Name, Summary, Lifecycle, Brain ID, Last Synced; `sections` "Brief" (0041) |
-| goals | Name, Summary, Why, Deadline, Area, Lifecycle, Brain ID, Last Synced |
-| projects | Name, Summary, Key Facts, Area, Goal, Client, People, Lifecycle, Brain ID, Last Synced |
+| domains | Name, Summary, Org, Brain ID, Last Synced, Archived *(once)* |
+| areas | Name, Summary, Domain, Brain ID, Last Synced, Archived *(once)*; `sections` "Brief" (0041) |
+| goals | Name, Summary, Why, Deadline, Area, Brain ID, Last Synced, Archived *(once)* |
+| projects | Name, Summary, Key Facts, Area, Goal, Client, People, Brain ID, Last Synced, Archived *(once)* |
 | people | Name, Summary, Role, Org, Lifecycle, Brain ID, Last Synced |
-| orgs | Name, Summary, Lifecycle, Brain ID, Last Synced |
+| orgs | Name, Summary, Brain ID, Last Synced, Archived *(once)* |
 | decisions | Name, Summary, Date, Assessment, Project, Area, Decided In, Supersedes, Lifecycle, Brain ID, Last Synced |
 | questions | Name, Summary, Kind, Project, Area, Raised In, Lifecycle, Brain ID, Last Synced, Status *(Open or Answered, once)* |
 | concepts | Name, Summary, Project, Area, Lifecycle, Brain ID, Last Synced |
@@ -1085,6 +1086,7 @@ A source with `attached_to` is never selected: it has no Inbox row (0042). Notes
 | inbox | Name *(create only)*, Kind *(if empty)*, Summary, Decisions, Questions, Concepts, Documents, People, Project *(if empty)*, Area *(if empty)*, Brain Status, Brain ID, Last Synced; a report: Name, Kind, Project, Area, Ask, Brain Status, Brain ID, Last Synced, Refresh asked *(clear)*, What to fix *(clear)* |
 
 - On `create`, every listed property is sent. On `update`, only properties whose B ≠ S are sent, plus Last Synced (= `--now`) for the databases that have it (not Meetings or Review). So Lifecycle goes out on create (`Draft`) and when the brain changed it (`archived` by a supersession), and your own Lifecycle edits, already pulled into the brain, are never overwritten.
+- **Archived *(once)*** (0070): domains, areas, goals, projects and orgs send no Lifecycle. When the note's `lifecycle` is `archived` (a merge or supersession) and `notion_fields.archived` is not true, Archived goes out as a checked checkbox; once S holds it, it is not sent again, so unticking it in Notion is your edit and stays.
 - Project relations carry every id in `projects`.
 - **Area on Decisions and Questions** (0034) is derived, never stored in the note: the `area` of each note in the record's `projects`, deduped and sorted. No projects, or projects without an area → empty. It is brain-owned and compared like any other property, so the first render after the upgrade sends it to every decision and question once.
 - **Concepts:** Project = `projects`, Area = `area`; the body is the whole page body, as for decisions.
