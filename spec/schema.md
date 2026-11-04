@@ -184,6 +184,7 @@ A work or life context that groups Areas; distinct from an Org.
 | `deciders` | list of IDs (`per-`) | | brain |
 | `valid_from` | date | | brain; defaults to `date` when absent (0005) |
 | `valid_until` | date | required when `assessment: superseded` | brain; the superseding decision's `valid_from` (or `date`) |
+| `workflow` | `{id: wf-…, artifact: art-…}` | | brain; the connected workflow and artifact this decision publishes (connected-workflows.md §6.3). `note new` writes such a decision `reviewed`: the user approved the artifact, so it gets its page at once (0071) |
 - Supersession uses `relations`: the newer decision has `supersedes: <old>`, the older has `superseded_by: <new>` (both persisted, §6). A superseded decision has `assessment: superseded`, `valid_until` set, and lifecycle `archived`.
 - `decided_in` and the meeting's `decisions` list must agree (lint error otherwise); same for question `raised_in` and the meeting's `questions`.
 - Body sections: `## Decision`, `## Context`, `## Consequences`, `## Sources`.
@@ -381,7 +382,7 @@ Only sync writes `notion_fields`. The brain never pushes these values to Notion.
 
 ## 8. Lifecycle and assessment (0005)
 
-- **lifecycle** (every **knowledge** note; not `source`, `view` or `proposal`, which have their own states: immutable, regenerated, `status`; decision 0025): `draft` → `reviewed` | `disputed` → `archived`. Agents set `draft` (creation) and `archived` (supersession). They also set `reviewed`, or `archived` with no successor, when, and only when, they apply a `review_notes` proposal you decided (0041, §11.2). You set the rest in Notion.
+- **lifecycle** (every **knowledge** note; not `source`, `view` or `proposal`, which have their own states: immutable, regenerated, `status`; decision 0025): `draft` → `reviewed` | `disputed` → `archived`. Agents set `draft` (creation) and `archived` (supersession). They also set `reviewed`, or `archived` with no successor, when, and only when, they apply a `review_notes` proposal you decided (0041, §11.2). You set the rest in Notion. A decision, question, concept or reference gets its Notion page only once it is `reviewed` or `disputed`; a draft lives only in its Review row (0071, cli §5.14.4).
 - **Types you create (0070):** a `domain`, `area`, `goal`, `project` or `org` note is `reviewed` from creation (a Notion row, or `note new` after your yes), and its Notion database has no Lifecycle property: you close one with Archived. When the brain retires one (merge, supersession) it becomes `archived`, and the next publish ticks its Archived once (cli.md §5.14.4). People keep Lifecycle: ingest writes them from meetings for you to confirm.
 - **assessment** (decisions, timeline entries): `accepted`, `provisional` (mentioned once, unconfirmed), `contested` (conflicting sources; keep both entries), `superseded` (replaced; kept as history).
 

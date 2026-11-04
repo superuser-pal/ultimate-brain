@@ -181,7 +181,6 @@ Above the tabs, a gray line: "Approving makes these notes trusted: they appear i
 | Questions *(Knowledge)* | What did we answer? | List | Status is Answered | Created time, descending | — | Name, Project, Summary | Resolved questions and their answer |
 | Concepts *(Knowledge)* | What did we learn recently? | List | Lifecycle is not Archived | Created time, descending | — | Name, Project, Summary | Ideas and methods from your documents and meetings |
 | Concepts *(Knowledge)* | What do we know per project? | Table | Lifecycle is not Archived | Name | Project | Name, Area, Summary | What the brain learned, by project |
-| Concepts *(Knowledge)* | Which concepts are drafts? | List | Lifecycle is Draft | Created time, descending | — | Name, Project | New concepts to read and mark Reviewed |
 | Documents *(Documents)* | What did we keep? | List | Lifecycle is not Archived | Last edited time, descending | — | Name, Project, Summary | Documents (0049): whole inputs, the parts you asked for (requirements, price lists), and pages promoted from decisions and concepts, kept up to date as new versions arrive |
 | People | Who's who? | Gallery (small cards) | Lifecycle is not Archived | Name | *(Orgs)* Org | Name, Role, *(Orgs)* Org | Find a person by company and role |
 | People | Who's disputed? | List | Lifecycle is Disputed | Name | — | Name, Summary | People records you marked as wrong |
