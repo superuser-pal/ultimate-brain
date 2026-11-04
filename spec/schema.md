@@ -126,13 +126,13 @@ Each row lists fields **in addition to** §3. "Notion" names the database the ty
 ### area · `areas/` · Notion: Areas
 An ongoing responsibility (e.g. "Clients", "Health").
 - `domain`: optional scalar `dom-` ID, naming at most one Domain (0055).
-- `notion_fields`: `archived` (bool). Before 0.9.1 it also held `type` (`Business`·`Personal`) from Areas · Type; the property moved to Domains (CC-120), lint still accepts the old value, and the next `sync apply` drops it.
+- `notion_fields`: `archived` (bool). Before 0.9.0 it also held `type` (`Business`·`Personal`) from Areas · Type; the property moved to Domains (CC-120), lint still accepts the old value, and the next `sync apply` drops it.
 - Body: description; optional "What to track" section is v2 (docs/v2-ideas.md).
 
 ### domain · `domains/` · Notion: Domains (0055)
 A work or life context that groups Areas; distinct from an Org.
 - `org`: optional scalar `org-` ID, naming an Org.
-- `notion_fields`: `type` (`Personal`·`Entrepreneurship`·`Professional`, from Domains · Type, 0.9.1), `archived` (optional boolean).
+- `notion_fields`: `type` (`Personal`·`Entrepreneurship`·`Professional`, from Domains · Type, 0.9.0), `archived` (optional boolean).
 - Body: description. With Domains off, notes remain in Git and are still indexed and linted.
 
 ### goal · `goals/` · Notion: Goals (0020)
@@ -611,7 +611,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 | Notion database · property | Brain field |
 |---|---|
 | all · Name / Summary / Lifecycle / Brain ID / Last Synced | `title` / `summary` / `lifecycle` / `id` / `last_synced`; no Lifecycle on Domains, Areas, Goals, Projects, Orgs (0070) |
-| Domains · Type, Archived | `notion_fields.type`, `.archived` (0.9.1) |
+| Domains · Type, Archived | `notion_fields.type`, `.archived` (0.9.0) |
 | Orgs · Archived | `notion_fields.archived` (0070) |
 | Areas · Archived | `notion_fields.archived` |
 | Goals · Why, Deadline | `why`, `facts.deadline` |
