@@ -1,6 +1,6 @@
 ---
 name: brain-ingest
-description: Ingest into the brain reviewed meeting minutes from Notion or a file, documents (PDF, Word, PowerPoint, Excel, HTML, images), web pages by URL, pasted emails, chat threads and notes, the Notion Inbox, files attached in Notion, and the changed files of a linked repo. Snapshots each input as a source, matches it against what the brain already knows, writes new notes (meeting, people, decisions, questions, concepts) as drafts, keeps an input as a Document (whole, or a part) when asked, with one Review row per source holding the new notes and every change to existing knowledge, proposes answers to open questions, reads a corrected input again for only what changed, and creates action items as Notion tasks. Use when the user says "ingest my meetings", "process the reviewed minutes", "ingest this PDF", "ingest this page <url>", "ingest this email", "process my inbox", "process my drop folder", "link the repo at <path>", or after marking meetings Reviewed.
+description: Ingest into the brain reviewed meeting minutes from Notion or a file, documents (PDF, Word, PowerPoint, Excel, HTML, images), web pages by URL, pasted emails, chat threads and notes, the Notion Inbox, files attached in Notion, and the changed files of a linked repo. Snapshots each input as a source, matches it against what the brain already knows, writes new notes (meeting, people, decisions, questions, concepts) as drafts, keeps an input as a Document (whole, or a part) when asked, with one Review row per source holding the new notes and every change to existing knowledge, proposes answers to open questions, reads a corrected input again for only what changed, and creates action items as Notion tasks. Use when the user says "ingest my meetings", "process the reviewed minutes", "ingest this PDF", "ingest this page <url>", "ingest this email", "process my inbox", "process my drop folder", or after marking meetings Reviewed.
 ---
 
 # Ingest into the brain
@@ -15,7 +15,7 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
 
 - **Notion mode (default):** meetings come from the Notion Meetings database through the Notion MCP. Run it only when `brain status` shows `notion.configured` includes `meetings`.
 - **Markdown-only mode:** the user gives a minutes file (or pastes the text) plus the meeting's title, date and, if known, project. Skip every step marked *(Notion)*. Use this mode when Notion is not configured or the user asks for it.
-- **Other sources:** a document file, the drop folder, a pasted email, chat thread or note, the Inbox, a file attached in Notion, or a linked repo's changed files. Follow [references/sources.md](references/sources.md) instead of the procedure below; it says which of these steps still apply.
+- **Other sources:** a document file, the drop folder, a pasted email, chat thread or note, the Inbox, a file attached in Notion, or a linked repo's changed files. Follow [references/sources.md](references/sources.md) instead of the procedure below; it says which of these steps still apply. To link a repo ("link the repo at <path>"), use the brain-repos skill.
 
 ## Selected input (decision 0055)
 
