@@ -168,7 +168,7 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 **Rerun after merging main (CC-120, CC-121, CC-128):** install, rollback (7/7), the five sandboxes and the shared checks (9/9) pass on the merged head; the blind runs were not repeated, since they never create or read what CC-120 and CC-121 change (docs/acceptance-0.9.0.md).
 
 
-### CC-129 · The rollback names the version, and kit check says when a draft can't be confirmed · `review`
+### CC-129 · The rollback names the version, and kit check says when a draft can't be confirmed · `done` (#212)
 **Release:** 0.9.0
 **Changelog:** after the first `brain upgrade` of an unpinned brain, the rollback names the version to go back to; `brain repo kit check` also returns the hash `kit write` confirms, so a kit draft formatted by hand can be written.
 **Output:** from CC-107's findings 1 and 2 (docs/acceptance-0.9.0.md). Spec first: spec/skills-delivery.md §8 and spec/cli.md (where `brain upgrade` reports `previous_cli`, and §5.29 `repo kit check`), docs/releasing.md and the brain's AGENTS.md block: what the first upgrade of an unpinned brain reports as the previous version (the CLI that wrote the brain, from its `brain.json` or the package that ran before, as the spec decides), and what `kit check` says about a draft whose bytes differ from the form `kit write` writes; then the CLI test-first, and brain-repos's wording if it changes.
