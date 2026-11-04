@@ -1,6 +1,6 @@
 ---
 name: brain-ingest
-description: Ingest into the brain reviewed meeting minutes from Notion or a file, documents (PDF, Word, PowerPoint, Excel, HTML, images), web pages by URL, pasted emails, chat threads and notes, the Notion Inbox, files attached in Notion, and the changed files of a linked repo. Snapshots each input as a source, matches it against what the brain already knows, writes new notes (meeting, people, decisions, questions, concepts) as drafts, keeps an input as a Document (whole, or a part) when asked, with one Review row per source holding the new notes and every change to existing knowledge, proposes answers to open questions, reads a corrected input again for only what changed, and creates action items as Notion tasks. Use when the user says "ingest my meetings", "process the reviewed minutes", "ingest this PDF", "ingest this page <url>", "ingest this email", "process my inbox", "process my drop folder", or after marking meetings Reviewed.
+description: Ingest into the brain reviewed meeting minutes from Notion or a file, documents (PDF, Word, PowerPoint, Excel, HTML, images), web pages by URL, pasted emails, chat threads and notes, the Notion Inbox, files attached in Notion, and the changed files of a linked repo. Snapshots each input as a source, matches it against what the brain already knows, writes new notes (meeting, people, decisions, questions, learned Documents) as drafts, keeps an input as a Document (whole, or a part) when asked, with one Review row per source holding the new notes and every change to existing knowledge, proposes answers to open questions, reads a corrected input again for only what changed, and creates action items as Notion tasks (never as questions). Use when the user says "ingest my meetings", "process the reviewed minutes", "ingest this PDF", "ingest this page <url>", "ingest this email", "process my inbox", "process my drop folder", "turn my to-do questions into tasks", or after marking meetings Reviewed.
 ---
 
 # Ingest into the brain
@@ -20,6 +20,10 @@ The rules in the brain's AGENTS.md apply throughout (if the brain has none, they
 ## Selected input (decision 0055)
 
 When a meeting's summary or a capture has subjects and item ids, the user decides what enters the brain: read [references/selection.md](references/selection.md) before step 2. It replaces the source snapshot of step 3 with an **extract** (only the selected paragraphs, written by `brain source extract`), gates every input on its confirmation, and sets the rules for Tasks (yours by default, Waiting On only when the item says `Track: Waiting On —`). A summary with no ids is ingested whole by the procedure below, unchanged.
+
+## To-do questions (decision 0071)
+
+When the user asks to turn their to-do questions into tasks (or to clean up open questions that are really to-dos), follow [references/todo-tidy.md](references/todo-tidy.md) instead of the procedure below. It is attended only: never part of a catch-up or an unattended run.
 
 ## Procedure (per meeting)
 
@@ -59,10 +63,10 @@ When a meeting's summary or a capture has subjects and item ids, the user decide
    - decisions (each one passes the decision gate);
    - fact changes;
    - new people and role changes;
-   - open questions and risks;
+   - open questions (only what a later document, meeting or answer can settle) and risks;
    - answers to open questions the brain already has (an `answer` proposal, step 8);
    - contradictions with the loaded notes;
-   - action items.
+   - action items: the owner's explicit to-dos become tasks and other people's commitments stay text, wherever they are written. **A to-do is never a question** (references/extraction.md, "Questions or commitments").
 
    Keep every claim attached to its subject, and copy values verbatim. Hold the result in memory as two lists: **new notes** and **changes to existing notes**. *(Documents)* When the input is to be kept as a document (Document asked on its row, the drop folder's answer, or the user's words), add its **Documents** to the new notes: references/extraction.md, "Documents". The notes are extracted either way (decision 0049).
 
@@ -84,7 +88,7 @@ When a meeting's summary or a capture has subjects and item ids, the user decide
    - a likely duplicate → `merge`;
    - a new decision or question for a meeting that already existed before this run → `new_item`.
 
-   - a new note this run wrote, every `add_link`, `update_fact`, `update_body` and `add_to_note` → **one** `review_notes` item for the input (decisions 0041, 0043, 0045): `{ "kind": "review_notes", "source": "<mtg-id, or the src- id for any other input>", "notes": [<every knowledge note step 7 created: the meeting, people, decisions, questions, concepts, `part` Documents; never the source, and never a `whole` Document, which needs no Review>] }`, with `notes: []` when the input created none (a re-read). The CLI folds every change and link item with the same `source` into it, fact changes first, so they are lettered items of that one Review row, and writes its title ("From Acme sync: 2 changes, 1 new note and 1 link"). Send the change items as usual, each with its own `title` and `why`. Only judgment calls get rows of their own: `contradiction`, `supersede`, `merge`, `new_item` and `answer`;
+   - a new note this run wrote, every `add_link`, `update_fact`, `update_body` and `add_to_note` → **one** `review_notes` item for the input (decisions 0041, 0043, 0045): `{ "kind": "review_notes", "source": "<mtg-id, or the src- id for any other input>", "notes": [<every knowledge note step 7 created: the meeting, people, decisions, questions, `learned` and `part` Documents; never the source, and never a `whole` Document, which needs no Review>] }`, with `notes: []` when the input created none (a re-read). The CLI folds every change and link item with the same `source` into it, fact changes first, so they are lettered items of that one Review row, and writes its title ("From Acme sync: 2 changes, 1 new note and 1 link"). Send the change items as usual, each with its own `title` and `why`. Only judgment calls get rows of their own: `contradiction`, `supersede`, `merge`, `new_item` and `answer`;
    - the material answers an open question the brain already has → `answer`, on that question: the answer in one sentence, the quote as `why`, and `answer_note` = the note that answers it when there is one (usually a decision step 7 created).
 
    `DUPLICATE_PENDING`, `ALREADY_LINKED` and `ALREADY_ANSWERED` skips are fine: the change is already waiting for review, already made, or the question already has an answer. `NOTHING_TO_REVIEW` means the input created no note and no link: fine too.

@@ -5,7 +5,7 @@ The space is a core (Inbox, Meetings, Projects, Areas, People, Review) plus opti
 | Module | File | Databases |
 |---|---|---|
 | Domains | [domains.md](domains.md) | Domains (in every space, 0065: turning it on builds nothing) |
-| Knowledge | [knowledge.md](knowledge.md) | Decisions, Questions, Concepts |
+| Knowledge | [knowledge.md](knowledge.md) | Decisions, Questions |
 | Orgs | [orgs.md](orgs.md) | Orgs |
 | Documents | [documents.md](documents.md) | Documents |
 | Reports | [reports.md](reports.md) | Documents (Reports needs the Documents module): a report is a Documents row with Origin Report; Ask rows on the Inbox |

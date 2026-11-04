@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { parseFrontmatter, serializeFrontmatter, serializeNewFile } from "../src/lib/frontmatter.ts";
-import { brain, fixtureCopy } from "./helpers.ts";
+import { approveNote, brain, fixtureCopy } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const MARIA = "per-3h8w2n6c";
@@ -125,28 +125,31 @@ test("a project that has its Notion page renders as an update with no template",
   assert.equal(Object.hasOwn(item, "template"), false);
 });
 
-test("sync render creates Inbox and Concepts payloads from a document source", async (context) => {
+test("sync render creates Inbox and Documents payloads from a document source; a learned Document is Origin Learned (0071)", async (context) => {
   const dir = await fixtureCopy(context);
   const configPath = join(dir, "brain.json");
   const config = JSON.parse(await readFile(configPath, "utf8"));
   config.notion.databases.inbox = "a1000000-0000-4000-8000-00000000000c";
-  config.notion.databases.concepts = "a1000000-0000-4000-8000-00000000000d";
+  config.notion.databases.documents = "a1000000-0000-4000-8000-00000000000d";
   await writeFile(configPath, JSON.stringify(config, null, 2));
   const source = "src-1a2b3c4d";
   const noteInput = { notes: [
     { type: "source", id: source, title: "Architecture brief", file_date: "2026-12-10", frontmatter: { source_key: "agent:test/document", kind: "document", summary: "Explains the deployment model." }, body: "Deployment notes.\n" },
-    { type: "concept", id: "con-2a3b4c5d", title: "Deployment model", frontmatter: { summary: "A deployment approach.", sources: [source] }, body: "Deploy safely.\n" },
+    { type: "reference", id: "ref-2a3b4c5d", title: "Deployment model", frontmatter: { origin: "learned", summary: "A deployment approach.", sources: [source] }, body: "Deploy safely.\n" },
   ] };
   const created = await brain(["note", "new", "--brain", dir, "--now", NOW, "--input", await input(dir, "source-and-concept.json", noteInput), "--json"]);
   assert.equal(created.code, 0, created.stdout);
-  const run = await brain(["sync", "render", "--brain", dir, "--ids", `${source},con-2a3b4c5d`, "--json"]);
+  await approveNote(dir, created.json.data.created.find((note: { id: string }) => note.id === "ref-2a3b4c5d").path);
+  const run = await brain(["sync", "render", "--brain", dir, "--ids", `${source},ref-2a3b4c5d`, "--json"]);
   assert.equal(run.code, 0, run.stdout);
   const byId = new Map<string, { database: string; action: string; properties: Record<string, unknown>; pending_relations: Array<Record<string, unknown>> }>(run.json.data.items.map((item: { id: string; database: string; action: string; properties: Record<string, unknown>; pending_relations: Array<Record<string, unknown>> }) => [item.id, item]));
   assert.equal(byId.get(source)?.database, "inbox");
   assert.equal(byId.get(source)?.action, "create");
-  assert.deepEqual(byId.get(source)?.properties.Concepts, { type: "relation", value: [] });
-  assert.deepEqual(byId.get(source)?.pending_relations, [{ property: "Concepts", ids: ["con-2a3b4c5d"] }]);
-  assert.equal(byId.get("con-2a3b4c5d")?.database, "concepts");
+  assert.equal(byId.get(source)?.properties.Concepts, undefined, "Inbox · Concepts is retired (0071)");
+  assert.deepEqual(byId.get(source)?.properties.Documents, { type: "relation", value: [] });
+  assert.deepEqual(byId.get(source)?.pending_relations, [{ property: "Documents", ids: ["ref-2a3b4c5d"] }]);
+  assert.equal(byId.get("ref-2a3b4c5d")?.database, "documents");
+  assert.deepEqual(byId.get("ref-2a3b4c5d")?.properties.Origin, { type: "select", value: "Learned" });
 });
 
 test("sync render updates a capture at the Inbox page in its key", async (context) => {
@@ -227,21 +230,21 @@ test("sync tasks rejects a non-meeting, non-source target", async (context) => {
   assert.equal(run.json.error.code, "INPUT_INVALID");
 });
 
-test("sync plan reports concept relation edits as not correctable", async (context) => {
+test("sync plan reports learned Document relation edits as not correctable", async (context) => {
   const dir = await fixtureCopy(context);
   const source = "src-1a2b3c4d";
-  const concept = "con-2a3b4c5d";
+  const concept = "ref-2a3b4c5d";
   const created = await brain(["note", "new", "--brain", dir, "--now", NOW, "--input", await input(dir, "concept-for-plan.json", { notes: [
     { type: "source", id: source, title: "Architecture brief", file_date: "2026-12-10", frontmatter: { source_key: "agent:test/document", kind: "document" }, body: "Deployment notes.\n" },
-    { type: "concept", id: concept, title: "Deployment model", frontmatter: { summary: "A deployment approach.", sources: [source], projects: ["prj-9x4t1b7e"] }, body: "Deploy safely.\n" },
+    { type: "reference", id: concept, title: "Deployment model", frontmatter: { origin: "learned", summary: "A deployment approach.", sources: [source], projects: ["prj-9x4t1b7e"] }, body: "Deploy safely.\n" },
   ] }), "--json"]);
   assert.equal(created.code, 0, created.stdout);
-  const conceptPath = join(dir, "knowledge/concepts/deployment-model.md");
+  const conceptPath = join(dir, "knowledge/references/deployment-model.md");
   const document = parseFrontmatter(await readFile(conceptPath, "utf8"));
   document.attributes.notion = "10000000-0000-4000-8000-0000000000c1";
   document.attributes.notion_published = { Project: ["2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e"], Area: [] };
   await writeFile(conceptPath, serializeFrontmatter(document));
-  const snapshot = { as_of: NOW, rows: [{ database: "concepts", page_id: document.attributes.notion, last_edited: "2026-12-10T08:00:00Z", properties: { "Brain ID": concept, Project: [], Area: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] } }] };
+  const snapshot = { as_of: NOW, rows: [{ database: "documents", page_id: document.attributes.notion, last_edited: "2026-12-10T08:00:00Z", properties: { "Brain ID": concept, Project: [], Area: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] } }] };
   const run = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "concept-relations.json", snapshot), "--json"]);
   assert.equal(run.code, 0, run.stdout);
   assert.deepEqual(run.json.data.corrections, []);
@@ -597,6 +600,21 @@ test("Domains, Areas, Goals, Projects and Orgs created in Notion are reviewed an
   const published = Object.fromEntries(render.json.data.items.filter((item: { page_id: string }) => pages.has(item.page_id)).map((item: { type: string; published: Record<string, unknown> }) => [item.type, Object.hasOwn(item.published, "Lifecycle")]));
   assert.deepEqual(published, { area: false, domain: false, goal: false, org: false, person: true, project: false });
   assert.equal((await brain(["lint", "--brain", dir, "--json"])).json.data.errors, 0);
+});
+
+test("Orgs · Relationship Employer syncs into the org note and lints clean; an unknown option still fails (0071)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const path = join(dir, "knowledge/orgs/acme.md");
+  const rows = [{ database: "orgs", page_id: "6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b9c", last_edited: NOW, properties: { "Brain ID": "org-6d1f9z3k", Relationship: "Employer", Website: "https://acme.example", Archived: false } }];
+  const plan = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot.json", { as_of: NOW, rows }), "--json"]);
+  assert.equal(plan.code, 0, plan.stdout);
+  assert.equal(plan.json.data.updates.find((item: { id: string }) => item.id === "org-6d1f9z3k").notion_fields.relationship, "Employer");
+  const applied = await brain(["sync", "apply", "--brain", dir, "--now", NOW, "--input", await input(dir, "plan.json", plan.json.data), "--json"]);
+  assert.equal(applied.code, 0, applied.stdout);
+  assert.equal((parseFrontmatter(await readFile(path, "utf8")).attributes.notion_fields as Record<string, unknown>).relationship, "Employer");
+  assert.equal((await brain(["lint", "--brain", dir, "--json"])).json.data.errors, 0);
+  await writeFile(path, (await readFile(path, "utf8")).replace("relationship: Employer", "relationship: Customer"));
+  assert.ok((await brain(["lint", "--brain", dir, "--json"])).json.data.errors > 0);
 });
 
 test("a project the brain retires ticks Archived once, and Archived stays yours afterwards (0070)", async (context) => {

@@ -10,7 +10,7 @@ const NOW = "2026-12-10T09:00:00Z";
 const PAGE = "11111111-2222-4333-8444-555555555555";
 const TRANSCRIPT = "The launch moves to February.\n\nPricing is zebrafish95k, keep it between us.\n\nMaria sends the contract on Friday.";
 const SUMMARY = (pricing: "Use in brain" | "Meeting only") => `## [s1] Launch\n- [s1.i1] Launch “The launch moves to February”\n\n## [s2] Pricing\nSelection: ${pricing}\n- [s2.i1] Price “keep it between us”\n\n## [s3] Contract\n- [s3.i1] Contract “sends the contract on Friday”\n`;
-const CONCEPT = "knowledge/concepts/row-level-security.md";
+const CONCEPT = "knowledge/references/row-level-security.md";
 const git = (dir: string, ...args: string[]) => execFileSync("git", args, { cwd: dir, encoding: "utf8" });
 
 async function gitBrain(context: TestContext) {
@@ -315,7 +315,7 @@ test("a partly restricted note loses its summary and aliases, and so does one th
 
 test("recover never overwrites a path the user changed after the interrupted operation, and an unreadable journal is named", async (context) => {
   const dir = await gitBrain(context);
-  const tracked = "knowledge/concepts/row-level-security.md";
+  const tracked = "knowledge/references/row-level-security.md";
   const original = await readFile(join(dir, tracked), "utf8");
   await mkdir(join(dir, "_journal"), { recursive: true });
   const { createHash } = await import("node:crypto");

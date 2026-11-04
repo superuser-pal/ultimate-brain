@@ -56,7 +56,7 @@ Do these in order, after the ingest commit: pages first, so every task's project
       - **`action: trash`** (a Review row decided more than 30 days ago, decision 0045): move `page_id` to Notion's trash (update the page with `in_trash: true`; `archived: true` on API versions before 2025-09). Nothing else. Record it like any other write; the proposal stays in the brain.
       - **Meeting and Inbox relations with `"mode": "add"`:** add the listed pages and keep the existing ones.
       - **`"mode": "if_empty"`:** write only if the property is empty in Notion.
-      - **`body` (decisions, questions, concepts, Documents):** replace the page body with it. A `promoted` Document has a `body` only on `create`; on `update` it is `null`, and its page body is the user's (decision 0049).
+      - **`body` (decisions, questions, Documents):** replace the page body with it. A `promoted` Document has a `body` only on `create`; on `update` it is `null`, and its page body is the user's (decision 0049).
       - **`body` and `sections` on an Inbox item** (a source): see "Inbox bodies" below; a report's `body`, on its Documents row: "Report bodies" below. A capture's or an Ask row's page body is the user's: render never gives one a body.
       - **`sections` (projects):** replace only the children of the toggle heading with that exact name ("Brief", "Decision log"). Read the page's blocks first (decision 0033):
         - **the page has no toggle headings at all** (created without the template): append a "Brief" and a "Decision log" toggle heading, in that order, at the end of the page, then fill them;
@@ -66,7 +66,7 @@ Do these in order, after the ingest commit: pages first, so every task's project
       **Writing a section through the MCP: the block API only** (decision 0043). List the toggle's children, delete them, and append the new ones as blocks. Never write a section through the Markdown page update, even on a page that holds nothing else: it flattens the toggles and can delete the user's content. The one use of the Markdown page update is a new Review row's whole body, above (decision 0068).
 
       **`properties` with `"Refresh asked": { "type": "checkbox", "value": false }`** on a Report row (a Documents page) clears its box: send it as any other property. Document asked and Promote asked are never in `properties`: the skill unticks them through the MCP once it has acted (brain-catch-up, step 5).
-   3. **Pending relations:** items that list `pending_relations` reference notes not yet published. Publish and record those first, then run `sync render --changed` again.
+   3. **Pending relations:** items that list `pending_relations` reference notes not yet published. Publish and record those first, then run `sync render --changed` again. An item with empty `properties` is only waiting for them (a decision you just approved, its meeting's Decisions): write nothing for it and leave it out of the record; the next render sends the relation. A draft decision, question or Document is never pending: it gets its page once approved in Review (decision 0071), and its relations fill in then.
    4. Run `brain sync record` with one record per page written: `{ "id", "notion": <page id>, "synced_at": <now>, "published": <the item's published> }`.
 2. **Tasks,** now that the pages they link to exist (decision 0037). If `brain status` shows `tasks_database: true`:
    1. Run `brain sync tasks --meeting <mtg-id> --input <items.json>`, or `--source <src-id>` for the owner's tasks from any other source.

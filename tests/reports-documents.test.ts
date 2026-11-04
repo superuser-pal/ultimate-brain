@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
-import { brain, fixtureCopy } from "./helpers.ts";
+import { approveNote, brain, fixtureCopy } from "./helpers.ts";
 
 // CC-124, decision 0071: a report is a Documents row with Origin = Report; its Ask rows stay on the Inbox.
 
@@ -154,6 +154,7 @@ test("Documents · Origin: a whole Document is Kept, a promoted one Promoted (00
   const text = "## Requirements\n\n- Login\n";
   const kept = await run(dir, ["note", "new"], { notes: [{ type: "source", title: "Requirements", file_date: "2026-12-01", frontmatter: { source_key: `file:sha256:${"a".repeat(64)}`, file_name: "requirements.pdf", converter: "markitdown 0.1.8", kind: "document", summary: "The requirements.", digest: "- Login." }, body: text }] });
   assert.equal(kept.code, 0, kept.stdout);
+  await approveNote(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md"); // only a reviewed decision is promoted (0071)
   const made = await run(dir, ["note", "new"], { notes: [
     { type: "reference", title: "Requirements (whole)", frontmatter: { summary: "Whole.", origin: "whole", sources: [kept.json.data.created[0].id] }, body: text },
     { type: "reference", title: "Supabase auth (page)", frontmatter: { summary: "A page for the decision.", origin: "promoted", promoted_from: "dec-7k2m9q4x" }, body: "## Why\nBecause.\n" },

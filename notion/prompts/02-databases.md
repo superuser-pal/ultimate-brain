@@ -14,7 +14,7 @@ On the page "Brain Data", create these full-page databases with exactly these pr
 4. "Projects": Name (title), Summary (text), Key Facts (text), Status (select: Planned, Active, On Hold, Done), Priority (select: High, Medium, Low), Dates (date, allow end date), Workflow (select: Standard, Connected), Work type (select: Software, General), Logging level (select: Tasks only, Tasks + final outputs, Full durable record, Custom), Log artifacts (multi-select: Briefs, Plans, Specifications, Decisions, Final deliverables), Archived (checkbox), Brain ID (text), Last Synced (date), Last edited time (last edited time).
 5. "Meetings": Name (title), Date (date), Brain Status (select: Not Reviewed, Reviewed, Ingested, Skipped; default Not Reviewed), Ingested At (date), Brain ID (text).
 6. "People": Name (title), Summary (text), Role (text), Email (email), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date).
-[Orgs] 7. "Orgs": Name (title), Summary (text), Relationship (select: Client, Prospect, Partner, Supplier, Other), Website (url), Archived (checkbox), Brain ID (text), Last Synced (date).
+[Orgs] 7. "Orgs": Name (title), Summary (text), Relationship (select: Client, Prospect, Partner, Supplier, Employer, Other), Website (url), Archived (checkbox), Brain ID (text), Last Synced (date).
 [Knowledge] 8. "Decisions": Name (title), Summary (text), Date (date), Assessment (select: Accepted, Provisional, Contested, Superseded), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date).
 [Knowledge] [Documents] Also in "Decisions": Promote asked (checkbox).
 [Knowledge] 9. "Questions": Name (title), Summary (text), Kind (select: Question, Risk), Status (select: Open, Answered, Dropped), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time).
@@ -22,8 +22,6 @@ On the page "Brain Data", create these full-page databases with exactly these pr
 11. "Inbox": Name (title), Kind (select: Capture, File, Email, Chat, Note, Ask, Catch-up; default Capture), Summary (text), Brain Status (select: New, Ready, Done; default New), Brain ID (text), Last Synced (date), Created (created time).
 [Documents] Also in "Inbox": Document asked (checkbox), Only keep (text).
 [Tasks] 12. "Tasks": Name (title), Status (status: To Do, Doing, Waiting On, Someday, Done; put Waiting On and Someday in any group except Complete), Due (date), Brain ID (text), Last edited time (last edited time).
-[Knowledge] 13. "Concepts": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time).
-[Knowledge] [Documents] Also in "Concepts": Promote asked (checkbox).
 [Documents] 14. "Documents": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Origin (select: Kept, Learned, Report, Promoted, Workflow), Brain ID (text), Last Synced (date), Created time (created time), Last edited time (last edited time).
 [Documents] Also in "Documents": Accepted (checkbox), Accepted at (date, with time).
 [Reports] Also in "Documents": Refresh asked (checkbox), What to fix (text).

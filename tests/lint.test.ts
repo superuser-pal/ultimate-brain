@@ -84,13 +84,13 @@ const create = (file: string, content: string): Mutation => async (dir) => {
 
 /** One failing case per rule: [rule, severity, file the issue lands in, mutation]. */
 const CASES: Array<[string, "error" | "warning", string, Mutation]> = [
-  ["not-a-note", "error", "knowledge/concepts/plain.md", create("knowledge/concepts/plain.md", "# no frontmatter\n")],
-  ["unparseable", "error", "knowledge/concepts/bad.md", create("knowledge/concepts/bad.md", "---\ntitle: [oops\n---\n")],
+  ["not-a-note", "error", "knowledge/references/plain.md", create("knowledge/references/plain.md", "# no frontmatter\n")],
+  ["unparseable", "error", "knowledge/references/bad.md", create("knowledge/references/bad.md", "---\ntitle: [oops\n---\n")],
   ["schema", "error", CARLOS, replace(CARLOS, "lifecycle: draft\n", "")],
   ["brain-config", "error", "brain.json", replace("brain.json", '"owner": { "name": "Alex Example" },', '"owner": {},')],
   ["id-format", "error", ACME, replace(ACME, "id: org-6d1f9z3k", "id: org-6D1F")],
-  ["id-duplicate", "error", "knowledge/concepts/zz-copy.md", async (dir) => {
-    await writeFile(join(dir, "knowledge/concepts/zz-copy.md"), await readFile(join(dir, "knowledge/concepts/row-level-security.md"), "utf8"));
+  ["id-duplicate", "error", "knowledge/references/zz-copy.md", async (dir) => {
+    await writeFile(join(dir, "knowledge/references/zz-copy.md"), await readFile(join(dir, "knowledge/references/row-level-security.md"), "utf8"));
   }],
   ["wrong-folder", "error", "knowledge/orgs/carlos-ruiz.md", async (dir) => {
     await writeFile(join(dir, "knowledge/orgs/carlos-ruiz.md"), await readFile(join(dir, CARLOS), "utf8"));
@@ -220,7 +220,7 @@ test("code blocks and inline code are not linted as prose", async (context) => {
 
 test("only reference fields are checked for ids: tags and proposal values are free text", async (context) => {
   const dir = await fixtureCopy(context);
-  await replace("knowledge/concepts/row-level-security.md", "tags: [security, supabase]", "tags: [security, org-partners]")(dir);
+  await replace("knowledge/references/row-level-security.md", "tags: [security, supabase]", "tags: [security, org-partners]")(dir);
   assert.deepEqual((await issuesFor(dir)).map((issue) => issue.rule), []);
 });
 
@@ -232,8 +232,8 @@ test("fact-timeline accepts a contested fact that keeps its earlier value", asyn
 
 test("id-duplicate is reported on every file that shares the id", async (context) => {
   const dir = await fixtureCopy(context);
-  await writeFile(join(dir, "knowledge/concepts/zz-copy.md"), await readFile(join(dir, "knowledge/concepts/row-level-security.md"), "utf8"));
-  const run = await brain(["lint", "knowledge/concepts/row-level-security.md", "--brain", dir, "--json"]);
+  await writeFile(join(dir, "knowledge/references/zz-copy.md"), await readFile(join(dir, "knowledge/references/row-level-security.md"), "utf8"));
+  const run = await brain(["lint", "knowledge/references/row-level-security.md", "--brain", dir, "--json"]);
   assert.equal(run.code, 1);
   assert.deepEqual(run.json.data.issues.map((issue: { rule: string }) => issue.rule), ["id-duplicate"]);
 });
@@ -253,12 +253,12 @@ test("path filters keep brain.json issues, accept folders, and reject unknown pa
 test("schema issues point at the offending key; a numeric id is an id-format error", async (context) => {
   const dir = await fixtureCopy(context);
   await replace(CARLOS, "org: org-6d1f9z3k", "org: 42")(dir);
-  await replace("knowledge/concepts/row-level-security.md", "id: con-1s6t8e2b", "id: 12345678")(dir);
+  await replace("knowledge/references/row-level-security.md", "id: con-1s6t8e2b", "id: 12345678")(dir);
   const issues = await issuesFor(dir);
   const schema = issues.find((issue) => issue.rule === "schema" && issue.path === CARLOS)!;
   const lines = (await readFile(join(dir, CARLOS), "utf8")).split("\n");
   assert.equal(lines[schema.line - 1], "org: 42");
-  assert.ok(issues.some((issue) => issue.rule === "id-format" && issue.path === "knowledge/concepts/row-level-security.md"));
+  assert.ok(issues.some((issue) => issue.rule === "id-format" && issue.path === "knowledge/references/row-level-security.md"));
 });
 
 test("freshness ignores words inside link targets", async (context) => {

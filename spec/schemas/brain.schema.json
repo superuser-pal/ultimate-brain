@@ -224,7 +224,9 @@
               "$ref": "#/$defs/dbId"
             },
             "concepts": {
-              "$ref": "#/$defs/dbId"
+              "$ref": "#/$defs/dbId",
+              "deprecated": true,
+              "description": "Retired in 0.9.1 (decision 0071): concepts are learned Documents. Accepted and never read; brain upgrade removes it."
             },
             "references": {
               "$ref": "#/$defs/dbId",

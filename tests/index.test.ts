@@ -42,7 +42,7 @@ test("brain index --json lists every note and computed backlinks", async () => {
   assert.equal(notes.length, 22);
   assert.deepEqual(counts, {
     domain: 0, area: 1, goal: 1, project: 1, person: 2, org: 1, meeting: 2, decision: 2,
-    question: 1, concept: 1, reference: 0, source: 2, view: 3, proposal: 4, memory: 1,
+    question: 1, reference: 1, source: 2, view: 3, proposal: 4, memory: 1,
   });
   assert.deepEqual(notes.map((note: { path: string }) => note.path), [...notes.map((note: { path: string }) => note.path)].sort());
 
@@ -78,9 +78,9 @@ function note(id: string, type: string, attributes: Record<string, unknown>, pat
 
 test("index lines sort by NFC-lowercased code points, escape brackets and flag lifecycle", () => {
   const { markdown } = buildIndex([
-    note("con-00000001", "concept", { title: "abeja", summary: "b" }),
-    note("con-00000002", "concept", { title: "Ábaco", summary: "a\nsecond line", lifecycle: "disputed" }),
-    note("con-00000003", "concept", { title: "[draft] Zeta", summary: "z", aliases: ["Z", "zz"], lifecycle: "draft" }),
+    note("que-00000001", "question", { title: "abeja", summary: "b" }),
+    note("que-00000002", "question", { title: "Ábaco", summary: "a\nsecond line", lifecycle: "disputed" }),
+    note("que-00000003", "question", { title: "[draft] Zeta", summary: "z", aliases: ["Z", "zz"], lifecycle: "draft" }),
   ]);
   assert.equal(
     markdown,
@@ -89,10 +89,10 @@ test("index lines sort by NFC-lowercased code points, escape brackets and flag l
       "",
       "# Index",
       "",
-      "## Concepts",
-      "- [\\[draft\\] Zeta](knowledge/x/con-00000003.md) — con-00000003 · z · aliases: Z, zz",
-      "- [abeja](knowledge/x/con-00000001.md) — con-00000001 · b",
-      "- [Ábaco](knowledge/x/con-00000002.md) — con-00000002 · a second line · disputed",
+      "## Questions",
+      "- [\\[draft\\] Zeta](knowledge/x/que-00000003.md) — que-00000003 · z · aliases: Z, zz",
+      "- [abeja](knowledge/x/que-00000001.md) — que-00000001 · b",
+      "- [Ábaco](knowledge/x/que-00000002.md) — que-00000002 · a second line · disputed",
       "",
     ].join("\n"),
   );
@@ -111,10 +111,10 @@ test("an empty brain gets the bare index header", () => {
 
 test("index warns on unparseable notes and duplicate ids instead of failing", async (context) => {
   const dir = await fixtureCopy(context);
-  await mkdir(join(dir, "knowledge", "concepts"), { recursive: true });
-  await writeFile(join(dir, "knowledge/concepts/broken.md"), "---\ntitle: [unclosed\n---\n");
-  const original = await readFile(join(dir, "knowledge/concepts/row-level-security.md"), "utf8");
-  await writeFile(join(dir, "knowledge/concepts/zz-copy.md"), original);
+  await mkdir(join(dir, "knowledge", "references"), { recursive: true });
+  await writeFile(join(dir, "knowledge/references/broken.md"), "---\ntitle: [unclosed\n---\n");
+  const original = await readFile(join(dir, "knowledge/references/row-level-security.md"), "utf8");
+  await writeFile(join(dir, "knowledge/references/zz-copy.md"), original);
 
   const run = await brain(["index", "--brain", dir, "--json"]);
   assert.equal(run.code, 0);

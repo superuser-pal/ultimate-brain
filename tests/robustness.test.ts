@@ -88,16 +88,16 @@ test("--now rejects impossible calendar dates", async () => {
 
 test("note scanning reports files without frontmatter or id, and reads a BOM file", async (context) => {
   const dir = await fixtureCopy(context);
-  await writeFile(join(dir, "knowledge/concepts/plain.md"), "# Just text\n");
-  await writeFile(join(dir, "knowledge/concepts/no-id.md"), "---\ntitle: Missing id\n---\n");
-  const rls = await readFile(join(dir, "knowledge/concepts/row-level-security.md"), "utf8");
-  await writeFile(join(dir, "knowledge/concepts/row-level-security.md"), `\uFEFF${rls}`);
+  await writeFile(join(dir, "knowledge/references/plain.md"), "# Just text\n");
+  await writeFile(join(dir, "knowledge/references/no-id.md"), "---\ntitle: Missing id\n---\n");
+  const rls = await readFile(join(dir, "knowledge/references/row-level-security.md"), "utf8");
+  await writeFile(join(dir, "knowledge/references/row-level-security.md"), `\uFEFF${rls}`);
 
   const run = await brain(["index", "--check", "--brain", dir, "--json"]);
   const warnings = run.json.warnings.map((warning: { code: string; path: string }) => `${warning.code} ${warning.path}`);
   assert.deepEqual(warnings, [
-    "NOT_A_NOTE knowledge/concepts/no-id.md",
-    "NOT_A_NOTE knowledge/concepts/plain.md",
+    "NOT_A_NOTE knowledge/references/no-id.md",
+    "NOT_A_NOTE knowledge/references/plain.md",
   ]);
   assert.equal(run.json.data.stale, false, "the BOM file is still indexed");
 });
@@ -155,11 +155,11 @@ function note(id: string, type: string, attributes: Record<string, unknown>): No
 
 test("index values never break lines; titles escape backslashes; odd types are left out", () => {
   const { markdown } = buildIndex([
-    note("con-00000001", "concept", { title: "Path C:\\dir\\\nnext", summary: "line one  \r\n  line two\r", aliases: ["a\nb", { bad: 1 }] }),
+    note("que-00000001", "question", { title: "Path C:\\dir\\\nnext", summary: "line one  \r\n  line two\r", aliases: ["a\nb", { bad: 1 }] }),
     note("per-00000001", "person", { title: "P", summary: "s", org: ["org-1", "org-2"], facts: { role: { nested: true } } }),
   ]);
   const lines = markdown.trimEnd().split("\n");
-  assert.ok(lines.includes("- [Path C:\\\\dir\\\\ next](knowledge/x/con-00000001.md) — con-00000001 · line one line two · aliases: a b"));
+  assert.ok(lines.includes("- [Path C:\\\\dir\\\\ next](knowledge/x/que-00000001.md) — que-00000001 · line one line two · aliases: a b"));
   assert.ok(lines.includes("- [P](knowledge/x/per-00000001.md) — per-00000001 · s"));
 });
 

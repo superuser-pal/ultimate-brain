@@ -26,11 +26,11 @@ import { restrictedSources } from "./eligibility.ts";
 import { contextFor, publishableNote, requireSuppressions } from "./suppressions.ts";
 import { importedItems } from "./selection.ts";
 
-const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "concepts", "documents", "review", "inbox"] as const;
+const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "documents", "review", "inbox"] as const;
 const CREATABLE = new Set(["domains", "areas", "goals", "projects", "people", "orgs"]);
-const TYPE_FOR_DATABASE: Record<string, string> = { domains: "domain", areas: "area", goals: "goal", projects: "project", people: "person", orgs: "org", decisions: "decision", questions: "question", concepts: "concept", documents: "reference", review: "proposal" };
-const DATABASE_FOR_TYPE: Record<string, string> = { domain: "domains", area: "areas", goal: "goals", project: "projects", person: "people", org: "orgs", decision: "decisions", question: "questions", concept: "concepts", reference: "documents", source: "inbox", meeting: "meetings", proposal: "review" };
-const PUBLISHED_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "decision", "question", "concept", "reference", "source", "meeting", "proposal"]);
+const TYPE_FOR_DATABASE: Record<string, string> = { domains: "domain", areas: "area", goals: "goal", projects: "project", people: "person", orgs: "org", decisions: "decision", questions: "question", documents: "reference", review: "proposal" };
+const DATABASE_FOR_TYPE: Record<string, string> = { domain: "domains", area: "areas", goal: "goals", project: "projects", person: "people", org: "orgs", decision: "decisions", question: "questions", reference: "documents", source: "inbox", meeting: "meetings", proposal: "review" };
+const PUBLISHED_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "decision", "question", "reference", "source", "meeting", "proposal"]);
 
 export interface SyncPlan {
   as_of: string;
@@ -40,7 +40,7 @@ export interface SyncPlan {
   decisions: DecisionInput[];
   /** Inbox rows whose Document asked box is ticked by the Keep as document button (0049); the skill writes a Document for each. */
   document_requests: Array<{ page_id: string; source: string; files: string[]; only_keep: string | null; existing?: string[] }>;
-  /** Decision and concept rows whose Promote box is ticked (0049); the skill writes a promoted Document for each. */
+  /** Decision rows whose Promote box is ticked (0049; Concepts are retired since 0.9.1, 0071); the skill writes a promoted Document for each. */
   promote_requests: Array<{ page_id: string; note: string; existing?: string }>;
   /** Report rows whose Refresh box is ticked, and their new What to fix texts (0045); the skill runs `report new` / `report fix`. */
   refresh_requests: Array<{ page_id: string; report: string; wording_blocked?: true }>;
@@ -155,7 +155,7 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
     const known = typeof brainId === "string" && brainId !== "" ? row : { ...row, properties: { ...row.properties, "Brain ID": note.id } };
     planExisting(workspace, snapshot.as_of, known, note, result);
     if (row.database === "documents" && row.wording !== undefined && wordingDocument(note)) planWording(workspace, snapshot.as_of, row.page_id, note, row.wording, result);
-    if ((row.database === "decisions" || row.database === "concepts") && property(row.properties, "Promote asked") === true) planPromote(workspace, row, note, modules.documents, result);
+    if (row.database === "decisions" && property(row.properties, "Promote asked") === true) planPromote(workspace, row, note, modules.documents, result);
   }
   // A queued full refresh waits while Notion text for that report is unresolved (cli §5.14.7).
   const wordingNotes = new Set([...result.accepted_wording, ...result.wording_waiting, ...result.wording_held].map((item) => item.note));
@@ -382,9 +382,11 @@ function planInbox(workspace: Workspace, row: SnapshotRow, out: SyncPlan): void 
   out.document_requests.push(request);
 }
 
-/** A Promote asked box on a decision or concept row (cli §5.14.2, 0049). */
+/** A Promote asked box on a decision row (cli §5.14.2, 0049). */
 function planPromote(workspace: Workspace, row: SnapshotRow, note: Note, documentsOn: boolean, out: SyncPlan): void {
   if (!documentsOn) { out.ignored.push(ignoredRow(row, "MODULE_OFF", "Promote asked")); return; }
+  // Only reviewed knowledge is promoted (0071): the box stays ticked until the note is approved.
+  if (note.attributes.lifecycle !== "reviewed" && note.attributes.lifecycle !== "disputed") { out.ignored.push(ignoredRow(row, "NOT_REVIEWED", "Promote asked")); return; }
   const existing = workspace.notes.find((candidate) => candidate.type === "reference" && candidate.attributes.origin === "promoted" && candidate.attributes.promoted_from === note.id);
   out.promote_requests.push({ page_id: row.page_id, note: note.id, ...(existing === undefined ? {} : { existing: existing.id }) });
 }
@@ -439,7 +441,7 @@ function notionFields(database: string, p: Record<string, unknown>, asOf: string
 
 function brainProperties(database: string): Array<[string, string]> {
   const common: Array<[string, string]> = [["Name", "title"], ["Summary", "summary"], ...(NO_LIFECYCLE_PROPERTY.has(TYPE_FOR_DATABASE[database] ?? "") ? [] : [["Lifecycle", "lifecycle"] as [string, string]])];
-  const extras: Record<string, Array<[string, string]>> = { areas: [["Domain", "domain"]], domains: [["Org", "org"]], goals: [["Why", "why"], ["Deadline", "facts.deadline"], ["Area", "area"]], projects: [["Key Facts", "facts"], ["Area", "area"], ["Goal", "goal"], ["Client", "client"], ["People", "people"]], people: [["Role", "facts.role"], ["Org", "org"]], decisions: [["Assessment", "assessment"], ["Project", "projects"], ["Area", "derived_area"]], questions: [["Kind", "kind"], ["Project", "projects"], ["Area", "derived_area"]], concepts: [["Project", "concept_projects"], ["Area", "concept_area"]], documents: [["Project", "reference_projects"], ["Area", "reference_area"]] };
+  const extras: Record<string, Array<[string, string]>> = { areas: [["Domain", "domain"]], domains: [["Org", "org"]], goals: [["Why", "why"], ["Deadline", "facts.deadline"], ["Area", "area"]], projects: [["Key Facts", "facts"], ["Area", "area"], ["Goal", "goal"], ["Client", "client"], ["People", "people"]], people: [["Role", "facts.role"], ["Org", "org"]], decisions: [["Assessment", "assessment"], ["Project", "projects"], ["Area", "derived_area"]], questions: [["Kind", "kind"], ["Project", "projects"], ["Area", "derived_area"]], documents: [["Project", "reference_projects"], ["Area", "reference_area"]] };
   return [...common, ...(extras[database] ?? [])];
 }
 
@@ -475,7 +477,6 @@ function offRelations(config: Record<string, unknown>, database: string): Set<st
   if (!on.orgs && database === "people") off.add("Org");
   if (!on.planning && database === "projects") off.add("Goal");
   if (!on.knowledge && (database === "inbox" || database === "meetings")) { off.add("Decisions"); off.add("Questions"); }
-  if (!on.knowledge && database === "inbox") off.add("Concepts");
   if (!on.documents && database === "inbox") off.add("Documents");
   return off;
 }
@@ -692,11 +693,34 @@ function summarize(items: readonly Record<string, unknown>[]): Record<string, nu
 
 export interface RenderItem { template?: { type: "default" }; item_updates?: Array<{ item_id: string; reason: string; section: string }>; review_published_after?: Record<string, unknown>; id: string; type: string; database: string; database_id: string; page_id: string | null; action: "create" | "update" | "trash"; properties: Record<string, unknown>; body: string | null; sections: Record<string, string> | null; pending_relations: Array<Record<string, unknown>>; published: Record<string, unknown> }
 
-export function render(workspace: Workspace, now: Date, ids?: readonly string[], held?: ReadonlyMap<string, Set<string>>): { items: RenderItem[]; errors: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id?: string }> } {
+/** The types whose page waits for review (cli §5.14.4, 0071). */
+const REVIEWED_PAGE_TYPES = new Set(["decision", "question", "concept", "reference"]);
+/** A decision, question, concept or Document with no page that isn't reviewed yet: render never publishes it (0071). */
+function awaitsReview(note: Note | undefined): boolean {
+  return note !== undefined && REVIEWED_PAGE_TYPES.has(note.type) && typeof note.attributes.notion !== "string" && note.attributes.lifecycle !== "reviewed" && note.attributes.lifecycle !== "disputed";
+}
+
+/** `sync render --unpublish-drafts` (cli §5.14.4, migration 0020): the Draft pages from before 0.9.1 that a pending Review row can bring back. */
+export function unpublishDrafts(workspace: Workspace, now: Date): RenderItem[] {
+  const held = new Set(workspace.notes.filter((note) => note.type === "proposal" && note.attributes.kind === "review_notes" && note.attributes.status === "pending").flatMap((note) => Array.isArray(note.attributes.notes) ? note.attributes.notes.map(String) : []));
+  const items: RenderItem[] = [];
+  for (const note of workspace.notes) {
+    const a = note.attributes; const database = DATABASE_FOR_TYPE[note.type];
+    if (!REVIEWED_PAGE_TYPES.has(note.type) || database === undefined || typeof a.notion !== "string" || a.lifecycle !== "draft" || !held.has(note.id)) continue;
+    // A promoted Document's page is yours (0049); a page already trashed is never rendered again.
+    if (a.origin === "promoted" || (isRecord(a.notion_published) && a.notion_published["@trashed"] !== undefined) || !typeIsOn(workspace.config, note.type)) continue;
+    const databaseId = databaseIdFor(workspace, database); if (databaseId === "") continue;
+    items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: a.notion, action: "trash", properties: {}, body: null, sections: null, pending_relations: [], published: { "@trashed": formatTimestamp(now) } });
+  }
+  return items.sort((a, b) => DATABASES.indexOf(a.database as never) - DATABASES.indexOf(b.database as never) || compareCodePoints(a.id, b.id));
+}
+
+export function render(workspace: Workspace, now: Date, ids?: readonly string[], held?: ReadonlyMap<string, Set<string>>): { items: RenderItem[]; errors: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id?: string }>; skipped: Array<{ id: string; reason: string }> } {
   const selected = ids === undefined
     ? workspace.notes.filter((note) => (PUBLISHED_TYPES.has(note.type) && !(note.type === "source" && note.attributes.kind === undefined)) || isReport(note))
     : ids.map((id) => workspace.get(id)!).filter(Boolean);
-  const items: RenderItem[] = []; const errors: Array<Record<string, unknown>> = []; const warnings: Array<{ code: string; message: string; id?: string }> = [];
+  const items: RenderItem[] = []; const errors: Array<Record<string, unknown>> = []; const warnings: Array<{ code: string; message: string; id?: string }> = []; const skipped: Array<{ id: string; reason: string }> = [];
+  const waiting: RenderItem[] = [];
   const modules = modulesOf(workspace.config);
   for (const note of selected) {
     const database = isReport(note) ? "documents" : DATABASE_FOR_TYPE[note.type]; if (database === undefined || (note.type === "source" && note.attributes.kind === undefined)) continue;
@@ -706,6 +730,8 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     if (note.type === "source" && note.attributes.attached_to !== undefined) continue;
     // A decided Review row leaves Notion 30 days after its decision, once (0045).
     if (note.type === "proposal" && isRecord(note.attributes.notion_published) && note.attributes.notion_published["@trashed"] !== undefined) continue;
+    // Notion shows reviewed knowledge (0071): a draft lives only in its Review row, and a rejected one never gets a page.
+    if (awaitsReview(note)) { if (ids !== undefined) skipped.push({ id: note.id, reason: "NOT_REVIEWED" }); continue; }
     const databaseId = databaseIdFor(workspace, database); if (databaseId === "") { warnings.push({ code: "DATABASE_NOT_CONFIGURED", message: `${database} database is not configured`, id: note.id }); continue; }
     if (note.type === "proposal" && trashDue(note, now)) { items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: String(note.attributes.notion), action: "trash", properties: {}, body: null, sections: null, pending_relations: [], published: { "@trashed": formatTimestamp(now) } }); continue; }
     if (note.type === "meeting" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "MEETING_NOT_PUBLISHED" }); continue; }
@@ -766,13 +792,20 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
       rendered["@fixes"] = Math.max(fixes, stored);
     }
     // Full text (0043) is retired (0049): nothing is sent, and `@full_text` in S stays as it is.
-    if (!isCreate && Object.keys(properties).length === 0 && !contentChanged && !reportDue && itemUpdates.length === 0) continue;
+    if (!isCreate && Object.keys(properties).length === 0 && !contentChanged && !reportDue && itemUpdates.length === 0) {
+      // A page whose only news is a relation to a note this render creates: nothing to write, but the skill renders again after publishing it (0071).
+      if (pending.length > 0) waiting.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: typeof note.attributes.notion === "string" ? note.attributes.notion : capturePage ?? null, action: "update", properties: {}, body: null, sections: null, pending_relations: pending, published: rendered });
+      continue;
+    }
     if (!isCreate && note.type !== "meeting" && note.type !== "proposal") properties["Last Synced"] = { type: "date", value: { start: formatTimestamp(now), end: null } };
     // A new project's page comes from the space's default Projects template, its toggles, views and My notes (0068).
     items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: typeof note.attributes.notion === "string" ? note.attributes.notion : capturePage ?? null, action: isCreate ? "create" : "update", ...(isCreate && note.type === "project" ? { template: { type: "default" as const } } : {}), ...(itemUpdates.length === 0 ? {} : { item_updates: itemUpdates, review_published_after: publishedAfter }), properties, body: content.body, sections: content.sections, pending_relations: pending, published: rendered });
   }
+  // Kept only when this render creates one of the notes it waits for; otherwise the relation fills at a later render.
+  const creates = new Set(items.filter((item) => item.action === "create").map((item) => item.id));
+  items.push(...waiting.filter((item) => item.pending_relations.some((entry) => Array.isArray(entry.ids) && entry.ids.some((id) => creates.has(String(id))))));
   items.sort((a, b) => DATABASES.concat(["meetings"] as never[]).indexOf(a.database as never) - DATABASES.concat(["meetings"] as never[]).indexOf(b.database as never) || compareCodePoints(a.id, b.id));
-  return { items, errors, warnings };
+  return { items, errors, warnings, skipped };
 }
 
 const TRASH_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
@@ -831,17 +864,19 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
   if (note.type === "person") Object.assign(values, { Role: isRecord(a.facts) ? a.facts.role ?? null : null, Org: relationPages(a.org === undefined ? [] : [a.org], workspace) });
   if (note.type === "decision") Object.assign(values, { Date: dateOutput(a.date), Assessment: select(a.assessment), Area: relationPages(projectAreas(a.projects, workspace), workspace), Project: relationPages(a.projects, workspace), "Decided In": relationPages(a.decided_in === undefined ? [] : [a.decided_in], workspace), Supersedes: relationPages((Array.isArray(a.relations) ? a.relations.filter(isRecord).filter((x) => x.type === "supersedes").map((x) => x.target) : []), workspace) });
   if (note.type === "question") Object.assign(values, { Kind: select(a.kind), Area: relationPages(projectAreas(a.projects, workspace), workspace), Project: relationPages(a.projects, workspace), "Raised In": relationPages(a.raised_in === undefined ? [] : [a.raised_in], workspace) });
-  // Status goes out once as Open while you never set one, and once as Answered after an approved answer; it stays yours otherwise (0041, 0045).
+  // Status goes out once as Open while you never set one, once as Answered after an approved answer, and once as Dropped after
+  // the to-do tidy dropped it; it stays yours otherwise (0041, 0045, 0071).
   if (note.type === "question") {
     const published = isRecord(a.notion_published) ? a.notion_published : {};
     const yours = isRecord(a.notion_fields) && a.notion_fields.status !== undefined;
     if (a.answer !== undefined) { if (published.Status !== "Answered") values.Status = "Answered"; }
+    else if (a.dropped !== undefined) { if (published.Status !== "Dropped" && !(isRecord(a.notion_fields) && a.notion_fields.status === "Dropped")) values.Status = "Dropped"; }
     else if (published.Status === undefined && !yours) values.Status = "Open";
   }
-  if (note.type === "concept" || note.type === "reference") Object.assign(values, { Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace) });
   if (note.type === "reference") {
+    // From concept is retired with Concepts (0071): a Document promoted from a concept before 0.9.1 has no From relation.
     const from = a.origin === "promoted" && typeof a.promoted_from === "string" ? a.promoted_from : undefined;
-    Object.assign(values, { Origin: ORIGIN_LABEL[String(a.origin ?? "part")] ?? null, "From decision": relationPages(from?.startsWith("dec-") ? [from] : [], workspace), "From concept": relationPages(from?.startsWith("con-") ? [from] : [], workspace) });
+    Object.assign(values, { Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), Origin: ORIGIN_LABEL[String(a.origin ?? "part")] ?? null, "From decision": relationPages(from?.startsWith("dec-") ? [from] : [], workspace) });
   }
   return values;
 }
@@ -875,7 +910,7 @@ function projectAreas(projects: unknown, workspace: Workspace): string[] {
 function producedBy(note: Note, workspace: Workspace): Note[] {
   const sources = new Set([note.id, ...workspace.notes.filter((candidate) => candidate.type === "source" && candidate.attributes.attached_to === note.id).map((candidate) => candidate.id)]);
   // A promoted Document comes from its note, not the source (0049).
-  return workspace.notes.filter((candidate) => ["decision", "question", "concept", "reference", "person"].includes(candidate.type) && !(candidate.type === "reference" && candidate.attributes.origin === "promoted") && Array.isArray(candidate.attributes.sources) && candidate.attributes.sources.some((id) => sources.has(String(id))));
+  return workspace.notes.filter((candidate) => ["decision", "question", "reference", "person"].includes(candidate.type) && !(candidate.type === "reference" && candidate.attributes.origin === "promoted") && Array.isArray(candidate.attributes.sources) && candidate.attributes.sources.some((id) => sources.has(String(id))));
 }
 
 function sourceValues(note: Note, workspace: Workspace): Record<string, unknown> {
@@ -883,17 +918,18 @@ function sourceValues(note: Note, workspace: Workspace): Record<string, unknown>
   const ids = (type: string) => produced.filter((candidate) => candidate.type === type).map((candidate) => candidate.id).sort(compareCodePoints);
   const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))].sort(compareCodePoints);
   const areas = [...new Set([...produced.map((candidate) => candidate.attributes.area).filter((id): id is string => typeof id === "string"), ...projects.flatMap((id) => { const area = workspace.get(id)?.attributes.area; return typeof area === "string" ? [area] : []; })])].sort(compareCodePoints);
-  return { Name: note.attributes.title, Kind: note.attributes.kind === "document" ? "File" : select(note.attributes.kind), Summary: note.attributes.summary ?? null, Decisions: relationPages(ids("decision"), workspace), Questions: relationPages(ids("question"), workspace), Concepts: relationPages(ids("concept"), workspace), ...(databaseIdFor(workspace, "documents") === "" ? {} : { Documents: relationPages(ids("reference"), workspace) }), People: relationPages(ids("person"), workspace), Project: relationPages(projects, workspace), Area: relationPages(areas, workspace), "Brain Status": "Done", "Brain ID": note.id };
+  return { Name: note.attributes.title, Kind: note.attributes.kind === "document" ? "File" : select(note.attributes.kind), Summary: note.attributes.summary ?? null, Decisions: relationPages(ids("decision"), workspace), Questions: relationPages(ids("question"), workspace), ...(databaseIdFor(workspace, "documents") === "" ? {} : { Documents: relationPages(ids("reference"), workspace) }), People: relationPages(ids("person"), workspace), Project: relationPages(projects, workspace), Area: relationPages(areas, workspace), "Brain Status": "Done", "Brain ID": note.id };
 }
 
 function notionProperty(name: string, value: unknown, note: Note, workspace: Workspace, pending: Array<Record<string, unknown>>): unknown {
-  const relation = ["Domain", "Area", "Goal", "Client", "People", "Org", "Project", "Decided In", "Raised In", "Supersedes", "Decisions", "Questions", "Concepts", "Documents", "Attendees", "From decision", "From concept"].includes(name);
+  const relation = ["Domain", "Area", "Goal", "Client", "People", "Org", "Project", "Decided In", "Raised In", "Supersedes", "Decisions", "Questions", "Documents", "Attendees", "From decision"].includes(name);
   if (relation) {
     const sourceField: Record<string, string> = { Domain: "domain", Area: "area", Goal: "goal", Client: "client", People: "people", Org: "org", Project: "projects", "Decided In": "decided_in", "Raised In": "raised_in", Decisions: "decisions", Questions: "questions", Attendees: "attendees" };
     const raw = name === "Area" && note.type === "proposal" ? reviewArea(note.attributes, workspace)
-      : name === "From decision" || name === "From concept" ? (Array.isArray(value) && note.attributes.promoted_from !== undefined && String(note.attributes.promoted_from).startsWith(name === "From decision" ? "dec-" : "con-") ? [note.attributes.promoted_from] : [])
+      : name === "From decision" ? (Array.isArray(value) && note.attributes.promoted_from !== undefined && String(note.attributes.promoted_from).startsWith("dec-") ? [note.attributes.promoted_from] : [])
       : name === "Area" && (note.type === "decision" || note.type === "question") ? projectAreas(note.attributes.projects, workspace) : name === "Supersedes" ? (Array.isArray(note.attributes.relations) ? note.attributes.relations.filter(isRecord).filter((item) => item.type === "supersedes").map((item) => item.target) : []) : note.type === "source" ? sourceRelationIds(note, name, workspace) : note.attributes[sourceField[name] ?? ""];
-    const missing = (Array.isArray(raw) ? raw : raw === undefined ? [] : [raw]).map(String).filter((id) => typeof workspace.get(id)?.attributes.notion !== "string");
+    // A note waiting for review isn't pending: no render publishes it, and the relation fills once it is approved (0071).
+    const missing = (Array.isArray(raw) ? raw : raw === undefined ? [] : [raw]).map(String).filter((id) => typeof workspace.get(id)?.attributes.notion !== "string" && !awaitsReview(workspace.get(id)));
     if (missing.length > 0) pending.push({ property: name, ids: missing });
     const mode = (note.type === "meeting" || note.type === "source") ? (["Project", "Area"].includes(name) ? "if_empty" : note.type === "meeting" ? "add" : undefined) : undefined;
     return { type: "relation", value: Array.isArray(value) ? value : [], ...(mode === undefined ? {} : { mode }) };
@@ -917,7 +953,6 @@ function sourceRelationIds(note: Note, name: string, workspace: Workspace): stri
   const produced = producedBy(note, workspace);
   if (name === "Decisions") return produced.filter((candidate) => candidate.type === "decision").map((candidate) => candidate.id);
   if (name === "Questions") return produced.filter((candidate) => candidate.type === "question").map((candidate) => candidate.id);
-  if (name === "Concepts") return produced.filter((candidate) => candidate.type === "concept").map((candidate) => candidate.id);
   if (name === "Documents") return produced.filter((candidate) => candidate.type === "reference").map((candidate) => candidate.id);
   if (name === "People") return produced.filter((candidate) => candidate.type === "person").map((candidate) => candidate.id);
   const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))];
@@ -934,7 +969,7 @@ function renderedContent(note: Note, workspace: Workspace): { body: string | nul
   // A source's digest is written once (0043).
   if (note.type === "source") { if (!hasInboxBody(note)) return { body: null, sections: null }; const body = digestBody(note); return { body, sections: null, hash: hash(body) }; }
   if (isReport(note)) { const body = notionMarkdown(note.body.replace(/^\n+/, ""), note, workspace); return { body, sections: null, hash: hash(body) }; }
-  if (note.type === "decision" || note.type === "question" || note.type === "concept" || note.type === "reference") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: notionMarkdown(generatedBlock(brief?.body ?? ""), note, workspace), "Decision log": notionMarkdown(generatedBlock(log?.body ?? ""), note, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
+  if (note.type === "decision" || note.type === "question" || note.type === "reference") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: notionMarkdown(generatedBlock(brief?.body ?? ""), note, workspace), "Decision log": notionMarkdown(generatedBlock(log?.body ?? ""), note, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
 function generatedBlock(body: string): string { const start = body.indexOf("<!-- @generated:start -->"); const end = body.indexOf("<!-- @generated:end -->"); return start >= 0 && end > start ? body.slice(start + "<!-- @generated:start -->".length, end).trim() : body.trim(); }
 function notionMarkdown(body: string, source: Note, workspace: Workspace): string { const fromFolder = source.path.includes("/") ? source.path.slice(0, source.path.lastIndexOf("/")) : ""; return body.replace(/\^\[(inferred|ambiguous)\]/g, (_, kind) => kind === "inferred" ? " (AI inference)" : " (ambiguous)").replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_all, title, link) => { const targetPath = normalizeRelative(fromFolder, link); const target = workspace.notes.find((note) => note.path === targetPath); return typeof target?.attributes.notion === "string" ? `[${title}](https://www.notion.so/${target.attributes.notion.replaceAll("-", "")})` : title; }); }
 function reviewMarkdown(body: string, target: Note | undefined): string {
@@ -1101,7 +1136,10 @@ function bindTaskItems(note: Note, attributes: Record<string, unknown>, value: u
 
 export function record(workspace: Workspace, input: unknown): Record<string, unknown> {
   if (!isRecord(input) || !Array.isArray(input.records)) throw new BrainError("INPUT_INVALID", "record input needs a records list"); const records: Array<Record<string, unknown>> = [];
-  for (const entry of input.records) { if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note); if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; if (entry.task_items !== undefined) bindTaskItems(note, doc.attributes, entry.task_items, entry.tasks); workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && (error.message === "NOTION_ID_MISMATCH" || error.message === "TASK_ITEM_EXISTS") ? error.message : "INVALID_RESULT", changed: [] }); } }
+  for (const entry of input.records) { if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note);
+    // A Draft page moved to the trash (--unpublish-drafts, 0071): the note has no page again, until it is approved.
+    if (REVIEWED_PAGE_TYPES.has(note.type) && isRecord(entry.published) && entry.published["@trashed"] !== undefined) { if (typeof doc.attributes.notion !== "string" || doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); for (const key of ["notion", "notion_published", "last_synced"]) delete doc.attributes[key]; workspace.save(note.path, doc); if (workspace.newErrors().length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); continue; }
+    if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; if (entry.task_items !== undefined) bindTaskItems(note, doc.attributes, entry.task_items, entry.tasks); workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && (error.message === "NOTION_ID_MISMATCH" || error.message === "TASK_ITEM_EXISTS") ? error.message : "INVALID_RESULT", changed: [] }); } }
   return { records };
 }
 

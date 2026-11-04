@@ -15,6 +15,7 @@ Each operation has a skill; follow it end to end:
 | connect the brain to Notion (after building the space) | `brain-connect-notion` |
 | catch up: do everything that's waiting (decided reviews, reviewed meetings, the Inbox and its attachments, the drop folder, linked repos, reports asked for) | `brain-catch-up` |
 | ingest one input: reviewed minutes, a document, a web page, a pasted email or note, the Inbox, the drop folder, a linked repo | `brain-ingest` |
+| turn open questions that are really to-dos into tasks, or drop them (once, after a yes for each, 0071) | `brain-ingest` |
 | apply decisions from the Notion Review queue | `brain-apply` |
 | pull Notion edits and new rows, republish notes | `brain-sync` |
 | answer a question from the brain, or write a report on a subject | `brain-query` |
@@ -39,7 +40,7 @@ Each operation has a skill; follow it end to end:
 ## Product files and findings
 
 - **Product-owned files are read-only here:** this block, `.agents/skills/` and `.claude/skills/` (the skills Ultimate Brain ships), and `skills.lock.json`. Never edit them, even to fix a bug; the next upgrade would erase the fix and the product would never learn of it. `brain lint` reports a changed one as `product-file`.
-- **Pinned skills.** `skills.lock.json` records the skill snapshot this brain uses; only `brain upgrade` changes it. When a command stops with a `SKILLS_` error, show the user its message and stop: never use another copy of a skill instead. To undo an upgrade: `git revert <upgrade commit>`, then `npm install -g ultimate-brain@<installed_by>` (the version in the restored `skills.lock.json`), then `brain lint`.
+- **Pinned skills.** `skills.lock.json` records the skill snapshot this brain uses; only `brain upgrade` changes it. When a command stops with a `SKILLS_` error, show the user its message and stop: never use another copy of a skill instead. To undo an upgrade: `git revert <upgrade commit>`, then `npm install -g ultimate-brain@<previous_cli>` (the version the upgrade reported; also the restored `skills.lock.json`'s `installed_by` when there is one), then `brain lint`.
 - **When the product is wrong** (a skill step fails, the CLI misbehaves, a rule gives a bad result), finish or stop the run, then file a finding: `gh issue create --repo superuser-pal/ultimate-brain --label dogfood --template dogfood.md`. Describe it as it would happen in a made-up brain ("a meeting with two projects…"): never names, client text or note content from this brain. Show the user the issue text before filing. If `gh` is missing, give the user the text to file.
 
 ## Trust rules

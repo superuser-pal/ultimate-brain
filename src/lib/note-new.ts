@@ -43,7 +43,7 @@ const ITEM_KEYS = ["type", "id", "title", "file_date", "frontmatter", "body"];
 const KNOWLEDGE_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 /** Types you create, or the brain writes only after your yes: no Lifecycle in Notion, `reviewed` from creation (0070). */
 export const NO_LIFECYCLE_PROPERTY = new Set(["domain", "area", "goal", "project", "org"]);
-const NEW_NOTE_TYPES = new Set([...KNOWLEDGE_TYPES, "source"]);
+const NEW_NOTE_TYPES = new Set([...KNOWLEDGE_TYPES, "source"].filter((type) => type !== "concept"));
 const FORBIDDEN_KEYS = ["id", "type", "title", "created", "updated", "lifecycle"];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 /** Types whose path uses the note's own `date` (spec/cli.md §3.8). */
@@ -61,7 +61,9 @@ export function checkNoteInput(value: unknown, pointer: string, withId = true): 
   const problems = unknownKeys(value, withId ? ITEM_KEYS : ITEM_KEYS.filter((key) => key !== "id"), pointer);
   const at = (key: string, message: string) => problems.push({ pointer: `${pointer}/${key}`, message });
 
-  if (typeof value.type !== "string" || !NEW_NOTE_TYPES.has(value.type)) {
+  if (value.type === "concept") {
+    at("type", "concept is retired since 0.9.1: write a reference with origin: learned (decision 0071)");
+  } else if (typeof value.type !== "string" || !NEW_NOTE_TYPES.has(value.type)) {
     at("type", `must be one of ${[...NEW_NOTE_TYPES].join(", ")} (views and proposals have their own commands)`);
   }
   if (typeof value.title !== "string" || value.title === "") at("title", "must be a non-empty string");
@@ -183,6 +185,8 @@ export function stageNotes(
     }
     // A workflow Document carries an artifact the user approved (connected-workflows.md §6.3).
     if (item.type === "reference" && attributes.origin === "workflow") attributes.lifecycle = "reviewed";
+    // So does a decision a connected workflow publishes: the user approved it (0071).
+    if (item.type === "decision" && attributes.workflow !== undefined) attributes.lifecycle = "reviewed";
     if (item.type === "reference" && attributes.origin === "promoted") {
       // A promoted Document stands where its note stands (0049).
       attributes.lifecycle = workspace.get(String(attributes.promoted_from))?.attributes.lifecycle ?? attributes.lifecycle;
@@ -252,7 +256,10 @@ function documentProblems(workspace: Workspace, items: readonly NoteInput[], poi
     }
     if (origin === "promoted" && typeof from === "string") {
       const type = workspace.get(from)?.type;
-      if (type !== "decision" && type !== "concept") return at("frontmatter/promoted_from", `${from} is not an existing decision or concept`);
+      // Promote is on decisions only since 0.9.1, and only reviewed knowledge is promoted: a draft's Document would get no page (0071).
+      if (type !== "decision") return at("frontmatter/promoted_from", `${from} is not an existing decision`);
+      const lifecycle = workspace.get(from)?.attributes.lifecycle;
+      if (lifecycle !== "reviewed" && lifecycle !== "disputed") return at("frontmatter/promoted_from", `${from} is ${String(lifecycle)}: only a reviewed or disputed note is promoted (approve it first)`);
       const other = promoted.get(from);
       if (other !== undefined) return at("frontmatter/promoted_from", `${from} is already promoted to ${other}`);
       promoted.set(from, item.id ?? `${pointerOf(index)}`);

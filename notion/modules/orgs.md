@@ -1,13 +1,13 @@
 # Orgs
 
-Clients, partners and suppliers, linked to their people and projects (decisions 0034, 0048; docs/notion-space-design.md §3.7). On by default.
+Clients, partners, suppliers and your employer, linked to their people and projects (decisions 0034, 0048, 0071; docs/notion-space-design.md §3.7). On by default.
 
 ## Turning it on
 
 ### 1 · The database
 
 **Notion AI**, on **Brain Data** (the API can't create databases):
-> In this page, create one full-page database "Orgs" with: Name (title), Summary (text), Relationship (select: Client, Prospect, Partner, Supplier, Other), Website (url), Archived (checkbox), Brain ID (text), Last Synced (date). Don't change anything else.
+> In this page, create one full-page database "Orgs" with: Name (title), Summary (text), Relationship (select: Client, Prospect, Partner, Supplier, Employer, Other), Website (url), Archived (checkbox), Brain ID (text), Last Synced (date). Don't change anything else.
 
 ### 2 · Relations, rollups, descriptions
 

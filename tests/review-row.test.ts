@@ -11,7 +11,7 @@ const SYNC = "mtg-8c4n2p7w";
 const PROJECT = "prj-9x4t1b7e";
 const PROJECT_PATH = "projects/acme-website/project.md";
 const CONCEPT = "con-1s6t8e2b";
-const CONCEPT_PATH = "knowledge/concepts/row-level-security.md";
+const CONCEPT_PATH = "knowledge/references/row-level-security.md";
 const QUESTION = "que-8n3v5x1d";
 
 async function run(dir: string, args: string[], input?: unknown) {

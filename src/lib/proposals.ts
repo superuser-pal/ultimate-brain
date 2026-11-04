@@ -433,8 +433,9 @@ export function stageNewItem(
   note: NoteInput,
   pointer: string,
   now: Date,
+  lifecycle?: string,
 ): { note: CreatedNote; meetingPath?: string; pointers: Map<string, string> } {
-  const staged = stageNotes(workspace, [note], () => pointer, { now });
+  const staged = stageNotes(workspace, [note], () => pointer, { now, ...(lifecycle === undefined ? {} : { lifecycle }) });
   const created = staged.created[0];
   if (created === undefined) {
     const existingId = staged.skipped[0]?.existing;
