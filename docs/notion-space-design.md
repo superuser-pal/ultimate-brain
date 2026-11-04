@@ -259,7 +259,7 @@ Open questions and risks raised in meetings.
 | Property | Type | Owner |
 |---|---|---|
 | Kind | Select: Question, Risk | Brain |
-| Status | Select: Open, Answered, Dropped | You. The brain sets Open when it creates a question, and Answered once after you approve an Answer row in Review (0041, 0045) |
+| Status | Select: Open, Answered, Dropped | You. The brain sets Open when it creates a question, Answered once after you approve an Answer row in Review (0041, 0045), and Dropped once after the to-do tidy drops a question that was a to-do (0071) |
 | Project | Relation → Projects | Brain |
 | Area | Relation → Areas (two-way with Questions) | Brain: the areas of its projects (0034) |
 | Raised In | Relation → Meetings | Brain |
