@@ -183,6 +183,8 @@ export function stageNotes(
     }
     // A workflow Document carries an artifact the user approved (connected-workflows.md §6.3).
     if (item.type === "reference" && attributes.origin === "workflow") attributes.lifecycle = "reviewed";
+    // So does a decision a connected workflow publishes: the user approved it (0071).
+    if (item.type === "decision" && attributes.workflow !== undefined) attributes.lifecycle = "reviewed";
     if (item.type === "reference" && attributes.origin === "promoted") {
       // A promoted Document stands where its note stands (0049).
       attributes.lifecycle = workspace.get(String(attributes.promoted_from))?.attributes.lifecycle ?? attributes.lifecycle;

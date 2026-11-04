@@ -52,6 +52,9 @@ async function editQuestion(dir: string, { drop = [] as string[], status }: { dr
 test("render: a new question is created with Status Open (0045)", async (context) => {
   const dir = await fixtureCopy(context);
   await editQuestion(dir, { drop: ["notion", "notion_fields"] });
+  // Only a reviewed question gets a page (0071).
+  const path = join(dir, QUESTION_FILE);
+  await writeFile(path, (await readFile(path, "utf8")).replace(/^lifecycle: draft$/m, "lifecycle: reviewed"));
   const [item] = await rendered(dir, [QUESTION]);
   assert.equal(item!.action, "create");
   assert.deepEqual(item!.properties.Status, { type: "select", value: "Open" });
