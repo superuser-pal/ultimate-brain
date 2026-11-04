@@ -1,5 +1,5 @@
 import { readJsonInput } from "../lib/input.ts";
-import { applyPlan, buildPlan, parsePlan, parseSnapshot, record, render, renderTasks } from "../lib/sync.ts";
+import { applyPlan, buildPlan, parsePlan, parseSnapshot, record, render, renderTasks, unpublishDrafts } from "../lib/sync.ts";
 import type { Command } from "../lib/command.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { commitJournaled } from "../lib/journal.ts";
@@ -21,9 +21,15 @@ export const syncApplyCommand: Command = {
 };
 
 export const syncRenderCommand: Command = {
-  name: "sync render", usage: "brain sync render (--changed | --ids <id>[,<id>…]) [--plan <plan.json> [--skip-conflicted]] [--json]", summary: "Render Notion payloads without writing.", options: { changed: "boolean", ids: "string", plan: "string", "skip-conflicted": "boolean" }, maxPositionals: 0, needsBrain: true,
+  name: "sync render", usage: "brain sync render (--changed | --ids <id>[,<id>…]) [--plan <plan.json> [--skip-conflicted]] | --unpublish-drafts [--json]", summary: "Render Notion payloads without writing.", options: { changed: "boolean", ids: "string", plan: "string", "skip-conflicted": "boolean", "unpublish-drafts": "boolean" }, maxPositionals: 0, needsBrain: true,
   async run({ args, brain, now }) {
     const changed = args.options.changed === true; const idsText = args.options.ids as string | undefined;
+    // The Draft pages from before 0.9.1, moved to the trash after a yes (cli §5.14.4, migration 0020).
+    if (args.options["unpublish-drafts"] === true) {
+      if (changed || idsText !== undefined || args.options.plan !== undefined || args.options["skip-conflicted"] === true) throw new BrainError("USAGE", "--unpublish-drafts runs alone");
+      const items = unpublishDrafts(await Workspace.open(brain!), now);
+      return { data: { items, errors: [], skipped: [] }, human: `${items.length} Draft pages to move to the trash\n` };
+    }
     if (changed === (idsText !== undefined)) throw new BrainError("USAGE", "provide exactly one of --changed or --ids");
     const workspace = await Workspace.open(brain!); const ids = idsText === undefined ? undefined : idsText.split(",").map((id) => id.trim()).filter(Boolean);
     if (ids !== undefined) for (const id of ids) if (workspace.get(id) === undefined) throw new BrainError("UNKNOWN_ID", `No note with id ${id}`);
@@ -42,7 +48,7 @@ export const syncRenderCommand: Command = {
     if (plan !== undefined) for (const item of [...plan.wording_waiting, ...plan.wording_held, ...plan.accepted_wording]) if (!withheld.has(item.note)) withheld.set(item.note, "WORDING_PENDING");
     // A Review row with edits or decisions in Notion is never rewritten (capture-and-review §7.10).
     if (plan !== undefined) for (const item of plan.review_pending) if (!withheld.has(item.proposal)) withheld.set(item.proposal, "REVIEW_PENDING");
-    const skipped: Array<{ id: string; reason: string }> = []; const items = data.items.filter((item) => {
+    const skipped: Array<{ id: string; reason: string }> = [...data.skipped]; const items = data.items.filter((item) => {
       const reason = withheld.get(item.id) ?? (item.page_id !== null && conflictedPages.has(item.page_id) ? "ROW_CONFLICTED" : undefined);
       if (reason === undefined) return true; skipped.push({ id: item.id, reason }); return false;
     });

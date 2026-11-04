@@ -160,7 +160,7 @@ A work or life context that groups Areas; distinct from an Org.
 - `facts.role` holds the current role (history in `timeline`). `notion_fields`: `email`.
 
 ### org · `knowledge/orgs/` · Notion: Orgs
-- `notion_fields`: `relationship` (`Client`·`Prospect`·`Partner`·`Supplier`·`Other`), `website`, `archived` (bool, 0070).
+- `notion_fields`: `relationship` (`Client`·`Prospect`·`Partner`·`Supplier`·`Employer`·`Other`; `Employer` from 0071), `website`, `archived` (bool, 0070).
 
 ### meeting · `knowledge/meetings/YYYY-MM-DD-<slug>.md` · Notion: Meetings (relations only, 0007)
 | Field | Type | Req | Owner |
@@ -183,6 +183,7 @@ A work or life context that groups Areas; distinct from an Org.
 | `deciders` | list of IDs (`per-`) | | brain |
 | `valid_from` | date | | brain; defaults to `date` when absent (0005) |
 | `valid_until` | date | required when `assessment: superseded` | brain; the superseding decision's `valid_from` (or `date`) |
+| `workflow` | `{id: wf-…, artifact: art-…}` | | brain; the connected workflow and artifact this decision publishes (connected-workflows.md §6.3). `note new` writes such a decision `reviewed`: the user approved the artifact, so it gets its page at once (0071) |
 - Supersession uses `relations`: the newer decision has `supersedes: <old>`, the older has `superseded_by: <new>` (both persisted, §6). A superseded decision has `assessment: superseded`, `valid_until` set, and lifecycle `archived`.
 - `decided_in` and the meeting's `decisions` list must agree (lint error otherwise); same for question `raised_in` and the meeting's `questions`.
 - Body sections: `## Decision`, `## Context`, `## Consequences`, `## Sources`.
@@ -193,7 +194,10 @@ A work or life context that groups Areas; distinct from an Org.
 | `kind` | `question`·`risk` | ✔ | brain |
 | `raised_in` | ID (`mtg-`) | | brain |
 | `answer` | string or ID | | brain (set by an applied `answer` proposal, 0041) |
-- `notion_fields`: `status` (`Open`·`Answered`·`Dropped`). Status is yours, with two exceptions, each sent once: a question reaches Notion as Open while you have set no Status (0045), and the publish after an applied `answer` proposal sets it to Answered (0041, cli.md §5.14.4).
+| `dropped` | date | | brain (set by `brain question drop`, cli.md §5.30, 0071): the day the to-do tidy dropped it, because it was a to-do, not a question |
+| `task` | string (Notion task page id) | only with `dropped` | brain: the Task it became, when the tidy converted it (capture-and-review §6.2) |
+- `notion_fields`: `status` (`Open`·`Answered`·`Dropped`). Status is yours, with three exceptions, each sent once: a question reaches Notion as Open while you have set no Status (0045), the publish after an applied `answer` proposal sets it to Answered (0041), and the publish after a drop sets it to Dropped (0071, cli.md §5.14.4).
+- A line someone has to act on is never a question (0071, capture-and-review §6.1): the owner's to-do is a Task, someone else's a commitment in the text.
 
 ### concept · retired in 0.9.1 (0071)
 Concepts are **learned Documents** since 0.9.1: a `reference` with `origin: learned` (below). `brain upgrade` converts every `type: concept` note (cli.md §5.15 step 5a): it becomes `type: reference`, `origin: learned`, moves from `knowledge/concepts/<slug>.md` to `knowledge/references/<slug>.md` and keeps its `con-` id (§1: the prefix is fixed at creation), so no frontmatter reference changes. A `type: concept` note left in a brain is the lint error `concept-retired` (§15); `note new` refuses the type.
@@ -380,7 +384,7 @@ Only sync writes `notion_fields`. The brain never pushes these values to Notion.
 
 ## 8. Lifecycle and assessment (0005)
 
-- **lifecycle** (every **knowledge** note; not `source`, `view` or `proposal`, which have their own states: immutable, regenerated, `status`; decision 0025): `draft` → `reviewed` | `disputed` → `archived`. Agents set `draft` (creation) and `archived` (supersession). They also set `reviewed`, or `archived` with no successor, when, and only when, they apply a `review_notes` proposal you decided (0041, §11.2). You set the rest in Notion.
+- **lifecycle** (every **knowledge** note; not `source`, `view` or `proposal`, which have their own states: immutable, regenerated, `status`; decision 0025): `draft` → `reviewed` | `disputed` → `archived`. Agents set `draft` (creation) and `archived` (supersession). They also set `reviewed`, or `archived` with no successor, when, and only when, they apply a `review_notes` proposal you decided (0041, §11.2). You set the rest in Notion. A decision, question, concept or reference gets its Notion page only once it is `reviewed` or `disputed`; a draft lives only in its Review row (0071, cli §5.14.4).
 - **Types you create (0070):** a `domain`, `area`, `goal`, `project` or `org` note is `reviewed` from creation (a Notion row, or `note new` after your yes), and its Notion database has no Lifecycle property: you close one with Archived. When the brain retires one (merge, supersession) it becomes `archived`, and the next publish ticks its Archived once (cli.md §5.14.4). People keep Lifecycle: ingest writes them from meetings for you to confirm.
 - **assessment** (decisions, timeline entries): `accepted`, `provisional` (mentioned once, unconfirmed), `contested` (conflicting sources; keep both entries), `superseded` (replaced; kept as history).
 
@@ -474,7 +478,7 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
 | `update_body` | a `reference` note whose `origin` isn't `promoted` (0045, 0049) | Replace the body with V(content). Add `source` to `sources` if missing. **Stale** when the target's body hash differs from `before_hash` (§11.1, closed with `closed_reason: stale`) | nothing changes |
 | `supersede` | the **newer** note (already written as `draft` by the ingest, 0003) | `target.relations` += `{supersedes: <supersedes>}`; `<supersedes>.relations` += `{superseded_by: target}`; older note `lifecycle: archived`; if both are decisions, older gets `assessment: superseded` and `valid_until: <target.valid_from or target.date>` | the newer note stays, without the relation |
 | `merge` | the **duplicate** X to retire, merged into the survivor Y = `merge_into` | Steps, in order: **1. References.** In every note except X, Y, sources and proposals (proposals are a record of what was decided about X), rewrite frontmatter references to X's id into Y's id (then dedupe each list, keeping the first occurrence) and relative links to X's file into links to Y's file. **Persisted pairs are left alone**: a meeting's `decisions`/`questions` entries, a decision's `decided_in`, a question's `raised_in`, and other notes' `supersedes`/`superseded_by` relations keep pointing at X, whose side of those pairs stays in place (X is archived, not deleted). **2. Into Y:** union `aliases` (plus X's `title`), `tags`, `sources`, `projects`; add X's `relations` except `supersedes`/`superseded_by` and any whose target is X or Y (dedupe); append X's `timeline` entries (dedupe exact entries); a `facts` key only X has is copied to Y; for a key both have, Y's value stays and X's `accepted` entries with a different value become `superseded` with `until: <today>`; append X's body under `## Merged from <X title>`. **3. Pair:** X gets `lifecycle: archived` and `relations` += `{superseded_by: Y}`; Y gets `{supersedes: X}`. If X is a decision, it also gets `assessment: superseded` and `valid_until` = Y's `valid_from` or `date` | nothing changes |
-| `new_item` | — | Write `note` as a new note with the `brain note new` rules (lifecycle `draft`). If it has `decided_in` or `raised_in`, add its id to that meeting's `decisions` or `questions` | discard |
+| `new_item` | — | Write `note` as a new note with the `brain note new` rules, lifecycle `reviewed`: approving the row is the review, so it gets its Notion page (0071; `draft` before 0.9.1). If it has `decided_in` or `raised_in`, add its id to that meeting's `decisions` or `questions` | discard |
 | `review_notes` | — (the notes, link targets and change targets it lists) | In this order: every entry of `changes` not excluded is applied with its kind's rule above, or dropped when stale (§11.3); every listed note not excluded and still `draft` gets `lifecycle: reviewed`; every entry of `links` not excluded is applied to its `target` as an `add_link` entry (append if not already there). A listed note that is no longer `draft` is left as it is and reported (cli.md §5.7). Excluded items are **deferred** to a new pending `review_notes` (§11.3); an excluded note stays `draft`. `fix` corrects items first (§11.3) | Every listed note still `draft` gets `lifecycle: archived`, with no successor; nothing is deleted. No link or change is applied |
 | `answer` | the question | The question's `answer` = `answer_note` when set, else V(`answer`). **edit:** `answer` = V (your Note, as text); `answer_note` is not used. The next publish sets the question's Notion Status to Answered (cli.md §5.14.4) | nothing changes; the question stays open |
 
@@ -627,7 +631,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 | Orgs · Relationship, Website | `notion_fields.relationship`, `.website` |
 | Decisions · Date, Assessment, Project, Decided In, Supersedes | `date`, `assessment`, `projects`, `decided_in`, `relations[supersedes]` |
 | Decisions, Questions · Area | derived: the `area` of each of the record's `projects` (0034); not stored in the note |
-| Questions · Kind, Status, Project, Raised In | `kind`, `notion_fields.status`, `projects`, `raised_in`. Status = Open is written once while Notion has none, and Answered once after an applied `answer` (0041, 0045) |
+| Questions · Kind, Status, Project, Raised In | `kind`, `notion_fields.status`, `projects`, `raised_in`. Status = Open is written once while Notion has none, Answered once after an applied `answer` (0041, 0045), and Dropped once after `question drop` (0071) |
 | Areas · Brief toggle | the area's `area_brief` view (§16.3, 0041) |
 | Documents · Area, Project, page body | `area`, `projects`, the body (0045, 0049). A `promoted` Document's body is sent on create only: after that it is yours |
 | Documents, Reports · Accepted, Accepted at | yours (0054): the accept control (*Accept write-up* on a Document, accepting the proposed refresh on a report) sets Accepted and Accepted at. Never compared or corrected; read only by `sync plan`'s accepted-wording rules (cli.md §5.14.7); the skill unticks Accepted and clears Accepted at after the wording is imported. The page body of a `promoted` Document or of a report stays Notion's until accepted wording is imported exactly; after that `notion_published` holds `@notion_body` (the Markdown read back from the page at the last sync) and `@git_body` (the Git body then), the baselines of cli.md §5.14.7; `@content` stays render's own bookkeeping (what it would send) |
