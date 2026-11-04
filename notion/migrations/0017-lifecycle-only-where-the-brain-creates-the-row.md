@@ -1,6 +1,6 @@
 # 0017 · Lifecycle only where the brain creates the row
 
-**Design change:** decision [0070](../../decisions/0070-lifecycle-only-where-the-brain-creates-the-row.md); CC-121 (release 0.9.1; docs/notion-space-design.md §3; spec/schema.md §8; spec/cli.md §5.14). **Applies to:** spaces built or migrated before 0.9.1. Run 0016 first. A step already done changes nothing, so running this again is safe.
+**Design change:** decision [0070](../../decisions/0070-lifecycle-only-where-the-brain-creates-the-row.md); CC-121 (release 0.9.0; docs/notion-space-design.md §3; spec/schema.md §8; spec/cli.md §5.14). **Applies to:** spaces built or migrated before 0.9.0. Run 0016 first. A step already done changes nothing, so running this again is safe.
 
 What changes: **Domains, Areas, Goals, Projects and Orgs lose Lifecycle.** You create those rows, so a Draft there tells you nothing; you close one with **Archived**, which Orgs gains. People, Decisions, Questions, Concepts and Documents keep Lifecycle: the brain writes those from what it reads, and you confirm them in Review.
 

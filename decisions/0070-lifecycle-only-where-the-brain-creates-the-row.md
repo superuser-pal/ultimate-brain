@@ -21,4 +21,4 @@ Domains, Areas, Goals, Projects and Orgs are different: you create them in Notio
 - A space that still has Lifecycle on those databases keeps working: the brain ignores the property there.
 
 ## Evidence
-The user's scope review, 2026-11-04 (CC-121): Lifecycle on Areas, Domains, Projects, Goals and Orgs is not needed; People keeps it; part of 0.9.1.
+The user's scope review, 2026-11-04 (CC-121): Lifecycle on Areas, Domains, Projects, Goals and Orgs is not needed; People keeps it; part of 0.9.0 (first planned as 0.9.1; renumbered by CC-128, 2026-11-04).

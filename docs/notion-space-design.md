@@ -133,7 +133,7 @@ Page body: a toggle heading **Brief** (brain-written, 0041: the area's projects,
 
 ### Domains database (0055; in every space, 0065)
 
-Every space has it, with the Domains module on or off: the module decides only whether the brain reads and publishes Domains and whether pages show them (migration 0014 adds it to an older space). Name (title) and Summary (text) are brain-owned after creation; Type (select: Personal, Entrepreneurship, Professional; 0.9.1, it replaced Areas · Type) and Archived (checkbox) are yours; no Lifecycle (0070). Brain ID (text) and Last Synced (date) are system fields. Areas is the inverse of Areas · Domain, limited on the Area side to one page by hand. Org is a correctable relation to Orgs, created when the space has an Orgs database; Orgs · Domains is its inverse. The Domain page shows Areas and, when enabled, Org.
+Every space has it, with the Domains module on or off: the module decides only whether the brain reads and publishes Domains and whether pages show them (migration 0014 adds it to an older space). Name (title) and Summary (text) are brain-owned after creation; Type (select: Personal, Entrepreneurship, Professional; 0.9.0, it replaced Areas · Type) and Archived (checkbox) are yours; no Lifecycle (0070). Brain ID (text) and Last Synced (date) are system fields. Areas is the inverse of Areas · Domain, limited on the Area side to one page by hand. Org is a correctable relation to Orgs, created when the space has an Orgs database; Orgs · Domains is its inverse. The Domain page shows Areas and, when enabled, Org.
 
 ### 3.2 Goals
 | Property | Type | Owner |
