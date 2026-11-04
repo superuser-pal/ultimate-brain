@@ -2,6 +2,33 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.9.0 — 2026-11-04
+
+- CC-97 (#181): development only: an inventory of the skills Claude Code and Codex load today, compared with the pinned upstream, and the approved keep/adapt/isolate/retire mapping for the shared-skills fork.
+- CC-98 (#182): the contract for pinned skill delivery: each brain records the skill snapshot it uses, both agents load the same version, and an incompatible or missing snapshot stops a command before it writes, with the upgrade to run.
+- CC-99 (#183, #186): contracts for connected workflows, the adoption of existing projects, and linked repos with a link kit (decisions 0059, 0066).
+- CC-95 (#184): decision 0064 puts a brain assistant in 0.10.0 and reflection in 0.11.0, moves Hermes after 1.0, and breaks 0.9.0 into tasks.
+- CC-100 (#187): each brain uses the exact skill snapshot it recorded: Claude Code and Codex load the same version, and a missing or incompatible snapshot stops a command before it writes, with the upgrade to run.
+- CC-101 (#185): development only: the public ultimate-brain-skills fork holds the skills' source, with upstream attribution, compatibility metadata in every release and reviewable upstream updates.
+- CC-102 (#190): a linked repo carries a link kit saying what the brain may read, where its tasks live and how it works; the brain shows its tasks as a read-only rollup or leaves them to Notion, and can check, change or unlink it without losing knowledge; `brain workflow` keeps connected work's scope, progress and pending Notion writes as durable records in the brain.
+- CC-103 (#188): Projects and Areas get Workflow settings in Notion (tracking, work type, logging level and logged artifacts), with one dated summary of progress, pending publication and decisions needed on the page; migration 0015 adds them.
+- CC-104 (#200): three new skills: adopt an existing project's plans and tasks, run work as standard or Notion-connected with the logging you chose, and link, check, unlink or start a repo from the brain.
+- CC-106 (#189): development only: the product checks the skills fork daily, at the start of work and before a release, keeps one open integration issue for unassessed skill changes, and blocks a release on an incompatible one.
+- CC-107 (#207): development only: end-to-end acceptance of 0.9.0 in isolated installations: four adoption scenarios, rollback, and both agents loading the same skills.
+- CC-129 (#212): after the first `brain upgrade` of an unpinned brain, the rollback names the version to go back to; `brain repo kit check` also returns the hash `kit write` confirms, so a kit draft formatted by hand can be written.
+- CC-114 (#197): a new project is published from the space's Projects template through the API instead of being refused with `PROJECT_NOT_IN_NOTION`, and a new Review row's body is written once through Notion's markdown endpoint so its toggles stay real toggles.
+- CC-112 (#198): meeting minutes split your actions into quick follow-ups, which stay in Notion as checkboxes, and tasks with an editable Scope (done when, due, project, notes) that the ingest carries into the Notion task; a long or reworded quote no longer blocks a whole meeting (#191).
+- CC-113 (#195): `sync apply` creates new notes in relation order, so an Area whose Domain (or a Project whose Area or Org) is new in the same plan is created in one run, whatever the plan's order; a cycle among creates is reported as `RELATION_CYCLE`.
+- CC-115 (#199): development only: CC-113's task row, dropped by a merge of main into #195, is restored, and the own-row check is planned as CC-116 in 0.10.0.
+- CC-117 (#201): each catch-up rebuilds the task rollup of a repo whose tasks are tracked in the repo, and "link the repo at <path>" in an ingest goes through brain-repos, so every new link gets a kit after your yes.
+- CC-119 (#205): development only: CC-105 (skills from the fork) moves to a later patch release (0.9.2 since CC-128), so 0.9.0 ships on the product's own skills (decision 0069).
+- CC-128 (#206): development only: the tasks merged before 0.9.0 is released count as 0.9.0 (CC-120, CC-121, CC-122), a simpler Notion becomes 0.9.1 and skills from the fork 0.9.2, so each release's notes match what it ships.
+- CC-120 (#202): Type (Personal, Entrepreneurship, Professional) moves from Areas to Domains: sync reads it into the domain note and drops the old value from area notes (migration 0016).
+- CC-121 (#203): Domains, Areas, Goals, Projects and Orgs no longer have Lifecycle: they come in as reviewed, you close them with Archived (Orgs gain it), and People and the knowledge databases keep Lifecycle for Review (decision 0070).
+- CC-122 (#204): development only: decision 0071 plans 0.9.1 (first numbered 0.9.2; renumbered by CC-128), a simpler Notion, and breaks it into CC-123 to CC-127.
+
+Skills: ultimate-brain 0.9.0 (sha256-564ec7a488f801761c6ebead2edd0d7cdd4d0e5409e4e8c19a78b52035ed313e)
+
 ## 0.8.1 — 2026-11-03
 
 - CC-91 (#176): development only: a Claude reviewer sub-agent reviews each PR and its pass turns `merge-ready` green, so PRs no longer wait for Codex (decision 0063).
