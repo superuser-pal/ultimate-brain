@@ -294,6 +294,16 @@ Right after 0.9.0. Fewer databases and only reviewed knowledge in Notion; the br
 - [ ] A symbolic `AGENTS.md` is still refused with `OUTSIDE_ROOT`; every other link test passes unchanged.
 - [ ] brain-repos step 5 names the case and the fix; `npm run skills` leaves the mirrors in sync.
 
+### CC-131 · brain-sync reads the Domains database · `in progress`
+**Release:** 0.9.1
+**Changelog:** the brain-sync skill reads the Domains database when Domains is on, so a Domain's Type, Archived and edits reach the brain and a Domain added in Notion is imported.
+**Output:** brain-sync step 2's table and `references/formats.md`; `spec/cli.md` §5.2 and §5.14.1 name `domains` where the CLI already accepts it; `tests/brain-sync-databases.test.ts` ties the skill and spec lists to `sync plan`'s databases. From dogfood #216.
+**Acceptance:**
+- [ ] brain-sync step 2's table has a Domains row, read when Domains is on; `formats.md` lists `domains` among the `database` keys.
+- [ ] `spec/cli.md` names `domains` in the status keys, the snapshot `database` keys and the creatable databases, matching the CLI.
+- [ ] A test fails when a database `sync plan` accepts is missing from step 2's table, `formats.md` or the spec's `database` list.
+- [ ] `npm test`, `npm run typecheck`, `npm run test:package`, the skill mirror check and the leak check pass.
+
 ## 0.9.2 — Skills from the fork (decision 0069)
 
 After 0.9.1. Starts with its scope check against 0069 and spec/skills-delivery.md §9.
