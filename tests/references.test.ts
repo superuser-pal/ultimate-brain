@@ -38,6 +38,12 @@ async function configure(dir: string, key: string, id: string): Promise<void> {
   assert.equal(set.code, 0, set.stdout);
 }
 
+/** Makes a draft reviewed, as approving it in Review does: only reviewed knowledge gets a Notion page (0071). */
+async function approved(dir: string, path: string): Promise<void> {
+  const file = join(dir, path);
+  await writeFile(file, (await readFile(file, "utf8")).replace(/^lifecycle: draft$/m, "lifecycle: reviewed"));
+}
+
 export async function newReference(dir: string, sourceId: string, title = "Acme requirements"): Promise<{ id: string; path: string }> {
   const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title, frontmatter: { summary: "What Acme requires of the website.", origin: "part", area: AREA, projects: [PROJECT], sources: [sourceId] }, body: REQUIREMENTS }] });
   assert.equal(created.code, 0, created.stdout);
@@ -50,6 +56,7 @@ test("a reference validates, is listed under its project and renders to Document
   const reference = await newReference(dir, document.id);
   assert.match(reference.id, /^ref-/);
   assert.equal(reference.path, "knowledge/references/acme-requirements.md");
+  await approved(dir, reference.path);
 
   const lint = await run(dir, ["lint"]);
   assert.equal(lint.json.data.errors, 0, lint.stdout);
@@ -355,6 +362,7 @@ test("sync plan: rows of a module that is off are ignored as MODULE_OFF (0048)",
 test("render: a promoted Document links its note through From decision, and its body goes out on create only (0049)", async (context) => {
   const dir = await fixtureCopy(context);
   await configure(dir, "documents", "a1000000-0000-4000-8000-00000000000c");
+  await approved(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
   const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Supabase auth (page)", frontmatter: { summary: "A page for the decision.", origin: "promoted", promoted_from: "dec-7k2m9q4x", projects: [PROJECT] }, body: "## Why\nBecause.\n" }] });
   assert.equal(created.code, 0, created.stdout);
   const page = created.json.data.created[0];
