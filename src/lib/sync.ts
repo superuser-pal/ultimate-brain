@@ -26,7 +26,7 @@ import { restrictedSources } from "./eligibility.ts";
 import { contextFor, publishableNote, requireSuppressions } from "./suppressions.ts";
 import { importedItems } from "./selection.ts";
 
-const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "documents", "review", "inbox"] as const;
+export const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "documents", "review", "inbox"] as const;
 const CREATABLE = new Set(["domains", "areas", "goals", "projects", "people", "orgs"]);
 const TYPE_FOR_DATABASE: Record<string, string> = { domains: "domain", areas: "area", goals: "goal", projects: "project", people: "person", orgs: "org", decisions: "decision", questions: "question", documents: "reference", review: "proposal" };
 const DATABASE_FOR_TYPE: Record<string, string> = { domain: "domains", area: "areas", goal: "goals", project: "projects", person: "people", org: "orgs", decision: "decisions", question: "questions", reference: "documents", source: "inbox", meeting: "meetings", proposal: "review" };
