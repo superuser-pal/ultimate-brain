@@ -730,13 +730,15 @@ test("adopt apply creates items with the adopted meaning, history and resolved d
   const by = (key: string) => items.find((entry) => entry.origin.key === key);
   const limiter = by(K1);
   assert.deepEqual([limiter.title, limiter.scope, limiter.status, limiter.approved_at, limiter.acceptance], ["Set up the limiter", "Set up the limiter", "todo", NOW, []]);
-  assert.deepEqual(limiter.progress, [{ at: NOW, text: `Adopted from PLAN.md ${K1} as [ ]` }]);
+  assert.deepEqual(limiter.progress, [{ at: NOW, text: "Adopted from PLAN.md (to do there)" }], "no raw key or checkbox marker (CC-130)");
+  assert.equal(by(K2).progress[0].text.includes("line:"), false);
   assert.deepEqual(by(K2).depends_on, [limiter.id]);
   const done = by(K3);
   assert.equal(done.status, "done");
   assert.deepEqual([done.accepted.statement, done.accepted.at], ["Done before adoption", NOW]);
   assert.equal(by(GH).status, "review");
-  assert.equal(by(GH).progress[0].text, `Adopted from acme/acme-api ${GH} as In review`);
+  assert.equal(by(GH).progress[0].text, `Adopted from acme/acme-api ${GH} (In review there)`);
+  assert.equal(done.progress[0].text, "Adopted from PLAN.md (done there)");
 });
 
 test("adopt apply opens a create_task per new item and records the map, runs and conventions", async (context) => {
@@ -776,6 +778,7 @@ test("adopt apply for Notion-origin items takes the existing page and updates on
   const second = items.find((entry) => entry.origin.key === page(41));
   assert.deepEqual([first.notion.page, first.notion.title, first.notion.status, first.notion.read_at], [page(40), "Existing, no Brain ID", "Doing", NOW]);
   assert.equal(second.notion.page, page(41));
+  assert.equal(first.progress[0].text, "Adopted from Notion (Doing there)", "no page id in the progress line (CC-130)");
   assert.deepEqual(await c.openOps(undefined, "create_task"), []);
   const updates = await c.openOps(undefined, "update_task");
   assert.deepEqual(updates.map((op) => op.target), [first.id]);

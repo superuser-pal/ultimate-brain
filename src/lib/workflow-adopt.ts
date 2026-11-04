@@ -122,7 +122,7 @@ export function adoptApply(records: Records, input: Json, now: Date): { created:
       origin: source.origin, accepted: source.meaning === "done" ? { at: ts(now), statement: "Done before adoption" } : null,
       claim: null, progress: [], notion: null, publication: { state: "pending", at: ts(now), error: null },
     };
-    progress(item, now, `Adopted from ${source.origin.ref} ${source.origin.key} as ${source.raw_status}`);
+    progress(item, now, adoptedFrom(source));
     records.items.set(id, item);
     if (source.origin.kind === "notion") {
       item.notion = { page: source.origin.key, title: source.title, status: source.raw_status, read_at: ts(now) };
@@ -155,4 +155,14 @@ export function adoptApply(records: Records, input: Json, now: Date): { created:
 export function assertAdoptionRev(records: Records, rev: number): void {
   const current = (records.adoption?.rev as number | undefined) ?? 0;
   if (current !== rev) throw new BrainError("STALE_RECORD", `adoption.json is at revision ${current}, not ${rev}: preview again and retry`);
+}
+
+const STATUS_WORDS: Readonly<Record<string, string>> = { todo: "to do", in_progress: "in progress", waiting: "waiting", review: "in review", done: "done", dropped: "dropped" };
+
+/** An adopted item's first progress line, in words a person reads (connected-workflows.md §11.6): no raw key, page id or checkbox marker. */
+function adoptedFrom(source: Json): string {
+  const origin = source.origin as Json;
+  const where = origin.kind === "github" || origin.kind === "gitlab" ? `${origin.ref} ${origin.key}` : origin.kind === "notion" ? "Notion" : String(origin.ref);
+  const status = origin.kind === "markdown" ? STATUS_WORDS[String(source.meaning)] ?? String(source.meaning) : String(source.raw_status);
+  return `Adopted from ${where} (${status} there)`;
 }
