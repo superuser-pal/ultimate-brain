@@ -851,11 +851,13 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
   if (note.type === "person") Object.assign(values, { Role: isRecord(a.facts) ? a.facts.role ?? null : null, Org: relationPages(a.org === undefined ? [] : [a.org], workspace) });
   if (note.type === "decision") Object.assign(values, { Date: dateOutput(a.date), Assessment: select(a.assessment), Area: relationPages(projectAreas(a.projects, workspace), workspace), Project: relationPages(a.projects, workspace), "Decided In": relationPages(a.decided_in === undefined ? [] : [a.decided_in], workspace), Supersedes: relationPages((Array.isArray(a.relations) ? a.relations.filter(isRecord).filter((x) => x.type === "supersedes").map((x) => x.target) : []), workspace) });
   if (note.type === "question") Object.assign(values, { Kind: select(a.kind), Area: relationPages(projectAreas(a.projects, workspace), workspace), Project: relationPages(a.projects, workspace), "Raised In": relationPages(a.raised_in === undefined ? [] : [a.raised_in], workspace) });
-  // Status goes out once as Open while you never set one, and once as Answered after an approved answer; it stays yours otherwise (0041, 0045).
+  // Status goes out once as Open while you never set one, once as Answered after an approved answer, and once as Dropped after
+  // the to-do tidy dropped it; it stays yours otherwise (0041, 0045, 0071).
   if (note.type === "question") {
     const published = isRecord(a.notion_published) ? a.notion_published : {};
     const yours = isRecord(a.notion_fields) && a.notion_fields.status !== undefined;
     if (a.answer !== undefined) { if (published.Status !== "Answered") values.Status = "Answered"; }
+    else if (a.dropped !== undefined) { if (published.Status !== "Dropped" && !(isRecord(a.notion_fields) && a.notion_fields.status === "Dropped")) values.Status = "Dropped"; }
     else if (published.Status === undefined && !yours) values.Status = "Open";
   }
   if (note.type === "concept" || note.type === "reference") Object.assign(values, { Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace) });

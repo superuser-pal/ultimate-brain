@@ -161,7 +161,7 @@ A work or life context that groups Areas; distinct from an Org.
 - `facts.role` holds the current role (history in `timeline`). `notion_fields`: `email`.
 
 ### org · `knowledge/orgs/` · Notion: Orgs
-- `notion_fields`: `relationship` (`Client`·`Prospect`·`Partner`·`Supplier`·`Other`), `website`, `archived` (bool, 0070).
+- `notion_fields`: `relationship` (`Client`·`Prospect`·`Partner`·`Supplier`·`Employer`·`Other`; `Employer` from 0071), `website`, `archived` (bool, 0070).
 
 ### meeting · `knowledge/meetings/YYYY-MM-DD-<slug>.md` · Notion: Meetings (relations only, 0007)
 | Field | Type | Req | Owner |
@@ -195,7 +195,10 @@ A work or life context that groups Areas; distinct from an Org.
 | `kind` | `question`·`risk` | ✔ | brain |
 | `raised_in` | ID (`mtg-`) | | brain |
 | `answer` | string or ID | | brain (set by an applied `answer` proposal, 0041) |
-- `notion_fields`: `status` (`Open`·`Answered`·`Dropped`). Status is yours, with two exceptions, each sent once: a question reaches Notion as Open while you have set no Status (0045), and the publish after an applied `answer` proposal sets it to Answered (0041, cli.md §5.14.4).
+| `dropped` | date | | brain (set by `brain question drop`, cli.md §5.30, 0071): the day the to-do tidy dropped it, because it was a to-do, not a question |
+| `task` | string (Notion task page id) | only with `dropped` | brain: the Task it became, when the tidy converted it (capture-and-review §6.2) |
+- `notion_fields`: `status` (`Open`·`Answered`·`Dropped`). Status is yours, with three exceptions, each sent once: a question reaches Notion as Open while you have set no Status (0045), the publish after an applied `answer` proposal sets it to Answered (0041), and the publish after a drop sets it to Dropped (0071, cli.md §5.14.4).
+- A line someone has to act on is never a question (0071, capture-and-review §6.1): the owner's to-do is a Task, someone else's a commitment in the text.
 
 ### concept · `knowledge/concepts/` · Notion: Concepts (0037)
 Ideas, methods, definitions: what the brain learned from a document, an email or a meeting. Only the §3.2 fields; `area` and `projects` place it, `sources` says where it came from.
@@ -630,7 +633,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 | Orgs · Relationship, Website | `notion_fields.relationship`, `.website` |
 | Decisions · Date, Assessment, Project, Decided In, Supersedes | `date`, `assessment`, `projects`, `decided_in`, `relations[supersedes]` |
 | Decisions, Questions · Area | derived: the `area` of each of the record's `projects` (0034); not stored in the note |
-| Questions · Kind, Status, Project, Raised In | `kind`, `notion_fields.status`, `projects`, `raised_in`. Status = Open is written once while Notion has none, and Answered once after an applied `answer` (0041, 0045) |
+| Questions · Kind, Status, Project, Raised In | `kind`, `notion_fields.status`, `projects`, `raised_in`. Status = Open is written once while Notion has none, Answered once after an applied `answer` (0041, 0045), and Dropped once after `question drop` (0071) |
 | Areas · Brief toggle | the area's `area_brief` view (§16.3, 0041) |
 | Concepts · Area, Project | `area`, `projects` |
 | Documents · Area, Project, page body | `area`, `projects`, the body (0045, 0049). A `promoted` Document's body is sent on create only: after that it is yours |
