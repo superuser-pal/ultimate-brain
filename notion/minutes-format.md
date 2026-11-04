@@ -4,6 +4,8 @@ Paste it into Notion AI when it summarises a meeting, and use it for the "Minute
 
 **Since 0.9.0 (decision 0067)** "My actions" is two groups, Quick follow-ups and Tasks, and each task has a Scope toggle. Minutes written with the earlier prompt, with "My actions", are still read exactly as before. To switch, paste the prompt below into Notion AI again ([pasting-the-minutes-prompt.md](pasting-the-minutes-prompt.md)).
 
+**Since 0.9.1 (decision 0071)** Open questions holds only what a later meeting or document can answer, never an action, and a tentative idea no longer goes there. The ingest reads every line for what it says either way (a to-do written under Open questions becomes a task, not a question), so older minutes still work; paste the prompt again to get the cleaner shape.
+
 The old eleven-heading format (Attendees, Projects, Action Items, Decisions, Open Questions, Risks, Meeting Purpose, Background, Current Status, Requirements and Deadlines, Other relevant topics) is replaced. Attendees and Projects still come first because the ingest asks about them when the meeting's properties are empty.
 
 ```text
@@ -32,7 +34,7 @@ Inside a subject, in this order, only the sub-headings that apply:
 ### Quick follow-ups
 ### Tasks
 ### Other commitments   (what someone else said they would do)
-### Open questions
+### Open questions   (what a later meeting or document can answer; never an action)
 ### Concerns raised   (only what the conversation supports)
 
 Number the subjects [s1], [s2], ... Write every item (in the overview as [s0.iN], in a subject as [sN.iM]) as ONE line in exactly this form:
@@ -60,7 +62,8 @@ Rules:
 - Omit a sub-heading with nothing under it. Write nothing under a heading you would fill with "None".
 - Never repeat a sentence in the overview and in a subject.
 - Never invent a risk, an owner, a date or a conclusion. Write "needs clarification" when the owner or the meaning is uncertain.
-- A tentative idea ("we could...") is not a commitment: leave it out of Quick follow-ups, Tasks and Other commitments, or put it under Open questions.
+- An action is never an open question, even when it was said as one ("can you send me the plan?"): an action I take on goes under Quick follow-ups or Tasks, someone else's under Other commitments. Open questions holds only what a later meeting, document or answer can settle. A risk or worry goes under Concerns raised.
+- A tentative idea ("we could...") is neither a commitment nor a question: leave it out of Quick follow-ups, Tasks, Other commitments and Open questions. When it matters, write it under Highlights as "Idea, not agreed: ...".
 - Preserve names, teams, acronyms, dates, numbers, qualifications and substantive context exactly as said, and keep the references to documents and sources the speakers gave.
 - Distinguish confirmed information from expectations and open questions.
 - Omit small talk and repetition. Do not mark anything "Meeting only" yourself.
