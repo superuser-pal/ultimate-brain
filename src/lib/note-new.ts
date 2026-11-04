@@ -183,6 +183,8 @@ export function stageNotes(
     }
     // A workflow Document carries an artifact the user approved (connected-workflows.md §6.3).
     if (item.type === "reference" && attributes.origin === "workflow") attributes.lifecycle = "reviewed";
+    // So does a decision a connected workflow publishes: the user approved it (0071).
+    if (item.type === "decision" && attributes.workflow !== undefined) attributes.lifecycle = "reviewed";
     if (item.type === "reference" && attributes.origin === "promoted") {
       // A promoted Document stands where its note stands (0049).
       attributes.lifecycle = workspace.get(String(attributes.promoted_from))?.attributes.lifecycle ?? attributes.lifecycle;
@@ -253,6 +255,9 @@ function documentProblems(workspace: Workspace, items: readonly NoteInput[], poi
     if (origin === "promoted" && typeof from === "string") {
       const type = workspace.get(from)?.type;
       if (type !== "decision" && type !== "concept") return at("frontmatter/promoted_from", `${from} is not an existing decision or concept`);
+      // Only reviewed knowledge is promoted: a draft's Document would get no page (0071).
+      const lifecycle = workspace.get(from)?.attributes.lifecycle;
+      if (lifecycle !== "reviewed" && lifecycle !== "disputed") return at("frontmatter/promoted_from", `${from} is ${String(lifecycle)}: only a reviewed or disputed note is promoted (approve it first)`);
       const other = promoted.get(from);
       if (other !== undefined) return at("frontmatter/promoted_from", `${from} is already promoted to ${other}`);
       promoted.set(from, item.id ?? `${pointerOf(index)}`);
