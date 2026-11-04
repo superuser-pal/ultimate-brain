@@ -14,7 +14,6 @@ On this page ("Archive") add one tab per numbered item, each with one linked vie
 3. Tab "Areas": "Areas", List, named "Which areas did I close?": filter Archived is checked; sort Name; show Name.
 [Knowledge] 4. Tab "Decisions": "Decisions", List, named "Which decisions are archived?": filter Lifecycle is Archived; sort Date descending; show Name, Project, Date.
 [Knowledge] 5. Tab "Questions": "Questions", List, named "Which questions are archived?": filter Lifecycle is Archived; sort Created time descending; show Name, Project, Status.
-[Knowledge] 6. Tab "Concepts": "Concepts", List, named "Which concepts are archived?": filter Lifecycle is Archived; sort Name; show Name, Project.
 [Documents] 6b. Tab "Documents": "Documents", List, named "Which documents are archived?": filter Lifecycle is Archived; sort Name; show Name, Project.
 7. Tab "People": "People", List, named "Who is archived?": filter Lifecycle is Archived; sort Name; show Name, Role.
 [Orgs] 8. Tab "Orgs": "Orgs", List, named "Which orgs are archived?": filter Archived is checked; sort Name; show Name, Relationship.
