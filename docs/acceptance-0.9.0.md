@@ -66,6 +66,13 @@ No scenario failed. These came up on the way; none is fixed here.
 | 6 | brain-workflow (the yes rule) | S3 edited the agenda's header after "I approve it as it is" and hashed the edited text. The approval rule could say that any edit after the yes needs showing again. | the skills task below |
 | 7 | `workflow adopt apply` | The adopted items' first progress line reads "Adopted from PLAN.md line:… as /": a raw key and the checkbox marker (S2). | cosmetic, the same task as 2 or later |
 | 8 | the harness, not the product | A runner that misses `env.sh` runs the user's own `brain`, which resolves the user's brain (S4b: one read-only `brain index`). The building session did the same once while preparing CC-117. A sandbox can't stop an agent from running another binary. | for later evals: start every runner with `BRAIN_DIR` set to the sandbox and a fail-closed check that `brain status` names it before any other command |
-| 9 | phase A delivery (design, for CC-105 / 0.9.1) | brain-workflow and brain-workflow-adopt are meant for any working folder, but the phase A snapshot targets them at the brain only, and `brain link` copies only brain-query into a linked repo. In a folder that isn't the brain, an agent finds them only if the user runs from the brain or installs them globally. The runs gave the skill's path. | a question for the 0.9.1 grill |
+| 9 | phase A delivery (design, for CC-105 / 0.9.2) | brain-workflow and brain-workflow-adopt are meant for any working folder, but the phase A snapshot targets them at the brain only, and `brain link` copies only brain-query into a linked repo. In a folder that isn't the brain, an agent finds them only if the user runs from the brain or installs them globally. The runs gave the skill's path. | a question for the 0.9.1 grill |
 
 Proposed tasks, for the planning session to add: **(a)** findings 1 and 2 (spec, then CLI test-first: `kit check` and the rollback text); **(b)** findings 3 to 7 in the brain-workflow skill and the adoption progress text.
+
+**Triage (the user, 2026-11-04):** (a) is **CC-129** in 0.9.0, so the rollback in U-24 names the version to go back to; (b) is **CC-130** in 0.9.1; finding 9 goes to CC-105 (0.9.2); finding 8 is a harness note, no task.
+
+## Rerun after merging main (2026-11-04)
+
+Main gained CC-120 (Type moves from Areas to Domains), CC-121 (no Lifecycle on Domains, Areas, Goals, Projects and Orgs; decision 0070) and the CC-128 renumbering, all part of 0.9.0. On the merged head: `install.sh` installed it as 0.9.0; `rollback.mjs` passes its 7 checks; `make-sandbox.sh` builds all five sandboxes (the fixture brain upgrades and pins with no error); `shared-checks.mjs` passes its 9 checks. The blind scenario runs were not repeated: they use an existing Area and Project (workflow settings, summaries, the Repo tasks toggle) and never create those rows or read Type or Lifecycle, which is all CC-120 and CC-121 change.
+
