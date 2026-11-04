@@ -4,7 +4,7 @@
 #   <dir>/brain    the Acme fixture brain (all modules on, a Documents database), pinned by the installed CLI's own
 #                  `brain upgrade` (its .claude/skills and .agents/skills are the agents' skills), every note recorded
 #                  as published so nothing else waits
-#   <dir>/notion   CC-104's Notion stand-in (eval/workflow-0.9.0/harness/notion-sim) with Tasks, Projects, Areas,
+#   <dir>/notion   the Notion stand-in (harness/notion-sim: CC-104's, with page bodies) with Tasks, Projects, Areas,
 #                  Documents and Decisions
 #   <dir>/github   the gh stand-in's state (gh-sim), for the scenarios with a GitHub-shaped repo
 #   <dir>/bin      notion-sim, and gh (gh-sim)
@@ -39,7 +39,7 @@ fs.writeFileSync(process.argv[2],JSON.stringify({records:d.items.map(i=>({id:i.i
 done
 rm "$D/render.json" "$D/record.json"
 git -C "$B" add -A; git -C "$B" commit -q -m "publish: sandbox"
-cp "$SRC/eval/workflow-0.9.0/harness/notion-sim" "$D/bin/notion-sim"
+cp "$H/notion-sim" "$D/bin/notion-sim"
 cp "$H/gh-sim" "$D/bin/gh"; chmod +x "$D/bin/notion-sim" "$D/bin/gh"
 PATH="$D/bin:$PATH" sh "$SRC/eval/workflow-0.9.0/harness/make-notion.sh" "$D/notion" "$B"
 node -e '
