@@ -81,7 +81,7 @@ test("brain query leaves out restricted statements and notes resting on a suppre
   // The fixture already has sources and concepts: add an extract source, a suppression and a concept citing it.
   const src = join(dir, "sources/notion/2026-12-10-extract.md");
   await write(src, `---\nid: src-ex2a3b4c\ntype: source\ntitle: Launch extract\nsource_key: notion:${page}\nkind: minutes\nextract: true\nextract_of: ${page}\nextract_version: 2\ntranscript_hash: ${"a".repeat(64)}\nselection:\n  - id: s1\n    effective: use\n    explicit: null\npassages:\n  - n: 1\n    hash: ${hash}\n    items:\n      - s1.i1\ncontent_hash: sha256:${"0".repeat(64)}\ncaptured: 2026-12-10T09:00:00Z\n---\n<!-- passage ¶1 item s1.i1 -->\n${text}\n`);
-  const concept = join(dir, "knowledge/concepts/row-level-security.md");
+  const concept = join(dir, "knowledge/references/row-level-security.md");
   const original = await read(concept, "utf8");
   const withSources = original.replace(/\nsources:[^\n]*\n/, "\n").replace(/\n---\n/, `\nsources:\n  - src-ex2a3b4c\n---\n`);
   // Only marked statements: unmarked prose would restrict the whole note (capture-and-review §5.1).

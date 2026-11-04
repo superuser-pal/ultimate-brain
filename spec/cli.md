@@ -987,7 +987,7 @@ Read-only. Compares each row with the brain and returns a plan. Notes are matche
 | questions | Status → `status` | Name, Summary |
 | documents | — | Name, Summary |
 
-Other brain-owned properties (Assessment, Supersedes, Decided In, Raised In, Kind, Project on Decisions and Questions, the derived Area on Decisions and Questions (0034)) are not correctable in v1 (decision 0027): a change you make there is `ignored`, `NOT_CORRECTABLE`, so the skill can tell you to use a proposal instead.
+Other brain-owned properties (Assessment, Supersedes, Decided In, Raised In, Kind, Project on Decisions and Questions, the derived Area on Decisions and Questions (0034), Project and Area on Documents) are not correctable in v1 (decision 0027): a change you make there is `ignored`, `NOT_CORRECTABLE`, so the skill can tell you to use a proposal instead.
 
 ```json
 { "data": {
@@ -1079,7 +1079,7 @@ A source with `attached_to` is never selected: it has no Inbox row (0042). Notes
 | orgs | Name, Summary, Brain ID, Last Synced, Archived *(once)* |
 | decisions | Name, Summary, Date, Assessment, Project, Area, Decided In, Supersedes, Lifecycle, Brain ID, Last Synced |
 | questions | Name, Summary, Kind, Project, Area, Raised In, Lifecycle, Brain ID, Last Synced, Status *(Open or Answered, once)* |
-| documents | Name, Summary, Project, Area, From decision, Lifecycle, Brain ID, Last Synced (0045, 0049; From concept until 0.9.1, 0071) |
+| documents | Name, Summary, Project, Area, Origin (0071), From decision, Lifecycle, Brain ID, Last Synced (0045, 0049; From concept until 0.9.1, 0071) |
 | meetings | Decisions, Questions, Attendees *(add)*, Project *(if empty)*, Area *(if empty)*, Brain Status, Ingested At, Brain ID |
 | review | Name, Kind, About, About Page, Now, Proposed, Why, Source Meeting, Area (0050), State, Brain ID (Target, Target Page, Before, After before 0.5.0; 0045). Render always sends the 0.5.0 names: it doesn't read the space's schema, so a space not yet migrated (migration 0009) rejects the write. Migration 0009 therefore runs before the first publish on 0.5.0; `brain upgrade` names it, and the publish's error report names the missing property |
 | inbox | Name *(create only)*, Kind *(if empty)*, Summary, Decisions, Questions, Documents, People, Project *(if empty)*, Area *(if empty)*, Brain Status, Brain ID, Last Synced; a report: Name, Kind, Project, Area, Ask, Brain Status, Brain ID, Last Synced, Refresh asked *(clear)*, What to fix *(clear)* |

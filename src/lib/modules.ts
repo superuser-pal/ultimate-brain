@@ -18,7 +18,7 @@ export const MODULE_DEFAULTS: Readonly<Record<ModuleName, boolean>> = {
 /** The `notion.databases` keys each module owns. Reports and Tasks own none (Tasks uses `notion.tasks`). */
 export const MODULE_DATABASES: Readonly<Record<ModuleName, readonly string[]>> = {
   domains: ["domains"],
-  knowledge: ["decisions", "questions", "concepts"],
+  knowledge: ["decisions", "questions"],
   orgs: ["orgs"],
   documents: ["documents"],
   reports: [],
@@ -30,7 +30,6 @@ const MODULE_FOR_TYPE: Readonly<Record<string, ModuleName>> = {
   domain: "domains",
   decision: "knowledge",
   question: "knowledge",
-  concept: "knowledge",
   org: "orgs",
   reference: "documents",
   goal: "planning",

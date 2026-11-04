@@ -16,7 +16,7 @@ import { normalizeTimestamp } from "../lib/time.ts";
 import { installedProduct } from "../lib/skills.ts";
 import { homeOf, statusSkills } from "../lib/skills-pin.ts";
 
-const NOTE_TYPES = ["domain", "area", "project", "person", "org", "meeting", "decision", "question", "concept", "source", "view", "goal", "memory", "reference"];
+const NOTE_TYPES = ["domain", "area", "project", "person", "org", "meeting", "decision", "question", "source", "view", "goal", "memory", "reference"];
 const PROPOSAL_STATUSES = ["pending", "approved", "edited", "rejected", "applied", "closed"];
 
 /** `brain status` (spec/cli.md §5.2). */
@@ -40,8 +40,9 @@ export const statusCommand: Command = {
       if (note.type === "proposal") {
         const status = note.attributes.status;
         if (typeof status === "string" && status in proposalCounts) proposalCounts[status] += 1;
-      } else if (note.type in noteCounts) {
-        noteCounts[note.type] += 1;
+      } else if (note.type in noteCounts || note.type === "concept") {
+        // A concept is counted only while a brain still has one, before brain upgrade converts it (0071).
+        noteCounts[note.type] = (noteCounts[note.type] ?? 0) + 1;
       }
     }
 
@@ -102,7 +103,7 @@ function readNotion(config: Record<string, unknown>): { configured: string[]; mi
   const notion = config.notion as Record<string, unknown>;
   const configured: string[] = [];
   const missing: string[] = [];
-  for (const key of ["domains", "areas", "goals", "key_results", "projects", "meetings", "people", "orgs", "decisions", "questions", "review", "inbox", "concepts", "documents"]) {
+  for (const key of ["domains", "areas", "goals", "key_results", "projects", "meetings", "people", "orgs", "decisions", "questions", "review", "inbox", "documents"]) {
     (databaseId(config, key) !== "" ? configured : missing).push(key);
   }
   const tasks = notion.tasks as Record<string, unknown>;

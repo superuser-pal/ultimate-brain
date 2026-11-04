@@ -55,11 +55,11 @@ test("a reference validates, is listed under its project and renders to Document
   assert.equal(lint.json.data.errors, 0, lint.stdout);
   const index = await run(dir, ["index"]);
   assert.equal(index.code, 0, index.stdout);
-  assert.equal(index.json.data.counts.reference, 1);
+  assert.equal(index.json.data.counts.reference, 2, "the fixture's learned Document and this one");
   const markdown = await readFile(join(dir, "index.md"), "utf8");
   assert.match(markdown, /\n## Documents\n- \[Acme requirements\]\(knowledge\/references\/acme-requirements\.md\) — ref-\w{8} · origin: part · area: Clients · project: Acme website · What Acme requires of the website\.\n/);
   const status = await run(dir, ["status"]);
-  assert.equal(status.json.data.notes.reference, 1);
+  assert.equal(status.json.data.notes.reference, 2);
   assert.ok(status.json.data.notion.missing.includes("documents"));
 
   const unconfigured = await run(dir, ["sync", "render", "--ids", reference.id]);
@@ -241,10 +241,13 @@ test("note new: a promoted Document takes its note's lifecycle, one per note; or
 
   const twice = await run(dir, ["note", "new"], { notes: [promoted("Firebase auth again", "dec-2p9f6h1r")] });
   assert.equal(twice.json.error?.code, "INPUT_INVALID");
-  const sameBatch = await run(dir, ["note", "new"], { notes: [promoted("RLS one", "con-1s6t8e2b"), promoted("RLS two", "con-1s6t8e2b")] });
+  const sameBatch = await run(dir, ["note", "new"], { notes: [promoted("Supabase one", "dec-7k2m9q4x"), promoted("Supabase two", "dec-7k2m9q4x")] });
   assert.deepEqual(sameBatch.json.error?.details.map((problem: { pointer: string }) => problem.pointer), ["/notes/1/frontmatter/promoted_from"]);
   const notADecision = await run(dir, ["note", "new"], { notes: [promoted("A question page", "dec-00000000")] });
   assert.equal(notADecision.json.error?.code, "INPUT_INVALID");
+  // Promote is on decisions only since 0.9.1 (0071): a learned Document, once a concept, is refused.
+  const learned = await run(dir, ["note", "new"], { notes: [promoted("RLS page", "con-1s6t8e2b")] });
+  assert.deepEqual(learned.json.error?.details.map((problem: { pointer: string }) => problem.pointer), ["/notes/0/frontmatter/promoted_from"]);
 
   const noOrigin = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "No origin", frontmatter: { summary: "x", sources: ["src-7w3c9k5m"] }, body: "x\n" }] });
   assert.equal(noOrigin.json.error?.details[0].pointer, "/notes/0/frontmatter/origin");
@@ -273,8 +276,8 @@ test("a promoted Document's body is yours: update_body is refused, and lint repo
   // A promoted_from naming a note retyped as a question, and an update_body proposal written by hand.
   const path = join(dir, page.path);
   await writeFile(path, (await readFile(path, "utf8")).replace("promoted_from: dec-7k2m9q4x", "promoted_from: con-1s6t8e2b"));
-  const concept = join(dir, "knowledge/concepts/row-level-security.md");
-  await writeFile(concept, (await readFile(concept, "utf8")).replace(/^type: concept$/m, "type: question"));
+  const concept = join(dir, "knowledge/references/row-level-security.md");
+  await writeFile(concept, (await readFile(concept, "utf8")).replace(/^type: reference$/m, "type: question"));
   const accepted = await run(dir, ["proposal", "new"], { proposals: [{ kind: "update_body", title: "Requirements v2", target: (await newReference(dir, "src-7w3c9k5m")).id, content: "x\n", why: "x", source: "src-7w3c9k5m" }] });
   const proposal = join(dir, accepted.json.data.created[0].path);
   await writeFile(proposal, (await readFile(proposal, "utf8")).replace(/^target: ref-\w+$/m, `target: ${page.id}`));
@@ -318,18 +321,21 @@ test("sync plan: Keep as document asks for a Document of the latest version or o
 
 test("sync plan: Promote asks for a promoted Document, or names the one there (0049)", async (context) => {
   const dir = await fixtureCopy(context);
-  const promoted = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "RLS (page)", frontmatter: { summary: "A page.", origin: "promoted", promoted_from: "con-1s6t8e2b" }, body: "RLS.\n" }] });
+  const promoted = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Firebase auth (page)", frontmatter: { summary: "A page.", origin: "promoted", promoted_from: "dec-2p9f6h1r" }, body: "Firebase.\n" }] });
   assert.equal(promoted.code, 0, promoted.stdout);
   const plan = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [
     { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { "Brain ID": "dec-7k2m9q4x", "Promote asked": true } },
-    { database: "concepts", page_id: "d4000000-0000-4000-8000-000000000002", last_edited: NOW, properties: { "Brain ID": "con-1s6t8e2b", "Promote asked": true } },
-    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000003", last_edited: NOW, properties: { "Brain ID": "dec-2p9f6h1r", "Promote asked": false } },
+    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000002", last_edited: NOW, properties: { "Brain ID": "dec-2p9f6h1r", "Promote asked": true } },
+    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000003", last_edited: NOW, properties: { "Brain ID": "dec-7k2m9q4x", "Promote asked": false } },
   ] });
   assert.equal(plan.code, 0, plan.stdout);
   assert.deepEqual(plan.json.data.promote_requests, [
     { page_id: "d4000000-0000-4000-8000-000000000001", note: "dec-7k2m9q4x" },
-    { page_id: "d4000000-0000-4000-8000-000000000002", note: "con-1s6t8e2b", existing: promoted.json.data.created[0].id },
+    { page_id: "d4000000-0000-4000-8000-000000000002", note: "dec-2p9f6h1r", existing: promoted.json.data.created[0].id },
   ]);
+  // The Concepts database is retired (0071): a snapshot naming it is refused.
+  const concepts = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [{ database: "concepts", page_id: "d4000000-0000-4000-8000-000000000004", last_edited: NOW, properties: { "Brain ID": "con-1s6t8e2b", "Promote asked": true } }] });
+  assert.equal(concepts.json.error?.code, "INPUT_INVALID");
   const applied = await run(dir, ["sync", "apply", "--dry-run"], plan.json.data);
   assert.deepEqual(applied.json.data.promote_requests, plan.json.data.promote_requests, "sync apply echoes the requests");
 });
@@ -363,7 +369,8 @@ test("render: a promoted Document links its note through From decision, and its 
   assert.equal(item.action, "create");
   assert.equal(item.body.trimStart(), "## Why\nBecause.\n");
   assert.deepEqual(item.properties["From decision"], { type: "relation", value: [] });
-  assert.deepEqual(item.properties["From concept"], { type: "relation", value: [] });
+  assert.equal(item.properties["From concept"], undefined, "From concept is retired (0071)");
+  assert.deepEqual(item.properties.Origin, { type: "select", value: "Promoted" });
   assert.deepEqual(item.pending_relations, [{ property: "From decision", ids: ["dec-7k2m9q4x"] }]);
   const recorded = await run(dir, ["sync", "record"], { records: [{ id: page.id, notion: "b3000000-0000-4000-8000-000000000001", synced_at: NOW, published: item.published }] });
   assert.equal(recorded.code, 0, recorded.stdout);

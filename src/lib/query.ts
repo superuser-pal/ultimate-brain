@@ -37,6 +37,8 @@ export interface QueryCandidate {
   lifecycle: string | null;
   assessment: string | null;
   date: string | null;
+  /** A Document's origin (absent = `part`); only on a `reference` (decision 0071). */
+  origin?: string;
   score: number;
   snippets: QuerySnippet[];
 }
@@ -145,6 +147,7 @@ function candidateFor(note: Note, tokens: readonly string[], context: QueryConte
     lifecycle: stringValue(note.attributes.lifecycle),
     assessment: stringValue(note.attributes.assessment),
     date: stringValue(note.attributes.date),
+    ...(note.type === "reference" ? { origin: stringValue(note.attributes.origin) ?? "part" } : {}),
     score,
     snippets: snippets(note, tokens),
   };

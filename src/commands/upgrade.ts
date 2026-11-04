@@ -1,9 +1,11 @@
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import { lstat, readdir, readFile, rmdir, unlink } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
 import { promisify } from "node:util";
 
 import type { Command, Warning } from "../lib/command.ts";
+import { planConceptConversion } from "../lib/concept-upgrade.ts";
 import { BrainError } from "../lib/errors.ts";
 import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
 import { appendLog } from "../lib/log.ts";
@@ -75,6 +77,11 @@ export const upgradeCommand: Command = {
             databases = renameKey(databases, old, key);
             changed = true;
           }
+          // 0.9.1: the Concepts database is retired (0071); its key goes, whatever its value.
+          if ("concepts" in databases) {
+            databases = Object.fromEntries(Object.entries(databases).filter(([name]) => name !== "concepts"));
+            changed = true;
+          }
           if (changed) config = { ...config, notion: { ...notion, databases } };
         }
         if (isRecord(config) && !("modules" in config)) {
@@ -86,6 +93,15 @@ export const upgradeCommand: Command = {
         changes.push({ path: brainJson, action: "skipped" });
         warnings.push({ code: "BRAIN_JSON_UNPARSEABLE", message: "brain.json is not valid JSON; left unchanged." });
       }
+    }
+
+    // 0.9.1 (step 5a, decision 0071): concepts become learned Documents, the links to them follow, and index.md is rebuilt.
+    const scanned = await scanNotes(root);
+    const indexBefore = await readOptional(join(root, "index.md"));
+    const concepts = planConceptConversion(root, scanned.notes, (path) => existsSync(join(root, path)), indexBefore);
+    for (const change of concepts.changes) {
+      await assertPlainPath(root, change.path);
+      changes.push(change);
     }
 
     // Skills (decisions 0029, 0059): the package snapshot replaces the pinned one (spec/skills-delivery.md §6.3). Its refusals are
@@ -199,13 +215,16 @@ export const upgradeCommand: Command = {
     if (!dryRun && written.length > 0) {
       await writeChanges(root, written);
       for (const [folder, self] of prune) await pruneEmpty(join(root, folder), self);
+      if (concepts.converted.length > 0) await rmdir(join(root, "knowledge/concepts")).catch(() => undefined);
       await appendLog(root, now, [{ op: "upgrade", id: "-", title: version, pairs: [["files", written.length]] }]);
     }
-    const { notes, problems } = await scanNotes(root);
+    // A dry run lints the planned tree: the converted notes as step 5a would leave them (spec/cli.md §5.15 step 7).
+    const { notes, problems } = dryRun ? { notes: concepts.notes, problems: scanned.problems } : await scanNotes(root);
     const plannedProductFiles = new Map<string, string | null>();
     for (const change of changes) if (change.action !== "skipped") plannedProductFiles.set(change.path, change.action === "removed" ? null : Buffer.from(change.content!).toString("utf8"));
     const home = homeOf(environment.env);
-    const lint = lintBrain({ root, notes, problems, brainConfig: brain!.config, indexMarkdown: await readOptional(join(root, "index.md")), plannedProductFiles, skillsLock: lock, home });
+    const lint = lintBrain({ root, notes, problems, brainConfig: brain!.config, indexMarkdown: dryRun && concepts.index !== null ? concepts.index : await readOptional(join(root, "index.md")),
+      pendingPaths: dryRun ? new Set(concepts.changes.filter((change) => change.action === "created").map((change) => change.path)) : undefined, plannedProductFiles, skillsLock: lock, home });
     const competing = competingCopies({ treeRoot: root, names: manifest!.skills.map((skill) => skill.name), home, brainRoot: root, brainSettings: plannedProductFiles.get(".claude/settings.json") });
     if (competing.length > 0) warnings.push({ code: "SKILLS_COMPETING", message: `${competing.length} competing skill copies; see data.skills.competing and remove them.` });
     let commit: string | null = null;
@@ -237,7 +256,7 @@ export const upgradeCommand: Command = {
     }
     return {
       warnings,
-      data: { dry_run: dryRun, dirty: dryRun ? await gitDirty(root) : undefined, version, files: changes.map(({ path, action }) => ({ path, action })), unchanged,
+      data: { dry_run: dryRun, dirty: dryRun ? await gitDirty(root) : undefined, version, files: changes.map(({ path, action }) => ({ path, action })), unchanged, converted: concepts.converted,
         skills: { from, to: { name: manifest!.name, version: manifest!.version }, retired, previous_cli: previousCli, competing },
         lint: { errors: lint.filter((x) => x.severity === "error").length, warnings: lint.filter((x) => x.severity === "warning").length }, commit, pushed },
       human: `${written.length} files ${dryRun ? "would change" : "changed"}, ${unchanged} unchanged\n`,

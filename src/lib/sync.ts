@@ -26,11 +26,11 @@ import { restrictedSources } from "./eligibility.ts";
 import { contextFor, publishableNote, requireSuppressions } from "./suppressions.ts";
 import { importedItems } from "./selection.ts";
 
-const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "concepts", "documents", "review", "inbox"] as const;
+const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "documents", "review", "inbox"] as const;
 const CREATABLE = new Set(["domains", "areas", "goals", "projects", "people", "orgs"]);
-const TYPE_FOR_DATABASE: Record<string, string> = { domains: "domain", areas: "area", goals: "goal", projects: "project", people: "person", orgs: "org", decisions: "decision", questions: "question", concepts: "concept", documents: "reference", review: "proposal" };
-const DATABASE_FOR_TYPE: Record<string, string> = { domain: "domains", area: "areas", goal: "goals", project: "projects", person: "people", org: "orgs", decision: "decisions", question: "questions", concept: "concepts", reference: "documents", source: "inbox", meeting: "meetings", proposal: "review" };
-const PUBLISHED_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "decision", "question", "concept", "reference", "source", "meeting", "proposal"]);
+const TYPE_FOR_DATABASE: Record<string, string> = { domains: "domain", areas: "area", goals: "goal", projects: "project", people: "person", orgs: "org", decisions: "decision", questions: "question", documents: "reference", review: "proposal" };
+const DATABASE_FOR_TYPE: Record<string, string> = { domain: "domains", area: "areas", goal: "goals", project: "projects", person: "people", org: "orgs", decision: "decisions", question: "questions", reference: "documents", source: "inbox", meeting: "meetings", proposal: "review" };
+const PUBLISHED_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "decision", "question", "reference", "source", "meeting", "proposal"]);
 
 export interface SyncPlan {
   as_of: string;
@@ -40,7 +40,7 @@ export interface SyncPlan {
   decisions: DecisionInput[];
   /** Inbox rows whose Document asked box is ticked by the Keep as document button (0049); the skill writes a Document for each. */
   document_requests: Array<{ page_id: string; source: string; files: string[]; only_keep: string | null; existing?: string[] }>;
-  /** Decision and concept rows whose Promote box is ticked (0049); the skill writes a promoted Document for each. */
+  /** Decision rows whose Promote box is ticked (0049; Concepts are retired since 0.9.1, 0071); the skill writes a promoted Document for each. */
   promote_requests: Array<{ page_id: string; note: string; existing?: string }>;
   /** Report rows whose Refresh box is ticked, and their new What to fix texts (0045); the skill runs `report new` / `report fix`. */
   refresh_requests: Array<{ page_id: string; report: string; wording_blocked?: true }>;
@@ -153,7 +153,7 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
     const known = typeof brainId === "string" && brainId !== "" ? row : { ...row, properties: { ...row.properties, "Brain ID": note.id } };
     planExisting(workspace, snapshot.as_of, known, note, result);
     if (row.database === "documents" && row.wording !== undefined && wordingDocument(note)) planWording(workspace, snapshot.as_of, row.page_id, note, row.wording, result);
-    if ((row.database === "decisions" || row.database === "concepts") && property(row.properties, "Promote asked") === true) planPromote(workspace, row, note, modules.documents, result);
+    if (row.database === "decisions" && property(row.properties, "Promote asked") === true) planPromote(workspace, row, note, modules.documents, result);
   }
   // A queued full refresh waits while Notion text for that report is unresolved (cli §5.14.7).
   const wordingNotes = new Set([...result.accepted_wording, ...result.wording_waiting, ...result.wording_held].map((item) => item.note));
@@ -373,7 +373,7 @@ function planInbox(workspace: Workspace, row: SnapshotRow, out: SyncPlan): void 
   out.document_requests.push(request);
 }
 
-/** A Promote asked box on a decision or concept row (cli §5.14.2, 0049). */
+/** A Promote asked box on a decision row (cli §5.14.2, 0049). */
 function planPromote(workspace: Workspace, row: SnapshotRow, note: Note, documentsOn: boolean, out: SyncPlan): void {
   if (!documentsOn) { out.ignored.push(ignoredRow(row, "MODULE_OFF", "Promote asked")); return; }
   const existing = workspace.notes.find((candidate) => candidate.type === "reference" && candidate.attributes.origin === "promoted" && candidate.attributes.promoted_from === note.id);
@@ -430,7 +430,7 @@ function notionFields(database: string, p: Record<string, unknown>, asOf: string
 
 function brainProperties(database: string): Array<[string, string]> {
   const common: Array<[string, string]> = [["Name", "title"], ["Summary", "summary"], ...(NO_LIFECYCLE_PROPERTY.has(TYPE_FOR_DATABASE[database] ?? "") ? [] : [["Lifecycle", "lifecycle"] as [string, string]])];
-  const extras: Record<string, Array<[string, string]>> = { areas: [["Domain", "domain"]], domains: [["Org", "org"]], goals: [["Why", "why"], ["Deadline", "facts.deadline"], ["Area", "area"]], projects: [["Key Facts", "facts"], ["Area", "area"], ["Goal", "goal"], ["Client", "client"], ["People", "people"]], people: [["Role", "facts.role"], ["Org", "org"]], decisions: [["Assessment", "assessment"], ["Project", "projects"], ["Area", "derived_area"]], questions: [["Kind", "kind"], ["Project", "projects"], ["Area", "derived_area"]], concepts: [["Project", "concept_projects"], ["Area", "concept_area"]], documents: [["Project", "reference_projects"], ["Area", "reference_area"]] };
+  const extras: Record<string, Array<[string, string]>> = { areas: [["Domain", "domain"]], domains: [["Org", "org"]], goals: [["Why", "why"], ["Deadline", "facts.deadline"], ["Area", "area"]], projects: [["Key Facts", "facts"], ["Area", "area"], ["Goal", "goal"], ["Client", "client"], ["People", "people"]], people: [["Role", "facts.role"], ["Org", "org"]], decisions: [["Assessment", "assessment"], ["Project", "projects"], ["Area", "derived_area"]], questions: [["Kind", "kind"], ["Project", "projects"], ["Area", "derived_area"]], documents: [["Project", "reference_projects"], ["Area", "reference_area"]] };
   return [...common, ...(extras[database] ?? [])];
 }
 
@@ -466,7 +466,6 @@ function offRelations(config: Record<string, unknown>, database: string): Set<st
   if (!on.orgs && database === "people") off.add("Org");
   if (!on.planning && database === "projects") off.add("Goal");
   if (!on.knowledge && (database === "inbox" || database === "meetings")) { off.add("Decisions"); off.add("Questions"); }
-  if (!on.knowledge && database === "inbox") off.add("Concepts");
   if (!on.documents && database === "inbox") off.add("Documents");
   return off;
 }
@@ -774,6 +773,8 @@ function trashDue(note: Note, now: Date): boolean {
   return Number.isFinite(time) && now.getTime() - time > TRASH_AFTER_MS;
 }
 function databaseIdFor(workspace: Workspace, database: string): string { return databaseId(workspace.config, database); }
+/** Documents · Origin (schema §14, decision 0071): a reference's `origin` (absent = `part`) and a report view (`report`). */
+const ORIGIN_LABEL: Readonly<Record<string, string>> = { whole: "Kept", part: "Kept", learned: "Learned", promoted: "Promoted", workflow: "Workflow", report: "Report" };
 function renderedBrainValues(note: Note, workspace: Workspace): Record<string, unknown> {
   const a = note.attributes; const values: Record<string, unknown> = {};
   const common = () => {
@@ -824,10 +825,10 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     if (a.answer !== undefined) { if (published.Status !== "Answered") values.Status = "Answered"; }
     else if (published.Status === undefined && !yours) values.Status = "Open";
   }
-  if (note.type === "concept" || note.type === "reference") Object.assign(values, { Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace) });
   if (note.type === "reference") {
+    // From concept is retired with Concepts (0071): a Document promoted from a concept before 0.9.1 has no From relation.
     const from = a.origin === "promoted" && typeof a.promoted_from === "string" ? a.promoted_from : undefined;
-    Object.assign(values, { "From decision": relationPages(from?.startsWith("dec-") ? [from] : [], workspace), "From concept": relationPages(from?.startsWith("con-") ? [from] : [], workspace) });
+    Object.assign(values, { Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), Origin: ORIGIN_LABEL[String(a.origin ?? "part")] ?? null, "From decision": relationPages(from?.startsWith("dec-") ? [from] : [], workspace) });
   }
   return values;
 }
@@ -861,7 +862,7 @@ function projectAreas(projects: unknown, workspace: Workspace): string[] {
 function producedBy(note: Note, workspace: Workspace): Note[] {
   const sources = new Set([note.id, ...workspace.notes.filter((candidate) => candidate.type === "source" && candidate.attributes.attached_to === note.id).map((candidate) => candidate.id)]);
   // A promoted Document comes from its note, not the source (0049).
-  return workspace.notes.filter((candidate) => ["decision", "question", "concept", "reference", "person"].includes(candidate.type) && !(candidate.type === "reference" && candidate.attributes.origin === "promoted") && Array.isArray(candidate.attributes.sources) && candidate.attributes.sources.some((id) => sources.has(String(id))));
+  return workspace.notes.filter((candidate) => ["decision", "question", "reference", "person"].includes(candidate.type) && !(candidate.type === "reference" && candidate.attributes.origin === "promoted") && Array.isArray(candidate.attributes.sources) && candidate.attributes.sources.some((id) => sources.has(String(id))));
 }
 
 function sourceValues(note: Note, workspace: Workspace): Record<string, unknown> {
@@ -869,15 +870,15 @@ function sourceValues(note: Note, workspace: Workspace): Record<string, unknown>
   const ids = (type: string) => produced.filter((candidate) => candidate.type === type).map((candidate) => candidate.id).sort(compareCodePoints);
   const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))].sort(compareCodePoints);
   const areas = [...new Set([...produced.map((candidate) => candidate.attributes.area).filter((id): id is string => typeof id === "string"), ...projects.flatMap((id) => { const area = workspace.get(id)?.attributes.area; return typeof area === "string" ? [area] : []; })])].sort(compareCodePoints);
-  return { Name: note.attributes.title, Kind: note.attributes.kind === "document" ? "File" : select(note.attributes.kind), Summary: note.attributes.summary ?? null, Decisions: relationPages(ids("decision"), workspace), Questions: relationPages(ids("question"), workspace), Concepts: relationPages(ids("concept"), workspace), ...(databaseIdFor(workspace, "documents") === "" ? {} : { Documents: relationPages(ids("reference"), workspace) }), People: relationPages(ids("person"), workspace), Project: relationPages(projects, workspace), Area: relationPages(areas, workspace), "Brain Status": "Done", "Brain ID": note.id };
+  return { Name: note.attributes.title, Kind: note.attributes.kind === "document" ? "File" : select(note.attributes.kind), Summary: note.attributes.summary ?? null, Decisions: relationPages(ids("decision"), workspace), Questions: relationPages(ids("question"), workspace), ...(databaseIdFor(workspace, "documents") === "" ? {} : { Documents: relationPages(ids("reference"), workspace) }), People: relationPages(ids("person"), workspace), Project: relationPages(projects, workspace), Area: relationPages(areas, workspace), "Brain Status": "Done", "Brain ID": note.id };
 }
 
 function notionProperty(name: string, value: unknown, note: Note, workspace: Workspace, pending: Array<Record<string, unknown>>): unknown {
-  const relation = ["Domain", "Area", "Goal", "Client", "People", "Org", "Project", "Decided In", "Raised In", "Supersedes", "Decisions", "Questions", "Concepts", "Documents", "Attendees", "From decision", "From concept"].includes(name);
+  const relation = ["Domain", "Area", "Goal", "Client", "People", "Org", "Project", "Decided In", "Raised In", "Supersedes", "Decisions", "Questions", "Documents", "Attendees", "From decision"].includes(name);
   if (relation) {
     const sourceField: Record<string, string> = { Domain: "domain", Area: "area", Goal: "goal", Client: "client", People: "people", Org: "org", Project: "projects", "Decided In": "decided_in", "Raised In": "raised_in", Decisions: "decisions", Questions: "questions", Attendees: "attendees" };
     const raw = name === "Area" && note.type === "proposal" ? reviewArea(note.attributes, workspace)
-      : name === "From decision" || name === "From concept" ? (Array.isArray(value) && note.attributes.promoted_from !== undefined && String(note.attributes.promoted_from).startsWith(name === "From decision" ? "dec-" : "con-") ? [note.attributes.promoted_from] : [])
+      : name === "From decision" ? (Array.isArray(value) && note.attributes.promoted_from !== undefined && String(note.attributes.promoted_from).startsWith("dec-") ? [note.attributes.promoted_from] : [])
       : name === "Area" && (note.type === "decision" || note.type === "question") ? projectAreas(note.attributes.projects, workspace) : name === "Supersedes" ? (Array.isArray(note.attributes.relations) ? note.attributes.relations.filter(isRecord).filter((item) => item.type === "supersedes").map((item) => item.target) : []) : note.type === "source" ? sourceRelationIds(note, name, workspace) : note.attributes[sourceField[name] ?? ""];
     const missing = (Array.isArray(raw) ? raw : raw === undefined ? [] : [raw]).map(String).filter((id) => typeof workspace.get(id)?.attributes.notion !== "string");
     if (missing.length > 0) pending.push({ property: name, ids: missing });
@@ -893,7 +894,7 @@ function notionProperty(name: string, value: unknown, note: Note, workspace: Wor
   if (name === "About Page") return { type: "url", value };
   // An Inbox row's Kind is written only when empty in Notion, so a Kind you chose stands (0048).
   if (name === "Kind" && note.type === "source") return { type: "select", value, mode: "if_empty" };
-  if (["Lifecycle", "Assessment", "Kind", "State", "Brain Status", "Status"].includes(name)) return { type: "select", value };
+  if (["Lifecycle", "Assessment", "Kind", "State", "Brain Status", "Status", "Origin"].includes(name)) return { type: "select", value };
   if (name === "Archived") return { type: "checkbox", value };
   if (name === "Last Synced" || name === "Date" || name === "Deadline" || name === "Ingested At") return { type: "date", value };
   return { type: name === "Name" ? "title" : "rich_text", value };
@@ -902,7 +903,6 @@ function sourceRelationIds(note: Note, name: string, workspace: Workspace): stri
   const produced = producedBy(note, workspace);
   if (name === "Decisions") return produced.filter((candidate) => candidate.type === "decision").map((candidate) => candidate.id);
   if (name === "Questions") return produced.filter((candidate) => candidate.type === "question").map((candidate) => candidate.id);
-  if (name === "Concepts") return produced.filter((candidate) => candidate.type === "concept").map((candidate) => candidate.id);
   if (name === "Documents") return produced.filter((candidate) => candidate.type === "reference").map((candidate) => candidate.id);
   if (name === "People") return produced.filter((candidate) => candidate.type === "person").map((candidate) => candidate.id);
   const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))];
@@ -919,7 +919,7 @@ function renderedContent(note: Note, workspace: Workspace): { body: string | nul
   // A source's digest is written once (0043).
   if (note.type === "source") { if (!hasInboxBody(note)) return { body: null, sections: null }; const body = digestBody(note); return { body, sections: null, hash: hash(body) }; }
   if (isReport(note)) { const body = notionMarkdown(note.body.replace(/^\n+/, ""), note, workspace); return { body, sections: null, hash: hash(body) }; }
-  if (note.type === "decision" || note.type === "question" || note.type === "concept" || note.type === "reference") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: notionMarkdown(generatedBlock(brief?.body ?? ""), note, workspace), "Decision log": notionMarkdown(generatedBlock(log?.body ?? ""), note, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
+  if (note.type === "decision" || note.type === "question" || note.type === "reference") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: notionMarkdown(generatedBlock(brief?.body ?? ""), note, workspace), "Decision log": notionMarkdown(generatedBlock(log?.body ?? ""), note, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
 function generatedBlock(body: string): string { const start = body.indexOf("<!-- @generated:start -->"); const end = body.indexOf("<!-- @generated:end -->"); return start >= 0 && end > start ? body.slice(start + "<!-- @generated:start -->".length, end).trim() : body.trim(); }
 function notionMarkdown(body: string, source: Note, workspace: Workspace): string { const fromFolder = source.path.includes("/") ? source.path.slice(0, source.path.lastIndexOf("/")) : ""; return body.replace(/\^\[(inferred|ambiguous)\]/g, (_, kind) => kind === "inferred" ? " (AI inference)" : " (ambiguous)").replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_all, title, link) => { const targetPath = normalizeRelative(fromFolder, link); const target = workspace.notes.find((note) => note.path === targetPath); return typeof target?.attributes.notion === "string" ? `[${title}](https://www.notion.so/${target.attributes.notion.replaceAll("-", "")})` : title; }); }
 function reviewMarkdown(body: string, target: Note | undefined): string {
