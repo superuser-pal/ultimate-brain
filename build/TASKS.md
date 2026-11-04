@@ -195,7 +195,7 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 **Output:** this file: the CC-113 row restored verbatim from 47a4743; the CC-116 row in 0.10.0.
 **Acceptance:** the CC-113 row matches `git show 47a4743:build/TASKS.md`; CC-116 has Release 0.10.0, a Changelog, Output, Acceptance and status `todo`; no other row or Changelog line changes.
 
-### CC-117 · Catch-up and ingest hand over to brain-repos · `review`
+### CC-117 · Catch-up and ingest hand over to brain-repos · `done` (#201)
 **Release:** 0.9.0
 **Changelog:** each catch-up rebuilds the task rollup of a repo whose tasks are tracked in the repo, and "link the repo at <path>" in an ingest goes through brain-repos, so every new link gets a kit after your yes.
 **Output:** CC-104's spec question 3 (answered 2026-11-04): brain-catch-up rebuilds the `Repo tasks · <name>` rollup of each tracked-in-repo linked repo per spec/linked-repos.md §4, with `brain repo tasks` through brain-repos "The rollup", written in the publish and counted in the short report; brain-ingest (SKILL.md and references/sources.md) hands repo linking to brain-repos instead of `repo add --pattern`; the skill mirror; a blind run in eval/handover-0.9.0; notion/migrations/0015 points to pasting the new minutes prompt (one line, the user's 2026-11-04 addition). This file: the answer line under CC-104's spec questions and the CC-118 row in 0.10.0.
