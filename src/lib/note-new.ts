@@ -41,6 +41,8 @@ export interface StagedNotes {
 
 const ITEM_KEYS = ["type", "id", "title", "file_date", "frontmatter", "body"];
 const KNOWLEDGE_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
+/** Types you create, or the brain writes only after your yes: no Lifecycle in Notion, `reviewed` from creation (0070). */
+export const NO_LIFECYCLE_PROPERTY = new Set(["domain", "area", "goal", "project", "org"]);
 const NEW_NOTE_TYPES = new Set([...KNOWLEDGE_TYPES, "source"]);
 const FORBIDDEN_KEYS = ["id", "type", "title", "created", "updated", "lifecycle"];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -167,7 +169,7 @@ export function stageNotes(
     const lf = item.body.replace(/\r\n?/g, "\n");
     const body = lf === "" || lf.endsWith("\n") ? lf : `${lf}\n`;
     const attributes: Record<string, unknown> = { type: item.type, title: item.title, ...item.frontmatter };
-    if (KNOWLEDGE_TYPES.has(item.type)) attributes.lifecycle = options.lifecycle ?? "draft";
+    if (KNOWLEDGE_TYPES.has(item.type)) attributes.lifecycle = options.lifecycle ?? (NO_LIFECYCLE_PROPERTY.has(item.type) ? "reviewed" : "draft");
     if (item.type === "reference" && attributes.origin === "whole") {
       // The source's own text needs no Review; one whole Document per source (spec/cli.md §5.5, 0049).
       const source = String((attributes.sources as unknown[])[0]);
