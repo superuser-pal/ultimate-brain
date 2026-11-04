@@ -249,14 +249,14 @@ My message carries my confirmation. When done, reply in at most three lines: wha
 
 ```text
 Goal: propose an up-to-date version of this report, using the brain pages in Notion.
-Source: this page only, and the pages in [@Brain Data] that bear on its subject: its Project and Area, newer Decisions, Questions, Concepts and Documents, People and Meetings, and the pages its text already links. It must be a Report row (Kind Report) in the Inbox database inside Brain Data; otherwise stop and tell me. No external research, unless my message asks for it.
+Source: this page only, and the pages in [@Brain Data] that bear on its subject: its Project and Area, newer Decisions, Questions, Concepts and Documents, People and Meetings, and the pages its text already links. It must be a report: a page of the Documents database inside Brain Data whose Origin is Report (on the Inbox with Kind Report before 0.9.1); otherwise stop and tell me. No external research, unless my message asks for it.
 
 1. Read the report and the pages it links. Search Brain Data for pages that bear on the same subject and are not linked yet, newer ones first.
 2. Add ONE toggle block at the end of the page with exactly the title "Proposed refresh · based on Notion" (no date in the title). If that toggle already exists, replace only what is inside it; leave everything else on the page exactly as it is.
 3. Inside the toggle, write the whole proposed report with exactly the six sections of a report, as H2 headings, in this order: Where it stands, Timeline, Decisions in force, Open questions and risks, People involved, Gaps. Timeline oldest first. Link every line to the page it rests on; mark a line that rests on a note I haven't reviewed with "(not reviewed)". Say in Gaps what the pages do not cover. Start the "Where it stands" text with "As of <today's date>, from the pages in Notion:", so the date travels with the text and nothing sits above the first section.
 4. Never change the report's current text, the title, any property (Refresh asked, What to fix, Accepted and Accepted at included), or any page other than this one.
 
-My message carries my confirmation. When done, reply in at most three lines: what changed in the toggle (new, or replaced); if Accepted is ticked on this page, that this edit cancels the acceptance (click Accept again after replacing the text); and what I do next: "Replace the report text with what is in the toggle, delete the toggle, then click Accept refresh."
+My message carries my confirmation. When done, reply in at most three lines: what changed in the toggle (new, or replaced); if Accepted is ticked on this page, that this edit cancels the acceptance (click Accept again after replacing the text); and what I do next: "Replace the report text with what is in the toggle, delete the toggle, then click Accept."
 ```
 
 **Without a Custom Agent** (plans without Business or Enterprise): save the same text as a personal skill, or paste it into Notion AI while the capture is open (decision 0045).

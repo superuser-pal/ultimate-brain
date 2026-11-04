@@ -23,7 +23,8 @@ On this page ("Knowledge") add one tab per numbered item you have. In each tab p
 [Knowledge]    - Table "What do we know per project?": Lifecycle is not Archived; sort Name; group by Project; show Name, Area, Summary.
 [Knowledge]    - List "Which concepts are drafts?": Lifecycle is Draft; sort Created time descending; show Name, Project.
 [Documents] 3b. Tab "Documents" (database "Documents"):
-[Documents]    - List "What did we keep?": Lifecycle is not Archived; sort Last edited time descending; show Name, Project, Summary.
+[Documents]    - List "What did we keep?": Lifecycle is not Archived and Origin is not Report; sort Last edited time descending; show Name, Project, Summary.
+[Reports]    - List "Which reports do I have?": Origin is Report; sort Last edited time descending; show Name, Project, Area, Refresh asked, What to fix.
 4. Tab "People" (database "People"):
    - Gallery with small cards "Who's who?": Lifecycle is not Archived; sort Name; show Name, Role.
 [Orgs]    - In "Who's who?", also group by Org and show Org.

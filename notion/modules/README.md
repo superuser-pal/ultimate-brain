@@ -8,7 +8,7 @@ The space is a core (Inbox, Meetings, Projects, Areas, People, Review) plus opti
 | Knowledge | [knowledge.md](knowledge.md) | Decisions, Questions, Concepts |
 | Orgs | [orgs.md](orgs.md) | Orgs |
 | Documents | [documents.md](documents.md) | Documents |
-| Reports | [reports.md](reports.md) | none: Ask and Report rows on the Inbox |
+| Reports | [reports.md](reports.md) | Documents (Reports needs the Documents module): a report is a Documents row with Origin Report; Ask rows on the Inbox |
 | Tasks | [tasks.md](tasks.md) | Tasks, or your own tasks database |
 | Planning | [planning.md](planning.md) | Goals, Key Results |
 
