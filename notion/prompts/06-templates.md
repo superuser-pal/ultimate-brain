@@ -25,8 +25,8 @@ Create a default page template for each database below. Each item "Heading: data
 [Knowledge]   "What's still open here?": Questions where Area is this page (views: "Open questions" Status is Open and Kind is Question; "Open risks" Status is Open and Kind is Risk; "Answered" Status is Answered), showing Name, Project, Kind.
   "What came in?": Inbox where Area is this page, sorted Created descending, showing Name, Kind, Summary.
 [Knowledge]   "What do we know?": views "Decisions" (Decisions where Area is this page, sorted Date descending, showing Name, Assessment, Date, Project).
-[Documents]   Under "What do we know?" (create the heading if it isn't there yet), a view "Documents" (Documents where Area is this page, sorted Last edited time descending, showing Name, Summary, Project).
-[Reports]   "Reports": Inbox where Area is this page and Kind is Report, sorted Created descending, showing Name, Refresh asked, What to fix.
+[Documents]   Under "What do we know?" (create the heading if it isn't there yet), a view "Documents" (Documents where Area is this page and Origin is not Report, sorted Last edited time descending, showing Name, Summary, Project).
+[Reports]   "Reports": Documents where Area is this page and Origin is Report, sorted Created time descending, showing Name, Refresh asked, What to fix.
   Then a toggle "My notes".
 [Planning] - Goals:
 [Planning]   "How are the key results moving?": Key Results where Goal is this page (views: "Open" Progress is less than 100%; "Done" Progress is 100%), showing Name, Current, Target, Unit, Progress, Done.
@@ -41,8 +41,8 @@ Create a default page template for each database below. Each item "Heading: data
   "Who's involved?": People where Projects contains this page, showing Name, Role.
   "What came in?": Inbox where Project is this page, sorted Created descending, showing Name, Kind, Summary.
 [Knowledge]   "What do we know?": views "Decisions" (Decisions where Project is this page, sorted Date descending, showing Name, Assessment, Date).
-[Documents]   Under "What do we know?" (create the heading if it isn't there yet), a view "Documents" (Documents where Project is this page, sorted Last edited time descending, showing Name, Summary).
-[Reports]   "Reports": Inbox where Project is this page and Kind is Report, sorted Created descending, showing Name, Refresh asked, What to fix.
+[Documents]   Under "What do we know?" (create the heading if it isn't there yet), a view "Documents" (Documents where Project is this page and Origin is not Report, sorted Last edited time descending, showing Name, Summary).
+[Reports]   "Reports": Documents where Project is this page and Origin is Report, sorted Created time descending, showing Name, Refresh asked, What to fix.
   Then a toggle "My notes".
 - Meetings:
   A gray callout containing a heading 3 "Before marking Reviewed", a divider, and the to-do items "Attendees linked", "Project linked", "Minutes follow the format", "Minutes checked and corrected", then a gray line "Check the minutes, fix them, then set Brain Status to Reviewed. Fixed them after the brain took them in? Set Reviewed again: it reads only what changed."

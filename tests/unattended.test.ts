@@ -195,7 +195,7 @@ const REPORT_BODY = [
 
 async function reportBrain(context: TestContext): Promise<{ dir: string; id: string; page: string }> {
   const dir = await fixtureCopy(context);
-  await setConfig(dir, (config) => { config.notion.databases.inbox = INBOX; });
+  await setConfig(dir, (config) => { config.notion.databases.inbox = INBOX; config.notion.databases.documents = "d1000000-0000-4000-8000-000000000001"; });
   const created = await run(dir, ["report", "new"], { title: "Acme launch: where we stand", question: "Everything about the Acme launch", projects: ["prj-9x4t1b7e"], body: REPORT_BODY });
   const id = created.json.data.id as string;
   const rendered = await run(dir, ["sync", "render", "--ids", id]);

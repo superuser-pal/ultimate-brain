@@ -19,7 +19,7 @@ Run CLI commands as `brain <command> --brain <brain> --json`. If `brain` is not 
    [ ] Domains: group Areas by work or life context (its database is in every space)
    [x] Orgs: client and partner organizations
    [ ] Documents: keep a document, or part of one, as a page
-   [ ] Reports: ask the brain in the Inbox, get a report you can refresh
+   [ ] Reports: ask the brain in the Inbox, get a report in Documents you can refresh (turns Documents on too)
    [ ] Tasks: action items as Notion tasks
    [ ] Planning: Goals and Key Results
    ```

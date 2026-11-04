@@ -105,6 +105,16 @@ export async function inboxBrain(context: Parameters<typeof fixtureCopy>[0]): Pr
   return dir;
 }
 
+/** An Inbox brain with the Documents database too, where reports are published since 0.9.1 (0071). */
+async function reportBrain(context: Parameters<typeof fixtureCopy>[0]): Promise<string> {
+  const dir = await inboxBrain(context);
+  const configPath = join(dir, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  config.notion.databases.documents = "d1000000-0000-4000-8000-000000000001";
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+  return dir;
+}
+
 let pages = 0;
 /** Render one note and record what was sent, as the skill does after writing the page. */
 export async function renderAndRecord(dir: string, id: string): Promise<Record<string, any> | undefined> {
@@ -205,8 +215,8 @@ const REPORT_BODY = [
   "## Gaps", "- Nothing on pricing.",
 ].join("\n\n");
 
-test("report new stores a dated report view; render creates its Inbox row once, linked to the Ask row", async (context) => {
-  const dir = await inboxBrain(context);
+test("report new stores a dated report view; render creates its Documents row once, linked to the Ask row (0071)", async (context) => {
+  const dir = await reportBrain(context);
   const ask = "f1000000-0000-4000-8000-000000000001";
   const input = { title: "Acme launch: where we stand", question: "Everything about the Acme launch", asked_in: ask, projects: ["prj-9x4t1b7e"], area: "area-2m7c4h8n", body: REPORT_BODY };
   const created = await run(dir, ["report", "new"], input);
@@ -223,10 +233,10 @@ test("report new stores a dated report view; render creates its Inbox row once, 
 
   const item = await renderAndRecord(dir, created.json.data.id);
   assert.equal(item!.action, "create");
-  assert.equal(item!.database, "inbox");
+  assert.equal(item!.database, "documents");
   const p = item!.properties;
-  assert.deepEqual([p.Name.value, p.Kind.value, p["Brain Status"].value, p["Brain ID"].value], ["Acme launch: where we stand", "Report", "Done", created.json.data.id]);
-  assert.deepEqual(p.Ask, { type: "relation", value: [ask] });
+  assert.deepEqual([p.Name.value, p.Origin.value, p["Brain ID"].value, p.Kind, p["Brain Status"]], ["Acme launch: where we stand", "Report", created.json.data.id, undefined, undefined]);
+  assert.deepEqual(p["Asked in"], { type: "relation", value: [ask] });
   assert.deepEqual(p.Project, { type: "relation", value: ["2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e"] });
   assert.deepEqual(p.Area, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] });
   assert.ok(item!.body.startsWith("## Where it stands\n\nLaunch is set for February, per the auth decision."), item!.body);
@@ -235,7 +245,7 @@ test("report new stores a dated report view; render creates its Inbox row once, 
 });
 
 test("render skips reports while Reports is off, and names one asked for by id MODULE_OFF (0048)", async (context) => {
-  const dir = await inboxBrain(context);
+  const dir = await reportBrain(context);
   const input = { title: "Acme launch: where we stand", question: "Everything about the Acme launch", asked_in: "f1000000-0000-4000-8000-000000000002", projects: ["prj-9x4t1b7e"], area: "area-2m7c4h8n", body: REPORT_BODY };
   const created = await run(dir, ["report", "new"], input);
   assert.equal(created.code, 0, created.stdout);
@@ -259,7 +269,7 @@ test("report new refuses wrong sections, broken links and unknown ids", async (c
 });
 
 test("a Report row: What to fix becomes a report fix, and a refresh keeps the id and Notion row and clears Refresh asked (0045, 0048)", async (context) => {
-  const dir = await inboxBrain(context);
+  const dir = await reportBrain(context);
   const [ask, ask2] = ["f1000000-0000-4000-8000-000000000001", "f1000000-0000-4000-8000-000000000002"];
   const created = await run(dir, ["report", "new"], { title: "Acme launch: where we stand", question: "Everything about the Acme launch", asked_in: ask, projects: ["prj-9x4t1b7e"], body: REPORT_BODY });
   const id = created.json.data.id as string;
@@ -267,7 +277,7 @@ test("a Report row: What to fix becomes a report fix, and a refresh keeps the id
   const path = join(dir, created.json.data.path);
   const page = parseFrontmatter(await readFile(path, "utf8")).attributes.notion as string;
 
-  const snapshot = (fix: string) => ({ as_of: NOW, rows: [{ database: "inbox", page_id: page, last_edited: NOW, properties: { "Brain ID": id, "Refresh asked": true, "What to fix": fix } }] });
+  const snapshot = (fix: string) => ({ as_of: NOW, rows: [{ database: "documents", page_id: page, last_edited: NOW, properties: { "Brain ID": id, "Refresh asked": true, "What to fix": fix } }] });
   const plan = async (fix: string) => (await run(dir, ["sync", "plan"], snapshot(fix))).json.data;
   const first = await plan("Lucía left Acme in June");
   assert.deepEqual(first.refresh_requests, [{ page_id: page, report: id }]);
@@ -307,7 +317,7 @@ test("a Report row: What to fix becomes a report fix, and a refresh keeps the id
   assert.equal(sent!.page_id, page);
   assert.ok(sent!.body.startsWith("## Where it stands\n\nLaunch is set for March"), sent!.body);
   assert.deepEqual(sent!.properties["Refresh asked"], { type: "checkbox", value: false });
-  assert.deepEqual(sent!.properties.Ask, { type: "relation", value: [ask, ask2] });
+  assert.deepEqual(sent!.properties["Asked in"], { type: "relation", value: [ask, ask2] });
   assert.equal(await renderAndRecord(dir, id), undefined, "nothing changed since");
   assert.equal((await run(dir, ["report", "new"], { refresh: "dec-7k2m9q4x", body: REPORT_BODY })).json.error?.code, "INPUT_INVALID");
   await assertLintClean(dir);
