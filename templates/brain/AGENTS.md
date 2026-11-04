@@ -15,6 +15,7 @@ Each operation has a skill; follow it end to end:
 | connect the brain to Notion (after building the space) | `brain-connect-notion` |
 | catch up: do everything that's waiting (decided reviews, reviewed meetings, the Inbox and its attachments, the drop folder, linked repos, reports asked for) | `brain-catch-up` |
 | ingest one input: reviewed minutes, a document, a web page, a pasted email or note, the Inbox, the drop folder, a linked repo | `brain-ingest` |
+| turn open questions that are really to-dos into tasks, or drop them (once, after a yes for each, 0071) | `brain-ingest` |
 | apply decisions from the Notion Review queue | `brain-apply` |
 | pull Notion edits and new rows, republish notes | `brain-sync` |
 | answer a question from the brain, or write a report on a subject | `brain-query` |

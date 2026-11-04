@@ -131,7 +131,7 @@ Run SKILL.md step 7 as it is (ids from `brain id new`, the dry run for paths, li
 - give the source a `summary`: one line on what it taught, in the user's terms ("Acme's brief sets the February launch and a 95000 EUR budget"). It becomes the Inbox row's Summary, and is written once: the source never changes after this run;
 - give every source except a `capture` or an attachment a **`digest`** (decision 0043), of the whole input (the Inbox row describes the document): the key points by section, as Markdown bullets under the input's own headings, and the figures and dates exactly as stated. No links, no conclusions of your own. It becomes the body of the source's Inbox row, written once;
 - *(Documents)* **the Documents** the input is kept as, in the same batch ([extraction.md](extraction.md), "Documents"). "Full text for the Acme brief" in chat means a `whole` Document now: Full text is retired (decision 0049). With Documents off, say the module is off and offer "turn on documents";
-- the owner's action items become tasks ([extraction.md](extraction.md), "Tasks for the owner"); hold them for step 7.
+- the owner's action items become tasks ([extraction.md](extraction.md), "Tasks for the owner"); hold them for step 7. A to-do is never a question note, the owner's or anyone else's (extraction.md, "Questions or commitments");
 
 Then run SKILL.md step 8 (propose changes) and step 9 (rebuild and check) as they are.
 
