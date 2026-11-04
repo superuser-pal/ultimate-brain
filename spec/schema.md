@@ -161,7 +161,7 @@ A work or life context that groups Areas; distinct from an Org.
 - `facts.role` holds the current role (history in `timeline`). `notion_fields`: `email`.
 
 ### org · `knowledge/orgs/` · Notion: Orgs
-- `notion_fields`: `relationship` (`Client`·`Prospect`·`Partner`·`Supplier`·`Other`), `website`, `archived` (bool, 0070).
+- `notion_fields`: `relationship` (`Client`·`Prospect`·`Partner`·`Supplier`·`Employer`·`Other`; `Employer` from 0071), `website`, `archived` (bool, 0070).
 
 ### meeting · `knowledge/meetings/YYYY-MM-DD-<slug>.md` · Notion: Meetings (relations only, 0007)
 | Field | Type | Req | Owner |
