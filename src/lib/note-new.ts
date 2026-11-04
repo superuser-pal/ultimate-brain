@@ -255,6 +255,9 @@ function documentProblems(workspace: Workspace, items: readonly NoteInput[], poi
     if (origin === "promoted" && typeof from === "string") {
       const type = workspace.get(from)?.type;
       if (type !== "decision" && type !== "concept") return at("frontmatter/promoted_from", `${from} is not an existing decision or concept`);
+      // Only reviewed knowledge is promoted: a draft's Document would get no page (0071).
+      const lifecycle = workspace.get(from)?.attributes.lifecycle;
+      if (lifecycle !== "reviewed" && lifecycle !== "disputed") return at("frontmatter/promoted_from", `${from} is ${String(lifecycle)}: only a reviewed or disputed note is promoted (approve it first)`);
       const other = promoted.get(from);
       if (other !== undefined) return at("frontmatter/promoted_from", `${from} is already promoted to ${other}`);
       promoted.set(from, item.id ?? `${pointerOf(index)}`);

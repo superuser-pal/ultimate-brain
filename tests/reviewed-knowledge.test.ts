@@ -211,3 +211,28 @@ test("note new: a decision a connected workflow publishes is written reviewed (0
   assert.equal(note.lifecycle, "reviewed");
   assert.equal(byId((await renderChanged(dir)).items, created.json.data.created[0].id)?.action, "create");
 });
+
+test("promote waits for review: a draft's Promote asked is ignored NOT_REVIEWED, and note new refuses to promote it (0071)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const set = await brain(["config", "set", "notion.databases.documents", JSON.stringify("a1000000-0000-4000-8000-00000000000c"), "--brain", dir, "--json"]);
+  assert.equal(set.code, 0, set.stdout);
+  // A Draft page kept from before 0.9.1.
+  const page = "e4000000-0000-4000-8000-000000000004";
+  await setField(dir, DECISION_FILE, "notion", page);
+  const row = { database: "decisions", page_id: page, last_edited: NOW, properties: { "Brain ID": DECISION, "Promote asked": true } };
+  const plan = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [row] });
+  assert.equal(plan.code, 0, plan.stdout);
+  assert.deepEqual(plan.json.data.promote_requests, []);
+  assert.deepEqual(plan.json.data.ignored, [{ database: "decisions", page_id: page, brain_id: DECISION, property: "Promote asked", reason: "NOT_REVIEWED" }]);
+  const promoted = { notes: [{ type: "reference", title: "Supabase auth (page)", frontmatter: { summary: "A page for the decision.", origin: "promoted", promoted_from: DECISION }, body: "Because.\n" }] };
+  const refused = await run(dir, ["note", "new"], promoted);
+  assert.equal(refused.json.error?.code, "INPUT_INVALID");
+  assert.match(refused.stdout, /only a reviewed or disputed note is promoted/);
+
+  // Approved: the same ticked box is a request, and the Document can be written.
+  await setField(dir, DECISION_FILE, "lifecycle", "reviewed");
+  const after = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [row] });
+  assert.deepEqual(after.json.data.promote_requests, [{ page_id: page, note: DECISION }]);
+  const written = await run(dir, ["note", "new"], promoted);
+  assert.equal(written.code, 0, written.stdout);
+});

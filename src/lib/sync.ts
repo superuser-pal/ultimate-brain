@@ -376,6 +376,8 @@ function planInbox(workspace: Workspace, row: SnapshotRow, out: SyncPlan): void 
 /** A Promote asked box on a decision or concept row (cli §5.14.2, 0049). */
 function planPromote(workspace: Workspace, row: SnapshotRow, note: Note, documentsOn: boolean, out: SyncPlan): void {
   if (!documentsOn) { out.ignored.push(ignoredRow(row, "MODULE_OFF", "Promote asked")); return; }
+  // Only reviewed knowledge is promoted (0071): the box stays ticked until the note is approved.
+  if (note.attributes.lifecycle !== "reviewed" && note.attributes.lifecycle !== "disputed") { out.ignored.push(ignoredRow(row, "NOT_REVIEWED", "Promote asked")); return; }
   const existing = workspace.notes.find((candidate) => candidate.type === "reference" && candidate.attributes.origin === "promoted" && candidate.attributes.promoted_from === note.id);
   out.promote_requests.push({ page_id: row.page_id, note: note.id, ...(existing === undefined ? {} : { existing: existing.id }) });
 }
