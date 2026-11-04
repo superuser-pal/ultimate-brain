@@ -225,8 +225,10 @@ export const repoKitCheckCommand: Command = {
     } else read = parseKitBytes(await readInputBytes(input!));
     const name = args.options.name as string | undefined;
     const problems = [...read.problems, ...(read.kit === null ? [] : await kitProblems(read.kit, hub, { name, entry }))];
+    // The hash `kit write` confirms is of the bytes it writes (cli §5.29, CC-129), so a hand-formatted draft is confirmed by this one.
+    const confirm = read.kit !== null && typeof read.kit === "object" && !Array.isArray(read.kit) ? kitHash(serializeKit(read.kit as Record<string, unknown>)) : null;
     return {
-      data: { kit: read.kit, sha256: read.sha256, problems },
+      data: { kit: read.kit, sha256: read.sha256, confirm_sha256: confirm, canonical: confirm === read.sha256, problems },
       resolvedBrain: brain?.root ?? null,
       human: problems.length === 0 ? `${KIT_FILE} is valid (${read.sha256})\n` : problems.map((problem) => `${problem.pointer || "/"} ${problem.message}\n`).join(""),
     };
