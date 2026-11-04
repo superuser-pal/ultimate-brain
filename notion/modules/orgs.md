@@ -7,14 +7,14 @@ Clients, partners and suppliers, linked to their people and projects (decisions 
 ### 1 · The database
 
 **Notion AI**, on **Brain Data** (the API can't create databases):
-> In this page, create one full-page database "Orgs" with: Name (title), Summary (text), Relationship (select: Client, Prospect, Partner, Supplier, Other), Website (url), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date). Don't change anything else.
+> In this page, create one full-page database "Orgs" with: Name (title), Summary (text), Relationship (select: Client, Prospect, Partner, Supplier, Other), Website (url), Archived (checkbox), Brain ID (text), Last Synced (date). Don't change anything else.
 
 ### 2 · Relations, rollups, descriptions
 
 | Change | Who |
 |---|---|
 | Two-way relations: Projects "Client" ↔ Orgs "Projects"; People "Org" ↔ Orgs "People" | agent |
-| Descriptions: Relationship, Website, Lifecycle "Owner: you."; Name "Owner: you when creating, then brain."; Brain ID, Last Synced "Owner: system. Do not edit."; the rest "Owner: brain." | agent |
+| Descriptions: Relationship, Website, Archived "Owner: you."; Name "Owner: you when creating, then brain."; Brain ID, Last Synced "Owner: system. Do not edit."; the rest "Owner: brain." | agent |
 | Record the id: `brain config set notion.databases.orgs '"<id>"'` | agent |
 
 **Notion AI**, on **Brain Data**: items 7 and 8 of [Prompt 4](../prompts/04-formula-rollup.md) (Areas "Clients via projects", Orgs "Meetings via projects"), with "Add only these. Don't change anything else."
