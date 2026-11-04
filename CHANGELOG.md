@@ -2,6 +2,19 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.9.1 — 2026-11-04
+
+- CC-123 (#214): concepts become Documents of their own kind, "learned": the Concepts database is retired and existing concepts move to Documents with their links.
+- CC-124 (#211): reports live in Documents instead of the Inbox, still one per subject, refreshed from their page; an Ask stays in the Inbox and links to its report.
+- CC-125 (#210): decisions, questions and Documents appear in Notion once you approve them; until then they are in their Review row only.
+- CC-126 (#209): the brain no longer files to-dos as questions: your own become tasks, other people's stay commitments you can track as Waiting On, and questions are kept for what something can answer later; a one-off tidy offers to turn existing to-do questions into tasks.
+- CC-127 (#208): an Org can be your Employer, besides Client, Prospect, Partner, Supplier and Other.
+- CC-130 (#219): the workflow skill publishes final artifacts without a refused lifecycle, documents its input shapes and retry path, releases an item's claim when it is done, shows an edit made after your yes again, and adoption's first progress line reads plainly.
+- CC-132 (#217): `brain link` accepts a repo whose `CLAUDE.md` is a symbolic link to its own `AGENTS.md`, and refuses any other symbolic `CLAUDE.md` with `INSTRUCTIONS_SYMLINK` instead of `OUTSIDE_ROOT`.
+- CC-131 (#218): the brain-sync skill reads the Domains database when Domains is on, so a Domain's Type, Archived and edits reach the brain and a Domain added in Notion is imported.
+
+Skills: ultimate-brain 0.9.1 (sha256-1a06225fbe4a5378f5f7dfbfaf06e4f72c6d6bb7258bdac898fc2c85fa3c8db3)
+
 ## 0.9.0 — 2026-11-04
 
 - CC-97 (#181): development only: an inventory of the skills Claude Code and Codex load today, compared with the pinned upstream, and the approved keep/adapt/isolate/retire mapping for the shared-skills fork.
