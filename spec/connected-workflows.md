@@ -272,11 +272,12 @@ Every item and artifact has `publication: { state, at, error }`. `state` is one 
 A `publish_artifact` operation (§7.3) is carried out by the skill, in this order:
 1. **If `artifact.note` is null, the skill creates the note** with `note new`, then records it with `artifact put` (`note`):
    - **`decision`:** a `decision` note with `workflow: { id, artifact }`, which `note new` writes `lifecycle: reviewed` (the user approved it; since 0.9.1 only reviewed decisions get a page, decision 0071). `date` = the approval date, and the default `assessment` of `note new`. `projects` (a Project destination) or `area` (an Area destination). No `sources`. The body has the sections `## Decision`, `## Context` and `## Consequences` from the artifact, and `## Sources` naming the artifact's location.
-   - **Every other category:** a Document (`reference` note) with `origin: workflow`, `workflow: { id, artifact }`, `lifecycle: reviewed` (the user approved it), the same placement, and **no `sources`**. Its summary is the artifact's first sentence, cut to 200 characters. Its body:
+   - **Every other category:** a Document (`reference` note) with `origin: workflow` and `workflow: { id, artifact }`, which `note new` writes `lifecycle: reviewed` (the user approved it; the input never carries `lifecycle`, which `note new` refuses as set by the CLI), the same placement, and **no `sources`**. Its summary is the artifact's first sentence, cut to 200 characters. Its body:
      - a text artifact: the file's text at `sha256`;
      - a binary artifact: the line `File: {name} ({size})`, then the link when there is a `location.url`. With a `location.path`, the skill also attaches the file to the Document page through the MCP's file upload. If the upload isn't available, the operation fails with the lasting code `upload_unsupported`, and the user can give a URL instead.
 2. **Publish it** with the existing `sync render`, the MCP create or update, and `sync record`. Before creating, the skill looks up Brain ID (§10.3).
 3. **Close the operation:** `op state … done --page <page id>`. The CLI sets `published_sha256` and `publication: published`.
+4. **Commit** the new note and the publish's `sync record` before the next `brain workflow` command, which refuses a dirty brain with `DIRTY_TREE` (CC-130).
 
 **A new version of an approved artifact** (a new `sha256` approved by `artifact put`) opens a new `publish_artifact`.
 - For a Document, step 1 writes an `update_body` proposal (0003) instead of a new note. The user's approval of the new version in the session is the approval, so the skill applies it in chat (0003, the in-session path). Step 2 then publishes the new body.
@@ -600,7 +601,7 @@ On the user's yes to the preview, `brain workflow adopt apply` takes the same in
   - `approved_at` = now: the yes to the preview approves the adopted scope;
   - `status` = `meaning`; a `done` item gets `accepted: { at: now, statement: "Done before adoption" }`;
   - `origin`, and `depends_on` resolved to `wi-` ids;
-  - `progress`: `[{ at: now, text: "Adopted from <ref> <key> as <raw_status>" }]`.
+  - `progress`: `[{ at: now, text: "Adopted from <where> (<status> there)" }]`, in words a person reads (CC-130): `<where>` is `<ref> <key>` for `github` and `gitlab` (`acme/acme-api #17`), `Notion` for `notion`, and `<ref>` otherwise (the file path for `markdown`, the system's name for `other`); `<status>` is `raw_status` (`In review`, `Doing`), except for `markdown`, whose `raw_status` is a checkbox marker: there it is the item's status in words, `to do`, `in progress`, `waiting`, `in review`, `done` or `dropped`. So `Adopted from PLAN.md (in progress there)`, never a raw key or marker.
   - With origin `notion`, the item also gets `notion: { page: <key>, title, status: <the option>, read_at: now }`, and an `update_task` operation when the Brain ID is empty. Otherwise it gets a `create_task` operation.
 - **For each `update`:** only the fields in `changes`: `title` → title, `body` → scope (an empty new body leaves the scope as it is). `approved_at` is set to now, since the yes to the preview approves the change. The status is never touched.
 - **Notion options:** each option of a `notion`-origin item that is in neither `status_map` nor `status_read` must have a meaning in the input's `status_read` (`{ option: meaning }`), which the preview lists as `status_options`, or the command fails with `INPUT_INVALID`. These are added to the workflow's `status_read`.
