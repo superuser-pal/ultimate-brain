@@ -492,7 +492,7 @@
       "allOf": [{ "$ref": "#/$defs/knowledge" }],
       "properties": {
         "org": { "$ref": "#/$defs/orgId" },
-        "notion_fields": { "properties": { "archived": { "type": "boolean" } } }
+        "notion_fields": { "properties": { "type": { "enum": ["Personal", "Entrepreneurship", "Professional"] }, "archived": { "type": "boolean" } } }
       }
     },
     "area": {
@@ -695,6 +695,9 @@
                 "Supplier",
                 "Other"
               ]
+            },
+            "archived": {
+              "type": "boolean"
             },
             "website": {
               "type": "string"

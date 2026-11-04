@@ -9,6 +9,7 @@ created: 2026-10-01
 updated: 2026-10-01
 notion_fields:
   as_of: 2026-10-01T00:00:00Z
+  type: Professional
   archived: false
 ---
 

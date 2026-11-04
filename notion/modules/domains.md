@@ -5,7 +5,7 @@ Group Areas by work or life context. Domains are optional and off by default (00
 ## Turning it on
 
 1. **Agent:** check the database is there: Brain Data has **Domains**, Areas has **Domain** (two-way with Domains · Areas, Limit: 1 page) and, with an Orgs database, Domains has **Org** (two-way with Orgs · Domains). Missing? The space predates 0.8.1: run [migration 0014](../migrations/0014-domains-database-in-every-space.md) first. Make sure `notion.databases.domains` holds the database id.
-2. **By hand:** group Home's Areas view by Domain, including No domain; show Domain on area homes and Areas and Org on Domain pages.
+2. **By hand:** group Home's Areas view by Domain, including No domain; show Domain on area homes and Type, Areas and Org on Domain pages. Set each Domain's **Type** (Personal, Entrepreneurship or Professional); it is yours, and the brain only reads it. A space without Domains · Type predates 0.9.0: run [migration 0016](../migrations/0016-type-moves-from-areas-to-domains.md).
 3. **Verify:** `brain modules` shows Domains on and its database configured; an Area can have one Domain or none.
 
 ## Turning it off
