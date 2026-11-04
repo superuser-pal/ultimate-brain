@@ -270,14 +270,13 @@ Every item and artifact has `publication: { state, at, error }`. `state` is one 
 
 ### 6.3 How artifacts reach Notion
 A `publish_artifact` operation (§7.3) is carried out by the skill, in this order:
-1. **If `artifact.note` is null, the skill creates the note** with `note new`, then records it with `artifact put` (`note`):
+1. **If `artifact.note` is null, the skill creates the note** with `note new`, commits it, then records it with `artifact put` (`note`); every `brain workflow` command refuses a brain with uncommitted changes (`DIRTY_TREE`), so each brain write the skill makes outside `brain workflow` is committed before the next one (CC-130):
    - **`decision`:** a `decision` note with `workflow: { id, artifact }`, which `note new` writes `lifecycle: reviewed` (the user approved it; since 0.9.1 only reviewed decisions get a page, decision 0071). `date` = the approval date, and the default `assessment` of `note new`. `projects` (a Project destination) or `area` (an Area destination). No `sources`. The body has the sections `## Decision`, `## Context` and `## Consequences` from the artifact, and `## Sources` naming the artifact's location.
    - **Every other category:** a Document (`reference` note) with `origin: workflow` and `workflow: { id, artifact }`, which `note new` writes `lifecycle: reviewed` (the user approved it; the input never carries `lifecycle`, which `note new` refuses as set by the CLI), the same placement, and **no `sources`**. Its summary is the artifact's first sentence, cut to 200 characters. Its body:
      - a text artifact: the file's text at `sha256`;
      - a binary artifact: the line `File: {name} ({size})`, then the link when there is a `location.url`. With a `location.path`, the skill also attaches the file to the Document page through the MCP's file upload. If the upload isn't available, the operation fails with the lasting code `upload_unsupported`, and the user can give a URL instead.
-2. **Publish it** with the existing `sync render`, the MCP create or update, and `sync record`. Before creating, the skill looks up Brain ID (§10.3).
+2. **Publish it** with the existing `sync render`, the MCP create or update, and `sync record`, then commit. Before creating, the skill looks up Brain ID (§10.3).
 3. **Close the operation:** `op state … done --page <page id>`. The CLI sets `published_sha256` and `publication: published`.
-4. **Commit** the new note and the publish's `sync record` before the next `brain workflow` command, which refuses a dirty brain with `DIRTY_TREE` (CC-130).
 
 **A new version of an approved artifact** (a new `sha256` approved by `artifact put`) opens a new `publish_artifact`.
 - For a Document, step 1 writes an `update_body` proposal (0003) instead of a new note. The user's approval of the new version in the session is the approval, so the skill applies it in chat (0003, the in-session path). Step 2 then publishes the new body.
