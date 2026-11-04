@@ -282,7 +282,7 @@ Right after 0.9.0. Fewer databases and only reviewed knowledge in Notion; the br
 **Output:** from CC-107's findings 3 to 7 (docs/acceptance-0.9.0.md): skills/brain-workflow (references/notion.md and the input shapes: `acceptance` entries, artifact `format`, `location`, the `failed → pending` retry), the claim released on `done`, the approval rule (an edit after the yes is shown again), and `workflow adopt apply`'s progress text (src/lib/workflow-adopt.ts, spec first in spec/connected-workflows.md if the text is specified).
 **Acceptance:** a blind run by a fresh Sonnet sub-agent on CC-107's connected-pr and general-area sandboxes (eval/acceptance-0.9.0/harness) publishes a final artifact with no refused command, leaves no claim on a done item and shows an edited artifact again; a test shows the adoption progress line without the raw key; the skill mirror check, `npm test` and the leak check pass.
 
-### CC-132 · brain link writes through a CLAUDE.md symlink to the repo's AGENTS.md · `in progress`
+### CC-132 · brain link writes through a CLAUDE.md symlink to the repo's AGENTS.md · `done` (#217)
 **Release:** 0.9.1
 **Changelog:** `brain link` accepts a repo whose `CLAUDE.md` is a symbolic link to its own `AGENTS.md`, and refuses any other symbolic `CLAUDE.md` with `INSTRUCTIONS_SYMLINK` instead of `OUTSIDE_ROOT`.
 **Output:** `spec/cli.md` §5.12 step 2 and the error table; `src/commands/link.ts`, `src/lib/errors.ts`; `tests/link.test.ts`; brain-repos step 5 (and its mirrors). From dogfood #215.
