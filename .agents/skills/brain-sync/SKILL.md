@@ -22,9 +22,9 @@ Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come 
    | Database | Read when |
    |---|---|
    | Areas, Projects, People, Review | always (core) |
-   | Decisions, Questions, Concepts | Knowledge is on |
+   | Decisions, Questions | Knowledge is on |
    | Orgs | Orgs is on |
-   | Documents | Documents is on |
+   | Documents (learned Documents included: there is no Concepts database since 0.9.1) | Documents is on |
    | Goals, Key Results | Planning is on |
 
    A database whose module is off is never read, even when its id is set: `sync plan` would ignore its rows (`MODULE_OFF`). Meetings are not read here. Of the Inbox, read only:
@@ -33,7 +33,7 @@ Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come 
 
    *(Documents, Reports)* **Accepted wording,** on every pull: read the promoted Documents and the Report rows as "Accepted wording" below says (steps 1 to 3), so that a page with unresolved Notion text is in the plan and can be protected.
 
-   *(Documents)* On Decisions and Concepts, also read **Promote asked** (ticked by the Promote to document button); `sync plan` turns a ticked one into a `promote_requests` item.
+   *(Documents)* On Decisions, also read **Promote asked** (ticked by the Promote to document button); `sync plan` turns a ticked one into a `promote_requests` item.
 
    The rest of the Inbox belongs to the brain-ingest skill. On the Review database, the user's properties are **Your call** and **What to fix**; a space not yet migrated (migration 0009) has Decision and Note instead: send whichever the space has.
 3. **Snapshot.** Write `snapshot.json` in the format of [references/formats.md](references/formats.md), converting each property to its normalized value (the table there). It has one example row per kind of row the plan reads (a Review row, an Inbox row asking for a Document, a Report row, a decision with Promote asked): copy their shape exactly, so the plan accepts the file the first time.
@@ -69,7 +69,8 @@ Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come 
     - **`template` on a project `create`** (decision 0068): list the Projects data source's templates once per run (`GET /v1/data_sources/{id}/templates`). With a default template, create the page with `"template": { "type": "default" }` and the item's `properties`, and no children: the template supplies the page. Then re-read its blocks a few times, over about 30 seconds, until the "Brief" and "Decision log" toggle headings are there, and write `sections` into them. Never append toggles to a page you just created from the template; if they don't appear, or a section write fails, record the page with `"@content": null` in its `published`, so the next run sends the sections. With **no default template**, create nothing for that project, record nothing for it, and ask the user to create it with **New project** in Notion and put the note's id in its Brain ID; notes that relate to it are written without that relation this run. Status is the user's: the report names each new project so they can set it.
     - **`action: update`:** update `page_id` with `properties`.
     - **`action: trash`** (a Review row decided more than 30 days ago, decision 0045): move `page_id` to Notion's trash (update the page with `in_trash: true`; `archived: true` on API versions before 2025-09). Nothing else. Record it like any other write; the proposal stays in the brain.
-    - **`body` (decisions, questions, concepts, Documents):** replace the page body. A promoted Document gets its body on `create` only; render gives it none after that (decision 0049).
+    - **Documents · Origin missing** (decision 0071): when the Documents data source has no **Origin** property, leave Origin out of the write and out of the `published` you pass to `sync record`, and say in the report: "Documents has no Origin yet: run notion/migrations/0018-concepts-become-documents.md". Write the rest of the item as usual; the first render after the migration sends Origin (spec/cli.md §5.14.4).
+    - **`body` (decisions, questions, Documents):** replace the page body. A promoted Document gets its body on `create` only; render gives it none after that (decision 0049).
     - **`body` on Inbox items** (a source's digest, a report's body, also on a refreshed report's `update`): the brain-ingest skill's references/notion.md, "Inbox bodies". Never write a capture's or an Ask row's page body; render never gives one.
     - **Every write carries its final content.** Never create a page, or replace a body, with placeholder text to fill in later: write the whole body in the same call, or in consecutive appends that hold only real content (references/notion.md in brain-ingest, "One write, final content").
     - **A Review row with item sections** (`published["@review"]`; spec/cli.md §5.14.4): the page body is written on **create only**, as given: create the row with its `properties`, then write the whole `body` once with Notion's markdown page update (`PATCH /v1/pages/{id}/markdown`, `replace_content`) while the page is still empty, so each `<details>` becomes a real toggle block (decision 0068). Never build the blocks yourself. If that write fails, move the new page to the trash and leave it out of the record; the next render creates it again. On an update, replace only the children of the `Review summary` section, through the block API. `item_updates` lists item sections that need something the user must see (a drafted revision, a changed base); write one only if the page's section is still the one you read at the last submission, otherwise add a toggle "Brain update" beside it. Never write an applied or closed status into an item section, and never rewrite a whole Review body. A row named `REVIEW_PENDING` in `skipped` holds the user's edits or decisions: leave it. brain-apply references/review-items.md §4 has the full order, including clearing Decided, Decided at and Accept all.

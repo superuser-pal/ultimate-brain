@@ -27,6 +27,7 @@ How to read one meeting's minutes and decide what becomes a note, what becomes a
 | Meeting Purpose, Current Status, or an older Summary | The meeting note's `summary` (≤200 characters) and its `## Summary` section | `note new` |
 | Requirements and Deadlines | Facts and dates of the project they belong to (`update_fact`), or a decision when one passes the gate; "confirmed" kept apart from "expected" and "open" | `proposal new` / `note new` |
 | Background, Other relevant topics | Context for the analysis; a note only when a line passes the rules below | |
+| An idea, method or definition the input explains ("how the blue-green deploy works") | A **learned Document** ("Learned Documents" below) when it is worth reading again beyond this input | `note new` |
 | Something that contradicts a loaded note | `contradiction` (both claims kept until the user decides) | `proposal new` |
 | A standing requirement of the client ("Acme's legal team requires EU data residency") | `add_to_note` on the org, besides any decision that cites it | `proposal new` |
 | An answer to an existing open question | `answer` on the question (decision 0041): the answer in one sentence, the line as `why`, and `answer_note` = the decision or note that answers it, when there is one. Approved, it closes the question and sets its Status to Answered in Notion | `proposal new` |
@@ -55,11 +56,20 @@ Minutes follow the table above. For other sources (references/sources.md) there 
 | `document` (brief, contract, report, deck) | Facts and their changes, decisions the document records, people with roles, open questions and risks; and, when it is kept as a document, its Documents (below) | A decision's `date` is the date the document gives for it, else the document's date. When the document is about a project, propose one `add_to_note` on the project: what the document is, in 1–2 sentences, with a link to the source (relative to the project note). A document about an area only, or about work that has no project note, gets none: its Inbox row already files it, and the report suggests creating the project in Notion when the work deserves one. Action items only where the document assigns them |
 | `email`, `chat` | Decisions and facts stated in the thread, people, questions | Who said what matters: attribute a decision to its sender (`deciders`) only when the thread shows they decided. A thread that reports a decision made elsewhere ("the launch moves to March") still yields the decision note if it passes the gate. A quoted earlier message is part of the thread, not a new statement |
 | `note` | Whatever the user wrote: facts, ideas, people | The user's own words: no `^[ambiguous]` against the user's other notes; a disagreement with the brain is a `contradiction` |
-| `capture` | Usually one thing: a fact, an idea, a person, a to-do | A fact about an existing note → `update_fact`; an idea or method → a `concept` note (`summary`, `sources`, and `area`, `projects` or `tags` when the capture says what it belongs to); a new person → a person note; the owner's own to-do → a task (below). Nothing durable is a valid result. **A capture holding a pasted email or chat thread** is analysed with the `email`/`chat` row instead (sources.md) |
+| `capture` | Usually one thing: a fact, an idea, a person, a to-do | A fact about an existing note → `update_fact`; an idea or method → a learned Document (below: `summary`, `sources`, and `area`, `projects` or `tags` when the capture says what it belongs to); a new person → a person note; the owner's own to-do → a task (below). Nothing durable is a valid result. **A capture holding a pasted email or chat thread** is analysed with the `email`/`chat` row instead (sources.md) |
+
+### Learned Documents (decision 0071)
+
+What the brain learned from an input, an idea, a method or a definition, is a **learned Document**: a `reference` note with `origin: learned` (there is no `concept` type since 0.9.1; `note new` refuses it).
+- `title`: the idea's name ("Blue-green deploys"); `frontmatter`: `origin: learned`, `summary` (one line: what it is), `sources: [<the input's source or meeting id>]`, and `area`, `projects` or `tags` from what it is about;
+- body: the explanation in your own words, short, every figure and name as stated; `^[inferred]` on what the input implies but doesn't say;
+- it is a draft like any new note: it goes in the input's `review_notes`. It is written whether or not the Documents module is on: with it off, it stays in Git and in `brain query`, unpublished;
+- one per idea: an idea the brain already has a learned Document for gets an `add_to_note` (or `update_body`) on it, never a second one;
+- never for something the user asked to keep (that is `whole` or `part`, below), nor for a decision, a question or a fact.
 
 ### Documents: keeping an input as a page (decisions 0045, 0049) *(Documents)*
 
-A Document is a `reference` note shown in Notion's Documents database: something the user wants to read and refer to from any database. The extraction above runs **either way**: keeping an input as a page never stops its decisions, questions and facts from being taken out (decision 0049). There are three kinds, by `origin`:
+A Document is a `reference` note shown in Notion's Documents database: something the user wants to read and refer to from any database. The extraction above runs **either way**: keeping an input as a page never stops its decisions, questions and facts from being taken out (decision 0049). There are three kinds the user asks for, by `origin` (a fourth, `learned`, is above):
 
 - **`whole`:** the input is to be kept and **Only keep is empty** (Document asked on its Inbox row, "all" in the drop folder's question, "keep the Acme brief as a document" in chat). One Document per source, its body the source's body **byte for byte** (the CLI checks the hash): copy the source's body, never retype or tidy it.
   - `title`: the input's title without the kind ("Acme website brief"), `frontmatter`: `origin: whole`, `summary` (one line: what the file is), `sources: [<that one source id>]`, and `area` and `projects` from the row or the project the input is about;
@@ -71,7 +81,7 @@ A Document is a `reference` note shown in Notion's Documents database: something
   - `frontmatter`: `origin: part`, `summary` (one line: what it holds and from which document, without a version or date, so a new version doesn't make it stale), `sources: [<the source id>]`, and `area` and `projects`;
   - body: the kept content, as a Markdown list or table, in the document's order and wording; every figure, date and name exactly as stated. No commentary, no links of your own;
   - it is a draft like any new note: it goes in the input's `review_notes` (for a request on a source already in the brain, a new `review_notes` with that source).
-- **`promoted`:** Promote asked on a decision or concept (a `promote_requests` item). One Document seeded from the note, linked to it:
+- **`promoted`:** Promote asked on a decision (a `promote_requests` item; decisions only since 0.9.1, decision 0071). One Document seeded from the note, linked to it:
   - `title`: the note's title, `frontmatter`: `origin: promoted`, `promoted_from: <the note id>`, `summary` = the note's summary, and the note's `area`, `projects` and `sources` copied;
   - body: the note's summary, a blank line, then the note's body;
   - the CLI gives it the note's lifecycle, and it needs no Review. From then on **its body is the user's**: never propose an `update_body` on it.

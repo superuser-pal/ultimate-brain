@@ -867,6 +867,7 @@
       }
     },
     "concept": {
+      "description": "Retired in 0.9.1 (decision 0071): a concept is a reference with origin learned; brain upgrade converts it, and lint reports one left behind (concept-retired).",
       "allOf": [
         {
           "$ref": "#/$defs/knowledge"
@@ -874,7 +875,7 @@
       ]
     },
     "reference": {
-      "description": "A Document (decision 0049; a reference note, decision 0045; spec/schema.md §4 reference): a source's whole text, a part the user asked to keep, a page promoted from a decision or concept, or an artifact a connected workflow published (connected-workflows.md §6.3).",
+      "description": "A Document (decision 0049; a reference note, decision 0045; spec/schema.md §4 reference): a source's whole text, a part the user asked to keep, what the brain learned (origin learned, decision 0071), a page promoted from a decision, or an artifact a connected workflow published (connected-workflows.md §6.3).",
       "allOf": [
         {
           "$ref": "#/$defs/knowledge"
@@ -885,10 +886,11 @@
               "enum": [
                 "whole",
                 "part",
+                "learned",
                 "promoted",
                 "workflow"
               ],
-              "description": "whole: a source's converted text, verbatim; part: what Only keep named; promoted: seeded from a decision or concept; workflow: an artifact of a connected workflow. Absent: part (written before 0.6.0)."
+              "description": "whole: a source's converted text, verbatim; part: what Only keep named; learned: an idea, method or definition the brain learned (a concept before 0.9.1, decision 0071); promoted: seeded from a decision (or, before 0.9.1, a concept); workflow: an artifact of a connected workflow. Absent: part (written before 0.6.0)."
             },
             "promoted_from": {
               "type": "string",
@@ -969,7 +971,10 @@
               ],
               "properties": {
                 "origin": {
-                  "const": "workflow"
+                  "enum": [
+                    "workflow",
+                    "learned"
+                  ]
                 }
               }
             },
