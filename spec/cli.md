@@ -1778,8 +1778,10 @@ The model, the kit's fields and their checks, the rollup text and the health che
 
 **§1's rules gain these exceptions.** `repo kit write` writes exactly one file, `<path>/brain-kit.json`. `repo new` writes the starter into a new folder, runs `git init` there and makes its first commit. They are added to "Writes only inside the brain" and "No Git" respectively. Neither ever writes another file in a linked repo, and neither ever pushes.
 
-**`repo kit check`** writes nothing. It reads `<path>/brain-kit.json`, or `--input`; exactly one of the two must be given (`USAGE`). It returns `{ kit, sha256, problems: [{pointer, message}] }`:
-- `sha256` is the hash of the bytes it read;
+**`repo kit check`** writes nothing. It reads `<path>/brain-kit.json`, or `--input`; exactly one of the two must be given (`USAGE`). It returns `{ kit, sha256, confirm_sha256, canonical, problems: [{pointer, message}] }`:
+- `sha256` is the hash of the bytes it read (the `--replace` value for an existing file);
+- `confirm_sha256` is the hash of the bytes `kit write` would write for this kit (2-space indent, keys in linked-repos.md §2.1 order, trailing newline): the `--confirm` value. It is `null` when `kit` isn't a JSON object (CC-129);
+- `canonical` is `true` when the bytes read are already that form, so `sha256` equals `confirm_sha256`;
 - `kit` is the parsed JSON, or `null` when the bytes aren't JSON;
 - `problems` holds a JSON parse failure (pointer `""`, message `not JSON: <reason>`), every schema error, and the checks of linked-repos.md §2.2.
 
