@@ -256,7 +256,7 @@ Right after 0.9.0. Fewer databases and only reviewed knowledge in Notion; the br
 **Spec questions (from the review of PR #204):** 1. Old-format minutes (Open Questions as plain lines, no item ids): does the rule apply to them, and how is a converted line tied to its task without an item id? 2. Idempotence: a re-ingest must not create a second task for a line that was a question before; is `task_items` enough for an item that changes kind? 3. The tidy: does dropping a converted question archive it with a successor link to the task, or simply archive it?
 **Acceptance:** a blind run by a fresh Sonnet sub-agent on synthetic minutes with one real question, one owner to-do, one to-do for someone else (unmarked, then marked `Track: Waiting On —`), one ambiguous-owner line and one risk produces one question, one task, no task then one Waiting On task, nothing for the ambiguous line, and one risk; with Tasks off the owner's to-do stays in the text and is not a question; a re-ingest creates no second task; the tidy converts a to-do question only after a yes; the skill mirror check and the leak check pass.
 
-### CC-127 · Orgs · Relationship gains Employer (decision 0071) · `in progress`
+### CC-127 · Orgs · Relationship gains Employer (decision 0071) · `review`
 **Release:** 0.9.1
 **Changelog:** an Org can be your Employer, besides Client, Prospect, Partner, Supplier and Other.
 **Output:** the Employer option in spec/schema.md §4 (org `notion_fields.relationship`), note.schema.json, docs/notion-space-design.md §3.7, Prompt 2, the Orgs module, the Orgs views (unchanged filters: "Which clients do I have?" stays Client), and a migration step that adds the option (with the existing options' ids sent first).
