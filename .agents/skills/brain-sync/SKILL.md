@@ -45,7 +45,7 @@ Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come 
    - **Your edits** (`corrections`): "Maria's role: Product Manager → Product lead."
    - **Refreshed Notion fields** (`updates`): count only.
    - **Review decisions** (`decisions`): how many approvals and rejections.
-   - **Documents** (`document_requests`, `promote_requests`): "Acme brief: keep as document (whole)", "Use Supabase for auth: promote to a document". An item with `existing` is already done: "Acme brief: already kept, I'll clear the box".
+   - **Documents** (`document_requests`, `promote_requests`): "Acme brief: keep as document (whole)", "Use Supabase for auth: promote to a document". An item with `existing` is already done: "Acme brief: already kept, I'll clear the box". An `ignored` Promote asked with `NOT_REVIEWED` waits for its note's approval: say so ("Use Supabase for auth: promote waits until you approve it in Review") and leave the box ticked.
    - **Reports** (`refresh_requests`, `report_fixes`): "Acme launch report: refresh asked", "Acme launch report: 'Lucía left Acme in June'".
    - **Conflicts**, one line each with what the user can do:
      - `BOTH_CHANGED`: you and the brain both changed a value. Show both and ask which to keep.
