@@ -2,6 +2,8 @@
 
 **Design change:** decision 0059; CC-103 (release 0.9.0; docs/notion-space-design.md §2, §3.19; spec/connected-workflows.md §4, §6.1, §9; spec/linked-repos.md §4). **Applies to:** spaces built or migrated before 0.9.0. Run 0014 first. A step whose property already exists, with its options, adds nothing, so running this again changes nothing.
 
+**Also in 0.9.0:** replace the minutes texts as [pasting-the-minutes-prompt.md](../pasting-the-minutes-prompt.md) describes (no space change).
+
 What changes: Projects and Areas get four **Workflow settings** (Workflow, Work type, Logging level, Log artifacts), so a piece of work (a software repo or any folder) can be connected to a Project or an Area and publish its tasks and documents there. Every page starts as Standard: nothing is connected until you say yes to "Connect this work to Notion?". Nothing is renamed or deleted, no value is filled in, and no Tasks property, database, view or Review row is added.
 
 Who does each step:
