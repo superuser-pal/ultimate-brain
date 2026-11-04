@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-11-03
 **Amends:** 0061 (release order, 0.12.0 and 0.14.0 dependencies on Hermes); 0060 (release placement only)
-**Amended by:** [0069](0069-skills-from-the-fork-in-0-9-3.md) (CC-105 in 0.9.3)
+**Amended by:** [0069](0069-skills-from-the-fork-in-0-9-2.md) (CC-105 in 0.9.2)
 **Keeps:** 0059 (0.9.0 scope, refined by 0066), 0052 (reflection's scope), 0061's feature cutoff at 0.14.0, the session-opening scope gate and every architecture rule
 
 ## Context
