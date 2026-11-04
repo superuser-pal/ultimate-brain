@@ -6,14 +6,15 @@
 
 ## Agreed release sequence to launch (2026-10-31)
 
-Decisions [0059](../decisions/0059-shared-skills-and-connected-workflows.md), [0060](../decisions/0060-hermes-operator-and-learning.md) and [0061](../decisions/0061-roadmap-and-launch-boundary.md), as amended by [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md) (2026-11-03), supersede older release-placement references below. 0.8.0 implementation continues unchanged. **Each human-led product development session for 0.9.0 onward starts with a grilling scope review and confirmed shared understanding before implementation.**
+Decisions [0059](../decisions/0059-shared-skills-and-connected-workflows.md), [0060](../decisions/0060-hermes-operator-and-learning.md) and [0061](../decisions/0061-roadmap-and-launch-boundary.md), as amended by [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md) (2026-11-03) and [0069](../decisions/0069-skills-from-the-fork-in-0-9-3.md) (2026-11-04), supersede older release-placement references below. 0.8.0 implementation continues unchanged. **Each human-led product development session for 0.9.0 onward starts with a grilling scope review and confirmed shared understanding before implementation.**
 
 | Release | Committed scope |
 |---|---|
 | 0.8.0 | Existing buttons, Domains, selected evidence and editable Review |
 | 0.8.1 | Review inside the building session (0063), release preflight, the Domains database in every space (0065) |
-| 0.9.0 | Public shared-skills fork; standard/Notion-connected software and general workflows; setup/adoption; compatible pins and update awareness (0059); linked repos with the link kit (0066) |
+| 0.9.0 | Public shared-skills fork; standard/Notion-connected software and general workflows; setup/adoption; compatible pins and update awareness (0059); linked repos with the link kit (0066); skills built from the product's `skills/` (phase A) |
 | 0.9.2 | A simpler Notion: Concepts and Reports into Documents, reviewed-only knowledge in Notion, to-dos as tasks, Orgs · Employer (0071) |
+| 0.9.3 | The package ships the fork's released skill snapshot, and skills are written in the fork (phase B, CC-105; 0069) |
 | 0.10.0 | The brain assistant: reviews Areas, Domains, Projects and Tasks, recommends, and changes through Review rows or a yes in chat (0064) |
 | 0.11.0 | Reflection (0052); CC-65 to CC-67 and U-21 retain their identities |
 | 0.12.0 | Cross-agent memory continuity and reliable cited retrieval, for Claude Code and Codex |
@@ -88,7 +89,7 @@ Future implementation tasks are decomposed by Claude Code after their opening sc
 
 ## 0.9.0 — Shared skills and connected workflows (decision 0059)
 
-Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md)). Follow [the detailed migration plan](../docs/skills-migration-plan.md). Order: inventory (CC-97) and contracts (CC-98, CC-99) first; then the CLI (CC-100, CC-102), the fork (CC-101) and Notion (CC-103) in parallel; then the skills (CC-104), the move of skill authorship (CC-105) and update awareness (CC-106); then acceptance (CC-107) and your switch (U-24). Each task owns its files; shared files (this one, spec/schema.md, spec/cli.md) are edited only in the task's own row or section.
+Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md)). Follow [the detailed migration plan](../docs/skills-migration-plan.md). Order: inventory (CC-97) and contracts (CC-98, CC-99) first; then the CLI (CC-100, CC-102), the fork (CC-101) and Notion (CC-103) in parallel; then the skills (CC-104) and update awareness (CC-106); then acceptance (CC-107) and your switch (U-24). The move of skill authorship (CC-105) is in 0.9.3 (decision [0069](../decisions/0069-skills-from-the-fork-in-0-9-3.md)). Each task owns its files; shared files (this one, spec/schema.md, spec/cli.md) are edited only in the task's own row or section.
 
 ### CC-97 · Inventory the installed skills and approve their mapping (decision 0059) · `done` (#181)
 **Release:** 0.9.0
@@ -151,12 +152,6 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 3. linked-repos.md §4 says each catch-up that reads a tracked-in-repo repo rebuilds its rollup, and brain-ingest still links with `repo add --pattern` ("link the repo at <path>"). Neither brain-catch-up nor brain-ingest is CC-104's to change beyond a hand-over line, so both still need their step: a hand-over to brain-repos in each.
 **Answers (the user, 2026-11-04):** 1 and 2: unlink and link again stays the way in 0.9.0, and `repo refresh` options that keep `commit` come in CC-118 (0.10.0); 3: CC-117.
 
-### CC-105 · Brain skills authored in the fork, a pinned snapshot in the package (decision 0059) · `todo`
-**Release:** 0.9.0
-**Changelog:** the brain skills are written in the ultimate-brain-skills fork, and the ultimate-brain package ships an exact, tested snapshot of them.
-**Output:** step 4 of docs/skills-migration-plan.md, after CC-100, CC-101 and CC-104: canonical skill authorship moves to the fork; the product build consumes an exact released snapshot and never edits generated copies; AGENTS.md, templates/brain/AGENTS.md and the docs say where skills are written; brains on older versions keep working until they upgrade.
-**Acceptance:** the package delivers a snapshot whose integrity matches the fork's release; editing a generated copy fails a check; a synthetic brain on 0.8.1 upgrades without both repos changing at the same moment; `test:package` and the skill checks pass.
-
 ### CC-106 · Update awareness in the product (decision 0059) · `done` (#189)
 **Release:** 0.9.0
 **Changelog:** development only: the product checks the skills fork daily, at the start of work and before a release, keeps one open integration issue for unassessed skill changes, and blocks a release on an incompatible one.
@@ -201,6 +196,12 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 **Changelog:** each catch-up rebuilds the task rollup of a repo whose tasks are tracked in the repo, and "link the repo at <path>" in an ingest goes through brain-repos, so every new link gets a kit after your yes.
 **Output:** CC-104's spec question 3 (answered 2026-11-04): brain-catch-up rebuilds the `Repo tasks · <name>` rollup of each tracked-in-repo linked repo per spec/linked-repos.md §4, with `brain repo tasks` through brain-repos "The rollup", written in the publish and counted in the short report; brain-ingest (SKILL.md and references/sources.md) hands repo linking to brain-repos instead of `repo add --pattern`; the skill mirror; a blind run in eval/handover-0.9.0; notion/migrations/0015 points to pasting the new minutes prompt (one line, the user's 2026-11-04 addition). This file: the answer line under CC-104's spec questions and the CC-118 row in 0.10.0.
 **Acceptance:** a blind run by a fresh Sonnet sub-agent with no answer key, on a synthetic brain with one tracked-in-repo linked repo: the catch-up rebuilds the rollup on the target page; "link the repo at <path>" given to brain-ingest ends in brain-repos asking for a yes on the kit, with nothing written before it; no skill still tells the agent to link with `repo add --pattern`; `npm test`, `npm run typecheck`, `npm run test:package`, the skill mirror check and the leak check pass.
+
+### CC-119 · Move CC-105 to 0.9.3 · `done` (#205)
+**Release:** 0.9.0
+**Changelog:** development only: CC-105 (skills from the fork) moves to a 0.9.3 patch release, after 0.9.1 and 0.9.2, so 0.9.0 ships on the product's own skills (decision 0069).
+**Output:** decision 0069 (amends 0064); one-line 0069 pointers in docs/skills-migration-plan.md (§4) and spec/skills-delivery.md (Status); this file: the 0.9.3 row of the release table, the 0.9.0 order, and CC-105 moved to a new 0.9.3 section with release 0.9.3 and its spec-first Output; an "Amended by" pointer on 0064.
+**Acceptance:** CC-105 keeps its title, Changelog and Acceptance, with Release 0.9.3; no other row or Changelog line changes; the user accepts decision 0069; the leak check passes.
 
 ## 0.9.1
 
@@ -256,6 +257,16 @@ Right after 0.9.1. Fewer databases and only reviewed knowledge in Notion; the br
 **Changelog:** an Org can be your Employer, besides Client, Prospect, Partner, Supplier and Other.
 **Output:** the Employer option in spec/schema.md §4 (org `notion_fields.relationship`), note.schema.json, docs/notion-space-design.md §3.7, Prompt 2, the Orgs module, the Orgs views (unchanged filters: "Which clients do I have?" stays Client), and a migration step that adds the option (with the existing options' ids sent first).
 **Acceptance:** an org note with `relationship: Employer` lints clean and syncs; the migration adds the option without dropping the others; `npm test` and the leak check pass.
+
+## 0.9.3 — Skills from the fork (decision 0069)
+
+After 0.9.2. Starts with its scope check against 0069 and spec/skills-delivery.md §9.
+
+### CC-105 · Brain skills authored in the fork, a pinned snapshot in the package (decision 0059) · `todo`
+**Release:** 0.9.3
+**Changelog:** the brain skills are written in the ultimate-brain-skills fork, and the ultimate-brain package ships an exact, tested snapshot of them.
+**Output:** step 4 of docs/skills-migration-plan.md, after 0.9.2 is released (decision 0069): first the spec of phase B (spec/skills-delivery.md §9: init, link, upgrade and lint), then a fork release that carries every skill change since brain-v1.0.0 and whose range includes the CLI being released; canonical skill authorship moves to the fork; the product build consumes an exact released snapshot and never edits generated copies; AGENTS.md, templates/brain/AGENTS.md and the docs say where skills are written; brains on older versions keep working until they upgrade.
+**Acceptance:** the package delivers a snapshot whose integrity matches the fork's release; editing a generated copy fails a check; a synthetic brain on 0.8.1 upgrades without both repos changing at the same moment; `test:package` and the skill checks pass.
 
 ## 0.10.0 — The brain assistant (decision 0064)
 
