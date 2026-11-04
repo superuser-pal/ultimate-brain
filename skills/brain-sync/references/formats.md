@@ -38,10 +38,10 @@ A copy of the inputs in spec/cli.md §5.14, so the skill works from inside a bra
   *(Documents)* An Inbox row whose Document asked box is ticked and that has a Brain ID. `Only keep` is its text or `null`. It becomes a `document_requests` item `{ "page_id", "source", "files", "only_keep", "existing"? }`.
 
   ```json
-  { "database": "inbox", "page_id": "c3000000-0000-4000-8000-000000000002", "last_edited": "2026-12-05T08:25:00Z",
+  { "database": "documents", "page_id": "c3000000-0000-4000-8000-000000000002", "last_edited": "2026-12-05T08:25:00Z",
     "properties": { "Brain ID": "vw-4c7n2k9p", "Refresh asked": true, "What to fix": "Lucía left Acme in June" } }
   ```
-  *(Reports)* A Report row with Refresh asked ticked or What to fix set. [Before migration 0010: `Refresh`.] It becomes `refresh_requests` `{ "page_id", "report" }` and `report_fixes` `{ "page_id", "report", "text" }`.
+  *(Reports)* A Report row (a Documents page with Origin Report, decision 0071) with Refresh asked ticked or What to fix set. [Before migration 0019 it is an Inbox row: `"database": "inbox"`, read the same way. Before migration 0010: `Refresh`.] It becomes `refresh_requests` `{ "page_id", "report" }` and `report_fixes` `{ "page_id", "report", "text" }`.
 
   ```json
   { "database": "decisions", "page_id": "5f6a7b8c-9d0e-4f1a-8b2c-3d4e5f6a7b8c", "last_edited": "2026-12-05T08:30:00Z",
