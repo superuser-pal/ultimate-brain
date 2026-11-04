@@ -1840,7 +1840,7 @@ Drops questions the user agreed, in the to-do tidy, are not questions: an owner'
 
 Checks, all before any write (one failing item writes nothing; `INPUT_INVALID` unless named):
 - `id` names a note (`UNKNOWN_ID`) that is a `question` with `kind: question`: a risk is never dropped this way;
-- the question has no `answer`;
+- the question has no `answer`, its Status is not Answered (`notion_fields.status`; Dropped is fine, Open or none is the usual case), and, unless it is already dropped (below), its lifecycle is not `archived`: an archived question is history (superseded, merged or archived by you), not a to-do;
 - `task`, when given, is a non-empty string held in the `tasks` of the question's `raised_in` meeting or of one of its `sources`: the skill creates the Task with `sync tasks` and records it with `sync record` (§5.14.5, §5.14.6) **before** the drop, so a drop never names a Task the brain has not recorded.
 
 Per item:

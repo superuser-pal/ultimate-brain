@@ -34,7 +34,7 @@ How to read one meeting's minutes and decide what becomes a note, what becomes a
 
 ## Questions or commitments (decision 0071)
 
-Read each line for what it says, never for the heading it sits under. **A line someone has to act on is a commitment, never a question**, even when it is phrased as one:
+Read each line for what it says, never for the heading it sits under (one exception: a Quick follow-ups line stays on the page whatever it says, never a task and never a question). **A line someone has to act on is a commitment, never a question**, even when it is phrased as one:
 
 | The line | Becomes |
 |---|---|

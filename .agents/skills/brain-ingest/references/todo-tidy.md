@@ -7,7 +7,7 @@ Before 0.9.1 the ingest sometimes filed a to-do as an open question. This one-of
 Run `brain status` (the owner name, whether the Tasks module is on and Notion is configured), then read the question notes in `knowledge/questions/`. A candidate is a question with `kind: question` (never a risk), a lifecycle other than `archived`, no `answer`, no `dropped`, and Notion Status Open or none (`notion_fields.status`). Read each one's title, summary and body, and the line of its meeting (`raised_in`) or source it came from.
 
 Classify each with [extraction.md](extraction.md), "Questions or commitments":
-- **the owner's explicit to-do** ("Send the deck to the board?", "I'll draft the onboarding checklist") → **Convert**: a task, then the question dropped with it. With the Tasks module off, or no Tasks database, or a question with neither `raised_in` nor a non-minutes source, offer **Drop** instead and say why ("Tasks is off: it stays in the meeting's text");
+- **the owner's explicit to-do** ("Send the deck to the board?", "I'll draft the onboarding checklist") → **Convert**: a task, then the question dropped with it. With the Tasks module off, or no Tasks database, or a question with neither `raised_in` nor a non-minutes source, offer **Drop** instead and say why ("Tasks is off: it stays in the meeting's text"). The same for a question from a selected capture whose line you can't tie to one item (step 3);
 - **someone else's commitment** ("Will Dana share the contract?") → **Drop**, with no task. Never a Waiting On task: only the `Track: Waiting On —` token on a meeting item makes one (decision 0055);
 - anything a later document or meeting can still answer, an ambiguous owner, a tentative idea → **not listed**. When in doubt, leave it out.
 
@@ -30,9 +30,9 @@ The task title is the action as an imperative; its projects are the question's `
 ## 3. Apply, one item at a time
 
 For each **Convert** the user said yes to, in this order:
-1. `brain sync tasks --meeting <raised_in>` (or `--source <its source>` for a question from another input) with one item `{ "title", "projects", "due"? }` ([cli-inputs.md](cli-inputs.md) §4). No `item`: the tidy is not a re-read of the meeting.
+1. `brain sync tasks --meeting <raised_in>` (or `--source <its source>` for a question from another input) with one item `{ "title", "projects", "due"? }` ([cli-inputs.md](cli-inputs.md) §4). No `item` with `--meeting`. **A source with `extract: true`** (a selected capture) needs one: take the `¶n` of the question's passage reference (`^[src-…#¶n:…]`), find the marker `<!-- passage ¶n item … -->` in that source's body, and when it names exactly **one** item, add `"item": "<that id>"`. When it names several or none, don't convert: offer Drop in step 2 instead ("I can't tell which line of the capture it came from").
 2. Create the task page through the Notion MCP, as references/notion.md says for tasks.
-3. `brain sync record` with the meeting's (or source's) record and `"tasks": ["<page id>"]`.
+3. `brain sync record` with the meeting's (or source's) record and `"tasks": ["<page id>"]`; for an extract source, also `"task_items": { "<item id>": "<page id>" }`.
 4. `brain question drop --input` with `{ "items": [ { "id": "<que-id>", "task": "<page id>" } ] }`.
 
 For each **Drop**: `brain question drop` with `{ "items": [ { "id": "<que-id>" } ] }` (several at once is fine).
