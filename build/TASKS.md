@@ -6,13 +6,15 @@
 
 ## Agreed release sequence to launch (2026-10-31)
 
-Decisions [0059](../decisions/0059-shared-skills-and-connected-workflows.md), [0060](../decisions/0060-hermes-operator-and-learning.md) and [0061](../decisions/0061-roadmap-and-launch-boundary.md), as amended by [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md) (2026-11-03), supersede older release-placement references below. 0.8.0 implementation continues unchanged. **Each human-led product development session for 0.9.0 onward starts with a grilling scope review and confirmed shared understanding before implementation.**
+Decisions [0059](../decisions/0059-shared-skills-and-connected-workflows.md), [0060](../decisions/0060-hermes-operator-and-learning.md) and [0061](../decisions/0061-roadmap-and-launch-boundary.md), as amended by [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md) (2026-11-03) and [0069](../decisions/0069-skills-from-the-fork-in-0-9-2.md) (2026-11-04), supersede older release-placement references below. 0.8.0 implementation continues unchanged. **Each human-led product development session for 0.9.0 onward starts with a grilling scope review and confirmed shared understanding before implementation.**
 
 | Release | Committed scope |
 |---|---|
 | 0.8.0 | Existing buttons, Domains, selected evidence and editable Review |
 | 0.8.1 | Review inside the building session (0063), release preflight, the Domains database in every space (0065) |
-| 0.9.0 | Public shared-skills fork; standard/Notion-connected software and general workflows; setup/adoption; compatible pins and update awareness (0059); linked repos with the link kit (0066) |
+| 0.9.0 | Public shared-skills fork; standard/Notion-connected software and general workflows; setup/adoption; compatible pins and update awareness (0059); linked repos with the link kit (0066); skills built from the product's `skills/` (phase A); Type on Domains and Lifecycle only where the brain creates the row (0070) |
+| 0.9.1 | A simpler Notion: Concepts and Reports into Documents, reviewed-only knowledge in Notion, to-dos as tasks, Orgs · Employer (0071) |
+| 0.9.2 | The package ships the fork's released skill snapshot, and skills are written in the fork (phase B, CC-105; 0069) |
 | 0.10.0 | The brain assistant: reviews Areas, Domains, Projects and Tasks, recommends, and changes through Review rows or a yes in chat (0064) |
 | 0.11.0 | Reflection (0052); CC-65 to CC-67 and U-21 retain their identities |
 | 0.12.0 | Cross-agent memory continuity and reliable cited retrieval, for Claude Code and Codex |
@@ -87,7 +89,7 @@ Future implementation tasks are decomposed by Claude Code after their opening sc
 
 ## 0.9.0 — Shared skills and connected workflows (decision 0059)
 
-Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md)). Follow [the detailed migration plan](../docs/skills-migration-plan.md). Order: inventory (CC-97) and contracts (CC-98, CC-99) first; then the CLI (CC-100, CC-102), the fork (CC-101) and Notion (CC-103) in parallel; then the skills (CC-104), the move of skill authorship (CC-105) and update awareness (CC-106); then acceptance (CC-107) and your switch (U-24). Each task owns its files; shared files (this one, spec/schema.md, spec/cli.md) are edited only in the task's own row or section.
+Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md)). Follow [the detailed migration plan](../docs/skills-migration-plan.md). Order: inventory (CC-97) and contracts (CC-98, CC-99) first; then the CLI (CC-100, CC-102), the fork (CC-101) and Notion (CC-103) in parallel; then the skills (CC-104) and update awareness (CC-106); then acceptance (CC-107) and your switch (U-24). The move of skill authorship (CC-105) is in 0.9.2 (decision [0069](../decisions/0069-skills-from-the-fork-in-0-9-2.md)). Each task owns its files; shared files (this one, spec/schema.md, spec/cli.md) are edited only in the task's own row or section.
 
 ### CC-97 · Inventory the installed skills and approve their mapping (decision 0059) · `done` (#181)
 **Release:** 0.9.0
@@ -150,12 +152,6 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 3. linked-repos.md §4 says each catch-up that reads a tracked-in-repo repo rebuilds its rollup, and brain-ingest still links with `repo add --pattern` ("link the repo at <path>"). Neither brain-catch-up nor brain-ingest is CC-104's to change beyond a hand-over line, so both still need their step: a hand-over to brain-repos in each.
 **Answers (the user, 2026-11-04):** 1 and 2: unlink and link again stays the way in 0.9.0, and `repo refresh` options that keep `commit` come in CC-118 (0.10.0); 3: CC-117.
 
-### CC-105 · Brain skills authored in the fork, a pinned snapshot in the package (decision 0059) · `todo`
-**Release:** 0.9.0
-**Changelog:** the brain skills are written in the ultimate-brain-skills fork, and the ultimate-brain package ships an exact, tested snapshot of them.
-**Output:** step 4 of docs/skills-migration-plan.md, after CC-100, CC-101 and CC-104: canonical skill authorship moves to the fork; the product build consumes an exact released snapshot and never edits generated copies; AGENTS.md, templates/brain/AGENTS.md and the docs say where skills are written; brains on older versions keep working until they upgrade.
-**Acceptance:** the package delivers a snapshot whose integrity matches the fork's release; editing a generated copy fails a check; a synthetic brain on 0.8.1 upgrades without both repos changing at the same moment; `test:package` and the skill checks pass.
-
 ### CC-106 · Update awareness in the product (decision 0059) · `done` (#189)
 **Release:** 0.9.0
 **Changelog:** development only: the product checks the skills fork daily, at the start of work and before a release, keeps one open integration issue for unassessed skill changes, and blocks a release on an incompatible one.
@@ -202,6 +198,81 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 **Changelog:** each catch-up rebuilds the task rollup of a repo whose tasks are tracked in the repo, and "link the repo at <path>" in an ingest goes through brain-repos, so every new link gets a kit after your yes.
 **Output:** CC-104's spec question 3 (answered 2026-11-04): brain-catch-up rebuilds the `Repo tasks · <name>` rollup of each tracked-in-repo linked repo per spec/linked-repos.md §4, with `brain repo tasks` through brain-repos "The rollup", written in the publish and counted in the short report; brain-ingest (SKILL.md and references/sources.md) hands repo linking to brain-repos instead of `repo add --pattern`; the skill mirror; a blind run in eval/handover-0.9.0; notion/migrations/0015 points to pasting the new minutes prompt (one line, the user's 2026-11-04 addition). This file: the answer line under CC-104's spec questions and the CC-118 row in 0.10.0.
 **Acceptance:** a blind run by a fresh Sonnet sub-agent with no answer key, on a synthetic brain with one tracked-in-repo linked repo: the catch-up rebuilds the rollup on the target page; "link the repo at <path>" given to brain-ingest ends in brain-repos asking for a yes on the kit, with nothing written before it; no skill still tells the agent to link with `repo add --pattern`; `npm test`, `npm run typecheck`, `npm run test:package`, the skill mirror check and the leak check pass.
+
+### CC-119 · Move CC-105 to 0.9.3 · `done` (#205)
+**Release:** 0.9.0
+**Changelog:** development only: CC-105 (skills from the fork) moves to a later patch release (0.9.2 since CC-128), so 0.9.0 ships on the product's own skills (decision 0069).
+**Output:** decision 0069 (amends 0064); one-line 0069 pointers in docs/skills-migration-plan.md (§4) and spec/skills-delivery.md (Status); this file: the 0.9.3 row of the release table, the 0.9.0 order, and CC-105 moved to a new 0.9.3 section with release 0.9.3 and its spec-first Output; an "Amended by" pointer on 0064.
+**Acceptance:** CC-105 keeps its title, Changelog and Acceptance, with Release 0.9.3; no other row or Changelog line changes; the user accepts decision 0069; the leak check passes.
+
+### CC-128 · Renumber 0.9.x: CC-120 and CC-121 in 0.9.0 · `done` (#206)
+**Release:** 0.9.0
+**Changelog:** development only: the tasks merged before 0.9.0 is released count as 0.9.0 (CC-120, CC-121, CC-122), a simpler Notion becomes 0.9.1 and skills from the fork 0.9.2, so each release's notes match what it ships.
+**Output:** from the user's choice on 2026-11-04 (option A): this file (the release table, CC-120 to CC-122 moved into 0.9.0 with Release 0.9.0, CC-123 to CC-127 in 0.9.1, CC-105 in 0.9.2); decisions 0069 (renamed to `…-in-0-9-2.md`), 0070 and 0071 and the pointer in 0064; migrations 0016 and 0017 and their README rows; the version notes in spec/schema.md, spec/capture-and-review.md, docs/notion-space-design.md, notion/modules/domains.md, docs/skills-migration-plan.md. Test fixtures that use these numbers as sample versions are unchanged.
+**Acceptance:** no task row, Changelog line or reference other than release numbers changes; `git grep` finds no 0.9.3 outside tests and no remaining claim that CC-120/CC-121 are 0.9.1; tests, typecheck, `test:package` and the leak check pass.
+
+### CC-120 · Type moves from Areas to Domains · `done` (#202)
+**Release:** 0.9.0
+**Changelog:** Type (Personal, Entrepreneurship, Professional) moves from Areas to Domains: sync reads it into the domain note and drops the old value from area notes (migration 0016).
+**Output:** the user's 2026-11-04 change in their space, recorded in the product: Domains · Type (select: Personal, Entrepreneurship, Professional, yours) and no Areas · Type in docs/notion-space-design.md, spec/schema.md (§3 area and domain, §14), spec/cli.md §5.14, spec/capture-and-review.md §1, note.schema.json and the examples; `sync plan` maps Domains · Type to `notion_fields.type` and no longer reads Areas · Type, so an area note's old `type` is dropped at the next sync and is still valid until then; Prompt 2, Prompts 7b and 7h and the views guide; notion/modules/domains.md; notion/migrations/0016 for spaces built before 0.9.0.
+**Acceptance:** a test shows `sync plan` taking Type from a Domains row into the domain note and dropping `type` from an area note that held one, with lint passing after apply; no product file still lists Areas · Type outside the history of migrations 0001–0015; `npm test`, `npm run typecheck` and the leak check pass.
+
+### CC-121 · Lifecycle only where the brain creates the row · `done` (#203)
+**Release:** 0.9.0
+**Changelog:** Domains, Areas, Goals, Projects and Orgs no longer have Lifecycle: they come in as reviewed, you close them with Archived (Orgs gain it), and People and the knowledge databases keep Lifecycle for Review (decision 0070).
+**Output:** decision 0070 (amends 0005; from the user's 2026-11-04 review, People keeps Lifecycle); `sync plan` reads no Lifecycle on the five and creates their rows as `reviewed`, `note new` writes them as `reviewed`, render sends no Lifecycle there and ticks Archived once on a note the brain retired; Orgs · Archived → `notion_fields.archived`; spec/schema.md §3, §4, §8, §14, spec/cli.md §5.5 and §5.14, spec/capture-and-review.md §1.4, note.schema.json; docs/notion-space-design.md, Prompt 2, Prompts 7f and 7h, the views guide, the Planning and Orgs modules, the brain-howto guide; notion/migrations/0017.
+**Acceptance:** tests show rows of the five databases created as `reviewed` with no Lifecycle published while People stays `draft` and publishes it; a stale Lifecycle on Projects is ignored with no conflict; a retired project ticks Archived once and not again after you untick it; `note new` writes a project as `reviewed`; Orgs · Archived is pulled; `npm test`, `npm run typecheck`, `npm run test:package`, the skill mirror check and the leak check pass.
+
+### CC-122 · Plan 0.9.1: a simpler Notion · `done` (#204)
+**Release:** 0.9.0
+**Changelog:** development only: decision 0071 plans 0.9.1 (first numbered 0.9.2; renumbered by CC-128), a simpler Notion, and breaks it into CC-123 to CC-127.
+**Output:** decision 0071 (from the user's 2026-11-04 scope review of Review, Inbox, Decisions, Questions, Concepts, Documents and Orgs; accepted the same day); this file: the 0.9.1 row of the release table and rows CC-123 to CC-127. No code.
+**Acceptance:** every point of 0071 has a task; no other row or Changelog line changes; the leak check passes.
+
+## 0.9.1 — A simpler Notion (decision 0071)
+
+Right after 0.9.0. Fewer databases and only reviewed knowledge in Notion; the brain in Git keeps everything. Each task writes its spec first.
+
+### CC-123 · Concepts become Documents (decision 0071) · `todo`
+**Release:** 0.9.1
+**Changelog:** concepts become Documents of their own kind, "learned": the Concepts database is retired and existing concepts move to Documents with their links.
+**Output:** spec first: `origin: learned` on `reference` notes in spec/schema.md and note.schema.json, what replaces the `concept` type (a `brain upgrade` step that rewrites existing concept notes and every reference to them, or the type kept as an alias: the spec decides), ingest's extraction (an idea or method → a learned Document), query, Review sections and Promote (decisions only); then the CLI, the skills, the Notion design (no Concepts database, Documents views by origin, "What do we know?" with Decisions and Documents), the Knowledge and Documents modules, Prompts 2/4/6/7, and a migration that moves Concepts rows to Documents and retires the database after a yes.
+**Acceptance:** a synthetic brain with concepts upgrades with no lint error and every former concept is a learned Document reachable from its project, area and source; a fresh ingest of an idea writes a learned Document; `brain query` finds it; the migration's verify list passes on the design; `npm test`, `npm run typecheck`, `npm run test:package`, the skill mirror check and the leak check pass.
+
+### CC-124 · Reports move to Documents (decision 0071) · `todo`
+**Release:** 0.9.1
+**Changelog:** reports live in Documents instead of the Inbox, still one per subject, refreshed from their page; an Ask stays in the Inbox and links to its report.
+**Output:** spec first: a report as a `reference` note with `origin: report` (or the report shape moved under Documents: the spec decides), the Ask ↔ Report relation between Inbox and Documents, Refresh asked and What to fix on Documents, render and sync for them, 0057 kept (never ingested, not a proposal target); then the CLI, brain-query's report mode, the Refresh report button and Brain Assistant's skill, the Notion design and views ("Reports" on project and area pages read Documents), and a migration that moves existing Report rows.
+**Acceptance:** a test publishes a new report to Documents and refreshes it in place; an Ask row links to it; existing Report rows have a migration path with a verify list; a report still never becomes a source or a proposal target; checks as CC-123.
+
+### CC-125 · Notion shows reviewed knowledge (decision 0071) · `todo`
+**Release:** 0.9.1
+**Changelog:** decisions, questions and Documents appear in Notion once you approve them; until then they are in their Review row only.
+**Output:** spec first (spec/cli.md §5.14): render publishes a decision, question or Document only when its lifecycle is `reviewed`, `disputed` or `archived` (a whole Document is reviewed from creation), and a person whatever its lifecycle; the relations that point at an unpublished note (Inbox Produced, Meeting Decisions and Questions, Supersedes) wait as pending relations; approving a Review Notes row publishes its notes in the same run; a rejected draft never gets a page; what happens to existing Draft pages (left until decided, or trashed after a yes); Briefs, reports and Review pages unchanged; then the CLI, brain-sync/catch-up wording, the Notion design and views (drop "Which concepts are drafts?" and other Draft views), and a migration.
+**Acceptance:** tests: a draft decision gets no page and its meeting's Decisions relation fills in when it is approved; a rejected draft never renders; a draft person still renders; a disputed decision keeps its page; checks as CC-123.
+
+### CC-126 · A to-do becomes a task, not a question (decision 0071) · `todo`
+**Release:** 0.9.1
+**Changelog:** the brain no longer files to-dos as questions: your own become tasks, other people's stay commitments you can track as Waiting On, and questions are kept for what something can answer later; a one-off tidy offers to turn existing to-do questions into tasks.
+**Output:** spec first, in the contracts that hold the rule today: spec/capture-and-review.md §4.1 and §6 and spec/cli.md §5.14.5 (unchanged for other people's commitments: Waiting On only through `Track: Waiting On —`, decision 0055), then skills/brain-ingest/references/extraction.md, sources.md and selection.md (answerable later → question; the owner's explicit to-do → task; someone else's → a commitment in the text; ambiguous owner or tentative idea → no task and no question; risk → Kind Risk), the minutes format's Open Questions and Risks guidance (notion/minutes-format.md), and a tidy (in brain-tidy or a cleanup row: the spec decides) that lists existing questions that read as the owner's to-dos and converts each after a yes, dropping the question; then the skills and their mirror, and a blind run on synthetic minutes.
+**Spec questions (from the review of PR #204):** 1. Old-format minutes (Open Questions as plain lines, no item ids): does the rule apply to them, and how is a converted line tied to its task without an item id? 2. Idempotence: a re-ingest must not create a second task for a line that was a question before; is `task_items` enough for an item that changes kind? 3. The tidy: does dropping a converted question archive it with a successor link to the task, or simply archive it?
+**Acceptance:** a blind run by a fresh Sonnet sub-agent on synthetic minutes with one real question, one owner to-do, one to-do for someone else (unmarked, then marked `Track: Waiting On —`), one ambiguous-owner line and one risk produces one question, one task, no task then one Waiting On task, nothing for the ambiguous line, and one risk; with Tasks off the owner's to-do stays in the text and is not a question; a re-ingest creates no second task; the tidy converts a to-do question only after a yes; the skill mirror check and the leak check pass.
+
+### CC-127 · Orgs · Relationship gains Employer (decision 0071) · `todo`
+**Release:** 0.9.1
+**Changelog:** an Org can be your Employer, besides Client, Prospect, Partner, Supplier and Other.
+**Output:** the Employer option in spec/schema.md §4 (org `notion_fields.relationship`), note.schema.json, docs/notion-space-design.md §3.7, Prompt 2, the Orgs module, the Orgs views (unchanged filters: "Which clients do I have?" stays Client), and a migration step that adds the option (with the existing options' ids sent first).
+**Acceptance:** an org note with `relationship: Employer` lints clean and syncs; the migration adds the option without dropping the others; `npm test` and the leak check pass.
+
+## 0.9.2 — Skills from the fork (decision 0069)
+
+After 0.9.1. Starts with its scope check against 0069 and spec/skills-delivery.md §9.
+
+### CC-105 · Brain skills authored in the fork, a pinned snapshot in the package (decision 0059) · `todo`
+**Release:** 0.9.2
+**Changelog:** the brain skills are written in the ultimate-brain-skills fork, and the ultimate-brain package ships an exact, tested snapshot of them.
+**Output:** step 4 of docs/skills-migration-plan.md, after 0.9.1 is released (decision 0069): first the spec of phase B (spec/skills-delivery.md §9: init, link, upgrade and lint), then a fork release that carries every skill change since brain-v1.0.0 and whose range includes the CLI being released; canonical skill authorship moves to the fork; the product build consumes an exact released snapshot and never edits generated copies; AGENTS.md, templates/brain/AGENTS.md and the docs say where skills are written; brains on older versions keep working until they upgrade.
+**Acceptance:** the package delivers a snapshot whose integrity matches the fork's release; editing a generated copy fails a check; a synthetic brain on 0.8.1 upgrades without both repos changing at the same moment; `test:package` and the skill checks pass.
 
 ## 0.10.0 — The brain assistant (decision 0064)
 

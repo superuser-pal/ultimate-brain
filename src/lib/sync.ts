@@ -5,7 +5,7 @@ import { applyAll, type Correction, type DecisionInput } from "./apply.ts";
 import { BrainError } from "./errors.ts";
 import { assertNoProblems, isRecord, unknownKeys, type InputProblem } from "./input.ts";
 import { generateId, TYPE_PREFIX } from "./ids.ts";
-import { assertStagedValid, checkNoteInput, stageNotes, type NoteInput } from "./note-new.ts";
+import { assertStagedValid, checkNoteInput, NO_LIFECYCLE_PROPERTY, stageNotes, type NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 import { splitParts } from "./parts.ts";
 import { referencedIds } from "./lint.ts";
@@ -180,7 +180,7 @@ function createFromRow(workspace: Workspace, asOf: string, row: SnapshotRow, cre
   const frontmatter: Record<string, unknown> = {
     summary: typeof property(row.properties, "Summary") === "string" && property(row.properties, "Summary") !== "" ? property(row.properties, "Summary") : title,
     notion: row.page_id, sources: [`notion:${row.page_id}`], notion_fields: notionFields(row.database, row.properties, asOf),
-    notion_published: publishedBaseline(row, renderedBrainValues({ path: "", type, id: "", body: "", raw: "", attributes: { type, title, summary: property(row.properties, "Summary") ?? title, lifecycle: normalizeLifecycle(property(row.properties, "Lifecycle")) ?? "draft", notion: row.page_id } } as Note, workspace)),
+    notion_published: publishedBaseline(row, renderedBrainValues({ path: "", type, id: "", body: "", raw: "", attributes: { type, title, summary: property(row.properties, "Summary") ?? title, lifecycle: rowLifecycle(type, row), notion: row.page_id } } as Note, workspace)),
   };
   const facts: Record<string, unknown> = {};
   const timeline: Record<string, unknown>[] = [];
@@ -193,7 +193,13 @@ function createFromRow(workspace: Workspace, asOf: string, row: SnapshotRow, cre
   if (Object.keys(facts).length > 0) { frontmatter.facts = facts; for (const [field, value] of Object.entries(facts)) fact(field, value); frontmatter.timeline = timeline; }
   if ((type === "goal" && (typeof frontmatter.why !== "string" || typeof frontmatter.area !== "string")) || (type === "project" && typeof frontmatter.area !== "string")) { conflicts.push(conflict(row, "MISSING_REQUIRED", `${type} "${title}" is missing required properties`)); return undefined; }
   const id = creates.get(row.page_id)!.id;
-  return { type, id, title, lifecycle: normalizeLifecycle(property(row.properties, "Lifecycle")) as string ?? "draft", frontmatter, body: "" };
+  return { type, id, title, lifecycle: rowLifecycle(type, row), frontmatter, body: "" };
+}
+
+/** A new row's lifecycle: Notion's Lifecycle (default `draft`), or `reviewed` for the types without the property (0070). */
+function rowLifecycle(type: string, row: SnapshotRow): string {
+  if (NO_LIFECYCLE_PROPERTY.has(type)) return "reviewed";
+  return (normalizeLifecycle(property(row.properties, "Lifecycle")) as string | undefined) ?? "draft";
 }
 
 /** The baseline is what Notion shows (cli §5.14.2), empty values included, so render publishes the brain's values over them. */
@@ -416,14 +422,14 @@ function sortPlan(plan: SyncPlan): void {
 }
 
 function notionFields(database: string, p: Record<string, unknown>, asOf: string): Record<string, unknown> {
-  const mapping: Record<string, Record<string, string>> = { domains: { Archived: "archived" }, areas: { Type: "type", Archived: "archived" }, goals: { Status: "status", Progress: "progress", Archived: "archived" }, projects: { Status: "status", Priority: "priority", Dates: "dates", Archived: "archived" }, people: { Email: "email" }, orgs: { Relationship: "relationship", Website: "website" }, questions: { Status: "status" } };
+  const mapping: Record<string, Record<string, string>> = { domains: { Type: "type", Archived: "archived" }, areas: { Archived: "archived" }, goals: { Status: "status", Progress: "progress", Archived: "archived" }, projects: { Status: "status", Priority: "priority", Dates: "dates", Archived: "archived" }, people: { Email: "email" }, orgs: { Relationship: "relationship", Website: "website", Archived: "archived" }, questions: { Status: "status" } };
   const fields: Record<string, unknown> = { as_of: asOf };
   for (const [name, key] of Object.entries(mapping[database] ?? {})) if (Object.hasOwn(p, name) && p[name] !== null) fields[key] = p[name];
   return fields;
 }
 
 function brainProperties(database: string): Array<[string, string]> {
-  const common: Array<[string, string]> = [["Name", "title"], ["Summary", "summary"], ["Lifecycle", "lifecycle"]];
+  const common: Array<[string, string]> = [["Name", "title"], ["Summary", "summary"], ...(NO_LIFECYCLE_PROPERTY.has(TYPE_FOR_DATABASE[database] ?? "") ? [] : [["Lifecycle", "lifecycle"] as [string, string]])];
   const extras: Record<string, Array<[string, string]>> = { areas: [["Domain", "domain"]], domains: [["Org", "org"]], goals: [["Why", "why"], ["Deadline", "facts.deadline"], ["Area", "area"]], projects: [["Key Facts", "facts"], ["Area", "area"], ["Goal", "goal"], ["Client", "client"], ["People", "people"]], people: [["Role", "facts.role"], ["Org", "org"]], decisions: [["Assessment", "assessment"], ["Project", "projects"], ["Area", "derived_area"]], questions: [["Kind", "kind"], ["Project", "projects"], ["Area", "derived_area"]], concepts: [["Project", "concept_projects"], ["Area", "concept_area"]], documents: [["Project", "reference_projects"], ["Area", "reference_area"]] };
   return [...common, ...(extras[database] ?? [])];
 }
@@ -770,7 +776,13 @@ function trashDue(note: Note, now: Date): boolean {
 function databaseIdFor(workspace: Workspace, database: string): string { return databaseId(workspace.config, database); }
 function renderedBrainValues(note: Note, workspace: Workspace): Record<string, unknown> {
   const a = note.attributes; const values: Record<string, unknown> = {};
-  const common = () => Object.assign(values, { Name: a.title, Summary: a.summary ?? null, Lifecycle: select(a.lifecycle), "Brain ID": note.id });
+  const common = () => {
+    if (!NO_LIFECYCLE_PROPERTY.has(note.type)) return Object.assign(values, { Name: a.title, Summary: a.summary ?? null, Lifecycle: select(a.lifecycle), "Brain ID": note.id });
+    Object.assign(values, { Name: a.title, Summary: a.summary ?? null, "Brain ID": note.id });
+    // A note the brain retired (a merge or a supersession) ticks Archived once; Archived stays yours afterwards (0070).
+    if (a.lifecycle === "archived" && !(isRecord(a.notion_fields) && a.notion_fields.archived === true)) values.Archived = true;
+    return values;
+  };
   if (note.type === "proposal") {
     const target = typeof a.target === "string" ? workspace.get(a.target) : undefined;
     const addLink = a.kind === "add_link";
@@ -882,6 +894,7 @@ function notionProperty(name: string, value: unknown, note: Note, workspace: Wor
   // An Inbox row's Kind is written only when empty in Notion, so a Kind you chose stands (0048).
   if (name === "Kind" && note.type === "source") return { type: "select", value, mode: "if_empty" };
   if (["Lifecycle", "Assessment", "Kind", "State", "Brain Status", "Status"].includes(name)) return { type: "select", value };
+  if (name === "Archived") return { type: "checkbox", value };
   if (name === "Last Synced" || name === "Date" || name === "Deadline" || name === "Ingested At") return { type: "date", value };
   return { type: name === "Name" ? "title" : "rich_text", value };
 }
