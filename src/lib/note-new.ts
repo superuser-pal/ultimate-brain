@@ -43,7 +43,7 @@ const ITEM_KEYS = ["type", "id", "title", "file_date", "frontmatter", "body"];
 const KNOWLEDGE_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 /** Types you create, or the brain writes only after your yes: no Lifecycle in Notion, `reviewed` from creation (0070). */
 export const NO_LIFECYCLE_PROPERTY = new Set(["domain", "area", "goal", "project", "org"]);
-const NEW_NOTE_TYPES = new Set([...KNOWLEDGE_TYPES, "source"]);
+const NEW_NOTE_TYPES = new Set([...KNOWLEDGE_TYPES, "source"].filter((type) => type !== "concept"));
 const FORBIDDEN_KEYS = ["id", "type", "title", "created", "updated", "lifecycle"];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 /** Types whose path uses the note's own `date` (spec/cli.md §3.8). */
@@ -61,7 +61,9 @@ export function checkNoteInput(value: unknown, pointer: string, withId = true): 
   const problems = unknownKeys(value, withId ? ITEM_KEYS : ITEM_KEYS.filter((key) => key !== "id"), pointer);
   const at = (key: string, message: string) => problems.push({ pointer: `${pointer}/${key}`, message });
 
-  if (typeof value.type !== "string" || !NEW_NOTE_TYPES.has(value.type)) {
+  if (value.type === "concept") {
+    at("type", "concept is retired since 0.9.1: write a reference with origin: learned (decision 0071)");
+  } else if (typeof value.type !== "string" || !NEW_NOTE_TYPES.has(value.type)) {
     at("type", `must be one of ${[...NEW_NOTE_TYPES].join(", ")} (views and proposals have their own commands)`);
   }
   if (typeof value.title !== "string" || value.title === "") at("title", "must be a non-empty string");
@@ -252,7 +254,8 @@ function documentProblems(workspace: Workspace, items: readonly NoteInput[], poi
     }
     if (origin === "promoted" && typeof from === "string") {
       const type = workspace.get(from)?.type;
-      if (type !== "decision" && type !== "concept") return at("frontmatter/promoted_from", `${from} is not an existing decision or concept`);
+      // Promote is on decisions only since 0.9.1 (decision 0071).
+      if (type !== "decision") return at("frontmatter/promoted_from", `${from} is not an existing decision`);
       const other = promoted.get(from);
       if (other !== undefined) return at("frontmatter/promoted_from", `${from} is already promoted to ${other}`);
       promoted.set(from, item.id ?? `${pointerOf(index)}`);

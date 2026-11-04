@@ -87,7 +87,7 @@ test("a blocked input, a dirty tree and a missing --previous write nothing", asy
 
 test("an interrupted write leaves a journal: every command refuses until recover rolls it back", async (context) => {
   const dir = await gitBrain(context);
-  const tracked = "knowledge/concepts/row-level-security.md";
+  const tracked = "knowledge/references/row-level-security.md";
   const original = await readFile(join(dir, tracked), "utf8");
   await writeFile(join(dir, tracked), `${original}\nhalf written\n`);
   await writeFile(join(dir, "sources/notion/2026-12-10-new.md"), "---\nid: src-halfhalf\n---\n");
@@ -107,7 +107,7 @@ test("an interrupted write leaves a journal: every command refuses until recover
 
 test("recover only clears the journal when the Op commit exists", async (context) => {
   const dir = await gitBrain(context);
-  const tracked = "knowledge/concepts/row-level-security.md";
+  const tracked = "knowledge/references/row-level-security.md";
   await writeFile(join(dir, tracked), `${await readFile(join(dir, tracked), "utf8")}\ncommitted\n`);
   git(dir, "commit", "-q", "-am", "work\n\nOp: op-cafe0001");
   await mkdir(join(dir, "_journal"), { recursive: true });
@@ -181,7 +181,7 @@ test("cleanup-plan lists restricted claims, the claims that stay, Tasks of exclu
   const id = v1.json.data.created[0] as string;
   const hashes = new Map<number, string>();
   for (const m of (await readFile(join(dir, v1.json.data.path), "utf8")).matchAll(/- n: (\d+)\n\s+hash: ([0-9a-f]{8})/g)) hashes.set(Number(m[1]), m[2]!);
-  const concept = join(dir, "knowledge/concepts/row-level-security.md");
+  const concept = join(dir, "knowledge/references/row-level-security.md");
   const original = await readFile(concept, "utf8");
   const withSource = original.replace(/\nsources:[^\n]*\n/, "\n").replace(/\n---\n/, `\nsources:\n  - ${id}\n---\n`);
   await writeFile(concept, `${withSource}\nPricing was 95k. ^[${id}#¶2:${hashes.get(2)}]\nThe contract goes Friday. ^[${id}#¶3:${hashes.get(3)}]\n`);

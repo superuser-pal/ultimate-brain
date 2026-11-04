@@ -29,5 +29,5 @@
 - [Acme kickoff](knowledge/meetings/2026-10-01-acme-kickoff.md) — mtg-5r2k8v3a · date: 2026-10-01 · project: Acme website · Kickoff of the Acme website rebuild; Firebase chosen for auth, launch planned for January 2027.
 - [Acme sync](knowledge/meetings/2026-12-03-acme-sync.md) — mtg-8c4n2p7w · date: 2026-12-03 · project: Acme website · Launch moved to February, auth switched to Supabase, Maria is now PM.
 
-## Concepts
-- [Row-level security](knowledge/concepts/row-level-security.md) — con-1s6t8e2b · Database access rules evaluated per row; used by Supabase for auth-aware queries.
+## Documents
+- [Row-level security](knowledge/references/row-level-security.md) — con-1s6t8e2b · origin: learned · Database access rules evaluated per row; used by Supabase for auth-aware queries.
