@@ -18,6 +18,7 @@ const fail = (m, code = 1) => { save(); console.error(m); process.exit(code); };
 const issueView = (i) => ({ number: i.number, title: i.title, body: i.body, state: i.state.toUpperCase(), stateReason: i.stateReason, labels: i.labels.map((name) => ({ name })), url: url("issues", i.number), comments: i.comments.map((body) => ({ body })) });
 const prView = (p) => ({ number: p.number, title: p.title, body: p.body, headRefName: p.head, baseRefName: p.base, state: p.state, mergedAt: p.mergedAt, url: url("pull", p.number) });
 const [a, b] = args;
+if (has("--help") || has("-h")) out(`gh-sim: ${args.filter((x) => !x.startsWith("-")).join(" ")}: issue list/view/comment/edit/close, pr create/list/view/checks/close, repo view, auth status`);
 if (a === "auth" && b === "status") out("Logged in to github.com (simulated)");
 if (a === "repo" && b === "view") out(has("--json") ? { nameWithOwner: st.repo, url: `https://github.com/${st.repo}` } : st.repo);
 if (a === "issue") {
@@ -40,5 +41,6 @@ if (a === "pr") {
   if (!p) fail(`no pull requests found for ${ref}`);
   if (b === "view") out(has("--json") ? pick(prView(p), opt("--json")) : `${p.title} (${p.state})`);
   if (b === "checks") out("test\tpass\t(simulated)");
+  if (b === "close") { p.state = "CLOSED"; out(url("pull", p.number)); }
 }
 fail(`gh-sim: unsupported: gh ${args.join(" ")}`, 2);
