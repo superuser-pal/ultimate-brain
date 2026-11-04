@@ -27,7 +27,8 @@ test("a new brain starts with the onboarding defaults, and modules lists what ea
   const byName = Object.fromEntries(list.json.data.modules.map((module: { name: string }) => [module.name, module]));
   assert.deepEqual(byName.knowledge.missing, ["decisions", "questions"]);
   assert.deepEqual(byName.tasks, { name: "tasks", on: false, default: false, databases: [], missing: ["tasks"] });
-  assert.deepEqual(byName.reports.missing, []);
+  // A report is a Documents row (0071): Reports uses the Documents database.
+  assert.deepEqual([byName.reports.databases, byName.reports.missing], [["documents"], ["documents"]]);
 
   const status = await brain(["status", "--brain", target, "--json"], root);
   assert.deepEqual(status.json.data.modules, { domains: false, knowledge: true, orgs: true, documents: false, reports: false, tasks: false, planning: false });

@@ -11,7 +11,7 @@ import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
 import { appendLog } from "../lib/log.ts";
 import { isRecord } from "../lib/input.ts";
 import { lintBrain } from "../lib/lint.ts";
-import { modulesOf, withModules } from "../lib/modules.ts";
+import { modulesOf, storedModules, withModules } from "../lib/modules.ts";
 import { scanNotes } from "../lib/notes.ts";
 import { assertPlainPath, installedProduct } from "../lib/skills.ts";
 import { competingCopies } from "../lib/skills-competing.ts";
@@ -87,6 +87,13 @@ export const upgradeCommand: Command = {
         if (isRecord(config) && !("modules" in config)) {
           config = withModules(config, modulesOf(config));
           changed = true;
+        }
+        // 0.9.1: a report is a Documents row, so Reports needs Documents on (0071).
+        const stored = storedModules(config);
+        if (stored.reports && !stored.documents) {
+          config = withModules(config, { ...stored, documents: true });
+          changed = true;
+          warnings.push({ code: "DOCUMENTS_TURNED_ON", message: "Reports now live in Documents, so the Documents module is on. Apply Notion migration 0019 before the next publish." });
         }
         if (changed) changes.push({ path: brainJson, action: "updated", content: `${JSON.stringify(config, null, 2)}\n` });
       } catch {

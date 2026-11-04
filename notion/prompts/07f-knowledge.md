@@ -19,8 +19,9 @@ On this page ("Knowledge") add one tab per numbered item you have. In each tab p
 [Knowledge]    - List "Which risks are open?": Status is Open and Kind is Risk; sort Created time descending; show Name, Project, Raised In.
 [Knowledge]    - List "What did we answer?": Status is Answered; sort Created time descending; show Name, Project, Summary.
 [Documents] 3b. Tab "Documents" (database "Documents"):
-[Documents]    - List "What did we keep?": Lifecycle is not Archived; sort Last edited time descending; show Name, Project, Summary.
+[Documents]    - List "What did we keep?": Lifecycle is not Archived and Origin is not Report; sort Last edited time descending; show Name, Project, Summary.
 [Documents]    - List "What did we learn?": Origin is Learned and Lifecycle is not Archived; sort Created time descending; show Name, Project, Summary.
+[Reports]    - List "Which reports do I have?": Origin is Report; sort Last edited time descending; show Name, Project, Area, Refresh asked, What to fix.
 4. Tab "People" (database "People"):
    - Gallery with small cards "Who's who?": Lifecycle is not Archived; sort Name; show Name, Role.
 [Orgs]    - In "Who's who?", also group by Org and show Org.

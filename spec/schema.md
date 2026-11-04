@@ -71,7 +71,7 @@ The prefix is fixed at creation even if `type` later changes; `type` is the trut
 ├── sources/notion/YYYY-MM-DD-<slug>.md  type: source (immutable), key notion:
 ├── sources/files/YYYY-MM-DD-<slug>.md   type: source, key file: (0032)
 ├── sources/text/YYYY-MM-DD-<slug>.md    type: source, key url: or agent: (0032)
-├── reports/YYYY-MM-DD-<slug>.md   type: view, view_kind report (0043)
+├── reports/YYYY-MM-DD-<slug>.md   type: view, view_kind report (0043); Notion: a Documents row, Origin Report (0071)
 ├── memories/YYYY/MM/YYYY-MM-DD-<slug>.md type: memory (v2 loop)
 └── _proposals/YYYY-MM-DD-<slug>.md      type: proposal
 ```
@@ -292,7 +292,7 @@ Generated; never evidence (lint error if any note's `sources` cites a view).
 | `notion`, `last_synced`, `notion_published` | as §3.2 (system) | `report` only |
 Body of `brief`, `decision_log` and `area_brief`: `<!-- @generated:start -->` … `<!-- @generated:end -->`, then optional `<!-- @user:start -->` … `<!-- @user:end -->`. Tools replace only the generated block. The content of each view kind is fixed in §16.
 
-**Reports (0043, 0045)** are the one view the CLI doesn't build: the brain-query skill writes the body, and `brain report new` (cli.md §5.18) stores it. A report is **living**: one report per subject, rewritten in place when the user asks for a refresh (`report new` with `refresh`), with a new `generated_at` (its "as of"). Git keeps every earlier version. It is never rebuilt by `brain views`, never edited otherwise, and never cited as a source, so the brain doesn't learn from its own summaries. Its body is the sections of §16.4. It is published as an Inbox row with Kind = Report.
+**Reports (0043, 0045)** are the one view the CLI doesn't build: the brain-query skill writes the body, and `brain report new` (cli.md §5.18) stores it. A report is **living**: one report per subject, rewritten in place when the user asks for a refresh (`report new` with `refresh`), with a new `generated_at` (its "as of"). Git keeps every earlier version. It is never rebuilt by `brain views`, never edited otherwise, and never cited as a source, so the brain doesn't learn from its own summaries. Its body is the sections of §16.4. It is published as a **Documents** row with Origin = Report (0.9.1, decision 0071; an Inbox row with Kind = Report before), and it stays a view: never a source, never a proposal target (0057), never reviewed. It has no Lifecycle and goes out whatever the lifecycle of the notes it cites (their lines say *(not reviewed)*). The Ask rows it answers stay in the Inbox and link to it (§14).
 
 ### memory · `memories/YYYY/MM/` · never published (0008, 0009; loop is v2)
 | Field | Type | Req |
@@ -553,7 +553,7 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 | `knowledge` | `true` | `decisions`, `questions` (`concepts` until 0.9.1, 0071) |
 | `orgs` | `true` | `orgs` |
 | `documents` | `false` | `documents` (0049) |
-| `reports` | `false` | none: Ask and Report rows on the Inbox (0043, 0045) |
+| `reports` | `false` | `documents`, shared with the Documents module: a report is a Documents row (0071); Ask rows on the Inbox (0043, 0045). **Needs `documents` on:** Reports counts as off while Documents is off; `brain modules` turns Documents on with Reports and Reports off with Documents (cli.md §5.20), and `brain upgrade` turns Documents on in a brain that has Reports on (cli.md §5.15) |
 | `tasks` | `false` | `notion.tasks` |
 | `planning` | `false` | `goals`, `key_results` |
 
@@ -633,20 +633,22 @@ A fixed item can't also be excluded. A `fixes` entry that names no item of the p
 | Decisions, Questions · Area | derived: the `area` of each of the record's `projects` (0034); not stored in the note |
 | Questions · Kind, Status, Project, Raised In | `kind`, `notion_fields.status`, `projects`, `raised_in`. Status = Open is written once while Notion has none, Answered once after an applied `answer` (0041, 0045), and Dropped once after `question drop` (0071) |
 | Areas · Brief toggle | the area's `area_brief` view (§16.3, 0041) |
-| Documents · Area, Project, page body | `area`, `projects`, the body (0045, 0049). A `promoted` Document's body is sent on create only: after that it is yours |
-| Documents, Reports · Accepted, Accepted at | yours (0054): the accept control (*Accept write-up* on a Document, accepting the proposed refresh on a report) sets Accepted and Accepted at. Never compared or corrected; read only by `sync plan`'s accepted-wording rules (cli.md §5.14.7); the skill unticks Accepted and clears Accepted at after the wording is imported. The page body of a `promoted` Document or of a report stays Notion's until accepted wording is imported exactly; after that `notion_published` holds `@notion_body` (the Markdown read back from the page at the last sync) and `@git_body` (the Git body then), the baselines of cli.md §5.14.7; `@content` stays render's own bookkeeping (what it would send) |
+| Documents · Area, Project, page body | `area`, `projects`, the body (0045, 0049). A `promoted` Document's body is sent on create only: after that it is yours. On a report: its `area`, `projects` and body (0071) |
+| Documents · Origin | select, brain-owned, written from the note (0071): `whole` and `part` (and a reference with no `origin`) → Kept, `learned` → Learned, `promoted` → Promoted, `workflow` → Workflow, a report view → Report. Never read back: a changed Origin is not a correction (it is not in the correctable table of cli.md §5.14.2) |
+| Documents · Asked in | a report's `asked_in`: the Ask rows it answers (relation → Inbox, two-way with Inbox · Report, 0071; was Inbox · Ask, a relation within the Inbox, before 0.9.1) |
+| Documents · Refresh asked, on a report | yours (a checkbox, ticked by hand): ask for a full refresh from the notes in Git; the brain clears it when it rewrites the report (0045, 0048). On the Inbox before 0.9.1 (0071), and called Refresh before migration 0010; `sync plan` still reads `Refresh` |
+| Documents · What to fix, on a report | yours: what the report gets wrong; the brain records it in the report's `fixes`, turns it into proposals and clears it (0045; on the Inbox before 0.9.1) |
+| Documents · Accepted, Accepted at | yours (0054): the **Accept** button (0071; *Accept write-up* on a Document and *Accept refresh* on a Report row before 0.9.1), on a Document after a write-up or on a report after its proposed refresh sets Accepted and Accepted at. Never compared or corrected; read only by `sync plan`'s accepted-wording rules (cli.md §5.14.7); the skill unticks Accepted and clears Accepted at after the wording is imported. The page body of a `promoted` Document or of a report stays Notion's until accepted wording is imported exactly; after that `notion_published` holds `@notion_body` (the Markdown read back from the page at the last sync) and `@git_body` (the Git body then), the baselines of cli.md §5.14.7; `@content` stays render's own bookkeeping (what it would send) |
 | Documents · From decision | a `promoted` Document's `promoted_from` when it names a decision (two-way with Decisions · Documents, which Notion fills, 0049). From concept is retired with Concepts in 0.9.1 (0071) |
-| Documents · Origin, on a learned Document | Learned (`origin: learned`, 0071) |
 | Decisions · Promote asked | yours (a checkbox, ticked by the Promote to document button): ask for a promoted Document. The brain clears it once it has acted (0048, 0049) |
 | Decisions, Questions, Documents, People · Sources | inverse of the Inbox relations below (Notion fills it) |
 | Inbox · Name | the source's `title` (on rows the brain creates; a capture's Name is yours) |
-| Inbox · Kind, Summary | source `kind` (`Capture`, `File` for `document` (Document before 0.6.0), `Email`, `Chat`, `Note`), written only when Kind is empty in Notion, so a Kind you chose stands (0048); source `summary`; `Report` for a report view; `Ask` is yours (0043) |
-| Inbox · page body | a brain-created row's digest (0043); a report's body. Never a capture's or an Ask row's. ("Full text" toggles written before 0.6.0 stay as they are; no new one is written, 0049) |
-| Inbox · Ask, Report | a report's `asked_in` (two-way relation within the Inbox, 0043) |
+| Inbox · Kind, Summary | source `kind` (`Capture`, `File` for `document` (Document before 0.6.0), `Email`, `Chat`, `Note`), written only when Kind is empty in Notion, so a Kind you chose stands (0048); source `summary`; `Ask` is yours (0043); `Catch-up` on the run summary an unattended catch-up writes (no note, cli.md §6.1). `Report` is retired in 0.9.1: reports are Documents (0071) |
+| Inbox · page body | a brain-created row's digest (0043). Never a capture's or an Ask row's (a report's body is on its Documents row since 0.9.1, 0071). ("Full text" toggles written before 0.6.0 stay as they are; no new one is written, 0049) |
+| Inbox · Report | on an Ask row, the reports that answer it: the other side of Documents · Asked in, which Notion fills (0071) |
 | Inbox · Document asked | yours (a checkbox, ticked by the Keep as document button, which also sets Brain Status to Ready): keep the input as a Document. The brain clears it once it has acted (0048, 0049) |
 | Inbox · Only keep | yours: when only part should be kept ("the requirements table and the deadlines"); the ingest stores it as the source's `only_keep`. Empty = the whole input (0049; was Keep, 0045) |
-| Inbox · Refresh asked, on a Report row | yours (a checkbox, ticked by hand since 0.8.0; before that by the Refresh button, which now messages Brain Assistant, 0054): ask for a full refresh from the notes in Git; the brain clears it when it rewrites the report (0045, 0048). It is the checkbox called Refresh before migration 0010, which renames it; `sync plan` still reads `Refresh` from a space not yet migrated, and the brain only ever writes `Refresh asked`. (The Ask row's Refresh report relation is retired in 0.6.0: an Ask row is always a new report, 0048) |
-| Inbox · What to fix, on a Report row | yours: what the report gets wrong; the brain records it in the report's `fixes`, turns it into proposals and clears it (0045) |
+| Inbox · Refresh asked, What to fix, on a Report row | retired in 0.9.1: reports are Documents rows, and these two are Documents properties (above, 0071). Migration 0019 moves the Report rows; the old properties stay unused for you to delete |
 | Inbox · Decisions, Questions, Documents, People | derived: the published notes of those types whose `sources` lists the source's id (Documents was References before 0.6.0; learned Documents are in Documents, and Inbox · Concepts is retired in 0.9.1, 0071) |
 | Inbox · Project, Area | yours; the brain fills them only when empty, from the produced notes' `projects` and `area` |
 | Inbox · Brain Status | `New` → `Ready` → `Done` (0048). `New` and `Ready` are yours; the brain sets `Done` when it publishes the row, and on a row it skipped, whose Summary then says why ("Skipped: same as <title>"). A catch-up takes in only `Ready` rows. Read before 0.6.0: `Processed` = `Done`; `Skipped` is retired (migration 0010 moves those rows to `Done`) |

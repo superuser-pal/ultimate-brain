@@ -2,7 +2,7 @@ import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { atomicWriteFile } from "../lib/fs-safe.ts";
 import { appendLog } from "../lib/log.ts";
-import { isModuleName, missingFor, MODULE_DATABASES, MODULE_DEFAULTS, MODULES, modulesOf, withModules, type ModuleName } from "../lib/modules.ts";
+import { isModuleName, missingFor, MODULE_DATABASES, MODULE_DEFAULTS, MODULES, modulesOf, storedModules, withModules, type ModuleName } from "../lib/modules.ts";
 import { describeErrors, loadSchemas } from "../lib/schemas.ts";
 
 /** `brain modules` (spec/cli.md §5.20). */
@@ -45,12 +45,20 @@ function switchCommand(value: boolean): Command {
       }
 
       // An absent block means every module is on (schema §12): write it out whole, then switch.
-      const next = withModules(config, { ...modulesOf(config), [module]: value });
+      // Reports needs Documents (0071): on reports turns Documents on, off documents turns Reports off.
+      const stored = storedModules(config);
+      const block = { ...stored, [module]: value };
+      const linked: ModuleName | null = module === "reports" && value ? "documents" : module === "documents" && !value ? "reports" : null;
+      if (linked !== null) block[linked] = value;
+      const also = linked !== null && stored[linked] !== value ? [{ module: linked, on: value }] : [];
+      const next = withModules(config, block);
       const schemas = loadSchemas();
       if (!schemas.brain(next)) throw new BrainError("BRAIN_CONFIG_INVALID", `brain.json would be invalid: ${describeErrors(schemas.brain.errors).join("; ")}`);
       await atomicWriteFile(brain!.root, "brain.json", `${JSON.stringify(next, null, 2)}\n`);
-      await appendLog(brain!.root, now, [{ op: "modules", id: "-", title: module, pairs: [["state", word]] }]);
-      return { data: { module, on: value, changed: true, missing }, human: `${module}: ${word}${value && missing.length > 0 ? ` (Notion still needs: ${missing.join(", ")})` : ""}\n` };
+      const logged = [module, ...also.map((entry) => entry.module)].filter((name) => stored[name] !== value);
+      await appendLog(brain!.root, now, logged.map((name) => ({ op: "modules", id: "-", title: name, pairs: [["state", word]] })));
+      const alsoText = also.map((entry) => ` (${entry.module} ${word} too: reports are Documents)`).join("");
+      return { data: { module, on: value, changed: true, missing, ...(also.length === 0 ? {} : { also }) }, human: `${module}: ${word}${alsoText}${value && missing.length > 0 ? ` (Notion still needs: ${missing.join(", ")})` : ""}\n` };
     },
   };
 }

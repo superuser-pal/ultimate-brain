@@ -141,6 +141,8 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
     if (row.database === "inbox") { planInbox(workspace, row, result); continue; }
     const brainId = property(row.properties, "Brain ID");
     let note = typeof brainId === "string" && brainId !== "" ? workspace.get(brainId) : noteByNotion(workspace, row.page_id);
+    // A report's row is in Documents since 0.9.1 (0071): read only for its requests and wording, as on the Inbox before.
+    if (row.database === "documents" && note !== undefined && isReport(note)) { planReport(workspace, row, note, result); continue; }
     if (typeof brainId === "string" && brainId !== "" && note === undefined) { result.conflicts.push(conflict(row, "UNKNOWN_BRAIN_ID", `No note has Brain ID ${brainId}`)); continue; }
     if (note !== undefined && note.attributes.notion !== undefined && note.attributes.notion !== row.page_id) { result.conflicts.push(conflict(row, "NOTION_ID_MISMATCH", `Note ${note.id} belongs to another Notion page`)); continue; }
     if (note === undefined) {
@@ -331,6 +333,21 @@ function ignoredRow(row: SnapshotRow, reason: string, propertyName?: string): Re
 }
 
 /**
+ * A Report row (a Documents row since 0.9.1, an Inbox row before migration 0019; cli §5.14.1, 0071) is read only for
+ * Refresh asked, What to fix and its wording (0045, 0054): nothing on it goes through the three-way comparison.
+ */
+function planReport(workspace: Workspace, row: SnapshotRow, note: Note, out: SyncPlan): void {
+  if (!modulesOf(workspace.config).reports) { out.ignored.push(ignoredRow(row, "MODULE_OFF")); return; }
+  // The report belongs to one page (cli §5.14.2): a duplicate or misassigned Brain ID on another row plans nothing.
+  if (note.attributes.notion !== undefined && note.attributes.notion !== row.page_id) { out.conflicts.push(conflict(row, "NOTION_ID_MISMATCH", `Report ${note.id} belongs to another Notion page`)); return; }
+  if (property(row.properties, "Refresh asked") === true || property(row.properties, "Refresh") === true) out.refresh_requests.push({ page_id: row.page_id, report: note.id });
+  if (row.wording !== undefined) planWording(workspace, out.as_of, row.page_id, note, row.wording, out);
+  const text = property(row.properties, "What to fix");
+  const last = (Array.isArray(note.attributes.fixes) ? note.attributes.fixes : []).filter(isRecord).at(-1);
+  if (typeof text === "string" && text.trim() !== "" && text !== last?.text) out.report_fixes.push({ page_id: row.page_id, report: note.id, text });
+}
+
+/**
  * An Inbox row is read for Document asked (0049) and, on a Report row, Refresh and What to fix
  * (0045); a Full text box is retired (cli §5.14.2).
  */
@@ -339,16 +356,8 @@ function planInbox(workspace: Workspace, row: SnapshotRow, out: SyncPlan): void 
   const brainId = property(row.properties, "Brain ID");
   const note = typeof brainId === "string" && brainId !== "" ? workspace.get(brainId) : undefined;
   if (Object.hasOwn(row.properties, "Full text")) out.ignored.push(ignoredRow(row, "RETIRED", "Full text"));
-  if (note !== undefined && isReport(note)) {
-    if (!modules.reports) { out.ignored.push(ignoredRow(row, "MODULE_OFF")); return; }
-    // The report belongs to one page (cli §5.14.2): a duplicate or misassigned Brain ID on another row plans nothing.
-    if (note.attributes.notion !== undefined && note.attributes.notion !== row.page_id) { out.conflicts.push(conflict(row, "NOTION_ID_MISMATCH", `Report ${note.id} belongs to another Notion page`)); return; }
-    if (property(row.properties, "Refresh asked") === true || property(row.properties, "Refresh") === true) out.refresh_requests.push({ page_id: row.page_id, report: note.id });
-    if (row.wording !== undefined) planWording(workspace, out.as_of, row.page_id, note, row.wording, out);
-    const text = property(row.properties, "What to fix");
-    const last = (Array.isArray(note.attributes.fixes) ? note.attributes.fixes : []).filter(isRecord).at(-1);
-    if (typeof text === "string" && text.trim() !== "" && text !== last?.text) out.report_fixes.push({ page_id: row.page_id, report: note.id, text });
-  }
+  // A Report row still on the Inbox: a space before migration 0019 (0071).
+  if (note !== undefined && isReport(note)) planReport(workspace, row, note, out);
   // An unattended run's Report row has no Brain ID and holds no report (cli §5.14.2, §6.1).
   if (typeof brainId !== "string" || brainId === "") {
     const reason = modules.reports ? "NOT_A_REPORT" : "MODULE_OFF";
@@ -714,7 +723,7 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
   const waiting: RenderItem[] = [];
   const modules = modulesOf(workspace.config);
   for (const note of selected) {
-    const database = isReport(note) ? "inbox" : DATABASE_FOR_TYPE[note.type]; if (database === undefined || (note.type === "source" && note.attributes.kind === undefined)) continue;
+    const database = isReport(note) ? "documents" : DATABASE_FOR_TYPE[note.type]; if (database === undefined || (note.type === "source" && note.attributes.kind === undefined)) continue;
     // A note of a module that is off isn't published; naming one is an error (0048).
     if ((isReport(note) && !modules.reports) || !typeIsOn(workspace.config, note.type)) { if (ids !== undefined) errors.push({ id: note.id, reason: "MODULE_OFF" }); continue; }
     // An attached source has no Inbox row: its notes go on the parent's (0042).
@@ -733,7 +742,9 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     for (const name of offRelations(workspace.config, database)) delete rendered[name];
     const properties: Record<string, unknown> = {}; const pending: Array<Record<string, unknown>> = []; const heldProperties = held?.get(note.id) ?? new Set<string>();
     const isCreate = note.attributes.notion === undefined && capturePage === undefined;
-    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || !Object.hasOwn(published, name) || !sameValue(value, RENAMED_VALUES[name]?.[String(published[name])] ?? published[name]))) properties[name] = encoded; }
+    // A report last published on the Inbox (no Origin in S) was moved to Documents by migration 0019: every property goes out once (cli §5.14.4, 0071).
+    const moved = isReport(note) && !isCreate && !Object.hasOwn(published, "Origin");
+    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || moved || !Object.hasOwn(published, name) || !sameValue(value, RENAMED_VALUES[name]?.[String(published[name])] ?? published[name]))) properties[name] = encoded; }
     const content = renderedContent(form, workspace); if (content.hash !== undefined) rendered["@content"] = content.hash;
     // A Review row with item ids (0055): its body is written once, at create. Afterwards only the brain-owned summary at the top is sent;
     // the item sections belong to the user (capture-and-review §7.4, §7.10), and the hashes of what was rendered are kept in S.
@@ -841,7 +852,8 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     });
     return values;
   }
-  if (isReport(note)) { Object.assign(values, { Name: a.title, Kind: "Report", Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), Ask: typeof a.asked_in === "string" ? [a.asked_in] : Array.isArray(a.asked_in) ? a.asked_in : [], "Brain Status": "Done", "Brain ID": note.id }); return values; }
+  // A report is a Documents row since 0.9.1 (0071); its Ask rows stay on the Inbox and link back through Asked in.
+  if (isReport(note)) { Object.assign(values, { Name: a.title, Origin: ORIGIN_LABEL.report, Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Asked in": typeof a.asked_in === "string" ? [a.asked_in] : Array.isArray(a.asked_in) ? a.asked_in : [], "Brain ID": note.id }); return values; }
   if (note.type === "meeting") { Object.assign(values, { Decisions: relationPages(a.decisions, workspace), Questions: relationPages(a.questions, workspace), Attendees: relationPages(a.attendees, workspace), Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Brain Status": "Ingested", "Ingested At": dateOutput(a.created), "Brain ID": note.id }); return values; }
   if (note.type === "source") return sourceValues(note, workspace);
   common();
@@ -927,7 +939,8 @@ function notionProperty(name: string, value: unknown, note: Note, workspace: Wor
     if (meeting?.type === "meeting" && typeof meeting.attributes.notion !== "string") pending.push({ property: name, ids: [meeting.id] });
     return { type: "relation", value: Array.isArray(value) ? value : [] };
   }
-  if (name === "Ask") return { type: "relation", value: Array.isArray(value) ? value : [] };
+  // A report's Ask rows: Notion page ids, not notes (0071; Ask on the Inbox before 0.9.1).
+  if (name === "Asked in" || name === "Ask") return { type: "relation", value: Array.isArray(value) ? value : [] };
   if (name === "About Page") return { type: "url", value };
   // An Inbox row's Kind is written only when empty in Notion, so a Kind you chose stands (0048).
   if (name === "Kind" && note.type === "source") return { type: "select", value, mode: "if_empty" };
