@@ -1,0 +1,59 @@
+#!/usr/bin/env node
+// A file-based stand-in for the Notion MCP, for CC-104 blind runs; CC-107 adds page bodies (`body`, `create --body`). State: $NOTION_SIM_DIR/state.json.
+const fs = require("fs"), path = require("path"), crypto = require("crypto");
+const dir = process.env.NOTION_SIM_DIR; if (!dir) { console.error("NOTION_SIM_DIR not set"); process.exit(2); }
+const file = path.join(dir, "state.json");
+const st = JSON.parse(fs.readFileSync(file, "utf8"));
+const save = () => fs.writeFileSync(file, JSON.stringify(st, null, 2));
+const now = () => new Date().toISOString().replace(/\.\d+Z$/, "Z");
+const out = (v) => { console.log(JSON.stringify(v, null, 2)); };
+const fail = (code, message) => { st.log.push({ at: now(), cmd: args.join(" "), error: code }); save(); console.log(JSON.stringify({ error: { code, message } })); process.exit(1); };
+const args = process.argv.slice(2); const cmd = args[0];
+const opt = (name) => { const i = args.indexOf(name); return i < 0 ? undefined : args[i + 1]; };
+const all = (name) => args.flatMap((a, i) => (a === name ? [args[i + 1]] : []));
+const readArg = (v) => { if (v === undefined) return undefined; if (v === "-") return fs.readFileSync(0, "utf8"); try { return fs.readFileSync(v, "utf8"); } catch { return v; } };
+const norm = (props) => Object.fromEntries(Object.entries(props).map(([k, v]) => [k, v && typeof v === "object" && !Array.isArray(v) && "value" in v ? v.value : v]));
+const injected = (c) => { const i = st.fail.findIndex((f) => f.cmd === c && f.times > 0); if (i < 0) return null; st.fail[i].times--; return st.fail[i]; };
+const view = (id) => { const p = st.pages[id]; return { id, database: p.database, properties: p.properties, body: p.body ?? "", toggles: p.toggles, archived: p.archived, in_trash: p.in_trash, last_edited_time: p.last_edited }; };
+const HELP = `notion-sim: stands in for the Notion MCP (never call the real Notion tools).
+  notion-sim databases                         list databases and their properties (Status options)
+  notion-sim get <page>                        a page: properties, toggle headings (name -> markdown), archived, in_trash, last_edited_time
+  notion-sim query <database> [--where "<Prop>=<value>"]...   pages of a database; a relation matches when it contains the value
+  notion-sim create <database> --properties <json|file>      create a page; returns {id}. Property values plain, or {type,value} as brain renders them
+  notion-sim update <page> --properties <json|file>          set properties
+  notion-sim body <page> --markdown <file|text>              replace the page body (the page content outside toggle headings)
+  (create also takes --body <file|text>, the page body)
+  notion-sim toggle <page> --heading <name> --markdown <file|text>   replace that toggle heading's children, or append it at the end
+  notion-sim remove-toggle <page> --heading <name>
+  notion-sim trash <page> | restore <page>
+Errors print {"error":{"code","message"}} and exit 1. Codes: network, rate_limited, server (temporary), validation, permission, missing_property (lasting).`;
+if (!cmd || cmd === "help" || cmd === "--help") { console.log(HELP); process.exit(0); }
+st.log.push({ at: now(), cmd: args.join(" ") });
+if (cmd === "databases") { save(); out(st.databases); process.exit(0); }
+const f = injected(cmd);
+if (f && f.mode !== "ghost") fail(f.code, f.message);
+switch (cmd) {
+  case "get": { const p = st.pages[args[1]]; if (!p) fail("validation", "no such page"); save(); out(view(args[1])); break; }
+  case "query": {
+    const db = args[1]; const wh = all("--where").map((w) => { const i = w.indexOf("="); return [w.slice(0, i), w.slice(i + 1)]; });
+    const rows = Object.keys(st.pages).filter((id) => st.pages[id].database === db && wh.every(([k, v]) => { const x = st.pages[id].properties[k]; return Array.isArray(x) ? x.includes(v) : String(x) === v; }));
+    save(); out({ results: rows.map(view), next_cursor: null }); break; }
+  case "create": {
+    const db = args[1]; if (!st.databases[db]) fail("validation", "no such database");
+    const props = norm(JSON.parse(readArg(opt("--properties"))));
+    const s = props.Status; const opts = st.databases[db].properties.Status?.options;
+    if (s !== undefined && opts && !opts.includes(s)) fail("validation", `Status option "${s}" doesn't exist`);
+    const id = crypto.randomUUID(); st.pages[id] = { database: db, properties: props, body: readArg(opt("--body")) ?? "", toggles: {}, archived: false, in_trash: false, last_edited: now() };
+    if (f && f.mode === "ghost") fail(f.code, f.message);
+    save(); out({ id }); break; }
+  case "update": {
+    const p = st.pages[args[1]]; if (!p) fail("validation", "no such page");
+    Object.assign(p.properties, norm(JSON.parse(readArg(opt("--properties"))))); p.last_edited = now();
+    if (f && f.mode === "ghost") fail(f.code, f.message);
+    save(); out(view(args[1])); break; }
+  case "toggle": { const p = st.pages[args[1]]; if (!p) fail("validation", "no such page"); delete p.toggles[opt("--heading")]; p.toggles[opt("--heading")] = readArg(opt("--markdown")); p.last_edited = now(); save(); out({ ok: true }); break; }
+  case "body": { const p = st.pages[args[1]]; if (!p) fail("validation", "no such page"); p.body = readArg(opt("--markdown")) ?? ""; p.last_edited = now(); save(); out({ ok: true }); break; }
+  case "remove-toggle": { const p = st.pages[args[1]]; delete p.toggles[opt("--heading")]; p.last_edited = now(); save(); out({ ok: true }); break; }
+  case "trash": case "restore": { const p = st.pages[args[1]]; p.in_trash = cmd === "trash"; p.last_edited = now(); save(); out({ ok: true }); break; }
+  default: console.log(HELP); process.exit(2);
+}
