@@ -158,7 +158,7 @@ export const upgradeCommand: Command = {
         lock = { format: 1, installed_by: write ? product.version : old!.installed_by, snapshot: manifest };
         if (write) {
           changes.push({ path: LOCK, action: previous.kind === "absent" ? "created" : "updated", content: serializeLock(product.version, manifest) });
-          if (old !== undefined) previousCli = old.installed_by;
+          previousCli = old !== undefined ? old.installed_by : await lastUpgradeCli(root, product.version);
         } else unchanged += 1;
       }
     }
@@ -336,4 +336,16 @@ function renameKey(values: Record<string, unknown>, old: string, key: string): R
     else if (name !== key) next[name] = existing;
   }
   return next;
+}
+
+/** The first pin's `previous_cli` (skills-delivery §7, CC-129): the version in the newest `upgrade: ultimate brain <version>` commit other than the running one, or null. */
+async function lastUpgradeCli(root: string, running: string): Promise<string | null> {
+  try {
+    const { stdout } = await exec("git", ["log", "--format=%s"], { cwd: root, maxBuffer: 64 * 1024 * 1024 });
+    for (const subject of stdout.split("\n")) {
+      const match = /^upgrade: ultimate brain (\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?:, skills .*)?$/.exec(subject);
+      if (match !== null && match[1] !== running) return match[1];
+    }
+  } catch { /* not a Git repo, or no commits: null */ }
+  return null;
 }
