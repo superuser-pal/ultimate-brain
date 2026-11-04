@@ -203,7 +203,7 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 
 ## 0.9.1
 
-### CC-120 · Type moves from Areas to Domains · `review`
+### CC-120 · Type moves from Areas to Domains · `done` (#202)
 **Release:** 0.9.1
 **Changelog:** Type (Personal, Entrepreneurship, Professional) moves from Areas to Domains: sync reads it into the domain note and drops the old value from area notes (migration 0016).
 **Output:** the user's 2026-11-04 change in their space, recorded in the product: Domains · Type (select: Personal, Entrepreneurship, Professional, yours) and no Areas · Type in docs/notion-space-design.md, spec/schema.md (§3 area and domain, §14), spec/cli.md §5.14, spec/capture-and-review.md §1, note.schema.json and the examples; `sync plan` maps Domains · Type to `notion_fields.type` and no longer reads Areas · Type, so an area note's old `type` is dropped at the next sync and is still valid until then; Prompt 2, Prompts 7b and 7h and the views guide; notion/modules/domains.md; notion/migrations/0016 for spaces built before 0.9.1.
