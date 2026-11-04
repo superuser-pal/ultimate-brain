@@ -26,7 +26,7 @@ Decision 0024 lists user-facing commands. Some are skills that call the CLI; som
 |---|---|---|
 | `brain init` | CLI | `init` |
 | `brain connect-notion` | skill (CC-08) | `config set`, `modules` (the onboarding checklist, 0048) |
-| `brain ingest` | skill (CC-06) | `status`, `index`, `id new`, `note new`, `proposal new`, `views`, `lint`, `log`, `sync tasks`, `sync render`, `sync record` |
+| `brain ingest` | skill (CC-06) | `status`, `index`, `id new`, `note new`, `proposal new`, `views`, `lint`, `log`, `sync tasks`, `sync render`, `sync record`; the to-do tidy: `question drop` (0071) |
 | `brain apply` | skill (CC-09) | `sync plan`, `sync apply` (or `apply` in chat), `index`, `views`, `sync render`, `sync record` |
 | `brain sync` | skill (CC-08) | `sync plan`, `sync apply`, `index`, `views`, `sync render`, `sync record` |
 | `brain query` | skill (CC-10) | `query --candidates`, `index`; report mode (0043, 0045): `report new` (with `refresh`), `report fix`, `sync render`, `sync record` |
@@ -218,7 +218,7 @@ Write commands append to `log/<YYYY-MM>.md` (month of `--now`), creating it with
 - <timestamp> <op> <id> "<title>"[ <key>=<value>]…
 ```
 
-`"` and `\` in titles are escaped with `\`, and CR and LF become `\r` and `\n`, so every entry is exactly one line. Values with spaces, quotes, backslashes or line breaks are quoted and escaped the same way. The file is created exclusively with its header, then lines are appended; an unreadable log is an error, never a reason to start the file over. Ops written by the CLI: `init`, `note-new`, `proposal-new`, `apply`, `correct`, `sync-create`, `sync-update`, `upgrade`, `repo-add`, `repo-record`, `full-text` (before 0.6.0), `modules`, `report-new`, `report-refresh`, `report-fix`. Skills add their own (`ingest`, `publish`, `catch-up`, `query`) with `brain log` (§5.11). `index` and `views` do not log.
+`"` and `\` in titles are escaped with `\`, and CR and LF become `\r` and `\n`, so every entry is exactly one line. Values with spaces, quotes, backslashes or line breaks are quoted and escaped the same way. The file is created exclusively with its header, then lines are appended; an unreadable log is an error, never a reason to start the file over. Ops written by the CLI: `init`, `note-new`, `proposal-new`, `apply`, `correct`, `sync-create`, `sync-update`, `upgrade`, `repo-add`, `repo-record`, `full-text` (before 0.6.0), `modules`, `report-new`, `report-refresh`, `report-fix`, `question-drop`. Skills add their own (`ingest`, `publish`, `catch-up`, `query`) with `brain log` (§5.11). `index` and `views` do not log.
 
 **The catch-up line (0045, 0051).** An attended catch-up logs `catch-up - notes_read=<n> seconds=<s>`. An unattended one (§6.1) logs `catch-up - mode=unattended inputs=<n> left=<n> skipped=<n> waiting=<n> failed=<n>[ failures="<reason>; <reason>"] report=<yes|no> notes_read=<n> seconds=<s>`: `inputs` taken in (failed ones included), `left` the inputs beyond the budget, `skipped` the inputs skipped for a blocker, `waiting` the decided Review rows and report What to fix left for an attended run, `failed` the steps that failed, `failures` their reasons in a few words each ("Notion login"), `report` whether it wrote a Report row. A `catch-up` line without `mode=unattended` is attended, as every line before 0.7.0 is. `brain status` reads these lines (§5.2).
 
@@ -1078,7 +1078,7 @@ A source with `attached_to` is never selected: it has no Inbox row (0042). Notes
 | people | Name, Summary, Role, Org, Lifecycle, Brain ID, Last Synced |
 | orgs | Name, Summary, Brain ID, Last Synced, Archived *(once)* |
 | decisions | Name, Summary, Date, Assessment, Project, Area, Decided In, Supersedes, Lifecycle, Brain ID, Last Synced |
-| questions | Name, Summary, Kind, Project, Area, Raised In, Lifecycle, Brain ID, Last Synced, Status *(Open or Answered, once)* |
+| questions | Name, Summary, Kind, Project, Area, Raised In, Lifecycle, Brain ID, Last Synced, Status *(Open, Answered or Dropped, once)* |
 | concepts | Name, Summary, Project, Area, Lifecycle, Brain ID, Last Synced |
 | documents | Name, Summary, Project, Area, From decision, From concept, Lifecycle, Brain ID, Last Synced (0045, 0049) |
 | meetings | Decisions, Questions, Attendees *(add)*, Project *(if empty)*, Area *(if empty)*, Brain Status, Ingested At, Brain ID |
@@ -1091,9 +1091,10 @@ A source with `attached_to` is never selected: it has no Inbox row (0042). Notes
 - **Area on Decisions and Questions** (0034) is derived, never stored in the note: the `area` of each note in the record's `projects`, deduped and sorted. No projects, or projects without an area → empty. It is brain-owned and compared like any other property, so the first render after the upgrade sends it to every decision and question once.
 - **Concepts:** Project = `projects`, Area = `area`; the body is the whole page body, as for decisions.
 - **Documents (0045, 0049):** as concepts: Project = `projects`, Area = `area`; the body is the whole page body. From decision / From concept = `promoted_from`'s page, by its prefix, on a `promoted` Document (the other one empty); Notion fills Decisions · Documents and Concepts · Documents. A `promoted` Document's body is sent on `create` only: on `update`, `body` is `null` and `@content` isn't compared, because the body is yours from then on.
-- **Question Status (0041, 0045):** Status stays Notion-owned for `sync plan` (§5.14.2); the brain sends it in two cases only, each once:
+- **Question Status (0041, 0045, 0071):** Status stays Notion-owned for `sync plan` (§5.14.2); the brain sends it in three cases only, each once:
   - **Open:** when the question has no `answer`, S has no `Status` and its snapshot has no `notion_fields.status`, B of `Status` is `Open`. So a new question is created as Open, and a question published before 0.4.1 with Status empty in Notion gets Open on the next publish. Once S holds it, it is never sent again; a Status you set (pulled into `notion_fields.status`) is never overwritten.
   - **Answered:** when the question has `answer`, B of `Status` is `Answered`; it is sent only while S has no `Status` of `Answered`, so it goes out once, right after the `answer` proposal is applied.
+  - **Dropped (0071):** when the question has `dropped` (set by `question drop`, §5.30) and no `answer`, B of `Status` is `Dropped`; it is sent only while S has no `Status` of `Dropped`, so it goes out once, in the publish after the drop, with its Lifecycle Archived. On a question that is created with `dropped` (never published before), it goes out on create.
 
   If you reopen the question in Notion, the brain never sets it back.
 - **Areas (0041):** `sections` = `{ "Brief": <the area brief's generated block> }`. The skill replaces the children of the area page's "Brief" toggle heading; a page without one gets a "Brief" toggle heading appended at the **end** of the page, then filled (the page is yours, so the brain never inserts above your content).
@@ -1189,7 +1190,7 @@ Unmapped (empty) properties are left out. After creating the tasks, the skill re
 - brain_id = the source id.
 - `owner` is left out: these tasks are yours.
 
-Who the item is for and its due date are the skill's judgment: only action items addressed to the owner become tasks, and `due` only when the text gives one (0037).
+Who the item is for and its due date are the skill's judgment: only action items addressed to the owner become tasks, and `due` only when the text gives one (0037). A to-do is never written as a question instead (capture-and-review §6.1, 0071); other people's commitments become a Task only as `waiting_on`, above.
 
 **No dedupe here, for either form.** `sync tasks` renders exactly the items it is given, every time; it never compares them with the note's `tasks`. Tasks are created once, in the run that ingests the meeting or source: a second ingest of the same input is skipped as `DUPLICATE_SOURCE` (§5.5) before any action item is extracted, so there is no rerun to dedupe. Within that run, the skill creates each rendered item once and records the page ids it created (§5.14.6); an item held back by `pending_relations` is rendered again with only the held-back items, as above. The note's `tasks` is a record of page ids (appended, deduped by id), not a dedupe key.
 
@@ -1830,3 +1831,28 @@ It exits 0 even with problems: this is the command the skill uses to show them. 
 **Changes to §5.16.** `repo changes` leaves out the files that match the entry's `never_read`, and always leaves out `brain-kit.json`. For `repo add` without `--kit`, `never_read` and `project` can't be set; they come only from a kit.
 
 New error codes, all with exit 4: `KIT_MISSING`, `KIT_INVALID`, `KIT_EXISTS`, `KIT_CHANGED`, `NO_KIT`, `MODE_CONNECTED`, `NO_TASKS`, `CONFIRMATION_REQUIRED`, `CONFIRMATION_MISMATCH`. Existing codes used: `REPO_NOT_FOUND`, `REPO_IS_BRAIN`, `OUTSIDE_ROOT`, `TARGET_NOT_EMPTY`, `UNKNOWN_ID`, `USAGE`. CC-102 adds the new codes to §3.5, the rows of §1.1 (the link skill: `repo kit check`, `repo kit write`, `repo add`, `repo refresh`, `repo show`, `repo health`, `repo tasks`, `repo unlink`, `repo new`, `link`) and §1's exceptions.
+
+### 5.30 `brain question drop` (0071, capture-and-review §6.2)
+
+```text
+brain question drop --input <file|->
+```
+
+Drops questions the user agreed, in the to-do tidy, are not questions: an owner's to-do that became a Task, or someone else's commitment. Attended only: the skill runs it after the user's yes for each item, never in an unattended run. Input: `{ "items": [ { "id": "que-…", "task": "<Notion task page id>" } ] }`, `task` optional, at least one item, each id once (`INPUT_INVALID` otherwise, with the pointer `/items/<n>`).
+
+Checks, all before any write (one failing item writes nothing; `INPUT_INVALID` unless named):
+- `id` names a note (`UNKNOWN_ID`) that is a `question` with `kind: question`: a risk is never dropped this way;
+- the question has no `answer`, its Status is not Answered (`notion_fields.status`; Dropped is fine, Open or none is the usual case), and, unless it is already dropped (below), its lifecycle is not `archived`: an archived question is history (superseded, merged or archived by you), not a to-do;
+- `task`, when given, is a non-empty string held in the `tasks` of the question's `raised_in` meeting or of one of its `sources`: the skill creates the Task with `sync tasks` and records it with `sync record` (§5.14.5, §5.14.6) **before** the drop, so a drop never names a Task the brain has not recorded.
+
+Per item:
+- **`dropped`**: the question gets `lifecycle: archived`, `dropped` = today (the `--now` date), `task` when given, and `updated` = today. Its `notion_fields` are not touched (Status is yours; the publish sends Dropped once, §5.14.4). Logs `question-drop <id> "<title>"`.
+- **`unchanged`**: the question already has `dropped` and the same `task` (or none in both): nothing is written, so a retry after a failure is safe.
+- A question that already has `dropped` with a different `task`, or a `task` where it had none, is `INPUT_INVALID`: a dropped question keeps its first record.
+
+Then lint runs on the changed notes; a lint error (none is expected) rolls the whole input back (`INPUT_INVALID`). The meeting's `questions` and the question's `raised_in` stay as they are: the dropped question is history (schema §4 question).
+
+`data` = `{ "items": [ { "id": "que-…", "result": "dropped" | "unchanged", "task": "…"? } ] }`. Exit 0.
+
+Errors: `UNKNOWN_ID`, `INPUT_INVALID`.
+

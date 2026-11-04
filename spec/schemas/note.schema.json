@@ -809,6 +809,11 @@
       "required": [
         "kind"
       ],
+      "dependentRequired": {
+        "task": [
+          "dropped"
+        ]
+      },
       "properties": {
         "kind": {
           "enum": [
@@ -821,6 +826,13 @@
         },
         "answer": {
           "type": "string"
+        },
+        "dropped": {
+          "$ref": "#/$defs/date"
+        },
+        "task": {
+          "type": "string",
+          "minLength": 1
         },
         "notion_fields": {
           "properties": {
