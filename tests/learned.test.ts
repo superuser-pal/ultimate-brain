@@ -225,3 +225,29 @@ test("brain query finds a learned Document and says it is learned", async (conte
   const decisions = await brain(["query", "--candidates", "supabase", "--brain", dir, "--json"]);
   assert.equal("origin" in decisions.json.data.candidates.find((item: { type: string }) => item.type === "decision"), false);
 });
+
+test("brain upgrade removes every folder it empties under knowledge/concepts, and keeps one that still holds a file", async (context) => {
+  const dir = await fixtureCopy(context);
+  await mkdir(join(dir, "knowledge/concepts/old/deeper"), { recursive: true });
+  await writeFile(join(dir, "knowledge/concepts/old/deeper/nested.md"), `---
+id: con-4d5e6f7g
+type: concept
+title: Nested idea
+summary: A concept filed in a subfolder.
+lifecycle: draft
+sources: [${SOURCE}]
+created: 2026-12-03
+updated: 2026-12-03
+---
+
+Nested.
+`);
+  await mkdir(join(dir, "knowledge/concepts/kept"), { recursive: true });
+  await writeFile(join(dir, "knowledge/concepts/kept/notes.txt"), "not a note\n");
+  assert.equal((await brain(["index", "--brain", dir, "--json"])).code, 0);
+  const run = await brain(["upgrade", "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  assert.deepEqual(run.json.data.converted, [{ id: "con-4d5e6f7g", from: "knowledge/concepts/old/deeper/nested.md", to: "knowledge/references/nested.md" }]);
+  assert.equal(await exists(join(dir, "knowledge/concepts/old")), false, "the emptied subfolders go");
+  assert.ok(await exists(join(dir, "knowledge/concepts/kept/notes.txt")), "a folder still holding a file stays");
+});

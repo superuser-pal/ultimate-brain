@@ -215,7 +215,8 @@ export const upgradeCommand: Command = {
     if (!dryRun && written.length > 0) {
       await writeChanges(root, written);
       for (const [folder, self] of prune) await pruneEmpty(join(root, folder), self);
-      if (concepts.converted.length > 0) await rmdir(join(root, "knowledge/concepts")).catch(() => undefined);
+      // knowledge/concepts/ and every folder under it the conversion left empty (spec/cli.md §5.15 step 5a).
+      if (concepts.converted.length > 0) await pruneEmpty(join(root, "knowledge/concepts"), true);
       await appendLog(root, now, [{ op: "upgrade", id: "-", title: version, pairs: [["files", written.length]] }]);
     }
     // A dry run lints the planned tree: the converted notes as step 5a would leave them (spec/cli.md §5.15 step 7).
