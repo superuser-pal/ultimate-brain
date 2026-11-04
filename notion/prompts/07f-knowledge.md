@@ -21,7 +21,6 @@ On this page ("Knowledge") add one tab per numbered item you have. In each tab p
 [Knowledge] 3. Tab "Concepts" (database "Concepts"):
 [Knowledge]    - List "What did we learn recently?": Lifecycle is not Archived; sort Created time descending; show Name, Project, Summary.
 [Knowledge]    - Table "What do we know per project?": Lifecycle is not Archived; sort Name; group by Project; show Name, Area, Summary.
-[Knowledge]    - List "Which concepts are drafts?": Lifecycle is Draft; sort Created time descending; show Name, Project.
 [Documents] 3b. Tab "Documents" (database "Documents"):
 [Documents]    - List "What did we keep?": Lifecycle is not Archived; sort Last edited time descending; show Name, Project, Summary.
 4. Tab "People" (database "People"):
