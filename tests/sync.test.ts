@@ -599,6 +599,21 @@ test("Domains, Areas, Goals, Projects and Orgs created in Notion are reviewed an
   assert.equal((await brain(["lint", "--brain", dir, "--json"])).json.data.errors, 0);
 });
 
+test("Orgs · Relationship Employer syncs into the org note and lints clean; an unknown option still fails (0071)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const path = join(dir, "knowledge/orgs/acme.md");
+  const rows = [{ database: "orgs", page_id: "6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b9c", last_edited: NOW, properties: { "Brain ID": "org-6d1f9z3k", Relationship: "Employer", Website: "https://acme.example", Archived: false } }];
+  const plan = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot.json", { as_of: NOW, rows }), "--json"]);
+  assert.equal(plan.code, 0, plan.stdout);
+  assert.equal(plan.json.data.updates.find((item: { id: string }) => item.id === "org-6d1f9z3k").notion_fields.relationship, "Employer");
+  const applied = await brain(["sync", "apply", "--brain", dir, "--now", NOW, "--input", await input(dir, "plan.json", plan.json.data), "--json"]);
+  assert.equal(applied.code, 0, applied.stdout);
+  assert.equal((parseFrontmatter(await readFile(path, "utf8")).attributes.notion_fields as Record<string, unknown>).relationship, "Employer");
+  assert.equal((await brain(["lint", "--brain", dir, "--json"])).json.data.errors, 0);
+  await writeFile(path, (await readFile(path, "utf8")).replace("relationship: Employer", "relationship: Customer"));
+  assert.ok((await brain(["lint", "--brain", dir, "--json"])).json.data.errors > 0);
+});
+
 test("a project the brain retires ticks Archived once, and Archived stays yours afterwards (0070)", async (context) => {
   const dir = await fixtureCopy(context);
   const path = join(dir, "projects/acme-website/project.md");

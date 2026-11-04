@@ -224,11 +224,11 @@ The brain **never edits the meeting page body** (0007). Instead of publishing a 
 | Sources | Relation → Inbox (two-way with People) | Brain (filled from the Inbox side) |
 
 ### 3.7 Orgs
-Clients, partners, suppliers. One canonical entity database (your pattern's rule).
+Clients, partners, suppliers, your employer. One canonical entity database (your pattern's rule).
 
 | Property | Type | Owner |
 |---|---|---|
-| Relationship | Select: Client, Prospect, Partner, Supplier, Other | You |
+| Relationship | Select: Client, Prospect, Partner, Supplier, Employer, Other (Employer: 0071) | You |
 | People | Relation → People (two-way with Org) | Brain |
 | Projects | Relation → Projects (two-way with Client) | Brain |
 | Website | URL | You |
