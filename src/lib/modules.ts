@@ -21,7 +21,7 @@ export const MODULE_DEFAULTS: Readonly<Record<ModuleName, boolean>> = {
  */
 export const MODULE_DATABASES: Readonly<Record<ModuleName, readonly string[]>> = {
   domains: ["domains"],
-  knowledge: ["decisions", "questions", "concepts"],
+  knowledge: ["decisions", "questions"],
   orgs: ["orgs"],
   documents: ["documents"],
   reports: ["documents"],
@@ -33,7 +33,6 @@ const MODULE_FOR_TYPE: Readonly<Record<string, ModuleName>> = {
   domain: "domains",
   decision: "knowledge",
   question: "knowledge",
-  concept: "knowledge",
   org: "orgs",
   reference: "documents",
   goal: "planning",

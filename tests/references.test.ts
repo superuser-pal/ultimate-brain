@@ -38,6 +38,18 @@ async function configure(dir: string, key: string, id: string): Promise<void> {
   assert.equal(set.code, 0, set.stdout);
 }
 
+/** Makes a draft reviewed, as approving it in Review does: only reviewed knowledge gets a Notion page (0071). */
+async function approved(dir: string, path: string): Promise<void> {
+  const file = join(dir, path);
+  await writeFile(file, (await readFile(file, "utf8")).replace(/^lifecycle: draft$/m, "lifecycle: reviewed"));
+}
+
+/** The fixture's draft decision and learned Document (once a concept), approved: only reviewed knowledge is promoted (0071). */
+async function approveFixtureKnowledge(dir: string): Promise<void> {
+  await approved(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
+  await approved(dir, "knowledge/references/row-level-security.md");
+}
+
 export async function newReference(dir: string, sourceId: string, title = "Acme requirements"): Promise<{ id: string; path: string }> {
   const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title, frontmatter: { summary: "What Acme requires of the website.", origin: "part", area: AREA, projects: [PROJECT], sources: [sourceId] }, body: REQUIREMENTS }] });
   assert.equal(created.code, 0, created.stdout);
@@ -50,16 +62,17 @@ test("a reference validates, is listed under its project and renders to Document
   const reference = await newReference(dir, document.id);
   assert.match(reference.id, /^ref-/);
   assert.equal(reference.path, "knowledge/references/acme-requirements.md");
+  await approved(dir, reference.path);
 
   const lint = await run(dir, ["lint"]);
   assert.equal(lint.json.data.errors, 0, lint.stdout);
   const index = await run(dir, ["index"]);
   assert.equal(index.code, 0, index.stdout);
-  assert.equal(index.json.data.counts.reference, 1);
+  assert.equal(index.json.data.counts.reference, 2, "the fixture's learned Document and this one");
   const markdown = await readFile(join(dir, "index.md"), "utf8");
   assert.match(markdown, /\n## Documents\n- \[Acme requirements\]\(knowledge\/references\/acme-requirements\.md\) — ref-\w{8} · origin: part · area: Clients · project: Acme website · What Acme requires of the website\.\n/);
   const status = await run(dir, ["status"]);
-  assert.equal(status.json.data.notes.reference, 1);
+  assert.equal(status.json.data.notes.reference, 2);
   assert.ok(status.json.data.notion.missing.includes("documents"));
 
   const unconfigured = await run(dir, ["sync", "render", "--ids", reference.id]);
@@ -233,18 +246,27 @@ test("note new: a whole Document of a source earlier in the batch, and a second 
 
 test("note new: a promoted Document takes its note's lifecycle, one per note; origin is required (0049)", async (context) => {
   const dir = await fixtureCopy(context);
+  await approveFixtureKnowledge(dir);
   const promoted = (title: string, from: string) => ({ type: "reference", title, frontmatter: { summary: "A page for the note.", origin: "promoted", promoted_from: from }, body: "## Why\nBecause.\n" });
 
-  const fromArchived = await run(dir, ["note", "new"], { notes: [promoted("Firebase auth (page)", "dec-2p9f6h1r")] });
-  assert.equal(fromArchived.code, 0, fromArchived.stdout);
-  assert.equal(parseFrontmatter(await readFile(join(dir, fromArchived.json.data.created[0].path), "utf8")).attributes.lifecycle, "archived");
-
-  const twice = await run(dir, ["note", "new"], { notes: [promoted("Firebase auth again", "dec-2p9f6h1r")] });
-  assert.equal(twice.json.error?.code, "INPUT_INVALID");
-  const sameBatch = await run(dir, ["note", "new"], { notes: [promoted("RLS one", "con-1s6t8e2b"), promoted("RLS two", "con-1s6t8e2b")] });
+  // Two in one batch: the second is refused, and nothing is written.
+  const sameBatch = await run(dir, ["note", "new"], { notes: [promoted("Supabase one", "dec-7k2m9q4x"), promoted("Supabase two", "dec-7k2m9q4x")] });
   assert.deepEqual(sameBatch.json.error?.details.map((problem: { pointer: string }) => problem.pointer), ["/notes/1/frontmatter/promoted_from"]);
+  const fromReviewed = await run(dir, ["note", "new"], { notes: [promoted("Supabase auth (page)", "dec-7k2m9q4x")] });
+  assert.equal(fromReviewed.code, 0, fromReviewed.stdout);
+  assert.equal(parseFrontmatter(await readFile(join(dir, fromReviewed.json.data.created[0].path), "utf8")).attributes.lifecycle, "reviewed");
+  // Only a reviewed or disputed note is promoted (0071): an archived one's Document would never get a page.
+  const fromArchived = await run(dir, ["note", "new"], { notes: [promoted("Firebase auth (page)", "dec-2p9f6h1r")] });
+  assert.equal(fromArchived.json.error?.code, "INPUT_INVALID");
+  assert.match(fromArchived.stdout, /only a reviewed or disputed note is promoted/);
+
+  const twice = await run(dir, ["note", "new"], { notes: [promoted("Supabase auth again", "dec-7k2m9q4x")] });
+  assert.equal(twice.json.error?.code, "INPUT_INVALID");
   const notADecision = await run(dir, ["note", "new"], { notes: [promoted("A question page", "dec-00000000")] });
   assert.equal(notADecision.json.error?.code, "INPUT_INVALID");
+  // Promote is on decisions only since 0.9.1 (0071): a learned Document, once a concept, is refused.
+  const learned = await run(dir, ["note", "new"], { notes: [promoted("RLS page", "con-1s6t8e2b")] });
+  assert.deepEqual(learned.json.error?.details.map((problem: { pointer: string }) => problem.pointer), ["/notes/0/frontmatter/promoted_from"]);
 
   const noOrigin = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "No origin", frontmatter: { summary: "x", sources: ["src-7w3c9k5m"] }, body: "x\n" }] });
   assert.equal(noOrigin.json.error?.details[0].pointer, "/notes/0/frontmatter/origin");
@@ -262,6 +284,7 @@ test("note new: a source's area and projects must exist (UNKNOWN_ID, 0050)", asy
 
 test("a promoted Document's body is yours: update_body is refused, and lint reports one written by hand (0049)", async (context) => {
   const dir = await fixtureCopy(context);
+  await approveFixtureKnowledge(dir);
   const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Supabase auth (page)", frontmatter: { summary: "A page for the decision.", origin: "promoted", promoted_from: "dec-7k2m9q4x" }, body: "## Why\nBecause.\n" }] });
   assert.equal(created.code, 0, created.stdout);
   const page = created.json.data.created[0];
@@ -273,8 +296,8 @@ test("a promoted Document's body is yours: update_body is refused, and lint repo
   // A promoted_from naming a note retyped as a question, and an update_body proposal written by hand.
   const path = join(dir, page.path);
   await writeFile(path, (await readFile(path, "utf8")).replace("promoted_from: dec-7k2m9q4x", "promoted_from: con-1s6t8e2b"));
-  const concept = join(dir, "knowledge/concepts/row-level-security.md");
-  await writeFile(concept, (await readFile(concept, "utf8")).replace(/^type: concept$/m, "type: question"));
+  const concept = join(dir, "knowledge/references/row-level-security.md");
+  await writeFile(concept, (await readFile(concept, "utf8")).replace(/^type: reference$/m, "type: question"));
   const accepted = await run(dir, ["proposal", "new"], { proposals: [{ kind: "update_body", title: "Requirements v2", target: (await newReference(dir, "src-7w3c9k5m")).id, content: "x\n", why: "x", source: "src-7w3c9k5m" }] });
   const proposal = join(dir, accepted.json.data.created[0].path);
   await writeFile(proposal, (await readFile(proposal, "utf8")).replace(/^target: ref-\w+$/m, `target: ${page.id}`));
@@ -318,18 +341,23 @@ test("sync plan: Keep as document asks for a Document of the latest version or o
 
 test("sync plan: Promote asks for a promoted Document, or names the one there (0049)", async (context) => {
   const dir = await fixtureCopy(context);
-  const promoted = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "RLS (page)", frontmatter: { summary: "A page.", origin: "promoted", promoted_from: "con-1s6t8e2b" }, body: "RLS.\n" }] });
+  await approveFixtureKnowledge(dir);
+  const promoted = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Supabase auth (page)", frontmatter: { summary: "A page.", origin: "promoted", promoted_from: "dec-7k2m9q4x" }, body: "Supabase.\n" }] });
   assert.equal(promoted.code, 0, promoted.stdout);
   const plan = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [
     { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { "Brain ID": "dec-7k2m9q4x", "Promote asked": true } },
-    { database: "concepts", page_id: "d4000000-0000-4000-8000-000000000002", last_edited: NOW, properties: { "Brain ID": "con-1s6t8e2b", "Promote asked": true } },
-    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000003", last_edited: NOW, properties: { "Brain ID": "dec-2p9f6h1r", "Promote asked": false } },
+    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000002", last_edited: NOW, properties: { "Brain ID": "dec-2p9f6h1r", "Promote asked": true } },
+    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000003", last_edited: NOW, properties: { "Brain ID": "dec-7k2m9q4x", "Promote asked": false } },
   ] });
   assert.equal(plan.code, 0, plan.stdout);
   assert.deepEqual(plan.json.data.promote_requests, [
-    { page_id: "d4000000-0000-4000-8000-000000000001", note: "dec-7k2m9q4x" },
-    { page_id: "d4000000-0000-4000-8000-000000000002", note: "con-1s6t8e2b", existing: promoted.json.data.created[0].id },
+    { page_id: "d4000000-0000-4000-8000-000000000001", note: "dec-7k2m9q4x", existing: promoted.json.data.created[0].id },
   ]);
+  // The archived decision isn't reviewed: its Promote asked is ignored as NOT_REVIEWED and waits (0071).
+  assert.deepEqual(plan.json.data.ignored.filter((item: { reason: string }) => item.reason === "NOT_REVIEWED").map((item: { page_id: string }) => item.page_id), ["d4000000-0000-4000-8000-000000000002"]);
+  // The Concepts database is retired (0071): a snapshot naming it is refused.
+  const concepts = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [{ database: "concepts", page_id: "d4000000-0000-4000-8000-000000000004", last_edited: NOW, properties: { "Brain ID": "con-1s6t8e2b", "Promote asked": true } }] });
+  assert.equal(concepts.json.error?.code, "INPUT_INVALID");
   const applied = await run(dir, ["sync", "apply", "--dry-run"], plan.json.data);
   assert.deepEqual(applied.json.data.promote_requests, plan.json.data.promote_requests, "sync apply echoes the requests");
 });
@@ -355,6 +383,7 @@ test("sync plan: rows of a module that is off are ignored as MODULE_OFF (0048)",
 test("render: a promoted Document links its note through From decision, and its body goes out on create only (0049)", async (context) => {
   const dir = await fixtureCopy(context);
   await configure(dir, "documents", "a1000000-0000-4000-8000-00000000000c");
+  await approved(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
   const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Supabase auth (page)", frontmatter: { summary: "A page for the decision.", origin: "promoted", promoted_from: "dec-7k2m9q4x", projects: [PROJECT] }, body: "## Why\nBecause.\n" }] });
   assert.equal(created.code, 0, created.stdout);
   const page = created.json.data.created[0];
@@ -363,7 +392,8 @@ test("render: a promoted Document links its note through From decision, and its 
   assert.equal(item.action, "create");
   assert.equal(item.body.trimStart(), "## Why\nBecause.\n");
   assert.deepEqual(item.properties["From decision"], { type: "relation", value: [] });
-  assert.deepEqual(item.properties["From concept"], { type: "relation", value: [] });
+  assert.equal(item.properties["From concept"], undefined, "From concept is retired (0071)");
+  assert.deepEqual(item.properties.Origin, { type: "select", value: "Promoted" });
   assert.deepEqual(item.pending_relations, [{ property: "From decision", ids: ["dec-7k2m9q4x"] }]);
   const recorded = await run(dir, ["sync", "record"], { records: [{ id: page.id, notion: "b3000000-0000-4000-8000-000000000001", synced_at: NOW, published: item.published }] });
   assert.equal(recorded.code, 0, recorded.stdout);
@@ -443,6 +473,7 @@ test("acceptance: a Review row from a project's meeting with no area of its own 
 
 test("lint: a promoted Document's origin and promoted_from are declared keys, not unknown-key warnings", async (context) => {
   const dir = await fixtureCopy(context);
+  await approveFixtureKnowledge(dir);
   const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Declared keys", frontmatter: { summary: "A page for the decision.", origin: "promoted", promoted_from: "dec-7k2m9q4x" }, body: "## Why\nBecause.\n" }] });
   assert.equal(created.code, 0, created.stdout);
   const lint = await run(dir, ["lint"]);
@@ -452,6 +483,7 @@ test("lint: a promoted Document's origin and promoted_from are declared keys, no
 
 test("lint: a key no type declares is still an unknown-key warning on a reference (negative control)", async (context) => {
   const dir = await fixtureCopy(context);
+  await approveFixtureKnowledge(dir);
   const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Stray key", frontmatter: { summary: "A page.", origin: "promoted", promoted_from: "dec-7k2m9q4x" }, body: "Text.\n" }] });
   assert.equal(created.code, 0, created.stdout);
   const file = join(dir, created.json.data.created[0].path);

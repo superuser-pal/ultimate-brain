@@ -5,7 +5,7 @@ import { test } from "node:test";
 
 import { parseFrontmatter, serializeFrontmatter } from "../src/lib/frontmatter.ts";
 import { gitBodyOf, textHash } from "../src/lib/wording.ts";
-import { brain, fixtureCopy } from "./helpers.ts";
+import { approveNote, brain, fixtureCopy } from "./helpers.ts";
 
 const NOW = "2026-12-10T10:05:00Z";
 const PAGE = "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d";
@@ -24,7 +24,9 @@ async function run(dir: string, args: string[], input?: unknown) {
 
 /** A promoted Document published to Notion once: its baselines are what Notion served back and what Git held. */
 async function promotedDocument(dir: string, body = SEED): Promise<{ id: string; path: string }> {
-  const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Login page", frontmatter: { summary: "The login decision.", origin: "promoted", promoted_from: "dec-2p9f6h1r" }, body }] });
+  // Only a reviewed decision is promoted (0071).
+  await approveNote(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
+  const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Login page", frontmatter: { summary: "The login decision.", origin: "promoted", promoted_from: "dec-7k2m9q4x" }, body }] });
   assert.equal(created.code, 0, created.stdout);
   const { id, path } = created.json.data.created[0];
   const file = join(dir, path);

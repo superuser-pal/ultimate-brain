@@ -197,6 +197,7 @@ export function lintBrain(input: LintInput): Issue[] {
     }
 
     // Type rules
+    if (note.type === "concept") err("concept-retired", lineOfKey(note, "type"), "concepts are learned Documents since 0.9.1; run brain upgrade (0071)");
     if (note.type === "source") {
       const hash = `sha256:${createHash("sha256").update(note.body, "utf8").digest("hex")}`;
       if (a.content_hash !== hash) err("source-hash", lineOfKey(note, "content_hash"), "the body no longer matches content_hash; sources are immutable");
@@ -322,7 +323,9 @@ export function lintBrain(input: LintInput): Issue[] {
     }
     if (note.type === "reference" && typeof a.promoted_from === "string") {
       const from = byId.get(a.promoted_from);
-      if (from !== undefined && from.type !== "decision" && from.type !== "concept") err("promoted-from", lineOfKey(note, "promoted_from"), `promoted_from names ${a.promoted_from}, a ${from.type}, not a decision or concept (0049)`);
+      // A concept promoted before 0.9.1 is now a learned Document that kept its con- id (0071).
+      const formerConcept = from !== undefined && from.id.startsWith("con-") && (from.type === "concept" || (from.type === "reference" && from.attributes.origin === "learned"));
+      if (from !== undefined && from.type !== "decision" && !formerConcept) err("promoted-from", lineOfKey(note, "promoted_from"), `promoted_from names ${a.promoted_from}, a ${from.type}, not a decision (0049, 0071)`);
     }
     if (note.type === "source" && typeof a.replaces === "string") {
       const replaced = byId.get(a.replaces);

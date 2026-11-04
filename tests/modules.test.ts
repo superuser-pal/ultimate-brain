@@ -25,7 +25,7 @@ test("a new brain starts with the onboarding defaults, and modules lists what ea
     ["domains", false], ["knowledge", true], ["orgs", true], ["documents", false], ["reports", false], ["tasks", false], ["planning", false],
   ]);
   const byName = Object.fromEntries(list.json.data.modules.map((module: { name: string }) => [module.name, module]));
-  assert.deepEqual(byName.knowledge.missing, ["decisions", "questions", "concepts"]);
+  assert.deepEqual(byName.knowledge.missing, ["decisions", "questions"]);
   assert.deepEqual(byName.tasks, { name: "tasks", on: false, default: false, databases: [], missing: ["tasks"] });
   // A report is a Documents row (0071): Reports uses the Documents database.
   assert.deepEqual([byName.reports.databases, byName.reports.missing], [["documents"], ["documents"]]);
@@ -104,7 +104,7 @@ test("render leaves out the notes and relations of a module that is off; --ids n
   const changed = await brain(["sync", "render", "--changed", "--brain", dir, "--now", NOW, "--json"]);
   assert.equal(changed.code, 0, changed.stdout);
   const types = new Set(changed.json.data.items.map((item: { type: string }) => item.type));
-  for (const type of ["decision", "question", "concept", "org", "goal"]) assert.equal(types.has(type), false, type);
+  for (const type of ["decision", "question", "org", "goal"]) assert.equal(types.has(type), false, type);
 
   const named = await brain(["sync", "render", "--ids", "dec-7k2m9q4x,per-3h8w2n6c,mtg-8c4n2p7w", "--brain", dir, "--now", NOW, "--json"]);
   assert.deepEqual(named.json.data.errors, [{ id: "dec-7k2m9q4x", reason: "MODULE_OFF" }]);

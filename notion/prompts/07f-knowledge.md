@@ -18,12 +18,9 @@ On this page ("Knowledge") add one tab per numbered item you have. In each tab p
 [Knowledge]    - List "What's still open?": Status is Open and Kind is Question; sort Created time descending; show Name, Project, Raised In.
 [Knowledge]    - List "Which risks are open?": Status is Open and Kind is Risk; sort Created time descending; show Name, Project, Raised In.
 [Knowledge]    - List "What did we answer?": Status is Answered; sort Created time descending; show Name, Project, Summary.
-[Knowledge] 3. Tab "Concepts" (database "Concepts"):
-[Knowledge]    - List "What did we learn recently?": Lifecycle is not Archived; sort Created time descending; show Name, Project, Summary.
-[Knowledge]    - Table "What do we know per project?": Lifecycle is not Archived; sort Name; group by Project; show Name, Area, Summary.
-[Knowledge]    - List "Which concepts are drafts?": Lifecycle is Draft; sort Created time descending; show Name, Project.
 [Documents] 3b. Tab "Documents" (database "Documents"):
 [Documents]    - List "What did we keep?": Lifecycle is not Archived and Origin is not Report; sort Last edited time descending; show Name, Project, Summary.
+[Documents]    - List "What did we learn?": Origin is Learned and Lifecycle is not Archived; sort Created time descending; show Name, Project, Summary.
 [Reports]    - List "Which reports do I have?": Origin is Report; sort Last edited time descending; show Name, Project, Area, Refresh asked, What to fix.
 4. Tab "People" (database "People"):
    - Gallery with small cards "Who's who?": Lifecycle is not Archived; sort Name; show Name, Role.
@@ -34,7 +31,7 @@ On this page ("Knowledge") add one tab per numbered item you have. In each tab p
 [Orgs]    - Table "Who else do we work with?": Relationship is not Client and Archived is unchecked; sort Name; group by Relationship; show Name, Relationship, People.
 6. Tab "Inbox" (database "Inbox"):
    - Table "What came in?": Brain Status is Done; sort Created descending; show Name, Kind, Summary, Project.
-[Knowledge]    - In "What came in?", also show Decisions and Concepts.
+[Knowledge]    - In "What came in?", also show Decisions.
 
 If you can't create tabs, add one heading 3 per database instead, each followed by its linked view.
 
@@ -42,5 +39,5 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 ```
 
 ## Verify
-- [ ] One tab per database you have (seven with every module: Decisions, Questions, Concepts, Documents, People, Orgs, Inbox), each with its views as view tabs.
+- [ ] One tab per database you have (six with every module: Decisions, Questions, Documents, People, Orgs, Inbox), each with its views as view tabs.
 - [ ] (Knowledge) "What changed our minds?" shows only Superseded decisions.

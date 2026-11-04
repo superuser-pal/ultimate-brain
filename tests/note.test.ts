@@ -152,7 +152,7 @@ test("note new refuses a decision whose existing meeting does not list it, and w
 test("note new reports a missing reference against the input item", async (context) => {
   const dir = await fixtureCopy(context);
   const run = await noteNew(dir, {
-    notes: [{ type: "concept", title: "Edge caching", frontmatter: { summary: "S.", projects: ["prj-00000000"] }, body: "" }],
+    notes: [{ type: "reference", title: "Edge caching", frontmatter: { origin: "learned", summary: "S.", projects: ["prj-00000000"] }, body: "" }],
   });
   assert.equal(run.json.error.code, "INPUT_INVALID");
   assert.equal(run.json.error.details[0].pointer, "/notes/0");
@@ -305,9 +305,9 @@ test("note new keeps nothing when the log append fails, folders included", async
 
 test("note new normalizes CRLF bodies, refuses them in sources, and checks file_date and dated paths", async (context) => {
   const dir = await fixtureCopy(context);
-  const crlf = await noteNew(dir, { notes: [{ type: "concept", title: "Edge caching", frontmatter: { summary: "S.", sources: ["mtg-8c4n2p7w"] }, body: "Line one\r\nLine two" }] });
+  const crlf = await noteNew(dir, { notes: [{ type: "reference", title: "Edge caching", frontmatter: { origin: "learned", summary: "S.", sources: ["mtg-8c4n2p7w"] }, body: "Line one\r\nLine two" }] });
   assert.equal(crlf.code, 0, crlf.stdout);
-  assert.ok((await readFile(join(dir, "knowledge/concepts/edge-caching.md"), "utf8")).endsWith("\n\nLine one\nLine two\n"));
+  assert.ok((await readFile(join(dir, "knowledge/references/edge-caching.md"), "utf8")).endsWith("\n\nLine one\nLine two\n"));
 
   const bad = await noteNew(dir, {
     notes: [

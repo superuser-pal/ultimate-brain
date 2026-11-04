@@ -168,11 +168,12 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 **Rerun after merging main (CC-120, CC-121, CC-128):** install, rollback (7/7), the five sandboxes and the shared checks (9/9) pass on the merged head; the blind runs were not repeated, since they never create or read what CC-120 and CC-121 change (docs/acceptance-0.9.0.md).
 
 
-### CC-129 · The rollback names the version, and kit check says when a draft can't be confirmed · `todo`
+### CC-129 · The rollback names the version, and kit check says when a draft can't be confirmed · `done` (#212)
 **Release:** 0.9.0
-**Changelog:** after the first `brain upgrade` of an unpinned brain, the rollback names the version to go back to; `brain repo kit check` warns when a hand-formatted kit draft can't be confirmed by `kit write`.
+**Changelog:** after the first `brain upgrade` of an unpinned brain, the rollback names the version to go back to; `brain repo kit check` also returns the hash `kit write` confirms, so a kit draft formatted by hand can be written.
 **Output:** from CC-107's findings 1 and 2 (docs/acceptance-0.9.0.md). Spec first: spec/skills-delivery.md §8 and spec/cli.md (where `brain upgrade` reports `previous_cli`, and §5.29 `repo kit check`), docs/releasing.md and the brain's AGENTS.md block: what the first upgrade of an unpinned brain reports as the previous version (the CLI that wrote the brain, from its `brain.json` or the package that ran before, as the spec decides), and what `kit check` says about a draft whose bytes differ from the form `kit write` writes; then the CLI test-first, and brain-repos's wording if it changes.
 **Acceptance:** tests: the first upgrade of an unpinned 0.8.1 brain reports a non-null previous version, and the rollback text names it; `kit check` on a hand-formatted valid draft says it must be written in the canonical form (or returns the hash `kit write` confirms, as the spec decides); `npm test`, typecheck, `test:package`, the skill mirror check and the leak check pass.
+**Spec decided (CC-129):** the first pin's `previous_cli` comes from the brain's newest `upgrade: ultimate brain <version>` commit other than the running version (skills-delivery §7), else `null` with the §8 fallback; `kit check` adds `confirm_sha256` (the hash of the bytes `kit write` writes, the `--confirm` value) and `canonical` (cli §5.29), and brain-repos confirms with it.
 
 ### CC-114 · Projects from the Notion template and Review bodies by markdown · `done` (#197)
 **Release:** 0.9.0
@@ -241,10 +242,11 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 
 Right after 0.9.0. Fewer databases and only reviewed knowledge in Notion; the brain in Git keeps everything. Each task writes its spec first.
 
-### CC-123 · Concepts become Documents (decision 0071) · `todo`
+### CC-123 · Concepts become Documents (decision 0071) · `done` (#214)
 **Release:** 0.9.1
 **Changelog:** concepts become Documents of their own kind, "learned": the Concepts database is retired and existing concepts move to Documents with their links.
 **Output:** spec first: `origin: learned` on `reference` notes in spec/schema.md and note.schema.json, what replaces the `concept` type (a `brain upgrade` step that rewrites existing concept notes and every reference to them, or the type kept as an alias: the spec decides), ingest's extraction (an idea or method → a learned Document), query, Review sections and Promote (decisions only); then the CLI, the skills, the Notion design (no Concepts database, Documents views by origin, "What do we know?" with Decisions and Documents), the Knowledge and Documents modules, Prompts 2/4/6/7, and a migration that moves Concepts rows to Documents and retires the database after a yes.
+**Spec answers (the user, 2026-11-04):** 1. The `concept` type is replaced, not aliased: `brain upgrade` rewrites each concept into a `reference` with `origin: learned` in `knowledge/references/`, keeping its `con-` id, and rewrites the links to it; a concept left behind is lint `concept-retired`. 2. Notion: the upgrade clears the former concept's page link, the next sync creates its page in Documents, and migration 0018 trashes the Concepts database after a yes (no page moves). 3. Learned Documents follow the Documents module: with it off they stay in Git and in `brain query`, unpublished. Also (CC-123's own choices): a learned Document keeps the concept's rule that `sources` is optional; CC-124 owns the Documents · Origin property, CC-123 adds its Learned value and view.
 **Acceptance:** a synthetic brain with concepts upgrades with no lint error and every former concept is a learned Document reachable from its project, area and source; a fresh ingest of an idea writes a learned Document; `brain query` finds it; the migration's verify list passes on the design; `npm test`, `npm run typecheck`, `npm run test:package`, the skill mirror check and the leak check pass.
 
 ### CC-124 · Reports move to Documents (decision 0071) · `done` (#211)
@@ -254,30 +256,44 @@ Right after 0.9.0. Fewer databases and only reviewed knowledge in Notion; the br
 **Acceptance:** a test publishes a new report to Documents and refreshes it in place; an Ask row links to it; existing Report rows have a migration path with a verify list; a report still never becomes a source or a proposal target; checks as CC-123.
 **Spec answers (the user, 2026-11-04):** 1. A report stays a `view` (`vw-`, `reports/`, `view_kind: report`) in Git; only its Notion home changes, to a Documents row with Origin = Report, so 0057 holds unchanged and nothing in a brain is rewritten. 2. Existing Report rows are moved by hand (Move to → Documents), keeping their page ids, bodies, comments and any proposed or accepted refresh; the next publish fills Origin, Project, Area and Asked in. 3. Reports needs Documents: `brain modules on reports` also turns Documents on, `off documents` also turns Reports off, and each says so. 4. One **Accept** button on Documents (Accept write-up renamed) for a write-up and a refreshed report alike. 5. The unattended catch-up's run summary stays an Inbox row, with a new Kind **Catch-up**; the Inbox Kind Report is retired. CC-124 owns the Documents · Origin select (Kept, Learned, Report, Promoted, Workflow); CC-123 maps `learned` (agreed with CC-123's session).
 
-### CC-125 · Notion shows reviewed knowledge (decision 0071) · `todo`
+### CC-125 · Notion shows reviewed knowledge (decision 0071) · `done` (#210)
 **Release:** 0.9.1
 **Changelog:** decisions, questions and Documents appear in Notion once you approve them; until then they are in their Review row only.
 **Output:** spec first (spec/cli.md §5.14): render publishes a decision, question or Document only when its lifecycle is `reviewed`, `disputed` or `archived` (a whole Document is reviewed from creation), and a person whatever its lifecycle; the relations that point at an unpublished note (Inbox Produced, Meeting Decisions and Questions, Supersedes) wait as pending relations; approving a Review Notes row publishes its notes in the same run; a rejected draft never gets a page; what happens to existing Draft pages (left until decided, or trashed after a yes); Briefs, reports and Review pages unchanged; then the CLI, brain-sync/catch-up wording, the Notion design and views (drop "Which concepts are drafts?" and other Draft views), and a migration.
 **Acceptance:** tests: a draft decision gets no page and its meeting's Decisions relation fills in when it is approved; a rejected draft never renders; a draft person still renders; a disputed decision keeps its page; checks as CC-123.
+**Answers (the user, 2026-11-04):** 1. Existing Draft pages: moved to Notion's trash after a yes (migration 0020, `sync render --unpublish-drafts`), only those a pending Review notes row holds, so approving brings each back as a new page. 2. A decision a connected workflow publishes arrives `reviewed` (the approval in the session is the review, as for a workflow Document), with `workflow: {id, artifact}` on the note. Following 0071 §3 without a new question: an approved `new_item` writes its note `reviewed`.
 
-### CC-126 · A to-do becomes a task, not a question (decision 0071) · `todo`
+### CC-126 · A to-do becomes a task, not a question (decision 0071) · `done` (#209)
 **Release:** 0.9.1
 **Changelog:** the brain no longer files to-dos as questions: your own become tasks, other people's stay commitments you can track as Waiting On, and questions are kept for what something can answer later; a one-off tidy offers to turn existing to-do questions into tasks.
 **Output:** spec first, in the contracts that hold the rule today: spec/capture-and-review.md §4.1 and §6 and spec/cli.md §5.14.5 (unchanged for other people's commitments: Waiting On only through `Track: Waiting On —`, decision 0055), then skills/brain-ingest/references/extraction.md, sources.md and selection.md (answerable later → question; the owner's explicit to-do → task; someone else's → a commitment in the text; ambiguous owner or tentative idea → no task and no question; risk → Kind Risk), the minutes format's Open Questions and Risks guidance (notion/minutes-format.md), and a tidy (in brain-tidy or a cleanup row: the spec decides) that lists existing questions that read as the owner's to-dos and converts each after a yes, dropping the question; then the skills and their mirror, and a blind run on synthetic minutes.
 **Spec questions (from the review of PR #204):** 1. Old-format minutes (Open Questions as plain lines, no item ids): does the rule apply to them, and how is a converted line tied to its task without an item id? 2. Idempotence: a re-ingest must not create a second task for a line that was a question before; is `task_items` enough for an item that changes kind? 3. The tidy: does dropping a converted question archive it with a successor link to the task, or simply archive it?
+**Answers (the user, 2026-11-04):** 1. The rule applies to old-format minutes too: a line is classified by what it says, whatever its heading; an old-format Task goes through `sync tasks --meeting`, is recorded in the meeting's `tasks` and needs no item id, and a corrected re-read reads only the changed lines (`source diff`), so an unchanged line never makes a second Task. 2. A re-ingest never reclassifies a line the brain already holds as a question (open, answered or dropped): it creates no Task for it, and only the tidy converts it; a line the user edited is a corrected line, its Task is made once (`task_items`), and the old question is named under Check to drop. 3. A converted question is archived with `task` (the Task's page id), the meeting or source records the Task, and Notion gets Lifecycle Archived and Status Dropped, each sent once. 4. The tidy is a chat step of brain-ingest, run when the user asks ("turn my to-do questions into tasks"), each item after a yes, through a new `brain question drop`; a question that reads as someone else's commitment is offered as a drop with no Task (never Waiting On, 0055).
 **Acceptance:** a blind run by a fresh Sonnet sub-agent on synthetic minutes with one real question, one owner to-do, one to-do for someone else (unmarked, then marked `Track: Waiting On —`), one ambiguous-owner line and one risk produces one question, one task, no task then one Waiting On task, nothing for the ambiguous line, and one risk; with Tasks off the owner's to-do stays in the text and is not a question; a re-ingest creates no second task; the tidy converts a to-do question only after a yes; the skill mirror check and the leak check pass.
 
-### CC-127 · Orgs · Relationship gains Employer (decision 0071) · `todo`
+### CC-127 · Orgs · Relationship gains Employer (decision 0071) · `done` (#208)
 **Release:** 0.9.1
 **Changelog:** an Org can be your Employer, besides Client, Prospect, Partner, Supplier and Other.
 **Output:** the Employer option in spec/schema.md §4 (org `notion_fields.relationship`), note.schema.json, docs/notion-space-design.md §3.7, Prompt 2, the Orgs module, the Orgs views (unchanged filters: "Which clients do I have?" stays Client), and a migration step that adds the option (with the existing options' ids sent first).
 **Acceptance:** an org note with `relationship: Employer` lints clean and syncs; the migration adds the option without dropping the others; `npm test` and the leak check pass.
+**Migration number:** 0021, fixed when 0.9.1 was split across parallel windows so no two tasks collide: CC-123 0018, CC-124 0019, CC-125 0020, CC-127 0021, CC-126 0022 (only if it needs one). Until those merge, the README goes from 0017 to 0021; run them in number order once they exist.
+**Scope (user, 2026-11-04):** no blind run; the tests and the leak check are enough.
 
 ### CC-130 · brain-workflow polish from the 0.9.0 acceptance · `todo`
 **Release:** 0.9.1
 **Changelog:** the workflow skill publishes final artifacts without a refused lifecycle, documents its input shapes and retry path, releases an item's claim when it is done, shows an edit made after your yes again, and adoption's first progress line reads plainly.
 **Output:** from CC-107's findings 3 to 7 (docs/acceptance-0.9.0.md): skills/brain-workflow (references/notion.md and the input shapes: `acceptance` entries, artifact `format`, `location`, the `failed → pending` retry), the claim released on `done`, the approval rule (an edit after the yes is shown again), and `workflow adopt apply`'s progress text (src/lib/workflow-adopt.ts, spec first in spec/connected-workflows.md if the text is specified).
 **Acceptance:** a blind run by a fresh Sonnet sub-agent on CC-107's connected-pr and general-area sandboxes (eval/acceptance-0.9.0/harness) publishes a final artifact with no refused command, leaves no claim on a done item and shows an edited artifact again; a test shows the adoption progress line without the raw key; the skill mirror check, `npm test` and the leak check pass.
+
+### CC-132 · brain link writes through a CLAUDE.md symlink to the repo's AGENTS.md · `done` (#217)
+**Release:** 0.9.1
+**Changelog:** `brain link` accepts a repo whose `CLAUDE.md` is a symbolic link to its own `AGENTS.md`, and refuses any other symbolic `CLAUDE.md` with `INSTRUCTIONS_SYMLINK` instead of `OUTSIDE_ROOT`.
+**Output:** `spec/cli.md` §5.12 step 2 and the error table; `src/commands/link.ts`, `src/lib/errors.ts`; `tests/link.test.ts`; brain-repos step 5 (and its mirrors). From dogfood #215.
+**Acceptance:**
+- [ ] A repo whose `CLAUDE.md` is a symbolic link to its `AGENTS.md` links: the block goes into AGENTS.md, `CLAUDE.md` stays a link and is reported `unchanged`, and a second run changes nothing.
+- [ ] A `CLAUDE.md` symlink to another file, outside the repo, or dangling is refused with `INSTRUCTIONS_SYMLINK` (exit 4) before any write; the message says how to fix it.
+- [ ] A symbolic `AGENTS.md` is still refused with `OUTSIDE_ROOT`; every other link test passes unchanged.
+- [ ] brain-repos step 5 names the case and the fix; `npm run skills` leaves the mirrors in sync.
 
 ## 0.9.2 — Skills from the fork (decision 0069)
 

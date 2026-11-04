@@ -13,7 +13,6 @@ const SECTIONS: ReadonlyArray<readonly [type: string, heading: string]> = [
   ["decision", "Decisions"],
   ["question", "Questions"],
   ["meeting", "Meetings"],
-  ["concept", "Concepts"],
   ["reference", "Documents"],
 ];
 

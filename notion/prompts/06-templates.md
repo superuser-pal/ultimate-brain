@@ -24,7 +24,7 @@ Create a default page template for each database below. Each item "Heading: data
 [Knowledge]   "What have we decided here?": Decisions where Area is this page (views: "Current" Assessment is not Superseded, Date descending; "Superseded" Assessment is Superseded, Date descending), showing Name, Project, Date.
 [Knowledge]   "What's still open here?": Questions where Area is this page (views: "Open questions" Status is Open and Kind is Question; "Open risks" Status is Open and Kind is Risk; "Answered" Status is Answered), showing Name, Project, Kind.
   "What came in?": Inbox where Area is this page, sorted Created descending, showing Name, Kind, Summary.
-[Knowledge]   "What do we know?": views "Decisions" (Decisions where Area is this page, sorted Date descending, showing Name, Assessment, Date, Project) and "Concepts" (Concepts where Area is this page, sorted Created time descending, showing Name, Summary, Project).
+[Knowledge]   "What do we know?": views "Decisions" (Decisions where Area is this page, sorted Date descending, showing Name, Assessment, Date, Project).
 [Documents]   Under "What do we know?" (create the heading if it isn't there yet), a view "Documents" (Documents where Area is this page and Origin is not Report, sorted Last edited time descending, showing Name, Summary, Project).
 [Reports]   "Reports": Documents where Area is this page and Origin is Report, sorted Created time descending, showing Name, Refresh asked, What to fix.
   Then a toggle "My notes".
@@ -40,7 +40,7 @@ Create a default page template for each database below. Each item "Heading: data
 [Knowledge]   "What's still open here?": Questions where Project is this page and Status is Open, showing Name, Kind.
   "Who's involved?": People where Projects contains this page, showing Name, Role.
   "What came in?": Inbox where Project is this page, sorted Created descending, showing Name, Kind, Summary.
-[Knowledge]   "What do we know?": views "Decisions" (Decisions where Project is this page, sorted Date descending, showing Name, Assessment, Date) and "Concepts" (Concepts where Project is this page, sorted Created time descending, showing Name, Summary).
+[Knowledge]   "What do we know?": views "Decisions" (Decisions where Project is this page, sorted Date descending, showing Name, Assessment, Date).
 [Documents]   Under "What do we know?" (create the heading if it isn't there yet), a view "Documents" (Documents where Project is this page and Origin is not Report, sorted Last edited time descending, showing Name, Summary).
 [Reports]   "Reports": Documents where Project is this page and Origin is Report, sorted Created time descending, showing Name, Refresh asked, What to fix.
   Then a toggle "My notes".
