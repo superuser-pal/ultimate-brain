@@ -322,6 +322,9 @@ test("render: an attached source has no Inbox row; its notes go on the parent's 
   const made = await run(dir, ["note", "new"], { notes: [{ type: "decision", title: "Launch in February", frontmatter: { summary: "Launch in February.", date: "2026-12-01", assessment: "accepted", projects: ["prj-9x4t1b7e"], sources: [attached.id] }, body: "Launch in February.\n" }] });
   assert.equal(made.code, 0, made.stdout);
   const decision = made.json.data.created[0].id;
+  // Approved, so it gets a page and the Inbox row waits for it (0071).
+  const decisionPath = join(dir, made.json.data.created[0].path);
+  await writeFile(decisionPath, (await readFile(decisionPath, "utf8")).replace(/^lifecycle: draft$/m, "lifecycle: reviewed"));
 
   const byId = await run(dir, ["sync", "render", "--ids", attached.id]);
   assert.deepEqual(byId.json.data?.items, [], byId.stdout);

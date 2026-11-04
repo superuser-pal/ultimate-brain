@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { excludableDecision } from "./exclusion-fixture.ts";
-import { brain, fixtureCopy } from "./helpers.ts";
+import { approveNote, brain, fixtureCopy } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const SYNC = "mtg-8c4n2p7w";
@@ -36,6 +36,7 @@ test("a report line that links a note resting on excluded content is flagged (so
 test("sync render publishes a restricted note in its eligible form, so a copy published before the exclusion is re-rendered without the excluded text", async (context) => {
   const dir = await fixtureCopy(context);
   const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
+  await approveNote(dir, note.path);
   const before = (await run(dir, ["sync", "render", "--ids", note.id])).json.data.items[0];
   assert.ok(String(before.body).includes("95k"), "while the paragraph is live it is published");
   await exclude();

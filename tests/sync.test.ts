@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { parseFrontmatter, serializeFrontmatter, serializeNewFile } from "../src/lib/frontmatter.ts";
-import { brain, fixtureCopy } from "./helpers.ts";
+import { approveNote, brain, fixtureCopy } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const MARIA = "per-3h8w2n6c";
@@ -139,6 +139,7 @@ test("sync render creates Inbox and Concepts payloads from a document source", a
   ] };
   const created = await brain(["note", "new", "--brain", dir, "--now", NOW, "--input", await input(dir, "source-and-concept.json", noteInput), "--json"]);
   assert.equal(created.code, 0, created.stdout);
+  await approveNote(dir, created.json.data.created.find((note: { id: string }) => note.id === "con-2a3b4c5d").path);
   const run = await brain(["sync", "render", "--brain", dir, "--ids", `${source},con-2a3b4c5d`, "--json"]);
   assert.equal(run.code, 0, run.stdout);
   const byId = new Map<string, { database: string; action: string; properties: Record<string, unknown>; pending_relations: Array<Record<string, unknown>> }>(run.json.data.items.map((item: { id: string; database: string; action: string; properties: Record<string, unknown>; pending_relations: Array<Record<string, unknown>> }) => [item.id, item]));

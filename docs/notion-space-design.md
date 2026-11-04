@@ -76,6 +76,8 @@ Every database that mirrors a brain note has three kinds of properties. Each pro
 
 **Creation:** new rows you create in Areas, Goals, Projects, People, Orgs are imported by the next `brain sync` (0021). Rows in Decisions, Questions, Concepts, Documents and Review are created by the brain only. Inbox rows come from you (Quick capture) or from the brain (every document, email, chat or note it ingests, 0037).
 
+**Only reviewed knowledge (0071, 0.9.1).** Decisions, Questions, Concepts and Documents show what you trusted: a row gets its page when its note is reviewed, approved in its Review row, or reviewed from the start, as a whole Document is. Until then the draft lives only in its Review row, whose page holds its full wording (0055); a draft you reject never gets a page. Relations to a draft (an Inbox row's Decisions, a meeting's Decisions and Questions) fill in when you approve it, in the same run. People still arrive as Draft, because a meeting's Attendees needs their pages. A row that has a page keeps it: a superseded decision or an answered question stays as history. Draft pages from before 0.9.1 are moved to Notion's trash after your yes (migration 0020); each comes back as a new page when you approve it. The brain in Git keeps every draft (spec/cli.md §5.14.4).
+
 **Page bodies (0026, 0041, 0043):** the brain writes only inside named toggle headings: "Brief" and "Decision log" on project pages, "Brief" on area pages. It owns the whole body of Decisions, Questions and Concepts pages, of the Documents kept from an input, and of the Inbox rows it creates (a digest of what came in, and the report on a Report row; "Full text" toggles written before 0.6.0 stay). A Document promoted from a decision or concept is seeded once, then its body is yours (0049). It publishes no body for Goals, People and Orgs, and never edits Meetings (0007), a capture you wrote or an Ask row. Everything else on a page is yours, including the **"My notes"** toggle.
 
 **Workflow and rollup toggles (0059, 0066).** Three more brain-owned toggle headings, written by the skills and never by `sync render`; no template creates them, and the skill appends one at the end of the page the first time it writes it (drag it up once):
@@ -97,7 +99,7 @@ Up to fourteen databases, all on the backend page **Brain Data**: the six of Cor
 |---|---|---|---|
 | Name | Title | Brain (you on creation) | |
 | Summary | Text | Brain | ≤200 chars, from the note's `summary:` |
-| Lifecycle | Select: Draft, Reviewed, Disputed, Archived | You | 0005. New brain records arrive as Draft. **Only on People, Decisions, Questions, Concepts and Documents** (0070): rows you create (Domains, Areas, Goals, Projects, Orgs) have none, and Archived closes them |
+| Lifecycle | Select: Draft, Reviewed, Disputed, Archived | You | 0005. A new person arrives as Draft; decisions, questions and Documents arrive once reviewed (0071, §2). **Only on People, Decisions, Questions, Concepts and Documents** (0070): rows you create (Domains, Areas, Goals, Projects, Orgs) have none, and Archived closes them |
 | Brain ID | Text | System | e.g. `prj-9x4t1b7e` (0017). Empty = not imported yet |
 | Last Synced | Date (with time) | System | |
 
@@ -356,7 +358,7 @@ Plus the common properties. Page body: the concept's explanation, brain-written.
 ### 3.14 Documents
 Pages you keep to read and link from anywhere (0049; the References database of 0045, renamed with its id, relations and views). Created by the brain only, in three ways:
 - **Keep as document** on an Inbox row, with Only keep empty: the input's **whole text**, verbatim. It needs no Review and arrives Reviewed.
-- **Keep as document** with **Only keep** filled in: only that part, chosen by the brain. It comes as an item in that input's Review row and is Draft until you approve it.
+- **Keep as document** with **Only keep** filled in: only that part, chosen by the brain. It comes as an item in that input's Review row and gets its page when you approve it (0071).
 - **Promote to document** on a decision or concept: a page seeded from it, linked to it. From then on its body is **yours**; the brain never rewrites it.
 
 A new version of a kept file proposes the changed lines to its Documents (Kind Update Body in Review).
@@ -528,7 +530,7 @@ Each Space: the synced Spaces navigation in a narrow left column, then one tabs 
 | **Projects** | Run projects | Active (board by Status) · By area · Deadlines (timeline) · Gone quiet |
 | **Plan** (Planning module) | Areas → goals → key results → projects | Goals · Key results (by goal) · Areas (the way into each Area page) · Projects by goal |
 | **Review** | Decide on proposals | A muted line above the views: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. To correct something, pick Fix in Your call and say what's wrong in What to fix." (0043, 0045). A decided row leaves Review 30 days after the decision; the brain keeps it in Git (0045) · Needs my decision (with a Type column: From source, Conflict, Answer; Kind hidden, 0048) · Sources disagree · Approved recently · Rejected. Review stays one queue for every area; each area home has its own "Review waiting" tab (0050) |
-| **Knowledge** | Navigate what the brain knows | Decisions (Recent, Current, Provisional, Superseded, Disputed) · Questions (Open questions, Open risks, Answered) · Concepts (Recent, By project, Drafts) · Documents (What did we keep?, 0045, 0049) · People (by org, Disputed) · Orgs (Clients, Others) · Inbox (What came in?: Done, newest first; the rows still waiting are Home's Inbox tab). Each tab follows its module |
+| **Knowledge** | Navigate what the brain knows | Decisions (Recent, Current, Provisional, Superseded, Disputed) · Questions (Open questions, Open risks, Answered) · Concepts (Recent, By project) · Documents (What did we keep?, 0045, 0049) · People (by org, Disputed) · Orgs (Clients, Others) · Inbox (What came in?: Done, newest first; the rows still waiting are Home's Inbox tab). Each tab follows its module |
 | **Archive** (under System) | Find what's finished | One tab per database of your modules: Projects (Done or Archived) · Goals (Achieved, Dropped or Archived) · Areas · Decisions · Questions · Concepts · Documents · People · Orgs (Archived) |
 
 Every view, with its filters, sort and properties, is in [notion/views-guide.md](../notion/views-guide.md) and Prompts 7a–7h.

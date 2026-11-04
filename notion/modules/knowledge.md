@@ -30,7 +30,7 @@ What the brain learns: decisions, open questions and risks, and concepts, each l
 ### Verify
 - [ ] `brain modules` shows `knowledge` on with nothing missing.
 - [ ] Knowledge has Decisions, Questions and Concepts tabs; a new project shows "What do we know?".
-- [ ] After the next ingest, new decisions appear as Draft and link their meeting.
+- [ ] After the next ingest, new decisions appear only in their Review row; once you approve one, it gets its page in Decisions, linked to its meeting (0071).
 
 ## Turning it off
 

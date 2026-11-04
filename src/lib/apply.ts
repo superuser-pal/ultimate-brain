@@ -461,7 +461,8 @@ function defer(workspace: Workspace, id: string, p: Record<string, unknown>, exc
 export function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPath: string, V: unknown, D: string, today: string, exclude: Array<{ field: string; value: unknown }> = [], correctedBy?: string): string | null {
   const kind = String(p.kind);
   if (kind === "new_item") {
-    stageNewItem(workspace, p.note as NoteInput, proposalPath, new Date(`${today}T00:00:00Z`));
+    // Approving the row is the review: the note is written reviewed, so it gets its Notion page (0071).
+    stageNewItem(workspace, p.note as NoteInput, proposalPath, new Date(`${today}T00:00:00Z`), "reviewed");
     return null;
   }
 
