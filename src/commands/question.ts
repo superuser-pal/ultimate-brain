@@ -47,6 +47,9 @@ export const questionDropCommand: Command = {
         checked.push({ id, ...(task === undefined ? {} : { task }), unchanged: true });
         return;
       }
+      if (a.lifecycle === "archived") assertNoProblems([{ pointer: `${pointer}/id`, message: `${id} is archived: it is history, not a to-do` }]);
+      const status = isRecord(a.notion_fields) ? a.notion_fields.status : undefined;
+      if (status === "Answered") assertNoProblems([{ pointer: `${pointer}/id`, message: `${id} is Answered in Notion: it is not a to-do` }]);
       if (task !== undefined && !recordedTasks(workspace, a).has(task)) {
         assertNoProblems([{ pointer: `${pointer}/task`, message: `${task} is not in the tasks of ${id}'s meeting or sources: record the Task with sync record first` }]);
       }

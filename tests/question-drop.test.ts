@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
+import { parseFrontmatter } from "../src/lib/frontmatter.ts";
 import { brain, fixtureCopy } from "./helpers.ts";
 
 // Decision 0071 (0.9.1, CC-126): the to-do tidy drops a question that was a to-do (spec/cli.md §5.30, capture-and-review §6.2).
@@ -120,6 +123,16 @@ test("question drop: a risk, an answered question, a non-question, a repeated id
   assert.equal((await drop(dir, [{ id: QUESTION }])).json.error.code, "INPUT_INVALID", "an answered question is not a to-do");
 });
 
+test("question drop: an archived question, or one you marked Answered in Notion, is refused", async (context) => {
+  const dir = await fixtureCopy(context);
+  await editQuestion(dir, (text) => text.replace(/^lifecycle: draft$/m, "lifecycle: archived"));
+  const before = await question(dir);
+  assert.equal((await drop(dir, [{ id: QUESTION }])).json.error.code, "INPUT_INVALID", "an archived question is history");
+  assert.equal(await question(dir), before);
+  await editQuestion(dir, (text) => text.replace(/^lifecycle: archived$/m, "lifecycle: reviewed").replace(/^  status: Open$/m, "  status: Answered"));
+  assert.equal((await drop(dir, [{ id: QUESTION }])).json.error.code, "INPUT_INVALID", "Answered in Notion is never overwritten by Dropped");
+});
+
 test("render: Dropped is not sent again after you reopen the question in Notion", async (context) => {
   const dir = await fixtureCopy(context);
   assert.equal((await drop(dir, [{ id: QUESTION }])).code, 0);
@@ -135,4 +148,44 @@ test("render: a question you already set to Dropped in Notion gets no Status fro
   await editQuestion(dir, (text) => text.replace(/^  status: Open$/m, "  status: Dropped"));
   assert.equal((await drop(dir, [{ id: QUESTION }])).code, 0);
   assert.equal((await rendered(dir)).properties.Status, undefined);
+});
+
+// The tidy's Convert for a question from a selected capture (an extract): the item is the one the question's paragraph names (capture-and-review §6.2).
+const git = (dir: string, ...args: string[]) => execFileSync("git", args, { cwd: dir, encoding: "utf8" });
+function settle(dir: string) {
+  if (!existsSync(join(dir, ".git"))) { git(dir, "init", "-q"); git(dir, "config", "user.email", "t@example.com"); git(dir, "config", "user.name", "T"); }
+  git(dir, "add", "-A");
+  if (git(dir, "status", "--porcelain").trim() !== "") git(dir, "commit", "-q", "-m", "state");
+}
+
+test("question drop: a to-do question from a selected capture converts with the item its paragraph names", async (context) => {
+  const dir = await fixtureCopy(context);
+  const transcript = join(dir, "..", "capture.txt");
+  const summary = join(dir, "..", "summary.md");
+  await writeFile(transcript, "I need to send Globex the revised quote by Friday.\n\nNobody knows if the phase two budget is approved.");
+  await writeFile(summary, `## [s1] Quote\nSelection: Use in brain\n### Open questions\n[s1.i1] Send Globex the revised quote by Friday? "I need to send Globex the revised quote"\n[s1.i2] Is the phase two budget approved? "Nobody knows if the phase two budget is approved"\n`);
+  settle(dir);
+  const written = await run(dir, ["source", "extract", "--page", "7a7b0000-0000-4000-8000-0000000000d1", "--title", "Quote capture", "--date", "2026-12-10", "--kind", "capture", "--summary", summary, "--transcript", transcript]);
+  assert.equal(written.code, 0, written.stdout);
+  const extract = written.json.data.created[0] as string;
+  const source = parseFrontmatter(await readFile(join(dir, written.json.data.path), "utf8"));
+  const passages = source.attributes.passages as Array<{ n: number; hash: string }>;
+  const made = await run(dir, ["note", "new"], { notes: [{ type: "question", title: "Send Globex the revised quote?", frontmatter: { summary: "Filed as a question before 0.9.1.", kind: "question", projects: ["prj-9x4t1b7e"], sources: [extract] }, body: `Send Globex the revised quote by Friday. ^[${extract}#¶1:${passages.find((entry) => entry.n === 1)!.hash}]\n` }] });
+  assert.equal(made.code, 0, made.stdout);
+  const que = made.json.data.created[0].id as string;
+
+  // The skill reads the item from the marker of the cited paragraph: exactly one item cites ¶1.
+  const marker = /<!-- passage ¶1 item ([^>]*?)\s*-->/.exec(source.body)![1]!.split(",").map((id) => id.trim());
+  assert.deepEqual(marker, ["s1.i1"]);
+  const withoutItem = await run(dir, ["sync", "tasks", "--source", extract], { items: [{ title: "Send Globex the revised quote", projects: ["prj-9x4t1b7e"] }] });
+  assert.equal(withoutItem.json.error.code, "INPUT_INVALID", "an extract Task needs its item");
+  const tasks = await run(dir, ["sync", "tasks", "--source", extract], { items: [{ title: "Send Globex the revised quote", item: marker[0], projects: ["prj-9x4t1b7e"] }] });
+  assert.equal(tasks.code, 0, tasks.stdout);
+  const page = "7a7b0000-0000-4000-8000-0000000000d2";
+  const recorded = await run(dir, ["sync", "record"], { records: [{ id: extract, synced_at: NOW, tasks: [page], task_items: { [marker[0]!]: page } }] });
+  assert.equal(recorded.json.data.records[0].result, "recorded", recorded.stdout);
+  const dropped = await drop(dir, [{ id: que, task: page }]);
+  assert.equal(dropped.code, 0, dropped.stdout);
+  assert.deepEqual(dropped.json.data.items, [{ id: que, result: "dropped", task: page }]);
+  assert.deepEqual(await lintErrors(dir), []);
 });
