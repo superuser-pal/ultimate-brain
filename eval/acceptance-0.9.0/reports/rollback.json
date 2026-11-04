@@ -1,0 +1,146 @@
+{
+  "steps": [
+    {
+      "name": "install 0.8.1",
+      "version": "0.8.1"
+    },
+    {
+      "name": "brain init (0.8.1)",
+      "ok": true
+    },
+    {
+      "name": "lint (0.8.1, before)",
+      "code": 0,
+      "errors": 0
+    },
+    {
+      "name": "install packed 0.9.0",
+      "version": "0.9.0"
+    },
+    {
+      "name": "status before upgrade (0.9.0)",
+      "skills": {
+        "state": "unpinned",
+        "name": null,
+        "version": null,
+        "cli": null,
+        "integrity": null,
+        "installed_by": null,
+        "running": "0.9.0",
+        "reason": null,
+        "package": {
+          "name": "ultimate-brain",
+          "version": "0.9.0",
+          "compatible": true,
+          "reason": null
+        },
+        "drift": [
+          ".agents/skills/brain-catch-up/SKILL.md",
+          ".agents/skills/brain-connect-notion/SKILL.md",
+          ".agents/skills/brain-howto/SKILL.md",
+          ".agents/skills/brain-howto/references/guide.md",
+          ".agents/skills/brain-ingest/SKILL.md",
+          ".agents/skills/brain-ingest/references/cli-inputs.md",
+          ".agents/skills/brain-ingest/references/extraction.md",
+          ".agents/skills/brain-ingest/references/notion.md",
+          ".agents/skills/brain-ingest/references/selection.md",
+          ".agents/skills/brain-ingest/references/sources.md",
+          ".agents/skills/brain-repos",
+          ".agents/skills/brain-sync/SKILL.md",
+          ".agents/skills/brain-workflow",
+          ".agents/skills/brain-workflow-adopt",
+          ".claude/skills/brain-catch-up/SKILL.md",
+          ".claude/skills/brain-connect-notion/SKILL.md",
+          ".claude/skills/brain-howto/SKILL.md",
+          ".claude/skills/brain-howto/references/guide.md",
+          ".claude/skills/brain-ingest/SKILL.md",
+          ".claude/skills/brain-ingest/references/cli-inputs.md",
+          ".claude/skills/brain-ingest/references/extraction.md",
+          ".claude/skills/brain-ingest/references/notion.md",
+          ".claude/skills/brain-ingest/references/selection.md",
+          ".claude/skills/brain-ingest/references/sources.md",
+          ".claude/skills/brain-repos",
+          ".claude/skills/brain-sync/SKILL.md",
+          ".claude/skills/brain-workflow",
+          ".claude/skills/brain-workflow-adopt"
+        ],
+        "competing": []
+      }
+    },
+    {
+      "name": "brain upgrade (0.9.0)",
+      "code": 0,
+      "ok": true,
+      "skills": {
+        "from": null,
+        "to": {
+          "name": "ultimate-brain",
+          "version": "0.9.0"
+        },
+        "retired": [],
+        "previous_cli": null,
+        "competing": []
+      },
+      "files": 38,
+      "warnings": [
+        {
+          "code": "PUSH_SKIPPED",
+          "message": "Git branch has no upstream; commit was not pushed."
+        }
+      ],
+      "commit": "upgrade: ultimate brain 0.9.0, skills ultimate-brain 0.9.0"
+    },
+    {
+      "name": "status after upgrade",
+      "skills": {
+        "state": "pinned",
+        "name": "ultimate-brain",
+        "version": "0.9.0",
+        "cli": ">=0.9.0 <0.10.0",
+        "integrity": "sha256-1019ff1f008d3a21a536e8d634a645e5a4f3b62c176cbc279c7917b2faec6f6f",
+        "installed_by": "0.9.0",
+        "running": "0.9.0",
+        "reason": null,
+        "package": {
+          "name": "ultimate-brain",
+          "version": "0.9.0",
+          "compatible": true,
+          "reason": null
+        },
+        "drift": [],
+        "competing": []
+      }
+    },
+    {
+      "name": "previous_cli reported by the upgrade",
+      "previous_cli": null,
+      "used": "0.8.1"
+    },
+    {
+      "name": "after rollback",
+      "version": "0.8.1",
+      "head": "Revert \"upgrade: ultimate brain 0.9.0, skills ultimate-brain 0.9.0\""
+    },
+    {
+      "name": "lint after rollback",
+      "code": 0,
+      "errors": 0,
+      "warnings": 0
+    }
+  ],
+  "checks": {
+    "upgrade pinned ultimate-brain 0.9.0": true,
+    "manifest changed by the upgrade": true,
+    "manifest after rollback equals before": true,
+    "knowledge unchanged": true,
+    "configuration unchanged": true,
+    "lint exits 0 after rollback": true,
+    "git tree clean": true
+  },
+  "manifest_diff": [],
+  "counts": {
+    "knowledge_files": 36,
+    "skill_files_before": 17,
+    "skill_files_pinned": 24
+  }
+}

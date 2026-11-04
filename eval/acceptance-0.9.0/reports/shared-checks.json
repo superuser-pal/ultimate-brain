@@ -1,0 +1,80 @@
+{
+  "checks": {
+    "a title changed in both places is asked": true,
+    "a status changed in both places keeps Notion's": true,
+    "a stale record revision is refused": true,
+    "two sessions can't claim one item": true,
+    "the brain is pinned to the phase A snapshot": true,
+    "a global copy of a pinned skill is reported as competing": true,
+    "a missing pinned skill stops a write before it writes": true,
+    "an incompatible pin stops a write, with the upgrade to run": true,
+    "the brain is pinned again after the checks": true
+  },
+  "evidence": {
+    "a title changed in both places is asked": {
+      "needs_you": [
+        {
+          "kind": "BOTH_CHANGED",
+          "value": "Agenda for the Acme workshop",
+          "choices": [
+            "keep_mine",
+            "take_notion"
+          ]
+        }
+      ]
+    },
+    "a status changed in both places keeps Notion's": {
+      "status": "waiting",
+      "routine": [
+        {
+          "kind": "status_adopted",
+          "target": "wi-xcw4sbv9",
+          "from": "in_progress",
+          "to": "waiting"
+        }
+      ],
+      "ops": [],
+      "title_kept": "Draft the workshop agenda"
+    },
+    "a stale record revision is refused": {
+      "code": 4,
+      "error": "STALE_RECORD",
+      "message": "wi-xcw4sbv9 is at revision 5, not 3: read it again and retry"
+    },
+    "two sessions can't claim one item": {
+      "first": 0,
+      "second": "CLAIMED",
+      "message": "wi-xcw4sbv9 is claimed by session-a since 2026-11-04T09:30:00Z"
+    },
+    "the brain is pinned to the phase A snapshot": {
+      "skills": {
+        "state": "pinned",
+        "name": "ultimate-brain",
+        "version": "0.9.0",
+        "installed_by": "0.9.0"
+      }
+    },
+    "a global copy of a pinned skill is reported as competing": {
+      "issues": [
+        {
+          "rule": "skill-competing",
+          "severity": "warning",
+          "path": "~/.claude/skills/brain-query"
+        }
+      ]
+    },
+    "a missing pinned skill stops a write before it writes": {
+      "code": 3,
+      "error": "SKILLS_SNAPSHOT_MISSING",
+      "message": "Pinned skill brain-howto is missing from .agents/skills (ultimate-brain 0.9.0). Run brain upgrade to restore it."
+    },
+    "an incompatible pin stops a write, with the upgrade to run": {
+      "code": 3,
+      "error": "SKILLS_INCOMPATIBLE",
+      "message": "This brain's skills (ultimate-brain 0.9.0) need ultimate-brain >=0.10.0 <0.11.0; this CLI is 0.9.0. Install the version that pinned them: npm install -g ultimate-brain@0.9.0."
+    },
+    "the brain is pinned again after the checks": {
+      "state": "pinned"
+    }
+  }
+}

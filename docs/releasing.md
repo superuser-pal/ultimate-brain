@@ -55,7 +55,7 @@ Run `brain upgrade` only after `brain --version` prints the new version: the old
 
 **To roll back** an upgrade (spec/skills-delivery.md §8), in either order:
 1. In the brain: `git revert <upgrade commit>`. It restores the old `skills.lock.json` and the old skill files in one commit.
-2. `npm install -g ultimate-brain@<previous_cli>`: the `previous_cli` the upgrade reported, which is also the reverted lock's `installed_by`.
+2. `npm install -g ultimate-brain@<previous_cli>`: the `previous_cli` the upgrade reported, which is also the reverted lock's `installed_by` when there was one. The first pin (a brain's first upgrade to 0.9.0 or later) takes it from the brain's last `upgrade: ultimate brain <version>` commit, and the revert leaves the brain unpinned, as it was. When `previous_cli` is `null`, reinstall the version you ran before (`npm ls -g ultimate-brain` shows it before you install the new one).
 3. `brain lint` exits 0 (info issues such as `skills-update-available` don't count).
 
 A later `brain upgrade` with the newer CLI applies the upgrade again. An older CLI refuses to lower the pin (`SKILLS_DOWNGRADE`) instead of doing it silently.

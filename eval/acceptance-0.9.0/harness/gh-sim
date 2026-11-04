@@ -1,0 +1,46 @@
+#!/usr/bin/env node
+// A file-based stand-in for the GitHub CLI `gh`, for the 0.9.0 acceptance (CC-107). State: $GH_SIM_DIR/state.json
+// ({ repo, issues: [{ number, title, body, state, stateReason, labels, comments }], prs: [{ number, title, body, head, base, state, mergedAt }], log }).
+// Every call is logged. Only the subcommands below exist; anything else exits 2 with a message.
+const fs = require("fs"), path = require("path");
+const dir = process.env.GH_SIM_DIR; if (!dir) { console.error("GH_SIM_DIR not set"); process.exit(2); }
+const file = path.join(dir, "state.json");
+const st = JSON.parse(fs.readFileSync(file, "utf8"));
+const args = process.argv.slice(2);
+st.log.push({ at: new Date().toISOString(), args });
+const save = () => fs.writeFileSync(file, JSON.stringify(st, null, 2));
+const opt = (n) => { const i = args.indexOf(n); return i < 0 ? undefined : args[i + 1]; };
+const has = (n) => args.includes(n);
+const url = (kind, n) => `https://github.com/${st.repo}/${kind}/${n}`;
+const pick = (o, fields) => fields ? Object.fromEntries(fields.split(",").map((f) => [f, o[f]])) : o;
+const out = (v) => { save(); console.log(typeof v === "string" ? v : JSON.stringify(v, null, 2)); process.exit(0); };
+const fail = (m, code = 1) => { save(); console.error(m); process.exit(code); };
+const issueView = (i) => ({ number: i.number, title: i.title, body: i.body, state: i.state.toUpperCase(), stateReason: i.stateReason, labels: i.labels.map((name) => ({ name })), url: url("issues", i.number), comments: i.comments.map((body) => ({ body })) });
+const prView = (p) => ({ number: p.number, title: p.title, body: p.body, headRefName: p.head, baseRefName: p.base, state: p.state, mergedAt: p.mergedAt, url: url("pull", p.number) });
+const [a, b] = args;
+if (has("--help") || has("-h")) out(`gh-sim: ${args.filter((x) => !x.startsWith("-")).join(" ")}: issue list/view/comment/edit/close, pr create/list/view/checks/close, repo view, auth status`);
+if (a === "auth" && b === "status") out("Logged in to github.com (simulated)");
+if (a === "repo" && b === "view") out(has("--json") ? { nameWithOwner: st.repo, url: `https://github.com/${st.repo}` } : st.repo);
+if (a === "issue") {
+  const n = Number(args[2]); const issue = st.issues.find((i) => i.number === n);
+  if (b === "list") {
+    const state = opt("--state") ?? "open";
+    const list = st.issues.filter((i) => state === "all" || i.state === state).map(issueView);
+    out(has("--json") ? list.map((i) => pick(i, opt("--json"))) : list.map((i) => `#${i.number}\t${i.state}\t${i.title}`).join("\n"));
+  }
+  if (!issue) fail(`issue ${args[2]} not found`);
+  if (b === "view") out(has("--json") ? pick(issueView(issue), opt("--json")) : `${issue.title}\n\n${issue.body}\n${has("--comments") ? issue.comments.join("\n---\n") : ""}`);
+  if (b === "comment") { issue.comments.push(opt("--body") ?? opt("-b") ?? ""); out(url("issues", n)); }
+  if (b === "edit") { for (const l of (opt("--add-label") ?? "").split(",").filter(Boolean)) if (!issue.labels.includes(l)) issue.labels.push(l); for (const l of (opt("--remove-label") ?? "").split(",").filter(Boolean)) issue.labels = issue.labels.filter((x) => x !== l); out(url("issues", n)); }
+  if (b === "close") { issue.state = "closed"; issue.stateReason = (opt("--reason") ?? "completed").replace(" ", "_").toUpperCase(); out(url("issues", n)); }
+}
+if (a === "pr") {
+  if (b === "create") { const p = { number: st.prs.length + 1, title: opt("--title") ?? "", body: opt("--body") ?? "", head: opt("--head") ?? "", base: opt("--base") ?? "main", state: "OPEN", mergedAt: null }; st.prs.push(p); out(url("pull", p.number)); }
+  if (b === "list") out(st.prs.map(prView).map((p) => pick(p, opt("--json"))));
+  const ref = args[2]; const p = st.prs.find((x) => String(x.number) === String(ref).replace(/.*\//, "") || x.head === ref);
+  if (!p) fail(`no pull requests found for ${ref}`);
+  if (b === "view") out(has("--json") ? pick(prView(p), opt("--json")) : `${p.title} (${p.state})`);
+  if (b === "checks") out("test\tpass\t(simulated)");
+  if (b === "close") { p.state = "CLOSED"; out(url("pull", p.number)); }
+}
+fail(`gh-sim: unsupported: gh ${args.join(" ")}`, 2);

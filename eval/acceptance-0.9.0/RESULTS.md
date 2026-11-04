@@ -1,0 +1,58 @@
+# 0.9.0 acceptance: blind run results
+
+Nine runs on 2026-11-04 (one of them a rerun after a sandbox fault), each a fresh Sonnet sub-agent with only [harness/RULES.md](harness/RULES.md), a sandbox from [harness/make-sandbox.sh](harness/make-sandbox.sh) on the isolated installation, the skill to start with and the user's sentence. No answer key. "Checked" lines are what the building session verified itself after the run.
+
+| Scenario or check (spec) | Runs | Result |
+|---|---|---|
+| 1. Standard software (connected-workflows §14) | S1 | pass |
+| 2. Connected software with a PR, `full` | S2 (7 turns), A2 | pass |
+| 3. General work under an Area, `tasks_and_finals` | S3 (4 turns) | pass |
+| 4. A hub with a connected and a tracked-in-repo repo (linked-repos §11) | S4 (4 turns), S4b (2 turns) | pass |
+| An interrupted create resolves without a second task; a failed operation is retried next run; "Work complete, 1 not yet in Notion" meanwhile | R1 (rerun after a sandbox fault), R2 | pass |
+| An adoption rerun creates nothing | A2 | pass |
+
+## S1: standard software
+Sandbox `standard`: `widget-lib`, a Git repo whose work is in GitHub issues (2 open, 1 closed), no pointer; `brain` and `notion-sim` replaced by stubs that log every call. Started with brain-workflow. Told: "Let's work on the next task here."
+- Found no `.brain-workflow.json`, took issue 1 (the first open one), branched, fixed `slug()`, added a test (`node --test` 2 of 2), committed, opened PR 1 ("Closes #1"), commented on the issue twice; reported issue 1 ready for review, waiting on the merge.
+- **Checked:** the stubs' call log is empty (no `brain`, no Notion call); the brain's Git history and tree are unchanged; the stand-in Notion's log is empty; no pointer in the repo. **Pass.**
+
+## S2: connected software with a PR (brain-workflow-adopt, then brain-workflow)
+Sandbox `connected-pr`: `acme-app`, a Git repo with a bare remote and `PLAN.md` (1 done, 1 in progress, 1 to do). Told: "Adopt this repo's plan into Notion. It's the front end of the Acme website project in my brain. It's software work, and I want everything logged (full durable record)."
+- **Turn 1:** inspected read-only and asked "Connect this work to Notion?" with the destination, level, statuses and the item table; nothing written. **Answer:** "Yes, connect it with those settings. Leave the done skeleton item in the plan, don't import it."
+- **Turn 2:** set the Project's Workflow settings and read them back, `workflow new`, then one adoption preview (2 to create, the done item left in the plan, `PLAN.md` never edited). **Answer:** "Yes, apply it." **Turn 3:** `adopt apply --rev 0`, 2 `create_task` operations run with the Brain ID lookup first, the Work record toggles, the Workflow summary.
+- **Turn 4:** "Let's work on the contact form validation. Scope: … Done when both have tests and node --test passes. Open a PR when it's ready." Claimed the item, recorded the scope and 3 criteria as approved, implemented, `node --test` 4 of 4, opened PR 2, set the item to `review` with the criteria met and the PR link. (A `gh pr create --help` probe opened an empty PR 1 in the stand-in, which then treated `--help` as a create; fixed in gh-sim after the run.)
+- **Turn 5:** "I closed #1 and merged PR #2." The merge had not yet been made in the stand-in when it looked: it found PR 2 `OPEN` and **kept the item in review**, asking for confirmation instead of marking it done. After the merge (local merge commit, the stand-in PR set to `MERGED`): "It's merged now … Check again." **Turn 6:** read `MERGED` with its `mergedAt`, set the item `done`, ran the one `update_task` (Notion: Done), rewrote the summary.
+- **Turn 7 (full logging):** asked for a plan in `docs/price-formatter-plan.md` and a scratch log in `notes/scratch-log.md`; it recorded them as a `plan` and a `temporary` artifact and showed the plan. **Answer:** "Approved … Publish whatever my logging level says should go to Notion." `artifact put` approve: the plan `include` by level `full`, one `publish_artifact`; the scratch log, approved too, `exclude` with `local_reason: temporary`. The first publish failed because CC-104's stand-in can't hold a page body: the agent marked it failed (lasting) and the summary said "not yet in Notion". After the stand-in gained page bodies, "retry": the Brain ID lookup found the page created on the first try, so it wrote the body there (no second page), read it back, `sync record` with `@notion_body`, `op state done`.
+- **Checked:** 2 tasks in Notion (one per Brain ID), the contact-form item `done` with its PR link, `ops_open: 0`; one Documents page, "Price formatter plan", with a 1,283-character body, and none for the scratch log; `PLAN.md` unchanged. **Pass.**
+
+## S3: general work under an Area (brain-workflow)
+Sandbox `general-area`: `acme-workshop`, a folder (no Git). Told: "Connect this workshop to my Clients area in Notion. It's general work; log the tasks and the final outputs. Then let's start preparing it."
+- **Turn 1:** asked "Connect this work to Notion?" (Area Clients, General, Tasks + final outputs); nothing written. **Answer:** "Yes, connect it." **Turn 2:** set the Area's Workflow settings, `workflow new`, `reconcile --start`, and proposed 3 items with criteria. **Answer:** "Yes, log those three. … task 1 is accepted. Then do the agenda (task 2) and show it to me."
+- **Turn 3:** task 1 `done` with the user's words as `accepted`; task 2 drafted (`agenda.md`, a `final` artifact) and set to `review`; 3 tasks created in Notion. **Checked before approval:** the artifact `pending` with no publish decision, no Documents page in the stand-in.
+- **Answer:** "09:00 is right and the owners are fine. I approve the agenda as it is." **Turn 4:** `artifact put` approve (`include` by level `tasks_and_finals`), the item `done` with that sentence as `accepted`, `update_task`, `publish_artifact` (a reference note, the Documents page, `sync record`), summary.
+- **Checked:** the artifact's approval 10:04:26, its Documents page created 10:05:10; each `done` item carries the user's words; the brief still `todo`. **Pass.** It also changed the agenda's header line ("start time to be confirmed" removed) after the approval and before hashing it: the approved hash is of a text the user didn't see in that exact form (finding 6 in the acceptance doc).
+
+## S4 and S4b: a hub with two linked repos (brain-repos, brain-workflow-adopt, brain-ingest)
+Sandbox `hub`: `acme-api` (decisions, docs, `docs/private/salaries.md`, a `TASKS.md` checklist with `[?]`) and `acme-mobile` (docs, a `PLAN.md`). Told: "Link two repos: … acme-api belongs to the Clients area only and keeps its tasks in its TASKS.md; never read anything under docs/private there. acme-mobile is part of the Acme website project, and its tasks should live in Notion."
+- **Turn 1:** both kits proposed and checked, shown whole, nothing written. **Answer:** "Yes to both kits as shown. "?" is waiting." **Turn 2:** `kit write` refused both with `CONFIRMATION_MISMATCH`; the agent stopped and did not take the hash from the error. Its drafts had one-line arrays and objects: `kit check` hashed those bytes, `kit write` hashes the 2-space form it writes (finding 2). **Answer:** "redo the kit files exactly the way your skill says, check them again, show me what changed, and try again." **Turn 3:** normalised both with the command in kit.md, re-checked, wrote, `repo add --kit` for both, one brain commit, the acme-api rollup on the Clients page.
+- **Answer:** "No, neither repo needs to read the brain. Yes, adopt acme-mobile's PLAN.md … Then ingest the linked repos." **Turn 4:** connected acme-mobile to the Project (2 tasks in Notion, the done item left, summary written), then the first ingest of both repos (5 sources, 1 draft decision).
+- Between runs, a commit in acme-api added `- [~] Write the SDK` (an unmapped status). **S4b**, a fresh agent: "Link the repo at …/acme-api, then show me its tasks and check my linked repos." It found the repo already linked with a current kit and wrote nothing; showed the tasks with "Not mapped: Write the SDK (`~`)"; health: `STATUS_UNMAPPED` (warning) and `KIT_UNCOMMITTED` (info). **Answer:** "Leave ~ unmapped … write the rollup to the Clients page. Then … unlink it." It wrote the rollup (read back with the "Not mapped" line), `repo unlink acme-api` (`sources: 3`), removed the toggle, committed.
+- **Checked:**
+  - each kit written once, after the yes (one `repo-kit` log line each);
+  - nothing else in either repo: `git status` shows `brain-kit.json` in each, and `.brain-workflow.json` in acme-mobile (the connected workflow's pointer, written by `workflow new`, not by the link);
+  - `docs/private/salaries.md`, matched by `docs/**/*.md` and listed in `never_read`, is in no source or note;
+  - the second link run changed nothing (the brain's HEAD, the kit's hash and `brain.json`'s hash identical before and after);
+  - after the unlink, acme-api's 3 sources and its decision note are still in the brain; `repo health` lists only acme-mobile, with one info (`KIT_UNCOMMITTED`) and no error;
+  - the Project shows the Workflow summary and no rollup; the Area had the `Repo tasks · acme-api` toggle with the §4 counts.
+  **Pass.**
+- **Isolation lapse in S4b:** its first command used the wrong sandbox path, so `env.sh` wasn't sourced: it read the product repo's README, AGENTS.md and log, and ran `brain index --json` with the user's own installed CLI, which resolved the user's brain. Read-only, nothing printed or written (the user's brain's `git status` was clean afterwards, last commit 13 hours earlier). Finding 8.
+
+## R1 and R2: interruption and retry (brain-workflow)
+Sandbox `retry`: a connected workflow from `acme-launch` on the Acme website project, 3 items all `done`, no task in Notion; the stand-in set to fail twice: the first create **writes the page and answers `network`** (`ghost`), the second fails with a lasting `validation` error. Told: "Start a work session here: bring Notion up to date with what's waiting, then end the session and tell me where things stand. No task work today."
+- **First attempt (sandbox fault):** the Project's Workflow setting was empty in the stand-in, so `reconcile --start` paused the workflow and the agent published nothing, as the spec says. The sandbox now sets it to Connected; R1 ran again on a new sandbox.
+- **R1:** `reconcile --start` opened 3 `create_task`. Ghost: the Brain ID lookup before the retry found the page Notion had written, closed the operation with it. Lasting: `failed` at once, kept. Summary on the Project: "Not yet in Notion: 1: Send the invitations (failed: …) · Work complete, 1 not yet in Notion." It wrote "Print the badges"'s Work record text onto the "Book the venue" page by a mix-up in its shell loop: a runner error; the toggles are views the spec never reads back.
+- **R2**, a fresh agent, the same sandbox, Notion working: "New session here. Get Notion up to date first, then end the session …". `reconcile --start` returned the failed operation (its first failed run, so no question); lookup, create, toggle, `done`; the summary rewritten without the line.
+- **Checked:** 3 tasks in Notion with 3 distinct Brain IDs; `ops_open: 0`; the summary "3 completed · 100%". **Pass.**
+
+## A2: an adoption rerun (brain-workflow-adopt)
+The `hub` sandbox after S4, a fresh agent in `acme-mobile`: "Adopt this repo's plan into Notion. I may have done this already, I don't remember." It found the workflow, recomputed the keys (they matched), ran `adopt preview`: the 2 adopted items `untouched`, the done item unselected; applied nothing. **Checked:** the brain's HEAD unchanged, still 2 tasks in Notion. **Pass.**
