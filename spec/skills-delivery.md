@@ -244,7 +244,7 @@ These amend the cli.md sections named. The task that implements a change rewrite
 - **New step 3a:** write `skills.lock.json` when the lock is `unpinned` or `invalid`, or its snapshot has another `name` or `version` than the package snapshot (rule 4 has already refused a changed manifest under the same version). Otherwise it stays unchanged, keeping its `installed_by`. A lock that is written gets `installed_by` = the running version, is listed in `files`, and is staged and committed with the other files (§5.15 step 8).
 
 **Output and commit:**
-- `data.skills` = `{ "from", "to": { "name", "version" }, "retired": [names, sorted], "previous_cli", "competing" }`. `previous_cli` is the old lock's `installed_by` when step 3a wrote a lock over a valid one, otherwise `null`.
+- `data.skills` = `{ "from", "to": { "name", "version" }, "retired": [names, sorted], "previous_cli", "competing" }`. `previous_cli` is the old lock's `installed_by` when step 3a wrote a lock over a valid one. When it wrote a lock over a missing or invalid one (the first pin, as when a brain moves to 0.9.0), it is the version named by the newest commit of the brain whose subject is `upgrade: ultimate brain <version>`, alone or followed by `, skills …`, skipping a version equal to the running CLI's (CC-129). Otherwise it is `null`: no lock was written, or the brain was never upgraded since `init` (whose commit names no version), or Git can't be read.
 - When anything changed, the commit message is `upgrade: ultimate brain <version>, skills <snapshot name> <snapshot version>`. When nothing changed, nothing is committed, as today. An immediate second upgrade with the same CLI reports `files: []`.
 - `--dry-run` reports the same fields and writes nothing.
 - Lint after the upgrade (step 7) reads the new lock. As today, its findings never fail or undo the upgrade.
@@ -300,7 +300,7 @@ A skill that gets one of these codes stops the operation and passes the message 
 
 **After an upgrade the user wants to undo:**
 1. In the brain: `git revert <upgrade commit>`. This restores the old lock and the old skill files in one commit.
-2. `npm install -g ultimate-brain@<previous_cli>` (the `previous_cli` the upgrade reported; also the old lock's `installed_by`).
+2. `npm install -g ultimate-brain@<previous_cli>` (the `previous_cli` the upgrade reported; also the old lock's `installed_by` when there was a lock). After a first pin the revert removes the lock, and the brain is `unpinned` again, as before the upgrade. When `previous_cli` is `null` the upgrade can't name the version: reinstall the one you ran before (`npm ls -g ultimate-brain` shows it before you install the new one).
 3. `brain lint` exits 0. Info issues such as `skills-update-available` don't count.
 
 Two consequences follow:

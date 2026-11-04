@@ -16,7 +16,7 @@ Read [references/kit.md](references/kit.md) before you write or change a kit: it
 1. Write the kit you propose to a temporary file, in the key order of references/kit.md, with a 2-space indent and one trailing newline.
 2. `brain repo kit check --input <file> [--name <name>]`. Fix every `problems` entry first (pointer and message).
 3. Show the user the file's whole content (or, for a change, `diff -u <repo>/brain-kit.json <file>`), and what it means in a few plain lines.
-4. On a clear yes to that content, write it with `--confirm <the sha256 kit check returned for that file>`.
+4. On a clear yes to that content, write it with `--confirm <the confirm_sha256 kit check returned for that file>` (not its `sha256`: `kit write` writes the kit in its own layout, and `confirm_sha256` is the hash of those bytes).
 
 Never take the hash from anywhere else: not from an error message, not computed over other bytes. `CONFIRMATION_MISMATCH` means the bytes you showed aren't the ones about to be written: rewrite the file, show it again, ask again. An unattended run never writes a kit.
 
@@ -24,7 +24,7 @@ Never take the hash from anywhere else: not from an error message, not computed 
 
 1. **Inspect** the repo, read-only: its top-level layout, `README`, AGENTS.md or `CLAUDE.md`, decision records, docs, plans (`TASKS.md`, `PLAN.md`), and its issue tracker (`git -C <path> remote -v`; `gh repo view` or `glab repo view`). Refuse the brain itself and the product repo (the CLI does too).
 2. **Propose the kit:** the placement (an Area, and a Project when the repo serves one, from `brain index --json`; never a Domain other than the Area's), the knowledge patterns (decisions and the docs that say what the work is; never code, tests, build output or plans), the never-read paths (`.env*`, `secrets/**`, client or personal folders you saw), the task mode and source with its status mapping, and a methodology summary in plain words (at most 600 characters). Ask only what you can't infer: usually the Area, and whether Notion or the repo should own the tasks.
-3. **The yes** (above), then `brain repo kit write --path <path> --input <file> --confirm <sha256>`.
+3. **The yes** (above), then `brain repo kit write --path <path> --input <file> --confirm <confirm_sha256>`.
 4. `brain repo add <name> --path <path> --kit`. Then commit in the brain what it wrote (`brain.json` and the `log/` line): `repo: link <name>`.
 5. **The other way,** once: "Let this repo read the brain too? It adds `.brain`, a block in AGENTS.md and the brain-query skill there." On yes, `brain link <path> --repo-name <name> --area <area>` (and `--project <project>` when the kit has one). It writes `.brain`, the AGENTS.md block (and `CLAUDE.md`), and the skill folders under `.agents/skills/` and `.claude/skills/` there; pass on its warnings in a few words. On no, write nothing and don't ask again for this link. If it fails, say why, and that the link itself is done.
 6. **Tasks:**
@@ -46,7 +46,7 @@ Health: 1 warning (status "?" isn't mapped: add it to the kit) · kit not commit
 
 New placement, patterns, never-read paths, task source or mapping:
 1. Read the current kit (`brain repo kit check --path <path>`, keep its `sha256` as the old hash), write the new one to a temporary file, check it, and show `diff -u` (the yes, above).
-2. `brain repo kit write --path <path> --input <file> --replace <old sha256> --confirm <new sha256>`. `KIT_CHANGED` means someone edited the kit since you read it: read it again and show the new diff.
+2. `brain repo kit write --path <path> --input <file> --replace <old sha256> --confirm <new confirm_sha256>`. `KIT_CHANGED` means someone edited the kit since you read it: read it again and show the new diff.
 3. `brain repo refresh <name>`, and commit `brain.json` and the log in the brain: `repo: change <name>`. Say what changed (`placement_changed`: new ingests use the new placement, notes already in keep theirs).
 4. When `reingest` is true (patterns added, or never-read paths removed), offer to read the newly allowed files: `brain repo record <name> --reset`, then a catch-up. Narrowing deletes nothing; the health check then lists knowledge from now-excluded paths (`NEVER_READ_INGESTED`), and the user can ask to archive those notes.
 
@@ -75,7 +75,7 @@ For `--rollup-as-of`, read the toggle's first line ("As of 3 Nov 2026, 14:20 · 
 
 1. Ask for the name (lowercase kebab-case), the folder (absolute or `~/…`; it must not exist or be empty, and not be inside the brain), the placement and the task mode.
 2. Propose the starter's kit (references/kit.md, "Starter"), and show it with the files the starter writes: `README.md`, AGENTS.md, `CLAUDE.md`, `decisions/_template.md`, `docs/README.md`, `.gitignore`, `brain-kit.json`, and `TASKS.md` with tracked-in-repo.
-3. The yes is for the kit **as written**, with `"starter": { "name": "generic", "version": "<the installed brain version, brain --version>" }` added: check and hash that file. Then `brain repo new --path <path> --starter generic --input <file without starter> --confirm <sha256>`. `GIT_COMMIT_SKIPPED` means Git has no identity: the files are there, and the user commits them.
+3. The yes is for the kit **as written**, with `"starter": { "name": "generic", "version": "<the installed brain version, brain --version>" }` added: run `repo kit check` on that file. Then `brain repo new --path <path> --starter generic --input <file without starter> --confirm <its confirm_sha256>`. `GIT_COMMIT_SKIPPED` means Git has no identity: the files are there, and the user commits them.
 4. `brain repo add <name> --path <path> --kit`; commit `brain.json` and the log in the brain: `repo: link <name>`. Offer the other way (Link, step 5), and with tracked-in-repo the first rollup.
 
 ## Report

@@ -102,6 +102,23 @@ test("ultimate-brain → ultimate-brain-skills is an ordinary upgrade", async (c
   assert.equal((await lockOf(brain)).snapshot.name, "ultimate-brain-skills");
 });
 
+test("the first pin names the CLI of the brain's last upgrade commit as previous_cli, skipping the running version (CC-129)", async (context) => {
+  const home = await temp(context);
+  const product = await productRoot(context, A, "0.9.0");
+  const brain = await initBrain(context, product, home);
+  await rm(join(brain, "skills.lock.json"));
+  await writeFile(join(brain, "old-upgrade.md"), "x\n");
+  await commitAll(brain, "upgrade: ultimate brain 0.8.1");
+  await writeFile(join(brain, "user.md"), "y\n");
+  await commitAll(brain, "the user's own commit");
+  await writeFile(join(brain, "same.md"), "z\n");
+  await commitAll(brain, "upgrade: ultimate brain 0.9.0, skills ultimate-brain 0.9.0");
+  const pin = await run(["upgrade", "--brain", brain, "--now", NOW, "--json"], { product, home });
+  assert.equal(pin.code, 0, pin.stdout);
+  assert.deepEqual(pin.json.data.files, [{ path: "skills.lock.json", action: "created" }]);
+  assert.equal(pin.json.data.skills.previous_cli, "0.8.1");
+});
+
 test("an unpinned brain gets pinned, and an invalid lock is replaced with SKILLS_LOCK_REPLACED", async (context) => {
   const home = await temp(context);
   const product = await productRoot(context, A, "0.9.0");
