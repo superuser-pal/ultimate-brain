@@ -160,7 +160,7 @@ Above the tabs, a gray line: "Approving makes these notes trusted: they appear i
 | Contradiction | Both claims are kept as contested | Your value becomes the accepted truth |
 | Supersede | The newer note replaces the older one, which is archived | It replaces the note you name instead |
 | Merge | The duplicate is folded into the survivor | It is folded into the record you name instead |
-| New Item | The new note is created as Draft | It is created with your corrections |
+| New Item | The new note is created as Reviewed, with its page | It is created with your corrections |
 | Answer | The question gets this answer and shows as Answered | Your text becomes the answer |
 
 ---
@@ -184,7 +184,7 @@ Above the tabs, a gray line: "Approving makes these notes trusted: they appear i
 | People | Who's who? | Gallery (small cards) | Lifecycle is not Archived | Name | *(Orgs)* Org | Name, Role, *(Orgs)* Org | Find a person by company and role |
 | People | Who's disputed? | List | Lifecycle is Disputed | Name | — | Name, Summary | People records you marked as wrong |
 | Orgs *(Orgs)* | Which clients do I have? | Table | Relationship is Client · Archived is unchecked | Name | — | Name, People, Projects | Your clients with their contacts and projects |
-| Orgs *(Orgs)* | Who else do we work with? | Table | Relationship is not Client · Archived is unchecked | Name | Relationship | Name, Relationship, People | Prospects, partners and suppliers |
+| Orgs *(Orgs)* | Who else do we work with? | Table | Relationship is not Client · Archived is unchecked | Name | Relationship | Name, Relationship, People | Prospects, partners, suppliers and your employer |
 | Inbox | What came in? | Table | Brain Status is Done | Created, descending | — | Name, Kind, Summary, Project, *(Knowledge)* Decisions | History: every document, email and capture the brain took in, and what it made from each |
 
 There is no Notes database on purpose: notes typed there would never reach the brain. Quick notes go to the Inbox, and notes about a record go in its "My notes" toggle.

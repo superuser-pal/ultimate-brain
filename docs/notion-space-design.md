@@ -76,6 +76,8 @@ Every database that mirrors a brain note has three kinds of properties. Each pro
 
 **Creation:** new rows you create in Areas, Goals, Projects, People, Orgs are imported by the next `brain sync` (0021). Rows in Decisions, Questions, Documents and Review are created by the brain only. Inbox rows come from you (Quick capture) or from the brain (every document, email, chat or note it ingests, 0037).
 
+**Only reviewed knowledge (0071, 0.9.1).** Decisions, Questions and Documents show what you trusted: a row gets its page when its note is reviewed, approved in its Review row, or reviewed from the start, as a whole Document is. Until then the draft lives only in its Review row, whose page holds its full wording (0055); a draft you reject never gets a page. Relations to a draft (an Inbox row's Decisions, a meeting's Decisions and Questions) fill in when you approve it, in the same run. People still arrive as Draft, because a meeting's Attendees needs their pages. A row that has a page keeps it: a superseded decision or an answered question stays as history. Draft pages from before 0.9.1 are moved to Notion's trash after your yes (migration 0020); each comes back as a new page when you approve it. The brain in Git keeps every draft (spec/cli.md §5.14.4).
+
 **Page bodies (0026, 0041, 0043):** the brain writes only inside named toggle headings: "Brief" and "Decision log" on project pages, "Brief" on area pages. It owns the whole body of Decisions and Questions pages, of the Documents kept from an input or learned (0071), and of the Inbox rows it creates (a digest of what came in, and the report on a Report row; "Full text" toggles written before 0.6.0 stay). A Document promoted from a decision is seeded once, then its body is yours (0049). It publishes no body for Goals, People and Orgs, and never edits Meetings (0007), a capture you wrote or an Ask row. Everything else on a page is yours, including the **"My notes"** toggle.
 
 **Workflow and rollup toggles (0059, 0066).** Three more brain-owned toggle headings, written by the skills and never by `sync render`; no template creates them, and the skill appends one at the end of the page the first time it writes it (drag it up once):
@@ -97,7 +99,7 @@ Up to fourteen databases, all on the backend page **Brain Data**: the six of Cor
 |---|---|---|---|
 | Name | Title | Brain (you on creation) | |
 | Summary | Text | Brain | ≤200 chars, from the note's `summary:` |
-| Lifecycle | Select: Draft, Reviewed, Disputed, Archived | You | 0005. New brain records arrive as Draft. **Only on People, Decisions, Questions and Documents** (0070): rows you create (Domains, Areas, Goals, Projects, Orgs) have none, and Archived closes them |
+| Lifecycle | Select: Draft, Reviewed, Disputed, Archived | You | 0005. A new person arrives as Draft; decisions, questions and Documents arrive once reviewed (0071, §2). **Only on People, Decisions, Questions and Documents** (0070): rows you create (Domains, Areas, Goals, Projects, Orgs) have none, and Archived closes them |
 | Brain ID | Text | System | e.g. `prj-9x4t1b7e` (0017). Empty = not imported yet |
 | Last Synced | Date (with time) | System | |
 
@@ -222,11 +224,11 @@ The brain **never edits the meeting page body** (0007). Instead of publishing a 
 | Sources | Relation → Inbox (two-way with People) | Brain (filled from the Inbox side) |
 
 ### 3.7 Orgs
-Clients, partners, suppliers. One canonical entity database (your pattern's rule).
+Clients, partners, suppliers, your employer. One canonical entity database (your pattern's rule).
 
 | Property | Type | Owner |
 |---|---|---|
-| Relationship | Select: Client, Prospect, Partner, Supplier, Other | You |
+| Relationship | Select: Client, Prospect, Partner, Supplier, Employer, Other (Employer: 0071) | You |
 | People | Relation → People (two-way with Org) | Brain |
 | Projects | Relation → Projects (two-way with Client) | Brain |
 | Website | URL | You |
@@ -257,7 +259,7 @@ Open questions and risks raised in meetings.
 | Property | Type | Owner |
 |---|---|---|
 | Kind | Select: Question, Risk | Brain |
-| Status | Select: Open, Answered, Dropped | You. The brain sets Open when it creates a question, and Answered once after you approve an Answer row in Review (0041, 0045) |
+| Status | Select: Open, Answered, Dropped | You. The brain sets Open when it creates a question, Answered once after you approve an Answer row in Review (0041, 0045), and Dropped once after the to-do tidy drops a question that was a to-do (0071) |
 | Project | Relation → Projects | Brain |
 | Area | Relation → Areas (two-way with Questions) | Brain: the areas of its projects (0034) |
 | Raised In | Relation → Meetings | Brain |
@@ -341,8 +343,8 @@ Concepts were ideas, methods and definitions the brain learned (0037). Since 0.9
 ### 3.14 Documents
 Pages you keep to read and link from anywhere (0049; the References database of 0045, renamed with its id, relations and views), and what the brain learned (0071). Created by the brain only, in four ways:
 - **Keep as document** on an Inbox row, with Only keep empty: the input's **whole text**, verbatim. It needs no Review and arrives Reviewed.
-- **Keep as document** with **Only keep** filled in: only that part, chosen by the brain. It comes as an item in that input's Review row and is Draft until you approve it.
-- **Learned** (0071; a concept before 0.9.1): an idea, method or definition the brain learned from an input, in its own words. It comes as an item in that input's Review row and is Draft until you approve it.
+- **Keep as document** with **Only keep** filled in: only that part, chosen by the brain. It comes as an item in that input's Review row and gets its page when you approve it (0071).
+- **Learned** (0071; a concept before 0.9.1): an idea, method or definition the brain learned from an input, in its own words. It comes as an item in that input's Review row and gets its page when you approve it.
 - **Promote to document** on a decision: a page seeded from it, linked to it. From then on its body is **yours**; the brain never rewrites it.
 
 A new version of a kept file proposes the changed lines to its Documents (Kind Update Body in Review).

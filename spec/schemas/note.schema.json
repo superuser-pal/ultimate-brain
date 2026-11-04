@@ -693,6 +693,7 @@
                 "Prospect",
                 "Partner",
                 "Supplier",
+                "Employer",
                 "Other"
               ]
             },
@@ -781,6 +782,25 @@
         },
         "valid_until": {
           "$ref": "#/$defs/date"
+        },
+        "workflow": {
+          "description": "The connected workflow and artifact this decision publishes (connected-workflows.md §6.3); written reviewed (decision 0071).",
+          "type": "object",
+          "required": [
+            "id",
+            "artifact"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^wf-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+            },
+            "artifact": {
+              "type": "string",
+              "pattern": "^art-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+            }
+          }
         }
       },
       "if": {
@@ -808,6 +828,11 @@
       "required": [
         "kind"
       ],
+      "dependentRequired": {
+        "task": [
+          "dropped"
+        ]
+      },
       "properties": {
         "kind": {
           "enum": [
@@ -820,6 +845,13 @@
         },
         "answer": {
           "type": "string"
+        },
+        "dropped": {
+          "$ref": "#/$defs/date"
+        },
+        "task": {
+          "type": "string",
+          "minLength": 1
         },
         "notion_fields": {
           "properties": {

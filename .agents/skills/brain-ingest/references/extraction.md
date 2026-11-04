@@ -17,12 +17,12 @@ How to read one meeting's minutes and decide what becomes a note, what becomes a
 | Attendees | Links to **person** notes. Unknown names → new person notes | `note new` |
 | Projects | The meeting's `projects` when its Project property is empty (SKILL.md step 3); each item's own `projects` still comes from what it is about | `note new` |
 | Decisions | A **decision** note if it passes the decision gate; otherwise a line in the meeting body, plus a proposal if it changes a fact | `note new` / `proposal new` |
-| Action Items | Notion **tasks** (Notion mode), and a list in the meeting body. Never notes. Each item's owner, deliverable, timing and dependencies are as written | `sync tasks` |
+| Action Items, and the owner's to-dos written anywhere else (under Open questions, in Highlights) | The owner's explicit ones → Notion **tasks** (Notion mode); everyone's → a list in the meeting body. Never notes, never questions ("Questions or commitments", below). Each item's owner, deliverable, timing and dependencies are as written | `sync tasks` |
 | Tasks, each with a Scope toggle (decision 0067) | Notion **tasks** as above; the Scope's Due and Project are the task's, its Done when and Notes its page body ([selection.md](selection.md) §6) | `sync tasks` |
 | Quick follow-ups (decision 0067: to-do checkboxes) | **Nothing.** They stay on the meeting page: no task, no note, no line in the meeting body | |
 | Facts and figures, wherever they're stated (Current Status, Requirements and Deadlines, Background, or an older Facts & numbers section) | A change to a `facts` key of an existing note → `update_fact`. A new fact about an existing note → `update_fact` with no `before`. Facts about a new note go in its frontmatter | `proposal new` / `note new` |
 | Role changes ("Maria is now PM") | `update_fact` on the person's `role` | `proposal new` |
-| Open questions | A **question** note (`kind: question`) when it matters beyond this meeting | `note new` |
+| Open questions | A **question** note (`kind: question`) when a later document, meeting or answer can settle it and it matters beyond this meeting. A to-do written here is a commitment, not a question (below) | `note new` |
 | Risks | A **question** note with `kind: risk` | `note new` |
 | Meeting Purpose, Current Status, or an older Summary | The meeting note's `summary` (≤200 characters) and its `## Summary` section | `note new` |
 | Requirements and Deadlines | Facts and dates of the project they belong to (`update_fact`), or a decision when one passes the gate; "confirmed" kept apart from "expected" and "open" | `proposal new` / `note new` |
@@ -32,6 +32,20 @@ How to read one meeting's minutes and decide what becomes a note, what becomes a
 | A standing requirement of the client ("Acme's legal team requires EU data residency") | `add_to_note` on the org, besides any decision that cites it | `proposal new` |
 | An answer to an existing open question | `answer` on the question (decision 0041): the answer in one sentence, the line as `why`, and `answer_note` = the decision or note that answers it, when there is one. Approved, it closes the question and sets its Status to Answered in Notion | `proposal new` |
 | A person working on an existing project they're not listed on (new or existing person) | `add_link` on the project, `field: people` | `proposal new` |
+
+## Questions or commitments (decision 0071)
+
+Read each line for what it says, never for the heading it sits under (one exception: a Quick follow-ups line stays on the page whatever it says, never a task and never a question). **A line someone has to act on is a commitment, never a question**, even when it is phrased as one:
+
+| The line | Becomes |
+|---|---|
+| Something a later document, meeting or answer can settle: "Is the Q3 budget confirmed?", "Who owns the mobile app?" | a **question** note, when it matters beyond the input |
+| A risk or concern: "the vendor may miss the deadline" | a question note with `kind: risk` |
+| The owner's own explicit to-do: "I'll send Globex the revised quote", "can you send me the plan by Friday?" asked of the owner | a **task** (Tasks module on); with Tasks off, a line in the meeting's `## Action items` (or the report's list for another source). **Never a question** |
+| Someone else's commitment: "Dana will share the contract" | a line in `## Action items` (`action — Dana — due`). A **Waiting On** task only when the item carries `Track: Waiting On —` (selection.md §6); never add the token. **Never a question** |
+| An ambiguous owner, "needs clarification", or a tentative idea: "we could try a pilot", "should we check the invoice?" with no one taking it on | **nothing**: no task, no question. Name it under the report's Check |
+
+So an Open questions section that reads "[s1.i5] I'll draft the onboarding checklist" yields one task (from item `s1.i5`), and "[s1.i6] Is the onboarding budget approved?" yields one question. A line already in the brain as a question is never turned into a task by a re-read ("Re-reads", below); the to-do tidy ([todo-tidy.md](todo-tidy.md)) converts those, after the user's yes.
 
 ## By source kind (decision 0032)
 
@@ -86,6 +100,7 @@ A corrected input read again (a meeting set back to Reviewed, an Inbox row set b
 - a removed or reversed line that a note rests on (a decision the minutes no longer record, a misheard name) → never archive or rewrite that note yourself. Name it under the report's Check, with what to do ("Use Firebase for auth rests on a line the corrected minutes removed: reject it in Review if it's still pending, or say 'archive it'").
 - the meeting note's own text (its summary and body) still says what the first version said: when a change touches it, add one `add_to_note` on the meeting ("Corrected minutes: the launch moves to March 2027, not February"), and name under Check any `summary` the change makes stale (a project's, the meeting's): no proposal kind rewrites a summary;
 - an action item only when its line changed (a new owner or date): it becomes a task as in a first ingest. Unchanged ones already are tasks, and the report doesn't list them again;
+- **a line the brain already holds as a question** (a question note raised in this meeting, or citing this input, that says the same thing; open, answered or dropped) is never turned into a task, even when it now reads as the owner's to-do: only the to-do tidy converts it ([todo-tidy.md](todo-tidy.md)). A line the user **rewrote** into a to-do is a changed line: it gets its task once, unless the question it replaces was dropped with a `task` (that task stands); name the old question under Check: "<question> is now your task: say 'drop it'" (the tidy's Drop);
 - unchanged lines are not read again: what they gave is already in the brain.
 
 ### Tasks for the owner (decision 0037)
@@ -95,7 +110,7 @@ In these sources, an action item becomes a Notion **task** only when it is addre
 - `due`: only when the text gives a date or a day you can date from the source ("by Friday" in an email sent on 2026-12-03 → `2026-12-05`); otherwise leave it out. Never a default;
 - `projects`: the projects the action is about, or the capture row's Project; else none.
 
-They go to `brain sync tasks --source` ([cli-inputs.md](cli-inputs.md) §4). Action items for other people stay in the note text, and the report lists them.
+They go to `brain sync tasks --source` ([cli-inputs.md](cli-inputs.md) §4). Action items for other people stay in the note text, and the report lists them. Neither ever becomes a question note ("Questions or commitments", above).
 
 ## Owner rulings (decision 0031)
 

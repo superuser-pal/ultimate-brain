@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { excludableDecision } from "./exclusion-fixture.ts";
-import { brain, fixtureCopy, withoutReviewSections } from "./helpers.ts";
+import { approveNote, brain, fixtureCopy, withoutReviewSections } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const SYNC = "mtg-8c4n2p7w";
@@ -263,6 +263,7 @@ test("a Review row whose source is an excluded version publishes no wording, in 
 test("sync plan reads a published restricted note in its eligible form: no conflict, no correction", async (context) => {
   const dir = await fixtureCopy(context);
   const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
+  await approveNote(dir, note.path);
   const [item] = (await run(dir, ["sync", "render", "--ids", note.id])).json.data.items;
   await run(dir, ["sync", "record"], { records: [{ id: note.id, notion: "6a7b0000-0000-4000-8000-0000000000dd", synced_at: NOW, published: item.published }] });
   await exclude();

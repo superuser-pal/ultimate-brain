@@ -1,5 +1,5 @@
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { cp, mkdtemp, rm } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TestContext } from "node:test";
@@ -85,4 +85,10 @@ export async function withoutReviewSections(dir: string): Promise<void> {
   const config = JSON.parse(await readFile(path, "utf8"));
   config.notion.review_sections = false;
   await writeFile(path, `${JSON.stringify(config, null, 2)}\n`);
+}
+
+/** Makes a draft note reviewed, as approving it in Review does: only reviewed knowledge gets a Notion page (0071). */
+export async function approveNote(dir: string, path: string): Promise<void> {
+  const file = join(dir, path);
+  await writeFile(file, (await readFile(file, "utf8")).replace(/^lifecycle: draft$/m, "lifecycle: reviewed"));
 }

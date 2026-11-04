@@ -160,7 +160,7 @@ test("apply new_item writes the note and adds it to its meeting", async (context
   const newPath = "knowledge/decisions/2026-12-03-keep-the-blog-on-the-main-domain.md";
   assert.deepEqual(run.json.data.decisions[0].changed, [proposalPath, newPath, "knowledge/meetings/2026-12-03-acme-sync.md"]);
   const created = parseFrontmatter(await readFile(join(dir, newPath), "utf8")).attributes;
-  assert.equal(created.lifecycle, "draft");
+  assert.equal(created.lifecycle, "reviewed", "approving the row is the review (0071)");
   const meeting = parseFrontmatter(await readFile(join(dir, "knowledge/meetings/2026-12-03-acme-sync.md"), "utf8")).attributes;
   assert.deepEqual(meeting.decisions, ["dec-7k2m9q4x", created.id]);
   assert.equal(meeting.updated, "2026-12-10");
