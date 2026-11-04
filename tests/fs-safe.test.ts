@@ -36,9 +36,9 @@ test("atomicCreateFile never replaces a file created concurrently", async (conte
 test("Workspace.commit uses an exclusive create for files that were new when scanned", async (context) => {
   const root = await fixtureCopy(context);
   const workspace = await Workspace.open(await openBrain({ brainFlag: root }));
-  const path = "knowledge/concepts/race.md";
+  const path = "knowledge/references/race.md";
   workspace.write(path, serializeNewFile({
-    id: "con-0a1b2c3d", type: "concept", title: "Race", summary: "A synthetic race test.", lifecycle: "draft", created: "2026-12-10", updated: "2026-12-10",
+    id: "ref-0a1b2c3d", type: "reference", title: "Race", summary: "A synthetic race test.", lifecycle: "draft", origin: "learned", created: "2026-12-10", updated: "2026-12-10",
   }, ""));
   await writeFile(join(root, path), "other writer\n");
 
