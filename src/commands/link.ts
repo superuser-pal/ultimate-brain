@@ -63,10 +63,11 @@ export const linkCommand: Command = {
     const block = instructionBlock(project, area);
 
     const agents = await readOptional(root, "AGENTS.md");
-    const claude = await readOptional(root, "CLAUDE.md");
     const agentText = replaceOrAppend(agents, block, "AGENTS.md");
-    const claudeText = claude === null
-      ? "@AGENTS.md\n"
+    const claudeIsAgents = await claudeLinksToAgents(root, agents);
+    const claude = claudeIsAgents ? agentText : await readOptional(root, "CLAUDE.md");
+    const claudeText = claudeIsAgents || claude === null
+      ? claude ?? "@AGENTS.md\n"
       : hasAgentImport(claude) ? claude : replaceOrAppend(claude, block, "CLAUDE.md");
 
     const planned: PlannedFile[] = [
@@ -236,6 +237,27 @@ function markerPositions(content: string, marker: string): number[] {
 
 function hasAgentImport(content: string): boolean {
   return content.split(/\r?\n/).some((line) => line === "@AGENTS.md");
+}
+
+/**
+ * Whether the repo's CLAUDE.md is a symbolic link to its own AGENTS.md (spec/cli.md §5.12 step 2): such a link is left alone and the block
+ * goes only into AGENTS.md. Any other symbolic CLAUDE.md is refused with INSTRUCTIONS_SYMLINK before any write.
+ */
+async function claudeLinksToAgents(root: string, agents: string | null): Promise<boolean> {
+  const claudePath = join(root, "CLAUDE.md");
+  try {
+    if (!(await lstat(claudePath)).isSymbolicLink()) return false;
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") return false;
+    throw error;
+  }
+  let resolved: string | null = null;
+  try { resolved = await realpath(claudePath); } catch { /* dangling */ }
+  if (agents !== null && resolved !== null && resolved === await realpath(join(root, "AGENTS.md"))) return true;
+  throw new BrainError(
+    "INSTRUCTIONS_SYMLINK",
+    `${claudePath} is a symbolic link that doesn't resolve to this repo's AGENTS.md. Replace it with a file holding the single line @AGENTS.md, or point it at AGENTS.md, then run brain link again.`,
+  );
 }
 
 async function readOptional(root: string, path: string): Promise<string | null> {
