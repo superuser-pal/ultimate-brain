@@ -12,9 +12,9 @@ You never edit the Markdown by hand. You work in Notion and talk to your agent.
 | Module | Adds | On for a new brain |
 |---|---|---|
 | **Domains** | Group Areas by work or life context | no |
-| **Knowledge** | Decisions, Questions, Concepts | yes |
+| **Knowledge** | Decisions, Questions | yes |
 | **Orgs** | Client and partner organizations | yes |
-| **Documents** | A document, or part of one, kept as a page you can read | no |
+| **Documents** | A document, or part of one, kept as a page you can read, and what the brain learned (ideas, methods, definitions) | no |
 | **Reports** | Ask the brain in the Inbox, and get a report you can refresh | no |
 | **Tasks** | Action items as Notion tasks | no |
 | **Planning** | Goals and Key Results | no |
@@ -35,12 +35,12 @@ The navigation on the left of every page lists the Spaces. Each one has tabs tha
 | **Projects** | Keep projects moving | Active · By area · Deadlines · Gone quiet |
 | **Plan** | Check that your work serves your goals | Goals · Key results · Areas · Projects by goal |
 | **Review** | Decide on the changes the brain proposes | Needs my decision · Sources disagree · Approved recently · Rejected |
-| **Knowledge** | Find what the brain knows, and everything that came in | Decisions · Questions · Concepts · Documents · People · Orgs · Inbox (What came in?: everything ingested, with what it produced; the captures still waiting are in Home's Inbox tab) |
+| **Knowledge** | Find what the brain knows, and everything that came in | Decisions · Questions · Documents · People · Orgs · Inbox (What came in?: everything ingested, with what it produced; the captures still waiting are in Home's Inbox tab) |
 | **Archive** (under System) | Find finished and archived records | One tab per database |
 
 **Area pages** collect everything for one area: its goals, projects, tasks, meetings, decisions and open questions in views, and its people and clients as lists at the top. The brain adds a **Brief** toggle at the end: the area's projects with their status, and its recent decisions and open questions. Open one from Plan → Areas.
 
-**Project pages** show the Brief and Decision log (written by the brain), then the project's tasks, meetings, open questions and people, "What came in?" (every input filed under the project), "What do we know?" (its decisions, concepts and Documents) and **Reports** (the project's reports), then your own "My notes".
+**Project pages** show the Brief and Decision log (written by the brain), then the project's tasks, meetings, open questions and people, "What came in?" (every input filed under the project), "What do we know?" (its decisions and Documents) and **Reports** (the project's reports), then your own "My notes".
 
 **A Brief shows only what you reviewed.** Decisions and questions still in Draft stay out of it until you accept them in Review. When a section has nothing reviewed yet, it says how many notes are waiting: "Nothing reviewed yet: 4 notes waiting in Review".
 
@@ -186,7 +186,7 @@ Hover over a property name to see its owner. Each description starts with "Owner
 **Page text:**
 - **Brief and Decision log** on project pages, and the **Brief** on area pages, are rewritten by the brain on every sync. Anything you type inside them is lost.
 - **My notes**, and everything else on a page, is yours.
-- Decision, Question and Concept pages are written entirely by the brain. So is a Document's page, except a promoted one ("Buttons" below): its text is yours once it's made.
+- Decision and Question pages are written entirely by the brain. So is a Document's page, except a promoted one ("Buttons" below): its text is yours once it's made.
 - A capture's text is yours; the brain only adds its Kind, Summary and what it produced. An Ask row's text is yours too.
 - **Inbox rows the brain creates** (a document, email, web page, a repo file) get a **digest** in their body: what the input is, a summary and the key points, with figures and dates as stated. It is written once and never read back, so an edit you make there stays in Notion. To read the whole input in Notion, keep it as a Document ("Buttons" below). The original file is the real copy. A **Full text** toggle on an older row stays as it is.
 - A question's **Status** is yours. The brain sets it twice at most: **Open** when it creates the question, and **Answered** once, when you approve an Answer row.
@@ -197,7 +197,7 @@ Hover over a property name to see its owner. Each description starts with "Owner
 - **Disputed:** you think it's wrong;
 - **Archived:** no longer current.
 
-Only People, Decisions, Questions, Concepts and Documents have it: the brain writes those from what it reads. Domains, Areas, Goals, Projects and Orgs are yours from the start, so they have none; close one with **Archived**.
+Only People, Decisions, Questions and Documents have it: the brain writes those from what it reads. Domains, Areas, Goals, Projects and Orgs are yours from the start, so they have none; close one with **Archived**.
 
 Set **Disputed** on anything wrong. The brain stops relying on it, and you can ask your agent to fix it.
 
@@ -219,12 +219,13 @@ Every Inbox row moves through **Brain Status**: **New → Ready → Done**.
 | **Tidy capture** | Inbox rows of Kind Capture, Brain Status New | nothing (it sends a message to Brain Assistant) | Rewrites the capture's text as clear sentences, keeping every name, number, date and quote; the row stays New, and you set Ready afterwards |
 | **Write up** | Documents (promoted ones) | nothing (it sends a message to Brain Assistant) | Develops the page into Purpose, Main content, Open questions and Sources, from the brain pages it links; a second click keeps your edits and adds a "Proposed revision" toggle |
 | **Accept write-up**, **Accept refresh** | Documents, Report rows | Accepted and Accepted at | Marks the page text as final. The next catch-up shows you the change against Git and, once you say yes, puts exactly that text in the brain and unticks the box |
-| **Promote to document** | Decisions, Concepts | Promote asked | Makes a Document from the note, linked both ways, whose text is yours to edit from then on |
+| **Promote to document** | Decisions | Promote asked | Makes a Document from the note, linked both ways, whose text is yours to edit from then on |
 
 **Documents** (the Documents module). A Document is a page you read, linked to its source, project and area:
 - **the whole input:** the text exactly as it came in. It needs no review and is Reviewed straight away;
 - **a part** (Only keep set, or "also keep the budget from the Acme doc"): what you asked for, as a list or a table. It arrives as Draft in the source's Review row, like a new note;
-- **promoted** from a decision or concept: it starts from the note, then you write in it.
+- **learned:** an idea, method or definition the brain learned from what it read (a concept before 0.9.1). It arrives as Draft in the source's Review row, like a new note;
+- **promoted** from a decision: it starts from the note, then you write in it.
 
 The brain still reads every input for decisions, questions and people, whether or not you keep it as a Document. A new version of the file later proposes only the lines that changed.
 
@@ -333,7 +334,7 @@ Run these in Claude Code or Codex, from your brain's folder.
 | Ask what the brain knows | "what did we decide about …?", "who is …?", "when is the … launch?" |
 | Get a report on a subject: where it stands, a timeline, decisions, open questions, people and gaps | "report on the Acme launch". It includes notes you haven't reviewed, marked *(not reviewed)*, and is published as a Report row. "refresh the Acme launch report" rewrites it as of today |
 | Keep a document, or part of one, as a page | "keep the Acme brief as a document", "also keep the budget from the Acme doc" (or click **Keep as document** on its Inbox row) |
-| Turn a decision or concept into a page you write in | "promote Use Supabase for auth to a document" (or click **Promote to document** on it) |
+| Turn a decision into a page you write in | "promote Use Supabase for auth to a document" (or click **Promote to document** on it) |
 | Turn a module on or off | "turn on documents", "turn planning off", "which modules do I have?" |
 | Read a repo into the brain | "link the repo at <path>"; "what is linked?", "check my linked repos", "show the repo's tasks", "change what the brain reads in <repo>", "unlink <repo>" |
 | Start a new repo for a project | "start a new repo for <project> at <path>" |
@@ -363,7 +364,7 @@ Run these in Claude Code or Codex, from your brain's folder.
 | A row "Deferred from …" appeared | You approved a row "all except …": the items you left out wait there | Decide it like any other row |
 | A capture wasn't taken in | It is still **New**: the brain takes in only Ready rows | Set it to **Ready**, then "catch up" |
 | You fixed the minutes after the ingest, and nothing changed | The meeting is still Ingested | Set it back to **Reviewed**, then "catch up" |
-| You want to see what the brain made from a document | Every input has a row in Knowledge → Inbox → What came in?, and on its project's page | Open the row: the body has the digest, and Decisions, Questions, Concepts and People list what it produced |
+| You want to see what the brain made from a document | Every input has a row in Knowledge → Inbox → What came in?, and on its project's page | Open the row: the body has the digest, and Decisions, Questions, Documents and People list what it produced |
 | A Brief says "Nothing reviewed yet" | Its notes are still Draft | Approve their Review notes rows, then "catch up" |
 | A document's row shows only the digest | Inbox rows get a digest; the whole text lives in a Document | Click **Keep as document** on the row, then "catch up" |
 | A capture is Done but produced nothing | It repeats a source the brain already has; its Summary says "Skipped: same as …" | Nothing, or say "ingest it anyway" if it adds something |

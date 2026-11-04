@@ -111,7 +111,7 @@ A Document is a `reference` note with an `origin` (references/extraction.md, "Do
   "body": "Acme moves auth from Firebase to Supabase.\n\n## Decision\nUse Supabase for auth.\n" }
 ```
 
-- **`origin` is required.** `whole`: `sources` is exactly that one `src-` id and the body is its body byte for byte, or the CLI refuses it; the CLI writes it as `reviewed`, and a second one of the same source comes back in `skipped` as `ALREADY_KEPT` (fine). `part`: a draft that goes in the input's `review_notes` like any new note. `promoted`: `promoted_from` names an existing decision or concept that has no promoted Document yet; it takes that note's lifecycle; `sources` may be left out.
+- **`origin` is required.** `whole`: `sources` is exactly that one `src-` id and the body is its body byte for byte, or the CLI refuses it; the CLI writes it as `reviewed`, and a second one of the same source comes back in `skipped` as `ALREADY_KEPT` (fine). `part`: a draft that goes in the input's `review_notes` like any new note. `learned`: what the brain learned (extraction.md "Learned Documents"), a draft in `review_notes`; `sources` may be left out, but give them. `promoted`: `promoted_from` names an existing decision that has no promoted Document yet; it takes that note's lifecycle; `sources` may be left out.
 - Leave `whole` and `promoted` Documents out of `review_notes`: they need no Review.
 
 ## 3. The proposals batch
