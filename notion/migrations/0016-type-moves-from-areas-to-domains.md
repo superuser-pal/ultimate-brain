@@ -1,6 +1,6 @@
 # 0016 · Type moves from Areas to Domains
 
-**Design change:** CC-120 (release 0.9.1; docs/notion-space-design.md §3.1 and the Domains database; spec/schema.md §14). **Applies to:** spaces built or migrated before 0.9.1. Run 0014 first. A step already done changes nothing, so running this again is safe.
+**Design change:** CC-120 (release 0.9.0; docs/notion-space-design.md §3.1 and the Domains database; spec/schema.md §14). **Applies to:** spaces built or migrated before 0.9.1. Run 0014 first. A step already done changes nothing, so running this again is safe.
 
 What changes: the **Type** select leaves Areas and goes to Domains, with the options Personal, Entrepreneurship and Professional. A Domain is the context that groups Areas, so the kind of context is set once there rather than on every area. Type stays yours: the brain reads it into the domain note and never writes it. Nothing else is renamed, and no other value is filled in.
 
