@@ -109,7 +109,7 @@ test("a Report row in Documents: Refresh asked and What to fix are read, and a r
   assert.equal(await renderAndRecord(dir, report.id), undefined, "nothing changed since");
 });
 
-test("a report published on the Inbox before 0.9.1 keeps its page: the first render sends Origin and Asked in once, no body (migration 0019)", async (context) => {
+test("a report published on the Inbox before 0.9.1 keeps its page: the first render resends every property once, no body (migration 0019)", async (context) => {
   const dir = await reportBrain(context);
   const report = await newReport(dir);
   const created = await run(dir, ["sync", "render", "--ids", report.id]);
@@ -123,7 +123,8 @@ test("a report published on the Inbox before 0.9.1 keeps its page: the first ren
   const changed = await run(dir, ["sync", "render", "--changed"]);
   const moved = changed.json.data.items.find((candidate: { id: string }) => candidate.id === report.id);
   assert.deepEqual([moved.action, moved.database, moved.page_id, moved.body], ["update", "documents", page, null]);
-  assert.deepEqual(Object.keys(moved.properties).sort(), ["Asked in", "Last Synced", "Origin"]);
+  // A move between databases can drop properties, so all of them go out once (cli §5.14.4).
+  assert.deepEqual(Object.keys(moved.properties).sort(), ["Area", "Asked in", "Brain ID", "Last Synced", "Name", "Origin", "Project"]);
   assert.equal((await run(dir, ["sync", "record"], { records: [{ id: report.id, synced_at: NOW, published: moved.published }] })).code, 0);
   const again = await run(dir, ["sync", "render", "--changed"]);
   assert.equal(again.json.data.items.some((candidate: { id: string }) => candidate.id === report.id), false);

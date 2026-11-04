@@ -716,7 +716,9 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     for (const name of offRelations(workspace.config, database)) delete rendered[name];
     const properties: Record<string, unknown> = {}; const pending: Array<Record<string, unknown>> = []; const heldProperties = held?.get(note.id) ?? new Set<string>();
     const isCreate = note.attributes.notion === undefined && capturePage === undefined;
-    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || !Object.hasOwn(published, name) || !sameValue(value, RENAMED_VALUES[name]?.[String(published[name])] ?? published[name]))) properties[name] = encoded; }
+    // A report last published on the Inbox (no Origin in S) was moved to Documents by migration 0019: every property goes out once (cli §5.14.4, 0071).
+    const moved = isReport(note) && !isCreate && !Object.hasOwn(published, "Origin");
+    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || moved || !Object.hasOwn(published, name) || !sameValue(value, RENAMED_VALUES[name]?.[String(published[name])] ?? published[name]))) properties[name] = encoded; }
     const content = renderedContent(form, workspace); if (content.hash !== undefined) rendered["@content"] = content.hash;
     // A Review row with item ids (0055): its body is written once, at create. Afterwards only the brain-owned summary at the top is sent;
     // the item sections belong to the user (capture-and-review §7.4, §7.10), and the hashes of what was rendered are kept in S.
