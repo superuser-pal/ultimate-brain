@@ -162,7 +162,7 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 **Output:** per spec/skills-delivery.md §11: the scheduled check and its credentials; the tested and the assessed revision; the single integration issue and its classification (ready to upgrade, linked brain work required, reviewed with no action); `release.mjs` refusing while an incompatible change is unassessed; "status unknown" when a check fails.
 **Acceptance:** tests or recorded dry runs against a compatible change, an incompatible change, an unreleased change and an unavailable source: at most one open issue, the release blocked only for the incompatible change, a failed check reported as status unknown; existing release-script tests pass.
 
-### CC-107 · 0.9.0 acceptance (decisions 0059, 0066) · `todo`
+### CC-107 · 0.9.0 acceptance (decisions 0059, 0066) · `in progress`
 **Release:** 0.9.0
 **Changelog:** development only: end-to-end acceptance of 0.9.0 in isolated installations: four adoption scenarios, rollback, and both agents loading the same skills.
 **Output:** steps 5 and 7 of docs/skills-migration-plan.md: isolated agent skill locations; the scenarios standard software, connected software with a PR, general work directly under an Area, and a hub with one connected and one tracked-in-repo linked repo; interruption, retry, conflict, version and update behaviours tested once; rollback exercised; brief Claude Code and Codex smoke checks; evidence in docs/acceptance-0.9.0.md.
