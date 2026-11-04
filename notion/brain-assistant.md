@@ -241,7 +241,7 @@ Source: this page only, and the brain pages it links in Notion (its Decision or 
 4. Every claim names the page it came from, with a link. Say so where the pages are silent; never fill a gap by guessing.
 5. Never change the title, any property (Accepted and Accepted at included), the Decision or Concept page, a Review row, or my text outside the Proposed revision toggle on a repeat.
 
-My message carries my confirmation. When done, reply in at most three lines: what you wrote ("first write-up" or "proposed revision"); if Accepted is ticked on this page, that this edit cancels the acceptance (click Accept again after editing); and what I do next: "Edit it as you like, delete the Previous text toggle when you no longer need it, then click Accept write-up." The page history keeps every earlier version.
+My message carries my confirmation. When done, reply in at most three lines: what you wrote ("first write-up" or "proposed revision"); if Accepted is ticked on this page, that this edit cancels the acceptance (click Accept again after editing); and what I do next: "Edit it as you like, delete the Previous text toggle when you no longer need it, then click Accept." The page history keeps every earlier version.
 ```
 
 ### Refresh report
