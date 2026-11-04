@@ -279,7 +279,7 @@ Right after 0.9.0. Fewer databases and only reviewed knowledge in Notion; the br
 **Migration number:** 0021, fixed when 0.9.1 was split across parallel windows so no two tasks collide: CC-123 0018, CC-124 0019, CC-125 0020, CC-127 0021, CC-126 0022 (only if it needs one). Until those merge, the README goes from 0017 to 0021; run them in number order once they exist.
 **Scope (user, 2026-11-04):** no blind run; the tests and the leak check are enough.
 
-### CC-130 · brain-workflow polish from the 0.9.0 acceptance · `in progress`
+### CC-130 · brain-workflow polish from the 0.9.0 acceptance · `done` (#219)
 **Release:** 0.9.1
 **Changelog:** the workflow skill publishes final artifacts without a refused lifecycle, documents its input shapes and retry path, releases an item's claim when it is done, shows an edit made after your yes again, and adoption's first progress line reads plainly.
 **Output:** from CC-107's findings 3 to 7 (docs/acceptance-0.9.0.md): skills/brain-workflow (references/notion.md and the input shapes: `acceptance` entries, artifact `format`, `location`, the `failed → pending` retry), the claim released on `done`, the approval rule (an edit after the yes is shown again), and `workflow adopt apply`'s progress text (src/lib/workflow-adopt.ts, spec first in spec/connected-workflows.md if the text is specified). Also U-24 marked done in "Your tasks". Evidence: eval/acceptance-0.9.0/RESULTS.md, "CC-130 rerun".
