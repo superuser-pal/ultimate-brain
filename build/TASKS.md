@@ -261,6 +261,8 @@ Right after 0.9.0. Fewer databases and only reviewed knowledge in Notion; the br
 **Changelog:** an Org can be your Employer, besides Client, Prospect, Partner, Supplier and Other.
 **Output:** the Employer option in spec/schema.md §4 (org `notion_fields.relationship`), note.schema.json, docs/notion-space-design.md §3.7, Prompt 2, the Orgs module, the Orgs views (unchanged filters: "Which clients do I have?" stays Client), and a migration step that adds the option (with the existing options' ids sent first).
 **Acceptance:** an org note with `relationship: Employer` lints clean and syncs; the migration adds the option without dropping the others; `npm test` and the leak check pass.
+**Migration number:** 0021, fixed when 0.9.1 was split across parallel windows so no two tasks collide: CC-123 0018, CC-124 0019, CC-125 0020, CC-127 0021, CC-126 0022 (only if it needs one). Until those merge, the README goes from 0017 to 0021; run them in number order once they exist.
+**Scope (user, 2026-11-04):** no blind run; the tests and the leak check are enough.
 
 ## 0.9.2 — Skills from the fork (decision 0069)
 
