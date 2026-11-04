@@ -220,7 +220,7 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 
 Right after 0.9.1. Fewer databases and only reviewed knowledge in Notion; the brain in Git keeps everything. Each task writes its spec first.
 
-### CC-122 · Plan 0.9.2: a simpler Notion · `in progress`
+### CC-122 · Plan 0.9.2: a simpler Notion · `review`
 **Release:** 0.9.2
 **Changelog:** development only: decision 0071 plans 0.9.2, a simpler Notion, and breaks it into CC-123 to CC-127.
 **Output:** decision 0071 (from the user's 2026-11-04 scope review of Review, Inbox, Decisions, Questions, Concepts, Documents and Orgs; accepted the same day); this file: the 0.9.2 row of the release table and rows CC-123 to CC-127. No code.
