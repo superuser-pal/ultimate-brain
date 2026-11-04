@@ -106,7 +106,6 @@ Ongoing responsibilities (clients, health, learning…).
 
 | Property | Type | Owner |
 |---|---|---|
-| Type | Select: Business, Personal | You |
 | Domain | Relation → Domains, two-way with Areas, Limit: 1 page (in every space, 0065; the brain reads it with the Domains module on) | Brain; your edits are corrections |
 | Goals | Relation → Goals | You |
 | Projects | Relation → Projects | You |
@@ -134,7 +133,7 @@ Page body: a toggle heading **Brief** (brain-written, 0041: the area's projects,
 
 ### Domains database (0055; in every space, 0065)
 
-Every space has it, with the Domains module on or off: the module decides only whether the brain reads and publishes Domains and whether pages show them (migration 0014 adds it to an older space). Name (title) and Summary (text) are brain-owned after creation; Lifecycle (select: Draft, Reviewed, Disputed, Archived) and Archived (checkbox) are yours. Brain ID (text) and Last Synced (date) are system fields. Areas is the inverse of Areas · Domain, limited on the Area side to one page by hand. Org is a correctable relation to Orgs, created when the space has an Orgs database; Orgs · Domains is its inverse. The Domain page shows Areas and, when enabled, Org.
+Every space has it, with the Domains module on or off: the module decides only whether the brain reads and publishes Domains and whether pages show them (migration 0014 adds it to an older space). Name (title) and Summary (text) are brain-owned after creation; Type (select: Personal, Entrepreneurship, Professional; 0.9.1, it replaced Areas · Type), Lifecycle (select: Draft, Reviewed, Disputed, Archived) and Archived (checkbox) are yours. Brain ID (text) and Last Synced (date) are system fields. Areas is the inverse of Areas · Domain, limited on the Area side to one page by hand. Org is a correctable relation to Orgs, created when the space has an Orgs database; Orgs · Domains is its inverse. The Domain page shows Areas and, when enabled, Org.
 
 ### 3.2 Goals
 | Property | Type | Owner |
@@ -396,7 +395,7 @@ Archived and Done (on a milestone) stay checkboxes: they describe a state, not a
 | Decisions | Promote, Lifecycle | Brain ID, Last Synced |
 | Concepts | Promote, Lifecycle | Brain ID, Last Synced, Created time |
 | Documents | Lifecycle, Project, Area, Sources | Brain ID, Last Synced, Created time, Last edited time |
-| Areas | Type, At a glance | Brain ID, Last Synced |
+| Areas | At a glance | Brain ID, Last Synced |
 | Goals, Projects, People, Orgs, Questions, Meetings | the "You" properties of §3 | Brain ID, Last Synced, Ingested At |
 
 **Workflow settings are not pinned** (§3.19): on Projects and Areas, Workflow, Work type, Logging level and Log artifacts sit at the end of the property group. You set them once per piece of work, usually through the setup chat.
@@ -486,7 +485,7 @@ Each template is the default for its database. Every linked view sits under an H
 | Database | Template body |
 |---|---|
 | Areas | **The area's home (0050).** Domain is visible when the Domains module is on. "Brief" toggle heading (brain-written, 0041) · "What needs me here?" with tabs Today (Tasks due today or earlier, neither Done nor Won't Do) · Meetings (to review, held today or earlier) · Review waiting (Review where Area is this page and State is Pending, grouped by Type) · Inbox (where Area is this page and Brain Status is New or Ready) · "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What have we decided here?" (Decisions: Current, Superseded) · "What's still open here?" (Questions: Open questions, Open risks, Answered) · "What came in?" (Inbox where Area is this page, newest first) · "What do we know?" (tabs Decisions, Concepts and Documents where Area is this page) · "Reports" (Inbox where Area is this page and Kind is Report, 0045) · "My notes". People and Clients show as the "via projects" rollups in the page header (0034). Each part follows its module (§1, 0050): Today and "What's on my plate here?" with Tasks; "What am I working toward here?" with Planning; "What have we decided here?", "What's still open here?" and the Decisions and Concepts tabs with Knowledge; the Documents tab with Documents; "Reports" with Reports; Clients via projects with Orgs. A new area is one page from this template |
-| Domains | Show Areas and, when Orgs is on, Org; description and My notes. |
+| Domains | Show Type, Areas and, when Orgs is on, Org; description and My notes. |
 | Goals | "How are the key results moving?" (Key Results: Open, Done) · "Which projects serve it?" (Projects) · "My notes" |
 | Projects | A muted line "The brain writes only inside its toggles: Brief and Decision log, and Workflow or Repo tasks when you connect work or link a repo. Add your own notes in My notes." (0.9.0; before it: "Brief and Decision log are written by the brain. Add your own notes in My notes.") · "Brief" toggle heading (brain-written) · "Decision log" toggle heading (brain-written) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What's still open here?" (Questions, Open) · "Who's involved?" (People) · "What came in?" (Inbox where Project is this page, newest first) · "What do we know?" (tabs Decisions, Concepts and Documents where Project is this page) · "Reports" (Inbox where Project is this page and Kind is Report, sorted by Created descending, 0045, #137) · "My notes". Parts follow their modules as on Areas. A project the brain publishes is created from this default template through the API (0068), so it must stay the Projects default; a space without one falls back to **New project** |
 | Meetings | Unchanged from the hand-reworked template (see notion/templates.md): "Before marking Reviewed" checklist callout, ending with the gray line "Check the minutes, fix them, then set Brain Status to Reviewed. Fixed them after the brain took them in? Set Reviewed again: it reads only what changed." (0045) · Notion AI meeting notes block · "My notes" · toggles Decisions, Questions, Tasks |

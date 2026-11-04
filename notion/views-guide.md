@@ -127,7 +127,7 @@ All views use the Tasks database. Using your own Tasks database (0018)? Map the 
 |---|---|---|---|---|---|---|---|---|
 | 1 | Goals | What am I working toward? | Gallery (medium cards) | Status is Active · Archived is unchecked | Deadline, ascending | — | Name, Progress (bar), Countdown, Area | Your active goals with progress and time left. Glance at it weekly |
 | 2 | Key results | How are my key results moving? | Table | Goal → Status is Active (if your Notion can't filter through a relation, use Done is unchecked) | Due, ascending | Goal | Name, Current, Target, Unit, Progress, Done | Update Current and tick milestones here |
-| 3 | Areas | Which areas do I own? | Gallery (small cards) | Archived is unchecked | Type, then Name | — | Name, Type | Open an area to see its goals, projects, tasks, meetings, decisions and people |
+| 3 | Areas | Which areas do I own? | Gallery (small cards) | Archived is unchecked | Name | — | Name | Open an area to see its goals, projects, tasks, meetings, decisions and people |
 | 4 | Projects by goal | Which projects serve each goal? | Board | Archived is unchecked · Status is not Done | Priority (High→Low) | Goal (show "No goal") | Name, Status | Spot projects with no goal, and goals with no project |
 
 **Progress as a bar:** click Progress → *Show as* → **Bar**, color green, show the number.
@@ -201,7 +201,7 @@ There is no Notes database on purpose: notes typed there would never reach the b
 |---|---|---|---|---|---|---|
 | Projects | What's finished? | Projects | Table | Status is Done **or** Archived is checked (filter group joined with Or) | Dates (end), descending | Name, Dates, Status |
 | Goals *(Planning)* | Which goals are closed? | Goals | Table | Status is Achieved or Dropped, **or** Archived is checked | Deadline, descending | Name, Status, Deadline |
-| Areas | Which areas did I close? | Areas | List | Archived is checked | Name | Name, Type |
+| Areas | Which areas did I close? | Areas | List | Archived is checked | Name | Name |
 | Decisions *(Knowledge)* | Which decisions are archived? | Decisions | List | Lifecycle is Archived | Date, descending | Name, Project, Date |
 | Questions *(Knowledge)* | Which questions are archived? | Questions | List | Lifecycle is Archived | Created time, descending | Name, Project, Status |
 | Concepts *(Knowledge)* | Which concepts are archived? | Concepts | List | Lifecycle is Archived | Name | Name, Project |
@@ -250,7 +250,7 @@ A message without the page reference makes Brain Assistant stop and say so. The 
 
 | Database | Heading (in order) | Property group: where · order | Hidden | Backlinks | Why |
 |---|---|---|---|---|---|
-| Areas | Type, At a glance | Panel · To review, Meetings to review, Due, Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Decisions, Questions, Concepts, Documents, Inbox, Tasks, Review, Lifecycle, Archived, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced | Off | The area's home (0050): its counts as one line in the heading, everything else in its views |
+| Areas | At a glance | Panel · To review, Meetings to review, Due, Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Decisions, Questions, Concepts, Documents, Inbox, Tasks, Review, Lifecycle, Archived, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced | Off | The area's home (0050): its counts as one line in the heading, everything else in its views |
 | Goals | Status, Progress, Countdown | Panel · Deadline, Why, Area, Key Results, Projects, Summary, Lifecycle, Archived | Brain ID, Last Synced | Off | Progress and status at a glance |
 | Key Results | Progress, Current, Target | Main · Goal, Kind, Start, Unit, Done, Due | — | Off | No body; you edit Current in the heading |
 | Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Goal, People, Summary, Lifecycle, Archived, Meetings, Decisions, Questions, Concepts, Documents, Inbox, Tasks, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel. The Workflow settings close the panel (decision 0059) |

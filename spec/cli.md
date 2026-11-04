@@ -976,8 +976,8 @@ Read-only. Compares each row with the brain and returns a plan. Notes are matche
 
 | Database | Notion-owned → `notion_fields` | Correctable brain-owned → correction `field` |
 |---|---|---|
-| domains | Archived → `archived` | Name → `title`, Summary → `summary`, Org → `org` |
-| areas | Type → `type`, Archived → `archived` | Name → `title`, Summary → `summary`, Domain → `domain` |
+| domains | Type → `type`, Archived → `archived` | Name → `title`, Summary → `summary`, Org → `org` |
+| areas | Archived → `archived` | Name → `title`, Summary → `summary`, Domain → `domain` |
 | goals | Status → `status`, Progress → `progress`, Archived → `archived`, Key Results → `key_results` | Name, Summary, Why → `why`, Deadline → `facts.deadline`, Area → `area` |
 | projects | Status → `status`, Priority → `priority`, Dates → `dates`, Archived → `archived` | Name, Summary, Key Facts → `facts.<key>` (§5.14.4), Area → `area`, Goal → `goal`, Client (first) → `client`, People → `people` |
 | people | Email → `email` | Name, Summary, Role → `facts.role`, Org (first) → `org` |
