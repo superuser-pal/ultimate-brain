@@ -13,7 +13,7 @@ Who does each step:
 
 ## 1 · Documents · Origin (agent; Documents module)
 
-Read the Documents data source first. **Origin is missing** (migration 0018 may already have added it): add **Origin** (select) with the options Kept, Learned, Report, Promoted, Workflow, in that order, and the description "Owner: brain." **It exists as a select:** add only the options it lacks, sending the existing options with their ids first, so none is dropped. **It exists with another type:** change nothing, report it, and ask the user.
+Read the Documents data source first. **Origin is missing** (migration 0018, CC-123's "Concepts become Documents" in the same 0.9.1 release, adds the same property; whichever of the two you run first adds it): add **Origin** (select) with the options Kept, Learned, Report, Promoted, Workflow, in that order, and the description "Owner: brain." **It exists as a select:** add only the options it lacks, sending the existing options with their ids first, so none is dropped. **It exists with another type:** change nothing, report it, and ask the user.
 
 The next publish fills Origin on every Document.
 
