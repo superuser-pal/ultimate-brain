@@ -52,3 +52,5 @@ spec/examples/workflow/valid/item-done-merged.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3
 spec/examples/workflow/valid/snapshot.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
 spec/examples/workflow/invalid/snapshot-no-tasks.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
 spec/examples/workflow/valid/item-declined.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
+spec/examples/valid/question-dropped.md:4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f7a
+spec/examples/invalid/question-task-not-dropped.md:4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f7a
