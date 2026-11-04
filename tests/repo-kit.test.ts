@@ -304,6 +304,33 @@ async function writeCase(context: TestContext, kit: any = makeKit()) {
   return { dir, repo, input, expected, confirm: hash(expected), write, file: join(repo.root, "brain-kit.json") };
 }
 
+test("repo kit check: a hand-formatted draft gives confirm_sha256 of the canonical bytes, canonical false, and kit write accepts it (CC-129)", async (context) => {
+  const { dir, input, expected, write, file } = await writeCase(context);
+  const check = await run(dir, ["repo", "kit", "check", "--input", input]);
+  assert.equal(check.code, 0, check.stdout);
+  assert.deepEqual(check.json.data.problems, []);
+  assert.equal(check.json.data.sha256, hash(await readFile(input)));
+  assert.equal(check.json.data.confirm_sha256, hash(expected));
+  assert.notEqual(check.json.data.sha256, check.json.data.confirm_sha256);
+  assert.equal(check.json.data.canonical, false);
+  const written = await write(["--confirm", check.json.data.confirm_sha256]);
+  assert.equal(written.code, 0, written.stdout);
+  assert.equal(await readFile(file, "utf8"), expected);
+  const again = await run(dir, ["repo", "kit", "check", "--input", file]);
+  assert.equal(again.json.data.canonical, true);
+  assert.equal(again.json.data.sha256, again.json.data.confirm_sha256);
+});
+
+test("repo kit check: bytes that are not a JSON object give confirm_sha256 null and canonical false (CC-129)", async (context) => {
+  const dir = await fixtureCopy(context);
+  for (const bytes of ["{ not json", "[1, 2]"]) {
+    const result = await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, bytes)]);
+    assert.equal(result.code, 0, result.stdout);
+    assert.equal(result.json.data.confirm_sha256, null, bytes);
+    assert.equal(result.json.data.canonical, false, bytes);
+  }
+});
+
 test("repo kit write: no --confirm is CONFIRMATION_REQUIRED and nothing is written", async (context) => {
   const { write, file } = await writeCase(context);
   const result = await write([]);
