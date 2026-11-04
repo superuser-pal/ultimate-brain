@@ -361,7 +361,7 @@ Errors: `USAGE` (unknown type, count out of range).
 brain note new --input <file|-> [--dry-run]
 ```
 
-Writes **new** notes (lifecycle `draft`, 0003). Used by the ingest skill, by `apply` for `new_item`, and by `sync apply` for Notion-created rows (which keep the lifecycle set in Notion). Never modifies an existing note; changes go through `proposal new`. Types `view` and `proposal` are refused (use `views` and `proposal new`).
+Writes **new** notes (lifecycle `draft`, 0003). Used by the ingest skill, by `apply` for `new_item` (written `reviewed`: the approval is the review, 0071), and by `sync apply` for Notion-created rows (which keep the lifecycle set in Notion). Never modifies an existing note; changes go through `proposal new`. Types `view` and `proposal` are refused (use `views` and `proposal new`).
 
 **Input:**
 ```json

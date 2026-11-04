@@ -160,7 +160,7 @@ Above the tabs, a gray line: "Approving makes these notes trusted: they appear i
 | Contradiction | Both claims are kept as contested | Your value becomes the accepted truth |
 | Supersede | The newer note replaces the older one, which is archived | It replaces the note you name instead |
 | Merge | The duplicate is folded into the survivor | It is folded into the record you name instead |
-| New Item | The new note is created as Draft | It is created with your corrections |
+| New Item | The new note is created as Reviewed, with its page | It is created with your corrections |
 | Answer | The question gets this answer and shows as Answered | Your text becomes the answer |
 
 ---

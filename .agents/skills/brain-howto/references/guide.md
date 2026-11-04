@@ -60,7 +60,7 @@ Every meeting moves through **Brain Status**:
 
    Check the minutes, fix them, then set Brain Status to **Reviewed**. What the minutes get wrong, fix here: it's cheaper than fixing what the brain read from them.
 4. **Ingest:** tell your agent "ingest my reviewed meetings". The brain reads the minutes and sets the meeting to **Ingested**. Then:
-   - new notes (decisions, questions, people) arrive as **Draft**, with one **Review notes** row in Review to accept them all;
+   - new decisions, questions and Documents wait in one **Review notes** row in Review: each gets its page in Notion once you accept it there. New people arrive as **Draft** straight away, so the meeting can list them;
    - changes to things the brain already knew go to **Review**, and so does an answer it found to one of your open questions;
    - action items become **Tasks** (status To Do).
 5. Set **Skipped** for a meeting the brain should never read.
@@ -116,7 +116,7 @@ Changes to what the brain already knew come first, and a changed fact is marked 
 - **Approve** accepts them all: the changes are made, the notes become **Reviewed** and appear in the Briefs, and the links are added.
 - **Approve** with "all except b, h" accepts the rest. b and h aren't rejected: they move to a new row, "Deferred from Acme launch review", for you to decide later.
 - **Fix** with "a: March" applies everything, with a corrected.
-- **Reject** applies nothing, and archives the notes that are still Draft. Nothing is deleted.
+- **Reject** applies nothing, and archives the notes that are still Draft: they never get a page in Notion. Nothing is deleted.
 - If a fact changed since the row was written (you edited it in Notion, say), only that item is dropped, and the report says so. The rest applies.
 
 **Review rows with sections (after migration 0013).** A row from one input is a page: a short summary at the top, then one section per item, `## [a · it-9f2c1e44] Changes: Launch date on Acme website`, each with what the note says now, a toggle **Proposed final wording**, and a `Decision:` line.
@@ -142,7 +142,7 @@ The row's **Kind** property (hidden in your views) says exactly what the brain p
 
 | Kind | Approve means |
 |---|---|
-| Review Notes | Everything listed: the changes are made, the notes become Reviewed, the links are added. Reject archives the Draft notes |
+| Review Notes | Everything listed: the changes are made, the notes become Reviewed and get their pages, the links are added. Reject archives the Draft notes |
 | Update Fact | The new value replaces the old one; the old one stays in the history |
 | Add To Note | The text is added to the note |
 | Update Body | A Document's text is replaced by its new version; Proposed shows the lines that change (`-` old, `+` new) |
@@ -150,7 +150,7 @@ The row's **Kind** property (hidden in your views) says exactly what the brain p
 | Contradiction | Two sources disagree; both claims are kept as contested. Fix with the true value |
 | Supersede | A newer note replaces an older one, which is archived |
 | Merge | A duplicate is folded into the record it duplicates |
-| New Item | A new note is created as Draft |
+| New Item | A new note is created as Reviewed, with its page |
 | Answer | The question gets this answer and shows as Answered |
 
 **Fix works on every kind.** To see why a change was proposed, open the row: **Why** quotes the sentence from the source, and **Source Meeting** links to the meeting when there is one.
@@ -192,7 +192,7 @@ Hover over a property name to see its owner. Each description starts with "Owner
 - A question's **Status** is yours. The brain sets it twice at most: **Open** when it creates the question, and **Answered** once, when you approve an Answer row.
 
 **Lifecycle** tells you how far to trust a record:
-- **Draft:** new, not reviewed by you yet;
+- **Draft:** new, not reviewed by you yet (people only: a new decision, question or Document waits in Review instead);
 - **Reviewed:** you checked it, usually by approving its Review notes row;
 - **Disputed:** you think it's wrong;
 - **Archived:** no longer current.
@@ -223,7 +223,7 @@ Every Inbox row moves through **Brain Status**: **New → Ready → Done**.
 
 **Documents** (the Documents module). A Document is a page you read, linked to its source, project and area:
 - **the whole input:** the text exactly as it came in. It needs no review and is Reviewed straight away;
-- **a part** (Only keep set, or "also keep the budget from the Acme doc"): what you asked for, as a list or a table. It arrives as Draft in the source's Review row, like a new note;
+- **a part** (Only keep set, or "also keep the budget from the Acme doc"): what you asked for, as a list or a table. It waits in the source's Review row, like a new note, and gets its page when you approve it;
 - **promoted** from a decision or concept: it starts from the note, then you write in it.
 
 The brain still reads every input for decisions, questions and people, whether or not you keep it as a Document. A new version of the file later proposes only the lines that changed.
@@ -357,6 +357,7 @@ Run these in Claude Code or Codex, from your brain's folder.
 | A new project or person isn't in the brain | It is imported on the next sync | "sync with Notion" |
 | A rejected change came back | A later source said it again | Reject it again, or Fix it to the true value |
 | A record shows Draft | You haven't reviewed it yet | Read it; set **Reviewed**, or **Disputed** if it's wrong |
+| A new decision or question isn't in its database | It waits in its Review notes row | Approve it there, then "catch up" |
 | An Area page doesn't list a decision | A decision's Area comes from its project | Link the decision's project to the area, then "sync with Notion" |
 | A Review row with What to fix is still pending | The agent couldn't tell what it meant, or it described a different change | Answer the agent's question, or look for the new row it proposed |
 | A Fix row is still pending | What to fix is empty | Say what's wrong in What to fix |
