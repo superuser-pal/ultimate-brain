@@ -148,6 +148,7 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 1. A legacy link (`NO_KIT`) can get a kit file (`repo kit write`), but no command applies it to the existing entry: `repo refresh` refuses `NO_KIT` and `repo add --kit` refuses a taken name. brain-repos uses the defined path, `repo unlink` then `repo add --kit` after the user's yes, which resets `commit` so the next read lists the files again (already-ingested ones are skipped as duplicates). Should `repo refresh` adopt a kit for a legacy entry and keep its `commit`?
 2. A moved repo (`PATH_MISSING`) has no command to change an entry's `path`. brain-repos offers unlink and link again (the same reset). Should `repo refresh` (or a new option) take a new path?
 3. linked-repos.md §4 says each catch-up that reads a tracked-in-repo repo rebuilds its rollup, and brain-ingest still links with `repo add --pattern` ("link the repo at <path>"). Neither brain-catch-up nor brain-ingest is CC-104's to change beyond a hand-over line, so both still need their step: a hand-over to brain-repos in each.
+**Answers (the user, 2026-11-04):** 1 and 2: unlink and link again stays the way in 0.9.0, and `repo refresh` options that keep `commit` come in CC-118 (0.10.0); 3: CC-117.
 
 ### CC-105 · Brain skills authored in the fork, a pinned snapshot in the package (decision 0059) · `todo`
 **Release:** 0.9.0
@@ -227,6 +228,12 @@ An assistant you ask, from the CLI, about the structure of your work: Areas, Dom
 **Changelog:** development only: `pr-format` names a PR whose own task row is missing, instead of asking for a CHANGELOG.md line.
 **Output:** found on #195: merging main into the branch dropped the task's own row, and `pr-format` failed with "PR must add its task line to CHANGELOG.md", because a task with no row falls to the 0.3.x path; `merge-ready` was red but the PR was merged, and CC-115 (#199) restored the row. scripts/pr-format.mjs fails first with "PR has no row for its task CC-N" when the head has no row for the branch's task; scripts tests; a line in docs/releasing.md or AGENTS.md on merging main into a branch (keep every row on both sides). Ask the user whether `main` should require `merge-ready` (branch protection is off today; decision 0040).
 **Acceptance:** a scripts test: a PR head without its own task's row fails with the new message, and a 0.3.x task with no row-level Changelog still gets the old message; the user's answer on requiring `merge-ready` is recorded; `npm run test:scripts` and the leak check pass.
+
+### CC-118 · `brain repo refresh` adopts a kit for a legacy link and takes a new path · `todo`
+**Release:** 0.10.0
+**Changelog:** a link made before kits takes its new kit, and a moved repo its new path, with `brain repo refresh`, without the brain listing the repo's files again.
+**Output:** CC-104's spec questions 1 and 2 (answered 2026-11-04): spec/linked-repos.md and spec/cli.md §5.29 first (`repo refresh` applies a written kit to a legacy entry, and takes `--path` for a moved repo, both keeping `commit`; their checks and errors), then the CLI test-first in `src/commands/repo*`; brain-repos stops unlinking and linking again for these two cases, and its mirror.
+**Acceptance:** tests on synthetic repos: a refresh of a legacy entry with a kit written applies the kit and keeps `commit`, and the next `repo changes` lists nothing again; a refresh with `--path` of a moved repo does the same; the existing repo tests pass; the skill mirror check passes.
 
 ## 0.11.0 — The brain tidies itself (decisions 0052, 0061, 0064)
 
