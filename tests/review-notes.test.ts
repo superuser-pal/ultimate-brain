@@ -167,7 +167,7 @@ test("approving 2 notes, a link and an alias with the alias excluded applies the
   const applied = await run(dir, ["apply"], { decisions: [decided(row.id, "approve", { note: "all except d", exclude: [{ target: DECISION, field: "aliases", value: "Supabase auth" }] })] });
   assert.equal(applied.code, 0, applied.stdout);
   assert.deepEqual(applied.json.data.decisions[0].notes.map((note: { result: string }) => note.result), ["reviewed", "reviewed"]);
-  assert.deepEqual((await attributes(dir, "knowledge/concepts/row-level-security.md")).projects, [PROJECT]);
+  assert.deepEqual((await attributes(dir, "knowledge/references/row-level-security.md")).projects, [PROJECT]);
   assert.equal((await attributes(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md")).aliases, undefined);
   assert.equal((await attributes(dir, row.path)).status, "applied");
   assert.deepEqual(await lintErrors(dir), []);

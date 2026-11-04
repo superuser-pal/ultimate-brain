@@ -248,7 +248,7 @@ test("proposal new handles review edge cases from #14", async (context) => {
   assert.equal(dup.json.error.details[0].pointer, "/proposals/0/note");
 
   // An error in an earlier item is reported against that item, not a later new_item.
-  const note = { type: "concept", title: "Edge caching", frontmatter: { summary: "S.", sources: ["mtg-8c4n2p7w"] }, body: "" };
+  const note = { type: "reference", title: "Edge caching", frontmatter: { origin: "learned", summary: "S.", sources: ["mtg-8c4n2p7w"] }, body: "" };
   const blame = await proposalNew(dir, [{ ...budget, after: undefined }, { kind: "new_item", title: "New concept", why: "w", source: "mtg-8c4n2p7w", note }]);
   assert.equal(blame.json.error.code, "INPUT_INVALID");
   assert.deepEqual(blame.json.error.details.map((detail: { pointer: string }) => detail.pointer), ["/proposals/0"]);

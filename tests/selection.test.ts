@@ -139,7 +139,7 @@ test("lint checks an extract's passages and the passage references that cite it"
     return (out.json.data.issues as { rule: string; message: string }[]).filter((issue) => issue.rule === "extract-passages" || issue.rule === "passage-ref");
   };
   assert.deepEqual(await lintRules(), []);
-  const concept = join(dir, "knowledge/concepts", (await readdir(join(dir, "knowledge/concepts")))[0] as string);
+  const concept = join(dir, "knowledge/references", (await readdir(join(dir, "knowledge/references")))[0] as string);
   const original = await readFile(concept, "utf8");
   await writeFile(concept, original.replace(/\n$/, "") + `\n\nA statement. ^[${id}#¶1:${real}]\n`);
   assert.deepEqual(await lintRules(), []);

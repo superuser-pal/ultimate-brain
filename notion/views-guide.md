@@ -179,14 +179,13 @@ Above the tabs, a gray line: "Approving makes these notes trusted: they appear i
 | Questions *(Knowledge)* | What's still open? | List | Status is Open · Kind is Question | Created time, descending | — | Name, Project, Raised In | Open questions. Set Answered or Dropped when resolved |
 | Questions *(Knowledge)* | Which risks are open? | List | Status is Open · Kind is Risk | Created time, descending | — | Name, Project, Raised In | Open risks |
 | Questions *(Knowledge)* | What did we answer? | List | Status is Answered | Created time, descending | — | Name, Project, Summary | Resolved questions and their answer |
-| Concepts *(Knowledge)* | What did we learn recently? | List | Lifecycle is not Archived | Created time, descending | — | Name, Project, Summary | Ideas and methods from your documents and meetings |
-| Concepts *(Knowledge)* | What do we know per project? | Table | Lifecycle is not Archived | Name | Project | Name, Area, Summary | What the brain learned, by project |
-| Documents *(Documents)* | What did we keep? | List | Lifecycle is not Archived | Last edited time, descending | — | Name, Project, Summary | Documents (0049): whole inputs, the parts you asked for (requirements, price lists), and pages promoted from decisions and concepts, kept up to date as new versions arrive |
+| Documents *(Documents)* | What did we keep? | List | Lifecycle is not Archived | Last edited time, descending | — | Name, Project, Summary | Documents (0049): whole inputs, the parts you asked for (requirements, price lists), and pages promoted from decisions, kept up to date as new versions arrive |
+| Documents *(Documents)* | What did we learn? | List | Origin is Learned and Lifecycle is not Archived | Created time, descending | — | Name, Project, Summary | Ideas, methods and definitions the brain learned from your documents and meetings (0071; Concepts before 0.9.1) |
 | People | Who's who? | Gallery (small cards) | Lifecycle is not Archived | Name | *(Orgs)* Org | Name, Role, *(Orgs)* Org | Find a person by company and role |
 | People | Who's disputed? | List | Lifecycle is Disputed | Name | — | Name, Summary | People records you marked as wrong |
 | Orgs *(Orgs)* | Which clients do I have? | Table | Relationship is Client · Archived is unchecked | Name | — | Name, People, Projects | Your clients with their contacts and projects |
 | Orgs *(Orgs)* | Who else do we work with? | Table | Relationship is not Client · Archived is unchecked | Name | Relationship | Name, Relationship, People | Prospects, partners, suppliers and your employer |
-| Inbox | What came in? | Table | Brain Status is Done | Created, descending | — | Name, Kind, Summary, Project, *(Knowledge)* Decisions, Concepts | History: every document, email and capture the brain took in, and what it made from each |
+| Inbox | What came in? | Table | Brain Status is Done | Created, descending | — | Name, Kind, Summary, Project, *(Knowledge)* Decisions | History: every document, email and capture the brain took in, and what it made from each |
 
 There is no Notes database on purpose: notes typed there would never reach the brain. Quick notes go to the Inbox, and notes about a record go in its "My notes" toggle.
 
@@ -203,7 +202,6 @@ There is no Notes database on purpose: notes typed there would never reach the b
 | Areas | Which areas did I close? | Areas | List | Archived is checked | Name | Name |
 | Decisions *(Knowledge)* | Which decisions are archived? | Decisions | List | Lifecycle is Archived | Date, descending | Name, Project, Date |
 | Questions *(Knowledge)* | Which questions are archived? | Questions | List | Lifecycle is Archived | Created time, descending | Name, Project, Status |
-| Concepts *(Knowledge)* | Which concepts are archived? | Concepts | List | Lifecycle is Archived | Name | Name, Project |
 | Documents *(Documents)* | Which documents are archived? | Documents | List | Lifecycle is Archived | Name | Name, Project |
 | People | Who is archived? | People | List | Lifecycle is Archived | Name | Name, Role |
 | Orgs *(Orgs)* | Which orgs are archived? | Orgs | List | Archived is checked | Name | Name, Relationship |
@@ -231,7 +229,7 @@ Notion lets you shape how each database page opens. Set it once per database: op
 | Write | Write up | Documents | Send message to Brain Assistant | Documents |
 | Accept | Accept write-up | Documents | Accepted → checked; Accepted at → now | Documents |
 | Accept | Accept refresh | Inbox | Accepted → checked; Accepted at → now (the brain acts on it only on a Report row) | Reports |
-| Promote | Promote to document | Decisions, Concepts | Promote asked → checked | Documents (and Knowledge) |
+| Promote | Promote to document | Decisions | Promote asked → checked | Documents (and Knowledge) |
 | Submit | Submit decisions | Review | Decided → checked; Decided at → now (decision 0055) | core |
 | Submit all | Submit and accept all | Review | Decided → checked; Accept all → checked; Decided at → now | core |
 
@@ -242,26 +240,25 @@ The name and the label differ, so the layout doesn't show the same text twice (#
 | Button | Message |
 |---|---|
 | Tidy capture | `Run your Tidy capture skill on this Inbox page: @This page. I confirm: replace the text below the title with the rewrite, as the skill says. Do not change the title, Brain Status or any property.` |
-| Write up | `Run your Write up skill on this Documents page: @This page. I confirm: do it as the skill says. Do not change any property, the Decision or Concept page, or any other page.` |
+| Write up | `Run your Write up skill on this Documents page: @This page. I confirm: do it as the skill says. Do not change any property, the Decision page, or any other page.` |
 | Refresh report | `Run your Refresh report skill on this Report row: @This page. I confirm: add or replace the Proposed refresh toggle as the skill says. Do not change the report's text outside it, or any property.` |
 
 A message without the page reference makes Brain Assistant stop and say so. The two Accept buttons use **Edit property** on **This page**: Accepted → checked and Accepted at → Now.
 
 | Database | Heading (in order) | Property group: where · order | Hidden | Backlinks | Why |
 |---|---|---|---|---|---|
-| Areas | At a glance | Panel · To review, Meetings to review, Due, Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Decisions, Questions, Concepts, Documents, Inbox, Tasks, Review, Archived, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced | Off | The area's home (0050): its counts as one line in the heading, everything else in its views |
+| Areas | At a glance | Panel · To review, Meetings to review, Due, Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Decisions, Questions, Documents, Inbox, Tasks, Review, Archived, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced | Off | The area's home (0050): its counts as one line in the heading, everything else in its views |
 | Goals | Status, Progress, Countdown | Panel · Deadline, Why, Area, Key Results, Projects, Summary, Archived | Brain ID, Last Synced | Off | Progress and status at a glance |
 | Key Results | Progress, Current, Target | Main · Goal, Kind, Start, Unit, Done, Due | — | Off | No body; you edit Current in the heading |
-| Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Goal, People, Summary, Archived, Meetings, Decisions, Questions, Concepts, Documents, Inbox, Tasks, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel. The Workflow settings close the panel (decision 0059) |
+| Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Goal, People, Summary, Archived, Meetings, Decisions, Questions, Documents, Inbox, Tasks, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel. The Workflow settings close the panel (decision 0059) |
 | Meetings | Brain Status, Date, Project | Panel · Attendees, Area, Decisions, Questions, Tasks, Review Items | Brain ID, Ingested At | Off | Brain Status is the one field you change per meeting |
 | People | Role, Org | Panel · Email, Projects, Meetings, Sources, Summary, Lifecycle | Brain ID, Last Synced | On hover | Who they are and where they work |
 | Orgs | Relationship, Website | Panel · Meetings via projects, People, Projects, Summary, Archived | Brain ID, Last Synced | On hover | — |
 | Decisions | Promote, Lifecycle | Panel · Promote asked, Assessment, Date, Project, Area, Decided In, Supersedes, Superseded By, Sources, Documents, Summary | Brain ID, Last Synced | Show always | The body is brain-written; backlinks show supersede chains and mentions |
 | Questions | Status, Kind, Project | Panel · Area, Raised In, Sources, Summary, Lifecycle | Brain ID, Last Synced, Created time | Off | You set Status |
 | Review | Submit, Submit all, Your call, What to fix, About Page | Main · Decided, Decided at, Accept all, Type, Now, Proposed, Why, About, Area, Source Meeting | Kind, State, Brain ID, Created time, Last edited time | Off | A row from a source is a page with a section per change (decision 0055): decide there and click Submit. Older rows are decided in the heading (Your call, What to fix) |
-| Inbox | Keep, Update, Tidy, Accept, Brain Status, Project, Area | Main · Document asked, Refresh asked, Accepted, Accepted at, Only keep, Kind, Summary, What to fix, Decisions, Questions, Concepts, Documents, People, Tasks, Ask, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
-| Concepts | Promote, Lifecycle | Panel · Promote asked, Project, Area, Sources, Documents, Summary | Brain ID, Last Synced, Created time | Show always | The body is brain-written |
-| Documents | Write, Accept, Lifecycle, Project, Area, Sources | Panel · Accepted, Accepted at, From decision, From concept, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |
+| Inbox | Keep, Update, Tidy, Accept, Brain Status, Project, Area | Main · Document asked, Refresh asked, Accepted, Accepted at, Only keep, Kind, Summary, What to fix, Decisions, Questions, Documents, People, Tasks, Ask, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
+| Documents | Write, Accept, Lifecycle, Project, Area, Sources | Panel · Accepted, Accepted at, Origin, From decision, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |
 | Tasks | Status, Due | Panel · Project, Area, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
 
 **Hide system properties everywhere.** Brain ID, Last Synced, Created time and Last edited time are plumbing (owner "system"). Hide them in every view and layout, except where a view lists one to show (for example Last edited time in "Which projects have gone quiet?"). Don't delete them, because the brain matches records by Brain ID.

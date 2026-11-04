@@ -23,9 +23,7 @@ On the page "Brain Data", create these full-page databases with exactly these pr
 [Documents] Also in "Inbox": Document asked (checkbox), Only keep (text).
 [Reports] Also in "Inbox": Refresh asked (checkbox), What to fix (text), Accepted (checkbox), Accepted at (date, with time).
 [Tasks] 12. "Tasks": Name (title), Status (status: To Do, Doing, Waiting On, Someday, Done; put Waiting On and Someday in any group except Complete), Due (date), Brain ID (text), Last edited time (last edited time).
-[Knowledge] 13. "Concepts": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time).
-[Knowledge] [Documents] Also in "Concepts": Promote asked (checkbox).
-[Documents] 14. "Documents": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date), Created time (created time), Last edited time (last edited time).
+[Documents] 14. "Documents": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Origin (select: Kept, Learned, Report, Promoted, Workflow), Brain ID (text), Last Synced (date), Created time (created time), Last edited time (last edited time).
 [Documents] Also in "Documents": Accepted (checkbox), Accepted at (date, with time).
 15. "Domains": Name (title), Summary (text), Type (select: Personal, Entrepreneurship, Professional), Archived (checkbox), Brain ID (text), Last Synced (date).
 ```

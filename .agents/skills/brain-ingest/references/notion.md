@@ -56,7 +56,7 @@ Do these in order, after the ingest commit: pages first, so every task's project
       - **`action: trash`** (a Review row decided more than 30 days ago, decision 0045): move `page_id` to Notion's trash (update the page with `in_trash: true`; `archived: true` on API versions before 2025-09). Nothing else. Record it like any other write; the proposal stays in the brain.
       - **Meeting and Inbox relations with `"mode": "add"`:** add the listed pages and keep the existing ones.
       - **`"mode": "if_empty"`:** write only if the property is empty in Notion.
-      - **`body` (decisions, questions, concepts, Documents):** replace the page body with it. A `promoted` Document has a `body` only on `create`; on `update` it is `null`, and its page body is the user's (decision 0049).
+      - **`body` (decisions, questions, Documents):** replace the page body with it. A `promoted` Document has a `body` only on `create`; on `update` it is `null`, and its page body is the user's (decision 0049).
       - **`body` and `sections` on an Inbox item** (a source, or a report): see "Inbox bodies" below. A capture's or an Ask row's page body is the user's: render never gives one a body.
       - **`sections` (projects):** replace only the children of the toggle heading with that exact name ("Brief", "Decision log"). Read the page's blocks first (decision 0033):
         - **the page has no toggle headings at all** (created without the template): append a "Brief" and a "Decision log" toggle heading, in that order, at the end of the page, then fill them;

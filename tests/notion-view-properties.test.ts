@@ -54,16 +54,14 @@ const viewPropertyReferences: readonly PropertyReference[] = [
   { database: "Questions", source: "Prompt 7f Knowledge", properties: ["Status", "Kind", "Created time", "Name", "Project", "Raised In", "Summary"] },
   { database: "People", source: "Prompt 7f Knowledge", properties: ["Lifecycle", "Org", "Name", "Role", "Summary"] },
   { database: "Orgs", source: "Prompt 7f Knowledge", properties: ["Relationship", "Lifecycle", "Name", "People"] },
-  { database: "Concepts", source: "Prompt 7f Knowledge", properties: ["Lifecycle", "Created time", "Name", "Project", "Area", "Summary"] },
-  { database: "Documents", source: "Prompt 7f Knowledge", properties: ["Lifecycle", "Last edited time", "Name", "Project", "Summary"] },
-  { database: "Inbox", source: "Prompt 7f Knowledge", properties: ["Brain Status", "Created", "Name", "Kind", "Only keep", "Project", "Summary", "Decisions", "Concepts"] },
+  { database: "Documents", source: "Prompt 7f Knowledge", properties: ["Lifecycle", "Last edited time", "Origin", "Created time", "Name", "Project", "Summary"] },
+  { database: "Inbox", source: "Prompt 7f Knowledge", properties: ["Brain Status", "Created", "Name", "Kind", "Only keep", "Project", "Summary", "Decisions"] },
   { database: "Tasks", source: "Prompt 7g Tasks", properties: ["Status", "Due", "Name", "Project", "Meeting", "Last edited time"] },
   { database: "Projects", source: "Prompt 7h Archive", properties: ["Status", "Archived", "Dates", "Name", "Client"] },
   { database: "Goals", source: "Prompt 7h Archive", properties: ["Status", "Archived", "Deadline", "Name"] },
   { database: "Areas", source: "Prompt 7h Archive", properties: ["Archived", "Name"] },
   { database: "Decisions", source: "Prompt 7h Archive", properties: ["Lifecycle", "Date", "Name", "Project"] },
   { database: "Questions", source: "Prompt 7h Archive", properties: ["Lifecycle", "Created time", "Name", "Project", "Status"] },
-  { database: "Concepts", source: "Prompt 7h Archive", properties: ["Lifecycle", "Name", "Project"] },
   { database: "People", source: "Prompt 7h Archive", properties: ["Lifecycle", "Name", "Org"] },
   { database: "Orgs", source: "Prompt 7h Archive", properties: ["Lifecycle", "Name", "Relationship"] },
 ];
@@ -90,7 +88,7 @@ function sectionThreeProperties(design: string): Map<string, Set<string>> {
     else common.add(row[1]);
   }
 
-  for (const database of ["Areas", "Goals", "Projects", "People", "Orgs", "Decisions", "Questions", "Concepts", "Documents"]) {
+  for (const database of ["Areas", "Goals", "Projects", "People", "Orgs", "Decisions", "Questions", "Documents"]) {
     for (const property of common) properties.get(database)?.add(property);
   }
   // §3.8 defines the inverse relation in prose rather than as a separate row.

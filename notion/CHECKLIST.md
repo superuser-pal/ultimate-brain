@@ -9,7 +9,7 @@ The prompts are generated from [docs/notion-space-design.md](../docs/notion-spac
 The space is a core (Inbox, Meetings, Projects, Areas, People, Review) plus the modules you choose. You can change this any time by asking your agent ("turn on documents"); each module's steps for later are in [modules/](modules/).
 
 - [ ] **Domains:** group Areas by the work or life context they belong to. The Domains database is built either way (decision 0065); this choice is whether the brain uses it
-- [x] **Knowledge:** Decisions, Questions, Concepts
+- [x] **Knowledge:** Decisions, Questions
 - [x] **Orgs:** client and partner organizations
 - [ ] **Documents:** keep a document, or part of one, as a page
 - [ ] **Reports:** ask the brain in the Inbox, get a report you can refresh

@@ -97,8 +97,8 @@ Template id `<id>`. Header shows the "Meetings via projects" rollup (page layout
 ### Inbox · "Capture" (default)
 Template id `<id>`. Empty body; it only sets Kind = Capture on a new row (migration 0005), so a quick capture needs nothing set.
 
-### Decisions, Questions, Concepts, Review, Key Results, Tasks
-No template. This is intended: the brain writes the whole body of Decisions, Questions and Concepts pages (0026, 0037), and the other databases are property-only.
+### Decisions, Questions, Review, Key Results, Tasks
+No template. This is intended: the brain writes the whole body of Decisions and Questions pages (0026, 0037), and the other databases are property-only. (Concepts, retired in 0.9.1, had none either: their pages are learned Documents now, 0071.)
 
 ---
 
