@@ -199,7 +199,7 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 ### CC-119 · Move CC-105 to 0.9.3 · `in progress`
 **Release:** 0.9.0
 **Changelog:** development only: CC-105 (skills from the fork) moves to a 0.9.3 patch release, after 0.9.1 and 0.9.2, so 0.9.0 ships on the product's own skills (decision 0069).
-**Output:** decision 0069 (amends 0064); this file: the 0.9.3 row of the release table, the 0.9.0 order, and CC-105 moved to a new 0.9.3 section with release 0.9.3 and its spec-first Output; an "Amended by" pointer on 0064.
+**Output:** decision 0069 (amends 0064); one-line 0069 pointers in docs/skills-migration-plan.md (§4) and spec/skills-delivery.md (Status); this file: the 0.9.3 row of the release table, the 0.9.0 order, and CC-105 moved to a new 0.9.3 section with release 0.9.3 and its spec-first Output; an "Amended by" pointer on 0064.
 **Acceptance:** CC-105 keeps its title, Changelog and Acceptance, with Release 0.9.3; no other row or Changelog line changes; the user accepts decision 0069; the leak check passes.
 
 ## 0.9.1
@@ -225,6 +225,7 @@ After 0.9.2. Starts with its scope check against 0069 and spec/skills-delivery.m
 **Changelog:** the brain skills are written in the ultimate-brain-skills fork, and the ultimate-brain package ships an exact, tested snapshot of them.
 **Output:** step 4 of docs/skills-migration-plan.md, after 0.9.2 is released (decision 0069): first the spec of phase B (spec/skills-delivery.md §9: init, link, upgrade and lint), then a fork release that carries every skill change since brain-v1.0.0 and whose range includes the CLI being released; canonical skill authorship moves to the fork; the product build consumes an exact released snapshot and never edits generated copies; AGENTS.md, templates/brain/AGENTS.md and the docs say where skills are written; brains on older versions keep working until they upgrade.
 **Acceptance:** the package delivers a snapshot whose integrity matches the fork's release; editing a generated copy fails a check; a synthetic brain on 0.8.1 upgrades without both repos changing at the same moment; `test:package` and the skill checks pass.
+
 ## 0.10.0 — The brain assistant (decision 0064)
 
 An assistant you ask, from the CLI, about the structure of your work: Areas, Domains, Projects and Tasks. It finds what's stalled, misplaced or missing, recommends, turns your thinking into captures, tasks and projects, and makes changes through Review rows, or directly after your yes in a live chat. On demand; the weekly scheduled run is CC-111 in 0.13.0. Starts after 0.9.0 is released, with its opening scope grill.
