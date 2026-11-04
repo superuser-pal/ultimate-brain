@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -163,4 +163,49 @@ test("link refuses a brain-query skill folder that links out of the repo", async
   assert.equal(run.code, 5, run.stdout);
   assert.equal(run.json.error.code, "OUTSIDE_ROOT");
   assert.equal(await readFile(join(outside, "A-precious.md"), "utf8"), "keep me\n");
+});
+
+test("link writes the block in AGENTS.md and leaves a CLAUDE.md symlink to it alone (CC-132)", async (context) => {
+  const target = await repo(context);
+  await writeFile(join(target, "AGENTS.md"), "# Rules\n");
+  await symlink("AGENTS.md", join(target, "CLAUDE.md"));
+  const result = await brain(["link", target, "--repo-name", "acme-api", "--area", "area-2m7c4h8n", ...BRAIN]);
+  assert.equal(result.code, 0, result.stdout);
+  const files = result.json.data.files.filter((file: { path: string }) => !file.path.includes("skills"));
+  assert.deepEqual(files, [{ path: "AGENTS.md", action: "updated" }, { path: "CLAUDE.md", action: "unchanged" }]);
+  assert.equal((await lstat(join(target, "CLAUDE.md"))).isSymbolicLink(), true);
+  assert.equal(await readlink(join(target, "CLAUDE.md")), "AGENTS.md");
+  const agents = await readFile(join(target, "AGENTS.md"), "utf8");
+  assert.ok(agents.startsWith("# Rules\n") && agents.includes("<!-- ultimate-brain:start -->"));
+  const again = await brain(["link", target, "--repo-name", "acme-api", "--area", "area-2m7c4h8n", ...BRAIN]);
+  assert.equal(again.code, 0, again.stdout);
+  assert.equal(await readFile(join(target, "AGENTS.md"), "utf8"), agents);
+});
+
+test("link refuses a CLAUDE.md symlink to anything but the repo's AGENTS.md with INSTRUCTIONS_SYMLINK and writes nothing (CC-132)", async (context) => {
+  const outside = await repo(context);
+  await writeFile(join(outside, "AGENTS.md"), "# Elsewhere\n");
+  for (const [name, link] of [["other file", "NOTES.md"], ["outside the repo", join(outside, "AGENTS.md")], ["dangling", "missing.md"]] as const) {
+    const target = await repo(context);
+    await writeFile(join(target, "AGENTS.md"), "# Rules\n");
+    await writeFile(join(target, "NOTES.md"), "notes\n");
+    await symlink(link, join(target, "CLAUDE.md"));
+    const result = await brain(["link", target, "--repo-name", "acme-api", "--area", "area-2m7c4h8n", ...BRAIN]);
+    assert.equal(result.code, 4, `${name}: ${result.stdout}`);
+    assert.equal(result.json.error.code, "INSTRUCTIONS_SYMLINK", name);
+    assert.ok(result.json.error.message.includes("@AGENTS.md"), name);
+    assert.equal(await readFile(join(target, "AGENTS.md"), "utf8"), "# Rules\n", name);
+    await assert.rejects(readFile(join(target, ".brain")), name);
+  }
+});
+
+test("link still refuses a symbolic AGENTS.md with OUTSIDE_ROOT, even when CLAUDE.md links to it (CC-132)", async (context) => {
+  const target = await repo(context);
+  await writeFile(join(target, "RULES.md"), "# Rules\n");
+  await symlink("RULES.md", join(target, "AGENTS.md"));
+  await symlink("AGENTS.md", join(target, "CLAUDE.md"));
+  const result = await brain(["link", target, "--repo-name", "acme-api", "--area", "area-2m7c4h8n", ...BRAIN]);
+  assert.equal(result.code, 5, result.stdout);
+  assert.equal(result.json.error.code, "OUTSIDE_ROOT");
+  assert.equal(await readFile(join(target, "RULES.md"), "utf8"), "# Rules\n");
 });
