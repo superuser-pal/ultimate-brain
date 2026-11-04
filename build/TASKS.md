@@ -242,7 +242,7 @@ Scoped in the 2026-11-03 grill (CC-95, [0064](../decisions/0064-brain-assistant-
 
 Right after 0.9.0. Fewer databases and only reviewed knowledge in Notion; the brain in Git keeps everything. Each task writes its spec first.
 
-### CC-123 · Concepts become Documents (decision 0071) · `in progress`
+### CC-123 · Concepts become Documents (decision 0071) · `review`
 **Release:** 0.9.1
 **Changelog:** concepts become Documents of their own kind, "learned": the Concepts database is retired and existing concepts move to Documents with their links.
 **Output:** spec first: `origin: learned` on `reference` notes in spec/schema.md and note.schema.json, what replaces the `concept` type (a `brain upgrade` step that rewrites existing concept notes and every reference to them, or the type kept as an alias: the spec decides), ingest's extraction (an idea or method → a learned Document), query, Review sections and Promote (decisions only); then the CLI, the skills, the Notion design (no Concepts database, Documents views by origin, "What do we know?" with Decisions and Documents), the Knowledge and Documents modules, Prompts 2/4/6/7, and a migration that moves Concepts rows to Documents and retires the database after a yes.
