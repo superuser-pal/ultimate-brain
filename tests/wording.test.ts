@@ -277,8 +277,8 @@ test("a report held with no baseline still gets its properties; only its text wa
   assert.equal(item.body, null);
   assert.equal(item.sections, null);
   assert.deepEqual(item.properties.Origin, { type: "select", value: "Report" });
-  for (const name of ["Project", "Asked in", "Brain ID", "Last Synced"]) assert.ok(Object.hasOwn(item.properties, name), name);
-  assert.ok(item.pending_relations.some((entry: { property: string }) => entry.property === "Area"), "Area waits for the area's page, as for any note");
+  for (const name of ["Name", "Project", "Area", "Asked in", "Brain ID", "Last Synced"]) assert.ok(Object.hasOwn(item.properties, name), name);
+  assert.deepEqual(item.properties["Asked in"], { type: "relation", value: [ASK] });
   assert.equal(Object.hasOwn(item.properties, "Refresh asked"), false, "a refresh is not consumed by a held body");
   assert.equal(Object.hasOwn(item.published, "@content"), false);
   assert.equal(Object.hasOwn(item.published, "@git_body"), false);
@@ -301,6 +301,10 @@ test("a report held with no baseline still gets its properties; only its text wa
 test("a promoted Document with a pending revision gets its properties; an accepted page is left alone whole", async (context) => {
   const dir = await fixtureCopy(context);
   const document = await promotedDocument(dir);
+  const configPath = join(dir, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  config.notion.databases.documents = "d1000000-0000-4000-8000-000000000001";
+  await writeFile(configPath, JSON.stringify(config, null, 2));
   const file = join(dir, document.path);
   const stored = parseFrontmatter(await readFile(file, "utf8"));
   stored.attributes.projects = ["prj-9x4t1b7e"];
