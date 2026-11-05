@@ -91,7 +91,7 @@ test("a body edited after acceptance gives no import, even when the edit made No
   const document = await promotedDocument(dir);
   const edited = await plan(dir, [documentRow(wording({ page_edited_at: "2026-12-10T10:01:00Z" }))]);
   assert.deepEqual(edited.accepted_wording, []);
-  assert.deepEqual(edited.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "EDITED_AFTER_ACCEPTANCE" }]);
+  assert.deepEqual(edited.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "EDITED_AFTER_ACCEPTANCE", accepted: true }]);
   // Validation comes before the shortcut that consumes an acceptance: Notion equal to Git, edited later, is still stale.
   const level = await plan(dir, [documentRow(wording({ body_markdown: SEED, page_edited_at: "2026-12-10T10:01:00Z" }))]);
   assert.equal(level.wording_waiting[0].reason, "EDITED_AFTER_ACCEPTANCE");
@@ -106,9 +106,9 @@ test("a pending revision blocks the import, accepted or not", async (context) =>
   const document = await promotedDocument(dir);
   const accepted = await plan(dir, [documentRow(wording({ pending_revision: true }))]);
   assert.deepEqual(accepted.accepted_wording, []);
-  assert.deepEqual(accepted.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "REVISION_PENDING" }]);
+  assert.deepEqual(accepted.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "REVISION_PENDING", accepted: true }]);
   const drafted = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null, pending_revision: true }))]);
-  assert.deepEqual(drafted.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "REVISION_PENDING" }]);
+  assert.deepEqual(drafted.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "REVISION_PENDING", accepted: false }]);
 });
 
 test("fail closed: no acceptance time, no baseline, an unconvertible block, an unaccepted draft", async (context) => {
@@ -118,11 +118,11 @@ test("fail closed: no acceptance time, no baseline, an unconvertible block, an u
   assert.equal(undated.wording_waiting[0].reason, "ACCEPTANCE_UNDATED");
   assert.deepEqual(undated.clear_accepted, []);
   const unconvertibleDraft = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null, body_markdown: null, unconvertible: true }))]);
-  assert.deepEqual(unconvertibleDraft.wording_held, [{ page_id: PAGE, note: document.id, reason: "UNCONVERTIBLE_BLOCK" }]);
+  assert.deepEqual(unconvertibleDraft.wording_held, [{ page_id: PAGE, note: document.id, reason: "UNCONVERTIBLE_BLOCK", accepted: false }]);
   const unconvertibleAccepted = await plan(dir, [documentRow(wording({ body_markdown: null, unconvertible: true }))]);
   assert.equal(unconvertibleAccepted.wording_waiting[0].reason, "UNCONVERTIBLE_BLOCK");
   const draft = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null }))]);
-  assert.deepEqual(draft.wording_held, [{ page_id: PAGE, note: document.id, reason: "UNACCEPTED_DRAFT" }]);
+  assert.deepEqual(draft.wording_held, [{ page_id: PAGE, note: document.id, reason: "UNACCEPTED_DRAFT", accepted: false }]);
   assert.deepEqual(draft.accepted_wording, []);
   // No baseline: nothing is imported and nothing is claimed to conflict.
   const file = join(dir, document.path);
@@ -133,7 +133,7 @@ test("fail closed: no acceptance time, no baseline, an unconvertible block, an u
   assert.equal(lost.wording_waiting[0].reason, "NO_BASELINE");
   assert.deepEqual(lost.accepted_wording, []);
   const lostDraft = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null }))]);
-  assert.deepEqual(lostDraft.wording_held, [{ page_id: PAGE, note: document.id, reason: "NO_BASELINE" }]);
+  assert.deepEqual(lostDraft.wording_held, [{ page_id: PAGE, note: document.id, reason: "NO_BASELINE", accepted: false }]);
 });
 
 test("Git changing alone is no conflict; both changing is GIT_CHANGED; a Git body that moved after the plan fails the apply", async (context) => {
@@ -224,22 +224,124 @@ test("a publish keeps a pending proposed refresh and an unaccepted report draft;
 
   const button = await plan(dir, [reportRow(page, wording({ accepted: false, accepted_at: null, pending_refresh: true, body_markdown: REPORT }), { "Brain ID": report.id })]);
   assert.deepEqual(button.refresh_requests, [], "the button ticks no Refresh asked, so no full refresh is queued");
-  assert.deepEqual(button.wording_waiting, [{ page_id: page, note: report.id, reason: "REFRESH_PENDING" }]);
+  assert.deepEqual(button.wording_waiting, [{ page_id: page, note: report.id, reason: "REFRESH_PENDING", accepted: false }]);
   const planFile = join(dir, "..", "plan.json");
   await writeFile(planFile, JSON.stringify(button));
   const held = await run(dir, ["sync", "render", "--ids", report.id, "--plan", planFile]);
-  assert.deepEqual(held.json.data.items, []);
+  // Not accepted: only the text waits (#221). The body, Refresh asked and the body baselines stay out.
+  assert.equal(held.json.data.items.length, 1);
+  assert.equal(held.json.data.items[0].body, null);
+  assert.equal(Object.hasOwn(held.json.data.items[0].properties, "Refresh asked"), false);
   assert.deepEqual(held.json.data.skipped, [{ id: report.id, reason: "WORDING_PENDING" }]);
 
   const draft = await plan(dir, [reportRow(page, wording({ accepted: false, accepted_at: null, body_markdown: REPORT.replace("On track.", "A draft of mine.") }), { "Brain ID": report.id })]);
-  assert.deepEqual(draft.wording_held, [{ page_id: page, note: report.id, reason: "UNACCEPTED_DRAFT" }]);
+  assert.deepEqual(draft.wording_held, [{ page_id: page, note: report.id, reason: "UNACCEPTED_DRAFT", accepted: false }]);
   await writeFile(planFile, JSON.stringify(draft));
   const kept = await run(dir, ["sync", "render", "--ids", report.id, "--plan", planFile]);
   assert.deepEqual(kept.json.data.skipped, [{ id: report.id, reason: "WORDING_PENDING" }]);
+  assert.deepEqual(kept.json.data.items.map((item: { body: unknown }) => item.body), [null]);
 
   // A queued full refresh waits while Notion text for that report is unresolved.
   const queued = await plan(dir, [reportRow(page, wording({ accepted: false, accepted_at: null, body_markdown: REPORT.replace("On track.", "A draft of mine.") }), { "Brain ID": report.id, "Refresh asked": true })]);
   assert.equal(queued.refresh_requests[0].wording_blocked, true);
+});
+
+const ASK = "e1000000-0000-4000-8000-0000000000a1";
+
+/** Renders `id` with the plan and returns the reply's data. */
+async function renderWith(dir: string, id: string, planned: unknown) {
+  const planFile = join(dir, "..", `plan-${Math.random().toString(36).slice(2)}.json`);
+  await writeFile(planFile, JSON.stringify(planned));
+  const rendered = await run(dir, ["sync", "render", "--ids", id, "--plan", planFile]);
+  assert.equal(rendered.code, 0, rendered.stdout);
+  return rendered.json.data;
+}
+
+test("a report held with no baseline still gets its properties; only its text waits (#221)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const report = await publishedReport(dir);
+  const page = "5c4d3e2f-1a0b-4c9d-8e7f-6a5b4c3d2e1f";
+  // A report moved from the Inbox by migration 0019 and published before 0.8.0: no Origin and no body baselines in S.
+  const file = join(dir, report.path);
+  const stored = parseFrontmatter(await readFile(file, "utf8"));
+  Object.assign(stored.attributes, { projects: ["prj-9x4t1b7e"], area: "area-2m7c4h8n", asked_in: ASK, notion_published: { "@content": "sha256:old", "@fixes": 0, Name: stored.attributes.title } });
+  await writeFile(file, serializeFrontmatter(stored));
+  const planned = await plan(dir, [reportRow(page, wording({ accepted: false, accepted_at: null, body_markdown: REPORT.replace("On track.", "Notion's own words.") }), { "Brain ID": report.id })]);
+  assert.deepEqual(planned.wording_held, [{ page_id: page, note: report.id, reason: "NO_BASELINE", accepted: false }]);
+
+  const data = await renderWith(dir, report.id, planned);
+  assert.deepEqual(data.skipped, [{ id: report.id, reason: "WORDING_PENDING" }], "listed as held for its body");
+  assert.equal(data.items.length, 1);
+  const [item] = data.items;
+  assert.equal(item.action, "update");
+  assert.equal(item.body, null);
+  assert.equal(item.sections, null);
+  assert.deepEqual(item.properties.Origin, { type: "select", value: "Report" });
+  for (const name of ["Project", "Asked in", "Brain ID", "Last Synced"]) assert.ok(Object.hasOwn(item.properties, name), name);
+  assert.ok(item.pending_relations.some((entry: { property: string }) => entry.property === "Area"), "Area waits for the area's page, as for any note");
+  assert.equal(Object.hasOwn(item.properties, "Refresh asked"), false, "a refresh is not consumed by a held body");
+  assert.equal(Object.hasOwn(item.published, "@content"), false);
+  assert.equal(Object.hasOwn(item.published, "@git_body"), false);
+  assert.equal(item.published.Origin, "Report");
+
+  // Recording it keeps the body baselines as they were; the properties are now in step, so the next held render writes nothing.
+  const recorded = await run(dir, ["sync", "record"], { records: [{ id: report.id, notion: page, synced_at: NOW, published: item.published }] });
+  assert.equal(recorded.code, 0, recorded.stdout);
+  const after = parseFrontmatter(await readFile(file, "utf8")).attributes.notion_published as Record<string, unknown>;
+  assert.equal(after["@content"], "sha256:old");
+  assert.equal(Object.hasOwn(after, "@git_body"), false);
+  const again = await renderWith(dir, report.id, planned);
+  assert.deepEqual(again.items, []);
+  assert.deepEqual(again.skipped, [{ id: report.id, reason: "WORDING_PENDING" }]);
+  // Once the hold is resolved, the body goes out as before.
+  const free = await run(dir, ["sync", "render", "--ids", report.id]);
+  assert.equal(free.json.data.items[0].body, gitBodyOf(stored as never));
+});
+
+test("a promoted Document with a pending revision gets its properties; an accepted page is left alone whole", async (context) => {
+  const dir = await fixtureCopy(context);
+  const document = await promotedDocument(dir);
+  const file = join(dir, document.path);
+  const stored = parseFrontmatter(await readFile(file, "utf8"));
+  stored.attributes.projects = ["prj-9x4t1b7e"];
+  await writeFile(file, serializeFrontmatter(stored));
+  const free = await run(dir, ["sync", "render", "--ids", document.id]);
+  assert.equal(free.json.data.items.length, 1);
+
+  // Not accepted, a Proposed revision on the page: the Project goes out, the body never does.
+  const drafted = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null, pending_revision: true }))]);
+  assert.deepEqual(drafted.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "REVISION_PENDING", accepted: false }]);
+  const held = await renderWith(dir, document.id, drafted);
+  assert.deepEqual(held.skipped, [{ id: document.id, reason: "WORDING_PENDING" }]);
+  assert.equal(held.items.length, 1);
+  assert.equal(held.items[0].body, null);
+  assert.ok(Object.hasOwn(held.items[0].properties, "Project"));
+  assert.deepEqual(held.items[0].properties, free.json.data.items[0].properties);
+
+  // Accepted with a pending revision (row 5): any write would make the acceptance look stale, so nothing is rendered.
+  const accepted = await plan(dir, [documentRow(wording({ pending_revision: true }))]);
+  assert.equal(accepted.wording_waiting[0].accepted, true);
+  const whole = await renderWith(dir, document.id, accepted);
+  assert.deepEqual(whole.items, []);
+  assert.deepEqual(whole.skipped, [{ id: document.id, reason: "WORDING_PENDING" }]);
+  // A row without `accepted` (as the skill writes when it moves a declined import into wording_held) fails closed.
+  const moved = { ...drafted, wording_waiting: [], wording_held: [{ page_id: PAGE, note: document.id, reason: "UNACCEPTED_DRAFT" }] };
+  assert.deepEqual((await renderWith(dir, document.id, moved)).items, []);
+  // So does an accepted_wording item, and a row the plan does not name leaves the note rendered as before.
+  const importing = await plan(dir, [documentRow(wording())]);
+  assert.equal(importing.accepted_wording.length, 1);
+  assert.deepEqual((await renderWith(dir, document.id, importing)).items, []);
+  const unrelated = { ...drafted, wording_waiting: [{ page_id: PAGE, note: "ref-0000aaaa", reason: "REVISION_PENDING", accepted: false }] };
+  const asBefore = await renderWith(dir, document.id, unrelated);
+  assert.deepEqual(asBefore.skipped, []);
+  assert.deepEqual(asBefore.items, free.json.data.items);
+});
+
+test("a plan row whose accepted is not true or false is refused as input", async (context) => {
+  const dir = await fixtureCopy(context);
+  const document = await promotedDocument(dir);
+  const bad = await run(dir, ["sync", "apply"], { as_of: NOW, create: [], updates: [], corrections: [], decisions: [], conflicts: [], ignored: [], wording_held: [{ page_id: PAGE, note: document.id, reason: "UNACCEPTED_DRAFT", accepted: "no" }] });
+  assert.equal(bad.json.error.code, "INPUT_INVALID");
 });
 
 test("an accepted refreshed report is imported exactly and keeps its six sections; one that lost them is refused", async (context) => {
@@ -376,11 +478,11 @@ test("Adopt Notion: from an accepted no-baseline row, the skill's item is import
   await writeFile(file, serializeFrontmatter(stored));
   // Unaccepted: held, with no acceptance time to build an item from. The user must click Accept first.
   const unaccepted = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null }))]);
-  assert.deepEqual(unaccepted.wording_held, [{ page_id: PAGE, note: document.id, reason: "NO_BASELINE" }]);
+  assert.deepEqual(unaccepted.wording_held, [{ page_id: PAGE, note: document.id, reason: "NO_BASELINE", accepted: false }]);
   assert.deepEqual(unaccepted.accepted_wording, []);
   // Accepted: waiting NO_BASELINE; the snapshot's own accepted_at goes into the skill's item.
   const accepted = await plan(dir, [documentRow(wording())]);
-  assert.deepEqual(accepted.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "NO_BASELINE" }]);
+  assert.deepEqual(accepted.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "NO_BASELINE", accepted: true }]);
   const adopt = { page_id: PAGE, kind: "document", note: document.id, accepted_at: "2026-12-10T10:00:00Z", page_edited_at: "2026-12-10T10:00:00Z", fingerprint: textHash(ACCEPTED), markdown: ACCEPTED, base: textHash(SEED), unattended_ok: false, diff: { added: 1, removed: 1 }, verified: { fingerprint: textHash(ACCEPTED), page_edited_at: "2026-12-10T10:00:00Z" } };
   const applied = await run(dir, ["sync", "apply"], { as_of: NOW, create: [], updates: [], corrections: [], decisions: [], conflicts: [], ignored: [], accepted_wording: [adopt] });
   assert.equal(applied.code, 0, applied.stdout);
@@ -404,11 +506,11 @@ test("an emptied accepted page waits instead of failing the whole plan; text wit
   const document = await promotedDocument(dir);
   const emptied = await plan(dir, [documentRow(wording({ body_markdown: "" }))]);
   assert.deepEqual(emptied.accepted_wording, []);
-  assert.deepEqual(emptied.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "EMPTY_BODY" }]);
+  assert.deepEqual(emptied.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "EMPTY_BODY", accepted: true }]);
   const unterminated = await plan(dir, [documentRow(wording({ body_markdown: "No newline at the end" }))]);
   assert.equal(unterminated.wording_waiting[0].reason, "UNCONVERTIBLE_BLOCK");
   const draft = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null, body_markdown: "No newline at the end" }))]);
-  assert.deepEqual(draft.wording_held, [{ page_id: PAGE, note: document.id, reason: "UNCONVERTIBLE_BLOCK" }]);
+  assert.deepEqual(draft.wording_held, [{ page_id: PAGE, note: document.id, reason: "UNCONVERTIBLE_BLOCK", accepted: false }]);
 });
 
 test("an acceptance younger than two minutes is not unattended_ok; --record-only skips the import but keeps the baseline update", async (context) => {
@@ -466,7 +568,7 @@ test("sync record: a null in published removes the old baseline, so a refreshed 
   assert.equal(published["@git_body"], textHash("refreshed\n"));
   // The next plan has no baseline for the report: held (unaccepted) or waiting NO_BASELINE (accepted), never compared with the old one.
   const draft = await plan(dir, [reportRow(page, wording({ accepted: false, accepted_at: null, body_markdown: REPORT.replace("On track.", "Another text.") }), { "Brain ID": report.id })]);
-  assert.deepEqual(draft.wording_held, [{ page_id: page, note: report.id, reason: "NO_BASELINE" }]);
+  assert.deepEqual(draft.wording_held, [{ page_id: page, note: report.id, reason: "NO_BASELINE", accepted: false }]);
 });
 
 test("sync record: a null on an ordinary property is kept as a real empty baseline; only an @-key with null is removed", async (context) => {
