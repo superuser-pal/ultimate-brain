@@ -70,10 +70,12 @@ Setup identifies the following, asking only for what it can't find:
 4. **Additional relations**, optional: a Goal (with a Project destination), People and Orgs. These are the ids that the work's tasks and documents also link to.
 5. **Work type, logging level and Log artifacts**, read from the destination's Workflow settings when they are set (§4). The suggested level is "Tasks + final outputs".
 6. **The status mapping** of §3.3.
+7. **The skills in the folder** (skills-delivery §9.7, from 0.9.2): whether the folder is not the brain and lacks the workflow skills, that is, it has no `.brain`, or its `.brain` `skills.names` lacks `brain-workflow`.
 
-Then it shows one summary and asks "Connect this work to Notion?". On yes, in this order:
+Then it shows one summary and asks "Connect this work to Notion?". When item 7 holds, the same message also asks whether to install the brain skills in the folder, so a session started there finds them. On yes to connecting, in this order:
 1. It sets the destination's Workflow settings through the MCP: `Workflow` = Connected, plus the work type, level and artifacts the user chose.
 2. It runs `brain workflow new` (§12), which writes the record and the pointer.
+3. On yes to the skills too, it runs `brain link <folder>` (cli.md §5.12) with `--project` or `--area` for the destination, and tells the user to commit what it wrote when the folder is a Git repo. A no writes nothing, and the question is asked only in setup.
 
 If step 2 fails, Notion says Connected but there is no record. The next setup run finds the Connected setting, fills only the gaps, and runs `workflow new` again.
 

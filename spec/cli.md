@@ -768,7 +768,7 @@ Errors: `USAGE` (bad op or key=value), `UNKNOWN_ID`.
 brain link <repo-path> [--project <id>] [--area <id>] [--stack <name>]… [--repo-name <name>]
 ```
 
-Connects a consuming repo to the brain (0006, 0009; CX-08). Allowed root: `<repo-path>`; writes only `.brain`, `AGENTS.md`, `CLAUDE.md`, and the folders of the linked skills in `.agents/skills/` and `.claude/skills/` there (`brain-query` today). Refuses if `<repo-path>` is the brain or the product repo, or if any part of a linked or retired skill folder is a symbolic link or the wrong file type (`OUTSIDE_ROOT`, before any write). The brain passes the pin guard first (§5.28); the linked repo has no pin and is not guarded.
+Connects a consuming repo, or any working folder, to the brain (0006, 0009; CX-08). Allowed root: `<repo-path>`; writes only `.brain`, `AGENTS.md`, `CLAUDE.md`, and the folders of the linked skills in `.agents/skills/` and `.claude/skills/` there (`brain-query`; from the 0.9.2 snapshot also `brain-workflow` and `brain-workflow-adopt`, skills-delivery §9.7). Refuses if `<repo-path>` is the brain or the product repo, or if any part of a linked or retired skill folder is a symbolic link or the wrong file type (`OUTSIDE_ROOT`, before any write). The brain passes the pin guard first (§5.28); the linked repo has no pin and is not guarded.
 
 1. **`.brain`** (JSON, committed with the repo; holds no machine paths):
    ```json
@@ -777,7 +777,7 @@ Connects a consuming repo to the brain (0006, 0009; CX-08). Allowed root: `<repo
    `repo` = `--repo-name`, else the folder name. `skills` (0059, skills-delivery §6.2) is replaced on every run: `{ "name", "version", "integrity", "names" }` of the snapshot the linked skills came from, `names` sorted; an existing `.brain` whose `skills` is not an object of three strings and a `names` list of kebab-case skill names fails `INPUT_INVALID`. `stacks`: lowercase kebab-case, deduped, sorted. If `.brain` exists, options given replace their keys; others are kept. When `--project` is given without `--area`, `area` is set to that project's `area` (replacing any old value). All keys optional; `project`/`area` must exist in the brain. Written as JSON with 2-space indent, keys in the order `repo`, `project`, `area`, `stacks`, `skills` (absent keys left out), and a trailing newline.
 2. **Instruction block** in `AGENTS.md` (created if missing). If `CLAUDE.md` exists and has no line `@AGENTS.md`, the block is also written there; if `CLAUDE.md` does not exist, it is created with the single line `@AGENTS.md`. If `CLAUDE.md` is a symbolic link that resolves to this repo's `AGENTS.md` (a regular file), it is left alone and reported `unchanged`: the block reaches it through the link. Any other symbolic `CLAUDE.md` (to another file, out of the repo, or dangling) is refused with `INSTRUCTIONS_SYMLINK` before any write, and the message says to replace it with a file holding the line `@AGENTS.md` or to point it at `AGENTS.md` (CC-132). A symbolic `AGENTS.md` is still refused with `OUTSIDE_ROOT`. The block sits between the lines `<!-- ultimate-brain:start -->` and `<!-- ultimate-brain:end -->`; an existing block is replaced in place, otherwise it is appended after one blank line. Nothing outside the markers changes.
 
-Block text (normative; `{…}` filled from the brain; the `- Project:` and `- Area:` lines are left out when `.brain` has no project or area, and the line before them then ends with `.` instead of `:`):
+Block text (normative; `{…}` filled from the brain; the `- Project:` and `- Area:` lines are left out when `.brain` has no project or area, and the line before them then ends with `.` instead of `:`; the workflow lines below are added when their skills are linked):
 
 ```markdown
 <!-- ultimate-brain:start -->
@@ -801,6 +801,21 @@ How: use the `brain-query` skill, or run `brain query --candidates "<question>" 
 The brain is read-only from this repo. Never edit its files from here.
 <!-- ultimate-brain:end -->
 ```
+
+**Workflow lines** (skills-delivery §9.7). When the linked skills include `brain-workflow`:
+- a paragraph goes between the `How:` paragraph and the read-only line, with one blank line before and after it: ``To track this repo's work, the standard way or connected to a Notion Project or Area, use the `brain-workflow` skill.`` When the linked skills also include `brain-workflow-adopt`, its final `.` is replaced by ``; to take over its existing plans and tasks, use `brain-workflow-adopt`.``
+- the read-only line gains, after one space, ``A connected workflow's records change only through `brain workflow` commands.``
+
+With all three skills linked, the end of the block reads:
+
+```markdown
+To track this repo's work, the standard way or connected to a Notion Project or Area, use the `brain-workflow` skill; to take over its existing plans and tasks, use `brain-workflow-adopt`.
+
+The brain is read-only from this repo. Never edit its files from here. A connected workflow's records change only through `brain workflow` commands.
+<!-- ultimate-brain:end -->
+```
+
+With only `brain-query` linked, the block is exactly as before 0.9.2: no workflow paragraph, and the last line ends after `from here.`.
 
 3. **Skills** (0029, 0038, 0059; skills-delivery §6.2): the **linked skills** are the skills of the source whose `targets` include `linked_repo`.
    - **Source.** A pinned brain (state `pinned` or `drift`): the files its lock lists, copied from the brain's `.agents/skills/<name>/`; before any write each must be a regular file with the locked bytes, and the first that isn't refuses `SKILLS_SNAPSHOT_MISSING` (§5.28) naming it. Unlisted files there and the brain's `.claude/skills` copy are ignored (lint covers them). An `unpinned` brain: the package snapshot, which must be compatible (else `SKILLS_SNAPSHOT_INVALID`), with warning `SKILLS_UNPINNED`.
@@ -1358,7 +1373,7 @@ Brings the product-owned files of an existing brain up to the installed version 
 7. **Lint** the brain (§5.10) and report the counts in `lint`; it reads the new lock. Lint findings never stop the upgrade: it only wrote product-owned files. With `--dry-run`, lint reads the **planned** tree: every `created`, `updated` or `removed` file as the upgrade would leave it, everything else (including `skipped` files) as it is on disk. So a dry run reports what would remain after the upgrade: `product-file` is silent for drift the upgrade repairs, and still reports an `AGENTS.md` left `skipped` for missing markers.
 8. **Commit and push**, when anything changed and the brain is a Git repository: stage exactly the paths in `files` whose `action` is `created`, `updated` or `removed`, plus the log file step 6 appended to (`log/<YYYY-MM>.md`). Never stage a `skipped` path or anything else in the working tree. Commit `upgrade: ultimate brain <version>, skills <snapshot name> <snapshot version>`, then `git push` if the current branch has an upstream. No upstream → warning `PUSH_SKIPPED`. A push that fails → warning `PUSH_FAILED` with Git's message; the commit stays, and the exit code is still 0. A failed commit (no identity) → warning `GIT_COMMIT_SKIPPED`, files kept. Not a Git repository → no commit, no warning.
 
-The skill a linked repo carries (`brain-query`, §5.12) is refreshed by running `brain link` there again.
+The skills a linked repo or folder carries (§5.12) are refreshed by running `brain link` there again.
 
 ```sh
 brain upgrade --json
