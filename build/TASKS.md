@@ -374,7 +374,7 @@ An assistant you ask, from the CLI, about the structure of your work: Areas, Dom
 **Output:** docs/acceptance-0.10.0.md: a scenario per finding kind, the Review-row path and the chat-yes path, a linked repo's rollup reviewed, Notion unreachable.
 **Acceptance:** every scenario passes with its evidence; no change happens without a Review row or a yes; the Review workload of one run stays within the cap the contracts set.
 
-### CC-137 · Record the 0.10.0 opening grill: Ultimate Assistant (decision 0072) · `review`
+### CC-137 · Record the 0.10.0 opening grill: Ultimate Assistant (decision 0072) · `done` (#223)
 **Release:** 0.10.0
 **Changelog:** development only: the 0.10.0 opening grill is recorded as decision 0072, which names the assistant Ultimate Assistant and settles how a review session goes.
 **Output:** decision 0072 from the user's answers of 2026-11-05 (name, report first, fixed thresholds, where a ramble lands, whole brain top 10, dismissals); an "Amended by" pointer on 0064; this file: the 0.10.0 intro and CC-108's Output point to 0072, and the 1.0.0 section notes the Notion agent's rename. No code, no spec.
