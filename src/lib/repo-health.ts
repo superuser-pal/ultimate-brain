@@ -24,7 +24,7 @@ export async function repoHealth(repo: LinkedRepo, hub: HubContext, brainRoot: s
   try {
     path = await openRepo(repo, hub.home);
   } catch {
-    return [{ code: "PATH_MISSING", severity: "error", message: `${repo.path} doesn't exist or isn't the top of a Git working tree: move it back, or unlink and link it again` }];
+    return [{ code: "PATH_MISSING", severity: "error", message: `${repo.path} doesn't exist or isn't the top of a Git working tree: move it back, or record where it is now with brain repo refresh ${repo.name} --path <path>` }];
   }
 
   // The kit, when the entry has one: missing or invalid skips every check that reads its content.
@@ -43,7 +43,7 @@ export async function repoHealth(repo: LinkedRepo, hub: HubContext, brainRoot: s
         if (committed === null || !committed.equals(bytes)) checks.push({ code: "KIT_UNCOMMITTED", severity: "info", message: `${KIT_FILE} isn't committed in ${repo.name}: commit it there`, path: KIT_FILE });
       }
     }
-  } else checks.push({ code: "NO_KIT", severity: "info", message: `${repo.name} has no link kit: the skill can write one` });
+  } else checks.push({ code: "NO_KIT", severity: "info", message: `${repo.name} has no link kit: the skill can write one, and brain repo refresh ${repo.name} applies it` });
 
   if (kit !== null) {
     const byId = new Map(hub.notes.map((note) => [note.id, note]));

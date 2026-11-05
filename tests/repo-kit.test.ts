@@ -717,6 +717,7 @@ test("repo refresh --path: a relative path, a folder that is not a repo, the bra
   context.after(() => rm(dirname(clone), { recursive: true, force: true }));
   await exec("git", ["clone", "-q", link.repo.root, clone]);
   await rm(join(clone, "brain-kit.json"));
+  await exec("git", ["-C", link.dir, "init", "-q"]);
   const cases: [string, string][] = [["relative/acme-api", "INPUT_INVALID"], [plain, "REPO_NOT_FOUND"], [link.dir, "REPO_IS_BRAIN"], [clone, "KIT_MISSING"]];
   for (const [path, code] of cases) {
     const result = await run(link.dir, ["repo", "refresh", "acme-api", "--path", path]);
