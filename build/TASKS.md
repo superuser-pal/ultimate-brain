@@ -345,6 +345,7 @@ After 0.9.1. Scope checked with the user on 2026-11-05 (CC-133): CC-105 as decis
 **Changelog:** development only: `pr-format` names a PR whose own task row is missing, instead of asking for a CHANGELOG.md line.
 **Output:** found on #195: merging main into the branch dropped the task's own row, and `pr-format` failed with "PR must add its task line to CHANGELOG.md", because a task with no row falls to the 0.3.x path; `merge-ready` was red but the PR was merged, and CC-115 (#199) restored the row. scripts/pr-format.mjs fails first with "PR has no row for its task CC-N" when the head has no row for the branch's task; scripts tests; a line in docs/releasing.md or AGENTS.md on merging main into a branch (keep every row on both sides). Ask the user whether `main` should require `merge-ready` (branch protection is off today; decision 0040).
 **Acceptance:** a scripts test: a PR head without its own task's row fails with the new message, and a 0.3.x task with no row-level Changelog still gets the old message; the user's answer on requiring `merge-ready` is recorded; `npm run test:scripts` and the leak check pass.
+**Answer (user, 2026-11-05):** yes, `main` should require `merge-ready`: the repo is public now, so a free ruleset can enforce it. It changes decision 0040, so it is its own task, CC-138 in 0.10.0; CC-116 doesn't change the repo's settings.
 
 ### CC-118 · `brain repo refresh` adopts a kit for a legacy link and takes a new path · `todo`
 **Release:** 0.9.2
@@ -367,6 +368,12 @@ An assistant you ask, from the CLI, about the structure of your work: Areas, Dom
 **Changelog:** "review my projects" finds stalled tasks, finished projects still open, misplaced projects and missing next steps, recommends what to do, and turns what you say into captures, tasks and projects, changing nothing without your yes or a Review row.
 **Output:** per CC-108: the skill (single source for Claude Code and Codex, delivered as 0.9.0 delivers skills), a thin `.claude/agents` sub-agent that loads it, any CLI helper with tests, templates/brain/AGENTS.md, brain-howto and the guide.
 **Acceptance:** blind runs on a synthetic brain and a synthetic Notion snapshot with planted problems (a stalled project, a task with no project, a finished project still Active, a project under the wrong Area, an Area with no Domain while Domains is on): each is found; nothing is written without a Review row or an explicit yes; a ramble of mixed thoughts is split into the right captures, tasks and project changes; with Notion unreachable it says so and reviews the brain only; the skill mirror check passes.
+
+### CC-138 · `main` requires `merge-ready` · `todo`
+**Release:** 0.10.0
+**Changelog:** development only: a ruleset on `main` requires the `merge-ready` status, so a PR can't merge without its format, its ticked boxes, its `done` (#N) and a reviewer's pass at its head.
+**Output:** the user's answer on CC-116 (2026-11-05): a decision amending 0040's "it informs, it doesn't block" now that the repo is public (a free ruleset can require a status); the ruleset requiring the `merge-ready` commit status on `main`, with the repo admin as bypass actor so `release.mjs` can still push its release commit; what the user does when no reviewer can run; AGENTS.md and docs/releasing.md. The user turns the ruleset on; agents don't change repo settings.
+**Acceptance:** the decision names the bypass and the case of an unavailable reviewer; on a test PR the Merge button stays disabled while `merge-ready` is red and enables once it is green; the next `release.mjs` push to `main` goes through the bypass; the leak check passes.
 
 ### CC-110 · 0.10.0 acceptance (decision 0064) · `todo`
 **Release:** 0.10.0
