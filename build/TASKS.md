@@ -310,7 +310,7 @@ Right after 0.9.0. Fewer databases and only reviewed knowledge in Notion; the br
 
 After 0.9.1. Scope checked with the user on 2026-11-05 (CC-133): CC-105 as decision 0069 placed it, its spec first (CC-134), plus the dogfood fixes #221 (CC-135) and #220 (CC-136), and CC-116 and CC-118 taken from 0.10.0. 0.9.2 is released when CC-105 is done. CC-134, CC-135, CC-136, CC-116 and CC-118 can be built in parallel; CC-105 starts once CC-134 is on `main`.
 
-### CC-133 · Plan 0.9.2: dogfood fixes, CC-116 and CC-118 join, CC-105 spec first · `in progress`
+### CC-133 · Plan 0.9.2: dogfood fixes, CC-116 and CC-118 join, CC-105 spec first · `review`
 **Release:** 0.9.2
 **Changelog:** development only: 0.9.2 gains the fixes for dogfood #220 and #221 and takes CC-116 and CC-118 from 0.10.0, and CC-105's spec becomes its own task.
 **Output:** the 0.9.2 scope check of 2026-11-05 with the user: one 0.9.2 release that ships when CC-105 is done (decision 0069 kept); the fixes for #221 (CC-135) and #220 (CC-136) join it; CC-116 and CC-118 move from 0.10.0 so they can be built now; CC-105's phase B spec becomes CC-134, ahead of its build; the 0.10.0 opening grill runs while 0.9.2 is built. TASKS.md only: the release table, the status notes, the 0.9.2 rows.
