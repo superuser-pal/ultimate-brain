@@ -14,7 +14,7 @@ Decisions [0059](../decisions/0059-shared-skills-and-connected-workflows.md), [0
 | 0.8.1 | Review inside the building session (0063), release preflight, the Domains database in every space (0065) |
 | 0.9.0 | Public shared-skills fork; standard/Notion-connected software and general workflows; setup/adoption; compatible pins and update awareness (0059); linked repos with the link kit (0066); skills built from the product's `skills/` (phase A); Type on Domains and Lifecycle only where the brain creates the row (0070) |
 | 0.9.1 | A simpler Notion: Concepts and Reports into Documents, reviewed-only knowledge in Notion, to-dos as tasks, Orgs · Employer (0071) |
-| 0.9.2 | The package ships the fork's released skill snapshot, and skills are written in the fork (phase B, CC-105; 0069) |
+| 0.9.2 | The package ships the fork's released skill snapshot, and skills are written in the fork (phase B, CC-105; 0069); the 0.9.1 dogfood fixes and CC-116, CC-118 (CC-133) |
 | 0.10.0 | The brain assistant: reviews Areas, Domains, Projects and Tasks, recommends, and changes through Review rows or a yes in chat (0064) |
 | 0.11.0 | Reflection (0052); CC-65 to CC-67 and U-21 retain their identities |
 | 0.12.0 | Cross-agent memory continuity and reliable cited retrieval, for Claude Code and Codex |
@@ -40,7 +40,8 @@ Future implementation tasks are decomposed by Claude Code after their opening sc
 > - **2026-10-29, CC-69 (planning):** decision 0054 (buttons that run Brain Assistant: Tidy capture, Write up, Refresh report), accepted by the user in a grill with Codex, plans 0.7.1 (CC-70 to CC-73, U-22).
 > - **2026-10-31, CC-86 (planning):** decision [0056](../decisions/0056-buttons-move-into-0-8-0.md) moves the Brain Assistant buttons (CC-70 to CC-73, U-22) from 0.7.1 into 0.8.0; 0.7.1 becomes CC-83 to CC-85.
 > - **2026-10-30, CC-74 (planning):** decision [0055](../decisions/0055-domains-capture-and-review.md), accepted in the user's grill, assigns optional Domains, Won't Do, voice capture, subject selection and editable Review to **0.8.0** (CC-74 to CC-82, U-23). Reflection (CC-65 to CC-67, U-21) moves to **0.9.0**; 0.7.0 and 0.7.1 keep their scope (decision [0056](../decisions/0056-buttons-move-into-0-8-0.md), 2026-10-31, later moved the buttons into 0.8.0 and left 0.7.1 as CC-83 to CC-85). This supersedes the earlier release order above; user acceptance runs remain deferred until the builds are ready. The user explicitly asked Codex to record CC-74 while Claude Code was busy; implementation ownership otherwise stays with Claude Code, and CC-74 needs independent review.
-> - **Untriaged `dogfood` issues:** 0 (#143–#146 → CC-68, 2026-10-29; #137 → CC-59).
+> - **2026-11-05, CC-133 (planning):** the 0.9.2 scope check: one 0.9.2 shipped with CC-105 (0069 kept), its spec split out as CC-134; dogfood #221 → CC-135, #220 → CC-136; CC-116 and CC-118 move from 0.10.0 to 0.9.2; the 0.10.0 opening grill runs while 0.9.2 is built.
+> - **Untriaged `dogfood` issues:** 0 (#220 → CC-136, #221 → CC-135, 2026-11-05; #143–#146 → CC-68, 2026-10-29; #137 → CC-59).
 > - **Earlier:** v1 waves 1–4 and dogfood findings 1–24 (the Wave 4 table) are in [HISTORY.md](HISTORY.md).
 
 ## Why this split
@@ -307,13 +308,49 @@ Right after 0.9.0. Fewer databases and only reviewed knowledge in Notion; the br
 
 ## 0.9.2 — Skills from the fork (decision 0069)
 
-After 0.9.1. Starts with its scope check against 0069 and spec/skills-delivery.md §9.
+After 0.9.1. Scope checked with the user on 2026-11-05 (CC-133): CC-105 as decision 0069 placed it, its spec first (CC-134), plus the dogfood fixes #221 (CC-135) and #220 (CC-136), and CC-116 and CC-118 taken from 0.10.0. 0.9.2 is released when CC-105 is done. CC-134, CC-135, CC-136, CC-116 and CC-118 can be built in parallel; CC-105 starts once CC-134 is on `main`.
+
+### CC-133 · Plan 0.9.2: dogfood fixes, CC-116 and CC-118 join, CC-105 spec first · `in progress`
+**Release:** 0.9.2
+**Changelog:** development only: 0.9.2 gains the fixes for dogfood #220 and #221 and takes CC-116 and CC-118 from 0.10.0, and CC-105's spec becomes its own task.
+**Output:** the 0.9.2 scope check of 2026-11-05 with the user: one 0.9.2 release that ships when CC-105 is done (decision 0069 kept); the fixes for #221 (CC-135) and #220 (CC-136) join it; CC-116 and CC-118 move from 0.10.0 so they can be built now; CC-105's phase B spec becomes CC-134, ahead of its build; the 0.10.0 opening grill runs while 0.9.2 is built. TASKS.md only: the release table, the status notes, the 0.9.2 rows.
+**Acceptance:** each of CC-134, CC-135 and CC-136 has a Release, Changelog, Output and Acceptance line; CC-116 and CC-118 keep their rows word for word except their Release; no other task's row changes; `pr-format` and the leak check pass.
+
+### CC-134 · The phase B spec: skills written in the fork (decision 0069) · `todo`
+**Release:** 0.9.2
+**Changelog:** development only: the contract for phase B of skill delivery, where skills are written in the fork and the package ships its released snapshot.
+**Output:** spec/skills-delivery.md §9 (and the sections it touches: §6 init, link, upgrade and lint, §10 the fork, §12 acceptance) and spec/cli.md where a command changes: where a skill is written once CC-105 lands, how the product build takes an exact released fork snapshot and refuses an edited generated copy, what `brain init`, `link`, `upgrade` and `lint` do differently, how a brain on 0.8.1 or 0.9.x upgrades without both repos changing at once, CC-107's finding 9 (brain-workflow and brain-workflow-adopt reach any working folder, not only the brain), and how skill changes made in `skills/` since brain-v1.0.0 (0.9.0 and 0.9.1) reach the fork. Classify the open change of the skills-integration issue #213.
+**Acceptance:** a context-free Sonnet sub-agent reading only the spec lists no question it would need answered to build CC-105; every skill change since brain-v1.0.0 is named with how it reaches the fork; #213 has no unclassified change; the leak check passes.
 
 ### CC-105 · Brain skills authored in the fork, a pinned snapshot in the package (decision 0059) · `todo`
 **Release:** 0.9.2
 **Changelog:** the brain skills are written in the ultimate-brain-skills fork, and the ultimate-brain package ships an exact, tested snapshot of them.
-**Output:** step 4 of docs/skills-migration-plan.md, after 0.9.1 is released (decision 0069): first the spec of phase B (spec/skills-delivery.md §9: init, link, upgrade and lint), also CC-107's finding 9 (brain-workflow and brain-workflow-adopt must reach any working folder, not only the brain); then a fork release that carries every skill change since brain-v1.0.0 and whose range includes the CLI being released; canonical skill authorship moves to the fork; the product build consumes an exact released snapshot and never edits generated copies; AGENTS.md, templates/brain/AGENTS.md and the docs say where skills are written; brains on older versions keep working until they upgrade.
+**Output:** step 4 of docs/skills-migration-plan.md, built from CC-134's spec once it is on `main` (decision 0069; CC-133 split the spec out): a fork release that carries every skill change since brain-v1.0.0 and whose range includes the CLI being released; canonical skill authorship moves to the fork; the product build consumes an exact released snapshot and never edits generated copies; AGENTS.md, templates/brain/AGENTS.md and the docs say where skills are written; brains on older versions keep working until they upgrade.
 **Acceptance:** the package delivers a snapshot whose integrity matches the fork's release; editing a generated copy fails a check; a synthetic brain on 0.8.1 upgrades without both repos changing at the same moment; `test:package` and the skill checks pass.
+
+### CC-135 · A held report still gets its properties (dogfood #221) · `todo`
+**Release:** 0.9.2
+**Changelog:** a report or Document whose text is held for your decision still gets its Origin, Project, Area and links in Notion; only its text waits.
+**Output:** #221: `sync render` leaves a note named by `wording_waiting`, `wording_held` or `accepted_wording` out of `items` whole (`WORDING_PENDING`), so reports moved by migration 0019 with no baseline kept an empty Origin, Project, Area and Asked in. Spec first (spec/cli.md §5.14.6 and the row 9 text in §5.14.7): such a note is rendered with its properties and with `body` and `sections` null, and `skipped` still names it for its body; then `src/lib/sync.ts` test-first; brain-sync and brain-catch-up say that only the text waits; migration 0019's text notes that moved pages keep hidden leftover Inbox properties (Kind, Brain Status). Also notion/brain-assistant.md: the Instructions say "a report's body" instead of "a Report row's body" (0.9.1 moved reports to Documents).
+**Acceptance:** tests on a synthetic brain: a report with no baseline renders its properties with a null body and is listed as held for its body; a promoted Document with a pending revision does the same; a note with no hold renders as before; the existing sync tests pass; the skill mirror check and the leak check pass.
+
+### CC-136 · brain upgrade rewrites concept links inside proposals (dogfood #220) · `todo`
+**Release:** 0.9.2
+**Changelog:** `brain upgrade` also moves the links to old concept notes that sit inside proposals, so no proposal points at `knowledge/concepts/` after 0.9.1.
+**Output:** #220: the 0.9.1 concept conversion (spec/cli.md §5.15 step 5a, `planConceptConversion` in src/commands/upgrade.ts) rewrites links in note bodies but not inside the frontmatter strings of proposals in `_proposals/` (`content:` and the other text fields). Spec first: whether applied proposals are rewritten too or kept as history (pending ones must be, or they fail on apply); then the CLI test-first; an upgrade run on an already-converted brain fixes the links it missed (the step is safe to run again).
+**Acceptance:** tests on a synthetic brain: a pending proposal whose `content:` links a concept points at its Document after the upgrade and still applies; applied proposals follow the spec's rule; running the upgrade again on a converted brain fixes missed links and changes nothing else; `brain lint` is clean; the existing upgrade tests pass.
+
+### CC-116 · CI catches a PR that drops its own task row · `todo`
+**Release:** 0.9.2
+**Changelog:** development only: `pr-format` names a PR whose own task row is missing, instead of asking for a CHANGELOG.md line.
+**Output:** found on #195: merging main into the branch dropped the task's own row, and `pr-format` failed with "PR must add its task line to CHANGELOG.md", because a task with no row falls to the 0.3.x path; `merge-ready` was red but the PR was merged, and CC-115 (#199) restored the row. scripts/pr-format.mjs fails first with "PR has no row for its task CC-N" when the head has no row for the branch's task; scripts tests; a line in docs/releasing.md or AGENTS.md on merging main into a branch (keep every row on both sides). Ask the user whether `main` should require `merge-ready` (branch protection is off today; decision 0040).
+**Acceptance:** a scripts test: a PR head without its own task's row fails with the new message, and a 0.3.x task with no row-level Changelog still gets the old message; the user's answer on requiring `merge-ready` is recorded; `npm run test:scripts` and the leak check pass.
+
+### CC-118 · `brain repo refresh` adopts a kit for a legacy link and takes a new path · `todo`
+**Release:** 0.9.2
+**Changelog:** a link made before kits takes its new kit, and a moved repo its new path, with `brain repo refresh`, without the brain listing the repo's files again.
+**Output:** CC-104's spec questions 1 and 2 (answered 2026-11-04): spec/linked-repos.md and spec/cli.md §5.29 first (`repo refresh` applies a written kit to a legacy entry, and takes `--path` for a moved repo, both keeping `commit`; their checks and errors), then the CLI test-first in `src/commands/repo*`; brain-repos stops unlinking and linking again for these two cases, and its mirror.
+**Acceptance:** tests on synthetic repos: a refresh of a legacy entry with a kit written applies the kit and keeps `commit`, and the next `repo changes` lists nothing again; a refresh with `--path` of a moved repo does the same; the existing repo tests pass; the skill mirror check passes.
 
 ## 0.10.0 — The brain assistant (decision 0064)
 
@@ -336,18 +373,6 @@ An assistant you ask, from the CLI, about the structure of your work: Areas, Dom
 **Changelog:** development only: end-to-end acceptance of the brain assistant on a synthetic brain, attended, with Review rows and chat approvals.
 **Output:** docs/acceptance-0.10.0.md: a scenario per finding kind, the Review-row path and the chat-yes path, a linked repo's rollup reviewed, Notion unreachable.
 **Acceptance:** every scenario passes with its evidence; no change happens without a Review row or a yes; the Review workload of one run stays within the cap the contracts set.
-
-### CC-116 · CI catches a PR that drops its own task row · `todo`
-**Release:** 0.10.0
-**Changelog:** development only: `pr-format` names a PR whose own task row is missing, instead of asking for a CHANGELOG.md line.
-**Output:** found on #195: merging main into the branch dropped the task's own row, and `pr-format` failed with "PR must add its task line to CHANGELOG.md", because a task with no row falls to the 0.3.x path; `merge-ready` was red but the PR was merged, and CC-115 (#199) restored the row. scripts/pr-format.mjs fails first with "PR has no row for its task CC-N" when the head has no row for the branch's task; scripts tests; a line in docs/releasing.md or AGENTS.md on merging main into a branch (keep every row on both sides). Ask the user whether `main` should require `merge-ready` (branch protection is off today; decision 0040).
-**Acceptance:** a scripts test: a PR head without its own task's row fails with the new message, and a 0.3.x task with no row-level Changelog still gets the old message; the user's answer on requiring `merge-ready` is recorded; `npm run test:scripts` and the leak check pass.
-
-### CC-118 · `brain repo refresh` adopts a kit for a legacy link and takes a new path · `todo`
-**Release:** 0.10.0
-**Changelog:** a link made before kits takes its new kit, and a moved repo its new path, with `brain repo refresh`, without the brain listing the repo's files again.
-**Output:** CC-104's spec questions 1 and 2 (answered 2026-11-04): spec/linked-repos.md and spec/cli.md §5.29 first (`repo refresh` applies a written kit to a legacy entry, and takes `--path` for a moved repo, both keeping `commit`; their checks and errors), then the CLI test-first in `src/commands/repo*`; brain-repos stops unlinking and linking again for these two cases, and its mirror.
-**Acceptance:** tests on synthetic repos: a refresh of a legacy entry with a kit written applies the kit and keeps `commit`, and the next `repo changes` lists nothing again; a refresh with `--path` of a moved repo does the same; the existing repo tests pass; the skill mirror check passes.
 
 ## 0.11.0 — The brain tidies itself (decisions 0052, 0061, 0064)
 
