@@ -297,8 +297,8 @@ test("brain upgrade rewrites the concept links inside every proposal, and the pe
   const body = await attributesOf(dir, updateBody);
   assert.equal(body.content, "| Page | TTL |\n\nPer the [caching idea](caching-2.md).\n");
   assert.equal(body.before_hash, bodyHash(parseFrontmatter(await readFile(join(dir, TABLE), "utf8")).body), "before_hash follows the rewritten body");
-  // Read from the concept's old folder, written for its new one: the moved sibling gets its new name, the table keeps its own.
-  assert.equal((await attributesOf(dir, onConcept)).content, "Also [caching](caching-2.md) and the [table](caching.md).\n");
+  // Read from the concept's old folder, written for its new one: the moved sibling gets its new name; the table link still reaches its file.
+  assert.equal((await attributesOf(dir, onConcept)).content, "Also [caching](caching-2.md) and the [table](../references/caching.md).\n");
   const item = (await attributesOf(dir, newItem)).note as { type: string; frontmatter: Record<string, unknown>; body: string };
   assert.equal(item.type, "reference");
   assert.equal(item.frontmatter.origin, "learned");

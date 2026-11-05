@@ -39,8 +39,8 @@ const after = (result: ReturnType<typeof plan>, path: string) => {
 test("the plan rewrites each text field of a proposal for the note it is written for", async (context) => {
   const root = await emptyRoot(context);
   const idea = note("knowledge/concepts/idea.md", { id: "con-1a1a1a1a", type: "concept", title: "Idea", summary: "s", lifecycle: "draft", sources: ["src-6e7f8g9h"], ...day }, "Idea.\n");
-  const old = "See [idea](../concepts/idea.md).\n";
-  const table = note("knowledge/references/table.md", { id: "ref-2b2b2b2b", type: "reference", title: "Table", summary: "s", lifecycle: "draft", origin: "part", sources: ["src-6e7f8g9h"], ...day }, old);
+  const table = note("knowledge/references/table.md", { id: "ref-2b2b2b2b", type: "reference", title: "Table", summary: "s", lifecycle: "draft", origin: "part", sources: ["src-6e7f8g9h"], ...day }, "See [idea](../concepts/idea.md).\n");
+  const old = table.body;
   const link = "[idea](../concepts/idea.md)";
   const fixed = prp("prp-3c3c3c3c", { kind: "update_body", target: "ref-2b2b2b2b", before_hash: bodyHash(old), content: link, status: "edited",
     decision: { action: "fix", note: "n", fixes: [{ value: link }], decided_at: "2026-12-09T08:00:00Z", decided_by: "notion" } });
@@ -48,16 +48,16 @@ test("the plan rewrites each text field of a proposal for the note it is written
   const closed = prp("prp-5e5e5e5e", { kind: "update_body", target: "ref-2b2b2b2b", before_hash: bodyHash(old), content: link, status: "applied", decision: { action: "approve", decided_at: "2026-12-09T08:00:00Z", decided_by: "notion" } });
   const edited = prp("prp-6f6f6f6f", { kind: "add_to_note", target: "ref-2b2b2b2b", content: "x", status: "edited", decision: { action: "edit", value: link, decided_at: "2026-12-09T08:00:00Z", decided_by: "notion" } });
   const review = prp("prp-7g7g7g7g", { kind: "review_notes", notes: [], links: [], status: "pending",
-    changes: [{ kind: "update_body", target: "ref-2b2b2b2b", content: link, before_hash: bodyHash(old) }, { kind: "add_to_note", target: "con-1a1a1a1a", content: "[table](../references/table.md)" }],
+    changes: [{ kind: "update_body", target: "ref-2b2b2b2b", content: link, before_hash: bodyHash(old) }, { kind: "add_to_note", target: "con-1a1a1a1a", content: "[self](../concepts/idea.md)" }],
     items: [{ item_id: "it-1a1a1a1a", kind: "change", ref: 0 }, { item_id: "it-2b2b2b2b", kind: "change", ref: 1 }],
-    revisions: [{ item_id: "it-2b2b2b2b", instruction: "i", requested_at: "2026-12-09T08:00:00Z", status: "drafted", previous: "[table](../references/table.md)", drafted_at: "2026-12-09T08:00:00Z" }] });
+    revisions: [{ item_id: "it-2b2b2b2b", instruction: "i", requested_at: "2026-12-09T08:00:00Z", status: "drafted", previous: "[self](../concepts/idea.md)", drafted_at: "2026-12-09T08:00:00Z" }] });
   const project = prp("prp-8h8h8h8h", { kind: "new_item", note: { type: "project", title: "Web relaunch", frontmatter: {}, body: "[idea](../../knowledge/concepts/idea.md)" } });
   const history = prp("prp-9j9j9j9j", { kind: "new_item", status: "applied", decision: { action: "approve", decided_at: "2026-12-09T08:00:00Z", decided_by: "notion" },
     note: { type: "concept", title: "Older", frontmatter: {}, body: "[idea](idea.md)" } });
   const lost = prp("prp-0k0k0k0k", { kind: "add_to_note", target: "per-9z9z9z9z", content: link });
 
   const result = plan(root, [idea, table, fixed, stale, closed, edited, review, project, history, lost]);
-  const newBody = "See [idea](idea.md).\n";
+  const newBody = old.replace("../concepts/idea.md", "idea.md");
   assert.equal(result.notes.find((item) => item.path === "knowledge/references/table.md")!.body, newBody);
 
   const a = after(result, fixed.path);
@@ -74,9 +74,9 @@ test("the plan rewrites each text field of a proposal for the note it is written
   const changes = r.changes as Array<{ content: string; before_hash?: string }>;
   assert.equal(changes[0]!.content, "[idea](idea.md)");
   assert.equal(changes[0]!.before_hash, bodyHash(newBody));
-  // Written for the concept, which moved from knowledge/concepts/ to knowledge/references/.
-  assert.equal(changes[1]!.content, "[table](table.md)");
-  assert.equal((r.revisions as Array<{ previous: string }>)[0]!.previous, "[table](table.md)");
+  // Written for the concept, read from knowledge/concepts/ (from _proposals/ the link would reach no note) and written for knowledge/references/.
+  assert.equal(changes[1]!.content, "[self](idea.md)");
+  assert.equal((r.revisions as Array<{ previous: string }>)[0]!.previous, "[self](idea.md)");
   assert.equal((after(result, project.path).note as { body: string }).body, "[idea](../../knowledge/references/idea.md)");
   const h = after(result, history.path).note as { type: string; body: string };
   assert.equal(h.type, "concept", "an applied new_item keeps its record");
