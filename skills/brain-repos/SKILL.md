@@ -1,6 +1,6 @@
 ---
 name: brain-repos
-description: Link another Git repo to the brain with a link kit (what the brain reads and never reads, where the repo's tasks live and how they map, how work is done there, and the Area and Project it belongs to), show a link, change it, unlink it while keeping the knowledge, check a link's health, and start a new repo from the generic starter. Writes the kit in the repo only after the user says yes to its exact content, shows a read-only rollup of a repo's tasks on its Project or Area, and offers to let the repo read the brain too. Use when the user says "link the repo at <path>", "connect my repo", "what is linked", "check my linked repos", "show the repo's tasks", "stop reading <repo>", "unlink <repo>", "change what the brain reads in <repo>", or "start a new repo for <project>".
+description: Link another Git repo to the brain with a link kit (what the brain reads and never reads, where the repo's tasks live and how they map, how work is done there, and the Area and Project it belongs to), show a link, change it (a legacy link's first kit included), record a moved repo's new folder, unlink it while keeping the knowledge, check a link's health, and start a new repo from the generic starter. Writes the kit in the repo only after the user says yes to its exact content, shows a read-only rollup of a repo's tasks on its Project or Area, and offers to let the repo read the brain too. Use when the user says "link the repo at <path>", "connect my repo", "what is linked", "check my linked repos", "show the repo's tasks", "stop reading <repo>", "unlink <repo>", "change what the brain reads in <repo>", "<repo> moved to <path>", or "start a new repo for <project>".
 ---
 
 # Linked repos
@@ -50,7 +50,11 @@ New placement, patterns, never-read paths, task source or mapping:
 3. `brain repo refresh <name>`, and commit `brain.json` and the log in the brain: `repo: change <name>`. Say what changed (`placement_changed`: new ingests use the new placement, notes already in keep theirs).
 4. When `reingest` is true (patterns added, or never-read paths removed), offer to read the newly allowed files: `brain repo record <name> --reset`, then a catch-up. Narrowing deletes nothing; the health check then lists knowledge from now-excluded paths (`NEVER_READ_INGESTED`), and the user can ask to archive those notes.
 
-A legacy link (`NO_KIT`: linked before kits) keeps working as it is. When the user wants a kit for it, propose one from its `brain.json` entry (its `area` and `patterns`) and write it after the yes, with no `--replace`. `repo refresh` doesn't apply a kit to a legacy entry, so the link takes it only by linking again: on the user's yes, `brain repo unlink <name>` then `brain repo add <name> --path <path> --kit`. Say first that the knowledge stays, and that the next read lists the repo's files again, where the ones already ingested are skipped as duplicates.
+A legacy link (`NO_KIT`: linked before kits) keeps working as it is. When the user wants a kit for it, propose one from its `brain.json` entry (its `area` and `patterns`) and write it after the yes, with no `--replace`. Then `brain repo refresh <name>` applies it to the entry and keeps what was already read (`commit`); commit `brain.json` and the log in the brain: `repo: kit for <name>`. Steps 3 and 4 above apply: say what changed, and offer the re-read when `reingest` is true. Don't unlink and link again for this.
+
+## A repo that moved
+
+`PATH_MISSING` with the repo in a new folder: ask for the new path (absolute or `~/…`), then `brain repo refresh <name> --path <new path>`. It keeps the kit and what was already read, and refuses a folder that holds another repo (`REPO_COMMIT_UNKNOWN`: the recorded commit isn't in its history); then ask the user which folder it is, and only if its history was rewritten, offer to unlink and link again. Commit `brain.json` and the log in the brain: `repo: move <name>`. A legacy link that moved takes its new path the same way, and a kit in the new folder at the same time.
 
 ## Unlink
 
