@@ -354,7 +354,7 @@ After 0.9.1. Scope checked with the user on 2026-11-05 (CC-133): CC-105 as decis
 
 ## 0.10.0 — The brain assistant (decision 0064)
 
-An assistant you ask, from the CLI, about the structure of your work: Areas, Domains, Projects and Tasks. It finds what's stalled, misplaced or missing, recommends, turns your thinking into captures, tasks and projects, and makes changes through Review rows, or directly after your yes in a live chat. On demand; the weekly scheduled run is CC-111 in 0.13.0. Starts after 0.9.0 is released, with its opening scope grill. The grill ran on 2026-11-05 (CC-137): decision [0072](../decisions/0072-ultimate-assistant.md) names it **Ultimate Assistant** (and the Notion agent **Notion Brain Assistant**), shows a report first and applies what you say yes to, with Review rows only when you ask.
+An assistant you ask, from the CLI, about the structure of your work: Areas, Domains, Projects and Tasks. It finds what's stalled, misplaced or missing, recommends, turns your thinking into captures, tasks and projects, and makes changes through Review rows, or directly after your yes in a live chat. On demand; the weekly scheduled run is CC-111 in 0.13.0. Starts after 0.9.0 is released, with its opening scope grill. The grill ran on 2026-11-05 (CC-137): decision [0072](../decisions/0072-ultimate-assistant.md) names it **Ultimate Assistant**, shows a report first and applies what you say yes to, with Review rows only when you ask.
 
 ### CC-108 · Contracts for the brain assistant (decision 0064) · `todo`
 **Release:** 0.10.0
@@ -376,9 +376,9 @@ An assistant you ask, from the CLI, about the structure of your work: Areas, Dom
 
 ### CC-137 · Record the 0.10.0 opening grill: Ultimate Assistant (decision 0072) · `review`
 **Release:** 0.10.0
-**Changelog:** development only: the 0.10.0 opening grill is recorded as decision 0072, which names the assistant Ultimate Assistant and the Notion agent Notion Brain Assistant and settles how a review session goes.
-**Output:** decision 0072 from the user's answers of 2026-11-05 (names, report first, fixed thresholds, where a ramble lands, whole brain top 10, dismissals); an "Amended by" pointer on 0064; this file: the 0.10.0 intro and CC-108's Output point to 0072. No code, no spec.
-**Acceptance:** 0072 records each of the six answers as the user gave them; 0064 points to it; no other task's row changes except CC-108's Output; the leak check passes.
+**Changelog:** development only: the 0.10.0 opening grill is recorded as decision 0072, which names the assistant Ultimate Assistant and settles how a review session goes.
+**Output:** decision 0072 from the user's answers of 2026-11-05 (name, report first, fixed thresholds, where a ramble lands, whole brain top 10, dismissals); an "Amended by" pointer on 0064; this file: the 0.10.0 intro and CC-108's Output point to 0072, and the 1.0.0 section notes the Notion agent's rename. No code, no spec.
+**Acceptance:** 0072 records each of the six answers as the user gave them; 0064 points to it; no other task's row changes except CC-108's Output; the 1.0.0 section notes the Notion agent's rename; the leak check passes.
 
 ## 0.11.0 — The brain tidies itself (decisions 0052, 0061, 0064)
 
@@ -423,6 +423,8 @@ Work packages: onboarding/diagnostic/preference contracts; probe-first setup and
 ## 1.0.0 — Productisation, translation, funnel and launch (decision 0061)
 
 After the feature cutoff, scope packaging/install/upgrade guidance, consistent Notion templates/terminology, user-facing translations, positioning/demo/landing-page and acquisition/onboarding funnel, release candidates and launch acceptance. Confirm languages, offer and publication choices during the opening grill. Allow launch-blocking fixes, not unapproved features. The release gate includes a fresh user's end-to-end path and common-failure recovery; publishing/releasing follows existing user approval and release-script rules.
+
+**Noted for 1.0.0 (decision 0072, 2026-11-05):** rename the Notion custom agent Brain Assistant to **Notion Brain Assistant**, so it isn't confused with the CLI's Ultimate Assistant: notion/brain-assistant.md, the button messages, the guide, the views guide and a Notion migration for the rename by hand. Not a task yet.
 
 ## Your tasks
 
