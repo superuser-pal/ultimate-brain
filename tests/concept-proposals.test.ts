@@ -94,15 +94,17 @@ test("the plan repairs missed links by file name, and names the ones it cannot p
     learned("knowledge/references/dup-2.md", "con-4d4d4d4d"),
     learned("knowledge/references/dup-3.md", "con-5e5e5e5e"),
     learned("knowledge/references/plain.md", "ref-6f6f6f6f"),
+    // A conversion numbers from -2, so -1 is no former concept's file.
+    learned("knowledge/references/solo-1.md", "con-7g7g7g7g"),
   ];
   const quiet = plan(root, notes);
   assert.deepEqual(quiet.changes, [], "nothing to repair changes nothing");
   assert.deepEqual(quiet.unresolved, []);
 
-  const content = "[a](../concepts/idea.md) [b](../concepts/sub/other.md) [c](../concepts/dup.md) [d](../concepts/plain.md)";
+  const content = "[a](../concepts/idea.md) [b](../concepts/sub/other.md) [c](../concepts/dup.md) [d](../concepts/plain.md) [e](../concepts/solo.md)";
   const missed = prp("prp-7g7g7g7g", { kind: "add_to_note", target: "ref-3c3c3c3c", content });
   const result = plan(root, [...notes, missed]);
   assert.deepEqual(result.changes.map((change) => change.path), [missed.path], "index.md is not rebuilt without a conversion");
-  assert.equal(after(result, missed.path).content, "[a](idea.md) [b](other-2.md) [c](../concepts/dup.md) [d](../concepts/plain.md)");
-  assert.deepEqual(result.unresolved, [{ path: missed.path, links: ["../concepts/dup.md", "../concepts/plain.md"] }]);
+  assert.equal(after(result, missed.path).content, "[a](idea.md) [b](other-2.md) [c](../concepts/dup.md) [d](../concepts/plain.md) [e](../concepts/solo.md)");
+  assert.deepEqual(result.unresolved, [{ path: missed.path, links: ["../concepts/dup.md", "../concepts/plain.md", "../concepts/solo.md"] }]);
 });
