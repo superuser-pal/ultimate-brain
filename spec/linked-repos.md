@@ -28,7 +28,7 @@ How this file fits: [cli.md §5.29](cli.md) holds the commands, [schema.md §12]
   | `tracked-in-repo` | The repo: a Markdown plan, or GitHub or GitLab issues | Shows a **read-only rollup** on the Project or Area (§4). It writes nothing to the repo's tracker and creates no Notion task from it. The 0.10.0 brain assistant reviews the rollup. |
   | no `tasks` key | Nobody | No rollup and no workflow: knowledge only. |
 
-- **Legacy link:** a `repos` entry without `kit` (0042, made with `repo add --pattern`). It keeps working as it does today, and the health check reports `NO_KIT` (info).
+- **Legacy link:** a `repos` entry without `kit` (0042, made with `repo add --pattern`). It keeps working as it does today, and the health check reports `NO_KIT` (info). Once a kit is written in its repo (§3), `repo refresh` adopts it and keeps the entry's `commit` (cli.md §5.29, CC-118).
 
 ## 2. The kit file
 
@@ -166,7 +166,7 @@ With Domains off, `placement.domain` is ignored and not checked.
 - **Concurrent edits are refused.** A change passes `--replace <sha256>`, the hash of the kit the user saw. If the file changed since then, the write is refused (`KIT_CHANGED`) and the skill shows the new diff.
 - **The hub never commits or pushes in the linked repo.** The skill tells the user to commit `brain-kit.json` there; until then the health check reports `KIT_UNCOMMITTED`.
 - **Refused targets:** the brain (`REPO_IS_BRAIN`); the product repo (`OUTSIDE_ROOT`: its contents are public, and the kit holds brain ids); a `brain-kit.json` that is a symbolic link or a folder (`OUTSIDE_ROOT`).
-- After the write, `brain repo add --kit` (a new link) or `brain repo refresh` (a change) applies the kit to `brain.json`.
+- After the write, `brain repo add --kit` (a new link) or `brain repo refresh` (a change, or a legacy link's first kit) applies the kit to `brain.json`.
 
 ## 4. The read-only rollup (tracked-in-repo)
 
@@ -220,7 +220,7 @@ A kit adds three optional keys to a `repos` entry. Legacy entries don't change.
 - `never_read`: a list of Git glob pathspecs (absent means none). `repo changes` (cli.md §5.16) leaves out the files that match it, in a legacy entry too.
 - `project`: a `prj-` id (absent means none).
 
-The machine's `path` and the ingest state in `commit` stay in `brain.json` only; the kit holds neither.
+The machine's `path` and the ingest state in `commit` stay in `brain.json` only; the kit holds neither. `repo refresh --path` changes `path` when the repo moved, and no `refresh` changes `commit` (cli.md §5.29).
 
 ## 6. Health check
 
@@ -228,12 +228,12 @@ The machine's `path` and the ingest state in `commit` stay in `brain.json` only;
 
 | Code | Severity | When |
 |---|---|---|
-| `PATH_MISSING` | error | `path` doesn't exist or isn't the top of a Git working tree |
+| `PATH_MISSING` | error | `path` doesn't exist or isn't the top of a Git working tree: when the repo moved, `repo refresh --path` records where |
 | `KIT_MISSING` | error | the entry has `kit`, and the file is gone |
 | `KIT_INVALID` | error | the kit fails its schema or a §2.2 check (with the pointer) |
 | `KIT_CHANGED` | warning | the kit's hash differs from `kit.sha256`: run `repo refresh` |
 | `KIT_UNCOMMITTED` | info | the kit isn't tracked, or differs from `HEAD` |
-| `NO_KIT` | info | a legacy entry: the skill offers to write a kit |
+| `NO_KIT` | info | a legacy entry: the skill offers to write a kit, which `repo refresh` then applies |
 | `PLACEMENT_ARCHIVED` | warning | the Area or Project is `archived` |
 | `COMMIT_UNKNOWN` | error | the recorded `commit` isn't an ancestor of `HEAD` (rewritten history): the fix is `repo record --reset` |
 | `CHANGES_WAITING` | info | files that `repo changes` would list (never-read paths and the kit left out), with their count; skipped after `COMMIT_UNKNOWN` |
@@ -337,7 +337,7 @@ After a link (or `repo new`), the skill asks once: "Let this repo read the brain
 - **The repo isn't touched.** `brain-kit.json` and any `.brain` stay. The skill tells the user they can delete them there.
 - **The rollup goes.** The skill removes the `Repo tasks · <name>` toggle from the Project or Area page, with the same yes as the unlink.
 - **A connected workflow isn't ended by an unlink.** The workflow runs in the repo, not in the link. The report names the workflow, and the user ends it separately (connected-workflows.md §3.4).
-- **Linking again** under the same name starts with `commit: ""`. Files ingested before are found as duplicates by `note new` (cli.md §5.16, `--reset`).
+- **Linking again** under the same name starts with `commit: ""`. Files ingested before are found as duplicates by `note new` (cli.md §5.16, `--reset`). A moved repo and a legacy link taking a kit don't need it: `repo refresh` keeps `commit`.
 
 ## 10. The skill (CC-104)
 
@@ -345,6 +345,8 @@ After a link (or `repo new`), the skill asks once: "Let this repo read the brain
 - **Link:** inspect the repo (top-level layout, instructions, plans, issue tracker), propose a kit (placement from the hub's Areas and Projects; patterns and never-read paths; mode and source; status mapping; methodology summary), show it, and on yes `repo kit write --confirm <its sha256>`, `repo add --kit`, offer §8, and, with tracked-in-repo, the first rollup. The first ingest stays attended (0042).
 - **Show:** `repo show` and `repo health` (with `--rollup-as-of` read from the toggle), in two lines (skill-report rule).
 - **Change:** propose the new kit as a diff, and on yes `repo kit write --replace <old> --confirm <new>`, `repo refresh`; when `reingest` is true, `repo record --reset` and a catch-up.
+- **A legacy link's first kit:** propose one from the entry, and on yes `repo kit write --confirm <its sha256>`, then `repo refresh` (CC-118).
+- **A moved repo:** ask for the new path, and `repo refresh --path <new path>` (CC-118).
 - **Unlink:** §9.
 - **Health check:** `repo health`; for each error and warning, the fix in one line.
 - **New repo:** ask for the name, folder, placement and mode; show the kit and the file list; `repo new`; `repo add --kit`; offer §8.

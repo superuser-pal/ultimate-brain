@@ -351,6 +351,7 @@ After 0.9.1. Scope checked with the user on 2026-11-05 (CC-133): CC-105 as decis
 **Changelog:** a link made before kits takes its new kit, and a moved repo its new path, with `brain repo refresh`, without the brain listing the repo's files again.
 **Output:** CC-104's spec questions 1 and 2 (answered 2026-11-04): spec/linked-repos.md and spec/cli.md §5.29 first (`repo refresh` applies a written kit to a legacy entry, and takes `--path` for a moved repo, both keeping `commit`; their checks and errors), then the CLI test-first in `src/commands/repo*`; brain-repos stops unlinking and linking again for these two cases, and its mirror.
 **Acceptance:** tests on synthetic repos: a refresh of a legacy entry with a kit written applies the kit and keeps `commit`, and the next `repo changes` lists nothing again; a refresh with `--path` of a moved repo does the same; the existing repo tests pass; the skill mirror check passes.
+**Spec decided (CC-118):** `repo refresh` never changes `commit`; a legacy entry adopts the kit in its repo, and stays `NO_KIT` when there is none and no `--path`; `--path` takes the checks of `repo add` plus the recorded commit, which must be in the repo at the new path and an ancestor of its `HEAD` (`REPO_COMMIT_UNKNOWN`), so a wrong repo is refused; `data` keeps its shape, `changed` also true for a new path; the log adds `path=` (cli §5.29, linked-repos §1, §5, §6, §9, §10).
 
 ## 0.10.0 — The brain assistant (decision 0064)
 
