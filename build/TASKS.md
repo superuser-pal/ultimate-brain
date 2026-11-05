@@ -330,7 +330,7 @@ After 0.9.1. Scope checked with the user on 2026-11-05 (CC-133): CC-105 as decis
 
 ### CC-135 · A held report still gets its properties (dogfood #221) · `done` (#225)
 **Release:** 0.9.2
-**Changelog:** a report or Document whose text is held for your decision still gets its Origin, Project, Area and links in Notion; only its text waits.
+**Changelog:** a report or Document whose text is held for your decision still gets its Origin, Project, Area and links in Notion unless you ticked it Accepted; only its text waits.
 **Output:** #221: `sync render` leaves a note named by `wording_waiting`, `wording_held` or `accepted_wording` out of `items` whole (`WORDING_PENDING`), so reports moved by migration 0019 with no baseline kept an empty Origin, Project, Area and Asked in. Spec first (spec/cli.md §5.14.6 and the row 9 text in §5.14.7): such a note is rendered with its properties and with `body` and `sections` null, and `skipped` still names it for its body; then `src/commands/sync.ts` (the render) test-first; brain-sync and brain-catch-up say that only the text waits; migration 0019's text notes that moved pages keep hidden leftover Inbox properties (Kind, Brain Status). Also notion/brain-assistant.md: the Instructions say "a report's body" instead of "a Report row's body" (0.9.1 moved reports to Documents).
 **Acceptance:** tests on a synthetic brain: a report with no baseline renders its properties with a null body and is listed as held for its body; a promoted Document with a pending revision does the same; a note with no hold renders as before; the existing sync tests pass; the skill mirror check and the leak check pass.
 
