@@ -346,7 +346,7 @@ After 0.9.1. Scope checked with the user on 2026-11-05 (CC-133): CC-105 as decis
 **Output:** found on #195: merging main into the branch dropped the task's own row, and `pr-format` failed with "PR must add its task line to CHANGELOG.md", because a task with no row falls to the 0.3.x path; `merge-ready` was red but the PR was merged, and CC-115 (#199) restored the row. scripts/pr-format.mjs fails first with "PR has no row for its task CC-N" when the head has no row for the branch's task; scripts tests; a line in docs/releasing.md or AGENTS.md on merging main into a branch (keep every row on both sides). Ask the user whether `main` should require `merge-ready` (branch protection is off today; decision 0040).
 **Acceptance:** a scripts test: a PR head without its own task's row fails with the new message, and a 0.3.x task with no row-level Changelog still gets the old message; the user's answer on requiring `merge-ready` is recorded; `npm run test:scripts` and the leak check pass.
 
-### CC-118 · `brain repo refresh` adopts a kit for a legacy link and takes a new path · `todo`
+### CC-118 · `brain repo refresh` adopts a kit for a legacy link and takes a new path · `in progress`
 **Release:** 0.9.2
 **Changelog:** a link made before kits takes its new kit, and a moved repo its new path, with `brain repo refresh`, without the brain listing the repo's files again.
 **Output:** CC-104's spec questions 1 and 2 (answered 2026-11-04): spec/linked-repos.md and spec/cli.md §5.29 first (`repo refresh` applies a written kit to a legacy entry, and takes `--path` for a moved repo, both keeping `commit`; their checks and errors), then the CLI test-first in `src/commands/repo*`; brain-repos stops unlinking and linking again for these two cases, and its mirror.
