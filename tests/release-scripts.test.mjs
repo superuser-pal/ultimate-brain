@@ -1285,3 +1285,34 @@ test("the pre-commit hook refuses a skill edit staged without its rebuilt mirror
   const accepted = hook();
   assert.equal(accepted.status, 0, accepted.stdout + accepted.stderr);
 });
+
+/** pr-format fakes for the PR of CX-1 whose head has the rows `headRows`; the base has only CC-2's row, as for a task whose row was added on its branch (CC-116). */
+function ownRowPath(root, headRows, files = "[]") {
+  return fakeCommands(root, {
+    gh: `case "$1 $2" in
+      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"head","baseRefOid":"base","title":"CX-1: One","files":${files}}' ;;
+      "repo view") printf owner/repo ;;
+      "api repos/owner/repo/contents/build/TASKS.md?ref=base") printf '%s' '${taskRows("### CC-2 · Two · `done` (#2)\n**Release:** 0.4.0\n**Changelog:** Two\n")}' ;;
+      "api repos/owner/repo/contents/build/TASKS.md?ref=head") printf '%s' '${taskRows(headRows)}' ;;
+      "api repos/owner/repo/contents/build/HISTORY.md?ref=base"|"api repos/owner/repo/contents/build/HISTORY.md?ref=head") echo 'gh: Not Found (HTTP 404)' >&2; exit 1 ;;
+      "api repos/owner/repo/contents/CHANGELOG.md?ref=base"|"api repos/owner/repo/contents/CHANGELOG.md?ref=head") printf '' ;;
+    esac`,
+  });
+}
+
+test("PR format names a head that has no row for its own task, and a 0.3.x row still needs its CHANGELOG.md line (CC-116)", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const two = "### CC-2 · Two · `done` (#2)\n**Release:** 0.4.0\n**Changelog:** Two\n";
+  const dropped = run("pr-format.mjs", ["1"], { root, env: { PATH: ownRowPath(root, two) } });
+  assert.equal(dropped.status, 1);
+  assert.match(dropped.stderr, /PR has no row for its task CX-1/);
+  assert.doesNotMatch(dropped.stderr, /CHANGELOG\.md/);
+  const legacy = run("pr-format.mjs", ["1"], { root, env: { PATH: ownRowPath(root, `### CX-1 · One · \`review\`\n**Release:** 0.3.1\n\n${two}`) } });
+  assert.equal(legacy.status, 1);
+  assert.match(legacy.stderr, /PR must add its task line to CHANGELOG\.md/);
+  const legacyWithLine = run("pr-format.mjs", ["1"], { root, env: { PATH: ownRowPath(root, `### CX-1 · One · \`review\`\n**Release:** 0.3.1\n\n${two}`, '[{"path":"CHANGELOG.md"}]') } });
+  assert.equal(legacyWithLine.status, 0, legacyWithLine.stderr);
+  const kept = run("pr-format.mjs", ["1"], { root, env: { PATH: ownRowPath(root, `### CX-1 · One · \`review\`\n**Release:** 0.4.0\n**Changelog:** One\n\n${two}`) } });
+  assert.equal(kept.status, 0, kept.stderr);
+});
