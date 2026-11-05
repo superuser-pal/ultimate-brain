@@ -30,7 +30,7 @@ Moving keeps each page: its id, body, comments, and any Proposed refresh or acce
 
 1. Open the Inbox as a full page and filter: **Kind is Report** and **Brain ID is not empty**. Every row the filter shows is a report (its Brain ID starts with `vw-`).
 2. Select them all → `•••` → **Move to** → **Documents**.
-3. Notion keeps the properties whose name and type also exist in Documents and drops the rest (Kind, Brain Status, Old ask). That's expected: at the next publish the brain sends every property of a moved report once (Name, Origin, Project, Area, Asked in, Brain ID), but never its body unless a refresh is due.
+3. Notion keeps the values of the properties whose name and type also exist in Documents. The others (Kind, Brain Status, Old ask) stay on each moved page as hidden leftover properties outside the Documents schema: harmless, and the brain never reads or writes them. At the next publish the brain sends every property of a moved report once (Name, Origin, Project, Area, Asked in, Brain ID), but never its body unless a refresh is due. A report published before 0.8.0 has no saved copy of its Notion text, so its text waits for you to choose Notion's or Git's (the sync asks); **only the text waits**, and its properties still go out, unless the page is ticked Accepted (then nothing is written to it until the text is settled).
 4. Remove the filter.
 
 **A row Notion won't move** (rare: a locked page, or no Move to): leave it, and tell the agent its Brain ID. It stays a report the brain knows; the next publish fails on that page and names it, and you move it later.
