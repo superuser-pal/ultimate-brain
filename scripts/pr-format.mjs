@@ -30,7 +30,9 @@ else {
         const headLines = changelogIds(headLog.stdout);
         const missingLines = [...changelogIds(baseLog.stdout)].filter((id) => !headLines.has(id));
         const task = headTasks.find((entry) => entry.id === match[2]);
-        if (missingHeadings.length > 0) fail(`PR loses task heading(s): ${missingHeadings.join(", ")}`);
+        // A task with no row on the head would fall to the 0.3.x path below and be asked for a CHANGELOG.md line (CC-116).
+        if (task === undefined) fail(`PR has no row for its task ${match[2]}: keep its row in build/TASKS.md`);
+        else if (missingHeadings.length > 0) fail(`PR loses task heading(s): ${missingHeadings.join(", ")}`);
         else if (missingLines.length > 0) fail(`PR loses CHANGELOG.md line(s): ${missingLines.join(", ")}`);
         else if (missingChangelog.length > 0) fail(`PR loses **Changelog:** line(s): ${missingChangelog.join(", ")}`);
         else if (usesTaskRowChangelog(task?.release)) {
