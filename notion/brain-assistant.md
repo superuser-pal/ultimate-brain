@@ -261,4 +261,4 @@ My message carries my confirmation. When done, reply in at most three lines: wha
 
 **Without a Custom Agent** (plans without Business or Enterprise): save the same text as a personal skill, or paste it into Notion AI while the capture is open (decision 0045).
 
-The "How it works" page is a copy of the user guide ([skills/brain-howto/references/guide.md](../skills/brain-howto/references/guide.md)). When the guide changes, update the page from it.
+The "How it works" page is a copy of the user guide ([.agents/skills/brain-howto/references/guide.md](../.agents/skills/brain-howto/references/guide.md), the vendored copy; the guide is written in the ultimate-brain-skills fork). When a vendored release changes the guide, update the page from it.

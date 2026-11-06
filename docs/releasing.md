@@ -35,6 +35,8 @@ node scripts/release.mjs 0.4.0
 5. `npm test`, `npm run typecheck` and `npm run test:package` pass.
 6. Every task with `**Release:** 0.4.0` is `done`.
 7. From 0.9.0 on, the skills-integration check passes (spec/skills-delivery.md §11.3): the package snapshot is valid and doesn't exclude the version, the check's status isn't `unknown`, and no change in the `skills-integration` issue is `unclassified` or has an `error`. Classify open changes in that issue's block first. It uses your `gh` login; `--dry-run` runs the check without writing the issue.
+8. From 0.9.2 on (§9.8): the vendored skills pass the online check (`vendor-skills.mjs --check --online`: `.agents/skills/` is a fork release, unedited, and its release on GitHub matches it), so a phase A snapshot is refused on its name; and a release without a prerelease part ships a vendored snapshot without one.
+9. The version is not lower than `package.json`'s (§9.4), except a prerelease of that same version (`0.9.2-rc.1` when `package.json` is `0.9.2`). A vendoring PR may already have set `package.json` to the release it lands in; releasing that version keeps it.
 
 Then it sets the version, writes the CHANGELOG section from the task rows (`- <id> (#N): <text>`, in build/TASKS.md order; for 0.3.x it dates the hand-written entry; from 0.9.0 the section ends with `Skills: <snapshot> <version> (<integrity>)`), commits `0.4.0`, tags `v0.4.0`, publishes and pushes the commit and tag. Check with `npm view ultimate-brain version`.
 
@@ -42,6 +44,16 @@ Then it sets the version, writes the CHANGELOG section from the task rows (`- <i
 
 - **patch:** fixes only. **minor:** new commands, skill changes, new template rules. Stay below 1.0.0 until v1 is declared stable.
 - **A candidate:** `node scripts/release.mjs 0.3.0-rc.1` publishes on the `next` tag, never `latest`.
+
+## Vendoring the skills (spec/skills-delivery.md §9)
+
+The brain skills are written in the ultimate-brain-skills fork (`brain/<name>/`), never in this repo. `.agents/skills/` holds one released fork snapshot, committed whole and never edited: `npm test`, `npm run build` and the pre-commit hook run `vendor-skills.mjs --check`, and CI adds `--check --online`.
+
+- **A skill change** is a fork PR (branch `claude/<task-id>-<slug>`), reviewed with the product PR that names it on a `Fork:` line. Once the user merges it and the fork's CI passed on the merge commit, an annotated tag `brain-v<version>` on that commit, pushed only on the user's yes, publishes the release (§9.5).
+- **Vendoring:** `node --experimental-strip-types scripts/vendor-skills.mjs <version>` writes the release `brain-v<version>` into `.agents/skills/` after checking its notes, its tarball's hash, its members and its snapshot, and prints what it added, changed and retired. Commit `.agents/skills/` in one commit `<task id>: vendor ultimate-brain-skills <version>`.
+- **The version rule** (§9.4): the vendored snapshot is compatible with `package.json`'s version at every commit. When a release's range starts above it, set `package.json` to the release it lands in (`npm version <x.y.z> --no-git-tag-version`) in the vendoring commit; `main` then carries that unpublished version until it is released.
+- **Unreleased skill text** in a product branch: `vendor-skills.mjs --local <fork checkout> [--commit <ref>]` builds the fork's committed `brain/` as `0.0.0-local`. It passes `npm test` but never the online check, so it can't reach `main`.
+- **An edited copy** fails the check with its reason; restore with `git checkout -- .agents/skills` and `git clean -fdx .agents/skills`, or vendor a release.
 
 ## Then, in each brain
 

@@ -341,7 +341,7 @@ After a link (or `repo new`), the skill asks once: "Let this repo read the brain
 
 ## 10. The skill (CC-104)
 
-**`brain-repos`**, one of CC-104's three skills. It is written in `skills/` until CC-105 moves skill authorship to the fork (0059). These are what the skill must do; the skill decides how it is worded. Every write is preceded by the content and the user's yes.
+**`brain-repos`**, one of CC-104's three skills. It is written in the ultimate-brain-skills fork's `brain/` since CC-105 (0059, skills-delivery §9.1). These are what the skill must do; the skill decides how it is worded. Every write is preceded by the content and the user's yes.
 - **Link:** inspect the repo (top-level layout, instructions, plans, issue tracker), propose a kit (placement from the hub's Areas and Projects; patterns and never-read paths; mode and source; status mapping; methodology summary), show it, and on yes `repo kit write --confirm <its sha256>`, `repo add --kit`, offer §8, and, with tracked-in-repo, the first rollup. The first ingest stays attended (0042).
 - **Show:** `repo show` and `repo health` (with `--rollup-as-of` read from the toggle), in two lines (skill-report rule).
 - **Change:** propose the new kit as a diff, and on yes `repo kit write --replace <old> --confirm <new>`, `repo refresh`; when `reingest` is true, `repo record --reset` and a catch-up.

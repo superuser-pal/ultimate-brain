@@ -17,12 +17,12 @@ The builder gives you the PR number, the worktree path (`../ub-<task-id>`) and t
 - **No personal knowledge** in a comment: no names, client text, Notion ids or emails from a real brain.
 
 ## What to check
-Read `AGENTS.md`, the task's row in `build/TASKS.md` (Output, Acceptance), the decisions it cites and the parts of `spec/` it touches. Then `git diff origin/main...HEAD` (for a stacked PR, the base branch instead of `origin/main`).
+Read `AGENTS.md`, the task's row in `build/TASKS.md` (Output, Acceptance), the decisions it cites and the parts of `spec/` it touches. Then `git diff origin/main...HEAD` (for a stacked PR, the base branch instead of `origin/main`). When the PR body has a line `Fork: https://github.com/<owner>/ultimate-brain-skills/pull/<n>`, that fork PR is part of the change (spec/skills-delivery.md §9.5): review its diff too (`gh pr diff <n> --repo <owner>/ultimate-brain-skills`), post its findings on the product PR, and let your verdict there cover both.
 1. Every acceptance criterion is met, with evidence: a test name, or a command and its output.
 2. The code does what the spec says, and nothing the spec doesn't define. Behaviour missing from the spec is a finding: the builder fixes the spec first.
 3. Data loss, a write the user did not accept, excluded text leaking, non-atomic or non-idempotent writes, a broken migration step.
 4. Tests that pass for the wrong reason: try a mutation in a `/tmp` copy of the repo and see whether a test fails.
-5. The checks: `npm test`, `npm run typecheck`, `npm run test:package`, `node scripts/leak-check.mjs`. Don't run `npm run skills`: it rewrites the mirror in the repo. `npm test` already fails when a skill edit was not rebuilt into `.agents/skills`.
+5. The checks: `npm test`, `npm run typecheck`, `npm run test:package`, `node scripts/leak-check.mjs`, and `node --experimental-strip-types scripts/vendor-skills.mjs --check --online` (the vendored skills match their fork release; `npm test` checks them offline). Skills are written in the fork: an edit under `.agents/skills/` in a product PR is a finding.
 
 ## Report
 Post one PR comment headed `Review (Claude reviewer) at <short sha>`, then return the same text to the builder:
