@@ -48,3 +48,4 @@ spec/examples/workflow/invalid/snapshot-no-tasks.json:6f1e2d3c-4b5a-4987-8a6b-5c
 spec/examples/workflow/valid/item-declined.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
 spec/examples/valid/question-dropped.md:4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f7a
 spec/examples/invalid/question-task-not-dropped.md:4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f7a
+eval/acceptance-0.10.0/planted.json:0a10[0-9a-f]{2}00-0000-4000-8000-0{10}[0-9]{2}
