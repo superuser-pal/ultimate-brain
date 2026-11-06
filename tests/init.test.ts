@@ -119,7 +119,7 @@ test("init can record the new default brain without inspecting the product repos
 test("init installs every shipped skill and --force leaves existing skill files alone", async (context) => {
   const root = await scratch(context);
   const target = join(root, "skills-brain");
-  const names = (await readdir(join(import.meta.dirname, "..", "skills"), { withFileTypes: true }))
+  const names = (await readdir(join(import.meta.dirname, "..", ".agents", "skills"), { withFileTypes: true }))
     .filter((entry) => entry.isDirectory()).map((entry) => entry.name);
   assert.ok(names.length >= 6);
 

@@ -19,7 +19,9 @@ export const prBody = (impact, links = []) => [`Fork change.`, "", ...(impact ==
 
 /**
  * The fork's state: `history` is its `main`, oldest first; each commit is `{ label, pull? }`, and a commit with a `pull` (`{ number, body }`)
- * is that PR's merge commit, unless `plain` makes it an ordinary commit the API still associates with the PR. `releases` are `{ version, at }` with `at` a history label.
+ * is that PR's merge commit, unless `plain` makes it an ordinary commit the API still associates with the PR. `releases` are `{ version, at }` with `at` a history label,
+ * and for vendoring (§9.2) optionally `draft`, `body` (the release notes), `annotated` (the tag is a tag object) and `assets`
+ * (`{ id, name, bytes, redirect? }`; `redirect` answers with a 302 to a signed URL).
  */
 export function forkState({ history, releases = [], schema = SCHEMA }) {
   return { history: history.map((commit) => ({ ...commit, sha: sha(commit.label) })), releases: releases.map((release) => ({ ...release, commit: sha(release.at) })), schema };
@@ -40,6 +42,14 @@ export async function startMock(state) {
       const url = new URL(request.url, "http://mock");
       requests.push({ method: request.method, path: url.pathname, query: url.search, body: text === "" ? undefined : JSON.parse(text) });
       const send = (status, value) => { response.writeHead(status, { "content-type": "application/json" }); response.end(value === undefined ? "" : JSON.stringify(value)); };
+      // A release asset's signed download URL (§9.2 step 3) takes no Authorization header, as GitHub's storage refuses one.
+      if (url.pathname.startsWith("/signed/")) {
+        if (request.headers.authorization !== undefined) return send(400, { message: "Authorization not allowed" });
+        const asset = assetById(state, Number(url.pathname.slice("/signed/".length)));
+        if (asset === undefined) return send(404, { message: "Not Found" });
+        response.writeHead(200, { "content-type": "application/octet-stream" });
+        return response.end(asset.bytes);
+      }
       if (request.headers.authorization !== `Bearer ${state.token ?? TOKEN}`) return send(401, { message: "Bad credentials" });
       if (state.down) return send(503, { message: "unavailable" });
       const fork = `/repos/${FORK}`;
@@ -53,6 +63,32 @@ export async function startMock(state) {
         if (rest === "/commits/main") return send(200, { sha: history.at(-1).sha });
         if (rest === "/releases") return send(200, state.fork.releases.map((release) => ({ tag_name: `brain-v${release.version}`, draft: release.draft ?? false })));
         let match;
+        // Vendoring (§9.2): a release by tag with its notes and assets, the tag ref and tag object, and an asset's bytes.
+        if ((match = /^\/releases\/tags\/brain-v(.+)$/.exec(rest))) {
+          const release = state.fork.releases.find((entry) => entry.version === decodeURIComponent(match[1]));
+          if (release === undefined) return send(404, { message: "Not Found" });
+          return send(200, { tag_name: `brain-v${release.version}`, draft: release.draft ?? false, body: release.body ?? "", assets: (release.assets ?? []).map((asset) => ({ id: asset.id, name: asset.name })) });
+        }
+        if ((match = /^\/git\/ref\/tags\/brain-v(.+)$/.exec(rest))) {
+          const release = state.fork.releases.find((entry) => entry.version === decodeURIComponent(match[1]));
+          if (release === undefined) return send(404, { message: "Not Found" });
+          return send(200, { ref: `refs/tags/brain-v${release.version}`, object: release.annotated ? { type: "tag", sha: sha(`tag ${release.version}`) } : { type: "commit", sha: release.commit } });
+        }
+        if ((match = /^\/git\/tags\/([0-9a-f]{40})$/.exec(rest))) {
+          const release = state.fork.releases.find((entry) => entry.annotated && sha(`tag ${entry.version}`) === match[1]);
+          return release === undefined ? send(404, { message: "Not Found" }) : send(200, { sha: match[1], object: { type: "commit", sha: release.commit } });
+        }
+        if ((match = /^\/releases\/assets\/(\d+)$/.exec(rest))) {
+          const asset = assetById(state, Number(match[1]));
+          if (asset === undefined) return send(404, { message: "Not Found" });
+          if (request.headers.accept !== "application/octet-stream") return send(415, { message: "octet-stream only" });
+          if (asset.redirect) {
+            response.writeHead(302, { location: `http://${request.headers.host}/signed/${asset.id}` });
+            return response.end();
+          }
+          response.writeHead(200, { "content-type": "application/octet-stream" });
+          return response.end(asset.bytes);
+        }
         if ((match = /^\/commits\/([^/]+)\/pulls$/.exec(rest))) {
           const commit = find(match[1]);
           return send(200, commit?.pull === undefined ? [] : [{ number: commit.pull.number, body: commit.pull.body, merged_at: "2026-11-01T00:00:00Z" }]);
@@ -104,19 +140,38 @@ export async function startMock(state) {
   return { url: `http://127.0.0.1:${server.address().port}`, state, requests, close: () => new Promise((done) => server.close(done)) };
 }
 
+function assetById(state, id) {
+  return (state.fork?.releases ?? []).flatMap((release) => release.assets ?? []).find((asset) => asset.id === id);
+}
+
 function view(issue) {
   return { number: issue.number, title: issue.title, body: issue.body, state: issue.state ?? "open", labels: (issue.labels ?? []).map((name) => ({ name })), ...(issue.pull_request === undefined ? {} : { pull_request: issue.pull_request }) };
 }
 
-/** Writes a valid package snapshot at `<root>/.agents/skills` and the product's snapshot schema at `<root>/spec/schemas` (§2). */
+const PACKAGE_SKILL = "---\nname: brain-apply\ndescription: Synthetic fixture skill.\n---\n";
+const PACKAGE_HASH = createHash("sha256").update(PACKAGE_SKILL).digest("hex");
+/** The integrity of every package snapshot `writePackage` writes: one skill, the same bytes. */
+export const PACKAGE_INTEGRITY = `sha256-${createHash("sha256").update(`${PACKAGE_HASH}  brain-apply/SKILL.md\n`).digest("hex")}`;
+
+/** The notes lines a fork release ends with (§10.2), for a package snapshot of range `cli`. */
+export const releaseNotes = (cli, integrity = PACKAGE_INTEGRITY) => `Release notes.\n\nIntegrity: ${integrity}\nTarball-SHA256: ${"0".repeat(64)}\nCLI: ${cli}\n`;
+
+/**
+ * Writes a valid package snapshot at `<root>/.agents/skills` and the product's snapshot schema at `<root>/spec/schemas` (§2). A fork
+ * snapshot (`ultimate-brain-skills`) also gets the LICENSE and NOTICE.md a vendored release carries (§9.1).
+ */
 export function writePackage(root, { name = "ultimate-brain", version = "0.9.0", cli = ">=0.9.0 <0.10.0", commit } = {}) {
   const folder = join(root, ".agents", "skills", "brain-apply");
   mkdirSync(folder, { recursive: true });
-  const content = "---\nname: brain-apply\ndescription: Synthetic fixture skill.\n---\n";
+  const content = PACKAGE_SKILL;
   writeFileSync(join(folder, "SKILL.md"), content);
-  const hash = createHash("sha256").update(content).digest("hex");
-  const integrity = `sha256-${createHash("sha256").update(`${hash}  brain-apply/SKILL.md\n`).digest("hex")}`;
+  const hash = PACKAGE_HASH;
+  const integrity = PACKAGE_INTEGRITY;
   const fork = name === "ultimate-brain-skills";
+  if (fork) {
+    writeFileSync(join(root, ".agents", "skills", "LICENSE"), "MIT License\n");
+    writeFileSync(join(root, ".agents", "skills", "NOTICE.md"), "# Notice\n");
+  }
   const manifest = {
     format: 1, name, version, cli,
     source: fork ? { repository: `https://github.com/${FORK}`, commit } : { repository: "https://www.npmjs.com/package/ultimate-brain" },

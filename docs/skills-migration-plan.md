@@ -22,7 +22,7 @@ Completion: a released snapshot can be reproduced and checked against a declared
 
 ## 4. Move source and preserve delivery
 
-**Release:** 0.9.2 (CC-105, [decision 0069](../decisions/0069-skills-from-the-fork-in-0-9-2.md)); 0.9.0 ships with skills built from the product's `skills/`.
+**Release:** 0.9.2 (CC-105, [decision 0069](../decisions/0069-skills-from-the-fork-in-0-9-2.md)). **Done by CC-105:** the skills are written in the fork's `brain/`, and the product vendors its released snapshot ([spec/skills-delivery.md §9](../spec/skills-delivery.md#9-transition-todays-delivery-keeps-working)). 0.9.0 and 0.9.1 shipped skills built from the product's former `skills/` folder.
 
 Move canonical brain skill authorship to the fork. Adapt the product's build to consume an exact released snapshot; generated distribution copies are never edited. Specify init/link/upgrade/lint changes first. Preserve read-only linked-repo behaviour and existing brains until their deliberate upgrade. A broken/missing/incompatible snapshot fails before affected writes.
 

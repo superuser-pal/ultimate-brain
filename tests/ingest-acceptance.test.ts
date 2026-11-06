@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { brain, fixtureCopy } from "./helpers.ts";
 
 const NOW = "2026-12-10T18:00:00Z";
-const BATCH = join(import.meta.dirname, "..", "skills", "brain-ingest", "references", "example-batch.json");
+const BATCH = join(import.meta.dirname, "..", ".agents", "skills", "brain-ingest", "references", "example-batch.json");
 
 async function input(dir: string, name: string, value: unknown) {
   const path = join(dir, "..", name);

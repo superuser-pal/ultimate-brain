@@ -7,9 +7,6 @@ eval/ingest-text/cases/03-capture/capture.json:10000000-0000-4000-8000-000000000
 eval/ingest-text/expected.md:10000000-0000-4000-8000-0000000000e1
 eval/ingest-text/expected.md:c59d6a01681a8a55cfe04bf6d97c8a1f
 eval/ingest-text/expected.md:e8f1aaef5698ec657a1d3d6c51f87f35
-skills/brain-ingest/references/cli-inputs.md:3c4d5e6f-7a8b-4c0d-9e2f-3a4b5c6d7e8f
-skills/brain-sync/references/formats.md:6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d
-skills/brain-sync/references/formats.md:9b8a7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d
 spec/cli.md:2c4e6a80-1b3d-4f50-9a7c-8e6d4b2a0f13
 spec/cli.md:6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d
 spec/cli.md:9b8a7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d
@@ -38,9 +35,6 @@ spec/examples/invalid/source-only-keep-on-minutes.md:3c4d5e6f-7a8b-4c0d-9e2f-3a4
 .agents/skills/brain-sync/references/formats.md:1e2f3a4b-5c6d-4e7f-8a9b-0c1d2e3f4a5b
 .agents/skills/brain-sync/references/formats.md:5f6a7b8c-9d0e-4f1a-8b2c-3d4e5f6a7b8c
 .agents/skills/brain-sync/references/formats.md:c3000000-0000-4000-8000-00000000000[12]
-skills/brain-sync/references/formats.md:1e2f3a4b-5c6d-4e7f-8a9b-0c1d2e3f4a5b
-skills/brain-sync/references/formats.md:5f6a7b8c-9d0e-4f1a-8b2c-3d4e5f6a7b8c
-skills/brain-sync/references/formats.md:c3000000-0000-4000-8000-00000000000[12]
 spec/connected-workflows.md:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
 spec/examples/workflow/invalid/item-bad-id.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
 spec/examples/workflow/invalid/item-done-criterion-unmet.json:6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b
