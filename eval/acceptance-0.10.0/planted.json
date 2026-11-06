@@ -1,48 +1,48 @@
 {
   "as_of": "2026-12-01",
-  "about": "CC-140: the planted problems of the 0.10.0 acceptance fixtures (harness/fixture.mjs). Each entry names its page ids, the signal that should find it and the evidence that makes it a finding at as_of; dates are days before as_of, so the entries hold for a sandbox made at any as_of. Signal names and rules are a reference reading of decision 0072 §3 and CC-140's task text; CC-108's contracts may rename or refine them, and this file follows. harness/check-planted.mjs checks a sandbox against this file.",
+  "about": "CC-140: the planted problems of the 0.10.0 acceptance fixtures (harness/fixture.mjs). Each entry names its page ids, the signal that should find it and the evidence that makes it a finding at as_of; dates are days before as_of, so the entries hold for a sandbox made at any as_of. Signal names are those of spec/assistant.md §3.3 (CC-108); the rules here are a reference reading of decision 0072 §3, and the spec's rules decide. harness/check-planted.mjs checks a sandbox against this file.",
   "signals": {
-    "task-stalled": {
+    "task_stalled": {
       "days": 14,
       "group": "stalled",
       "rule": "an open task (not Done, Won't Do or Waiting On) whose last edit is 14 or more days before as_of"
     },
-    "task-overdue": {
+    "task_overdue": {
       "days": 3,
       "group": "overdue",
       "rule": "an open task (not Done, Won't Do or Waiting On) whose Due is 3 or more days before as_of"
     },
-    "task-no-project": {
+    "task_no_project": {
       "group": "structure",
       "rule": "an open task (not Done or Won't Do) with no Project"
     },
-    "project-stalled": {
+    "project_stalled": {
       "days": 21,
       "group": "stalled",
       "rule": "an Active project with no task done (a Done task's last edit) and no mention in the brain (a meeting's date, or the updated date of a note listing it in projects, or of its own note) in the 21 days before as_of"
     },
-    "project-no-next-step": {
+    "project_no_next_step": {
       "group": "no next step",
       "rule": "an Active project with no open task (Waiting On counts as open)"
     },
-    "project-finished-open": {
+    "project_done_but_open": {
       "group": "no next step",
       "rule": "an Active project with at least one task, every task Done or Won't Do and at least one Done; it has no open task either"
     },
-    "project-wrong-area": {
+    "project_misplaced": {
       "group": "structure",
       "rule": "an Active project whose brain notes listing it in projects all have an Area, none of them the project's own"
     },
-    "project-duplicate": {
+    "project_duplicate": {
       "similarity": 0.6,
       "group": "structure",
       "rule": "two projects not Done in the same Area whose names share most words: Jaccard of their lowercased words of 0.6 or more, without the, a, an, of, and, for, to, new; catalogue and catalog are one word"
     },
-    "area-nothing-active": {
+    "area_empty": {
       "group": "structure",
       "rule": "an Area with no Active project and no open task (its own, or of one of its projects)"
     },
-    "area-no-domain": {
+    "area_no_domain": {
       "group": "structure",
       "rule": "an Area with no Domain, with the Domains module on"
     }
@@ -50,7 +50,7 @@
   "planted": [
     {
       "key": "stalled-task-about-copy",
-      "signal": "task-stalled",
+      "signal": "task_stalled",
       "title": "Write the About page copy",
       "pages": [
         "0a10c000-0000-4000-8000-000000000001"
@@ -64,7 +64,7 @@
     },
     {
       "key": "stalled-task-running-shoes",
-      "signal": "task-stalled",
+      "signal": "task_stalled",
       "title": "Buy new running shoes",
       "pages": [
         "0a10c000-0000-4000-8000-000000000028"
@@ -78,7 +78,7 @@
     },
     {
       "key": "overdue-task-logo-proposals",
-      "signal": "task-overdue",
+      "signal": "task_overdue",
       "title": "Send the logo proposals",
       "pages": [
         "0a10c000-0000-4000-8000-000000000005"
@@ -92,7 +92,7 @@
     },
     {
       "key": "overdue-task-case-studies",
-      "signal": "task-overdue",
+      "signal": "task_overdue",
       "title": "Update the case studies",
       "pages": [
         "0a10c000-0000-4000-8000-000000000019"
@@ -106,7 +106,7 @@
     },
     {
       "key": "no-project-task-domain-name",
-      "signal": "task-no-project",
+      "signal": "task_no_project",
       "title": "Renew the studio domain name",
       "pages": [
         "0a10c000-0000-4000-8000-000000000033"
@@ -121,7 +121,7 @@
     },
     {
       "key": "no-project-task-dentist",
-      "signal": "task-no-project",
+      "signal": "task_no_project",
       "title": "Book a dentist appointment",
       "pages": [
         "0a10c000-0000-4000-8000-000000000034"
@@ -136,7 +136,7 @@
     },
     {
       "key": "stalled-project-pinecrest",
-      "signal": "project-stalled",
+      "signal": "project_stalled",
       "title": "Pinecrest Clinic signage",
       "pages": [
         "0a10b000-0000-4000-8000-000000000003"
@@ -151,7 +151,7 @@
     },
     {
       "key": "no-next-step-talk",
-      "signal": "project-no-next-step",
+      "signal": "project_no_next_step",
       "title": "Conference talk proposal",
       "pages": [
         "0a10b000-0000-4000-8000-000000000010"
@@ -166,10 +166,7 @@
     },
     {
       "key": "finished-open-packaging",
-      "signal": "project-finished-open",
-      "also": [
-        "project-no-next-step"
-      ],
+      "signal": "project_done_but_open",
       "title": "Larkspur Bakery packaging",
       "pages": [
         "0a10b000-0000-4000-8000-000000000007"
@@ -184,7 +181,7 @@
     },
     {
       "key": "wrong-area-newsletter",
-      "signal": "project-wrong-area",
+      "signal": "project_misplaced",
       "title": "Studio newsletter (under Clients; its meetings and decision are Marketing)",
       "pages": [
         "0a10b000-0000-4000-8000-000000000004"
@@ -200,7 +197,7 @@
     },
     {
       "key": "duplicate-quayside",
-      "signal": "project-duplicate",
+      "signal": "project_duplicate",
       "title": "Quayside Books catalogue / Quayside Books catalog redesign",
       "pages": [
         "0a10b000-0000-4000-8000-000000000005",
@@ -221,7 +218,7 @@
     },
     {
       "key": "nothing-active-workshops",
-      "signal": "area-nothing-active",
+      "signal": "area_empty",
       "title": "Workshops",
       "pages": [
         "0a10a000-0000-4000-8000-000000000006"
@@ -233,7 +230,7 @@
     },
     {
       "key": "no-domain-finance",
-      "signal": "area-no-domain",
+      "signal": "area_no_domain",
       "title": "Finance",
       "pages": [
         "0a10a000-0000-4000-8000-000000000003"
