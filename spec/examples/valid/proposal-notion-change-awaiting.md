@@ -1,7 +1,7 @@
 ---
 id: prp-3w8n2k6d
 type: proposal
-title: "Suggestion: Acme website: Status → On Hold"
+title: "Acme website: Status → On Hold"
 created: 2026-11-06
 updated: 2026-11-06
 kind: notion_change

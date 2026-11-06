@@ -1,7 +1,7 @@
 ---
 id: prp-4m8q2v6k
 type: proposal
-title: "Suggestion: Acme website: launch date"
+title: "Acme website: launch date"
 created: 2026-11-06
 updated: 2026-11-06
 kind: set_field

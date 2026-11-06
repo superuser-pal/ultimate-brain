@@ -1,7 +1,7 @@
 ---
 id: prp-6t2m8k4r
 type: proposal
-title: "Suggestion: Send the revised quote: Status → Done"
+title: "Send the revised quote: Status → Done"
 created: 2026-11-06
 updated: 2026-11-06
 kind: notion_change

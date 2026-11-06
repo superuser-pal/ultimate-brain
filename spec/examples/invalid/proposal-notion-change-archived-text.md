@@ -1,7 +1,7 @@
 ---
 id: prp-9c4t2m6w
 type: proposal
-title: "Suggestion: Health: Archived → yes"
+title: "Health: Archived → yes"
 created: 2026-11-06
 updated: 2026-11-06
 kind: notion_change

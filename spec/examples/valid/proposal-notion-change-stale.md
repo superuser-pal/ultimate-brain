@@ -1,7 +1,7 @@
 ---
 id: prp-8k2v6m4t
 type: proposal
-title: "Suggestion: Call the printer: Due → 2026-11-13"
+title: "Call the printer: Due → 2026-11-13"
 created: 2026-11-06
 updated: 2026-11-07
 kind: notion_change

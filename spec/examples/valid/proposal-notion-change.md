@@ -1,7 +1,7 @@
 ---
 id: prp-6t2m8k4q
 type: proposal
-title: "Suggestion: Send the revised quote: Status → Won't Do"
+title: "Send the revised quote: Status → Won't Do"
 created: 2026-11-06
 updated: 2026-11-06
 kind: notion_change

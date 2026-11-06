@@ -1,7 +1,7 @@
 ---
 id: prp-5d9k3m7v
 type: proposal
-title: "Suggestion: Acme website: Area → Clients"
+title: "Acme website: Area → Clients"
 created: 2026-11-06
 updated: 2026-11-06
 kind: set_field
