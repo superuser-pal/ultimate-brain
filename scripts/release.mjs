@@ -21,6 +21,11 @@ else {
   if (tryCommand("git", ["branch", "--show-current"]).stdout !== "main") failures.push("must run on main");
   if (command("git", ["status", "--porcelain"]) !== "") failures.push("working tree is not clean");
   if (command("git", ["rev-parse", "HEAD"]) !== command("git", ["rev-parse", "origin/main"])) failures.push("HEAD is not level with origin/main");
+  // The vendoring PR may already have set package.json to the release it lands in (spec/skills-delivery.md §9.4).
+  const held = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")).version;
+  if (comparePrecedence(version, held) < 0 && !(isPrerelease(version) && !isPrerelease(held) && version.split("-")[0] === held)) {
+    failures.push(`package.json is already ${held}; release ${held} or later`);
+  }
   const rowChangelog = usesTaskRowChangelog(version);
   const tasks = taskEntries().filter((entry) => entry.release === version && entry.status !== "dropped");
   if (!rowChangelog) {
@@ -53,7 +58,7 @@ else {
     const result = tryCommand(program, args, { stdio: "inherit" });
     if (!result.ok) failures.push(`${program} ${args.join(" ")} failed`);
   }
-  // The skills gate runs after npm test, whose pretest regenerates the package snapshot (spec/skills-delivery.md §11.3).
+  // The skills gate runs after npm test, whose pretest checks the vendored snapshot offline; the gate adds the online check (spec/skills-delivery.md §9.8, §11.3).
   const skills = gatesSkills(version) ? skillsGate(version, repo.ok && repo.stdout !== "" ? repo.stdout : undefined, dryRun) : { problems: [] };
   failures.push(...skills.problems);
   if (failures.length > 0) fail(`Release refused: ${failures.join("; ")}`);
@@ -62,7 +67,7 @@ else {
     process.stdout.write(`Would release ${version}${isPrerelease(version) ? " to npm@next" : ""}\n`);
   }
   else {
-    command("npm", ["version", version, "--no-git-tag-version"], { stdio: "inherit" });
+    command("npm", ["version", version, "--no-git-tag-version", ...(version === held ? ["--allow-same-version"] : [])], { stdio: "inherit" });
     const date = new Date().toISOString().slice(0, 10);
     const dated = rowChangelog
       ? writeReleaseSection(readFileSync(resolve(ROOT, "CHANGELOG.md"), "utf8"), version, releaseSection(version, tasks, date, skills.line))
@@ -84,6 +89,23 @@ else {
       fail(`${version} is published on npm, but the push failed. Fix the cause, then from this checkout run: UB_RELEASE=1 git push --follow-tags`);
     }
   }
+}
+
+/** SemVer 2.0.0 precedence of two `x.y.z[-pre]` versions, as src/lib/skills-range.ts orders them: negative when `left` is lower. */
+function comparePrecedence(left, right) {
+  const parse = (value) => { const [core, pre] = value.split(/-(.*)/s); return { core: core.split(".").map(Number), pre: pre === undefined ? [] : pre.split(".") }; };
+  const [a, b] = [parse(left), parse(right)];
+  for (let index = 0; index < 3; index += 1) if (a.core[index] !== b.core[index]) return a.core[index] - b.core[index];
+  if (a.pre.length === 0 || b.pre.length === 0) return b.pre.length - a.pre.length;
+  for (let index = 0; index < Math.min(a.pre.length, b.pre.length); index += 1) {
+    const [x, y] = [a.pre[index], b.pre[index]];
+    if (x === y) continue;
+    const [xNumber, yNumber] = [/^\d+$/.test(x), /^\d+$/.test(y)];
+    if (xNumber && yNumber) return Number(x) - Number(y);
+    if (xNumber !== yNumber) return xNumber ? -1 : 1;
+    return x < y ? -1 : 1;
+  }
+  return a.pre.length - b.pre.length;
 }
 
 /** npm must be logged in as an owner of the package, so a publish can't fail after the commit and tag (0.8.0 did: E404 from another account). */
@@ -120,8 +142,8 @@ function gatesSkills(version) {
 }
 
 /**
- * Runs the skills-integration check with the release rules (§11.3), printing its warnings: `{ problems, line }`, where `line` is the CHANGELOG's `Skills:` line (§11.1).
- * In phase A the shipped manifest carries the released version, since prepack regenerates it.
+ * Runs the skills-integration check with the release rules (§11.3, §9.8), printing its warnings: `{ problems, line }`, where `line` is the CHANGELOG's
+ * `Skills:` line (§11.1): the vendored snapshot's name and version. (A phase A manifest, which the gate now refuses, carried the released version.)
  */
 function skillsGate(version, repo, dryRun) {
   const script = fileURLToPath(new URL("./skills-integration.mjs", import.meta.url));
