@@ -291,38 +291,81 @@ async function entryKit(brain: Brain, repo: LinkedRepo, home?: string): Promise<
   return { top, read, kit: await validKit(read, await hubOf(brain, home), { entry: repo }) };
 }
 
-/** `brain repo refresh <name> [--dry-run]` (spec/cli.md §5.29): copy a changed kit into brain.json. */
+/** The working tree at a new `--path` for `repo refresh` (cli.md §5.29): the checks of `repo add`. */
+async function movedRepo(brain: Brain, repo: LinkedRepo, path: string, home?: string): Promise<string> {
+  if (!/^(\/|~\/)/.test(path)) throw new BrainError("INPUT_INVALID", `--path ${path} must be absolute or start with ~/`);
+  const top = await openRepo({ ...repo, path }, home);
+  // Compared after resolving symbolic links, so a link to the brain is refused too.
+  if (top === (await realpath(brain.root))) throw new BrainError("REPO_IS_BRAIN", `${path} is the brain itself; link another repo`);
+  return top;
+}
+
+/** REPO_COMMIT_UNKNOWN unless the recorded commit is in the repo at `top` and an ancestor of its HEAD: the same repo. */
+async function assertSameRepo(repo: LinkedRepo, top: string, path: string): Promise<void> {
+  if (repo.commit === "") return;
+  try {
+    await resolveCommit(top, repo.commit);
+    await assertAncestor(top, repo.commit, await headCommit(top));
+  } catch (error) {
+    if (!(error instanceof BrainError)) throw error;
+    throw new BrainError("REPO_COMMIT_UNKNOWN", `${repo.name}'s recorded commit ${repo.commit} isn't in the history of ${path}: is it the same repo? If its history was rewritten, unlink it and link it again`);
+  }
+}
+
+/** `brain repo refresh <name> [--path <path>] [--dry-run]` (spec/cli.md §5.29): copy a changed kit, a legacy link's first kit, or a moved repo's path into brain.json, keeping `commit`. */
 export const repoRefreshCommand: Command = {
   name: "repo refresh",
-  usage: "brain repo refresh <name> [--dry-run] [--json]",
-  summary: "Re-read a kit-linked repo's brain-kit.json and copy its placement and patterns into brain.json.",
-  options: { "dry-run": "boolean" },
+  usage: "brain repo refresh <name> [--path <path>] [--dry-run] [--json]",
+  summary: "Re-read a linked repo's brain-kit.json and copy its placement and patterns into brain.json (a legacy link takes its first kit); --path records where a moved repo is now. Keeps the ingested commit.",
+  options: { path: "string", "dry-run": "boolean" },
   maxPositionals: 1,
   needsBrain: true,
   async run({ args, brain, now, environment }) {
     const [name] = args.positionals;
     if (name === undefined) throw new BrainError("USAGE", "Name the repo: brain repo refresh <name>");
+    const home = environment.homeDirectory;
     const repo = findRepo(brain!.config, name);
-    const { read, kit } = await entryKit(brain!, repo, environment.homeDirectory);
-    const changed = read.sha256 !== repo.kit!.sha256;
+    const given = args.options.path as string | undefined;
+    const top = given === undefined ? await openRepo(repo, home) : await movedRepo(brain!, repo, given, home);
+
+    // A kit-linked entry needs its kit (KIT_MISSING); a legacy one adopts a kit when its repo has one (CC-118).
+    let read: KitRead | null = null;
+    if (repo.kit !== undefined) read = await readKitFile(top);
+    else {
+      const bytes = await kitBytesIfAny(top);
+      if (bytes !== null) read = parseKitBytes(bytes);
+      else if (given === undefined) throw new BrainError("NO_KIT", `${name} is linked without a kit (0042), and ${KIT_FILE} isn't in the repo: write one with the brain-repos skill`);
+    }
+    const kit = read === null ? null : await validKit(read, await hubOf(brain!, home), { entry: repo });
+    if (given !== undefined) await assertSameRepo(repo, top, given);
+
+    const path = given ?? repo.path;
     const diff = (before: readonly string[] = [], after: readonly string[] = []) => after.filter((value) => !before.includes(value));
     const data = {
       name,
-      changed,
-      placement_changed: repo.area !== kit.placement.area || repo.project !== kit.placement.project,
-      added_patterns: diff(repo.patterns, kit.knowledge.patterns),
-      removed_patterns: diff(kit.knowledge.patterns, repo.patterns),
-      added_never_read: diff(repo.never_read, kit.knowledge.never_read),
-      removed_never_read: diff(kit.knowledge.never_read, repo.never_read),
+      changed: (read !== null && read.sha256 !== repo.kit?.sha256) || path !== repo.path,
+      placement_changed: kit !== null && (repo.area !== kit.placement.area || repo.project !== kit.placement.project),
+      added_patterns: kit === null ? [] : diff(repo.patterns, kit.knowledge.patterns),
+      removed_patterns: kit === null ? [] : diff(kit.knowledge.patterns, repo.patterns),
+      added_never_read: kit === null ? [] : diff(repo.never_read, kit.knowledge.never_read),
+      removed_never_read: kit === null ? [] : diff(kit.knowledge.never_read, repo.never_read),
       reingest: false,
     };
     data.reingest = data.added_patterns.length > 0 || data.removed_never_read.length > 0;
-    if (changed && args.options["dry-run"] !== true) {
-      const next = kitEntry(name, repo.path, kit, repo.commit, read.sha256);
+    if (data.changed && args.options["dry-run"] !== true) {
+      // `commit` is never changed here: the next `repo changes` lists only what changed since the last ingest.
+      const next = kit === null ? { ...repo, path } : kitEntry(name, path, kit, repo.commit, read!.sha256);
       await writeRepos(brain!, linkedRepos(brain!.config).map((entry) => (entry.name === name ? next : entry)));
-      await appendLog(brain!.root, now, [{ op: "repo-refresh", id: "-", title: name, pairs: [["sha", shortHash(read.sha256)]] }]);
+      const pairs: [string, string][] = [];
+      if (read !== null) pairs.push(["sha", shortHash(read.sha256)]);
+      if (path !== repo.path) pairs.push(["path", path]);
+      await appendLog(brain!.root, now, [{ op: "repo-refresh", id: "-", title: name, pairs }]);
     }
-    return { data, human: changed ? `${name}: kit applied${data.reingest ? "; run brain repo record --reset to read the newly readable files" : ""}\n` : `${name}: kit unchanged\n` };
+    const done: string[] = [];
+    if (read !== null && read.sha256 !== repo.kit?.sha256) done.push(repo.kit === undefined ? "kit adopted" : "kit applied");
+    if (path !== repo.path) done.push(`path now ${path}`);
+    const human = done.length === 0 ? `${name}: nothing to change\n` : `${name}: ${done.join("; ")}; commit kept${data.reingest ? "; run brain repo record --reset to read the newly readable files" : ""}\n`;
+    return { data, human };
   },
 };
 

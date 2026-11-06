@@ -144,7 +144,7 @@ Failure:
 | `KIT_INVALID` | 4 | a link kit fails its schema or a check of linked-repos.md §2.2; `details` lists `{pointer, message}` (§5.29) |
 | `KIT_EXISTS` | 4 | `kit write` without `--replace` found a `brain-kit.json` (§5.29) |
 | `KIT_CHANGED` | 4 | `kit write --replace` names a hash that isn't the current kit's: it changed since the user saw it (§5.29) |
-| `NO_KIT` | 4 | `repo refresh` or `repo tasks` on an entry linked without a kit (§5.29) |
+| `NO_KIT` | 4 | `repo tasks` on an entry linked without a kit, or `repo refresh` on one whose repo has no kit file, without `--path` (§5.29) |
 | `MODE_CONNECTED` | 4 | `repo tasks` on a repo whose tasks are connected to Notion (§5.29) |
 | `NO_TASKS` | 4 | `repo tasks` on a kit without `tasks` (§5.29) |
 | `CONFIRMATION_REQUIRED` | 4 | `kit write` or `repo new` without `--confirm` (§5.29, linked-repos.md §3) |
@@ -1778,7 +1778,7 @@ Every brain pins the operational skills it uses in `skills.lock.json` at its roo
 brain repo kit check (--path <path> | --input <file|->) [--name <name>]
 brain repo kit write --path <path> --input <file|-> --confirm <sha256> [--replace <sha256>]
 brain repo add <name> --path <path> --kit
-brain repo refresh <name> [--dry-run]
+brain repo refresh <name> [--path <path>] [--dry-run]
 brain repo show <name>
 brain repo health [<name>] [--input <file|->] [--rollup-as-of <timestamp>]
 brain repo tasks <name> [--input <file|->]
@@ -1812,11 +1812,14 @@ It exits 0 even with problems: this is the command the skill uses to show them. 
 
 **`repo add <name> --path <path> --kit`** links a repo from its kit. It is §5.16's `repo add` with the kit's values: `area` = `placement.area`, `patterns` = `knowledge.patterns`, `never_read` and `project` when the kit has them, and `kit: { sha256 }`. The kit's `name` must equal `<name>` (`KIT_INVALID`, pointer `/name`); a repo with no kit is `KIT_MISSING`. `--kit` can't be combined with `--area` or `--pattern` (`USAGE`). §5.16's other checks apply unchanged. `data` = the new entry.
 
-**`repo refresh <name>`** re-reads the kit of a kit-linked repo and copies `area`, `patterns`, `never_read`, `project` and the hash into its entry. A legacy entry is `NO_KIT` (exit 4).
-- `data` = `{ name, changed, placement_changed, added_patterns, removed_patterns, added_never_read, removed_never_read, reingest }`. `changed` is false when the hash equals `kit.sha256`, and then nothing is written. `placement_changed` is true when `area` or `project` differ, a project added or removed included. The four lists compare the kit with the entry, in the kit's (added) or the entry's (removed) order.
-- `reingest` is true when patterns were added or never-read paths removed: files that are now readable but older than the recorded commit are only listed after `repo record --reset` (§5.16), and the skill offers that.
-- `--dry-run` writes nothing and reports the same `data`.
-- Logs `repo-refresh - "<name>" sha=<first 12 hex>` when it writes.
+**`repo refresh <name>`** re-reads the kit of a linked repo and copies `area`, `patterns`, `never_read`, `project` and the hash into its entry. It never changes `commit`, so the next `repo changes` lists only what changed since the last ingest (CC-118).
+- **A legacy entry** (no `kit`) whose repo now has a `brain-kit.json` (written by `repo kit write` after the user's yes) adopts it: the entry gets the kit's copies and `kit: { sha256 }`, as `repo add --kit` would give it. A legacy entry whose repo has no kit file is `NO_KIT` (exit 4), unless `--path` is given: then only the path changes and the entry stays legacy.
+- **`--path <path>`** records a repo's new location, when it moved (`PATH_MISSING` in the health check). It is absolute or starts with `~/` (`INPUT_INVALID`), and is stored as given. It must resolve to the top of a Git working tree (`REPO_NOT_FOUND`) that isn't the brain (`REPO_IS_BRAIN`, compared after resolving symbolic links). The kit is read there. When `commit` isn't `""`, it must be a commit of the repo at the new path and an ancestor of its `HEAD` (`REPO_COMMIT_UNKNOWN`): this is how the command knows the path holds the same repo. The old path isn't read, so it may be gone.
+- Order of checks, all before any write: the name (`REPO_NOT_FOUND`); `--path` as above, or else the entry's own path (`REPO_NOT_FOUND`); the kit: a kit-linked entry needs one (`KIT_MISSING`), a legacy entry with no kit and no `--path` is `NO_KIT`, and a kit read must be valid for this entry, its `name` the entry's (`KIT_INVALID`, as for `kit write`); then, with `--path`, the commit.
+- `data` = `{ name, changed, placement_changed, added_patterns, removed_patterns, added_never_read, removed_never_read, reingest }`. `changed` is true when the entry would change: the kit's hash isn't `kit.sha256` (always, for a legacy entry adopting a kit), or `--path` differs from the stored `path`. When it is false, nothing is written. `placement_changed` is true when `area` or `project` differ, a project added or removed included. The four lists compare the kit with the entry, in the kit's (added) or the entry's (removed) order; they are empty when no kit is read.
+- `reingest` is true when patterns were added or never-read paths removed: files that are now readable but older than the recorded commit are only listed after `repo record --reset` (§5.16), and the skill offers that. A legacy entry adopting a kit is compared with its own `patterns` and `never_read`.
+- `--dry-run` writes nothing and reports the same `data`, after the same checks.
+- Logs `repo-refresh - "<name>"` when it writes, with `sha=<first 12 hex>` when the entry has a kit after the write, and `path=<path>` when the path changed.
 
 **`repo show <name>`** writes nothing. `data` = `{ entry, kit, kit_sha256, kit_status: current|changed|missing|invalid|none, workflow }`.
 - `kit` is `null` unless the status is `current` or `changed`. `kit_sha256` is the hash of the file's bytes, `null` for `missing` (the file or the repo's path is gone) and `none`.

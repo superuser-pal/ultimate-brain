@@ -65,12 +65,12 @@ node -e 'const fs=require("fs");fs.writeFileSync(process.argv[2],JSON.stringify(
 
 | Code | Fix in one line |
 |---|---|
-| `PATH_MISSING` (error) | The repo moved or is gone: give its new path (unlink and link again), or unlink it |
+| `PATH_MISSING` (error) | The repo moved or is gone: `brain repo refresh <name> --path <new path>` (SKILL.md, "A repo that moved"), or unlink it |
 | `KIT_MISSING` (error) | `brain-kit.json` was deleted: write it again (the yes) from the entry, or unlink |
 | `KIT_INVALID` (error) | Fix the kit at the pointer shown (a change, with the yes) |
 | `KIT_CHANGED` (warning) | The kit was edited: `brain repo refresh <name>` applies it (show what changes first with `--dry-run`) |
 | `KIT_UNCOMMITTED` (info) | Commit `brain-kit.json` in the repo |
-| `NO_KIT` (info) | Linked before kits; offer to write one |
+| `NO_KIT` (info) | Linked before kits; offer to write one, then `brain repo refresh <name>` applies it |
 | `PLACEMENT_ARCHIVED` (warning) | Its Area or Project is archived: move the repo (a change) or unlink it |
 | `COMMIT_UNKNOWN` (error) | The repo's history was rewritten: `brain repo record <name> --reset`; the next read skips what's already in |
 | `CHANGES_WAITING` (info) | Files to read: "ingest the linked repo" or the next catch-up |
