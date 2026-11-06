@@ -1,0 +1,327 @@
+# Ultimate Assistant (contract, decisions 0064 and 0072)
+
+**Status:** contract for release 0.10.0 (CC-108), built by CC-109, accepted by CC-110. Written by Claude Code.
+
+How this file fits: it holds the assistant's whole behaviour: what it reads, the signals and their thresholds, the ranking, the report, how a yes or a Review row changes things, where a ramble lands, the dismissal memory and the sub-agent. Field definitions are in [schema.md](schema.md) (§11 proposal kinds `notion_change` and `set_field`, §2 `_assistant/`), command behaviour in [cli.md](cli.md) (§5.31 `brain assistant`, §5.6 `proposal settle`, §5.7 apply, §5.14.4 render, §5.14.5 `sync tasks --direct`). The machine-readable shapes are in [schemas/assistant.schema.json](schemas/assistant.schema.json), with examples in [examples/assistant/](examples/assistant/).
+
+**Names.** The assistant is **Ultimate Assistant** (0072 §1). Its skill is `ultimate-assistant` (written in the fork's `brain/`, delivered in the pinned snapshot like every brain skill, skills-delivery §9.5); its Claude Code sub-agent is `.claude/agents/ultimate-assistant.md` (§10); "brain assistant" in older text means this feature. The Notion custom agent keeps its name, Brain Assistant.
+
+**Calls taken in this contract that the user may veto** (each the simplest reading of 0064 and 0072; none contradicts them):
+1. A task the user dictates in chat is created with no source and no backlink (`sync tasks --direct`), not from a text source of the chat: the chat is not knowledge, and a source would put it in the Inbox as a row (§7).
+2. Every change made after a yes goes through a proposal file that is applied at once (decided in chat), so Git records what changed and why; such a proposal never becomes a Review row (§6).
+3. A Notion-owned change approved in a Review row is carried out by the skill that applied the decision, through the Notion MCP; until then the proposal waits as `approved` (§6.3).
+4. "Someday" is read by name as a parked task status, beside the mapped Waiting On status (§3.1).
+5. The signals' exact rules (which notes count as a mention, what makes two projects duplicates, when a project is misplaced) are fixed in §3, with no setting (0072 §3).
+
+---
+
+## 1. A session
+
+On demand only (0064): the user asks ("review my projects", "what's stalled in Clients?"). An unattended or scheduled run is CC-111 (0.13.0); in 0.10.0 the skill refuses to run with no user present.
+
+1. **Preconditions.** `brain status --json` resolves the brain. The skill commits nothing it didn't write.
+2. **Waiting Notion writes.** For each proposal of kind `notion_change` with status `approved` or `edited` (`brain proposal list --status approved,edited`), the skill passes its recorded decision to `brain apply` again and carries out the returned `notion_writes` (§6.3). These are the user's Review decisions that no skill has carried out yet.
+3. **Read Notion live** (§2.1) into the assistant snapshot. If Notion can't be read, the session runs **brain only** (§2.3).
+4. **Read the linked repos' rollups** (§2.2) into the same snapshot.
+5. **Findings.** `brain assistant findings --input <snapshot> [--scope <id>]` (cli.md §5.31) returns the ranked findings and the report text (§4).
+6. **The report.** The skill shows `data.report` exactly as returned. It writes nothing before the user answers.
+7. **The user's answers** are carried out one by one (§5): a yes applies directly (§6.1, §6.2), "propose N" writes a Review row (§6.3), "skip N" offers a status or remembers the skip (§8), "more" and a named scope run step 5 again with `--offset` or `--scope`, and a ramble is split and placed after a yes (§7).
+8. **Close.** After the user's last answer: `brain index`, `brain views`, `brain lint`, commit, push per `settings.push`, then one log line (§9) and the closing summary (§4.4).
+
+The session reads; it changes nothing the user hasn't said yes to or asked to propose (0072 §2).
+
+## 2. What it reads
+
+### 2.1 Notion, live (0064)
+Tasks exist only in Notion; a project's and an Area's Status and Archived live there too (schema §7). The skill reads them through the Notion MCP, **every row**, following `next_cursor` until each query is exhausted, and writes the **assistant snapshot** (`$defs/snapshot` in assistant.schema.json):
+
+```json
+{
+  "as_of": "2026-11-06T10:00:00Z",
+  "notion": "live",
+  "task_statuses": [
+    { "name": "To Do", "group": "todo" }, { "name": "Doing", "group": "in_progress" },
+    { "name": "Waiting On", "group": "todo" }, { "name": "Someday", "group": "todo" },
+    { "name": "Done", "group": "complete" }, { "name": "Won't Do", "group": "complete" }
+  ],
+  "tasks": [
+    { "page_id": "2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e", "title": "Send the revised quote", "status": "To Do",
+      "due": "2026-10-29", "projects": ["7c6b5a49-3827-4615-a4b3-c2d1e0f9a8b7"], "areas": [],
+      "created": "2026-10-01T09:00:00Z", "last_edited": "2026-10-20T08:30:00Z" }
+  ],
+  "projects": [
+    { "page_id": "7c6b5a49-3827-4615-a4b3-c2d1e0f9a8b7", "brain_id": "prj-9x4t1b7e", "title": "Acme website",
+      "status": "Active", "archived": false, "last_edited": "2026-10-28T16:00:00Z" }
+  ],
+  "areas": [
+    { "page_id": "5d4c3b2a-1908-4f7e-8d6c-5b4a39281706", "brain_id": "area-2m7c4h8n", "title": "Clients", "archived": false }
+  ],
+  "repos": []
+}
+```
+
+- `as_of`: the time the reads started (`--now` in tests). Page ids are in Notion's dashed form, lowercase.
+- `task_statuses`: the options of the mapped Tasks `status` property (schema §12 `notion.tasks.properties.status`), in the database's order, from the data source's schema. `group` is `todo`, `in_progress` or `complete` for a Notion Status property (its groups To-do, In progress, Complete), and `null` for a select.
+- `tasks`: every row of the Tasks database (`notion.tasks.database`) that isn't in Notion's trash. Values come from the mapped properties (schema §12): `title`, `status` (the option name, `null` when empty), `due` (the start date's first 10 characters, `null` when empty), `projects` and `areas` (the relations' page ids, sorted; `[]` when unmapped or empty), and the page's `created_time` and `last_edited_time`. A property whose mapping is empty is sent as `null` (`status`, `due`) or `[]`.
+- `projects`, `areas`: every row of the Projects and Areas databases (`notion.databases`): `brain_id` (the Brain ID, `null` when empty), `title` (Name), `status` (Projects · Status, `null` when empty), `archived` (Archived), `last_edited` (projects only).
+- With the **Tasks module off** (schema §12), `tasks` and `task_statuses` are left out and the Tasks database isn't read.
+- `brain assistant findings` matches a Notion row to its note by `brain_id`, else by the note's `notion` page id. A Projects or Areas row that matches no note isn't a subject of any finding; the report counts it under "not in the brain yet" (§4.2) so the user can run a sync.
+
+Live values win over the brain's dated `notion_fields` snapshot for Status and Archived. The assistant never stores what it reads: task statuses stay in Notion (0018), and only the next `brain sync` refreshes `notion_fields`.
+
+### 2.2 Linked repos (0066)
+For each `brain.json` `repos` entry linked with a kit whose task mode is **tracked in the repo** (linked-repos.md §2.4), the skill runs `brain repo tasks <name>`, fetching the issues first for a GitHub or GitLab source (linked-repos.md §4.1), and adds `{ "name": "<name>", "rollup": <its data> }` to `repos`. An entry refused with `NO_KIT`, `MODE_CONNECTED` or `NO_TASKS` is left out silently (a connected repo's tasks are already Notion Tasks). One that fails (no `gh`, not logged in, any error) is added as `{ "name": "<name>", "error": "<the reason in a few words>" }` instead, and the report says so in one line. A rollup's open items (`todo`, `in_progress`, `waiting`, `review` counts) are next steps of its target: the project of `rollup.target.project`, else every project of the Area `rollup.target.area`.
+
+### 2.3 Notion unreachable
+When a Notion read fails (the MCP is missing, not logged in, or any query of §2.1 fails after one retry), the snapshot is `{ "as_of": …, "notion": "unreachable", "repos": […] }`, and the whole session is **brain only**: the report's second line says so (§4.2), statuses come from `notion_fields` with their `as_of` date, the signals that need Notion are skipped (§3.3), and no change to a Notion-owned field is offered. Brain-owned changes and Review rows are still offered; a publish waits for the next run that reaches Notion.
+
+## 3. Signals
+
+### 3.1 Terms (normative)
+- **Days.** `D` is the UTC date of `as_of`. The age of a timestamp or date `x` is `days(x)` = `D` minus the UTC date of `x`, in whole days.
+- **Task states,** from `status`, compared case-insensitively after trimming:
+  - **dropped:** the status is `notion.tasks.wont_do_status` (default `Won't Do`);
+  - **done:** not dropped, and its option's `group` is `complete`, or (a select, `group` `null`) the status is `Done`;
+  - **waiting:** the status is `notion.tasks.waiting_on_status` (default `Waiting On`); **someday:** the status is `Someday`. Both are **parked**;
+  - **open:** neither done nor dropped (an empty status is open); **active:** open and not parked; **next step:** open and not someday.
+- **A task's projects** are the notes whose `notion` is in its `projects`; a page id no note has is a project outside the brain, and its status comes from the `projects` row with that `page_id`, if any.
+- **Live project:** not archived (the live Archived, else `notion_fields.archived`, or `lifecycle: archived`, or a file under `archive/`) and with a status other than `Done`. Its status is the live row's, else (brain only) `notion_fields.status`; a project with neither has status `null`.
+- **A task belongs to an Area** when the Area's `notion` is in its `areas`, or one of its projects has that `area`. **A project belongs to** its `area`; **an Area to** its `domain`.
+- **Mentions of a project:** a knowledge note (every type except `source`, `view`, `proposal` and `memory`, and not the project itself) whose `projects` lists it, dated by its `date` for a meeting and its `created` otherwise; a source whose `projects` lists it, or whose `repo` is a `repos` entry with that `project`, dated by its `captured`; and the project note itself, dated by its `created` and its `updated`.
+- **Normalized title:** NFKD, combining marks dropped, lowercase, split on every run of characters outside `[a-z0-9]`, empty tokens and these stop words dropped: `a an and the of for to in on project de del la el los las y en para proyecto`. The result is a set of tokens.
+
+### 3.2 Thresholds (fixed, 0072 §3)
+
+| Constant | Value | Used by |
+|---|---|---|
+| `TASK_OVERDUE_DAYS` | 3 | `task_overdue`: `days(due)` ≥ 3 |
+| `TASK_STALLED_DAYS` | 14 | `task_stalled`: `days(last_edited)` ≥ 14 |
+| `PROJECT_STALLED_DAYS` | 21 | `project_stalled`: `days(last activity)` ≥ 21 |
+| `MISPLACED_MIN_NOTES` | 3 | `project_misplaced` |
+| `MISPLACED_SHARE` | 2/3 | `project_misplaced` |
+| `DUPLICATE_SIMILARITY` | 2/3 | `project_duplicate` |
+| `REPORT_LIMIT` | 10 | findings shown per page (0072 §5) |
+| `DISMISS_DAYS` | 30 | a skip is remembered this long (0072 §6) |
+
+No setting changes them in 0.10.0; per-area preferences are 0.14.0.
+
+### 3.3 The signals (normative; the names are stable)
+
+Each finding has one **signal**, one **subject** and a **key** `<signal>:<subject key>`: the subject key is the brain id, or `notion:<page id>` for a task, or `<id1>+<id2>` (sorted) for a project pair. A subject can have several findings, except where a row says "not when".
+
+| Signal | Category | Subject | Fires when | Needs |
+|---|---|---|---|---|
+| `task_overdue` | overdue | task | the task is active, `due` is set and `days(due)` ≥ 3 | live, Tasks on, `status` and `due` mapped |
+| `task_stalled` | stalled | task | the task is active, not `task_overdue`, and `days(last_edited)` ≥ 14 | live, Tasks on, `status` mapped |
+| `project_stalled` | stalled | project | the project's status is `Active`, not `project_done_but_open`, and its **last activity** is 21 or more days old: the latest of its mentions' dates and the `last_edited` of its done tasks (§3.1) | the brain; with Tasks on and live, the done tasks too |
+| `project_no_next_step` | no next step | project | the project's status is `Active`, not `project_done_but_open` or `project_stalled`, it has no task that is a next step, and no repo rollup with open items targets it (§2.2) | live, Tasks on, `status` and `project` mapped |
+| `project_done_but_open` | no next step | project | the project is live, has at least one task, every one of its tasks is done or dropped and at least one is done, and no repo rollup with open items targets it | live, Tasks on, `status` and `project` mapped |
+| `project_misplaced` | structure | project | the project is live; at least 3 notes that mention it (§3.1, the project note itself excluded) have an `area`; one Area other than the project's, not archived, holds at least two thirds of them (`3 × count ≥ 2 × total`) | the brain |
+| `project_duplicate` | structure | project pair | both projects are live and their normalized titles (§3.1) are equal and not empty; or both have at least 2 tokens and share at least two thirds of their union (`3 × |A ∩ B| ≥ 2 × |A ∪ B|`); or the normalized title of one equals the normalized form of an alias of the other | the brain |
+| `task_no_project` | structure | task | the task is open and has no project, or every project it names is closed: a note that isn't live (§3.1), or, outside the brain, a Projects row whose status is `Done` or that is archived | live, Tasks on, `project` mapped |
+| `area_no_domain` | structure | Area | the Domains module is on, the Area isn't archived and has no `domain` | the brain |
+| `area_empty` | structure | Area | the Area isn't archived, no live project of status `Active` or `Planned` belongs to it, no open task belongs to it (with Tasks on), and no repo rollup with open items targets it or its projects | live |
+
+- **"Needs".** A signal whose needs aren't met isn't computed, and `data.skipped_signals` lists it once with the reason: `NOTION_UNREACHABLE`, `MODULE_OFF` (Tasks or Domains off) or `NOT_MAPPED` (the mapping property it needs is empty). Brain only, `project_stalled` uses mentions alone and statuses from `notion_fields`.
+- **The pair's order.** In a `project_duplicate`, the **survivor** is the project more notes mention (§3.1), then the one created first, then the lower id; the other is the duplicate.
+- **Evidence** (the finding's `evidence` object): `task_overdue` `{ due, days_late, status }`; `task_stalled` `{ last_edited, days_idle, status }`; `project_stalled` `{ last_activity: { date, kind: "task_done"·"meeting"·"note"·"source"·"project_note", ref }, days_idle }` (`ref` a note id or a task page id; on equal dates the order of `kind` here wins, then the lower `ref`); `project_no_next_step` `{ tasks_open: 0, tasks_someday, tasks_done, tasks_dropped }`; `project_done_but_open` `{ tasks_done, tasks_dropped }`; `project_misplaced` `{ area, suggested_area, notes, of }`; `project_duplicate` `{ survivor, duplicate, shared_tokens }`; `task_no_project` `{ projects: [<page ids of its closed projects>] }`; `area_no_domain` `{}`; `area_empty` `{ projects_on_hold, projects_done }`.
+
+### 3.4 Recommendations and status offers
+Each finding carries `recommendations`, lettered `a`, `b`, `c` in this order, and `status_offers` (§8). An **action** is one of the stable codes of §6's table; `value` is filled when the rule gives it and `null` when the user must say it. A recommendation whose value would name a status option the Tasks database lacks, or a note with no Notion page where a page is needed, is left out.
+
+| Signal | Recommendations | Status offers |
+|---|---|---|
+| `task_overdue` | a `set_task_due` null · b `set_task_status` the done status · c `set_task_status` the dropped status | the waiting status, `Someday` |
+| `task_stalled` | a `set_task_due` null · b `set_task_status` the done status · c `set_task_status` the dropped status | the waiting status, `Someday` |
+| `project_stalled` | a `set_project_status` `On Hold` · b `add_task` · c `set_project_status` `Done` | `On Hold` |
+| `project_no_next_step` | a `add_task` · b `set_project_status` `On Hold` · c `set_project_status` `Done` | `On Hold` |
+| `project_done_but_open` | a `set_project_status` `Done` · b `add_task` | none |
+| `project_misplaced` | a `move_project` the suggested Area | none |
+| `project_duplicate` | a `merge_projects` `{ target: <duplicate>, merge_into: <survivor> }` | none |
+| `task_no_project` | a `set_task_project` the Area's only live `Active` project when the task belongs to exactly one Area and it has exactly one, else null · b `set_task_status` the dropped status | none |
+| `area_no_domain` | a `set_area_domain` the only Domain not archived when there is exactly one, else null | none |
+| `area_empty` | a `archive_area` `true` | none |
+
+The **done status** is the option named `Done` when there is one, else the first option of group `complete` that isn't the dropped status; the **dropped status** is `wont_do_status`; the **waiting status** is `waiting_on_status`. `add_task` has the value `{ "project": "<prj id>" }`: the user gives the task's words.
+
+### 3.5 Scope, ranking and the cap (0072 §5)
+- **Scope.** Without `--scope`, every finding counts. With `--scope <id>` (an Area, Domain or Project; the skill resolves the name the user said to an id, and asks when two match), a finding counts when the id is in its subject's reach: a task's projects, the Areas it belongs to and their Domains; a project, its Area and that Area's Domain; a pair, the reach of both projects; an Area and its Domain.
+- **Dismissals** (§8) then remove every finding whose key has an active entry; `data.dismissed` counts them.
+- **Ranking,** worst first: by category (overdue, stalled, no next step, structure); within a category by signal, in the table's order except that `project_stalled` comes before `task_stalled` and `project_no_next_step` before `project_done_but_open`; within a signal, `task_overdue` by `days_late` and the two stalled signals by `days_idle`, both descending, and every other signal by the subject's title (lowercase, NFC, compared by code points); then by key.
+- **The cap.** `--limit` (default 10) findings from `--offset` (default 0) are returned, each with its `rank` (1-based in the whole list); `data.total` is the number of findings after scope and dismissals. "More" is the next offset.
+
+## 4. The report (0072 §2, §5)
+
+`brain assistant findings` builds the report text, so the skill doesn't word it. The skill prints `data.report` as it is.
+
+### 4.1 Layout (normative)
+```text
+Ultimate Assistant · whole brain · 6 Nov 2026
+Notion read live: 42 tasks, 9 projects, 6 areas.
+
+1. Overdue · "Send the revised quote" (task in Acme website) · due 29 Oct, 8 days late
+   a) give it a new due date  b) mark it Done  c) mark it Won't Do
+2. Stalled · Acme website (project) · nothing done or mentioned for 23 days (last: meeting Acme sync, 14 Oct)
+   a) set Status to On Hold  b) add a next step  c) set Status to Done
+…
+10. Structure · Health (area) · no Domain
+   a) put it in a Domain
+
+14 more. Say "more", or name an Area, Domain or Project.
+3 skipped for now.
+Answer with "yes 1, 2b", a change ("1: due Friday"), "skip 4 because …", or "propose 5" for a Review row.
+```
+
+- Line 1: `Ultimate Assistant · <whole brain | the scope's title (area|domain|project)> · <D Mon YYYY>` (UTC date of `as_of`, English month abbreviation).
+- Line 2, live: `Notion read live: <n> tasks, <n> projects, <n> areas.`, then ` <n> projects and <n> areas aren't in the brain yet: run a sync.` when any (a count of 0 is left out with its words). Brain only: `Notion unreachable: brain only. Statuses as of <D Mon YYYY> (the oldest notion_fields as_of used); tasks not checked.` Then, live or not, one sentence per skipped reason other than `NOTION_UNREACHABLE`: `Tasks module off: tasks not checked.`, `Domains module off: Areas without a Domain not checked.`, `Tasks has no <property> mapped: <signals> not checked.`, and per failed repo `Repo <name> not read: <reason>.`
+- A blank line, then one block per finding: `<rank>. <Category> · <subject> · <evidence>` and the line `   <letter>) <label>` for each recommendation, joined by two spaces. Category labels: `Overdue`, `Stalled`, `No next step`, `Structure`. Subject: a task `"<title>" (task[ in <project title>])` (its first project in the brain, by title), a project `<title> (project)`, an Area `<title> (area)`, a pair `<duplicate title> and <survivor title> (projects)`.
+- Evidence text: `task_overdue` `due <D Mon>, <n> days late`; `task_stalled` `no edit for <n> days (status <status>)`; `project_stalled` `nothing done or mentioned for <n> days (last: <kind label> <ref title>, <D Mon>)` with kind labels `task done`, `meeting`, `note`, `source`, `project note`; `project_no_next_step` `Active with no open task`; `project_done_but_open` `all <n> tasks done, still <status>`; `project_misplaced` `in <area title>, but <notes> of its <of> notes are in <suggested title>`; `project_duplicate` `look like the same project`; `task_no_project` `no project` or `its project is closed`; `area_no_domain` `no Domain`; `area_empty` `nothing active`.
+- Labels: `set_task_due` null `give it a new due date`, with a value `move the due date to <D Mon>`; `set_task_status` `mark it <status>`; `set_task_project` null `put it in a project`, with a value `put it in <project title>`; `set_task_area` `put it in <area title>`; `set_project_status` `set Status to <status>`; `archive_area` `archive it`; `move_project` `move it to <area title>`; `set_area_domain` null `put it in a Domain`, with a value `put it in <domain title>`; `merge_projects` `merge <duplicate title> into <survivor title>`; `add_task` `add a next step`.
+- After the blocks, a blank line, then only the lines that apply: `<total − offset − shown> more. Say "more", or name an Area, Domain or Project.`; `<dismissed> skipped for now.`; and always `Answer with "yes 1, 2b", a change ("1: due Friday"), "skip 4 because …", or "propose 5" for a Review row.`
+- **Nothing found:** after line 2, `Nothing needs you.` (and the dismissed line when any). The text ends with one newline.
+
+### 4.2 What the skill adds
+Nothing to the report itself. When the user answers, the skill confirms each change in one line as it is made ("1: due date moved to 13 Nov", "4: skipped for 30 days"), quoting values as they were written.
+
+### 4.3 As a sub-agent
+§10: the report is the sub-agent's whole answer; it applies nothing.
+
+### 4.4 Closing summary
+One line, then the push line of AGENTS.md: `Done: <n> changed, <n> Review rows, <n> skipped, <n> created (<t> tasks, <p> projects, <c> captures).` (parts at 0 are left out; `Nothing changed.` when every count is 0).
+
+## 5. The user's answers (0072 §2)
+
+- **A yes applies exactly what it names.** "yes 1" is the finding's first recommendation, "yes 2b" its second, "yes 1, 3" each; "yes to all" means every recommendation `a` shown in the last report, "all but 3" all of them except 3. Nothing is applied for a finding the user didn't name.
+- **A recommendation with value `null`** (a new due date, a project, a Domain, the words of a next step) needs the user's value: "yes 1" on it makes the skill ask for that value, and nothing is applied until it is given. A value the user gives ("1: due Friday", "4: put it in Acme website") is resolved against `as_of` and the brain (dates to `YYYY-MM-DD`, names to ids by title and alias); when it is ambiguous (two notes match, "next week"), the skill asks and applies nothing for that finding.
+- **A change that isn't one of the recommendations** ("3: rename it Acme site") is applied when §6's table has an action for it; otherwise the skill says it can't do that here and names the skill that can (a rename is a Notion edit by the user, or a proposal through brain-sync's correction path).
+- **"propose N"** writes the finding's recommendation as a Review row instead (§6.3). **"skip N"** is §8. **"more"** and **a scope** re-run the findings (§3.5).
+- **A ramble** (thoughts that aren't answers to a numbered finding) is §7.
+
+## 6. How a change is made
+
+### 6.1 Actions
+
+| Action | What changes | Owner | Proposal kind |
+|---|---|---|---|
+| `set_task_status` | the task's Status | Notion | `notion_change` (`tasks`, `status`) |
+| `set_task_due` | the task's Due | Notion | `notion_change` (`tasks`, `due`) |
+| `set_task_project` | the task's Project relation | Notion | `notion_change` (`tasks`, `project`) |
+| `set_task_area` | the task's Area relation | Notion | `notion_change` (`tasks`, `area`) |
+| `set_project_status` | Projects · Status | Notion | `notion_change` (`projects`, `status`) |
+| `archive_area` | Areas · Archived | Notion | `notion_change` (`areas`, `archived`) |
+| `move_project` | the project's `area` | brain | `set_field` (`area`) |
+| `set_area_domain` | the Area's `domain` | brain | `set_field` (`domain`) |
+| `merge_projects` | the duplicate merged into the survivor | brain | `merge` (schema §11.2) |
+| `add_task` | a new Task | Notion | none: chat only (§7) |
+
+**Who writes a Notion-owned field (schema §7).** The CLI never sends one: `sync render` doesn't, and no command calls Notion. The **skill** writes it through the Notion MCP, in exactly two cases: the user said yes to that change in a live chat (§6.2), or the user approved a `notion_change` Review row (§6.3). Either way a `notion_change` proposal records it first, and `brain apply` hands the skill the exact write (`notion_writes`, cli.md §5.7).
+
+**Moving a project, or putting an Area in a Domain,** changes a brain-owned field, so it goes through Git first: a `set_field` proposal, applied by `brain apply`; then `sync render` publishes the project's Area or the Area's Domain relation like any brain-owned property (cli.md §5.14.4), and `sync record` stores it. The project's tasks keep their own Area relation: the confirmation line says how many open tasks name the old Area, and the user can say yes to moving them too (`set_task_area`, one `notion_change` per task, under that one yes).
+
+### 6.2 After a yes in chat (direct apply)
+For each change the user said yes to, in this order, before the next one:
+1. `brain proposal new` with the proposal of §6.1's table: `finding` = the finding's key, `source` = `agent:ultimate-assistant/<session>` (the session's `as_of`, compact: `20261106T100000Z`), `why` = the report's evidence text, `area` = the finding's `area`, and the kind's fields (cli.md §5.6). For `notion_change`, `value_before` is the value in the snapshot.
+2. `brain apply --input` with `{ proposal, action: "approve", decided_at: <now>, decided_by: "chat" }` (or `fix` with the user's value, when it differs from the recommendation: `note` = their words).
+3. **Notion-owned:** carry out `data.notion_writes` (§6.4), then `brain proposal settle`. **Brain-owned:** `brain index`, `brain views`, `brain lint`, commit; then `brain sync render --ids <every note the apply changed>`, write the payloads through the MCP, `brain sync record`, commit. The yes covers this publish: `settings.publish: ask` isn't asked again for it. A `merge_projects` yes also covers moving the duplicate's open tasks to the survivor (one `notion_change` per task, `project`), which the confirmation line counts.
+
+A proposal decided in chat before it had a Review row never gets one (cli.md §5.14.4): it is the Git record of the yes.
+
+### 6.3 A Review row, when asked (0072 §2)
+"propose N" (or "propose it", "later" on a finding) writes step 1 of §6.2 and no decision: the proposal is `pending`. The skill publishes it at once (`brain sync render --ids <prp id>`, the MCP, `brain sync record`; the user asked for the row, so the publish is covered). The row is a **Suggestion** (schema §14): Kind `Notion Change` or `Set Field`, or a `merge` row as today. The user decides it in Notion like any row (Approve, Reject, Fix with What to fix). An `add_task` can't be a Review row: the skill says so and offers an Inbox capture instead (§7).
+
+**How a decided row is applied.** Every skill that runs `brain apply` or `brain sync apply` (brain-apply, brain-sync, brain-catch-up attended and unattended, and this one) carries out `data.notion_writes` (§6.4) after the apply and settles them. An unattended catch-up does too: an Approve is the user's explicit decision (0051); a Fix waits for an attended run, as for every Fix. Until a skill carries out a write the proposal stays `approved` (or `edited`), its row shows Pending, and the next Ultimate Assistant session does it first (§1 step 2). A `set_field` or a `merge` row is applied by `brain apply` like any proposal.
+
+### 6.4 Carrying out a Notion write
+For each `notion_writes` item `{ proposal, database, page_id, property, payload, expect, value }` (cli.md §5.7):
+1. Read the page's property through the MCP and normalize it as the snapshot does (§2.1).
+2. Equal to `value` → nothing to write; settle `applied`. Equal to `expect` → write `payload` to `property` on `page_id`; on success settle `applied`. Anything else → write nothing; settle `stale` (the user changed it in Notion since).
+3. A failed MCP write settles nothing: the proposal stays `approved`, and the report names it.
+4. `brain proposal settle --input` with the results (cli.md §5.6); commit.
+
+## 7. A ramble lands in its place (0072 §4)
+
+When the user says several things at once ("the Acme quote is done, I should call Lucía about the contract next week, and maybe a blog series on onboarding"), the skill splits it into items and shows them as a numbered list, each with where it goes:
+
+| The item | Lands as | How, after the yes |
+|---|---|---|
+| A change to something that exists ("the quote is done", "Acme is on hold") | the matching action of §6.1 | §6.2 |
+| A task the user will do ("call Lucía next week") | a Task in Notion, with Project and Due when given, Area when the user named an Area and no project | `brain sync tasks --direct` (cli.md §5.14.5), then the MCP creates each page; nothing is recorded. With Tasks off it is offered as a capture instead |
+| Someone else's commitment the user wants to track | a Waiting On Task with that person as owner (`status: waiting_on`, capture-and-review §6) | as a task |
+| A new project ("start a project for the onboarding guide") | a project note and its page from the Projects template | `brain note new` (type `project`, `reviewed` from creation, 0070; `area` required: asked when not said), `brain index`, `brain views`, `brain lint`, commit, `brain sync render --ids <prj id>` (a `create` with the default template, cli.md §5.14.4), the MCP, `brain sync record`, commit. A Status the user gave is then a `set_project_status` under the same yes (§6.2) |
+| An idea, a note or anything to keep ("a blog series on onboarding") | an Inbox capture for the normal ingest | the MCP creates an Inbox row: Name = a short title, Kind `Capture`, Brain Status `Ready`, Project and Area when named, body = the user's words for that item, as they said them. Nothing is written in Git: the next catch-up takes it in |
+
+- **The yes is the review** (0072 §4): what the user says yes to lands directly; what they don't is dropped. "Later" on an item makes it an Inbox capture with Brain Status `New`, which no run takes in until the user sets it to Ready.
+- Dates and names are resolved as in §5, and the list shows the resolved values ("Due 13 Nov", "Project Acme website") before the yes.
+- A ramble item never becomes a Review row.
+
+## 8. Skipping a finding (0072 §6)
+
+"skip N" (with or without a reason):
+1. **A status that says why.** When the finding has `status_offers` (a task Waiting On or Someday, a project On Hold), the skill offers them once: "Set it to Waiting On, so it stops being flagged?" A yes applies it as a `set_task_status` or `set_project_status` (§6.2); the rules of §3.3 then no longer fire for it, so nothing is remembered.
+2. **Otherwise it is remembered.** No offer, or the user declines it: the skill asks for the reason once when none was given ("why, in a few words? or 'no reason'"), then runs `brain assistant dismiss` (cli.md §5.31). For 30 days the finding with that key is left out of every report, and counted in "skipped for now".
+3. The user can undo a skip ("show the skipped ones again", "unskip 4"): `brain assistant dismiss` with `remove`.
+
+**The dismissal store** is `_assistant/dismissals.json` in the brain (Git), never published (`$defs/dismissals`):
+
+```json
+{
+  "version": 1,
+  "dismissals": [
+    { "key": "area_no_domain:area-6p3r8t2w", "reason": "a personal area, no Domain needed",
+      "dismissed_at": "2026-11-06T10:22:00Z", "until": "2026-12-06T10:22:00Z" }
+  ]
+}
+```
+
+- One entry per key, sorted by key; `until` is `dismissed_at` plus exactly 30 days; `reason` may be empty (the user gave none). An entry is **active** while `until` is after `as_of`.
+- Written only by `brain assistant dismiss`, which drops expired entries on each write; a missing file means no dismissals. JSON, 2-space indent, keys in the order shown, one trailing newline.
+- `brain lint` checks it (`assistant-dismissals`, cli.md §5.10): readable JSON, the schema, unique keys, and a brain id in a key that names an existing note. `brain assistant findings` refuses a damaged file (`DISMISSALS_UNREADABLE`) rather than show skipped findings again.
+
+## 9. The log
+
+The skill writes one line at the end of a session with `brain log`:
+
+`assistant - mode=<live|brain_only> scope=<id|all> findings=<total> shown=<n> applied=<n> proposals=<n> dismissed=<n> tasks=<n> projects=<n> captures=<n>`
+
+`applied` counts changes made after a yes, `proposals` Review rows written, `dismissed` skips remembered in this session, and the last three what a ramble created. The CLI logs its own lines as usual (`proposal-new`, `apply`, `assistant-dismiss`).
+
+## 10. The sub-agent (0064)
+
+The brain ships `.claude/agents/ultimate-assistant.md`, a product-owned file written by `brain init` and `brain upgrade` from `templates/brain/.claude/agents/ultimate-assistant.md` and checked by lint (`product-file`, cli.md §5.10). Its text, exactly:
+
+```markdown
+---
+name: ultimate-assistant
+description: Ultimate Assistant reviews the structure of your work in this brain (Areas, Domains, Projects and Tasks) and finds what is overdue, stalled, missing a next step or in the wrong place. Use it when the user asks to review their projects or tasks, or what is stalled, overdue or misplaced.
+---
+
+You are Ultimate Assistant. Load the skill `ultimate-assistant` (`.claude/skills/ultimate-assistant/SKILL.md`) and follow it end to end.
+
+When you run as a sub-agent of another session, nobody can answer you: build the report, return it as your whole answer, and change nothing. The session that called you shows it to the user and carries out what the user says yes to, by the same skill.
+```
+
+- **A conversation with it:** `claude --agent ultimate-assistant` in the brain starts a session whose main agent is the assistant, so the user answers the report and its yes applies (§5, §6). In any other Claude Code session the user can also ask for it by name, and the main session runs the skill itself.
+- **As a sub-agent** (the main session delegates "what's stalled?") it only reads and reports.
+- **Codex** has no sub-agent: it loads the skill from `.agents/skills/ultimate-assistant/` when the user asks.
+- The brain's `AGENTS.md` operations table gains the row "review the structure of your work: what's overdue, stalled, missing a next step or misplaced, and turn your thoughts into tasks, projects and captures | `ultimate-assistant`".
+
+## 11. Edge cases
+
+| Case | Result |
+|---|---|
+| Notion unreachable | brain only (§2.3): the report says so; Notion-owned changes aren't offered |
+| Tasks module off | no task signal, no `project_no_next_step`, `project_done_but_open`; `add_task` and ramble tasks offered as captures |
+| Domains module off | no `area_no_domain` |
+| A Projects row with no Brain ID | not a subject; counted in "not in the brain yet" |
+| A task on a project outside the brain | counts for `task_no_project` only by that row's status |
+| A `notion_change` whose page was changed in Notion before it was carried out | settled `stale`: closed, nothing written (§6.4) |
+| The same change proposed twice | the second `proposal new` is skipped `DUPLICATE_PENDING` |
+| A skipped finding whose subject changes (a task gets a new due date) | still skipped until `until`: the key names the subject, not its values |
+| A merged duplicate's tasks after a Review-row merge | not moved by apply; while open, each is a `task_no_project` (its project is archived) until the user moves it |
+| No user present (scheduled) | refused in 0.10.0 (CC-111) |
+
+## 12. What CC-109 builds
+- The skill `ultimate-assistant` in the fork (§1 to §9), released and vendored (skills-delivery §9.5); the `notion_writes` step in brain-apply, brain-sync and brain-catch-up (§6.3); brain-howto and the guide.
+- `templates/brain/.claude/agents/ultimate-assistant.md` (§10), its writing by `init` and `upgrade` and its `product-file` check; `templates/brain/AGENTS.md`'s operations row.
+- The CLI: `brain assistant findings` and `brain assistant dismiss` (cli.md §5.31), `brain proposal settle` (§5.6), the kinds `notion_change` and `set_field` in `proposal new`, `apply`, `sync apply` and `sync render` (schema §11, §14), `sync tasks --direct` (§5.14.5), the lint rule `assistant-dismissals`, with tests; a test that validates `spec/examples/assistant/` against assistant.schema.json.
+- The Notion migration for the Review database: Kind options `Notion Change` and `Set Field`, and the Type formula's **Suggestion** (docs/notion-space-design.md §3.10).

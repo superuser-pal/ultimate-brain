@@ -43,7 +43,7 @@ How this file fits: [schema.md](schema.md) holds field definitions, [cli.md](cli
 
 ## 2. Won't Do
 
-**2.1 Mapping.** `brain.json` `notion.tasks.wont_do_status` (string, optional; default `"Won't Do"`): the Tasks status option meaning "closed without doing it", placed in Notion's **Complete** group next to Done. The brain never sets it and never reads task statuses (0018: no unrestricted status sync); the contract is for the Notion space, the mapped external database and the agent's answers. Terminal and **reopenable**.
+**2.1 Mapping.** `brain.json` `notion.tasks.wont_do_status` (string, optional; default `"Won't Do"`): the Tasks status option meaning "closed without doing it", placed in Notion's **Complete** group next to Done. The ingest and sync never set it and never read task statuses (0018: no unrestricted status sync); Ultimate Assistant reads them live, never stores them, and sets one only after the user's yes or approved Review row (0072, [assistant.md](assistant.md) §6); the contract is for the Notion space, the mapped external database and the agent's answers. Terminal and **reopenable**.
 
 **2.2 Where it counts.**
 
