@@ -60,7 +60,7 @@ export const linkCommand: Command = {
     const retired = (existingMarker.value.skills?.names ?? []).filter((name) => !names.includes(name));
     const project = marker.project === undefined ? undefined : noteOf(notes, marker.project, "project");
     const area = marker.area === undefined ? undefined : noteOf(notes, marker.area, "area");
-    const block = instructionBlock(project, area);
+    const block = instructionBlock(project, area, names);
 
     const agents = await readOptional(root, "AGENTS.md");
     const agentText = replaceOrAppend(agents, block, "AGENTS.md");
@@ -182,7 +182,8 @@ function orderedMarker(marker: RepoMarker): RepoMarker {
   return ordered;
 }
 
-function instructionBlock(project: Note | undefined, area: Note | undefined): string {
+/** The block of cli.md §5.12; the workflow lines join it when brain-workflow is among the linked skills (skills-delivery §9.7). */
+function instructionBlock(project: Note | undefined, area: Note | undefined, linked: readonly string[]): string {
   const lines = [
     START,
     "## Ultimate Brain",
@@ -203,8 +204,15 @@ function instructionBlock(project: Note | undefined, area: Note | undefined): st
     "- rely on a fact about the client or project that this repo does not state.",
     "",
     "How: use the `brain-query` skill, or run `brain query --candidates \"<question>\" --json` and read the notes it returns. Cite the note paths. Say when a fact is `contested` or `superseded`.",
+  );
+  const workflow = linked.includes("brain-workflow");
+  if (workflow) {
+    const adopt = linked.includes("brain-workflow-adopt") ? "; to take over its existing plans and tasks, use `brain-workflow-adopt`." : ".";
+    lines.push("", `To track this repo's work, the standard way or connected to a Notion Project or Area, use the \`brain-workflow\` skill${adopt}`);
+  }
+  lines.push(
     "",
-    "The brain is read-only from this repo. Never edit its files from here.",
+    `The brain is read-only from this repo. Never edit its files from here.${workflow ? " A connected workflow's records change only through `brain workflow` commands." : ""}`,
     END,
   );
   return lines.join("\n");
