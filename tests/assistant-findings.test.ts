@@ -111,6 +111,8 @@ test("project_no_next_step and project_done_but_open: Someday isn't a next step,
     project("prj-ccccccc5", "Repo work", "area-aaaaaaa1", { notion: projectPage(5), ...recent }),
     project("prj-ccccccc6", "All dropped", "area-aaaaaaa1", { notion: projectPage(6), ...recent }),
     project("prj-ccccccc7", "Next year", "area-aaaaaaa1", { notion: projectPage(7), ...recent }),
+    area("area-aaaaaaa2", "Tools", { domain: "dom-aaaaaaa1", notion: areaPage(2) }),
+    project("prj-ccccccc8", "Tooling upgrade", "area-aaaaaaa2", { notion: projectPage(8), ...recent }),
   ]);
   const at = (n: number) => [projectPage(n)];
   const run = await findings(root, snapshot({
@@ -122,9 +124,10 @@ test("project_no_next_step and project_done_but_open: Someday isn't a next step,
       task(5, "Quote from the tiler", { status: "Waiting On", projects: at(4) }),
       task(6, "Dropped", { status: "Won't Do", projects: at(6) }),
     ],
-    projects: [1, 2, 3, 4, 5, 6].map((n) => projectRow(n, `prj-ccccccc${n}`, `P${n}`)).concat([projectRow(7, "prj-ccccccc7", "Next year", { status: "Planned" })]),
-    areas: [CLIENTS_ROW],
-    repos: [{ name: "site", rollup: { name: "site", target: { area: "area-aaaaaaa1", project: "prj-ccccccc5" }, counts: { todo: 1, in_progress: 0, waiting: 0, review: 0, done: 2, dropped: 0, unmapped: 0 } } }],
+    projects: [1, 2, 3, 4, 5, 6].map((n) => projectRow(n, `prj-ccccccc${n}`, `P${n}`)).concat([projectRow(7, "prj-ccccccc7", "Next year", { status: "Planned" }), projectRow(8, "prj-ccccccc8", "Tooling upgrade")]),
+    areas: [CLIENTS_ROW, areaRow(2, "area-aaaaaaa2", "Tools")],
+    // A rollup that targets only an Area is a next step of every project of that Area (§2.2).
+    repos: [{ name: "tools", rollup: { name: "tools", target: { area: "area-aaaaaaa2" }, counts: { todo: 0, in_progress: 0, waiting: 1, review: 0, done: 0, dropped: 0, unmapped: 0 } } }, { name: "site", rollup: { name: "site", target: { area: "area-aaaaaaa1", project: "prj-ccccccc5" }, counts: { todo: 1, in_progress: 0, waiting: 0, review: 0, done: 2, dropped: 0, unmapped: 0 } } }],
   }));
   assert.equal(run.code, 0, run.stdout);
   assert.deepEqual(keys(run), ["project_no_next_step:prj-ccccccc6", "project_no_next_step:prj-ccccccc3", "project_no_next_step:prj-ccccccc1", "project_done_but_open:prj-ccccccc2"]);
@@ -152,6 +155,14 @@ test("project_misplaced needs 3 mentions with an Area and two thirds of them in 
     mention("mtg-ddddddd5", "prj-ddddddd2", "area-aaaaaaa2"),
     mention("mtg-ddddddd6", "prj-ddddddd2", "area-aaaaaaa2"),
     project("prj-ddddddd3", "Talk", "area-aaaaaaa2", { notion: projectPage(3), updated: daysAgo(2) }),
+    // Exactly two thirds (2 of 3) fires; 3 of 5 (3 × 3 < 2 × 5) doesn't.
+    project("prj-ddddddd4", "Brochure", "area-aaaaaaa1", { notion: projectPage(4), updated: daysAgo(2) }),
+    mention("mtg-ddddddd7", "prj-ddddddd4", "area-aaaaaaa2"),
+    mention("mtg-ddddddd8", "prj-ddddddd4", "area-aaaaaaa2"),
+    mention("mtg-ddddddd9", "prj-ddddddd4", "area-aaaaaaa1"),
+    project("prj-ddddddd5", "Website", "area-aaaaaaa1", { notion: projectPage(5), updated: daysAgo(2) }),
+    ...["mtg-dddddda1", "mtg-dddddda2", "mtg-dddddda3"].map((id) => mention(id, "prj-ddddddd5", "area-aaaaaaa2")),
+    ...["mtg-dddddda4", "mtg-dddddda5"].map((id) => mention(id, "prj-ddddddd5", "area-aaaaaaa1")),
   ]);
   const run = await findings(root, snapshot({
     tasks: [
@@ -160,13 +171,17 @@ test("project_misplaced needs 3 mentions with an Area and two thirds of them in 
       task(3, "Plan the next one", { projects: [projectPage(1)] }),
       task(4, "Update the site", { projects: [projectPage(2)] }),
       task(5, "Write the abstract", { projects: [projectPage(3)] }),
+      task(6, "Print the brochure", { projects: [projectPage(4)] }),
+      task(7, "Fix the menu", { projects: [projectPage(5)] }),
     ],
-    projects: [projectRow(1, "prj-ddddddd1", "Newsletter"), projectRow(2, "prj-ddddddd2", "Portfolio"), projectRow(3, "prj-ddddddd3", "Talk")],
+    projects: [projectRow(1, "prj-ddddddd1", "Newsletter"), projectRow(2, "prj-ddddddd2", "Portfolio"), projectRow(3, "prj-ddddddd3", "Talk"),
+      projectRow(4, "prj-ddddddd4", "Brochure"), projectRow(5, "prj-ddddddd5", "Website")],
     areas: [CLIENTS_ROW, areaRow(2, "area-aaaaaaa2", "Marketing")],
   }));
   assert.equal(run.code, 0, run.stdout);
-  assert.deepEqual(keys(run), ["project_misplaced:prj-ddddddd1"]);
-  const [misplaced] = run.json.data.findings;
+  assert.deepEqual(keys(run), ["project_misplaced:prj-ddddddd4", "project_misplaced:prj-ddddddd1"]);
+  assert.deepEqual(run.json.data.findings[0].evidence, { area: "area-aaaaaaa1", suggested_area: "area-aaaaaaa2", notes: 2, of: 3 });
+  const misplaced = run.json.data.findings[1];
   assert.deepEqual(misplaced.evidence, { area: "area-aaaaaaa1", suggested_area: "area-aaaaaaa2", notes: 3, of: 4 });
   assert.deepEqual(misplaced.recommendations, [
     { letter: "a", action: "move_project", value: "area-aaaaaaa2", label: "move it to Marketing (and its 2 open tasks that name Clients)" },
@@ -186,16 +201,26 @@ test("project_duplicate: alike titles after the spelling step, or a title equal 
     project("prj-eeeeeee5", "Larkspur Bakery website", "area-aaaaaaa1", { notion: projectPage(5), updated: daysAgo(2) }),
     project("prj-eeeeeee6", "Larkspur Bakery packaging", "area-aaaaaaa1", { notion: projectPage(6), updated: daysAgo(2) }),
     project("prj-eeeeeee7", "Quayside Books catalogue redesign", "area-aaaaaaa1", { notion: projectPage(7), updated: daysAgo(2) }),
+    // Exactly two thirds of the union (2 of 3) is a duplicate; 3 of 5 isn't.
+    project("prj-eeeeeee8", "Harbour mural", "area-aaaaaaa1", { notion: projectPage(8), created: "2026-08-01", updated: daysAgo(2) }),
+    project("prj-eeeeeee9", "Harbour mural sketches", "area-aaaaaaa1", { notion: projectPage(9), created: "2026-09-01", updated: daysAgo(2) }),
+    project("prj-eeeeeeea", "Delta river bridge", "area-aaaaaaa1", { notion: projectPage(10), updated: daysAgo(2) }),
+    project("prj-eeeeeeeb", "Delta river bridge north span", "area-aaaaaaa1", { notion: projectPage(11), updated: daysAgo(2) }),
+    // The spelling step needs a stem of 5 characters: "logo" doesn't make "logos" the same word.
+    project("prj-eeeeeeec", "Logo pack", "area-aaaaaaa1", { notion: projectPage(12), updated: daysAgo(2) }),
+    project("prj-eeeeeeed", "Logos pack", "area-aaaaaaa1", { notion: projectPage(13), updated: daysAgo(2) }),
   ]);
   const open = (n: number, p: number) => task(n, `Step ${n}`, { projects: [projectPage(p)] });
   const run = await findings(root, snapshot({
-    tasks: [open(1, 1), open(2, 1), open(3, 2), open(4, 3), open(5, 4), open(6, 5), open(7, 6)],
-    projects: [1, 2, 3, 4, 5, 6].map((n) => projectRow(n, `prj-eeeeeee${n}`, `P${n}`)).concat([projectRow(7, "prj-eeeeeee7", "P7", { status: "Done" })]),
+    tasks: [open(1, 1), open(2, 1), open(3, 2), open(4, 3), open(5, 4), open(6, 5), open(7, 6), ...[8, 9, 10, 11, 12, 13].map((n) => open(n + 10, n))],
+    projects: [1, 2, 3, 4, 5, 6].map((n) => projectRow(n, `prj-eeeeeee${n}`, `P${n}`)).concat([projectRow(7, "prj-eeeeeee7", "P7", { status: "Done" })],
+      [[8, "8"], [9, "9"], [10, "a"], [11, "b"], [12, "c"], [13, "d"]].map(([n, suffix]) => projectRow(n as number, `prj-eeeeeee${suffix}`, `P${n}`))),
     areas: [CLIENTS_ROW],
   }));
   assert.equal(run.code, 0, run.stdout);
-  assert.deepEqual(keys(run), ["project_duplicate:prj-eeeeeee3+prj-eeeeeee4", "project_duplicate:prj-eeeeeee1+prj-eeeeeee2"]);
-  const [shed, books] = run.json.data.findings;
+  assert.deepEqual(keys(run), ["project_duplicate:prj-eeeeeee3+prj-eeeeeee4", "project_duplicate:prj-eeeeeee8+prj-eeeeeee9", "project_duplicate:prj-eeeeeee1+prj-eeeeeee2"]);
+  const [shed, mural, books] = run.json.data.findings;
+  assert.deepEqual(mural.evidence, { survivor: "prj-eeeeeee8", duplicate: "prj-eeeeeee9", shared_tokens: ["harbour", "mural"] });
   assert.deepEqual(books.subject, { kind: "project_pair", ids: ["prj-eeeeeee1", "prj-eeeeeee2"], titles: ["Quayside Books catalogue", "Quayside Books catalog redesign"] });
   assert.deepEqual(books.evidence, { survivor: "prj-eeeeeee2", duplicate: "prj-eeeeeee1", shared_tokens: ["books", "catalog", "quayside"] });
   assert.equal(books.project, "prj-eeeeeee2");
@@ -356,21 +381,23 @@ test("--scope keeps the findings in an Area's, a Domain's or a Project's reach a
 
 test("dismissals leave out active skips, not expired ones, and a Suggestion rejected less than 30 days ago counts as one", async (context) => {
   const projectId = "prj-aaaaaaa1";
-  const rejected = (id: string, finding: string, days: number) => ({
+  const rejected = (id: string, finding: string, decidedAt: string) => ({
     path: `_proposals/2026-10-01-${id}.md`, id, type: "proposal", title: `Suggestion ${id}`, created: "2026-10-01", updated: "2026-10-01",
     kind: "notion_change", status: "rejected", finding,
-    decision: { action: "reject", decided_at: stampAgo(days), decided_by: "notion" },
+    decision: { action: "reject", decided_at: decidedAt, decided_by: "notion" },
   });
   const p = [projectPage(1)];
   const root = await world(context, [
     WORK, CLIENTS,
     project(projectId, "Acme website", "area-aaaaaaa1", { notion: projectPage(1), updated: daysAgo(2) }),
-    rejected("prp-aaaaaaa1", `task_overdue:notion:${taskPage(3)}`, 29),
-    rejected("prp-aaaaaaa2", `task_overdue:notion:${taskPage(4)}`, 30),
+    // One second under 30 days before as_of still counts as a skip; exactly 30 days doesn't.
+    rejected("prp-aaaaaaa1", `task_overdue:notion:${taskPage(3)}`, "2026-10-07T10:00:01Z"),
+    rejected("prp-aaaaaaa2", `task_overdue:notion:${taskPage(4)}`, "2026-10-07T10:00:00Z"),
   ]);
   await writeDismissals(root, [
-    { key: `task_overdue:notion:${taskPage(1)}`, reason: "waiting for the client", dismissed_at: "2026-10-20T10:00:00Z", until: "2026-11-19T10:00:00Z" },
-    { key: `task_overdue:notion:${taskPage(2)}`, reason: "", dismissed_at: "2026-10-01T10:00:00Z", until: "2026-10-31T10:00:00Z" },
+    // Active while until is after as_of: one second after is active, until equal to as_of has expired.
+    { key: `task_overdue:notion:${taskPage(1)}`, reason: "waiting for the client", dismissed_at: "2026-10-07T10:00:01Z", until: "2026-11-06T10:00:01Z" },
+    { key: `task_overdue:notion:${taskPage(2)}`, reason: "", dismissed_at: "2026-10-07T10:00:00Z", until: AS_OF },
   ]);
   const snap = snapshot({
     tasks: [1, 2, 3, 4].map((n) => task(n, `Task ${n}`, { due: daysAgo(5), projects: p })),
