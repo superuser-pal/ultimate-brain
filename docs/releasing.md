@@ -26,6 +26,7 @@ Decision 0073: a repository ruleset requires the `merge-ready` commit status on 
 - **Name** `main requires merge-ready`, **Enforcement status** Active.
 - **Bypass list:** Repository admin, set to **Always allow**, so `release.mjs` can push its release commit.
 - **Target branches:** Include default branch.
+- **Restrict deletions** and **Block force pushes:** leave them ticked, as the form does by default.
 - **Require status checks to pass:** add `merge-ready` with the source **GitHub Actions**. Leave **Require branches to be up to date before merging** off: updating a branch makes a new head without a reviewer's pass.
 
 The same, from the main checkout:
@@ -38,7 +39,7 @@ gh api -X POST repos/{owner}/{repo}/rulesets --input - <<'JSON'
   "enforcement": "active",
   "conditions": { "ref_name": { "include": ["~DEFAULT_BRANCH"], "exclude": [] } },
   "bypass_actors": [{ "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always" }],
-  "rules": [{
+  "rules": [{ "type": "deletion" }, { "type": "non_fast_forward" }, {
     "type": "required_status_checks",
     "parameters": {
       "strict_required_status_checks_policy": false,
