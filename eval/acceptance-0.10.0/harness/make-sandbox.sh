@@ -21,28 +21,28 @@ echo "$A" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' || { echo "as_of must be YYY
 mkdir -p "$D/bin" "$D/notion"; D=$(cd "$D" && pwd); I=$(cd "$I" && pwd)
 . "$I/env.sh"
 B="$D/brain"
-brain init "$B" --owner "Robin Example" --no-git --json > "$D/init.json" || { cat "$D/init.json" >&2; exit 1; }
+set -- $(node "$H/build-fixture.mjs" times "$A"); INIT="$1"; NOW="$2"
+brain init "$B" --owner "Robin Example" --no-git --now "$INIT" --json > "$D/init.json" || { cat "$D/init.json" >&2; exit 1; }
 node "$H/build-fixture.mjs" write "$B" "$D/notion" "$A"
 export BRAIN_DIR="$B"
-brain views --brain "$B" --json > /dev/null
-brain index --brain "$B" --json > /dev/null
-SYNCED=$(node -e 'console.log(new Date(Date.parse(process.argv[1]+"T08:00:00Z")-86400000).toISOString().replace(/\.\d+Z$/,"Z"))' "$A")
+brain views --brain "$B" --now "$NOW" --json > /dev/null
+brain index --brain "$B" --now "$NOW" --json > /dev/null
 for pass in 1 2 3; do
-  brain sync render --changed --brain "$B" --json > "$D/render.json"
+  brain sync render --changed --brain "$B" --now "$NOW" --json > "$D/render.json"
   node -e '
 const fs=require("fs");const d=JSON.parse(fs.readFileSync(process.argv[1],"utf8")).data;
 const missing=d.items.filter(i=>!i.page_id).map(i=>i.id);
 if(missing.length){console.error("no page id for "+missing.join(", "));process.exit(1);}
-fs.writeFileSync(process.argv[2],JSON.stringify({records:d.items.map(i=>({id:i.id,notion:i.page_id,synced_at:process.argv[3],published:i.published}))}));' "$D/render.json" "$D/record.json" "$SYNCED"
+fs.writeFileSync(process.argv[2],JSON.stringify({records:d.items.map(i=>({id:i.id,notion:i.page_id,synced_at:process.argv[3],published:i.published}))}));' "$D/render.json" "$D/record.json" "$NOW"
   node "$H/build-fixture.mjs" publish "$D/notion" "$D/render.json"
-  brain sync record --brain "$B" --input "$D/record.json" --json > /dev/null
+  brain sync record --brain "$B" --input "$D/record.json" --now "$NOW" --json > /dev/null
 done
 rm "$D/init.json" "$D/render.json" "$D/record.json"
-brain index --brain "$B" --json > /dev/null
+brain index --brain "$B" --now "$NOW" --json > /dev/null
 node "$H/build-fixture.mjs" commit "$B" "$A"
 cp "$H/../../acceptance-0.9.0/harness/notion-sim" "$D/bin/notion-sim"; chmod +x "$D/bin/notion-sim"
 { cat "$I/env.sh"; printf 'export BRAIN_DIR=%s NOTION_SIM_DIR=%s/notion PATH=%s/bin:$PATH\n' "$B" "$D" "$D"; } > "$D/env.sh"
-brain lint --strict --brain "$B" --json > "$D/lint.json" || { cat "$D/lint.json" >&2; exit 1; }
+brain lint --strict --brain "$B" --now "$NOW" --json > "$D/lint.json" || { cat "$D/lint.json" >&2; exit 1; }
 rm "$D/lint.json"
 git -C "$B" status --porcelain | grep -q . && { echo "brain not clean after setup" >&2; exit 1; }
 echo "sandbox ready: $D (as_of $A; . $D/env.sh)"
