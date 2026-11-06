@@ -1,11 +1,11 @@
 {
   "format": 1,
   "name": "ultimate-brain-skills",
-  "version": "0.0.0-local",
+  "version": "1.1.0",
   "cli": ">=0.9.2-0 <0.10.0",
   "source": {
     "repository": "https://github.com/superuser-pal/ultimate-brain-skills",
-    "commit": "04fab35aa8ee8b1cf6a53728c38c30170c8cd036"
+    "commit": "8bc2889d2fa904244a008d4c14d7b57d2f1091bb"
   },
   "upstream": {
     "repository": "https://github.com/mattpocock/skills",
