@@ -8,6 +8,7 @@
 //   build-fixture.mjs publish <notion dir> <render.json>       what a publish does to Notion: each rendered item's
 //                                                              properties and toggle sections onto its page in the state, so
 //                                                              the state holds what the brain records as published
+//   build-fixture.mjs times <as_of>                            prints the init and publish timestamps (for --now)
 // Dates in the output are as_of plus fixture.mjs's day offsets; nothing else changes with as_of.
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
@@ -113,10 +114,10 @@ function notionState() {
     [db("goals")]: { name: "Goals", properties: { ...base, Status: sel(["Not Started", "Active", "Achieved", "Dropped"]), Area: r, Archived: { type: "checkbox" } } },
     [db("key_results")]: { name: "Key Results", properties: { Name: { type: "title" }, Goal: r } },
     [db("projects")]: { name: "Projects", properties: { ...base, Summary: { type: "rich_text" }, Status: sel(["Planned", "Active", "On Hold", "Done"]), Priority: sel(["High", "Medium", "Low"]), Dates: { type: "date" }, Area: r, Goal: r, Client: r, People: r, Meetings: r, Tasks: r, Archived: { type: "checkbox" }, ...wf } },
-    [db("meetings")]: { name: "Meetings", properties: { ...base, Date: { type: "date" }, Area: r, Projects: r, Attendees: r, Tasks: r } },
+    [db("meetings")]: { name: "Meetings", properties: { ...base, Date: { type: "date" }, Attendees: r, Project: r, Area: r, "Brain Status": sel(["Not Reviewed", "Reviewed", "Ingested", "Skipped"]), Decisions: r, Questions: r, Tasks: r } },
     [db("people")]: { name: "People", properties: { ...base, Org: r, Projects: r } },
     [db("orgs")]: { name: "Orgs", properties: { ...base, Relationship: sel(["Client", "Prospect", "Partner", "Supplier", "Employer", "Other"]), Archived: { type: "checkbox" } } },
-    [db("decisions")]: { name: "Decisions", properties: { ...base, Area: r, Project: r, Meeting: r } },
+    [db("decisions")]: { name: "Decisions", properties: { ...base, Date: { type: "date" }, Project: r, Area: r, "Decided In": r } },
     [db("questions")]: { name: "Questions", properties: { ...base, Status: sel(["Open", "Answered", "Dropped"]), Area: r, Project: r } },
     [db("review")]: { name: "Review", properties: { ...base, Kind: { type: "select" }, State: sel(["Pending", "Approved", "Rejected", "Applied"]), Proposed: { type: "rich_text" }, Area: r, Project: r } },
     [db("inbox")]: { name: "Inbox", properties: { Name: { type: "title" }, Kind: { type: "select" }, Status: sel(["New", "Processed"]), Area: r, Project: r } },
@@ -140,12 +141,13 @@ function notionState() {
     Project: t.project ? [pageId("project", t.project)] : [], Area: [pageId("area", t.area ?? byN(W.projects, t.project).area)],
     Meeting: [], Source: [], "Brain ID": "" }, t.edited);
   for (const m of W.meetings) page(pageId("meeting", m.n), db("meetings"), { Name: m.title, "Brain ID": brainId("meeting", m.n), Date: date(m.date),
-    Area: [pageId("area", m.area)], Projects: [pageId("project", m.project)], Attendees: m.attendees.map((x) => pageId("person", x)), Tasks: [] }, m.date);
+    Attendees: m.attendees.map((x) => pageId("person", x)), Project: [pageId("project", m.project)], Area: [pageId("area", m.area)],
+    "Brain Status": "Reviewed", Decisions: [], Questions: [], Tasks: [] }, m.date);
   for (const o of W.orgs) page(pageId("org", o.n), db("orgs"), { Name: o.title, "Brain ID": brainId("org", o.n), Relationship: "Client", Archived: false }, byN(W.meetings, o.meeting).date);
   for (const p of W.people) page(pageId("person", p.n), db("people"), { Name: p.title, "Brain ID": brainId("person", p.n), Org: [pageId("org", p.org)],
     Projects: W.projects.filter((x) => x.people.includes(p.n)).map((x) => pageId("project", x.n)) }, byN(W.meetings, p.meeting).date);
   for (const d of W.decisions) page(pageId("decision", d.n), db("decisions"), { Name: d.title, "Brain ID": brainId("decision", d.n),
-    Area: [pageId("area", d.area)], Project: [pageId("project", d.project)], Meeting: [pageId("meeting", d.meeting)] }, byN(W.meetings, d.meeting).date);
+    Project: [pageId("project", d.project)], Area: [pageId("area", byN(W.projects, d.project).area)], "Decided In": [pageId("meeting", d.meeting)] }, byN(W.meetings, d.meeting).date);
   return { as_of: AS_OF, databases, pages, fail: [], log: [] };
 }
 
@@ -163,6 +165,11 @@ function write(brain, notion, asOf) {
   writeFileSync(join(notion, "state.json"), JSON.stringify(notionState(), null, 2));
 }
 
+// The brain's first day (the day before its oldest note) and the publish, the day before as_of: the clock
+// make-sandbox.sh gives the CLI with --now, so its log and timestamps match the history.
+const firstDay = () => Math.min(...notes().map((n) => n.day)) - 1;
+function times(asOf) { AS_OF = asOf; console.log(`${stamp(firstDay())} ${stamp(-1, "08:00:00")}`); }
+
 function commit(brain, asOf) {
   AS_OF = asOf;
   const git = (args, when) => execFileSync("git", ["-C", brain, ...args], { stdio: ["ignore", "pipe", "inherit"],
@@ -172,7 +179,7 @@ function commit(brain, asOf) {
   const generated = (p) => p === "index.md" || p.startsWith("log/") || /\/(brief|decision-log)\.md$/.test(p) || p.startsWith("areas/briefs/");
   const files = execFileSync("git", ["-C", brain, "ls-files", "--others", "--exclude-standard"], { encoding: "utf8" }).split("\n").filter(Boolean);
   const notePaths = new Set(all.map((n) => n.path));
-  const first = Math.min(...all.map((n) => n.day)) - 1;
+  const first = firstDay();
   git(["add", "--", ...files.filter((p) => !notePaths.has(p) && !generated(p))]);
   git(["commit", "-q", "-m", "init: ultimate brain (schema v1)"], stamp(first));
   for (const day of [...new Set(all.map((n) => n.day))].sort((a, b) => a - b)) {
@@ -208,5 +215,6 @@ function publish(notion, renderFile) {
 
 if (mode === "write" && rest.length === 3) write(...rest);
 else if (mode === "publish" && rest.length === 2) publish(...rest);
+else if (mode === "times" && rest.length === 1) times(...rest);
 else if (mode === "commit" && rest.length === 2) commit(...rest);
-else { console.error("Usage: build-fixture.mjs write <brain> <notion> <as_of> | commit <brain> <as_of> | publish <notion> <render.json>"); process.exit(2); }
+else { console.error("Usage: build-fixture.mjs write <brain> <notion> <as_of> | commit <brain> <as_of> | publish <notion> <render.json> | times <as_of>"); process.exit(2); }

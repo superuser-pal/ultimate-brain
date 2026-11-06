@@ -24,11 +24,11 @@ sh eval/acceptance-0.10.0/harness/make-sandbox.sh /tmp/ub-0100/i /tmp/ub-0100/s
 ```
 
 `make-sandbox.sh <install dir> <new dir> [<as_of>]` writes:
-- `<dir>/brain`: made by the installed CLI's `brain init`, then the fixture's notes, with every module on and Domains on. Its views and index are generated, every note is recorded as published, `brain lint --strict` is clean (the script fails otherwise), and its Git history is dated: the brain's own files first, each note on its `created` day, the publish on the day before `as_of`.
+- `<dir>/brain`: made by the installed CLI's `brain init`, then the fixture's notes, with every module on and Domains on. Its views and index are generated, every note is recorded as published, `brain lint --strict` is clean (the script fails otherwise), and its clock follows the fixture: the CLI runs with `--now` (`brain init` on the day before the oldest note, the publish on the day before `as_of`), and the Git history is dated the same way, each note committed on its `created` day.
 - `<dir>/notion/state.json`: Domains, Areas, Projects, Tasks, Meetings, People, Orgs, Decisions, Review, Inbox, Documents, Goals, Key Results and Questions, with `as_of` at the top. Each page holds what the publish sent, and its `last_edited` is the fixture's date (a publish is not an edit of yours). The call log is empty.
 - `<dir>/bin/notion-sim` and `<dir>/env.sh` (the installation's, then `BRAIN_DIR`, `NOTION_SIM_DIR` and `PATH`).
 
-**`as_of`.** Every date is `as_of` plus the fixture's offsets, so a sandbox never ages: it looks the same at any `as_of`. The default is planted.json's (2026-12-01), which the check uses. For a live run, make the sandbox at today's date, `make-sandbox.sh <i> <dir> "$(date +%F)"`, so the agent's today is the fixture's: `notion-sim` stamps its own edits with the real time, and `brain init`'s log line has the real time too.
+**`as_of`.** Every date is `as_of` plus the fixture's offsets, so a sandbox never ages: it looks the same at any `as_of`. The default is planted.json's (2026-12-01), which the check uses. For a live run, make the sandbox at today's date, `make-sandbox.sh <i> <dir> "$(date +%F)"`, so the agent's today is the fixture's: `notion-sim` stamps the edits a run makes with the real time, and the CLI uses the real clock unless the run passes `--now`.
 
 ## What is planted
 
@@ -62,4 +62,4 @@ Not to be flagged: "Get a quote from the tiler", Waiting On, unedited for 20 day
 - the state loads: `notion-sim` (run on a copy, so the sandbox's call log stays empty) lists every database and returns every row;
 - `brain lint --strict` is clean and the brain has no uncommitted change.
 
-It prints the failures and a count (`195/195 checks pass; 14 findings at 2026-12-01, 13 planted`) and exits 1 on any failure; `--json` gives the same as JSON.
+It prints the failures and a count (`194/194 checks pass; 14 findings at 2026-12-01, 13 planted`) and exits 1 on any failure; `--json` gives the same as JSON.
