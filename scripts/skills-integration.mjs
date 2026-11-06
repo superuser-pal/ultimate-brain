@@ -102,14 +102,14 @@ export function releaseSnapshotProblem(root, version) {
   return satisfies(version, check.manifest.cli) ? null : `the package snapshot ${check.manifest.name} ${check.manifest.version} excludes ${version} (${check.manifest.cli})`;
 }
 
-/** A small GitHub REST client over fetch. */
+/** A small GitHub REST client over fetch; without a token it asks anonymously (the fork is public, §9.2). */
 export function github({ api = process.env.UB_GITHUB_API ?? "https://api.github.com", token, timeoutMs = 15000 }) {
   return async function request(path, { method = "GET", body, allow404 = false } = {}) {
     let response;
     try {
       response = await fetch(`${api}${path}`, {
         method,
-        headers: { accept: "application/vnd.github+json", authorization: `Bearer ${token}`, "x-github-api-version": "2022-11-28", ...(body === undefined ? {} : { "content-type": "application/json" }) },
+        headers: { accept: "application/vnd.github+json", ...(token === undefined ? {} : { authorization: `Bearer ${token}` }), "x-github-api-version": "2022-11-28", ...(body === undefined ? {} : { "content-type": "application/json" }) },
         body: body === undefined ? undefined : JSON.stringify(body),
         signal: AbortSignal.timeout(timeoutMs),
       });
@@ -362,7 +362,7 @@ function option(args, name) {
 }
 
 /** `owner/name` from GITHUB_REPOSITORY or the origin remote. */
-function productRepo(root) {
+export function productRepo(root) {
   if (process.env.GITHUB_REPOSITORY) return process.env.GITHUB_REPOSITORY;
   try {
     const url = execFileSync("git", ["remote", "get-url", "origin"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
@@ -370,7 +370,8 @@ function productRepo(root) {
   } catch { return undefined; }
 }
 
-function credential() {
+/** §11.4's product credential: GH_TOKEN, else GITHUB_TOKEN, else `gh auth token`; undefined when there is none. */
+export function credential() {
   if (process.env.GH_TOKEN) return process.env.GH_TOKEN;
   if (process.env.GITHUB_TOKEN) return process.env.GITHUB_TOKEN;
   try { return execFileSync("gh", ["auth", "token"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || undefined; } catch { return undefined; }
