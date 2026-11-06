@@ -6,7 +6,8 @@ How a change reaches a brain (decision 0038). npm is the only channel: the packa
 
 - **Main is always releasable.** Merge only what you would publish tonight. A fix the user needs mid-use is an `urgent` task, shipped as a patch the same day.
 - **A task belongs to a release** through its `**Release:** x.y.z` line in build/TASKS.md, and, from 0.4.0 on, a `**Changelog:**` line below it: the sentence `release.mjs` puts in the CHANGELOG (decision 0039). PRs don't edit `CHANGELOG.md`; a 0.3.x task still adds its line there by hand. It is set to `done` (#N) in its own PR's last commit, once the review finds nothing left; the reviewer then posts `Review (<agent>): pass at <sha>` for that commit.
-- **Merge on the GitHub PR page** once CI and `merge-ready` are green (decision 0040). `merge-ready` shows the format, the ticked boxes, the task's `done` (#N) and a reviewer's pass for the head commit: on a `claude/` PR `Review (Claude reviewer): …` or `Review (Codex): …` (decision 0063; only a comment or review by the repo owner's account counts: every agent posts through it today, an operational assumption, so who wrote a verdict is a convention, not something the check can see); it informs and can't block the click. `node scripts/merge.mjs <PR>` does the same checks from the terminal and is optional. `main-guard` fails only on a commit that reached `main` from no PR.
+- **Merge on the GitHub PR page** once CI and `merge-ready` are green (decision 0040). `merge-ready` shows the format, the ticked boxes, the task's `done` (#N) and a reviewer's pass for the head commit: on a `claude/` PR `Review (Claude reviewer): …` or `Review (Codex): …` (decision 0063; only a comment or review by the repo owner's account counts: every agent posts through it today, an operational assumption, so who wrote a verdict is a convention, not something the check can see). A ruleset on `main` requires it (decision 0073, [below](#the-ruleset-on-main)), so the Merge button stays disabled while it is red. `node scripts/merge.mjs <PR>` does the same checks from the terminal and is optional. `main-guard` fails only on a commit that reached `main` from no PR.
+- **When no reviewer can run** (neither the `pr-reviewer` sub-agent nor Codex), post a comment on the PR, `Merged without review: <reason>`, then tick "Merge without waiting for requirements to be met (bypass rules)" and merge. Use the bypass only for a missing reviewer: when `merge-ready` is red for any other reason, the PR is fixed first.
 - **Release from the main checkout only** (`~/GitHub/ultimate-brain`, always on a clean `main`). Tasks are built in their own worktrees (`../ub-<ID>`).
 - **A brain runs only published versions.** Try a candidate as a prerelease on the `next` tag.
 
@@ -17,6 +18,39 @@ npm login
 ```
 
 Log in as an **owner of the `ultimate-brain` package** (`npm owner ls ultimate-brain`), which may be a different account from your GitHub one. npm requires two-factor authentication to publish. `npm publish` asks for the code in the browser.
+
+## The ruleset on `main`
+
+Decision 0073: a repository ruleset requires the `merge-ready` commit status on `main`. The user turns it on or changes it; agents don't change repository settings. In **Settings → Rules → Rulesets → New branch ruleset**:
+
+- **Name** `main requires merge-ready`, **Enforcement status** Active.
+- **Bypass list:** Repository admin, set to **Always allow**, so `release.mjs` can push its release commit.
+- **Target branches:** Include default branch.
+- **Require status checks to pass:** add `merge-ready` with the source **GitHub Actions**. Leave **Require branches to be up to date before merging** off: updating a branch makes a new head without a reviewer's pass.
+
+The same, from the main checkout:
+
+```sh
+gh api -X POST repos/{owner}/{repo}/rulesets --input - <<'JSON'
+{
+  "name": "main requires merge-ready",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": { "ref_name": { "include": ["~DEFAULT_BRANCH"], "exclude": [] } },
+  "bypass_actors": [{ "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always" }],
+  "rules": [{
+    "type": "required_status_checks",
+    "parameters": {
+      "strict_required_status_checks_policy": false,
+      "do_not_enforce_on_create": false,
+      "required_status_checks": [{ "context": "merge-ready", "integration_id": 15368 }]
+    }
+  }]
+}
+JSON
+```
+
+`gh api repos/{owner}/{repo}/rulesets` lists it, and `gh pr view <N> --json mergeStateStatus` reads `BLOCKED` on a PR whose `merge-ready` is red. The workflow job that computes the status is named `compute merge-ready`, so the status is the only thing named `merge-ready`.
 
 ## Each release
 
@@ -38,9 +72,9 @@ node scripts/release.mjs 0.4.0
 8. From 0.9.2 on (§9.8): the vendored skills pass the online check (`vendor-skills.mjs --check --online`: `.agents/skills/` is a fork release, unedited, and its release on GitHub matches it), so a phase A snapshot is refused on its name; and a release without a prerelease part ships a vendored snapshot without one.
 9. The version is not lower than `package.json`'s (§9.4), except a prerelease of that same version (`0.9.2-rc.1` when `package.json` is `0.9.2`). A vendoring PR may already have set `package.json` to the release it lands in; releasing that version keeps it.
 
-Then it sets the version, writes the CHANGELOG section from the task rows (`- <id> (#N): <text>`, in build/TASKS.md order; for 0.3.x it dates the hand-written entry; from 0.9.0 the section ends with `Skills: <snapshot> <version> (<integrity>)`), commits `0.4.0`, tags `v0.4.0`, publishes and pushes the commit and tag. Check with `npm view ultimate-brain version`.
+Then it sets the version, writes the CHANGELOG section from the task rows (`- <id> (#N): <text>`, in build/TASKS.md order; for 0.3.x it dates the hand-written entry; from 0.9.0 the section ends with `Skills: <snapshot> <version> (<integrity>)`), commits `0.4.0`, tags `v0.4.0`, publishes and pushes the commit and tag. The release commit comes from no PR, so it has no `merge-ready` status: the push goes through the ruleset's admin bypass, and `git push` says it bypassed the rule. Check with `npm view ultimate-brain version`.
 
-**If the publish fails** (for example E404: the logged-in account isn't an owner), the commit and tag exist only in the main checkout and nothing is pushed. Don't run `release.mjs` again. Fix the cause, then run what it prints: `npm publish && UB_RELEASE=1 git push --follow-tags` (for a prerelease, `npm publish --tag next && …`). If the publish worked and only the push failed, run `UB_RELEASE=1 git push --follow-tags`. A release whose tag already exists, here or on origin, or whose version is already on npm, is refused before anything changes.
+**If the publish fails** (for example E404: the logged-in account isn't an owner), the commit and tag exist only in the main checkout and nothing is pushed. Don't run `release.mjs` again. Fix the cause, then run what it prints: `npm publish && UB_RELEASE=1 git push --follow-tags` (for a prerelease, `npm publish --tag next && …`). If the publish worked and only the push failed, run `UB_RELEASE=1 git push --follow-tags`. A push refused by the ruleset means the bypass list lost the Repository admin role: put it back in the ruleset, then push again. A release whose tag already exists, here or on origin, or whose version is already on npm, is refused before anything changes.
 
 - **patch:** fixes only. **minor:** new commands, skill changes, new template rules. Stay below 1.0.0 until v1 is declared stable.
 - **A candidate:** `node scripts/release.mjs 0.3.0-rc.1` publishes on the `next` tag, never `latest`.
