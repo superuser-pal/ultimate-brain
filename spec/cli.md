@@ -1259,7 +1259,7 @@ Unmapped (empty) properties are left out. After creating the tasks, the skill re
 - `projects`: absent or empty → no project;
 - area relation: the item's `area` when given, else the `area` of the item's projects (deduped), when published and mapped;
 - no backlink (`meeting`, `meeting_url` and `source` are left out) and no `brain_id`;
-- `owner` is left out, except on a `waiting_on` item, as above;
+- `owner` is left out, except on a `waiting_on` item: `"status": "waiting_on"` with `owner` (their name, as text) is accepted as for a meeting, and sends that owner and `waiting_on_status`;
 - nothing is recorded afterwards: the task belongs to no note, so the skill doesn't call `sync record` for it.
 
 Who the item is for and its due date are the skill's judgment: only action items addressed to the owner become tasks, and `due` only when the text gives one (0037). A to-do is never written as a question instead (capture-and-review §6.1, 0071); other people's commitments become a Task only as `waiting_on`, above.
