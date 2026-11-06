@@ -76,27 +76,28 @@ const jaccard = (a, b) => { const x = tokens(a), y = tokens(b); const i = [...x]
 const found = [];
 const add = (signal, pages) => found.push({ signal, pages: [...pages].sort() });
 for (const t of tasks) {
-  if (flaggable(t) && age(t.last_edited) >= S["task-stalled"].days) add("task-stalled", [t.id]);
-  if (flaggable(t) && t.props.Due && age(t.props.Due) >= S["task-overdue"].days) add("task-overdue", [t.id]);
-  if (isOpen(t) && rel(t.props.Project).length === 0) add("task-no-project", [t.id]);
+  if (flaggable(t) && age(t.last_edited) >= S["task_stalled"].days) add("task_stalled", [t.id]);
+  if (flaggable(t) && t.props.Due && age(t.props.Due) >= S["task_overdue"].days) add("task_overdue", [t.id]);
+  if (isOpen(t) && rel(t.props.Project).length === 0) add("task_no_project", [t.id]);
 }
 for (const p of projects.filter(active)) {
   const ts = tasksOf(p), done = lastDone(p), mention = lastMention(p);
-  if ((!done || age(done) >= S["project-stalled"].days) && (!mention || age(mention) >= S["project-stalled"].days)) add("project-stalled", [p.id]);
-  if (!ts.some(isOpen)) add("project-no-next-step", [p.id]);
-  if (ts.length > 0 && ts.every((t) => !isOpen(t)) && ts.some((t) => t.props.Status === DONE)) add("project-finished-open", [p.id]);
+  if ((!done || age(done) >= S["project_stalled"].days) && (!mention || age(mention) >= S["project_stalled"].days)) add("project_stalled", [p.id]);
+  const finished = ts.length > 0 && ts.every((t) => !isOpen(t)) && ts.some((t) => t.props.Status === DONE);
+  if (finished) add("project_done_but_open", [p.id]);
+  else if (!ts.some(isOpen)) add("project_no_next_step", [p.id]); // spec/assistant.md §3.3: not also project_done_but_open
   const ms = mentionsOf(p), area = noteById[brainIdOf(p)]?.area;
-  if (ms.length > 0 && ms.every((n) => n.area && n.area !== area)) add("project-wrong-area", [p.id]);
+  if (ms.length > 0 && ms.every((n) => n.area && n.area !== area)) add("project_misplaced", [p.id]);
 }
 const live = projects.filter((p) => p.props.Status !== DONE);
 for (const [i, p] of live.entries()) for (const q of live.slice(i + 1)) {
-  if (rel(p.props.Area)[0] === rel(q.props.Area)[0] && jaccard(p.props.Name, q.props.Name) >= S["project-duplicate"].similarity) add("project-duplicate", [p.id, q.id]);
+  if (rel(p.props.Area)[0] === rel(q.props.Area)[0] && jaccard(p.props.Name, q.props.Name) >= S["project_duplicate"].similarity) add("project_duplicate", [p.id, q.id]);
 }
 for (const a of areas) {
   const ps = projects.filter((p) => rel(p.props.Area).includes(a.id));
   const openHere = tasks.filter(isOpen).some((t) => rel(t.props.Area).includes(a.id) || rel(t.props.Project).some((id) => ps.some((p) => p.id === id)));
-  if (!ps.some(active) && !openHere) add("area-nothing-active", [a.id]);
-  if (rel(a.props.Domain).length === 0) add("area-no-domain", [a.id]);
+  if (!ps.some(active) && !openHere) add("area_empty", [a.id]);
+  if (rel(a.props.Domain).length === 0) add("area_no_domain", [a.id]);
 }
 
 // ---- compare with planted.json
