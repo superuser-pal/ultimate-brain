@@ -449,7 +449,7 @@ notion: 7c6b…
 | `property` | `status`·`due`·`project`·`area`·`archived` | for `notion_change` | `tasks`: `status`, `due`, `project`, `area`; `projects`: `status`, `archived`; `areas`: `archived`. The Notion property name comes from the Tasks mapping (§12) or is Status or Archived |
 | `value_before` / `value_after` | per `property`: `status` a string or null, `due` a `YYYY-MM-DD` date or null, `project` and `area` a sorted list of page ids, `archived` a boolean | both for `notion_change` | the value read when proposed, and the value to write; `value_after` is never null on `status` |
 | `area` | ID (`area-`) | | on `notion_change` and `set_field`: the Area whose home shows the Review row (§14) |
-| `finding` | `<signal>:<subject key>` | | the Ultimate Assistant finding the proposal comes from ([assistant.md](assistant.md) §3.3). A proposal with `finding` decided in chat before it had a Review row never gets one (cli.md §5.14.4) |
+| `finding` | `<signal>:<subject key>` | | the Ultimate Assistant finding the proposal comes from ([assistant.md](assistant.md) §3.3). An Ultimate Assistant proposal (`source` `agent:ultimate-assistant/…`) decided in chat before it had a Review row never gets one (cli.md §5.14.4) |
 | `from` | date or month | for `update_fact`, `contradiction` | event time of the new value; defaults to the source meeting's `date`, else `created` |
 | `content` | string | for `add_to_note`, `update_body` | `add_to_note`: Markdown to append. `update_body`: the whole new body |
 | `note` | object | for `new_item` | one `brain note new` input item without `id`: `{type, title, frontmatter, body, file_date?}` ([cli.md](cli.md) §5.5) |
