@@ -207,12 +207,6 @@ export function buildManifest(folder: string, meta: ManifestMeta): Manifest {
   return canonicalManifest({ format: 1, name: meta.name, version: meta.version, cli: meta.cli, source: meta.source, upstream: meta.upstream, integrity: computeIntegrity(skills), skills });
 }
 
-/** §9's phase A range for a package version: `>=<version> <<major>.<minor + 1>.0`. */
-export function phaseARange(version: string): string {
-  const [major, minor] = version.split(".");
-  return `>=${version} <${major}.${Number(minor) + 1}.0`;
-}
-
 export interface PackageSnapshot {
   /** The package snapshot folder, `<package root>/.agents/skills`. */
   folder: string;

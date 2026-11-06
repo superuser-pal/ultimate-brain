@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { buildManifest, computeIntegrity, packageProblem, packageSnapshot, phaseARange, serializeManifest, validateSnapshot } from "../src/lib/skills-snapshot.ts";
+import { buildManifest, computeIntegrity, packageProblem, packageSnapshot, serializeManifest, validateSnapshot } from "../src/lib/skills-snapshot.ts";
 import { FORK_META, invalidSnapshots, productRoot, SNAPSHOTS, snapshotCopy } from "./skills-fixtures.ts";
 
 // spec/skills-delivery.md §2 and §2.3; §12.1 test 2.
@@ -55,9 +55,4 @@ test("a package snapshot is compatible only when valid and the running CLI is in
   assert.equal(packageProblem(newer), "not compatible with 0.10.0 (>=0.9.0 <0.10.0)");
   const broken = await productRoot(context, (await invalidSnapshots(context))["file-missing"]!);
   assert.equal(packageProblem(packageSnapshot(broken, "0.9.0")), "file-missing: brain-old/SKILL.md");
-});
-
-test("the phase A range accepts the package version up to the next minor", () => {
-  assert.equal(phaseARange("0.9.0"), ">=0.9.0 <0.10.0");
-  assert.equal(phaseARange("0.9.0-rc.1"), ">=0.9.0-rc.1 <0.10.0");
 });
