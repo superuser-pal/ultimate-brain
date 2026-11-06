@@ -1,7 +1,9 @@
 name: merge-ready
 
 # Decision 0040: shows on each PR whether it is ready to merge (format, ticked boxes, task done with the PR number,
-# a reviewer's pass for the head commit, decision 0063) as the commit status `merge-ready`. It informs; the user merges.
+# a reviewer's pass for the head commit, decision 0063) as the commit status `merge-ready`. A ruleset on `main` requires
+# that status (decision 0073). The job has its own name, so its check run, green whenever it posted a status, is never
+# taken for the status.
 on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
@@ -16,6 +18,7 @@ concurrency:
 
 jobs:
   merge-ready:
+    name: compute merge-ready
     if: github.event_name != 'issue_comment' || github.event.issue.pull_request
     runs-on: ubuntu-latest
     permissions:
