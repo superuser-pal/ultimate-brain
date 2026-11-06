@@ -8,4 +8,5 @@ coverage/
 dist/
 *.pem
 .claude/settings.local.json
-.agents/skills/snapshot.json
+.agents/skills.new/
+.agents/skills.old/

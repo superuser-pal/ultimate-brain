@@ -12,7 +12,7 @@ const NAMES: Record<string, string> = {
 };
 
 test("brain-sync step 2 reads every database sync plan accepts (CC-131)", async () => {
-  const skill = await readFile("skills/brain-sync/SKILL.md", "utf8");
+  const skill = await readFile(".agents/skills/brain-sync/SKILL.md", "utf8");
   const step2 = skill.slice(skill.indexOf("2. **Read**"), skill.indexOf("Meetings are not read here"));
   const table = step2.split("\n").filter((line) => /^\s*\| /.test(line) && !line.includes("Read when") && !/^\s*\|---/.test(line)).map((line) => line.split("|")[1]!);
   for (const database of DATABASES) {
@@ -22,7 +22,7 @@ test("brain-sync step 2 reads every database sync plan accepts (CC-131)", async 
 });
 
 test("brain-sync formats.md and spec/cli.md §5.14.1 list every snapshot database key (CC-131)", async () => {
-  const formats = (await readFile("skills/brain-sync/references/formats.md", "utf8")).split("\n").find((line) => line.startsWith("- `database`:"))!;
+  const formats = (await readFile(".agents/skills/brain-sync/references/formats.md", "utf8")).split("\n").find((line) => line.startsWith("- `database`:"))!;
   const spec = (await readFile("spec/cli.md", "utf8")).split("\n").find((line) => line.startsWith("- `database`: a key of `brain.json` `notion.databases`"))!;
   for (const database of DATABASES) {
     assert.ok(formats.includes(`\`${database}\``), `formats.md doesn't list ${database}`);
