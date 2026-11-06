@@ -2,6 +2,18 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.9.2 — 2026-11-06
+
+- CC-133 (#222): development only: 0.9.2 gains the fixes for dogfood #220 and #221 and takes CC-116 and CC-118 from 0.10.0, and CC-105's spec becomes its own task.
+- CC-134 (#228): development only: the contract for phase B of skill delivery, where skills are written in the fork and the package ships its released snapshot.
+- CC-105 (#229): the brain skills are written in the ultimate-brain-skills fork, and the ultimate-brain package ships an exact, tested snapshot of them.
+- CC-135 (#225): a report or Document whose text is held for your decision still gets its Origin, Project, Area and links in Notion unless you ticked it Accepted; only its text waits.
+- CC-136 (#227): `brain upgrade` also moves the links to old concept notes that sit inside proposals, so no proposal points at `knowledge/concepts/` after 0.9.1.
+- CC-116 (#226): development only: `pr-format` names a PR whose own task row is missing, instead of asking for a CHANGELOG.md line.
+- CC-118 (#224): a link made before kits takes its new kit, and a moved repo its new path, with `brain repo refresh`, without the brain listing the repo's files again.
+
+Skills: ultimate-brain-skills 1.1.0 (sha256-5dadc9f250606c8b2eaabd7cbb2e57cf5886206ae66ab2a826ffb6d168687751)
+
 ## 0.9.1 — 2026-11-04
 
 - CC-123 (#214): concepts become Documents of their own kind, "learned": the Concepts database is retired and existing concepts move to Documents with their links.
