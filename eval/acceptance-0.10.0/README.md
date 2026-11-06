@@ -36,22 +36,22 @@ Thirteen findings, more than 10, so the top-10 cap and "more" can be tested; ids
 
 | Signal | Row | Why |
 |---|---|---|
-| `task-overdue` | Send the logo proposals | Due 5 days before `as_of` |
-| `task-overdue` | Update the case studies | Due 10 days before |
-| `task-stalled` | Write the About page copy | No edit for 20 days |
-| `task-stalled` | Buy new running shoes | No edit for 31 days |
-| `project-stalled` | Pinecrest Clinic signage | Active; last task done 40 days ago, last brain mention 35 days ago |
-| `project-no-next-step` | Conference talk proposal | Active, no task at all, mentioned 4 days ago |
-| `project-finished-open` (also `project-no-next-step`) | Larkspur Bakery packaging | Active, its 3 tasks all Done |
-| `task-no-project` | Renew the studio domain name; Book a dentist appointment | Open, no Project (two findings) |
-| `project-wrong-area` | Studio newsletter | Under Clients; its two meetings and its decision are all Marketing |
-| `project-duplicate` | Quayside Books catalogue / Quayside Books catalog redesign | Same client, same Area, names alike |
-| `area-nothing-active` | Workshops | Its only project is Done, no open task |
-| `area-no-domain` | Finance | No Domain, with Domains on; it has active work |
+| `task_overdue` | Send the logo proposals | Due 5 days before `as_of` |
+| `task_overdue` | Update the case studies | Due 10 days before |
+| `task_stalled` | Write the About page copy | No edit for 20 days |
+| `task_stalled` | Buy new running shoes | No edit for 31 days |
+| `project_stalled` | Pinecrest Clinic signage | Active; last task done 40 days ago, last brain mention 35 days ago |
+| `project_no_next_step` | Conference talk proposal | Active, no task at all, mentioned 4 days ago |
+| `project_done_but_open` | Larkspur Bakery packaging | Active, its 3 tasks all Done |
+| `task_no_project` | Renew the studio domain name; Book a dentist appointment | Open, no Project (two findings) |
+| `project_misplaced` | Studio newsletter | Under Clients; its two meetings and its decision are all Marketing |
+| `project_duplicate` | Quayside Books catalogue / Quayside Books catalog redesign | Same client, same Area, names alike |
+| `area_empty` | Workshops | Its only project is Done, no open task |
+| `area_no_domain` | Finance | No Domain, with Domains on; it has active work |
 
 Not to be flagged: "Get a quote from the tiler", Waiting On, unedited for 20 days and 5 days past due; and rows one day under a threshold (an edit 13 days ago, due 2 days ago, due today, a project last active 20 days ago), an On Hold and a Planned project, and two projects that share a client's name only.
 
-**Signal names and rules** are a reference reading of 0072 §3 and CC-140's task text, written in planted.json's `signals` so the fixtures could be checked before the contracts. CC-108 may rename or refine them; planted.json and the check follow in a later commit.
+**Signal names** are those of [spec/assistant.md](../../spec/assistant.md) §3.3 (CC-108). **The rules** in planted.json's `signals` and the check are a reference reading of 0072 §3, written so the fixtures could be checked before the contracts; where they differ from the spec, the spec decides (CC-110).
 
 ## What the check confirms
 

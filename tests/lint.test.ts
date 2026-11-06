@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { promisify } from "node:util";
 
+import { Ajv2020 } from "ajv/dist/2020.js";
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
 import { loadSchemas } from "../src/lib/schemas.ts";
 import { brain, fixtureCopy, FIXTURE_BRAIN } from "./helpers.ts";
@@ -171,6 +172,26 @@ test("every spec example passes or fails the JSON Schemas as labelled", async ()
       assert.equal(validate(attributes), kind === "valid", `${kind}/${file}`);
     }
   }
+});
+
+// spec/assistant.md (CC-108): each example is named after the $defs shape it shows (snapshot-…, dismissals-…, dismissInput-…).
+test("every Ultimate Assistant example passes or fails assistant.schema.json as labelled", async () => {
+  const schema = JSON.parse(await readFile(join(import.meta.dirname, "..", "spec", "schemas", "assistant.schema.json"), "utf8"));
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  ajv.addSchema(schema);
+  const root = join(import.meta.dirname, "..", "spec", "examples", "assistant");
+  let checked = 0;
+  for (const kind of ["valid", "invalid"] as const) {
+    for (const file of (await readdir(join(root, kind))).sort()) {
+      const shape = file.replace(/(-.*)?\.json$/, "");
+      assert.ok(["snapshot", "dismissals", "dismissInput"].includes(shape), `assistant/${kind}/${file}: unknown shape ${shape}`);
+      const validate = ajv.getSchema(`${schema.$id}#/$defs/${shape}`);
+      assert.ok(validate, shape);
+      assert.equal(validate(JSON.parse(await readFile(join(root, kind, file), "utf8"))), kind === "valid", `assistant/${kind}/${file}`);
+      checked += 1;
+    }
+  }
+  assert.ok(checked >= 10, `${checked} examples`);
 });
 
 test("every brain.json example passes or fails its JSON Schema as labelled", async () => {

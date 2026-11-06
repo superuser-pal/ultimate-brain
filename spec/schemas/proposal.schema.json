@@ -45,7 +45,9 @@
         "merge",
         "new_item",
         "review_notes",
-        "answer"
+        "answer",
+        "notion_change",
+        "set_field"
       ]
     },
     "target": {
@@ -512,10 +514,38 @@
     },
     "answer_note": {
       "$ref": "note.schema.json#/$defs/id"
-    }
+    },
+    "database": {
+      "description": "notion_change: the Notion database of page (spec/schema.md §11, spec/assistant.md §6).",
+      "enum": ["tasks", "projects", "areas"]
+    },
+    "page": { "description": "notion_change: the Notion page id, dashed and lowercase.", "$ref": "#/$defs/pageId" },
+    "page_title": { "description": "notion_change: the row's Name when proposed.", "type": "string", "minLength": 1 },
+    "property": {
+      "description": "notion_change: tasks take status, due, project, area; projects status, archived; areas archived.",
+      "enum": ["status", "due", "project", "area", "archived"]
+    },
+    "value_before": { "description": "notion_change: the value read when proposed; its shape follows property.", "$ref": "#/$defs/notionValue" },
+    "value_after": { "description": "notion_change: the value to write; its shape follows property.", "$ref": "#/$defs/notionValue" },
+    "area": { "description": "notion_change and set_field: the Area whose home shows the Review row.", "type": "string", "pattern": "^area-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
+    "finding": { "description": "The Ultimate Assistant finding key (spec/assistant.md §3.3); the same pattern as assistant.schema.json $defs/findingKey.", "$ref": "#/$defs/findingKey" }
   },
   "additionalProperties": false,
   "allOf": [
+    {"description": "notion_change (0072): its own fields, no fact or note fields.", "if": {"properties": {"kind": {"const": "notion_change"}}, "required": ["kind"]}, "then": {"required": ["database", "page", "page_title", "property", "value_before", "value_after"], "not": {"anyOf": [{"required": ["field"]}, {"required": ["before"]}, {"required": ["after"]}, {"required": ["content"]}, {"required": ["note"]}, {"required": ["links"]}, {"required": ["notes"]}, {"required": ["changes"]}, {"required": ["supersedes"]}, {"required": ["merge_into"]}, {"required": ["answer"]}, {"required": ["answer_note"]}]}}},
+    {"description": "notion_change fields belong to notion_change only.", "if": {"anyOf": [{"required": ["database"]}, {"required": ["page"]}, {"required": ["page_title"]}, {"required": ["property"]}, {"required": ["value_before"]}, {"required": ["value_after"]}]}, "then": {"properties": {"kind": {"const": "notion_change"}}}},
+    {"description": "area belongs to notion_change and set_field only.", "if": {"required": ["area"]}, "then": {"properties": {"kind": {"enum": ["notion_change", "set_field"]}}}},
+    {"description": "A task has no note: no target; tasks take status, due, project, area.", "if": {"properties": {"database": {"const": "tasks"}}, "required": ["database"]}, "then": {"not": {"required": ["target"]}, "properties": {"property": {"enum": ["status", "due", "project", "area"]}}}},
+    {"description": "projects: the project note is the target; Status or Archived.", "if": {"properties": {"database": {"const": "projects"}}, "required": ["database"]}, "then": {"required": ["target"], "properties": {"target": {"pattern": "^prj-"}, "property": {"enum": ["status", "archived"]}}}},
+    {"description": "areas: the Area note is the target; Archived only.", "if": {"properties": {"database": {"const": "areas"}}, "required": ["database"]}, "then": {"required": ["target"], "properties": {"target": {"pattern": "^area-"}, "property": {"const": "archived"}}}},
+    {"description": "status: a string, or null before; never null after.", "if": {"properties": {"property": {"const": "status"}}, "required": ["property"]}, "then": {"properties": {"value_before": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]}, "value_after": {"type": "string", "minLength": 1}}}},
+    {"description": "A project's Status is one of its four options.", "if": {"properties": {"database": {"const": "projects"}, "property": {"const": "status"}}, "required": ["database", "property"]}, "then": {"properties": {"value_before": {"enum": ["Planned", "Active", "On Hold", "Done", null]}, "value_after": {"enum": ["Planned", "Active", "On Hold", "Done"]}}}},
+    {"description": "due: a date or null.", "if": {"properties": {"property": {"const": "due"}}, "required": ["property"]}, "then": {"properties": {"value_before": {"anyOf": [{"$ref": "note.schema.json#/$defs/date"}, {"type": "null"}]}, "value_after": {"anyOf": [{"$ref": "note.schema.json#/$defs/date"}, {"type": "null"}]}}}},
+    {"description": "project and area: a sorted, duplicate-free list of page ids.", "if": {"properties": {"property": {"enum": ["project", "area"]}}, "required": ["property"]}, "then": {"properties": {"value_before": {"$ref": "#/$defs/pageIds"}, "value_after": {"$ref": "#/$defs/pageIds"}}}},
+    {"description": "archived: a boolean.", "if": {"properties": {"property": {"const": "archived"}}, "required": ["property"]}, "then": {"properties": {"value_before": {"type": "boolean"}, "value_after": {"type": "boolean"}}}},
+    {"description": "set_field (0072): a project's area or an Area's domain, as note ids.", "if": {"properties": {"kind": {"const": "set_field"}}, "required": ["kind"]}, "then": {"required": ["target", "field", "after"], "properties": {"field": {"enum": ["area", "domain"]}}, "not": {"anyOf": [{"required": ["content"]}, {"required": ["note"]}, {"required": ["links"]}, {"required": ["notes"]}, {"required": ["changes"]}, {"required": ["supersedes"]}, {"required": ["merge_into"]}, {"required": ["answer"]}, {"required": ["answer_note"]}, {"required": ["from"]}]}}},
+    {"if": {"properties": {"kind": {"const": "set_field"}, "field": {"const": "area"}}, "required": ["kind", "field"]}, "then": {"properties": {"target": {"pattern": "^prj-"}, "before": {"type": "string", "pattern": "^area-[0-9abcdefghjkmnpqrstvwxyz]{8}$"}, "after": {"type": "string", "pattern": "^area-[0-9abcdefghjkmnpqrstvwxyz]{8}$"}}}},
+    {"if": {"properties": {"kind": {"const": "set_field"}, "field": {"const": "domain"}}, "required": ["kind", "field"]}, "then": {"properties": {"target": {"pattern": "^area-"}, "before": {"type": "string", "pattern": "^dom-[0-9abcdefghjkmnpqrstvwxyz]{8}$"}, "after": {"type": "string", "pattern": "^dom-[0-9abcdefghjkmnpqrstvwxyz]{8}$"}}}},
     {
       "if": {
         "properties": {
@@ -1437,6 +1467,10 @@
     }
   ],
   "$defs": {
+    "pageId": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
+    "pageIds": {"type": "array", "items": {"$ref": "#/$defs/pageId"}, "uniqueItems": true},
+    "notionValue": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}, {"type": "boolean"}, {"$ref": "#/$defs/pageIds"}]},
+    "findingKey": {"type": "string", "pattern": "^(task_overdue|task_stalled|task_no_project):notion:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^(project_stalled|project_no_next_step|project_done_but_open|project_misplaced):prj-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^project_duplicate:prj-[0-9abcdefghjkmnpqrstvwxyz]{8}\\+prj-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^(area_no_domain|area_empty):area-[0-9abcdefghjkmnpqrstvwxyz]{8}$"},
     "change": {
       "type": "object",
       "required": [
