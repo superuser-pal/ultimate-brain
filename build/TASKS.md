@@ -407,8 +407,8 @@ An assistant you ask, from the CLI, about the structure of your work: Areas, Dom
 
 ### CC-141 · Move the finished 0.9.x releases to HISTORY.md · `in progress`
 **Release:** 0.10.0
-**Changelog:** development only: the 0.9.0, 0.9.1 and 0.9.2 sections move from TASKS.md to HISTORY.md, as AGENTS.md asks after each release.
-**Output:** the 0.9.0, 0.9.1 and 0.9.2 sections of build/TASKS.md moved verbatim to the end of build/HISTORY.md, in release order; TASKS.md keeps the release table, the status notes and the open releases; any link in docs or decisions that points at those sections still resolves; release.mjs and pr-format still find every done task (they read both files).
+**Changelog:** development only: the 0.8.1, 0.9.0, 0.9.1 and 0.9.2 sections move from TASKS.md to HISTORY.md, as AGENTS.md asks after each release.
+**Output:** the 0.8.1, 0.9.0, 0.9.1 and 0.9.2 sections of build/TASKS.md moved verbatim to the end of build/HISTORY.md, in release order (0.8.1 added at the user's answer of 2026-11-06, so HISTORY.md stays in release order); the "v1 to 0.8.0" lines in both files say 0.9.2; TASKS.md keeps the release table, the status notes and the open releases; any link in docs or decisions that points at those sections still resolves; release.mjs and pr-format still find every done task (they read both files).
 **Acceptance:** `git diff` shows the sections removed from TASKS.md and added to HISTORY.md with identical text; `npm run test:scripts` passes; `node scripts/release.mjs 0.10.0 --dry-run` lists no 0.9.x task; the leak check passes.
 
 ## 0.11.0 — The brain tidies itself (decisions 0052, 0061, 0064)
