@@ -1,7 +1,7 @@
 ---
 id: prp-2r7k4n8x
 type: proposal
-title: "Suggestion: Acme website: Due → 2026-12-01"
+title: "Acme website: Due → 2026-12-01"
 created: 2026-11-06
 updated: 2026-11-06
 kind: notion_change

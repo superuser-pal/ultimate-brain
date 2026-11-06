@@ -1,7 +1,7 @@
 ---
 id: prp-7h3n5q2c
 type: proposal
-title: "Suggestion: Health: Domain → Personal"
+title: "Health: Domain → Personal"
 created: 2026-11-06
 updated: 2026-11-06
 kind: set_field
