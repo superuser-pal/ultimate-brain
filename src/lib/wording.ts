@@ -29,8 +29,9 @@ export type WaitingReason = "EMPTY_BODY" | "REVISION_PENDING" | "REFRESH_PENDING
 
 export interface WordingPlan {
   accepted_wording: AcceptedWording[];
-  wording_waiting: Array<{ page_id: string; note: string; reason: WaitingReason }>;
-  wording_held: Array<{ page_id: string; note: string; reason: HeldReason }>;
+  /** `accepted` is the page's Accepted box: render sends a held note's properties only when it is false (cli §5.14.7). It is optional on input, where a row without it fails closed. */
+  wording_waiting: Array<{ page_id: string; note: string; reason: WaitingReason; accepted?: boolean }>;
+  wording_held: Array<{ page_id: string; note: string; reason: HeldReason; accepted?: boolean }>;
   /** `accepted_at` is the acceptance being consumed: the skill clears Accepted only if the page still shows it (cli §5.14.7). */
   clear_accepted: Array<{ page_id: string; note: string; accepted_at: string; page_edited_at: string; fingerprint: string }>;
   updates: Array<Record<string, unknown>>;
@@ -62,13 +63,14 @@ const minute = (timestamp: string): string => timestamp.slice(0, 16);
 export function planWording(workspace: Workspace, asOf: string, pageId: string, note: Note, w: Wording, out: WordingPlan): void {
   const kind = note.type === "view" ? "report" : "document";
   const ref = { page_id: pageId, note: note.id };
-  const waiting = (reason: WaitingReason) => out.wording_waiting.push({ ...ref, reason });
+  const waiting = (reason: WaitingReason) => out.wording_waiting.push({ ...ref, reason, accepted: w.accepted });
+  const held = (reason: HeldReason) => out.wording_held.push({ ...ref, reason, accepted: false });
   const pending = w.pending_revision ? "REVISION_PENDING" as const : w.pending_refresh ? "REFRESH_PENDING" as const : undefined;
   // 2: the body cannot be converted, so N is unknown: fail closed.
-  if (w.unconvertible || w.body_markdown === null) { if (w.accepted) waiting("UNCONVERTIBLE_BLOCK"); else out.wording_held.push({ ...ref, reason: "UNCONVERTIBLE_BLOCK" }); return; }
+  if (w.unconvertible || w.body_markdown === null) { if (w.accepted) waiting("UNCONVERTIBLE_BLOCK"); else held("UNCONVERTIBLE_BLOCK"); return; }
   // An emptied page is not wording to import; text the converter did not end with one newline is not its output (cli §5.14.7): fail closed.
   if (w.accepted && w.body_markdown.trim() === "") { waiting("EMPTY_BODY"); return; }
-  if (w.body_markdown !== "" && !w.body_markdown.endsWith("\n")) { if (w.accepted) waiting("UNCONVERTIBLE_BLOCK"); else out.wording_held.push({ ...ref, reason: "UNCONVERTIBLE_BLOCK" }); return; }
+  if (w.body_markdown !== "" && !w.body_markdown.endsWith("\n")) { if (w.accepted) waiting("UNCONVERTIBLE_BLOCK"); else held("UNCONVERTIBLE_BLOCK"); return; }
   // 3: an acceptance with no time has no order against the edits.
   if (w.accepted && w.accepted_at === null) { waiting("ACCEPTANCE_UNDATED"); return; }
   // 4, 5: a pending proposal; an unresolved one blocks acceptance.
@@ -91,8 +93,8 @@ export function planWording(workspace: Workspace, asOf: string, pageId: string, 
     return;
   }
   // 9: no common baseline: no comparison is made.
-  if (sn === undefined || sg === undefined) { if (w.accepted) waiting("NO_BASELINE"); else out.wording_held.push({ ...ref, reason: "NO_BASELINE" }); return; }
-  if (!w.accepted) { if (n !== sn) out.wording_held.push({ ...ref, reason: "UNACCEPTED_DRAFT" }); return; } // 10, 11
+  if (sn === undefined || sg === undefined) { if (w.accepted) waiting("NO_BASELINE"); else held("NO_BASELINE"); return; }
+  if (!w.accepted) { if (n !== sn) held("UNACCEPTED_DRAFT"); return; } // 10, 11
   if (n === sn) { out.clear_accepted.push({ ...ref, accepted_at: w.accepted_at!, page_edited_at: w.page_edited_at, fingerprint: n }); return; } // 12: nothing to import
   if (g !== sg) { waiting("GIT_CHANGED"); return; } // 14
   const added = lineDiff(git, markdown);

@@ -548,6 +548,7 @@ export function parsePlan(input: unknown): SyncPlan {
       if (typeof item.unattended_ok !== "boolean") problems.push({ pointer: `${at}/unattended_ok`, message: "must be true or false" });
       if (!isRecord(item.diff) || typeof item.diff.added !== "number" || typeof item.diff.removed !== "number") problems.push({ pointer: `${at}/diff`, message: "must be { added, removed }" });
     }
+    if ((key === "wording_waiting" || key === "wording_held") && item.accepted !== undefined && typeof item.accepted !== "boolean") problems.push({ pointer: `${at}/accepted`, message: "must be true or false" });
     if (key === "clear_accepted") for (const name of ["accepted_at", "page_edited_at"]) if (!isTimestamp(item[name])) problems.push({ pointer: `${at}/${name}`, message: "must be an ISO 8601 UTC timestamp" });
     if (key === "accepted_wording" && item.verified !== undefined && (!isRecord(item.verified) || typeof item.verified.fingerprint !== "string" || typeof item.verified.page_edited_at !== "string")) problems.push({ pointer: `${at}/verified`, message: "must be { fingerprint, page_edited_at }" });
   });
