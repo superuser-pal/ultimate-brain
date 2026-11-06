@@ -54,7 +54,7 @@ Future implementation tasks are decomposed by Claude Code after their opening sc
 - **Contracts came first** (wave 1) so both could work in parallel without guessing.
 - Every task was reviewed by the other agent.
 
-**Done releases (v1 to 0.8.0)** are in [HISTORY.md](HISTORY.md): read it only when a task or decision points there.
+**Done releases (v1 to 0.9.2)** are in [HISTORY.md](HISTORY.md): read it only when a task or decision points there.
 
 ## 0.10.0 — The brain assistant (decision 0064)
 
