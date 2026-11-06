@@ -373,7 +373,7 @@ An assistant you ask, from the CLI, about the structure of your work: Areas, Dom
 **Output:** per CC-108: the skill (single source for Claude Code and Codex, delivered as 0.9.0 delivers skills), a thin `.claude/agents` sub-agent that loads it, any CLI helper with tests, templates/brain/AGENTS.md, brain-howto and the guide.
 **Acceptance:** blind runs on a synthetic brain and a synthetic Notion snapshot with planted problems (a stalled project, a task with no project, a finished project still Active, a project under the wrong Area, an Area with no Domain while Domains is on): each is found; nothing is written without a Review row or an explicit yes; a ramble of mixed thoughts is split into the right captures, tasks and project changes; with Notion unreachable it says so and reviews the brain only; the skill mirror check passes.
 
-### CC-138 · `main` requires `merge-ready` · `in progress`
+### CC-138 · `main` requires `merge-ready` · `review`
 **Release:** 0.10.0
 **Changelog:** development only: a ruleset on `main` requires the `merge-ready` status, so a PR can't merge without its format, its ticked boxes, its `done` (#N) and a reviewer's pass at its head.
 **Output:** the user's answer on CC-116 (2026-11-05): a decision amending 0040's "it informs, it doesn't block" now that the repo is public (a free ruleset can require a status); the ruleset requiring the `merge-ready` commit status on `main`, with the repo admin as bypass actor so `release.mjs` can still push its release commit; what the user does when no reviewer can run; AGENTS.md and docs/releasing.md. The user turns the ruleset on; agents don't change repo settings.
