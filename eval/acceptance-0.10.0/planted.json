@@ -1,0 +1,331 @@
+{
+  "as_of": "2026-12-01",
+  "about": "CC-140: the planted problems of the 0.10.0 acceptance fixtures (harness/fixture.mjs). Each entry names its page ids, the signal that should find it and the evidence that makes it a finding at as_of; dates are days before as_of, so the entries hold for a sandbox made at any as_of. Signal names and rules are a reference reading of decision 0072 §3 and CC-140's task text; CC-108's contracts may rename or refine them, and this file follows. harness/check-planted.mjs checks a sandbox against this file.",
+  "signals": {
+    "task-stalled": {
+      "days": 14,
+      "group": "stalled",
+      "rule": "an open task (not Done, Won't Do or Waiting On) whose last edit is 14 or more days before as_of"
+    },
+    "task-overdue": {
+      "days": 3,
+      "group": "overdue",
+      "rule": "an open task (not Done, Won't Do or Waiting On) whose Due is 3 or more days before as_of"
+    },
+    "task-no-project": {
+      "group": "structure",
+      "rule": "an open task (not Done or Won't Do) with no Project"
+    },
+    "project-stalled": {
+      "days": 21,
+      "group": "stalled",
+      "rule": "an Active project with no task done (a Done task's last edit) and no mention in the brain (a meeting's date, or the updated date of a note listing it in projects, or of its own note) in the 21 days before as_of"
+    },
+    "project-no-next-step": {
+      "group": "no next step",
+      "rule": "an Active project with no open task (Waiting On counts as open)"
+    },
+    "project-finished-open": {
+      "group": "no next step",
+      "rule": "an Active project with at least one task, every task Done or Won't Do and at least one Done; it has no open task either"
+    },
+    "project-wrong-area": {
+      "group": "structure",
+      "rule": "an Active project whose brain notes listing it in projects all have an Area, none of them the project's own"
+    },
+    "project-duplicate": {
+      "similarity": 0.6,
+      "group": "structure",
+      "rule": "two projects not Done in the same Area whose names share most words: Jaccard of their lowercased words of 0.6 or more, without the, a, an, of, and, for, to, new; catalogue and catalog are one word"
+    },
+    "area-nothing-active": {
+      "group": "structure",
+      "rule": "an Area with no Active project and no open task (its own, or of one of its projects)"
+    },
+    "area-no-domain": {
+      "group": "structure",
+      "rule": "an Area with no Domain, with the Domains module on"
+    }
+  },
+  "planted": [
+    {
+      "key": "stalled-task-about-copy",
+      "signal": "task-stalled",
+      "title": "Write the About page copy",
+      "pages": [
+        "0a10c000-0000-4000-8000-000000000001"
+      ],
+      "evidence": {
+        "status": "To Do",
+        "last_edited_days_ago": 20,
+        "due_days_ago": null,
+        "project": "0a10b000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "key": "stalled-task-running-shoes",
+      "signal": "task-stalled",
+      "title": "Buy new running shoes",
+      "pages": [
+        "0a10c000-0000-4000-8000-000000000028"
+      ],
+      "evidence": {
+        "status": "Doing",
+        "last_edited_days_ago": 31,
+        "due_days_ago": null,
+        "project": "0a10b000-0000-4000-8000-000000000014"
+      }
+    },
+    {
+      "key": "overdue-task-logo-proposals",
+      "signal": "task-overdue",
+      "title": "Send the logo proposals",
+      "pages": [
+        "0a10c000-0000-4000-8000-000000000005"
+      ],
+      "evidence": {
+        "status": "To Do",
+        "last_edited_days_ago": 2,
+        "due_days_ago": 5,
+        "project": "0a10b000-0000-4000-8000-000000000002"
+      }
+    },
+    {
+      "key": "overdue-task-case-studies",
+      "signal": "task-overdue",
+      "title": "Update the case studies",
+      "pages": [
+        "0a10c000-0000-4000-8000-000000000019"
+      ],
+      "evidence": {
+        "status": "Doing",
+        "last_edited_days_ago": 1,
+        "due_days_ago": 10,
+        "project": "0a10b000-0000-4000-8000-000000000009"
+      }
+    },
+    {
+      "key": "no-project-task-domain-name",
+      "signal": "task-no-project",
+      "title": "Renew the studio domain name",
+      "pages": [
+        "0a10c000-0000-4000-8000-000000000033"
+      ],
+      "evidence": {
+        "status": "To Do",
+        "last_edited_days_ago": 2,
+        "due_days_ago": -3,
+        "project": null,
+        "area": "0a10a000-0000-4000-8000-000000000003"
+      }
+    },
+    {
+      "key": "no-project-task-dentist",
+      "signal": "task-no-project",
+      "title": "Book a dentist appointment",
+      "pages": [
+        "0a10c000-0000-4000-8000-000000000034"
+      ],
+      "evidence": {
+        "status": "To Do",
+        "last_edited_days_ago": 1,
+        "due_days_ago": null,
+        "project": null,
+        "area": "0a10a000-0000-4000-8000-000000000005"
+      }
+    },
+    {
+      "key": "stalled-project-pinecrest",
+      "signal": "project-stalled",
+      "title": "Pinecrest Clinic signage",
+      "pages": [
+        "0a10b000-0000-4000-8000-000000000003"
+      ],
+      "evidence": {
+        "status": "Active",
+        "brain": "prj-0a10b003",
+        "last_done_days_ago": 40,
+        "last_mention_days_ago": 35,
+        "open_tasks": 1
+      }
+    },
+    {
+      "key": "no-next-step-talk",
+      "signal": "project-no-next-step",
+      "title": "Conference talk proposal",
+      "pages": [
+        "0a10b000-0000-4000-8000-000000000010"
+      ],
+      "evidence": {
+        "status": "Active",
+        "brain": "prj-0a10b010",
+        "tasks": 0,
+        "open_tasks": 0,
+        "last_mention_days_ago": 4
+      }
+    },
+    {
+      "key": "finished-open-packaging",
+      "signal": "project-finished-open",
+      "also": [
+        "project-no-next-step"
+      ],
+      "title": "Larkspur Bakery packaging",
+      "pages": [
+        "0a10b000-0000-4000-8000-000000000007"
+      ],
+      "evidence": {
+        "status": "Active",
+        "brain": "prj-0a10b007",
+        "tasks": 3,
+        "open_tasks": 0,
+        "last_done_days_ago": 2
+      }
+    },
+    {
+      "key": "wrong-area-newsletter",
+      "signal": "project-wrong-area",
+      "title": "Studio newsletter (under Clients; its meetings and decision are Marketing)",
+      "pages": [
+        "0a10b000-0000-4000-8000-000000000004"
+      ],
+      "evidence": {
+        "status": "Active",
+        "brain": "prj-0a10b004",
+        "area": "0a10a000-0000-4000-8000-000000000001",
+        "mention_areas": [
+          "0a10a000-0000-4000-8000-000000000002"
+        ]
+      }
+    },
+    {
+      "key": "duplicate-quayside",
+      "signal": "project-duplicate",
+      "title": "Quayside Books catalogue / Quayside Books catalog redesign",
+      "pages": [
+        "0a10b000-0000-4000-8000-000000000005",
+        "0a10b000-0000-4000-8000-000000000006"
+      ],
+      "evidence_each": [
+        {
+          "status": "Active",
+          "brain": "prj-0a10b005",
+          "area": "0a10a000-0000-4000-8000-000000000001"
+        },
+        {
+          "status": "Active",
+          "brain": "prj-0a10b006",
+          "area": "0a10a000-0000-4000-8000-000000000001"
+        }
+      ]
+    },
+    {
+      "key": "nothing-active-workshops",
+      "signal": "area-nothing-active",
+      "title": "Workshops",
+      "pages": [
+        "0a10a000-0000-4000-8000-000000000006"
+      ],
+      "evidence": {
+        "brain": "area-0a10a006",
+        "domain": "0a10d000-0000-4000-8000-000000000003"
+      }
+    },
+    {
+      "key": "no-domain-finance",
+      "signal": "area-no-domain",
+      "title": "Finance",
+      "pages": [
+        "0a10a000-0000-4000-8000-000000000003"
+      ],
+      "evidence": {
+        "brain": "area-0a10a003",
+        "domain": null
+      }
+    }
+  ],
+  "not_flagged": [
+    {
+      "key": "waiting-task-tiler",
+      "title": "Get a quote from the tiler",
+      "page": "0a10c000-0000-4000-8000-000000000024",
+      "why": "planted: Waiting On, so neither stalled nor overdue although it trips both thresholds",
+      "evidence": {
+        "status": "Waiting On",
+        "last_edited_days_ago": 20,
+        "due_days_ago": 5,
+        "project": "0a10b000-0000-4000-8000-000000000012"
+      }
+    },
+    {
+      "key": "edge-task-13-days",
+      "title": "Add the Tidewell project page",
+      "page": "0a10c000-0000-4000-8000-000000000020",
+      "why": "last edit 13 days before as_of, one under 14",
+      "evidence": {
+        "status": "To Do",
+        "last_edited_days_ago": 13
+      }
+    },
+    {
+      "key": "edge-task-2-days-late",
+      "title": "Collect the receipts for Q4",
+      "page": "0a10c000-0000-4000-8000-000000000022",
+      "why": "Due 2 days before as_of, one under 3",
+      "evidence": {
+        "status": "To Do",
+        "due_days_ago": 2
+      }
+    },
+    {
+      "key": "edge-task-due-today",
+      "title": "Choose the cabinet handles",
+      "page": "0a10c000-0000-4000-8000-000000000025",
+      "why": "Due on as_of",
+      "evidence": {
+        "status": "To Do",
+        "due_days_ago": 0
+      }
+    },
+    {
+      "key": "edge-project-20-days",
+      "title": "Quarterly tax filing",
+      "page": "0a10b000-0000-4000-8000-000000000011",
+      "why": "last task done 20 days and last mention 18 days before as_of, under 21",
+      "evidence": {
+        "status": "Active",
+        "last_done_days_ago": 20,
+        "last_mention_days_ago": 18
+      }
+    },
+    {
+      "key": "edge-project-on-hold",
+      "title": "Garden shed",
+      "page": "0a10b000-0000-4000-8000-000000000013",
+      "why": "On Hold, so not reviewed as Active although nothing happened for 50 days",
+      "evidence": {
+        "status": "On Hold",
+        "open_tasks": 0
+      }
+    },
+    {
+      "key": "edge-project-planned",
+      "title": "Bookkeeping system",
+      "page": "0a10b000-0000-4000-8000-000000000016",
+      "why": "Planned, with no task yet",
+      "evidence": {
+        "status": "Planned",
+        "tasks": 0
+      }
+    },
+    {
+      "key": "edge-not-duplicates",
+      "title": "Larkspur Bakery website",
+      "page": "0a10b000-0000-4000-8000-000000000001",
+      "why": "shares the client's name with Larkspur Bakery packaging, but not most words",
+      "evidence": {
+        "status": "Active"
+      }
+    }
+  ]
+}
