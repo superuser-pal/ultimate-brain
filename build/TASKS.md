@@ -361,6 +361,8 @@ After 0.9.1. Scope checked with the user on 2026-11-05 (CC-133): CC-105 as decis
 
 An assistant you ask, from the CLI, about the structure of your work: Areas, Domains, Projects and Tasks. It finds what's stalled, misplaced or missing, recommends, turns your thinking into captures, tasks and projects, and makes changes through Review rows, or directly after your yes in a live chat. On demand; the weekly scheduled run is CC-111 in 0.13.0. Starts after 0.9.0 is released, with its opening scope grill. The grill ran on 2026-11-05 (CC-137): decision [0072](../decisions/0072-ultimate-assistant.md) names it **Ultimate Assistant**, shows a report first and applies what you say yes to, with Review rows only when you ask.
 
+**Plan (2026-11-06, CC-139):** the main session writes CC-108; beside it, build agents take CC-140 (fixtures), CC-141 (history move) and CC-138 (`main` requires `merge-ready`). Once CC-108 is on `main`, CC-109 is split into slices along its contracts and built in parallel; CC-110 runs on CC-140's fixtures.
+
 ### CC-108 · Contracts for the brain assistant (decision 0064) · `in progress`
 **Release:** 0.10.0
 **Changelog:** contracts for the brain assistant: what it checks in Areas, Domains, Projects and Tasks, how each finding becomes a Review row, and when it may change something directly.
@@ -390,6 +392,24 @@ An assistant you ask, from the CLI, about the structure of your work: Areas, Dom
 **Changelog:** development only: the 0.10.0 opening grill is recorded as decision 0072, which names the assistant Ultimate Assistant and settles how a review session goes.
 **Output:** decision 0072 from the user's answers of 2026-11-05 (name, report first, fixed thresholds, where a ramble lands, whole brain top 10, dismissals); an "Amended by" pointer on 0064; this file: the 0.10.0 intro and CC-108's Output point to 0072, and the 1.0.0 section notes the Notion agent's rename. No code, no spec.
 **Acceptance:** 0072 records each of the six answers as the user gave them; 0064 points to it; no other task's row changes except CC-108's Output; the 1.0.0 section notes the Notion agent's rename; the leak check passes.
+
+### CC-139 · Plan 0.10.0: acceptance fixtures and the history move beside the contracts · `done` (#230)
+**Release:** 0.10.0
+**Changelog:** development only: 0.10.0 gains CC-140 (the acceptance fixtures) and CC-141 (finished releases move to HISTORY.md), built beside CC-108's contracts with CC-138.
+**Output:** the user's plan of 2026-11-06 for 0.10.0: CC-108 written by the main session; in parallel, CC-140, CC-141 and CC-138 by build agents; CC-109 split into slices once CC-108 is on `main`; CC-110 runs on CC-140's fixtures. This file only: the 0.10.0 intro and the two new rows.
+**Acceptance:** CC-140 and CC-141 each have a Release, Changelog, Output and Acceptance line; no other task's row changes; `pr-format` and the leak check pass.
+
+### CC-140 · Acceptance fixtures for Ultimate Assistant (decision 0072) · `todo`
+**Release:** 0.10.0
+**Changelog:** development only: a synthetic brain and a synthetic Notion space with planted project-management problems, for testing Ultimate Assistant.
+**Output:** eval/acceptance-0.10.0/harness/, reusing the 0.9.0 harness (eval/acceptance-0.9.0/harness: install.sh, make-sandbox.sh, the notion-sim stand-in; copy or call, don't change 0.9.0's files): a fixture brain (synthetic names only, every module on, Domains on) and a notion-sim state with Areas, Domains, Projects and Tasks holding, each findable: a task with no edit for 20 days; a task 5 days overdue; a task with no project; an Active project with no task done and no brain mention for 30 days; an Active project with no open task; an Active project whose tasks are all done; a project under the wrong Area (its notes and meetings all belong to another Area); two projects that look like duplicates; an Area with nothing active; an Area without a Domain; a task already Waiting (not to be flagged); plus enough healthy rows that the planted ones aren't all there is, and more than 10 findings in total so the top-10 cap and "more" can be tested. A manifest (eval/acceptance-0.10.0/planted.json) lists each planted problem with its page ids and the signal that should find it; dates are relative to a fixed `as_of`, so the fixtures don't age. A README says how to make a sandbox. No CLI or skill change: signal names follow decision 0072 and the task text above; CC-108 may rename them, and a later commit follows.
+**Acceptance:** `make-sandbox.sh` builds a sandbox whose `brain lint` is clean and whose notion-sim state loads; a check script confirms that every row in planted.json exists in the state with the dates and relations that make it a finding at `as_of`, and that the healthy rows trip none of 0072's thresholds; the leak check passes.
+
+### CC-141 · Move the finished 0.9.x releases to HISTORY.md · `todo`
+**Release:** 0.10.0
+**Changelog:** development only: the 0.9.0, 0.9.1 and 0.9.2 sections move from TASKS.md to HISTORY.md, as AGENTS.md asks after each release.
+**Output:** the 0.9.0, 0.9.1 and 0.9.2 sections of build/TASKS.md moved verbatim to the end of build/HISTORY.md, in release order; TASKS.md keeps the release table, the status notes and the open releases; any link in docs or decisions that points at those sections still resolves; release.mjs and pr-format still find every done task (they read both files).
+**Acceptance:** `git diff` shows the sections removed from TASKS.md and added to HISTORY.md with identical text; `npm run test:scripts` passes; `node scripts/release.mjs 0.10.0 --dry-run` lists no 0.9.x task; the leak check passes.
 
 ## 0.11.0 — The brain tidies itself (decisions 0052, 0061, 0064)
 
