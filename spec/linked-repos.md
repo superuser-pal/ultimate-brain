@@ -328,7 +328,7 @@ secrets/
 
 ## 8. Offering `brain link` the other way
 
-After a link (or `repo new`), the skill asks once: "Let this repo read the brain too? It adds `.brain`, a block in AGENTS.md and the brain-query skill there." On yes, it runs `brain link <path> --repo-name <name> --area <area>` (with `--project <project>` when the kit has one). This is the existing §5.12 command, a separate write with its own yes; it doesn't pass through the kit. On no, nothing is written, and it isn't asked again for this link. The answer goes in the skill's report.
+After a link (or `repo new`), the skill asks once: "Let this repo read the brain too? It adds `.brain`, a block in AGENTS.md, and the brain-query, brain-workflow and brain-workflow-adopt skills there." (The skills are those the brain's snapshot links, skills-delivery §9.7; before 0.9.2 the offer names brain-query only.) On yes, it runs `brain link <path> --repo-name <name> --area <area>` (with `--project <project>` when the kit has one). This is the existing §5.12 command, a separate write with its own yes; it doesn't pass through the kit. On no, nothing is written, and it isn't asked again for this link. The answer goes in the skill's report.
 
 ## 9. Unlinking
 
