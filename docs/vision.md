@@ -63,6 +63,8 @@ After 0.8.0: **0.9.0** separates shared skill source and adds explicitly connect
 
 **Feature work ends at 0.14.0.** Productisation, translation and the acquisition/onboarding funnel then lead to **1.0.0**. Release candidates, or an explicitly scoped preparation version if needed, address launch readiness. Issues and dogfood still produce fixes; they do not silently expand feature scope. Each human-led development session for 0.9.0 onward starts with a grilling scope review and confirmed shared understanding. Hermes as a native operator ([0060](../decisions/0060-hermes-operator-and-learning.md)) comes after 1.0. See [0061](../decisions/0061-roadmap-and-launch-boundary.md), [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md) and [build/TASKS.md](../build/TASKS.md).
 
+**0.12.0's opening grill is locked in [0074](../decisions/0074-scoped-memory-handovers-and-bounded-recall.md):** approved durable memories, work handovers in existing repo/task/session records, a generated opening context pack initially capped at 800 tokens, targeted recall and reviewed promotion. Prefer small TypeScript retrieval adaptations over another memory runtime; keep the existing architecture and flows.
+
 ## Post-1.0 (deferred, not rejected)
 
 The [backlog](v2-ideas.md) distinguishes the committed milestones above from post-1.0 candidates: new email/Slack/Teams connectors, topic dossiers and person/client profiles, rich fact/relationship modelling, MCP access, OKF export/alignment, advanced retrieval infrastructure and sensitivity tiers, external worker execution, extra platforms/schedulers, multi-user/teams and hosting. None has a promised pre-launch version.
