@@ -148,15 +148,30 @@ function view(issue) {
   return { number: issue.number, title: issue.title, body: issue.body, state: issue.state ?? "open", labels: (issue.labels ?? []).map((name) => ({ name })), ...(issue.pull_request === undefined ? {} : { pull_request: issue.pull_request }) };
 }
 
-/** Writes a valid package snapshot at `<root>/.agents/skills` and the product's snapshot schema at `<root>/spec/schemas` (§2). */
+const PACKAGE_SKILL = "---\nname: brain-apply\ndescription: Synthetic fixture skill.\n---\n";
+const PACKAGE_HASH = createHash("sha256").update(PACKAGE_SKILL).digest("hex");
+/** The integrity of every package snapshot `writePackage` writes: one skill, the same bytes. */
+export const PACKAGE_INTEGRITY = `sha256-${createHash("sha256").update(`${PACKAGE_HASH}  brain-apply/SKILL.md\n`).digest("hex")}`;
+
+/** The notes lines a fork release ends with (§10.2), for a package snapshot of range `cli`. */
+export const releaseNotes = (cli, integrity = PACKAGE_INTEGRITY) => `Release notes.\n\nIntegrity: ${integrity}\nTarball-SHA256: ${"0".repeat(64)}\nCLI: ${cli}\n`;
+
+/**
+ * Writes a valid package snapshot at `<root>/.agents/skills` and the product's snapshot schema at `<root>/spec/schemas` (§2). A fork
+ * snapshot (`ultimate-brain-skills`) also gets the LICENSE and NOTICE.md a vendored release carries (§9.1).
+ */
 export function writePackage(root, { name = "ultimate-brain", version = "0.9.0", cli = ">=0.9.0 <0.10.0", commit } = {}) {
   const folder = join(root, ".agents", "skills", "brain-apply");
   mkdirSync(folder, { recursive: true });
-  const content = "---\nname: brain-apply\ndescription: Synthetic fixture skill.\n---\n";
+  const content = PACKAGE_SKILL;
   writeFileSync(join(folder, "SKILL.md"), content);
-  const hash = createHash("sha256").update(content).digest("hex");
-  const integrity = `sha256-${createHash("sha256").update(`${hash}  brain-apply/SKILL.md\n`).digest("hex")}`;
+  const hash = PACKAGE_HASH;
+  const integrity = PACKAGE_INTEGRITY;
   const fork = name === "ultimate-brain-skills";
+  if (fork) {
+    writeFileSync(join(root, ".agents", "skills", "LICENSE"), "MIT License\n");
+    writeFileSync(join(root, ".agents", "skills", "NOTICE.md"), "# Notice\n");
+  }
   const manifest = {
     format: 1, name, version, cli,
     source: fork ? { repository: `https://github.com/${FORK}`, commit } : { repository: "https://www.npmjs.com/package/ultimate-brain" },
