@@ -97,7 +97,7 @@ export const assistantFindingsCommand: Command = {
 
     const result = computeFindings({ snapshot, notes, config, dismissals: store.entries, scope, exclude, limit, numberFrom });
     const report = reportText(result, snapshot.as_of, scope);
-    const findings = result.findings.map(({ text: _text, subjectKeys: _keys, reach: _reach, ...finding }) => ({
+    const findings = result.findings.map((finding) => ({
       rank: finding.rank, key: finding.key, signal: finding.signal, category: finding.category, subject: finding.subject,
       project: finding.project, area: finding.area, evidence: finding.evidence, recommendations: finding.recommendations, status_offers: finding.status_offers,
     }));
