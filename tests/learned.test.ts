@@ -3,7 +3,8 @@ import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { parseFrontmatter } from "../src/lib/frontmatter.ts";
+import { parseFrontmatter, serializeNewFile } from "../src/lib/frontmatter.ts";
+import { bodyHash } from "../src/lib/proposals.ts";
 import { brain, fixtureCopy } from "./helpers.ts";
 
 // Concepts become learned Documents (decision 0071, spec/schema.md §4, spec/cli.md §5.15 step 5a).
@@ -250,4 +251,98 @@ Nested.
   assert.deepEqual(run.json.data.converted, [{ id: "con-4d5e6f7g", from: "knowledge/concepts/old/deeper/nested.md", to: "knowledge/references/nested.md" }]);
   assert.equal(await exists(join(dir, "knowledge/concepts/old")), false, "the emptied subfolders go");
   assert.ok(await exists(join(dir, "knowledge/concepts/kept/notes.txt")), "a folder still holding a file stays");
+});
+
+// Links to old concept notes inside proposals (CC-136, dogfood #220).
+const DECISION_ID = "dec-7k2m9q4x";
+const MARIA = "knowledge/people/maria-lopez.md";
+const TABLE = "knowledge/references/caching.md";
+
+async function proposal(dir: string, id: string, fields: Record<string, unknown>): Promise<string> {
+  const path = `_proposals/2026-12-08-${id}.md`;
+  const attributes = { id, type: "proposal", title: `Test ${id}`, created: "2026-12-08", updated: "2026-12-08", why: "w", source: BRIEF, status: "pending", ...fields };
+  await writeFile(join(dir, path), serializeNewFile(attributes, ""));
+  return path;
+}
+
+const attributesOf = async (dir: string, path: string) => parseFrontmatter(await readFile(join(dir, path), "utf8")).attributes;
+
+async function apply(dir: string, ids: string[]) {
+  const file = join(dir, "..", "decisions.json");
+  await writeFile(file, JSON.stringify({ decisions: ids.map((proposal) => ({ proposal, action: "approve", decided_at: "2026-12-09T08:00:00Z", decided_by: "notion" })) }));
+  return brain(["apply", "--brain", dir, "--now", NOW, "--json", "--input", file]);
+}
+
+test("brain upgrade rewrites the concept links inside every proposal, and the pending ones still apply", async (context) => {
+  const dir = await fixtureCopy(context);
+  await withConcepts(dir);
+  // The Caching table links a concept, so its body changes too: the update_body against it must not go stale.
+  const table = await readFile(join(dir, TABLE), "utf8");
+  await writeFile(join(dir, TABLE), `${table}\nSee the [caching idea](../concepts/caching.md).\n`);
+  const tableBody = parseFrontmatter(await readFile(join(dir, TABLE), "utf8")).body;
+
+  const addToNote = await proposal(dir, "prp-1a2b3c4d", { kind: "add_to_note", target: DECISION_ID, content: "Ships with the [deployment model](../concepts/deployment-model.md#flags).\n" });
+  const updateBody = await proposal(dir, "prp-2b3c4d5e", { kind: "update_body", target: "ref-4c5d6e7f", before_hash: bodyHash(tableBody), content: "| Page | TTL |\n\nPer the [caching idea](../concepts/caching.md).\n" });
+  const onConcept = await proposal(dir, "prp-3c4d5e6f", { kind: "add_to_note", target: "con-2a3b4c5d", content: "Also [caching](caching.md) and the [table](../references/caching.md).\n" });
+  const newItem = await proposal(dir, "prp-4d5e6f7g", { kind: "new_item", note: { type: "concept", title: "Edge rules", frontmatter: { summary: "Rules for the edge cache.", sources: [BRIEF] }, body: "Builds on [caching](caching.md).\n" } });
+  const applied = await proposal(dir, "prp-5e6f7g8h", { kind: "add_to_note", target: DECISION_ID, content: "Cached as in [caching](../concepts/caching.md).\n", status: "applied", decision: { action: "approve", decided_at: "2026-12-05T08:00:00Z", decided_by: "notion" } });
+
+  const run = await brain(["upgrade", "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  const actions = new Map<string, string>(run.json.data.files.map((file: { path: string; action: string }) => [file.path, file.action]));
+  for (const path of [addToNote, updateBody, onConcept, newItem, applied]) assert.equal(actions.get(path), "updated", path);
+  assert.deepEqual(run.json.warnings.filter((warning: { code: string }) => warning.code === "CONCEPT_LINK_UNRESOLVED"), []);
+
+  assert.equal((await attributesOf(dir, addToNote)).content, "Ships with the [deployment model](../references/deployment-model.md#flags).\n");
+  const body = await attributesOf(dir, updateBody);
+  assert.equal(body.content, "| Page | TTL |\n\nPer the [caching idea](caching-2.md).\n");
+  assert.equal(body.before_hash, bodyHash(parseFrontmatter(await readFile(join(dir, TABLE), "utf8")).body), "before_hash follows the rewritten body");
+  // Read from the concept's old folder, written for its new one: the moved sibling gets its new name; the table link still reaches its file.
+  assert.equal((await attributesOf(dir, onConcept)).content, "Also [caching](caching-2.md) and the [table](../references/caching.md).\n");
+  const item = (await attributesOf(dir, newItem)).note as { type: string; frontmatter: Record<string, unknown>; body: string };
+  assert.equal(item.type, "reference");
+  assert.equal(item.frontmatter.origin, "learned");
+  assert.equal(item.body, "Builds on [caching](caching-2.md).\n");
+  const record = await attributesOf(dir, applied);
+  assert.equal(record.content, "Cached as in [caching](../references/caching-2.md).\n", "an applied proposal is rewritten too");
+  assert.equal(record.status, "applied");
+
+  const lint = await brain(["lint", "--brain", dir, "--json"]);
+  assert.deepEqual(errors(lint), []);
+  const done = await apply(dir, ["prp-1a2b3c4d", "prp-2b3c4d5e", "prp-3c4d5e6f", "prp-4d5e6f7g"]);
+  assert.equal(done.code, 0, done.stdout);
+  for (const path of [addToNote, updateBody, onConcept, newItem]) assert.equal((await attributesOf(dir, path)).status, "applied", path);
+  assert.match(await readFile(join(dir, DECISION), "utf8"), /\[deployment model\]\(\.\.\/references\/deployment-model\.md#flags\)/);
+  assert.match(await readFile(join(dir, "knowledge/references/edge-rules.md"), "utf8"), /origin: learned[\s\S]*Builds on \[caching\]\(caching-2\.md\)/);
+  assert.deepEqual(errors(await brain(["lint", "--brain", dir, "--json"])), []);
+});
+
+test("brain upgrade again on a converted brain repairs the concept links it missed and changes nothing else", async (context) => {
+  const dir = await fixtureCopy(context);
+  await withConcepts(dir);
+  assert.equal((await brain(["upgrade", "--brain", dir, "--now", NOW, "--json"])).code, 0);
+
+  // As 0.9.1 left them: links to the old paths in a proposal's text, and a note an old skill wrote after the conversion.
+  const missed = await proposal(dir, "prp-6f7g8h9j", { kind: "add_to_note", target: DECISION_ID, status: "applied", decision: { action: "approve", decided_at: "2026-12-05T08:00:00Z", decided_by: "notion" },
+    content: "See [model](../concepts/deployment-model.md), [caching](../concepts/caching.md#ttl) and [gone](../concepts/gone.md).\n" });
+  const maria = await readFile(join(dir, MARIA), "utf8");
+  await writeFile(join(dir, MARIA), `${maria}\nKnows the [deployment model](../concepts/deployment-model.md).\n`);
+  const index = await readFile(join(dir, "index.md"), "utf8");
+
+  const run = await brain(["upgrade", "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  assert.deepEqual(run.json.data.converted, []);
+  const notes = run.json.data.files.filter((file: { path: string }) => /^(knowledge|_proposals|index\.md)/.test(file.path));
+  assert.deepEqual(notes, [{ path: missed, action: "updated" }, { path: MARIA, action: "updated" }].sort((a, b) => (a.path < b.path ? -1 : 1)));
+  assert.equal((await attributesOf(dir, missed)).content, "See [model](../references/deployment-model.md), [caching](../references/caching-2.md#ttl) and [gone](../concepts/gone.md).\n");
+  assert.match(await readFile(join(dir, MARIA), "utf8"), /Knows the \[deployment model\]\(\.\.\/references\/deployment-model\.md\)\./);
+  assert.equal(await readFile(join(dir, "index.md"), "utf8"), index, "index.md is not rebuilt when nothing is converted");
+  const unresolved = run.json.warnings.filter((warning: { code: string }) => warning.code === "CONCEPT_LINK_UNRESOLVED");
+  assert.equal(unresolved.length, 1);
+  assert.match(unresolved[0].message, new RegExp(`${missed.replace(/[.]/g, "\\.")}.*\\.\\./concepts/gone\\.md`));
+  assert.deepEqual(errors(await brain(["lint", "--brain", dir, "--json"])), []);
+
+  const again = await brain(["upgrade", "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(again.code, 0, again.stdout);
+  assert.deepEqual(again.json.data.files.filter((file: { path: string }) => /^(knowledge|_proposals|index\.md)/.test(file.path)), []);
 });

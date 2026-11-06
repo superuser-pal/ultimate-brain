@@ -110,6 +110,9 @@ export const upgradeCommand: Command = {
       await assertPlainPath(root, change.path);
       changes.push(change);
     }
+    for (const { path, links } of concepts.unresolved) {
+      warnings.push({ code: "CONCEPT_LINK_UNRESOLVED", message: `${path}: ${links.join(", ")} ${links.length === 1 ? "points" : "point"} at a concept note that no longer exists, and no learned Document has its file name. Fix ${links.length === 1 ? "it" : "them"} by hand.` });
+    }
 
     // Skills (decisions 0029, 0059): the package snapshot replaces the pinned one (spec/skills-delivery.md §6.3). Its refusals are
     // decided here and raised after the BRAIN_DIRTY check, still before any write.
