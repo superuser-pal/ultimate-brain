@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test, type TestContext } from "node:test";
@@ -579,6 +579,163 @@ test("repo refresh: adding a never-read path does not ask for a re-ingest", asyn
   assert.deepEqual(result.json.data.added_patterns, []);
   assert.deepEqual(result.json.data.added_never_read, ["docs/clients/**"]);
   assert.equal(result.json.data.placement_changed, false);
+});
+
+/** A legacy link (`repo add --pattern`) ingested up to HEAD, its repo holding `files`. */
+async function legacyLinked(context: TestContext, files: Record<string, string> = {}) {
+  const dir = await fixtureCopy(context);
+  const repo = await tempRepo(context);
+  const head = await repo.commit("2026-11-01T10:00:00Z", { ...BASE_FILES, ...files });
+  assert.equal((await run(dir, ["repo", "add", "acme-api", "--path", repo.root, "--area", AREA, "--pattern", "decisions/**"])).code, 0);
+  assert.equal((await run(dir, ["repo", "record", "acme-api", "--commit", head])).code, 0);
+  return { dir, repo, head };
+}
+
+/** Move a test repo to a new temporary folder (cleaned up after the test); returns the new path. */
+async function moveRepo(context: TestContext, root: string): Promise<string> {
+  const parent = await mkdtemp(join(tmpdir(), "brain-moved-"));
+  context.after(() => rm(parent, { recursive: true, force: true }));
+  const target = join(parent, "acme-api");
+  await rename(root, target);
+  return realpath(target);
+}
+
+test("repo refresh: a legacy entry adopts the kit written in its repo, keeps commit, and the next repo changes lists nothing (CC-118)", async (context) => {
+  const kit = makeKit({ knowledge: { patterns: ["decisions/**", "docs/**"], never_read: ["secrets/**"] } });
+  const { dir, repo, head } = await legacyLinked(context, { "brain-kit.json": canon(kit) });
+  const expected = {
+    name: "acme-api", changed: true, placement_changed: true, added_patterns: ["docs/**"], removed_patterns: [], added_never_read: ["secrets/**"], removed_never_read: [], reingest: true,
+  };
+  const before = await readFile(join(dir, "brain.json"), "utf8");
+  const dry = await run(dir, ["repo", "refresh", "acme-api", "--dry-run"]);
+  assert.equal(dry.code, 0, dry.stdout);
+  assert.deepEqual(dry.json.data, expected);
+  assert.equal(await readFile(join(dir, "brain.json"), "utf8"), before, "dry run writes nothing");
+
+  const result = await run(dir, ["repo", "refresh", "acme-api"]);
+  assert.equal(result.code, 0, result.stdout);
+  assert.deepEqual(result.json.data, expected);
+  assert.deepEqual((await readConfig(dir)).repos, [{
+    name: "acme-api", path: repo.root, area: AREA, patterns: ["decisions/**", "docs/**"], never_read: ["secrets/**"], project: PROJECT, commit: head, kit: { sha256: hash(canon(kit)) },
+  }]);
+  assert.ok((await logOf(dir)).includes(`repo-refresh - "acme-api" sha=${sha(canon(kit)).slice(0, 12)}`));
+  const changes = await run(dir, ["repo", "changes", "acme-api"]);
+  assert.equal(changes.code, 0, changes.stdout);
+  assert.deepEqual([changes.json.data.from, changedPaths(changes), changes.json.data.deleted], [head, [], []]);
+  assert.equal((await run(dir, ["repo", "refresh", "acme-api"])).json.data.changed, false, "a second refresh finds nothing to do");
+  assert.ok(!codes((await run(dir, ["repo", "health", "acme-api"])).json.data.repos[0].checks).includes("NO_KIT"));
+});
+
+test("repo refresh: a legacy entry's kit must carry its name (KIT_INVALID at /name), and nothing is written", async (context) => {
+  const { dir } = await legacyLinked(context, { "brain-kit.json": canon(makeKit({ name: "other-api" })) });
+  const before = await readFile(join(dir, "brain.json"), "utf8");
+  const result = await run(dir, ["repo", "refresh", "acme-api"]);
+  assert.equal(result.code, 4);
+  assert.equal(result.json.error.code, "KIT_INVALID");
+  assert.ok(result.json.error.details.some((problem: { pointer: string }) => problem.pointer === "/name"));
+  assert.equal(await readFile(join(dir, "brain.json"), "utf8"), before);
+});
+
+test("repo refresh --path: a moved kit-linked repo takes its new path, keeps commit and kit, and the next repo changes lists nothing (CC-118)", async (context) => {
+  const link = await linked(context);
+  assert.equal((await run(link.dir, ["repo", "record", "acme-api", "--commit", link.head])).code, 0);
+  const moved = await moveRepo(context, link.repo.root);
+  assert.deepEqual(codes((await healthOf(link)).checks), ["PATH_MISSING"]);
+
+  const expected = {
+    name: "acme-api", changed: true, placement_changed: false, added_patterns: [], removed_patterns: [], added_never_read: [], removed_never_read: [], reingest: false,
+  };
+  const before = await readFile(join(link.dir, "brain.json"), "utf8");
+  const dry = await run(link.dir, ["repo", "refresh", "acme-api", "--path", moved, "--dry-run"]);
+  assert.equal(dry.code, 0, dry.stdout);
+  assert.deepEqual(dry.json.data, expected);
+  assert.equal(await readFile(join(link.dir, "brain.json"), "utf8"), before, "dry run writes nothing");
+
+  const result = await run(link.dir, ["repo", "refresh", "acme-api", "--path", moved]);
+  assert.equal(result.code, 0, result.stdout);
+  assert.deepEqual(result.json.data, expected);
+  const entry = (await readConfig(link.dir)).repos[0];
+  assert.deepEqual(entry, { name: "acme-api", path: moved, area: AREA, patterns: ["decisions/**"], never_read: [".env*", "secrets/**"], project: PROJECT, commit: link.head, kit: { sha256: link.hash } });
+  assert.ok((await logOf(link.dir)).includes(`repo-refresh - "acme-api" sha=${link.hash.slice(7, 19)} path=${moved}`));
+  const changes = await run(link.dir, ["repo", "changes", "acme-api"]);
+  assert.deepEqual([changes.json.data.from, changedPaths(changes)], [link.head, []]);
+  assert.ok(!codes((await healthOf(link)).checks).includes("PATH_MISSING"));
+  assert.equal((await run(link.dir, ["repo", "refresh", "acme-api", "--path", moved])).json.data.changed, false, "the same path again changes nothing");
+});
+
+test("repo refresh --path: a moved legacy repo with no kit takes its new path and stays legacy", async (context) => {
+  const { dir, repo, head } = await legacyLinked(context);
+  const moved = await moveRepo(context, repo.root);
+  const result = await run(dir, ["repo", "refresh", "acme-api", "--path", moved]);
+  assert.equal(result.code, 0, result.stdout);
+  assert.deepEqual(result.json.data, {
+    name: "acme-api", changed: true, placement_changed: false, added_patterns: [], removed_patterns: [], added_never_read: [], removed_never_read: [], reingest: false,
+  });
+  assert.deepEqual((await readConfig(dir)).repos, [{ name: "acme-api", path: moved, area: AREA, patterns: ["decisions/**"], commit: head }]);
+  const log = await logOf(dir);
+  assert.ok(log.includes(`repo-refresh - "acme-api" path=${moved}`));
+  assert.ok(!log.includes(`repo-refresh - "acme-api" sha=`));
+  assert.deepEqual(changedPaths(await run(dir, ["repo", "changes", "acme-api"])), []);
+});
+
+test("repo refresh --path: a moved legacy repo with a kit written takes both", async (context) => {
+  const { dir, repo, head } = await legacyLinked(context, { "brain-kit.json": canon(makeKit()) });
+  const moved = await moveRepo(context, repo.root);
+  const result = await run(dir, ["repo", "refresh", "acme-api", "--path", moved]);
+  assert.equal(result.code, 0, result.stdout);
+  const entry = (await readConfig(dir)).repos[0];
+  assert.deepEqual([entry.path, entry.commit, entry.kit], [moved, head, { sha256: hash(canon(makeKit())) }]);
+});
+
+test("repo refresh --path: a repo without the recorded commit is REPO_COMMIT_UNKNOWN, and nothing is written", async (context) => {
+  const link = await linked(context);
+  assert.equal((await run(link.dir, ["repo", "record", "acme-api", "--commit", link.head])).code, 0);
+  const other = await tempRepo(context);
+  await other.commit("2026-11-02T10:00:00Z", { ...BASE_FILES, "brain-kit.json": link.text });
+  const before = await readFile(join(link.dir, "brain.json"), "utf8");
+  const result = await run(link.dir, ["repo", "refresh", "acme-api", "--path", other.root]);
+  assert.equal(result.code, 4);
+  assert.equal(result.json.error.code, "REPO_COMMIT_UNKNOWN");
+  assert.equal(await readFile(join(link.dir, "brain.json"), "utf8"), before);
+});
+
+test("repo refresh --path: the recorded commit must be an ancestor of the new HEAD", async (context) => {
+  const link = await linked(context);
+  const later = await link.repo.commit("2026-11-02T10:00:00Z", { "decisions/0002-two.md": "# Two\n" });
+  assert.equal((await run(link.dir, ["repo", "record", "acme-api", "--commit", later])).code, 0);
+  await link.repo.git("reset", "-q", "--hard", link.head);
+  const result = await run(link.dir, ["repo", "refresh", "acme-api", "--path", link.repo.root]);
+  assert.equal(result.json.error?.code, "REPO_COMMIT_UNKNOWN");
+});
+
+test("repo refresh --path: a relative path, a folder that is not a repo, the brain, and a kit-linked repo with no kit there are refused", async (context) => {
+  const link = await linked(context);
+  const before = await readFile(join(link.dir, "brain.json"), "utf8");
+  const plain = await mkdtemp(join(tmpdir(), "brain-plain-"));
+  context.after(() => rm(plain, { recursive: true, force: true }));
+  const clone = join(await mkdtemp(join(tmpdir(), "brain-clone-")), "acme-api");
+  context.after(() => rm(dirname(clone), { recursive: true, force: true }));
+  await exec("git", ["clone", "-q", link.repo.root, clone]);
+  await rm(join(clone, "brain-kit.json"));
+  await exec("git", ["-C", link.dir, "init", "-q"]);
+  const cases: [string, string][] = [["relative/acme-api", "INPUT_INVALID"], [plain, "REPO_NOT_FOUND"], [link.dir, "REPO_IS_BRAIN"], [clone, "KIT_MISSING"]];
+  for (const [path, code] of cases) {
+    const result = await run(link.dir, ["repo", "refresh", "acme-api", "--path", path]);
+    assert.equal(result.json.error?.code, code, path);
+    assert.equal(result.code, 4, path);
+  }
+  assert.equal(await readFile(join(link.dir, "brain.json"), "utf8"), before);
+});
+
+test("repo refresh --path: a clone of the same repo elsewhere is accepted with commit kept", async (context) => {
+  const link = await linked(context);
+  assert.equal((await run(link.dir, ["repo", "record", "acme-api", "--commit", link.head])).code, 0);
+  const clone = join(await mkdtemp(join(tmpdir(), "brain-clone-")), "acme-api");
+  context.after(() => rm(dirname(clone), { recursive: true, force: true }));
+  await exec("git", ["clone", "-q", link.repo.root, clone]);
+  const result = await run(link.dir, ["repo", "refresh", "acme-api", "--path", clone]);
+  assert.equal(result.code, 0, result.stdout);
+  assert.deepEqual([(await readConfig(link.dir)).repos[0].path, (await readConfig(link.dir)).repos[0].commit], [clone, link.head]);
 });
 
 // ---- repo show -------------------------------------------------------------------------------------------------
