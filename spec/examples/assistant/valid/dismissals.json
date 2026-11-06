@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "dismissals": [
+    { "key": "area_no_domain:area-6p3r8t2w", "reason": "a personal area, no Domain needed",
+      "dismissed_at": "2026-11-06T10:22:00Z", "until": "2026-12-06T10:22:00Z" },
+    { "key": "project_duplicate:prj-4k7m2q9z+prj-9x4t1b7e", "reason": "",
+      "dismissed_at": "2026-11-06T10:23:00Z", "until": "2026-12-06T10:23:00Z" },
+    { "key": "task_no_project:notion:4e5f6a7b-8c9d-4e0f-a1b2-c3d4e5f6a7b8", "reason": "an area task",
+      "dismissed_at": "2026-11-06T10:24:00Z", "until": "2026-12-06T10:24:00Z" }
+  ]
+}
