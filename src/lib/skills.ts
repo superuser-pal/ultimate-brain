@@ -13,6 +13,9 @@ export function setInstalledProductRootForTests(root: string | undefined, source
   productRootOverride = root === undefined ? undefined : { root, source };
 }
 
+/** The Ultimate Assistant sub-agent: a product-owned file, written whole from `templates/brain/` (spec/assistant.md §10, cli.md §5.15 step 2a). */
+export const SUB_AGENT = ".claude/agents/ultimate-assistant.md";
+
 /** Resolve the package containing the running module, never a package found on PATH. */
 export function installedProduct(): InstalledProduct {
   let folder = productRootOverride?.root ?? resolve(dirname(fileURLToPath(import.meta.url)), "../..");
