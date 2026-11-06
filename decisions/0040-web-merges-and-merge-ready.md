@@ -2,6 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-10-20
+**Amended by:** [0073](0073-main-requires-merge-ready.md) (a ruleset on `main` requires `merge-ready`; the repo admin bypasses it for the release commit and, with a PR comment, when no reviewer can run)
 
 Amends 0038 ("Merge, without paid branch protection").
 
