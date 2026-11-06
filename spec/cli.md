@@ -763,7 +763,7 @@ The skill rules (`product-file` for skills, `skills-*`, `skill-*`) have `line` 1
 | `unknown-lineage` | warning | a knowledge note's `sources` names a source or meeting whose input cannot be determined (no `source_key`, `extract_of` or meeting `source`): its evidence is never live while any suppression is active (0055, capture-and-review §5.1) |
 | `report-source-excluded` | warning | a line of a report links a note that a suppression restricts (whole, or some of its lines, timeline entries or facts): flagged "(source excluded)" at that line, never edited by the brain; the next refresh is written from `brain query`, which leaves the restricted claims out (capture-and-review §5.1) |
 | `workflow-record` | error | a record under `_workflows/` that isn't readable JSON or fails its `spec/schemas/workflow.schema.json` definition, a record whose id isn't its file name, or an item's `depends_on`, an artifact's `item`, an operation's `target` or an adoption map entry naming a record that doesn't exist (connected-workflows.md §12) |
-| `assistant-dismissals` | error | `_assistant/dismissals.json` (when present) isn't readable JSON, fails `$defs/dismissals` of `spec/schemas/assistant.schema.json`, repeats a `key`, or has a key whose subject is a brain id naming no note ([assistant.md](assistant.md) §8); `assistant findings` refuses with `DISMISSALS_UNREADABLE`. One issue per problem, at that path, line 1 |
+| `assistant-dismissals` | error | `_assistant/dismissals.json` (when present) isn't readable JSON, fails `$defs/dismissals` of `spec/schemas/assistant.schema.json`, or repeats a `key` ([assistant.md](assistant.md) §8); `assistant findings` refuses with `DISMISSALS_UNREADABLE`. One issue per problem, at that path, line 1 |
 | `suppression-record` | error | a file of `_suppressions/` (or the folder) cannot be read or is malformed (0055, capture-and-review §5.3); retrieval commands refuse with `SUPPRESSIONS_UNREADABLE` |
 | `proposal-items` | error | a `review_notes` `items` list that does not give every note, link and change exactly one immutable `it-` id, an item that refers to something the proposal does not hold, or an `item_decisions` entry that names no item or repeats one (0055, capture-and-review §7.2) |
 | `extract-passages` | error | an extract source's `passages` does not list the `<!-- passage ¶n -->` paragraphs of its body in order, or a paragraph no longer matches its 8-hex hash (0055, capture-and-review §4.5) |
@@ -1959,13 +1959,13 @@ Errors: `UNKNOWN_ID`, `INPUT_INVALID`.
 ### 5.31 `brain assistant` (0064, 0072, [assistant.md](assistant.md))
 
 ```text
-brain assistant findings --input <file|-> [--scope <id>] [--limit <n>] [--offset <n>]
+brain assistant findings --input <file|-> [--scope <id>] [--limit <n>] [--exclude <file>] [--number-from <n>]
 brain assistant dismiss --input <file|->
 ```
 
 The deterministic half of Ultimate Assistant: the skill reads Notion and linked repos and talks with the user; these commands compute the findings and keep the skipped ones. The signals, thresholds, ranking and report text are normative in assistant.md §3 and §4; this section holds the commands.
 
-**`assistant findings`** writes nothing. Input: the assistant snapshot (assistant.md §2.1, `$defs/snapshot` of `spec/schemas/assistant.schema.json`; `INPUT_INVALID` with pointers when it fails). It reads the brain (notes, `brain.json` modules and Tasks mapping, `repos`) and `_assistant/dismissals.json` (`DISMISSALS_UNREADABLE` when damaged; missing means none). `--scope` names an Area, Domain or Project (`UNKNOWN_ID`; another type is `INPUT_INVALID`); `--limit` is an integer of at least 1 (default 10) and `--offset` of at least 0 (default 0), else `USAGE`. `as_of` is the snapshot's, not `--now`.
+**`assistant findings`** writes nothing. Input: the assistant snapshot (assistant.md §2.1, `$defs/snapshot` of `spec/schemas/assistant.schema.json`; `INPUT_INVALID` with pointers when it fails). It reads the brain (notes, `brain.json` modules and Tasks mapping, `repos`) and `_assistant/dismissals.json` (`DISMISSALS_UNREADABLE` when damaged; missing means none). `--scope` names an Area, Domain or Project (`UNKNOWN_ID`; another type is `INPUT_INVALID`); `--limit` and `--number-from` are integers of at least 1 (defaults 10 and 1), else `USAGE`. `--exclude` is a JSON file holding an array of finding keys (`INPUT_UNREADABLE`, `INPUT_INVALID`): those findings are left out after the dismissals and counted in `excluded` (assistant.md §3.5). `as_of` is the snapshot's, not `--now`.
 
 ```json
 { "data": {
@@ -1976,7 +1976,7 @@ The deterministic half of Ultimate Assistant: the skill reads Notion and linked 
     "statuses_as_of": null,
     "skipped_signals": [ { "signal": "area_no_domain", "reason": "MODULE_OFF" } ],
     "repos_failed": [],
-    "total": 24, "offset": 0, "dismissed": 3,
+    "total": 24, "dismissed": 3, "excluded": 0, "number_from": 1,
     "findings": [
       { "rank": 1, "key": "task_overdue:notion:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e", "signal": "task_overdue", "category": "overdue",
         "subject": { "kind": "task", "id": null, "page_id": "2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e", "title": "Send the revised quote",
@@ -1998,12 +1998,12 @@ The deterministic half of Ultimate Assistant: the skill reads Notion and linked 
 - `subject`: `kind` `task`, `project`, `area` or `project_pair`. A task has `id: null`, `page_id`, `title` and `current` `{ status, due, projects, areas }` (the snapshot's values); a project `id`, `page_id` (its `notion`, or `null`), `title` and `current` `{ status, archived, area }`; an Area `id`, `page_id`, `title` and `current` `{ archived, domain }`; a pair `ids` `[duplicate, survivor]`, `titles` in the same order and no `current`.
 - `project` and `area` place the finding: for a task, its first project in the brain (by title) and that project's `area`, else `null` and the first brain Area whose `notion` is in its `areas`; for a project, itself and its `area`; for an Area, `null` and itself; for a pair, the survivor and its `area`. The skill copies `area` into the proposal it writes (§5.6), so a Review row lands on the right area home.
 - `recommendations` and `status_offers` follow assistant.md §3.4; `value` holds brain ids for notes (`prj-`, `area-`, `dom-`), `{ "target", "merge_into" }` for `merge_projects`, `{ "project" }` for `add_task`, `true` for `archive_area`; `label` is the report's wording (§4.1). The skill turns a note id into the page id a `notion_change` needs through that note's `notion`.
-- `findings` holds the page: `--limit` findings from `--offset`, ranked (assistant.md §3.5); `total` counts every finding after the scope and the dismissals, `dismissed` those the dismissals removed.
+- `findings` holds the page: the first `--limit` findings, ranked (assistant.md §3.5); `total` counts every finding after the scope, the dismissals and `--exclude`, `dismissed` those the dismissals removed, `excluded` those `--exclude` removed.
 - `report` is the text of assistant.md §4.1 for this page, ending with one newline.
 
 Exit 0, findings or not. Errors: `INPUT_UNREADABLE`, `INPUT_INVALID`, `UNKNOWN_ID`, `DISMISSALS_UNREADABLE`, `BRAIN_CONFIG_INVALID`.
 
-**`assistant dismiss`** keeps the skipped findings (assistant.md §8). Input: `{ "dismissals": [ { "key": "<finding key>", "reason": "<the user's words, may be empty>" } | { "key": "<finding key>", "remove": true } ] }`, at least one item, each key once (`INPUT_INVALID` otherwise). A key is `<signal>:<subject key>` with a signal of assistant.md §3.3 and the subject key its signal takes: `notion:<dashed page id>` for a task signal, a `prj-` id for a project signal, `<prj id>+<prj id>` (two different ids, sorted) for `project_duplicate`, an `area-` id for an Area signal (`INPUT_INVALID`); a brain id must name a note (`UNKNOWN_ID`). Checks run before any write; one failing item writes nothing.
+**`assistant dismiss`** keeps the skipped findings (assistant.md §8). Input: `{ "dismissals": [ { "key": "<finding key>", "reason": "<the user's words, may be empty>" } | { "key": "<finding key>", "remove": true } ] }`, at least one item, each key once (`INPUT_INVALID` otherwise). A key is `<signal>:<subject key>` with a signal of assistant.md §3.3 and the subject key its signal takes: `notion:<dashed page id>` for a task signal, a `prj-` id for a project signal, `<prj id>+<prj id>` (two different ids, sorted) for `project_duplicate`, an `area-` id for an Area signal (`INPUT_INVALID`); on an item that adds or replaces, a brain id must name a note (`UNKNOWN_ID`); a `remove` item isn't checked against the notes. Checks run before any write; one failing item writes nothing.
 
 It reads `_assistant/dismissals.json` (`DISMISSALS_UNREADABLE` when it exists and is damaged), drops every entry whose `until` is at or before now (`--now`), then per item: a new key is `added`, an existing one `replaced` (new `reason`, `dismissed_at` and `until`), a `remove` deletes the entry (`removed`, or `unchanged` when there is none). `dismissed_at` is now and `until` now plus 30 days, both with seconds and `Z`. It writes the file atomically (creating `_assistant/`) in the format of assistant.md §8, or deletes it when no entry is left. Logs `assistant-dismiss - key=<key> result=<result>` per item.
 
