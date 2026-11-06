@@ -361,7 +361,7 @@ After 0.9.1. Scope checked with the user on 2026-11-05 (CC-133): CC-105 as decis
 
 An assistant you ask, from the CLI, about the structure of your work: Areas, Domains, Projects and Tasks. It finds what's stalled, misplaced or missing, recommends, turns your thinking into captures, tasks and projects, and makes changes through Review rows, or directly after your yes in a live chat. On demand; the weekly scheduled run is CC-111 in 0.13.0. Starts after 0.9.0 is released, with its opening scope grill. The grill ran on 2026-11-05 (CC-137): decision [0072](../decisions/0072-ultimate-assistant.md) names it **Ultimate Assistant**, shows a report first and applies what you say yes to, with Review rows only when you ask.
 
-### CC-108 · Contracts for the brain assistant (decision 0064) · `todo`
+### CC-108 · Contracts for the brain assistant (decision 0064) · `in progress`
 **Release:** 0.10.0
 **Changelog:** contracts for the brain assistant: what it checks in Areas, Domains, Projects and Tasks, how each finding becomes a Review row, and when it may change something directly.
 **Output:** per decision 0072's six answers (the opening grill, 2026-11-05): a spec for the checks (signals and thresholds: stalled and overdue tasks, tasks without a project, active projects with no recent work or no next step, finished but open projects, misplaced or duplicate projects, empty Areas, Areas without a Domain), the proposal each finding makes (including how a Review row changes a Notion-owned field such as a project's Status), the direct-apply rule in a live chat, reading Notion live and linked repos' rollups, the report, the sub-agent file, any CLI helper (`brain` commands the skill needs).
