@@ -89,3 +89,57 @@ test("an unpinned brain links the package snapshot with SKILLS_UNPINNED, and dup
   const refused = await run(["link", repo, "--brain", brain, "--json"], { product: await productRoot(context, broken, "0.9.0"), home });
   assert.equal(refused.json.error.code, "SKILLS_SNAPSHOT_INVALID");
 });
+
+/** A fork snapshot like A whose `linked` skills (brain-workflow and brain-workflow-adopt added as needed) carry `linked_repo` (§9.7). */
+async function workflowSnapshot(context: Parameters<typeof temp>[0], linked: string[]): Promise<string> {
+  const folder = await snapshotCopy(context, "a");
+  for (const name of ["brain-workflow", "brain-workflow-adopt"]) {
+    await mkdir(join(folder, name), { recursive: true });
+    await writeFile(join(folder, name, "SKILL.md"), `---\nname: ${name}\ndescription: a synthetic ${name}\n---\n# ${name}\n`);
+  }
+  await writeFile(join(folder, "snapshot.json"), serializeManifest(buildManifest(folder, { ...FORK_META("1.1.0"), targets: (name) => (linked.includes(name) ? ["brain", "linked_repo"] : ["brain"]) })));
+  return folder;
+}
+
+const BLOCK_START = "<!-- ultimate-brain:start -->\n## Ultimate Brain\n\nManaged by `brain link`; edits inside this block are overwritten.\n\nThis repo is linked to the user's second brain.\n\n"
+  + "The brain holds decisions, key facts, people and meeting history that this repo does not.\n\nConsult it before you:\n"
+  + "- make or revisit a decision about scope, architecture, vendors or the client;\n- answer why something was decided, who someone is, or a date, budget or owner;\n"
+  + "- rely on a fact about the client or project that this repo does not state.\n\n"
+  + "How: use the `brain-query` skill, or run `brain query --candidates \"<question>\" --json` and read the notes it returns. Cite the note paths. Say when a fact is `contested` or `superseded`.\n\n";
+const BLOCK_BEFORE = `${BLOCK_START}The brain is read-only from this repo. Never edit its files from here.\n<!-- ultimate-brain:end -->\n`;
+
+test("linking the workflow skills writes all three, lists them in .brain and adds the workflow lines to the block (skills-delivery §9.7)", async (context) => {
+  const home = await temp(context);
+  const product = await productRoot(context, await workflowSnapshot(context, ["brain-query", "brain-workflow", "brain-workflow-adopt"]), "0.9.2");
+  const brain = await initBrain(context, product, home);
+  const repo = await temp(context, "skills-repo-");
+  await writeFile(join(repo, ".brain"), `${JSON.stringify({ repo: "x", skills: { name: "ultimate-brain-skills", version: "1.0.0", integrity: `sha256-${"1".repeat(64)}`, names: ["brain-query"] } })}\n`);
+  const link = await run(["link", repo, "--brain", brain, "--json"], { product, home });
+  assert.equal(link.code, 0, link.stdout);
+  const names = ["brain-query", "brain-workflow", "brain-workflow-adopt"];
+  assert.deepEqual(link.json.data.skills.names, names);
+  assert.deepEqual(JSON.parse(await readFile(join(repo, ".brain"), "utf8")).skills.names, names);
+  for (const tree of [".agents/skills", ".claude/skills"]) assert.deepEqual((await readdir(join(repo, tree))).sort(), names);
+  assert.ok(link.json.data.files.some((file: { path: string; action: string }) => file.path === ".claude/skills/brain-workflow-adopt/SKILL.md" && file.action === "created"));
+  assert.equal(await readFile(join(repo, "AGENTS.md"), "utf8"), `${BLOCK_START}`
+    + "To track this repo's work, the standard way or connected to a Notion Project or Area, use the `brain-workflow` skill; to take over its existing plans and tasks, use `brain-workflow-adopt`.\n\n"
+    + "The brain is read-only from this repo. Never edit its files from here. A connected workflow's records change only through `brain workflow` commands.\n<!-- ultimate-brain:end -->\n");
+});
+
+test("the block's workflow lines follow the linked skills: brain-workflow alone, adopt alone, and A's brain-query only as before", async (context) => {
+  const home = await temp(context);
+  const cases: Array<[string[] | null, string]> = [
+    [["brain-query", "brain-workflow"], `${BLOCK_START}To track this repo's work, the standard way or connected to a Notion Project or Area, use the \`brain-workflow\` skill.\n\n`
+      + "The brain is read-only from this repo. Never edit its files from here. A connected workflow's records change only through `brain workflow` commands.\n<!-- ultimate-brain:end -->\n"],
+    [["brain-query", "brain-workflow-adopt"], BLOCK_BEFORE],
+    [null, BLOCK_BEFORE],
+  ];
+  for (const [linked, expected] of cases) {
+    const product = await productRoot(context, linked === null ? A : await workflowSnapshot(context, linked), "0.9.2");
+    const brain = await initBrain(context, product, home);
+    const repo = await temp(context, "skills-repo-");
+    const link = await run(["link", repo, "--brain", brain, "--json"], { product, home });
+    assert.equal(link.code, 0, link.stdout);
+    assert.equal(await readFile(join(repo, "AGENTS.md"), "utf8"), expected, String(linked));
+  }
+});
