@@ -1,5 +1,6 @@
 import { readJsonInput } from "../lib/input.ts";
 import { applyPlan, buildPlan, parsePlan, parseSnapshot, record, render, renderTasks, unpublishDrafts } from "../lib/sync.ts";
+import type { RenderItem } from "../lib/sync.ts";
 import type { Command } from "../lib/command.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { commitJournaled } from "../lib/journal.ts";
@@ -45,16 +46,31 @@ export const syncRenderCommand: Command = {
       for (const item of plan.report_fixes) if (!withheld.has(item.report)) withheld.set(item.report, "FIX_WAITING");
     }
     // A note whose Notion text is unresolved is never overwritten (cli §5.14.7, 0054): a pending proposal, an unaccepted draft, or accepted wording not yet imported.
-    if (plan !== undefined) for (const item of [...plan.wording_waiting, ...plan.wording_held, ...plan.accepted_wording]) if (!withheld.has(item.note)) withheld.set(item.note, "WORDING_PENDING");
+    // Only its body waits when every row naming it says the page is not accepted (#221); an accepted page gets no write at all, since any write would make the acceptance look stale.
+    const bodyOnly = new Set<string>();
+    if (plan !== undefined) {
+      const rows = [...plan.wording_waiting, ...plan.wording_held, ...plan.accepted_wording];
+      for (const item of rows) if (!withheld.has(item.note)) { withheld.set(item.note, "WORDING_PENDING"); bodyOnly.add(item.note); }
+      for (const item of rows) if (!("accepted" in item) || item.accepted !== false) bodyOnly.delete(item.note);
+    }
     // A Review row with edits or decisions in Notion is never rewritten (capture-and-review §7.10).
     if (plan !== undefined) for (const item of plan.review_pending) if (!withheld.has(item.proposal)) withheld.set(item.proposal, "REVIEW_PENDING");
     const skipped: Array<{ id: string; reason: string }> = [...data.skipped]; const items = data.items.filter((item) => {
       const reason = withheld.get(item.id) ?? (item.page_id !== null && conflictedPages.has(item.page_id) ? "ROW_CONFLICTED" : undefined);
-      if (reason === undefined) return true; skipped.push({ id: item.id, reason }); return false;
+      if (reason === undefined) return true; skipped.push({ id: item.id, reason });
+      if (!bodyOnly.has(item.id) || item.action !== "update") return false;
+      holdBody(item); return Object.keys(item.properties).some((name) => name !== "Last Synced");
     });
     return { data: { items, errors: data.errors, skipped }, warnings: data.warnings, exitCode: data.errors.length > 0 ? 1 : 0, human: `${items.length} payloads\n` };
   },
 };
+
+/** A held note's update without its body (cli §5.14.7, #221): no body, no Refresh asked, and the body baselines in S left as they were. */
+function holdBody(item: RenderItem): void {
+  item.body = null; item.sections = null;
+  delete item.properties["Refresh asked"];
+  delete item.published["@content"]; delete item.published["@git_body"];
+}
 
 export const syncTasksCommand: Command = {
   name: "sync tasks", usage: "brain sync tasks (--meeting <mtg-id> | --source <src-id>) --input <file|-> [--json]", summary: "Render action-item task payloads for a meeting or source.", options: { meeting: "string", source: "string", input: "string" }, maxPositionals: 0, needsBrain: true,
