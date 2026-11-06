@@ -68,7 +68,7 @@ An assistant you ask, from the CLI, about the structure of your work: Areas, Dom
 **Output:** per decision 0072's six answers (the opening grill, 2026-11-05): a spec for the checks (signals and thresholds: stalled and overdue tasks, tasks without a project, active projects with no recent work or no next step, finished but open projects, misplaced or duplicate projects, empty Areas, Areas without a Domain), the proposal each finding makes (including how a Review row changes a Notion-owned field such as a project's Status), the direct-apply rule in a live chat, reading Notion live and linked repos' rollups, the report, the sub-agent file, any CLI helper (`brain` commands the skill needs).
 **Acceptance:** a context-free Sonnet sub-agent reading only the contracts lists no question it would need answered to build CC-109; schema examples validate for each new proposal shape.
 
-### CC-142 · Split CC-109 into four parallel tasks along spec/assistant.md §12 · `in progress`
+### CC-142 · Split CC-109 into four parallel tasks along spec/assistant.md §12 · `review`
 **Release:** 0.10.0
 **Changelog:** development only: CC-109's build is split into CC-143 (findings and skips in the CLI), CC-144 (Notion-owned changes and field moves as proposals), CC-145 (the sub-agent, templates and the Review migration), with CC-109 keeping the skill, its fork release and the blind run.
 **Output:** spec/assistant.md §12 (merged in CC-108, #234) split along its seams, so four agents can build at once: CC-143, CC-144 and CC-145 start from `main` in parallel; CC-109 writes the skill in the fork alongside them and vendors and blind-runs it once the three are on `main`. This file only: the four rows.
