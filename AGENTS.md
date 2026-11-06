@@ -47,7 +47,7 @@ Orca may launch and watch the agents; the rules above still decide branches, rol
 | `src/` | TypeScript CLI (`brain`) | Claude Code |
 | `tests/` | CLI tests and fixtures | Claude Code |
 | `templates/brain/` | Skeleton for a new user brain | Claude Code |
-| `skills/` | Agent skills (one source for Claude Code and Codex) | Claude Code |
+| `.agents/skills/` | Vendored snapshot of the ultimate-brain-skills fork; never edited here (skills-delivery §9) | the fork, through fork PRs (§9.5) |
 | `notion/prompts/` | Notion AI prompts generated from the space design | Claude Code |
 | `build/TASKS.md` | Build plan and status of open work | Claude Code |
 | `build/HISTORY.md` | Done releases, moved from TASKS.md | Claude Code |
@@ -59,3 +59,4 @@ Orca may launch and watch the agents; the rules above still decide branches, rol
 - Standard relative Markdown links; no `[[wikilinks]]` (0002). Note IDs like `dec-7k2m9q4x` (0017).
 - Test fixtures are synthetic; never use real personal or client data.
 - Small, reviewable changes. Never bulk-rewrite existing files.
+- Skills are written in the fork's `brain/` and reach this repo as a released snapshot (spec/skills-delivery.md §9.5).

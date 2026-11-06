@@ -3,7 +3,8 @@ import { chmod, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { git, initBrain, productRoot, run, SNAPSHOTS, snapshotCopy, temp } from "./skills-fixtures.ts";
+import { buildManifest, serializeManifest } from "../src/lib/skills-snapshot.ts";
+import { FORK_META, git, initBrain, productRoot, run, SNAPSHOTS, snapshotCopy, temp } from "./skills-fixtures.ts";
 
 // spec/skills-delivery.md §6.3 and §8; §12.1 tests 5 and 8.
 const A = join(SNAPSHOTS, "a");
@@ -189,4 +190,38 @@ test("rollback: revert the upgrade commit and run a CLI in A's range: pinned, li
   const again = await run(["upgrade", "--brain", brain, "--now", NOW, "--json"], { product: await productRoot(context, B, "0.9.1"), home });
   assert.equal(again.code, 0, again.stdout);
   assert.equal((await lockOf(brain)).snapshot.version, "1.1.0");
+});
+
+test("a brain pinned to a phase A snapshot upgrades to the fork's with the same skills: only differing files, nothing retired (skills-delivery §9.9)", async (context) => {
+  const home = await temp(context);
+  const bundled = await snapshotCopy(context, "a", (manifest) => {
+    manifest.name = "ultimate-brain"; manifest.version = "0.9.1"; manifest.cli = ">=0.9.1 <0.10.0"; manifest.source = { repository: "https://www.npmjs.com/package/ultimate-brain" }; manifest.upstream = null;
+  });
+  const brain = await initBrain(context, await productRoot(context, bundled, "0.9.1"), home);
+  const fork = await snapshotCopy(context, "a", (manifest) => { manifest.version = "1.1.0"; manifest.cli = ">=0.9.2-0 <0.10.0"; });
+  await writeFile(join(fork, "brain-apply/SKILL.md"), "---\nname: brain-apply\ndescription: the fork's copy\n---\n# Apply\n");
+  await writeFile(join(fork, "snapshot.json"), serializeManifest(buildManifest(fork, { ...FORK_META("1.1.0"), cli: ">=0.9.2-0 <0.10.0" })));
+  const product = await productRoot(context, fork, "0.9.2");
+  const upgrade = await run(["upgrade", "--brain", brain, "--now", NOW, "--json"], { product, home });
+  assert.equal(upgrade.code, 0, upgrade.stdout);
+  assert.deepEqual(upgrade.json.data.skills.from, { name: "ultimate-brain", version: "0.9.1" });
+  assert.deepEqual(upgrade.json.data.skills.to, { name: "ultimate-brain-skills", version: "1.1.0" });
+  assert.deepEqual(upgrade.json.data.skills.retired, []);
+  assert.deepEqual(upgrade.json.data.files.filter((file: { path: string }) => file.path !== "AGENTS.md"), [
+    { path: ".agents/skills/brain-apply/SKILL.md", action: "updated" },
+    { path: ".claude/skills/brain-apply/SKILL.md", action: "updated" },
+    { path: "skills.lock.json", action: "updated" },
+  ]);
+  assert.equal((await lockOf(brain)).snapshot.name, "ultimate-brain-skills");
+  assert.equal((await git(brain, ["log", "-1", "--format=%s"])).trim(), "upgrade: ultimate brain 0.9.2, skills ultimate-brain-skills 1.1.0");
+
+  // An unpinned brain (made before 0.9.0) upgrades to it too.
+  const unpinned = await initBrain(context, await productRoot(context, bundled, "0.9.1"), home);
+  await rm(join(unpinned, "skills.lock.json"));
+  await commitAll(unpinned, "unpin");
+  const pin = await run(["upgrade", "--brain", unpinned, "--now", NOW, "--json"], { product, home });
+  assert.equal(pin.code, 0, pin.stdout);
+  assert.equal(pin.json.data.skills.from, null);
+  assert.deepEqual(pin.json.data.skills.to, { name: "ultimate-brain-skills", version: "1.1.0" });
+  assert.equal((await run(["status", "--brain", unpinned, "--json"], { product, home })).json.data.skills.state, "pinned");
 });

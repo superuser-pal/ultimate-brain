@@ -5,7 +5,7 @@
 How this file fits: this file holds the lifecycle of a connected workflow, from opting in through execution, publication, reconciliation and completion, and the adoption of an existing project. [schemas/workflow.schema.json](schemas/workflow.schema.json) holds the shapes of its records. Linked repos and their task modes are in [linked-repos.md](linked-repos.md).
 - §4 and §6.1 are the Notion design that CC-103's migration builds.
 - §12 holds the commands, which CC-102 builds with the `brain repo` commands (the user's choice, 2026-11-03).
-- The skills (CC-104, written in `skills/` until CC-105 moves authorship to the fork, 0059) follow §§2–11 and §13.
+- The skills (CC-104; written in the ultimate-brain-skills fork's `brain/` since CC-105, 0059, skills-delivery §9.1) follow §§2–11 and §13.
 
 When this file and the JSON Schema disagree, the JSON Schema wins and this file is fixed. Timestamps are ISO 8601 UTC and come from `--now` (cli.md §3.1).
 
@@ -692,7 +692,7 @@ brain workflow publish-history <wf>
 
 ## 13. Skills (CC-104)
 
-CC-104's three skills, written in `skills/` until CC-105 moves authorship to the fork (0059):
+CC-104's three skills, written in the ultimate-brain-skills fork's `brain/` since CC-105 (0059, skills-delivery §9.1):
 - **`brain-workflow-adopt`:** adoption (§11).
 - **`brain-repos`:** linked repos (linked-repos.md §10).
 - **`brain-workflow`:** setup (§3.1), and running work as standard or connected. Other skills that track work hand over to it when a folder has a pointer. Its execution discipline:

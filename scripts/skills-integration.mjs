@@ -16,6 +16,7 @@ import { Ajv2020 } from "ajv/dist/2020.js";
 
 import { validateSnapshot } from "../src/lib/skills-snapshot.ts";
 import { comparePrecedence, satisfies } from "../src/lib/skills-range.ts";
+import { checkVendored } from "./vendor-skills.mjs";
 
 const SOURCE = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const LABEL = "skills-integration";
@@ -93,23 +94,31 @@ export function testedRevision(root) {
   return { manifest: check.manifest, tested: { name, version, ...(source.commit === undefined ? {} : { commit: source.commit }), integrity } };
 }
 
-/** The release gate's snapshot rule (§11.3): null, or why the package snapshot can't ship `version`. */
-export function releaseSnapshotProblem(root, version) {
+/**
+ * The release gate's snapshot rules (§11.3, §9.8): the problems that stop the package snapshot from shipping `version`. The range applies to
+ * every snapshot; then the online check of the vendored release (§9.3), which refuses a phase A manifest on its name; then a prerelease
+ * snapshot can't ship in a release without a prerelease part. `request` is a client of the shape `github()` returns.
+ */
+export async function releaseSnapshotProblems(root, version, { fork, request }) {
   const check = validateSnapshot(join(root, ".agents", "skills"));
-  if (check.reason !== null) return `the package snapshot is invalid (${check.reason})`;
-  // Phase A (§9): prepack regenerates the manifest with the released version and the range of that version, which always contains it.
-  if (check.manifest.name === "ultimate-brain") return null;
-  return satisfies(version, check.manifest.cli) ? null : `the package snapshot ${check.manifest.name} ${check.manifest.version} excludes ${version} (${check.manifest.cli})`;
+  if (check.reason !== null) return [`the package snapshot is invalid (${check.reason})`];
+  const { name, version: snapshotVersion, cli } = check.manifest;
+  if (!satisfies(version, cli)) return [`the package snapshot ${name} ${snapshotVersion} excludes ${version} (${cli})`];
+  const problems = [];
+  const vendored = await checkVendored({ root, fork, online: true, request });
+  if (vendored !== null) problems.push(`vendored skills: ${vendored}`);
+  if (snapshotVersion.includes("-") && !version.includes("-")) problems.push("a release ships released skills: vendor a brain-v release without a prerelease part");
+  return problems;
 }
 
-/** A small GitHub REST client over fetch. */
+/** A small GitHub REST client over fetch; without a token it asks anonymously (the fork is public, §9.2). */
 export function github({ api = process.env.UB_GITHUB_API ?? "https://api.github.com", token, timeoutMs = 15000 }) {
   return async function request(path, { method = "GET", body, allow404 = false } = {}) {
     let response;
     try {
       response = await fetch(`${api}${path}`, {
         method,
-        headers: { accept: "application/vnd.github+json", authorization: `Bearer ${token}`, "x-github-api-version": "2022-11-28", ...(body === undefined ? {} : { "content-type": "application/json" }) },
+        headers: { accept: "application/vnd.github+json", ...(token === undefined ? {} : { authorization: `Bearer ${token}` }), "x-github-api-version": "2022-11-28", ...(body === undefined ? {} : { "content-type": "application/json" }) },
         body: body === undefined ? undefined : JSON.stringify(body),
         signal: AbortSignal.timeout(timeoutMs),
       });
@@ -340,10 +349,9 @@ export function summary(result) {
  * §11.3's release rules, from a check result and the package snapshot: `{ problems, warnings }`. Only a change that may be incompatible blocks
  * while unclassified (0059); an unclassified `compatible` or `none` change is a warning.
  */
-export function releaseRules(result, snapshotProblem) {
-  const problems = [];
+export function releaseRules(result, snapshotProblems = []) {
+  const problems = [...snapshotProblems];
   const warnings = [];
-  if (snapshotProblem !== null) problems.push(snapshotProblem);
   if (result.status !== "ok") return { problems: [...problems, `skills integration status unknown (${result.error})`], warnings };
   const where = result.issue === null ? "" : ` in issue #${result.issue}`;
   const unclassified = result.block.changes.filter((change) => change.classification === "unclassified");
@@ -362,7 +370,7 @@ function option(args, name) {
 }
 
 /** `owner/name` from GITHUB_REPOSITORY or the origin remote. */
-function productRepo(root) {
+export function productRepo(root) {
   if (process.env.GITHUB_REPOSITORY) return process.env.GITHUB_REPOSITORY;
   try {
     const url = execFileSync("git", ["remote", "get-url", "origin"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
@@ -370,7 +378,8 @@ function productRepo(root) {
   } catch { return undefined; }
 }
 
-function credential() {
+/** §11.4's product credential: GH_TOKEN, else GITHUB_TOKEN, else `gh auth token`; undefined when there is none. */
+export function credential() {
   if (process.env.GH_TOKEN) return process.env.GH_TOKEN;
   if (process.env.GITHUB_TOKEN) return process.env.GITHUB_TOKEN;
   try { return execFileSync("gh", ["auth", "token"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || undefined; } catch { return undefined; }
@@ -381,10 +390,14 @@ async function main(args) {
   const repo = option(args, "--repo") ?? productRepo(root);
   const release = option(args, "--release");
   const token = credential();
+  const request = github({ token });
   const result = token === undefined
     ? { status: "unknown", error: "no credential (set GH_TOKEN or run gh auth login)", block: null, issue: null, written: false }
-    : await runCheck({ root, repo, request: github({ token }), write: !args.includes("--dry-run") });
-  const { problems, warnings } = release === undefined ? { problems: [], warnings: [] } : releaseRules(result, releaseSnapshotProblem(root, release));
+    : await runCheck({ root, repo, request, write: !args.includes("--dry-run") });
+  const fork = /^[^/\s]+\/[^/\s]+$/.test(repo ?? "") ? `${repo.split("/")[0]}/${FORK_NAME}` : undefined;
+  const { problems, warnings } = release === undefined
+    ? { problems: [], warnings: [] }
+    : releaseRules(result, await releaseSnapshotProblems(root, release, { fork, request }));
   if (args.includes("--json")) process.stdout.write(`${JSON.stringify({ ...result, summary: summary(result), problems, warnings })}\n`);
   else process.stdout.write(`${summary(result)}\n${problems.map((problem) => `refused: ${problem}\n`).join("")}${warnings.map((warning) => `warning: ${warning}\n`).join("")}`);
   if (result.status !== "ok" || problems.length > 0) process.exitCode = 1;

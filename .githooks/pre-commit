@@ -1,7 +1,7 @@
 #!/bin/sh
 
 node scripts/leak-check.mjs --staged || exit 1
-# A skill edit must ship with its rebuilt .agents/skills/ mirror (npm run skills).
-if git diff --cached --name-only | grep -q '^skills/'; then
-  node --experimental-strip-types scripts/build-skills.ts --check || exit 1
+# .agents/skills/ is a vendored fork release, never edited here (spec/skills-delivery.md §9.3); the check reads the working tree.
+if git diff --cached --name-only | grep -q '^\.agents/skills/'; then
+  node --experimental-strip-types scripts/vendor-skills.mjs --check || exit 1
 fi

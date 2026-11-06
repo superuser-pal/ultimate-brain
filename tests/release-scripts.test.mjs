@@ -6,9 +6,11 @@ import { dirname, join, resolve } from "node:path";
 import test from "node:test";
 
 import { withBlock } from "../scripts/skills-integration.mjs";
-import { forkState, PRODUCT, prBody, sha, startMock, TOKEN, writePackage } from "./fixtures/github-mock.mjs";
+import { forkState, PACKAGE_INTEGRITY, PRODUCT, prBody, releaseNotes, sha, startMock, TOKEN, writePackage } from "./fixtures/github-mock.mjs";
 
 const source = resolve(import.meta.dirname, "..");
+/** A vendored fork snapshot (phase B, skills-delivery §9) that the mock's release brain-v1.0.0 matches; its range admits every version the tests use. */
+const VENDORED = { name: "ultimate-brain-skills", version: "1.0.0", cli: ">=0.0.0 <2.0.0", commit: sha("m1") };
 
 function temporaryRoot() {
   const root = mkdtempSync(join(tmpdir(), "ultimate-brain-scripts-"));
@@ -53,7 +55,7 @@ async function integrationMock(t, edit = () => {}) {
     last_check: { at: "2026-11-03T06:00:00Z", status: "ok" },
   };
   const state = {
-    fork: forkState({ history: [{ label: "c1" }, { label: "m1", pull: { number: 1, body: prBody("none") } }], releases: [{ version: "1.0.0", at: "m1" }] }),
+    fork: forkState({ history: [{ label: "c1" }, { label: "m1", pull: { number: 1, body: prBody("none") } }], releases: [{ version: "1.0.0", at: "m1", body: releaseNotes(VENDORED.cli) }] }),
     issues: [{ number: 1, title: "Skills integration: 0 open change(s)", body: withBlock("", block), labels: ["skills-integration"], state: "closed" }],
   };
   edit(state);
@@ -301,7 +303,7 @@ test("release pushes its annotated tag through --follow-tags", async (t) => {
   t.after(() => rmSync(root, { recursive: true, force: true }));
   writeFileSync(join(root, "CHANGELOG.md"), "## 1.2.3 — unreleased\n");
   writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done` (#1)\n**Release:** 1.2.3\n**Changelog:** One\n");
-  writePackage(root);
+  writePackage(root, VENDORED);
   const path = fakeCommands(root, {
     gh: `case "$1" in
       repo) printf ${PRODUCT} ;;
@@ -324,7 +326,7 @@ test("release pushes its annotated tag through --follow-tags", async (t) => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(command(root, ["ls-remote", "--tags", "origin"]), /refs\/tags\/v1\.2\.3$/m);
   assert.equal(command(root, ["cat-file", "-t", "v1.2.3"]).trim(), "tag");
-  assert.match(readFileSync(join(root, "CHANGELOG.md"), "utf8"), /- CX-1 \(#1\): One\n\nSkills: ultimate-brain 1\.2\.3 \(sha256-[0-9a-f]{64}\)\n/);
+  assert.match(readFileSync(join(root, "CHANGELOG.md"), "utf8"), new RegExp(`- CX-1 \\(#1\\): One\n\nSkills: ultimate-brain-skills 1\\.0\\.0 \\(${PACKAGE_INTEGRITY}\\)\n`));
 });
 
 test("a failed publish keeps the commit and tag local and says how to finish", async (t) => {
@@ -332,7 +334,7 @@ test("a failed publish keeps the commit and tag local and says how to finish", a
   t.after(() => rmSync(root, { recursive: true, force: true }));
   writeFileSync(join(root, "CHANGELOG.md"), "## 1.2.3 — unreleased\n");
   writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done` (#1)\n**Release:** 1.2.3\n**Changelog:** One\n");
-  writePackage(root);
+  writePackage(root, VENDORED);
   const path = fakeCommands(root, {
     gh: `case "$1" in
       repo) printf ${PRODUCT} ;;
@@ -363,7 +365,7 @@ test("a failed publish keeps the commit and tag local and says how to finish", a
 function releaseRepository(t, root, npm) {
   writeFileSync(join(root, "CHANGELOG.md"), "## 1.2.3 — unreleased\n");
   writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done` (#1)\n**Release:** 1.2.3\n**Changelog:** One\n");
-  writePackage(root);
+  writePackage(root, VENDORED);
   const path = fakeCommands(root, {
     gh: `case "$1" in
       repo) printf ${PRODUCT} ;;
@@ -417,7 +419,7 @@ test("a push that fails after the publish says the package is out and how to pus
 });
 
 /** Fakes for a release dry run of `version` (0.9.0 on) from a clean main, with a valid package snapshot; returns the PATH. */
-function gateDryRun(root, version = "0.9.0", snapshot = {}) {
+function gateDryRun(root, version = "0.9.0", snapshot = VENDORED) {
   writeFileSync(join(root, "CHANGELOG.md"), "# Changelog\n");
   writeFileSync(join(root, "build/TASKS.md"), `### CC-1 · One · \`done\` (#12)\n**Release:** ${version}\n**Changelog:** One\n`);
   writePackage(root, snapshot);
@@ -439,7 +441,7 @@ function gateDryRun(root, version = "0.9.0", snapshot = {}) {
 /** The fork's history after release 1.0.0 with one merged PR `m2`, and an open integration issue holding `changes` (§11.2). */
 function forkChange(state, { body, release, changes, issues = [] }) {
   const history = [{ label: "c1" }, { label: "m1", pull: { number: 1, body: prBody("none") } }, { label: "m2", pull: { number: 2, body } }];
-  state.fork = forkState({ history, releases: [{ version: "1.0.0", at: "m1" }, ...(release === undefined ? [] : [{ version: release, at: "m2" }])] });
+  state.fork = forkState({ history, releases: [{ version: "1.0.0", at: "m1", body: releaseNotes(VENDORED.cli) }, ...(release === undefined ? [] : [{ version: release, at: "m2" }])] });
   state.issues.push(...issues);
   if (changes === undefined) return;
   const block = parseBlockOf(state.issues[0].body);
@@ -456,7 +458,7 @@ test("the release gate passes a current integration and the section ends with th
   const { env, mock } = await integrationMock(t);
   const result = await runAsync("release.mjs", ["0.9.0", "--dry-run"], { root, env: { ...env, PATH: path } });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /## 0\.9\.0 — YYYY-MM-DD\n\n- CC-1 \(#12\): One\n\nSkills: ultimate-brain 0\.9\.0 \(sha256-[0-9a-f]{64}\)\n/);
+  assert.match(result.stdout, /## 0\.9\.0 — YYYY-MM-DD\n\n- CC-1 \(#12\): One\n\nSkills: ultimate-brain-skills 1\.0\.0 \(sha256-[0-9a-f]{64}\)\n/);
   assert.equal(mock.requests.filter((request) => request.method !== "GET").length, 0, "a dry run writes no issue");
 });
 
@@ -534,7 +536,7 @@ test("the release gate refuses an unavailable source as status unknown", async (
 
 test("the release gate refuses a package snapshot that is invalid or whose range excludes the version", async (t) => {
   for (const [snapshot, broken, message] of [
-    [{}, true, /the package snapshot is invalid \(manifest-missing\)/],
+    [VENDORED, true, /the package snapshot is invalid \(manifest-missing\)/],
     [{ name: "ultimate-brain-skills", version: "1.0.0", cli: ">=0.8.0 <0.9.0", commit: sha("m1") }, false, /the package snapshot ultimate-brain-skills 1\.0\.0 excludes 0\.9\.0 \(>=0\.8\.0 <0\.9\.0\)/],
   ]) {
     const root = temporaryRoot();
@@ -548,14 +550,72 @@ test("the release gate refuses a package snapshot that is invalid or whose range
   }
 });
 
-test("the release gate accepts a phase A snapshot built from the previous version: prepack rebuilds it for the release", async (t) => {
+test("the release gate refuses a phase A snapshot: a release ships the fork's (skills-delivery §9.8)", async (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = gateDryRun(root, "0.9.0", { version: "0.8.1", cli: ">=0.8.1 <0.9.0" });
+  const path = gateDryRun(root, "0.9.0", { version: "0.8.1", cli: ">=0.8.1 <0.10.0" });
   const { env } = await integrationMock(t);
   const result = await runAsync("release.mjs", ["0.9.0", "--dry-run"], { root, env: { ...env, PATH: path } });
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Skills: ultimate-brain 0\.9\.0 \(/);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /vendored skills: name ultimate-brain/);
+});
+
+test("the release gate refuses a vendored snapshot the fork's release doesn't match, or that has no release (skills-delivery §9.8)", async (t) => {
+  for (const [edit, message] of [
+    [(state) => { state.fork.releases[0].body = releaseNotes(VENDORED.cli, `sha256-${"0".repeat(64)}`); }, /vendored skills: differs from brain-v1\.0\.0: integrity/],
+    [(state) => { state.fork.releases[0].body = releaseNotes(">=0.9.0 <0.10.0"); }, /vendored skills: differs from brain-v1\.0\.0: cli/],
+    [(state) => { state.fork.releases[0].version = "1.0.1"; }, /vendored skills: no release brain-v1\.0\.0/],
+  ]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const path = gateDryRun(root);
+    const { env } = await integrationMock(t, edit);
+    const result = await runAsync("release.mjs", ["0.9.0", "--dry-run"], { root, env: { ...env, PATH: path } });
+    assert.equal(result.status, 1, result.stdout);
+    assert.match(result.stderr, message);
+  }
+});
+
+test("a release ships released skills: a prerelease vendored snapshot refuses a release without a prerelease part (skills-delivery §9.8)", async (t) => {
+  for (const [version, status] of [["0.9.0", 1], ["0.9.0-rc.1", 0]]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const path = gateDryRun(root, version, { ...VENDORED, version: "1.1.0-rc.1" });
+    const { env } = await integrationMock(t, (state) => { state.fork.releases.push({ version: "1.1.0-rc.1", at: "m1", commit: sha("m1"), body: releaseNotes(VENDORED.cli) }); });
+    const result = await runAsync("release.mjs", [version, "--dry-run"], { root, env: { ...env, PATH: path } });
+    assert.equal(result.status, status, result.stderr);
+    if (status === 1) assert.match(result.stderr, /a release ships released skills: vendor a brain-v release without a prerelease part/);
+    else assert.match(result.stdout, /Skills: ultimate-brain-skills 1\.1\.0-rc\.1 \(/);
+  }
+});
+
+test("release refuses a version below package.json's, except a prerelease of that version (skills-delivery §9.4)", async (t) => {
+  for (const [version, refused] of [["0.9.1", true], ["0.9.2-rc.1", false], ["0.9.2", false], ["0.9.3", false]]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const path = gateDryRun(root, version);
+    writeFileSync(join(root, "package.json"), '{"name":"fixture","version":"0.9.2"}\n');
+    const { env } = await integrationMock(t);
+    const result = await runAsync("release.mjs", [version, "--dry-run"], { root, env: { ...env, PATH: path } });
+    if (refused) {
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /Release refused: package\.json is already 0\.9\.2; release 0\.9\.2 or later/);
+    } else assert.equal(result.status, 0, `${version}: ${result.stderr}`);
+  }
+});
+
+test("releasing the version package.json already holds runs npm version with --allow-same-version (skills-delivery §9.4)", async (t) => {
+  for (const [held, expected] of [["1.2.3", "version 1.2.3 --no-git-tag-version --allow-same-version"], ["0.0.0", "version 1.2.3 --no-git-tag-version"]]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    writeFileSync(join(root, "package.json"), `{"name":"fixture","version":"${held}"}\n`);
+    const log = join(root, "npm.log");
+    const { path } = releaseRepository(t, root, `printf '%s\\n' "$*" >> ${log}; case "$1" in whoami) printf tester ;; owner) printf "tester <t@example.test>\\n" ;; view) exit 1 ;; esac`);
+    const { env } = await integrationMock(t);
+    const result = await runAsync("release.mjs", ["1.2.3"], { root, env: { ...env, PATH: path } });
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(readFileSync(log, "utf8").split("\n").includes(expected), readFileSync(log, "utf8"));
+  }
 });
 
 test("a release before 0.9.0 has no skills gate", async (t) => {
@@ -1265,25 +1325,26 @@ test("merge-ready stays red on a stacked PR until its base is main (decision 004
   assert.match(status, /base is claude\/CC-1-below: merge the PR below first, then retarget this one to main/);
 });
 
-test("the pre-commit hook refuses a skill edit staged without its rebuilt mirror", (t) => {
+test("the pre-commit hook refuses a staged edit of a vendored skill file and accepts a whole vendored release (skills-delivery §9.3)", (t) => {
   const root = mkdtempSync(join(tmpdir(), "ultimate-brain-hook-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  for (const folder of ["scripts", "skills", ".agents", "src", ".githooks"]) execFileSync("cp", ["-R", join(source, folder), join(root, folder)]);
+  for (const folder of ["scripts", "src", "spec", ".githooks", "package.json"]) execFileSync("cp", ["-R", join(source, folder), join(root, folder)]);
   execFileSync("ln", ["-s", join(source, "node_modules"), join(root, "node_modules")]);
   command(root, ["init", "-q", "-b", "main"]);
   command(root, ["add", "-A"]);
   command(root, ["-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "--no-verify", "-m", "base"]);
-  const skill = join(root, "skills", "brain-howto", "SKILL.md");
-  writeFileSync(skill, `${readFileSync(skill, "utf8")}\nOne more line.\n`);
-  command(root, ["add", "skills"]);
   const hook = () => spawnSync("sh", [".githooks/pre-commit"], { cwd: root, encoding: "utf8", env: { ...process.env, HOME: root } });
-  const refused = hook();
-  assert.equal(refused.status, 1, refused.stdout);
-  assert.match(refused.stdout + refused.stderr, /drift/);
-  execFileSync(process.execPath, ["--experimental-strip-types", "scripts/build-skills.ts"], { cwd: root });
+  execFileSync("cp", ["-R", join(source, ".agents"), join(root, ".agents")]);
   command(root, ["add", ".agents"]);
   const accepted = hook();
   assert.equal(accepted.status, 0, accepted.stdout + accepted.stderr);
+  command(root, ["-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "--no-verify", "-m", "vendor"]);
+  const skill = join(root, ".agents", "skills", "brain-howto", "SKILL.md");
+  writeFileSync(skill, `${readFileSync(skill, "utf8")}\nOne more line.\n`);
+  command(root, ["add", ".agents"]);
+  const refused = hook();
+  assert.equal(refused.status, 1, refused.stdout);
+  assert.match(refused.stderr, /^\.agents\/skills is not a released ultimate-brain-skills snapshot \(file-mismatch: brain-howto\/SKILL\.md\)\. Skills are written in the fork; restore with git checkout -- \.agents\/skills/m);
 });
 
 /** pr-format fakes for the PR of CX-1 whose head has the rows `headRows`; the base has only CC-2's row, as for a task whose row was added on its branch (CC-116). */
