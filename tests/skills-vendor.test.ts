@@ -288,7 +288,8 @@ test("--check passes on a vendored release and names the first failing reason; -
   for (const args of [["--check"], ["--check", "--online"]]) {
     const passed = await vendor(args, root, mock.url);
     assert.equal(passed.code, 0, passed.stderr);
-    assert.equal(passed.stdout, "vendored skills OK: ultimate-brain-skills 1.1.0\n");
+    assert.equal(passed.stdout, "");
+    assert.equal(passed.stderr, "vendored skills OK: ultimate-brain-skills 1.1.0\n");
   }
   // Offline: no network, no remote. The API URL points at a closed port, and the check still passes.
   assert.equal((await vendor(["--check"], root, "http://127.0.0.1:65535", { GITHUB_REPOSITORY: "" })).code, 0);

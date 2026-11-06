@@ -80,7 +80,7 @@ test("Prompt 5, the views guide, migration 0015 and brain-connect-notion name th
   const readme = await read("notion/migrations/README.md");
   assert.ok(readme.includes("[0015](0015-workflow-settings-on-projects-and-areas.md)"));
 
-  const skill = await read("skills/brain-connect-notion/SKILL.md");
+  const skill = await read(".agents/skills/brain-connect-notion/SKILL.md");
   for (const s of settings) assert.ok(skill.includes(`**${s.name}** (${s.type}: ${s.options.join(", ")})`), `brain-connect-notion: ${s.name}`);
   assert.ok(skill.includes("notion/migrations/0015-workflow-settings-on-projects-and-areas.md"));
 });

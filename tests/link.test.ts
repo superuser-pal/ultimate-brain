@@ -13,6 +13,13 @@ async function repo(context: { after(callback: () => unknown): void }): Promise<
 }
 
 const BRAIN = ["--brain", FIXTURE_BRAIN, "--json"];
+const PACKAGE = JSON.parse(await readFile(join(import.meta.dirname, "..", ".agents", "skills", "snapshot.json"), "utf8"));
+/** The package's linked skills (brain-query and, from the 0.9.2 snapshot, the workflow skills; skills-delivery §9.7). */
+const LINKED: Array<{ name: string; files: Array<{ path: string }> }> = PACKAGE.skills.filter((skill: { targets: string[] }) => skill.targets.includes("linked_repo"));
+/** Every file link writes for them in both trees, sorted as link reports them, with `action`. */
+const linkedFiles = (action: string) => [".agents/skills", ".claude/skills"]
+  .flatMap((tree) => LINKED.flatMap((skill) => skill.files.map((file) => `${tree}/${skill.name}/${file.path}`)))
+  .sort().map((path) => ({ path, action }));
 
 test("link writes a canonical marker and agent instructions, then is byte-idempotent", async (context) => {
   const target = await repo(context);
@@ -29,14 +36,13 @@ test("link writes a canonical marker and agent instructions, then is byte-idempo
     value: { repo: "acme-api", project: "prj-9x4t1b7e", area: "area-2m7c4h8n", stacks: ["nextjs", "supabase"] },
   });
   // An unpinned brain links the package's skills (spec/skills-delivery.md §6.2).
-  assert.deepEqual({ name: skills.name, names: skills.names }, { name: "ultimate-brain", names: ["brain-query"] });
+  assert.deepEqual({ name: skills.name, names: skills.names }, { name: PACKAGE.name, names: LINKED.map((skill) => skill.name) });
   assert.deepEqual(Object.keys(first.json.data.marker.value), ["repo", "project", "area", "stacks", "skills"]);
   assert.deepEqual(first.json.warnings.map((warning: { code: string }) => warning.code), ["SKILLS_UNPINNED"]);
   assert.deepEqual(first.json.data.files, [
     { path: "AGENTS.md", action: "created" },
     { path: "CLAUDE.md", action: "created" },
-    { path: ".agents/skills/brain-query/SKILL.md", action: "created" },
-    { path: ".claude/skills/brain-query/SKILL.md", action: "created" },
+    ...linkedFiles("created"),
   ]);
   assert.deepEqual(JSON.parse(await readFile(join(target, ".brain"), "utf8")), first.json.data.marker.value);
   const agents = await readFile(join(target, "AGENTS.md"), "utf8");
@@ -52,8 +58,7 @@ test("link writes a canonical marker and agent instructions, then is byte-idempo
   assert.deepEqual(second.json.data.files, [
     { path: "AGENTS.md", action: "unchanged" },
     { path: "CLAUDE.md", action: "unchanged" },
-    { path: ".agents/skills/brain-query/SKILL.md", action: "unchanged" },
-    { path: ".claude/skills/brain-query/SKILL.md", action: "unchanged" },
+    ...linkedFiles("unchanged"),
   ]);
   const after = await Promise.all([".brain", "AGENTS.md", "CLAUDE.md"].map((path) => readFile(join(target, path), "utf8")));
   assert.deepEqual(after, before);
@@ -80,8 +85,7 @@ test("link updates fenced instructions in place and retains content outside them
   assert.deepEqual(run.json.data.files, [
     { path: "AGENTS.md", action: "updated" },
     { path: "CLAUDE.md", action: "updated" },
-    { path: ".agents/skills/brain-query/SKILL.md", action: "created" },
-    { path: ".claude/skills/brain-query/SKILL.md", action: "created" },
+    ...linkedFiles("created"),
   ]);
   const agents = await readFile(join(target, "AGENTS.md"), "utf8");
   assert.equal(agents.startsWith("# Local rules\nKeep this intro.\n\n"), true);
@@ -126,7 +130,7 @@ test("link refuses malformed instruction markers without touching the repository
   assert.equal(await readFile(join(target, "AGENTS.md"), "utf8"), bad);
 });
 
-test("link installs brain-query only, refreshes it, removes stale files and leaves other .agents content", async (context) => {
+test("link installs only the linked skills, refreshes them, removes stale files and leaves other .agents content", async (context) => {
   const target = await repo(context);
   const skill = join(target, ".agents", "skills", "brain-query");
   const shipped = await readFile(join(import.meta.dirname, "..", ".agents", "skills", "brain-query", "SKILL.md"), "utf8");
@@ -138,19 +142,18 @@ test("link installs brain-query only, refreshes it, removes stale files and leav
 
   const first = await brain(["link", target, ...BRAIN]);
   assert.equal(first.code, 0, first.stdout);
-  assert.deepEqual(first.json.data.files.filter((file: any) => file.path.startsWith(".agents/")), [
-    { path: ".agents/skills/brain-query/SKILL.md", action: "updated" },
-    { path: ".agents/skills/brain-query/stale.md", action: "removed" },
-  ]);
+  assert.deepEqual(first.json.data.files.filter((file: any) => file.path.startsWith(".agents/")), linkedFiles("created")
+    .filter((file) => file.path.startsWith(".agents/"))
+    .map((file) => (file.path === ".agents/skills/brain-query/SKILL.md" ? { ...file, action: "updated" } : file))
+    .concat({ path: ".agents/skills/brain-query/stale.md", action: "removed" })
+    .sort((a, b) => (a.path < b.path ? -1 : 1)));
   assert.equal(await readFile(join(skill, "SKILL.md"), "utf8"), shipped);
   await assert.rejects(readFile(join(skill, "stale.md")));
   assert.equal(await readFile(join(target, ".agents", "skills", "mine", "SKILL.md"), "utf8"), "keep\n");
   await assert.rejects(readFile(join(target, ".agents", "skills", "brain-ingest", "SKILL.md")));
 
   const second = await brain(["link", target, ...BRAIN]);
-  assert.deepEqual(second.json.data.files.filter((file: any) => file.path.startsWith(".agents/")), [
-    { path: ".agents/skills/brain-query/SKILL.md", action: "unchanged" },
-  ]);
+  assert.deepEqual(second.json.data.files.filter((file: any) => file.path.startsWith(".agents/")), linkedFiles("unchanged").filter((file) => file.path.startsWith(".agents/")));
 });
 
 test("link refuses a brain-query skill folder that links out of the repo", async (context) => {

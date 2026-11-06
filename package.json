@@ -28,12 +28,11 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc --project tsconfig.build.json && node --experimental-strip-types scripts/build-skills.ts --snapshot",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc --project tsconfig.build.json && node --experimental-strip-types scripts/vendor-skills.mjs --check",
     "prepack": "npm run build",
-    "skills": "node --experimental-strip-types scripts/build-skills.ts && node --experimental-strip-types --test tests/skills.test.ts",
     "test:package": "node scripts/test-package.mjs",
     "test:scripts": "node --test tests/release-scripts.test.mjs",
-    "pretest": "node --experimental-strip-types scripts/build-skills.ts --snapshot",
+    "pretest": "node --experimental-strip-types scripts/vendor-skills.mjs --check",
     "test": "node --experimental-strip-types --test tests/*.test.ts tests/*.test.mjs",
     "typecheck": "tsc --noEmit"
   },

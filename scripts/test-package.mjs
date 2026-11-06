@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { access, cp, mkdir, readFile, rm, mkdtemp, writeFile } from "node:fs/promises";
+import { access, cp, mkdir, readdir, readFile, rm, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -33,12 +33,16 @@ try {
   const shipped = validateSnapshot(join(installed, ".agents", "skills"));
   assert.equal(shipped.reason, null, `packed snapshot: ${shipped.reason}`);
   assert.ok(satisfies(packedVersion, shipped.manifest.cli), `packed snapshot range ${shipped.manifest.cli} excludes ${packedVersion}`);
+  // Phase B (spec/skills-delivery.md §9.1, §12.5 item 8): the fork's release, its snapshot.json, LICENSE and NOTICE.md beside the skills, nothing else.
+  assert.equal(shipped.manifest.name, "ultimate-brain-skills");
+  assert.deepEqual((await readdir(join(installed, ".agents", "skills"))).sort(), [...shipped.manifest.skills.map((skill) => skill.name), "LICENSE", "NOTICE.md", "snapshot.json"].sort());
   const help = await exec("npx", ["--no-install", "ultimate-brain", "--help"], { cwd: temp, env });
   assert.match(help.stdout, /^Usage: brain /);
   const init = await exec("npx", ["--no-install", "ultimate-brain", "init", "brain", "--no-git", "--json"], { cwd: temp, env });
   assert.equal(JSON.parse(init.stdout).ok, true);
   const lock = JSON.parse(await readFile(join(temp, "brain", "skills.lock.json"), "utf8"));
   assert.deepEqual(lock.snapshot, shipped.manifest);
+  assert.equal(lock.snapshot.name, "ultimate-brain-skills");
   const status = await exec("npx", ["--no-install", "ultimate-brain", "status", "--brain", "brain", "--json"], { cwd: temp, env });
   assert.equal(JSON.parse(status.stdout).data.skills.state, "pinned");
   await access(join(temp, "brain", "brain.json"));

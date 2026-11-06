@@ -309,7 +309,9 @@ async function main(args) {
     const fork = online ? forkOf(root, parsed.repo) : undefined;
     const reason = await checkVendored({ root, fork, online, request: online ? github({ api, token: credential() }) : undefined });
     if (reason === null) {
-      process.stdout.write(`vendored skills OK: ${validateSnapshot(join(root, ".agents", "skills")).manifest.name} ${validateSnapshot(join(root, ".agents", "skills")).manifest.version}\n`);
+      // On stderr, so `npm pack --json`, whose prepack runs this check, keeps a clean stdout.
+      const { manifest } = validateSnapshot(join(root, ".agents", "skills"));
+      process.stderr.write(`vendored skills OK: ${manifest.name} ${manifest.version}\n`);
       return;
     }
     process.stderr.write(`${checkMessage(reason)}\n`);

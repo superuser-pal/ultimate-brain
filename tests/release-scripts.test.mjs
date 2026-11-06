@@ -1325,25 +1325,26 @@ test("merge-ready stays red on a stacked PR until its base is main (decision 004
   assert.match(status, /base is claude\/CC-1-below: merge the PR below first, then retarget this one to main/);
 });
 
-test("the pre-commit hook refuses a skill edit staged without its rebuilt mirror", (t) => {
+test("the pre-commit hook refuses a staged edit of a vendored skill file and accepts a whole vendored release (skills-delivery §9.3)", (t) => {
   const root = mkdtempSync(join(tmpdir(), "ultimate-brain-hook-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  for (const folder of ["scripts", "skills", ".agents", "src", ".githooks"]) execFileSync("cp", ["-R", join(source, folder), join(root, folder)]);
+  for (const folder of ["scripts", "src", "spec", ".githooks", "package.json"]) execFileSync("cp", ["-R", join(source, folder), join(root, folder)]);
   execFileSync("ln", ["-s", join(source, "node_modules"), join(root, "node_modules")]);
   command(root, ["init", "-q", "-b", "main"]);
   command(root, ["add", "-A"]);
   command(root, ["-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "--no-verify", "-m", "base"]);
-  const skill = join(root, "skills", "brain-howto", "SKILL.md");
-  writeFileSync(skill, `${readFileSync(skill, "utf8")}\nOne more line.\n`);
-  command(root, ["add", "skills"]);
   const hook = () => spawnSync("sh", [".githooks/pre-commit"], { cwd: root, encoding: "utf8", env: { ...process.env, HOME: root } });
-  const refused = hook();
-  assert.equal(refused.status, 1, refused.stdout);
-  assert.match(refused.stdout + refused.stderr, /drift/);
-  execFileSync(process.execPath, ["--experimental-strip-types", "scripts/build-skills.ts"], { cwd: root });
+  execFileSync("cp", ["-R", join(source, ".agents"), join(root, ".agents")]);
   command(root, ["add", ".agents"]);
   const accepted = hook();
   assert.equal(accepted.status, 0, accepted.stdout + accepted.stderr);
+  command(root, ["-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "--no-verify", "-m", "vendor"]);
+  const skill = join(root, ".agents", "skills", "brain-howto", "SKILL.md");
+  writeFileSync(skill, `${readFileSync(skill, "utf8")}\nOne more line.\n`);
+  command(root, ["add", ".agents"]);
+  const refused = hook();
+  assert.equal(refused.status, 1, refused.stdout);
+  assert.match(refused.stderr, /^\.agents\/skills is not a released ultimate-brain-skills snapshot \(file-mismatch: brain-howto\/SKILL\.md\)\. Skills are written in the fork; restore with git checkout -- \.agents\/skills/m);
 });
 
 /** pr-format fakes for the PR of CX-1 whose head has the rows `headRows`; the base has only CC-2's row, as for a task whose row was added on its branch (CC-116). */

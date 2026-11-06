@@ -85,10 +85,9 @@ if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
 
 /**
  * The start-of-work line of the skills-integration check (spec/skills-delivery.md §11.3), run without writing against the new worktree's
- * package snapshot. Never blocks.
+ * committed package snapshot (§9.8). Never blocks.
  */
 function skillsIntegrationLine(worktree) {
-  tryCommand(process.execPath, ["--experimental-strip-types", "scripts/build-skills.ts", "--snapshot"], { cwd: worktree });
   const script = fileURLToPath(new URL("./skills-integration.mjs", import.meta.url));
   // An unknown status exits 1 with its JSON on stdout, so the exit code is not read.
   const result = spawnSync(process.execPath, ["--no-warnings", "--experimental-strip-types", script, "--dry-run", "--json", "--root", worktree], { cwd: worktree, encoding: "utf8" });
