@@ -2,6 +2,24 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.10.0 — 2026-11-07
+
+- CC-108 (#234): contracts for the brain assistant: what it checks in Areas, Domains, Projects and Tasks, how each finding becomes a Review row, and when it may change something directly.
+- CC-142 (#235): development only: CC-109's build is split into CC-143 (findings and skips in the CLI), CC-144 (Notion-owned changes and field moves as proposals), CC-145 (the sub-agent, templates and the Review migration), with CC-109 keeping the skill, its fork release and the blind run.
+- CC-143 (#240): `brain assistant findings` computes Ultimate Assistant's findings from your brain and a Notion snapshot (stalled and overdue tasks, finished or stalled projects, misplaced or duplicate projects, Areas with nothing active or no Domain), ranked, top 10 first, with your skips left out; `brain assistant dismiss` remembers a skip for 30 days.
+- CC-144 (#236): a Review row can propose a change to a Notion-owned field, such as a task's Status or a project's Status, or a move of a project to another Area, and the brain applies it after your yes.
+- CC-145 (#239): a brain gets the `ultimate-assistant` Claude Code sub-agent (`claude --agent ultimate-assistant`), and the Review database gains the Suggestion rows Ultimate Assistant writes when you ask it to propose a change.
+- CC-109 (#237): "review my projects" finds stalled tasks, finished projects still open, misplaced projects and missing next steps, recommends what to do, and turns what you say into captures, tasks and projects, changing nothing without your yes or a Review row.
+- CC-138 (#231): development only: a ruleset on `main` requires the `merge-ready` status, so a PR can't merge without its format, its ticked boxes, its `done` (#N) and a reviewer's pass at its head.
+- CC-110 (#243): development only: end-to-end acceptance of the brain assistant on a synthetic brain, attended, with Review rows and chat approvals.
+- CC-137 (#223): development only: the 0.10.0 opening grill is recorded as decision 0072, which names the assistant Ultimate Assistant and settles how a review session goes.
+- CC-139 (#230): development only: 0.10.0 gains CC-140 (the acceptance fixtures) and CC-141 (finished releases move to HISTORY.md), built beside CC-108's contracts with CC-138.
+- CC-140 (#233): development only: a synthetic brain and a synthetic Notion space with planted project-management problems, for testing Ultimate Assistant.
+- CC-141 (#232): development only: the 0.8.1, 0.9.0, 0.9.1 and 0.9.2 sections move from TASKS.md to HISTORY.md, as AGENTS.md asks after each release.
+- CC-148 (#242): merging two projects (or any two notes) no longer rewrites the duplicate's own Brief and Decision log to point at the survivor, so `brain views` and `brain lint` stay clean after a merge.
+
+Skills: ultimate-brain-skills 1.2.0 (sha256-985c4f4b8626f6269a0864e270611b137b10e5bad9bd8352057c0b4959f1f54d)
+
 ## 0.9.2 — 2026-11-06
 
 - CC-133 (#222): development only: 0.9.2 gains the fixes for dogfood #220 and #221 and takes CC-116 and CC-118 from 0.10.0, and CC-105's spec becomes its own task.
