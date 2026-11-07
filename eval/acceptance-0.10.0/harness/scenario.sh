@@ -5,8 +5,8 @@
 #   fail-update   the next notion-sim update fails once with `network` (a failed write, §6.4 step 3)
 #   repos         two linked repos under <sandbox>/repos, committed in the brain: talk-notes (tasks tracked in the repo,
 #                 TASKS.md with one open item, target the project "Conference talk proposal") and site-issues (tasks
-#                 tracked as GitHub issues, target the Area "Workshops"); a `gh` stand-in that always fails, so
-#                 site-issues can't be read and no real GitHub is reached
+#                 tracked as GitHub issues, target the Area "Workshops"); the sandbox's `gh` always fails
+#                 (make-sandbox.sh), so site-issues can't be read
 #   clear-fail    removes every injected failure (between two sessions)
 #   user-edit <page> <properties json>
 #                 the user editing a page in Notion: sets those properties and stamps last_edited now, with no entry in
@@ -54,7 +54,6 @@ repos)
   printf '# Workshop site\n\nIssues track the work.\n' > "$R/README.md"
   g "$R"
   kit "$R" '{"kit_version":1,"name":"site-issues","placement":{"area":"'"$WSH"'","domain":"'"$TEACH"'"},"knowledge":{"patterns":["README.md"],"never_read":[]},"tasks":{"mode":"tracked-in-repo","source":{"kind":"github","repo":"robin-example/workshop-site"},"status_map":{"label:blocked":"waiting"}},"methodology":{"summary":"Each change is an issue."}}'
-  printf '#!/bin/sh\necho "gh: not logged in to any GitHub hosts. Run gh auth login." >&2\nexit 1\n' > "$S/bin/gh"; chmod +x "$S/bin/gh"
   git -C "$B" add brain.json log; git -C "$B" commit -qm "Link talk-notes and site-issues"
   git -C "$B" status --porcelain | grep -q . && { echo "brain not clean" >&2; exit 1; }
   ;;

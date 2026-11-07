@@ -23,7 +23,7 @@ sh eval/acceptance-0.10.0/harness/make-sandbox.sh /tmp/cc110/i /tmp/cc110/<name>
 sh eval/acceptance-0.10.0/harness/scenario.sh /tmp/cc110/<name> <variant>     # only where a scenario says so
 ```
 
-The sandbox is made at today's date, so the machine clock the skill uses (§2.1) and the fixture agree; `D` below is that date, and `D+6` the date six days later, written as the report writes dates (`13 Nov`). [scenario.sh](../eval/acceptance-0.10.0/harness/scenario.sh) prepares a variant: `unreachable` (every notion-sim query and get fails), `fail-update` (the next update fails once), `repos` (two linked repos, below), `clear-fail`, and `user-edit <page> <json>`, which stands for the user editing a page in Notion: it changes the page and its `last_edited`, and leaves no entry in the call log, so the log holds only the agent's MCP calls.
+The sandbox is made at today's date, so the machine clock the skill uses (§2.1) and the fixture agree; `D` below is that date, and `D+6` the date six days later, written as the report writes dates (`13 Nov`). Every sandbox's `bin/gh` always fails (not logged in), so no runner can reach the real GitHub. [scenario.sh](../eval/acceptance-0.10.0/harness/scenario.sh) prepares a variant: `unreachable` (every notion-sim query and get fails), `fail-update` (the next update fails once), `repos` (two linked repos, below), `clear-fail`, and `user-edit <page> <json>`, which stands for the user editing a page in Notion: it changes the page and its `last_edited`, and leaves no entry in the call log, so the log holds only the agent's MCP calls.
 
 Before each session, `. <sandbox>/env.sh; brain status --json` names `<sandbox>/brain` and `git status` is clean.
 
@@ -105,7 +105,7 @@ Evidence: `evidence.mjs` marked before answer 1; each proposal's fields (C4); `n
 
 Between sessions the user decides in Notion: `scenario.sh B user-edit <Workshops row> '{"Your call":"Approve"}'`, the same for the Finance row, and `'{"Your call":"Reject"}'` on the dentist row.
 
-**Session B2**, start **chat**: `Sync my brain.` (brain-sync, §6.3 "How a decided row is applied") → the three decisions are read by `sync plan` and applied by `sync apply`; the Workshops write is carried out by the skill (Areas · Archived true) and settled `applied`; the Finance `set_field` is applied and published (Domain relation Studio); the dentist proposal is rejected and nothing changes on its task; each row is then rendered as cli.md §5.14.4 renders its proposal's new status (the two applied ones with State Applied), and RESULTS.md records what the rejected one's row shows against that section.
+**Session B2**, start **chat**: `Sync my brain.` (brain-sync, §6.3 "How a decided row is applied") → the three decisions are read by `sync plan` and applied by `sync apply`; the Workshops write is carried out by the skill (Areas · Archived true) and settled `applied`; the Finance `set_field` is applied and published (Domain relation Studio); the dentist proposal is rejected and nothing changes on its task; each row is then rendered with its proposal's new status (cli.md §5.14.4): the two applied ones with State Applied, and the rejected one, which the apply closes, with State Closed.
 
 **Session B3**, start **agent**: `Review my projects.` → the report has no Workshops, Finance or dentist finding; the dentist one is left out as a rejected Suggestion and counted in `<n> skipped for now.` with 3.4's dismissal (C1 shows the count is the CLI's); then `done`.
 

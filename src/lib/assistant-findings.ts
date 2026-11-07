@@ -446,7 +446,7 @@ export function computeFindings(input: FindingsInput): FindingsResult {
           const [areaId, n] = suggested;
           const oldPage = project.area === null ? null : areas.get(project.area)?.page ?? null;
           const moving = oldPage === null ? 0 : own.filter((task) => isOpen(task) && task.row.areas.includes(oldPage)).length;
-          const label = `move it to ${titleOf(areaId)}${moving > 0 ? ` (and its ${count(moving, "open task")} that name ${titleOf(project.area)})` : ""}`;
+          const label = `move it to ${titleOf(areaId)}${moving > 0 ? ` (and its ${count(moving, "open task")} that ${moving === 1 ? "names" : "name"} ${titleOf(project.area)})` : ""}`;
           projectFinding(project, "project_misplaced", { area: project.area, suggested_area: areaId, notes: n, of: total },
             `in ${titleOf(project.area)}, but ${n} of its ${total} notes are in ${titleOf(areaId)}`,
             finish([{ action: "move_project", value: areaId, label, notionOwned: false }]), [], null);
