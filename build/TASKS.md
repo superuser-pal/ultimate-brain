@@ -104,7 +104,7 @@ An assistant you ask, from the CLI, about the structure of your work: Areas, Dom
 **Output:** the user's answer on CC-116 (2026-11-05): a decision amending 0040's "it informs, it doesn't block" now that the repo is public (a free ruleset can require a status); the ruleset requiring the `merge-ready` commit status on `main`, with the repo admin as bypass actor so `release.mjs` can still push its release commit; what the user does when no reviewer can run; AGENTS.md and docs/releasing.md. The user turns the ruleset on; agents don't change repo settings.
 **Acceptance:** the decision names the bypass and the case of an unavailable reviewer; on a test PR the Merge button stays disabled while `merge-ready` is red and enables once it is green; the next `release.mjs` push to `main` goes through the bypass; the leak check passes.
 
-### CC-110 · 0.10.0 acceptance (decision 0064) · `review`
+### CC-110 · 0.10.0 acceptance (decision 0064) · `done` (#243)
 **Release:** 0.10.0
 **Changelog:** development only: end-to-end acceptance of the brain assistant on a synthetic brain, attended, with Review rows and chat approvals.
 **Output:** docs/acceptance-0.10.0.md: a scenario per finding kind, the Review-row path and the chat-yes path, a linked repo's rollup reviewed, Notion unreachable. eval/acceptance-0.10.0/RESULTS.md: the blind runs of every scenario (CLI 0.10.0, skills 1.2.0) and their findings. Two small fixes they found, in this repo: a move's label says "1 open task that names" (spec/assistant.md §4.1 first, then the CLI), and the fixture maps Tasks · Status as a select; every sandbox gets a `gh` that always fails. The fork's findings go to the user.
