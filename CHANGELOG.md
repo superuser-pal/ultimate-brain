@@ -2,6 +2,12 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.10.2 — 2026-11-07
+
+- CC-150 (#246): Ultimate Assistant's skill wording follows its contracts more closely (ultimate-brain-skills 1.2.1): a ramble keeps the session open, a delegated run carries out waiting Notion writes, and the log line and the summary count the same things.
+
+Skills: ultimate-brain-skills 1.2.1 (sha256-e1aa1d661d5da68ff06bc8239d520b9b5c8283d85c9e44b6fbdd57227e0216a5)
+
 ## 0.10.1 — 2026-11-07
 
 
