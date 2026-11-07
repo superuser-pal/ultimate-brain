@@ -65,6 +65,8 @@ After 0.8.0: **0.9.0** separates shared skill source and adds explicitly connect
 
 **0.12.0's opening grill is locked in [0074](../decisions/0074-scoped-memory-handovers-and-bounded-recall.md):** approved durable memories, work handovers in existing repo/task/session records, a generated opening context pack initially capped at 800 tokens, targeted recall and reviewed promotion. Prefer small TypeScript retrieval adaptations over another memory runtime; keep the existing architecture and flows.
 
+**0.13.0's opening grill is locked in [0075](../decisions/0075-weekly-review-and-targeted-corrections.md):** one report per week with knowledge changes, task analysis and decisions, sharing five-decision/five-target limits; targeted correction checks after meaningful approved corrections; bounded partial coverage, no-op quiet weeks and a separate no-apply weekly run. Default scheduling is Monday 08:00 local when enabled; acceptance includes representative scenarios and one attended private-brain trial.
+
 ## Post-1.0 (deferred, not rejected)
 
 The [backlog](v2-ideas.md) distinguishes the committed milestones above from post-1.0 candidates: new email/Slack/Teams connectors, topic dossiers and person/client profiles, rich fact/relationship modelling, MCP access, OKF export/alignment, advanced retrieval infrastructure and sensitivity tiers, external worker execution, extra platforms/schedulers, multi-user/teams and hosting. None has a promised pre-launch version.
