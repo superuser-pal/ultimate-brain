@@ -58,7 +58,7 @@ Future implementation tasks are decomposed by Claude Code after their opening sc
 
 ## 0.10.1
 
-### CC-150 · Skills 1.2.1: the CC-110 wording fixes, vendored · `in progress`
+### CC-150 · Skills 1.2.1: the CC-110 wording fixes, vendored · `done` (#246)
 **Release:** 0.10.1
 **Changelog:** Ultimate Assistant's skill wording follows its contracts more closely (ultimate-brain-skills 1.2.1): a ramble keeps the session open, a delegated run carries out waiting Notion writes, and the log line and the summary count the same things.
 **Output:** the skill findings of CC-110's blind runs (eval/acceptance-0.10.0/RESULTS.md §4: 2, 3, 4, 7, 8, 10) fixed in the fork (ultimate-brain-skills PR, `compatible`), released as brain-v1.2.1 after the user's yes, and vendored in `.agents/skills/` (spec/skills-delivery.md §9.5); `.agents/skills/` is not edited by hand. Also: the 0.10.0 section moves verbatim to build/HISTORY.md, and `src/cli.ts` lists `proposalReviseCommand` once in COMMANDS.
