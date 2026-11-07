@@ -14,6 +14,7 @@ import { sourceFolder } from "./paths.ts";
 import { extractPassages, PASSAGE_REF, passageHash } from "./selection.ts";
 import { lineageOf } from "./eligibility.ts";
 import { reportLinks } from "./report-body.ts";
+import { DISMISSALS_PATH, readDismissals } from "./assistant-dismissals.ts";
 import { contextFor, eligibleNotes, indexNotes, loadSuppressions, restrictionOf } from "./suppressions.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
@@ -94,6 +95,7 @@ export function lintBrain(input: LintInput): Issue[] {
     issues.push({ severity, rule, path, line, id, message });
 
   for (const message of loadSuppressions(input.root).problems) add("error", "suppression-record", "_suppressions", 1, null, message);
+  for (const message of readDismissals(input.root).problems) add("error", "assistant-dismissals", DISMISSALS_PATH, 1, null, message);
   for (const problem of workflowRecordProblems(input.root)) add("error", "workflow-record", problem.path, 1, null, `${problem.path} ${problem.message}`);
   for (const problem of input.problems) {
     if (problem.code === "NOT_A_NOTE") add("error", "not-a-note", problem.path, 1, null, problem.message);
