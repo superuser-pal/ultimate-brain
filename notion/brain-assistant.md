@@ -56,7 +56,7 @@ Source: the databases inside [@Brain Data] only.
 
 1. Tasks: Status To Do or Doing, Due on or before today. Overdue first. Show name, project, due.
 2. Meetings: Date is today. Show time, name, project, attendees.
-3. Review: rows with State Pending. Show the count by Type (From source, Conflict, Answer) and the three newest names.
+3. Review: rows with State Pending. Show the count by Type (From source, Conflict, Answer, Suggestion) and the three newest names.
 4. Meetings: Brain Status Not Reviewed and Date on or before today. Show the count.
 5. Projects: Status Active and Countdown says Overdue. Show the names.
 
@@ -71,9 +71,9 @@ Read only. Don't edit anything.
 Goal: help me decide on the brain's pending proposals.
 Source: the Review database inside [@Brain Data], and the meetings its rows link to.
 
-1. Take the rows with State Pending, newest first, grouped by Type: From source, Conflict, Answer.
+1. Take the rows with State Pending, newest first, grouped by Type: From source, Conflict, Answer, Suggestion.
 2. For each row: About, Now → Proposed, the sentence in Why, the source it links to, and what Approve would do for its Kind:
-   Review Notes applies its lettered items (⚠ marks a fact change; "all except b" in What to fix sets b aside on a row of its own); Contradiction keeps both values as contested; Supersede archives the older note; Merge folds a duplicate in; Answer answers a question. Fix applies it as corrected in What to fix.
+   Review Notes applies its lettered items (⚠ marks a fact change; "all except b" in What to fix sets b aside on a row of its own); Contradiction keeps both values as contested; Supersede archives the older note; Merge folds a duplicate in; Answer answers a question; Notion Change (a Suggestion from Ultimate Assistant) changes the one Notion field it names, a task's Status, Due, Project or Area, a project's Status or an Area's Archived, the next time the brain applies decisions; Set Field (a Suggestion) moves a project to another Area or puts an Area in a Domain. Fix applies it as corrected in What to fix.
 3. Point out rows that conflict with each other.
 4. List rows worth a closer look, and why.
 
