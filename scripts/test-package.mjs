@@ -47,6 +47,8 @@ try {
   assert.equal(JSON.parse(status.stdout).data.skills.state, "pinned");
   await access(join(temp, "brain", "brain.json"));
   await access(join(temp, "brain", ".gitignore"));
+  // The Ultimate Assistant sub-agent ships in the template (spec/assistant.md §10).
+  await access(join(temp, "brain", ".claude", "agents", "ultimate-assistant.md"));
   for (const skill of ["brain-ingest", "brain-apply", "brain-query", "brain-connect-notion", "brain-sync", "brain-notion-change"]) {
     await access(join(temp, "brain", ".agents", "skills", skill, "SKILL.md"));
   }

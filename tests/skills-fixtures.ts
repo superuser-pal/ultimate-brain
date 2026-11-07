@@ -81,6 +81,7 @@ export async function productRoot(context: TestContext, snapshot: string, versio
   await writeFile(join(root, "package.json"), `${JSON.stringify({ name: "ultimate-brain", version })}\n`);
   await mkdir(join(root, "templates", "brain"), { recursive: true });
   await cp(join(REPO, "templates", "brain", "AGENTS.md"), join(root, "templates", "brain", "AGENTS.md"));
+  await cp(join(REPO, "templates", "brain", ".claude"), join(root, "templates", "brain", ".claude"), { recursive: true });
   await cp(snapshot, join(root, ".agents", "skills"), { recursive: true });
   return root;
 }

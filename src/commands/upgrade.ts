@@ -13,7 +13,7 @@ import { isRecord } from "../lib/input.ts";
 import { lintBrain } from "../lib/lint.ts";
 import { modulesOf, storedModules, withModules } from "../lib/modules.ts";
 import { scanNotes } from "../lib/notes.ts";
-import { assertPlainPath, installedProduct } from "../lib/skills.ts";
+import { assertPlainPath, installedProduct, SUB_AGENT } from "../lib/skills.ts";
 import { competingCopies } from "../lib/skills-competing.ts";
 import { homeOf, LOCK, readLock, serializeLock, snapshotInvalid, type Lock } from "../lib/skills-pin.ts";
 import { comparePrecedence } from "../lib/skills-range.ts";
@@ -59,6 +59,13 @@ export const upgradeCommand: Command = {
     }
     if (!(await exists(join(root, "CLAUDE.md")))) changes.push({ path: "CLAUDE.md", action: "created", content: "@AGENTS.md\n" });
     else unchanged += 1;
+    // 0.10.0: the Ultimate Assistant sub-agent, product-owned as a whole file (spec/cli.md §5.15 step 2a).
+    const agentTemplate = await readFile(join(product.root, "templates/brain", SUB_AGENT));
+    await assertPlainPath(root, SUB_AGENT);
+    const agentBefore = await readOptionalBuffer(join(root, SUB_AGENT));
+    if (agentBefore === null) changes.push({ path: SUB_AGENT, action: "created", content: agentTemplate });
+    else if (agentBefore.equals(agentTemplate)) unchanged += 1;
+    else changes.push({ path: SUB_AGENT, action: "updated", content: agentTemplate });
 
     // 0.3.0: Inbox is the former Capture Inbox; 0.6.0: Documents are the former References (0049).
     // Keep each database id, but retire the old key. 0.6.0 also writes the modules block (0048).

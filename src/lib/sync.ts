@@ -19,6 +19,7 @@ import { bodyHash, bodyOf } from "./proposals.ts";
 import { applyReviewDecisions } from "./review-apply.ts";
 import { recordRevisionRequests } from "./review-revision.ts";
 import { renderReview } from "./review-body.ts";
+import { decidedInChat, suggestionText } from "./notion-change.ts";
 import { parseReviewPageInput, planReviewRow, type ItemDecision, type ReviewDecision, type ReviewHeld, type ReviewPage, type ReviewRevision } from "./review-plan.ts";
 import { hasReportShape, reportLinks } from "./report-body.ts";
 import { gitBodyOf, parseWording, planWording, textHash, type AcceptedWording, type Wording, type WordingPlan } from "./wording.ts";
@@ -618,7 +619,7 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
   ];
   updates.push(...skippedUpdates);
   const correctionsOut = [...corrections, ...skippedCorrections] as Array<Record<string, unknown>>; const decisionsOut = [...decisionResult, ...skippedDecisions] as Array<Record<string, unknown>>;
-  return { create, updates, corrections: correctionsOut, decisions: decisionsOut, review_results: [...review.results, ...reviewSkipped], revision_results: revisions, document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, accepted_wording: wording.results, wording_waiting: plan.wording_waiting, wording_held: plan.wording_held, clear_accepted: plan.clear_accepted.filter((item) => !conflictedIds.has(item.note) && !conflictedPages.has(item.page_id) && !updates.some((update) => update.id === item.note && update.result === "failed") && workspace.get(item.note) !== undefined), conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...wording.results, ...updates, ...correctionsOut, ...decisionsOut, ...review.results, ...reviewSkipped].map((item) => ({ ...item }))), log };
+  return { create, updates, corrections: correctionsOut, decisions: decisionsOut, notion_writes: decisionApply.notion_writes, review_results: [...review.results, ...reviewSkipped], revision_results: revisions, document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, accepted_wording: wording.results, wording_waiting: plan.wording_waiting, wording_held: plan.wording_held, clear_accepted: plan.clear_accepted.filter((item) => !conflictedIds.has(item.note) && !conflictedPages.has(item.page_id) && !updates.some((update) => update.id === item.note && update.result === "failed") && workspace.get(item.note) !== undefined), conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...wording.results, ...updates, ...correctionsOut, ...decisionsOut, ...review.results, ...reviewSkipped].map((item) => ({ ...item }))), log };
 }
 
 /**
@@ -690,7 +691,7 @@ function relationOrder(creates: readonly SyncPlan["create"][number][]): { order:
   const reaches = (from: number, target: number, seen: Set<number>): boolean => [...needs[from]!].some((dep) => dep === target || (!done.has(dep) && !seen.has(dep) && (seen.add(dep), reaches(dep, target, seen))));
   return { order, stuck, cyclic: new Set(stuck.filter((index) => reaches(index, index, new Set()))) };
 }
-function summarize(items: readonly Record<string, unknown>[]): Record<string, number> { const result: Record<string, number> = { applied: 0, closed: 0, recorded: 0, corrected: 0, skipped: 0, failed: 0 }; for (const item of items) if (typeof item.result === "string" && Object.hasOwn(result, item.result)) result[item.result] += 1; return result; }
+function summarize(items: readonly Record<string, unknown>[]): Record<string, number> { const result: Record<string, number> = { applied: 0, closed: 0, recorded: 0, awaiting_notion: 0, corrected: 0, skipped: 0, failed: 0 }; for (const item of items) if (typeof item.result === "string" && Object.hasOwn(result, item.result)) result[item.result] += 1; return result; }
 
 export interface RenderItem { template?: { type: "default" }; item_updates?: Array<{ item_id: string; reason: string; section: string }>; review_published_after?: Record<string, unknown>; id: string; type: string; database: string; database_id: string; page_id: string | null; action: "create" | "update" | "trash"; properties: Record<string, unknown>; body: string | null; sections: Record<string, string> | null; pending_relations: Array<Record<string, unknown>>; published: Record<string, unknown> }
 
@@ -733,6 +734,8 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     if (note.type === "proposal" && isRecord(note.attributes.notion_published) && note.attributes.notion_published["@trashed"] !== undefined) continue;
     // Notion shows reviewed knowledge (0071): a draft lives only in its Review row, and a rejected one never gets a page.
     if (awaitsReview(note)) { if (ids !== undefined) skipped.push({ id: note.id, reason: "NOT_REVIEWED" }); continue; }
+    // A change Ultimate Assistant made after a yes in chat never becomes a Review row (assistant.md §6.2).
+    if (decidedInChat(note)) { if (ids !== undefined) skipped.push({ id: note.id, reason: "DECIDED_IN_CHAT" }); continue; }
     const databaseId = databaseIdFor(workspace, database); if (databaseId === "") { warnings.push({ code: "DATABASE_NOT_CONFIGURED", message: `${database} database is not configured`, id: note.id }); continue; }
     if (note.type === "proposal" && trashDue(note, now)) { items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: String(note.attributes.notion), action: "trash", properties: {}, body: null, sections: null, pending_relations: [], published: { "@trashed": formatTimestamp(now) } }); continue; }
     if (note.type === "meeting" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "MEETING_NOT_PUBLISHED" }); continue; }
@@ -839,6 +842,12 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     // A body diff can only be shown while the target's body is the one proposed against; then S keeps it (0045).
     const proposed = staleBody(a, workspace) && isRecord(a.notion_published) && Object.hasOwn(a.notion_published, "Proposed") ? a.notion_published.Proposed : undefined;
     const reviewText = (value: unknown) => truncate(typeof value === "string" ? reviewMarkdown(value, target) : value);
+    // A Suggestion row (0072, cli §5.14.4): Ultimate Assistant's notion_change or set_field, shown in the proposal's own Area, with no Source Meeting.
+    if (a.kind === "notion_change" || a.kind === "set_field") {
+      const text = suggestionText(a, workspace);
+      Object.assign(values, { Name: text.name, Kind: select(a.kind), About: text.about, "About Page": text.aboutPage, Now: truncate(text.now), Proposed: truncate(text.proposed), Why: reviewText(a.why), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), State: select(proposalState(a.status)), "Brain ID": note.id });
+      return values;
+    }
     // A Review notes row names its source: the meeting for minutes, else the source (0041).
     const source = a.kind === "review_notes" && typeof a.source === "string" ? workspace.get(a.source) : undefined;
     const targetText = source !== undefined ? `${source.attributes.title} (${source.id})` : target === undefined ? null : `${target.attributes.title} (${target.id})`;
@@ -1055,8 +1064,10 @@ function proposalAfter(attributes: Record<string, unknown>, workspace: Workspace
   return attributes.after ?? null;
 }
 
-export function renderTasks(workspace: Workspace, targetId: string, input: unknown): Record<string, unknown> {
+/** Task payloads for a meeting's or source's action items, or (targetId undefined, `--direct`) for tasks the user said yes to in a chat (cli §5.14.5). */
+export function renderTasks(workspace: Workspace, targetId: string | undefined, input: unknown): Record<string, unknown> {
   if (!isRecord(input) || !Array.isArray(input.items)) throw new BrainError("INPUT_INVALID", "tasks input needs an items list");
+  if (targetId === undefined) return renderDirectTasks(workspace, input.items);
   const config = tasksConfig(workspace); const target = workspace.get(targetId); const sourceMode = target?.type === "source";
   if (target === undefined) throw new BrainError("UNKNOWN_ID", `No meeting or source has id ${targetId}`);
   if (target.type !== "meeting" && !sourceMode) throw new BrainError("INPUT_INVALID", `${targetId} is not a meeting or source`);
@@ -1098,6 +1109,44 @@ export function renderTasks(workspace: Workspace, targetId: string, input: unkno
       if (isRecord(entry) && (entry.effective !== "use" || !importedItems(target.body).has(itemId as string))) throw new BrainError("INPUT_INVALID", `${String(itemId)} is excluded from the brain or none of its paragraphs was copied, so it creates no Task`, [{ pointer: `/items/${index}/item`, message: "must be an item that is included (Use in brain)" }]);
     }
     return { database_id: config.database, properties, pending_relations, ...(itemId === undefined ? {} : { item: itemId }) };
+  });
+  return { items: tasks };
+}
+
+/**
+ * `sync tasks --direct` (0072, cli §5.14.5, assistant.md §7): no meeting or source, so no backlink and no Brain ID; an item may name
+ * its Area; the owner is sent only on a Waiting On item. Nothing is recorded afterwards.
+ */
+function renderDirectTasks(workspace: Workspace, items: unknown[]): Record<string, unknown> {
+  const config = tasksConfig(workspace);
+  const tasks = items.map((item, index) => {
+    if (!isRecord(item) || typeof item.title !== "string" || item.title === "") throw new BrainError("INPUT_INVALID", "each task needs a title", [{ pointer: `/items/${index}/title`, message: "must be a non-empty string" }]);
+    if (item.item !== undefined) throw new BrainError("INPUT_INVALID", "a task from a chat has no extract item", [{ pointer: `/items/${index}/item`, message: "is only allowed with --source" }]);
+    if (item.status !== undefined && item.status !== "waiting_on") throw new BrainError("INPUT_INVALID", "a task status can only be waiting_on", [{ pointer: `/items/${index}/status`, message: "must be waiting_on, or absent" }]);
+    const waiting = item.status === "waiting_on";
+    if (waiting && (typeof item.owner !== "string" || item.owner.trim() === "")) throw new BrainError("INPUT_INVALID", "a Waiting On task needs the owner's name", [{ pointer: `/items/${index}/owner`, message: "must be the name of the person you wait on" }]);
+    let area: string | undefined;
+    if (item.area !== undefined) {
+      const note = typeof item.area === "string" ? workspace.get(item.area) : undefined;
+      if (note === undefined) throw new BrainError("UNKNOWN_ID", `No note with id ${String(item.area)}`, [{ pointer: `/items/${index}/area`, message: "does not exist" }]);
+      if (note.type !== "area") throw new BrainError("INPUT_INVALID", `${note.id} is not an Area`, [{ pointer: `/items/${index}/area`, message: `is a ${note.type}, not an Area` }]);
+      area = note.id;
+    }
+    const projects = taskProjects(workspace, undefined, item.projects, index);
+    const properties: Record<string, unknown> = {}; const pending_relations: Array<Record<string, unknown>> = [];
+    const put = (key: string, type: string, value: unknown) => { const name = config.properties[key]; if (typeof name === "string" && name !== "") properties[name] = { type, value }; };
+    put("title", "title", item.title); put("status", config.status_type, waiting ? config.waiting_on_status : config.new_task_status);
+    if (item.due !== undefined) put("due", "date", dateOutput(item.due));
+    if (waiting) put("owner", "person_name", item.owner);
+    const projectProperty = config.properties.project;
+    if (typeof projectProperty === "string" && projectProperty !== "") {
+      const unpublished = projects.filter((id) => typeof workspace.get(id)?.attributes.notion !== "string");
+      if (unpublished.length > 0) pending_relations.push({ property: projectProperty, ids: unpublished });
+      put("project", "relation", publishedPages(projects, workspace));
+    }
+    const areas = area !== undefined ? [area] : [...new Set(projects.flatMap((id) => { const value = workspace.get(id)?.attributes.area; return typeof value === "string" ? [value] : []; }))];
+    put("area", "relation", publishedPages(areas, workspace));
+    return { database_id: config.database, properties, pending_relations };
   });
   return { items: tasks };
 }

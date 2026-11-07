@@ -7,16 +7,17 @@ import { generateId, generateItemId } from "./ids.ts";
 import { assertNoProblems, isRecord, unknownKeys, type InputProblem } from "./input.ts";
 import { assertStagedValid, checkNoteInput, stageNotes, type CreatedNote, type NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
+import { checkNotionChange, defaultTitle, duplicateOf, resolveSetField } from "./notion-change.ts";
 import { newNotePath } from "./paths.ts";
 import { loadSchemas } from "./schemas.ts";
 import { formatDate } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 
-export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "update_body", "add_link", "supersede", "contradiction", "merge", "new_item", "review_notes", "answer"] as const;
+export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "update_body", "add_link", "supersede", "contradiction", "merge", "new_item", "review_notes", "answer", "notion_change", "set_field"] as const;
 export const PROPOSAL_STATUSES = ["pending", "approved", "rejected", "edited", "applied", "closed"] as const;
 
 /** Input keys of `proposal new`: the schema §11 fields the CLI does not set (spec/cli.md §5.6). */
-const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source"];
+const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding"];
 const ID = /^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{8}$/;
 const KNOWLEDGE_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 const ADD_LINK_FIELDS = new Set(["aliases", "tags", "projects", "people", "attendees", "deciders"]);
@@ -82,6 +83,16 @@ export function stageProposals(
       const pointer = `/proposals/${index}`;
       if (item.kind === "review_notes") return;
       const fields = resolveFields(workspace, item, pointer, today);
+      // Ultimate Assistant's kinds (spec/cli.md §5.6, 0072): their own no-change and dedupe rules, and a default title.
+      if (item.kind === "notion_change" || item.kind === "set_field") {
+        if (fields.noChange === true) { skipped.push({ input_index: index, reason: "NO_CHANGE" }); return; }
+        delete fields.noChange;
+        const duplicate = duplicateOf(workspace, fields);
+        if (duplicate !== undefined) { skipped.push({ input_index: index, reason: "DUPLICATE_PENDING", existing: duplicate.id }); return; }
+        if (fields.title === undefined) fields.title = defaultTitle(workspace, fields);
+        createProposal(workspace, fields, [index], today, pointer, pointers, created);
+        return;
+      }
       if (item.kind === "answer" && workspace.get(String(fields.target))!.attributes.answer !== undefined) {
         skipped.push({ input_index: index, reason: "ALREADY_ANSWERED" });
         return;
@@ -299,10 +310,11 @@ function checkShape(item: unknown, pointer: string): InputProblem[] {
   const problems = unknownKeys(item, INPUT_KEYS, pointer);
   const at = (key: string, message: string) => problems.push({ pointer: `${pointer}/${key}`, message });
   if (!(PROPOSAL_KINDS as readonly unknown[]).includes(item.kind)) at("kind", `must be one of ${PROPOSAL_KINDS.join(", ")}`);
-  for (const key of item.kind === "review_notes" ? ["source"] : ["title", "why", "source"]) {
+  const titled = item.kind !== "review_notes" && item.kind !== "notion_change" && item.kind !== "set_field";
+  for (const key of titled ? ["title", "why", "source"] : item.kind === "review_notes" ? ["source"] : ["why", "source"]) {
     if (typeof item[key] !== "string" || item[key] === "") at(key, "must be a non-empty string");
   }
-  for (const key of item.kind === "review_notes" ? ["title", "why"] : []) {
+  for (const key of item.kind === "review_notes" ? ["title", "why"] : titled ? [] : ["title"]) {
     if (item[key] !== undefined && (typeof item[key] !== "string" || item[key] === "")) at(key, "must be a non-empty string");
   }
   if (item.kind === "review_notes") {
@@ -321,6 +333,8 @@ function checkShape(item: unknown, pointer: string): InputProblem[] {
   } else if (item.kind === "new_item") {
     if (item.target !== undefined) at("target", "a new_item has no target");
     problems.push(...checkNoteInput(item.note, `${pointer}/note`, false));
+  } else if (item.kind === "notion_change") {
+    // Checked against the brain in checkNotionChange: a task has no target, a project or an Area does.
   } else if (typeof item.target !== "string") {
     at("target", "must be the id of an existing note");
   }
@@ -350,6 +364,11 @@ function resolveFields(workspace: Workspace, item: Record<string, unknown>, poin
 
   if (typeof item.source === "string" && ID.test(item.source)) existing("source");
   if (kind === "new_item") return fields;
+  if (kind === "notion_change") return { ...fields, noChange: checkNotionChange(workspace, item, pointer).noChange };
+  if (kind === "set_field") {
+    const { noChange } = resolveSetField(workspace, item, fields, pointer);
+    return { ...fields, noChange };
+  }
   const target = existing("target");
   if (!KNOWLEDGE_TYPES.has(target.type)) invalid("target", `is a ${target.type}; proposals change knowledge notes only`);
   if (kind === "answer") {

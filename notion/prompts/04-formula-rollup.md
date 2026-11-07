@@ -14,7 +14,7 @@ Ignore the module names in square brackets at the start of lines.
 6. In "Areas", add a rollup property "People via projects" over the relation "Projects", property People, calculated as Show original.
 [Orgs] 7. In "Areas", add a rollup property "Clients via projects" over the relation "Projects", property Client, calculated as Show original.
 [Orgs] 8. In "Orgs", add a rollup property "Meetings via projects" over the relation "Projects", property "Meetings", calculated as Show original.
-9. In "Review", add a formula property "Type" that returns text: "From source" when Kind is Review Notes, Update Fact, Add To Note, Update Body or Add Link; "Conflict" when Kind is Contradiction, Supersede, Merge or New Item; "Answer" when Kind is Answer.
+9. In "Review", add a formula property "Type" that returns text: "From source" when Kind is Review Notes, Update Fact, Add To Note, Update Body or Add Link; "Conflict" when Kind is Contradiction, Supersede, Merge or New Item; "Answer" when Kind is Answer; "Suggestion" when Kind is Notion Change or Set Field.
 10. In "Areas", add a formula property "To review" that returns the number of pages in the relation "Review" whose State is Pending.
 11. In "Areas", add a formula property "Meetings to review" that returns the number of pages in the relation "Meetings" whose Brain Status is Not Reviewed and whose Date is today or earlier.
 [Tasks] 12. In "Areas", add a formula property "Due" that returns the number of pages in the relation "Tasks" whose Status is neither Done nor Won't Do and whose Due is today or earlier.
@@ -43,7 +43,9 @@ Review Type:
 
 ```text
 if(or(prop("Kind") == "Review Notes", prop("Kind") == "Update Fact", prop("Kind") == "Add To Note", prop("Kind") == "Update Body", prop("Kind") == "Add Link"), "From source",
-  if(prop("Kind") == "Answer", "Answer", if(empty(prop("Kind")), "", "Conflict")))
+  if(prop("Kind") == "Answer", "Answer",
+    if(or(prop("Kind") == "Notion Change", prop("Kind") == "Set Field"), "Suggestion",
+      if(empty(prop("Kind")), "", "Conflict"))))
 ```
 
 Areas To review, Meetings to review and, with Tasks, Due (0050), in that order:
@@ -88,5 +90,5 @@ Mapping your own tasks database? Build Task Progress and Due over your own Tasks
 - [ ] (Planning) Create a test goal with two key results: a Number one (Start 4, Current 6, Target 10) shows 33%; a Milestone one with Done checked shows 100%. The goal's Progress shows 67%.
 - [ ] (Planning) Give the test goal a Deadline 10 days from today: Countdown shows "10 days left". Set Status to Achieved: Countdown is empty.
 - [ ] (Tasks) Create a project with eight Done and two Won't Do: Task Progress shows 8 completed · 2 dropped · 100%. With three dropped and no other tasks it shows 0 completed · 3 dropped; with no tasks it shows no active tasks.
-- [ ] In Review, a test row with Kind Answer shows Type "Answer"; Kind Merge shows "Conflict". In Areas, link that row to a test area: To review shows 1 and At a glance shows "1 to review"; unlink it: At a glance shows "all clear".
+- [ ] In Review, a test row with Kind Answer shows Type "Answer"; Kind Merge shows "Conflict"; Kind Notion Change shows "Suggestion". In Areas, link that row to a test area: To review shows 1 and At a glance shows "1 to review"; unlink it: At a glance shows "all clear".
 - [ ] Delete the test goal, key results, project, tasks, Review row and area.

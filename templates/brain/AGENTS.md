@@ -4,7 +4,7 @@
 
 This repo is a second brain: Markdown notes in Git, operated by agents through the `brain` CLI, with Notion as the human view. Its value is trust: every claim traces to a source, and history is kept, never overwritten.
 
-`brain` is the Ultimate Brain CLI. If it is not installed (`command not found`), run `npm install -g ultimate-brain`. To update, run `npm install -g ultimate-brain@latest`, then `brain upgrade` (it refreshes this block, `.agents/skills/` and `.claude/skills/`, never your notes or the text below the block, then commits and pushes). From this repo run it as `brain <command> --brain . --json` and read the JSON it prints; `brain --help` lists the commands. Exit codes: 1 means findings to act on; 2 or 4 means your command or input was wrong, so fix it and retry; 3 or 5 means the brain or a write was refused, so stop and report to the user; 10 is a bug, so report it.
+`brain` is the Ultimate Brain CLI. If it is not installed (`command not found`), run `npm install -g ultimate-brain`. To update, run `npm install -g ultimate-brain@latest`, then `brain upgrade` (it refreshes this block, `.agents/skills/`, `.claude/skills/` and `.claude/agents/ultimate-assistant.md`, never your notes or the text below the block, then commits and pushes). From this repo run it as `brain <command> --brain . --json` and read the JSON it prints; `brain --help` lists the commands. Exit codes: 1 means findings to act on; 2 or 4 means your command or input was wrong, so fix it and retry; 3 or 5 means the brain or a write was refused, so stop and report to the user; 10 is a bug, so report it.
 
 ## Operations
 
@@ -22,6 +22,7 @@ Each operation has a skill; follow it end to end:
 | link a repo with its kit, show, change or unlink a link, check its health, show its tasks, start a new repo | `brain-repos` |
 | track and run the work in a folder, standard or connected to a Notion Project or Area: set it up, run a session, pause or end it | `brain-workflow` |
 | take an existing project's plans and tasks (a Markdown plan, issues, Notion tasks) into a connected workflow | `brain-workflow-adopt` |
+| review the structure of your work: what's overdue, stalled, missing a next step or misplaced, and turn your thoughts into tasks, projects and captures | `ultimate-assistant` (delegated to the sub-agent: say `report only`) |
 | learn how the system works ("how do I…", "why didn't…") | `brain-howto` |
 | change the Notion structure (databases, properties, views) | `brain-notion-change`; structure is changed in the product repo first, never edited directly in Notion (0022) |
 
@@ -39,7 +40,7 @@ Each operation has a skill; follow it end to end:
 
 ## Product files and findings
 
-- **Product-owned files are read-only here:** this block, `.agents/skills/` and `.claude/skills/` (the skills Ultimate Brain ships, written in the public ultimate-brain-skills repository and installed only by `brain upgrade`), and `skills.lock.json`. Never edit them, even to fix a bug; the next upgrade would erase the fix and the product would never learn of it. `brain lint` reports a changed one as `product-file`.
+- **Product-owned files are read-only here:** this block, `.agents/skills/` and `.claude/skills/` (the skills Ultimate Brain ships, written in the public ultimate-brain-skills repository and installed only by `brain upgrade`), `.claude/agents/ultimate-assistant.md` (the Ultimate Assistant sub-agent), and `skills.lock.json`. Never edit them, even to fix a bug; the next upgrade would erase the fix and the product would never learn of it. `brain lint` reports a changed one as `product-file`.
 - **Pinned skills.** `skills.lock.json` records the skill snapshot this brain uses; only `brain upgrade` changes it. When a command stops with a `SKILLS_` error, show the user its message and stop: never use another copy of a skill instead. To undo an upgrade: `git revert <upgrade commit>`, then `npm install -g ultimate-brain@<previous_cli>` (the version the upgrade reported; also the restored `skills.lock.json`'s `installed_by` when there is one), then `brain lint`.
 - **When the product is wrong** (a skill step fails, the CLI misbehaves, a rule gives a bad result), finish or stop the run, then file a finding: `gh issue create --repo superuser-pal/ultimate-brain --label dogfood --template dogfood.md`. Describe it as it would happen in a made-up brain ("a meeting with two projects…"): never names, client text or note content from this brain. Show the user the issue text before filing. If `gh` is missing, give the user the text to file.
 

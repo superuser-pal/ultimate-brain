@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, posix } from "node:path";
-import { installedProduct } from "./skills.ts";
+import { installedProduct, SUB_AGENT } from "./skills.ts";
 import { competingCopies, competingMessage } from "./skills-competing.ts";
 import { checkedNames, incompatibleMessage, LOCK, pinState, skillDrift, type Lock, type Pin } from "./skills-pin.ts";
 import { comparePrecedence, satisfies } from "./skills-range.ts";
@@ -14,6 +14,7 @@ import { sourceFolder } from "./paths.ts";
 import { extractPassages, PASSAGE_REF, passageHash } from "./selection.ts";
 import { lineageOf } from "./eligibility.ts";
 import { reportLinks } from "./report-body.ts";
+import { DISMISSALS_PATH, readDismissals } from "./assistant-dismissals.ts";
 import { contextFor, eligibleNotes, indexNotes, loadSuppressions, restrictionOf } from "./suppressions.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
@@ -94,6 +95,7 @@ export function lintBrain(input: LintInput): Issue[] {
     issues.push({ severity, rule, path, line, id, message });
 
   for (const message of loadSuppressions(input.root).problems) add("error", "suppression-record", "_suppressions", 1, null, message);
+  for (const message of readDismissals(input.root).problems) add("error", "assistant-dismissals", DISMISSALS_PATH, 1, null, message);
   for (const problem of workflowRecordProblems(input.root)) add("error", "workflow-record", problem.path, 1, null, `${problem.path} ${problem.message}`);
   for (const problem of input.problems) {
     if (problem.code === "NOT_A_NOTE") add("error", "not-a-note", problem.path, 1, null, problem.message);
@@ -550,12 +552,20 @@ function lintProductFiles(input: LintInput, add: Add): void {
   try { product = installedProduct(); } catch (error) { add("error", "product-file", "AGENTS.md", 1, null, `installed package not found: ${String(error)}`); return; }
   const message = `product files differ from ultimate-brain ${product.version}; run brain upgrade, or file a finding`;
   const template = join(product.root, "templates/brain/AGENTS.md");
-  if (!existsSync(template)) { add("error", "product-file", "AGENTS.md", 1, null, "installed package not found: missing product files"); return; }
+  const agentTemplate = join(product.root, "templates/brain", SUB_AGENT);
+  if (!existsSync(template) || !existsSync(agentTemplate)) { add("error", "product-file", "AGENTS.md", 1, null, "installed package not found: missing product files"); return; }
   const block = /<!-- ultimate-brain:rules:start\b[^>]*-->[\s\S]*?<!-- ultimate-brain:rules:end -->/.exec(readFileSync(template, "utf8"))?.[0];
   const agents = planned?.get("AGENTS.md") ?? (existsSync(join(root, "AGENTS.md")) ? readFileSync(join(root, "AGENTS.md"), "utf8") : null);
   const actual = agents?.match(/<!-- ultimate-brain:rules:start\b[^>]*-->[\s\S]*?<!-- ultimate-brain:rules:end -->/g) ?? null;
   if (block === undefined || actual?.length !== 1 || actual[0] !== block) add("error", "product-file", "AGENTS.md", 1, null, message);
+  // The Ultimate Assistant sub-agent is product-owned as a whole file, always against the package (spec/assistant.md §10).
+  const agent = planned?.has(SUB_AGENT) ? planned.get(SUB_AGENT)! : readRegularFile(join(root, SUB_AGENT));
+  if (agent !== readFileSync(agentTemplate, "utf8")) add("error", "product-file", SUB_AGENT, 1, null, message);
   lintSkills(input, product, add);
+}
+
+function readRegularFile(path: string): string | null {
+  try { return statSync(path).isFile() ? readFileSync(path, "utf8") : null; } catch { return null; }
 }
 
 /** Skill trees against the pin, or the package while unpinned, and the pin's own rules (spec/skills-delivery.md §6.4). */
