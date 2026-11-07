@@ -165,6 +165,9 @@ function write(brain, notion, asOf) {
   cfg.modules = { domains: true, knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: true };
   for (const k of Object.keys(DB)) if (k !== "tasks") cfg.notion.databases[k] = db(k);
   cfg.notion.tasks.database = db("tasks");
+  // notion-sim shows Tasks · Status as a select (no option groups), so the mapping says so too (CC-110: runners saw
+  // `status_type: status` beside a select and had to guess the groups).
+  cfg.notion.tasks.status_type = "select";
   writeFileSync(cfgPath, `${JSON.stringify(cfg, null, 2)}\n`);
   for (const n of notes()) { mkdirSync(dirname(join(brain, n.path)), { recursive: true }); writeFileSync(join(brain, n.path), n.text); }
   mkdirSync(notion, { recursive: true });
