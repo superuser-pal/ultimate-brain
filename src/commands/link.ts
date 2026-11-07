@@ -3,6 +3,7 @@ import { basename, join, resolve } from "node:path";
 
 import type { Command, Warning } from "../lib/command.ts";
 import { isProductRepository } from "../lib/brain-path.ts";
+import { KEBAB, parseMarker, type MarkerSkills, type RepoMarker } from "../lib/brain-marker.ts";
 import { BrainError } from "../lib/errors.ts";
 import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
 import type { Note } from "../lib/notes.ts";
@@ -14,16 +15,7 @@ import { packageProblem, packageSnapshot, sha256, TREES, type Manifest, type Sna
 
 const START = "<!-- ultimate-brain:start -->";
 const END = "<!-- ultimate-brain:end -->";
-const STACK = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
-interface MarkerSkills { name: string; version: string; integrity: string; names: string[] }
-interface RepoMarker {
-  repo?: string;
-  project?: string;
-  area?: string;
-  stacks?: string[];
-  skills?: MarkerSkills;
-}
+const STACK = KEBAB;
 
 /** The skills `link` installs and where their bytes come from (spec/skills-delivery.md §6.2). */
 interface LinkSource { source: "brain" | "package"; manifest: Manifest; folder: string; skills: SnapshotSkill[] }
@@ -111,14 +103,7 @@ async function openRepo(requested: string): Promise<string> {
 async function readMarker(root: string): Promise<{ raw: string | null; value: RepoMarker }> {
   const raw = await readOptional(root, ".brain");
   if (raw === null) return { raw, value: {} };
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (error) {
-    throw new BrainError("INPUT_INVALID", `.brain is not valid JSON: ${error instanceof Error ? error.message : String(error)}`);
-  }
-  if (!isMarker(parsed)) throw new BrainError("INPUT_INVALID", ".brain must be an object with only repo, project, area, stacks and skills");
-  return { raw, value: parsed };
+  return { raw, value: parseMarker(raw, "INPUT_INVALID", ".brain") };
 }
 
 function buildMarker(
@@ -386,23 +371,6 @@ async function writePlan(root: string, files: readonly PlannedFile[]): Promise<v
     }
     throw error;
   }
-}
-
-function isMarker(value: unknown): value is RepoMarker {
-  if (!isRecord(value)) return false;
-  if (!Object.keys(value).every((key) => ["repo", "project", "area", "stacks", "skills"].includes(key))) return false;
-  return (value.repo === undefined || typeof value.repo === "string")
-    && (value.project === undefined || typeof value.project === "string")
-    && (value.area === undefined || typeof value.area === "string")
-    && (value.stacks === undefined || Array.isArray(value.stacks))
-    && (value.skills === undefined || isMarkerSkills(value.skills));
-}
-
-/** `.brain` `skills` (skills-delivery §6.2); `names` must be skill names, since link removes the folders they name. */
-function isMarkerSkills(value: unknown): value is MarkerSkills {
-  return isRecord(value)
-    && typeof value.name === "string" && typeof value.version === "string" && typeof value.integrity === "string"
-    && Array.isArray(value.names) && value.names.every((name) => typeof name === "string" && STACK.test(name));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
