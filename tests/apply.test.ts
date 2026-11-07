@@ -172,7 +172,7 @@ test("re-applying the same decisions is a no-op", async (context) => {
   await proposal(dir, "prp-0a1b2c3d", kinds[0]!.fields);
   const input = { decisions: [decide("prp-0a1b2c3d"), decide("prp-9d3f7h2k", "reject")] };
   const first = await apply(dir, input);
-  assert.deepEqual(first.json.data.summary, { applied: 1, closed: 1, recorded: 0, corrected: 0, skipped: 0, failed: 0 });
+  assert.deepEqual(first.json.data.summary, { applied: 1, closed: 1, recorded: 0, awaiting_notion: 0, corrected: 0, skipped: 0, failed: 0 });
   const snapshot = await readFile(join(dir, PROJECT), "utf8");
   const log = await readFile(join(dir, "log/2026-12.md"), "utf8");
   assert.ok(log.endsWith(
@@ -253,7 +253,7 @@ test("apply reports item failures and keeps going", async (context) => {
   ]);
   assert.match(run.json.data.decisions[3].message, /missing-ref/);
   assert.equal(parseFrontmatter(await readFile(join(dir, "_proposals/2026-12-08-prp-2a1b2c3d.md"), "utf8")).attributes.status, "pending", "a failed item is left unchanged");
-  assert.deepEqual(run.json.data.summary, { applied: 1, closed: 0, recorded: 0, corrected: 0, skipped: 0, failed: 4 });
+  assert.deepEqual(run.json.data.summary, { applied: 1, closed: 0, recorded: 0, awaiting_notion: 0, corrected: 0, skipped: 0, failed: 4 });
 });
 
 test("corrections from Notion edits run first and later decisions see them", async (context) => {
