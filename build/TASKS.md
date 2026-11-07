@@ -168,15 +168,23 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 **Output:** decision 0074 from the user's accepted 2026-11-06 grill and final six-capability clarification; this release's intro and work packages, the roadmap/backlog pointers, and a refinement pointer on 0064. Planning only: no implementation, CLI/schema/skill change, upstream code import or brain operation. The user's instruction to lock the agreement authorises recording this planning agreement, following the CC-74/CC-95 precedent; implementation remains Claude Code's and independent review is required.
 **Acceptance:** 0074 records the six capabilities and every accepted capture, scope, conflict, retention, review-volume and token choice; it records the preferred small TypeScript component reuse and its boundaries; the synthetic 100% critical-trust / at least 90% answerable-case gates and separate cost accounting are explicit; the roadmap/backlog point to the decision without changing other release scope or task rows; only planning Markdown changes; the leak check and PR format check pass.
 
-## 0.13.0 — Knowledge pays back (decisions 0061, 0064)
+## 0.13.0 — Knowledge pays back (decisions 0061, 0064, 0075)
 
-Work packages: digest/review and correction-sweep contracts; reviewable propagation to affected restatements; cited weekly digest and concise review flow using existing module/output rules; acceptance of usefulness and Review workload. Existing-knowledge changes remain proposals. Scope/decompose at the opening grill.
+The opening grill ran on 2026-11-07 and is locked in [0075](../decisions/0075-weekly-review-and-targeted-corrections.md). One weekly report has What changed, Task analysis and What needs your decision, with roughly two minutes to read and five minutes to decide. Analyse meaningful changes since the last successful brief and current outstanding work; recommend an order of attention with reasons. Keep one report per week for browsable Notion history, updating that week's report on rerun under existing module/publishing rules.
+
+Work packages: contracts and representative resource-budget trials; shared digest/assistant selection with at most five actionable decisions and five affected targets per run, selective repetition and existing dismissals; targeted checks queued after approved corrections that change meaning, with well-supported claim-grouped/selectable proposals preserving independent and historical evidence; bounded work with honest partial coverage and queued remainder; one on-demand/scheduled weekly flow, default Monday 08:00 local when enabled, separate from catch-up and applying nothing; synthetic busy/quiet/missed-week/partial/repeated/correction scenarios plus one attended private-brain trial. Quiet runs write nothing; failures and incomplete coverage are surfaced. Numeric token/time defaults come from trials before production implementation is committed. CC-111 retains its identity; Claude Code decomposes implementation after contracts. This scope record starts none.
 
 ### CC-111 · The brain assistant's scheduled weekly review (decisions 0064, 0051) · `todo`
 **Release:** 0.13.0
 **Changelog:** the brain assistant can review your projects every week on a schedule, leaving a report and Review rows and changing nothing directly.
 **Output:** the assistant's unattended mode per 0051 (its schedule, the report, Review rows only, no direct changes, no questions), shared with the weekly digest where they overlap; detailed at 0.13.0's opening grill.
 **Acceptance:** a scheduled run on a synthetic brain writes one report and at most the capped Review rows, applies nothing, and a run with nothing found writes nothing.
+
+### CC-147 · Record the 0.13.0 weekly review and correction scope · `review`
+**Release:** 0.13.0
+**Changelog:** development only: the 0.13.0 opening grill is recorded, covering weekly report history, task analysis, shared five-decision/five-target limits and targeted correction checks.
+**Output:** decision 0075 from the user's accepted 2026-11-07 grill; this release's intro/work packages, the roadmap/backlog pointers and a refinement pointer on 0064. Planning only: no implementation, CLI/schema/skill change, brain operation or schedule installation. The user's confirmation authorises recording this planning agreement, following CC-146's precedent; implementation remains Claude Code's and independent review is required.
+**Acceptance:** 0075 records the three-section brief, time targets, meaningful-change window and current task analysis; both shared caps, grouped/selectable corrections, selective reminders and preservation/uncertainty rules are explicit; weekly history, scheduling, separate no-apply operation, quiet no-op behaviour and budgeted partial coverage are explicit; resource defaults remain trial-derived and acceptance includes representative synthetic scenarios plus one attended private-brain trial; roadmap/backlog pointers change no other release scope or existing task row; only planning Markdown changes; the leak and PR format checks pass.
 
 ## 0.14.0 — Repeatable onboarding and adoption (decision 0061)
 
