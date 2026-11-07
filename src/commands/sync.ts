@@ -73,8 +73,13 @@ function holdBody(item: RenderItem): void {
 }
 
 export const syncTasksCommand: Command = {
-  name: "sync tasks", usage: "brain sync tasks (--meeting <mtg-id> | --source <src-id>) --input <file|-> [--json]", summary: "Render action-item task payloads for a meeting or source.", options: { meeting: "string", source: "string", input: "string" }, maxPositionals: 0, needsBrain: true,
-  async run({ args, brain }) { const meeting = args.options.meeting as string | undefined; const source = args.options.source as string | undefined; const input = args.options.input as string | undefined; if ((meeting === undefined) === (source === undefined) || input === undefined) throw new BrainError("USAGE", "sync tasks needs exactly one of --meeting or --source, and --input"); if (!modulesOf(brain!.config).tasks) throw new BrainError("MODULE_OFF", "The Tasks module is off: brain modules on tasks"); return { data: renderTasks(await Workspace.open(brain!), meeting ?? source!, await readJsonInput(input, "sync tasks")), human: "Task payloads rendered.\n" }; },
+  name: "sync tasks", usage: "brain sync tasks (--meeting <mtg-id> | --source <src-id> | --direct) --input <file|-> [--json]", summary: "Render task payloads for a meeting's or source's action items, or for tasks said yes to in a chat (--direct).", options: { meeting: "string", source: "string", direct: "boolean", input: "string" }, maxPositionals: 0, needsBrain: true,
+  async run({ args, brain }) {
+    const meeting = args.options.meeting as string | undefined; const source = args.options.source as string | undefined; const direct = args.options.direct === true; const input = args.options.input as string | undefined;
+    if ([meeting !== undefined, source !== undefined, direct].filter(Boolean).length !== 1 || input === undefined) throw new BrainError("USAGE", "sync tasks needs exactly one of --meeting, --source or --direct, and --input");
+    if (!modulesOf(brain!.config).tasks) throw new BrainError("MODULE_OFF", "The Tasks module is off: brain modules on tasks");
+    return { data: renderTasks(await Workspace.open(brain!), direct ? undefined : meeting ?? source!, await readJsonInput(input, "sync tasks")), human: "Task payloads rendered.\n" };
+  },
 };
 
 export const syncRecordCommand: Command = {
