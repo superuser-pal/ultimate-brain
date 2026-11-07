@@ -106,6 +106,18 @@ test("query reads the .brain that brain link writes: plain (no context), --proje
   const find = (run: { json: { data: { candidates: Array<{ id: string; score: number }> } } }) => run.json.data.candidates.find((candidate) => candidate.id === "dec-7k2m9q4x")!.score;
   assert.equal(find(contextual), find(plain) + 3);
 
+  // From inside the repo, without --repo: the CLI reads the current folder's .brain (cli.md §5.13 step 4).
+  const previous = process.cwd();
+  process.chdir(projectRepo);
+  try {
+    const fromRepo = await brain(["query", "--candidates", "auth", ...ARGS]);
+    assert.equal(fromRepo.code, 0, fromRepo.stdout);
+    assert.equal(fromRepo.json.data.context.project, "prj-9x4t1b7e");
+    assert.equal(find(fromRepo), find(contextual));
+  } finally {
+    process.chdir(previous);
+  }
+
   await writeFile(join(plainRepo, ".brain"), JSON.stringify({ repo: "x", colour: "blue" }));
   const unknown = await brain(["query", "--candidates", "auth", "--repo", plainRepo, ...ARGS]);
   assert.equal(unknown.code, 2, unknown.stdout);
