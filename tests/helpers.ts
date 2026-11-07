@@ -25,6 +25,7 @@ export async function testPackageRoot(): Promise<string> {
   cpSync(join(REPO, "package.json"), join(root, "package.json"));
   mkdirSync(join(root, "templates", "brain"), { recursive: true });
   cpSync(join(REPO, "templates", "brain", "AGENTS.md"), join(root, "templates", "brain", "AGENTS.md"));
+  cpSync(join(REPO, "templates", "brain", ".claude"), join(root, "templates", "brain", ".claude"), { recursive: true });
   cpSync(join(REPO, ".agents", "skills"), join(root, ".agents", "skills"), { recursive: true });
   packageRoot = root;
   return root;
@@ -42,6 +43,7 @@ export async function fixtureCopy(context: TestContext): Promise<string> {
   await cp(shipped, join(brain, ".agents", "skills"), { recursive: true, filter: skillFolder(shipped) });
   await cp(shipped, join(brain, ".claude", "skills"), { recursive: true, filter: skillFolder(shipped) });
   await cp(join(REPO, "templates", "brain", "AGENTS.md"), join(brain, "AGENTS.md"));
+  await cp(join(REPO, "templates", "brain", ".claude", "agents"), join(brain, ".claude", "agents"), { recursive: true });
   return brain;
 }
 

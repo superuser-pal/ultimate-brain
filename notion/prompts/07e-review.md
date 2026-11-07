@@ -21,4 +21,4 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 ## Verify
 - [ ] A gray line starting "Approving makes these notes trusted" sits above the tabs.
 - [ ] Four tabs: Needs my decision, Sources disagree, Approved, Rejected.
-- [ ] "What needs my decision?" shows only Pending rows, a Type column (From source, Conflict, Answer) and no Kind, and Your call can be set in the view.
+- [ ] "What needs my decision?" shows only Pending rows, a Type column (From source, Conflict, Answer, Suggestion) and no Kind, and Your call can be set in the view.
