@@ -180,7 +180,7 @@ Work packages: contracts and representative resource-budget trials; shared diges
 **Output:** the assistant's unattended mode per 0051 (its schedule, the report, Review rows only, no direct changes, no questions), shared with the weekly digest where they overlap; detailed at 0.13.0's opening grill.
 **Acceptance:** a scheduled run on a synthetic brain writes one report and at most the capped Review rows, applies nothing, and a run with nothing found writes nothing.
 
-### CC-147 · Record the 0.13.0 weekly review and correction scope · `review`
+### CC-147 · Record the 0.13.0 weekly review and correction scope · `done` (#241)
 **Release:** 0.13.0
 **Changelog:** development only: the 0.13.0 opening grill is recorded, covering weekly report history, task analysis, shared five-decision/five-target limits and targeted correction checks.
 **Output:** decision 0075 from the user's accepted 2026-11-07 grill; this release's intro/work packages, the roadmap/backlog pointers and a refinement pointer on 0064. Planning only: no implementation, CLI/schema/skill change, brain operation or schedule installation. The user's confirmation authorises recording this planning agreement, following CC-146's precedent; implementation remains Claude Code's and independent review is required.
