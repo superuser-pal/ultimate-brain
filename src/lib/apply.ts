@@ -713,9 +713,9 @@ function supersedePair(newer: Record<string, unknown>, newerId: string, older: R
 
 /** merge X (the duplicate) into Y (spec/schema.md §11.2). */
 function merge(workspace: Workspace, x: Note, y: Note, today: string): void {
-  // 1. References, in every note except X, Y, sources and proposals.
+  // 1. References, in every note except X, Y, sources, proposals and views (views are generated; X's own stay with X, CC-148).
   for (const note of workspace.notes) {
-    if (note.id === x.id || note.id === y.id || note.type === "source" || note.type === "proposal") continue;
+    if (note.id === x.id || note.id === y.id || note.type === "source" || note.type === "proposal" || note.type === "view") continue;
     const document = workspace.edit(note);
     const before = JSON.stringify([document.attributes, document.body]);
     rewriteReferences(document.attributes, x.id, y.id);
