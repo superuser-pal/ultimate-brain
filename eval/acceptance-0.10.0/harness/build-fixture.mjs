@@ -119,8 +119,14 @@ function notionState() {
     [db("orgs")]: { name: "Orgs", properties: { ...base, Relationship: sel(["Client", "Prospect", "Partner", "Supplier", "Employer", "Other"]), Archived: { type: "checkbox" } } },
     [db("decisions")]: { name: "Decisions", properties: { ...base, Date: { type: "date" }, Project: r, Area: r, "Decided In": r } },
     [db("questions")]: { name: "Questions", properties: { ...base, Status: sel(["Open", "Answered", "Dropped"]), Area: r, Project: r } },
-    [db("review")]: { name: "Review", properties: { ...base, Kind: { type: "select" }, State: sel(["Pending", "Approved", "Rejected", "Applied"]), Proposed: { type: "rich_text" }, Area: r, Project: r } },
-    [db("inbox")]: { name: "Inbox", properties: { Name: { type: "title" }, Kind: { type: "select" }, Status: sel(["New", "Processed"]), Area: r, Project: r } },
+    // Review and Inbox as docs/notion-space-design.md §3.10 and §3.11 have them in 0.10.0 (migration 0022's Kind options
+    // included), so CC-110 can decide a Suggestion row ("Your call") and an Inbox capture can carry Brain Status.
+    [db("review")]: { name: "Review", properties: { ...base, Kind: sel(["Update Fact", "Add To Note", "Update Body", "Add Link", "Supersede", "Contradiction", "Merge", "New Item", "Review Notes", "Answer", "Notion Change", "Set Field"]),
+      Type: { type: "formula" }, Area: r, About: { type: "rich_text" }, "About Page": { type: "url" }, Now: { type: "rich_text" }, Proposed: { type: "rich_text" }, Why: { type: "rich_text" },
+      "Source Meeting": r, "Your call": sel(["Approve", "Reject", "Fix"]), "What to fix": { type: "rich_text" }, State: sel(["Pending", "Applied", "Closed"]) } },
+    [db("inbox")]: { name: "Inbox", properties: { Name: { type: "title" }, Kind: sel(["Capture", "File", "Email", "Chat", "Note", "Ask", "Catch-up"]), Summary: { type: "rich_text" },
+      Decisions: r, Questions: r, Documents: r, People: r, Project: r, Area: r, "Brain Status": sel(["New", "Ready", "Done"]), "Document asked": { type: "checkbox" },
+      "Only keep": { type: "rich_text" }, Tasks: r, "Brain ID": { type: "rich_text" }, "Last Synced": { type: "date" } } },
     [db("documents")]: { name: "Documents", properties: { ...base, Category: { type: "select" }, Project: r, Area: r } },
     [db("tasks")]: { name: "Tasks", properties: { Name: { type: "title" }, Status: sel(["To Do", "Doing", "Waiting On", "Someday", "Done", "Won't Do"]), Due: { type: "date" }, Project: r, Area: r, Meeting: r, Source: r, "Brain ID": { type: "rich_text" } } },
   };
