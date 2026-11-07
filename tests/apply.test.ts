@@ -103,7 +103,6 @@ const kinds: Array<{ name: string; fields: Record<string, unknown>; action?: str
       CARLOS,
       MARIA,
       "knowledge/questions/who-owns-the-acme-mobile-app.md",
-      "projects/acme-website/brief.md",
       PROJECT,
     ],
   },
@@ -381,4 +380,34 @@ test("apply returns lint warnings for notes it writes", async (context) => {
   const run = await apply(dir, { decisions: [decide("prp-0a1b2c3d")] });
   assert.equal(run.code, 0, run.stdout);
   assert.ok(run.json.warnings.some((warning: { code: string; path: string }) => warning.code === "FRESHNESS" && warning.path === "knowledge/orgs/acme.md"));
+});
+
+test("a merge of two projects leaves the duplicate's own views alone (CC-148, schema §11.2)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const duplicate = "prj-3n8d5j9p";
+  const original = await readFile(join(dir, PROJECT), "utf8");
+  await mkdir(join(dir, "projects/acme-website-old"), { recursive: true });
+  await writeFile(join(dir, "projects/acme-website-old/project.md"),
+    original.replace("id: prj-9x4t1b7e", `id: ${duplicate}`).replace("title: Acme website", "title: Acme website old").replace(/^aliases: .*\n/m, ""));
+  const views = await brain(["views", "--brain", dir, "--json"]);
+  assert.equal(views.code, 0, JSON.stringify(views.json));
+  const briefPath = join(dir, "projects/acme-website-old/brief.md");
+  const logPath = join(dir, "projects/acme-website-old/decision-log.md");
+  assert.match(await readFile(briefPath, "utf8"), new RegExp(`^project: ${duplicate}$`, "m"));
+
+  await proposal(dir, "prp-0a1b2c3d", { kind: "merge", target: duplicate, merge_into: "prj-9x4t1b7e" });
+  const merged = await apply(dir, { decisions: [decide("prp-0a1b2c3d")] });
+  assert.equal(merged.json.data.decisions[0].result, "applied", JSON.stringify(merged.json.data.decisions[0]));
+
+  for (const path of [briefPath, logPath]) {
+    const text = await readFile(path, "utf8");
+    assert.match(text, new RegExp(`^project: ${duplicate}$`, "m"), path);
+    assert.doesNotMatch(text, /^project: prj-9x4t1b7e$/m, path);
+  }
+  const after = await brain(["views", "--brain", dir, "--json"]);
+  assert.equal(after.code, 0, JSON.stringify(after.json));
+  assert.deepEqual(after.json.data.errors ?? [], []);
+  const lint = await brain(["lint", "--brain", dir, "--json"]);
+  assert.equal(lint.json.data.errors, 0, JSON.stringify(lint.json.data.issues));
+  assert.deepEqual(lint.json.data.issues.filter((issue: { rule: string }) => issue.rule === "view-stale"), []);
 });
