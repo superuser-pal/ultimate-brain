@@ -54,91 +54,16 @@ Future implementation tasks are decomposed by Claude Code after their opening sc
 - **Contracts came first** (wave 1) so both could work in parallel without guessing.
 - Every task was reviewed by the other agent.
 
-**Done releases (v1 to 0.9.2)** are in [HISTORY.md](HISTORY.md): read it only when a task or decision points there.
+**Done releases (v1 to 0.10.0)** are in [HISTORY.md](HISTORY.md): read it only when a task or decision points there.
 
-## 0.10.0 — The brain assistant (decision 0064)
+## 0.10.2
 
-An assistant you ask, from the CLI, about the structure of your work: Areas, Domains, Projects and Tasks. It finds what's stalled, misplaced or missing, recommends, turns your thinking into captures, tasks and projects, and makes changes through Review rows, or directly after your yes in a live chat. On demand; the weekly scheduled run is CC-111 in 0.13.0. Starts after 0.9.0 is released, with its opening scope grill. The grill ran on 2026-11-05 (CC-137): decision [0072](../decisions/0072-ultimate-assistant.md) names it **Ultimate Assistant**, shows a report first and applies what you say yes to, with Review rows only when you ask.
-
-**Plan (2026-11-06, CC-139):** the main session writes CC-108; beside it, build agents take CC-140 (fixtures), CC-141 (history move) and CC-138 (`main` requires `merge-ready`). Once CC-108 is on `main`, CC-109 is split into slices along its contracts and built in parallel; CC-110 runs on CC-140's fixtures.
-
-### CC-108 · Contracts for the brain assistant (decision 0064) · `done` (#234)
-**Release:** 0.10.0
-**Changelog:** contracts for the brain assistant: what it checks in Areas, Domains, Projects and Tasks, how each finding becomes a Review row, and when it may change something directly.
-**Output:** per decision 0072's six answers (the opening grill, 2026-11-05): a spec for the checks (signals and thresholds: stalled and overdue tasks, tasks without a project, active projects with no recent work or no next step, finished but open projects, misplaced or duplicate projects, empty Areas, Areas without a Domain), the proposal each finding makes (including how a Review row changes a Notion-owned field such as a project's Status), the direct-apply rule in a live chat, reading Notion live and linked repos' rollups, the report, the sub-agent file, any CLI helper (`brain` commands the skill needs).
-**Acceptance:** a context-free Sonnet sub-agent reading only the contracts lists no question it would need answered to build CC-109; schema examples validate for each new proposal shape.
-
-### CC-142 · Split CC-109 into four parallel tasks along spec/assistant.md §12 · `done` (#235)
-**Release:** 0.10.0
-**Changelog:** development only: CC-109's build is split into CC-143 (findings and skips in the CLI), CC-144 (Notion-owned changes and field moves as proposals), CC-145 (the sub-agent, templates and the Review migration), with CC-109 keeping the skill, its fork release and the blind run.
-**Output:** spec/assistant.md §12 (merged in CC-108, #234) split along its seams, so four agents can build at once: CC-143, CC-144 and CC-145 start from `main` in parallel; CC-109 writes the skill in the fork alongside them and vendors and blind-runs it once the three are on `main`. This file only: the four rows.
-**Acceptance:** every item of spec/assistant.md §12 belongs to exactly one of CC-109, CC-143, CC-144, CC-145; each new row has a Release, Changelog, Output and Acceptance line; CC-109 changes only its Output and Acceptance; no other task's row changes; `pr-format` and the leak check pass.
-
-### CC-143 · `brain assistant findings` and `brain assistant dismiss` (spec/assistant.md §3, §8) · `done` (#240)
-**Release:** 0.10.0
-**Changelog:** `brain assistant findings` computes Ultimate Assistant's findings from your brain and a Notion snapshot (stalled and overdue tasks, finished or stalled projects, misplaced or duplicate projects, Areas with nothing active or no Domain), ranked, top 10 first, with your skips left out; `brain assistant dismiss` remembers a skip for 30 days.
-**Output:** per spec/assistant.md §3 (terms, thresholds, signals, recommendations, scope, ranking and the cap), §8 (skips) and spec/cli.md §5.31: `brain assistant findings` and `brain assistant dismiss` (add and remove), the dismissal store `_assistant/dismissals.json` and the lint rule `assistant-dismissals`, test-first in `src/commands/assistant*` with synthetic fixtures; the test that validates `spec/examples/assistant/` against assistant.schema.json. No skill, no proposal kind, no template. A spec gap goes into the spec first, in the same PR.
-**Acceptance:** tests per signal (fires at its threshold, not one day before), ranking and the cap with `--number-from`, scope filters, dismissals (active, expired, removed) and the rejected-Suggestion skip; `brain assistant findings` on a sandbox from `eval/acceptance-0.10.0` returns exactly planted.json's `planted` and none of `not_flagged`; the examples test passes; `npm test`, `npm run typecheck`, `npm run test:package` and the leak check pass.
-
-### CC-144 · Notion-owned changes and field moves as proposals (spec/assistant.md §6) · `done` (#236)
-**Release:** 0.10.0
-**Changelog:** a Review row can propose a change to a Notion-owned field, such as a task's Status or a project's Status, or a move of a project to another Area, and the brain applies it after your yes.
-**Output:** per spec/assistant.md §6 and §7 and the schema §11, §14 and spec/cli.md sections it names: the proposal kinds `notion_change` and `set_field` in `proposal new`, `apply` (with `data.notion_writes`), `sync apply` and `sync render` (the Suggestion row: Kind `Notion Change` or `Set Field`); `brain proposal settle`; `sync tasks --direct` for a task created from a chat; test-first, synthetic fixtures. No skill text, no template, no Notion migration. A spec gap goes into the spec first, in the same PR.
-**Acceptance:** tests: each `notion_change` property (task status, due, project, area; project status; area archived) proposed, applied to `notion_writes` and settled `applied`, `stale` and left `approved` on a failed write; `set_field` for a project's `area` (its open tasks follow, as §6.1 says) and an Area's `domain`, then rendered; a decided Suggestion row read by `sync plan` and applied by `sync apply`; `DUPLICATE_PENDING`; `sync tasks --direct` renders a task with no meeting or source; `npm test`, `npm run typecheck`, `npm run test:package` and the leak check pass.
-
-### CC-145 · The ultimate-assistant sub-agent, the brain templates and the Review migration (spec/assistant.md §10) · `done` (#239)
-**Release:** 0.10.0
-**Changelog:** a brain gets the `ultimate-assistant` Claude Code sub-agent (`claude --agent ultimate-assistant`), and the Review database gains the Suggestion rows Ultimate Assistant writes when you ask it to propose a change.
-**Output:** per spec/assistant.md §10 and §12: `templates/brain/.claude/agents/ultimate-assistant.md`; `brain init` and `brain upgrade` write it, and its `product-file` check; `templates/brain/AGENTS.md`'s operations row (with the `report only` hand-off); the next Notion migration (`notion/migrations/0022-…`): Review · Kind gains `Notion Change` and `Set Field`, the Type formula gains **Suggestion** (docs/notion-space-design.md §3.10), with the agent and by-hand split and a Verify list as earlier migrations have; docs/notion-space-design.md and notion/prompts as they follow. No CLI proposal logic, no skill text.
-**Acceptance:** tests: `init` writes the sub-agent file, `upgrade` writes and updates it, and the `product-file` check flags an edited copy; the migration says which steps the agent does through the API and which you do by hand, and its Verify list names the Kind options and the formula result; `npm test`, `npm run typecheck`, `npm run test:package` and the leak check pass.
-
-### CC-109 · The brain-assistant skill and its Claude sub-agent (decision 0064) · `done` (#237)
-**Release:** 0.10.0
-**Changelog:** "review my projects" finds stalled tasks, finished projects still open, misplaced projects and missing next steps, recommends what to do, and turns what you say into captures, tasks and projects, changing nothing without your yes or a Review row.
-**Output:** per spec/assistant.md §1 to §9 and §12 (CC-142 split the CLI, templates and migration into CC-143, CC-144 and CC-145): the skill `ultimate-assistant` in the fork, with the `notion_writes` step in brain-apply, brain-sync and brain-catch-up, brain-howto and the guide, in one fork PR and the release ultimate-brain-skills 1.2.0 (`cli` `>=0.10.0-0 <0.11.0`); the skill is written in the fork beside CC-143 to CC-145, and the product PR vendors the release once those three are on `main` (skills-delivery §9.5). Ask the user before creating the fork release.
-**Acceptance:** CC-109's blind run passes as spec/assistant.md §12 defines it, in a sandbox from eval/acceptance-0.10.0 with the fork branch's skill installed: the report's findings over the first page and "more" are exactly planted.json's `planted` and none of `not_flagged`; a yes on a Notion-owned change, a brain-owned move and a merge, a "propose N", a skip with a status offer and one without, and a ramble with a task, a project and a capture each land as §6 to §8 say; a write changed first in notion-sim settles `stale`; an injected failed write stays `approved` and is carried out first next session; a `report only` run writes nothing; `brain lint` is clean; the vendored snapshot's integrity matches the fork release; the skill checks and the leak check pass.
-
-### CC-138 · `main` requires `merge-ready` · `done` (#231)
-**Release:** 0.10.0
-**Changelog:** development only: a ruleset on `main` requires the `merge-ready` status, so a PR can't merge without its format, its ticked boxes, its `done` (#N) and a reviewer's pass at its head.
-**Output:** the user's answer on CC-116 (2026-11-05): a decision amending 0040's "it informs, it doesn't block" now that the repo is public (a free ruleset can require a status); the ruleset requiring the `merge-ready` commit status on `main`, with the repo admin as bypass actor so `release.mjs` can still push its release commit; what the user does when no reviewer can run; AGENTS.md and docs/releasing.md. The user turns the ruleset on; agents don't change repo settings.
-**Acceptance:** the decision names the bypass and the case of an unavailable reviewer; on a test PR the Merge button stays disabled while `merge-ready` is red and enables once it is green; the next `release.mjs` push to `main` goes through the bypass; the leak check passes.
-
-### CC-110 · 0.10.0 acceptance (decision 0064) · `done` (#243)
-**Release:** 0.10.0
-**Changelog:** development only: end-to-end acceptance of the brain assistant on a synthetic brain, attended, with Review rows and chat approvals.
-**Output:** docs/acceptance-0.10.0.md: a scenario per finding kind, the Review-row path and the chat-yes path, a linked repo's rollup reviewed, Notion unreachable. eval/acceptance-0.10.0/RESULTS.md: the blind runs of every scenario (CLI 0.10.0, skills 1.2.0) and their findings. Two small fixes they found, in this repo: a move's label says "1 open task that names" (spec/assistant.md §4.1 first, then the CLI), and the fixture maps Tasks · Status as a select; every sandbox gets a `gh` that always fails. The fork's findings go to the user.
-**Acceptance:** every scenario passes with its evidence; no change happens without a Review row or a yes; the Review workload of one run stays within the cap the contracts set.
-
-### CC-137 · Record the 0.10.0 opening grill: Ultimate Assistant (decision 0072) · `done` (#223)
-**Release:** 0.10.0
-**Changelog:** development only: the 0.10.0 opening grill is recorded as decision 0072, which names the assistant Ultimate Assistant and settles how a review session goes.
-**Output:** decision 0072 from the user's answers of 2026-11-05 (name, report first, fixed thresholds, where a ramble lands, whole brain top 10, dismissals); an "Amended by" pointer on 0064; this file: the 0.10.0 intro and CC-108's Output point to 0072, and the 1.0.0 section notes the Notion agent's rename. No code, no spec.
-**Acceptance:** 0072 records each of the six answers as the user gave them; 0064 points to it; no other task's row changes except CC-108's Output; the 1.0.0 section notes the Notion agent's rename; the leak check passes.
-
-### CC-139 · Plan 0.10.0: acceptance fixtures and the history move beside the contracts · `done` (#230)
-**Release:** 0.10.0
-**Changelog:** development only: 0.10.0 gains CC-140 (the acceptance fixtures) and CC-141 (finished releases move to HISTORY.md), built beside CC-108's contracts with CC-138.
-**Output:** the user's plan of 2026-11-06 for 0.10.0: CC-108 written by the main session; in parallel, CC-140, CC-141 and CC-138 by build agents; CC-109 split into slices once CC-108 is on `main`; CC-110 runs on CC-140's fixtures. This file only: the 0.10.0 intro and the two new rows.
-**Acceptance:** CC-140 and CC-141 each have a Release, Changelog, Output and Acceptance line; no other task's row changes; `pr-format` and the leak check pass.
-
-### CC-140 · Acceptance fixtures for Ultimate Assistant (decision 0072) · `done` (#233)
-**Release:** 0.10.0
-**Changelog:** development only: a synthetic brain and a synthetic Notion space with planted project-management problems, for testing Ultimate Assistant.
-**Output:** eval/acceptance-0.10.0/harness/, reusing the 0.9.0 harness (eval/acceptance-0.9.0/harness: install.sh, make-sandbox.sh, the notion-sim stand-in; copy or call, don't change 0.9.0's files): a fixture brain (synthetic names only, every module on, Domains on) and a notion-sim state with Areas, Domains, Projects and Tasks holding, each findable: a task with no edit for 20 days; a task 5 days overdue; a task with no project; an Active project with no task done and no brain mention for 30 days; an Active project with no open task; an Active project whose tasks are all done; a project under the wrong Area (its notes and meetings all belong to another Area); two projects that look like duplicates; an Area with nothing active; an Area without a Domain; a task already Waiting (not to be flagged); plus enough healthy rows that the planted ones aren't all there is, and more than 10 findings in total so the top-10 cap and "more" can be tested. A manifest (eval/acceptance-0.10.0/planted.json) lists each planted problem with its page ids and the signal that should find it; dates are relative to a fixed `as_of`, so the fixtures don't age. A README says how to make a sandbox. No CLI or skill change: signal names follow decision 0072 and the task text above; CC-108 may rename them, and a later commit follows.
-**Acceptance:** `make-sandbox.sh` builds a sandbox whose `brain lint` is clean and whose notion-sim state loads; a check script confirms that every row in planted.json exists in the state with the dates and relations that make it a finding at `as_of`, and that the healthy rows trip none of 0072's thresholds; the leak check passes.
-
-### CC-141 · Move the finished 0.9.x releases to HISTORY.md · `done` (#232)
-**Release:** 0.10.0
-**Changelog:** development only: the 0.8.1, 0.9.0, 0.9.1 and 0.9.2 sections move from TASKS.md to HISTORY.md, as AGENTS.md asks after each release.
-**Output:** the 0.8.1, 0.9.0, 0.9.1 and 0.9.2 sections of build/TASKS.md moved verbatim to the end of build/HISTORY.md, in release order (0.8.1 added at the user's answer of 2026-11-06, so HISTORY.md stays in release order); the "v1 to 0.8.0" lines in both files say 0.9.2; TASKS.md keeps the release table, the status notes and the open releases; any link in docs or decisions that points at those sections still resolves; release.mjs and pr-format still find every done task (they read both files).
-**Acceptance:** `git diff` shows the sections removed from TASKS.md and added to HISTORY.md with identical text; `npm run test:scripts` passes; `node scripts/release.mjs 0.10.0 --dry-run` lists no 0.9.x task; the leak check passes.
-
-### CC-148 · A merge leaves the duplicate's generated views alone (schema §11.2) · `done` (#242)
-**Release:** 0.10.0
-**Changelog:** merging two projects (or any two notes) no longer rewrites the duplicate's own Brief and Decision log to point at the survivor, so `brain views` and `brain lint` stay clean after a merge.
-**Output:** found by CC-109's blind run (PR #237), the user's choice of 2026-11-07 to fix it beside CC-109: schema §11.2's `merge` step 1 rewrites references "in every note except X, Y, sources and proposals", which includes views; after Ultimate Assistant merged two projects, the duplicate's `brief.md` and `decision-log.md` named the survivor, `brain views` failed with `MARKERS_INVALID` on both and lint warned `view-stale`. Spec first: step 1 also leaves views alone (they are regenerated by `brain views`: the duplicate's stay with the archived duplicate, other views follow their sources), then the merge apply, test-first with a synthetic fixture. Before CC-110.
-**Acceptance:** a test merges two projects that each have a Brief and a Decision log, and the duplicate's views still name the duplicate, `brain views` writes no error and `brain lint` reports no `view-stale`; the other notes' references are still rewritten as before; `npm test`, `npm run typecheck`, `npm run test:package` and the leak check pass.
+### CC-150 · Skills 1.2.1: the CC-110 wording fixes, vendored · `done` (#246)
+**Release:** 0.10.2
+**Changelog:** Ultimate Assistant's skill wording follows its contracts more closely (ultimate-brain-skills 1.2.1): a ramble keeps the session open, a delegated run carries out waiting Notion writes, and the log line and the summary count the same things.
+**Output:** the skill findings of CC-110's blind runs (eval/acceptance-0.10.0/RESULTS.md §4: 2, 3, 4, 7, 8, 10) fixed in the fork (ultimate-brain-skills PR, `compatible`), released as brain-v1.2.1 after the user's yes, and vendored in `.agents/skills/` (spec/skills-delivery.md §9.5); `.agents/skills/` is not edited by hand. Also: the 0.10.0 section moves verbatim to build/HISTORY.md, and `src/cli.ts` lists `proposalReviseCommand` once in COMMANDS.
+**Acceptance:** the vendored snapshot is ultimate-brain-skills 1.2.1 and passes the snapshot check; the six findings each have their fix in the vendored text; `npm test`, `npm run typecheck`, `npm run test:package` and the leak check pass; the skills-integration check reports 0 unclassified.
+**Spec decided (CC-150 review, 2026-11-07):** skills-delivery §9.5 step 2 contradicted §10.4 (a vendored fork PR was always `coordinated`); the user chose §10.4's rule: `coordinated` only when the skill needs the product PR's change, otherwise `compatible`, with a `Product:` line either way. Fork PR #6 (`compatible`, no `Product:` line) predates the fix; §10.4 ignores the line for `compatible`.
 
 ## 0.11.0 — The brain tidies itself (decisions 0052, 0061, 0064)
 
