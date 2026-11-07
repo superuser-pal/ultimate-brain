@@ -12,8 +12,13 @@ A synthetic brain and a synthetic Notion space with planted project-management p
 | [harness/make-sandbox.sh](harness/make-sandbox.sh) | One sandbox: the brain, the state, `notion-sim` and `env.sh` |
 | [harness/check-planted.mjs](harness/check-planted.mjs) | Checks a sandbox against planted.json |
 | [harness/install.sh](harness/install.sh) | An isolated installation of this checkout's CLI (0.9.0's, packing HEAD at its own version) |
+| [harness/RULES.md](harness/RULES.md) | The rules a blind runner reads first (CC-110) |
+| [harness/scenario.sh](harness/scenario.sh) | Prepares a sandbox for one scenario: Notion unreachable, a failed write, two linked repos, a user's edit in Notion (CC-110) |
+| [harness/reference.mjs](harness/reference.mjs) | The reference report: the snapshot of spec/assistant.md §2.1 read from the sandbox's state, run through `brain assistant findings` (CC-110) |
+| [harness/evidence.mjs](harness/evidence.mjs) | What a session changed since a mark: commits, proposals, dismissals, log lines, notion-sim writes, Review rows, lint (CC-110) |
+| [RESULTS.md](RESULTS.md) | The results of CC-110's blind runs |
 
-The Notion stand-in is 0.9.0's [notion-sim](../acceptance-0.9.0/harness/notion-sim), copied into the sandbox unchanged. Blind runners follow 0.9.0's [RULES.md](../acceptance-0.9.0/harness/RULES.md) until CC-110 writes its own: `notion-sim` instead of any Notion tool, and nothing outside the sandbox.
+The Notion stand-in is 0.9.0's [notion-sim](../acceptance-0.9.0/harness/notion-sim), copied into the sandbox unchanged. Blind runners follow [harness/RULES.md](harness/RULES.md) (CC-110, from 0.9.0's): `notion-sim` instead of any Notion tool, nothing outside the sandbox, and a first `brain status` that must name the sandbox's brain. The scenarios, their steps and their evidence are in [docs/acceptance-0.10.0.md](../../docs/acceptance-0.10.0.md).
 
 ## Make a sandbox
 

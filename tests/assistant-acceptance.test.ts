@@ -81,4 +81,6 @@ test("findings on the CC-140 sandbox are exactly planted.json's planted, none of
   assert.equal(first.json.data.total, planted.planted.length);
   for (const entry of planted.not_flagged) assert.ok(!found.some((line) => line.includes(entry.page)), `${entry.key} is flagged`);
   assert.match(first.json.data.report, /\n\n3 more\. Say "more", or name an Area, Domain or Project\.\n/);
+  // One task to move: the verb agrees (CC-110's acceptance found "its 1 open task that name Clients").
+  assert.match(first.json.data.report, /a\) move it to Marketing \(and its 1 open task that names Clients\)\n/);
 });

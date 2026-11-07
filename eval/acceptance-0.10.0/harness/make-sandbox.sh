@@ -6,7 +6,7 @@
 #                  Git history dated: each note is committed on its `created` day, the publish on the day before as_of
 #   <dir>/notion   the Notion stand-in's state (eval/acceptance-0.9.0/harness/notion-sim, called unchanged): Domains, Areas,
 #                  Projects, Tasks and the other databases, with the problems ../planted.json lists; `as_of` is in it
-#   <dir>/bin      notion-sim
+#   <dir>/bin      notion-sim, and a gh that always fails (no real GitHub)
 #   <dir>/env.sh   the installation's env.sh, then BRAIN_DIR, NOTION_SIM_DIR and PATH
 # as_of defaults to planted.json's; every date in the sandbox is as_of plus fixture.mjs's offsets, so a sandbox made with
 # today's date (`date +%F`) looks the same to an agent as one made at the default does to the check.
@@ -41,6 +41,9 @@ rm "$D/init.json" "$D/render.json" "$D/record.json"
 brain index --brain "$B" --now "$NOW" --json > /dev/null
 node "$H/build-fixture.mjs" commit "$B" "$A"
 cp "$H/../../acceptance-0.9.0/harness/notion-sim" "$D/bin/notion-sim"; chmod +x "$D/bin/notion-sim"
+# A `gh` that always fails (CC-110): a runner following the brain's AGENTS.md (file a dogfood issue) or fetching a linked
+# repo's issues never reaches the real GitHub.
+printf '#!/bin/sh\necho "gh: not logged in to any GitHub hosts. Run gh auth login." >&2\nexit 1\n' > "$D/bin/gh"; chmod +x "$D/bin/gh"
 { cat "$I/env.sh"; printf 'export BRAIN_DIR=%s NOTION_SIM_DIR=%s/notion PATH=%s/bin:$PATH\n' "$B" "$D" "$D"; } > "$D/env.sh"
 brain lint --strict --brain "$B" --now "$NOW" --json > "$D/lint.json" || { cat "$D/lint.json" >&2; exit 1; }
 rm "$D/lint.json"
