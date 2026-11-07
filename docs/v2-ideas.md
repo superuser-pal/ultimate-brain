@@ -9,7 +9,7 @@ Deferred ideas and their current disposition. [Decision 0061](../decisions/0061-
 | 0.9.0 ([0059](../decisions/0059-shared-skills-and-connected-workflows.md)) | Shared skill source, standard/connected workflows, setup/adoption and update coordination; linked repos with the link kit ([0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md)) |
 | 0.10.0 ([0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md)) | The brain assistant: reviews Areas, Domains, Projects and Tasks, recommends, and changes through Review rows or a yes in chat |
 | 0.11.0 | Contradiction/staleness/dedup reflection under 0052; later in-catch-up reflection remains deferred |
-| 0.12.0 | Shared Claude Code/Codex memory loop and reliable cited retrieval; evaluate before selecting ranking/index changes |
+| 0.12.0 ([0074](../decisions/0074-scoped-memory-handovers-and-bounded-recall.md)) | Shared Claude Code/Codex memory capture, work handovers, generated hot context initially capped at 800 tokens, scoped/correctable memory, targeted cited retrieval and reviewed promotion; prefer surgical TypeScript component reuse and evaluate before selecting ranking/index changes |
 | 0.13.0 | Weekly digest/review and targeted correction propagation; the assistant's scheduled weekly review |
 | 0.14.0 | Full onboarding, diagnostics, selected seeding and minimal per-area tracking preferences; rich capability profiles remain deferred |
 | Launch readiness | Product packaging, guidance/templates, translation, funnel, fresh-user acceptance and common-failure recovery; no new feature milestone |
