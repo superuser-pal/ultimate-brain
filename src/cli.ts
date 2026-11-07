@@ -4,6 +4,7 @@ import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { applyCommand } from "./commands/apply.ts";
+import { assistantDismissCommand, assistantFindingsCommand } from "./commands/assistant.ts";
 import { indexCommand } from "./commands/index.ts";
 import { initCommand } from "./commands/init.ts";
 import { statusCommand } from "./commands/status.ts";
@@ -15,7 +16,7 @@ import { modulesListCommand, modulesOffCommand, modulesOnCommand } from "./comma
 import { noteNewCommand } from "./commands/note.ts";
 import { linkCommand } from "./commands/link.ts";
 import { upgradeCommand } from "./commands/upgrade.ts";
-import { proposalBacklogCommand, proposalReviseCommand, proposalListCommand, proposalNewCommand } from "./commands/proposal.ts";
+import { proposalBacklogCommand, proposalReviseCommand, proposalSettleCommand, proposalListCommand, proposalNewCommand } from "./commands/proposal.ts";
 import { reportFixCommand, reportNewCommand } from "./commands/report.ts";
 import { scheduleInstallCommand, scheduleListCommand, scheduleRemoveCommand } from "./commands/schedule.ts";
 import { repoAddCommand, repoChangesCommand, repoHealthCommand, repoKitCheckCommand, repoKitWriteCommand, repoNewCommand, repoRecordCommand, repoRefreshCommand, repoShowCommand, repoTasksCommand, repoUnlinkCommand } from "./commands/repo.ts";
@@ -36,7 +37,8 @@ export type CommandHandler = (args: readonly string[], io: CliIo) => number | Pr
 
 /** Registered commands, in help order. */
 export const COMMANDS: readonly Command[] = [
-  initCommand, statusCommand, configGetCommand, configSetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, proposalBacklogCommand, proposalReviseCommand, proposalReviseCommand, sourceFullTextCommand, sourceDiffCommand, sourceExtractPlanCommand, sourceCleanupPlanCommand, sourceCleanupProposeCommand, sourceExtractCommand, recoverCommand, reportNewCommand, reportFixCommand, repoAddCommand, repoChangesCommand, repoRecordCommand, repoKitCheckCommand, repoKitWriteCommand, repoRefreshCommand, repoShowCommand, repoHealthCommand, repoTasksCommand, repoUnlinkCommand, repoNewCommand, questionDropCommand, applyCommand,
+  initCommand, statusCommand, configGetCommand, configSetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, proposalBacklogCommand, proposalReviseCommand, proposalSettleCommand, proposalReviseCommand, sourceFullTextCommand, sourceDiffCommand, sourceExtractPlanCommand, sourceCleanupPlanCommand, sourceCleanupProposeCommand, sourceExtractCommand, recoverCommand, reportNewCommand, reportFixCommand, repoAddCommand, repoChangesCommand, repoRecordCommand, repoKitCheckCommand, repoKitWriteCommand, repoRefreshCommand, repoShowCommand, repoHealthCommand, repoTasksCommand, repoUnlinkCommand, repoNewCommand, questionDropCommand, applyCommand,
+  assistantFindingsCommand, assistantDismissCommand,
   syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand, viewsCommand, linkCommand, queryCommand, upgradeCommand, modulesListCommand, modulesOnCommand, modulesOffCommand,
   scheduleInstallCommand, scheduleListCommand, scheduleRemoveCommand, ...WORKFLOW_COMMANDS,
 ];

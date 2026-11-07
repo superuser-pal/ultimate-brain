@@ -4,6 +4,7 @@ import { posix } from "node:path";
 import { assertNoProblems, isRecord, unknownKeys, type InputProblem } from "./input.ts";
 import type { NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
+import { fixValueProblem, notionWrite, type NotionWrite } from "./notion-change.ts";
 import { bodyHash, bodyOf, reviewTitle, sourceTitle, stageNewItem, writeProposal } from "./proposals.ts";
 import { loadSchemas } from "./schemas.ts";
 import { formatDate, normalizeTimestamp } from "./time.ts";
@@ -41,7 +42,7 @@ export interface ApplyInput {
 }
 
 export interface ItemResult {
-  result: "applied" | "closed" | "recorded" | "skipped" | "failed";
+  result: "applied" | "closed" | "recorded" | "awaiting_notion" | "skipped" | "failed";
   reason?: string;
   message?: string;
   changed: string[];
@@ -69,7 +70,9 @@ export interface NoteResult {
 export interface ApplyResult {
   corrections: Array<{ target: string; field: string } & ItemResult>;
   decisions: Array<{ proposal: string; kind?: string; action: string } & ItemResult>;
-  summary: Record<"applied" | "closed" | "recorded" | "corrected" | "skipped" | "failed", number>;
+  summary: Record<"applied" | "closed" | "recorded" | "awaiting_notion" | "corrected" | "skipped" | "failed", number>;
+  /** The Notion writes of the notion_change proposals decided here, for the skill to carry out (spec/cli.md §5.7). */
+  notion_writes: NotionWrite[];
   log: LogEntry[];
 }
 
@@ -141,7 +144,8 @@ export function applyAll(workspace: Workspace, input: ApplyInput, options: { now
   const result: ApplyResult = {
     corrections: [],
     decisions: [],
-    summary: { applied: 0, closed: 0, recorded: 0, corrected: 0, skipped: 0, failed: 0 },
+    summary: { applied: 0, closed: 0, recorded: 0, awaiting_notion: 0, corrected: 0, skipped: 0, failed: 0 },
+    notion_writes: [],
     log: [],
   };
 
@@ -161,6 +165,7 @@ export function applyAll(workspace: Workspace, input: ApplyInput, options: { now
     const proposal = workspace.get(decision.proposal);
     const kind = proposal?.type === "proposal" ? String(proposal.attributes.kind) : undefined;
     const item = runItem(workspace, () => applyDecision(workspace, decision, today, options.recordOnly));
+    if (item.write !== undefined) result.notion_writes.push(item.write);
     result.decisions.push({ proposal: decision.proposal, ...(kind === undefined ? {} : { kind }), action: item.action ?? decision.action, ...item.outcome });
     result.summary[item.outcome.result] += 1;
     if (item.outcome.result === "applied" || item.outcome.result === "closed") {
@@ -179,6 +184,8 @@ interface Outcome {
   deferred?: string;
   /** Action actually applied, when it differs from the input's (an earlier, later-dated decision). */
   action?: string;
+  /** awaiting_notion: the write the skill carries out (spec/cli.md §5.7). */
+  write?: NotionWrite;
 }
 
 class ItemFailure extends Error {
@@ -191,7 +198,7 @@ class ItemFailure extends Error {
 }
 
 /** Run one item atomically: on failure or a result that adds lint errors, restore the workspace. */
-function runItem(workspace: Workspace, run: () => Outcome): { outcome: ItemResult; action?: string } {
+function runItem(workspace: Workspace, run: () => Outcome): { outcome: ItemResult; action?: string; write?: NotionWrite } {
   const start = workspace.checkpoint();
   let outcome: Outcome;
   try {
@@ -210,8 +217,8 @@ function runItem(workspace: Workspace, run: () => Outcome): { outcome: ItemResul
     const message = errors.map((issue) => `${issue.path}: ${issue.rule}: ${issue.message}`).join("; ");
     return { outcome: { result: "failed", reason: "INVALID_RESULT", message, changed: [] } };
   }
-  const { action, ...rest } = outcome;
-  return { outcome: { ...rest, changed }, action };
+  const { action, write, ...rest } = outcome;
+  return { outcome: { ...rest, changed }, action, write };
 }
 
 function applyCorrection(workspace: Workspace, correction: Correction, today: string): Outcome {
@@ -275,6 +282,21 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   // A fix corrects the proposal before it is applied; the file keeps what was proposed (spec/schema.md §11.3).
   const fixed = decision.action === "fix" ? corrected(workspace, p, decision.fixes ?? [], exclude) : { q: p, noteFixes: new Map<string, Array<Record<string, unknown>>>() };
   const action = decision.action === incoming.action ? undefined : decision.action;
+
+  // A notion_change is written by the skill, not here: apply records the decision and hands back the write (spec/cli.md §5.7).
+  if (p.kind === "notion_change" && decision.action !== "reject") {
+    const write = recordOnly ? undefined : notionWrite(workspace, proposal.id, p, decision.action === "fix" ? fixed.value : p.value_after);
+    if (write !== undefined && "reason" in write) throw new ItemFailure(write.reason, write.message);
+    const status = decision.action === "approve" ? "approved" : "edited";
+    // The same decision already recorded: nothing changes in the file, the write is handed back again.
+    if (!(recorded !== undefined && decision === recorded && p.status === status)) {
+      p.decision = decision;
+      p.status = status;
+      p.updated = today;
+      workspace.save(proposal.path, document);
+    }
+    return recordOnly ? { result: "recorded", action } : { result: "awaiting_notion", action, write };
+  }
 
   p.decision = decision;
   p.status = decision.action === "approve" ? "approved" : decision.action === "reject" ? "rejected" : "edited";
@@ -418,6 +440,13 @@ function corrected(workspace: Workspace, p: Record<string, unknown>, fixes: Arra
     q.links = links;
     return { q, noteFixes };
   }
+  if (kind === "notion_change" || kind === "set_field") {
+    const { value } = single();
+    const problem = fixValueProblem(workspace, p, value);
+    if (problem !== undefined) shape(problem);
+    if (kind === "set_field") q.after = value;
+    return { q, value, noteFixes };
+  }
   throw new ItemFailure("INVALID_RESULT", `Unknown proposal kind ${kind}`);
 }
 
@@ -479,6 +508,7 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
     }
   }
   if (kind === "update_body" && bodyHash(target.body) !== p.before_hash) return `${target.id}'s body changed after the proposal was written`;
+  if (kind === "set_field" && a[field] !== p.before) return `${field} is ${a[field] === undefined ? "absent" : JSON.stringify(a[field])}, proposal expected ${p.before === undefined ? "absent" : JSON.stringify(p.before)}`;
 
   switch (kind) {
     case "update_fact":
@@ -515,6 +545,10 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
     case "merge":
       merge(workspace, target, existing(workspace, String(p.merge_into)), today);
       return null;
+    case "set_field":
+      // Applied like a correction of that field (spec/cli.md §5.7); a fix has already put its value in `after`.
+      a[field] = p.after;
+      break;
     case "answer":
       // edit: your Note is the answer, as text; otherwise the note that holds it, else the sentence.
       a.answer = V !== undefined ? String(V) : p.answer_note ?? p.answer;

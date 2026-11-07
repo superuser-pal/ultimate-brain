@@ -28,7 +28,7 @@ export const applyCommand: Command = {
       ...result.decisions.map((item) => `${item.result} ${item.proposal} ${item.action}${item.reason === undefined ? "" : ` (${item.reason})`}`),
     ];
     return {
-      data: { dry_run: dryRun, corrections: result.corrections, decisions: result.decisions, summary: result.summary },
+      data: { dry_run: dryRun, corrections: result.corrections, decisions: result.decisions, notion_writes: result.notion_writes, summary: result.summary },
       warnings,
       exitCode: result.summary.failed > 0 ? 1 : 0,
       human: lines.length === 0 ? "Nothing to apply.\n" : `${lines.join("\n")}\n`,

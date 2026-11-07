@@ -41,7 +41,7 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 ```
 
 ## Verify
-- [ ] "Needs you" shows two short lists, the Review one grouped by Type (From source, Conflict, Answer); a meeting dated tomorrow is not in "Which minutes need review?".
+- [ ] "Needs you" shows two short lists, the Review one grouped by Type (From source, Conflict, Answer, Suggestion); a meeting dated tomorrow is not in "Which minutes need review?".
 - [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status **Ready**; New meeting and New project open a page with the default template.
 - [ ] "What's on today?" has its tabs: Areas, Tasks (Tasks module), Meetings, Projects, Inbox; nothing sits above the two columns (#143).
 - [ ] The Areas tab's "How are my areas?" shows one line per area that reads on its own: "Agency · 4 to review · 1 meeting", or "all clear" (decisions 0050, #145).
