@@ -6,7 +6,8 @@ import { test } from "node:test";
 
 import { rankCandidates, queryWords, type QueryContext } from "../src/lib/query.ts";
 import type { Note } from "../src/lib/notes.ts";
-import { brain, FIXTURE_BRAIN } from "./helpers.ts";
+import { isMarker } from "../src/lib/brain-marker.ts";
+import { brain, FIXTURE_BRAIN, fixtureCopy } from "./helpers.ts";
 
 const BRAIN = ["--brain", FIXTURE_BRAIN, "--json"];
 
@@ -79,4 +80,58 @@ test("query tokenizes accents and rejects invalid candidate forms", async () => 
   const type = await brain(["query", "--candidates", "auth", "--types", "unknown", ...BRAIN]);
   assert.equal(type.code, 2);
   assert.equal(type.json.error.code, "USAGE");
+});
+
+test("query reads the .brain that brain link writes: plain (no context), --project (+3), and the same reader refuses an unknown key (CC-152)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const plainRepo = await mkdtemp(join(tmpdir(), "brain-query-link-"));
+  const projectRepo = await mkdtemp(join(tmpdir(), "brain-query-link-"));
+  context.after(() => Promise.all([rm(plainRepo, { recursive: true, force: true }), rm(projectRepo, { recursive: true, force: true })]));
+  const ARGS = ["--brain", dir, "--json"];
+
+  const linkedPlain = await brain(["link", plainRepo, ...ARGS]);
+  assert.equal(linkedPlain.code, 0, linkedPlain.stdout);
+  assert.ok("skills" in linkedPlain.json.data.marker.value, "link records the skills it installed in .brain (skills-delivery §6.2)");
+  const plain = await brain(["query", "--candidates", "auth", "--repo", plainRepo, ...ARGS]);
+  assert.equal(plain.code, 0, plain.stdout);
+  assert.deepEqual(plain.json.data.context, { repo: plainRepo.split("/").pop(), project: null, area: null });
+  assert.ok(plain.json.data.candidates.length > 0);
+
+  const linkedProject = await brain(["link", projectRepo, "--project", "prj-9x4t1b7e", ...ARGS]);
+  assert.equal(linkedProject.code, 0, linkedProject.stdout);
+  const contextual = await brain(["query", "--candidates", "auth", "--repo", projectRepo, ...ARGS]);
+  assert.equal(contextual.code, 0, contextual.stdout);
+  assert.equal(contextual.json.data.context.project, "prj-9x4t1b7e");
+  assert.equal(contextual.json.data.context.area, "area-2m7c4h8n");
+  const find = (run: { json: { data: { candidates: Array<{ id: string; score: number }> } } }) => run.json.data.candidates.find((candidate) => candidate.id === "dec-7k2m9q4x")!.score;
+  assert.equal(find(contextual), find(plain) + 3);
+
+  // From inside the repo, without --repo: the CLI reads the current folder's .brain (cli.md §5.13 step 4).
+  const previous = process.cwd();
+  process.chdir(projectRepo);
+  try {
+    const fromRepo = await brain(["query", "--candidates", "auth", ...ARGS]);
+    assert.equal(fromRepo.code, 0, fromRepo.stdout);
+    assert.equal(fromRepo.json.data.context.project, "prj-9x4t1b7e");
+    assert.equal(find(fromRepo), find(contextual));
+  } finally {
+    process.chdir(previous);
+  }
+
+  await writeFile(join(plainRepo, ".brain"), JSON.stringify({ repo: "x", colour: "blue" }));
+  const unknown = await brain(["query", "--candidates", "auth", "--repo", plainRepo, ...ARGS]);
+  assert.equal(unknown.code, 2, unknown.stdout);
+  assert.equal(unknown.json.error.code, "USAGE");
+  assert.match(unknown.json.error.message, /must be an object with only repo, project, area, stacks, skills/);
+});
+
+test("the shared marker validation accepts what link writes and rejects the rest", () => {
+  const skills = { name: "ultimate-brain-skills", version: "1.1.0", integrity: "sha256-abc", names: ["brain-query", "brain-workflow"] };
+  assert.equal(isMarker({ repo: "acme-api", project: "prj-9x4t1b7e", area: "area-2m7c4h8n", stacks: ["nextjs"], skills }), true);
+  assert.equal(isMarker({ repo: "acme-api", skills }), true);
+  assert.equal(isMarker({}), true);
+  assert.equal(isMarker({ repo: "acme-api", colour: "blue" }), false);
+  assert.equal(isMarker({ skills: { ...skills, names: ["Not Kebab"] } }), false);
+  assert.equal(isMarker({ skills: { name: "x", version: "1", names: [] } }), false, "integrity is required");
+  assert.equal(isMarker([]), false);
 });

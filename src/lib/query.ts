@@ -1,6 +1,7 @@
-import { readFile, stat } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 
+import { readMarker } from "./brain-marker.ts";
 import { BrainError } from "./errors.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 
@@ -77,20 +78,10 @@ export async function queryContext(repoPath: string | undefined): Promise<QueryC
     throw new BrainError("USAGE", `--repo must be a directory: ${repoPath}`);
   }
 
-  let raw: string;
-  try {
-    raw = await readFile(join(root, ".brain"), "utf8");
-  } catch {
-    return { repo: null, project: null, area: null };
-  }
-
-  let marker: unknown;
-  try {
-    marker = JSON.parse(raw);
-  } catch {
-    throw new BrainError("USAGE", `.brain in ${root} is not valid JSON`);
-  }
-  if (!isMarker(marker)) throw new BrainError("USAGE", `.brain in ${root} has an invalid format`);
+  // One reader for the marker `link` writes (brain-marker.ts, CC-152): a `.brain` with a key §5.12 doesn't list is `USAGE` here.
+  const read = await readMarker(root, "USAGE", `.brain in ${root}`);
+  if (read === null) return { repo: null, project: null, area: null };
+  const marker = read.value;
   return {
     repo: marker.repo ?? basename(root),
     project: marker.project ?? null,
@@ -192,12 +183,3 @@ function stringValue(value: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
 
-function isMarker(value: unknown): value is { repo?: string; project?: string; area?: string } {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
-  const marker = value as Record<string, unknown>;
-  return Object.keys(marker).every((key) => ["repo", "project", "area", "stacks"].includes(key))
-    && (marker.repo === undefined || typeof marker.repo === "string")
-    && (marker.project === undefined || typeof marker.project === "string")
-    && (marker.area === undefined || typeof marker.area === "string")
-    && (marker.stacks === undefined || Array.isArray(marker.stacks));
-}

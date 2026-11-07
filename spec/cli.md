@@ -890,7 +890,7 @@ Returns ranked candidate notes for the query skill (CX-11); the skill reads them
 1. **Tokens:** NFKD, drop combining marks, lowercase, split on runs outside `[a-z0-9]`, drop tokens shorter than 2 and these stopwords: `a an and are as at be by did do does for from has have how in is it of on or that the this to was we what when where which who why will with` and `al como con de del el en es la las lo los para por que se su un una y`.
 2. **Searched:** knowledge notes and sources (default `--types`: all except view, proposal, memory).
 3. **Score** per note = sum over query tokens of: 5 if in `title` or any alias; 3 if in `summary`; 2 if in any other frontmatter string value (facts and timeline values included); 1 per body line containing it, at most 3. A token matches a word when the word starts with it (`deci` matches `decision`).
-4. **Context boost:** if `--repo` (default: the current directory, when it has `.brain`) names a project, +3 to notes whose `projects` contains it or whose id is it; else if it names an area, +2 for that `area`.
+4. **Context boost:** if `--repo` (default: the current directory, when it has `.brain`) names a project, +3 to notes whose `projects` contains it or whose id is it; else if it names an area, +2 for that `area`. The marker is read as §5.12 step 1 defines it, `skills` included, by the one reader every command shares (CC-152): a `.brain` that is not valid JSON, or has a key §5.12 doesn't list, is `USAGE` naming the folder; a folder without one has no context.
 5. Notes with score 0 are dropped. Order: score descending, then `updated` descending, then id. Default limit 10, max 50.
 
 ```json

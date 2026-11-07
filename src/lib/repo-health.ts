@@ -1,6 +1,4 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-
+import { readMarker } from "./brain-marker.ts";
 import { BrainError } from "./errors.ts";
 import { isRecord } from "./input.ts";
 import { globMatch, KIT_FILE, kitBytesIfAny, kitProblems, matchesAny, parseKitBytes, type HubContext, type Kit } from "./link-kit.ts";
@@ -113,10 +111,11 @@ export async function repoHealth(repo: LinkedRepo, hub: HubContext, brainRoot: s
   return checks;
 }
 
+/** The repo's `.brain`, read with the one marker reader (brain-marker.ts); a missing or malformed file is no link (`null`). */
 async function readDotBrain(path: string): Promise<{ project?: string; area?: string } | null> {
   try {
-    const value = JSON.parse(await readFile(join(path, ".brain"), "utf8"));
-    return isRecord(value) ? { project: typeof value.project === "string" ? value.project : undefined, area: typeof value.area === "string" ? value.area : undefined } : null;
+    const read = await readMarker(path, "INPUT_INVALID", ".brain");
+    return read === null ? null : { project: read.value.project, area: read.value.area };
   } catch {
     return null;
   }
