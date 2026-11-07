@@ -63,6 +63,7 @@ Future implementation tasks are decomposed by Claude Code after their opening sc
 **Changelog:** Ultimate Assistant's skill wording follows its contracts more closely (ultimate-brain-skills 1.2.1): a ramble keeps the session open, a delegated run carries out waiting Notion writes, and the log line and the summary count the same things.
 **Output:** the skill findings of CC-110's blind runs (eval/acceptance-0.10.0/RESULTS.md §4: 2, 3, 4, 7, 8, 10) fixed in the fork (ultimate-brain-skills PR, `compatible`), released as brain-v1.2.1 after the user's yes, and vendored in `.agents/skills/` (spec/skills-delivery.md §9.5); `.agents/skills/` is not edited by hand. Also: the 0.10.0 section moves verbatim to build/HISTORY.md, and `src/cli.ts` lists `proposalReviseCommand` once in COMMANDS.
 **Acceptance:** the vendored snapshot is ultimate-brain-skills 1.2.1 and passes the snapshot check; the six findings each have their fix in the vendored text; `npm test`, `npm run typecheck`, `npm run test:package` and the leak check pass; the skills-integration check reports 0 unclassified.
+**Spec decided (CC-150 review, 2026-11-07):** skills-delivery §9.5 step 2 contradicted §10.4 (a vendored fork PR was always `coordinated`); the user chose §10.4's rule: `coordinated` only when the skill needs the product PR's change, otherwise `compatible`, with a `Product:` line either way. Fork PR #6 (`compatible`, no `Product:` line) predates the fix; §10.4 ignores the line for `compatible`.
 
 ## 0.11.0 — The brain tidies itself (decisions 0052, 0061, 0064)
 
