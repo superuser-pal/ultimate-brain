@@ -1,17 +1,17 @@
 {
   "format": 1,
   "name": "ultimate-brain-skills",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "cli": ">=0.10.0-0 <0.11.0",
   "source": {
     "repository": "https://github.com/superuser-pal/ultimate-brain-skills",
-    "commit": "add959c8c01d789fa89b429dfba1964c69fa8e41"
+    "commit": "3d3aa7d7ea486ffe7f1edfa86a86204d1a63c39b"
   },
   "upstream": {
     "repository": "https://github.com/mattpocock/skills",
     "commit": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
   },
-  "integrity": "sha256-985c4f4b8626f6269a0864e270611b137b10e5bad9bd8352057c0b4959f1f54d",
+  "integrity": "sha256-e1aa1d661d5da68ff06bc8239d520b9b5c8283d85c9e44b6fbdd57227e0216a5",
   "skills": [
     {
       "name": "brain-apply",
@@ -21,8 +21,8 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "59fd4ef86b96bca9440db8ca6f2e7770c5da5b970e7b5e40e37f9319ad265e2e",
-          "bytes": 19234
+          "sha256": "b95b3b4f5a638ffbf3e7e65247aec79dfe4f93dd6ee5f6be47123059578b872e",
+          "bytes": 19228
         },
         {
           "path": "references/review-items.md",
@@ -237,18 +237,18 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "ab651c70011dbc556c5d7c01a2e05216a49bd0bc75d06d82b97cfde808d7fe99",
-          "bytes": 10448
+          "sha256": "703402d62ae5df673f5471ae261ff95598fa883f01a4ec95137f280da1d5bb2c",
+          "bytes": 10875
         },
         {
           "path": "references/answers.md",
-          "sha256": "9d1a25eb01f7c3206d76b37a5235e22d932d7cf9221d3814a4b73f4ab2e0b133",
-          "bytes": 10474
+          "sha256": "f2821a218f9fa68c84c58cde210192e629e33d317e00878626fee9c4b7f5346f",
+          "bytes": 10567
         },
         {
           "path": "references/ramble.md",
-          "sha256": "cbbd322f5cc9813f5539fc42c4967a3354ed3ed2c88c68f041e8177b361b3b92",
-          "bytes": 5706
+          "sha256": "85bba2b0c64463ba5dff47ca63b94c3d81c285c73fbc4e79375a5da155372ce2",
+          "bytes": 5950
         },
         {
           "path": "references/skips.md",
