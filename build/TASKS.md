@@ -116,7 +116,7 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 **Output:** `eval/retrieval-0.12/`: TypeScript adaptations written from reading claude-obsidian at `2e545563` (its code is never run: `sources/` is untrusted), each behind the same retriever interface as CC-164's runner, run on CC-164's questions and on CC-165's answerable cases when those are merged; `RESULTS.md` gives recall@k, MRR, the tokens a result page costs, the lines each adaptation needs and its attribution, and a recommendation per piece (adopt, adapt or drop) under 0074 §5's conditions. No change outside `eval/retrieval-0.12/` and this row.
 **Acceptance:** each piece's numbers sit beside the baseline's on the same questions; the token cost uses one stated tokenizer; no piece needs a new runtime dependency, Python, a vector database or a schema change, or the report says it is dropped for that; the leak and PR format checks pass.
 
-### CC-168 · Split 0.12.0's build tasks from the contracts · `review`
+### CC-168 · Split 0.12.0's build tasks from the contracts · `done` (#272)
 **Release:** 0.12.0
 **Changelog:** development only: 0.12.0's build tasks are split from the merged contracts, each owning separate files.
 **Output:** the rows CC-169 to CC-173, U-26 and the ownership table below. Planning only.
