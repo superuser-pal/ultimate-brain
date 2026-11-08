@@ -35,7 +35,10 @@ export function brainCli(root: string): Retriever {
         env: { ...process.env, BRAIN_DIR: root },
         encoding: "utf8",
       });
-      return { ids: JSON.parse(out).data.candidates.map((c: { id: string }) => c.id), page: out.trimEnd() };
+      const parsed = JSON.parse(out);
+      // The envelope names the brain's folder, a scratch path here; a typical one stands in, so the count doesn't depend on it.
+      const page = JSON.stringify({ ...parsed, brain: "/Users/name/brain" });
+      return { ids: parsed.data.candidates.map((c: { id: string }) => c.id), page };
     },
   };
 }
