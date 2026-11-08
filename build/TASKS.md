@@ -76,7 +76,7 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 **Output:** the three sections moved verbatim from build/TASKS.md to the end of build/HISTORY.md (the done releases, CC-94); no other line changes.
 **Acceptance:** each moved section is byte-identical in HISTORY.md to its text in TASKS.md on `main`; every task row in them is `done`; no other task row is lost or changed; the leak and PR format checks pass.
 
-### CC-163 · Plan 0.12.0's first tasks: baseline, evaluation set, contracts, component comparison · `review`
+### CC-163 · Plan 0.12.0's first tasks: baseline, evaluation set, contracts, component comparison · `done` (#269)
 **Release:** 0.12.0
 **Changelog:** development only: 0.12.0's first four tasks are planned, each owning separate paths so they can be built in parallel.
 **Output:** the rows CC-164 to CC-167 and the ownership table below. Planning only.
