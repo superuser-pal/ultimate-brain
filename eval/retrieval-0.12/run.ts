@@ -17,7 +17,7 @@ import { queryWords } from "../../src/lib/query.ts";
 import { chunkBody } from "./chunk.ts";
 import { loadCorpus, type Note } from "./corpus.ts";
 import type { Retriever } from "./retriever.ts";
-import { bm25Chunks, bm25v05, bm25Whole, brainCli, withCompactPage } from "./retrievers.ts";
+import { bm25Chunks, bm25v05, bm25Whole, brainCli, brainOneSnippet, withCompactPage } from "./retrievers.ts";
 import { brainWithCjk, tokenize } from "./tokenize.ts";
 
 const TOKENIZER = "gpt-tokenizer 4.1.0, encoding o200k_base";
@@ -45,7 +45,8 @@ const baseline = cached(brainCli(brain));
 const retrievers: Retriever[] = [
   baseline,
   bm25v05(brain, byId),
-  withCompactPage("brain + snippet", baseline, byId),
+  brainOneSnippet(baseline, byId),
+  withCompactPage("brain, compact text page", baseline, byId),
   bm25Whole(notes, { name: "co-bm25", tokens: "upstream" }),
   bm25Whole(notes, { name: "co-bm25, brain tokens", tokens: "brain" }),
   bm25Whole(notes, { name: "co-bm25F", tokens: "upstream", titleWeight: 3, summaryWeight: 2 }),
