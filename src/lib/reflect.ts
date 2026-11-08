@@ -14,6 +14,8 @@ type Signal = typeof SIGNALS[number];
 /** Types the near_duplicate signal leaves out (§5.32): a recurring meeting repeats its title; the structure of your work is Ultimate Assistant's. */
 const NOT_DUPLICATES = new Set(["meeting", "domain", "area", "goal", "project"]);
 const WINDOW_DAYS = 30;
+/** §5.32 "Common ground" leaves out references to these types: the input a note came from and the structure it was filed under say nothing it claims. */
+const CONTEXT_TYPES: ReadonlySet<string> = new Set(["meeting", "source", "domain", "area", "goal", "project"]);
 const ID = /^(area|dom|gol|prj|per|org|mtg|dec|que|con|ref|src|mem|prp|vw)-[0-9abcdefghjkmnpqrstvwxyz]{8}$/;
 const NOTE_ID = "(?:area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}";
 const FINGERPRINT = {
@@ -102,6 +104,18 @@ interface Input {
   text: string[][];
 }
 
+/** A line's prose for terms (§5.32): inline code, link targets, URLs, emails, domains and file names removed (a link keeps its text); an apostrophe inside a word dropped. */
+function prose(text: string): string {
+  return text
+    .replace(/`[^`]*`/g, " ")
+    .replace(/\]\([^)]*\)/g, "] ")
+    .replace(/<[a-z][a-z0-9+.-]*:[^>\s]*>/gi, " ")
+    .replace(/\b(?:[a-z][a-z0-9+.-]*:\/\/|www\.)\S+/gi, " ")
+    .replace(/\S+@\S+\.[a-z]{2,}\b/gi, " ")
+    .replace(/\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:[a-z]{2,})\b(?:\/\S*)?/gi, " ")
+    .replace(/(\p{L})['’](\p{L})/gu, "$1$2");
+}
+
 function inputOf(note: Note): Input | null {
   if (note.type === "meeting") {
     // ok
@@ -114,9 +128,9 @@ function inputOf(note: Note): Input | null {
   const values = new Set(Object.entries(a).filter(([key]) => key !== "id").flatMap(([, value]) => strings(value)));
   const lines = bodyLines(note).map(({ line, text }) => ({ line, text, tokens: joined(reflectTokens(text)), heading: /^#/.test(text), links: linkedPaths(note.path, text) }));
   const text = [
-    typeof a.title === "string" ? reflectTokens(a.title) : [],
-    typeof a.summary === "string" ? reflectTokens(a.summary) : [],
-    ...lines.filter((line) => !line.heading).map((line) => reflectTokens(line.text)),
+    typeof a.title === "string" ? reflectTokens(prose(a.title)) : [],
+    typeof a.summary === "string" ? reflectTokens(prose(a.summary)) : [],
+    ...lines.filter((line) => !line.heading).map((line) => reflectTokens(prose(line.text))),
   ].filter((tokens) => tokens.length > 0);
   return {
     note,
@@ -140,14 +154,26 @@ function names(input: Input, note: Note, runs: readonly string[]): boolean {
   return input.lines.some((line) => lineNames(line, note, runs));
 }
 
-function termsOf(input: Input): Map<string, number[]> {
+/** §5.32 "A term": §5.13's stopwords and the function words of §5.32's list, which open or close a phrase but never name a theme. */
+const TERM_STOPWORDS: ReadonlySet<string> = new Set([...QUERY_STOPWORDS,
+  "i", "me", "my", "you", "your", "he", "him", "his", "she", "her", "they", "them", "their", "our", "us", "its", "these", "those", "there", "here",
+  "am", "been", "being", "were", "can", "could", "would", "should", "shall", "may", "might", "must", "not", "no", "yes", "if", "but", "so", "than", "then", "too", "very",
+  "make", "made", "get", "got", "put", "take", "like", "well", "now", "still", "even", "much", "many", "new", "next", "last", "sure", "soon", "possible",
+  "today", "tomorrow", "yesterday", "day", "days", "week", "weeks", "month", "months", "year", "years",
+  "dont", "doesnt", "didnt", "cant", "couldnt", "wont", "wouldnt", "shouldnt", "isnt", "arent", "wasnt", "werent", "im", "ive", "youre", "youve", "theyre", "lets", "thats", "theres", "whats",
+  "just", "also", "all", "any", "some", "each", "more", "most", "other", "such", "only", "own", "same", "about", "into", "over", "after", "before", "up", "out", "off", "again", "per", "via",
+  "le", "les", "mi", "tu", "sus", "nos", "o", "pero", "si", "no", "ya", "muy", "mas", "este", "esta", "ese", "esa", "son", "fue", "ha", "hay", "sin", "sobre", "entre",
+]);
+
+function termsOf(input: Input, boilerplate: ReadonlySet<string> = new Set()): Map<string, number[]> {
   // term text → the text lines (by index) holding it
   const found = new Map<string, number[]>();
   input.text.forEach((tokens, index) => {
+    if (boilerplate.has(tokens.join(" "))) return;
     for (const size of [2, 3]) {
       for (let start = 0; start + size <= tokens.length; start += 1) {
         const run = tokens.slice(start, start + size);
-        if (QUERY_STOPWORDS.has(run[0]!) || QUERY_STOPWORDS.has(run[run.length - 1]!) || run.some((token) => /^\d+$/.test(token))) continue;
+        if (TERM_STOPWORDS.has(run[0]!) || TERM_STOPWORDS.has(run[run.length - 1]!) || run.some((token) => token.length < 2 || /^\d+$/.test(token))) continue;
         const term = run.join(" ");
         const at = found.get(term) ?? [];
         if (!at.includes(index)) at.push(index);
@@ -304,7 +330,7 @@ export function reflectCandidates(all: readonly Note[], loaded: Pick<Loaded, "su
 
   // shared_ground: two reviewed notes, not meetings, one updated in the window, two or more references in common.
   const reviewed = knowledge.filter((note) => note.attributes.lifecycle === "reviewed" && note.type !== "meeting");
-  const refs = new Map(reviewed.map((note) => [note.id, referencesOf(note, byPath, knownIds)]));
+  const refs = new Map(reviewed.map((note) => [note.id, new Set([...referencesOf(note, byPath, knownIds)].filter((id) => !CONTEXT_TYPES.has(byId.get(id)?.type ?? "")))]));
   const sortedReviewed = [...reviewed].sort((a, b) => compareCodePoints(a.id, b.id));
   const inWindow = (note: Note) => { const updated = day(note.attributes.updated); return updated >= from && updated <= to; };
   for (let i = 0; i < sortedReviewed.length; i += 1) {
@@ -352,14 +378,19 @@ export function reflectCandidates(all: readonly Note[], loaded: Pick<Loaded, "su
   }
 
   // recurring_term: a term in three or more window inputs that no knowledge note's name carries.
+  const lineInputs = new Map<string, Set<Input>>();
+  for (const input of window) for (const tokens of input.text) { const key = tokens.join(" "); const set = lineInputs.get(key) ?? new Set<Input>(); set.add(input); lineInputs.set(key, set); }
+  const boilerplate = new Set([...lineInputs].filter(([, set]) => set.size >= 2).map(([key]) => key));
   const terms = new Map<string, Map<Input, number[]>>();
-  for (const input of window) for (const [term, at] of termsOf(input)) { const entry = terms.get(term) ?? new Map<Input, number[]>(); entry.set(input, at); terms.set(term, entry); }
+  for (const input of window) for (const [term, at] of termsOf(input, boilerplate)) { const entry = terms.get(term) ?? new Map<Input, number[]>(); entry.set(input, at); terms.set(term, entry); }
   const carried = knowledge.flatMap((note) => namesOf(note).map((name) => joined(reflectTokens(name))));
+  const personal = new Set(notes.filter((note) => note.type === "person").flatMap((note) => namesOf(note).flatMap(reflectTokens)).filter((token) => token.length >= 3 && !TERM_STOPWORDS.has(token)));
   const frequent = [...terms].filter(([, found]) => found.size >= 3);
   const sameInputs = (a: Map<Input, number[]>, b: Map<Input, number[]>) => a.size === b.size && [...a.keys()].every((input) => b.has(input));
   for (const [term, found] of frequent) {
     const padded = ` ${term} `;
     if (carried.some((name) => name.includes(padded))) continue;
+    if (term.split(" ").some((token) => personal.has(token))) continue;
     if (frequent.some(([longer, other]) => longer !== term && longer.split(" ").length > term.split(" ").length && ` ${longer} `.includes(padded) && sameInputs(found, other))) continue;
     const slug = term.split(" ").join("-");
     const fingerprint = `theme:${slug}`;
