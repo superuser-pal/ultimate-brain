@@ -84,7 +84,7 @@ for (const [name, fn] of Object.entries(retrievers)) {
 // The commit the numbers were produced at, and the command, so anyone can rerun it.
 const repo = fileURLToPath(new URL("../..", import.meta.url));
 const git = (...a) => execFileSync("git", ["-C", repo, ...a], { encoding: "utf8" }).trim();
-const dirty = git("status", "--porcelain", "--", "src", "eval/search-0.5") ? " (with uncommitted changes in src/ or eval/search-0.5/)" : "";
+const dirty = git("status", "--porcelain", "--", "src", "eval/search-0.5", ":!eval/search-0.5/results-*.txt") ? " (with uncommitted changes in src/ or eval/search-0.5/)" : "";
 const shown = (p) => (p.startsWith("/") ? (relative(repo, p).startsWith("..") ? `<${p === brain ? "brain-dir" : "file"}>` : relative(repo, p)) : p);
 console.log(`commit: ${git("rev-parse", "HEAD")}${dirty}`);
 console.log(`command: ${process.env.RUN_ROWS ? "RUN_ROWS=1 " : ""}node eval/search-0.5/run.mjs ${process.argv.slice(2).map(shown).join(" ")}`);
