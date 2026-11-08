@@ -1,6 +1,6 @@
 # Search evaluation (0.5, CC-50; baseline for 0.12.0, CC-164)
 
-50 known questions on a synthetic brain of 1,982 notes, run against `brain query --candidates` and a local BM25 index, and once against GBrain. The method and the 0.5 results are in [review 07](../../reviews/07-hermes-and-search.md) §3. Since 0.12.0 it is the retrieval baseline that any retrieval change is compared with first (decision [0074](../../decisions/0074-agent-memory-and-handover.md) §6).
+50 known questions on a synthetic brain of 1,982 notes, run against `brain query --candidates` and a local BM25 index, and once against GBrain. The method and the 0.5 results are in [review 07](../../reviews/07-hermes-and-search.md) §3. Since 0.12.0 it is the retrieval baseline that any retrieval change is compared with first (decision [0074](../../decisions/0074-scoped-memory-handovers-and-bounded-recall.md) §6).
 
 | File | What it is |
 |---|---|
