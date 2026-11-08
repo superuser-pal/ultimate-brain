@@ -22,7 +22,7 @@ timeline:
     value: Lead developer
     from: 2026-12-08
     learned: 2026-12-09
-    source: mtg-8c4n2p7w
+    source: user-correction:prp-0a1b2c3d
     assessment: accepted
 created: 2026-10-01
 updated: 2026-12-10

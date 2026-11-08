@@ -77,9 +77,17 @@ const kinds: Array<{ name: string; fields: Record<string, unknown>; action?: str
     changed: [CARLOS],
   },
   {
+    // A value no claim holds is the user's (schema §11.2, 0076 §1): `user-correction:<proposal id>`.
     name: "contradiction-edit",
     fields: { kind: "contradiction", target: "per-9t2c6m4a", field: "role", before: "Developer", after: "Tech lead", from: "2026-12-08" },
     action: "edit", value: "Lead developer",
+    changed: [CARLOS],
+  },
+  {
+    // The value the proposal's source claims keeps that source: picking a claim is not a correction (CC-160).
+    name: "contradiction-edit-to-claim",
+    fields: { kind: "contradiction", target: "per-9t2c6m4a", field: "role", before: "Developer", after: "Tech lead", from: "2026-12-08" },
+    action: "edit", value: "Tech lead",
     changed: [CARLOS],
   },
   {
