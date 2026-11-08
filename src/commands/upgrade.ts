@@ -100,7 +100,7 @@ export const upgradeCommand: Command = {
         if (stored.reports && !stored.documents) {
           config = withModules(config, { ...stored, documents: true });
           changed = true;
-          warnings.push({ code: "DOCUMENTS_TURNED_ON", message: "Reports now live in Documents, so the Documents module is on. Apply Notion migration 0019 before the next publish." });
+          warnings.push({ code: "DOCUMENTS_TURNED_ON", message: `Reports now live in Documents, so the Documents module is on. Apply Notion migration 0019 before the next publish: ${join(installedProduct().root, "notion", "migrations", "0019-reports-move-to-documents.md")}` });
         }
         if (changed) changes.push({ path: brainJson, action: "updated", content: `${JSON.stringify(config, null, 2)}\n` });
       } catch {

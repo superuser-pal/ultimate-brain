@@ -94,6 +94,8 @@ export const statusCommand: Command = {
       suppressions,
       last_log: lastLog,
       skills: statusSkills(brain!.root, installedProduct(), homeOf(environment.env)),
+      // Where the Notion build files are: <path>/notion/…, <path>/docs/notion-space-design.md (§5.2).
+      product: { path: installedProduct().root },
     };
     return { data, human: `Owner: ${data.owner}\nNotes: ${notes.length}\n${taskNote === null ? "" : `${taskNote}\n`}` };
   },
