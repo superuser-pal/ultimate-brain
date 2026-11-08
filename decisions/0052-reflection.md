@@ -3,6 +3,8 @@
 **Status:** Accepted
 **Date:** 2026-10-29
 
+**Amended by:** [0076](0076-reflection-chat-first.md) (2026-11-08): a run reports first in the chat and applies what the user says yes to, Review rows only on "later"; on demand only in 0.11.0, the weekly run in 0.13.0's brief; skips by kind; themes become draft learned Documents; `note-size` checks learned and promoted Documents; U-21 has no move-in gate. Where the text below differs, 0076 governs.
+
 **Current release placement:** [0064](0064-brain-assistant-before-reflection-hermes-after-1-0.md) moves reflection (CC-65 to CC-67, U-21) to **0.11.0**, after the brain assistant. [0061](0061-roadmap-and-launch-boundary.md) had placed it in 0.10.0, after 0.9.0's skills separation. Earlier release wording below is historical; reflection behaviour remains unchanged.
 
 **Release amendment:** [0055](0055-domains-capture-and-review.md), accepted 2026-10-30, moves reflection (CC-65 to CC-67, U-21) from 0.8.0 to 0.9.0, after the new Review and source-selection flow. The original release wording below is historical; the reflection behavior otherwise stands, subject to 0055's excluded-evidence rules.
