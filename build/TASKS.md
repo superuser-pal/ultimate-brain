@@ -157,11 +157,11 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 **Output:** an adapter in `eval/memory-0.12/adapters/` mapping the cases to `brain recall --pack` and `--search` as memory.md §8 says, and a results file with the gate figures (trust cases, answerable cases, unknown cases) and the measured tokens of every pack beside its estimate.
 **Acceptance:** the scorer runs end to end with the new adapter; 100% of trust cases pass, and every failure in the other kinds is listed with its cause; every pack's measured tokens are within its budget; the leak and PR format checks pass.
 
-### CC-173 · Retrieval changes chosen from CC-167's comparison (0074 §5) · `todo`
+### CC-173 · Retrieval changes chosen from CC-167's comparison (0074 §5) · `in progress`
 **Release:** 0.12.0
 **Changelog:** `brain query` and `brain recall --search` find the right note more often, using small ports of the retrieval pieces that won the 0.12.0 comparison.
-**Output:** detailed after CC-167's RESULTS.md is merged: the pieces it recommends adopting or adapting, ported into `src/`, with their attribution; nothing it drops.
-**Acceptance:** on CC-164's questions and CC-165's answerable cases, recall@10 and MRR are at least the baseline's and the comparison's for those pieces; trust cases still pass 100%; no new runtime dependency; `npm test`, `npm run typecheck`, `npm run test:package` and the leak check pass.
+**Output:** what eval/retrieval-0.12/RESULTS.md recommends, and nothing it drops (chunking, the synthetic prefix, snippets, freshness). cli.md §5.13 first: the score becomes Okapi BM25 (k1 1.5, b 0.75) over each searched note as one document, title and aliases ×3, summary ×2, other frontmatter strings and the body ×1, with the CLI's words and its prefix match, plus 1-, 2- and 3-character n-grams of CJK runs as terms; `score` is a decimal rounded to 4 places; step 4's boost and the tie order (`updated`, then id) stay. Then tests that pin the ranking on small synthetic notes, then the port with its attribution (claude-obsidian at `2e545563`, MIT). `brain recall --search` ranks the same way (memory.md §6.1). Files: `src/lib/query.ts`, `src/lib/bm25.ts` (new: the BM25 scoring), `src/lib/cjk.ts` (new: the CJK n-grams), `src/lib/recall.ts` (only its call to the ranking), `tests/query*.test.ts`, spec/cli.md §5.13, `eval/search-0.5/results-cc173.txt`.
+**Acceptance:** on CC-164's 50 questions (eval/search-0.5 "Rerun the baseline"), recall@1/5/10 and MRR are at least the comparison's BM25 (28/32/36, MRR 0.61), committed as `eval/search-0.5/results-cc173.txt`; CC-165's scorer with the query adapter does no worse than its committed baseline on answerable cases, and if CC-172 is merged, its recall adapter's trust cases still pass 100%; no new runtime dependency; `npm test`, `npm run typecheck`, `npm run test:package` and the leak check pass.
 
 ## 0.13.0 — Knowledge pays back (decisions 0061, 0064, 0075)
 
