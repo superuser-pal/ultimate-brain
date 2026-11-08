@@ -156,6 +156,18 @@ Reflection across notes: contradictions, stale facts, duplicates, promotions and
 **Output:** CC-67's review (#262, finding 2) and the user's answer of 2026-11-08: keep the attribution of a chosen claim and fix the wording. Writing it showed the other half missing: `resolveContradiction` (src/lib/apply.ts) gave every new entry the proposal's `source`, even a value the user typed, where schema §11.2 (CC-65) says `user-correction:<proposal id>`. Now a new entry keeps the proposal's `source` when its value is the proposal's `after`, and is `user-correction:<id>` otherwise; schema §11.2 says so, and 0076 gets a "Clarified" line for §1's table. Test-first.
 **Acceptance:** tests/apply.test.ts goldens: `contradiction-edit` to a value no claim holds appends it with `source: user-correction:prp-0a1b2c3d`; the new `contradiction-edit-to-claim` to the proposal's `after` keeps `source: mtg-8c4n2p7w`; `npm test`, `npm run typecheck` and the leak check pass.
 
+## 0.11.1
+
+### CC-161 · reflect --candidates gives fewer, truer clusters: shared ground without one ingest's context, terms without boilerplate (#266) · `review`
+**Release:** 0.11.1
+**Changelog:** `brain reflect --candidates` finds far fewer, truer clusters: shared ground ignores the meeting and project notes were taken from, and terms skip link targets, URLs, code, sign-offs, contractions, function words and people's names.
+**Output:** spec/cli.md §5.32 (common ground, prose of a line, term stopwords, boilerplate, the person-name rule); `src/lib/reflect.ts`; two tests in `tests/reflect.test.ts`. Dogfood #266: on the real brain the run went from 387 clusters to 53 (13 shared ground, 2 overtaken, 38 terms; counts only, nothing from the brain in this repo).
+**Acceptance:**
+- [ ] Two notes whose only common references are a meeting, a source, a domain, an area, a goal or a project, plus one other reference, are no `shared_ground` cluster; with two other references in common they are, and `shared` lists only those (test `common ground leaves out the meeting and the project…`).
+- [ ] A term is never built from a link target, a URL, an email, a domain or file name, inline code, a line repeated in two or more window inputs, a one-character token, a contraction or term stopword at its edge, or a token of a person's name; a true term still clusters (test `a term never comes from link targets…`).
+- [ ] spec/cli.md §5.32 defines every rule above, and its term stopword list equals the code's.
+- [ ] `npm test`, `npm run typecheck` and the leak check pass.
+
 ## 0.12.0 — Remember and retrieve reliably (decisions 0061, 0074)
 
 The opening grill ran on 2026-11-06 and is locked in [0074](../decisions/0074-scoped-memory-handovers-and-bounded-recall.md). Deliver six capabilities for Claude Code and Codex: hot opening context, cross-session work handovers, durable memory capture, targeted recall, scoped/correctable memories and reviewed promotion. Durable lessons stay in the existing brain memories; temporary progress stays in repo/task/session records; hot context is a generated selection of those records.
