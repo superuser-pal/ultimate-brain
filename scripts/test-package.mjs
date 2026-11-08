@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { access, cp, mkdir, readdir, readFile, rm, mkdtemp, writeFile } from "node:fs/promises";
+import { access, cp, mkdir, readdir, readFile, realpath, rm, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -20,6 +20,13 @@ try {
   const { stdout } = await exec("npm", ["pack", "--json"], { cwd: root });
   const [packed] = JSON.parse(stdout);
   tarball = join(root, packed.filename);
+  // The Notion build files ship (CC-154): the checklist, every build prompt, module step and migration, and the space design.
+  const notionFiles = ["notion/CHECKLIST.md", "docs/notion-space-design.md"];
+  for (const folder of ["prompts", "modules", "migrations"]) {
+    for (const entry of await readdir(join(root, "notion", folder))) if (entry.endsWith(".md")) notionFiles.push(`notion/${folder}/${entry}`);
+  }
+  const packedPaths = new Set(packed.files.map((file) => file.path));
+  for (const file of notionFiles) assert.ok(packedPaths.has(file), `npm pack does not list ${file}`);
   await exec("npm", ["install", "--ignore-scripts", tarball], { cwd: temp });
   // HOME is a temp folder, so the user's global skill folders never show up as competing copies (spec/skills-delivery.md §5.2).
   const home = join(temp, "home");
@@ -45,6 +52,10 @@ try {
   assert.equal(lock.snapshot.name, "ultimate-brain-skills");
   const status = await exec("npx", ["--no-install", "ultimate-brain", "status", "--brain", "brain", "--json"], { cwd: temp, env });
   assert.equal(JSON.parse(status.stdout).data.skills.state, "pinned");
+  // product.path (spec/cli.md §5.2) is the installed package, and the Notion build files are under it.
+  const productPath = JSON.parse(status.stdout).data.product.path;
+  assert.equal(productPath, await realpath(installed));
+  for (const file of notionFiles) await access(join(productPath, file));
   await access(join(temp, "brain", "brain.json"));
   await access(join(temp, "brain", ".gitignore"));
   // The Ultimate Assistant sub-agent ships in the template (spec/assistant.md §10).
@@ -56,6 +67,17 @@ try {
   assert.equal(JSON.parse(lint.stdout).ok, true);
   const upgrade = await exec("npx", ["--no-install", "ultimate-brain", "upgrade", "--brain", "brain", "--json"], { cwd: temp, env });
   assert.deepEqual(JSON.parse(upgrade.stdout).data.files, []);
+  // DOCUMENTS_TURNED_ON (spec/cli.md §5.15 step 5) names a migration file that exists in the packed install.
+  await exec("npx", ["--no-install", "ultimate-brain", "init", "reports-brain", "--no-git", "--json"], { cwd: temp, env });
+  const reportsConfig = JSON.parse(await readFile(join(temp, "reports-brain", "brain.json"), "utf8"));
+  reportsConfig.modules = { ...reportsConfig.modules, documents: false, reports: true };
+  await writeFile(join(temp, "reports-brain", "brain.json"), `${JSON.stringify(reportsConfig, null, 2)}\n`);
+  const turnedOn = JSON.parse((await exec("npx", ["--no-install", "ultimate-brain", "upgrade", "--brain", "reports-brain", "--json"], { cwd: temp, env })).stdout);
+  const documentsWarning = turnedOn.warnings.find((warning) => warning.code === "DOCUMENTS_TURNED_ON");
+  assert.ok(documentsWarning !== undefined, JSON.stringify(turnedOn.warnings));
+  const named = documentsWarning.message.slice(documentsWarning.message.lastIndexOf(": ") + 2);
+  assert.equal(named, join(productPath, "notion", "migrations", "0019-reports-move-to-documents.md"));
+  await access(named);
   for (const command of ["status", "index"]) {
     const result = await exec("npx", ["--no-install", "ultimate-brain", command, "--brain", "brain", "--json"], { cwd: temp, env });
     assert.equal(JSON.parse(result.stdout).ok, true);
