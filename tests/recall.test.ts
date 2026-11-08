@@ -359,11 +359,12 @@ test("--search ranks eligible memories as query --candidates does, with the boos
   await memory(dir, "mem-jjjj0005", "A draft about migrations.", { scope: "general" }, { lifecycle: "draft" });
   await memory(dir, "mem-jjjj0006", "Migrations elsewhere.", { scope: "project", projects: [OTHER_PROJECT] });
   const search = await recall(dir, "--search", "migrations", "--repo", repo);
-  // Summary +3, body none; project +3, the project's area +2. The unrelated project memory scores 3 from the boost alone, as in query.
+  // BM25 over the eligible memories (cli.md §5.13), then the boost: project +3, the project's area +2. "migrations" is in
+  // three of the four, so it weighs little, and the unrelated project memory's 3 from the boost alone ranks above the area one.
   assert.deepEqual(search.results.map((result: { id: string; score: number }) => [result.id, result.score]), [
-    ["mem-jjjj0002", 6], ["mem-jjjj0003", 5], ["mem-jjjj0001", 3], ["mem-jjjj0004", 3],
+    ["mem-jjjj0002", 3.4994], ["mem-jjjj0004", 3], ["mem-jjjj0003", 2.5075], ["mem-jjjj0001", 0.5158],
   ]);
-  assert.deepEqual(search.results[0], { id: "mem-jjjj0002", text: "Migrations go through staging.", scope: "project", confidence: "verified", updated: "2026-09-01", path: "memories/2026/09/2026-09-01-mem-jjjj0002.md", score: 6 });
+  assert.deepEqual(search.results[0], { id: "mem-jjjj0002", text: "Migrations go through staging.", scope: "project", confidence: "verified", updated: "2026-09-01", path: "memories/2026/09/2026-09-01-mem-jjjj0002.md", score: 3.4994 });
   assert.equal(search.query, "migrations");
   assert.deepEqual(search.caller, { repo: "acme-api", project: PROJECT, area: null, stacks: ["supabase"] });
   assert.equal(search.tokens, estimate(search.results.map((result: { text: string }) => result.text).join("\n")));
@@ -387,7 +388,7 @@ test("--include-superseded adds superseded memories after the eligible ones, mar
   // A reviewed memory that something supersedes comes back too, and the superseded ones rank among themselves.
   const reviewedOld = await recall(dir, "--search", "superseded", "--repo", repo, "--include-superseded");
   assert.deepEqual(reviewedOld.results.map((result: { id: string; superseded_by?: string }) => [result.id, result.superseded_by]), [
-    ["mem-aaaa0011", undefined], ["mem-aaaa0002", undefined], ["mem-aaaa0004", undefined], ["mem-aaaa0012", "mem-aaaa0001"], ["mem-aaaa0010", "mem-aaaa0011"],
+    ["mem-aaaa0011", undefined], ["mem-aaaa0002", undefined], ["mem-aaaa0004", undefined], ["mem-aaaa0010", "mem-aaaa0011"], ["mem-aaaa0012", "mem-aaaa0001"],
   ]);
   // --limit counts the whole list.
   assert.deepEqual(ids((await recall(dir, "--search", "rule", "--repo", repo, "--include-superseded", "--limit", "1")).results), ["mem-aaaa0011"]);
