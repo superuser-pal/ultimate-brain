@@ -651,3 +651,75 @@ test("note new writes a project as reviewed and a person as draft (0070)", async
   const [project, person] = run.json.data.created.map((item: { path: string }) => item.path);
   assert.deepEqual([await lifecycle(project), await lifecycle(person)], ["reviewed", "draft"]);
 });
+
+test("sync plan links an Inbox row to its source by Brain ID when the publish was never recorded, so render stops creating it (CC-153)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const configPath = join(dir, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  config.notion.databases.inbox = "a1000000-0000-4000-8000-00000000000c";
+  await writeFile(configPath, JSON.stringify(config, null, 2));
+  const source = "src-5c6d7e8f";
+  const page = "7f7f0000-0000-4000-8000-0000000000f5";
+  const noteInput = { notes: [{ type: "source", id: source, title: "Pasted note: partner pricing", file_date: "2026-12-10", frontmatter: { source_key: "agent:test/partner-pricing", kind: "note", summary: "A pasted note.", digest: "- Per-seat price.\n" }, body: "Consider a per-seat price.\n" }] };
+  const created = await brain(["note", "new", "--brain", dir, "--now", NOW, "--input", await input(dir, "pasted-note.json", noteInput), "--json"]);
+  assert.equal(created.code, 0, created.stdout);
+
+  // The run that created the page stopped before `sync record`: render still wants to create it.
+  const before = await brain(["sync", "render", "--brain", dir, "--changed", "--json"]);
+  assert.deepEqual(before.json.data.items.filter((item: { id: string }) => item.id === source).map((item: { action: string }) => item.action), ["create"]);
+
+  // The next pull passes the row's Brain ID only (cli §5.14.1): the plan links it.
+  const snapshot = { as_of: NOW, rows: [{ database: "inbox", page_id: page, last_edited: NOW, properties: { "Brain ID": source } }] };
+  const plan = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "inbox-link.json", snapshot), "--json"]);
+  assert.equal(plan.code, 0, plan.stdout);
+  assert.deepEqual(plan.json.data.updates, [{ id: source, notion: page }]);
+  assert.deepEqual(plan.json.data.conflicts, []);
+  assert.deepEqual(plan.json.data.document_requests, []);
+  const applied = await brain(["sync", "apply", "--brain", dir, "--now", NOW, "--input", await input(dir, "inbox-link-plan.json", plan.json.data), "--json"]);
+  assert.equal(applied.code, 0, applied.stdout);
+  assert.deepEqual(applied.json.data.updates.map((item: { id: string; result: string }) => [item.id, item.result]), [[source, "applied"]]);
+  const file = parseFrontmatter(await readFile(join(dir, created.json.data.created[0].path), "utf8"));
+  assert.equal(file.attributes.notion, page);
+  const after = await brain(["sync", "render", "--brain", dir, "--ids", source, "--json"]);
+  assert.equal(after.json.data.items[0].action, "update");
+  assert.equal(after.json.data.items[0].page_id, page);
+
+  // With Document asked ticked, the same row still asks for its Document, and still links.
+  const asked = { as_of: NOW, rows: [{ database: "inbox", page_id: page, last_edited: NOW, properties: { "Brain ID": source, "Document asked": true, "Only keep": null } }] };
+  const config2 = JSON.parse(await readFile(configPath, "utf8")); config2.modules = { ...(config2.modules ?? {}), documents: true }; await writeFile(configPath, JSON.stringify(config2, null, 2));
+  const planAsked = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "inbox-asked.json", asked), "--json"]);
+  assert.equal(planAsked.code, 0, planAsked.stdout);
+  assert.deepEqual(planAsked.json.data.updates, [], "already linked");
+  assert.equal(planAsked.json.data.document_requests.length, 1);
+
+  // Another page claiming the same source is a mismatch; an unknown Brain ID is a conflict; a row with no Brain ID is nothing.
+  const other = { as_of: NOW, rows: [
+    { database: "inbox", page_id: "7f7f0000-0000-4000-8000-0000000000f6", last_edited: NOW, properties: { "Brain ID": source } },
+    { database: "inbox", page_id: "7f7f0000-0000-4000-8000-0000000000f7", last_edited: NOW, properties: { "Brain ID": "src-00000000" } },
+    { database: "inbox", page_id: "7f7f0000-0000-4000-8000-0000000000f8", last_edited: NOW, properties: {} },
+  ] };
+  const planOther = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "inbox-other.json", other), "--json"]);
+  assert.deepEqual(planOther.json.data.conflicts.map((item: { code: string }) => item.code).sort(), ["NOTION_ID_MISMATCH", "UNKNOWN_BRAIN_ID"]);
+  assert.deepEqual(planOther.json.data.updates, []);
+});
+
+test("sync plan links neither a capture (its Inbox page is its key) nor minutes (no Inbox row) (CC-153)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const configPath = join(dir, "brain.json");
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  config.notion.databases.inbox = "a1000000-0000-4000-8000-00000000000c";
+  await writeFile(configPath, JSON.stringify(config, null, 2));
+  const page = "11111111-0000-4000-8000-000000000011";
+  const source = "src-6d7e8f9a";
+  const noteInput = { notes: [{ type: "source", id: source, title: "Quick capture", file_date: "2026-12-10", frontmatter: { source_key: `notion:${page}`, kind: "capture" }, body: "Remember this.\n" }] };
+  const created = await brain(["note", "new", "--brain", dir, "--now", NOW, "--input", await input(dir, "capture2.json", noteInput), "--json"]);
+  assert.equal(created.code, 0, created.stdout);
+  const snapshot = { as_of: NOW, rows: [{ database: "inbox", page_id: page, last_edited: NOW, properties: { "Brain ID": source } }] };
+  const plan = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "capture-row.json", snapshot), "--json"]);
+  assert.equal(plan.code, 0, plan.stdout);
+  assert.deepEqual(plan.json.data.updates, []);
+  assert.deepEqual(plan.json.data.conflicts, []);
+  const minutes = { as_of: NOW, rows: [{ database: "inbox", page_id: "11111111-0000-4000-8000-000000000012", last_edited: NOW, properties: { "Brain ID": "src-7w3c9k5m" } }] };
+  const noRow = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "minutes-row.json", minutes), "--json"]);
+  assert.deepEqual(noRow.json.data.updates, [], "minutes have no Inbox row, so none is linked");
+});
