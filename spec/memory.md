@@ -80,7 +80,7 @@ The memory's frontmatter: `scope` and its list (schema "memory"), `confidence` (
 
 **The proposals** (CC-171): one per answered candidate. `title` is `Remember: <the memory's title>`, `why` is the user's words or "said yes at the closing review", and `source` is the same session key. A memory that supersedes one is a `new_item`, then a `supersede` with `target` the new memory and `supersedes` the old one, each applied in chat (§6.2).
 
-**The commit** (CC-171). The writes go through `brain` commands only, never by editing the brain's files. Then the agent commits them in the brain repo, `git -C <brain path>` (the path `brain status --json` gives), with the message `memory: <title>` (one memory) or `memory: <n> lessons` (more), and pushes per `settings.push` (schema §12). From a linked repo, this is the one write the brain gets: the block's read-only line covers everything else, and its recall paragraph names this review (cli.md §5.12).
+**The commit** (CC-171). The writes go through `brain` commands only, never by editing the brain's files. Then the agent commits them in the brain repo, `git -C <brain path>` (the path `brain status --json` gives), with the message `memory: <title>` (one memory) or `memory: <n> lessons` (more), and pushes per `settings.push` (schema §12). From a linked repo, this is the one write the brain gets, and the user approves each memory in it. The block's recall paragraph names this exception to its read-only line (cli.md §5.12), and the skill's read-only rule names it too; in a repo linked without the recall paragraph, the closing review still runs when the user asks for it, with the same exception. Everything else stays read-only.
 
 ## 4. Work handover
 
