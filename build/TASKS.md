@@ -76,6 +76,46 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 **Output:** the three sections moved verbatim from build/TASKS.md to the end of build/HISTORY.md (the done releases, CC-94); no other line changes.
 **Acceptance:** each moved section is byte-identical in HISTORY.md to its text in TASKS.md on `main`; every task row in them is `done`; no other task row is lost or changed; the leak and PR format checks pass.
 
+### CC-163 · Plan 0.12.0's first tasks: baseline, evaluation set, contracts, component comparison · `done` (#269)
+**Release:** 0.12.0
+**Changelog:** development only: 0.12.0's first four tasks are planned, each owning separate paths so they can be built in parallel.
+**Output:** the rows CC-164 to CC-167 and the ownership table below. Planning only.
+**Acceptance:** each new row has a release, a Changelog line, an Output and an Acceptance; no two tasks own the same path; no other row changes; the leak and PR format checks pass.
+
+**Parallel work (CC-163, 2026-11-08).** The main session coordinates; each task is built in its own worktree and may edit only the paths it owns, plus its own row in this file. No task edits `src/`, `tests/`, `.agents/` or `notion/` before CC-166's contracts are merged. One `pr-reviewer` runs at a time; a builder asks the main session for a review slot. Each PR changes only its own row's lines here, which git merges cleanly; if a conflict still appears, the later branch merges `main` and keeps every row from both sides (AGENTS.md), before its review.
+
+| Task | Owns | Starts | Built by |
+|---|---|---|---|
+| CC-164 | `eval/search-0.5/` | now | a worker session |
+| CC-165 | `eval/memory-0.12/` | now | a worker session |
+| CC-166 | `spec/`, `decisions/` | now, with the user's answers on handover records, the closing trigger and the recall opt-in | the main session |
+| CC-167 | `eval/retrieval-0.12/` | after CC-164 is merged | a worker session |
+
+### CC-164 · The search baseline runs on today's brain and its numbers are committed (0074 §6, assessment C2) · `todo`
+**Release:** 0.12.0
+**Changelog:** development only: the 0.5 search evaluation runs again on the current brain format, and its recall and MRR are committed as 0.12.0's retrieval baseline.
+**Output:** `eval/search-0.5/` made runnable at the current `main`: its generated brain has a valid `brain.json` and passes `brain lint` with no errors, `run.mjs` runs `brain query --candidates` and the BM25 comparison on it (GBrain stays optional), and a committed `results-baseline-0.12.txt` records recall@1/5/10, MRR and timing per question kind, with the commit and the command that produced it, plus a short README section on how to rerun it. No change outside `eval/search-0.5/` and this row; a CLI defect found on the way is reported to the main session, not fixed here.
+**Acceptance:** a fresh clone at the PR head regenerates the brain and reproduces the committed numbers with the README's commands (timing aside); the brain lints with no errors; the 50 questions are unchanged; the leak and PR format checks pass.
+
+### CC-165 · The 0.12.0 evaluation set: trust, answerable and unknown cases on a synthetic brain (0074 §6) · `todo`
+**Release:** 0.12.0
+**Changelog:** development only: a fixed synthetic test set for memory and recall, written before any 0.12.0 code, with its scoring rules.
+**Output:** `eval/memory-0.12/`: a generator for a synthetic brain (memories under `memories/YYYY/MM/` per schema "memory" with provenance, confidence, scopes and supersession; approved and unapproved inferred candidates; excluded sources per 0055; projects and decisions with evidence; recorded work state for handovers), and a cases file with three kinds: **critical trust** (approval eligibility, default-deny scope, excluded evidence, supersession, unsupported claims not stated as facts, inference labelled), **answerable** (paraphrases, current versus superseded guidance, corrections, contested evidence, both agent-switch directions and a later session of the same agent) and **unknown** (no answer in the brain). Each case names its expected evidence ids and the facts a correct answer must contain. A scorer computes the 0074 §6 gates (100% of trust cases, at least 90% of answerable cases, unknown cases scored separately) from a retriever's or answerer's output through a small adapter, independent of the command shapes CC-166 defines; the adapter for the current `brain query --candidates` is included as the first one. A README states the scoring rules. Fixtures are synthetic; no change outside `eval/memory-0.12/` and this row.
+**Acceptance:** the generator is deterministic (two runs, identical bytes) and its brain lints with no errors; at least 15 trust, 40 answerable and 8 unknown cases, every kind of 0074 §6 covered; the scorer runs end to end with the `query --candidates` adapter and prints the gate results (passing them is not required: this is the baseline); the leak and PR format checks pass.
+
+### CC-166 · Contracts for 0.12.0: opening context, closing capture, handovers, recall opt-in (decision 0074) · `todo`
+**Release:** 0.12.0
+**Changelog:** development only: the 0.12.0 contracts define the opening context pack, the closing memory review, how a session finds where work stopped, and the recall opt-in.
+**Output:** spec changes that settle 0074's "Consequences" list: command shapes and JSON for the opening pack and targeted recall; the 800-token accounting, selection order and safe truncation; candidate persistence and approval through the existing flows (no new queue); the work records a handover points to; the closing trigger and its fallback for each agent; the explicit recall opt-in and how it meets repo links and connected workflows; cache invalidation on approval, scope, exclusion, correction and supersession; and how CC-165's adapter maps to the new commands. The build tasks after it are split from these contracts.
+**Acceptance:** every item in 0074's "Consequences" contract list has a section; each rule cites its decision; the user has answered the open questions recorded under this row; the leak and PR format checks pass.
+**Open questions (for the user):** 1. A handover points to the records that already exist (task rows, open PRs, the project's handover notes), not a new file type? 2. The closing review starts with a phrase the user says, in both agents, and Claude Code's session-end trigger is only a convenience? 3. Opening recall is a per-brain setting, off by default, asked once at setup?
+
+### CC-167 · Compare small TypeScript ports of claude-obsidian's retrieval pieces with the baseline (0074 §5) · `todo`
+**Release:** 0.12.0
+**Changelog:** development only: a bounded comparison of small TypeScript adaptations of claude-obsidian's BM25, chunking, prefix, snippet and freshness pieces against the 0.12.0 baseline.
+**Output:** `eval/retrieval-0.12/`: TypeScript adaptations written from reading claude-obsidian at `2e545563` (its code is never run: `sources/` is untrusted), each behind the same retriever interface as CC-164's runner, run on CC-164's questions and on CC-165's answerable cases when those are merged; `RESULTS.md` gives recall@k, MRR, the tokens a result page costs, the lines each adaptation needs and its attribution, and a recommendation per piece (adopt, adapt or drop) under 0074 §5's conditions. No change outside `eval/retrieval-0.12/` and this row.
+**Acceptance:** each piece's numbers sit beside the baseline's on the same questions; the token cost uses one stated tokenizer; no piece needs a new runtime dependency, Python, a vector database or a schema change, or the report says it is dropped for that; the leak and PR format checks pass.
+
 ## 0.13.0 — Knowledge pays back (decisions 0061, 0064, 0075)
 
 The opening grill ran on 2026-11-07 and is locked in [0075](../decisions/0075-weekly-review-and-targeted-corrections.md). One weekly report has What changed, Task analysis and What needs your decision, with roughly two minutes to read and five minutes to decide. Analyse meaningful changes since the last successful brief and current outstanding work; recommend an order of attention with reasons. Keep one report per week for browsable Notion history, updating that week's report on rerun under existing module/publishing rules.
