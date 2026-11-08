@@ -9,10 +9,9 @@ import type { Command, CommandContext, Warning } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { slugify } from "../lib/paths.ts";
 
-/** The jobs a schedule can run, each with its fixed prompt and the skill it needs (spec/cli.md §5.21, decision 0051). */
+/** The jobs a schedule can run, each with its fixed prompt and the skill it needs (spec/cli.md §5.21, decision 0051). Reflection has none in 0.11.0 (0076 §5). */
 const JOBS = {
   "catch-up": { prompt: "catch up unattended", skill: "brain-catch-up" },
-  reflect: { prompt: "tidy the brain unattended", skill: "brain-reflect" },
 } as const;
 type Job = keyof typeof JOBS;
 

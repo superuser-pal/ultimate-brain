@@ -235,6 +235,9 @@ test("one shared reference, an input dated on the update, initials alone, a two-
   // Two names match only with a position of equal tokens of two or more letters.
   await put(dir, "knowledge/people/m-l.md", person("per-1p1p1p1p", "M. L."));
   await put(dir, "knowledge/people/mark-lee.md", person("per-1q1q1q1q", "Mark Lee"));
+  // Nor when the only equal tokens are single letters: "A. B." and "A B".
+  await put(dir, "knowledge/people/a-b-dotted.md", person("per-1w1w1w1w", "A. B."));
+  await put(dir, "knowledge/people/a-b.md", person("per-1x1x1x1x", "A B"));
   // A one-token name names a note only with 3 or more characters.
   await put(dir, "knowledge/people/bo.md", person("per-1r1r1r1r", "Bo"));
   await put(dir, "knowledge/meetings/2026-11-02-weekly.md", meeting("mtg-1s1s1s1s", "Weekly", "2026-11-02"), "Bo will call.\n");

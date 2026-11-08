@@ -372,7 +372,7 @@ test("schedule install elsewhere prints the cron line and writes nothing", async
   assert.equal(await absent(join(home, ".ultimate-brain")), true, "nothing written outside it either");
 });
 
-test("schedule install refuses a bad job, time, day or model, a missing claude, and reflect without its skill", async (context) => {
+test("schedule install refuses a bad job, time, day or model, a missing claude, a job without its skill, and reflect (decision 0076)", async (context) => {
   const dir = await fixtureCopy(context);
   const { env, home } = await scheduleEnv(context);
   const code = async (args: string[], environment = env) => (await schedule(dir, ["install", ...args], environment, home)).json.error?.code;
@@ -383,5 +383,7 @@ test("schedule install refuses a bad job, time, day or model, a missing claude, 
   assert.equal(await code(["catch-up", "--at", "07:00", "--model", "sonnet"]), "USAGE", "a moving alias is refused");
   assert.equal(await code(["catch-up", "--at", "07:00"]), "USAGE");
   assert.equal(await code(["catch-up", "--at", "07:00", "--model", "claude-sonnet-5-5"], { ...env, PATH: "/nonexistent" }), "CLAUDE_NOT_FOUND");
-  assert.equal(await code(["reflect", "--at", "08:00", "--days", "mon", "--model", "claude-sonnet-5-5"]), "SKILL_MISSING");
+  assert.equal(await code(["reflect", "--at", "08:00", "--days", "mon", "--model", "claude-sonnet-5-5"]), "USAGE", "reflection has no schedule in 0.11.0 (0076 §5)");
+  await rm(join(dir, ".claude", "skills", "brain-catch-up"), { recursive: true, force: true });
+  assert.equal(await code(["catch-up", "--at", "07:00", "--model", "claude-sonnet-5-5"]), "SKILL_MISSING");
 });
