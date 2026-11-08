@@ -359,6 +359,17 @@ function planInbox(workspace: Workspace, row: SnapshotRow, out: SyncPlan): void 
   if (Object.hasOwn(row.properties, "Full text")) out.ignored.push(ignoredRow(row, "RETIRED", "Full text"));
   // A Report row still on the Inbox: a space before migration 0019 (0071).
   if (note !== undefined && isReport(note)) planReport(workspace, row, note, out);
+  // A row the brain created names its source. As for every other database (cli §5.14.2), a page the skill wrote but never
+  // recorded is linked here instead of created again at the next render (CC-153); a page of another source is a mismatch.
+  if (typeof brainId === "string" && brainId !== "") {
+    if (note === undefined) { out.conflicts.push(conflict(row, "UNKNOWN_BRAIN_ID", `No note has Brain ID ${brainId}`)); return; }
+    // Only a source that gets an Inbox row of its own (§5.14.4: every kind but minutes, not an attached file; a capture's
+    // page is the one in its key, schema §4) can be linked here.
+    if (note.type === "source" && note.attributes.kind !== undefined && note.attributes.kind !== "minutes" && note.attributes.kind !== "capture" && note.attributes.attached_to === undefined) {
+      if (note.attributes.notion === undefined) out.updates.push({ id: note.id, notion: row.page_id });
+      else if (note.attributes.notion !== row.page_id) { out.conflicts.push(conflict(row, "NOTION_ID_MISMATCH", `Source ${note.id} belongs to another Inbox page`)); return; }
+    }
+  }
   // An unattended run's Report row has no Brain ID and holds no report (cli §5.14.2, §6.1).
   if (typeof brainId !== "string" || brainId === "") {
     const reason = modules.reports ? "NOT_A_REPORT" : "MODULE_OFF";
