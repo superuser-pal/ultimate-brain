@@ -31,9 +31,14 @@ export function statusMap(kit: Kit): Map<string, Meaning> {
 
 /** The lines a Markdown source reads (§2.4): LF lines without a trailing CR, outside fenced code blocks, at most 2,000 characters. */
 function readableLines(text: string): string[] {
-  const lines: string[] = [];
+  return readableLinesWithIndex(text).map((entry) => entry.line);
+}
+
+/** The lines a Markdown source reads (§2.4), each with its 0-based index among the file's LF lines (`brain recall`'s stopped line, memory.md §5.1). */
+export function readableLinesWithIndex(text: string): Array<{ index: number; line: string }> {
+  const lines: Array<{ index: number; line: string }> = [];
   let fence: string | null = null;
-  for (const raw of text.split("\n")) {
+  for (const [index, raw] of text.split("\n").entries()) {
     const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
     const opener = /^(`{3,}|~{3,})/.exec(line);
     if (fence !== null) {
@@ -42,7 +47,7 @@ function readableLines(text: string): string[] {
     }
     if (opener !== null) { fence = opener[1]!; continue; }
     if (line.length > 2000) continue;
-    lines.push(line);
+    lines.push({ index, line });
   }
   return lines;
 }
