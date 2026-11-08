@@ -52,7 +52,7 @@ export const linkCommand: Command = {
     const retired = (existingMarker.value.skills?.names ?? []).filter((name) => !names.includes(name));
     const project = marker.project === undefined ? undefined : noteOf(notes, marker.project, "project");
     const area = marker.area === undefined ? undefined : noteOf(notes, marker.area, "area");
-    const block = instructionBlock(project, area, names);
+    const block = instructionBlock(project, area, names, recallOpening(brain!.config));
 
     const agents = await readOptional(root, "AGENTS.md");
     const agentText = replaceOrAppend(agents, block, "AGENTS.md");
@@ -167,8 +167,20 @@ function orderedMarker(marker: RepoMarker): RepoMarker {
   return ordered;
 }
 
-/** The block of cli.md §5.12; the workflow lines join it when brain-workflow is among the linked skills (skills-delivery §9.7). */
-function instructionBlock(project: Note | undefined, area: Note | undefined, linked: readonly string[]): string {
+/** cli.md §5.12 "Recall paragraph" (0074, memory.md §7), normative bytes. */
+const RECALL_PARAGRAPH = "At the start of substantive work, run `brain recall --pack --json` here and read its `text`: the user's lessons for this repo and where its work stopped. Mention a memory only when it shapes your approach. When the user says \"wrap up\", run the closing review of the `brain-query` skill.";
+
+/** Whether `settings.recall` is `opening` (schema §12); `off` or absent leaves the paragraph out. */
+function recallOpening(config: Record<string, unknown>): boolean {
+  const settings = config.settings;
+  return isRecord(settings) && settings.recall === "opening";
+}
+
+/**
+ * The block of cli.md §5.12; the recall paragraph follows the `How:` paragraph when `settings.recall` is `opening`,
+ * and the workflow lines join it when brain-workflow is among the linked skills (skills-delivery §9.7).
+ */
+function instructionBlock(project: Note | undefined, area: Note | undefined, linked: readonly string[], recall: boolean): string {
   const lines = [
     START,
     "## Ultimate Brain",
@@ -190,6 +202,7 @@ function instructionBlock(project: Note | undefined, area: Note | undefined, lin
     "",
     "How: use the `brain-query` skill, or run `brain query --candidates \"<question>\" --json` and read the notes it returns. Cite the note paths. Say when a fact is `contested` or `superseded`.",
   );
+  if (recall) lines.push("", RECALL_PARAGRAPH);
   const workflow = linked.includes("brain-workflow");
   if (workflow) {
     const adopt = linked.includes("brain-workflow-adopt") ? "; to take over its existing plans and tasks, use `brain-workflow-adopt`." : ".";
