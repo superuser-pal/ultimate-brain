@@ -110,7 +110,7 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 **Acceptance:** every item in 0074's "Consequences" contract list has a section; each rule cites its decision; the user has answered the open questions recorded under this row; the leak and PR format checks pass.
 **Questions answered (the user, 2026-11-08):** 1. Yes: a handover reads the records that already exist (task rows, open PRs), no new file type; where work stopped is one `**Stopped:**` line under the task row (memory.md §4). 2. Yes: the closing review starts with "wrap up" in both agents; Claude Code's offer is only a convenience (memory.md §3.1). 3. Yes: opening recall is `settings.recall`, `off` by default, asked once at setup (memory.md §7).
 
-### CC-167 · Compare small TypeScript ports of claude-obsidian's retrieval pieces with the baseline (0074 §5) · `todo`
+### CC-167 · Compare small TypeScript ports of claude-obsidian's retrieval pieces with the baseline (0074 §5) · `in progress`
 **Release:** 0.12.0
 **Changelog:** development only: a bounded comparison of small TypeScript adaptations of claude-obsidian's BM25, chunking, prefix, snippet and freshness pieces against the 0.12.0 baseline.
 **Output:** `eval/retrieval-0.12/`: TypeScript adaptations written from reading claude-obsidian at `2e545563` (its code is never run: `sources/` is untrusted), each behind the same retriever interface as CC-164's runner, run on CC-164's questions and on CC-165's answerable cases when those are merged; `RESULTS.md` gives recall@k, MRR, the tokens a result page costs, the lines each adaptation needs and its attribution, and a recommendation per piece (adopt, adapt or drop) under 0074 §5's conditions. No change outside `eval/retrieval-0.12/` and this row.
