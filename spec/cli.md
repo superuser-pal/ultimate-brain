@@ -875,7 +875,7 @@ The brain is read-only from this repo. Never edit its files from here. A connect
 <!-- ultimate-brain:end -->
 ```
 
-With only `brain-query` linked, the block is exactly as before 0.9.2: no workflow paragraph, and the last line ends after `from here.`.
+With only `brain-query` linked and `settings.recall` not `opening`, the block is exactly as before 0.9.2: no workflow paragraph, and the last line ends after `from here.`.
 
 **Recall paragraph** (0074, [memory.md](memory.md) §7). When the brain's `settings.recall` is `opening` (schema §12), a paragraph goes right after the `How:` paragraph, with one blank line before and after it:
 
@@ -2212,4 +2212,6 @@ brain recall --search "<query>" [--repo <path>] [--limit <n>] [--include-superse
 
 Read-only. `--pack` builds the opening context for the caller (memory.md §5): the active task rows of the caller's repo and the eligible memories (memory.md §2), within `--budget` estimated tokens (default 800, an integer from 200 to 4000). `--search` returns the eligible memories that match the query (memory.md §6.1); `--limit` is an integer from 1 to 50 (default 10). The caller is `--repo`, else the current directory, and its identity is the `.brain` in it (memory.md §2.1). The output, the selection order, the token estimate and the reach rules are memory.md's. The restricted-evidence rule applies as in `query` (§5.13); an unreadable suppression record fails with `SUPPRESSIONS_UNREADABLE`.
 
-Errors: `USAGE` (neither or both of `--pack` and `--search`, an extra argument, a value out of range, a flag the mode doesn't take), `REPO_NOT_FOUND` (`--repo` isn't a folder), `MARKER_INVALID` (a `.brain` that isn't §5.12's JSON), `SUPPRESSIONS_UNREADABLE`.
+The `.brain` is read by the one reader every command shares (§5.13 step 4, CC-152): one that is not valid JSON, or has a key §5.12 doesn't list, is `USAGE` naming the folder.
+
+Errors: `USAGE` (neither or both of `--pack` and `--search`, an extra argument, a value out of range, a flag the mode doesn't take, a `--repo` that isn't a folder, an invalid `.brain`), `SUPPRESSIONS_UNREADABLE`. No new error or warning code.
