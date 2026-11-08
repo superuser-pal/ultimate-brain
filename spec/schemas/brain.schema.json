@@ -74,6 +74,11 @@
               "default": 10
             }
           }
+        },
+        "recall": {
+          "description": "Opening recall in linked repos (decision 0074, spec/memory.md §7).",
+          "enum": ["off", "opening"],
+          "default": "off"
         }
       }
     },

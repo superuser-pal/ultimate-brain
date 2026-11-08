@@ -877,6 +877,14 @@ The brain is read-only from this repo. Never edit its files from here. A connect
 
 With only `brain-query` linked, the block is exactly as before 0.9.2: no workflow paragraph, and the last line ends after `from here.`.
 
+**Recall paragraph** (0074, [memory.md](memory.md) §7). When the brain's `settings.recall` is `opening` (schema §12), a paragraph goes right after the `How:` paragraph, with one blank line before and after it:
+
+```markdown
+At the start of substantive work, run `brain recall --pack --json` here and read its `text`: the user's lessons for this repo and where its work stopped. Mention a memory only when it shapes your approach. When the user says "wrap up", run the closing review of the `brain-query` skill.
+```
+
+When `settings.recall` is `off` or absent, there is no recall paragraph, and a run of `brain link` removes one an earlier run wrote.
+
 3. **Skills** (0029, 0038, 0059; skills-delivery §6.2): the **linked skills** are the skills of the source whose `targets` include `linked_repo`.
    - **Source.** A pinned brain (state `pinned` or `drift`): the files its lock lists, copied from the brain's `.agents/skills/<name>/`; before any write each must be a regular file with the locked bytes, and the first that isn't refuses `SKILLS_SNAPSHOT_MISSING` (§5.28) naming it. Unlisted files there and the brain's `.claude/skills` copy are ignored (lint covers them). An `unpinned` brain: the package snapshot, which must be compatible (else `SKILLS_SNAPSHOT_INVALID`), with warning `SKILLS_UNPINNED`.
    - **Writing.** For each linked skill, `.agents/skills/<name>/` and `.claude/skills/<name>/` are product-owned: files whose bytes differ are replaced, and files the snapshot doesn't list in that folder are removed.
@@ -2194,3 +2202,14 @@ A note is in as many clusters as it qualifies for. Three notes whose names match
 - `read.notes` counts the knowledge notes read, `read.inputs` the inputs in the window.
 
 Exit 0, clusters or not. Errors: `USAGE`, `SUPPRESSIONS_UNREADABLE`.
+
+### 5.33 `brain recall` (0074, [memory.md](memory.md))
+
+```text
+brain recall --pack [--repo <path>] [--task "<text>"] [--budget <n>]
+brain recall --search "<query>" [--repo <path>] [--limit <n>] [--include-superseded]
+```
+
+Read-only. `--pack` builds the opening context for the caller (memory.md §5): the active task rows of the caller's repo and the eligible memories (memory.md §2), within `--budget` estimated tokens (default 800, an integer from 200 to 4000). `--search` returns the eligible memories that match the query (memory.md §6.1); `--limit` is an integer from 1 to 50 (default 10). The caller is `--repo`, else the current directory, and its identity is the `.brain` in it (memory.md §2.1). The output, the selection order, the token estimate and the reach rules are memory.md's. The restricted-evidence rule applies as in `query` (§5.13); an unreadable suppression record fails with `SUPPRESSIONS_UNREADABLE`.
+
+Errors: `USAGE` (neither or both of `--pack` and `--search`, an extra argument, a value out of range, a flag the mode doesn't take), `REPO_NOT_FOUND` (`--repo` isn't a folder), `MARKER_INVALID` (a `.brain` that isn't §5.12's JSON), `SUPPRESSIONS_UNREADABLE`.
