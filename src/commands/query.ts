@@ -10,13 +10,14 @@ export const queryCommand: Command = {
   usage: "brain query --candidates <question> [--limit <n>] [--types <t>[,<t>…]] [--repo <path>] [--json]",
   summary: "Return ranked note candidates for the brain-query skill.",
   options: { candidates: "string", limit: "string", types: "string", repo: "string" },
-  maxPositionals: 0,
+  // A bare question is refused below with the skill's name, not as an unexpected argument (§5.13).
   needsBrain: true,
   async run({ args, brain }) {
     const question = args.options.candidates as string | undefined;
     if (question === undefined) {
       throw new BrainError("USAGE", "brain query requires --candidates; use the brain-query skill to answer questions");
     }
+    if (args.positionals.length > 0) throw new BrainError("USAGE", `Unexpected argument: ${args.positionals[0]}`);
     const limit = parseLimit(args.options.limit as string | undefined);
     const tokens = queryWords(question);
     const [context, scanned] = await Promise.all([

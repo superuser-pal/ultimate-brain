@@ -138,7 +138,8 @@ export const initCommand: Command = {
         default_config: defaultConfig,
         skills: { state: pin.state, name: pin.lock?.snapshot.name ?? null, version: pin.lock?.snapshot.version ?? null, competing },
       },
-      human: `Initialized Ultimate Brain at ${root}\n`,
+      // The two next steps (§5.1, CC-156): build the space from the checklist the package ships, then connect.
+      human: `Initialized Ultimate Brain at ${root}\nNext:\n  1. Build your Notion space: follow ${join(installedProduct().root, "notion", "CHECKLIST.md")}\n  2. Then, in ${root}, ask your agent: "connect the brain to Notion"\n`,
     };
   },
 };
