@@ -132,7 +132,7 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 | CC-172 | `eval/memory-0.12/adapters/` | after CC-165 and CC-169 are merged | a worker session |
 | CC-173 | the files RESULTS.md names, decided when the row is detailed | after CC-167 and CC-169 are merged (it may change `src/lib/recall.ts`) | decided then |
 
-### CC-169 · `brain recall --pack` and `--search` (cli.md §5.33, memory.md §2, §5, §6.1) · `review`
+### CC-169 · `brain recall --pack` and `--search` (cli.md §5.33, memory.md §2, §5, §6.1) · `done` (#275)
 **Release:** 0.12.0
 **Changelog:** `brain recall --pack` gives an agent a small opening context of your approved lessons for the repo it works in and where its work stopped, within 800 tokens, and `brain recall --search` finds the rest.
 **Output:** the command as cli.md §5.33 and memory.md define it: the caller from `--repo` or the current folder and its `.brain` (the shared reader, CC-152); eligibility (memory.md §2: reviewed, not superseded, in reach by 0009, not left out by the restricted-evidence rule, sources all left out); the pack's selection, work section from a `tracked-in-repo` markdown kit with stopped lines, ⌈bytes ÷ 3⌉ budget, whole items only, `omitted`, `work_unread`, `text` and the JSON of §5.3; `--search` ranked as `query --candidates`, `--include-superseded`; the `USAGE` cases. No cache. Synthetic fixtures only.
