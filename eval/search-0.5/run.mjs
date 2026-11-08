@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 // Runs the known questions against three retrievers and prints recall and timing.
 // Usage: node eval/search-0.5/run.mjs <brain-dir> <questions.json> [gbrain]
+// Prints the commit and command first, then recall@1/5/10 and MRR overall and per
+// question kind, then timing in its own table: everything above "## Timing" is
+// deterministic for `brain` and `bm25` (CC-164).
 //   brain   `brain query --candidates` from this checkout (BRAIN_DIR = <brain-dir>)
 //   bm25    eval/search-0.5/bm25.mjs over the same files
 //   gbrain  `gbrain search` (keyword only), when the third argument is `gbrain`;
 //           GBRAIN_HOME must point at a scratch home where <brain-dir> was imported.
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build, search } from "./bm25.mjs";
 
@@ -56,33 +60,45 @@ if (withGbrain === "gbrain") {
 
 const rows = [];
 const totals = {};
+const tally = () => ({ n: 0, r1: 0, r5: 0, r10: 0, rr: 0, ms: 0 });
 for (const [name, fn] of Object.entries(retrievers)) {
-  const t = { r1: 0, r5: 0, r10: 0, rr: 0, ms: 0, byKind: {} };
+  const t = { all: tally(), byKind: {} };
   for (const q of qs) {
     const s = Date.now();
     const ids = fn(q.q);
-    t.ms += Date.now() - s;
+    const ms = Date.now() - s;
     const rank = ids.indexOf(q.answer) + 1;
-    if (rank === 1) t.r1++;
-    if (rank && rank <= 5) t.r5++;
-    if (rank) t.r10++;
-    t.rr += rank ? 1 / rank : 0;
-    const k = (t.byKind[q.kind] ||= { n: 0, r5: 0 });
-    k.n++;
-    if (rank && rank <= 5) k.r5++;
+    for (const k of [t.all, (t.byKind[q.kind] ||= tally())]) {
+      k.n++;
+      k.ms += ms;
+      if (rank === 1) k.r1++;
+      if (rank && rank <= 5) k.r5++;
+      if (rank) k.r10++;
+      k.rr += rank ? 1 / rank : 0;
+    }
     rows.push({ retriever: name, kind: q.kind, q: q.q, rank: rank || null });
   }
   totals[name] = t;
 }
 
-const n = qs.length;
-console.log(`notes indexed: ${index.docs.length}; questions: ${n}; bm25 build: ${bm25Build} ms`);
-console.log("\n| retriever | recall@1 | recall@5 | recall@10 | MRR | ms per query |");
-console.log("|---|---|---|---|---|---|");
-for (const [name, t] of Object.entries(totals))
-  console.log(`| ${name} | ${t.r1}/${n} | ${t.r5}/${n} | ${t.r10}/${n} | ${(t.rr / n).toFixed(2)} | ${Math.round(t.ms / n)} |`);
+// The commit the numbers were produced at, and the command, so anyone can rerun it.
+const repo = fileURLToPath(new URL("../..", import.meta.url));
+const git = (...a) => execFileSync("git", ["-C", repo, ...a], { encoding: "utf8" }).trim();
+const dirty = git("status", "--porcelain", "--", "src", "eval/search-0.5") ? " (with uncommitted changes in src/ or eval/search-0.5/)" : "";
+const shown = (p) => (p.startsWith("/") ? (relative(repo, p).startsWith("..") ? `<${p === brain ? "brain-dir" : "file"}>` : relative(repo, p)) : p);
+console.log(`commit: ${git("rev-parse", "HEAD")}${dirty}`);
+console.log(`command: ${process.env.RUN_ROWS ? "RUN_ROWS=1 " : ""}node eval/search-0.5/run.mjs ${process.argv.slice(2).map(shown).join(" ")}`);
+console.log(`notes indexed by bm25: ${index.docs.length}; questions: ${qs.length}; limit: ${LIMIT}`);
+
 const kinds = [...new Set(qs.map((q) => q.kind))];
-console.log(`\n| recall@5 by kind | ${Object.keys(totals).join(" | ")} |`);
-console.log(`|---|${Object.keys(totals).map(() => "---").join("|")}|`);
-for (const k of kinds) console.log(`| ${k} | ${Object.values(totals).map((t) => `${t.byKind[k].r5}/${t.byKind[k].n}`).join(" | ")} |`);
-if (process.env.RUN_ROWS) console.log("\n" + rows.map((r) => `${r.retriever}\t${r.kind}\t${r.rank ?? "-"}\t${r.q}`).join("\n"));
+const line = (label, k) => `| ${label} | ${k.r1}/${k.n} | ${k.r5}/${k.n} | ${k.r10}/${k.n} | ${(k.rr / k.n).toFixed(2)} |`;
+for (const [name, t] of Object.entries(totals)) {
+  console.log(`\n## ${name}\n\n| kind | recall@1 | recall@5 | recall@10 | MRR |\n|---|---|---|---|---|`);
+  for (const k of kinds) console.log(line(k, t.byKind[k]));
+  console.log(line("**all**", t.all));
+}
+console.log(`\n## Timing (ms per query; varies by machine)\n\nbm25 build: ${bm25Build} ms\n`);
+console.log(`| kind | ${Object.keys(totals).join(" | ")} |\n|---|${Object.keys(totals).map(() => "---").join("|")}|`);
+for (const k of [...kinds, "all"])
+  console.log(`| ${k === "all" ? "**all**" : k} | ${Object.values(totals).map((t) => { const x = k === "all" ? t.all : t.byKind[k]; return Math.round(x.ms / x.n); }).join(" | ")} |`);
+if (process.env.RUN_ROWS) console.log("\n## Rows\n\n" + rows.map((r) => `${r.retriever}\t${r.kind}\t${r.rank ?? "-"}\t${r.q}`).join("\n"));

@@ -2,8 +2,15 @@
 // Builds a synthetic brain of about 2,000 notes and the known questions for CC-50.
 // Usage: node eval/search-0.5/make-brain.mjs <out-dir> <questions.json>
 // Deterministic: the same seed gives the same files. Every name is made up.
-import { mkdirSync, writeFileSync } from "node:fs";
+// <out-dir> must be missing, empty or a fresh `brain init`: the script runs `brain init` from this checkout,
+// writes the notes in the current schema (CC-164), then runs `brain index`.
+// The notes and the questions come from one seeded stream; anything CC-164 added
+// draws from a second stream, so questions.json stays byte for byte the 0.5 one.
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const [out, qfile] = process.argv.slice(2);
 if (!out || !qfile) {
@@ -11,15 +18,24 @@ if (!out || !qfile) {
   process.exit(2);
 }
 
-let seed = 50;
-function rand() {
-  // mulberry32
-  seed = (seed + 0x6d2b79f5) | 0;
-  let t = seed;
-  t = Math.imul(t ^ (t >>> 15), t | 1);
-  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+const cli = fileURLToPath(new URL("../../src/cli.ts", import.meta.url));
+const brain = (...args) => execFileSync("node", [cli, ...args], { env: { ...process.env, BRAIN_DIR: out }, stdio: ["ignore", "ignore", "inherit"] });
+// review 07's recipe ran `brain init` first; then the brain is already there.
+if (!existsSync(join(out, "brain.json"))) brain("init", out, "--owner", "Test Owner", "--no-git");
+
+function mulberry32(start) {
+  let seed = start;
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = seed;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
+const rand = mulberry32(50);
+// CC-164's additions (source ids) draw from here, never from `rand`.
+const rand2 = mulberry32(164);
 const pick = (a) => a[Math.floor(rand() * a.length)];
 const int = (lo, hi) => lo + Math.floor(rand() * (hi - lo + 1));
 const shuffle = (a) => {
@@ -32,10 +48,10 @@ const shuffle = (a) => {
 };
 const ALPHA = "0123456789abcdefghjkmnpqrstvwxyz";
 const used = new Set();
-function id(prefix) {
+function id(prefix, r = rand) {
   for (;;) {
     let s = "";
-    for (let i = 0; i < 8; i++) s += ALPHA[Math.floor(rand() * ALPHA.length)];
+    for (let i = 0; i < 8; i++) s += ALPHA[Math.floor(r() * ALPHA.length)];
     if (!used.has(s)) {
       used.add(s);
       return `${prefix}-${s}`;
@@ -90,7 +106,10 @@ function fmText(fm) {
   const lines = ["---"];
   for (const [k, v] of Object.entries(fm)) {
     if (v === undefined) continue;
-    if (Array.isArray(v)) lines.push(`${k}: [${v.join(", ")}]`);
+    if (Array.isArray(v) && v.some((x) => x && typeof x === "object")) {
+      lines.push(`${k}:`);
+      for (const item of v) Object.entries(item).forEach(([k2, v2], i) => lines.push(`${i ? "   " : "  -"} ${k2}: ${v2}`));
+    } else if (Array.isArray(v)) lines.push(`${k}: [${v.join(", ")}]`);
     else if (v && typeof v === "object") {
       lines.push(`${k}:`);
       for (const [k2, v2] of Object.entries(v)) lines.push(`  ${k2}: ${v2}`);
@@ -180,12 +199,29 @@ for (let i = 0; i < 70; i++) {
   questionsN.push({ id: id("que"), title: `Should the ${p.title} revisit ${t.key}? (${i})`, p, t });
 }
 
+// ---- current schema (CC-164) ----
+// Every meeting rests on a minutes source (schema §4 meeting). The source has a
+// neutral title and an empty body, so it matches none of the questions' words.
+const hash = (s) => createHash("sha256").update(s).digest("hex");
+for (const m of meetings) m.src = id("src", rand2);
+for (const m of meetings) for (const d of m.decs) d.meeting = m;
+// A person's role is learned at the first meeting they attended, else at a meeting of their project or their org.
+const roleSource = (pe) =>
+  (meetings.find((m) => m.attendees.includes(pe)) ?? meetings.find((m) => pe.projects.includes(m.p)) ?? meetings.find((m) => m.p.org === pe.org)).id;
+
 // ---- write notes ----
+for (const m of meetings) {
+  add({
+    dir: "sources/notion", file: `${m.date}-minutes-${m.src.slice(4)}.md`,
+    fm: { id: m.src, type: "source", title: `Minutes ${m.date} (Notion)`, source_key: `notion:${hash(m.src).slice(0, 32)}`, content_hash: `sha256:${hash("")}`, captured: `${m.date}T18:00:00Z`, created: m.date, updated: m.date },
+    body: "",
+  });
+}
 for (const pe of people) {
   const role = pe.role;
   add({
     dir: "knowledge/people", file: `${slug(pe.title)}.md`,
-    fm: { id: pe.id, type: "person", title: pe.title, summary: `${role[0].toUpperCase() + role.slice(1)} at ${pe.org.title}.`, lifecycle: "reviewed", org: pe.org.id, projects: pe.projects.map((p) => p.id), facts: { role }, created: day(2), updated: day(2) },
+    fm: { id: pe.id, type: "person", title: pe.title, summary: `${role[0].toUpperCase() + role.slice(1)} at ${pe.org.title}.`, lifecycle: "reviewed", org: pe.org.id, projects: pe.projects.map((p) => p.id), facts: { role }, timeline: [{ field: "role", value: role, from: day(2), learned: day(2), source: roleSource(pe), assessment: "accepted" }], created: day(2), updated: day(2) },
     body: `Works on ${pe.projects.map((p) => p.title).join(", ") || "no current project"}. Prefers ${pick(["email", "calls", "short written updates", "the shared channel"])}.\n`,
   });
 }
@@ -199,7 +235,7 @@ for (const p of projects) {
 for (const d of decisions) {
   add({
     dir: "knowledge/decisions", file: `${d.date}-${slug(d.title)}.md`,
-    fm: { id: d.id, type: "decision", title: d.title, summary: `${d.p.org.title} chose ${d.tech} for ${d.t.key}.`, lifecycle: "reviewed", date: d.date, assessment: "accepted", area: area.id, projects: [d.p.id], created: d.date, updated: d.date },
+    fm: { id: d.id, type: "decision", title: d.title, summary: `${d.p.org.title} chose ${d.tech} for ${d.t.key}.`, lifecycle: "reviewed", date: d.date, assessment: "accepted", decided_in: d.meeting.id, area: area.id, projects: [d.p.id], sources: [d.meeting.src], created: d.date, updated: d.date },
     body: `## Decision\nUse ${d.tech} for ${d.t.key}.\n\n## Context\nChosen because ${d.reason}.\n\n## Consequences\n${pick(FILLER)}\n`,
   });
 }
@@ -210,28 +246,30 @@ for (const m of meetings) {
   lines.push(pick(FILLER));
   add({
     dir: "knowledge/meetings", file: `${m.date}-${slug(m.title)}-${m.id.slice(4)}.md`,
-    fm: { id: m.id, type: "meeting", title: m.title, summary: `${m.title} on the ${m.p.kind}.`, lifecycle: "reviewed", date: m.date, attendees: m.attendees.map((a) => a.id), decisions: m.decs.map((d) => d.id), area: area.id, projects: [m.p.id], created: m.date, updated: m.date },
+    fm: { id: m.id, type: "meeting", title: m.title, summary: `${m.title} on the ${m.p.kind}.`, lifecycle: "reviewed", date: m.date, attendees: m.attendees.map((a) => a.id), source: m.src, decisions: m.decs.map((d) => d.id), area: area.id, projects: [m.p.id], sources: [m.src], created: m.date, updated: m.date },
     body: `## Summary\n${lines.join(" ")}\n`,
   });
 }
+// Concepts are learned Documents since 0.9.1 (0071): `brain upgrade` would move them here, keeping the con- id.
 for (const c of concepts) {
   add({
-    dir: "knowledge/concepts", file: `${slug(c.title)}.md`,
-    fm: { id: c.id, type: "concept", title: c.title, summary: `Notes on ${c.tech} for ${c.t.key}.`, lifecycle: "reviewed", created: day(5), updated: day(5) },
+    dir: "knowledge/references", file: `${slug(c.title)}.md`,
+    fm: { id: c.id, type: "reference", title: c.title, summary: `Notes on ${c.tech} for ${c.t.key}.`, lifecycle: "reviewed", origin: "learned", created: day(5), updated: day(5) },
     body: `${c.tech} is one option for ${c.t.key}. ${pick(FILLER)}\n`,
   });
 }
+// A Document kept in part rests on a source (schema §4 reference): the first meeting of its project.
 for (const r of references) {
   add({
     dir: "knowledge/references", file: `${slug(r.title)}.md`,
-    fm: { id: r.id, type: "reference", title: r.title, summary: `Reference document for the ${r.p.title}.`, lifecycle: "reviewed", projects: [r.p.id], created: day(6), updated: day(6) },
+    fm: { id: r.id, type: "reference", title: r.title, summary: `Reference document for the ${r.p.title}.`, lifecycle: "reviewed", origin: "part", projects: [r.p.id], sources: [meetings.find((m) => m.p === r.p).src], created: day(6), updated: day(6) },
     body: `${pick(FILLER)} ${pick(FILLER)}\n`,
   });
 }
 for (const q of questionsN) {
   add({
     dir: "knowledge/questions", file: `${slug(q.title)}.md`,
-    fm: { id: q.id, type: "question", title: q.title, summary: `Open question on ${q.t.key} for ${q.p.org.title}.`, lifecycle: "draft", projects: [q.p.id], created: day(7), updated: day(7) },
+    fm: { id: q.id, type: "question", title: q.title, summary: `Open question on ${q.t.key} for ${q.p.org.title}.`, lifecycle: "draft", kind: "question", projects: [q.p.id], created: day(7), updated: day(7) },
     body: `Raised when ${q.p.org.title} asked about ${q.t.alt[0]}.\n`,
   });
 }
@@ -260,6 +298,7 @@ for (let i = 0, k = 0; k < 10 && i < ps.length; i++) {
   qs.push({ kind: "person-role", q: `Who is the ${m.role} on the ${p.title}?`, answer: m.id });
   k++;
 }
-mkdirSync(out, { recursive: true });
 writeFileSync(qfile, JSON.stringify(qs, null, 2) + "\n");
-console.log(JSON.stringify({ notes: notes.length, questions: qs.length }));
+brain("index");
+const sources = notes.filter((n) => n.fm.type === "source").length;
+console.log(JSON.stringify({ notes: notes.length - sources, sources, questions: qs.length }));
