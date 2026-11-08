@@ -43,6 +43,23 @@ export function brainCli(root: string): Retriever {
   };
 }
 
+/** The baseline's own JSON page, each candidate's snippets (up to 3 matching lines) replaced by one upstream snippet:
+ *  the snippet rule alone, inside today's output shape. */
+export function brainOneSnippet(inner: Retriever, byId: Map<string, Note>): Retriever {
+  return {
+    name: "brain JSON, one snippet",
+    search(query, limit) {
+      const { ids, page } = inner.search(query, limit);
+      const parsed = JSON.parse(page);
+      for (const c of parsed.data.candidates) {
+        const raw = (chunkBody(byId.get(c.id)?.body ?? "")[0] ?? "").trim();
+        c.snippets = raw ? [{ text: snippet(raw) }] : [];
+      }
+      return { ids, page: JSON.stringify(parsed) };
+    },
+  };
+}
+
 /** Any ranking, re-paged with compact snippets: the snippet piece alone, applied to another retriever's order. */
 export function withCompactPage(name: string, inner: Retriever, byId: Map<string, Note>): Retriever {
   return {
