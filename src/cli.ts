@@ -91,6 +91,8 @@ export async function runCli(args: readonly string[], options: CliOptions = {}):
   for (const command of COMMANDS) {
     handlers.set(command.name, (rest, commandIo) => runCommand(command, rest, commandIo, options));
   }
+  // `modules list` is `modules` (§5.20): an alias, kept out of the help.
+  handlers.set("modules list", (rest, commandIo) => runCommand(modulesListCommand, rest, commandIo, options));
   for (const [name, handler] of options.commands ?? []) handlers.set(name, handler);
 
   // Longest command path first, so "note new" wins over "note" and "repo kit check" over "repo kit".
