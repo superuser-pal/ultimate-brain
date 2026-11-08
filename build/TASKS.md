@@ -70,7 +70,7 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 **Output:** decision 0074 from the user's accepted 2026-11-06 grill and final six-capability clarification; this release's intro and work packages, the roadmap/backlog pointers, and a refinement pointer on 0064. Planning only: no implementation, CLI/schema/skill change, upstream code import or brain operation. The user's instruction to lock the agreement authorises recording this planning agreement, following the CC-74/CC-95 precedent; implementation remains Claude Code's and independent review is required.
 **Acceptance:** 0074 records the six capabilities and every accepted capture, scope, conflict, retention, review-volume and token choice; it records the preferred small TypeScript component reuse and its boundaries; the synthetic 100% critical-trust / at least 90% answerable-case gates and separate cost accounting are explicit; the roadmap/backlog point to the decision without changing other release scope or task rows; only planning Markdown changes; the leak check and PR format check pass.
 
-### CC-162 · Move the done 0.10.2, 0.11.0 and 0.11.1 sections to HISTORY.md · `review`
+### CC-162 · Move the done 0.10.2, 0.11.0 and 0.11.1 sections to HISTORY.md · `done` (#268)
 **Release:** 0.12.0
 **Changelog:** development only: the done 0.10.2, 0.11.0 and 0.11.1 sections move to build/HISTORY.md.
 **Output:** the three sections moved verbatim from build/TASKS.md to the end of build/HISTORY.md (the done releases, CC-94); no other line changes.
