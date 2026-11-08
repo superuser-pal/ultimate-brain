@@ -450,6 +450,8 @@ notion: 7c6b…
 | `value_before` / `value_after` | per `property`: `status` a string or null, `due` a `YYYY-MM-DD` date or null, `project` and `area` a sorted list of page ids, `archived` a boolean | both for `notion_change` | the value read when proposed, and the value to write; `value_after` is never null on `status` |
 | `area` | ID (`area-`) | | on `notion_change` and `set_field`: the Area whose home shows the Review row (§14) |
 | `finding` | `<signal>:<subject key>` | | the Ultimate Assistant finding the proposal comes from ([assistant.md](assistant.md) §3.3). An Ultimate Assistant proposal (`source` `agent:ultimate-assistant/…`) decided in chat before it had a Review row never gets one (cli.md §5.14.4) |
+| `fingerprint` | `<finding kind>:<ids or term>[:<field or source>]` | with `evidence` | the reflection finding the proposal records, so the brain remembers the user's answer (§11.4, 0052, 0076). Never with `finding` |
+| `evidence` | list of `mtg-` and `src-` ids, sorted, unique | with `fingerprint` | the inputs the finding rested on when the user answered it (§11.4); `[]` for a duplicate or a contradiction between two notes, which rest on notes |
 | `from` | date or month | for `update_fact`, `contradiction` | event time of the new value; defaults to the source meeting's `date`, else `created` |
 | `content` | string | for `add_to_note`, `update_body` | `add_to_note`: Markdown to append. `update_body`: the whole new body |
 | `note` | object | for `new_item` | one `brain note new` input item without `id`: `{type, title, frontmatter, body, file_date?}` ([cli.md](cli.md) §5.5) |
@@ -483,7 +485,7 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
 | Kind | `target` is | On approve / edit | On reject |
 |---|---|---|---|
 | `update_fact` | the note owning the fact | In `timeline`, each entry for `field` with `assessment: accepted` gets `until: <from>` and `assessment: superseded`. Append `{field, value: V(after), from, learned: D, source, assessment: accepted}`. Set `facts.<field> = V` | nothing changes |
-| `contradiction` | the note owning the fact | **approve:** keep both claims. Existing accepted entries for `field` become `contested`; append `{field, value: after, from, learned: D, source, assessment: contested}`; remove `facts.<field>`. **edit:** V is the accepted truth. Only entries for `field` whose assessment is `accepted` or `contested` change: if one or more of them has value V, the latest of those (by `learned`, then position) becomes `accepted`; every other one becomes `superseded` with `until: <from>`. If none has value V, every one of them becomes `superseded` with `until: <from>`, and `{field, value: V, from, learned: D, source, assessment: accepted}` is appended. Already-superseded entries are left as they are. Set `facts.<field> = V` | nothing changes |
+| `contradiction` | the note owning the fact | **approve:** keep both claims. Existing accepted entries for `field` become `contested`; append `{field, value: after, from, learned: D, source, assessment: contested}`; remove `facts.<field>`. **edit:** V is the accepted truth. Only entries for `field` whose assessment is `accepted` or `contested` change: if one or more of them has value V, the latest of those (by `learned`, then position) becomes `accepted`; every other one becomes `superseded` with `until: <from>`. If none has value V, every one of them becomes `superseded` with `until: <from>`, and `{field, value: V, from, learned: D, source: user-correction:<this proposal's id>, assessment: accepted}` is appended: the value is the user's, not the source's (0076 §1; as for an edited Review item, capture-and-review §7.7). Already-superseded entries are left as they are. Set `facts.<field> = V` | nothing changes |
 | `add_link` | the note whose lists grow | For each entry of `links` not in `decision.exclude`, in order: append `value` to `target.<field>` if it is not already there (0028). No edit. Excluding every entry applies nothing to the target; the proposal is still `applied` | nothing changes |
 | `add_to_note` | the note to extend | Append V(content) to the end of the body, separated by exactly one blank line, followed by a line `Source: <source>`. Add `source` to `sources` if missing | nothing changes |
 | `update_body` | a `reference` note whose `origin` isn't `promoted` (0045, 0049) | Replace the body with V(content). Add `source` to `sources` if missing. **Stale** when the target's body hash differs from `before_hash` (§11.1, closed with `closed_reason: stale`) | nothing changes |
@@ -521,6 +523,31 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
 | `review_notes` | one or more of `{change: <index>, value}`, `{note: <id>, field, value}`, `{link: {target, field, value}, value}` | a change is applied with `after` (`update_fact`) or `content` (`update_body`, `add_to_note`) = `value`; a listed note gets `field` = `value` before it is reviewed, where `field` is one a correction may set (cli.md §5.7) or `projects` (a list of `prj-` ids); a link is applied with the new `value` |
 
 A fixed item can't also be excluded. A `fixes` entry that names no item of the proposal → `FIX_UNKNOWN`; a value of the wrong shape → `INVALID_RESULT` (cli.md §5.7). Both leave the proposal unchanged.
+
+### 11.4 Reflection fingerprints (normative, 0052, 0076)
+
+Every proposal brain-reflect writes carries a `fingerprint` and its `evidence` (cli.md §6.2): a yes (approved in chat, then applied), a "later" (pending, a Review row) and a skip (rejected in chat, then closed). The fingerprint names the **finding**, not the proposal: a finding answered twice has two proposals with one fingerprint, and the latest answer is the one that counts.
+
+| Finding | `fingerprint` | Proposal kind | Parts |
+|---|---|---|---|
+| Contradiction | `contradiction:<target>:<field>` | `contradiction` | the proposal's `target` and `field` |
+| Stale fact | `stale:<target>:<field>` | `update_fact` | the proposal's `target` and `field` |
+| Duplicate | `merge:<id>+<id>` | `merge` | `target` and `merge_into`, sorted by code point, so the pair has one fingerprint whichever note survives |
+| Promotion | `promotion:<target>:<source>` | `add_to_note` | the proposal's `target`, and its `source`: the meeting or source the rule was said in |
+| Theme | `theme:<term>` | `review_notes` for a yes or a "later" (its one note: the draft learned Document, §4 reference); `new_item` for a skip (the Document that would have been drafted, never written) | the term's tokens (cli.md §5.32) joined by `-`: `theme:pricing-tiers` |
+
+- **`evidence`** lists the inputs of the cluster the finding came from: every id of its `evidence` in `reflect --candidates` (cli.md §5.32), not only the ones the report showed; sorted, unique; `[]` for a duplicate and for a contradiction between two notes (`shared_ground`), which rest on notes, not inputs.
+- **`source`** is what the finding rests on: the input whose words the proposal's `why` quotes (a stale fact, a contradiction or a promotion from an `overtaken` cluster); the other member, a note id, for a contradiction from a `shared_ground` cluster; the newest input of `evidence` (by date, then id) for a theme (0076 §4); `agent:brain-reflect/<session>` for a duplicate, which rests on names (the session's start, compact: `20261108T100000Z`).
+- **Lint** (`proposal-fingerprint`, cli.md §5.10) checks that the fingerprint matches its proposal: the kind (also in the JSON Schema), `target` and `field`; a merge's two ids are `target` and `merge_into`, different and sorted; a promotion's source is `source`; a theme's `review_notes` lists exactly one note, a `reference` with `origin: learned`; a theme's `new_item` holds such a Document; every `evidence` id exists.
+
+**What a fingerprint holds back.** `reflect --candidates` (cli.md §5.32) leaves out, or marks, a finding whose fingerprint is **held**:
+1. **Waiting:** a proposal with the fingerprint is `pending`, `approved` or `edited` (a Review row not yet decided, or a decision not yet applied).
+2. **Skipped:** otherwise, the latest of its proposals that has a `decision` (by `decision.decided_at`, then `id`) is a reject (`rejected` or `closed`), whether the user said "skip" in the chat or Reject on its Review row. A skip lasts as long as its reason (0076 §3):
+   - **a duplicate** (`merge`) stays skipped: two notes the user said are different stay different;
+   - **a contradiction, stale fact or promotion** is released when an input that is not in the skip's `evidence`, and whose `created` is on or after the date of its `decided_at`, names the target (cli.md §5.32, "names"). The skill proposes it again only when that input bears on the field (for a promotion, the rule); otherwise it treats the finding as still skipped and writes nothing;
+   - **a theme** is released when an input not in its `evidence`, created on or after the skip's date, holds the term in its text (cli.md §5.32): the term's source count has grown.
+
+An applied proposal, or one closed as stale, holds nothing: the change is made, or its target moved on, and the signals see the note as it is now. A finding the user didn't answer leaves no proposal and can come back in the next run.
 
 ## 12. `brain.json` · see [schemas/brain.schema.json](schemas/brain.schema.json)
 
