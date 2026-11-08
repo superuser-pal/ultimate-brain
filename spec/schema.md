@@ -451,7 +451,7 @@ notion: 7c6b…
 | `area` | ID (`area-`) | | on `notion_change` and `set_field`: the Area whose home shows the Review row (§14) |
 | `finding` | `<signal>:<subject key>` | | the Ultimate Assistant finding the proposal comes from ([assistant.md](assistant.md) §3.3). An Ultimate Assistant proposal (`source` `agent:ultimate-assistant/…`) decided in chat before it had a Review row never gets one (cli.md §5.14.4) |
 | `fingerprint` | `<finding kind>:<ids or term>[:<field or source>]` | with `evidence` | the reflection finding the proposal records, so the brain remembers the user's answer (§11.4, 0052, 0076). Never with `finding` |
-| `evidence` | list of `mtg-` and `src-` ids, sorted, unique | with `fingerprint` | the inputs the finding rested on when the user answered it (§11.4); `[]` for a duplicate, which rests on names |
+| `evidence` | list of `mtg-` and `src-` ids, sorted, unique | with `fingerprint` | the inputs the finding rested on when the user answered it (§11.4); `[]` for a duplicate or a contradiction between two notes, which rest on notes |
 | `from` | date or month | for `update_fact`, `contradiction` | event time of the new value; defaults to the source meeting's `date`, else `created` |
 | `content` | string | for `add_to_note`, `update_body` | `add_to_note`: Markdown to append. `update_body`: the whole new body |
 | `note` | object | for `new_item` | one `brain note new` input item without `id`: `{type, title, frontmatter, body, file_date?}` ([cli.md](cli.md) §5.5) |
@@ -536,7 +536,7 @@ Every proposal brain-reflect writes carries a `fingerprint` and its `evidence` (
 | Promotion | `promotion:<target>:<source>` | `add_to_note` | the proposal's `target`, and its `source`: the meeting or source the rule was said in |
 | Theme | `theme:<term>` | `review_notes` for a yes or a "later" (its one note: the draft learned Document, §4 reference); `new_item` for a skip (the Document that would have been drafted, never written) | the term's tokens (cli.md §5.32) joined by `-`: `theme:pricing-tiers` |
 
-- **`evidence`** lists the inputs of the cluster the finding came from: every id of its `evidence` in `reflect --candidates` (cli.md §5.32), not only the ones the report showed; sorted, unique; `[]` for a duplicate.
+- **`evidence`** lists the inputs of the cluster the finding came from: every id of its `evidence` in `reflect --candidates` (cli.md §5.32), not only the ones the report showed; sorted, unique; `[]` for a duplicate and for a contradiction between two notes (`shared_ground`), which rest on notes, not inputs.
 - **`source`** is what the finding rests on: the input whose words the proposal's `why` quotes (a stale fact, a contradiction or a promotion from an `overtaken` cluster); the other member, a note id, for a contradiction from a `shared_ground` cluster; the newest input of `evidence` (by date, then id) for a theme (0076 §4); `agent:brain-reflect/<session>` for a duplicate, which rests on names (the session's start, compact: `20261108T100000Z`).
 - **Lint** (`proposal-fingerprint`, cli.md §5.10) checks that the fingerprint matches its proposal: the kind (also in the JSON Schema), `target` and `field`; a merge's two ids are `target` and `merge_into`, different and sorted; a promotion's source is `source`; a theme's `review_notes` lists exactly one note, a `reference` with `origin: learned`; a theme's `new_item` holds such a Document; every `evidence` id exists.
 
@@ -545,7 +545,7 @@ Every proposal brain-reflect writes carries a `fingerprint` and its `evidence` (
 2. **Skipped:** otherwise, the latest of its proposals that has a `decision` (by `decision.decided_at`, then `id`) is a reject (`rejected` or `closed`), whether the user said "skip" in the chat or Reject on its Review row. A skip lasts as long as its reason (0076 §3):
    - **a duplicate** (`merge`) stays skipped: two notes the user said are different stay different;
    - **a contradiction, stale fact or promotion** is released when an input that is not in the skip's `evidence`, and whose `created` is on or after the date of its `decided_at`, names the target (cli.md §5.32, "names"). The skill proposes it again only when that input bears on the field (for a promotion, the rule); otherwise it treats the finding as still skipped and writes nothing;
-   - **a theme** is released when an input not in its `evidence`, created on or after the skip's date, carries the term: the term's source count has grown.
+   - **a theme** is released when an input not in its `evidence`, created on or after the skip's date, holds the term in its text (cli.md §5.32): the term's source count has grown.
 
 An applied proposal, or one closed as stale, holds nothing: the change is made, or its target moved on, and the signals see the note as it is now. A finding the user didn't answer leaves no proposal and can come back in the next run.
 
