@@ -18,6 +18,12 @@ brain --help
 
 The agent skills come with it: `brain init` copies them into the brain, in `.agents/skills/` for Codex and `.claude/skills/` for Claude Code, so both agents run the same version (decision 0038).
 
+**The Notion build files come with it too:** the checklist that builds your Notion space (`notion/CHECKLIST.md`), the Notion AI build prompts (`notion/prompts/`), each module's steps (`notion/modules/`), the migrations for a space built by an earlier release (`notion/migrations/`) and the space design (`docs/notion-space-design.md`). They are in the installed package's folder, which `brain status --json` reports as `data.product.path`; with a global install that is `$(npm root -g)/ultimate-brain`:
+
+```sh
+ls "$(npm root -g)/ultimate-brain/notion"   # CHECKLIST.md, prompts/, modules/, migrations/, …
+```
+
 **To ingest Word, PowerPoint, Excel and saved HTML files** (optional), install [MarkItDown](https://github.com/microsoft/markitdown), the converter the ingest uses for them (decision 0032); it is also the first choice for web pages given by URL (decision 0036). In Claude Code, PDFs and images need nothing extra. In Codex, MarkItDown also converts PDFs, and images are read with Codex's image tool.
 
 ```sh
