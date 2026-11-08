@@ -13,7 +13,8 @@ export const QUERY_TYPES = [
 type QueryType = typeof QUERY_TYPES[number];
 
 const DEFAULT_TYPES = new Set<QueryType>(QUERY_TYPES.filter((type) => !["view", "proposal", "memory"].includes(type)));
-const STOPWORDS = new Set([
+/** §5.13 step 1's stopwords; reflection uses them for its terms (§5.32). */
+export const QUERY_STOPWORDS: ReadonlySet<string> = new Set([
   "a", "an", "and", "are", "as", "at", "be", "by", "did", "do", "does", "for", "from", "has", "have", "how", "in", "is", "it", "of", "on", "or", "that", "the", "this", "to", "was", "we", "what", "when", "where", "which", "who", "why", "will", "with",
   "al", "como", "con", "de", "del", "el", "en", "es", "la", "las", "lo", "los", "para", "por", "que", "se", "su", "un", "una", "y",
 ]);
@@ -51,7 +52,7 @@ export function queryWords(value: string): string[] {
     .replace(/\p{M}/gu, "")
     .toLowerCase()
     .split(/[^a-z0-9]+/)
-    .filter((word) => word.length >= 2 && !STOPWORDS.has(word));
+    .filter((word) => word.length >= 2 && !QUERY_STOPWORDS.has(word));
 }
 
 /** Parse an explicit `--types` value, or select the contract's default search types. */

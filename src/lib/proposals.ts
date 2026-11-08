@@ -9,6 +9,7 @@ import { assertStagedValid, checkNoteInput, stageNotes, type CreatedNote, type N
 import { compareCodePoints, type Note } from "./notes.ts";
 import { checkNotionChange, defaultTitle, duplicateOf, resolveSetField } from "./notion-change.ts";
 import { newNotePath } from "./paths.ts";
+import { fingerprintProblem } from "./reflect.ts";
 import { loadSchemas } from "./schemas.ts";
 import { formatDate } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
@@ -17,7 +18,7 @@ export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "update_body", "add
 export const PROPOSAL_STATUSES = ["pending", "approved", "rejected", "edited", "applied", "closed"] as const;
 
 /** Input keys of `proposal new`: the schema §11 fields the CLI does not set (spec/cli.md §5.6). */
-const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding"];
+const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding", "fingerprint", "evidence"];
 const ID = /^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{8}$/;
 const KNOWLEDGE_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 const ADD_LINK_FIELDS = new Set(["aliases", "tags", "projects", "people", "attendees", "deciders"]);
@@ -73,9 +74,12 @@ export function stageProposals(
   (list as Array<Record<string, unknown>>).forEach((item, index) => {
     if (item.kind !== "review_notes") return;
     const source = String(item.source);
-    if (reviews.has(source)) assertNoProblems([{ pointer: `/proposals/${index}/source`, message: `a second review_notes for ${source} in one input` }]);
+    // A theme's review_notes is a row of its own: nothing folds into it, and it doesn't take another review_notes' place (§5.6).
+    const key = typeof item.fingerprint === "string" ? `\u0000${item.fingerprint}` : source;
+    if (reviews.has(key)) assertNoProblems([{ pointer: `/proposals/${index}/source`, message: typeof item.fingerprint === "string" ? `a second review_notes for ${item.fingerprint} in one input` : `a second review_notes for ${source} in one input` }]);
     checkReviewNotes(workspace, item, `/proposals/${index}`);
-    reviews.set(source, { index, item, links: [], changes: [] });
+    if (typeof item.fingerprint === "string") checkFingerprint(workspace, item, `/proposals/${index}`);
+    reviews.set(key, { index, item, links: [], changes: [] });
   });
   const start = workspace.checkpoint();
   try {
@@ -83,6 +87,14 @@ export function stageProposals(
       const pointer = `/proposals/${index}`;
       if (item.kind === "review_notes") return;
       const fields = resolveFields(workspace, item, pointer, today);
+      // A reflection answer: checked against its item, deduped on its fingerprint, never folded into a review_notes (§5.6).
+      if (typeof item.fingerprint === "string") {
+        checkFingerprint(workspace, item, pointer);
+        const held = fingerprintDuplicate(workspace, item.fingerprint);
+        if (held !== undefined) { skipped.push({ input_index: index, reason: "DUPLICATE_PENDING", existing: held.id }); return; }
+        createProposal(workspace, fields, [index], today, pointer, pointers, created);
+        return;
+      }
       // Ultimate Assistant's kinds (spec/cli.md §5.6, 0072): their own no-change and dedupe rules, and a default title.
       if (item.kind === "notion_change" || item.kind === "set_field") {
         if (fields.noChange === true) { skipped.push({ input_index: index, reason: "NO_CHANGE" }); return; }
@@ -154,6 +166,10 @@ export function stageProposals(
     }
     for (const review of reviews.values()) {
       const notes = review.item.notes as string[];
+      if (typeof review.item.fingerprint === "string") {
+        const held = fingerprintDuplicate(workspace, review.item.fingerprint);
+        if (held !== undefined) { skipped.push({ input_index: review.index, reason: "DUPLICATE_PENDING", existing: held.id }); continue; }
+      }
       if (notes.length === 0 && review.links.length === 0 && review.changes.length === 0) {
         skipped.push({ input_index: review.index, reason: "NOTHING_TO_REVIEW" });
         continue;
@@ -179,6 +195,7 @@ export function stageProposals(
         items,
         why: review.item.why ?? `What came in from ${sourceTitle(workspace, source)}`,
         source,
+        ...(typeof review.item.fingerprint === "string" ? { fingerprint: review.item.fingerprint, evidence: review.item.evidence } : {}),
       };
       const held = [review.index, ...review.links.map(({ index }) => index), ...changes.map(({ index }) => index)].sort((a, b) => a - b);
       const proposal = createProposal(workspace, fields, held, today, `/proposals/${review.index}`, pointers, created);
@@ -285,6 +302,22 @@ function checkReviewNotes(workspace: Workspace, item: Record<string, unknown>, p
   assertNoProblems(problems);
 }
 
+/** A reflection item's fingerprint matches it, and its evidence names meetings and sources that exist (spec/cli.md §5.6, schema §11.4). */
+function checkFingerprint(workspace: Workspace, item: Record<string, unknown>, pointer: string): void {
+  const allowed = ["contradiction", "update_fact", "merge", "add_to_note", "review_notes", "new_item"];
+  if (!allowed.includes(String(item.kind))) assertNoProblems([{ pointer: `${pointer}/fingerprint`, message: `a fingerprint goes on ${allowed.join(", ")}` }]);
+  for (const [index, id] of (item.evidence as string[]).entries()) {
+    if (workspace.get(id) === undefined) throw new BrainError("UNKNOWN_ID", `${pointer}/evidence/${index}: no note with id ${id}`, [{ pointer: `${pointer}/evidence/${index}`, message: "does not exist" }]);
+  }
+  const problem = fingerprintProblem(item, (id) => workspace.get(id));
+  if (problem !== null) assertNoProblems([{ pointer: `${pointer}/${problem.key}`, message: problem.message }]);
+}
+
+/** A proposal with this fingerprint that is still waiting: pending, approved or edited (§5.6). */
+function fingerprintDuplicate(workspace: Workspace, fingerprint: string): Note | undefined {
+  return workspace.notes.find((note) => note.type === "proposal" && note.attributes.fingerprint === fingerprint && ["pending", "approved", "edited"].includes(String(note.attributes.status)));
+}
+
 function proposalLinks(attributes: Record<string, unknown>): Array<{ field: unknown; value: unknown }> {
   if (Array.isArray(attributes.links)) return attributes.links.filter(isRecord).map((link) => ({ field: link.field, value: link.value }));
   return attributes.field === undefined ? [] : [{ field: attributes.field, value: attributes.after }];
@@ -341,6 +374,11 @@ function checkShape(item: unknown, pointer: string): InputProblem[] {
   for (const key of ["supersedes", "merge_into"]) {
     if (item[key] !== undefined && typeof item[key] !== "string") at(key, "must be a note id");
   }
+  // A reflection answer (spec/cli.md §5.6, schema §11.4): fingerprint and evidence together, never with an assistant finding.
+  if ((item.fingerprint === undefined) !== (item.evidence === undefined)) at(item.fingerprint === undefined ? "evidence" : "fingerprint", "fingerprint and evidence are given together");
+  if (item.fingerprint !== undefined && item.finding !== undefined) at("finding", "is never given with a fingerprint");
+  if (item.fingerprint !== undefined && typeof item.fingerprint !== "string") at("fingerprint", "must be a string");
+  if (item.evidence !== undefined && (!Array.isArray(item.evidence) || item.evidence.some((id) => typeof id !== "string"))) at("evidence", "must be a list of meeting and source ids");
   // Everything else (field names, value shapes, required keys per kind) is checked by the proposal schema.
   return problems;
 }

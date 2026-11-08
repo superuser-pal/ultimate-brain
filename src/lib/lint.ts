@@ -19,6 +19,8 @@ import { contextFor, eligibleNotes, indexNotes, loadSuppressions, restrictionOf 
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
 import { workflowRecordProblems } from "./workflow-store.ts";
+import { decodePath, linkTargets } from "./lint-links.ts";
+import { fingerprintProblem, heldFingerprints, holdsWholeText, mergeFingerprint, nearDuplicatePairs, reflectionNotes } from "./reflect.ts";
 
 export type Severity = "error" | "warning" | "info";
 
@@ -384,6 +386,8 @@ export function lintBrain(input: LintInput): Issue[] {
     }
   }
 
+  lintReflection(input, byId, add);
+
   if (input.indexMarkdown !== undefined && input.indexMarkdown !== buildIndex(indexNotes(input.notes, loadSuppressions(input.root))).markdown) {
     add("warning", "index-stale", "index.md", 1, null, "index.md is out of date; run brain index");
   }
@@ -391,6 +395,48 @@ export function lintBrain(input: LintInput): Issue[] {
   lintProductFiles(input, add);
   return issues.sort((x, y) =>
     compareCodePoints(x.path, y.path) || x.line - y.line || compareCodePoints(x.rule, y.rule) || compareCodePoints(x.message, y.message));
+}
+
+/** The reflection checks (spec/cli.md §5.10, 0052, 0076): proposal-fingerprint, orphan, note-size and near-duplicate. */
+function lintReflection(input: LintInput, byId: ReadonlyMap<string, Note>, add: Add): void {
+  const knowledge = input.notes.filter((note) => KNOWLEDGE.has(note.type));
+  for (const note of input.notes) {
+    if (note.type !== "proposal") continue;
+    const problem = fingerprintProblem(note.attributes, (id) => byId.get(id));
+    if (problem !== null) add("error", "proposal-fingerprint", note.path, lineOfKey(note, problem.key.split("/")[0]!), note.id, `${problem.message} (schema §11.4)`);
+  }
+  for (const note of knowledge) {
+    if (holdsWholeText(note)) continue;
+    const bytes = Buffer.byteLength(note.body, "utf8");
+    if (bytes > 10_240) add("warning", "note-size", note.path, bodyLineOffset(note), note.id, `body is ${(bytes / 1024).toFixed(1)} KB, over 10 KB`);
+  }
+  // orphan: what other knowledge notes point at, by an id anywhere in their frontmatter or a body link to the file.
+  const byPath = new Map(input.notes.map((note) => [note.path, note]));
+  const pointedAt = new Set<string>();
+  for (const note of knowledge) {
+    for (const id of collectIds(Object.fromEntries(Object.entries(note.attributes).filter(([key]) => key !== "id")))) if (id !== note.id) pointedAt.add(id);
+    for (const [, line] of proseLines(note.body)) {
+      for (const target of linkTargets(line)) {
+        if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) continue;
+        const linked = byPath.get(posix.normalize(posix.join(posix.dirname(note.path), decodePath(target.split(/[?#]/)[0]!))));
+        if (linked !== undefined && linked.id !== note.id) pointedAt.add(linked.id);
+      }
+    }
+  }
+  for (const note of knowledge) {
+    if (note.attributes.lifecycle !== "reviewed" || ["domain", "area", "goal", "project", "meeting", "memory"].includes(note.type)) continue;
+    const area = note.attributes.area;
+    if ((typeof area === "string" && area !== "") || list(note.attributes.projects).length > 0 || pointedAt.has(note.id)) continue;
+    add("warning", "orphan", note.path, 1, note.id, "nothing links to it and it has no project or area");
+  }
+  // near-duplicate: the near_duplicate signal of reflect --candidates, unless the pair's merge is held (waiting or skipped).
+  const held = heldFingerprints(input.notes);
+  const loaded = loadSuppressions(input.root);
+  for (const pair of nearDuplicatePairs(reflectionNotes(input.notes, loaded))) {
+    if (held.has(mergeFingerprint(pair.notes[0].id, pair.notes[1].id))) continue;
+    const [first, other] = [...pair.notes].sort((a, b) => compareCodePoints(a.path, b.path)) as [Note, Note];
+    add("warning", "near-duplicate", first.path, 1, first.id, `may be the same ${first.type} as "${String(other.attributes.title)}" (${other.path})`);
+  }
 }
 
 /** Status/decision agreement (spec/schema.md §11.1). */
@@ -467,28 +513,6 @@ function proseLines(body: string): Array<[number, string]> {
     if (fence === null) out.push([index, line.replace(/`[^`]*`/g, "")]);
   });
   return out;
-}
-
-/** Targets of inline links (`[x](t)`, `[x](t "title")`, `[x](<t>)`) and reference definitions (`[x]: t`). */
-function linkTargets(line: string): string[] {
-  const targets: string[] = [];
-  for (const match of line.matchAll(/\]\(\s*(?:<([^>]*)>|([^)\s]+))(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*\)/g)) {
-    targets.push(match[1] ?? match[2]!);
-  }
-  const definition = /^\s{0,3}\[[^\]]+\]:\s*(?:<([^>]*)>|(\S+))/.exec(line);
-  if (definition !== null) targets.push(definition[1] ?? definition[2]!);
-  return targets;
-}
-
-/** Percent-decode each path segment; a segment that is not valid encoding is kept as written. */
-function decodePath(path: string): string {
-  return path.split("/").map((segment) => {
-    try {
-      return decodeURIComponent(segment);
-    } catch {
-      return segment;
-    }
-  }).join("/");
 }
 
 /** File existence with exact case on every segment, so macOS and Linux agree. */
