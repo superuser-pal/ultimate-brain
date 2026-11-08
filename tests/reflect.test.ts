@@ -250,6 +250,48 @@ test("one shared reference, an input dated on the update, initials alone, a two-
   assert.equal(data.read.inputs, 5);
 });
 
+test("common ground leaves out the meeting and the project two notes were taken from; two people in common still count (#266)", async (context) => {
+  const dir = await freshBrain(context);
+  await put(dir, "knowledge/projects/rollout.md", { id: "prj-7a7a7a7a", type: "project", title: "Rollout", summary: "s", lifecycle: "reviewed", sources: [], created: "2026-09-01", updated: "2026-09-01" });
+  await put(dir, "knowledge/meetings/2026-11-02-planning.md", meeting("mtg-7b7b7b7b", "Planning", "2026-11-02"));
+  const taken = (id: string, title: string, people: string[]) => ({ id, type: "decision", title, summary: "s", lifecycle: "reviewed", date: "2026-11-02", assessment: "accepted", projects: ["prj-7a7a7a7a"], people, sources: ["mtg-7b7b7b7b"], created: "2026-11-02", updated: "2026-11-03" });
+  const from = "Agreed in [Planning](../meetings/2026-11-02-planning.md).\n";
+  await put(dir, "knowledge/decisions/2026-11-02-pilot.md", taken("dec-7c7c7c7c", "Pilot in one region", ["per-7d7d7d7d"]), from);
+  await put(dir, "knowledge/decisions/2026-11-02-vendor.md", taken("dec-7e7e7e7e", "Keep the current vendor", ["per-7d7d7d7d"]), from);
+  await put(dir, "knowledge/people/rui-sato.md", person("per-7d7d7d7d", "Rui Sato"));
+  await put(dir, "knowledge/people/lea-novak.md", person("per-7f7f7f7f", "Lea Novak"));
+  const shared = async () => (await reflect(dir)).clusters.filter((cluster: { signal: string }) => cluster.signal === "shared_ground");
+  // The meeting, the project and one person in common: one reference of common ground, no cluster.
+  assert.deepEqual(await shared(), []);
+  await put(dir, "knowledge/decisions/2026-11-02-pilot.md", taken("dec-7c7c7c7c", "Pilot in one region", ["per-7d7d7d7d", "per-7f7f7f7f"]), from);
+  await put(dir, "knowledge/decisions/2026-11-02-vendor.md", taken("dec-7e7e7e7e", "Keep the current vendor", ["per-7d7d7d7d", "per-7f7f7f7f"]), from);
+  const pair = await shared();
+  assert.deepEqual(pair.map((cluster: { key: string; shared: string[] }) => [cluster.key, cluster.shared]), [["shared_ground:dec-7c7c7c7c+dec-7e7e7e7e", ["per-7d7d7d7d", "per-7f7f7f7f"]]]);
+});
+
+test("a term never comes from link targets, URLs, code, sign-offs, contractions, function words or a person's name (#266)", async (context) => {
+  const dir = await freshBrain(context);
+  await put(dir, "knowledge/people/dana-reyes.md", person("per-8a8a8a8a", "Dana Reyes"));
+  const inputs: Array<[string, string, string, string]> = [
+    ["src-8b8b8b8b", "Alpha", "2026-10-20", "first"],
+    ["src-8c8c8c8c", "Beta", "2026-10-25", "second"],
+    ["src-8d8d8d8d", "Gamma", "2026-11-01", "third"],
+  ];
+  const ends = ["is ready", "gets done", "is final"];
+  for (const [index, [id, title, captured, word]] of inputs.entries()) {
+    await put(dir, `sources/text/${captured}-${title.toLowerCase()}.md`, textSource(id, title, captured), [
+      `${title} asks: if you can make sure the vendor shortlist ${ends[index]} next week.`,
+      `See [the ${word} notes](../../knowledge/people/dana-reyes.md), https://wiki.example.com/vendor-page, wiki.example.com, ops@example.com and \`brain sync now\`.`,
+      `Dana Reyes said they don't want the ${word} option.`,
+      `Plan B for the ${word} pass.`,
+      "Best regards, Northwind Support",
+      "",
+    ].join("\n"));
+  }
+  const data = await reflect(dir);
+  assert.deepEqual(data.clusters.filter((cluster: { signal: string }) => cluster.signal === "recurring_term").map((cluster: { term: string }) => cluster.term), ["vendor shortlist"]);
+});
+
 test("proposal new checks a fingerprint against its item and dedupes on it; lint checks stored ones (cli.md §5.6, §5.10)", async (context) => {
   const dir = await freshBrain(context);
   await put(dir, "knowledge/people/maria-lopez.md", person("per-2a2a2a2a", "María López"));
