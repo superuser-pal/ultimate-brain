@@ -248,21 +248,23 @@ The skill writes this body once, at create, with the markdown page write (M9, §
 
 ## 8. Module-off and unattended
 
-| Situation | Attended | Unattended (0051, 0055) |
-|---|---|---|
-| Domains off | no Domain surface | same |
-| Voice template; Tasks module off | summary written, no Task items | same |
-| Input unconfirmed | asked to confirm; blocker otherwise | skipped, Needs you |
-| Selection unreadable / stale / unmappable | blocker, explained | skipped, Needs you |
-| Confirmed, page settled ≥ 2 minutes | previewed, then ingested as the extract | ingested as the extract; the confirming-minute limit stated in the report |
-| Selection changed after ingestion (tokens only) | preview, new version, cleanup row | page settled ≥ 2 minutes: new version written, restriction and views at once, cleanup only proposed; else waits (`TOO_FRESH`) |
-| Page set back to Reviewed/Ready and the transcript changed | new version, all old paragraphs suppressed (§4.8), preview first | skipped, Needs you |
-| Item `Accept`, Decided ticked, exact, current, base unchanged, Decided at ≥ 2 min | preview, then applied | applied |
-| `Request revision`, unreadable token, missing section, `base_changed`, ambiguous edit, Accept all with an ineligible item | shown / asked | skipped, named; never interpreted |
-| Exclusion cleanup | proposed | proposed (an addition); nothing removed |
-| Tasks from excluded content | listed | listed |
-| Reports module off | reports not touched | same |
-| Legacy Fix row (old layout) | kept as it is, read by the 0045 rules (§7.9) | kept as it is |
+What an unattended run does in each of these cases is in [cli.md](cli.md) §6.1, the one authority for unattended runs (assessment finding F-0007); its third table holds the rows that were here.
+
+| Situation | Attended |
+|---|---|
+| Domains off | no Domain surface |
+| Voice template; Tasks module off | summary written, no Task items |
+| Input unconfirmed | asked to confirm; blocker otherwise |
+| Selection unreadable / stale / unmappable | blocker, explained |
+| Confirmed, page settled ≥ 2 minutes | previewed, then ingested as the extract |
+| Selection changed after ingestion (tokens only) | preview, new version, cleanup row |
+| Page set back to Reviewed/Ready and the transcript changed | new version, all old paragraphs suppressed (§4.8), preview first |
+| Item `Accept`, Decided ticked, exact, current, base unchanged, Decided at ≥ 2 min | preview, then applied |
+| `Request revision`, unreadable token, missing section, `base_changed`, ambiguous edit, Accept all with an ineligible item | shown / asked |
+| Exclusion cleanup | proposed |
+| Tasks from excluded content | listed |
+| Reports module off | reports not touched |
+| Legacy Fix row (old layout) | kept as it is, read by the 0045 rules (§7.9) |
 
 ## 9. Notion mechanisms and feasibility
 
