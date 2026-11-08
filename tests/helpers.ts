@@ -13,6 +13,26 @@ const REPO = join(import.meta.dirname, "..");
 const TOP_LEVEL = new Set(["snapshot.json", "LICENSE", "NOTICE.md", "README.md"]);
 const skillFolder = (source: string) => (path: string) => !(dirname(path) === source && TOP_LEVEL.has(basename(path)));
 
+/**
+ * Since Git 2.5x every commit starts a detached `git maintenance run --auto`, which can still be writing into `.git/objects`
+ * while a test removes its temp brain, and the removal fails with ENOTEMPTY (CC-158). Every git a test starts, directly or
+ * through the in-process CLI, inherits this environment, so automatic maintenance and gc are off for the whole test process.
+ * Added after any GIT_CONFIG_* entries already set, so those keep their meaning.
+ */
+export function disableGitAutoMaintenance(env: NodeJS.ProcessEnv = process.env): void {
+  const count = Number(env.GIT_CONFIG_COUNT ?? 0) || 0;
+  const entries: Array<[string, string]> = [["maintenance.auto", "false"], ["gc.auto", "0"]];
+  entries.forEach(([key, value], index) => {
+    env[`GIT_CONFIG_KEY_${count + index}`] = key;
+    env[`GIT_CONFIG_VALUE_${count + index}`] = value;
+  });
+  env.GIT_CONFIG_COUNT = String(count + entries.length);
+}
+disableGitAutoMaintenance();
+
+/** Removal of a test's temp folder retries a busy or still-filling directory instead of failing the test (CC-158). */
+const REMOVE = { recursive: true, force: true, maxRetries: 10, retryDelay: 50 } as const;
+
 let packageRoot: string | undefined;
 /**
  * The package as the published CLI sees it: package.json, the AGENTS.md template, and the vendored `.agents/skills/` as it is, its
@@ -21,7 +41,7 @@ let packageRoot: string | undefined;
 export async function testPackageRoot(): Promise<string> {
   if (packageRoot !== undefined) return packageRoot;
   const root = mkdtempSync(join(tmpdir(), "brain-package-"));
-  process.on("exit", () => rmSync(root, { recursive: true, force: true }));
+  process.on("exit", () => rmSync(root, REMOVE));
   cpSync(join(REPO, "package.json"), join(root, "package.json"));
   mkdirSync(join(root, "templates", "brain"), { recursive: true });
   cpSync(join(REPO, "templates", "brain", "AGENTS.md"), join(root, "templates", "brain", "AGENTS.md"));
@@ -34,7 +54,7 @@ export async function testPackageRoot(): Promise<string> {
 /** Copy the fixture brain to a temp dir that is removed after the test. */
 export async function fixtureCopy(context: TestContext): Promise<string> {
   const parent = await mkdtemp(join(tmpdir(), "brain-test-"));
-  context.after(() => rm(parent, { recursive: true, force: true }));
+  context.after(() => rm(parent, REMOVE));
   const brain = join(parent, "brain-acme");
   await cp(FIXTURE_BRAIN, brain, { recursive: true });
   // Fixtures stay product-neutral; whole-brain lint tests receive the shipped skill folders at runtime.
