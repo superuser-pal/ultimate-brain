@@ -2,6 +2,25 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.11.0 — 2026-11-08
+
+- CC-65 (#257): contracts for reflection: candidates, the proposal fingerprint, and three new lint warnings.
+- CC-66 (#260): `brain reflect --candidates` finds likely duplicates, overtaken notes, notes that may disagree and recurring terms; proposals carry a fingerprint; lint warns on orphans, oversized notes and near-duplicate names.
+- CC-67 (#262): "tidy the brain" finds contradictions, stale facts, duplicates, promotions and recurring themes, shows them in the chat and applies what you say yes to; "later" puts one in Review, and a skipped one isn't asked again until something changes.
+- CC-149 (#245): development only: an optional, tool-agnostic coordination profile for the shared skills is recorded as a deferred post-1.0 idea in the backlog.
+- CC-151 (#247): development only: the 2026-11-07 assessment's findings become tasks: all in 0.11.0: the linked-repo query fix (CC-152), one Inbox row per source after an interrupted publish (CC-153), the Notion build files in the package (CC-154), the release rule for a partial `main` (CC-155) and the first-hour guidance (CC-156).
+- CC-152 (#249): `brain query --candidates` works again in a repo linked since 0.9.0: the `skills` entry `brain link` records in `.brain` no longer makes the query refuse with "invalid format".
+- CC-153 (#251): a run that stopped between writing an Inbox row and recording it no longer creates the row a second time: the next pull recognises the row by its Brain ID, and the ingest looks a row up before creating it.
+- CC-154 (#252): the Notion checklist, build prompts, module steps and migrations install with the CLI, and every message that sends you to them names the folder on your machine.
+- CC-155 (#254): development only: a release is refused when no task row has its version, or when `main` already holds done tasks of a later release (unless `--allow-partial` with a reason), and docs/vision.md and synthesis/synthesis.md say which parts are history.
+- CC-156 (#253): `brain init` and the README say what to do next (build the Notion space from the checklist, then connect), `brain query` without `--candidates` points to the brain-query skill as the contract says, and `brain modules list` is accepted.
+- CC-157 (#255): development only: the 0.11.0 opening grill is recorded as decision 0076: reflection reports first in the chat like Ultimate Assistant, runs on demand, and leaves the weekly run to 0.13.0.
+- CC-158 (#261): development only: the tests turn off Git's background maintenance and retry removing their temp folders, so `npm test` no longer fails at random with ENOTEMPTY.
+- CC-159 (#263): `brain schedule install reflect` is refused: reflection runs only when you ask in 0.11.0, and its weekly run comes with 0.13.0's weekly review.
+- CC-160 (#265): when you settle a contradiction with a value of your own, the brain records it as your correction; choosing one of the values the notes already claim keeps that note as its source.
+
+Skills: ultimate-brain-skills 1.4.0 (sha256-44a670b2237205b1b0aa89f7eed7b0b5c0dcf05d6fbfcf97ae8bdb228300d404)
+
 ## 0.11.0-rc.1 — 2026-11-08
 
 
