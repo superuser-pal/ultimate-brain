@@ -69,6 +69,8 @@ Fields of a case in `cases.json`:
 
 A retriever can't state facts, so `unsupported` trust cases and abstention are tested only at the answer level; at the retrieval level they pass unless forbidden evidence comes back. A note returned with its excluded text blanked still counts as returned: excluded evidence must not reach the caller.
 
+**Read the retrieval gates together.** At this level the trust and unknown rules only forbid what must not come back, so a retriever that returns nothing passes every trust and unknown case. Only the answerable gate shows that it delivers anything. A retriever meets 0074 §6 only when it meets both gates on the same run; a trust result is never reported without the answerable result beside it.
+
 ### Answer level (text and citations)
 
 | Kind | A case passes when |
