@@ -1,5 +1,7 @@
 # Ultimate Brain — Research Synthesis
 
+> **History.** This is the 2026-10-11 research design, kept as it was written. For the current folder layout read [spec/schema.md §2](../spec/schema.md#2-folder-layout); the spec and the decisions after 0017 win wherever they differ from this page.
+
 **Status:** Research complete; proposed design for v1. Not implemented.
 **Date:** 2026-10-11
 **Inputs:** [vision](../docs/vision.md), decisions [0001–0017](../decisions/), reviews [01](../reviews/01-claude-obsidian.md) · [02](../reviews/02-obsidian-wiki.md) · [03](../reviews/03-obsidian-mind.md) · [04](../reviews/04-obsidian-second-brain.md) · [05](../reviews/05-llm-wiki.md), [v2 ideas](../docs/v2-ideas.md).

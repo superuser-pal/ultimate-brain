@@ -290,6 +290,43 @@ test("release 0.4.0 refuses missing task-row changelog data and invalid done suf
   }
 });
 
+test("release refuses a version no task row has, dry run or not, before any change (#250)", (t) => {
+  for (const [version, tasks] of [
+    ["0.4.1", undefined],
+    ["0.4.1", "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n\n### CX-2 · Two · `dropped`\n**Release:** 0.4.1\n**Changelog:** Two\n"],
+  ]) {
+    for (const dryRun of [true, false]) {
+      const root = temporaryRoot();
+      t.after(() => rmSync(root, { recursive: true, force: true }));
+      const path = releaseDryRun(root);
+      if (tasks !== undefined) writeFileSync(join(root, "build/TASKS.md"), tasks);
+      const result = run("release.mjs", [version, ...(dryRun ? ["--dry-run"] : [])], { root, env: { PATH: path } });
+      assert.equal(result.status, 1);
+      assert.ok(result.stderr.includes(`no task has **Release:** ${version}; merge its PR first`), result.stderr);
+      assert.equal(readFileSync(join(root, "package.json"), "utf8"), '{"name":"fixture","version":"0.0.0"}\n');
+    }
+  }
+});
+
+test("a prerelease counts the task rows of its release (#250)", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = releaseDryRun(root);
+  const result = run("release.mjs", ["0.4.0-rc.1", "--dry-run"], { root, env: { PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Would release 0\.4\.0-rc\.1 to npm@next/);
+});
+
+test("usage refuses an unknown flag and an --allow-partial without a reason", (t) => {
+  for (const args of [["0.4.0", "--force"], ["0.4.0", "--allow-partial"], ["0.4.0", "--allow-partial", "  "], ["0.4.0", "--dry-run", "--dry-run"]]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const result = run("release.mjs", args, { root });
+    assert.equal(result.status, 1, args.join(" "));
+    assert.match(result.stderr, /Usage: node scripts\/release\.mjs <version> \[--dry-run\] \[--allow-partial "<reason>"\]/);
+  }
+});
+
 test("release refuses an invalid version before mutating files", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -361,10 +398,10 @@ test("a failed publish keeps the commit and tag local and says how to finish", a
   assert.doesNotMatch(command(root, ["ls-remote", "--tags", "origin"]), /v1\.2\.3/);
 });
 
-/** A real repository for release 1.2.3 with a bare origin; `npm` is the fake npm body. Returns the PATH and the origin path. */
-function releaseRepository(t, root, npm) {
+/** A real repository for release 1.2.3 with a bare origin; `npm` is the fake npm body, `moreTasks` rows after its task. Returns the PATH and the origin path. */
+function releaseRepository(t, root, npm, moreTasks = "") {
   writeFileSync(join(root, "CHANGELOG.md"), "## 1.2.3 — unreleased\n");
-  writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done` (#1)\n**Release:** 1.2.3\n**Changelog:** One\n");
+  writeFileSync(join(root, "build/TASKS.md"), `### CX-1 · One · \`done\` (#1)\n**Release:** 1.2.3\n**Changelog:** One\n${moreTasks}`);
   writePackage(root, VENDORED);
   const path = fakeCommands(root, {
     gh: `case "$1" in
@@ -602,6 +639,44 @@ test("release refuses a version below package.json's, except a prerelease of tha
       assert.match(result.stderr, /Release refused: package\.json is already 0\.9\.2; release 0\.9\.2 or later/);
     } else assert.equal(result.status, 0, `${version}: ${result.stderr}`);
   }
+});
+
+test("release refuses a version below a done task of a later, unreleased release on main, unless --allow-partial (F-0001)", async (t) => {
+  const later = "\n### CC-2 · Two · `done` (#13)\n**Release:** 0.10.0\n**Changelog:** Two\n";
+  for (const [extra, changelog, args, refused] of [
+    [later, "# Changelog\n", [], true],
+    [later, "# Changelog\n", ["--allow-partial", "a brain needs the fix today"], false],
+    [later, "# Changelog\n", ["--allow-partial=a brain needs the fix today"], false],
+    [later.replace("Two\n", "development only: plans 0.10.0\n"), "# Changelog\n", [], false],
+    [later, "# Changelog\n\n## 0.10.0 — 2026-11-07\n\n- CC-2 (#13): Two\n", [], false],
+    [later, "# Changelog\n\n## 0.10.0 — unreleased\n", [], true],
+    [later.replace("`done` (#13)", "`review`"), "# Changelog\n", [], false],
+  ]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const path = gateDryRun(root, "0.9.3");
+    writeFileSync(join(root, "build/TASKS.md"), readFileSync(join(root, "build/TASKS.md"), "utf8") + extra);
+    writeFileSync(join(root, "CHANGELOG.md"), changelog);
+    const { env } = await integrationMock(t);
+    const result = await runAsync("release.mjs", ["0.9.3", "--dry-run", ...args], { root, env: { ...env, PATH: path } });
+    const label = `${extra.split("\n")[1]} | ${changelog.split("\n")[2] ?? ""} | ${args.join(" ")}`;
+    if (refused) {
+      assert.equal(result.status, 1, label);
+      assert.ok(result.stderr.includes('done tasks of a later release are on main: CC-2 (0.10.0); release 0.10.0 or later, or pass --allow-partial "<reason>"'), `${label}: ${result.stderr}`);
+    } else assert.equal(result.status, 0, `${label}: ${result.stderr}`);
+    if (args.length > 0) assert.match(result.stdout, /Would release 0\.9\.3, partial \(CC-2 \(0\.10\.0\) stays out\): a brain needs the fix today/);
+  }
+});
+
+test("a partial release writes its reason and what it leaves out into the release commit (F-0001)", async (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const { path } = releaseRepository(t, root, npmOwner, "\n### CC-2 · Two · `done` (#13)\n**Release:** 1.3.0\n**Changelog:** Two\n");
+  const { env } = await integrationMock(t);
+  const result = await runAsync("release.mjs", ["1.2.3", "--allow-partial", "a brain needs the fix today"], { root, env: { ...env, PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(command(root, ["log", "-1", "--format=%B"]).trim(), "1.2.3\n\nPartial release: a brain needs the fix today\nOn main and not in it: CC-2 (1.3.0)");
+  assert.doesNotMatch(readFileSync(join(root, "CHANGELOG.md"), "utf8"), /CC-2/);
 });
 
 test("releasing the version package.json already holds runs npm version with --allow-same-version (skills-delivery §9.4)", async (t) => {
