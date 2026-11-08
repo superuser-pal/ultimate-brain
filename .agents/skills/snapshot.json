@@ -1,17 +1,17 @@
 {
   "format": 1,
   "name": "ultimate-brain-skills",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "cli": ">=0.11.0-0 <0.12.0",
   "source": {
     "repository": "https://github.com/superuser-pal/ultimate-brain-skills",
-    "commit": "1c3a56903ca2636047e8af76e0a9dc8a140ab11d"
+    "commit": "4df1d73f59a45ea9d4d7ba9d941e3a565e3107c1"
   },
   "upstream": {
     "repository": "https://github.com/mattpocock/skills",
     "commit": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
   },
-  "integrity": "sha256-7c7317ffb55a13f59187533472c37a79c5d4d96915628166371ed0cec1e890fb",
+  "integrity": "sha256-44a670b2237205b1b0aa89f7eed7b0b5c0dcf05d6fbfcf97ae8bdb228300d404",
   "skills": [
     {
       "name": "brain-apply",
@@ -65,13 +65,13 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "a0470ff889b3cf699c23b24225fa96dba9d00dcf674fc22830606de3fa9ff193",
-          "bytes": 4508
+          "sha256": "2b39a3b6b52f134bdcf39362685af430ed88b5eaa769b13ea155910dd620404e",
+          "bytes": 5417
         },
         {
           "path": "references/guide.md",
-          "sha256": "0bc09d331e9890b7a563fb8c073ef3d91021602b0e213326c0671ee4684cb949",
-          "bytes": 46958
+          "sha256": "9cf72c47bcbe180aec2f68f60e5ed6070bdd3f7ae6812d09c33331545200bfa0",
+          "bytes": 50400
         }
       ]
     },
@@ -147,6 +147,29 @@
           "path": "SKILL.md",
           "sha256": "1584937346f53326a7d83dc3f9cda8445cf640578c420b8bb26d22478a966428",
           "bytes": 14781
+        }
+      ]
+    },
+    {
+      "name": "brain-reflect",
+      "targets": [
+        "brain"
+      ],
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "8adcc4d8094b9649ac554a3ee1f2cfee211bf5927dae4b7b862f95d3b1debccf",
+          "bytes": 11627
+        },
+        {
+          "path": "references/answers.md",
+          "sha256": "5876ad0cd9fb54f79e450895f2bbe2f79f48e0b45ea9004d92d9c113f572d4ca",
+          "bytes": 7645
+        },
+        {
+          "path": "references/judging.md",
+          "sha256": "3deb65bdc671fbbecf8799e8d87c33ff23df5dc9e8d1c3a6c272c35c5c745e54",
+          "bytes": 6259
         }
       ]
     },
