@@ -67,6 +67,12 @@ try {
   assert.equal(JSON.parse(lint.stdout).ok, true);
   const upgrade = await exec("npx", ["--no-install", "ultimate-brain", "upgrade", "--brain", "brain", "--json"], { cwd: temp, env });
   assert.deepEqual(JSON.parse(upgrade.stdout).data.files, []);
+  // init's human output (spec/cli.md §5.1, CC-156) names a checklist that exists in the packed install, and the connect step.
+  const told = (await exec("npx", ["--no-install", "ultimate-brain", "init", "told-brain", "--no-git"], { cwd: temp, env })).stdout;
+  assert.match(told, /ask your agent: "connect the brain to Notion"/);
+  const checklist = /follow (.+CHECKLIST\.md)$/m.exec(told)?.[1];
+  assert.equal(checklist, join(productPath, "notion", "CHECKLIST.md"));
+  await access(checklist);
   // DOCUMENTS_TURNED_ON (spec/cli.md §5.15 step 5) names a migration file that exists in the packed install.
   await exec("npx", ["--no-install", "ultimate-brain", "init", "reports-brain", "--no-git", "--json"], { cwd: temp, env });
   const reportsConfig = JSON.parse(await readFile(join(temp, "reports-brain", "brain.json"), "utf8"));

@@ -24,6 +24,10 @@ The agent skills come with it: `brain init` copies them into the brain, in `.age
 ls "$(npm root -g)/ultimate-brain/notion"   # CHECKLIST.md, prompts/, modules/, migrations/, …
 ```
 
+**Next, after `brain init`** (it prints both steps with your paths):
+1. **Build your Notion space** by following the checklist: `$(npm root -g)/ultimate-brain/notion/CHECKLIST.md`.
+2. **Connect the brain to it:** open your agent (Claude Code or Codex) in the brain folder (`cd ~/brain`) and say "connect the brain to Notion".
+
 **To ingest Word, PowerPoint, Excel and saved HTML files** (optional), install [MarkItDown](https://github.com/microsoft/markitdown), the converter the ingest uses for them (decision 0032); it is also the first choice for web pages given by URL (decision 0036). In Claude Code, PDFs and images need nothing extra. In Codex, MarkItDown also converts PDFs, and images are read with Codex's image tool.
 
 ```sh
