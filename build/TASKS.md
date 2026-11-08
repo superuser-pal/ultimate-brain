@@ -156,6 +156,7 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 **Changelog:** development only: the 0.12.0 evaluation set scores `brain recall` against the trust and answer gates.
 **Output:** an adapter in `eval/memory-0.12/adapters/` mapping the cases to `brain recall --pack` and `--search` as memory.md §8 says, and a results file with the gate figures (trust cases, answerable cases, unknown cases) and the measured tokens of every pack beside its estimate.
 **Acceptance:** the scorer runs end to end with the new adapter; the gate figures, every failure with its cause and the task that fixes it, and every pack's measured tokens beside its estimate are committed; the leak and PR format checks pass. The 100% trust gate moves to the fix tasks (CC-173, CC-174) and the release (the main session, 2026-11-08).
+**Spec questions answered (the main session, 2026-11-08):** a knowledge note with every claim restricted and nothing else left, and a provenance entry that is not a source note (a note id, `agent:…`, `notion-edit`, `user-correction:…`) read as unknown lineage, go to CC-174; live before superseded for knowledge notes in `query` goes to CC-173; unk-04 is a limit of a retrieval-only adapter (unknown cases are judged on answers), with no task.
 
 ### CC-173 · Retrieval changes chosen from CC-167's comparison (0074 §5) · `todo`
 **Release:** 0.12.0
