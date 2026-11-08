@@ -39,6 +39,7 @@ Decision 0024 lists user-facing commands. Some are skills that call the CLI; som
 | `brain notion-change` | skill (CC-11) | none |
 | run work as standard or connected (0059) | skill `brain-workflow` (CC-104) | `workflow new`, `find`, `show`, `set`, `resolve`, `item put`, `item claim`, `artifact put`, `render`, `op state`, `reconcile`, `summary`, `publish-history`; `note new`, `proposal new`, `sync render`, `sync record` for artifacts (connected-workflows.md §6.3) |
 | adopt an existing project (0059) | skill `brain-workflow-adopt` (CC-104) | `workflow adopt preview`, `workflow adopt apply`, `repo tasks` (its parsing rules), `workflow reconcile` |
+| tidy the brain: contradictions, duplicates, stale facts, themes (0052, 0076) | skill `brain-reflect` (CC-67, §6.2; also loaded by the Ultimate Assistant sub-agent) | `status`, `reflect --candidates`, `proposal new`, `apply`, `note new`, `index`, `views`, `lint`, `sync render`, `sync record`, `log` |
 | review the structure of your work (0064, 0072) | skill `ultimate-assistant` (CC-109, [assistant.md](assistant.md)) | `status`, `repo tasks`, `assistant findings`, `assistant dismiss`, `proposal list`, `proposal new`, `apply`, `proposal settle`, `note new`, `sync tasks --direct`, `index`, `views`, `lint`, `sync render`, `sync record`, `log` |
 
 ---
@@ -221,7 +222,7 @@ Write commands append to `log/<YYYY-MM>.md` (month of `--now`), creating it with
 - <timestamp> <op> <id> "<title>"[ <key>=<value>]…
 ```
 
-`"` and `\` in titles are escaped with `\`, and CR and LF become `\r` and `\n`, so every entry is exactly one line. Values with spaces, quotes, backslashes or line breaks are quoted and escaped the same way. The file is created exclusively with its header, then lines are appended; an unreadable log is an error, never a reason to start the file over. Ops written by the CLI: `init`, `note-new`, `proposal-new`, `apply`, `correct`, `sync-create`, `sync-update`, `upgrade`, `repo-add`, `repo-record`, `full-text` (before 0.6.0), `modules`, `report-new`, `report-refresh`, `report-fix`, `question-drop`, `assistant-dismiss`. Skills add their own (`ingest`, `publish`, `catch-up`, `query`, `assistant`) with `brain log` (§5.11). `index` and `views` do not log.
+`"` and `\` in titles are escaped with `\`, and CR and LF become `\r` and `\n`, so every entry is exactly one line. Values with spaces, quotes, backslashes or line breaks are quoted and escaped the same way. The file is created exclusively with its header, then lines are appended; an unreadable log is an error, never a reason to start the file over. Ops written by the CLI: `init`, `note-new`, `proposal-new`, `apply`, `correct`, `sync-create`, `sync-update`, `upgrade`, `repo-add`, `repo-record`, `full-text` (before 0.6.0), `modules`, `report-new`, `report-refresh`, `report-fix`, `question-drop`, `assistant-dismiss`. Skills add their own (`ingest`, `publish`, `catch-up`, `query`, `assistant`, `reflect`) with `brain log` (§5.11). `index` and `views` do not log.
 
 **The catch-up line (0045, 0051).** An attended catch-up logs `catch-up - notes_read=<n> seconds=<s>`. An unattended one (§6.1) logs `catch-up - mode=unattended inputs=<n> left=<n> skipped=<n> waiting=<n> failed=<n>[ failures="<reason>; <reason>"] report=<yes|no> notes_read=<n> seconds=<s>`: `inputs` taken in (failed ones included), `left` the inputs beyond the budget, `skipped` the inputs skipped for a blocker, `waiting` the decided Review rows and report What to fix left for an attended run, `failed` the steps that failed, `failures` their reasons in a few words each ("Notion login"), `report` whether it wrote a Report row. A `catch-up` line without `mode=unattended` is attended, as every line before 0.7.0 is. `brain status` reads these lines (§5.2).
 
@@ -490,7 +491,7 @@ Input keys are the proposal fields of schema §11 except `id`, `type`, `created`
 - **dedupes:** an item equal to an existing `pending` proposal on (`kind`, `target`, `field`, `after`, `content`, `note`, `supersedes`, `merge_into`) is skipped (`DUPLICATE_PENDING`), so re-running an ingest does not duplicate review rows. For `add_link`, the item's (`field`, `after`) is compared with each entry of a pending `add_link` on the same target (its `links`, or its `field` and `after` if it is an old single one). An `add_link` whose value is already listed is skipped as `{ "input_index": 2, "reason": "ALREADY_LINKED" }` (no `existing`).
 - **groups `add_link` items (0037):** after validation and dedupe, the remaining `add_link` items of the input with the same `target` and `source` become **one** proposal, in input order: `links` = their (`field`, `after`) pairs as `{field, value}`, `why` = their distinct `why` texts joined by ` · `. Every new `add_link` proposal is written with `links`, never `field` and `after`, even with a single link. Its `title` is the item's own `title` when the group has one item; for two or more, the CLI writes `<target title>: add <parts>`, where `<parts>` lists each field present, in the order `people`, `projects`, `attendees`, `deciders`, `aliases`, `tags`, as `<n> <noun> (<v1>, <v2>, <v3>, …)` joined by `, `: nouns `person`/`people`, `project`/`projects`, `attendee`/`attendees`, `decider`/`deciders`, `alias`/`aliases`, `tag`/`tags` (singular for 1); values are note titles for reference fields, else the string; at most three values, then `…`; for a single value the parentheses hold just it. Titles longer than 120 characters are cut to 119 and end with `…`. Example: `Acme website: add 2 people (Lucía Fernández, Tomás Vidal), 1 alias (acme site)`.
 
-**`review_notes` (0041, 0043).** Input: `{ "kind": "review_notes", "source": "<id>", "notes": ["dec-…", "que-…"] }`, plus optional `title` and `why`. `source` is the ingest's provenance value, as the other proposals of the ingest carry it: the meeting id for minutes, else the `src-` id. The CLI:
+**`review_notes` (0041, 0043).** Input: `{ "kind": "review_notes", "source": "<id>", "notes": ["dec-…", "que-…"] }`, plus optional `title` and `why`, and `fingerprint` and `evidence` for a reflection theme (below). `source` is the ingest's provenance value, as the other proposals of the ingest carry it: the meeting id for minutes, else the `src-` id. The CLI:
 - checks every id in `notes` exists, is a knowledge note and is not listed by another `review_notes` proposal (any status) or twice here (`INPUT_INVALID`, pointer to the entry); at most one `review_notes` per `source` in one input (`INPUT_INVALID`);
 - **folds the routine links:** every `add_link` item of the same input with the same `source` becomes an entry `{target, field, value: after}` of this proposal's `links`, in input order, instead of a grouped `add_link` proposal. Each is validated, deduped against pending `add_link` and `review_notes` proposals (`DUPLICATE_PENDING`) and skipped when already linked (`ALREADY_LINKED`) exactly as an `add_link` item; skipped items are reported and not folded. Without a `review_notes` item for their source, `add_link` items are grouped as above;
 - **folds the changes (0045):** every `update_fact`, `update_body` and `add_to_note` item of the same input with the same `source` becomes an entry of this proposal's `changes`, instead of a proposal of its own. Each is filled (`before`, `from`, `before_hash`), validated and deduped (`DUPLICATE_PENDING`, against pending proposals of its kind and the `changes` of pending `review_notes`) exactly as a standalone item; skipped items are reported and not folded. The entry keeps the item's `kind`, `target`, `why` and that kind's fields, without `title` or `source`. Entries are stored in render order (schema §11.3): every `update_fact`, then every `update_body`, then every `add_to_note`, each in input order. `contradiction`, `supersede`, `merge`, `new_item` and `answer` items are never folded: they are judgment calls and keep their own rows. Without a `review_notes` item for their source, changes are written as proposals of their own;
@@ -509,6 +510,8 @@ Input keys are the proposal fields of schema §11 except `id`, `type`, `created`
 `value_before` is the value the skill read; the CLI can't see Notion, so the stale check is the skill's when it writes (assistant.md §6.4). `value_after` equal to `value_before` → skipped, `NO_CHANGE`. Dedupe: a pending, approved or edited `notion_change` with the same `page`, `property` and `value_after` → `DUPLICATE_PENDING` (a rejected, applied or closed one doesn't block a new one). `title` defaults to `<page_title>: <Property> → <value_after as rendered>` (render's rules, §5.14.4), cut as above.
 
 **`set_field` (0072, assistant.md §6.1).** A change to a brain-owned placement field: `{ "kind": "set_field", "target": "prj-…", "field": "area", "after": "area-…", "why": "…", "source": "…", "finding": "…", "title": "…" }`. `field` is `area` on a project or `domain` on an Area (`INPUT_INVALID` otherwise); `after` an existing note of that field's type (`UNKNOWN_ID`, `INPUT_INVALID`). The CLI sets `before` to the target's current value (absent when it has none); a given `before` that differs → `BEFORE_MISMATCH`; `after` equal to it → skipped, `NO_CHANGE`. `area`, when given, an existing Area (`UNKNOWN_ID`, `INPUT_INVALID`); when not given, the target's own Area: a project's current `area`, or the Area itself. Dedupe: a pending `set_field` with the same `target`, `field` and `after` → `DUPLICATE_PENDING`. `title` defaults to `<target title>: <Field> → <after title>`.
+
+**`fingerprint` and `evidence`** (0052, 0076, schema §11.4): given together or not at all, never with `finding`, on the kind the fingerprint's finding takes (`contradiction`, `update_fact`, `merge`, `add_to_note`, `review_notes` or `new_item`); the fingerprint's parts must match the item (its `target`, `field`, merge pair, promotion `source`; a theme's `review_notes` lists exactly one note, a learned Document, and a theme's `new_item` holds one), and every `evidence` id must be a meeting or a source that exists (`INPUT_INVALID` with its pointer; `UNKNOWN_ID`). Stored as given. Dedupe: besides the rules above, an item whose fingerprint is on a `pending`, `approved` or `edited` proposal is skipped `DUPLICATE_PENDING`, naming it in `existing`. A reflection item is never folded into another `review_notes`: a theme's `review_notes` is its own row, and its `contradiction`, `update_fact`, `merge` and `add_to_note` items keep rows of their own even when an item of the same input has the same `source`.
 
 **`finding`** (any kind, optional): the Ultimate Assistant finding key the proposal comes from (assistant.md §3.3); stored as given. Every proposal Ultimate Assistant writes has the `source` `agent:ultimate-assistant/<session>`, with or without `finding`; one decided in chat before it is published never becomes a Review row (§5.14.4).
 
@@ -779,6 +782,7 @@ The skill rules (`product-file` for skills, `skills-*`, `skill-*`) have `line` 1
 | `assistant-dismissals` | error | `_assistant/dismissals.json` (when present) isn't readable JSON, fails `$defs/dismissals` of `spec/schemas/assistant.schema.json`, or repeats a `key` ([assistant.md](assistant.md) §8); `assistant findings` refuses with `DISMISSALS_UNREADABLE`. One issue per problem, at that path, line 1 |
 | `suppression-record` | error | a file of `_suppressions/` (or the folder) cannot be read or is malformed (0055, capture-and-review §5.3); retrieval commands refuse with `SUPPRESSIONS_UNREADABLE` |
 | `proposal-items` | error | a `review_notes` `items` list that does not give every note, link and change exactly one immutable `it-` id, an item that refers to something the proposal does not hold, or an `item_decisions` entry that names no item or repeats one (0055, capture-and-review §7.2) |
+| `proposal-fingerprint` | error | a proposal's `fingerprint` that doesn't match it (schema §11.4): its `target`, `field`, merge pair (`target` and `merge_into`, different and sorted), a promotion's `source`, a theme's one learned Document; or an `evidence` id that names no meeting or source (0052, 0076) |
 | `extract-passages` | error | an extract source's `passages` does not list the `<!-- passage ¶n -->` paragraphs of its body in order, or a paragraph no longer matches its 8-hex hash (0055, capture-and-review §4.5) |
 | `passage-ref` | error | a `^[src-…#¶n:hash]` in a note body names a source that is not an extract, a passage it does not hold, or the wrong hash; or a note lists an extract in `sources` but cites none of its passages (0055, capture-and-review §5.1) |
 | `update-body` | error | an `update_body` proposal, or an `update_body` entry of a `review_notes`'s `changes`, whose target isn't a `reference` (0045) or is a `promoted` one (0049) |
@@ -791,6 +795,9 @@ The skill rules (`product-file` for skills, `skills-*`, `skill-*`) have `line` 1
 | `skills-update-available` | info | the pin is `pinned` or `drift` (lint doesn't tell them apart) and the package snapshot is compatible and has the pin's name with a higher version, or another name: `<package name> <version> is available (pinned: <name> <version>); run brain upgrade` |
 | `skill-duplicate` | error | a folder of a tree other than `N/` whose `SKILL.md` names a checked skill `N` (skills-delivery §5.2): `<path> also defines skill <N>; remove it, the pinned copy is <tree>/<N>` |
 | `skill-competing` | warning | a global copy (`~/.claude/skills/N`, `~/.agents/skills/N`, `~/.codex/skills/N`, any entry type) or the retired plugin enabled in `~/.claude/settings.json` or the brain's `.claude/settings.json` (skills-delivery §5.2). Paths keep the literal `~/`; without `HOME` the home checks are skipped |
+| `orphan` | warning | a `reviewed` knowledge note other than a domain, area, goal, project, meeting or memory, with no `area` and no `projects`, that no other knowledge note references or links (its id in any frontmatter field, a relation, or a body link to its file); proposals, views and sources don't count: `nothing links to it and it has no project or area` (0052) |
+| `note-size` | warning | a knowledge note whose body is over 10 KB (10,240 bytes of UTF-8): every knowledge type except Documents (`reference`) whose `origin` is `whole`, `part` (or absent) or `workflow`, which hold whole texts on purpose; learned and promoted Documents are checked, since they hold the brain's or the user's own text (0076 §7). Sources aren't knowledge notes and aren't checked |
+| `near-duplicate` | warning | a pair the `near_duplicate` signal finds (§5.32: one type, `draft` or `reviewed`, the same types left out, a name of one matching a name of the other), unless the pair's `merge:` fingerprint is held (schema §11.4: waiting in Review, or skipped): one warning per pair, at the path of the note whose path sorts first, `may be the same <type> as "<title>" (<path>)` naming the other (0052) |
 | `unknown-key` | warning | frontmatter key that the type's schema does not declare: the core fields, plus the knowledge fields (knowledge types), plus the type's own fields. `why` on a person is unknown |
 | `freshness` | warning | schema §10 |
 | `summary-length` | warning | summary longer than 200 characters |
@@ -1134,7 +1141,7 @@ Builds Notion payloads; writes nothing. With `--plan`, every property named by a
 - notes of a published type (area, goal, project, person, org, decision, question, reference) with no `notion`, unless its module is off (schema §12, 0048: goals with Planning, orgs with Orgs, decisions and questions with Knowledge, references, learned ones included, with Documents, 0071) or it is unpublished (above). A `type: concept` note left before `brain upgrade` is never published (lint `concept-retired`);
 - sources of every kind except `minutes` with no `notion` (0037: the Inbox). On the first run after the upgrade to 0.3.0 this selects every such source already in the brain, so the Inbox History fills with no migration;
 - notes, meetings and sources (with `notion`) where any rendered property's B differs from S, or the page content changed (B of `@content` ≠ S);
-- proposals with no `notion`, or whose State (or another rendered property) differs from S; except a proposal whose `source` starts with `agent:ultimate-assistant/`, that has no `notion` and whose `decision.decided_by` is `chat`: a change Ultimate Assistant made after a yes in chat never becomes a Review row ([assistant.md](assistant.md) §6.2), with `--changed` or `--ids` (`--ids` lists it in `skipped`, reason `DECIDED_IN_CHAT`);
+- proposals with no `notion`, or whose State (or another rendered property) differs from S; except a proposal whose `source` starts with `agent:ultimate-assistant/`, or that has a `fingerprint` (a reflection answer, schema §11.4), that has no `notion` and whose `decision.decided_by` is `chat`: a change Ultimate Assistant made after a yes in chat never becomes a Review row ([assistant.md](assistant.md) §6.2), and neither does a reflection yes or skip (§6.2), with `--changed` or `--ids` (`--ids` lists it in `skipped`, reason `DECIDED_IN_CHAT`);
 - with Reports on, reports (views with `view_kind: report`) with no `notion`, and published reports whose body, `fixes` count or any rendered property changed since S (0043, 0045). The first render on 0.9.1 therefore updates every published report once: Origin and Asked in are new names, so S holds neither (0071);
 - published proposals that are `applied` or `closed`, decided more than 30 days before `--now`, and not yet trashed (0045; see **Leaving Review** below).
 
@@ -1677,12 +1684,17 @@ The only writer of an extract. **Identity:** `--page` is the Notion page id of t
 | **Apply in chat** | `proposal list --status pending` → ask → `apply` with `decided_by: chat` → `index` → `views` → `lint` → commit. The next sync publishes the change |
 | **Sync** (CC-08) | as §5.14 |
 | **Query** (CC-10) | `query --candidates` → read the top notes → answer with citations → `log query - notes_read=<n> seconds=<s>` (0045) |
+| **Reflect** (0052, 0076) | `status` → `reflect --candidates` → the skill judges each cluster → the report, 10 findings at a time → per answer: yes (`proposal new` + `apply`, decided in chat), later (`proposal new`), skip (`proposal new` + `apply` reject) → `index` → `views` → `lint` → commit → at the end, `sync render --changed` + MCP → `sync record` → commit → `log reflect …`. Attended only. §6.2 |
 
 A run never leaves lint errors it introduced: if `lint` reports new errors after a write, the skill stops before committing and reports them.
 
 ### 6.1 Catch up unattended (0051)
 
 The skill brain-catch-up, started by the prompt `catch up unattended` (a schedule, §5.21, or the user by hand). It is **Catch up** above, in one turn, with nobody to ask: the read-only pass runs as usual, then each question of the batch takes its default or skips its input, and the run goes on. It applies the user's explicit decisions, interprets no text the user wrote, and decides nothing itself (0003 as amended by 0051). The 5-minute bar (0043) doesn't apply; the budget does.
+
+**The one authority (assessment finding F-0007).** This section is the only place that says what an unattended run does. Its three tables below cover every question of the batch, every kind of decided row and Notion edit, and every selected input, Review item and module case of capture-and-review §4 to §8 (that file's §8 points here). The unattended tables in the skills (brain-catch-up's "One batch of questions" and its references) are renderings of these: where one differs, this section governs and the skill is corrected in the fork. A case none of the tables names is treated as a question with no default: the run skips that input and names it under Needs you.
+
+**Reflection runs attended only** in 0.11.0 (0076 §5): `catch up unattended` never runs brain-reflect, and no table here has a reflection row. 0.13.0's weekly brief adds them (CC-111, 0075).
 
 **Sequence.** read-only pass (as **Catch up**; a failed read, such as an expired Notion login, is a failure: the parts that need it are skipped, the rest goes on) → if nothing is waiting and nothing failed, stop: **no commit, no Notion call, no log line** → `proposal backlog` → `sync apply --input plan.json --skip-conflicted` (without `--record-only`) → the inputs within the budget, oldest first, each as **Ingest one meeting** or **Ingest a …** → `note new` per `document_requests` and `promote_requests` → with Reports on, `report new` with `refresh` per report to refresh (the table below: `refresh_requests` and the reports whose fixes are all decided; none for a report with a `report_fixes` item) and **Report** per Ask row → `views` → with `settings.publish: auto`, `sync render --changed --plan plan.json --skip-conflicted` + MCP → `sync record` → commit, and the boxes cleared → with Reports on and something for the user (below), the Report row → `log catch-up - mode=unattended …` (§3.9) → commit → push per `settings.push`.
 
@@ -1731,6 +1743,24 @@ A request that asks no question runs as attended: a re-read, a `document_request
 | `ignored` (`NOT_CORRECTABLE`, `ALREADY_TERMINAL`, `MODULE_OFF`, …) | nothing, as attended; `NOT_CORRECTABLE` is named under Check |
 | Chat decisions | none: nobody is in the chat |
 
+**Every selected input, Review item and module case** (capture-and-review §4 to §8, 0055; moved here from capture-and-review §8, where the attended column stays):
+
+| Situation | Unattended |
+|---|---|
+| Domains off | no Domain surface, as attended |
+| Voice template; Tasks module off | summary written, no Task items, as attended |
+| Input unconfirmed | **skip** the input; named under Needs you |
+| Selection unreadable, stale or unmappable | **skip** the input; named under Needs you |
+| Confirmed, the page settled for at least 2 minutes | **ingested** as the extract; the report states the confirming-minute limit |
+| Selection changed after ingestion (tokens only) | the page settled for at least 2 minutes: the new version is written, its restriction and views at once, and the cleanup only proposed; otherwise it **waits** (`TOO_FRESH`) |
+| Page set back to Reviewed or Ready, and the transcript changed | **skip** the input; named under Needs you |
+| A Review item: Accept, Decided ticked, exact, current, base unchanged, Decided at at least 2 minutes old | **applied**: the `review_decisions` row of the table above |
+| A Review item: Request revision, an unreadable token, a missing section, `base_changed`, an ambiguous edit, or an Accept all with an ineligible item | **waits**, named, never interpreted: the `review_revisions` row of the table above |
+| Exclusion cleanup | **proposed** (an addition); nothing removed |
+| Tasks from excluded content | listed, as attended |
+| Reports module off | reports not touched, as attended |
+| Legacy Fix row (old layout) | kept as it is, as attended |
+
 0051 also lists "an Edit with a value" as applied. Since migration 0009 a Review row has no such option (Edit became Fix, whose What to fix needs reading), so nothing of that kind reaches an unattended run: an `edit` with a `value` is passed to `brain apply` only in chat, by an attended run.
 
 **The budget.** `settings.unattended.max_inputs` (default 10, schema §12) counts inputs: each Reviewed meeting, each Ready Inbox row (its attachments with it), each drop-folder file and each changed file of a linked repo. They are taken oldest first, by the meeting's Date, the row's created time, the drop-folder file's modified time, the repo file's `committed_at`. Skipped inputs don't count; failed ones do. A repo whose files didn't all fit gets no `repo record`: the next run lists them again, and the ones already in skip as `DUPLICATE_SOURCE` (sources.md, "Linked repos", step 4). An input whose source the brain already has (`note new --dry-run` reports `DUPLICATE_SOURCE`: a repo file taken by an earlier run, or a row an earlier run wrote but didn't publish) is not an input again and isn't counted; a row or meeting waits for the publish. The inputs beyond the budget are `left`, named in the report ("4 more wait for the next run"), and taken by the next run. Requests (Documents, promotions, refreshes, Ask rows, the backlog) aren't inputs and aren't counted. When `brain status` gives `unattended.backlog: true`, the report says "Backlog growing: run more often or raise the budget".
@@ -1743,6 +1773,76 @@ A request that asks no question runs as attended: a re-read, a `document_request
 - with Reports off or `publish: ask`, nowhere else: what needs the user waits where they act on it (the meeting Reviewed, the row Ready, the Fix in Review), and the next attended catch-up opens with the summary below. The skill's "Run on a schedule" section says so when it sets a schedule (CC-64): the summary row needs Reports on and `publish: auto`.
 
 **The next attended catch-up** opens with the summary of the unattended runs since the last attended one, from `brain status` `unattended.catch_up` (§5.2), before its batch: "Since last time: 4 scheduled runs, 6 inputs in, 1 skipped, 1 Fix waiting, 1 failed: Notion login". Nothing when `catch_up` is `null`. Its own log line has no `mode`, which starts the count again.
+
+### 6.2 Reflect (0052, 0076)
+
+The skill brain-reflect, started when the user asks: "tidy the brain", "what's inconsistent?", "any duplicates?". It reports first in the chat and changes nothing without a yes, as Ultimate Assistant does (0072): each finding comes with a recommendation, and the user says **yes** (applied now), **later** (a Review row) or **skip** (0076 §1). Every answer is a proposal carrying the finding's fingerprint (schema §11.4), so Git says what changed and why, and a skip is remembered. It runs **on demand only** (0076 §5, §6.1).
+
+**1. Candidates.** `brain status` (modules, a dirty tree), then `brain reflect --candidates` (§5.32).
+
+**2. Judging.** The skill reads each cluster, in rank order: its members and its inputs (their `path`s, and the notes they link when it needs them). It writes **zero or more findings** per cluster, each of one kind, with the proposal a yes writes:
+
+| Finding | From | What it is | The proposal (§5.6, schema §11.2) |
+|---|---|---|---|
+| Contradiction | `shared_ground`, `overtaken` | two claims about one fact that can't both hold, where the brain can't tell which is current: a member's `facts.<field>` and the other member, or an input | `contradiction` on the note that holds the fact: `field`, `after` = the other claim; `source` = the other member, or the input (schema §11.4) |
+| Stale fact | `overtaken` | an input says a fact of the note has changed since it was written | `update_fact`: `field`, `after` = the new value, `source` = that input |
+| Duplicate | `near_duplicate` | the two notes are one thing | `merge`: `merge_into` = the survivor (the `reviewed` note over a `draft`, then the one more knowledge notes reference, then the older `created`, then the lower id), `target` = the other; `title` = `Merge <target title> into <survivor title>` |
+| Promotion | `overtaken` | an input states a lasting rule, a commitment or a constraint that belongs on the note (a project or an Area) | `add_to_note`: `content` = the text to add, ending with the input's title and date in parentheses; `source` = that input |
+| Theme | `recurring_term` | the inputs discuss a subject the brain has no note for | a draft learned Document (schema §4 reference: `origin: learned`, `sources` = the inputs that discuss it, `area` and `projects` when they agree), in its own `review_notes` whose `source` is the newest input (0076 §4) |
+
+- A disagreement that no fact holds (two bodies that say different things) gives no contradiction in 0.11.0: the proposal kinds can't express it. A cluster that shows nothing wrong gives no finding.
+- **Held findings.** A finding whose fingerprint is in its cluster's `held` is dropped. A released skip (schema §11.4) is proposed again only when the new input bears on that field (for a promotion, on that rule); otherwise it is dropped too, and nothing is written.
+- `why` is the evidence in one sentence, quoting the input ("Acme sync, 3 Nov: María left Acme in June"). Every proposal also has `fingerprint` and `evidence` (schema §11.4).
+
+**3. Ranking.** Findings by kind, in 0052's order of severity (contradictions, stale facts, duplicates, promotions, themes), then by their cluster's `rank`, then in the order the skill found them. They are numbered from 1 for the whole session: a number names the same finding until the session ends.
+
+**4. The report** shows the first 10 (0076 §2). Layout (normative):
+
+```text
+Tidy the brain · 8 Nov 2026
+Read 412 notes, and 37 meetings and sources from the last 30 days.
+
+1. Contradiction · Acme website (project) · launch date 2027-01 here; "Launch Acme website in February" says 2027-02
+   which holds? a) 2027-02  b) 2027-01  c) another value
+2. Stale fact · María López (person) · role "PM at Acme"; Acme sync, 3 Nov: "María left Acme in June"
+   a) set role to "former PM at Acme (left in June 2026)"
+3. Duplicate · M. Lopez and María López (people) · the same name once initials are ignored
+   a) merge M. Lopez into María López
+4. Promotion · Acme website (project) · Acme sync, 3 Nov: every release needs legal's sign-off
+   a) add to the project: "Every release needs legal's sign-off (Acme sync, 3 Nov 2026)."
+5. Theme · pricing tiers · in 4 meetings and sources, and no note has it
+   a) draft a Document on pricing tiers
+
+12 more. Say "more".
+Answer "yes 2, 3", "1a" for the value that holds, "later 4", "skip 5 because …", or "done".
+```
+
+- Line 1: `Tidy the brain · <D Mon YYYY>` (the UTC date of `as_of`). Line 2: `Read <read.notes> notes, and <read.inputs> meetings and sources from the last 30 days.` (singular for 1).
+- A blank line, then one block per finding: `<number>. <Kind> · <subject> · <evidence>`, then one line indented three spaces with its recommendations, `<letter>) <label>` joined by two spaces. Kinds: `Contradiction`, `Stale fact`, `Duplicate`, `Promotion`, `Theme`. Subject: `<title> (<type>)`, with the type as the user sees it (`project`, `person`, `org`, `decision`, `Document`…); a duplicate `<target title> and <survivor title> (<type, plural>)`; a theme its term as the inputs write it. The evidence is the skill's words, one line, at most 160 characters.
+- Recommendations: a contradiction starts with `which holds?` and gives the values, newest claim first, then `another value`; a stale fact gives the new value; a duplicate names the survivor; a promotion shows **the whole text** it adds (0076 §1); a theme `draft a Document on <term>`.
+- After the blocks, a blank line, then `<n> more. Say "more".` when there are more (findings judged and not shown, plus `, and more to check` when clusters beyond the page are still unjudged), and always the answer line.
+- **Nothing found:** after line 2, a blank line and `Nothing to tidy.`
+
+**5. The answers** (0076 §1, §2):
+- **"yes N"** applies finding N's recommendation `a`, **"yes Nb"** its `b`; "yes 1, 3" each; **"yes to all"** every recommendation `a` of the last report. **A contradiction is never applied on a bare yes:** "yes 1" (or "yes to all" reaching it) makes the skill ask which value holds, and nothing is applied for it until the user picks one ("1a") or gives their own ("1: 2027-03"). Any finding takes a value of the user's own instead of its recommendation ("2: Head of Ops at Quayside", "3: keep M. Lopez").
+- A yes writes `proposal new` with the finding's proposal, then `apply` with `{ proposal, action, decided_at: <now>, decided_by: "chat" }`: `approve` for the recommendation; `fix` with `fixes: [{ value }]` and `note` = the user's words for a value of their own or a contradiction's chosen value (schema §11.3; a contradiction fixed to a value no claim holds is attributed to the user, schema §11.2). **A theme** isn't applied: a yes writes the draft with `note new`, then its `review_notes` with `proposal new`, and the user reviews the Document as any new note (0076 §4).
+- **"later N"** writes the proposal and no decision: it is `pending` and becomes a Review row at the end of the session. For a theme, "later" is the same as a yes: the draft is reviewed in Review either way. Review rows come only from "later", so 0052's cap of 10 rows per run is gone (0076 §2).
+- **"skip N"** (with "because …" or not; the skill doesn't ask why) writes the proposal and rejects it in chat: `apply` with `action: "reject"`, `note` = the reason when given. It is never published (§5.14.4). A theme's skip is a `new_item` holding the Document it would have drafted: title, summary, `origin: learned`, `sources`, a one-line body. How long a skip lasts depends on the kind (schema §11.4).
+- **A finding already proposed.** When `proposal new` skips the item `DUPLICATE_PENDING` (an earlier "later" of this session, or a Review row still pending), the `existing` proposal is decided instead: a yes approves or fixes it, a skip rejects it.
+- **"more"** shows the next 10 judged findings; when they run out and `total` is beyond the page, `reflect --candidates --offset <offset + limit>` is run and judged first (step 2), continuing the numbers. **"done"** ends the session.
+- A finding the user doesn't answer writes nothing; it can come back next time.
+
+**6. After the answers.** After each answer that wrote: `brain index`, `brain views`, `brain lint`, commit (`reflect: <what changed>`). At "done": when anything changed or a Review row waits, `brain sync render --changed` and the MCP, then `brain sync record`, commit, with `settings.publish` as an attended catch-up uses it (`auto` publishes; `ask` asks once), then push per `settings.push`. The proposals decided in chat aren't rendered (§5.14.4); the changed notes, the drafts and the "later" rows are.
+
+**7. Closing summary.** One line: `Done: <n> changed, <n> Review rows, <n> skipped, <n> drafted.` (parts at 0 left out; `Nothing changed.` when all are 0). **changed** counts the proposals applied after a yes, **Review rows** the "later" proposals, **skipped** the skips written, **drafted** the theme Documents written.
+
+**8. The log.** One line at the end: `reflect - clusters=<total> findings=<n> shown=<n> applied=<n> proposals=<n> skipped=<n> drafted=<n> notes_read=<n> seconds=<s>`: `clusters` is the first `reflect --candidates` call's `total`, `findings` the findings judged, `shown` those the reports showed, and the next four the closing summary's counts.
+
+**The Ultimate Assistant sub-agent loads brain-reflect too** (0076 §8), so "tidy the brain" works in the same chat as "review my projects" ([assistant.md](assistant.md) §10). Asked with `report only`, it returns the report above as its whole answer and changes nothing; the session that called it runs its own session of the skill when the user wants to act, and the user's numbers refer to that report.
+
+**In the brain's files** (CC-67): the brain's `AGENTS.md` operations table gains the row "tidy the brain: contradictions, duplicates, stale facts and recurring themes in your notes | `brain-reflect`", and the sub-agent's text names the skill (assistant.md §10).
+
+**Not in 0.11.0:** a schedule, an unattended run, and the light pass inside catch-up (0052) that 0075 §4's targeted check after an approved correction replaces (0076 §5).
 
 ### Domains (0055)
 
@@ -2025,3 +2125,69 @@ Exit 0, findings or not. Errors: `INPUT_UNREADABLE`, `INPUT_INVALID`, `UNKNOWN_I
 It reads `_assistant/dismissals.json` (`DISMISSALS_UNREADABLE` when it exists and is damaged), drops every entry whose `until` is at or before now (`--now`), then per item: a new key is `added`, an existing one `replaced` (new `reason`, `dismissed_at` and `until`), a `remove` deletes the entry (`removed`, or `unchanged` when there is none). `dismissed_at` is now and `until` now plus 30 days, both with seconds and `Z`. It writes the file atomically (creating `_assistant/`) in the format of assistant.md §8, or deletes it when no entry is left. Logs `assistant-dismiss - key=<key> result=<result>` per item.
 
 `data` = `{ "path": "_assistant/dismissals.json", "items": [ { "key": "…", "result": "added" | "replaced" | "removed" | "unchanged", "until"?: "…" } ], "pruned": <n> }`. Exit 0. Errors: `INPUT_UNREADABLE`, `INPUT_INVALID`, `UNKNOWN_ID`, `DISMISSALS_UNREADABLE`.
+
+### 5.32 `brain reflect --candidates` (0052, 0076)
+
+```text
+brain reflect --candidates [--limit <n>] [--offset <n>]
+```
+
+The deterministic half of reflection: it finds **clusters**, places in the brain where something may be wrong, and the skill brain-reflect reads each one, judges it and talks with the user (§6.2). It writes nothing. `brain reflect` without `--candidates` is `USAGE` with the message `brain reflect requires --candidates; use the brain-reflect skill to tidy the brain`; an extra argument is `USAGE` (`Unexpected argument: <it>`). `--limit` is an integer from 1 to 100 (default 30) and `--offset` an integer of at least 0 (default 0), else `USAGE`.
+
+**Terms (normative).**
+- **Input:** a meeting, or a source of any kind except `minutes` (a meeting's minutes source is that meeting, so it counts once). An input's **date** is a meeting's `date`, or the UTC date of a source's `captured`; its **created** is its own `created`. Its **text** is its title, its `summary` and its body lines.
+- **The window:** the inputs whose date is within the 30 days that end on `--now`'s date, both ends included (0052; fixed, not a setting).
+- **Restricted evidence** (0076 §6): §5.13's rule holds throughout, exactly as `query` applies it. A source it leaves out (an older version or a full copy of a changed input) is no input; a blanked line is no text; a note it leaves out whole is never a member and gives no names; a timeline entry or fact it drops is not read. An unreadable suppression record fails the command with `SUPPRESSIONS_UNREADABLE`.
+- **Tokens:** §5.13 step 1's normalization (NFKD, combining marks dropped, lowercase, split on runs outside `[a-z0-9]`), keeping every token, stopwords and single letters included.
+- **Names of a note:** its `title` and each of its `aliases`. **Two names match** when they have the same number of tokens, at each position the two tokens are equal or one is a single letter equal to the other's first letter, and at least one position has equal tokens of two or more letters: `María López` and `M. Lopez`, `Acme Corp.` and `ACME corp`; not `Maria` and `Maria Lopez`, nor `M. L.` and `Mark Lee`.
+- **An input names a note** N when its frontmatter holds N's id (any field), its body links N's file, or its title or a body line holds the tokens of one of N's names consecutively (a one-token name only when that token has 3 or more characters).
+- **References of a note:** the note ids in its frontmatter (relations' targets included) except in `id`, `sources` and `area`, plus every note whose file its body links; its own id is never one.
+- **A term:** a run of 2 or 3 consecutive tokens within one line of an input's text (its title, its summary, or one body line), whose first and last tokens are not stopwords of §5.13 step 1, and none of whose tokens is only digits. Its text is its tokens joined by one space (`pricing tiers`), its slug the same joined by `-` (`pricing-tiers`). A note's name **carries** a term when the term's tokens appear consecutively among the name's tokens.
+
+**Signals (normative; the names are stable).**
+
+| Signal | A cluster | Members | Evidence | Findings it can give (§6.2) |
+|---|---|---|---|---|
+| `shared_ground` | two `reviewed` notes, neither a meeting, at least one of them `updated` within the window, with two or more references in common | the pair | none; `shared` lists the common references | contradiction |
+| `overtaken` | one `reviewed` note, not a meeting, not a Document whose `origin` is `whole`, `part` (or absent) or `workflow`, named by one or more window inputs that aren't in its `sources` and whose date is after its `updated` | the note | those inputs | stale fact, contradiction, promotion |
+| `near_duplicate` | two notes of one type, each `draft` or `reviewed` (drafts only here, 0052), a name of one matching a name of the other; not meetings (a recurring meeting repeats its title), not domains, areas, goals or projects (Ultimate Assistant's `project_duplicate` covers the structure of your work, 0064's boundary), not Documents whose `origin` is `whole`, `part` (or absent) or `workflow` (one source's whole text and its parts share a title on purpose) | the pair | none; `names` gives the two matching names | duplicate |
+| `recurring_term` | a term in the text of three or more window inputs that no knowledge note's name carries (any lifecycle: a draft or an archived note that carries it counts) | none | those inputs | theme |
+
+A note is in as many clusters as it qualifies for. Three notes whose names match are three `near_duplicate` pairs. A term whose inputs are exactly those of a longer term that contains it is no cluster: only the longer one is.
+
+**Holds** (schema §11.4). A `near_duplicate` cluster whose `merge:<pair>` fingerprint is held, and a `recurring_term` cluster whose `theme:<slug>` fingerprint is held, are left out and counted in `held`. A `shared_ground` or `overtaken` cluster is returned with `held`: every held fingerprint of a `contradiction`, `stale` or `promotion` whose target is one of its members, so the skill doesn't propose that finding again.
+
+**Order and the page.** By signal, in the table's order (0052's severity: contradictions, then stale facts and promotions, then duplicates, then themes); within a signal, `shared_ground` by the number of common references, `overtaken` and `recurring_term` by the number of inputs, both descending; then by the newest date among its members' `updated` and its inputs' dates, descending; then by `key`. `total` counts every cluster after the holds; `clusters` holds the ones ranked `--offset` + 1 to `--offset` + `--limit`, each with that `rank`.
+
+```json
+{ "data": {
+    "as_of": "2026-11-08T10:00:00Z",
+    "window": { "from": "2026-10-10", "to": "2026-11-08" },
+    "read": { "notes": 412, "inputs": 37 },
+    "total": 18, "held": 2, "offset": 0,
+    "clusters": [
+      { "rank": 1, "key": "shared_ground:dec-2p9f6h1r+prj-9x4t1b7e", "signal": "shared_ground",
+        "notes": [
+          { "id": "dec-2p9f6h1r", "type": "decision", "title": "Launch Acme website in February", "path": "knowledge/decisions/2026-11-03-launch-acme-website-in-february.md", "lifecycle": "reviewed", "updated": "2026-11-04", "summary": "…" },
+          { "id": "prj-9x4t1b7e", "type": "project", "title": "Acme website", "path": "projects/acme-website/project.md", "lifecycle": "reviewed", "updated": "2026-10-02", "summary": "…" } ],
+        "shared": ["org-6d1f9z3k", "per-3h8w2n6c"], "held": [] },
+      { "rank": 2, "key": "overtaken:per-3h8w2n6c", "signal": "overtaken",
+        "notes": [ { "id": "per-3h8w2n6c", "type": "person", "title": "María López", "path": "knowledge/people/maria-lopez.md", "lifecycle": "reviewed", "updated": "2026-09-14", "summary": "…" } ],
+        "evidence": [
+          { "id": "mtg-8c4n2p7w", "type": "meeting", "title": "Acme sync", "path": "knowledge/meetings/2026-11-03-acme-sync.md", "date": "2026-11-03", "created": "2026-11-03",
+            "lines": [ { "line": 14, "text": "María left Acme in June; Tomás now leads the account." } ] } ],
+        "held": [ { "fingerprint": "contradiction:per-3h8w2n6c:role", "state": "skipped", "proposal": "prp-2r9c5w8n" } ] },
+      { "rank": 9, "key": "near_duplicate:per-3h8w2n6c+per-4t7x2c9m", "signal": "near_duplicate",
+        "notes": [ "…the two notes, as above…" ], "names": ["María López", "M. Lopez"], "fingerprint": "merge:per-3h8w2n6c+per-4t7x2c9m" },
+      { "rank": 14, "key": "recurring_term:pricing-tiers", "signal": "recurring_term", "notes": [],
+        "term": "pricing tiers", "fingerprint": "theme:pricing-tiers", "evidence": [ "…four inputs…" ] }
+    ]
+} }
+```
+
+- `key` is `<signal>:<member ids, sorted, joined by +>`, or `recurring_term:<slug>`. `notes` are the members, sorted by id (`summary` as §5.13 restricts it). `names` is in the order of `notes`.
+- `evidence` lists **every** input of the cluster, by date descending, then id; the skill copies its ids into the proposal's `evidence` (schema §11.4). `lines`: up to 3 body lines that name the member (`overtaken`) or hold the term (`recurring_term`), trimmed to 200 characters; `[]` when only the title, the summary or the frontmatter does.
+- `fingerprint` is the cluster's own finding's, on `near_duplicate` and `recurring_term`. `held` (on `shared_ground` and `overtaken`): `{ fingerprint, state: "waiting" | "skipped", proposal }`, where `proposal` is the latest proposal with that fingerprint; sorted by fingerprint.
+- `read.notes` counts the knowledge notes read, `read.inputs` the inputs in the window.
+
+Exit 0, clusters or not. Errors: `USAGE`, `SUPPRESSIONS_UNREADABLE`.
