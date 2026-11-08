@@ -103,14 +103,14 @@ Opening recall runs only when `settings.recall` is `opening` (schema §12) **and
 ### 5.1 Selection (normative)
 
 1. **Memories:** the eligible ones (§2), ranked by 0009: `project`, then `area`, then `stack`, then `general`; within a level, by relevance to `--task` when given (§5.4), then by `updated`, newest first, then by `id`.
-2. **Work:** when the caller's folder has a `brain-kit.json` whose `tasks.mode` is `tracked-in-repo` and whose source is `markdown`, the items of that file whose status meaning is `in_progress` or `review` (the kit's `status_map` over §2.4's defaults, linked-repos.md §2.4), in file order. Each is its item key, title, raw status, and its **stopped line**: the first line after the item's line, before the next item or heading, that starts with `**Stopped:**`, without that prefix, trimmed to 300 characters. Without such a kit there is no work section, and the agent reads its task records itself (§4.1). A kit that isn't valid (linked-repos.md §2) or a task file that can't be read leaves `work` empty and sets `work_unread` to that file's repo-relative path (else `null`); it is no error, since the memories still help.
+2. **Work:** when the caller's folder has a `brain-kit.json` whose `tasks.mode` is `tracked-in-repo` and whose source is `markdown`, the items of that file whose status meaning is `in_progress` or `review` (the kit's `status_map` over §2.4's defaults, linked-repos.md §2.4), in file order. The task file is read from the working tree, like the kit, not from `HEAD`: a `**Stopped:**` line is often not committed yet. Each item is its item key, title, raw status, and its **stopped line**: the first line after the item's line, before the next item or heading, that starts with `**Stopped:**`, without that prefix and trimmed, then cut to its first 300 characters and trimmed again. Characters are counted in Unicode code points here and in §5.3, so a cut never splits one. Only the lines §2.4 reads count (a line in a fenced code block is skipped), and a heading is a line matching `^#{1,6}\s`. Without such a kit there is no work section, and the agent reads its task records itself (§4.1). A kit that isn't valid or a task file that can't be read leaves `work` empty and sets `work_unread` to that file's repo-relative path (`brain-kit.json`, or the task file's `path`; else `null`); it is no error, since the memories still help. Valid means linked-repos.md §2's checks: the JSON Schema, the pattern, `never_read` and the ids in the brain; the `/name` checks don't apply, since the pack reads no `repos` entry.
 3. The pack holds work first, then memories, each whole, in that order, while the next item fits in the budget (§5.2). An item that doesn't fit is left out whole, never cut; the items after it are still tried. Every left-out item is counted in `omitted`.
 
 ### 5.2 The token budget
 
 The budget is **800 tokens** by default (`--budget <n>`, an integer from 200 to 4000), for the whole delivered text: the framing lines and every item (0074 §3).
 
-The CLI counts with a fixed estimate: **tokens = ⌈UTF-8 bytes ÷ 3⌉**, summed over the delivered `text`. The estimate is a guard, not evidence (0074 §3): the **measured** count decides. The evaluation (CC-165, CC-167) measures every delivered `text` with one named tokenizer and reports both numbers; the measured count must stay within the budget. If it ever doesn't, the divisor gets smaller, never the budget larger (0074 §6).
+The CLI counts with a fixed estimate: **tokens = ⌈UTF-8 bytes ÷ 3⌉**, one count over the whole delivered `text`, its LF separators included. An item fits when the `text` with its line added stays within the budget. The estimate is a guard, not evidence (0074 §3): the **measured** count decides. The evaluation (CC-165, CC-167) measures every delivered `text` with one named tokenizer and reports both numbers; the measured count must stay within the budget. If it ever doesn't, the divisor gets smaller, never the budget larger (0074 §6).
 
 ### 5.3 Output
 
@@ -131,13 +131,19 @@ The CLI counts with a fixed estimate: **tokens = ⌈UTF-8 bytes ÷ 3⌉**, summe
 } }
 ```
 
-- `text` is what the agent reads at the start: one framing line, then the work lines, then one line per memory (its text, then `(inferred)` or `(unverified)` when so). The `tokens` count is over `text`.
-- `memories[].text` is the memory's `summary`, else its body's first paragraph, trimmed to 300 characters at a word boundary. The pack never expands a memory in full (0074 §3).
-- With no eligible memory and no active work, `text` is empty, `tokens` is 0, and the skill says nothing.
+- `text` is what the agent reads at the start: one framing line, then the work lines, then one line per memory, joined by LF, with no LF at the end. The `tokens` count is over `text`. Its lines, byte for byte:
+  - **framing:** `Brain context for {repo} ({project}).`; with no `project` in `.brain`, `Brain context for {repo}.`; with no `.brain`, `Brain context for this folder.` `{repo}` is `caller.repo`.
+  - **work:** `- Work {task} ({status}): {title}`, then ` — stopped: {stopped}` when the item has a stopped line.
+  - **memory:** `- {text}`, then ` (inferred)` or ` (unverified)` when its `confidence` is so.
+
+  For the example above: `Brain context for acme-api (prj-9x4t1b7e).`, `- Work CC-12 (in progress): Retry the import — stopped: 2026-11-07: parser done; …`, `- acme-api: ask before running migrations; the prod database is shared.`
+- `caller` is the `.brain`'s `repo` (else the folder's name), `project`, `area` (each `null` when absent) and `stacks` (`[]` when absent); with no `.brain`, `repo`, `project` and `area` are `null`. `work` and `memories` hold only the delivered items.
+- `memories[].text` is the memory's `summary` (as the restricted-evidence rule leaves it), else its body's first paragraph: the first run of non-blank lines that are not headings (a line matching `^#{1,6}(\s|$)` once trimmed), each trimmed and joined with one space. Headings before the run are skipped, and a heading or a blank line ends it. Either, trimmed, is cut to 300 characters at a word boundary: the longest run of its whole words that fits in 300 characters (a first word longer than that is cut at 300), with no ellipsis. The pack never expands a memory in full (0074 §3).
+- With no eligible memory and no active work, `text` is empty, `tokens` is 0, and the skill says nothing. The same holds when there are items but none fits: the framing line is never delivered alone.
 
 ### 5.4 Relevance
 
-`--task "<text>"` ranks memories within a reach level by the token overlap between the task text and the memory's text, with cli.md §5.13 step 1's tokens and stopwords; ties keep the §5.1 order. Without `--task`, there is no relevance step.
+`--task "<text>"` ranks memories within a reach level by the token overlap between the task text and the memory's `text` (§5.3), with cli.md §5.13 step 1's tokens and stopwords: the number of distinct task tokens equal to a token of the memory's text, more first. Tokens match exactly, not by prefix. Ties keep the §5.1 order. Without `--task`, there is no relevance step.
 
 ### 5.5 How the agent uses it
 
@@ -148,6 +154,23 @@ The agent reads the pack silently. It mentions a memory only when it shapes the 
 ### 6.1 `brain recall --search "<query>"`
 
 `brain recall --search "<query>"` returns compact results over the **eligible** memories (§2), ranked like `brain query --candidates` (cli.md §5.13, the same scoring), at most `--limit` (default 10, at most 50). Each result has the same fields as a pack memory, plus `score`. `--include-superseded` also returns memories that something supersedes, each marked `superseded_by`, after the eligible ones; drafts and memories outside the caller's reach are never returned. Knowledge about the world is still `brain query --candidates`; neither command expands a note in full. The agent reads a note's file only when a decision needs it.
+
+- **Score:** §5.13 steps 1, 3 and 5 over the memory notes, as the restricted-evidence rule leaves them. The context boost of step 4 reads the memory's lists: +3 when its `projects` holds the caller's `project`, else +2 when its `areas` holds the caller's `area` or the area of the caller's project.
+- **Superseded:** with `--include-superseded`, a memory with a `superseded_by` relation is returned when it is not a `draft`, its reach includes the caller and the restricted-evidence rule leaves it in (§2 rules 3 and 4), whatever else its `lifecycle` is. These are ranked among themselves the same way, after every eligible one, and carry `superseded_by`: that relation's target. An eligible result has no `superseded_by` key. `--limit` counts the whole list.
+- **`tokens`** is §5.2's estimate over the results' `text` joined by LF.
+
+```json
+{ "ok": true, "data": {
+  "caller": { "repo": "acme-api", "project": "prj-9x4t1b7e", "area": "area-2m7c4h8n", "stacks": ["supabase"] },
+  "query": "migrations", "tokens": 39,
+  "results": [
+    { "id": "mem-3k8d2m4q", "text": "acme-api: ask before running migrations; the prod database is shared.",
+      "scope": "project", "confidence": "verified", "updated": "2026-10-30", "path": "memories/2026/10/2026-10-30-acme-api-migrations.md", "score": 11 },
+    { "id": "mem-7c2n9x4t", "text": "acme-api: run migrations freely; staging only.",
+      "scope": "project", "confidence": "verified", "updated": "2026-09-02", "path": "memories/2026/09/2026-09-02-acme-api-staging.md", "score": 11, "superseded_by": "mem-3k8d2m4q" }
+  ]
+} }
+```
 
 ### 6.2 Correction and supersession
 
