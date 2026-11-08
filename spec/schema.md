@@ -305,6 +305,7 @@ Body of `brief`, `decision_log` and `area_brief`: `<!-- @generated:start -->` �
 | `origin` | string (repo identity from `.brain`) | ✔ |
 - **Reach is exclusive** (0009): `general` → none of `areas`, `projects`, `stacks`; `area` → only `areas`; `project` → only `projects`; `stack` → only `stacks`. A memory that should reach two levels is two memories.
 - Supersession via `relations` (`supersedes` / `superseded_by`, both persisted).
+- **Eligibility for recall** (0074, [memory.md](memory.md) §2): `reviewed`, not superseded, in the caller's reach, and not left out by the restricted-evidence rule. A `draft` memory is a candidate the user hasn't approved. Approval never changes `confidence`.
 
 ---
 
@@ -586,6 +587,7 @@ An applied proposal, or one closed as stale, holds nothing: the change is made, 
 - `publish`: `ask` (default) asks before each publish to Notion; `auto` publishes after each run without asking.
 - `push`: `auto` (default) pushes the brain after a run's commits; `remind` leaves it to you, and the report says how many commits are not pushed.
 - `unattended.max_inputs` (0051): how many inputs one unattended run takes in, oldest first; an integer of at least 1, default 10. The rest waits for the next run (cli.md §6.1). `unattended` absent, or `max_inputs` absent from it, means 10.
+- `recall` (0074): `off` (default) or `opening`. With `opening`, `brain link` adds the recall paragraph to a linked repo's instruction block, so its agents load the opening context (cli.md §5.12, [memory.md](memory.md) §7). Setup asks once; absent means `off`.
 
 **Modules** (0048): the optional parts of the space. Core (Inbox, Meetings, Projects, Areas, People, Review) is always on and has no key.
 
