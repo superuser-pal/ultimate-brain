@@ -162,7 +162,7 @@ Failure:
 | `RETIRED` | 2 | a command retired in this version (`source full-text`, 0049); the message names what replaces it |
 | `WRITE_CONFLICT` | 5 | a file appeared at a path the command was creating, after it read the brain (another writer). Nothing is kept (§3.6); re-run the command |
 | `CLAUDE_NOT_FOUND` | 3 | `schedule install` found no `claude` executable on `PATH` to schedule (0051, §5.21) |
-| `SKILL_MISSING` | 3 | `schedule install` for a job whose skill the brain doesn't have (`reflect` before brain-reflect is installed, 0052) |
+| `SKILL_MISSING` | 3 | `schedule install` for a job whose skill the brain doesn't have (`catch-up` without brain-catch-up) |
 | `SKILLS_PIN_INVALID` | 3 | the brain's `skills.lock.json` is invalid (§5.28) |
 | `SKILLS_INCOMPATIBLE` | 3 | the brain's pinned skills exclude the running CLI (§5.28) |
 | `SKILLS_SNAPSHOT_MISSING` | 3 | a pinned skill's `SKILL.md` is missing from a tree; for `link`, a pinned file it copies is missing or differs (§5.28) |
@@ -1595,14 +1595,13 @@ brain schedule list
 brain schedule remove <job>
 ```
 
-Runs a skill on a schedule, with nobody there, through local Claude Code (`claude -p`), the one scheduler that sees every input: the drop folder, linked repos and the user's Notion MCP (0051). It writes the machine's scheduler entry and nothing in the brain: no file, no log line, no commit. The skill's "Run on a schedule" section calls it and writes the settings (brain-catch-up; brain-reflect from 0.8.0).
+Runs a skill on a schedule, with nobody there, through local Claude Code (`claude -p`), the one scheduler that sees every input: the drop folder, linked repos and the user's Notion MCP (0051). It writes the machine's scheduler entry and nothing in the brain: no file, no log line, no commit. The skill's "Run on a schedule" section calls it and writes the settings (brain-catch-up). Reflection has no job in 0.11.0 (0076 §5): it runs attended only, and its weekly run is 0.13.0's brief (CC-111, 0075), which adds its own job then.
 
 **Jobs.** Each job runs one fixed prompt in the brain folder, so the schedule starts the skill the same way every time:
 
 | `<job>` | Prompt | Needs |
 |---|---|---|
 | `catch-up` | `catch up unattended` | brain-catch-up |
-| `reflect` | `tidy the brain unattended` | brain-reflect (0052); without `.claude/skills/brain-reflect/SKILL.md` in the brain → `SKILL_MISSING` |
 
 **Options.**
 - `--at`: one or more local times, 24-hour `HH:MM`, comma-separated, kept sorted and without repeats (`07:00,13:00`). Required.
