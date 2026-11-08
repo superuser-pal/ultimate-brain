@@ -130,7 +130,7 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 | CC-170 | `src/commands/link.ts`, `src/commands/config.ts` (only if `config set` needs a change), `tests/link-recall.test.ts` | now | a worker session |
 | CC-171 | the fork's `brain/brain-query/`; `.agents/skills/` through `scripts/vendor-skills.mjs` only | after CC-169 and CC-170 are merged | the main session (the fork tag needs the user's yes) |
 | CC-172 | `eval/memory-0.12/adapters/` | after CC-165 and CC-169 are merged | a worker session |
-| CC-173 | the files RESULTS.md names, decided when the row is detailed | after CC-167 is merged | decided then |
+| CC-173 | the files RESULTS.md names, decided when the row is detailed | after CC-167 and CC-169 are merged (it may change `src/lib/recall.ts`) | decided then |
 
 ### CC-169 · `brain recall --pack` and `--search` (cli.md §5.33, memory.md §2, §5, §6.1) · `todo`
 **Release:** 0.12.0
