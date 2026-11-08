@@ -1,0 +1,10 @@
+{
+  "name": "ultimate-brain-eval-retrieval-0-12",
+  "private": true,
+  "description": "CC-167: measurement-only dependencies for the 0.12.0 retrieval comparison. Not part of the product.",
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "gpt-tokenizer": "4.1.0"
+  }
+}
