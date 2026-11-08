@@ -2,6 +2,12 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.11.1 — 2026-11-08
+
+- CC-161 (#267): `brain reflect --candidates` finds far fewer, truer clusters: shared ground ignores the meeting and project notes were taken from, and terms skip link targets, URLs, code, sign-offs, contractions, function words and people's names.
+
+Skills: ultimate-brain-skills 1.4.0 (sha256-44a670b2237205b1b0aa89f7eed7b0b5c0dcf05d6fbfcf97ae8bdb228300d404)
+
 ## 0.11.0 — 2026-11-08
 
 - CC-65 (#257): contracts for reflection: candidates, the proposal fingerprint, and three new lint warnings.
