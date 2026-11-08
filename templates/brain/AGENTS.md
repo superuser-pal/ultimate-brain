@@ -23,6 +23,7 @@ Each operation has a skill; follow it end to end:
 | track and run the work in a folder, standard or connected to a Notion Project or Area: set it up, run a session, pause or end it | `brain-workflow` |
 | take an existing project's plans and tasks (a Markdown plan, issues, Notion tasks) into a connected workflow | `brain-workflow-adopt` |
 | review the structure of your work: what's overdue, stalled, missing a next step or misplaced, and turn your thoughts into tasks, projects and captures | `ultimate-assistant` (delegated to the sub-agent: say `report only`) |
+| tidy the brain: contradictions, duplicates, stale facts and recurring themes in your notes | `brain-reflect` |
 | learn how the system works ("how do I…", "why didn't…") | `brain-howto` |
 | change the Notion structure (databases, properties, views) | `brain-notion-change`; structure is changed in the product repo first, never edited directly in Notion (0022) |
 
