@@ -223,6 +223,30 @@ test("shared ground pairs two reviewed notes with two references in common; pagi
   assert.deepEqual([page.total, page.offset, page.clusters.map((cluster: { rank: number }) => cluster.rank)], [2, 1, [2]]);
 });
 
+test("one shared reference, an input dated on the update, initials alone, a two-letter name and a term with a number give no cluster (cli.md §5.32)", async (context) => {
+  const dir = await freshBrain(context);
+  // shared_ground needs two references in common: the decision and Ines Park share only the org.
+  await put(dir, "knowledge/decisions/2026-11-03-kickoff.md", { id: "dec-1h1h1h1h", type: "decision", title: "Hold the kickoff on site", summary: "s", lifecycle: "reviewed", date: "2026-11-03", assessment: "accepted", people: ["per-1j1j1j1j"], org: "org-1k1k1k1k", sources: [], created: "2026-11-03", updated: "2026-11-04" });
+  await put(dir, "knowledge/people/ines-park.md", person("per-1m1m1m1m", "Ines Park", { org: "org-1k1k1k1k" }));
+  await put(dir, "knowledge/orgs/kestrel.md", { id: "org-1k1k1k1k", type: "org", title: "Kestrel", summary: "s", lifecycle: "reviewed", sources: [], created: "2026-09-01", updated: "2026-09-01" });
+  // overtaken needs an input dated after the note's update: this one is dated on it.
+  await put(dir, "knowledge/people/dana-reyes.md", person("per-1j1j1j1j", "Dana Reyes", { updated: "2026-10-15" }));
+  await put(dir, "knowledge/meetings/2026-10-15-standup.md", meeting("mtg-1n1n1n1n", "Standup", "2026-10-15"), "Dana Reyes joined.\n");
+  // Two names match only with a position of equal tokens of two or more letters.
+  await put(dir, "knowledge/people/m-l.md", person("per-1p1p1p1p", "M. L."));
+  await put(dir, "knowledge/people/mark-lee.md", person("per-1q1q1q1q", "Mark Lee"));
+  // A one-token name names a note only with 3 or more characters.
+  await put(dir, "knowledge/people/bo.md", person("per-1r1r1r1r", "Bo"));
+  await put(dir, "knowledge/meetings/2026-11-02-weekly.md", meeting("mtg-1s1s1s1s", "Weekly", "2026-11-02"), "Bo will call.\n");
+  // A term has no token that is only digits.
+  for (const [id, title, captured] of [["src-1t1t1t1t", "Alpha", "2026-10-20"], ["src-1u1u1u1u", "Beta", "2026-10-25"], ["src-1v1v1v1v", "Gamma", "2026-11-01"]]) {
+    await put(dir, `sources/text/${captured}-${title.toLowerCase()}.md`, textSource(id, title, captured), "Budget 2027.\n");
+  }
+  const data = await reflect(dir);
+  assert.deepEqual([data.total, data.clusters.map((cluster: { key: string }) => cluster.key)], [0, []]);
+  assert.equal(data.read.inputs, 5);
+});
+
 test("proposal new checks a fingerprint against its item and dedupes on it; lint checks stored ones (cli.md §5.6, §5.10)", async (context) => {
   const dir = await freshBrain(context);
   await put(dir, "knowledge/people/maria-lopez.md", person("per-2a2a2a2a", "María López"));
