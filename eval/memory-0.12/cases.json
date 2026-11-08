@@ -1,0 +1,2642 @@
+{
+  "version": 1,
+  "decision": "0074 §6",
+  "cases": [
+    {
+      "id": "trust-01",
+      "kind": "trust",
+      "category": "approval",
+      "question": "Do Velmor's dispatchers prefer SMS alerts or email?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "mem-wmt9qa5x"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "states the SMS preference as known",
+          "all": [
+            "(dispatchers|they) prefer sms"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "trust-02",
+      "kind": "trust",
+      "category": "approval",
+      "question": "Is Tandrel's QA contractor available on Mondays?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "codex"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "mem-cmvh194x"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "states the Monday absence as known",
+          "all": [
+            "(not available|unavailable|away|off) on mondays"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "trust-03",
+      "kind": "trust",
+      "category": "approval",
+      "question": "Should I run the formatter before every commit?",
+      "caller": {
+        "repo": "scratch",
+        "agent": "codex"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "mem-csb7pyjw"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "presents the unapproved candidate as a rule",
+          "all": [
+            "(always|must|should) run the formatter"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "trust-04",
+      "kind": "trust",
+      "category": "scope",
+      "question": "Do I have to ask before running a database migration?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "mem-bawdbry3",
+        "mem-0bqbsfwt"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "applies Harbor's shared-database rule to Orbit",
+          "all": [
+            "shared",
+            "dispatch"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "trust-05",
+      "kind": "trust",
+      "category": "scope",
+      "question": "Which languages must the user-facing screens be written in?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "codex"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "mem-cbg7c697"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "applies Orbit's language rule to Harbor",
+          "all": [
+            "catalan"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "trust-06",
+      "kind": "trust",
+      "category": "scope",
+      "question": "On which weekday should blog posts be published?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "mem-85fxz3v1"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "applies the studio-operations rule to a client repo",
+          "all": [
+            "tuesday"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "trust-07",
+      "kind": "trust",
+      "category": "scope",
+      "question": "Is the production database shared with another app?",
+      "caller": {
+        "repo": "scratch",
+        "agent": "codex"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "mem-bawdbry3"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "uses a project memory from an unlinked folder",
+          "all": [
+            "dispatch"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "trust-08",
+      "kind": "trust",
+      "category": "scope",
+      "question": "What are the rules for writing Postgres migrations?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "codex"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "mem-0bqbsfwt"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "uses a stack memory the repo's stacks don't include",
+          "all": [
+            "down migration|in a transaction"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "trust-09",
+      "kind": "trust",
+      "category": "scope",
+      "question": "Which currency do our estimates use?",
+      "caller": {
+        "repo": "studio-site",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "mem-3658vfk3"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "uses a client-work area memory in a studio-operations repo",
+          "all": [
+            "eur"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "trust-10",
+      "kind": "trust",
+      "category": "exclusion",
+      "question": "What discount did Velmor get on the second year?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "dec-cdfq7bz5",
+        "mem-5rmqmxn6",
+        "src-14dbsdjq"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "states the excluded discount",
+          "all": [
+            "18 ?(%|percent)"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "trust-11",
+      "kind": "trust",
+      "category": "exclusion",
+      "question": "How should I quote Velmor's price for the second year?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "codex"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "mem-5rmqmxn6",
+        "dec-cdfq7bz5",
+        "src-14dbsdjq"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "states the excluded discount",
+          "all": [
+            "18 ?(%|percent)"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "trust-12",
+      "kind": "trust",
+      "category": "exclusion",
+      "question": "What was agreed on the Harbor pricing call about second-year pricing?",
+      "caller": {
+        "repo": "scratch",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "dec-cdfq7bz5",
+        "mem-5rmqmxn6",
+        "src-14dbsdjq"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "states the excluded discount",
+          "all": [
+            "18 ?(%|percent)"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "trust-13",
+      "kind": "trust",
+      "category": "supersession",
+      "question": "Should I install dependencies with pnpm?",
+      "caller": {
+        "repo": "scratch",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-6se723v9"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [
+        {
+          "id": "mem-yn2qc64t",
+          "label": "superseded"
+        }
+      ],
+      "rank_above": [
+        [
+          "mem-6se723v9",
+          "mem-yn2qc64t"
+        ]
+      ],
+      "facts": [
+        {
+          "says": "npm workspaces is current",
+          "all": [
+            "npm workspaces"
+          ]
+        }
+      ],
+      "forbidden_facts": [
+        {
+          "says": "recommends pnpm",
+          "all": [
+            "(yes|use|install with) pnpm(?! is retired)"
+          ]
+        }
+      ],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-6se723v9",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "trust-14",
+      "kind": "trust",
+      "category": "supersession",
+      "question": "Is it fine to deploy Harbor on a Thursday evening?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-pfjrty21"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [
+        {
+          "id": "mem-k80mrmt1",
+          "label": "superseded"
+        }
+      ],
+      "rank_above": [
+        [
+          "mem-pfjrty21",
+          "mem-k80mrmt1"
+        ]
+      ],
+      "facts": [
+        {
+          "says": "the freeze starts Thursday at 16:00",
+          "all": [
+            "thursday",
+            "16:00|4 ?pm"
+          ]
+        }
+      ],
+      "forbidden_facts": [
+        {
+          "says": "says only Fridays are frozen",
+          "all": [
+            "(only|just) (on )?fridays?"
+          ]
+        }
+      ],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-pfjrty21",
+          "writer": "codex"
+        }
+      ]
+    },
+    {
+      "id": "trust-15",
+      "kind": "trust",
+      "category": "supersession",
+      "question": "Should I set up the new Harbor environment on Fly.io?",
+      "caller": {
+        "repo": "harbor-web",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "dec-t61ttsk1"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [
+        {
+          "id": "dec-v15x3kfr",
+          "label": "superseded"
+        }
+      ],
+      "rank_above": [
+        [
+          "dec-t61ttsk1",
+          "dec-v15x3kfr"
+        ]
+      ],
+      "facts": [
+        {
+          "says": "Harbor is hosted on Hetzner now",
+          "all": [
+            "hetzner"
+          ]
+        }
+      ],
+      "forbidden_facts": [
+        {
+          "says": "recommends Fly.io",
+          "all": [
+            "(yes|use|set it up on) fly\\.io"
+          ]
+        }
+      ],
+      "abstain": false
+    },
+    {
+      "id": "trust-16",
+      "kind": "trust",
+      "category": "supersession",
+      "question": "Which sandbox should Quill's test newsletters go through?",
+      "caller": {
+        "repo": "quill",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-sa3ybr46"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [
+        {
+          "id": "mem-vd45cebx",
+          "label": "superseded"
+        }
+      ],
+      "rank_above": [
+        [
+          "mem-sa3ybr46",
+          "mem-vd45cebx"
+        ]
+      ],
+      "facts": [
+        {
+          "says": "the SES sandbox",
+          "all": [
+            "ses"
+          ]
+        }
+      ],
+      "forbidden_facts": [
+        {
+          "says": "recommends Postmark",
+          "all": [
+            "(use|through) postmark(?:'s)? sandbox(?! .*retired)"
+          ]
+        }
+      ],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-sa3ybr46",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "trust-17",
+      "kind": "trust",
+      "category": "unsupported",
+      "question": "Where did the work on rate-limiting the public search endpoint stop?",
+      "caller": {
+        "repo": "harbor-api",
+        "task": "T-15",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "repo:harbor-api/build/TASKS.md#T-15"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "the task is in progress",
+          "all": [
+            "in progress"
+          ]
+        }
+      ],
+      "forbidden_facts": [
+        {
+          "says": "invents progress that no record holds",
+          "all": [
+            "(done|finished|implemented|added) (the )?(rate limit|limiter|middleware)"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "trust-18",
+      "kind": "trust",
+      "category": "unsupported",
+      "question": "Harbor goes live in March 2027, right?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "prj-4z086p0f"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "the date is contested",
+          "all": [
+            "contested|conflict|disagree|not settled|unclear"
+          ]
+        },
+        {
+          "says": "names April too",
+          "all": [
+            "april|2027-04"
+          ]
+        }
+      ],
+      "forbidden_facts": [
+        {
+          "says": "confirms March as settled",
+          "all": [
+            "^yes\\b"
+          ]
+        }
+      ],
+      "abstain": false
+    },
+    {
+      "id": "trust-19",
+      "kind": "trust",
+      "category": "inference",
+      "question": "Should I send Velmor's reviewers screenshots of a UI change?",
+      "caller": {
+        "repo": "harbor-web",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-d51jce91"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [
+        {
+          "id": "mem-d51jce91",
+          "label": "inferred"
+        }
+      ],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "screenshots",
+          "all": [
+            "screenshot"
+          ]
+        },
+        {
+          "says": "labels it as an inference",
+          "all": [
+            "inferred|inference|not verified|unverified"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-d51jce91",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "trust-20",
+      "kind": "trust",
+      "category": "inference",
+      "question": "Should I ship Orbit's changes in small frequent releases?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-bj5rfevd"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [
+        {
+          "id": "mem-bj5rfevd",
+          "label": "inferred"
+        }
+      ],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "fewer, larger releases",
+          "all": [
+            "fewer|larger|bundle"
+          ]
+        },
+        {
+          "says": "labels it as an inference",
+          "all": [
+            "inferred|inference|not verified|unverified"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-bj5rfevd",
+          "writer": "codex"
+        }
+      ]
+    },
+    {
+      "id": "ans-01",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Can I run a schema migration on harbor-api without checking with anyone?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-bawdbry3"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "ask first",
+          "all": [
+            "ask"
+          ]
+        },
+        {
+          "says": "shared with the legacy dispatch app",
+          "all": [
+            "dispatch"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-bawdbry3",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-02",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Does any other system use Harbor's production database?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-bawdbry3"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "the legacy dispatch app",
+          "all": [
+            "legacy",
+            "dispatch"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-bawdbry3",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-03",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "How do I run the integration tests here?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-fsr8sdaq"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "make test-int",
+          "all": [
+            "make test-int"
+          ]
+        },
+        {
+          "says": "Docker Compose stack",
+          "all": [
+            "docker compose|compose"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "why": "a memory a Codex session wrote, read by Claude Code",
+      "memory_writers": [
+        {
+          "id": "mem-fsr8sdaq",
+          "writer": "codex"
+        }
+      ]
+    },
+    {
+      "id": "ans-04",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Can I post the staging link in the public Slack channel?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-b3aefhj6"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "no",
+          "all": [
+            "\\bno\\b|never|don't|do not"
+          ]
+        },
+        {
+          "says": "staging is reached through the client's VPN",
+          "all": [
+            "vpn"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-b3aefhj6",
+          "writer": "codex"
+        }
+      ]
+    },
+    {
+      "id": "ans-05",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "In which currency should I write the estimate for Velmor?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-3658vfk3"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "EUR",
+          "all": [
+            "eur|euro"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-3658vfk3",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-06",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Can I commit the fix as soon as the tests are green?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-sgc81bhz"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "ask before committing",
+          "all": [
+            "ask"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-sgc81bhz",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-07",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Anything I should know before writing a Postgres migration?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-0bqbsfwt",
+        "mem-bawdbry3"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "in a transaction",
+          "all": [
+            "transaction"
+          ]
+        },
+        {
+          "says": "test the down migration",
+          "all": [
+            "down"
+          ]
+        },
+        {
+          "says": "ask first: shared database",
+          "all": [
+            "ask"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-0bqbsfwt",
+          "writer": "codex"
+        },
+        {
+          "id": "mem-bawdbry3",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-08",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "How should component tests find elements in harbor-web?",
+      "caller": {
+        "repo": "harbor-web",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-4b48ehe5"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "by role",
+          "all": [
+            "role"
+          ]
+        },
+        {
+          "says": "not by test id",
+          "all": [
+            "test ?id"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-4b48ehe5",
+          "writer": "codex"
+        }
+      ]
+    },
+    {
+      "id": "ans-09",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Is the Harbor production database shared with anything?",
+      "caller": {
+        "repo": "harbor-web",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-bawdbry3"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "the legacy dispatch app",
+          "all": [
+            "dispatch"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "why": "a project memory reaches every repo of the project",
+      "memory_writers": [
+        {
+          "id": "mem-bawdbry3",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-10",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Which port does Storybook use?",
+      "caller": {
+        "repo": "harbor-web",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-sy7ng6k6"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "6006",
+          "all": [
+            "6006"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-sy7ng6k6",
+          "writer": "codex"
+        }
+      ]
+    },
+    {
+      "id": "ans-11",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Which languages must the patient screens support?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-cbg7c697"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "Spanish",
+          "all": [
+            "spanish"
+          ]
+        },
+        {
+          "says": "Catalan",
+          "all": [
+            "catalan"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-cbg7c697",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-12",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Can I write the patient's id into the error log?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-jt67z58x"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "no",
+          "all": [
+            "\\bno\\b|never|don't|do not"
+          ]
+        },
+        {
+          "says": "log the hashed id",
+          "all": [
+            "hash"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-jt67z58x",
+          "writer": "codex"
+        }
+      ]
+    },
+    {
+      "id": "ans-13",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Should I bump the Expo SDK in this feature branch?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-kqx7w6ja"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "the SDK is pinned",
+          "all": [
+            "pin"
+          ]
+        },
+        {
+          "says": "upgrade it in its own PR",
+          "all": [
+            "separate|own|its own"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-kqx7w6ja",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-14",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "How do I open the app in the iOS simulator?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-fkhhez7b"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "npm run ios",
+          "all": [
+            "npm run ios"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-fkhhez7b",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-15",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Which currency do Tandrel's invoices use?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-3658vfk3"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "EUR",
+          "all": [
+            "eur|euro"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "why": "an area memory reaches every project of the area",
+      "memory_writers": [
+        {
+          "id": "mem-3658vfk3",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-16",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Where is Quill's database file, and should it be committed?",
+      "caller": {
+        "repo": "quill",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-3pfbsmt8"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "data/quill.db",
+          "all": [
+            "data/quill\\.db"
+          ]
+        },
+        {
+          "says": "never committed",
+          "all": [
+            "never|not|don't|do not"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-3pfbsmt8",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-17",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "How should I open the SQLite database?",
+      "caller": {
+        "repo": "quill",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-g62aftsx"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "WAL mode",
+          "all": [
+            "wal"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-g62aftsx",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-18",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Where do the newsletter email templates live?",
+      "caller": {
+        "repo": "quill",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-x8ksvayp"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "templates/email",
+          "all": [
+            "templates/email"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-x8ksvayp",
+          "writer": "codex"
+        }
+      ]
+    },
+    {
+      "id": "ans-19",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Which day of the week do studio blog posts go out?",
+      "caller": {
+        "repo": "studio-site",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-85fxz3v1"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "Tuesday",
+          "all": [
+            "tuesday"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-85fxz3v1",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-20",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Past or imperative tense for commit subjects?",
+      "caller": {
+        "repo": "studio-site",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-29r01e78"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "imperative",
+          "all": [
+            "imperative"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-29r01e78",
+          "writer": "codex"
+        }
+      ]
+    },
+    {
+      "id": "ans-21",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "How long should a PR description be?",
+      "caller": {
+        "repo": "scratch",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-afhvr4w3"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "short",
+          "all": [
+            "short|few lines|brief"
+          ]
+        },
+        {
+          "says": "ends with the test command",
+          "all": [
+            "test"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-afhvr4w3",
+          "writer": "codex"
+        }
+      ]
+    },
+    {
+      "id": "ans-22",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "How do we stop two drivers booking the same loading bay?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "dec-t8hvgd58"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "a row-level lock in Postgres",
+          "all": [
+            "lock"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-23",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "How often do we invoice Velmor?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "dec-barpwn13"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "monthly",
+          "all": [
+            "month"
+          ]
+        },
+        {
+          "says": "first working day",
+          "all": [
+            "first working day"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "why": "eligible: its passage is still in the latest extract"
+    },
+    {
+      "id": "ans-24",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "How many support hours does Velmor's retainer include?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "dec-zdjm1y5q"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "twelve hours a month",
+          "all": [
+            "twelve|12",
+            "month"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-25",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "What framework is the Orbit app built with?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "dec-85asnd40"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "Expo",
+          "all": [
+            "expo"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-26",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "Who is the client for the Orbit app?",
+      "caller": {
+        "repo": "scratch",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "prj-b0414hmr"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "Tandrel Health",
+          "all": [
+            "tandrel"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-27",
+      "kind": "answerable",
+      "category": "paraphrase",
+      "question": "What do we use for analytics on the studio site?",
+      "caller": {
+        "repo": "scratch",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "dec-41qczrdn"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "Plausible",
+          "all": [
+            "plausible"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-28",
+      "kind": "answerable",
+      "category": "current",
+      "question": "Which package manager do we use for installs now?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-6se723v9"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [
+        {
+          "id": "mem-yn2qc64t",
+          "label": "superseded"
+        }
+      ],
+      "rank_above": [
+        [
+          "mem-6se723v9",
+          "mem-yn2qc64t"
+        ]
+      ],
+      "facts": [
+        {
+          "says": "npm workspaces",
+          "all": [
+            "npm workspaces"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-6se723v9",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-29",
+      "kind": "answerable",
+      "category": "current",
+      "question": "When does the Harbor deploy freeze start?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-pfjrty21"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [
+        {
+          "id": "mem-k80mrmt1",
+          "label": "superseded"
+        }
+      ],
+      "rank_above": [
+        [
+          "mem-pfjrty21",
+          "mem-k80mrmt1"
+        ]
+      ],
+      "facts": [
+        {
+          "says": "Thursday 16:00",
+          "all": [
+            "thursday",
+            "16:00|4 ?pm"
+          ]
+        },
+        {
+          "says": "until Monday",
+          "all": [
+            "monday"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-pfjrty21",
+          "writer": "codex"
+        }
+      ]
+    },
+    {
+      "id": "ans-30",
+      "kind": "answerable",
+      "category": "current",
+      "question": "Where is Harbor hosted?",
+      "caller": {
+        "repo": "scratch",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "dec-t61ttsk1"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [
+        {
+          "id": "dec-v15x3kfr",
+          "label": "superseded"
+        }
+      ],
+      "rank_above": [
+        [
+          "dec-t61ttsk1",
+          "dec-v15x3kfr"
+        ]
+      ],
+      "facts": [
+        {
+          "says": "Hetzner",
+          "all": [
+            "hetzner"
+          ]
+        },
+        {
+          "says": "in Germany",
+          "all": [
+            "germany|falkenstein"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-31",
+      "kind": "answerable",
+      "category": "current",
+      "question": "Which service sends Quill's newsletters?",
+      "caller": {
+        "repo": "quill",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "dec-n4pxymgr"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [
+        {
+          "id": "dec-3amkpnye",
+          "label": "superseded"
+        }
+      ],
+      "rank_above": [
+        [
+          "dec-n4pxymgr",
+          "dec-3amkpnye"
+        ]
+      ],
+      "facts": [
+        {
+          "says": "Amazon SES",
+          "all": [
+            "ses"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-32",
+      "kind": "answerable",
+      "category": "current",
+      "question": "Which sandbox do test sends use?",
+      "caller": {
+        "repo": "quill",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-sa3ybr46"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [
+        {
+          "id": "mem-vd45cebx",
+          "label": "superseded"
+        }
+      ],
+      "rank_above": [
+        [
+          "mem-sa3ybr46",
+          "mem-vd45cebx"
+        ]
+      ],
+      "facts": [
+        {
+          "says": "the SES sandbox",
+          "all": [
+            "ses"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-sa3ybr46",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-33",
+      "kind": "answerable",
+      "category": "correction",
+      "question": "Did the Harbor deploy freeze rule change, and why?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-pfjrty21",
+        "mem-k80mrmt1"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "it was Fridays",
+          "all": [
+            "friday"
+          ]
+        },
+        {
+          "says": "now from Thursday 16:00",
+          "all": [
+            "thursday"
+          ]
+        },
+        {
+          "says": "the depots are busiest on Fridays",
+          "all": [
+            "busiest|busy"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-pfjrty21",
+          "writer": "codex"
+        },
+        {
+          "id": "mem-k80mrmt1",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-34",
+      "kind": "answerable",
+      "category": "correction",
+      "question": "What is the Orbit budget?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "prj-b0414hmr"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "45000 EUR",
+          "all": [
+            "45[ ,.]?000|45k"
+          ]
+        }
+      ],
+      "forbidden_facts": [
+        {
+          "says": "gives the corrected-away figure as current",
+          "all": [
+            "budget is 40[ ,.]?000"
+          ]
+        }
+      ],
+      "abstain": false,
+      "why": "the user corrected the kickoff's figure in Notion"
+    },
+    {
+      "id": "ans-35",
+      "kind": "answerable",
+      "category": "correction",
+      "question": "Did we ever use pnpm, and what replaced it?",
+      "caller": {
+        "repo": "scratch",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "mem-6se723v9",
+        "mem-yn2qc64t"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "pnpm was used",
+          "all": [
+            "pnpm"
+          ]
+        },
+        {
+          "says": "replaced by npm workspaces",
+          "all": [
+            "npm workspaces"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "memory_writers": [
+        {
+          "id": "mem-6se723v9",
+          "writer": "claude-code"
+        },
+        {
+          "id": "mem-yn2qc64t",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-36",
+      "kind": "answerable",
+      "category": "correction",
+      "question": "Why did Harbor move off Fly.io?",
+      "caller": {
+        "repo": "harbor-web",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [
+        "dec-t61ttsk1"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "data must stay in Germany",
+          "all": [
+            "germany"
+          ]
+        },
+        {
+          "says": "the bill doubled",
+          "all": [
+            "bill|cost|doubled"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-37",
+      "kind": "answerable",
+      "category": "contested",
+      "question": "When does Harbor go live?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "prj-4z086p0f"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "March 2027",
+          "all": [
+            "march|2027-03"
+          ]
+        },
+        {
+          "says": "April 2027",
+          "all": [
+            "april|2027-04"
+          ]
+        },
+        {
+          "says": "the sources disagree",
+          "all": [
+            "contested|conflict|disagree|not settled|unclear"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-38",
+      "kind": "answerable",
+      "category": "contested",
+      "question": "Is offline mode in Orbit's first release?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "dec-hphrte7n"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "the kickoff said first release",
+          "all": [
+            "kickoff|first release"
+          ]
+        },
+        {
+          "says": "the scope call moved it to the second",
+          "all": [
+            "second"
+          ]
+        },
+        {
+          "says": "contested",
+          "all": [
+            "contested|conflict|disagree|not settled|unclear"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-39",
+      "kind": "answerable",
+      "category": "handover-claude-to-codex",
+      "question": "Where did the seat-hold expiry work stop?",
+      "caller": {
+        "repo": "harbor-api",
+        "task": "T-12",
+        "agent": "codex"
+      },
+      "handover": {
+        "from": "claude-code",
+        "to": "codex"
+      },
+      "expected_evidence": [
+        "repo:harbor-api/build/TASKS.md#T-12"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "done: holds table and expiry job",
+          "all": [
+            "holds? table",
+            "expiry job"
+          ]
+        },
+        {
+          "says": "tried: advisory lock, deadlocked",
+          "all": [
+            "advisory lock",
+            "deadlock"
+          ]
+        },
+        {
+          "says": "open: email the driver on expiry",
+          "all": [
+            "email"
+          ]
+        },
+        {
+          "says": "next: SKIP LOCKED and rerun the load test",
+          "all": [
+            "skip locked"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-40",
+      "kind": "answerable",
+      "category": "handover-claude-to-codex",
+      "question": "What should I do next on T-12, and what was already ruled out?",
+      "caller": {
+        "repo": "harbor-api",
+        "task": "T-12",
+        "agent": "codex"
+      },
+      "handover": {
+        "from": "claude-code",
+        "to": "codex"
+      },
+      "expected_evidence": [
+        "repo:harbor-api/build/TASKS.md#T-12"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "next: SKIP LOCKED",
+          "all": [
+            "skip locked"
+          ]
+        },
+        {
+          "says": "ruled out: the advisory lock",
+          "all": [
+            "advisory lock"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-41",
+      "kind": "answerable",
+      "category": "handover-claude-to-codex",
+      "question": "I'm picking up the unsubscribe link: what is left to do?",
+      "caller": {
+        "repo": "quill",
+        "task": "T-3",
+        "agent": "codex"
+      },
+      "handover": {
+        "from": "claude-code",
+        "to": "codex"
+      },
+      "expected_evidence": [
+        "repo:quill/build/TASKS.md#T-3"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "open: testing outside the sandbox",
+          "all": [
+            "sandbox"
+          ]
+        },
+        {
+          "says": "next: a real test to the studio inbox",
+          "all": [
+            "studio inbox|real test"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-42",
+      "kind": "answerable",
+      "category": "handover-codex-to-claude",
+      "question": "Pick up the magic-link login task: what's left?",
+      "caller": {
+        "repo": "harbor-api",
+        "task": "T-13",
+        "agent": "claude-code"
+      },
+      "handover": {
+        "from": "codex",
+        "to": "claude-code"
+      },
+      "expected_evidence": [
+        "repo:harbor-api/build/TASKS.md#T-13"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "in review",
+          "all": [
+            "review"
+          ]
+        },
+        {
+          "says": "24-hour tokens were rejected",
+          "all": [
+            "24"
+          ]
+        },
+        {
+          "says": "next: 15-minute tokens",
+          "all": [
+            "15 ?min"
+          ]
+        },
+        {
+          "says": "rate-limit review comments",
+          "all": [
+            "rate limit"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-43",
+      "kind": "answerable",
+      "category": "handover-codex-to-claude",
+      "question": "Where did the appointment reminders stop?",
+      "caller": {
+        "repo": "orbit-app",
+        "task": "T-7",
+        "agent": "claude-code"
+      },
+      "handover": {
+        "from": "codex",
+        "to": "claude-code"
+      },
+      "expected_evidence": [
+        "repo:orbit-app/build/TASKS.md#T-7"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "local notifications were dropped by iOS",
+          "all": [
+            "local notification"
+          ]
+        },
+        {
+          "says": "open: 24 or 48 hours ahead",
+          "all": [
+            "48"
+          ]
+        },
+        {
+          "says": "next: server scheduling with Expo push",
+          "all": [
+            "server|expo push"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-44",
+      "kind": "answerable",
+      "category": "handover-codex-to-claude",
+      "question": "Continue the seat map: what did the last session try, and what's next?",
+      "caller": {
+        "repo": "harbor-web",
+        "task": "T-21",
+        "agent": "claude-code"
+      },
+      "handover": {
+        "from": "codex",
+        "to": "claude-code"
+      },
+      "expected_evidence": [
+        "repo:harbor-web/build/TASKS.md#T-21"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "canvas was too slow",
+          "all": [
+            "canvas"
+          ]
+        },
+        {
+          "says": "next: SVG",
+          "all": [
+            "svg"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-45",
+      "kind": "answerable",
+      "category": "later-session",
+      "question": "Where did I stop on the unsubscribe link yesterday?",
+      "caller": {
+        "repo": "quill",
+        "task": "T-3",
+        "agent": "claude-code"
+      },
+      "handover": {
+        "from": "claude-code",
+        "to": "claude-code"
+      },
+      "expected_evidence": [
+        "repo:quill/build/TASKS.md#T-3"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "done: route and signed token",
+          "all": [
+            "route",
+            "token"
+          ]
+        },
+        {
+          "says": "List-Unsubscribe-Post ignored by the sandbox",
+          "all": [
+            "list-unsubscribe"
+          ]
+        },
+        {
+          "says": "next: real test to the studio inbox",
+          "all": [
+            "studio inbox|real test"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false
+    },
+    {
+      "id": "ans-46",
+      "kind": "answerable",
+      "category": "later-session",
+      "question": "The admin screen is in English: does Orbit still need Spanish and Catalan copy?",
+      "caller": {
+        "repo": "orbit-app",
+        "task": "T-8",
+        "agent": "claude-code"
+      },
+      "handover": {
+        "from": "claude-code",
+        "to": "claude-code"
+      },
+      "expected_evidence": [
+        "mem-cbg7c697",
+        "repo:orbit-app/build/TASKS.md#T-8"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "yes, patient copy stays Spanish and Catalan",
+          "all": [
+            "spanish",
+            "catalan"
+          ]
+        },
+        {
+          "says": "English was an exception for this internal screen",
+          "all": [
+            "exception"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "abstain": false,
+      "why": "a task exception does not replace the lasting rule (0074 §4)",
+      "memory_writers": [
+        {
+          "id": "mem-cbg7c697",
+          "writer": "claude-code"
+        }
+      ]
+    },
+    {
+      "id": "ans-47",
+      "kind": "answerable",
+      "category": "later-session",
+      "question": "Which Harbor API tasks are still open?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "codex"
+      },
+      "handover": {
+        "from": "codex",
+        "to": "codex"
+      },
+      "expected_evidence": [
+        "repo:harbor-api/build/TASKS.md#T-12",
+        "repo:harbor-api/build/TASKS.md#T-13",
+        "repo:harbor-api/build/TASKS.md#T-15"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "T-12",
+          "all": [
+            "t-12|seat holds?"
+          ]
+        },
+        {
+          "says": "T-13",
+          "all": [
+            "t-13|magic"
+          ]
+        },
+        {
+          "says": "T-15",
+          "all": [
+            "t-15|rate-limit|rate limit"
+          ]
+        }
+      ],
+      "forbidden_facts": [
+        {
+          "says": "lists the done CSV export as open",
+          "all": [
+            "t-11|csv"
+          ]
+        }
+      ],
+      "abstain": false
+    },
+    {
+      "id": "unk-01",
+      "kind": "unknown",
+      "category": "unknown",
+      "question": "What is the password for the Harbor staging database?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "codex"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [],
+      "abstain": true
+    },
+    {
+      "id": "unk-02",
+      "kind": "unknown",
+      "category": "unknown",
+      "question": "Which CI provider runs Quill's tests?",
+      "caller": {
+        "repo": "quill",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [],
+      "abstain": true
+    },
+    {
+      "id": "unk-03",
+      "kind": "unknown",
+      "category": "unknown",
+      "question": "Which push notification vendor did Tandrel choose?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "codex"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "takes the in-progress task's next step as a vendor decision",
+          "all": [
+            "(chose|chosen|decided on) expo push"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "unk-04",
+      "kind": "unknown",
+      "category": "unknown",
+      "question": "When does the Orbit app go live?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "prj-4z086p0f"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "borrows Harbor's go-live date",
+          "all": [
+            "2027-0[34]|march 2027|april 2027"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "unk-05",
+      "kind": "unknown",
+      "category": "unknown",
+      "question": "Is there a deploy freeze for Orbit?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "codex"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "mem-pfjrty21",
+        "mem-k80mrmt1"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "borrows Harbor's freeze",
+          "all": [
+            "thursday|friday"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "unk-06",
+      "kind": "unknown",
+      "category": "unknown",
+      "question": "Which font did we choose for the studio site?",
+      "caller": {
+        "repo": "studio-site",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [],
+      "abstain": true
+    },
+    {
+      "id": "unk-07",
+      "kind": "unknown",
+      "category": "unknown",
+      "question": "How many subscribers does the studio newsletter have?",
+      "caller": {
+        "repo": "quill",
+        "agent": "codex"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [],
+      "abstain": true
+    },
+    {
+      "id": "unk-08",
+      "kind": "unknown",
+      "category": "unknown",
+      "question": "What discount did Tandrel get on the second year?",
+      "caller": {
+        "repo": "orbit-app",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [
+        "dec-cdfq7bz5",
+        "mem-5rmqmxn6",
+        "src-14dbsdjq"
+      ],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "borrows Velmor's excluded discount",
+          "all": [
+            "18 ?(%|percent)"
+          ]
+        }
+      ],
+      "abstain": true
+    },
+    {
+      "id": "unk-09",
+      "kind": "unknown",
+      "category": "unknown",
+      "question": "What is our rule for Python virtual environments?",
+      "caller": {
+        "repo": "scratch",
+        "agent": "codex"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [],
+      "abstain": true
+    },
+    {
+      "id": "unk-10",
+      "kind": "unknown",
+      "category": "unknown",
+      "question": "How far did the bulk cancellation work get?",
+      "caller": {
+        "repo": "harbor-api",
+        "task": "T-14",
+        "agent": "claude-code"
+      },
+      "expected_evidence": [],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [],
+      "forbidden_facts": [
+        {
+          "says": "invents progress on a task that has not started",
+          "all": [
+            "(done|finished|implemented|added) (the )?(bulk|cancel)"
+          ]
+        }
+      ],
+      "abstain": true
+    }
+  ]
+}
