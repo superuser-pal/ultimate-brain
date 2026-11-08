@@ -58,7 +58,7 @@ At most **five** suggested candidates, chosen in this order: reusable constraint
 Each candidate shows:
 
 - the text, one to three sentences;
-- its reach (`scope` and its list), the **narrowest** the user's words support. A project instruction stays a project memory. Only explicit general wording ("always", "in every repo") supports `general`;
+- its reach (`scope` and its list), the **narrowest** the user's words support. A project instruction stays a project memory. Only explicit general wording ("always", "in every repo") supports `general`. When the narrow reach has no id (the caller's `.brain` has no project, or not that stack), the agent says so and asks: `general`, or place the repo first (`brain link --project`) and then save it narrow. It never widens the reach silently (0009);
 - `inferred`, when the user didn't say it in those words, with one to three examples from the session that support it;
 - the memory it would supersede, when one is eligible and says something different (§6).
 
