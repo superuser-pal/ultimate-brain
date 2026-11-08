@@ -196,7 +196,8 @@ export function fixValueProblem(workspace: Workspace, p: Record<string, unknown>
 /** Whether a proposal was decided in chat before it had a Review row: it never gets one (spec/cli.md §5.14.4). */
 export function decidedInChat(note: Note): boolean {
   const a = note.attributes;
-  return note.type === "proposal" && typeof a.source === "string" && a.source.startsWith(ASSISTANT_SOURCE) && typeof a.notion !== "string" && isRecord(a.decision) && a.decision.decided_by === "chat";
+  // A reflection answer (it carries a fingerprint) decided in chat is the same (cli.md §5.14.4, §6.2).
+  return note.type === "proposal" && ((typeof a.source === "string" && a.source.startsWith(ASSISTANT_SOURCE)) || typeof a.fingerprint === "string") && typeof a.notion !== "string" && isRecord(a.decision) && a.decision.decided_by === "chat";
 }
 
 /** About, About Page, Now and Proposed of a Suggestion row (spec/cli.md §5.14.4). */
