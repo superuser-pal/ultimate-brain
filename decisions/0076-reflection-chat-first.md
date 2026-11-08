@@ -4,6 +4,7 @@
 **Date:** 2026-11-08
 **Release:** 0.11.0 (CC-65 to CC-67, U-21)
 **Amends:** [0052](0052-reflection.md) (how a run reaches the user, its schedule, skips, themes, the `note-size` scope and U-21's gate)
+**Clarified:** 2026-11-08 (CC-160, the user's yes): in §1's table, "attributed to the user" applies to a value of the user's own; a value one of the claims holds keeps that claim's source.
 **Keeps:** 0052's four signals, their thresholds and the 30-day window; its five finding kinds and their severity order; the fingerprint; the `orphan` and `near-duplicate` warnings; 0003; 0055's exclusion rules; 0064's boundary (the assistant reviews the structure of your work, reflection the content of your notes); 0061's feature cutoff
 
 ## Context
