@@ -116,6 +116,52 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 **Output:** `eval/retrieval-0.12/`: TypeScript adaptations written from reading claude-obsidian at `2e545563` (its code is never run: `sources/` is untrusted), each behind the same retriever interface as CC-164's runner, run on CC-164's questions and on CC-165's answerable cases when those are merged; `RESULTS.md` gives recall@k, MRR, the tokens a result page costs, the lines each adaptation needs and its attribution, and a recommendation per piece (adopt, adapt or drop) under 0074 §5's conditions. No change outside `eval/retrieval-0.12/` and this row.
 **Acceptance:** each piece's numbers sit beside the baseline's on the same questions; the token cost uses one stated tokenizer; no piece needs a new runtime dependency, Python, a vector database or a schema change, or the report says it is dropped for that; the leak and PR format checks pass.
 
+### CC-168 · Split 0.12.0's build tasks from the contracts · `done` (#272)
+**Release:** 0.12.0
+**Changelog:** development only: 0.12.0's build tasks are split from the merged contracts, each owning separate files.
+**Output:** the rows CC-169 to CC-173, U-26 and the ownership table below. Planning only.
+**Acceptance:** each new row has a release, a Changelog line, an Output and an Acceptance; no two tasks that run at the same time own the same file; no other row changes; the leak and PR format checks pass.
+
+**Build work (CC-168, 2026-11-08).** The contracts are spec/memory.md and cli.md §5.12 and §5.33 (CC-166, #270). The CC-163 rules hold: a task edits only what it owns plus its own row, one `pr-reviewer` at a time, and a spec question goes to the main session, which owns `spec/` and fixes the spec first (AGENTS.md "Specs are contracts").
+
+| Task | Owns | Starts | Built by |
+|---|---|---|---|
+| CC-169 | `src/commands/recall.ts`, `src/lib/recall.ts`, `tests/recall.test.ts`, `tests/fixtures/recall/`, and one registration line in `src/cli.ts` | now | a worker session |
+| CC-170 | `src/commands/link.ts`, `src/commands/config.ts` (only if `config set` needs a change), `tests/link-recall.test.ts` | now | a worker session |
+| CC-171 | the fork's `brain/brain-query/`; `.agents/skills/` through `scripts/vendor-skills.mjs` only | after CC-169 and CC-170 are merged | the main session (the fork tag needs the user's yes) |
+| CC-172 | `eval/memory-0.12/adapters/` | after CC-165 and CC-169 are merged | a worker session |
+| CC-173 | the files RESULTS.md names, decided when the row is detailed | after CC-167 and CC-169 are merged (it may change `src/lib/recall.ts`) | decided then |
+
+### CC-169 · `brain recall --pack` and `--search` (cli.md §5.33, memory.md §2, §5, §6.1) · `todo`
+**Release:** 0.12.0
+**Changelog:** `brain recall --pack` gives an agent a small opening context of your approved lessons for the repo it works in and where its work stopped, within 800 tokens, and `brain recall --search` finds the rest.
+**Output:** the command as cli.md §5.33 and memory.md define it: the caller from `--repo` or the current folder and its `.brain` (the shared reader, CC-152); eligibility (memory.md §2: reviewed, not superseded, in reach by 0009, not left out by the restricted-evidence rule, sources all left out); the pack's selection, work section from a `tracked-in-repo` markdown kit with stopped lines, ⌈bytes ÷ 3⌉ budget, whole items only, `omitted`, `work_unread`, `text` and the JSON of §5.3; `--search` ranked as `query --candidates`, `--include-superseded`; the `USAGE` cases. No cache. Synthetic fixtures only.
+**Acceptance:** tests on synthetic brains and linked folders cover: each eligibility rule (a draft, a superseded, an out-of-reach for each scope, an excluded-source and a restricted memory left out; general reaching a folder without `.brain`); 0009's ranking and `--task` relevance; the budget (a large item left out whole while a later small one fits; `tokens` ≤ budget; `--budget` bounds); the work section (active rows only, the stopped line, an invalid kit giving `work_unread`); `--search` with and without `--include-superseded`; every `USAGE` case of §5.33; a second call after a supersession or a lifecycle change sees it (no cache). `npm test`, `npm run typecheck`, `npm run test:package` and the leak check pass.
+
+### CC-170 · `brain link` writes the recall paragraph when `settings.recall` is `opening` (cli.md §5.12) · `todo`
+**Release:** 0.12.0
+**Changelog:** with opening recall turned on, `brain link` tells a linked repo's agents to load your lessons and where work stopped at the start of a session, and to run the closing review when you say "wrap up".
+**Output:** `brain link` adds cli.md §5.12's recall paragraph, byte for byte, after the `How:` paragraph when `settings.recall` is `opening`, and removes it when it is `off` or absent; idempotent; the rest of the block unchanged. `brain config set settings.recall` accepts `"off"` and `"opening"` and refuses anything else (brain.schema.json, already in the spec).
+**Acceptance:** tests in `tests/link-recall.test.ts`: the paragraph with `opening`, its exact bytes and place, with the workflow lines both present and absent; none with `off` or absent; a second run changes no bytes; turning it off and linking again removes it; `config set` accepts both values and refuses `"on"`. `npm test`, `npm run typecheck` and the leak check pass.
+
+### CC-171 · The closing review, "remember this" and opening recall in the brain-query skill (memory.md §3, §4, §5.5, §6.2) · `todo`
+**Release:** 0.12.0
+**Changelog:** say "wrap up" at the end of a session and the agent offers at most five lessons to remember, each with its reach, and records where the work stopped; say "remember this" at any time.
+**Output:** in the skills fork (skills-delivery.md §9.5), a section of `brain-query`: the closing review (at most five candidates, the order, reach, labelled inference with examples, superseding candidates, yes and edit through `proposal new` + `apply` decided in chat, no or later writing nothing), "remember this", the `**Stopped:**` line, the task exception and "from now on", reading the pack silently and mentioning a memory only when it shapes the approach. Released as a fork tag with the user's yes, vendored here with `scripts/vendor-skills.mjs`, classified in the skills-integration issue.
+**Acceptance:** the vendored snapshot passes `vendor-skills.mjs --check`; each rule of memory.md §3, §4, §5.5 and §6.2 has its sentence in the skill; a blind run in a synthetic brain records one approved memory, one declined one (nothing written) and one stopped line; the skills-integration check reports 0 unclassified.
+
+### CC-172 · The evaluation set's `brain recall` adapter, and 0.12.0's gate results (memory.md §8) · `todo`
+**Release:** 0.12.0
+**Changelog:** development only: the 0.12.0 evaluation set scores `brain recall` against the trust and answer gates.
+**Output:** an adapter in `eval/memory-0.12/adapters/` mapping the cases to `brain recall --pack` and `--search` as memory.md §8 says, and a results file with the gate figures (trust cases, answerable cases, unknown cases) and the measured tokens of every pack beside its estimate.
+**Acceptance:** the scorer runs end to end with the new adapter; 100% of trust cases pass, and every failure in the other kinds is listed with its cause; every pack's measured tokens are within its budget; the leak and PR format checks pass.
+
+### CC-173 · Retrieval changes chosen from CC-167's comparison (0074 §5) · `todo`
+**Release:** 0.12.0
+**Changelog:** `brain query` and `brain recall --search` find the right note more often, using small ports of the retrieval pieces that won the 0.12.0 comparison.
+**Output:** detailed after CC-167's RESULTS.md is merged: the pieces it recommends adopting or adapting, ported into `src/`, with their attribution; nothing it drops.
+**Acceptance:** on CC-164's questions and CC-165's answerable cases, recall@10 and MRR are at least the baseline's and the comparison's for those pieces; trust cases still pass 100%; no new runtime dependency; `npm test`, `npm run typecheck`, `npm run test:package` and the leak check pass.
+
 ## 0.13.0 — Knowledge pays back (decisions 0061, 0064, 0075)
 
 The opening grill ran on 2026-11-07 and is locked in [0075](../decisions/0075-weekly-review-and-targeted-corrections.md). One weekly report has What changed, Task analysis and What needs your decision, with roughly two minutes to read and five minutes to decide. Analyse meaningful changes since the last successful brief and current outstanding work; recommend an order of attention with reasons. Keep one report per week for browsable Notion history, updating that week's report on rerun under existing module/publishing rules.
@@ -174,3 +220,4 @@ After the feature cutoff, scope packaging/install/upgrade guidance, consistent N
 | U-23 | 0.8.0 in your brain: upgrade and migration 0013; try Domains off and on, a Won't Do task, a voice capture, a multi-subject meeting with one item and one subject kept in meeting only, an exact edited partial Review acceptance and a revision request; exclude previously ingested material and check reconciliation, source attribution and independently supported knowledge | After 0.8.0 is released and U-22 is closed; run the acceptance checks after the planned builds |
 | U-24 | 0.9.0 on your machine (migration plan step 6): see the installation diff and the rollback steps, install the global general skills and your brain's pinned snapshot, remove only the superseded copies the inventory names, check both agents load one definition per skill; then link one real repo with the link kit | Done on 2026-11-04: 0.9.0 installed in your brain and Notion migrations 0015 to 0017 applied; the global skills switch moved to CC-105 (0.9.2) |
 | U-25 | 0.10.0 in your brain: "review my projects" once, decide its Review rows, and one live-chat change with your yes | After 0.10.0 is released |
+| U-26 | 0.12.0 in your brain: turn on opening recall, link one real repo again, then work in it with Claude Code, say "wrap up" and approve one lesson, switch to Codex in the same repo and check it starts from where Claude Code stopped and uses the lesson, then back the other way; and a later session of the same agent | After 0.12.0 is released |
