@@ -8,10 +8,9 @@ import { ciWorkflowState, command, donePrNumbers, fail, isPrerelease, ROOT, slee
 const CI_POLL_MS = Number(process.env.UB_CI_POLL_MS ?? 20000);
 const CI_POLLS = Number(process.env.UB_CI_POLLS ?? 30);
 
-const [version, flag] = process.argv.slice(2);
-const dryRun = flag === "--dry-run";
 const semver = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
-if (!semver.test(version ?? "") || (flag !== undefined && !dryRun)) fail("Usage: node scripts/release.mjs <version> [--dry-run]");
+const { version, dryRun, partialReason, usage } = parseArguments(process.argv.slice(2));
+if (usage || !semver.test(version ?? "")) fail('Usage: node scripts/release.mjs <version> [--dry-run] [--allow-partial "<reason>"]');
 else {
   const failures = [];
   const worktrees = command("git", ["worktree", "list", "--porcelain"]).split("\n\n");
@@ -27,7 +26,20 @@ else {
     failures.push(`package.json is already ${held}; release ${held} or later`);
   }
   const rowChangelog = usesTaskRowChangelog(version);
-  const tasks = taskEntries().filter((entry) => entry.release === version && entry.status !== "dropped");
+  const entries = taskEntries();
+  const tasks = entries.filter((entry) => entry.release === version && entry.status !== "dropped");
+  // A prerelease ships the work of its release: 0.4.0-rc.1 counts the rows of 0.4.0 (#250: 0.10.1 was published with none).
+  const base = version.split("-")[0];
+  if (!entries.some((entry) => entry.status !== "dropped" && (entry.release === version || entry.release === base))) {
+    failures.push(`no task has **Release:** ${version}; merge its PR first`);
+  }
+  // Work of a later release already on main would ship in this one (F-0001); a release with a dated CHANGELOG section is out, and a development-only row ships nothing.
+  const ahead = laterWork(entries, base);
+  if (ahead.length > 0 && partialReason === undefined) {
+    const lowest = ahead.map((entry) => entry.release).sort(comparePrecedence)[0];
+    failures.push(`done tasks of a later release are on main: ${ahead.map(described).join(", ")}; release ${lowest} or later, or pass --allow-partial "<reason>"`);
+  }
+  const partial = ahead.length > 0 ? partialReason : undefined;
   if (!rowChangelog) {
     const changelog = readFileSync(resolve(ROOT, "CHANGELOG.md"), "utf8");
     if (!new RegExp(`^## ${version}(?: — |$)`, "m").test(changelog)) failures.push(`CHANGELOG.md has no ${version} entry`);
@@ -64,7 +76,7 @@ else {
   if (failures.length > 0) fail(`Release refused: ${failures.join("; ")}`);
   else if (dryRun) {
     if (rowChangelog) process.stdout.write(`${releaseSection(version, tasks, "YYYY-MM-DD", skills.line)}\n`);
-    process.stdout.write(`Would release ${version}${isPrerelease(version) ? " to npm@next" : ""}\n`);
+    process.stdout.write(`Would release ${version}${isPrerelease(version) ? " to npm@next" : ""}${partial === undefined ? "" : `, partial (${ahead.map(described).join(", ")} stays out): ${partial}`}\n`);
   }
   else {
     command("npm", ["version", version, "--no-git-tag-version", ...(version === held ? ["--allow-same-version"] : [])], { stdio: "inherit" });
@@ -75,7 +87,8 @@ else {
     writeFileSync(resolve(ROOT, "CHANGELOG.md"), dated);
     const publishArgs = ["publish", ...(isPrerelease(version) ? ["--tag", "next"] : [])];
     const staged = tryCommand("git", ["add", "package.json", "package-lock.json", "CHANGELOG.md"]);
-    const committed = staged.ok ? tryCommand("git", ["commit", "-m", version]) : staged;
+    const body = partial === undefined ? [] : ["-m", `Partial release: ${partial}\nOn main and not in it: ${ahead.map(described).join(", ")}`];
+    const committed = staged.ok ? tryCommand("git", ["commit", "-m", version, ...body]) : staged;
     const tagged = committed.ok ? tryCommand("git", ["tag", "-a", `v${version}`, "-m", version]) : committed;
     if (!tagged.ok) {
       fail(`Release stopped before publishing: ${tagged.message.split("\n")[0]}. Nothing was published or pushed.\n`
@@ -90,6 +103,35 @@ else {
     }
   }
 }
+
+/** `<version> [--dry-run] [--allow-partial "<reason>" | --allow-partial=<reason>]`, in any order; `usage` when anything else is given or a reason is blank. */
+function parseArguments(args) {
+  const parsed = { version: undefined, dryRun: false, partialReason: undefined, usage: false };
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    const inline = /^--allow-partial=(.*)$/s.exec(arg);
+    if (arg === "--dry-run" && !parsed.dryRun) parsed.dryRun = true;
+    else if ((arg === "--allow-partial" || inline !== null) && parsed.partialReason === undefined) {
+      const reason = inline === null ? args[++index] : inline[1];
+      if (reason === undefined || reason.trim() === "" || reason.startsWith("--")) parsed.usage = true;
+      else parsed.partialReason = reason.trim();
+    }
+    else if (!arg.startsWith("--") && parsed.version === undefined) parsed.version = arg;
+    else parsed.usage = true;
+  }
+  return parsed;
+}
+
+/** `done` tasks of a release above `base` that CHANGELOG.md has no dated section for, leaving out `development only` rows. */
+function laterWork(entries, base) {
+  const changelogPath = resolve(ROOT, "CHANGELOG.md");
+  const changelog = existsSync(changelogPath) ? readFileSync(changelogPath, "utf8") : "";
+  const released = new Set([...changelog.matchAll(/^## (\S+) — \d{4}-\d{2}-\d{2}/gm)].map((match) => match[1]));
+  return entries.filter((entry) => entry.status === "done" && semver.test(entry.release) && !released.has(entry.release)
+    && !/^\s*development only\b/.test(entry.changelog ?? "") && comparePrecedence(base, entry.release) < 0);
+}
+
+function described(entry) { return `${entry.id} (${entry.release})`; }
 
 /** SemVer 2.0.0 precedence of two `x.y.z[-pre]` versions, as src/lib/skills-range.ts orders them: negative when `left` is lower. */
 function comparePrecedence(left, right) {
