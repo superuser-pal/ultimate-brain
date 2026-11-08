@@ -2,7 +2,7 @@ import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { scanNotes } from "../lib/notes.ts";
 import { contextFor, eligibleNote, requireSuppressions } from "../lib/suppressions.ts";
-import { queryContext, queryTypes, queryWords, rankCandidates } from "../lib/query.ts";
+import { queryContext, queryTerms, queryTypes, rankCandidates } from "../lib/query.ts";
 
 /** `brain query --candidates <question>` (spec/cli.md §5.13). */
 export const queryCommand: Command = {
@@ -19,7 +19,7 @@ export const queryCommand: Command = {
     }
     if (args.positionals.length > 0) throw new BrainError("USAGE", `Unexpected argument: ${args.positionals[0]}`);
     const limit = parseLimit(args.options.limit as string | undefined);
-    const tokens = queryWords(question);
+    const tokens = queryTerms(question);
     const [context, scanned] = await Promise.all([
       queryContext(args.options.repo as string | undefined),
       scanNotes(brain!.root),
