@@ -8,6 +8,8 @@ The blind runs of brain-reflect on 2026-11-08, on the fixture of [README.md](REA
 
 **Verdict:** every acceptance line passes. No note changed without a yes. "later" wrote one pending proposal and nothing else. A report-only run and a nothing-found run wrote nothing. The fixes from the runners' notes (§3) went into the fork's second commit (2f9e80b), after these runs.
 
+**The released text (1.4.0) was read against these results, not rerun.** The runs used fork commit 945d221. brain-v1.4.0 (merge commit 4df1d73, vendored here) differs from it in four files of `brain/`, 10 lines added and 9 removed, all wording: the fixes of §3 (2f9e80b: the report adds nothing around it, `seconds` from a kept start time, a stale value in the input's words, each `key=value` its own log argument), "no schedule for it yet" dropped from the guide (449321b, CC-159), and the review's two rules (90afda7: "Review rows" counts only "later" proposals still pending at "done"; a contradiction's tie-break ends on the lower id). None of them changes which findings a run shows, what a yes, later or skip writes, or what a nothing-found or report-only run writes, which is what the lines of §2 check.
+
 ## 1. Sessions
 
 | Session | Sandbox | Start | User's words, in order |
