@@ -18,10 +18,10 @@ A handover is not copied into a memory, and a memory is not a task list (0074 §
 
 A memory is **eligible** for a caller when all of these hold:
 
-1. Its `lifecycle` is `reviewed`. A `draft` memory is a candidate the user hasn't approved (§3.3); `disputed` and `archived` are not eligible.
+1. Its `lifecycle` is `reviewed`. A `draft` memory is not approved (§3.3); `disputed` and `archived` are not eligible.
 2. Nothing supersedes it: it has no `superseded_by` relation (schema §6).
 3. Its reach includes the caller (0009, §2.1).
-4. The restricted-evidence rule (cli.md §5.13) leaves it in: a memory that rule leaves out whole is not eligible. A memory whose `sources` are all excluded material (0055) is not eligible either. A memory with no `sources` is judged on its own text.
+4. The restricted-evidence rule (cli.md §5.13) leaves it in: a memory that rule leaves out whole is not eligible. A memory with `sources` is not eligible either when that rule leaves out **every** one of them (a source it leaves out is no evidence, as `reflect` reads it, cli.md §5.32), since nothing then supports it (0055). A memory with no `sources` is judged on its own text.
 
 ### 2.1 The caller and reach
 
@@ -70,10 +70,11 @@ A one-off event is not a candidate; it belongs in the work record (§4).
 |---|---|
 | yes | `proposal new` with a `new_item` memory note, then `apply` decided in chat. The memory is written `reviewed` (cli.md §5.7 `new_item`). Decided in chat, it never becomes a Review row (cli.md §5.14.4) |
 | yes, with an edit | The same, with the user's text or reach |
-| later | `note new`: the memory is written `draft`. It is not eligible (§2) and is never published (0008). The next closing review lists the waiting drafts first, with their count, and asks again |
-| no | Nothing |
+| no, or later | Nothing. A candidate isn't kept: when the session's evidence recurs, a later closing review may show it again |
 
-A yes to a `draft` memory is a `review_notes` proposal decided in chat, which sets it `reviewed` (schema §11.2). A no to a draft archives it the same way. Memories never reach Notion (0008), so none of this has a Notion step.
+There is no waiting list of candidates: 0074 §2 allows no parallel approval queue, and a memory is approved or it doesn't exist. A `draft` memory (one written by `note new` some other way, or before 0.12.0) is not eligible (§2) until something reviews it. Memories never reach Notion (0008), so none of this has a Notion step.
+
+The closing review, "remember this" and the "wrap up" phrase are a section of the `brain-query` skill, which every linked repo has (cli.md §5.12). It is written in the skills fork and arrives as a released snapshot (skills-delivery.md §9.5), in a build task after this contract.
 
 The memory's frontmatter: `scope` and its list (schema "memory"), `confidence` (`verified` when the user stated it, `inferred` otherwise, `unverified` when the user doubts it), `origin` (the caller's `.brain` `repo`, or `brain` when there is none), and `sources` when it comes from notes or inputs the brain holds.
 
@@ -102,14 +103,14 @@ Opening recall runs only when `settings.recall` is `opening` (schema §12) **and
 ### 5.1 Selection (normative)
 
 1. **Memories:** the eligible ones (§2), ranked by 0009: `project`, then `area`, then `stack`, then `general`; within a level, by relevance to `--task` when given (§5.4), then by `updated`, newest first, then by `id`.
-2. **Work:** when the caller's folder has a `brain-kit.json` whose `tasks.mode` is `tracked-in-repo` and whose source is `markdown`, the items of that file whose status meaning is `in_progress` or `review` (the kit's `status_map` over §2.4's defaults, linked-repos.md §2.4), in file order. Each is its item key, title, raw status, and its **stopped line**: the first line after the item's line, before the next item or heading, that starts with `**Stopped:**`, without that prefix, trimmed to 300 characters. Without such a kit there is no work section, and the agent reads its task records itself (§4.1). An unreadable kit or task file leaves the work section empty and adds the warning `WORK_UNREADABLE`.
+2. **Work:** when the caller's folder has a `brain-kit.json` whose `tasks.mode` is `tracked-in-repo` and whose source is `markdown`, the items of that file whose status meaning is `in_progress` or `review` (the kit's `status_map` over §2.4's defaults, linked-repos.md §2.4), in file order. Each is its item key, title, raw status, and its **stopped line**: the first line after the item's line, before the next item or heading, that starts with `**Stopped:**`, without that prefix, trimmed to 300 characters. Without such a kit there is no work section, and the agent reads its task records itself (§4.1). A kit that isn't valid (linked-repos.md §2) or a task file that can't be read leaves `work` empty and sets `work_unread` to that file's repo-relative path (else `null`); it is no error, since the memories still help.
 3. The pack holds work first, then memories, each whole, in that order, while the next item fits in the budget (§5.2). An item that doesn't fit is left out whole, never cut; the items after it are still tried. Every left-out item is counted in `omitted`.
 
 ### 5.2 The token budget
 
 The budget is **800 tokens** by default (`--budget <n>`, an integer from 200 to 4000), for the whole delivered text: the framing lines and every item (0074 §3).
 
-The CLI counts with a fixed estimate: **tokens = ⌈UTF-8 bytes ÷ 3⌉**, summed over the delivered `text`. This over-counts English and Spanish prose against common tokenizers, so the real count stays under the budget. The evaluation (CC-165, CC-167) measures the delivered text with one named tokenizer and reports both numbers; if the real count ever exceeds the budget, the estimate's divisor changes, not the budget (0074 §6: the budget is never raised to make a case pass).
+The CLI counts with a fixed estimate: **tokens = ⌈UTF-8 bytes ÷ 3⌉**, summed over the delivered `text`. The estimate is a guard, not evidence (0074 §3): the **measured** count decides. The evaluation (CC-165, CC-167) measures every delivered `text` with one named tokenizer and reports both numbers; the measured count must stay within the budget. If it ever doesn't, the divisor gets smaller, never the budget larger (0074 §6).
 
 ### 5.3 Output
 
@@ -125,7 +126,7 @@ The CLI counts with a fixed estimate: **tokens = ⌈UTF-8 bytes ÷ 3⌉**, summe
     { "id": "mem-3k8d2m4q", "text": "acme-api: ask before running migrations; the prod database is shared.",
       "scope": "project", "confidence": "verified", "updated": "2026-10-30", "path": "memories/2026/10/2026-10-30-acme-api-migrations.md" }
   ],
-  "omitted": { "memories": 3, "work": 0 },
+  "omitted": { "memories": 3, "work": 0 }, "work_unread": null,
   "text": "Brain context for acme-api (prj-9x4t1b7e). Work: …"
 } }
 ```
@@ -181,4 +182,4 @@ The evaluation set's adapter maps its cases to these commands:
 | Knowledge question | `brain query --candidates` | as in 0.11.0 |
 | Answer | the agent's answer from those results | 0074 §6's gates: correct, complete enough, cited; inference labelled; unknown stays unknown |
 
-Errors: `USAGE` (a missing or extra argument, `--pack` with `--search`, a budget out of range), `REPO_NOT_FOUND` (`--repo` isn't a folder), `MARKER_INVALID` (a `.brain` that isn't the JSON of cli.md §5.12).
+Errors are cli.md §5.33's: `USAGE` for every bad call, a `--repo` that isn't a folder and an invalid `.brain` included, and `SUPPRESSIONS_UNREADABLE`.
