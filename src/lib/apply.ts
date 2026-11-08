@@ -518,7 +518,7 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
       break;
     case "contradiction":
       if (V === undefined) contest(a, field, p.after, String(p.from), D, String(p.source));
-      else resolveContradiction(a, field, V, String(p.from), D, String(p.source));
+      else resolveContradiction(a, field, V, String(p.from), D, String(p.source), p.after, String(p.id));
       break;
     case "add_to_note": {
       const content = String(V ?? p.content).replace(/\n+$/, "");
@@ -682,8 +682,11 @@ function contest(a: Record<string, unknown>, field: string, value: unknown, from
   else a.facts = facts;
 }
 
-/** contradiction edited: V is the accepted truth (spec/schema.md §11.2). */
-function resolveContradiction(a: Record<string, unknown>, field: string, value: unknown, from: string, learned: string, source: string): void {
+/**
+ * contradiction edited: V is the accepted truth (spec/schema.md §11.2). A new entry keeps the proposal's source when V is the value that
+ * source claims (`after`); any other value is the user's own, attributed `user-correction:<proposal id>` (0076 §1, CC-160).
+ */
+function resolveContradiction(a: Record<string, unknown>, field: string, value: unknown, from: string, learned: string, source: string, claimed: unknown, proposal: string): void {
   const timeline = list(a.timeline);
   const live = timeline
     .map((entry, index) => ({ entry, index }))
@@ -695,7 +698,7 @@ function resolveContradiction(a: Record<string, unknown>, field: string, value: 
   for (const { entry, index } of live) {
     next[index] = index === keep?.index ? entryWith(record(entry), { assessment: "accepted" }) : entryWith(record(entry), { until: from, assessment: "superseded" });
   }
-  if (keep === undefined) next.push(timelineEntry(field, value, from, learned, source, "accepted"));
+  if (keep === undefined) next.push(timelineEntry(field, value, from, learned, isDeepStrictEqual(value, claimed) ? source : `user-correction:${proposal}`, "accepted"));
   a.timeline = next;
   a.facts = { ...record(a.facts), [field]: value };
 }
