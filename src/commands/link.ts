@@ -168,7 +168,7 @@ function orderedMarker(marker: RepoMarker): RepoMarker {
 }
 
 /** cli.md §5.12 "Recall paragraph" (0074, memory.md §7), normative bytes. */
-const RECALL_PARAGRAPH = "At the start of substantive work, run `brain recall --pack --json` here and read its `text`: the user's lessons for this repo and where its work stopped. Mention a memory only when it shapes your approach. When the user says \"wrap up\", run the closing review of the `brain-query` skill.";
+const RECALL_PARAGRAPH = "At the start of substantive work, run `brain recall --pack --json` here and read its `text`: the user's lessons for this repo and where its work stopped. Mention a memory only when it shapes your approach. When the user says \"wrap up\", run the closing review of the `brain-query` skill: the lessons the user approves there are the one write this repo makes to the brain.";
 
 /** Whether `settings.recall` is `opening` (schema §12); `off` or absent leaves the paragraph out. */
 function recallOpening(config: Record<string, unknown>): boolean {
