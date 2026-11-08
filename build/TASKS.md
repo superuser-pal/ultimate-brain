@@ -158,7 +158,7 @@ Reflection across notes: contradictions, stale facts, duplicates, promotions and
 
 ## 0.11.1
 
-### CC-161 · reflect --candidates gives fewer, truer clusters: shared ground without one ingest's context, terms without boilerplate (#266) · `review`
+### CC-161 · reflect --candidates gives fewer, truer clusters: shared ground without one ingest's context, terms without boilerplate (#266) · `done` (#267)
 **Release:** 0.11.1
 **Changelog:** `brain reflect --candidates` finds far fewer, truer clusters: shared ground ignores the meeting and project notes were taken from, and terms skip link targets, URLs, code, sign-offs, contractions, function words and people's names.
 **Output:** spec/cli.md §5.32 (common ground, prose of a line, term stopwords, boilerplate, the person-name rule); `src/lib/reflect.ts`; two tests in `tests/reflect.test.ts`. Dogfood #266: on the real brain the run went from 387 clusters to 53 (13 shared ground, 2 overtaken, 38 terms; counts only, nothing from the brain in this repo).
