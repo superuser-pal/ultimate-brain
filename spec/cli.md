@@ -289,6 +289,15 @@ brain init ~/brain --owner "Alex" --set-default --json
 
 `created` lists every file written, sorted by path, including the `.gitkeep` placeholders of the empty note folders; the example above is shortened.
 
+**Human output** (without `--json`, CC-156): what was made, then the two next steps, with the checklist's path under `product.path` (§5.2):
+
+```text
+Initialized Ultimate Brain at /Users/me/brain
+Next:
+  1. Build your Notion space: follow /usr/local/lib/node_modules/ultimate-brain/notion/CHECKLIST.md
+  2. Then, in /Users/me/brain, ask your agent: "connect the brain to Notion"
+```
+
 Errors: `TARGET_NOT_EMPTY`, `ALREADY_A_BRAIN`, `BRAIN_IS_PRODUCT_REPO`, `SKILLS_SNAPSHOT_INVALID`, `OUTSIDE_ROOT` (template path escapes, defensive).
 
 ### 5.2 `brain status`
@@ -887,7 +896,7 @@ Errors: `UNKNOWN_ID`, `OUTSIDE_ROOT`, `USAGE` (path missing or not a directory),
 brain query --candidates "<question>" [--limit <n>] [--types <t>[,<t>…]] [--repo <path>]
 ```
 
-Returns ranked candidate notes for the query skill (CX-11); the skill reads them and writes the answer. `brain query` without `--candidates` is a usage error that points to the `brain-query` skill.
+Returns ranked candidate notes for the query skill (CX-11); the skill reads them and writes the answer. `brain query` without `--candidates`, with a question or without one (`brain query "what did we decide?"`), is `USAGE` with the message `brain query requires --candidates; use the brain-query skill to answer questions`. With `--candidates`, an extra argument is `USAGE` (`Unexpected argument: <it>`).
 
 **Ranking (deterministic):**
 1. **Tokens:** NFKD, drop combining marks, lowercase, split on runs outside `[a-z0-9]`, drop tokens shorter than 2 and these stopwords: `a an and are as at be by did do does for from has have how in is it of on or that the this to was we what when where which who why will with` and `al como con de del el en es la las lo los para por que se su un una y`.
@@ -1546,6 +1555,8 @@ brain modules
 brain modules on <module>
 brain modules off <module>
 ```
+
+`brain modules list` is the same command as `brain modules` (an alias, CC-156): same output, and `command` is `modules` in the envelope.
 
 Lists or switches the optional modules of schema §12: `domains`, `knowledge`, `orgs`, `documents`, `reports`, `tasks`, `planning`. Core has no switch.
 
