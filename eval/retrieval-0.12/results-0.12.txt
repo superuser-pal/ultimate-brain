@@ -1,0 +1,644 @@
+commit: c0529971ba8c064c2e393e1e52c41c065d54eeef
+command: RUN_ROWS=1 node --experimental-strip-types eval/retrieval-0.12/run.ts <brain-dir> eval/search-0.5/questions.json
+notes searched: 2582; questions: 50; limit: 10; tokenizer: gpt-tokenizer 4.1.0, encoding o200k_base
+longest body: 319 characters; notes with more than one chunk: 0
+
+## Recall, all 50 questions
+
+| retriever | recall@1 | recall@5 | recall@10 | MRR |
+|---|---|---|---|---|
+| brain | 21/50 | 25/50 | 30/50 | 0.46 |
+| bm25-0.5 | 27/50 | 31/50 | 36/50 | 0.59 |
+| brain JSON, one snippet | 21/50 | 25/50 | 30/50 | 0.46 |
+| brain, compact text page | 21/50 | 25/50 | 30/50 | 0.46 |
+| co-bm25 | 21/50 | 29/50 | 31/50 | 0.49 |
+| co-bm25, brain tokens | 20/50 | 29/50 | 32/50 | 0.48 |
+| co-bm25F | 27/50 | 30/50 | 34/50 | 0.58 |
+| co-bm25F, brain tokens + prefix | 28/50 | 32/50 | 36/50 | 0.61 |
+| co-chunks | 1/50 | 13/50 | 14/50 | 0.09 |
+| co-chunks + prefix | 12/50 | 22/50 | 28/50 | 0.33 |
+| co-chunks + meta prefix | 21/50 | 29/50 | 32/50 | 0.50 |
+
+## Recall@10 and MRR by kind
+
+| retriever | decision-by-topic | paraphrase | why | fact-in-body | person-role |
+|---|---|---|---|---|---|
+| brain | 10/10 (0.95) | 6/10 (0.26) | 10/10 (1.00) | 0/10 (0.00) | 4/10 (0.08) |
+| bm25-0.5 | 10/10 (0.85) | 6/10 (0.08) | 10/10 (1.00) | 0/10 (0.00) | 10/10 (1.00) |
+| brain JSON, one snippet | 10/10 (0.95) | 6/10 (0.26) | 10/10 (1.00) | 0/10 (0.00) | 4/10 (0.08) |
+| brain, compact text page | 10/10 (0.95) | 6/10 (0.26) | 10/10 (1.00) | 0/10 (0.00) | 4/10 (0.08) |
+| co-bm25 | 10/10 (0.44) | 1/10 (0.01) | 10/10 (1.00) | 0/10 (0.00) | 10/10 (1.00) |
+| co-bm25, brain tokens | 10/10 (0.35) | 2/10 (0.02) | 10/10 (1.00) | 0/10 (0.00) | 10/10 (1.00) |
+| co-bm25F | 10/10 (0.85) | 4/10 (0.07) | 10/10 (1.00) | 0/10 (0.00) | 10/10 (1.00) |
+| co-bm25F, brain tokens + prefix | 10/10 (0.85) | 6/10 (0.18) | 10/10 (1.00) | 0/10 (0.00) | 10/10 (1.00) |
+| co-chunks | 0/10 (0.00) | 0/10 (0.00) | 4/10 (0.07) | 0/10 (0.00) | 10/10 (0.39) |
+| co-chunks + prefix | 8/10 (0.17) | 0/10 (0.00) | 10/10 (1.00) | 0/10 (0.00) | 10/10 (0.47) |
+| co-chunks + meta prefix | 10/10 (0.47) | 2/10 (0.02) | 10/10 (1.00) | 0/10 (0.00) | 10/10 (1.00) |
+
+## Tokens a top-10 result page costs (per question; measured: gpt-tokenizer 4.1.0, encoding o200k_base; estimate: ⌈UTF-8 bytes ÷ 3⌉)
+
+| retriever | measured mean | measured max | estimate mean | estimate max | lowest estimate ÷ measured | pages the estimate undercounts |
+|---|---|---|---|---|---|---|
+| brain | 1092 | 1246 | 1340 | 1601 | 1.17 | 0/50 |
+| bm25-0.5 | 882 | 1074 | 1122 | 1452 | 1.09 | 0/50 |
+| brain JSON, one snippet | 1366 | 1559 | 1742 | 2087 | 1.23 | 0/50 |
+| brain, compact text page | 1007 | 1202 | 1299 | 1650 | 1.21 | 0/50 |
+| co-bm25 | 744 | 1050 | 930 | 1452 | 1.09 | 0/50 |
+| co-bm25, brain tokens | 747 | 1050 | 940 | 1452 | 1.09 | 0/50 |
+| co-bm25F | 893 | 1125 | 1122 | 1542 | 1.09 | 0/50 |
+| co-bm25F, brain tokens + prefix | 886 | 1074 | 1123 | 1452 | 1.09 | 0/50 |
+| co-chunks | 560 | 793 | 663 | 1031 | 1.08 | 0/50 |
+| co-chunks + prefix | 735 | 1050 | 919 | 1452 | 1.11 | 0/50 |
+| co-chunks + meta prefix | 752 | 1050 | 939 | 1452 | 1.09 | 0/50 |
+
+## Freshness: the 10 "why" answers changed after indexing
+
+| retriever | answer in top 10 | results shown from a changed file's old text |
+|---|---|---|
+| brain (reads the files on every call) | 10/10 | 0 |
+| co-chunks + meta prefix | 10/10 | 10 |
+| … + freshness | 0/10 | 0 |
+
+## Tokeniser probe (does the query match the text?)
+
+| query | text | brain tokens | upstream tokens | brain tokens + CJK n-grams |
+|---|---|---|---|---|
+| Felix | Félix Ortega confirmed the money. | yes | no | yes |
+| decision | Decisión: usar Supabase para el login. | yes | no | yes |
+| 予算 | 東京オフィスの予算を決めた。 | no | yes | yes |
+| sign in | Sign-in uses Supabase Auth. | yes | no | yes |
+| deci | The decision was taken at the sync. | yes | no | yes |
+| Lokalise | Chosen because Lokalise keeps the strings in one place. | yes | yes | yes |
+
+## The estimate on other scripts
+
+| text | measured | estimate | estimate ÷ measured |
+|---|---|---|---|
+| English | 20 | 31 | 1.55 |
+| Spanish | 22 | 32 | 1.45 |
+| Japanese | 26 | 33 | 1.27 |
+| ids and JSON | 39 | 33 | 0.85 |
+
+## Lines of code per piece
+
+| piece | file | lines |
+|---|---|---|
+| BM25 | bm25.ts | 45 |
+| tokenisation | tokenize.ts | 55 |
+| chunking | chunk.ts | 36 |
+| synthetic prefix | prefix.ts | 16 |
+| compact snippets | snippet.ts | 14 |
+| content freshness | freshness.ts | 14 |
+
+## Rows
+
+brain	decision-by-topic	1	What did we decide about translations for Lumdun CRM migration?
+brain	decision-by-topic	2	What did we decide about authentication for Zelsel mobile app?
+brain	decision-by-topic	1	What did we decide about invoicing for Pexzel CRM migration?
+brain	decision-by-topic	1	What did we decide about hosting for Marzel intranet?
+brain	decision-by-topic	1	What did we decide about content management for Brenkip mobile app?
+brain	decision-by-topic	1	What did we decide about search for Marzel mobile app?
+brain	decision-by-topic	1	What did we decide about translations for Quopex mobile app?
+brain	decision-by-topic	1	What did we decide about translations for Brental website?
+brain	decision-by-topic	1	What did we decide about hosting for Ralvik intranet?
+brain	decision-by-topic	1	What did we decide about authentication for Nortor booking platform?
+brain	paraphrase	9	How do we handle where it runs on the Ostvik CRM migration?
+brain	paraphrase	6	How do we handle log in on the Zelvik intranet?
+brain	paraphrase	-	How do we handle languages on the Talquo mobile app?
+brain	paraphrase	1	How do we handle where the data lives on the Brental mobile app?
+brain	paraphrase	-	How do we handle transactional mail on the Zelvik mobile app?
+brain	paraphrase	1	How do we handle data store on the Zelsel mobile app?
+brain	paraphrase	4	How do we handle editing pages on the Selbren website?
+brain	paraphrase	-	How do we handle transactional mail on the Pexzel shop?
+brain	paraphrase	9	How do we handle newsletters on the Pextal website?
+brain	paraphrase	-	How do we handle multilingual on the Lumvik mobile app?
+brain	why	1	Why did Vikkip pick Resend for the mobile app?
+brain	why	1	Why did Quopex pick Lokalise for the shop?
+brain	why	1	Why did Kipsel pick MySQL for the booking platform?
+brain	why	1	Why did Quopex pick Plausible for the shop?
+brain	why	1	Why did Zelvik pick React Native for the mobile app?
+brain	why	1	Why did Dunvik pick WordPress for the CRM migration?
+brain	why	1	Why did Selbren pick Lokalise for the website?
+brain	why	1	Why did Lumdun pick Paddle for the intranet?
+brain	why	1	Why did Dunmar pick Plausible for the CRM migration?
+brain	why	1	Why did Lumvik pick WordPress for the shop?
+brain	fact-in-body	-	What is the budget for the Marzel shop?
+brain	fact-in-body	-	What is the budget for the Nortor website?
+brain	fact-in-body	-	What is the budget for the Kipsel intranet?
+brain	fact-in-body	-	What is the budget for the Talquo CRM migration?
+brain	fact-in-body	-	What is the budget for the Selbren website?
+brain	fact-in-body	-	What is the budget for the Dunvik CRM migration?
+brain	fact-in-body	-	What is the budget for the Quopex shop?
+brain	fact-in-body	-	What is the budget for the Nortor intranet?
+brain	fact-in-body	-	What is the budget for the Talquo mobile app?
+brain	fact-in-body	-	What is the budget for the Lumvik booking platform?
+brain	person-role	-	Who is the designer on the Quokip CRM migration?
+brain	person-role	-	Who is the data analyst on the Pexzel CRM migration?
+brain	person-role	-	Who is the data analyst on the Quokip booking platform?
+brain	person-role	10	Who is the data analyst on the Pexzel shop?
+brain	person-role	8	Who is the data analyst on the Nortor intranet?
+brain	person-role	-	Who is the project manager on the Lumdun CRM migration?
+brain	person-role	-	Who is the QA lead on the Brenkip mobile app?
+brain	person-role	4	Who is the account manager on the Lumdun intranet?
+brain	person-role	-	Who is the product owner on the Dunmar CRM migration?
+brain	person-role	3	Who is the project manager on the Marzel intranet?
+bm25-0.5	decision-by-topic	1	What did we decide about translations for Lumdun CRM migration?
+bm25-0.5	decision-by-topic	2	What did we decide about authentication for Zelsel mobile app?
+bm25-0.5	decision-by-topic	1	What did we decide about invoicing for Pexzel CRM migration?
+bm25-0.5	decision-by-topic	2	What did we decide about hosting for Marzel intranet?
+bm25-0.5	decision-by-topic	1	What did we decide about content management for Brenkip mobile app?
+bm25-0.5	decision-by-topic	1	What did we decide about search for Marzel mobile app?
+bm25-0.5	decision-by-topic	1	What did we decide about translations for Quopex mobile app?
+bm25-0.5	decision-by-topic	1	What did we decide about translations for Brental website?
+bm25-0.5	decision-by-topic	2	What did we decide about hosting for Ralvik intranet?
+bm25-0.5	decision-by-topic	1	What did we decide about authentication for Nortor booking platform?
+bm25-0.5	paraphrase	-	How do we handle where it runs on the Ostvik CRM migration?
+bm25-0.5	paraphrase	8	How do we handle log in on the Zelvik intranet?
+bm25-0.5	paraphrase	-	How do we handle languages on the Talquo mobile app?
+bm25-0.5	paraphrase	4	How do we handle where the data lives on the Brental mobile app?
+bm25-0.5	paraphrase	-	How do we handle transactional mail on the Zelvik mobile app?
+bm25-0.5	paraphrase	10	How do we handle data store on the Zelsel mobile app?
+bm25-0.5	paraphrase	10	How do we handle editing pages on the Selbren website?
+bm25-0.5	paraphrase	-	How do we handle transactional mail on the Pexzel shop?
+bm25-0.5	paraphrase	10	How do we handle newsletters on the Pextal website?
+bm25-0.5	paraphrase	9	How do we handle multilingual on the Lumvik mobile app?
+bm25-0.5	why	1	Why did Vikkip pick Resend for the mobile app?
+bm25-0.5	why	1	Why did Quopex pick Lokalise for the shop?
+bm25-0.5	why	1	Why did Kipsel pick MySQL for the booking platform?
+bm25-0.5	why	1	Why did Quopex pick Plausible for the shop?
+bm25-0.5	why	1	Why did Zelvik pick React Native for the mobile app?
+bm25-0.5	why	1	Why did Dunvik pick WordPress for the CRM migration?
+bm25-0.5	why	1	Why did Selbren pick Lokalise for the website?
+bm25-0.5	why	1	Why did Lumdun pick Paddle for the intranet?
+bm25-0.5	why	1	Why did Dunmar pick Plausible for the CRM migration?
+bm25-0.5	why	1	Why did Lumvik pick WordPress for the shop?
+bm25-0.5	fact-in-body	-	What is the budget for the Marzel shop?
+bm25-0.5	fact-in-body	-	What is the budget for the Nortor website?
+bm25-0.5	fact-in-body	-	What is the budget for the Kipsel intranet?
+bm25-0.5	fact-in-body	-	What is the budget for the Talquo CRM migration?
+bm25-0.5	fact-in-body	-	What is the budget for the Selbren website?
+bm25-0.5	fact-in-body	-	What is the budget for the Dunvik CRM migration?
+bm25-0.5	fact-in-body	-	What is the budget for the Quopex shop?
+bm25-0.5	fact-in-body	-	What is the budget for the Nortor intranet?
+bm25-0.5	fact-in-body	-	What is the budget for the Talquo mobile app?
+bm25-0.5	fact-in-body	-	What is the budget for the Lumvik booking platform?
+bm25-0.5	person-role	1	Who is the designer on the Quokip CRM migration?
+bm25-0.5	person-role	1	Who is the data analyst on the Pexzel CRM migration?
+bm25-0.5	person-role	1	Who is the data analyst on the Quokip booking platform?
+bm25-0.5	person-role	1	Who is the data analyst on the Pexzel shop?
+bm25-0.5	person-role	1	Who is the data analyst on the Nortor intranet?
+bm25-0.5	person-role	1	Who is the project manager on the Lumdun CRM migration?
+bm25-0.5	person-role	1	Who is the QA lead on the Brenkip mobile app?
+bm25-0.5	person-role	1	Who is the account manager on the Lumdun intranet?
+bm25-0.5	person-role	1	Who is the product owner on the Dunmar CRM migration?
+bm25-0.5	person-role	1	Who is the project manager on the Marzel intranet?
+brain JSON, one snippet	decision-by-topic	1	What did we decide about translations for Lumdun CRM migration?
+brain JSON, one snippet	decision-by-topic	2	What did we decide about authentication for Zelsel mobile app?
+brain JSON, one snippet	decision-by-topic	1	What did we decide about invoicing for Pexzel CRM migration?
+brain JSON, one snippet	decision-by-topic	1	What did we decide about hosting for Marzel intranet?
+brain JSON, one snippet	decision-by-topic	1	What did we decide about content management for Brenkip mobile app?
+brain JSON, one snippet	decision-by-topic	1	What did we decide about search for Marzel mobile app?
+brain JSON, one snippet	decision-by-topic	1	What did we decide about translations for Quopex mobile app?
+brain JSON, one snippet	decision-by-topic	1	What did we decide about translations for Brental website?
+brain JSON, one snippet	decision-by-topic	1	What did we decide about hosting for Ralvik intranet?
+brain JSON, one snippet	decision-by-topic	1	What did we decide about authentication for Nortor booking platform?
+brain JSON, one snippet	paraphrase	9	How do we handle where it runs on the Ostvik CRM migration?
+brain JSON, one snippet	paraphrase	6	How do we handle log in on the Zelvik intranet?
+brain JSON, one snippet	paraphrase	-	How do we handle languages on the Talquo mobile app?
+brain JSON, one snippet	paraphrase	1	How do we handle where the data lives on the Brental mobile app?
+brain JSON, one snippet	paraphrase	-	How do we handle transactional mail on the Zelvik mobile app?
+brain JSON, one snippet	paraphrase	1	How do we handle data store on the Zelsel mobile app?
+brain JSON, one snippet	paraphrase	4	How do we handle editing pages on the Selbren website?
+brain JSON, one snippet	paraphrase	-	How do we handle transactional mail on the Pexzel shop?
+brain JSON, one snippet	paraphrase	9	How do we handle newsletters on the Pextal website?
+brain JSON, one snippet	paraphrase	-	How do we handle multilingual on the Lumvik mobile app?
+brain JSON, one snippet	why	1	Why did Vikkip pick Resend for the mobile app?
+brain JSON, one snippet	why	1	Why did Quopex pick Lokalise for the shop?
+brain JSON, one snippet	why	1	Why did Kipsel pick MySQL for the booking platform?
+brain JSON, one snippet	why	1	Why did Quopex pick Plausible for the shop?
+brain JSON, one snippet	why	1	Why did Zelvik pick React Native for the mobile app?
+brain JSON, one snippet	why	1	Why did Dunvik pick WordPress for the CRM migration?
+brain JSON, one snippet	why	1	Why did Selbren pick Lokalise for the website?
+brain JSON, one snippet	why	1	Why did Lumdun pick Paddle for the intranet?
+brain JSON, one snippet	why	1	Why did Dunmar pick Plausible for the CRM migration?
+brain JSON, one snippet	why	1	Why did Lumvik pick WordPress for the shop?
+brain JSON, one snippet	fact-in-body	-	What is the budget for the Marzel shop?
+brain JSON, one snippet	fact-in-body	-	What is the budget for the Nortor website?
+brain JSON, one snippet	fact-in-body	-	What is the budget for the Kipsel intranet?
+brain JSON, one snippet	fact-in-body	-	What is the budget for the Talquo CRM migration?
+brain JSON, one snippet	fact-in-body	-	What is the budget for the Selbren website?
+brain JSON, one snippet	fact-in-body	-	What is the budget for the Dunvik CRM migration?
+brain JSON, one snippet	fact-in-body	-	What is the budget for the Quopex shop?
+brain JSON, one snippet	fact-in-body	-	What is the budget for the Nortor intranet?
+brain JSON, one snippet	fact-in-body	-	What is the budget for the Talquo mobile app?
+brain JSON, one snippet	fact-in-body	-	What is the budget for the Lumvik booking platform?
+brain JSON, one snippet	person-role	-	Who is the designer on the Quokip CRM migration?
+brain JSON, one snippet	person-role	-	Who is the data analyst on the Pexzel CRM migration?
+brain JSON, one snippet	person-role	-	Who is the data analyst on the Quokip booking platform?
+brain JSON, one snippet	person-role	10	Who is the data analyst on the Pexzel shop?
+brain JSON, one snippet	person-role	8	Who is the data analyst on the Nortor intranet?
+brain JSON, one snippet	person-role	-	Who is the project manager on the Lumdun CRM migration?
+brain JSON, one snippet	person-role	-	Who is the QA lead on the Brenkip mobile app?
+brain JSON, one snippet	person-role	4	Who is the account manager on the Lumdun intranet?
+brain JSON, one snippet	person-role	-	Who is the product owner on the Dunmar CRM migration?
+brain JSON, one snippet	person-role	3	Who is the project manager on the Marzel intranet?
+brain, compact text page	decision-by-topic	1	What did we decide about translations for Lumdun CRM migration?
+brain, compact text page	decision-by-topic	2	What did we decide about authentication for Zelsel mobile app?
+brain, compact text page	decision-by-topic	1	What did we decide about invoicing for Pexzel CRM migration?
+brain, compact text page	decision-by-topic	1	What did we decide about hosting for Marzel intranet?
+brain, compact text page	decision-by-topic	1	What did we decide about content management for Brenkip mobile app?
+brain, compact text page	decision-by-topic	1	What did we decide about search for Marzel mobile app?
+brain, compact text page	decision-by-topic	1	What did we decide about translations for Quopex mobile app?
+brain, compact text page	decision-by-topic	1	What did we decide about translations for Brental website?
+brain, compact text page	decision-by-topic	1	What did we decide about hosting for Ralvik intranet?
+brain, compact text page	decision-by-topic	1	What did we decide about authentication for Nortor booking platform?
+brain, compact text page	paraphrase	9	How do we handle where it runs on the Ostvik CRM migration?
+brain, compact text page	paraphrase	6	How do we handle log in on the Zelvik intranet?
+brain, compact text page	paraphrase	-	How do we handle languages on the Talquo mobile app?
+brain, compact text page	paraphrase	1	How do we handle where the data lives on the Brental mobile app?
+brain, compact text page	paraphrase	-	How do we handle transactional mail on the Zelvik mobile app?
+brain, compact text page	paraphrase	1	How do we handle data store on the Zelsel mobile app?
+brain, compact text page	paraphrase	4	How do we handle editing pages on the Selbren website?
+brain, compact text page	paraphrase	-	How do we handle transactional mail on the Pexzel shop?
+brain, compact text page	paraphrase	9	How do we handle newsletters on the Pextal website?
+brain, compact text page	paraphrase	-	How do we handle multilingual on the Lumvik mobile app?
+brain, compact text page	why	1	Why did Vikkip pick Resend for the mobile app?
+brain, compact text page	why	1	Why did Quopex pick Lokalise for the shop?
+brain, compact text page	why	1	Why did Kipsel pick MySQL for the booking platform?
+brain, compact text page	why	1	Why did Quopex pick Plausible for the shop?
+brain, compact text page	why	1	Why did Zelvik pick React Native for the mobile app?
+brain, compact text page	why	1	Why did Dunvik pick WordPress for the CRM migration?
+brain, compact text page	why	1	Why did Selbren pick Lokalise for the website?
+brain, compact text page	why	1	Why did Lumdun pick Paddle for the intranet?
+brain, compact text page	why	1	Why did Dunmar pick Plausible for the CRM migration?
+brain, compact text page	why	1	Why did Lumvik pick WordPress for the shop?
+brain, compact text page	fact-in-body	-	What is the budget for the Marzel shop?
+brain, compact text page	fact-in-body	-	What is the budget for the Nortor website?
+brain, compact text page	fact-in-body	-	What is the budget for the Kipsel intranet?
+brain, compact text page	fact-in-body	-	What is the budget for the Talquo CRM migration?
+brain, compact text page	fact-in-body	-	What is the budget for the Selbren website?
+brain, compact text page	fact-in-body	-	What is the budget for the Dunvik CRM migration?
+brain, compact text page	fact-in-body	-	What is the budget for the Quopex shop?
+brain, compact text page	fact-in-body	-	What is the budget for the Nortor intranet?
+brain, compact text page	fact-in-body	-	What is the budget for the Talquo mobile app?
+brain, compact text page	fact-in-body	-	What is the budget for the Lumvik booking platform?
+brain, compact text page	person-role	-	Who is the designer on the Quokip CRM migration?
+brain, compact text page	person-role	-	Who is the data analyst on the Pexzel CRM migration?
+brain, compact text page	person-role	-	Who is the data analyst on the Quokip booking platform?
+brain, compact text page	person-role	10	Who is the data analyst on the Pexzel shop?
+brain, compact text page	person-role	8	Who is the data analyst on the Nortor intranet?
+brain, compact text page	person-role	-	Who is the project manager on the Lumdun CRM migration?
+brain, compact text page	person-role	-	Who is the QA lead on the Brenkip mobile app?
+brain, compact text page	person-role	4	Who is the account manager on the Lumdun intranet?
+brain, compact text page	person-role	-	Who is the product owner on the Dunmar CRM migration?
+brain, compact text page	person-role	3	Who is the project manager on the Marzel intranet?
+co-bm25	decision-by-topic	2	What did we decide about translations for Lumdun CRM migration?
+co-bm25	decision-by-topic	3	What did we decide about authentication for Zelsel mobile app?
+co-bm25	decision-by-topic	2	What did we decide about invoicing for Pexzel CRM migration?
+co-bm25	decision-by-topic	2	What did we decide about hosting for Marzel intranet?
+co-bm25	decision-by-topic	2	What did we decide about content management for Brenkip mobile app?
+co-bm25	decision-by-topic	4	What did we decide about search for Marzel mobile app?
+co-bm25	decision-by-topic	1	What did we decide about translations for Quopex mobile app?
+co-bm25	decision-by-topic	2	What did we decide about translations for Brental website?
+co-bm25	decision-by-topic	4	What did we decide about hosting for Ralvik intranet?
+co-bm25	decision-by-topic	9	What did we decide about authentication for Nortor booking platform?
+co-bm25	paraphrase	-	How do we handle where it runs on the Ostvik CRM migration?
+co-bm25	paraphrase	-	How do we handle log in on the Zelvik intranet?
+co-bm25	paraphrase	-	How do we handle languages on the Talquo mobile app?
+co-bm25	paraphrase	-	How do we handle where the data lives on the Brental mobile app?
+co-bm25	paraphrase	-	How do we handle transactional mail on the Zelvik mobile app?
+co-bm25	paraphrase	-	How do we handle data store on the Zelsel mobile app?
+co-bm25	paraphrase	8	How do we handle editing pages on the Selbren website?
+co-bm25	paraphrase	-	How do we handle transactional mail on the Pexzel shop?
+co-bm25	paraphrase	-	How do we handle newsletters on the Pextal website?
+co-bm25	paraphrase	-	How do we handle multilingual on the Lumvik mobile app?
+co-bm25	why	1	Why did Vikkip pick Resend for the mobile app?
+co-bm25	why	1	Why did Quopex pick Lokalise for the shop?
+co-bm25	why	1	Why did Kipsel pick MySQL for the booking platform?
+co-bm25	why	1	Why did Quopex pick Plausible for the shop?
+co-bm25	why	1	Why did Zelvik pick React Native for the mobile app?
+co-bm25	why	1	Why did Dunvik pick WordPress for the CRM migration?
+co-bm25	why	1	Why did Selbren pick Lokalise for the website?
+co-bm25	why	1	Why did Lumdun pick Paddle for the intranet?
+co-bm25	why	1	Why did Dunmar pick Plausible for the CRM migration?
+co-bm25	why	1	Why did Lumvik pick WordPress for the shop?
+co-bm25	fact-in-body	-	What is the budget for the Marzel shop?
+co-bm25	fact-in-body	-	What is the budget for the Nortor website?
+co-bm25	fact-in-body	-	What is the budget for the Kipsel intranet?
+co-bm25	fact-in-body	-	What is the budget for the Talquo CRM migration?
+co-bm25	fact-in-body	-	What is the budget for the Selbren website?
+co-bm25	fact-in-body	-	What is the budget for the Dunvik CRM migration?
+co-bm25	fact-in-body	-	What is the budget for the Quopex shop?
+co-bm25	fact-in-body	-	What is the budget for the Nortor intranet?
+co-bm25	fact-in-body	-	What is the budget for the Talquo mobile app?
+co-bm25	fact-in-body	-	What is the budget for the Lumvik booking platform?
+co-bm25	person-role	1	Who is the designer on the Quokip CRM migration?
+co-bm25	person-role	1	Who is the data analyst on the Pexzel CRM migration?
+co-bm25	person-role	1	Who is the data analyst on the Quokip booking platform?
+co-bm25	person-role	1	Who is the data analyst on the Pexzel shop?
+co-bm25	person-role	1	Who is the data analyst on the Nortor intranet?
+co-bm25	person-role	1	Who is the project manager on the Lumdun CRM migration?
+co-bm25	person-role	1	Who is the QA lead on the Brenkip mobile app?
+co-bm25	person-role	1	Who is the account manager on the Lumdun intranet?
+co-bm25	person-role	1	Who is the product owner on the Dunmar CRM migration?
+co-bm25	person-role	1	Who is the project manager on the Marzel intranet?
+co-bm25, brain tokens	decision-by-topic	2	What did we decide about translations for Lumdun CRM migration?
+co-bm25, brain tokens	decision-by-topic	3	What did we decide about authentication for Zelsel mobile app?
+co-bm25, brain tokens	decision-by-topic	3	What did we decide about invoicing for Pexzel CRM migration?
+co-bm25, brain tokens	decision-by-topic	4	What did we decide about hosting for Marzel intranet?
+co-bm25, brain tokens	decision-by-topic	2	What did we decide about content management for Brenkip mobile app?
+co-bm25, brain tokens	decision-by-topic	4	What did we decide about search for Marzel mobile app?
+co-bm25, brain tokens	decision-by-topic	2	What did we decide about translations for Quopex mobile app?
+co-bm25, brain tokens	decision-by-topic	2	What did we decide about translations for Brental website?
+co-bm25, brain tokens	decision-by-topic	4	What did we decide about hosting for Ralvik intranet?
+co-bm25, brain tokens	decision-by-topic	8	What did we decide about authentication for Nortor booking platform?
+co-bm25, brain tokens	paraphrase	-	How do we handle where it runs on the Ostvik CRM migration?
+co-bm25, brain tokens	paraphrase	10	How do we handle log in on the Zelvik intranet?
+co-bm25, brain tokens	paraphrase	-	How do we handle languages on the Talquo mobile app?
+co-bm25, brain tokens	paraphrase	7	How do we handle where the data lives on the Brental mobile app?
+co-bm25, brain tokens	paraphrase	-	How do we handle transactional mail on the Zelvik mobile app?
+co-bm25, brain tokens	paraphrase	-	How do we handle data store on the Zelsel mobile app?
+co-bm25, brain tokens	paraphrase	-	How do we handle editing pages on the Selbren website?
+co-bm25, brain tokens	paraphrase	-	How do we handle transactional mail on the Pexzel shop?
+co-bm25, brain tokens	paraphrase	-	How do we handle newsletters on the Pextal website?
+co-bm25, brain tokens	paraphrase	-	How do we handle multilingual on the Lumvik mobile app?
+co-bm25, brain tokens	why	1	Why did Vikkip pick Resend for the mobile app?
+co-bm25, brain tokens	why	1	Why did Quopex pick Lokalise for the shop?
+co-bm25, brain tokens	why	1	Why did Kipsel pick MySQL for the booking platform?
+co-bm25, brain tokens	why	1	Why did Quopex pick Plausible for the shop?
+co-bm25, brain tokens	why	1	Why did Zelvik pick React Native for the mobile app?
+co-bm25, brain tokens	why	1	Why did Dunvik pick WordPress for the CRM migration?
+co-bm25, brain tokens	why	1	Why did Selbren pick Lokalise for the website?
+co-bm25, brain tokens	why	1	Why did Lumdun pick Paddle for the intranet?
+co-bm25, brain tokens	why	1	Why did Dunmar pick Plausible for the CRM migration?
+co-bm25, brain tokens	why	1	Why did Lumvik pick WordPress for the shop?
+co-bm25, brain tokens	fact-in-body	-	What is the budget for the Marzel shop?
+co-bm25, brain tokens	fact-in-body	-	What is the budget for the Nortor website?
+co-bm25, brain tokens	fact-in-body	-	What is the budget for the Kipsel intranet?
+co-bm25, brain tokens	fact-in-body	-	What is the budget for the Talquo CRM migration?
+co-bm25, brain tokens	fact-in-body	-	What is the budget for the Selbren website?
+co-bm25, brain tokens	fact-in-body	-	What is the budget for the Dunvik CRM migration?
+co-bm25, brain tokens	fact-in-body	-	What is the budget for the Quopex shop?
+co-bm25, brain tokens	fact-in-body	-	What is the budget for the Nortor intranet?
+co-bm25, brain tokens	fact-in-body	-	What is the budget for the Talquo mobile app?
+co-bm25, brain tokens	fact-in-body	-	What is the budget for the Lumvik booking platform?
+co-bm25, brain tokens	person-role	1	Who is the designer on the Quokip CRM migration?
+co-bm25, brain tokens	person-role	1	Who is the data analyst on the Pexzel CRM migration?
+co-bm25, brain tokens	person-role	1	Who is the data analyst on the Quokip booking platform?
+co-bm25, brain tokens	person-role	1	Who is the data analyst on the Pexzel shop?
+co-bm25, brain tokens	person-role	1	Who is the data analyst on the Nortor intranet?
+co-bm25, brain tokens	person-role	1	Who is the project manager on the Lumdun CRM migration?
+co-bm25, brain tokens	person-role	1	Who is the QA lead on the Brenkip mobile app?
+co-bm25, brain tokens	person-role	1	Who is the account manager on the Lumdun intranet?
+co-bm25, brain tokens	person-role	1	Who is the product owner on the Dunmar CRM migration?
+co-bm25, brain tokens	person-role	1	Who is the project manager on the Marzel intranet?
+co-bm25F	decision-by-topic	1	What did we decide about translations for Lumdun CRM migration?
+co-bm25F	decision-by-topic	2	What did we decide about authentication for Zelsel mobile app?
+co-bm25F	decision-by-topic	1	What did we decide about invoicing for Pexzel CRM migration?
+co-bm25F	decision-by-topic	2	What did we decide about hosting for Marzel intranet?
+co-bm25F	decision-by-topic	1	What did we decide about content management for Brenkip mobile app?
+co-bm25F	decision-by-topic	1	What did we decide about search for Marzel mobile app?
+co-bm25F	decision-by-topic	1	What did we decide about translations for Quopex mobile app?
+co-bm25F	decision-by-topic	1	What did we decide about translations for Brental website?
+co-bm25F	decision-by-topic	2	What did we decide about hosting for Ralvik intranet?
+co-bm25F	decision-by-topic	1	What did we decide about authentication for Nortor booking platform?
+co-bm25F	paraphrase	-	How do we handle where it runs on the Ostvik CRM migration?
+co-bm25F	paraphrase	-	How do we handle log in on the Zelvik intranet?
+co-bm25F	paraphrase	6	How do we handle languages on the Talquo mobile app?
+co-bm25F	paraphrase	6	How do we handle where the data lives on the Brental mobile app?
+co-bm25F	paraphrase	-	How do we handle transactional mail on the Zelvik mobile app?
+co-bm25F	paraphrase	-	How do we handle data store on the Zelsel mobile app?
+co-bm25F	paraphrase	6	How do we handle editing pages on the Selbren website?
+co-bm25F	paraphrase	-	How do we handle transactional mail on the Pexzel shop?
+co-bm25F	paraphrase	6	How do we handle newsletters on the Pextal website?
+co-bm25F	paraphrase	-	How do we handle multilingual on the Lumvik mobile app?
+co-bm25F	why	1	Why did Vikkip pick Resend for the mobile app?
+co-bm25F	why	1	Why did Quopex pick Lokalise for the shop?
+co-bm25F	why	1	Why did Kipsel pick MySQL for the booking platform?
+co-bm25F	why	1	Why did Quopex pick Plausible for the shop?
+co-bm25F	why	1	Why did Zelvik pick React Native for the mobile app?
+co-bm25F	why	1	Why did Dunvik pick WordPress for the CRM migration?
+co-bm25F	why	1	Why did Selbren pick Lokalise for the website?
+co-bm25F	why	1	Why did Lumdun pick Paddle for the intranet?
+co-bm25F	why	1	Why did Dunmar pick Plausible for the CRM migration?
+co-bm25F	why	1	Why did Lumvik pick WordPress for the shop?
+co-bm25F	fact-in-body	-	What is the budget for the Marzel shop?
+co-bm25F	fact-in-body	-	What is the budget for the Nortor website?
+co-bm25F	fact-in-body	-	What is the budget for the Kipsel intranet?
+co-bm25F	fact-in-body	-	What is the budget for the Talquo CRM migration?
+co-bm25F	fact-in-body	-	What is the budget for the Selbren website?
+co-bm25F	fact-in-body	-	What is the budget for the Dunvik CRM migration?
+co-bm25F	fact-in-body	-	What is the budget for the Quopex shop?
+co-bm25F	fact-in-body	-	What is the budget for the Nortor intranet?
+co-bm25F	fact-in-body	-	What is the budget for the Talquo mobile app?
+co-bm25F	fact-in-body	-	What is the budget for the Lumvik booking platform?
+co-bm25F	person-role	1	Who is the designer on the Quokip CRM migration?
+co-bm25F	person-role	1	Who is the data analyst on the Pexzel CRM migration?
+co-bm25F	person-role	1	Who is the data analyst on the Quokip booking platform?
+co-bm25F	person-role	1	Who is the data analyst on the Pexzel shop?
+co-bm25F	person-role	1	Who is the data analyst on the Nortor intranet?
+co-bm25F	person-role	1	Who is the project manager on the Lumdun CRM migration?
+co-bm25F	person-role	1	Who is the QA lead on the Brenkip mobile app?
+co-bm25F	person-role	1	Who is the account manager on the Lumdun intranet?
+co-bm25F	person-role	1	Who is the product owner on the Dunmar CRM migration?
+co-bm25F	person-role	1	Who is the project manager on the Marzel intranet?
+co-bm25F, brain tokens + prefix	decision-by-topic	1	What did we decide about translations for Lumdun CRM migration?
+co-bm25F, brain tokens + prefix	decision-by-topic	2	What did we decide about authentication for Zelsel mobile app?
+co-bm25F, brain tokens + prefix	decision-by-topic	1	What did we decide about invoicing for Pexzel CRM migration?
+co-bm25F, brain tokens + prefix	decision-by-topic	2	What did we decide about hosting for Marzel intranet?
+co-bm25F, brain tokens + prefix	decision-by-topic	1	What did we decide about content management for Brenkip mobile app?
+co-bm25F, brain tokens + prefix	decision-by-topic	1	What did we decide about search for Marzel mobile app?
+co-bm25F, brain tokens + prefix	decision-by-topic	1	What did we decide about translations for Quopex mobile app?
+co-bm25F, brain tokens + prefix	decision-by-topic	1	What did we decide about translations for Brental website?
+co-bm25F, brain tokens + prefix	decision-by-topic	2	What did we decide about hosting for Ralvik intranet?
+co-bm25F, brain tokens + prefix	decision-by-topic	1	What did we decide about authentication for Nortor booking platform?
+co-bm25F, brain tokens + prefix	paraphrase	-	How do we handle where it runs on the Ostvik CRM migration?
+co-bm25F, brain tokens + prefix	paraphrase	8	How do we handle log in on the Zelvik intranet?
+co-bm25F, brain tokens + prefix	paraphrase	-	How do we handle languages on the Talquo mobile app?
+co-bm25F, brain tokens + prefix	paraphrase	3	How do we handle where the data lives on the Brental mobile app?
+co-bm25F, brain tokens + prefix	paraphrase	-	How do we handle transactional mail on the Zelvik mobile app?
+co-bm25F, brain tokens + prefix	paraphrase	1	How do we handle data store on the Zelsel mobile app?
+co-bm25F, brain tokens + prefix	paraphrase	10	How do we handle editing pages on the Selbren website?
+co-bm25F, brain tokens + prefix	paraphrase	-	How do we handle transactional mail on the Pexzel shop?
+co-bm25F, brain tokens + prefix	paraphrase	10	How do we handle newsletters on the Pextal website?
+co-bm25F, brain tokens + prefix	paraphrase	9	How do we handle multilingual on the Lumvik mobile app?
+co-bm25F, brain tokens + prefix	why	1	Why did Vikkip pick Resend for the mobile app?
+co-bm25F, brain tokens + prefix	why	1	Why did Quopex pick Lokalise for the shop?
+co-bm25F, brain tokens + prefix	why	1	Why did Kipsel pick MySQL for the booking platform?
+co-bm25F, brain tokens + prefix	why	1	Why did Quopex pick Plausible for the shop?
+co-bm25F, brain tokens + prefix	why	1	Why did Zelvik pick React Native for the mobile app?
+co-bm25F, brain tokens + prefix	why	1	Why did Dunvik pick WordPress for the CRM migration?
+co-bm25F, brain tokens + prefix	why	1	Why did Selbren pick Lokalise for the website?
+co-bm25F, brain tokens + prefix	why	1	Why did Lumdun pick Paddle for the intranet?
+co-bm25F, brain tokens + prefix	why	1	Why did Dunmar pick Plausible for the CRM migration?
+co-bm25F, brain tokens + prefix	why	1	Why did Lumvik pick WordPress for the shop?
+co-bm25F, brain tokens + prefix	fact-in-body	-	What is the budget for the Marzel shop?
+co-bm25F, brain tokens + prefix	fact-in-body	-	What is the budget for the Nortor website?
+co-bm25F, brain tokens + prefix	fact-in-body	-	What is the budget for the Kipsel intranet?
+co-bm25F, brain tokens + prefix	fact-in-body	-	What is the budget for the Talquo CRM migration?
+co-bm25F, brain tokens + prefix	fact-in-body	-	What is the budget for the Selbren website?
+co-bm25F, brain tokens + prefix	fact-in-body	-	What is the budget for the Dunvik CRM migration?
+co-bm25F, brain tokens + prefix	fact-in-body	-	What is the budget for the Quopex shop?
+co-bm25F, brain tokens + prefix	fact-in-body	-	What is the budget for the Nortor intranet?
+co-bm25F, brain tokens + prefix	fact-in-body	-	What is the budget for the Talquo mobile app?
+co-bm25F, brain tokens + prefix	fact-in-body	-	What is the budget for the Lumvik booking platform?
+co-bm25F, brain tokens + prefix	person-role	1	Who is the designer on the Quokip CRM migration?
+co-bm25F, brain tokens + prefix	person-role	1	Who is the data analyst on the Pexzel CRM migration?
+co-bm25F, brain tokens + prefix	person-role	1	Who is the data analyst on the Quokip booking platform?
+co-bm25F, brain tokens + prefix	person-role	1	Who is the data analyst on the Pexzel shop?
+co-bm25F, brain tokens + prefix	person-role	1	Who is the data analyst on the Nortor intranet?
+co-bm25F, brain tokens + prefix	person-role	1	Who is the project manager on the Lumdun CRM migration?
+co-bm25F, brain tokens + prefix	person-role	1	Who is the QA lead on the Brenkip mobile app?
+co-bm25F, brain tokens + prefix	person-role	1	Who is the account manager on the Lumdun intranet?
+co-bm25F, brain tokens + prefix	person-role	1	Who is the product owner on the Dunmar CRM migration?
+co-bm25F, brain tokens + prefix	person-role	1	Who is the project manager on the Marzel intranet?
+co-chunks	decision-by-topic	-	What did we decide about translations for Lumdun CRM migration?
+co-chunks	decision-by-topic	-	What did we decide about authentication for Zelsel mobile app?
+co-chunks	decision-by-topic	-	What did we decide about invoicing for Pexzel CRM migration?
+co-chunks	decision-by-topic	-	What did we decide about hosting for Marzel intranet?
+co-chunks	decision-by-topic	-	What did we decide about content management for Brenkip mobile app?
+co-chunks	decision-by-topic	-	What did we decide about search for Marzel mobile app?
+co-chunks	decision-by-topic	-	What did we decide about translations for Quopex mobile app?
+co-chunks	decision-by-topic	-	What did we decide about translations for Brental website?
+co-chunks	decision-by-topic	-	What did we decide about hosting for Ralvik intranet?
+co-chunks	decision-by-topic	-	What did we decide about authentication for Nortor booking platform?
+co-chunks	paraphrase	-	How do we handle where it runs on the Ostvik CRM migration?
+co-chunks	paraphrase	-	How do we handle log in on the Zelvik intranet?
+co-chunks	paraphrase	-	How do we handle languages on the Talquo mobile app?
+co-chunks	paraphrase	-	How do we handle where the data lives on the Brental mobile app?
+co-chunks	paraphrase	-	How do we handle transactional mail on the Zelvik mobile app?
+co-chunks	paraphrase	-	How do we handle data store on the Zelsel mobile app?
+co-chunks	paraphrase	-	How do we handle editing pages on the Selbren website?
+co-chunks	paraphrase	-	How do we handle transactional mail on the Pexzel shop?
+co-chunks	paraphrase	-	How do we handle newsletters on the Pextal website?
+co-chunks	paraphrase	-	How do we handle multilingual on the Lumvik mobile app?
+co-chunks	why	-	Why did Vikkip pick Resend for the mobile app?
+co-chunks	why	-	Why did Quopex pick Lokalise for the shop?
+co-chunks	why	-	Why did Kipsel pick MySQL for the booking platform?
+co-chunks	why	-	Why did Quopex pick Plausible for the shop?
+co-chunks	why	9	Why did Zelvik pick React Native for the mobile app?
+co-chunks	why	-	Why did Dunvik pick WordPress for the CRM migration?
+co-chunks	why	5	Why did Selbren pick Lokalise for the website?
+co-chunks	why	5	Why did Lumdun pick Paddle for the intranet?
+co-chunks	why	-	Why did Dunmar pick Plausible for the CRM migration?
+co-chunks	why	5	Why did Lumvik pick WordPress for the shop?
+co-chunks	fact-in-body	-	What is the budget for the Marzel shop?
+co-chunks	fact-in-body	-	What is the budget for the Nortor website?
+co-chunks	fact-in-body	-	What is the budget for the Kipsel intranet?
+co-chunks	fact-in-body	-	What is the budget for the Talquo CRM migration?
+co-chunks	fact-in-body	-	What is the budget for the Selbren website?
+co-chunks	fact-in-body	-	What is the budget for the Dunvik CRM migration?
+co-chunks	fact-in-body	-	What is the budget for the Quopex shop?
+co-chunks	fact-in-body	-	What is the budget for the Nortor intranet?
+co-chunks	fact-in-body	-	What is the budget for the Talquo mobile app?
+co-chunks	fact-in-body	-	What is the budget for the Lumvik booking platform?
+co-chunks	person-role	3	Who is the designer on the Quokip CRM migration?
+co-chunks	person-role	3	Who is the data analyst on the Pexzel CRM migration?
+co-chunks	person-role	3	Who is the data analyst on the Quokip booking platform?
+co-chunks	person-role	3	Who is the data analyst on the Pexzel shop?
+co-chunks	person-role	4	Who is the data analyst on the Nortor intranet?
+co-chunks	person-role	4	Who is the project manager on the Lumdun CRM migration?
+co-chunks	person-role	3	Who is the QA lead on the Brenkip mobile app?
+co-chunks	person-role	1	Who is the account manager on the Lumdun intranet?
+co-chunks	person-role	2	Who is the product owner on the Dunmar CRM migration?
+co-chunks	person-role	4	Who is the project manager on the Marzel intranet?
+co-chunks + prefix	decision-by-topic	6	What did we decide about translations for Lumdun CRM migration?
+co-chunks + prefix	decision-by-topic	8	What did we decide about authentication for Zelsel mobile app?
+co-chunks + prefix	decision-by-topic	5	What did we decide about invoicing for Pexzel CRM migration?
+co-chunks + prefix	decision-by-topic	9	What did we decide about hosting for Marzel intranet?
+co-chunks + prefix	decision-by-topic	3	What did we decide about content management for Brenkip mobile app?
+co-chunks + prefix	decision-by-topic	-	What did we decide about search for Marzel mobile app?
+co-chunks + prefix	decision-by-topic	2	What did we decide about translations for Quopex mobile app?
+co-chunks + prefix	decision-by-topic	7	What did we decide about translations for Brental website?
+co-chunks + prefix	decision-by-topic	7	What did we decide about hosting for Ralvik intranet?
+co-chunks + prefix	decision-by-topic	-	What did we decide about authentication for Nortor booking platform?
+co-chunks + prefix	paraphrase	-	How do we handle where it runs on the Ostvik CRM migration?
+co-chunks + prefix	paraphrase	-	How do we handle log in on the Zelvik intranet?
+co-chunks + prefix	paraphrase	-	How do we handle languages on the Talquo mobile app?
+co-chunks + prefix	paraphrase	-	How do we handle where the data lives on the Brental mobile app?
+co-chunks + prefix	paraphrase	-	How do we handle transactional mail on the Zelvik mobile app?
+co-chunks + prefix	paraphrase	-	How do we handle data store on the Zelsel mobile app?
+co-chunks + prefix	paraphrase	-	How do we handle editing pages on the Selbren website?
+co-chunks + prefix	paraphrase	-	How do we handle transactional mail on the Pexzel shop?
+co-chunks + prefix	paraphrase	-	How do we handle newsletters on the Pextal website?
+co-chunks + prefix	paraphrase	-	How do we handle multilingual on the Lumvik mobile app?
+co-chunks + prefix	why	1	Why did Vikkip pick Resend for the mobile app?
+co-chunks + prefix	why	1	Why did Quopex pick Lokalise for the shop?
+co-chunks + prefix	why	1	Why did Kipsel pick MySQL for the booking platform?
+co-chunks + prefix	why	1	Why did Quopex pick Plausible for the shop?
+co-chunks + prefix	why	1	Why did Zelvik pick React Native for the mobile app?
+co-chunks + prefix	why	1	Why did Dunvik pick WordPress for the CRM migration?
+co-chunks + prefix	why	1	Why did Selbren pick Lokalise for the website?
+co-chunks + prefix	why	1	Why did Lumdun pick Paddle for the intranet?
+co-chunks + prefix	why	1	Why did Dunmar pick Plausible for the CRM migration?
+co-chunks + prefix	why	1	Why did Lumvik pick WordPress for the shop?
+co-chunks + prefix	fact-in-body	-	What is the budget for the Marzel shop?
+co-chunks + prefix	fact-in-body	-	What is the budget for the Nortor website?
+co-chunks + prefix	fact-in-body	-	What is the budget for the Kipsel intranet?
+co-chunks + prefix	fact-in-body	-	What is the budget for the Talquo CRM migration?
+co-chunks + prefix	fact-in-body	-	What is the budget for the Selbren website?
+co-chunks + prefix	fact-in-body	-	What is the budget for the Dunvik CRM migration?
+co-chunks + prefix	fact-in-body	-	What is the budget for the Quopex shop?
+co-chunks + prefix	fact-in-body	-	What is the budget for the Nortor intranet?
+co-chunks + prefix	fact-in-body	-	What is the budget for the Talquo mobile app?
+co-chunks + prefix	fact-in-body	-	What is the budget for the Lumvik booking platform?
+co-chunks + prefix	person-role	3	Who is the designer on the Quokip CRM migration?
+co-chunks + prefix	person-role	1	Who is the data analyst on the Pexzel CRM migration?
+co-chunks + prefix	person-role	4	Who is the data analyst on the Quokip booking platform?
+co-chunks + prefix	person-role	2	Who is the data analyst on the Pexzel shop?
+co-chunks + prefix	person-role	6	Who is the data analyst on the Nortor intranet?
+co-chunks + prefix	person-role	4	Who is the project manager on the Lumdun CRM migration?
+co-chunks + prefix	person-role	2	Who is the QA lead on the Brenkip mobile app?
+co-chunks + prefix	person-role	1	Who is the account manager on the Lumdun intranet?
+co-chunks + prefix	person-role	2	Who is the product owner on the Dunmar CRM migration?
+co-chunks + prefix	person-role	4	Who is the project manager on the Marzel intranet?
+co-chunks + meta prefix	decision-by-topic	2	What did we decide about translations for Lumdun CRM migration?
+co-chunks + meta prefix	decision-by-topic	3	What did we decide about authentication for Zelsel mobile app?
+co-chunks + meta prefix	decision-by-topic	2	What did we decide about invoicing for Pexzel CRM migration?
+co-chunks + meta prefix	decision-by-topic	2	What did we decide about hosting for Marzel intranet?
+co-chunks + meta prefix	decision-by-topic	2	What did we decide about content management for Brenkip mobile app?
+co-chunks + meta prefix	decision-by-topic	4	What did we decide about search for Marzel mobile app?
+co-chunks + meta prefix	decision-by-topic	1	What did we decide about translations for Quopex mobile app?
+co-chunks + meta prefix	decision-by-topic	2	What did we decide about translations for Brental website?
+co-chunks + meta prefix	decision-by-topic	2	What did we decide about hosting for Ralvik intranet?
+co-chunks + meta prefix	decision-by-topic	8	What did we decide about authentication for Nortor booking platform?
+co-chunks + meta prefix	paraphrase	-	How do we handle where it runs on the Ostvik CRM migration?
+co-chunks + meta prefix	paraphrase	-	How do we handle log in on the Zelvik intranet?
+co-chunks + meta prefix	paraphrase	-	How do we handle languages on the Talquo mobile app?
+co-chunks + meta prefix	paraphrase	-	How do we handle where the data lives on the Brental mobile app?
+co-chunks + meta prefix	paraphrase	-	How do we handle transactional mail on the Zelvik mobile app?
+co-chunks + meta prefix	paraphrase	-	How do we handle data store on the Zelsel mobile app?
+co-chunks + meta prefix	paraphrase	8	How do we handle editing pages on the Selbren website?
+co-chunks + meta prefix	paraphrase	-	How do we handle transactional mail on the Pexzel shop?
+co-chunks + meta prefix	paraphrase	10	How do we handle newsletters on the Pextal website?
+co-chunks + meta prefix	paraphrase	-	How do we handle multilingual on the Lumvik mobile app?
+co-chunks + meta prefix	why	1	Why did Vikkip pick Resend for the mobile app?
+co-chunks + meta prefix	why	1	Why did Quopex pick Lokalise for the shop?
+co-chunks + meta prefix	why	1	Why did Kipsel pick MySQL for the booking platform?
+co-chunks + meta prefix	why	1	Why did Quopex pick Plausible for the shop?
+co-chunks + meta prefix	why	1	Why did Zelvik pick React Native for the mobile app?
+co-chunks + meta prefix	why	1	Why did Dunvik pick WordPress for the CRM migration?
+co-chunks + meta prefix	why	1	Why did Selbren pick Lokalise for the website?
+co-chunks + meta prefix	why	1	Why did Lumdun pick Paddle for the intranet?
+co-chunks + meta prefix	why	1	Why did Dunmar pick Plausible for the CRM migration?
+co-chunks + meta prefix	why	1	Why did Lumvik pick WordPress for the shop?
+co-chunks + meta prefix	fact-in-body	-	What is the budget for the Marzel shop?
+co-chunks + meta prefix	fact-in-body	-	What is the budget for the Nortor website?
+co-chunks + meta prefix	fact-in-body	-	What is the budget for the Kipsel intranet?
+co-chunks + meta prefix	fact-in-body	-	What is the budget for the Talquo CRM migration?
+co-chunks + meta prefix	fact-in-body	-	What is the budget for the Selbren website?
+co-chunks + meta prefix	fact-in-body	-	What is the budget for the Dunvik CRM migration?
+co-chunks + meta prefix	fact-in-body	-	What is the budget for the Quopex shop?
+co-chunks + meta prefix	fact-in-body	-	What is the budget for the Nortor intranet?
+co-chunks + meta prefix	fact-in-body	-	What is the budget for the Talquo mobile app?
+co-chunks + meta prefix	fact-in-body	-	What is the budget for the Lumvik booking platform?
+co-chunks + meta prefix	person-role	1	Who is the designer on the Quokip CRM migration?
+co-chunks + meta prefix	person-role	1	Who is the data analyst on the Pexzel CRM migration?
+co-chunks + meta prefix	person-role	1	Who is the data analyst on the Quokip booking platform?
+co-chunks + meta prefix	person-role	1	Who is the data analyst on the Pexzel shop?
+co-chunks + meta prefix	person-role	1	Who is the data analyst on the Nortor intranet?
+co-chunks + meta prefix	person-role	1	Who is the project manager on the Lumdun CRM migration?
+co-chunks + meta prefix	person-role	1	Who is the QA lead on the Brenkip mobile app?
+co-chunks + meta prefix	person-role	1	Who is the account manager on the Lumdun intranet?
+co-chunks + meta prefix	person-role	1	Who is the product owner on the Dunmar CRM migration?
+co-chunks + meta prefix	person-role	1	Who is the project manager on the Marzel intranet?
