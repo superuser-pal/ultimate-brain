@@ -1,0 +1,27 @@
+{
+  "about": "The 0.11.0 reflection fixture (CC-67): the 15 problems harness/fixture.mjs plants, the cluster brain reflect --candidates gives each, and the finding the skill should judge from it (spec/cli.md §6.2). Every date is as_of plus the fixture's offsets.",
+  "window_days": 30,
+  "clusters_total": 21,
+  "planted": [
+    { "n": 1, "kind": "contradiction", "cluster": "shared_ground:dec-0b11dc01+prj-0b11b001", "fingerprint": "contradiction:prj-0b11b001:launch_date", "values": ["2027-03", "2027-01"], "why": "Harbor app's launch_date is 2027-01; the decision Launch Harbor app in March says 2027-03" },
+    { "n": 2, "kind": "contradiction", "cluster": "shared_ground:dec-0b11dc02+prj-0b11b002", "fingerprint": "contradiction:prj-0b11b002:launch_date", "values": ["2027-05", "2027-04"], "why": "Quarry website's launch_date is 2027-04; the decision Quarry website goes live in May says 2027-05" },
+    { "n": 3, "kind": "contradiction or stale fact", "cluster": "overtaken:per-0b11e003", "fingerprint": "contradiction:per-0b11e003:role", "why": "Lena Ortiz is a Designer at Bluefin Labs; Bluefin moodboard calls her art director, without saying it changed" },
+    { "n": 4, "kind": "stale fact", "cluster": "overtaken:per-0b11e001", "fingerprint": "stale:per-0b11e001:role", "why": "Northwind sync: Priya Shah left Northwind in October" },
+    { "n": 5, "kind": "stale fact", "cluster": "overtaken:per-0b11e002", "fingerprint": "stale:per-0b11e002:role", "why": "Northwind leadership call: Omar Diaz was promoted to head of sales" },
+    { "n": 6, "kind": "stale fact", "cluster": "overtaken:per-0b11e004", "fingerprint": "stale:per-0b11e004:role", "why": "Copy kickoff: Ana Costa joined Quarry Co full-time as content lead" },
+    { "n": 7, "kind": "stale fact", "cluster": "overtaken:prj-0b11b002", "fingerprint": "stale:prj-0b11b002:budget", "why": "Quarry sync: the budget was raised to 28000 EUR (the note says 20000)" },
+    { "n": 8, "kind": "duplicate", "cluster": "near_duplicate:per-0b11e005+per-0b11e006", "fingerprint": "merge:per-0b11e005+per-0b11e006", "survivor": "per-0b11e005", "why": "T. Reyes (draft) is Tomás Reyes (reviewed): same org and role" },
+    { "n": 9, "kind": "duplicate", "cluster": "near_duplicate:org-0b11f002+org-0b11f003", "fingerprint": "merge:org-0b11f002+org-0b11f003", "survivor": "org-0b11f002", "why": "BlueFin Labs (draft) is Bluefin Labs (reviewed)" },
+    { "n": 10, "kind": "duplicate", "cluster": "near_duplicate:per-0b11e007+per-0b11e008", "fingerprint": "merge:per-0b11e007+per-0b11e008", "survivor": "per-0b11e007", "why": "J. Park (draft) is Jin Park (reviewed): same role" },
+    { "n": 11, "kind": "promotion", "cluster": "overtaken:prj-0b11b001", "fingerprint": "promotion:prj-0b11b001:mtg-0b11e003", "why": "Harbor release review: every Harbor app release needs a security review before it ships" },
+    { "n": 12, "kind": "promotion", "cluster": "overtaken:area-0b11a001", "fingerprint": "promotion:area-0b11a001:mtg-0b11e007", "why": "Clients review: every new client gets a kickoff call within a week of signing" },
+    { "n": 13, "kind": "theme", "cluster": "recurring_term:pricing-tiers", "fingerprint": "theme:pricing-tiers", "inputs": 4 },
+    { "n": 14, "kind": "theme", "cluster": "recurring_term:design-system", "fingerprint": "theme:design-system", "inputs": 3 },
+    { "n": 15, "kind": "theme", "cluster": "recurring_term:referral-programme", "fingerprint": "theme:referral-programme", "inputs": 3 }
+  ],
+  "not_flagged": [
+    { "what": "onboarding survey", "why": "in 2 meetings only (Bluefin moodboard, Copy kickoff): no recurring_term cluster" },
+    { "what": "the other overtaken clusters (the two Areas' and projects' mentions, Northwind, Quarry Co, Bluefin Labs, Jin Park)", "why": "the inputs only mention them: no finding" }
+  ],
+  "clean": "make-sandbox.sh … clean: the same areas, orgs, people and projects, no duplicate, no meeting in the window, no decision: 0 clusters, so Nothing to tidy"
+}
