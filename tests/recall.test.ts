@@ -47,8 +47,10 @@ type Reach = { scope: "general" } | { scope: "project"; projects: string[] } | {
 /** A memory note under memories/YYYY/MM/ (schema "memory"); reviewed and verified unless `extra` says otherwise. */
 async function memory(dir: string, id: string, summary: string, reach: Reach, extra: Record<string, unknown> = {}, body = "Learned in a session.\n"): Promise<string> {
   const updated = (extra.updated as string | undefined) ?? "2026-10-01";
-  const path = `memories/${updated.slice(0, 4)}/${updated.slice(5, 7)}/${updated}-${id}.md`;
+  // `slug` names the file, so a test can make the scan order differ from the id order.
+  const path = `memories/${updated.slice(0, 4)}/${updated.slice(5, 7)}/${updated}-${(extra.slug as string | undefined) ?? id}.md`;
   const attributes: Record<string, unknown> = { id, type: "memory", title: `Memory ${id}`, summary, lifecycle: "reviewed", ...reach, confidence: "verified", origin: "acme-api", sources: ["agent:claude-code/2026-10-01-session"], created: updated, updated, ...extra };
+  delete attributes.slug;
   if (attributes.summary === undefined) delete attributes.summary;
   await put(dir, path, attributes, body);
   return path;
@@ -176,15 +178,20 @@ test("memories rank project, area, stack, general, then newest, then id; --task 
   await memory(dir, "mem-bbbb0001", "General newer lesson about billing.", { scope: "general" }, { updated: "2026-10-20" });
   await memory(dir, "mem-bbbb0002", "General older lesson.", { scope: "general" }, { updated: "2026-10-01" });
   await memory(dir, "mem-bbbb0003", "Stack lesson.", { scope: "stack", stacks: ["supabase"] }, { updated: "2026-10-05" });
-  await memory(dir, "mem-bbbb0004", "Area lesson.", { scope: "area", areas: [AREA] }, { updated: "2026-09-01" });
+  // The area memory is newer than every project one: only the level puts it after them.
+  await memory(dir, "mem-bbbb0004", "Area lesson.", { scope: "area", areas: [AREA] }, { updated: "2026-10-10" });
   await memory(dir, "mem-bbbb0005", "Project lesson b.", { scope: "project", projects: [PROJECT] }, { updated: "2026-10-03" });
   await memory(dir, "mem-bbbb0006", "Project lesson a.", { scope: "project", projects: [PROJECT] }, { updated: "2026-10-03" });
   await memory(dir, "mem-bbbb0007", "Project billing invoices lesson.", { scope: "project", projects: [PROJECT] }, { updated: "2026-09-02" });
+  // Same level and date as 0005 and 0006, but its file is scanned first: only the id puts it last.
+  await memory(dir, "mem-bbbb0008", "Project lesson c.", { scope: "project", projects: [PROJECT] }, { updated: "2026-10-03", slug: "a-first" });
+  await memory(dir, "mem-bbbb0009", "Project billing lesson.", { scope: "project", projects: [PROJECT] }, { updated: "2026-10-04" });
   const plain = await recall(dir, "--pack", "--repo", repo);
-  assert.deepEqual(ids(plain.memories), ["mem-bbbb0005", "mem-bbbb0006", "mem-bbbb0007", "mem-bbbb0004", "mem-bbbb0003", "mem-bbbb0001", "mem-bbbb0002"]);
-  // "billing invoices" overlaps two tokens of mem-bbbb0007 and one of mem-bbbb0001: each rises within its level, never across.
+  assert.deepEqual(ids(plain.memories), ["mem-bbbb0009", "mem-bbbb0005", "mem-bbbb0006", "mem-bbbb0008", "mem-bbbb0007", "mem-bbbb0004", "mem-bbbb0003", "mem-bbbb0001", "mem-bbbb0002"]);
+  // "billing invoices" overlaps two tokens of mem-bbbb0007, one of the newer mem-bbbb0009 and one of mem-bbbb0001: more overlap first,
+  // within a level only.
   const task = await recall(dir, "--pack", "--repo", repo, "--task", "Fix the billing invoices");
-  assert.deepEqual(ids(task.memories), ["mem-bbbb0007", "mem-bbbb0005", "mem-bbbb0006", "mem-bbbb0004", "mem-bbbb0003", "mem-bbbb0001", "mem-bbbb0002"]);
+  assert.deepEqual(ids(task.memories), ["mem-bbbb0007", "mem-bbbb0009", "mem-bbbb0005", "mem-bbbb0006", "mem-bbbb0008", "mem-bbbb0004", "mem-bbbb0003", "mem-bbbb0001", "mem-bbbb0002"]);
   // Exact tokens only: "bill" is no prefix match.
   const prefix = await recall(dir, "--pack", "--repo", repo, "--task", "bill");
   assert.deepEqual(ids(prefix.memories), ids(plain.memories));
@@ -224,12 +231,15 @@ test("a memory's text is its summary, else its body's first paragraph, cut at a 
   const { dir, repo } = await world(context);
   const long = `${"word ".repeat(70)}tail`;
   await memory(dir, "mem-dddd0001", long, { scope: "general" }, { updated: "2026-10-03" });
-  await memory(dir, "mem-dddd0002", undefined as unknown as string, { scope: "general" }, { summary: undefined, updated: "2026-10-02" }, "# A heading\n\nFirst line\nsecond line.\n\nA later paragraph.\n");
+  await memory(dir, "mem-dddd0002", undefined as unknown as string, { scope: "general" }, { summary: undefined, updated: "2026-10-02" }, "# A heading\n\n  First line\nsecond line.\n## Next\nA later paragraph.\n");
+  // 300 characters are 300 code points: the emoji are never split into a lone surrogate.
+  await memory(dir, "mem-dddd0003", `a${"😀".repeat(400)}`, { scope: "general" }, { updated: "2026-10-01" });
   const pack = await recall(dir, "--pack", "--repo", repo);
-  const [first, second] = pack.memories;
+  const [first, second, third] = pack.memories;
   assert.ok(first.text.length <= 300);
   assert.equal(first.text, "word ".repeat(60).trim());
   assert.equal(second.text, "First line second line.");
+  assert.equal(third.text, `a${"😀".repeat(299)}`);
 });
 
 test("the budget: work first, then memories, each whole; one that doesn't fit is left out and later ones still tried (memory.md §5.1, §5.2)", async (context) => {
@@ -247,6 +257,13 @@ test("the budget: work first, then memories, each whole; one that doesn't fit is
   assert.equal(pack.tokens, estimate(pack.text));
   assert.ok(pack.tokens <= 200);
   assert.ok(!pack.text.includes("Large too"));
+  // An item that brings the text to exactly the budget fits: 42 + 279 + 279 bytes are 600, 200 tokens.
+  const exact = await world(context);
+  await marker(exact.repo, LINKED);
+  await memory(exact.dir, "mem-eeee0005", "e".repeat(276), { scope: "project", projects: [PROJECT] }, { updated: "2026-10-02" });
+  await memory(exact.dir, "mem-eeee0006", "f".repeat(276), { scope: "project", projects: [PROJECT] });
+  const full = await recall(exact.dir, "--pack", "--repo", exact.repo, "--budget", "200");
+  assert.deepEqual([ids(full.memories), full.tokens, Buffer.byteLength(full.text)], [["mem-eeee0005", "mem-eeee0006"], 200, 600]);
   // The default budget holds them all; the upper bound is accepted.
   assert.equal((await recall(dir, "--pack", "--repo", repo)).memories.length, 4);
   assert.equal((await recall(dir, "--pack", "--repo", repo, "--budget", "4000")).budget, 4000);
@@ -265,6 +282,8 @@ test("work is left out whole by the budget too, and a pack where nothing fits is
   const fixture = await readFile(TASKS_FIXTURE, "utf8");
   await writeFile(join(repo, "TASKS.md"), fixture.replace("**Stopped:** 2026-11-07: parser done; the date test fails on leap years; next: fix it", `**Stopped:** ${"z".repeat(400)}`));
   assert.equal((await recall(dir, "--pack", "--repo", repo)).work[0].stopped, "z".repeat(300));
+  await writeFile(join(repo, "TASKS.md"), fixture.replace("**Stopped:** 2026-11-07: parser done; the date test fails on leap years; next: fix it", `**Stopped:** z${"😀".repeat(400)}`));
+  assert.equal((await recall(dir, "--pack", "--repo", repo)).work[0].stopped, `z${"😀".repeat(299)}`);
   // A work line over the budget is left out whole; the work and the memory after it still fit.
   await writeFile(join(repo, "TASKS.md"), fixture.replace("Retry the import", `Retry ${"r".repeat(900)}`));
   const withWork = await recall(dir, "--pack", "--repo", repo, "--budget", "200");

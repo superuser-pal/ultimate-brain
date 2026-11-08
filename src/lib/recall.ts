@@ -136,12 +136,12 @@ export function memoryText(note: Note): string {
   return cutAtWord(summary !== "" ? summary : firstParagraph(note.body));
 }
 
+/** The first run of non-blank lines that are not headings; a heading ends a run that has started (§5.3). */
 function firstParagraph(body: string): string {
   const lines: string[] = [];
   for (const raw of body.split(/\r?\n/)) {
     const line = raw.trim();
-    if (/^#{1,6}(\s|$)/.test(line)) continue;
-    if (line === "") {
+    if (line === "" || /^#{1,6}(\s|$)/.test(line)) {
       if (lines.length > 0) break;
       continue;
     }
@@ -150,11 +150,15 @@ function firstParagraph(body: string): string {
   return lines.join(" ");
 }
 
-/** The longest run of whole words within 300 characters; a first word longer than that is cut at 300. */
+/** The first `limit` characters, counted in code points, so a surrogate pair is never split. */
+const firstChars = (text: string, limit: number): string => Array.from(text).slice(0, limit).join("");
+
+/** The longest run of whole words within 300 characters (code points); a first word longer than that is cut at 300. */
 function cutAtWord(text: string): string {
-  if (text.length <= TEXT_LIMIT) return text;
-  if (/\s/.test(text[TEXT_LIMIT]!)) return text.slice(0, TEXT_LIMIT).trim();
-  const head = text.slice(0, TEXT_LIMIT);
+  const chars = Array.from(text);
+  if (chars.length <= TEXT_LIMIT) return text;
+  const head = chars.slice(0, TEXT_LIMIT).join("");
+  if (/\s/.test(chars[TEXT_LIMIT]!)) return head.trim();
   const space = head.search(/\s\S*$/);
   return (space <= 0 ? head : head.slice(0, space)).trim();
 }
@@ -210,7 +214,7 @@ function stoppedLine(lines: ReadonlyArray<{ line: string }>, isItem: readonly bo
   for (let next = position + 1; next < lines.length; next += 1) {
     const line = lines[next]!.line;
     if (isItem[next] || /^#{1,6}\s/.test(line)) return null;
-    if (line.startsWith("**Stopped:**")) return line.slice("**Stopped:**".length).trim().slice(0, TEXT_LIMIT).trim();
+    if (line.startsWith("**Stopped:**")) return firstChars(line.slice("**Stopped:**".length).trim(), TEXT_LIMIT).trim();
   }
   return null;
 }
