@@ -24,6 +24,7 @@ import { recoverCommand, sourceExtractCommand } from "./commands/extract.ts";
 import { sourceCleanupPlanCommand, sourceCleanupProposeCommand, sourceDiffCommand, sourceExtractPlanCommand, sourceFullTextCommand } from "./commands/source.ts";
 import { queryCommand } from "./commands/query.ts";
 import { reflectCommand } from "./commands/reflect.ts";
+import { recallCommand } from "./commands/recall.ts";
 import { questionDropCommand } from "./commands/question.ts";
 import { syncApplyCommand, syncPlanCommand, syncRecordCommand, syncRenderCommand, syncTasksCommand } from "./commands/sync.ts";
 import { viewsCommand } from "./commands/views.ts";
@@ -40,7 +41,7 @@ export type CommandHandler = (args: readonly string[], io: CliIo) => number | Pr
 export const COMMANDS: readonly Command[] = [
   initCommand, statusCommand, configGetCommand, configSetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, proposalBacklogCommand, proposalReviseCommand, proposalSettleCommand, sourceFullTextCommand, sourceDiffCommand, sourceExtractPlanCommand, sourceCleanupPlanCommand, sourceCleanupProposeCommand, sourceExtractCommand, recoverCommand, reportNewCommand, reportFixCommand, repoAddCommand, repoChangesCommand, repoRecordCommand, repoKitCheckCommand, repoKitWriteCommand, repoRefreshCommand, repoShowCommand, repoHealthCommand, repoTasksCommand, repoUnlinkCommand, repoNewCommand, questionDropCommand, applyCommand,
   assistantFindingsCommand, assistantDismissCommand,
-  syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand, viewsCommand, linkCommand, queryCommand, reflectCommand, upgradeCommand, modulesListCommand, modulesOnCommand, modulesOffCommand,
+  syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand, viewsCommand, linkCommand, queryCommand, reflectCommand, recallCommand, upgradeCommand, modulesListCommand, modulesOnCommand, modulesOffCommand,
   scheduleInstallCommand, scheduleListCommand, scheduleRemoveCommand, ...WORKFLOW_COMMANDS,
 ];
 

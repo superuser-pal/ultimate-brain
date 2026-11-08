@@ -415,7 +415,7 @@ test("every USAGE case of cli.md §5.33, and SUPPRESSIONS_UNREADABLE", async (co
   for (const args of cases) {
     const result = await brain(["recall", ...args, "--brain", dir, "--json"]);
     assert.equal(result.code, 2, `${args.join(" ")}: ${result.stdout}`);
-    assert.equal(result.json.error.code, "USAGE", args.join(" "));
+    assert.deepEqual([result.json.command, result.json.error.code], ["recall", "USAGE"], args.join(" "));
   }
   await writeFile(join(repo, ".brain"), "{ not json");
   const badJson = await brain(["recall", "--pack", "--repo", repo, "--brain", dir, "--json"]);
