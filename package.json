@@ -24,6 +24,8 @@
     "templates/brain",
     "templates/repo",
     ".agents/skills",
+    "notion",
+    "docs/notion-space-design.md",
     "README.md",
     "LICENSE"
   ],
