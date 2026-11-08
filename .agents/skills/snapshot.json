@@ -5,13 +5,13 @@
   "cli": ">=0.12.0-0 <0.13.0",
   "source": {
     "repository": "https://github.com/superuser-pal/ultimate-brain-skills",
-    "commit": "6888fb76370c3394d6c24d40b9e6e6ed7d82694f"
+    "commit": "3792e7fab8a23eaa2fd2bd361186e9b87f50ff06"
   },
   "upstream": {
     "repository": "https://github.com/mattpocock/skills",
     "commit": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
   },
-  "integrity": "sha256-d034ce2fbab607be4534a4b307320168277027a56eb323469df5f2c389ebf3fb",
+  "integrity": "sha256-1056deccd5b1af6c199744c8c29b5a26454e213f8e271b5707f74d188f1674b2",
   "skills": [
     {
       "name": "brain-apply",
@@ -150,8 +150,8 @@
         },
         {
           "path": "references/memory.md",
-          "sha256": "20d8be7663966c111717b3ef6d49dea91f5bca12940ea125194c6fc09179aa03",
-          "bytes": 6668
+          "sha256": "8b5a2430fa5349478e15ca73ae7212a116d3dd8088f3b34ceb911c6f855626e1",
+          "bytes": 7855
         }
       ]
     },
