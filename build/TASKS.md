@@ -91,7 +91,7 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 | CC-166 | `spec/`, `decisions/` | now, with the user's answers on handover records, the closing trigger and the recall opt-in | the main session |
 | CC-167 | `eval/retrieval-0.12/` | after CC-164 is merged | a worker session |
 
-### CC-164 · The search baseline runs on today's brain and its numbers are committed (0074 §6, assessment C2) · `todo`
+### CC-164 · The search baseline runs on today's brain and its numbers are committed (0074 §6, assessment C2) · `in progress`
 **Release:** 0.12.0
 **Changelog:** development only: the 0.5 search evaluation runs again on the current brain format, and its recall and MRR are committed as 0.12.0's retrieval baseline.
 **Output:** `eval/search-0.5/` made runnable at the current `main`: its generated brain has a valid `brain.json` and passes `brain lint` with no errors, `run.mjs` runs `brain query --candidates` and the BM25 comparison on it (GBrain stays optional), and a committed `results-baseline-0.12.txt` records recall@1/5/10, MRR and timing per question kind, with the commit and the command that produced it, plus a short README section on how to rerun it. No change outside `eval/search-0.5/` and this row; a CLI defect found on the way is reported to the main session, not fixed here.
