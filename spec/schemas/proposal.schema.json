@@ -528,10 +528,18 @@
     "value_before": { "description": "notion_change: the value read when proposed; its shape follows property.", "$ref": "#/$defs/notionValue" },
     "value_after": { "description": "notion_change: the value to write; its shape follows property.", "$ref": "#/$defs/notionValue" },
     "area": { "description": "notion_change and set_field: the Area whose home shows the Review row.", "type": "string", "pattern": "^area-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
-    "finding": { "description": "The Ultimate Assistant finding key (spec/assistant.md §3.3); the same pattern as assistant.schema.json $defs/findingKey.", "$ref": "#/$defs/findingKey" }
+    "finding": { "description": "The Ultimate Assistant finding key (spec/assistant.md §3.3); the same pattern as assistant.schema.json $defs/findingKey.", "$ref": "#/$defs/findingKey" },
+    "fingerprint": { "description": "The reflection finding the proposal records (spec/schema.md §11.4, decisions 0052 and 0076): <finding kind>:<ids or term>[:<field or source>].", "$ref": "#/$defs/fingerprint" },
+    "evidence": { "description": "Reflection: the meetings and sources the finding rested on when the user answered it, sorted and unique (spec/schema.md §11.4); may be empty (a duplicate rests on names).", "type": "array", "items": { "type": "string", "pattern": "^(mtg|src)-[0-9abcdefghjkmnpqrstvwxyz]{8}$" }, "uniqueItems": true }
   },
   "additionalProperties": false,
   "allOf": [
+    {"description": "A reflection proposal (0052, 0076) carries its fingerprint and its evidence together, and is never an Ultimate Assistant one.", "if": {"anyOf": [{"required": ["fingerprint"]}, {"required": ["evidence"]}]}, "then": {"required": ["fingerprint", "evidence"], "not": {"required": ["finding"]}}},
+    {"description": "contradiction:<target>:<field> is a contradiction on that target and field.", "if": {"properties": {"fingerprint": {"pattern": "^contradiction:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "contradiction"}}}},
+    {"description": "stale:<target>:<field> is an update_fact on that target and field.", "if": {"properties": {"fingerprint": {"pattern": "^stale:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "update_fact"}}}},
+    {"description": "merge:<id>+<id> is a merge of those two notes.", "if": {"properties": {"fingerprint": {"pattern": "^merge:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "merge"}}}},
+    {"description": "promotion:<target>:<source> is an add_to_note on that target from that source.", "if": {"properties": {"fingerprint": {"pattern": "^promotion:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "add_to_note"}}}},
+    {"description": "theme:<term> is the draft learned Document's review_notes (a yes or later), or a new_item (a skip).", "if": {"properties": {"fingerprint": {"pattern": "^theme:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"enum": ["review_notes", "new_item"]}}}},
     {"description": "notion_change (0072): its own fields, no fact or note fields.", "if": {"properties": {"kind": {"const": "notion_change"}}, "required": ["kind"]}, "then": {"required": ["database", "page", "page_title", "property", "value_before", "value_after"], "not": {"anyOf": [{"required": ["field"]}, {"required": ["before"]}, {"required": ["after"]}, {"required": ["content"]}, {"required": ["note"]}, {"required": ["links"]}, {"required": ["notes"]}, {"required": ["changes"]}, {"required": ["supersedes"]}, {"required": ["merge_into"]}, {"required": ["answer"]}, {"required": ["answer_note"]}]}}},
     {"description": "notion_change fields belong to notion_change only.", "if": {"anyOf": [{"required": ["database"]}, {"required": ["page"]}, {"required": ["page_title"]}, {"required": ["property"]}, {"required": ["value_before"]}, {"required": ["value_after"]}]}, "then": {"properties": {"kind": {"const": "notion_change"}}}},
     {"description": "area belongs to notion_change and set_field only.", "if": {"required": ["area"]}, "then": {"properties": {"kind": {"enum": ["notion_change", "set_field"]}}}},
@@ -1470,6 +1478,7 @@
     "pageId": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
     "pageIds": {"type": "array", "items": {"$ref": "#/$defs/pageId"}, "uniqueItems": true},
     "notionValue": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}, {"type": "boolean"}, {"$ref": "#/$defs/pageIds"}]},
+    "fingerprint": {"type": "string", "pattern": "^(contradiction|stale):(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:[a-z][a-z0-9_]*$|^merge:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}\\+(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^promotion:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:(mtg|src)-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^theme:[a-z0-9]+(-[a-z0-9]+){1,2}$"},
     "findingKey": {"type": "string", "pattern": "^(task_overdue|task_stalled|task_no_project):notion:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^(project_stalled|project_no_next_step|project_done_but_open|project_misplaced):prj-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^project_duplicate:prj-[0-9abcdefghjkmnpqrstvwxyz]{8}\\+prj-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^(area_no_domain|area_empty):area-[0-9abcdefghjkmnpqrstvwxyz]{8}$"},
     "change": {
       "type": "object",
