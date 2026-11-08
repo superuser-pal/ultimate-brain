@@ -151,7 +151,7 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 **Output:** in the skills fork (skills-delivery.md §9.5), a section of `brain-query`: the closing review (at most five candidates, the order, reach, labelled inference with examples, superseding candidates, yes and edit through `proposal new` + `apply` decided in chat, no or later writing nothing), "remember this", the `**Stopped:**` line, the task exception and "from now on", reading the pack silently and mentioning a memory only when it shapes the approach. Released as a fork tag with the user's yes, vendored here with `scripts/vendor-skills.mjs`, classified in the skills-integration issue.
 **Acceptance:** the vendored snapshot passes `vendor-skills.mjs --check`; each rule of memory.md §3, §4, §5.5 and §6.2 has its sentence in the skill; a blind run in a synthetic brain records one approved memory, one declined one (nothing written) and one stopped line; the skills-integration check reports 0 unclassified.
 
-### CC-172 · The evaluation set's `brain recall` adapter, and 0.12.0's gate results (memory.md §8) · `todo`
+### CC-172 · The evaluation set's `brain recall` adapter, and 0.12.0's gate results (memory.md §8) · `in progress`
 **Release:** 0.12.0
 **Changelog:** development only: the 0.12.0 evaluation set scores `brain recall` against the trust and answer gates.
 **Output:** an adapter in `eval/memory-0.12/adapters/` mapping the cases to `brain recall --pack` and `--search` as memory.md §8 says, and a results file with the gate figures (trust cases, answerable cases, unknown cases) and the measured tokens of every pack beside its estimate.
