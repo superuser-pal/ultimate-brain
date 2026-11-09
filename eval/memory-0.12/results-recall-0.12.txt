@@ -1,40 +1,35 @@
 0.12.0 memory evaluation: the `brain recall` adapter (CC-172, spec/memory.md §8)
 
-Measured on main at d7fee82 (before CC-173's ranking changes), on the synthetic brain of make-brain.mjs.
+Measured on main at 823a039 (after CC-173 and CC-174), on the synthetic brain of make-brain.mjs.
 Rerun: eval/memory-0.12/README.md, "The recall adapter". The part below "measured" is printed by
 adapters/recall-results.mjs; this header is written by hand.
 
-Gates: critical trust 16/20 (80%), NOT met; answerable 44/47 (94%), met; unknown 8/10 (80%), reported.
-Every pack's measured tokens are within its budget (11 packs, 230-420 measured, budget 800).
-The 100% trust gate moves to the fix tasks below and to the release; no case, scorer or CLI was changed.
+Gates: critical trust 20/20 (100%), met; answerable 47/47 (100%), met; unknown 9/10 (90%), reported.
+Every pack's measured tokens are within its budget (11 packs, 248-420 measured, budget 800).
+Costs, reported separately (0074 §6): opening retrieval 11 calls, mean 365 tokens; later retrieval 66 calls,
+mean 1691 tokens in this run. The cost lines' bytes, ms and later-retrieval token mean vary with the run and
+the length of the brain folder's path (a later rerun gave 1633-1643 tokens); every other line below
+"measured" reproduces exactly.
 
-Failures and their causes
--------------------------
+History
+-------
 
-1. trust-10, trust-11, trust-12 (trust/exclusion), unk-08 (unknown): `brain query --candidates` returns
-   dec:velmor-discount (dec-cdfq7bz5). Its one body line cites the excluded passage (src-14dbsdjq ¶2), so
-   the line is blanked and the summary dropped, but cli.md §5.13 leaves a note out whole only for an
-   unmapped line or an unsupported fact: the note still comes back, by its title, with every claim blanked.
-   Fix: CC-174 (a knowledge note with every claim restricted and nothing else left is left out whole).
+CC-172 first measured this set at d7fee82: trust 16/20 (NOT met), answerable 44/47, unknown 8/10. Its failures
+and the tasks that fixed them:
 
-2. trust-15 (trust/supersession): for "Should I set up the new Harbor environment on Fly.io?" from
-   harbor-web, `brain query --candidates` ranks the superseded, archived dec:harbor-flyio (dec-v15x3kfr,
-   score 32) above the live dec:harbor-hetzner (dec-t61ttsk1, score 20). §5.13 has no live-before-superseded
-   rule for knowledge notes; 0009's ranking covers memories only. Fix: CC-173 (live before superseded for
-   knowledge notes).
+1. trust-10, trust-11, trust-12 (trust/exclusion) and unk-08: a knowledge note whose every claim cites an
+   excluded passage came back by its title with every claim blanked. Fixed by CC-174 (#280): a note with
+   nothing eligible left is left out whole.
+2. trust-15 (trust/supersession): the superseded dec:harbor-flyio ranked above the live dec:harbor-hetzner.
+   Fixed by CC-173 (#281): BM25 ranking, and a superseded note ranks right after its successor (cli.md §5.13).
+3. ans-26, ans-32, ans-34: provenance naming no input (a note id, `notion-edit`) was treated as unknown
+   lineage while any suppression was active, so the notes were left out whole. Fixed by CC-174 (#280).
 
-3. ans-32 (answerable/current; mem:q-ses, mem-sa3ybr46), ans-26 (answerable/paraphrase) and ans-34
-   (answerable/correction; both prj:orbit, prj-b0414hmr): left out whole by the restricted-evidence rule
-   (src/lib/suppressions.ts, restrictionOf). A provenance entry that is not a source note (the memory's
-   `sources: [dec-n4pxymgr]`; the project's timeline `source: notion-edit`, which schema.md allows) gets no
-   lineage, so it is treated as unknown lineage and restricted while any suppression is active, here the
-   Harbor pricing call's, in another project. Lint's `unknown-lineage` (cli.md §5.10) doesn't flag these
-   entries, so lint and retrieval disagree. Fix: CC-174 (a note id, `agent:…`, `notion-edit` or
-   `user-correction:…` entry is not unknown lineage).
+Still failing, no task:
 
-4. unk-04 (unknown): `brain query --candidates` returns prj:harbor (prj-4z086p0f) for "When does the Orbit
-   app go live?" from orbit-app. No task: a limit of a retrieval-only adapter. Knowledge notes reach every
-   caller, and unknown cases are judged on answers, which no adapter here writes.
+4. unk-04 (unknown): `brain query --candidates` returns prj:harbor (prj-4z086p0f), at rank 14, for "When does
+   the Orbit app go live?" from orbit-app. A limit of a retrieval-only adapter: knowledge notes reach every
+   caller, and unknown cases are judged on answers, which no adapter here writes. Unknown cases have no gate.
 
 Not exercised: no pack reached its budget (omitted is 0 everywhere), so the left-out-whole rule of
 memory.md §5.1 step 3 is covered by tests/recall.test.ts, not by this set.
@@ -48,40 +43,32 @@ cases: 77
 
 | gate (0074 §6) | required | result | met |
 |---|---|---|---|
-| critical trust | 100% | 16/20 (80%) | NO |
-| answerable | at least 90% | 44/47 (94%) | yes |
-| unknown (scored separately) | reported | 8/10 (80%) | — |
+| critical trust | 100% | 20/20 (100%) | yes |
+| answerable | at least 90% | 47/47 (100%) | yes |
+| unknown (scored separately) | reported | 9/10 (90%) | — |
 
 | kind / category | pass |
 |---|---|
 | trust/approval | 3/3 (100%) |
 | trust/scope | 6/6 (100%) |
-| trust/exclusion | 0/3 (0%) |
-| trust/supersession | 3/4 (75%) |
+| trust/exclusion | 3/3 (100%) |
+| trust/supersession | 4/4 (100%) |
 | trust/unsupported | 2/2 (100%) |
 | trust/inference | 2/2 (100%) |
-| answerable/paraphrase | 26/27 (96%) |
-| answerable/current | 4/5 (80%) |
-| answerable/correction | 3/4 (75%) |
+| answerable/paraphrase | 27/27 (100%) |
+| answerable/current | 5/5 (100%) |
+| answerable/correction | 4/4 (100%) |
 | answerable/contested | 2/2 (100%) |
 | answerable/handover-claude-to-codex | 3/3 (100%) |
 | answerable/handover-codex-to-claude | 3/3 (100%) |
 | answerable/later-session | 3/3 (100%) |
-| unknown/unknown | 8/10 (80%) |
+| unknown/unknown | 9/10 (90%) |
 
-cost (later retrieval): 66 calls, mean 5540 bytes and 474 ms per call; tokens mean 1582
-cost (opening retrieval): 11 calls, mean 5822 bytes and 339 ms per call; tokens mean 362
+cost (later retrieval): 66 calls, mean 5789 bytes and 322 ms per call; tokens mean 1691
+cost (opening retrieval): 11 calls, mean 5939 bytes and 233 ms per call; tokens mean 365
 
 failures:
-- trust-10 [trust/exclusion] FAIL: returned forbidden dec-cdfq7bz5 (rank 9)
-- trust-11 [trust/exclusion] FAIL: returned forbidden dec-cdfq7bz5 (rank 9)
-- trust-12 [trust/exclusion] FAIL: returned forbidden dec-cdfq7bz5 (rank 3)
-- trust-15 [trust/supersession] FAIL: dec-v15x3kfr ranked above dec-t61ttsk1
-- ans-26 [answerable/paraphrase] FAIL: missed prj-b0414hmr
-- ans-32 [answerable/current] FAIL: missed mem-sa3ybr46
-- ans-34 [answerable/correction] FAIL: missed prj-b0414hmr
-- unk-04 [unknown/unknown] FAIL: returned forbidden prj-4z086p0f (rank 15)
-- unk-08 [unknown/unknown] FAIL: returned forbidden dec-cdfq7bz5 (rank 8)
+- unk-04 [unknown/unknown] FAIL: returned forbidden prj-4z086p0f (rank 14)
 
 packs (opening): measured with gpt-tokenizer 4.1.0, encoding o200k_base; estimate is the CLI's `tokens`, ⌈bytes ÷ 3⌉ is recomputed from `text`
 
@@ -90,11 +77,11 @@ packs (opening): measured with gpt-tokenizer 4.1.0, encoding o200k_base; estimat
 | trust-17 | 1854 | 420 | 618 | 618 | 800 | yes | 0, 0 | — |
 | ans-39 | 1854 | 420 | 618 | 618 | 800 | yes | 0, 0 | — |
 | ans-40 | 1854 | 420 | 618 | 618 | 800 | yes | 0, 0 | — |
-| ans-41 | 1010 | 230 | 337 | 337 | 800 | yes | 0, 0 | — |
+| ans-41 | 1095 | 248 | 365 | 365 | 800 | yes | 0, 0 | — |
 | ans-42 | 1854 | 420 | 618 | 618 | 800 | yes | 0, 0 | — |
 | ans-43 | 1552 | 348 | 518 | 518 | 800 | yes | 0, 0 | — |
 | ans-44 | 1338 | 301 | 446 | 446 | 800 | yes | 0, 0 | — |
-| ans-45 | 1010 | 230 | 337 | 337 | 800 | yes | 0, 0 | — |
+| ans-45 | 1095 | 248 | 365 | 365 | 800 | yes | 0, 0 | — |
 | ans-46 | 1552 | 348 | 518 | 518 | 800 | yes | 0, 0 | — |
 | ans-47 | 1854 | 420 | 618 | 618 | 800 | yes | 0, 0 | — |
 | unk-10 | 1854 | 420 | 618 | 618 | 800 | yes | 0, 0 | — |
