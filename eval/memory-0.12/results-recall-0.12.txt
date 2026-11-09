@@ -7,7 +7,9 @@ adapters/recall-results.mjs; this header is written by hand.
 Gates: critical trust 20/20 (100%), met; answerable 47/47 (100%), met; unknown 9/10 (90%), reported.
 Every pack's measured tokens are within its budget (11 packs, 248-420 measured, budget 800).
 Costs, reported separately (0074 §6): opening retrieval 11 calls, mean 365 tokens; later retrieval 66 calls,
-mean 1691 tokens.
+mean 1691 tokens in this run. The cost lines' bytes, ms and later-retrieval token mean vary with the run and
+the length of the brain folder's path (a later rerun gave 1633-1643 tokens); every other line below
+"measured" reproduces exactly.
 
 History
 -------
