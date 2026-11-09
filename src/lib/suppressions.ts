@@ -96,6 +96,14 @@ const NONE = (): Restriction => ({ whole: false, lines: new Set(), timeline: new
 // Only an empty line is structure: a heading or a comment can carry excluded text, so it counts as unmapped content.
 const CONTENT = /^(?!\s*$)/;
 const CONTENT_LENIENT = /^(?!#{1,6}\s|<!--|\s*$)/;
+// A source or meeting id, even one that names no note, and a source key that is its own input (schema §1).
+const INPUT_REF = /^(?:(?:src|mtg)-[0-9a-z]{8}|(?:notion|url|file):.+)$/;
+
+/** Whether a provenance entry names an input a suppression can change. A knowledge note or memory id, an agent session (`agent:…`),
+ *  `notion-edit` or `user-correction:…` names none: it has no input lineage and is live (capture-and-review §5.1). */
+function namesInput(id: string, context: Context): boolean {
+  return context.sources.has(id) || INPUT_REF.test(id);
+}
 
 /** What of a note a retrieval surface must not use while suppressions are active (§5.1). Body line numbers are 0-based. */
 export function restrictionOf(note: Note, context: Context): Restriction {
@@ -125,6 +133,7 @@ export function restrictionOf(note: Note, context: Context): Restriction {
   const required = new Set<string>();
   const ever = new Set(context.suppressions.map((entry) => entry.input));
   const addLineage = (id: string) => {
+    if (!namesInput(id, context)) return;
     const lineage = lineageOf(id, context.sources);
     if (lineage === null) for (const input of active) required.add(input);
     else if (ever.has(lineage)) required.add(lineage); // reconciled or active: a reconciled cleanup does not free text it left in place
@@ -140,6 +149,7 @@ export function restrictionOf(note: Note, context: Context): Restriction {
     if (typeof entry.source !== "string") return;
     const passage = typeof entry.passage === "string" ? /^(src-[0-9a-z]{8})#¶(\d+):([0-9a-f]{8})$/.exec(entry.passage) : null;
     addLineage(passage?.[1] ?? entry.source);
+    if (passage === null && !namesInput(entry.source, context)) return; // your edit in Notion, a corrected Review item: live
     const entries = [{ source: passage?.[1] ?? entry.source, ...(passage === null ? {} : { passage: { n: Number(passage[2]), hash: passage[3]! } }) }];
     if (!eligible({ ...claim, entries }, context)) result.timeline.add(index);
   });
@@ -173,10 +183,24 @@ export function restrictionOf(note: Note, context: Context): Restriction {
   return result;
 }
 
-/** The note as a retrieval surface may use it (restricted statements blanked, restricted timeline entries and facts dropped), or null when restricted whole. */
+/** A note with restricted claims and nothing eligible left: no content line outside the restricted ones (its summary is dropped with them) and
+ *  no live fact. Retrieval leaves it out whole rather than return its title alone (§5.1); it is not a lineage defect, so `whole` stays false. */
+function nothingLeft(note: Note, restriction: Restriction): boolean {
+  if (restriction.lines.size === 0 && restriction.timeline.size === 0) return false;
+  if (note.body.split(/\r?\n/).some((text, index) => !restriction.lines.has(index) && CONTENT_LENIENT.test(text))) return false;
+  const facts = note.attributes.facts !== null && typeof note.attributes.facts === "object" ? Object.keys(note.attributes.facts as Record<string, unknown>) : [];
+  return facts.every((key) => restriction.facts.has(key));
+}
+
+/** The note as a retrieval surface may use it (restricted statements blanked, restricted timeline entries and facts dropped), or null when restricted
+ *  whole or nothing eligible is left. */
 export function eligibleNote(note: Note, context: Context): Note | null {
   const restriction = restrictionOf(note, context);
-  if (restriction.whole) return null;
+  if (restriction.whole || nothingLeft(note, restriction)) return null;
+  return partlyRestricted(note, restriction);
+}
+
+function partlyRestricted(note: Note, restriction: Restriction): Note {
   if (restriction.lines.size === 0 && restriction.timeline.size === 0 && restriction.facts.size === 0 && !restriction.summary) return note;
   const body = note.body.split(/(\r?\n)/).map((text, index) => index % 2 === 0 && restriction.lines.has(index / 2) ? " ".repeat(text.length) : text).join("");
   const attributes = { ...note.attributes };
@@ -211,5 +235,6 @@ export function publishableNote(note: Note, context: Context): Note {
     if ("timeline" in attributes) attributes.timeline = [];
     return { ...note, attributes, body: "" };
   }
-  return eligibleNote(note, context) ?? note;
+  // A note with nothing eligible left stays listed in its partly restricted form (§5.1, "Indexes").
+  return partlyRestricted(note, restriction);
 }
