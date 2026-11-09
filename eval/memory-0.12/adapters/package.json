@@ -1,0 +1,10 @@
+{
+  "name": "ultimate-brain-eval-memory-0-12-adapters",
+  "private": true,
+  "description": "CC-172: measurement-only dependency for the 0.12.0 memory evaluation's recall adapter (the same tokenizer as eval/retrieval-0.12). Not part of the product.",
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "gpt-tokenizer": "4.1.0"
+  }
+}

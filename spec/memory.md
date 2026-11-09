@@ -58,7 +58,7 @@ At most **five** suggested candidates, chosen in this order: reusable constraint
 Each candidate shows:
 
 - the text, one to three sentences;
-- its reach (`scope` and its list), the **narrowest** the user's words support. A project instruction stays a project memory. Only explicit general wording ("always", "in every repo") supports `general`;
+- its reach (`scope` and its list), the **narrowest** the user's words support. A project instruction stays a project memory. Only explicit general wording ("always", "in every repo") supports `general`. When the narrow reach has no id (the caller's `.brain` has no project, or not that stack), the agent says so and asks: `general`, or place the repo first (`brain link --project`) and then save it narrow. It never widens the reach silently (0009);
 - `inferred`, when the user didn't say it in those words, with one to three examples from the session that support it;
 - the memory it would supersede, when one is eligible and says something different (§6).
 
@@ -76,7 +76,11 @@ There is no waiting list of candidates: 0074 §2 allows no parallel approval que
 
 The closing review, "remember this" and the "wrap up" phrase are a section of the `brain-query` skill, which every linked repo has (cli.md §5.12). It is written in the skills fork and arrives as a released snapshot (skills-delivery.md §9.5), in a build task after this contract.
 
-The memory's frontmatter: `scope` and its list (schema "memory"), `confidence` (`verified` when the user stated it, `inferred` otherwise, `unverified` when the user doubts it), `origin` (the caller's `.brain` `repo`, or `brain` when there is none), and `sources` when it comes from notes or inputs the brain holds.
+The memory's frontmatter: `scope` and its list (schema "memory"), `confidence` (`verified` when the user stated it, `inferred` otherwise, `unverified` when the user doubts it), `origin` (the caller's `.brain` `repo`, or `brain` when there is none), and `sources`: the session's key `agent:brain-query/<the session's start, YYYYMMDDTHHMMSSZ>` (schema §1 source keys), plus the ids of the notes or inputs it comes from when the brain holds them. The session key is the memory's provenance (0008); it is no note, so §2 rule 4 never leaves it out.
+
+**The proposals** (CC-171): one per answered candidate. `title` is `Remember: <the memory's title>`, `why` is the user's words or "said yes at the closing review", and `source` is the same session key. A memory that supersedes one is a `new_item`, then a `supersede` with `target` the new memory and `supersedes` the old one, each applied in chat (§6.2).
+
+**The commit** (CC-171). The writes go through `brain` commands only, never by editing the brain's files. Then the agent commits them in the brain repo, `git -C <brain path>` (the path `brain status --json` gives), with the message `memory: <title>` (one memory) or `memory: <n> lessons` (more), and pushes per `settings.push` (schema §12). From a linked repo, this is the one write the brain gets, and the user approves each memory in it. The block's recall paragraph names this exception to its read-only line (cli.md §5.12), and the skill's read-only rule names it too; in a repo linked without the recall paragraph, the closing review still runs when the user asks for it, with the same exception. Everything else stays read-only.
 
 ## 4. Work handover
 

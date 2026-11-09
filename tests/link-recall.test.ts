@@ -9,7 +9,7 @@ import { FORK_META, initBrain, productRoot, run, SNAPSHOTS, snapshotCopy, temp }
 // spec/cli.md §5.12 "Recall paragraph", §5.3; spec/schema.md §12 `settings.recall`; spec/memory.md §7.
 type Context = Parameters<typeof temp>[0];
 
-const RECALL = "At the start of substantive work, run `brain recall --pack --json` here and read its `text`: the user's lessons for this repo and where its work stopped. Mention a memory only when it shapes your approach. When the user says \"wrap up\", run the closing review of the `brain-query` skill.";
+const RECALL = "At the start of substantive work, run `brain recall --pack --json` here and read its `text`: the user's lessons for this repo and where its work stopped. Mention a memory only when it shapes your approach. When the user says \"wrap up\", run the closing review of the `brain-query` skill: the lessons the user approves there are the one write this repo makes to the brain.";
 
 const BLOCK_START = "<!-- ultimate-brain:start -->\n## Ultimate Brain\n\nManaged by `brain link`; edits inside this block are overwritten.\n\nThis repo is linked to the user's second brain.\n\n"
   + "The brain holds decisions, key facts, people and meeting history that this repo does not.\n\nConsult it before you:\n"
