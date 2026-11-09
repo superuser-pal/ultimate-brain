@@ -169,9 +169,9 @@ The agent reads the pack silently. It mentions a memory only when it shapes the 
   "query": "migrations", "tokens": 39,
   "results": [
     { "id": "mem-3k8d2m4q", "text": "acme-api: ask before running migrations; the prod database is shared.",
-      "scope": "project", "confidence": "verified", "updated": "2026-10-30", "path": "memories/2026/10/2026-10-30-acme-api-migrations.md", "score": 11 },
+      "scope": "project", "confidence": "verified", "updated": "2026-10-30", "path": "memories/2026/10/2026-10-30-acme-api-migrations.md", "score": 3.5108 },
     { "id": "mem-7c2n9x4t", "text": "acme-api: run migrations freely; staging only.",
-      "scope": "project", "confidence": "verified", "updated": "2026-09-02", "path": "memories/2026/09/2026-09-02-acme-api-staging.md", "score": 11, "superseded_by": "mem-3k8d2m4q" }
+      "scope": "project", "confidence": "verified", "updated": "2026-09-02", "path": "memories/2026/09/2026-09-02-acme-api-staging.md", "score": 3.2877, "superseded_by": "mem-3k8d2m4q" }
   ]
 } }
 ```

@@ -5,7 +5,7 @@ import { readMarker } from "./brain-marker.ts";
 import { BrainError } from "./errors.ts";
 import { kitBytesIfAny, kitProblems, KIT_FILE, parseKitBytes, type Kit, type TaskSource } from "./link-kit.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
-import { queryTypes, queryWords, rankCandidates } from "./query.ts";
+import { queryTerms, queryTypes, queryWords, rankCandidates } from "./query.ts";
 import { parseMarkdownTasks, readableLinesWithIndex, statusMap } from "./repo-tasks.ts";
 import { contextFor, eligibleNote, type Loaded } from "./suppressions.ts";
 import type { Context } from "./eligibility.ts";
@@ -287,7 +287,7 @@ function scored(candidates: readonly Candidate[], query: string, caller: RecallC
     if (list(note.attributes.areas).some((area) => areas.includes(area))) attributes.area = AREA_MATCH;
     return { ...note, attributes };
   });
-  return rankCandidates(notes, queryWords(query), MEMORY_TYPES, { repo: caller.repo, project: caller.project, area: AREA_MATCH })
+  return rankCandidates(notes, queryTerms(query), MEMORY_TYPES, { repo: caller.repo, project: caller.project, area: AREA_MATCH })
     .map((candidate) => {
       const found = byId.get(candidate.id)!;
       const result: SearchResult = { ...packMemory(found.note), score: candidate.score };

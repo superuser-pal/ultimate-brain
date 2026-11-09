@@ -11,18 +11,22 @@ import { brain, FIXTURE_BRAIN, fixtureCopy } from "./helpers.ts";
 
 const BRAIN = ["--brain", FIXTURE_BRAIN, "--json"];
 
-test("query returns deterministic ranked candidates, including superseded decisions", async () => {
+test("query returns deterministic ranked candidates, the superseded decision right after the one that supersedes it", async () => {
   const run = await brain(["query", "--candidates", "auth", "--limit", "50", ...BRAIN]);
   assert.equal(run.code, 0, run.stdout);
   assert.deepEqual(run.json.data.tokens, ["auth"]);
   const candidates = run.json.data.candidates;
-  assert.equal(candidates[0].id, "dec-2p9f6h1r");
-  assert.equal(candidates[0].assessment, "superseded");
+  // The superseded decision scores almost as high; §5.13 step 5 places it right after its successor, marked.
+  assert.deepEqual(candidates.slice(0, 2).map((candidate: { id: string; score: number; superseded_by?: string }) => [candidate.id, candidate.score, candidate.superseded_by]), [
+    ["dec-7k2m9q4x", 1.1992, undefined], ["dec-2p9f6h1r", 1.1655, "dec-7k2m9q4x"],
+  ]);
+  assert.equal(candidates[1].assessment, "superseded");
+  assert.equal("superseded_by" in candidates[0], false);
   assert.equal(candidates.some((candidate: { type: string }) => ["view", "proposal", "memory"].includes(candidate.type)), false);
-  assert.deepEqual(candidates[0].snippets.map((snippet: { line: number }) => snippet.line), [24, 30]);
+  assert.deepEqual(candidates[1].snippets.map((snippet: { line: number }) => snippet.line), [24, 30]);
 });
 
-test("query scores title, summary, all other frontmatter and up to three matching body lines", () => {
+test("query scores one note as one BM25 document: title and aliases ×3, summary ×2, other frontmatter and the body ×1; up to three snippets", () => {
   const note: Note = {
     id: "con-00000001",
     type: "concept",
@@ -41,7 +45,11 @@ test("query scores title, summary, all other frontmatter and up to three matchin
   };
   const context: QueryContext = { repo: null, project: null, area: null };
   const [candidate] = rankCandidates([note], ["auth"], new Set(["concept"]), context);
-  assert.equal(candidate!.score, 13);
+  // Terms: title and alias [auth decision authentication] ×3 (9; `auth` matches 6), summary [auth summary] ×2 (4; 2),
+  // other strings [con 00000001 concept auth team 2026 12 03] (8; 1), body [auth one auth two auth three auth four] (8; 4).
+  // One note: N 1, df 1, |d| = avgdl = 29, f 13.
+  assert.equal(candidate!.score, Math.round(Math.log(1 + 0.5 / 1.5) * 13 * 2.5 / (13 + 1.5) * 10_000) / 10_000);
+  assert.equal(candidate!.score, 0.6448);
   assert.equal(candidate!.snippets.length, 3);
   assert.deepEqual(candidate!.snippets.map((snippet) => snippet.line), [4, 5, 6]);
 });
@@ -58,7 +66,7 @@ test("query applies linked repository project context and explicit type selectio
   });
   const plainDecision = plain.json.data.candidates.find((candidate: { id: string }) => candidate.id === "dec-7k2m9q4x");
   const contextDecision = contextual.json.data.candidates.find((candidate: { id: string }) => candidate.id === "dec-7k2m9q4x");
-  assert.equal(contextDecision.score, plainDecision.score + 3);
+  assert.ok(Math.abs(contextDecision.score - (plainDecision.score + 3)) <= 0.0001 + 1e-9, "the boost adds 3 before rounding");
 
   const views = await brain(["query", "--candidates", "acme", "--types", "view", ...BRAIN]);
   assert.equal(views.code, 0, views.stdout);
@@ -67,6 +75,9 @@ test("query applies linked repository project context and explicit type selectio
 
 test("query tokenizes accents and rejects invalid candidate forms", async () => {
   assert.deepEqual(queryWords("¿Qué decidió María? The él y auth"), ["decidio", "maria", "auth"]);
+  const cjk = await brain(["query", "--candidates", "予算 auth", ...BRAIN]);
+  assert.equal(cjk.code, 0, cjk.stdout);
+  assert.deepEqual(cjk.json.data.tokens, ["auth", "予", "算", "予算"], "tokens lists the query's terms, CJK n-grams included");
 
   const missing = await brain(["query", ...BRAIN]);
   assert.equal(missing.code, 2);
@@ -104,7 +115,7 @@ test("query reads the .brain that brain link writes: plain (no context), --proje
   assert.equal(contextual.json.data.context.project, "prj-9x4t1b7e");
   assert.equal(contextual.json.data.context.area, "area-2m7c4h8n");
   const find = (run: { json: { data: { candidates: Array<{ id: string; score: number }> } } }) => run.json.data.candidates.find((candidate) => candidate.id === "dec-7k2m9q4x")!.score;
-  assert.equal(find(contextual), find(plain) + 3);
+  assert.ok(Math.abs(find(contextual) - (find(plain) + 3)) <= 0.0001 + 1e-9, "the boost adds 3 before rounding");
 
   // From inside the repo, without --repo: the CLI reads the current folder's .brain (cli.md §5.13 step 4).
   const previous = process.cwd();
