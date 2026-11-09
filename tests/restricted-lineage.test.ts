@@ -5,6 +5,8 @@ import { dirname, join } from "node:path";
 import { test, type TestContext } from "node:test";
 
 import { serializeNewFile } from "../src/lib/frontmatter.ts";
+import { scanNotes } from "../src/lib/notes.ts";
+import { contextFor, eligibleNote, requireSuppressions } from "../src/lib/suppressions.ts";
 import { passageHash } from "../src/lib/selection.ts";
 import { brain } from "./helpers.ts";
 
@@ -79,7 +81,8 @@ async function world(context: TestContext): Promise<World> {
   await put(dir, "knowledge/decisions/2026-10-12-vault-keys.md", decision(IDS.noKeyDecision, "Rotate the zephyr vault keys", ["src-nk1a3b4c"]), "Rotate the zephyr vault keys monthly.\n");
   await put(dir, "knowledge/decisions/2026-10-12-second-year-price.md", decision(IDS.secretDecision, "Second-year zephyr price", ["src-ex1a3b4c"], OTHER_PROJECT), `The zephyr price carries the discount. ${SECRET_REF}\n`);
   await put(dir, "knowledge/decisions/2026-10-12-first-year-price.md", decision(IDS.partlyDecision, "First-year zephyr price", ["src-ex2a3b4c"], OTHER_PROJECT), `The zephyr price holds for year one. ${LIVE_REF}\n\nThe zephyr discount follows. ${SECRET_REF}\n`);
-  await put(dir, "knowledge/decisions/2026-10-12-discount-terms.md", decision(IDS.headingDecision, "Zephyr discount terms", ["src-ex2a3b4c"], OTHER_PROJECT), `## Terms\n\nThe zephyr discount terms. ${SECRET_REF}\n`);
+  // Marked independent of the input (Keep), so its heading is not unmapped text; its one claim still cites the suppressed passage.
+  await put(dir, "knowledge/decisions/2026-10-12-discount-terms.md", { ...decision(IDS.headingDecision, "Zephyr discount terms", ["src-ex2a3b4c"], OTHER_PROJECT), lineage_cleared: [INPUT] }, `## Terms\n\nThe zephyr discount terms. ${SECRET_REF}\n`);
 
   await put(dir, "memories/2026/10/2026-10-12-staging-keys.md", memory(IDS.agentMemory, "Ask before rotating the zephyr staging keys", [SESSION]), "Ask before rotating the zephyr staging keys.\n");
   await put(dir, "memories/2026/10/2026-10-12-deploy-by-pipeline.md", memory(IDS.decisionMemory, "Deploy zephyr through the pipeline", [IDS.liveDecision]), "Deploy zephyr through the pipeline, never by hand.\n");
@@ -109,9 +112,11 @@ test("provenance that names no input is live while a suppression is active elsew
   const { dir, repo } = await world(context);
   const found = await candidates(dir, repo);
   for (const id of [IDS.agentMemory, IDS.decisionMemory, IDS.liveDecision, PROJECT]) assert.ok(found.has(id), `${id} is returned by query --candidates`);
-  const project = JSON.stringify(found.get(PROJECT));
-  assert.match(project, /45000 EUR/, "the fact from your Notion edit is returned");
-  assert.match(project, /2026-12-01/, "the fact from a corrected Review item is returned");
+  // The candidates carry no facts: the project's eligible form, which query and the views read, keeps both.
+  const scanned = await scanNotes(dir);
+  const project = eligibleNote(scanned.notes.find((note) => note.id === PROJECT)!, contextFor(scanned.notes, requireSuppressions(dir)));
+  assert.deepEqual(project?.attributes.facts, { budget: "45000 EUR", launch: "2026-12-01" }, "the facts from your Notion edit and a corrected Review item stay");
+  assert.equal((project?.attributes.timeline as unknown[]).length, 3, "and so do their timeline entries");
   const memories = await recalled(dir, repo);
   assert.ok(memories.includes(IDS.agentMemory), "a memory citing an agent session is recalled");
   assert.ok(memories.includes(IDS.decisionMemory), "a memory citing a decision id is recalled");
@@ -121,11 +126,12 @@ test("a source whose input cannot be determined still fails closed, and lint and
   const { dir, repo } = await world(context);
   const found = await candidates(dir, repo);
   assert.ok(!found.has(IDS.noKeyDecision), "a note resting on a source with no source_key is restricted whole");
-  const lint = (await run(dir, "lint")).issues as Array<{ rule: string; path: string }>;
-  const unknown = lint.filter((issue) => issue.rule === "unknown-lineage");
-  assert.deepEqual(unknown.map((issue) => issue.path), ["knowledge/decisions/2026-10-12-vault-keys.md"], "lint flags only the note whose source has no input");
-  const status = await run(dir, "status");
-  assert.equal(status.suppressions.unresolved_lineage, 1, "status counts the same one note as unresolved lineage");
+  const lint = (await run(dir, "lint")).issues as Array<{ rule: string; id: string }>;
+  const flagged = lint.filter((issue) => issue.rule === "unknown-lineage").map((issue) => issue.id);
+  // The notes whose provenance alone decides: retrieval leaves out exactly those lint flags.
+  const lineageOnly = [IDS.agentMemory, IDS.decisionMemory, IDS.liveDecision, IDS.noKeyDecision, PROJECT];
+  assert.deepEqual(flagged, [IDS.noKeyDecision], "lint flags only the note whose source has no input");
+  assert.deepEqual(lineageOnly.filter((id) => !found.has(id)), flagged, "retrieval leaves out the same notes");
 });
 
 test("a note with nothing eligible left is not returned at all; a note with an eligible line left is still returned without the restricted one", async (context) => {
