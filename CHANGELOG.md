@@ -2,6 +2,26 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.12.0 — 2026-11-09
+
+- CC-146 (#238): development only: the 0.12.0 opening grill is recorded, covering scoped memory, work handovers, an initial 800-token hot-context budget and surgical TypeScript retrieval reuse.
+- CC-162 (#268): development only: the done 0.10.2, 0.11.0 and 0.11.1 sections move to build/HISTORY.md.
+- CC-163 (#269): development only: 0.12.0's first four tasks are planned, each owning separate paths so they can be built in parallel.
+- CC-164 (#271): development only: the 0.5 search evaluation runs again on the current brain format, and its recall and MRR are committed as 0.12.0's retrieval baseline.
+- CC-165 (#273): development only: a fixed synthetic test set for memory and recall, written before any 0.12.0 code, with its scoring rules.
+- CC-166 (#270): development only: the 0.12.0 contracts define the opening context pack, the closing memory review, how a session finds where work stopped, and the recall opt-in.
+- CC-167 (#276): development only: a bounded comparison of small TypeScript adaptations of claude-obsidian's BM25, chunking, prefix, snippet and freshness pieces against the 0.12.0 baseline.
+- CC-168 (#272): development only: 0.12.0's build tasks are split from the merged contracts, each owning separate files.
+- CC-169 (#275): `brain recall --pack` gives an agent a small opening context of your approved lessons for the repo it works in and where its work stopped, within 800 tokens, and `brain recall --search` finds the rest.
+- CC-170 (#274): with opening recall turned on, `brain link` tells a linked repo's agents to load your lessons and where work stopped at the start of a session, and to run the closing review when you say "wrap up".
+- CC-171 (#277): say "wrap up" at the end of a session and the agent offers at most five lessons to remember, each with its reach, and records where the work stopped; say "remember this" at any time.
+- CC-172 (#278): development only: the 0.12.0 evaluation set scores `brain recall` against the trust and answer gates.
+- CC-173 (#281): `brain query` and `brain recall --search` find the right note more often, using small ports of the retrieval pieces that won the 0.12.0 comparison.
+- CC-174 (#280): a note or memory whose provenance names no input (another note, a session, your edit in Notion) is no longer hidden whenever any cleanup is active, and a note with nothing eligible left is no longer returned as an empty title.
+- CC-175 (#282): development only: the 0.12.0 memory evaluation's committed results show both gates met on main after CC-173 and CC-174.
+
+Skills: ultimate-brain-skills 1.5.0 (sha256-1056deccd5b1af6c199744c8c29b5a26454e213f8e271b5707f74d188f1674b2)
+
 ## 0.11.1 — 2026-11-08
 
 - CC-161 (#267): `brain reflect --candidates` finds far fewer, truer clusters: shared ground ignores the meeting and project notes were taken from, and terms skip link targets, URLs, code, sign-offs, contractions, function words and people's names.
