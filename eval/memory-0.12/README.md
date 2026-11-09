@@ -145,3 +145,16 @@ cases: 77
 cost (later retrieval): 77 calls, mean 4097 bytes and 165 ms per call; tokens not measured by this adapter (bytes are not a token count, 0074 §3)
 cost (opening pack): not measured by this adapter
 ```
+
+## The recall adapter (CC-172)
+
+`adapters/recall.mjs` maps the cases onto `brain recall` as spec/memory.md §8 says. A case with a `handover` or a task row is an opening case: `brain recall --pack --repo <caller folder> --task <question>`, whose work rows and memories are the candidates. Every other case runs `brain recall --search <question> --limit 10 --include-superseded` (memories, with the superseded ones labelled for the correction cases) and then `brain query --candidates <question> --limit 10` with the default types (knowledge, no memories). Each pack's `text` is measured with gpt-tokenizer 4.1.0, o200k_base, the tokenizer eval/retrieval-0.12 uses, installed in `adapters/` only. The gate figures, every failure with its cause and fix task, and every pack's tokens are in [results-recall-0.12.txt](results-recall-0.12.txt).
+
+```sh
+npm ci --prefix eval/memory-0.12/adapters                 # the tokenizer, once
+node eval/memory-0.12/make-brain.mjs /tmp/mem12
+node eval/memory-0.12/score.mjs /tmp/mem12 --adapter recall
+node eval/memory-0.12/adapters/recall-results.mjs /tmp/mem12   # the results file's measured part, with the pack table
+```
+
+The results file's header (the causes and fix tasks) is written by hand; replace the part below `measured` with the last command's output, and update the header when a figure changes.

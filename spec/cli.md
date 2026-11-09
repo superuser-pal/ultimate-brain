@@ -880,7 +880,7 @@ With only `brain-query` linked and `settings.recall` not `opening`, the block is
 **Recall paragraph** (0074, [memory.md](memory.md) §7). When the brain's `settings.recall` is `opening` (schema §12), a paragraph goes right after the `How:` paragraph, with one blank line before and after it:
 
 ```markdown
-At the start of substantive work, run `brain recall --pack --json` here and read its `text`: the user's lessons for this repo and where its work stopped. Mention a memory only when it shapes your approach. When the user says "wrap up", run the closing review of the `brain-query` skill.
+At the start of substantive work, run `brain recall --pack --json` here and read its `text`: the user's lessons for this repo and where its work stopped. Mention a memory only when it shapes your approach. When the user says "wrap up", run the closing review of the `brain-query` skill: the lessons the user approves there are the one write this repo makes to the brain.
 ```
 
 When `settings.recall` is `off` or absent, there is no recall paragraph, and a run of `brain link` removes one an earlier run wrote.
