@@ -174,7 +174,7 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 **Release:** 0.12.0
 **Changelog:** development only: the 0.12.0 memory evaluation's committed results show both gates met on main after CC-173 and CC-174.
 **Output:** `eval/memory-0.12/results-recall-0.12.txt` rerun on main at 823a039: its measured part replaced with `adapters/recall-results.mjs`'s output, and its hand-written header updated (the gates, the separate opening and later costs, and CC-172's first failures with the tasks that fixed them). No case, scorer, adapter or CLI change.
-**Acceptance:** the file's measured part is byte-identical to `node eval/memory-0.12/adapters/recall-results.mjs <dir>` on a brain from `make-brain.mjs`, at this branch's head; it shows critical trust 20/20 and answerable 47/47, both met; the header's figures match the measured part; the search-0.5 rerun at the same head is identical to `results-cc173.txt` (28/32/36, MRR 0.61); only the results file and this row change; the leak and PR format checks pass.
+**Acceptance:** the file's measured part is identical to `node eval/memory-0.12/adapters/recall-results.mjs <dir>` on a brain from `make-brain.mjs`, at this branch's head, except the two cost lines' bytes, ms and later-retrieval token mean, which vary with the run and the brain folder's path; it shows critical trust 20/20 and answerable 47/47, both met; the header's figures match the measured part; the search-0.5 rerun at the same head is identical to `results-cc173.txt` (28/32/36, MRR 0.61); only the results file and this row change; the leak and PR format checks pass.
 
 ## 0.13.0 — Knowledge pays back (decisions 0061, 0064, 0075)
 
