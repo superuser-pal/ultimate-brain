@@ -7,9 +7,9 @@ Two templates exist; this one is the **Notion template**. The **brain folder** (
 | | |
 |---|---|
 | **Link** | **NOT PUBLISHED YET.** Placeholder: U-27 publishes the template and replaces this cell with its link, adding one `scripts/leak-allow.txt` entry for it in the same change. Until then there is nothing to duplicate. |
-| **Template version** | `0022` |
+| **Template version** | **NOT RECORDED YET.** Placeholder: the number of the last migration in [migrations/](migrations/) when U-27 builds the template (`0022` today; a later 0.14.0 task may add one first). U-27 records it here with the link. |
 
-**Template version** is the four-digit number of the last migration in [migrations/](migrations/) the template includes. The template's System page shows the same number on its first line, `Template version: 0022`, and the connect step stores it in `brain.json` as `notion.template_version`; `brain upgrade` then names the migrations newer than it (spec/setup.md §9, spec/cli.md §5.15).
+**Template version** is the four-digit number of the last migration in [migrations/](migrations/) the template includes. The template's System page shows the same number on its first line, `Template version: NNNN`, and the connect step stores it in `brain.json` as `notion.template_version`; `brain upgrade` then names the migrations newer than it (spec/setup.md §9, spec/cli.md §5.15).
 
 ## What a duplicate contains
 
@@ -19,7 +19,7 @@ Everything a space built from every prompt has (the build prompts include every 
 - **Ultimate Brain**, the top page, starting with the **Start here** callout: line 1, bold, "Start here."; line 2, "This is the Notion half of Ultimate Brain. Next: install Ultimate Brain, and in your brain folder tell your agent "set up my brain". Get started shows every step.", with "Get started" linked to the Get started section of the product README on GitHub.
 - Home, Tasks, Meetings, Projects, Plan, Review, Knowledge, with their views, buttons and synced navigation.
 - **Brain Data**, holding the databases below.
-- **System**, starting with the line `Template version: 0022`, then the navigation's synced blocks, and holding **Archive**, **How it works** (filled with the user guide) and the **Brain Assistant Skills** database.
+- **System**, starting with the line `Template version: NNNN` (the version above), then the navigation's synced blocks, and holding **Archive**, **How it works** (filled with the user guide) and the **Brain Assistant Skills** database.
 
 **Databases**
 
@@ -54,7 +54,7 @@ For whoever maintains it (U-27 the first time):
 1. Use a **Notion workspace that holds only the template**: never copy it from your own space (0078 §1).
 2. Build it with **every module** from [CHECKLIST.md](CHECKLIST.md) "Build it yourself": Prompts 1 to 9, then the buttons and page layouts by hand. Build it once CC-197 is merged, so Check minutes and Voice summary in Brain Assistant Skills are the 0079 versions.
 3. Check the Start here callout and link its "Get started" to the README's Get started section.
-4. Add the first line of System, `Template version: NNNN`, with the number of the last migration in [migrations/](migrations/), and put the same number in the table above.
-5. Publish the top page with duplication allowed, and put its link in the table above, with one `scripts/leak-allow.txt` entry for it (`notion/TEMPLATE.md:<the link's pattern>`), in one change.
+4. Add the first line of System, `Template version: NNNN`, with the number of the last migration in [migrations/](migrations/) as you build, and record the same number in the table above.
+5. Publish the top page with duplication allowed, and put its link in the table above, with one `scripts/leak-allow.txt` entry for it (`notion/TEMPLATE.md:<the link's pattern>`), in the same change as the version.
 
 **When a release adds a migration:** apply it in the template workspace (its last step updates the System line) and change the version above in the same release. A duplicate made earlier is brought up to date with the migrations `brain upgrade` names.
