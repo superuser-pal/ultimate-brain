@@ -1,6 +1,6 @@
 # Guided setup (contract, decision 0078)
 
-**Status:** contract for release 0.14.0 (CC-188). Built by CC-190 (the CLI side), CC-191 (the `brain-setup` skill and the skill changes it needs) and CC-189 (the Notion template); measured by CC-193. Written by Claude Code.
+**Status:** contract for release 0.14.0 (CC-188). Built by CC-190 (the CLI side), CC-191 (the `brain-setup` skill and the skill changes it needs, in one fork release: brain-setup, brain-connect-notion, Ultimate Assistant's seeding, brain-ingest's use of `track`, brain-catch-up's first-meeting line, brain-notion-change's template version), CC-192 (the `repository` field of `package.json`) and CC-189 (the Notion template); measured by CC-193. Written by Claude Code.
 
 How this file fits: it holds the whole first-time setup of a new user: what the `brain-setup` skill does and in what order, what it checks and how, what it stores and where, what seeding writes, how first value is checked, and the setup report. Command behaviour is in [cli.md](cli.md) (§5.1 `init`'s next step, §5.2 `status`'s `setup` block, §5.3 `notion.template_version`, §5.15 `upgrade`'s Notion migrations), and file formats are in [schema.md](schema.md) (§4 area `track`, §12 the new-brain modules and the new `brain.json` keys). What a read, an answer or a proposal may rest on is [eligibility.md](eligibility.md), and nothing here changes it.
 
@@ -200,7 +200,7 @@ A folder or repo the user points to is adopted through 0.9.0's project adoption 
 
 - **Format:** the four-digit number of the last migration in `notion/migrations/` that the template includes, as a string: `"0024"`. The template's System page shows it as `Template version: 0024` (CC-189), and `notion/TEMPLATE.md` records it.
 - **Stored** by brain-connect-notion at step 4: it reads the System page's line through the MCP and runs `brain config set notion.template_version '"0024"'`. A space without the line (built from the prompts, or before 0.14.0) leaves the key absent: the version is **unknown**, never guessed.
-- **Kept current:** when a migration is applied to the space (brain-notion-change), the skill sets `notion.template_version` to that migration's number if it is higher, and the migration's last step updates the System page's line.
+- **Kept current** (brain-notion-change, CC-191): when a migration is applied to the space, the skill sets `notion.template_version` to that migration's number if it is higher, and the migration's last step updates the System page's line.
 - **Named by `brain upgrade`** (cli.md §5.15): the migrations of the installed package with a higher number; with the version unknown, upgrade says so and names none.
 
 ## 10. First value (step 7; 0078 §5)
@@ -219,7 +219,7 @@ Every user's setup ends with the three checks of 0078 §5, **on a seeded documen
 
 ### 10.1 The first meeting (0078 §5, 0079)
 
-The first meeting is checked later. **The first catch-up that ingests a Reviewed meeting after step 7** adds one line to its report, and logs `setup - step=first-meeting result=done`, so it is said once:
+The first meeting is checked later. **The first catch-up that ingests a Reviewed meeting after step 7** (brain-catch-up, CC-191) adds one line to its report, and logs `setup - step=first-meeting result=done`, so it is said once:
 
 ```text
 First meeting in: 3 tasks for you (1 from a quick follow-up), 4 notes, 2 people matched, 0 new people. Anything wrong? Say "that's wrong: …".
@@ -237,7 +237,7 @@ First meeting in: 3 tasks for you (1 from a quick follow-up), 4 notes, 2 people 
 
 ## 12. The setup report (0078 §6)
 
-At the end (and when the user asks "show my setup report"), the skill writes the report and shows it **whole**, then asks: "Send this to the product as a `beta-setup` issue, to help fix setup? Nothing else is sent." It files **only after a yes**: with `settings.gh` `on`, `gh issue create --repo <product repository> --label beta-setup --title "Setup report: <CLI version>, <agent>" --body <report>`; with `gh` off, it gives the text and the repository's new-issue link for the user to paste. The product repository is the one named by the `repository` field of `<product.path>/package.json`. No telemetry: nothing is sent any other way.
+At the end (and when the user asks "show my setup report"), the skill writes the report and shows it **whole**, then asks: "Send this to the product as a `beta-setup` issue, to help fix setup? Nothing else is sent." It files **only after a yes**: with `settings.gh` `on`, `gh issue create --repo <product repository> --label beta-setup --title "Setup report: <CLI version>, <agent>" --body <report>`; with `gh` off, it gives the text and the repository's new-issue link for the user to paste. The product repository is the one named by the `repository` field of `<product.path>/package.json` (added by CC-192). No telemetry: nothing is sent any other way.
 
 ### 12.1 Fields (no names, no content)
 
