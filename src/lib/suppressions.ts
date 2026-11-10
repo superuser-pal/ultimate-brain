@@ -304,3 +304,90 @@ export function eligibleView(view: Note, links: { linked: readonly string[]; gon
   }
   return view;
 }
+
+// --- The answer surfaces' form of a note (CC-176; spec/eligibility.md §6 rules 2 to 4, cli.md §5.13 "The awaiting-cleanup form") ---------
+
+/** A note as an answer surface returns it. `titleWithheld`: it has a restricted claim, so its title, path, tags, free-text fields, headings and
+ *  comments are withheld and it is cited as `citeLabel` gives (the awaiting-cleanup form). */
+export type AnswerNote = Note & { readonly titleWithheld?: true };
+
+/** Frontmatter that names no content: ids, dates, enumerations, relations, the claims the rule leaves in and the Notion fields you set. */
+const CONTENT_FREE = new Set([
+  "id", "type", "created", "updated", "lifecycle", "assessment", "date", "valid_from", "valid_until", "lineage_cleared", "area", "projects", "sources",
+  "relations", "facts", "timeline", "notion", "last_synced", "notion_fields",
+  "domain", "org", "goal", "client", "people", "attendees", "source", "decisions", "questions", "tasks", "passage", "decided_in", "deciders", "workflow",
+  "kind", "raised_in", "dropped", "task", "origin", "promoted_from", "scope", "areas", "stacks", "confidence",
+  "source_key", "content_hash", "captured", "origin_edited", "attached_to", "extract", "extract_of", "extract_version", "transcript_hash", "selection",
+  "passages", "replaces", "task_items", "repo", "commit", "converter", "notion_text", "notion_parts",
+]);
+/** Every field the schema defines that holds free text or names the subject; never kept, whatever its value looks like. */
+const FREE_TEXT = new Set(["title", "summary", "aliases", "tags", "why", "digest", "only_keep", "keep", "file_name", "repo_path", "notion_published", "answer"]);
+const NOTE_ID = /^(?:area|dom|gol|prj|per|org|mtg|dec|que|con|ref|src|mem|prp|vw)-[0-9a-z]{8}$/;
+const DATE = /^\d{4}-\d{2}(?:-\d{2}(?:T[0-9:.]+Z)?)?$/;
+/** The fixed sections schema §4 defines for a type: they name no content. */
+const FIXED_SECTIONS: Readonly<Record<string, readonly string[]>> = { decision: ["## Decision", "## Context", "## Consequences", "## Sources"] };
+const HEADING = /^ {0,3}#{1,6}(?:\s|$)/;
+
+/** A value of a field the schema doesn't define is kept only when it can carry no text: a number, a boolean, an id or a date, at any depth. */
+function contentFree(value: unknown): boolean {
+  if (value === null || typeof value === "number" || typeof value === "boolean") return true;
+  if (typeof value === "string") return NOTE_ID.test(value) || DATE.test(value);
+  if (Array.isArray(value)) return value.every(contentFree);
+  if (typeof value === "object") return Object.values(value as Record<string, unknown>).every(contentFree);
+  return false;
+}
+
+/** Whether the rule restricts a claim of the note: a body line, a timeline entry or a fact. A dropped summary alone is no restricted claim. */
+function hasRestrictedClaim(restriction: Restriction): boolean {
+  return restriction.lines.size > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0;
+}
+
+/** The awaiting-cleanup form of a note the rule leaves partly in: no title, tags or free text; headings and comments as spaces. */
+function awaitingCleanup(note: Note): AnswerNote {
+  const attributes: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(note.attributes)) {
+    if (key === "answer" && typeof value === "string" && NOTE_ID.test(value)) attributes[key] = value;
+    else if (FREE_TEXT.has(key)) continue;
+    else if (CONTENT_FREE.has(key) || contentFree(value)) attributes[key] = value;
+  }
+  // A timeline entry's `note` is free text the ingest wrote (schema §5).
+  if (Array.isArray(attributes.timeline)) {
+    attributes.timeline = (attributes.timeline as unknown[]).map((entry) => {
+      if (entry === null || typeof entry !== "object" || !("note" in entry)) return entry;
+      const { note: _note, ...rest } = entry as Record<string, unknown>;
+      return rest;
+    });
+  }
+  const fixed = FIXED_SECTIONS[note.type] ?? [];
+  let comment = false;
+  const body = note.body.split(/(\r?\n)/).map((text, index) => {
+    if (index % 2 === 1) return text;
+    const opens = !comment && text.trimStart().startsWith("<!--");
+    const hidden = comment || opens || (HEADING.test(text) && !fixed.includes(text.trimEnd()));
+    if (opens || comment) comment = !text.includes("-->", opens ? text.indexOf("<!--") + 4 : 0);
+    return hidden ? " ".repeat(text.length) : text;
+  }).join("");
+  return { ...note, attributes, body, titleWithheld: true };
+}
+
+/**
+ * A note as an answer surface returns it (`query --candidates` and `--read`, `recall`, `reflect --candidates`; eligibility.md §2, §6): the
+ * restricted-evidence rule's form (`eligibleNote`), and, when a claim of it is restricted, the awaiting-cleanup form; null when the rule leaves it
+ * out whole. The published surfaces keep `eligibleNote` and `publishableNote` until CC-183 (eligibility.md §6 rule 5).
+ */
+export function answerNote(note: Note, context: Context): AnswerNote | null {
+  const restriction = restrictionOf(note, context);
+  if (restriction.whole || nothingLeft(note, restriction)) return null;
+  const kept = partlyRestricted(note, restriction);
+  return hasRestrictedClaim(restriction) ? awaitingCleanup(kept) : kept;
+}
+
+/** Whether an answer surface withholds the note's title and path (the awaiting-cleanup form). */
+export function titleWithheld(note: Note): boolean {
+  return (note as AnswerNote).titleWithheld === true;
+}
+
+/** The label an answer cites a note in the awaiting-cleanup form by (eligibility.md §6 rules 3 and 4). */
+export function citeLabel(note: Note): string {
+  return `${note.type} ${note.id}, title withheld: awaiting cleanup`;
+}
