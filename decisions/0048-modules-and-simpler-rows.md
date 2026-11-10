@@ -4,6 +4,7 @@
 **Date:** 2026-10-28
 **Amends:** 0043, 0045
 **Refines:** 0037, 0041
+**Defaults refined by:** [0078](0078-onboarding-and-early-access-in-0-14-0.md) (2026-11-10): a new brain starts with Knowledge, Orgs, Documents, Reports and Tasks on, and Domains follows seeding
 
 ## Context
 U-18 put 0.5.0 in the first brain on 2026-10-26 to 2026-10-28. Two of its four checks passed (a meeting re-read, a report refresh); the user didn't get to Fix, and Keep failed: a document attached to an Inbox row was taken in with Keep empty, so no `reference` note was written and the user couldn't find the document anywhere in Notion (decision 0049).
