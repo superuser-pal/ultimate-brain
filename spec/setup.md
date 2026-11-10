@@ -100,7 +100,7 @@ The `AGENTS.md` lines are written only below `<!-- ultimate-brain:rules:end -->`
 
 The other three of the nine required items (0078 §2) are the recorded steps `notion-mcp`, `minutes-prompt` and `brain-assistant` (§4.1, latest line `result=done`). So the count is: the six counted checks that pass, plus those three recorded as done, out of **9**.
 
-**Finished** when the latest `setup` line with `step=finished` exists; or, for a brain with no `setup` line at all, when the six counted checks pass (a brain set up before 0.14.0, §3). **Next** is the first step of §2 whose check fails or which is not recorded as done, by the step names of cli.md §5.2.
+**Finished** when the latest `setup` line with `step=finished` exists; or, for a brain with no `setup` line at all, when the six counted checks pass (a brain set up before 0.14.0, §3). **Next** is the first item not done in §2's order (a check that fails, or a step not recorded as done), as cli.md §5.2 lists them.
 
 ## 6. The checks the skill makes
 
