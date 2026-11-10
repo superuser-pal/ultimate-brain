@@ -50,7 +50,7 @@ test("apply closes an approved proposal that rests only on excluded evidence, an
   assert.ok(!note.includes("95k"), "the excluded wording was not added to the note");
 });
 
-test("proposal new skips a change that rests only on excluded evidence (cli §5.6)", async (context) => {
+test("proposal new skips a change that rests on excluded evidence, a mixed one whole (cli §5.6, eligibility §4.2)", async (context) => {
   const dir = await fixtureCopy(context);
   const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
   await exclude();
@@ -63,11 +63,13 @@ test("proposal new skips a change that rests only on excluded evidence (cli §5.
     addition(target, `${LIVE_LINE}\n\n${EXCLUDED_LINE}`),
   ] });
   assert.equal(out.code, 0, out.stdout);
+  // CC-177 before 0077 kept the mixed text (index 4); 0077 §1 withholds it whole (eligibility.md §4.2).
   assert.deepEqual(out.json.data.skipped, [
     { input_index: 0, reason: "SOURCE_EXCLUDED" },
     { input_index: 2, reason: "SOURCE_EXCLUDED" },
-  ], "an excluded passage, and an older version with no passage named; a live passage, the current version and a mixed text are kept");
-  assert.equal(out.json.data.created.length, 3);
+    { input_index: 4, reason: "SOURCE_EXCLUDED" },
+  ], "an excluded passage, an older version with no passage named, and a mixed text; a live passage and the current version are kept");
+  assert.equal(out.json.data.created.length, 2);
 });
 
 test("with no exclusion in the brain nothing is skipped or closed for it", async (context) => {
@@ -96,7 +98,7 @@ test("a line with no passage reference beside a live claim does not make a propo
     addition(target, `## Price\n\n${EXCLUDED_LINE}\n\nSo the budget is set. ^[inferred]`),
   ] });
   assert.equal(out.code, 0, out.stdout);
-  assert.deepEqual(out.json.data.skipped, [{ input_index: 3, reason: "SOURCE_EXCLUDED" }], "only the one whose every cited line is excluded");
+  assert.deepEqual(out.json.data.skipped, [{ input_index: 3, reason: "SOURCE_EXCLUDED" }], "only the one that cites an excluded passage");
   const applied = await run(dir, ["apply"], approve(before.json.data.created[0].id));
   assert.equal(applied.json.data.decisions[0].result, "applied", applied.stdout);
 });
@@ -130,7 +132,7 @@ test("proposal new tells a person why an item was skipped", async (context) => {
   const file = join(dir, "..", "skip.json");
   await writeFile(file, JSON.stringify({ proposals: [addition("dec-7k2m9q4x", EXCLUDED_LINE)] }));
   const out = await brain(["proposal", "new", "--input", file, "--brain", dir, "--now", NOW]);
-  assert.match(out.stdout, /skipped proposals\[0\]: rests only on content you excluded from the brain/);
+  assert.match(out.stdout, /skipped proposals\[0\]: rests on content you excluded from the brain/);
 });
 
 test("a fix or an edit whose value still holds the excluded claim is closed, whatever the kind (cli §5.7)", async (context) => {
@@ -181,3 +183,115 @@ test("an answer that rests only on an excluded passage is closed on approve and 
   assert.deepEqual((out.json.data.decisions as Array<{ result: string; reason?: string }>).map((entry) => [entry.result, entry.reason]), [["closed", "SOURCE_EXCLUDED"], ["closed", "SOURCE_EXCLUDED"]], out.stdout);
   for (const entry of question.slice(0, 2)) assert.ok(!(await readFile(join(dir, entry.path), "utf8")).includes("95k"), entry.path);
 });
+
+const MIXED_LIVE = `A mixed remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]`;
+const MIXED = `${MIXED_LIVE}\n\n${EXCLUDED_LINE}`;
+const TARGET_PATH = "knowledge/decisions/2026-12-03-use-supabase-for-auth.md";
+
+test("a mixed item is withheld whole on apply, an independent live one applies, and its re-proposal from the live passage needs its own decision (eligibility §4.2, §9.5)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
+  const target = "dec-7k2m9q4x";
+  const staged = await run(dir, ["proposal", "new"], { proposals: [addition(target, MIXED), addition(target, LIVE_LINE)] });
+  assert.equal(staged.code, 0, staged.stdout);
+  const [mixed, live] = staged.json.data.created as Array<{ id: string; path: string }>;
+  // The user approved the mixed item in chat before the exclusion; it was recorded, not applied yet.
+  const recorded = await brain(["apply", "--record-only", "--input", await input(dir, approve(mixed!.id)), "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(recorded.json.data.decisions[0].result, "recorded", recorded.stdout);
+  await exclude(); // made between the proposal's creation and its apply
+
+  const out = await run(dir, ["apply"], { decisions: [...approve(mixed!.id).decisions, ...approve(live!.id).decisions] });
+  assert.deepEqual((out.json.data.decisions as Array<{ result: string; reason?: string }>).map((entry) => [entry.result, entry.reason ?? null]), [["closed", "SOURCE_EXCLUDED"], ["applied", null]], out.stdout);
+  const closed = parseFrontmatter(await readFile(join(dir, mixed!.path), "utf8")).attributes;
+  assert.deepEqual([closed.status, closed.closed_reason], ["closed", "stale"]);
+  let note = await readFile(join(dir, TARGET_PATH), "utf8");
+  assert.ok(!note.includes("95k") && !note.includes("A mixed remark."), "neither the whole mixed text nor its live part is written");
+  assert.ok(note.includes("A kept remark."), "the independent live item is applied");
+
+  // Re-proposed from the live passage alone: a new pending item, which the earlier Approve does not reach.
+  const again = await run(dir, ["proposal", "new"], { proposals: [addition(target, MIXED_LIVE)] });
+  assert.deepEqual([again.code, again.json.data.skipped], [0, []], again.stdout);
+  const fresh = again.json.data.created[0] as { id: string; path: string };
+  assert.notEqual(fresh.id, mixed!.id);
+  const pending = await brain(["apply", "--brain", dir, "--now", NOW, "--json"]);
+  assert.ok(!(pending.json.data.decisions as Array<{ proposal: string }>).some((entry) => entry.proposal === fresh.id), "no decision is carried over to it");
+  assert.equal(parseFrontmatter(await readFile(join(dir, fresh.path), "utf8")).attributes.status, "pending");
+  const accepted = await run(dir, ["apply"], approve(fresh.id));
+  assert.equal(accepted.json.data.decisions[0].result, "applied", accepted.stdout);
+  note = await readFile(join(dir, TARGET_PATH), "utf8");
+  assert.ok(note.includes("A mixed remark.") && !note.includes("95k"));
+});
+
+test("on a mixed item, a fix that keeps the wording is closed, and one that keeps only the live cited line is applied (eligibility §9.5)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
+  const target = "dec-7k2m9q4x";
+  const staged = await run(dir, ["proposal", "new"], { proposals: [addition(target, MIXED), addition(target, `${MIXED}\n\nAnd more. ^[inferred]`)] });
+  const [kept, trimmed] = (staged.json.data.created as Array<{ id: string }>).map((entry) => entry.id);
+  await exclude();
+  const fix = (proposal: string, value: string) => ({ proposal, action: "fix", note: "n", fixes: [{ value }], decided_at: NOW, decided_by: "chat" });
+  const out = await run(dir, ["apply"], { decisions: [fix(kept!, MIXED), fix(trimmed!, MIXED_LIVE)] });
+  assert.deepEqual((out.json.data.decisions as Array<{ result: string; reason?: string }>).map((entry) => [entry.result, entry.reason ?? null]), [["closed", "SOURCE_EXCLUDED"], ["applied", null]], out.stdout);
+  const note = await readFile(join(dir, TARGET_PATH), "utf8");
+  assert.ok(note.includes(`${MIXED_LIVE}\nSource: src-ex1a3b4c`), "the user's exact wording, still that claim of the source");
+  assert.ok(!note.includes("95k"));
+});
+
+test("a value the user typed that restates excluded content is applied as their own correction, user-correction:<prp id> (eligibility §9.5)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
+  const target = "dec-7k2m9q4x";
+  const staged = await run(dir, ["proposal", "new"], { proposals: [
+    addition(target, MIXED),
+    { kind: "update_fact", title: "Budget", target: PROJECT, field: "budget", after: "95k", why: "The call set it.", source: "src-ex1a3b4c" },
+  ] });
+  assert.equal(staged.code, 0, staged.stdout);
+  const [appendix, fact] = (staged.json.data.created as Array<{ id: string }>).map((entry) => entry.id);
+  await exclude();
+  const sourcesBefore = parseFrontmatter(await readFile(join(dir, TARGET_PATH), "utf8")).attributes.sources;
+  const out = await run(dir, ["apply"], { decisions: [
+    { proposal: appendix!, action: "fix", note: "n", fixes: [{ value: "I recall the price was 95k." }], decided_at: NOW, decided_by: "chat" },
+    { proposal: fact!, action: "edit", value: "95,000", note: "n", decided_at: NOW, decided_by: "chat" },
+  ] });
+  assert.deepEqual((out.json.data.decisions as Array<{ result: string }>).map((entry) => entry.result), ["applied", "applied"], out.stdout);
+  const note = parseFrontmatter(await readFile(join(dir, TARGET_PATH), "utf8"));
+  assert.ok(note.body.includes(`I recall the price was 95k.\nSource: user-correction:${appendix}`), note.body);
+  assert.deepEqual(note.attributes.sources, sourcesBefore, "the excluded source is not added to the note's sources");
+  const project = parseFrontmatter(await readFile(join(dir, "projects/acme-website/project.md"), "utf8")).attributes as Record<string, any>;
+  assert.equal(project.facts.budget, "95,000");
+  const entries = (project.timeline as Array<Record<string, unknown>>).filter((entry) => entry.field === "budget");
+  assert.deepEqual(entries.at(-1) === undefined ? null : [entries.at(-1)!.value, entries.at(-1)!.source, entries.at(-1)!.assessment], ["95,000", `user-correction:${fact}`, "accepted"]);
+  assert.ok(!entries.some((entry) => entry.value === "95k" || entry.source === "src-ex1a3b4c"), "the proposal's excluded value is not written as history");
+  // Apply refuses a result that adds lint errors (cli §3.6.3), so "applied" also says both notes still lint.
+});
+
+test("an approved Review row of the new layout, applied from chat, withholds its mixed item and applies the independent ones (eligibility §4.1, §9.2)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { note: draft, exclude } = await excludableDecision(dir, SYNC, PROJECT, true); // the draft cites a live and an excluded passage
+  const staged = await run(dir, ["proposal", "new"], { proposals: [
+    { kind: "review_notes", source: SYNC, notes: [draft.id] },
+    addition("con-1s6t8e2b", MIXED, SYNC),
+    addition("con-1s6t8e2b", LIVE_LINE, SYNC),
+    { kind: "add_link", title: "link", target: "con-1s6t8e2b", field: "projects", after: PROJECT, why: "Said.", source: SYNC },
+  ] });
+  assert.equal(staged.code, 0, staged.stdout);
+  const row = staged.json.data.created[0] as { id: string; path: string };
+  await exclude();
+  const out = await run(dir, ["apply"], approve(row.id));
+  const [result] = out.json.data.decisions as Array<{ result: string; changes: Array<{ result: string; reason?: string }>; notes: Array<{ id: string; result: string }>; withheld: string[] }>;
+  assert.equal(result!.result, "applied", out.stdout);
+  assert.deepEqual(result!.changes.map((entry) => [entry.result, entry.reason ?? null]), [["dropped", "SOURCE_EXCLUDED"], ["applied", null]]);
+  assert.deepEqual(result!.notes.map((entry) => [entry.id, entry.result]), [[draft.id, "archived"]], "the mixed draft is archived, not reviewed");
+  assert.equal(result!.withheld.length, 2);
+  const proposal = parseFrontmatter(await readFile(join(dir, row.path), "utf8")).attributes as Record<string, any>;
+  assert.deepEqual(proposal.item_decisions.map((entry: Record<string, unknown>) => [entry.decision, entry.state, entry.reason]), [["reject", "closed", "source_excluded"], ["reject", "closed", "source_excluded"]]);
+  const concept = await readFile(join(dir, "knowledge/references/row-level-security.md"), "utf8");
+  assert.ok(concept.includes("A kept remark.") && concept.includes(PROJECT), "the live change and the link apply");
+  assert.ok(!concept.includes("95k") && !concept.includes("A mixed remark."));
+});
+
+async function input(dir: string, value: unknown): Promise<string> {
+  const file = join(dir, "..", `in-${Math.random().toString(36).slice(2)}.json`);
+  await writeFile(file, JSON.stringify(value));
+  return file;
+}

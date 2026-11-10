@@ -300,6 +300,8 @@ test("a change whose wording cites only an excluded passage is held on the Revie
     { kind: "review_notes", source: SYNC, notes: [] },
     { kind: "add_to_note", title: "Price", target: CONCEPT, content: `The price was 95k. ^[src-ex1a3b4c#¶2:${passageHash("Pricing was 95k.")}]`, why: "Said on the call.", source: SYNC },
     { kind: "add_to_note", title: "Kept", target: CONCEPT, content: `A kept remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]\n\nSo we follow up. ^[inferred]`, why: "Said on the call.", source: SYNC },
+    // A mixed change: a live cited line beside an excluded one is held whole (eligibility.md §4.2).
+    { kind: "add_to_note", title: "Mixed", target: CONCEPT, content: `A mixed remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]\n\nThe price was 95k too. ^[src-ex1a3b4c#¶2:${passageHash("Pricing was 95k.")}]`, why: "The mixed why.", source: SYNC },
   ] });
   assert.equal(created.code, 0, created.stdout);
   const id = created.json.data.created[0].id as string;
@@ -308,6 +310,7 @@ test("a change whose wording cites only an excluded passage is held on the Revie
   assert.ok(!JSON.stringify(page).includes("95k"), "the excluded wording is not published");
   assert.match(String(page.body), /Held: /);
   assert.ok(String(page.body).includes("A kept remark."), "the change on a live passage is shown");
+  assert.ok(!String(page.body).includes("A mixed remark.") && !String(page.body).includes("The mixed why."), "no wording or why of the mixed item is published, not even its live line");
   const held = Object.values(page.published["@review"].items as Record<string, { held?: boolean }>).filter((entry) => entry.held === true);
-  assert.equal(held.length, 1);
+  assert.equal(held.length, 2);
 });
