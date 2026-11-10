@@ -11,7 +11,20 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { CASES } from "./cases.mjs";
-import { AREAS, DECISIONS, EXCLUDED_INPUT, MEMORIES, ORGS, OWNER, PROJECTS, REPOS, SOURCES } from "./world.mjs";
+import { CASES_0_13 } from "./cases-0.13.mjs";
+import { AREAS, DECISIONS as DECISIONS_0_12, EXCLUDED_INPUT, MEMORIES as MEMORIES_0_12, ORGS, OWNER, PROJECTS, REPOS as REPOS_0_12, SOURCES } from "./world.mjs";
+import { DECISIONS_0_13, LINK_0_12_HOW, LINK_0_12_SKILLS, MEMORIES_0_13, PROPOSALS, REPORTS, REPOS_0_13, SUPPORT_INPUT, VIEWS } from "./world-0.13.mjs";
+
+// CC-185 (0.13.0) adds to the world of CC-165; every entity of world.mjs keeps its key, so its id, and the 77 cases of
+// cases.mjs are written first and unchanged.
+const DECISIONS = [...DECISIONS_0_12, ...DECISIONS_0_13];
+const MEMORIES = [...MEMORIES_0_12, ...MEMORIES_0_13];
+const REPOS = [...REPOS_0_12, ...REPOS_0_13];
+const EXCLUDED_INPUTS = [EXCLUDED_INPUT, SUPPORT_INPUT];
+// The frontmatter field that names a proposal's passages (0077 §3, spec/eligibility.md §9.1). TODO(CC-179): null until
+// CC-179 adds the field to schema §11 and the proposal schema accepts it; then set it here, and the proposals with
+// `passages` carry it. Until then every proposal is written as a legacy one (§9.3).
+const PROPOSAL_PASSAGES_FIELD = null;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const product = join(here, "../..");
@@ -27,7 +40,7 @@ if (!out || out.startsWith("--") || !casesFile) {
 // ---- ids ----
 const sha = (text) => createHash("sha256").update(text, "utf8").digest("hex");
 const ALPHA = "0123456789abcdefghjkmnpqrstvwxyz";
-const PREFIX = { area: "area", org: "org", prj: "prj", src: "src", dec: "dec", mem: "mem" };
+const PREFIX = { area: "area", org: "org", prj: "prj", src: "src", dec: "dec", mem: "mem", vw: "vw", prp: "prp" };
 const ids = new Map();
 function idOf(key) {
   if (ids.has(key)) return ids.get(key);
@@ -50,7 +63,21 @@ const normalize = (text) => text.replace(/\s+/g, " ").trim();
 const passageHash = (text) => sha(normalize(text)).slice(0, 8);
 
 // Register every entity first, so references resolve whatever the order.
-for (const e of [...AREAS, ...ORGS, ...PROJECTS, ...SOURCES, ...EXCLUDED_INPUT.versions, ...DECISIONS, ...MEMORIES]) idOf(e.key);
+for (const e of [...AREAS, ...ORGS, ...PROJECTS, ...SOURCES, ...EXCLUDED_INPUTS.flatMap((x) => x.versions), ...DECISIONS, ...MEMORIES, ...VIEWS, ...REPORTS, ...PROPOSALS]) idOf(e.key);
+const inputOf = new Map(EXCLUDED_INPUTS.flatMap((x) => x.versions.map((v) => [v.key, x])));
+
+// Each note's path from the brain's root, for "{path:@<key>}" in a body.
+const slug = (s) => s.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const paths = new Map();
+for (const p of PROJECTS) paths.set(p.key, `projects/${p.slug}/project.md`);
+for (const o of ORGS) paths.set(o.key, `knowledge/orgs/${slug(o.title)}.md`);
+for (const d of DECISIONS) paths.set(d.key, `knowledge/decisions/${d.file ?? `${d.date}-${slug(d.title)}`}.md`);
+for (const v of VIEWS) paths.set(v.key, `projects/${PROJECTS.find((p) => p.key === v.project).slug}/decision-log.md`);
+for (const r of REPORTS) paths.set(r.key, `reports/${r.date}-${r.slug}.md`);
+const pathOf = (key) => {
+  if (!paths.has(key)) throw new Error(`no path for ${key}`);
+  return paths.get(key);
+};
 
 const resolveValue = (v) => {
   if (typeof v === "string" && v.startsWith("@")) return idOf(v.slice(1));
@@ -58,9 +85,15 @@ const resolveValue = (v) => {
   if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, resolveValue(x)]));
   return v;
 };
+const passageRef = (key, n) => {
+  const input = inputOf.get(key);
+  if (!input) throw new Error(`${key} is not an extract of an excluded input`);
+  return `${idOf(key)}#¶${n}:${passageHash(input.paragraphs[Number(n) - 1])}`;
+};
 const resolveBody = (text) =>
   text
-    .replace(/\{¶@([^#}]+)#(\d+)\}/g, (_, key, n) => `^[${idOf(key)}#¶${n}:${passageHash(EXCLUDED_INPUT.paragraphs[Number(n) - 1])}]`)
+    .replace(/\{¶@([^#}]+)#(\d+)\}/g, (_, key, n) => `^[${passageRef(key, n)}]`)
+    .replace(/\{path:@([^}]+)\}/g, (_, key) => pathOf(key))
     .replace(/\{@([^}]+)\}/g, (_, key) => idOf(key));
 
 // ---- YAML frontmatter (a small, fixed writer) ----
@@ -94,14 +127,13 @@ function yaml(obj, indent = "") {
 }
 const files = new Map(); // path relative to out → content
 const note = (path, fm, body) => files.set(join("brain", path), `---\n${yaml(fm)}\n---\n${body}`);
-const slug = (s) => s.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 // ---- brain notes ----
 for (const a of AREAS) {
   note(`areas/${slug(a.title)}.md`, { id: idOf(a.key), type: "area", title: a.title, created: "2026-09-01", updated: "2026-09-01", summary: a.summary, lifecycle: "reviewed" }, a.body);
 }
 for (const o of ORGS) {
-  note(`knowledge/orgs/${slug(o.title)}.md`, { id: idOf(o.key), type: "org", title: o.title, created: "2026-09-01", updated: "2026-09-01", summary: o.summary, lifecycle: "reviewed", area: idOf("area:client-work") }, `${o.title} is a client of the studio.\n`);
+  note(pathOf(o.key), { id: idOf(o.key), type: "org", title: o.title, created: "2026-09-01", updated: "2026-09-01", summary: o.summary, lifecycle: "reviewed", area: idOf("area:client-work") }, `${o.title} is a client of the studio.\n`);
 }
 for (const p of PROJECTS) {
   const fm = { id: idOf(p.key), type: "project", title: p.title, created: "2026-09-01", updated: "2026-10-20", summary: p.summary, lifecycle: "reviewed", area: resolveValue(p.area), client: p.client ? resolveValue(p.client) : undefined, facts: p.facts, timeline: p.timeline ? resolveValue(p.timeline) : undefined };
@@ -116,30 +148,31 @@ for (const s of SOURCES) {
   }, body);
 }
 
-// The excluded input: two extract versions and the suppression record of version 2 (0055, capture-and-review §4.5, §5.3).
-const X = EXCLUDED_INPUT;
-const inputPage = pageId(X.key);
-const transcriptHash = sha(X.paragraphs.map(normalize).join("\n\n"));
-for (const v of X.versions) {
-  const kept = X.paragraphs.map((text, i) => ({ n: i + 1, text, item: X.items[i] })).filter((p) => v.version === 1 || !X.excluded.includes(p.n));
-  const body = kept.map((p) => `<!-- passage ¶${p.n} item ${p.item} -->\n${p.text}\n`).join("\n");
-  const excludedNow = (item) => v.version > 1 && X.excluded.includes(X.items.indexOf(item) + 1);
-  const previous = X.versions.find((w) => w.version === v.version - 1);
-  note(`sources/notion/${v.date}-${slug(X.title)}-extract-v${v.version}.md`, {
-    id: idOf(v.key), type: "source", title: `${X.title} (extract v${v.version})`, created: v.date, updated: v.date,
-    source_key: `notion:${inputPage}`, kind: "minutes", content_hash: `sha256:${sha(body)}`, captured: `${v.date}T10:00:00Z`,
-    extract: true, extract_of: inputPage, extract_version: v.version, replaces: previous ? idOf(previous.key) : undefined,
-    transcript_hash: transcriptHash,
-    selection: [{ id: "s1", effective: "use", explicit: null }, ...X.items.map((item) => ({ id: item, effective: excludedNow(item) ? "meeting only" : "use", explicit: excludedNow(item) ? "meeting only" : null }))],
-    passages: kept.map((p) => ({ n: p.n, hash: passageHash(p.text), items: [p.item] })),
-    area: idOf("area:client-work"), projects: [idOf("prj:harbor")],
-    summary: v.version === 1 ? "Selected extract of the Harbor pricing call." : "Selected extract of the Harbor pricing call; one item is now Meeting only.",
-  }, body);
+// The excluded inputs: two extract versions each and the suppression record of version 2 (0055, capture-and-review §4.5, §5.3).
+for (const X of EXCLUDED_INPUTS) {
+  const inputPage = pageId(X.key);
+  const transcriptHash = sha(X.paragraphs.map(normalize).join("\n\n"));
+  for (const v of X.versions) {
+    const kept = X.paragraphs.map((text, i) => ({ n: i + 1, text, item: X.items[i] })).filter((p) => v.version === 1 || !X.excluded.includes(p.n));
+    const body = kept.map((p) => `<!-- passage ¶${p.n} item ${p.item} -->\n${p.text}\n`).join("\n");
+    const excludedNow = (item) => v.version > 1 && X.excluded.includes(X.items.indexOf(item) + 1);
+    const previous = X.versions.find((w) => w.version === v.version - 1);
+    note(`sources/notion/${v.date}-${slug(X.title)}-extract-v${v.version}.md`, {
+      id: idOf(v.key), type: "source", title: `${X.title} (extract v${v.version})`, created: v.date, updated: v.date,
+      source_key: `notion:${inputPage}`, kind: "minutes", content_hash: `sha256:${sha(body)}`, captured: `${v.date}T10:00:00Z`,
+      extract: true, extract_of: inputPage, extract_version: v.version, replaces: previous ? idOf(previous.key) : undefined,
+      transcript_hash: transcriptHash,
+      selection: [{ id: "s1", effective: "use", explicit: null }, ...X.items.map((item) => ({ id: item, effective: excludedNow(item) ? "meeting only" : "use", explicit: excludedNow(item) ? "meeting only" : null }))],
+      passages: kept.map((p) => ({ n: p.n, hash: passageHash(p.text), items: [p.item] })),
+      area: idOf("area:client-work"), projects: [idOf("prj:harbor")],
+      summary: v.version === 1 ? `Selected extract of the ${X.title}.` : `Selected extract of the ${X.title}; one item is now Meeting only.`,
+    }, body);
+  }
+  files.set(join("brain", "_suppressions", `${inputPage}.json`), JSON.stringify({
+    input: inputPage,
+    records: X.versions.filter((v) => v.version > 1).map((v) => ({ version: v.version, passages: X.excluded.map((n) => ({ extract_of: inputPage, transcript_hash: transcriptHash, n })), full_copies: [], status: "active" })),
+  }, null, 2) + "\n");
 }
-files.set(join("brain", "_suppressions", `${inputPage}.json`), JSON.stringify({
-  input: inputPage,
-  records: X.versions.filter((v) => v.version > 1).map((v) => ({ version: v.version, passages: X.excluded.map((n) => ({ extract_of: inputPage, transcript_hash: transcriptHash, n })), full_copies: [], status: "active" })),
-}, null, 2) + "\n");
 
 const supersededBy = new Map([...DECISIONS, ...MEMORIES].filter((e) => e.supersedes).map((e) => [e.supersedes, e]));
 for (const d of DECISIONS) {
@@ -148,12 +181,12 @@ for (const d of DECISIONS) {
     ...(d.supersedes ? [{ type: "supersedes", target: idOf(d.supersedes) }] : []),
     ...(newer ? [{ type: "superseded_by", target: idOf(newer.key) }] : []),
   ];
-  note(`knowledge/decisions/${d.date}-${slug(d.title)}.md`, {
+  note(pathOf(d.key), {
     id: idOf(d.key), type: "decision", title: d.title, created: d.date, updated: newer ? newer.date : d.date,
-    summary: d.summary, lifecycle: newer ? "archived" : "reviewed", date: d.date,
+    summary: d.summary, lifecycle: newer ? "archived" : d.lifecycle ?? "reviewed", aliases: d.aliases, tags: d.tags, date: d.date,
     assessment: newer ? "superseded" : d.assessment ?? "accepted", valid_until: newer ? newer.date : undefined,
     area: d.area ? resolveValue(d.area) : undefined, projects: d.projects ? resolveValue(d.projects) : undefined,
-    sources: resolveValue(d.sources), relations: relations.length ? relations : undefined,
+    sources: resolveValue(d.sources), relations: relations.length ? relations : undefined, ...d.custom,
   }, resolveBody(d.body));
 }
 for (const m of MEMORIES) {
@@ -177,7 +210,73 @@ for (const m of MEMORIES) {
   }, resolveBody(m.body));
 }
 
+// ---- derived items and proposals (CC-185) ----
+const entity = new Map([...PROJECTS, ...DECISIONS, ...VIEWS, ...REPORTS].map((e) => [e.key, e]));
+const linkFrom = (folder, key) => `[${entity.get(key).title ?? key}](${folder}${pathOf(key)})`;
+// The decision log of schema §16.2, as `brain views` writes it; it lists every decision of the project.
+for (const v of VIEWS) {
+  const project = entity.get(v.project);
+  const up = "../../";
+  const own = DECISIONS.filter((d) => (d.projects ?? []).includes(`@${v.project}`));
+  const byDateThenId = (field) => (a, b) => (a[field] === b[field] ? (idOf(a.key) < idOf(b.key) ? -1 : 1) : a[field] < b[field] ? 1 : -1);
+  const current = own.filter((d) => !supersededBy.has(d.key)).sort(byDateThenId("date"));
+  const superseded = own.filter((d) => supersededBy.has(d.key)).map((d) => ({ ...d, until: supersededBy.get(d.key).date })).sort(byDateThenId("until"));
+  const lines = (list, render) => (list.length ? list.map(render) : ["- None"]);
+  const block = [
+    "<!-- @generated:start -->", "## Current",
+    ...lines(current, (d) => `- ${d.date} — ${linkFrom(up, d.key)} — ${d.assessment ?? "accepted"}${d.supersedes ? ` — supersedes ${linkFrom(up, d.supersedes)}` : ""}`),
+    "", "## Superseded",
+    ...lines(superseded, (d) => `- ${d.date} → ${d.until} — ${linkFrom(up, d.key)} — superseded by ${linkFrom(up, supersededBy.get(d.key).key)}`),
+    "<!-- @generated:end -->",
+  ].join("\n");
+  const day = v.generated_at.slice(0, 10);
+  note(pathOf(v.key), {
+    id: idOf(v.key), type: "view", title: `${project.title} — decision log`, view_kind: v.kind, project: idOf(v.project),
+    generated_from: [idOf(v.project), ...own.map((d) => idOf(d.key))].sort(), generated_at: v.generated_at, created: day, updated: day,
+  }, `\n${block}\n\n<!-- @user:start -->\n<!-- @user:end -->\n`);
+}
+// Reports (schema §16.4): the six sections as written; `generated_from` is every note the body links to.
+for (const r of REPORTS) {
+  const body = Object.entries(r.sections).map(([heading, text]) => `## ${heading}\n\n${resolveBody(text)}\n`).join("\n");
+  note(pathOf(r.key), {
+    id: idOf(r.key), type: "view", title: r.title, created: r.date, updated: r.date, view_kind: "report", question: r.question,
+    projects: resolveValue(r.projects), generated_from: r.links.map(idOf).sort(), generated_at: r.generated_at,
+  }, `\n${body}`);
+}
+// Proposals (schema §11), approved in chat and not yet applied.
+for (const p of PROPOSALS) {
+  const fm = {
+    id: idOf(p.key), type: "proposal", title: p.title, created: p.created, updated: p.decided_at.slice(0, 10), kind: p.kind,
+    target: resolveValue(p.target), field: p.field, after: p.after, from: p.from,
+    content: p.content === undefined ? undefined : resolveBody(p.content),
+    why: p.why, source: resolveValue(p.source), status: "approved",
+    decision: { action: "approve", decided_at: p.decided_at, decided_by: "chat" },
+  };
+  if (PROPOSAL_PASSAGES_FIELD && p.passages) fm[PROPOSAL_PASSAGES_FIELD] = p.passages.map((x) => passageRef(x.source, x.n));
+  files.set(join("brain", "_proposals", `${p.created}-${slug(p.title)}.md`), `---\n${yaml(fm)}\n---\n`);
+}
+
 // ---- linked repos and brain.json ----
+// The managed block 0.12.0's `brain link` wrote (src/commands/link.ts at v0.12.0, cli.md §5.12 of that release).
+function linkBlock012(project, area) {
+  const workflow = LINK_0_12_SKILLS.includes("brain-workflow");
+  const adopt = LINK_0_12_SKILLS.includes("brain-workflow-adopt") ? "; to take over its existing plans and tasks, use `brain-workflow-adopt`." : ".";
+  return [
+    "<!-- ultimate-brain:start -->", "## Ultimate Brain", "", "Managed by `brain link`; edits inside this block are overwritten.", "",
+    `This repo is linked to the user's second brain${project || area ? ":" : "."}`,
+    ...(project ? [`- Project: ${project.title} (\`${idOf(project.key)}\`)`] : []),
+    ...(area ? [`- Area: ${area.title} (\`${idOf(area.key)}\`)`] : []),
+    "", "The brain holds decisions, key facts, people and meeting history that this repo does not.", "",
+    "Consult it before you:",
+    "- make or revisit a decision about scope, architecture, vendors or the client;",
+    "- answer why something was decided, who someone is, or a date, budget or owner;",
+    "- rely on a fact about the client or project that this repo does not state.",
+    "", LINK_0_12_HOW,
+    ...(workflow ? ["", `To track this repo's work, the standard way or connected to a Notion Project or Area, use the \`brain-workflow\` skill${adopt}`] : []),
+    "", `The brain is read-only from this repo. Never edit its files from here.${workflow ? " A connected workflow's records change only through `brain workflow` commands." : ""}`,
+    "<!-- ultimate-brain:end -->",
+  ].join("\n");
+}
 const STATUS_MAP = { "in progress": "in_progress", review: "review", todo: "todo", done: "done" };
 const TASK_PATTERN = "^### (?<id>[A-Z]+-\\d+) · (?<title>.+) · `(?<status>[^`]+)`$";
 const repoEntries = [];
@@ -200,6 +299,12 @@ for (const r of REPOS) {
   files.set(join(dir, "brain-kit.json"), kitText);
   const rows = r.tasks.map((t) => `### ${t.id} · ${t.title} · \`${t.status}\`\n${t.stopped ? `**Stopped:** ${t.stopped}\n` : ""}`);
   files.set(join(dir, "build", "TASKS.md"), `# Tasks\n\n${rows.join("\n")}`);
+  // A repo linked by 0.12.0's `brain link` (CC-185): its managed block between project-owned text, CLAUDE.md importing AGENTS.md.
+  if (r.linkedBy === "0.12.0") {
+    const block = linkBlock012(project && entity.get(r.marker.project), AREAS.find((a) => a.key === r.marker.area));
+    files.set(join(dir, "AGENTS.md"), `${r.ownedBefore}${block}${r.ownedAfter}`);
+    files.set(join(dir, "CLAUDE.md"), "@AGENTS.md\n");
+  }
   repoEntries.push({ name: r.name, path: `~/memory-0.12-eval/repos/${r.name}`, area, ...(project ? { project } : {}), patterns: kit.knowledge.patterns, never_read: kit.knowledge.never_read, commit: "", kit: { sha256: `sha256:${sha(kitText)}` } });
 }
 // brain.json: the template's, with a synthetic owner and the linked repos.
@@ -232,12 +337,34 @@ function evidenceId(key) {
 }
 const writerOf = new Map(MEMORIES.map((m) => [m.key, m.writer]));
 const seen = new Set();
-const cases = CASES.map((c) => {
+// "{<key>}" in a question of CASES_0_13 names a note or proposal by its id (a full read, a proposal to apply).
+const questionOf = (text) => text.replace(/\{([a-z]+:[a-z0-9-]+)\}/g, (_, key) => evidenceId(key));
+const repoOf = new Map(REPOS.map((r) => [r.name, r]));
+// The fields CC-185 adds (cases-0.13.mjs); a case of cases.mjs has none of them, so its entry is as CC-165 wrote it.
+const added = (c) => ({
+  ...(c.gap ? { gap: c.gap } : {}),
+  ...(c.historical ? { historical: true } : {}),
+  ...(c.read ? { read: c.read.map(evidenceId) } : {}),
+  ...(c.forbiddenText ? { forbidden_text: c.forbiddenText } : {}),
+  ...(c.withheld ? { withheld: c.withheld.map(([key, reason]) => ({ id: evidenceId(key), reason })) } : {}),
+  ...(c.outcomes ? { outcomes: c.outcomes.map((o) => ({
+    proposal: evidenceId(o.proposal), expect: o.expect, target: evidenceId(o.target), target_path: pathOf(o.target),
+    written: o.written ?? [], forbidden_written: o.forbiddenWritten ?? [], ...(o.reason !== undefined ? { reason: o.reason } : {}),
+  })) } : {}),
+  ...(c.createdForbidden ? { created_forbidden: c.createdForbidden } : {}),
+  ...(c.upgrade ? { upgrade: (() => {
+    const r = repoOf.get(c.upgrade.repo);
+    if (!r?.linkedBy) throw new Error(`${c.id}: ${c.upgrade.repo} was not linked by an older release`);
+    return { repo: r.name, linked_by: r.linkedBy, managed_block: "current", project_text_sha256: `sha256:${sha(r.ownedBefore + r.ownedAfter)}` };
+  })() } : {}),
+  ...(c.todo ? { todo: c.todo } : {}),
+});
+const cases = [...CASES, ...CASES_0_13].map((c) => {
   if (seen.has(c.id)) throw new Error(`duplicate case ${c.id}`);
   seen.add(c.id);
   if (!REPOS.some((r) => r.name === c.caller)) throw new Error(`${c.id}: unknown caller ${c.caller}`);
   const resolved = {
-    id: c.id, kind: c.kind, category: c.category, question: c.question,
+    id: c.id, kind: c.kind, category: c.category, question: questionOf(c.question),
     caller: { repo: c.caller, ...(c.task ? { task: c.task } : {}), ...(c.agent ? { agent: c.agent } : {}) },
     ...(c.handover ? { handover: c.handover } : {}),
     expected_evidence: (c.expected ?? []).map(evidenceId),
@@ -247,6 +374,7 @@ const cases = CASES.map((c) => {
     facts: c.facts ?? [],
     forbidden_facts: c.forbiddenFacts ?? [],
     abstain: c.abstain === true,
+    ...added(c),
     ...(c.why ? { why: c.why } : {}),
   };
   // Who wrote each expected memory, so agent-switch cases can be checked (case metadata, never a note field).
