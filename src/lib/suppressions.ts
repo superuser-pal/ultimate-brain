@@ -259,3 +259,8 @@ export function restsOnlyOnExcluded(source: unknown, text: string | null, contex
   }
   return sources.some((id) => restrictedSources(context).has(id));
 }
+
+/** Whether a text carries a passage reference `^[src-…#¶n:hash]`. */
+export function citesPassage(text: string): boolean {
+  return [...text.matchAll(PASSAGE_REF)].length > 0;
+}
