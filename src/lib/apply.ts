@@ -7,6 +7,7 @@ import { compareCodePoints, type Note } from "./notes.ts";
 import { fixValueProblem, notionWrite, type NotionWrite } from "./notion-change.ts";
 import { bodyHash, bodyOf, reviewTitle, sourceTitle, stageNewItem, writeProposal } from "./proposals.ts";
 import { loadSchemas } from "./schemas.ts";
+import { citesPassage, contextFor, requireSuppressions, restsOnlyOnExcluded } from "./suppressions.ts";
 import { formatDate, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 import type { LogEntry } from "./log.ts";
@@ -324,6 +325,18 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
     const deferred = exclude.length === 0 ? undefined : defer(workspace, proposal.id, p, exclude, today);
     return { result: "applied", action, notes: applied.notes, changes: applied.changes, ...(deferred === undefined ? {} : { deferred }) };
   }
+  // Checked before apply, on every route: a proposal resting only on excluded evidence is closed stale and nothing is applied, even on an
+  // Approve (capture-and-review §5.1). What is judged is the wording that would be written: the user's value on a fix or an edit, else the
+  // proposed text. Only a value that differs from the proposal and cites no passage is the user's own wording, and is not judged.
+  const proposed = proposedText(fixed.q);
+  const written = typeof V === "string" ? V : proposed;
+  const own = decision.action !== "approve" && V !== undefined && !isDeepStrictEqual(V, proposedText(p) ?? p.after) && !(typeof V === "string" && citesPassage(V));
+  if (!own && restsOnlyOnExcluded(p.source, written, contextFor(workspace.notes, requireSuppressions(workspace.root)))) {
+    p.status = "closed";
+    p.closed_reason = "stale";
+    workspace.save(proposal.path, document);
+    return { result: "closed", reason: "SOURCE_EXCLUDED", message: "the proposal rests only on evidence the user excluded from the brain", action };
+  }
   const stale = applyKind(workspace, fixed.q, proposal.path, V, D, today, exclude as Array<{ field: string; value: unknown }>);
   if (stale !== null) {
     p.status = "closed";
@@ -334,6 +347,12 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   p.status = "applied";
   workspace.save(proposal.path, document);
   return { result: "applied", action };
+}
+
+/** The wording a proposal would put into the brain, for §5.1's check: an appendix, a new body, an answer or a new note's body. */
+function proposedText(p: Record<string, unknown>): string | null {
+  for (const value of [p.content, p.answer, isRecord(p.note) ? p.note.body : undefined]) if (typeof value === "string") return value;
+  return null;
 }
 
 /** Whether an exclude or fix entry names an item of a review_notes (spec/schema.md §11.3). */

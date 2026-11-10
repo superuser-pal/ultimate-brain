@@ -241,6 +241,32 @@ export function publishableNote(note: Note, context: Context): Note {
   return partlyRestricted(note, restriction);
 }
 
+/**
+ * Whether a proposed change rests only on excluded evidence (capture-and-review §5.1, "Pending proposals resting on it"): such a proposal
+ * is never written and never applied. `text` is the wording it would put into the brain, when it has one.
+ *
+ * With passage references in the text, only the lines that carry one are judged, each as a claim of a note resting on `source`: the change is
+ * excluded when every such line is restricted. A line with no reference (a heading, an `^[inferred]` sentence) is the agent's own framing
+ * of the claims beside it and decides nothing. Without any reference, the change is excluded when `source` is an older version or a full
+ * copy of a changed input, which retrieval no longer returns.
+ */
+export function restsOnlyOnExcluded(source: unknown, text: string | null, context: Context): boolean {
+  if (context.suppressions.length === 0) return false;
+  const sources = typeof source === "string" ? [source] : [];
+  const claims = text === null ? [] : text.split(/\r?\n/).filter((line) => [...line.matchAll(PASSAGE_REF)].length > 0);
+  if (claims.length > 0) {
+    const body = claims.join("\n");
+    const note: Note = { id: "", type: "decision", path: "", attributes: { sources }, body, raw: body };
+    return restrictionOf(note, context).lines.size === claims.length;
+  }
+  return sources.some((id) => restrictedSources(context).has(id));
+}
+
+/** Whether a text carries a passage reference `^[src-…#¶n:hash]`. */
+export function citesPassage(text: string): boolean {
+  return [...text.matchAll(PASSAGE_REF)].length > 0;
+}
+
 /** A frontmatter timestamp in the schema's form (`2026-11-10T09:30:00Z`, note.schema.json) as milliseconds; anything else is NaN. */
 function stamp(value: unknown): number {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(value) ? Date.parse(value) : Number.NaN;
