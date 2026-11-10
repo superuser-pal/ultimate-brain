@@ -927,6 +927,8 @@ When `settings.recall` is `off` or absent, there is no recall paragraph, and a r
 
 Idempotent: a second run with the same options changes no bytes.
 
+`brain upgrade` writes the same files, with no options, in every project registered in `brain.json` `repos`, and reports a project it can't finish instead of refusing (§5.15 step 9, 0077 §4). A folder linked here but not registered is refreshed only by running `brain link` there again.
+
 ```json
 { "data": {
     "repo_abs": "/Users/me/code/acme-api",
@@ -1559,7 +1561,23 @@ Brings the product-owned files of an existing brain up to the installed version 
 7. **Lint** the brain (§5.10) and report the counts in `lint`; it reads the new lock. Lint findings never stop the upgrade: it only wrote product-owned files. With `--dry-run`, lint reads the **planned** tree: every `created`, `updated` or `removed` file as the upgrade would leave it, everything else (including `skipped` files) as it is on disk. So a dry run reports what would remain after the upgrade: `product-file` is silent for drift the upgrade repairs, and still reports an `AGENTS.md` left `skipped` for missing markers.
 8. **Commit and push**, when anything changed and the brain is a Git repository: stage exactly the paths in `files` whose `action` is `created`, `updated` or `removed`, plus the log file step 6 appended to (`log/<YYYY-MM>.md`). Never stage a `skipped` path or anything else in the working tree. Commit `upgrade: ultimate brain <version>, skills <snapshot name> <snapshot version>`, then `git push` if the current branch has an upstream. No upstream → warning `PUSH_SKIPPED`. A push that fails → warning `PUSH_FAILED` with Git's message; the commit stays, and the exit code is still 0. A failed commit (no identity) → warning `GIT_COMMIT_SKIPPED`, files kept. Not a Git repository → no commit, no warning.
 
-The skills a linked repo or folder carries (§5.12) are refreshed by running `brain link` there again.
+9. **Linked projects (0.13.0; 0077 §4, [eligibility.md](eligibility.md) §11).** After the brain's own steps, the upgrade refreshes every **registered linked project**: each `repos` entry of `brain.json` (schema §12), in `brain.json` order, its `path` with `~/` expanded. A folder linked with `brain link` but not in `repos` is outside the upgrade: the brain records no path for it (step 1 of §5.12 writes none).
+   - **Source.** What `brain link` would write there (§5.12) with no options, so the project keeps its `.brain` placement: the managed block in `AGENTS.md` and, where §5.12 step 2 writes it, `CLAUDE.md`; `.brain` with its `skills` replaced; and the linked skills in `.agents/skills/` and `.claude/skills/`, all from the package snapshot this upgrade pins (step 3), retired linked skills removed as §5.12 removes them. Text outside the markers is kept byte for byte. Projects are never committed or pushed: `link` doesn't commit either, and the output says to commit there.
+   - **Judged before any write in that project**, in this order; the first that applies makes the project **unfinished** with its `reason`, nothing is written in it, and it is never counted upgraded:
+     | `reason` | When |
+     |---|---|
+     | `path_missing` | the path doesn't exist, isn't a folder or can't be read |
+     | `refused` | the path is the brain or the product repo, or §5.12 would refuse it (`OUTSIDE_ROOT` for a symbolic link where a file or folder belongs, `INSTRUCTIONS_SYMLINK`, `INPUT_INVALID` for a malformed `.brain`, `UNKNOWN_ID` for a `.brain` project or area the brain no longer has); `message` is the refusal's |
+     | `block_missing` | `AGENTS.md`, or a `CLAUDE.md` that neither imports `@AGENTS.md` nor links to `AGENTS.md`, is missing or has no managed-block marker |
+     | `block_damaged` | a marker without its pair, markers out of order, or one marker repeated |
+     | `conflicting_copies` | two complete managed blocks in one file; a `CLAUDE.md` block that differs from `AGENTS.md`'s; or a competing copy of a linked skill (skills-delivery §5.2, kinds `duplicate` in the project's trees and `global`). The upgrade never deletes or rewrites a copy it did not write (skills-delivery §5) |
+     | `write_failed` | a write failed: the project's files already written are restored (§3.6) |
+     | `definitions_differ` | the check below failed after writing |
+   - **An entry with no `.brain`** whose `AGENTS.md` and `CLAUDE.md` hold no managed-block marker was never linked with `brain link` (a read-only source, §5.16): state `not_linked`, nothing written, neither upgraded nor unfinished.
+   - **Both agents (eligibility.md §11 step 2).** After writing, in the brain and in each project written: every file the snapshot lists for a skill (the brain's skills; a project's linked skills) holds the snapshot's bytes in both `.agents/skills/<name>/` (Codex) and `.claude/skills/<name>/` (Claude Code); in a project, `AGENTS.md` holds the expected block once, and `CLAUDE.md` reaches it (it imports `@AGENTS.md`, links to `AGENTS.md`, or holds the same block). A project that fails is `definitions_differ`; the brain failing adds warning `DEFINITIONS_DIFFER` naming the first file. `--dry-run` skips this check.
+   - **State.** `upgraded` when a file changed, `unchanged` when none did, `unfinished`, or `not_linked`. An unfinished project is retried on the next run; a second run with the same CLI changes nothing more and reports the upgraded ones `unchanged`.
+   - **Report.** `data.projects`: one `{ "name", "path", "state", "reason", "message", "files" }` per entry, in `brain.json` order: `path` as stored; `reason` and `message` `null` unless `unfinished`; `files` the `{ path, action }` §5.12 reports, without `unchanged` ones (`[]` for an unfinished project). One warning `PROJECT_UNFINISHED` per unfinished project, its message `<name>: <message>`. **The exit code is 1** when any project is unfinished or the brain's check failed (§3.4: completed with findings); the brain's own writes and commit stand. `--dry-run` judges and plans the same and writes nothing in any project.
+   - **Human output** ends with these lines, after the files and the Notion line: `Projects: <n> upgraded, <n> unchanged, <n> unfinished.` (with `, <n> not linked` when there is one), one line `  <name>: <message>` per unfinished project, `Commit what changed in each upgraded project.` when one was upgraded, `Folders linked with brain link alone aren't tracked by the upgrade: register them with brain repo add, or run brain link there again.`, and last `Start fresh agent sessions in the brain and in every project: a session opened before the upgrade keeps the old instructions.` (eligibility.md §11 step 5). `data.next` holds the same closing lines, in order.
 
 ```sh
 brain upgrade --json
@@ -1580,7 +1598,12 @@ brain upgrade --json
     "lint": { "errors": 0, "warnings": 2 },
     "notion_migrations": { "template_version": "0024", "newer": ["0025-weekly-review.md"] },
     "commit": "2c2d653",
-    "pushed": true
+    "pushed": true,
+    "projects": [
+      { "name": "acme-api", "path": "~/code/acme-api", "state": "upgraded", "reason": null, "message": null, "files": [ { "path": "AGENTS.md", "action": "updated" } ] },
+      { "name": "old-site", "path": "~/code/old-site", "state": "unfinished", "reason": "path_missing", "message": "~/code/old-site doesn't exist or can't be read", "files": [] }
+    ],
+    "next": ["Commit what changed in each upgraded project.", "Folders linked with brain link alone aren't tracked by the upgrade: register them with brain repo add, or run brain link there again.", "Start fresh agent sessions in the brain and in every project: a session opened before the upgrade keeps the old instructions."]
   } }
 ```
 
@@ -1590,7 +1613,7 @@ brain upgrade --json
 
 **Safety:** all checks run before the first write. `AGENTS.md`, `skills.lock.json`, `.agents`, `.agents/skills`, `.claude`, `.claude/skills`, `.claude/settings.json`, a snapshot or retired skill's folder, or any file in it that is a symbolic link, or a file where a folder belongs → `OUTSIDE_ROOT`, and nothing is written or removed. `brain link` checks its skill folders the same way (§5.12). If a write fails part way, the files already replaced or removed are restored and the created ones deleted (§3.6), the lock included, so the last working pin stays. Undoing an upgrade is a `git revert` of its commit plus the previous CLI (`previous_cli`; docs/releasing.md, skills-delivery §8).
 
-Errors: `UNRELEASED_BUILD`, `BRAIN_DIRTY`, `OUTSIDE_ROOT`, `SKILLS_SNAPSHOT_INVALID`, `SKILLS_DOWNGRADE`, and the brain resolution errors (§4).
+Errors: `UNRELEASED_BUILD`, `BRAIN_DIRTY`, `OUTSIDE_ROOT`, `SKILLS_SNAPSHOT_INVALID`, `SKILLS_DOWNGRADE`, and the brain resolution errors (§4). A linked project never raises an error: its problems are its `unfinished` state (step 9).
 
 ### 5.16 `brain repo` (linked repos, 0042)
 
