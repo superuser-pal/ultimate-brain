@@ -244,7 +244,7 @@ export type ReadNote =
   | { id: string; status: "ok"; type: string; title: string | null; path: string; lifecycle: string | null; assessment: string | null; date: string | null;
       restricted: boolean; superseded_by?: string; frontmatter: Record<string, unknown>; body: string };
 
-/** Parse `--read`: 1 to 20 ids separated by commas; a repeated id is read once. */
+/** Parse `--read`: 1 to 20 distinct ids separated by commas; a repeated id is read once and counts once. */
 export function readIds(value: string): string[] {
   const ids = [...new Set(value.split(",").map((id) => id.trim()))];
   if (ids.some((id) => id === "") || ids.length > 20) throw new BrainError("USAGE", "--read takes 1 to 20 note ids separated by commas");

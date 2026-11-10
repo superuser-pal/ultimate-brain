@@ -45,3 +45,30 @@ test("sync render publishes a restricted note in its eligible form, so a copy pu
   assert.ok(String(after.body).includes("Kept statement"), "what stays is still published");
   assert.notEqual(after.published["@content"], before.published["@content"], "the content hash moves, so a published copy is re-rendered");
 });
+
+test("query --read and --candidates leave out a view that links a note resting on excluded content (cli §5.13.1, Views)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT);
+  const body = `## Where it stands\n\nThe price is 95k ([Pricing call](../${note.path})).\n\n## Timeline\n\n- None\n\n## Decisions in force\n\n- None\n\n## Open questions and risks\n\n- None\n\n## People involved\n\n- None\n\n## Gaps\n\n- None\n`;
+  const created = await run(dir, ["report", "new"], { title: "Pricing: where we stand", question: "Where does pricing stand?", body });
+  assert.equal(created.code, 0, created.stdout);
+  const id = created.json.data.id as string;
+  const read = async () => (await run(dir, ["query", "--read", id])).json.data.notes[0];
+  const found = async () => (await run(dir, ["query", "--candidates", "price 95k pricing", "--types", "view"])).json.data.candidates.map((candidate: { id: string }) => candidate.id);
+  assert.equal((await read()).status, "ok", "while the evidence is live the report is read");
+  assert.ok((await found()).includes(id));
+  await exclude();
+  assert.deepEqual(await read(), { id, status: "withheld", reason: "restricted" });
+  assert.ok(!(await found()).includes(id), "and it is not a candidate");
+  assert.ok(!JSON.stringify((await run(dir, ["query", "--candidates", "price 95k pricing", "--types", "view"])).json.data.candidates).includes("95k"));
+});
+
+test("the index lists no alias of a wholly restricted note", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, "unmapped");
+  const file = join(dir, note.path);
+  await writeFile(file, (await readFile(file, "utf8")).replace("\nsummary:", "\naliases: [Budget 95k]\nsummary:"));
+  await exclude();
+  assert.equal((await run(dir, ["index"])).code, 0);
+  assert.ok(!(await readFile(join(dir, "index.md"), "utf8")).includes("95k"));
+});
