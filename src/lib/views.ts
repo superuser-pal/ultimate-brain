@@ -1,6 +1,7 @@
 import { posix } from "node:path";
 
 import { compareCodePoints, type Note } from "./notes.ts";
+import { citeLabel, titleWithheld } from "./suppressions.ts";
 
 export type ViewKind = "brief" | "decision_log" | "area_brief";
 
@@ -19,10 +20,11 @@ export function deriveView(project: Note, kind: ViewKind, notes: readonly Note[]
   const canonical = notes.filter((note) => note.type !== "view");
   const byId = new Map(canonical.map((note) => [note.id, note]));
   const generated = new Set<string>([project.id]);
-  const link = (note: Note) => noteLink(kind === "area_brief" ? areaBriefPath(project) : projectViewPath(project, kind), note);
-  const title = (note: Note) => text(note.attributes.title);
+  // A note in the awaiting-cleanup form is shown by type and id, with no link, and rests nothing of the view on it (cli §5.9, schema §16).
+  const link = (note: Note) => titleWithheld(note) ? citeLabel(note) : noteLink(kind === "area_brief" ? areaBriefPath(project) : projectViewPath(project, kind), note);
+  const title = (note: Note) => titleWithheld(note) ? "" : text(note.attributes.title);
   const add = (note: Note) => {
-    generated.add(note.id);
+    if (!titleWithheld(note)) generated.add(note.id);
     return link(note);
   };
 
