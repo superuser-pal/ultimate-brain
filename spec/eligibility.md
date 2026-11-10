@@ -44,7 +44,7 @@ Evidence is **eligible** for a caller when all three hold, and an agent uses evi
 
 ## 3. Fail closed (0077 Out of scope, plan 3)
 
-Where the CLI cannot establish that evidence is eligible (unknown lineage, an unreadable suppression record, a report whose freshness can't be read, a proposal with no passages), it treats the evidence as not eligible and withholds the item it belongs to (§4). It never falls back to unfiltered text, and a skill never falls back to a raw read (§10). An unreadable `_suppressions/` record fails the command with `SUPPRESSIONS_UNREADABLE` (cli.md §3.5), as today.
+Where the CLI cannot establish that evidence is eligible (unknown lineage, an unreadable suppression record, a report whose freshness can't be read, a new proposal with no passages, a legacy proposal whose support §9.3 can't establish), it treats the evidence as not eligible and withholds the item it belongs to (§4). It never falls back to unfiltered text, and a skill never falls back to a raw read (§10). An unreadable `_suppressions/` record fails the command with `SUPPRESSIONS_UNREADABLE` (cli.md §3.5), as today.
 
 ## 4. Items and whole-item withholding (0077 §1, plan 4)
 
@@ -65,7 +65,7 @@ An item is never the whole brain, a whole Review page or a whole ingest: items s
 
 An item is withheld **whole** when eligible support for it cannot be established reliably:
 - **a mixed item:** it names a passage that is not live beside one that is. It is not applied whole and not applied in part: skipped by `proposal new`, held on the Review page with no wording published, closed on apply (`closed_reason: stale`, `SOURCE_EXCLUDED`). It can be re-proposed from the live passages alone (plan 4). This replaces cli.md §5.7's "only a text whose every cited line is excluded is skipped" (§13 row 6). CC-177.
-- **an item with no established support:** no passages (§9.3), or passages the CLI cannot resolve. CC-179.
+- **an item with no established support:** a new item with no passages (§9.2), a legacy item §9.3 can't support, or passages the CLI cannot resolve. A legacy item that §9.3 supports is not withheld. CC-179.
 - **a report or view** whose dependencies or freshness can't be shown safe (§8). CC-176, CC-183.
 
 ### 4.3 What a withheld item shows
@@ -125,12 +125,12 @@ Every proposed change carries the passages it rests on (CC-179 adds the field to
 ### 9.2 Checked when created and immediately before applied
 
 - **`proposal new`:** an item with no passages is refused; an item any of whose passages is not live is skipped `SOURCE_EXCLUDED` (§4.2). CC-179 (no passages), CC-177 (mixed).
-- **Before apply,** on every route (`apply` in chat, `sync apply` for a Review page, an older-layout row): the same check, with the suppression state at that moment, so an exclusion made between the first read or the proposal's creation and its apply is caught (0077 plan 7). CC-177, CC-179.
+- **Before apply,** on every route (`apply` in chat, `sync apply` for a Review page, an older-layout row): the same check of the named passages, with the suppression state at that moment, so an exclusion made between the first read or the proposal's creation and its apply is caught (0077 plan 7). A proposal with no passage list is not refused here: it was written before the field, and §9.3 judges it. Refusing an item with no passages is `proposal new`'s alone. CC-177, CC-179.
 - **What a passage check proves:** that the evidence is allowed; not that the change is true (0077 §3). The user still judges the change.
 
 ### 9.3 Legacy proposals
 
-A proposal written before the field exists (no passage list) is **legacy**. Its support is its `source` read as a whole-source entry, plus the passage references in its text. It has adequate passage support (0077 §3) when the input of its `source` has no suppression record: nothing of that input is excluded, so the whole input is live, and it applies normally. This is the user's reading of 0077 §3's "without adequate passage support" (2026-11-10), not a narrowing of it. When that input has a suppression record (active or reconciled), the legacy item's passages can't be established: it is withheld (held on the Review page, closed on apply with `SOURCE_EXCLUDED`), reported with the input it came from, and the next ingest of that input's current version may propose it again with passages. It is never applied on trust (0077 §3). CC-179 (the CLI), CC-180 (the ingest's re-proposal).
+A proposal written before the field exists (no passage list) is **legacy**. Its support is its `source` read as a whole-source entry, plus the passage references in its text. It has adequate passage support (0077 §3) when the input of its `source` has no suppression record (nothing of that input is excluded, so the whole input is live) **and** every passage reference in its text is live, whatever input it names (a reference that is not live makes it a mixed or unsupported item, §4.2). It then applies normally. This is the user's reading of 0077 §3's "without adequate passage support" (2026-11-10), not a narrowing of it. When the input of its `source` has a suppression record (active or reconciled), the legacy item's passages can't be established: it is withheld (held on the Review page, closed on apply with `SOURCE_EXCLUDED`), reported with the input it came from, and the next ingest of that input's current version may propose it again with passages. It is never applied on trust (0077 §3). CC-179 (the CLI), CC-180 (the ingest's re-proposal).
 
 **Older-layout `review_notes` approved whole:** each folded change, note and link is an item (§4.1). One without established support is withheld, reported and queued for re-proposal; independent items apply. CC-179.
 
