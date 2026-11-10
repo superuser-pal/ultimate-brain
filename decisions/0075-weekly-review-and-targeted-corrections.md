@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-11-07
 **Release:** 0.13.0
-**Release moved by:** [0077](0077-trust-repair-in-0-13-0.md) (2026-11-10): this scope ships in 0.14.0, unchanged
+**Release moved by:** [0077](0077-trust-repair-in-0-13-0.md) (2026-11-10): this scope ships in 0.14.0, unchanged; then [0078](0078-onboarding-and-early-access-in-0-14-0.md) (2026-11-10): in 0.15.0, unchanged, the feature cutoff
 **Refines:** [0061](0061-roadmap-and-launch-boundary.md) and [0064](0064-brain-assistant-before-reflection-hermes-after-1-0.md) (weekly knowledge payback, correction propagation and CC-111)
 **Keeps:** [0003](0003-proposal-review-flow.md), [0051](0051-unattended-catch-up-and-schedules.md), [0055](0055-domains-capture-and-review.md), [0072](0072-ultimate-assistant.md), [0074](0074-scoped-memory-handovers-and-bounded-recall.md), existing module/publishing rules and the 0.14.0 feature cutoff
 
