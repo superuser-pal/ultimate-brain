@@ -243,18 +243,30 @@ export function publishableNote(note: Note, context: Context): Note {
 
 /**
  * A view as retrieval may use it: whole, or null. A view is text written from notes (a Brief, a Decision log) or by a skill (a report), with no
- * passage references of its own, so it cannot be judged line by line: it is left out whole when any note it was generated from, or links, is
- * restricted in any part or is gone (capture-and-review §5.1). A report is never edited by the brain and a Brief waits for the next `views`
- * run, so either may still hold a statement the user excluded. `linked` holds the ids the view's body links.
+ * passage references of its own, so it cannot be judged line by line. While the brain has a suppression record it is left out whole when
+ * (a) a note it was generated from, or links, is restricted in any part or is gone (`gone`: a link of its body that names no note), or
+ * (b) it is a report written before the newest extract version that carries a suppression record: its prose may restate what that version
+ * removed without linking the note it came from, and only a refresh, which reads through retrieval, clears it (capture-and-review §5.1).
+ * `linked` holds the ids the view's body links.
  */
-export function eligibleView(view: Note, linked: readonly string[], byId: ReadonlyMap<string, Note>, context: Context): Note | null {
+export function eligibleView(view: Note, links: { linked: readonly string[]; gone: boolean }, byId: ReadonlyMap<string, Note>, context: Context): Note | null {
   if (context.suppressions.length === 0) return view;
+  if (links.gone) return null;
   const from = Array.isArray(view.attributes.generated_from) ? view.attributes.generated_from.filter((id): id is string => typeof id === "string") : [];
-  for (const id of new Set([...from, ...linked])) {
+  for (const id of new Set([...from, ...links.linked])) {
     const note = byId.get(id);
     if (note === undefined) return null;
     const restriction = restrictionOf(note, context);
     if (restriction.whole || restriction.lines.size > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0 || restriction.summary) return null;
+  }
+  if (view.attributes.view_kind === "report") {
+    const written = typeof view.attributes.generated_at === "string" ? Date.parse(view.attributes.generated_at) : Number.NaN;
+    for (const record of context.suppressions) {
+      const extract = [...byId.values()].find((note) => note.type === "source" && note.attributes.extract_of === record.input && note.attributes.extract_version === record.version);
+      const captured = typeof extract?.attributes.captured === "string" ? Date.parse(extract.attributes.captured) : Number.NaN;
+      // Fail closed: an unreadable time on either side keeps the report out.
+      if (!(written >= captured)) return null;
+    }
   }
   return view;
 }
