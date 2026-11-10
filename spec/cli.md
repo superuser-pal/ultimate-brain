@@ -16,7 +16,7 @@ The CLI does the **deterministic** work: IDs, file writes, validation, index, vi
 
 Rules for every command:
 - **No network.** The CLI never calls Notion or any other service. Notion data enters only as JSON files written by a skill.
-- **No Git, except `init`, `upgrade`, `repo`, `source extract` and `recover`.** Commands write files; the skill commits. `source extract` and `recover` commit and restore their own journaled files (§5.23, §5.24). `init` creates the repository and its first commit, `upgrade` commits its own files (§5.15), and `repo` reads a linked repo with read-only Git commands (§5.16, 0042). `repo new` runs `git init` in the repo it creates and makes its first commit there, and never pushes (§5.29). The `workflow` write commands commit their own records under `_workflows/` as one journaled operation, and never push (connected-workflows.md §12).
+- **No Git, except `init`, `upgrade`, `repo`, `source extract` and `recover`.** Commands write files; the skill commits. `source extract` and `recover` commit and restore their own journaled files (§5.23, §5.24). `init` creates the repository and its first commit, `upgrade` commits its own files (§5.15), and `repo` reads a linked repo with read-only Git commands (§5.16, 0042). `status` reads the brain's own Git identity and `origin` with read-only Git commands for its `setup` block (§5.2, 0078). `repo new` runs `git init` in the repo it creates and makes its first commit there, and never pushes (§5.29). The `workflow` write commands commit their own records under `_workflows/` as one journaled operation, and never push (connected-workflows.md §12).
 - **No LLM.** Same input and same brain give the same output, except for new random IDs and the clock (see `--now`).
 - **Writes only inside the brain**, except `init` (the new brain folder, and the global config file with `--set-default`), `link` (three files in the target repo), `repo kit write` (`brain-kit.json` in a linked repo) and `repo new` (the new repo's folder) (§5.29, 0066), and `workflow new` and `workflow set --pointer` (the pointer `.brain-workflow.json` in the working folder, connected-workflows.md §3.2).
 
@@ -27,6 +27,7 @@ Decision 0024 lists user-facing commands. Some are skills that call the CLI; som
 | User-facing (0024) | Runs as | CLI commands it calls |
 |---|---|---|
 | `brain init` | CLI | `init` |
+| "set up my brain" (0078) | skill `brain-setup` (CC-191, [setup.md](setup.md)) | `status`, `config set`, `modules`, `log` (`setup` lines), `schedule install`; and the calls of brain-connect-notion, Ultimate Assistant's ramble (seeding), brain-workflow-adopt and the ingest |
 | `brain connect-notion` | skill (CC-08) | `config set`, `modules` (the onboarding checklist, 0048) |
 | `brain ingest` | skill (CC-06) | `status`, `index`, `id new`, `note new`, `proposal new`, `views`, `lint`, `log`, `sync tasks`, `sync render`, `sync record`; the to-do tidy: `question drop` (0071) |
 | `brain apply` | skill (CC-09) | `sync plan`, `sync apply` (or `apply` in chat), `index`, `views`, `sync render`, `sync record` |
@@ -224,7 +225,7 @@ Write commands append to `log/<YYYY-MM>.md` (month of `--now`), creating it with
 - <timestamp> <op> <id> "<title>"[ <key>=<value>]…
 ```
 
-`"` and `\` in titles are escaped with `\`, and CR and LF become `\r` and `\n`, so every entry is exactly one line. Values with spaces, quotes, backslashes or line breaks are quoted and escaped the same way. The file is created exclusively with its header, then lines are appended; an unreadable log is an error, never a reason to start the file over. Ops written by the CLI: `init`, `note-new`, `proposal-new`, `apply`, `correct`, `sync-create`, `sync-update`, `upgrade`, `repo-add`, `repo-record`, `full-text` (before 0.6.0), `modules`, `report-new`, `report-refresh`, `report-fix`, `question-drop`, `assistant-dismiss`. Skills add their own (`ingest`, `publish`, `catch-up`, `query`, `assistant`, `reflect`) with `brain log` (§5.11). `index` and `views` do not log.
+`"` and `\` in titles are escaped with `\`, and CR and LF become `\r` and `\n`, so every entry is exactly one line. Values with spaces, quotes, backslashes or line breaks are quoted and escaped the same way. The file is created exclusively with its header, then lines are appended; an unreadable log is an error, never a reason to start the file over. Ops written by the CLI: `init`, `note-new`, `proposal-new`, `apply`, `correct`, `sync-create`, `sync-update`, `upgrade`, `repo-add`, `repo-record`, `full-text` (before 0.6.0), `modules`, `report-new`, `report-refresh`, `report-fix`, `question-drop`, `assistant-dismiss`. Skills add their own (`ingest`, `publish`, `catch-up`, `query`, `assistant`, `reflect`, `setup`) with `brain log` (§5.11). `setup` lines are setup.md §4.1's, and `brain status` reads them (§5.2). `index` and `views` do not log.
 
 **The catch-up line (0045, 0051).** An attended catch-up logs `catch-up - notes_read=<n> seconds=<s>`. An unattended one (§6.1) logs `catch-up - mode=unattended inputs=<n> left=<n> skipped=<n> waiting=<n> failed=<n>[ failures="<reason>; <reason>"] report=<yes|no> notes_read=<n> seconds=<s>`: `inputs` taken in (failed ones included), `left` the inputs beyond the budget, `skipped` the inputs skipped for a blocker, `waiting` the decided Review rows and report What to fix left for an attended run, `failed` the steps that failed, `failures` their reasons in a few words each ("Notion login"), `report` whether it wrote a Report row. A `catch-up` line without `mode=unattended` is attended, as every line before 0.7.0 is. `brain status` reads these lines (§5.2).
 
@@ -292,13 +293,11 @@ brain init ~/brain --owner "Alex" --set-default --json
 
 `created` lists every file written, sorted by path, including the `.gitkeep` placeholders of the empty note folders; the example above is shortened.
 
-**Human output** (without `--json`, CC-156): what was made, then the two next steps, with the checklist's path under `product.path` (§5.2):
+**Human output** (without `--json`): what was made, then **one next step** (0078 §2, from 0.14.0; before, CC-156's two steps named the checklist under `product.path`). It names no path under `product.path`: the setup skill gives the Notion template and every guide (setup.md §1).
 
 ```text
 Initialized Ultimate Brain at /Users/me/brain
-Next:
-  1. Build your Notion space: follow /usr/local/lib/node_modules/ultimate-brain/notion/CHECKLIST.md
-  2. Then, in /Users/me/brain, ask your agent: "connect the brain to Notion"
+Next: open Claude Code or Codex in /Users/me/brain and say "set up my brain"
 ```
 
 Errors: `TARGET_NOT_EMPTY`, `ALREADY_A_BRAIN`, `BRAIN_IS_PRODUCT_REPO`, `SKILLS_SNAPSHOT_INVALID`, `OUTSIDE_ROOT` (template path escapes, defensive).
@@ -328,13 +327,32 @@ Read-only health summary; the first call of every skill.
     "suppressions": { "active": 0, "reconciled": 0, "restricted_notes": 0, "unresolved_lineage": 0, "problems": [] },
     "last_log": "- 2026-12-03T10:22:00Z ingest mtg-8c4n2p7w \"Acme sync\" created=4 proposals=3",
     "skills": { "state": "pinned", "name": "ultimate-brain", "version": "0.9.0", "…": "§5.28" },
-    "product": { "path": "/usr/local/lib/node_modules/ultimate-brain" }
+    "product": { "path": "/usr/local/lib/node_modules/ultimate-brain" },
+    "setup": {
+      "checks": { "git_identity": true, "remote": true, "databases": true, "drop_folder": true, "language": true, "owner_person": true },
+      "recorded": { "notion-mcp": "2026-12-01T09:12:00Z", "minutes-prompt": null, "brain-assistant": null, "seeding": null, "first-value": null, "schedule": null },
+      "template_version": "0024",
+      "required": { "done": 7, "total": 9 },
+      "next": "minutes-prompt",
+      "finished": false
+    }
 } }
 ```
 
 `skills` (always present, 0059) is the brain's skill pin, defined in §5.28. `status` is exempt from the pin guard, so it reports every state.
 
 `product.path` (always present) is the absolute, symlink-resolved folder of the installed `ultimate-brain` package that is running: the folder holding its `package.json`, or the product repo's root when the CLI runs from source. The Notion build files ship under it, so a skill or a message names them as `<product.path>/<file>`: `notion/CHECKLIST.md`, `notion/prompts/`, `notion/modules/`, `notion/migrations/`, the other `notion/*.md` guides, and `docs/notion-space-design.md`.
+
+**Setup (0078, [setup.md](setup.md) §5).** `setup` (always present) is computed offline: no network call, Git read only through `git config` and `git remote get-url origin` in the brain folder.
+- `checks`: the six offline checks of setup.md §5 (`git_identity`, `remote`, `databases`, `drop_folder`, `language`, `owner_person`), each `true` or `false`.
+- `recorded`: for each step only an online or by-hand check proves (`notion-mcp`, `minutes-prompt`, `brain-assistant`, `seeding`, `first-value`, `schedule`), the timestamp of its latest `setup` log line (§3.9) when that line has `result=done` or `result=declined`, else `null`; read across the month files like `unattended`.
+- `template_version`: `notion.template_version`, or `null` when absent (unknown, setup.md §9).
+- `required`: `total` is 9, or 7 when the latest `setup` line with `step=prerequisites` has `notion_ai=no` (setup.md §13); `done` counts the six checks that pass plus `notion-mcp`, `minutes-prompt` and `brain-assistant` when recorded (only the first of the three without Notion AI).
+- `next`: the first item not done, in setup.md §2's order: `git_identity`, `remote`, `drop_folder`, `language` (step 2), `notion-mcp` (3), `databases` (4), `minutes-prompt`, `brain-assistant` (4a, 4b; left out without Notion AI), `owner_person` (5), `seeding`, `first-value`, `schedule`; a check is done when it passes, a step when it is recorded. `null` when every item is done.
+- `finished`: `true` when a `setup` line with `step=finished` exists, or when the brain has no `setup` line and `databases` and `owner_person` pass (a brain connected before 0.14.0, which may lack the `Language:` and `Drop folder:` lines). `required` and `next` are computed the same either way; with `finished` true they are information only.
+- A `setup` line with `step=first-meeting` (brain-catch-up, setup.md §10.1) is not read.
+
+**Human output** (without `--json`) starts, only while `finished` is `false`, with one line: `Setup: <done> of <total> done · next: <what>`, where `<what>` is, by `next` in that order: `set your Git identity`, `add a private remote`, `create the drop folder`, `say the language of your notes`, `connect your agent to Notion`, `connect Notion`, `paste the minutes prompt`, `set up Brain Assistant`, `set your identities`, `seed your work`, `check first value`, `choose the schedule`; then `say "set up my brain"`. Example: `Setup: 6 of 9 done · next: connect Notion · say "set up my brain"`. The rest of the human output is unchanged.
 
 `notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `domains`, `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `documents` (0045, 0049; a `references` key is reported as `documents`; a retired `concepts` key is not reported, 0071). `modules` (0048) has every module key, filled in as schema §12 says: all `true` except Domains when the block is absent, else each absent key at its default. `notes` counts every type, `reference` included (0045); `concept` is counted only when a brain still has concept notes (before `brain upgrade`, 0071). A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } }`. `unattended` (0051) sums the unattended catch-up lines (§3.9) written since the last attended `catch-up` line, across the month files: `since` is that attended line's timestamp (`null` when there is none), `runs` the unattended lines after it, `inputs` and `failed` their sums, `failures` their reasons in order without repeats, and `left`, `skipped`, `waiting` and `last` (its timestamp) from the latest one, since an input still skipped is counted again by every run. `catch_up` is `null` when no unattended line follows the last attended one. `backlog` is `true` when the last three unattended catch-up lines, attended or not in between, each have `left` above 0. The attended catch-up opens with this summary (§6.1). `repos` lists `brain.json` `repos` in order (empty when absent): `found` is whether `path` is a Git working tree. `views_stale` includes area briefs. Exit 0 even when stale.
 
@@ -357,6 +375,8 @@ brain config set notion.databases.projects '"2c4e6a80-1b3d-4f50-9a7c-8e6d4b2a0f1
 ```json
 { "data": { "path": "notion.databases.projects", "previous": "", "value": "2c4e6a80-1b3d-4f50-9a7c-8e6d4b2a0f13" } }
 ```
+
+**`notion.template_version`** (0078, from 0.14.0): the four-digit number of the last Notion migration the user's space includes, as a string (`'"0024"'`; schema §12, [setup.md](setup.md) §9). Written by brain-connect-notion from the System page's Template version line, and by brain-notion-change after it applies a newer migration. Anything but four digits fails the schema (`INPUT_INVALID`).
 
 Errors: `INPUT_INVALID` (value not JSON, result fails schema, `schema_version`), `USAGE` (`get` on a path that does not exist).
 
@@ -1558,10 +1578,13 @@ brain upgrade --json
     "converted": [],
     "skills": { "from": { "name": "ultimate-brain", "version": "0.2.2" }, "to": { "name": "ultimate-brain", "version": "0.2.3" }, "retired": [], "previous_cli": "0.2.2", "competing": [] },
     "lint": { "errors": 0, "warnings": 2 },
+    "notion_migrations": { "template_version": "0024", "newer": ["0025-weekly-review.md"] },
     "commit": "2c2d653",
     "pushed": true
   } }
 ```
+
+**Notion migrations newer than the template (0078, from 0.14.0; [setup.md](setup.md) §9).** `notion_migrations.template_version` is `brain.json` `notion.template_version` (`null` when absent). `newer` lists the file names in the installed package's `notion/migrations/` that match `^[0-9]{4}-.+\.md$` and whose number is higher than it, sorted; `[]` when there is none; `null` when the version is unknown, since nothing can be compared. It is read only: upgrade never writes the version, and `--dry-run` reports the same. Human output adds one line after the files: `Notion: 2 migrations newer than your space: <product.path>/notion/migrations/0025-….md, …. Ask your agent to apply them ("apply the Notion migrations").` with the full paths; `Notion: your space has every migration (template 0024).` for `[]`; `Notion: template version unknown, so upgrade can't tell which migrations your space needs; ask your agent which ones apply (<product.path>/notion/migrations/).` for `null`.
 
 `files` lists only the files created, updated, removed or skipped, sorted by path; `unchanged` counts the rest. `skills` (skills-delivery §6.3): `to` is the package snapshot; `retired` the retired skill names, sorted; `previous_cli` the old lock's `installed_by` when step 3a wrote over a valid lock, else `null`; `competing` per skills-delivery §5.2 for the package snapshot's skills, with warning `SKILLS_COMPETING` when non-empty (never a refusal). An immediate second upgrade with the same CLI reports `files: []`. `commit` is the short hash, or `null` when nothing was committed; `pushed` is `false` unless a push succeeded. `--dry-run` adds `dirty` and reports `commit: null`, `pushed: false`.
 
