@@ -130,6 +130,13 @@ test("a report whose provenance or freshness can't be read is withheld whole, na
   await captureAt(dir, "2026-12-10T08:00:00Z");
   assert.equal((await read(dir, "vw-unr0a1b2")).status, "ok", "readable provenance, written after the exclusion");
 
+  // A proposal is never evidence: a report resting on one, by generated_from or by a link, is withheld (cli §5.13.1, "Views").
+  const proposal = /^id: (prp-[0-9a-z]{8})$/m.exec(await readFile(join(dir, "_proposals/2026-12-03-acme-launch-jan-feb.md"), "utf8"))![1]!;
+  await handReport(dir, "vw-prp0a1b2", `generated_from: [${proposal}]\ngenerated_at: 2026-12-10T12:00:00Z`);
+  assert.deepEqual(await read(dir, "vw-prp0a1b2"), { id: "vw-prp0a1b2", status: "withheld", reason: "restricted", cause: "dependency", rebuild: "refresh" }, "generated_from names a proposal");
+  await handReport(dir, "vw-prp0a1b2", "generated_from: []\ngenerated_at: 2026-12-10T12:00:00Z", "[the proposal](../_proposals/2026-12-03-acme-launch-jan-feb.md)");
+  assert.deepEqual(await read(dir, "vw-prp0a1b2"), { id: "vw-prp0a1b2", status: "withheld", reason: "restricted", cause: "dependency", rebuild: "refresh" }, "the body links a proposal");
+
   const withheld = (id: string) => ({ id, status: "withheld", reason: "restricted", cause: "unreadable", rebuild: "refresh" });
   await handReport(dir, "vw-unr0a1b2", "generated_from: dec-7k2m9q4x\ngenerated_at: 2026-12-10T12:00:00Z");
   assert.deepEqual(await read(dir, "vw-unr0a1b2"), withheld("vw-unr0a1b2"), "generated_from that isn't a list");
