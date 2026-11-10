@@ -940,6 +940,38 @@ test("task start refuses unknown and non-todo tasks", (t) => {
   assert.match(nonTodo.stderr, /not todo/);
 });
 
+test("task start --resume continues an in-progress task whose branch merged, and only that (CC-195)", (t) => {
+  const { parent, root, path } = taskRepository("### CC-1 · Half built · `in progress`\n**Release:** 1.2.0\n\n### CC-2 · Fresh · `todo`\n**Release:** 1.2.0\n\n### CC-3 · Waiting · `review`\n**Release:** 1.2.0\n\n### CC-4 · Open · `in progress`\n**Release:** 1.2.0\n");
+  t.after(() => rmSync(parent, { recursive: true, force: true }));
+  // CC-1's first branch merged and is still on the remote; CC-4's branch has unmerged work.
+  command(root, ["push", "-q", "origin", "main:refs/heads/claude/CC-1-half-built"]);
+  command(root, ["checkout", "-q", "-b", "claude/CC-4-open"]);
+  writeFileSync(join(root, "open.txt"), "open\n");
+  command(root, ["add", "."]);
+  command(root, ["commit", "-q", "-m", "CC-4: open"]);
+  command(root, ["push", "-q", "origin", "claude/CC-4-open"]);
+  command(root, ["checkout", "-q", "main"]);
+  const plain = run("task.mjs", ["start", "CC-1"], { root, env: { PATH: path } });
+  assert.match(plain.stderr, /CC-1 is in progress, not todo \(if its branch merged and its row carries the rest, use --resume\)/);
+  const result = run("task.mjs", ["start", "CC-1", "--resume"], { root, env: { PATH: path } });
+  assert.equal(result.status, 0, result.stderr);
+  const worktree = join(parent, "ub-CC-1");
+  assert.equal(command(worktree, ["branch", "--show-current"]).trim(), "claude/CC-1-half-built");
+  assert.equal(command(worktree, ["config", "--get", "core.hooksPath"]).trim(), ".githooks");
+  assert.equal(command(worktree, ["status", "--porcelain"]), "", "the row is left as it is");
+  assert.match(readFileSync(join(worktree, "build/TASKS.md"), "utf8"), /CC-1 · Half built · `in progress`/);
+  const again = run("task.mjs", ["start", "CC-1", "--resume"], { root, env: { PATH: path } });
+  assert.match(again.stderr, /already exists/);
+  assert.match(run("task.mjs", ["start", "CC-2", "--resume"], { root, env: { PATH: path } }).stderr, /CC-2 is todo, not in progress/);
+  assert.match(run("task.mjs", ["start", "CC-3", "--resume"], { root, env: { PATH: path } }).stderr, /CC-3 is review, not in progress/);
+  assert.match(run("task.mjs", ["start", "CC-4", "--resume"], { root, env: { PATH: path } }).stderr, /CC-4 is still open on origin\/claude\/CC-4-open/);
+  for (const args of [["--resume", "--resume"], ["--resume", "--new", "X", "--release", "1.2.0"]]) {
+    assert.match(run("task.mjs", ["start", "CC-1", ...args], { root, env: { PATH: path } }).stderr, /Usage/);
+  }
+  assert.match(run("task.mjs", ["done", "CC-1", "--resume"], { root }).stderr, /Usage/);
+  for (const id of ["CC-2", "CC-3", "CC-4"]) assert.equal(existsSync(join(parent, `ub-${id}`)), false, id);
+});
+
 test("the pre-push hook rejects main and permits a task branch", () => {
   const hook = join(source, ".githooks/pre-push");
   const main = spawnSync("sh", [hook], { input: "a b refs/heads/main c\n", encoding: "utf8" });
