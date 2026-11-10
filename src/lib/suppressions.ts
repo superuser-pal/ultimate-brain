@@ -337,7 +337,9 @@ function contentFree(value: unknown): boolean {
   return false;
 }
 
-/** Whether the rule restricts a claim of the note: a body line, a timeline entry or a fact. A dropped summary alone is no restricted claim. */
+/** Whether the rule restricts a claim of the note: a body line, a timeline entry or a fact. A dropped summary alone is no restricted claim.
+ *  A fact is dropped only when every entry that supports it is (`restrictionOf`), so a dropped fact always comes with a dropped entry; the
+ *  fact is named for what cli.md §5.13 says, not as a separate case. */
 function hasRestrictedClaim(restriction: Restriction): boolean {
   return restriction.lines.size > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0;
 }
