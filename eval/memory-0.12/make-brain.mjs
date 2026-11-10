@@ -21,8 +21,9 @@ const DECISIONS = [...DECISIONS_0_12, ...DECISIONS_0_13];
 const MEMORIES = [...MEMORIES_0_12, ...MEMORIES_0_13];
 const REPOS = [...REPOS_0_12, ...REPOS_0_13];
 const EXCLUDED_INPUTS = [EXCLUDED_INPUT, SUPPORT_INPUT];
-// The frontmatter field that names a proposal's passages (0077 §3). TODO(CC-179, CC-182): null until the contract names
-// the field and the proposal schema accepts it; then set it here, and the proposals with `passages` carry it.
+// The frontmatter field that names a proposal's passages (0077 §3, spec/eligibility.md §9.1). TODO(CC-179): null until
+// CC-179 adds the field to schema §11 and the proposal schema accepts it; then set it here, and the proposals with
+// `passages` carry it. Until then every proposal is written as a legacy one (§9.3).
 const PROPOSAL_PASSAGES_FIELD = null;
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -345,6 +346,7 @@ const added = (c) => ({
   ...(c.historical ? { historical: true } : {}),
   ...(c.read ? { read: c.read.map(evidenceId) } : {}),
   ...(c.forbiddenText ? { forbidden_text: c.forbiddenText } : {}),
+  ...(c.withheld ? { withheld: c.withheld.map(([key, reason]) => ({ id: evidenceId(key), reason })) } : {}),
   ...(c.outcomes ? { outcomes: c.outcomes.map((o) => ({
     proposal: evidenceId(o.proposal), expect: o.expect, target: evidenceId(o.target), target_path: pathOf(o.target),
     written: o.written ?? [], forbidden_written: o.forbiddenWritten ?? [], ...(o.reason !== undefined ? { reason: o.reason } : {}),

@@ -2674,6 +2674,12 @@
           ]
         }
       ],
+      "withheld": [
+        {
+          "id": "vw-0b24snr7",
+          "reason": "restricted"
+        }
+      ],
       "why": "the report was written before the support call's exclusion and restates the excluded figure while linking only a live note"
     },
     {
@@ -2712,6 +2718,16 @@
           "all": [
             "18 ?(%|percent)"
           ]
+        }
+      ],
+      "withheld": [
+        {
+          "id": "vw-ad9hp3kv",
+          "reason": "restricted"
+        },
+        {
+          "id": "vw-25rhqjx2",
+          "reason": "restricted"
         }
       ],
       "why": "report → view → note: the overview is newer than every exclusion, but it rests on the decision log, which rests on wholly restricted decisions"
@@ -2760,6 +2776,12 @@
           "all": [
             "18 ?(%|percent)"
           ]
+        }
+      ],
+      "withheld": [
+        {
+          "id": "vw-25rhqjx2",
+          "reason": "restricted"
         }
       ],
       "why": "a view is read whole or withheld (cli §5.13.1); this one lists restricted decisions, and the title of one carries the excluded figure"
@@ -2979,18 +3001,33 @@
       "id": "trust-29",
       "kind": "trust",
       "category": "metadata",
-      "question": "How does Velmor send support requests for Harbor?",
+      "question": "How does Velmor send support requests for Harbor? Name the note you cite.",
       "caller": {
         "repo": "harbor-web",
         "agent": "claude-code"
       },
-      "expected_evidence": [],
+      "expected_evidence": [
+        "dec-vmz24pkk"
+      ],
       "forbidden_evidence": [
         "dec-f1jh1yw2"
       ],
       "labelled_evidence": [],
       "rank_above": [],
-      "facts": [],
+      "facts": [
+        {
+          "says": "through the help desk",
+          "all": [
+            "help desk"
+          ]
+        },
+        {
+          "says": "cites the note by type and id, title withheld",
+          "all": [
+            "decision dec-[0-9a-z]{8},? title withheld"
+          ]
+        }
+      ],
       "forbidden_facts": [
         {
           "says": "the excluded downtime penalty",
@@ -3009,7 +3046,50 @@
           ]
         }
       ],
-      "todo": "TODO(CC-182): whether a link label that restates excluded text is blanked or its note withheld; until then the case asks for no evidence or fact"
+      "why": "§6 rule 4: the citation label is built only from what the read returned: the type and id"
+    },
+    {
+      "id": "trust-45",
+      "kind": "trust",
+      "category": "metadata",
+      "question": "Where can Velmor see Harbor's planned maintenance windows?",
+      "caller": {
+        "repo": "harbor-api",
+        "agent": "codex"
+      },
+      "expected_evidence": [
+        "dec-vt4b6cg5"
+      ],
+      "forbidden_evidence": [],
+      "labelled_evidence": [],
+      "rank_above": [],
+      "facts": [
+        {
+          "says": "on the status page",
+          "all": [
+            "status page"
+          ]
+        }
+      ],
+      "forbidden_facts": [
+        {
+          "says": "the excluded downtime penalty",
+          "all": [
+            "\\b2[ ,.]?000\\b"
+          ]
+        }
+      ],
+      "abstain": false,
+      "gap": "restricted metadata: body heading and comment",
+      "forbidden_text": [
+        {
+          "says": "the excluded downtime penalty",
+          "all": [
+            "\\b2[ ,.]?000\\b"
+          ]
+        }
+      ],
+      "why": "§6 rule 3: the heading other than the fixed `## Decision` and the comment are withheld with the title"
     },
     {
       "id": "trust-30",
@@ -3232,6 +3312,12 @@
             "dispatch app"
           ]
         }
+      ],
+      "withheld": [
+        {
+          "id": "mem-bawdbry3",
+          "reason": "not_eligible"
+        }
       ]
     },
     {
@@ -3270,6 +3356,12 @@
             "vpn"
           ]
         }
+      ],
+      "withheld": [
+        {
+          "id": "mem-b3aefhj6",
+          "reason": "not_eligible"
+        }
       ]
     },
     {
@@ -3307,6 +3399,12 @@
           "all": [
             "sms alerts over email"
           ]
+        }
+      ],
+      "withheld": [
+        {
+          "id": "mem-wmt9qa5x",
+          "reason": "not_eligible"
         }
       ]
     },
@@ -3347,7 +3445,14 @@
             "\\b2[ ,.]?000\\b"
           ]
         }
-      ]
+      ],
+      "withheld": [
+        {
+          "id": "mem-e44aq4wx",
+          "reason": "not_eligible"
+        }
+      ],
+      "why": "with --historical a superseded memory is returned only when the exclusion rule leaves it in (§5)"
     },
     {
       "id": "trust-39",
@@ -3472,10 +3577,10 @@
               ]
             }
           ],
-          "reason": null
+          "reason": "SOURCE_EXCLUDED"
         }
       ],
-      "todo": "TODO(CC-182): the reason a withheld mixed item records (SOURCE_EXCLUDED, as for an item resting only on excluded evidence, is the best reading)"
+      "why": "a mixed item is not applied whole and not applied in part: closed on apply, SOURCE_EXCLUDED (§4.2)"
     },
     {
       "id": "trust-42",
@@ -3509,10 +3614,10 @@
               ]
             }
           ],
-          "reason": null
+          "reason": "SOURCE_EXCLUDED"
         }
       ],
-      "todo": "TODO(CC-182): the status and reason of a legacy proposal withheld for re-proposal"
+      "why": "its input has a suppression record, so its passages can't be established: closed on apply, SOURCE_EXCLUDED, and re-proposed by the next ingest (§9.3)"
     },
     {
       "id": "trust-43",
@@ -3556,7 +3661,7 @@
         "managed_block": "current",
         "project_text_sha256": "sha256:7d2f7e6e9695617a6b34d57453c9e1b526971f0dfeb8dfc795504a4bd795f956"
       },
-      "todo": "TODO(CC-184): the repo has 0.12.0's managed block but not yet 0.12.0's skill copies (CC-184's synthetic old installation)"
+      "todo": "TODO(CC-184, CC-180): the repo has 0.12.0's managed block but not 0.12.0's skill copies (CC-184's synthetic old installation); the upgrade writes CC-180's vendored snapshot"
     },
     {
       "id": "trust-44",
@@ -3666,9 +3771,9 @@
           ]
         },
         {
-          "says": "labels it not reviewed",
+          "says": "says it is unconfirmed",
           "all": [
-            "draft|not (yet )?reviewed|unreviewed|not approved"
+            "draft|not (yet )?reviewed|unreviewed|not approved|unconfirmed"
           ]
         }
       ],
@@ -3678,7 +3783,7 @@
       "read": [
         "dec-dywsfsx4"
       ],
-      "todo": "TODO(CC-182): how the read labels a draft knowledge note"
+      "why": "a draft knowledge note is eligible and carries its lifecycle, so the answer can say it is unconfirmed (§2)"
     },
     {
       "id": "ans-50",
@@ -3795,7 +3900,7 @@
           "forbidden_written": []
         }
       ],
-      "todo": "TODO(CC-179, CC-182): passes only once make-brain writes the proposal's passages (PROPOSAL_PASSAGES_FIELD); without them it is a legacy proposal on an input with an exclusion, and is withheld",
+      "todo": "TODO(CC-179): passes only once CC-179 adds the passage field and make-brain writes it (PROPOSAL_PASSAGES_FIELD); until then this is a legacy proposal on an input with a suppression record, closed SOURCE_EXCLUDED (§9.3)",
       "why": "an item of the same input that rests only on a live paragraph stays available (0077 §1)"
     },
     {

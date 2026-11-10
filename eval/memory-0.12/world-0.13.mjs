@@ -30,8 +30,9 @@ export const SUPPORT_INPUT = {
     "Planned maintenance on Harbor is announced to Velmor five working days ahead.",
     "Velmor sends support requests through the Harbor help desk, not by phone.",
     "Velmor's help desk is staffed from 07:00 to 19:00 on weekdays.",
+    "Harbor's status page shows every planned maintenance window.",
   ],
-  items: ["s1.i1", "s1.i2", "s1.i3", "s1.i4", "s1.i5", "s1.i6", "s1.i7"],
+  items: ["s1.i1", "s1.i2", "s1.i3", "s1.i4", "s1.i5", "s1.i6", "s1.i7", "s1.i8"],
   excluded: [2],
   versions: [
     { key: "src:harbor-support-v1", version: 1, date: "2026-11-02" },
@@ -39,8 +40,10 @@ export const SUPPORT_INPUT = {
   ],
 };
 
-// Decisions on the support call. Each of the first six cites one live paragraph and the excluded one, so it stays
-// readable with its live line, and carries the excluded figure in one metadata channel (`channel`, case metadata only).
+// Decisions on the support call. Each of the first seven cites one live paragraph and the excluded one, so it has a
+// restricted part: it stays readable with its live line, its title, path, tags, ingest-written fields, body headings
+// and comments are withheld, and it is cited as "decision <id>, title withheld: awaiting cleanup" (eligibility.md §6
+// rules 2 to 4). Each carries the excluded figure in one channel (`channel`, case metadata only).
 // `file` names the file when the title would put the figure in the path; `custom` adds frontmatter fields as written.
 export const DECISIONS_0_13 = [
   { key: "dec:harbor-monday-summary", channel: "title", date: "2026-11-02", file: "2026-11-02-harbor-monday-summary",
@@ -64,19 +67,25 @@ export const DECISIONS_0_13 = [
     custom: { penalty_clause: "2000 EUR for each hour down in depot hours" },
     summary: "Harbor's uptime is measured by Velmor's own monitor.",
     body: "Harbor's uptime is measured by Velmor's own monitor. {¶@src:harbor-support-v1#3}\n\nVelmor charges 2000 EUR for each hour down in depot hours. {¶@src:harbor-support-v1#2}\n" },
-  // The citation label: the note's own text rests on a live paragraph only; the label of its link to the wholly
-  // restricted penalty decision restates the excluded figure. TODO(CC-182): whether the label is blanked or the note
-  // withheld; the case that uses it asks for neither the note nor its fact.
+  // The citation label (eligibility.md §6 rule 4): the label an answer shows is built only from what the read returned,
+  // so for this note its type and id. (A link label inside a note with no restricted part that restates an excluded
+  // paragraph is the uncited restatement, a stated limit of §9.6 closed by the ingest's writing rule: not a case here.)
   { key: "dec:harbor-help-desk", channel: "citation label", date: "2026-11-02",
     title: "Velmor sends Harbor support requests through the help desk", projects: ["@prj:harbor"], sources: ["@src:harbor-support-v1"],
     summary: "Support requests from Velmor come through the Harbor help desk.",
-    body: "Velmor sends support requests through the Harbor help desk, not by phone. {¶@src:harbor-support-v1#6}\n\nSee also [the 2000 EUR downtime penalty](../../{path:@dec:harbor-penalty}).\n" },
+    body: "Velmor sends support requests through the Harbor help desk, not by phone. {¶@src:harbor-support-v1#6}\n\nDowntime during depot hours costs 2000 EUR an hour. {¶@src:harbor-support-v1#2}\n" },
+  // Body headings and comments (§6 rule 3): `## Decision` is a fixed section and stays; the other heading and the
+  // comment carry no passage reference and are withheld with the title.
+  { key: "dec:harbor-status-page", channel: "body heading and comment", date: "2026-11-02",
+    title: "Harbor's status page shows planned maintenance", projects: ["@prj:harbor"], sources: ["@src:harbor-support-v1"],
+    summary: "Planned maintenance windows are shown on Harbor's status page.",
+    body: "## Decision\n\nHarbor's status page shows every planned maintenance window. {¶@src:harbor-support-v1#8}\n\n## A penalty of 2000 EUR an hour\n\n<!-- From the support call: 2000 EUR for each hour down in depot hours. -->\nVelmor charges 2000 EUR for each hour down in depot hours. {¶@src:harbor-support-v1#2}\n" },
   // Wholly restricted: its only passage is excluded.
   { key: "dec:harbor-penalty", date: "2026-11-02", file: "2026-11-02-velmors-downtime-penalty",
     title: "Velmor's downtime penalty", projects: ["@prj:harbor"], sources: ["@src:harbor-support-v1"],
     summary: "Velmor charges 2000 EUR for each hour Harbor is down during depot hours.",
     body: "Velmor charges a penalty of 2000 EUR for each hour Harbor is down during depot hours. {¶@src:harbor-support-v1#2}\n" },
-  // A draft knowledge note: eligible, labelled by its lifecycle (the coordinator's note of CC-182's rule, 2026-11-10).
+  // A draft knowledge note: eligible, carrying its lifecycle so the answer can say it is unconfirmed (eligibility.md §2).
   { key: "dec:harbor-helpdesk-hours", date: "2026-11-06", lifecycle: "draft",
     title: "Velmor's help desk is staffed 07:00 to 19:00 on weekdays", projects: ["@prj:harbor"], sources: ["@src:harbor-support-v2"],
     summary: "Velmor's help desk is staffed from 07:00 to 19:00 on weekdays.",
@@ -129,9 +138,10 @@ export const REPORTS = [
 ];
 
 // Proposals (schema §11), every one approved in chat and waiting for `brain apply`.
-// `passages`: the paragraphs a 0.13.0 proposal names (0077 §3). `passages: null` marks a legacy proposal, written before
-// the field existed. make-brain.mjs writes the field only when PROPOSAL_PASSAGES_FIELD names it: TODO(CC-179, CC-182),
-// the field's name and shape are set by the contract, and lint rejects an unknown field until then.
+// `passages`: the paragraphs a 0.13.0 proposal names (0077 §3, eligibility.md §9.1). `passages: null` marks a legacy
+// proposal, written before the field existed (§9.3). make-brain.mjs writes the field only when PROPOSAL_PASSAGES_FIELD
+// names it: TODO(CC-179), which adds the field to schema §11 and sets its name and shape; lint rejects an unknown field
+// until then, so until CC-179 every proposal here is legacy.
 // `decided_at` before 2026-11-06T10:00:00Z = approved before the support call's exclusion, applied after it.
 export const PROPOSALS = [
   // An exclusion made between the proposal's creation (and approval) and its apply.
@@ -149,12 +159,12 @@ export const PROPOSALS = [
     title: "Velmor: Harbor's uptime target", source: "@src:harbor-support-v1", passages: [{ source: "src:harbor-support-v1", n: 3 }],
     content: "Harbor's uptime target for Velmor is 99.5 percent a month. {¶@src:harbor-support-v1#3}",
     why: "Harbor's uptime target is 99.5 percent a month, measured by Velmor's own monitor." },
-  // Legacy, on an input with a suppression record: withheld and re-proposed, though its value is live.
+  // Legacy, on an input with a suppression record: withheld (closed, SOURCE_EXCLUDED) and re-proposed, though its value is live (§9.3).
   { key: "prp:support-legacy", created: "2026-11-03", decided_at: "2026-11-04T09:15:00Z", kind: "update_fact", target: "@prj:harbor",
     title: "Harbor: uptime target", source: "@src:harbor-support-v1", passages: null,
     field: "uptime_target", after: "99.5 percent", from: "2026-11-02",
     why: "Harbor's uptime target is 99.5 percent a month, measured by Velmor's own monitor." },
-  // Legacy, on an input with no suppression record: applied normally (the coordinator's note of CC-182's rule).
+  // Legacy, on an input with no suppression record: adequate passage support, applied normally (§9.3).
   { key: "prp:quill-legacy", created: "2026-10-02", decided_at: "2026-10-03T09:00:00Z", kind: "update_fact", target: "@prj:quill",
     title: "Quill: sending service", source: "@src:quill-email-review", passages: null,
     field: "sending_service", after: "Amazon SES", from: "2026-10-01",
@@ -163,8 +173,9 @@ export const PROPOSALS = [
 
 // A linked project as 0.12.0's `brain link` left it: the managed block of that release (its `How:` paragraph sends the
 // agent to read the notes `query --candidates` returns, with no filtered read) between project-owned text, and CLAUDE.md
-// importing AGENTS.md. TODO(CC-184): the skill copies and the `.brain` `skills` entry of a 0.12.0 install come from
-// CC-184's synthetic old installation, made with the published 0.12.0 package; this repo has only the instructions.
+// importing AGENTS.md. TODO(CC-184, CC-180): the skill copies and the `.brain` `skills` entry of a 0.12.0 install come
+// from CC-184's synthetic old installation, made with the published 0.12.0 package, and the corrected copies from
+// CC-180's vendored snapshot; this repo has only the instructions.
 export const REPOS_0_13 = [
   {
     name: "harbor-ops", marker: { project: "prj:harbor", area: "area:client-work", stacks: ["node"] },

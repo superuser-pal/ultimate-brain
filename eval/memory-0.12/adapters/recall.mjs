@@ -32,8 +32,9 @@ function brain(env, args) {
   return { data: parsed.data, stdout, bytes: Buffer.byteLength(stdout, "utf8"), ms: Number(process.hrtime.bigint() - started) / 1e6 };
 }
 
-const memoryLabels = (m) => [...(m.superseded_by ? ["superseded"] : []), ...(m.confidence === "inferred" ? ["inferred"] : [])];
+const memoryLabels = (m) => [...(m.superseded_by ? ["superseded"] : []), ...(m.historical === true ? ["historical"] : []), ...(m.confidence === "inferred" ? ["inferred"] : [])];
 const noteLabels = (c) => [
+  ...(c.lifecycle === "draft" ? ["draft"] : []), // a draft knowledge note is eligible and carries its lifecycle (eligibility.md §2)
   ...(c.lifecycle === "archived" || c.assessment === "superseded" ? ["superseded"] : []),
   ...(c.assessment === "contested" ? ["contested"] : []),
 ];
