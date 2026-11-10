@@ -462,7 +462,7 @@ notion: 7c6b…
 | `source` | ID or source key | ✔ | |
 | `status` | `pending`·`approved`·`rejected`·`edited`·`applied`·`closed` | ✔ | |
 | `decision` | `{action: approve·reject·fix·edit, value?, note?, fixes?, exclude?, decided_at, decided_by: notion·chat}` | when decided | `note`: the Review row's What to fix (Note before 0.5.0), kept as written. `fixes`: on `fix`, the corrected values the skill read from `note` (§11.3). `edit` with `value` is the form before 0.5.0, still read. `exclude`: only on an approved or fixed `add_link` or `review_notes` ("all except X"): on `add_link`, a list of `{field, value}` from its `links`; on `review_notes`, a list of `{note: <id>}` from its `notes`, `{target, field, value}` from its `links` and `{change: <index>}` from its `changes` |
-| `closed_reason` | `stale` | only with `status: closed` and a non-reject decision | the target changed before apply (§11.1) |
+| `closed_reason` | `stale` | only with `status: closed` and a non-reject decision | the target changed before apply (§11.1), or the proposal rests only on excluded evidence (cli.md §5.7, "Excluded evidence") |
 | `notion` | Review row page id | | |
 
 ### 11.1 Status and decision (normative)
@@ -475,7 +475,7 @@ notion: 7c6b…
 | `rejected` | `action: reject` | decided, not yet closed |
 | `applied` | `approve`, `fix` or `edit` | applied to the target; terminal |
 | `closed` | `reject` | rejected and closed; terminal |
-| `closed` + `closed_reason: stale` | `approve`, `fix` or `edit` | the target's value changed after the proposal was written, so it was not applied; terminal. A new proposal may be written against the current value |
+| `closed` + `closed_reason: stale` | `approve`, `fix` or `edit` | the target's value changed after the proposal was written, so it was not applied; or its only evidence was excluded by the user before apply (cli.md §5.7); terminal. A new proposal may be written against the current value |
 
 `brain apply` moves `approved`/`edited` → `applied` and `rejected` → `closed`. Applying a proposal already in a terminal state is a **no-op** (exit 0, reported as skipped). `fix` is allowed on every kind (0045; §11.3 gives the `fixes` each kind takes). `edit` stays allowed only for `update_fact`, `contradiction`, `add_to_note`, `update_body` and `answer`; an `edit` on any other kind is an error (exit non-zero, proposal left unchanged).
 

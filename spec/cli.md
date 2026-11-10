@@ -484,6 +484,7 @@ brain proposal settle --input <file|-> [--dry-run]
 
 Input keys are the proposal fields of schema §11 except `id`, `type`, `created`, `updated`, `status`, `decision`, `notion`, `links`, `changes`, `before_hash`, `deferred_from`, `dropped`. An `add_link` input item always names **one** link with `field` and `after`; the CLI groups them (below). The CLI:
 - assigns `id`, `created` = `updated` = today, `status: pending`;
+- skips an item that rests only on excluded evidence (`SOURCE_EXCLUDED`; the rule is under "Excluded evidence" in §5.7), so no Review row is written for a change that could never be applied. A `review_notes` item is not checked as a whole; the changes folded into it are, before folding;
 - sets `before` to the target's current `facts.<field>` for `update_fact` and `contradiction` (absent if the fact is new). If the input gives `before` and it differs → `BEFORE_MISMATCH`;
 - for `update_fact` and `contradiction`, sets `from` if absent: the source meeting's `date` when `source` is a `mtg-` id, else `created`;
 - for `update_body` (0045), sets `before_hash` to the target's current body hash; `target` must be a `reference` whose `origin` isn't `promoted` (0049) and `content` non-empty and different from the current body (else skipped, `NO_CHANGE`);
@@ -590,6 +591,13 @@ A decision item may carry `note` (the Review row's What to fix, recorded as writ
 
 - **`--record-only`** writes the decision and status without applying (`approved`/`edited`/`rejected`), for a run that must not apply at all (0003). An unattended catch-up doesn't use it: it applies your explicit decisions (0051, §6.1).
 - **Without `--input`**, `apply` applies every proposal that holds a recorded decision but is not terminal.
+
+**Excluded evidence (0055, capture-and-review §5.1).** Checked before apply on every route (`decided_by: chat` or `notion`), for an `approve` of every kind except `review_notes` and `notion_change`: a proposal that rests only on evidence the user excluded is **closed** and nothing of it is applied: decision recorded, `status: closed`, `closed_reason: stale`, item result `closed` with reason `SOURCE_EXCLUDED`. A proposal rests only on excluded evidence when
+
+- the text it would write (`content`, `answer`, or `note.body`) carries passage references and, read as a note whose `sources` is the proposal's `source`, nothing eligible is left of it (capture-and-review §5.1: every statement restricted, no independent source); or
+- it carries no passage reference and its `source` is an older version or a full copy of an input that has a suppression record, which retrieval no longer returns.
+
+A text with one statement that stays and one that is excluded is applied whole: the note is then partly restricted and every surface leaves the excluded line out. An `edit` or a `fix` carries the user's own wording and is not checked. The items of a `review_notes` in the new layout are checked by `sync apply` (§5.14, reason `source_excluded`); the folded `changes` of an older-layout `review_notes` approved as a whole are not checked here. With no suppression record in the brain the check does nothing.
 
 **Stale proposals.** Before applying `update_fact` or `contradiction`, the target's current `facts.<field>` must still equal the proposal's `before` (both absent counts as equal); before applying `update_body`, the target's body hash must still equal `before_hash`. Inside a `review_notes`, a stale change is dropped alone and the rest applies (schema §11.3). If it doesn't, the proposal is **closed**: decision recorded, `status: closed`, `closed_reason: stale`, and the item result is `closed` with reason `STALE_PROPOSAL`. The Review row shows Closed, and the next ingest may propose the change again against the current value.
 

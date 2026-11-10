@@ -155,7 +155,7 @@ Deleting a block or a line without setting the meeting back to Reviewed is **not
 |---|---|
 | `brain query` answers and candidates | the claim is excluded from the answer; the answer says "restricted: awaiting cleanup" only if asked. A note body statement carrying only restricted references is not quoted or summarized |
 | `brain reflect` (0.9.0) | not a signal, not evidence |
-| Pending proposals resting on it | **checked before apply**: an item resting only on restricted claims is closed `stale` (reason `source_excluded`) and not applied, even if its token is Accept |
+| Pending proposals resting on it | **checked before apply**: an item resting only on restricted claims is closed `stale` (reason `source_excluded`) and not applied, even if its token is Accept. The same holds for a decision given in chat or on an older-layout row (`brain apply`, cli.md §5.7, reason `SOURCE_EXCLUDED`), and `brain proposal new` does not write such a proposal (cli.md §5.6) |
 | Derived views (Brief, Decision log, area Briefs) | the line is left out at the next `views` run |
 | Reports | a line resting on it is flagged "(source excluded)" and left out of a refresh; accepted report text is not edited by the brain |
 | Documents / kept text | a Document made from the excluded passage is listed (Remove / Keep); never silently deleted |
