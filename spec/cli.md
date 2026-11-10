@@ -6,6 +6,8 @@
 
 Decisions referenced: 0003, 0006, 0007, 0009, 0011, 0013, 0014, 0015, 0016, 0017, 0018, 0021, 0023, 0024, 0026, 0027, 0041–0043, 0045, 0064, 0072.
 
+**Eligibility (0077, 0.13.0):** what search, a full read, a summary, a citation and a proposal's evidence may rest on is one rule, in [eligibility.md](eligibility.md); where a section here differs, that file wins until the task it names (its §13) changes the section.
+
 ---
 
 ## 1. Scope
@@ -1662,7 +1664,7 @@ brain schedule list
 brain schedule remove <job>
 ```
 
-Runs a skill on a schedule, with nobody there, through local Claude Code (`claude -p`), the one scheduler that sees every input: the drop folder, linked repos and the user's Notion MCP (0051). It writes the machine's scheduler entry and nothing in the brain: no file, no log line, no commit. The skill's "Run on a schedule" section calls it and writes the settings (brain-catch-up). Reflection has no job in 0.11.0 (0076 §5): it runs attended only, and its weekly run is 0.13.0's brief (CC-111, 0075), which adds its own job then.
+Runs a skill on a schedule, with nobody there, through local Claude Code (`claude -p`), the one scheduler that sees every input: the drop folder, linked repos and the user's Notion MCP (0051). It writes the machine's scheduler entry and nothing in the brain: no file, no log line, no commit. The skill's "Run on a schedule" section calls it and writes the settings (brain-catch-up). Reflection has no job in 0.11.0 (0076 §5): it runs attended only, and its weekly run is 0.15.0's brief (CC-111, 0075; moved by 0077 and 0078), which adds its own job then.
 
 **Jobs.** Each job runs one fixed prompt in the brain folder, so the schedule starts the skill the same way every time:
 
@@ -1760,7 +1762,7 @@ The skill brain-catch-up, started by the prompt `catch up unattended` (a schedul
 
 **The one authority (assessment finding F-0007).** This section is the only place that says what an unattended run does. Its three tables below cover every question of the batch, every kind of decided row and Notion edit, and every selected input, Review item and module case of capture-and-review §4 to §8 (that file's §8 points here). The unattended tables in the skills (brain-catch-up's "One batch of questions" and its references) are renderings of these: where one differs, this section governs and the skill is corrected in the fork. A case none of the tables names is treated as a question with no default: the run skips that input and names it under Needs you.
 
-**Reflection runs attended only** in 0.11.0 (0076 §5): `catch up unattended` never runs brain-reflect, and no table here has a reflection row. 0.13.0's weekly brief adds them (CC-111, 0075).
+**Reflection runs attended only** in 0.11.0 (0076 §5): `catch up unattended` never runs brain-reflect, and no table here has a reflection row. 0.15.0's weekly brief adds them (CC-111, 0075; moved by 0077 and 0078).
 
 **Sequence.** read-only pass (as **Catch up**; a failed read, such as an expired Notion login, is a failure: the parts that need it are skipped, the rest goes on) → if nothing is waiting and nothing failed, stop: **no commit, no Notion call, no log line** → `proposal backlog` → `sync apply --input plan.json --skip-conflicted` (without `--record-only`) → the inputs within the budget, oldest first, each as **Ingest one meeting** or **Ingest a …** → `note new` per `document_requests` and `promote_requests` → with Reports on, `report new` with `refresh` per report to refresh (the table below: `refresh_requests` and the reports whose fixes are all decided; none for a report with a `report_fixes` item) and **Report** per Ask row → `views` → with `settings.publish: auto`, `sync render --changed --plan plan.json --skip-conflicted` + MCP → `sync record` → commit, and the boxes cleared → with Reports on and something for the user (below), the Report row → `log catch-up - mode=unattended …` (§3.9) → commit → push per `settings.push`.
 
