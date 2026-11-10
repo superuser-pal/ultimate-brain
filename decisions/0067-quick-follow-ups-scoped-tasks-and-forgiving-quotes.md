@@ -4,6 +4,7 @@
 **Date:** 2026-11-03
 **Amends:** 0055 (the minutes format, and when a quote blocks a meeting)
 **Refines:** 0037, 0062
+**Amended by:** [0079](0079-lean-minutes-and-follow-ups-as-tasks.md) (2026-11-10): the minutes get a readable part and a For the brain toggle, and a quick follow-up still unticked at the Reviewed read becomes a Task (new format only)
 
 ## Context
 
