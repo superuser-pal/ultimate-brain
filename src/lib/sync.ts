@@ -789,12 +789,14 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
         const after: Record<string, unknown> = { ...kept };
         for (const item of review.items) {
           const stored = isRecord(kept[item.item_id]) ? kept[item.item_id] as Record<string, unknown> : undefined;
-          if (stored === undefined || decided.has(item.item_id) || item.held || stored.rendered_hash === item.rendered_hash) continue;
+          if (stored === undefined || decided.has(item.item_id) || stored.rendered_hash === item.rendered_hash) continue;
           const drafted = (Array.isArray(note.attributes.revisions) ? note.attributes.revisions : []).filter(isRecord).some((entry) => entry.item_id === item.item_id && entry.status === "drafted");
-          const reason = drafted ? "revision_drafted" : stored.base_hash !== item.current_base_hash ? "base_changed" : undefined;
+          // A section that now names a note by type and id is rewritten too, held or not (cli §5.14.4, "Restricted notes"); the label stays after the cleanup.
+          const reason = item.held ? (item.title_withheld ? "title_withheld" : undefined)
+            : drafted ? "revision_drafted" : stored.base_hash !== item.current_base_hash ? "base_changed" : item.title_withheld ? "title_withheld" : undefined;
           if (reason === undefined) continue;
           itemUpdates.push({ item_id: item.item_id, reason, section: item.section });
-          after[item.item_id] = { rendered_hash: item.rendered_hash, proposed_hash: item.proposed_hash, base_hash: item.current_base_hash };
+          after[item.item_id] = { rendered_hash: item.rendered_hash, proposed_hash: item.proposed_hash, ...(reason === "title_withheld" ? { base_hash: stored.base_hash, ...(item.held || stored.held === true ? { held: true } : {}) } : { base_hash: item.current_base_hash }) };
         }
         if (itemUpdates.length > 0) publishedAfter = { "@review": { items: after } };
       }

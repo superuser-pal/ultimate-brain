@@ -240,3 +240,49 @@ test("sync render publishes a note with a restricted part in the awaiting-cleanu
   assert.ok(!JSON.stringify(project).includes("95k") && !JSON.stringify(project).includes("Price set"));
   assert.ok(String(project.sections["Decision log"]).includes(`decision ${note.id}, title withheld: awaiting cleanup`));
 });
+
+test("a Review page names a note with a restricted part by type and id: on create, and on a published page through title_withheld item updates that keep your pending edits (cli §5.14.4, §5.27)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
+  const file = join(dir, note.path);
+  await writeFile(file, (await readFile(file, "utf8")).replace(/^title: .*$/m, "title: Price set at 95k"));
+  const created = await run(dir, ["proposal", "new"], { proposals: [
+    { kind: "review_notes", source: SYNC, notes: [note.id] },
+    { kind: "add_to_note", title: "RLS", target: "con-1s6t8e2b", content: "Carlos will use RLS for the auth migration.", why: "Carlos said so.", source: SYNC },
+  ] });
+  assert.equal(created.code, 0, created.stdout);
+  const id = created.json.data.created[0].id as string;
+  const render = async (plan?: string) => (await run(dir, ["sync", "render", "--ids", id, ...(plan === undefined ? [] : ["--plan", plan])])).json.data;
+  const before = (await render()).items[0];
+  assert.ok(String(before.body).includes("Creates: Price set at 95k"), "while the evidence is live the page names the note");
+
+  await exclude();
+  const fresh = (await render()).items[0];
+  assert.equal(fresh.action, "create");
+  assert.ok(String(fresh.body).includes(`Held: decision ${note.id}, title withheld: awaiting cleanup`), "a page created after the exclusion names it by type and id");
+  assert.ok(!JSON.stringify(fresh).includes("Price set") && !JSON.stringify(fresh).includes("95k"));
+
+  // The page was published before the exclusion: record that render, then render again.
+  const recorded = await run(dir, ["sync", "record"], { records: [{ id, notion: "6a7b0000-0000-4000-8000-0000000000aa", synced_at: NOW, published: before.published }] });
+  assert.equal(recorded.json.data.records[0].result, "recorded", recorded.stdout);
+  const update = (await render()).items[0];
+  assert.equal(update.action, "update");
+  assert.equal(update.body, null, "the body is never rewritten whole");
+  assert.equal(update.item_updates.length, 1, "only the item that names the note is rewritten: the other section and its hash stay");
+  assert.equal(update.item_updates[0].reason, "title_withheld");
+  assert.ok(update.item_updates[0].section.includes(`decision ${note.id}, title withheld: awaiting cleanup`));
+  assert.ok(!JSON.stringify(update).includes("Price set") && !JSON.stringify(update).includes("95k"));
+  const kept = before.published["@review"].items;
+  const after = update.review_published_after["@review"].items;
+  const itemId = update.item_updates[0].item_id as string;
+  for (const other of Object.keys(kept).filter((key) => key !== itemId)) assert.deepEqual(after[other], kept[other]);
+  assert.equal(after[itemId].held, true);
+  assert.equal(after[itemId].base_hash, kept[itemId].base_hash);
+
+  // A page with your pending edits or tokens is not rewritten: the plan marks it and the render holds it back whole.
+  const plan = join(dir, "..", "plan.json");
+  await writeFile(plan, JSON.stringify({ as_of: NOW, create: [], updates: [], corrections: [], decisions: [], conflicts: [], ignored: [], review_pending: [{ proposal: id, page_id: "6a7b0000-0000-4000-8000-0000000000aa" }] }));
+  const held = await render(plan);
+  assert.deepEqual(held.items, []);
+  assert.deepEqual(held.skipped, [{ id, reason: "REVIEW_PENDING" }]);
+});
