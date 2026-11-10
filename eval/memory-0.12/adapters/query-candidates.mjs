@@ -28,6 +28,7 @@ export default {
         ...(c.assessment === "contested" ? ["contested"] : []),
       ],
     }));
-    return { candidates, cost: { phase: "later", bytes: Buffer.byteLength(stdout, "utf8"), ms } };
+    // `output`: everything the caller received, for the cases that forbid restricted text in any field (CC-185).
+    return { candidates, output: stdout, cost: { phase: "later", bytes: Buffer.byteLength(stdout, "utf8"), ms } };
   },
 };

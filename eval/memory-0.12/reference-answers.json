@@ -75,5 +75,115 @@
   "unk-07": "Not recorded.",
   "unk-08": "Nothing is recorded about a discount for Tandrel.",
   "unk-09": "No memory covers that; unknown.",
-  "unk-10": "T-14 is still todo, and no progress is recorded."
+  "unk-10": "T-14 is still todo, and no progress is recorded.",
+  "trust-21": "The Harbor support report was written before an exclusion, so it is withheld until it is refreshed; I can't use it.",
+  "trust-22": "The pricing overview is withheld: it rests on Harbor's decision log, which rests on restricted decisions. What I can say is that Velmor is invoiced monthly.",
+  "trust-23": "Harbor's decision log is withheld while decisions it lists are restricted; I can list the eligible decisions through brain query instead.",
+  "trust-24": "Every Monday morning, by email (the decision is cited by id; its title is withheld while it awaits cleanup).",
+  "trust-25": "99.5 percent a month (cited by id; the note's title and path are withheld).",
+  "trust-26": "Within one working day.",
+  "trust-27": "Five working days ahead.",
+  "trust-28": "Velmor's own monitor.",
+  "trust-29": "Through the Harbor help desk, not by phone.",
+  "trust-30": "Before SES, test sends went through Postmark's sandbox. That memory is historical: it was superseded by the SES sandbox.",
+  "trust-31": "Harbor's deploy freeze starts Thursday at 16:00 and lasts until Monday.",
+  "trust-32": "No memory that reaches orbit-app covers Harbor's deploys; it is not recorded for this repo.",
+  "trust-33": "The reason that memory gave is not eligible: it rests on evidence the user excluded. Today load tests run on staging only.",
+  "trust-34": "No approved memory says that; it is not recorded.",
+  "trust-35": "That memory is withheld: it is outside this repo's reach.",
+  "trust-36": "That memory is withheld: this folder is not linked to its area.",
+  "trust-37": "That memory is withheld: the user never approved it.",
+  "trust-38": "That memory is withheld, even in the historical read: it rests on evidence the user excluded.",
+  "trust-39": {
+    "text": "Not applied: its only evidence was excluded on 6 November, so apply closed it.",
+    "outcome": {
+      "proposals": [
+        {
+          "status": "closed",
+          "reason": "SOURCE_EXCLUDED"
+        }
+      ],
+      "notes": [
+        "---\ntype: project\ntitle: Harbor booking platform\n---\nDrivers book loading bays at Velmor's depots. Repos: harbor-api and harbor-web.\n"
+      ]
+    }
+  },
+  "trust-40": {
+    "text": "I can't propose that: the passage is now excluded, so no proposal was written.",
+    "outcome": {
+      "proposals": [],
+      "notes": [],
+      "created": []
+    }
+  },
+  "trust-41": {
+    "text": "Withheld whole: one of its two statements rests on excluded evidence. The live one can be proposed again on its own.",
+    "outcome": {
+      "proposals": [
+        {
+          "status": "closed",
+          "reason": "SOURCE_EXCLUDED"
+        }
+      ],
+      "notes": [
+        "---\ntype: org\ntitle: Velmor Freight\n---\nVelmor Freight is a client of the studio.\n"
+      ]
+    }
+  },
+  "trust-42": {
+    "text": "Withheld: it was written before proposals named their passages, and its input has an exclusion; it will be proposed again.",
+    "outcome": {
+      "proposals": [
+        {
+          "status": "closed",
+          "reason": "PASSAGES_MISSING"
+        }
+      ],
+      "notes": [
+        "---\ntype: project\ntitle: Harbor booking platform\n---\nDrivers book loading bays at Velmor's depots. Repos: harbor-api and harbor-web.\n"
+      ]
+    }
+  },
+  "trust-43": {
+    "text": "That is not in the brain's eligible evidence, so I can't say.",
+    "outcome": {
+      "proposals": [],
+      "notes": [],
+      "repo": {
+        "managed_block": "current",
+        "unchanged": true
+      }
+    }
+  },
+  "trust-44": "That is not in the brain's eligible evidence, so I can't say.",
+  "ans-48": "It says Harbor's production database is shared with Velmor's legacy dispatch app, so ask the user before any migration.",
+  "ans-49": "From 07:00 to 19:00 on weekdays. It is a draft decision, not yet reviewed.",
+  "ans-50": "Before npm workspaces we used pnpm. That memory is historical: pnpm is retired.",
+  "ans-51": {
+    "text": "Applied: Quill's sending service is now Amazon SES.",
+    "outcome": {
+      "proposals": [
+        {
+          "status": "applied"
+        }
+      ],
+      "notes": [
+        "---\ntype: project\ntitle: Quill newsletter tool\nfacts:\n  sending_service: Amazon SES\n---\nWrites and sends the studio newsletter. Repo: quill.\n"
+      ]
+    }
+  },
+  "ans-52": {
+    "text": "Applied: Harbor's uptime target was added to Velmor's note.",
+    "outcome": {
+      "proposals": [
+        {
+          "status": "applied"
+        }
+      ],
+      "notes": [
+        "---\ntype: org\ntitle: Velmor Freight\n---\nVelmor Freight is a client of the studio.\n\nHarbor's uptime target for Velmor is 99.5 percent a month.\n"
+      ]
+    }
+  },
+  "unk-11": "No service before Postmark is recorded for Quill."
 }
