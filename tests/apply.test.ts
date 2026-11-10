@@ -61,6 +61,7 @@ const kinds: Array<{ name: string; fields: Record<string, unknown>; action?: str
     changed: [PROJECT],
   },
   {
+    // The user's own value is a separately attributed correction: the source's value superseded, theirs `user-correction:<id>` (eligibility §9.5, CC-177).
     name: "update_fact-edit",
     fields: { kind: "update_fact", target: "prj-9x4t1b7e", field: "budget", before: "80000 EUR", after: "95000 EUR", from: "2026-12-08" },
     action: "edit", value: "90000 EUR",
