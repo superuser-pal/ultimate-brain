@@ -287,7 +287,7 @@ Work packages (0061, kept): onboarding/diagnostic/preference contracts; probe-fi
 
 | Task | Scope under 0078 | Owns | Starts | Status |
 |---|---|---|---|---|
-| CC-187 | This plan and decision 0078 | `decisions/0078`, pointers, roadmap docs, this section | now | `review` |
+| CC-187 | This plan and decision 0078 | `decisions/0078`, pointers, roadmap docs, this section | now | `done` (#286) |
 | CC-188 | Setup contracts | `spec/setup.md` (new), its lines in `spec/cli.md` and `spec/schema.md`, the moved release lines | after CC-187 is merged | `todo` |
 | CC-189 | The Notion template's design and its link | `docs/notion-space-design.md`, `notion/prompts/`, `notion/CHECKLIST.md`, `notion/TEMPLATE.md` (new), `scripts/leak-allow.txt` | after CC-188 is merged | `todo` |
 | U-27 | Build and publish the template in a dedicated workspace | the template workspace | after CC-189 is merged | `todo` |
@@ -297,7 +297,7 @@ Work packages (0061, kept): onboarding/diagnostic/preference contracts; probe-fi
 | CC-193 | The release gate: a fresh user end to end | `eval/setup-0.14/` (new) and its row | last, after every other 0.14.0 task | `todo` |
 | U-28 | Invite friends and family | — | after 0.14.0 is released | `todo` |
 
-### CC-187 · Record the onboarding and early-access plan · `review`
+### CC-187 · Record the onboarding and early-access plan · `done` (#286)
 **Release:** 0.14.0
 **Changelog:** development only: the onboarding grill is recorded as decision 0078 with 0.14.0's task plan; onboarding and early access for friends and family move to 0.14.0, and the weekly review to 0.15.0, still the feature cutoff.
 **Output:** decision 0078 from the user's 2026-11-10 grill (Q1 to Q31); header pointers on 0019, 0048, 0061, 0075 and 0077; this section's intro, plan and the rows CC-188 to CC-193, U-27 and U-28; the weekly review's section and CC-111 moved to 0.15.0 (Release, Output and Acceptance release numbers only), CC-147's note and one release clause in CC-182's Output updated to the new order; the 1.0.0 note; the roadmap table and cutoff line here, in docs/vision.md, docs/v2-ideas.md and AGENTS.md. Planning only: no CLI, spec, schema, skill, template, README, Notion or CHANGELOG change and no brain operation. The user's answers authorise recording this agreement; implementation remains Claude Code's, and independent review is required.
