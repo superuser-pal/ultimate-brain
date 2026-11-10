@@ -1,6 +1,6 @@
 # v2 Backlog
 
-Deferred ideas and their current disposition. [Decision 0061](../decisions/0061-roadmap-and-launch-boundary.md) sets the launch boundary: feature work ends at 0.14.0, then productisation, translation and the funnel lead to 1.0. Entries below retain historical context; the disposition table and decision govern current placement. Issues/dogfood may produce fixes without silently reopening feature scope.
+Deferred ideas and their current disposition. [Decision 0061](../decisions/0061-roadmap-and-launch-boundary.md) sets the launch boundary: feature work ends at 0.15.0 (moved from 0.14.0 by [0077](../decisions/0077-trust-repair-in-0-13-0.md)), then productisation, translation and the funnel lead to 1.0. Entries below retain historical context; the disposition table and decision govern current placement. Issues/dogfood may produce fixes without silently reopening feature scope.
 
 | Disposition | Items |
 |---|---|
@@ -10,8 +10,9 @@ Deferred ideas and their current disposition. [Decision 0061](../decisions/0061-
 | 0.10.0 ([0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md)) | The brain assistant: reviews Areas, Domains, Projects and Tasks, recommends, and changes through Review rows or a yes in chat |
 | 0.11.0 | Contradiction/staleness/dedup reflection under 0052; later in-catch-up reflection remains deferred |
 | 0.12.0 ([0074](../decisions/0074-scoped-memory-handovers-and-bounded-recall.md)) | Shared Claude Code/Codex memory capture, work handovers, generated hot context initially capped at 800 tokens, scoped/correctable memory, targeted cited retrieval and reviewed promotion; prefer surgical TypeScript component reuse and evaluate before selecting ranking/index changes |
-| 0.13.0 ([0075](../decisions/0075-weekly-review-and-targeted-corrections.md)) | One report per week with knowledge changes, task analysis and decisions; shared five-decision/five-target limits, selective reminders and bounded partial coverage; targeted checks after meaningful approved corrections; separate no-apply weekly run, default Monday 08:00 local when enabled |
-| 0.14.0 | Full onboarding, diagnostics, selected seeding and minimal per-area tracking preferences; rich capability profiles remain deferred |
+| 0.13.0 ([0077](../decisions/0077-trust-repair-in-0-13-0.md)) | Trust repair: one operational eligibility rule for answers, reads, derived content and proposals' evidence; one coordinated upgrade of the brain and its linked projects; no new features |
+| 0.14.0 ([0075](../decisions/0075-weekly-review-and-targeted-corrections.md), moved by 0077) | One report per week with knowledge changes, task analysis and decisions; shared five-decision/five-target limits, selective reminders and bounded partial coverage; targeted checks after meaningful approved corrections; separate no-apply weekly run, default Monday 08:00 local when enabled |
+| 0.15.0 (moved by 0077) | Full onboarding, diagnostics, selected seeding and minimal per-area tracking preferences; rich capability profiles remain deferred |
 | Launch readiness | Product packaging, guidance/templates, translation, funnel, fresh-user acceptance and common-failure recovery; no new feature milestone |
 | Post-1.0, evidence-gated | Native Hermes operator, private Telegram, scoped learning and native schedules ([0060](../decisions/0060-hermes-operator-and-learning.md), moved by 0064); new connected sources, extra converters, richer fact/relationship models and profiles, person/client outputs, research dossiers, MCP, OKF, advanced search infrastructure, direct Notion API, Notion webhooks, n8n/cloud scheduling, worker execution, an optional tool-agnostic coordination profile, extra hosts/channels/agents, broad sensitivity tiers and multi-user/hosting |
 
@@ -22,7 +23,7 @@ Sources folded in: docs/vision.md "v2", synthesis/synthesis.md §3.3, decisions 
 ## Onboarding and getting knowledge in
 
 ### Onboarding suite
-**Now 0.14.0 under 0061.** Previously moved out of 0.4.0 on 2026-10-20 (no second user yet; CC-35). The owner's identities and finding 3 shipped in 0.3.0 (CC-26). Reuse 0.9.0 project adoption and the 0.10.0 assistant rather than building duplicate flows (0064).
+**Now 0.15.0 under 0061, moved by 0077.** Previously moved out of 0.4.0 on 2026-10-20 (no second user yet; CC-35). The owner's identities and finding 3 shipped in 0.3.0 (CC-26). Reuse 0.9.0 project adoption and the 0.10.0 assistant rather than building duplicate flows (0064).
 
 **Adds:** a `brain-onboard` skill (or agent) that interviews a new user and populates the brain and Notion, so a new brain is useful on day one instead of empty.
 
@@ -89,9 +90,9 @@ Relations such as `about` and `related_to` as reviewable links. **Changes:** dec
 ### Per-area "What to track" (purpose) sections
 **Changes:** extraction in the meeting ingest (v1 uses the generic list from the schema for every meeting).
 
-**Minimal preferences planned for 0.14.0 under 0061.** Optional small section inside each area note (e.g. `areas/clients.md`: "budget, deadlines, decisions, owners, risks, scope changes"), editable in Notion. If present, the ingest focuses extraction on those fields; if absent, the generic list applies. Origin: llm_wiki `purpose.md` (Review 5).
+**Minimal preferences planned for 0.15.0 under 0061, moved by 0077.** Optional small section inside each area note (e.g. `areas/clients.md`: "budget, deadlines, decisions, owners, risks, scope changes"), editable in Notion. If present, the ingest focuses extraction on those fields; if absent, the generic list applies. Origin: llm_wiki `purpose.md` (Review 5).
 
-**Why:** pays off for long, noisy meetings, area-specific facts or fields the generic list doesn't cover. Keep the 0.14.0 implementation within the stable schema; richer domain-specific profiles remain post-1.0.
+**Why:** pays off for long, noisy meetings, area-specific facts or fields the generic list doesn't cover. Keep the 0.15.0 implementation within the stable schema; richer domain-specific profiles remain post-1.0.
 
 ### Capability profiles
 Composable profiles (client work, meeting-heavy work, research, writing, learning, personal planning) that tailor onboarding, extraction, views and optional note types on top of the same core schema. **Source:** decision 0030. **Revisit:** with the onboarding suite.
@@ -102,7 +103,7 @@ Composable profiles (client work, meeting-heavy work, research, writing, learnin
 A semantic lint across notes. **Source:** vision, synthesis §3.3 (Review 5). **Decided in 0052; now 0.11.0 under [0061](../decisions/0061-roadmap-and-launch-boundary.md) as amended by 0064:** `brain-reflect` writes contradictions and stale facts as Review rows.
 
 ### Correction sweep command
-One correction propagated to affected restatements through reviewable changes. **Source:** synthesis §3.2. Reflection in 0.11.0 proposes a fix for a stale restatement it finds; **0.13.0 under 0061** adds the targeted sweep after a correction. Preserve independently supported claims; no blind global replacement.
+One correction propagated to affected restatements through reviewable changes. **Source:** synthesis §3.2. Reflection in 0.11.0 proposes a fix for a stale restatement it finds; **0.14.0 under 0061, moved by 0077,** adds the targeted sweep after a correction. Preserve independently supported claims; no blind global replacement.
 
 ### Dedup audit
 Finds likely duplicate notes and people and writes `merge` proposals. **Source:** synthesis §3.3. **Decided in 0052; now 0.11.0 under 0061 as amended by 0064:** reflection's near-duplicate candidates and the `near-duplicate` lint warning.
@@ -116,7 +117,7 @@ Noted on 2026-10-23, left out of 0.6.0 by the user: an applied fact doesn't refr
 ## New flows and outputs
 
 - **Owners on Tasks:** an optional owner mapping on the user's Tasks database, so other people's action items become tasks too; today they stay in the meeting text, because a task with no owner would show as the user's. The Tasks database is the user's (0018). **Source:** U-13, decision 0043.
-- **Weekly digest (0.13.0, 0061):** decisions, open questions and what changed, with a concise weekly-review flow. **Source:** vision, synthesis.
+- **Weekly digest (0.14.0, 0061, moved by 0077):** decisions, open questions and what changed, with a concise weekly-review flow. **Source:** vision, synthesis.
 - **Person and client profiles,** generated from the notes. **Source:** vision.
 - **Topic research dossiers:** draft, then merge into the brain. **Source:** vision, synthesis (Review 1).
 - **Agent-memory loop (0.12.0, 0061):** Claude Code/Codex propose memories and the user promotes them to knowledge, defining the shared capture/proposal/promotion boundary itself, for a later Hermes to reuse (0064). `memories/` already exists. Includes session-end capture where supported and explicit fallbacks. **Source:** vision, 0008, 0009.
