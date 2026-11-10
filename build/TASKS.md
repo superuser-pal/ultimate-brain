@@ -186,7 +186,7 @@ An independent assessment of `v0.12.0` (2026-11-09 and 2026-11-10; records outsi
 
 | Task | Scope under 0077 | Owns | Starts | Status |
 |---|---|---|---|---|
-| CC-181 | This plan and decision 0077 | `decisions/0077`, pointers, roadmap docs, this section | now | `review` |
+| CC-181 | This plan and decision 0077 | `decisions/0077`, pointers, roadmap docs, this section | now | `done` (#285) |
 | CC-182 | The common eligibility contract | `spec/eligibility.md` (new), pointer and release lines in other spec files | after CC-181 is merged | `todo` |
 | CC-176 | Filtered full read, shared memory eligibility, historical mode, metadata, administrative access kept apart from answering | its branch's files (#283) | reconciles after CC-182 is merged | `review` on its branch (#283, head 54feae1); back to `in progress` for the added scope |
 | CC-177 | Text proposals on create and apply, mixed text withheld whole, fixes and edits, exact re-acceptance of changed wording, the Review page | its branch's files (#284) | reconciles after CC-182 is merged | `review` on its branch (#284, head 3eeb67c); back to `in progress` for the added scope |
