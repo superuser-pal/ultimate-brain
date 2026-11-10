@@ -162,3 +162,22 @@ test("a fix or an edit whose value still holds the excluded claim is closed, wha
     assert.ok(!/95k/i.test(await readFile(join(dir, path), "utf8")), path);
   }
 });
+
+test("an answer that rests only on an excluded passage is closed on approve and on a fix that keeps it (cli §5.7)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
+  const made = await run(dir, ["note", "new"], { notes: [{ type: "question", title: "Who pays for hosting", frontmatter: { summary: "Open: who pays for hosting.", kind: "question", projects: [PROJECT], sources: [SYNC] }, body: "Nobody said.\n" }] });
+  assert.equal(made.code, 0, made.stdout);
+  const question = [{ id: "que-8n3v5x1d", path: "knowledge/questions/who-owns-the-acme-mobile-app.md" }, made.json.data.created[0] as { id: string; path: string }];
+  const answer = (target: string) => ({ kind: "answer", title: "Answer", target, answer: EXCLUDED_LINE, why: "The call set it.", source: "src-ex1a3b4c" });
+  const staged = await run(dir, ["proposal", "new"], { proposals: [answer(question[0]!.id), answer(question[1]!.id)] });
+  assert.equal(staged.code, 0, staged.stdout);
+  const [first, second] = staged.json.data.created as Array<{ id: string }>;
+  await exclude();
+  const out = await run(dir, ["apply"], { decisions: [
+    ...approve(first!.id).decisions,
+    { proposal: second!.id, action: "fix", note: "n", fixes: [{ value: EXCLUDED_LINE }], decided_at: NOW, decided_by: "chat" },
+  ] });
+  assert.deepEqual((out.json.data.decisions as Array<{ result: string; reason?: string }>).map((entry) => [entry.result, entry.reason]), [["closed", "SOURCE_EXCLUDED"], ["closed", "SOURCE_EXCLUDED"]], out.stdout);
+  for (const entry of question.slice(0, 2)) assert.ok(!(await readFile(join(dir, entry.path), "utf8")).includes("95k"), entry.path);
+});
