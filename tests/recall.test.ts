@@ -451,3 +451,84 @@ test("every USAGE case of cli.md §5.33, and SUPPRESSIONS_UNREADABLE", async (co
     assert.equal(result.json.error.code, "SUPPRESSIONS_UNREADABLE", args.join(" "));
   }
 });
+
+// --- `brain query` applies the same rules to memories (cli.md §5.13 step 2, §5.13.1; memory.md §2) ---------------------------
+
+async function query(dir: string, ...args: string[]) {
+  const result = await brain(["query", ...args, "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(result.code, 0, result.stdout);
+  return result.json.data;
+}
+
+test("query --types memory returns only memories eligible for the caller, as recall --search does (cli.md §5.13 step 2)", async (context) => {
+  const { dir, repo, parent } = await world(context);
+  await eligibilityBrain(dir);
+  await marker(repo, LINKED);
+  const words = "general project area stack rule supported draft disputed restricted unsupported superseded other old";
+  const linked = await query(dir, "--candidates", words, "--types", "memory", "--repo", repo, "--limit", "50");
+  assert.deepEqual(ids(linked.candidates).sort(), ELIGIBLE);
+  // The default types still hold no memory, and a folder without .brain gets only general ones.
+  assert.equal((await query(dir, "--candidates", words, "--repo", repo, "--limit", "50")).candidates.some((candidate: { type: string }) => candidate.type === "memory"), false);
+  const bare = join(parent, "bare");
+  await mkdir(bare);
+  assert.deepEqual(ids((await query(dir, "--candidates", words, "--types", "memory", "--repo", bare, "--limit", "50")).candidates).sort(), ["mem-aaaa0001", "mem-aaaa0015"]);
+});
+
+test("query --read returns a note in full as retrieval may use it, and withholds what the caller may not see (cli.md §5.13.1)", async (context) => {
+  const { dir, repo } = await world(context);
+  await eligibilityBrain(dir);
+  await marker(repo, LINKED);
+  const hash = passageHash(SECRET);
+  const live = passageHash("A live paragraph.");
+  // A decision with one live statement and one resting only on the excluded paragraph; and one resting only on it.
+  await put(dir, "knowledge/decisions/2026-10-11-launch.md", { id: "dec-aaaa0001", type: "decision", title: "Launch in March", summary: "Launch in March at 95k.", lifecycle: "reviewed", assessment: "accepted", date: "2026-10-11", sources: ["src-ex1a3b4c"], created: "2026-10-11", updated: "2026-10-11" },
+    `Launch in March. ^[src-ex1a3b4c#¶1:${live}]\n${SECRET} ^[src-ex1a3b4c#¶2:${hash}]\n`);
+  await put(dir, "knowledge/decisions/2026-10-11-price.md", { id: "dec-aaaa0002", type: "decision", title: "The price", lifecycle: "reviewed", assessment: "accepted", date: "2026-10-11", sources: ["src-ex1a3b4c"], created: "2026-10-11", updated: "2026-10-11" },
+    `${SECRET} ^[src-ex1a3b4c#¶2:${hash}]\n`);
+  await put(dir, "_proposals/2026-10-12-price.md", { id: "prp-aaaa0001", type: "proposal", title: "Add the price", status: "pending", kind: "add_to_note", target: "dec-aaaa0001", created: "2026-10-12", updated: "2026-10-12" }, `${SECRET}\n`);
+  const data = await query(dir, "--read", "mem-aaaa0002,dec-aaaa0001,dec-aaaa0002,mem-aaaa0003,mem-aaaa0008,mem-aaaa0010,mem-aaaa0013,prp-aaaa0001,xyz-00000000,mem-aaaa0002", "--repo", repo);
+  const by = Object.fromEntries(data.notes.map((note: { id: string }) => [note.id, note]));
+  // One entry per distinct id, in the order given.
+  assert.deepEqual(ids(data.notes), ["mem-aaaa0002", "dec-aaaa0001", "dec-aaaa0002", "mem-aaaa0003", "mem-aaaa0008", "mem-aaaa0010", "mem-aaaa0013", "prp-aaaa0001", "xyz-00000000"]);
+  assert.deepEqual(data.context, { repo: "acme-api", project: PROJECT, area: AREA });
+  // An eligible memory comes whole.
+  assert.equal(by["mem-aaaa0002"].status, "ok");
+  assert.equal(by["mem-aaaa0002"].restricted, false);
+  assert.equal(by["mem-aaaa0002"].body.trim(), "Learned in a session.");
+  assert.equal(by["mem-aaaa0002"].frontmatter.summary, "Project: ask before migrations.");
+  // A partly restricted note: the excluded line is spaces of the same length, and the summary is gone.
+  const launch = by["dec-aaaa0001"];
+  assert.equal(launch.status, "ok");
+  assert.equal(launch.restricted, true);
+  assert.equal(launch.body.includes("95k"), false);
+  const lines = launch.body.replace(/^\n+/, "").split("\n");
+  assert.equal(lines[0], `Launch in March. ^[src-ex1a3b4c#¶1:${live}]`);
+  assert.match(lines[1], /^ +$/);
+  assert.equal("summary" in launch.frontmatter, false);
+  assert.deepEqual([launch.type, launch.title, launch.lifecycle, launch.assessment, launch.date, launch.path], ["decision", "Launch in March", "reviewed", "accepted", "2026-10-11", "knowledge/decisions/2026-10-11-launch.md"]);
+  // Withheld notes carry a reason and nothing else.
+  assert.deepEqual(by["dec-aaaa0002"], { id: "dec-aaaa0002", status: "withheld", reason: "restricted" });
+  for (const id of ["mem-aaaa0003", "mem-aaaa0008", "mem-aaaa0013", "prp-aaaa0001"]) assert.deepEqual(by[id], { id, status: "withheld", reason: "not_eligible" });
+  assert.deepEqual(by["xyz-00000000"], { id: "xyz-00000000", status: "withheld", reason: "unknown" });
+  // A superseded memory in reach is readable, marked, so an answer can say what a rule replaced.
+  assert.equal(by["mem-aaaa0010"].status, "ok");
+  assert.equal(by["mem-aaaa0010"].superseded_by, "mem-aaaa0011");
+  assert.equal(JSON.stringify(data).includes("95k"), false);
+});
+
+test("every USAGE case of query --read (cli.md §5.13.1)", async (context) => {
+  const { dir, repo } = await world(context);
+  const cases: Array<[string[], string]> = [
+    [[], "brain query requires --candidates or --read; use the brain-query skill to answer questions"],
+    [["--read", "dec-aaaa0001", "--candidates", "x"], "brain query takes one of --candidates and --read"],
+    [["--read", "dec-aaaa0001", "--limit", "5"], "--limit doesn't go with --read"],
+    [["--read", "dec-aaaa0001", "--types", "decision"], "--types doesn't go with --read"],
+    [["--read", "dec-aaaa0001,"], "--read takes 1 to 20 note ids separated by commas"],
+    [["--read", Array.from({ length: 21 }, (_, index) => `dec-aaaa00${String(index).padStart(2, "0")}`).join(",")], "--read takes 1 to 20 note ids separated by commas"],
+    [["--read", "dec-aaaa0001", "extra"], "Unexpected argument: extra"],
+  ];
+  for (const [args, message] of cases) {
+    const result = await brain(["query", ...args, "--repo", repo, "--brain", dir, "--json"]);
+    assert.deepEqual(result.json.error, { code: "USAGE", message }, args.join(" "));
+  }
+});
