@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-11-10
 **Release:** 0.14.0
+**Scope amended by:** [0079](0079-lean-minutes-and-follow-ups-as-tasks.md) (2026-11-10): 0.14.0 also ships the lean minutes format and quick follow-ups as Tasks, so testers start on it
 **Amends:** [0077](0077-trust-repair-in-0-13-0.md) §6 and [0061](0061-roadmap-and-launch-boundary.md) (release order only: onboarding 0.15.0 → 0.14.0, the weekly review 0.14.0 → 0.15.0; early access starts on 0.14.0, before 1.0); [0075](0075-weekly-review-and-targeted-corrections.md) (release placement only: 0.14.0 → 0.15.0)
 **Refines:** [0019](0019-notion-space-built-with-notion-ai-prompts.md) (a new user duplicates a published template instead of building from the prompts), [0048](0048-modules-and-simpler-rows.md) (the modules a new brain starts with), [0015](0015-notion-access-via-mcp.md) and [0037](0037-intake-experience.md) (what setup asks, and when)
 **Keeps:** 0077's trust repair as 0.13.0 and first; 0075's weekly scope (unchanged, one release later); the feature cutoff at 0.15.0; Markdown + Git canonical, Notion as the interface, 0022 (structure changes in the product first); the build prompts and migrations; the CLI stays non-interactive; the session-opening scope gate
