@@ -214,7 +214,7 @@ CC-183 and CC-179 may both touch `src/lib/suppressions.ts`; the later one merges
 4. Then CC-182's contract: the branch changes its spec text where `spec/eligibility.md` says so, then its code, then asks for a review of the new head.
 If a branch is dropped instead, the main session writes the rows it carried on `main`, with the same ids, before any task that depends on them starts. The fork PR #12 follows CC-178's row.
 
-### CC-181 · Record the trust repair agreement and release plan · `review`
+### CC-181 · Record the trust repair agreement and release plan · `done` (#285)
 **Release:** 0.13.0
 **Changelog:** development only: the trust repair agreement is recorded as decision 0077 with 0.13.0's task plan; the weekly review moves to 0.14.0, and onboarding and the feature cutoff to 0.15.0.
 **Output:** decision 0077 from the user's accepted 2026-11-10 grill and plan; header pointers on 0003, 0055, 0061, 0064, 0074 and 0075; this section's plan, scope additions and reconciliation rules, and the rows CC-182 to CC-186; the 0075 intro and CC-111 moved to the 0.14.0 section and onboarding to 0.15.0; the roadmap table and cutoff here, in docs/vision.md, docs/v2-ideas.md and AGENTS.md. Planning only: no CLI, spec, schema, skill, template or CHANGELOG change, no brain operation, and no row of CC-176 to CC-180 written. The user's acceptance authorises recording this agreement; implementation remains Claude Code's, and independent review is required.
