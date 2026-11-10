@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-11-10
 **Release:** 0.13.0
+**§6 release order amended by:** [0078](0078-onboarding-and-early-access-in-0-14-0.md) (2026-11-10): onboarding in 0.14.0, the weekly review in 0.15.0 (still the cutoff); the trust repair stays 0.13.0 and first
 **Amends:** [0061](0061-roadmap-and-launch-boundary.md) and [0064](0064-brain-assistant-before-reflection-hermes-after-1-0.md) (release order and the feature cutoff); [0075](0075-weekly-review-and-targeted-corrections.md) (release placement only: 0.13.0 → 0.14.0)
 **Refines:** [0003](0003-proposal-review-flow.md) (the evidence a proposal names), [0055](0055-domains-capture-and-review.md) (how exclusion reaches reads, derived content and proposals), [0074](0074-scoped-memory-handovers-and-bounded-recall.md) (superseded memories and the evaluation gate)
 **Keeps:** [0009](0009-memory-scope-levels.md), [0063](0063-claude-sub-agent-reviews.md), 0055's authoritative, separately attributed user corrections, 0074 §6's gates and token accounting, 0075's weekly scope (unchanged, one release later), the session-opening scope gate and every architecture rule
