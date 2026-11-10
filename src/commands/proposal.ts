@@ -9,6 +9,16 @@ import { formatDate } from "../lib/time.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { lintWarnings } from "../lib/warnings.ts";
 
+/** Why an input item was not written, for the human output (the reasons of spec/cli.md §5.6). */
+const SKIP_TEXT: Record<string, string> = {
+  DUPLICATE_PENDING: "same as a pending proposal",
+  ALREADY_LINKED: "already linked",
+  NOTHING_TO_REVIEW: "nothing to review",
+  ALREADY_ANSWERED: "the question already has an answer",
+  NO_CHANGE: "no change",
+  SOURCE_EXCLUDED: "rests only on content you excluded from the brain",
+};
+
 /** `brain proposal new --input <file|-> [--dry-run]` (spec/cli.md §5.6). */
 export const proposalNewCommand: Command = {
   name: "proposal new",
@@ -36,7 +46,7 @@ export const proposalNewCommand: Command = {
       })), now);
     }
     const human = created.map((proposal) => `${dryRun ? "would create" : "created"} ${proposal.path}\n`).join("")
-      + skipped.map((skip) => `skipped proposals[${skip.input_index}]: same as pending ${skip.existing}\n`).join("");
+      + skipped.map((skip) => `skipped proposals[${skip.input_index}]: ${SKIP_TEXT[skip.reason] ?? skip.reason}${skip.existing === undefined ? "" : ` (${skip.existing})`}\n`).join("");
     return { data: { created, skipped, dry_run: dryRun }, warnings, human: human || "Nothing to write.\n" };
   },
 };
