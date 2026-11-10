@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+
 import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { scanNotes, type Note } from "../lib/notes.ts";
@@ -33,7 +36,7 @@ export const queryCommand: Command = {
     const eligibility = contextFor(scanned.notes, loaded);
     const byId = new Map(scanned.notes.map((note) => [note.id, note]));
     // A view has no passage references: it is returned whole or not at all (§5.13, "Views").
-    const eligibleOf = (note: Note): Note | null => note.type === "view" ? eligibleView(note, viewLinks(scanned.notes, note), byId, eligibility) : eligibleNote(note, eligibility);
+    const eligibleOf = (note: Note): Note | null => note.type === "view" ? eligibleView(note, viewLinks(scanned.notes, note, (path) => existsSync(join(brain!.root, path))), byId, eligibility) : eligibleNote(note, eligibility);
     const warnings = scanned.problems.map((problem) => ({ code: problem.code, message: `${problem.path}: ${problem.message}`, path: problem.path }));
     // A memory is returned only as `brain recall` would return it to this folder (memory.md §2): approval and reach, besides the evidence rule.
     const memories = async (superseded: boolean): Promise<Map<string, Note>> => shownMemories(scanned.notes, loaded, (await readCaller(repo)).caller, superseded);

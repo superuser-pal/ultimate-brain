@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -95,6 +95,43 @@ test("a report written before an exclusion is withheld until it is refreshed, an
 
   await writeFile(join(dir, "reports/2026-12-10-hand.md"), `---\nid: vw-aaaa0009\ntype: view\ntitle: Hand report\ncreated: 2026-12-10\nupdated: 2026-12-10\nview_kind: report\nquestion: q\ngenerated_from: []\ngenerated_at: 2026-12-10T12:00:00Z\n---\n\n## Where it stands\n\nPrice is 95k ([gone](../knowledge/decisions/gone.md)).\n`);
   assert.deepEqual((await run(dir, ["query", "--read", "vw-aaaa0009"])).json.data.notes[0], { id: "vw-aaaa0009", status: "withheld", reason: "restricted" });
+});
+
+test("a report's time and the extract's are compared as full timestamps: a date alone, or the same second, withholds the report (cli §5.13.1, Views)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
+  await exclude();
+  const v2 = join(dir, "sources/notion/2026-12-10-extract-v2.md");
+  const original = await readFile(v2, "utf8");
+  await mkdir(join(dir, "reports"), { recursive: true });
+  const report = (at: string) => `---\nid: vw-aaaa0011\ntype: view\ntitle: Timed report\ncreated: 2026-12-10\nupdated: 2026-12-10\nview_kind: report\nquestion: q\ngenerated_from: []\ngenerated_at: ${at}\n---\n\n## Where it stands\n\nOn track.\n`;
+  const status = async (captured: string, at: string) => {
+    await writeFile(v2, original.replace("captured: 2026-12-10", `captured: ${captured}`));
+    await writeFile(join(dir, "reports/2026-12-10-timed.md"), report(at));
+    return (await run(dir, ["query", "--read", "vw-aaaa0011"])).json.data.notes[0].status;
+  };
+  assert.equal(await status("2026-12-10T10:00:00Z", "2026-12-10T10:00:01Z"), "ok", "a report written a second after the extract is read");
+  assert.equal(await status("2026-12-10T10:00:00Z", "2026-12-10T10:00:00Z"), "withheld", "the same second: the report may have been written first");
+  assert.equal(await status("2026-12-10", "2026-12-10T23:59:59Z"), "withheld", "a date alone on the extract is not a time");
+  assert.equal(await status("2026-12-10T10:00:00Z", "2026-12-11"), "withheld", "a date alone on the report is not a time");
+});
+
+test("a view's link to a file that isn't a note (a PDF, an index, a folder) doesn't withhold it; a .md link that names nothing does (cli §5.13.1, Views)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
+  await exclude();
+  const v2 = join(dir, "sources/notion/2026-12-10-extract-v2.md");
+  await writeFile(v2, (await readFile(v2, "utf8")).replace("captured: 2026-12-10", "captured: 2026-12-10T10:00:00Z"));
+  await writeFile(join(dir, "README.md"), "# Brain\n");
+  await mkdir(join(dir, "reports"), { recursive: true });
+  const write = (links: string) => writeFile(join(dir, "reports/2026-12-10-links.md"), `---\nid: vw-aaaa0012\ntype: view\ntitle: Linked report\ncreated: 2026-12-10\nupdated: 2026-12-10\nview_kind: report\nquestion: q\ngenerated_from: []\ngenerated_at: 2026-12-10T12:00:00Z\n---\n\n## Where it stands\n\n${links}\n`);
+  const status = async () => (await run(dir, ["query", "--read", "vw-aaaa0012"])).json.data.notes[0].status;
+  await write("See [the deck](../files/deck.pdf), [the readme](../README.md), [the folder](../knowledge/decisions/) and [the image](<../files/a b.png>).");
+  assert.equal(await status(), "ok");
+  await write("See [the readme](../README.md) and [a removed note](../knowledge/decisions/removed.md).");
+  assert.equal(await status(), "withheld");
+  await write("See [outside](../../elsewhere/notes.md).");
+  assert.equal(await status(), "withheld", "a .md link that leaves the brain names no note of it");
 });
 
 async function inputFile(dir: string, value: unknown): Promise<string> {
