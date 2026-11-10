@@ -21,7 +21,7 @@ How this file fits: it holds the one rule and where it applies. Command behaviou
 Evidence is **eligible** for a caller when all three hold, and an agent uses evidence only when a command on an answer surface returned it as eligible:
 
 1. **Approval** (0003, 0074 §2), by what the evidence is:
-   - a knowledge note, a source or a meeting: in the brain. A new note applies directly as `draft` (0003) and is eligible, carrying its `lifecycle` so the answer can say it is unconfirmed; `superseded` and `archived` knowledge notes are returned as history and labelled, as cli.md §5.13 orders them;
+   - a knowledge note, a source or a meeting: in the brain. A new note applies directly as `draft` (0003) and is eligible, carrying its `lifecycle` so the answer can say it is unconfirmed (today's behaviour, confirmed by the user on 2026-11-10: 0077 adds no approval step for knowledge notes, and only memories need `reviewed`); `superseded` and `archived` knowledge notes are returned as history and labelled, as cli.md §5.13 orders them;
    - a memory: `reviewed` and superseded by nothing (memory.md §2 rules 1 and 2), except in the historical read (§5);
    - a proposal: **never** evidence. Its change is not in the brain until it is applied (0003), and it may propose what its evidence no longer supports;
    - a view (Brief, Decision log, area Brief, report): navigation, never evidence (schema §4); §8 decides when it may be shown at all.
@@ -94,9 +94,9 @@ Metadata is every part of a note other than its body lines: `title`, `summary`, 
 
 1. **A withheld note** (restricted whole, a memory not eligible, a proposal, an unknown id) shows nothing but the id the caller named and the reason: no title, path, alias, summary or field.
 2. **A note with a restricted part:** no `summary`; no `aliases`; a timeline entry with no live passage dropped and a fact with no live accepted entry dropped (capture-and-review §5.1); the same note feeds search (§2 table), so an alias or summary that is left out of the read also adds no term to the score.
-3. **Title, `path`, `tags` and other free-text fields of a note with a restricted part:** *pending the user's choice (asked 2026-11-10; see the PR).* None of these carries a passage reference, so the CLI cannot tell a title that names the subject from one that states the excluded claim.
-4. **A citation label** is built only from what the read returned: an eligible note's title and path (as rule 3 leaves them), or its id.
-5. **Published surfaces** apply rules 1 to 3 too: `index.md`, the JSON index's text fields, the views and Notion keep no title, alias or summary of a wholly restricted note and no restricted metadata of a partly restricted one (CC-183). How a published page of a note already in Notion is rewritten is CC-183's to specify.
+3. **Title, `path` and `tags` of a note with a restricted part are withheld; the note stays readable** (the user's choice of 2026-11-10, under 0077 §1 and its fail-closed rule). None of them carries a passage reference, so the CLI cannot tell a title that names the subject from one that states the excluded claim (a decision titled "Budget cut to 40k" whose budget line is excluded, beside a live line "Vendor stays Acme"). While the note has a restricted part, an answer surface returns it with its eligible lines and no `title`, `path` or `tags`, and without the other free-text frontmatter values the ingest wrote (ids, dates, enumerations, relations and the Notion-owned fields the user sets are kept); none of them adds a term to its search score. It is cited by id: `<type> <id>, title withheld: awaiting cleanup` (`decision dec-7k2m9q4x, title withheld: awaiting cleanup`). It comes back whole once it has no restricted part: its cleanup item is accepted as a removal or correction, or it is marked independent (capture-and-review §5.2, §5.3). This keeps independently supported lines available (0077 §1) and shows nothing unverifiable. A note with **no** restricted claim keeps its title: a title that restates an excluded paragraph there is the same stated limit as an uncited restatement (§9.6), closed by the ingest's writing rule (CC-180). CC-176 (`--read`, `--candidates`, citations); CC-183 (rule 5).
+4. **A citation label** is built only from what the read returned: an eligible note's title and path, or, under rule 3, its type and id.
+5. **Published surfaces** apply rules 1 to 3 too: `index.md`, the JSON index's text fields, the views and Notion keep no title, alias or summary of a wholly restricted note, and show a note with a restricted part by its type and id with no title, alias, summary or tags (CC-183). How a published page of a note already in Notion is rewritten is CC-183's to specify.
 
 ## 7. Administrative access versus answering (plan 2, plan 5)
 
@@ -130,7 +130,7 @@ Every proposed change carries the passages it rests on (CC-179 adds the field to
 
 ### 9.3 Legacy proposals
 
-A proposal written before the field exists (no passage list) is **legacy**. Its support is its `source` read as a whole-source entry, plus the passage references in its text: established only when the input of its `source` has no suppression record; then nothing of that input is excluded and the support is live. When that input has a suppression record (active or reconciled), the legacy item's passages can't be established: it is withheld (held on the Review page, closed on apply with `SOURCE_EXCLUDED`), reported with the input it came from, and the next ingest of that input's current version may propose it again with passages. It is never applied on trust (0077 §3). CC-179 (the CLI), CC-180 (the ingest's re-proposal).
+A proposal written before the field exists (no passage list) is **legacy**. Its support is its `source` read as a whole-source entry, plus the passage references in its text. It has adequate passage support (0077 §3) when the input of its `source` has no suppression record: nothing of that input is excluded, so the whole input is live, and it applies normally. This is the user's reading of 0077 §3's "without adequate passage support" (2026-11-10), not a narrowing of it. When that input has a suppression record (active or reconciled), the legacy item's passages can't be established: it is withheld (held on the Review page, closed on apply with `SOURCE_EXCLUDED`), reported with the input it came from, and the next ingest of that input's current version may propose it again with passages. It is never applied on trust (0077 §3). CC-179 (the CLI), CC-180 (the ingest's re-proposal).
 
 **Older-layout `review_notes` approved whole:** each folded change, note and link is an item (§4.1). One without established support is withheld, reported and queued for re-proposal; independent items apply. CC-179.
 
@@ -204,8 +204,8 @@ This file wins in every row. "On `main`" is `main` at 07e74a5 (CC-176 #283, CC-1
 | # | Text on `main` | What this file says | Changes it |
 |---|---|---|---|
 | 1 | cli.md §5.13.1: `--read` returns a superseded memory that `recall --search --include-superseded` returns; memory.md §6.1's last sentence | only with `--historical`, labelled `historical: true` (§5) | CC-176 |
-| 2 | cli.md §5.13.1: a partly restricted note returned with its title and frontmatter fields | §6 rule 3 (pending the user's choice) | CC-176 |
-| 3 | cli.md §5.13 "Restricted evidence": a partly restricted note loses only its `summary`, and step 3 scores its aliases | no aliases either, and none scored (§6 rule 2) | CC-176 |
+| 2 | cli.md §5.13.1 and §5.13: a partly restricted note returned with its title, path, tags and frontmatter fields | no title, path, tags or ingest-written free text; cited by type and id (§6 rule 3) | CC-176 |
+| 3 | cli.md §5.13 "Restricted evidence": a partly restricted note loses only its `summary`, and step 3 scores its title and aliases | no aliases either, and no withheld field scored (§6 rules 2 and 3) | CC-176 |
 | 4 | cli.md §5.8 "Restricted evidence": a restricted note "stays listed" with its title; capture-and-review §5.1, row "Indexes" | listed without restricted metadata (§6 rule 5) | CC-183 |
 | 5 | capture-and-review §5.1, row "Reports": a line resting on it is flagged and left out of a refresh | the report is withheld whole until refreshed, also after the cleanup (§8) | CC-183 |
 | 6 | cli.md §5.6 (the `SOURCE_EXCLUDED` skip) and §5.7 "Excluded evidence", first bullet: only a text whose **every** cited line is excluded is skipped or closed; §5.7 "What the rule does not see": a mixed text is applied whole | a mixed item is withheld whole (§4.2) | CC-177 |
@@ -232,7 +232,7 @@ Text on `main` that already agrees: memory.md §2 (one rule for `recall` and `qu
 | 0077 | Rule | Implemented by |
 |---|---|---|
 | Decision: one operational eligibility rule | §2 | CC-176, CC-177, CC-179, CC-183 |
-| §1 whole item withheld; item defined; independent items stay; source and history kept | §4.1 to §4.4 | CC-176, CC-177, CC-179, CC-183 |
+| §1 whole item withheld; item defined; independent items stay; source and history kept | §4.1 to §4.4, §6 rule 3 | CC-176, CC-177, CC-179, CC-183 |
 | §1 accepted text never silently stripped; fresh exact acceptance | §4.4, §9.5 | CC-177 |
 | §1 approval never overrides exclusion | §2 | CC-177, CC-179 |
 | §2 superseded memories only in an explicit, labelled historical read; current questions get current memories; old does not mean approved | §5 | CC-176, CC-178 |
