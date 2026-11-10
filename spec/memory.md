@@ -25,6 +25,8 @@ A memory is **eligible** for a caller when all of these hold:
 
 **One rule for every command and every answer.** `brain recall` and `brain query` both apply this section (cli.md §5.13 step 2, §5.13.1, §5.33), so neither returns a memory it makes ineligible. (`brain index --json` lists every memory file with its `lifecycle`, for tools; `index.md` lists none. It is not a retrieval surface and no skill reads memories from it.) An agent answering a question uses a memory only when one of those commands returned it, and never a memory file it found by searching or opening the brain's folders: such a file may be unapproved or meant for another folder (0074 §2, §3).
 
+**From 0.13.0 (0077):** this rule is part of the one eligibility rule of [eligibility.md](eligibility.md) (§2); a superseded memory is read only through its explicit historical read (§5), and a listing such as `brain index --json` is never answer evidence (§7).
+
 ### 2.1 The caller and reach
 
 The caller is the folder the command runs for: `--repo <path>`, else the current directory. Its identity is the `.brain` marker in that folder, the repo's root, where `brain link` writes it (cli.md §5.12): `project`, `area`, `stacks`. A folder with no `.brain` has no project, area or stacks.

@@ -465,6 +465,8 @@ notion: 7c6b…
 | `closed_reason` | `stale` | only with `status: closed` and a non-reject decision | the target changed before apply (§11.1), or the proposal rests only on excluded evidence (cli.md §5.7, "Excluded evidence") |
 | `notion` | Review row page id | | |
 
+**From 0.13.0 (0077):** every proposed change names the passages it rests on, checked when it is created and before it is applied; a proposal without them is legacy ([eligibility.md](eligibility.md) §9; CC-179 adds the field here).
+
 ### 11.1 Status and decision (normative)
 
 | `status` | `decision` | Meaning |
