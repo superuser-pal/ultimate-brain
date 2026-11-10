@@ -178,7 +178,7 @@ Work packages: contracts and a fixed representative synthetic retrieval/answer e
 
 ## 0.12.1 — Answers keep the brain's approvals, scopes and exclusions (the assessment of 0.12.0)
 
-### CC-177 · Apply closes a proposal that rests only on excluded evidence, and proposal new refuses one (assessment F-0018) · `in progress`
+### CC-177 · Apply closes a proposal that rests only on excluded evidence, and proposal new refuses one (assessment F-0018) · `review`
 **Release:** 0.12.1
 **Changelog:** A proposed change whose only evidence you excluded is no longer written to Review, and approving an older one closes it instead of adding the excluded wording to a note.
 **Output:** cli.md §5.6 (the `SOURCE_EXCLUDED` skip) and §5.7 ("Excluded evidence"), schema.md §11 (`closed_reason: stale` also covers it), capture-and-review.md §5.1's row; `restsOnlyOnExcluded` in `src/lib/suppressions.ts`, called by `applyDecision` (`src/lib/apply.ts`, before the kind is applied, on an approve of every kind except `review_notes` and `notion_change`) and by `stageProposals` (`src/lib/proposals.ts`); `tests/excluded-proposal.test.ts`. Not in this task: the folded changes of an older-layout `review_notes` approved as a whole; a text with one excluded and one live statement (applied whole, then partly restricted at every read). This section's heading and intro are CC-176's; keep one copy when both branches merge.
