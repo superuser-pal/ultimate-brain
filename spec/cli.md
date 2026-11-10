@@ -29,7 +29,7 @@ Decision 0024 lists user-facing commands. Some are skills that call the CLI; som
 | `brain ingest` | skill (CC-06) | `status`, `index`, `id new`, `note new`, `proposal new`, `views`, `lint`, `log`, `sync tasks`, `sync render`, `sync record`; the to-do tidy: `question drop` (0071) |
 | `brain apply` | skill (CC-09) | `sync plan`, `sync apply` (or `apply` in chat), `index`, `views`, `sync render`, `sync record` |
 | `brain sync` | skill (CC-08) | `sync plan`, `sync apply`, `index`, `views`, `sync render`, `sync record` |
-| `brain query` | skill (CC-10) | `query --candidates`, `index`; report mode (0043, 0045): `report new` (with `refresh`), `report fix`, `sync render`, `sync record` |
+| `brain query` | skill (CC-10) | `query --candidates`, `query --read`, `index`; report mode (0043, 0045): `report new` (with `refresh`), `report fix`, `sync render`, `sync record` |
 | catch up | skill (0037) | the calls of ingest, apply and sync, plus `proposal backlog` (once, 0041), `repo changes` and `repo record` (0042), `source diff` (re-reads, 0045). (`source full-text`, 0043, is retired in 0.6.0, 0049) |
 | turn a module on or off (0048) | skill | `modules`, `config set` |
 | `brain link` | CLI | `link` |
@@ -856,7 +856,7 @@ Consult it before you:
 - answer why something was decided, who someone is, or a date, budget or owner;
 - rely on a fact about the client or project that this repo does not state.
 
-How: use the `brain-query` skill, or run `brain query --candidates "<question>" --json` and read the notes it returns. Cite the note paths. Say when a fact is `contested` or `superseded`.
+How: use the `brain-query` skill, or run `brain query --candidates "<question>" --json` and read the notes it returns with `brain query --read <id> --json`, not by opening the brain's files: only these commands leave out what the user excluded or has not approved. Cite the note paths. Say when a fact is `contested` or `superseded`.
 
 The brain is read-only from this repo. Never edit its files from here.
 <!-- ultimate-brain:end -->
@@ -905,18 +905,19 @@ Idempotent: a second run with the same options changes no bytes.
 
 Errors: `UNKNOWN_ID`, `OUTSIDE_ROOT`, `USAGE` (path missing or not a directory), `INPUT_INVALID` (a malformed `.brain`), the pin guard's codes (§5.28), `SKILLS_SNAPSHOT_MISSING`, `SKILLS_SNAPSHOT_INVALID`.
 
-### 5.13 `brain query --candidates`
+### 5.13 `brain query --candidates` and `--read`
 
 ```text
 brain query --candidates "<question>" [--limit <n>] [--types <t>[,<t>…]] [--repo <path>]
+brain query --read <id>[,<id>…] [--repo <path>]
 ```
 
-Returns ranked candidate notes for the query skill (CX-11); the skill reads them and writes the answer. `brain query` without `--candidates`, with a question or without one (`brain query "what did we decide?"`), is `USAGE` with the message `brain query requires --candidates; use the brain-query skill to answer questions`. With `--candidates`, an extra argument is `USAGE` (`Unexpected argument: <it>`).
+Returns ranked candidate notes for the query skill (CX-11); the skill reads them and writes the answer. `--read` returns notes in full, as retrieval may use them (§5.13.1). `brain query` without `--candidates` or `--read`, with a question or without one (`brain query "what did we decide?"`), is `USAGE` with the message `brain query requires --candidates or --read; use the brain-query skill to answer questions`; with both it is `USAGE` (`brain query takes one of --candidates and --read`). With either, an extra argument is `USAGE` (`Unexpected argument: <it>`).
 
 **Ranking (deterministic):**
 1. **Tokens:** NFKD, drop combining marks, lowercase, split on runs outside `[a-z0-9]`, drop tokens shorter than 2 and these stopwords: `a an and are as at be by did do does for from has have how in is it of on or that the this to was we what when where which who why will with` and `al como con de del el en es la las lo los para por que se su un una y`. These are the **words**; the commands that cite this step read them.
    - **Terms** (this command's ranking and snippets only): NFKC the text, then cut it into maximal runs of CJK characters and runs of anything else. A CJK character is a code point in U+1100–11FF, U+3040–309F, U+30A0–30FF, U+3100–312F, U+3130–318F, U+31A0–31BF, U+31F0–31FF, U+3400–4DBF, U+4E00–9FFF, U+A960–A97F, U+AC00–D7AF, U+D7B0–D7FF, U+F900–FAFF, U+FF66–FF9F, U+20000–2FA1F or U+30000–323AF. The terms are the words of the other runs joined by one space, then each CJK run's n-grams in order: its 1-character n-grams left to right, then its 2-character ones, then its 3-character ones (`東京の予算` gives `東 京 の 予 算 東京 京の の予 予算 東京の 京の予 の予算`). No stopword or length rule applies to an n-gram. The query's terms keep their order and repeats; the output's `tokens` lists them.
-2. **Searched:** knowledge notes and sources (default `--types`: all except view, proposal, memory), as the restricted-evidence rule below leaves them.
+2. **Searched:** knowledge notes and sources (default `--types`: all except view, proposal, memory), as the restricted-evidence rule below leaves them. A `memory` (searched only when `--types` names it) is searched only when it is **eligible** for the caller folder (memory.md §2: reviewed, not superseded, in the caller's reach, supported by eligible evidence), the caller being `--repo`, else the current directory (memory.md §2.1). So this command never returns a memory that `brain recall --search` withholds from the same folder.
 3. **Score:** Okapi BM25 (k1 = 1.5, b = 0.75) over the searched notes, each note one document whose terms are: the terms of its `title` and of each alias, three times; of its `summary`, twice; of every other frontmatter string value (facts and timeline values included), once; and of its body, once. A document's length |d| is its number of terms, repeats included; N is the number of searched notes and avgdl their mean length (1 when it is 0).
    - **Matching:** a query term that is a word matches every term of the document that starts with it (`deci` matches `decision`); an n-gram matches only itself. f(t, d) is the number of times the terms that t matches occur in d; df(t) is the number of documents where f(t, d) > 0.
    - **Sum:** over the query's terms in order (a repeated term counts each time), idf(t) · f(t, d) · (k1 + 1) / (f(t, d) + k1 · (1 − b + b · |d| / avgdl)), where idf(t) = ln(1 + (N − df(t) + 0.5) / (df(t) + 0.5)). A term with f(t, d) = 0 adds nothing.
@@ -942,6 +943,48 @@ Returns ranked candidate notes for the query skill (CX-11); the skill reads them
 `assessment` and `date` are `null` when the type has none. A Document (`reference`) also has `origin` (absent = `part`), so the skill can say "a learned Document" (0071); other types have no `origin` key. A learned Document is a `reference`: `--types reference` finds it, and `--types concept` still matches a concept not yet converted by `brain upgrade`. Snippets: up to 3 body lines, in order, where a query term matches one of the line's terms as step 3 defines, each trimmed to 200 characters. Superseded notes are returned, not hidden; the skill labels them. A candidate with a `superseded_by` relation has `superseded_by`: that relation's target (the first, in file order); other candidates have no such key. Errors: `USAGE`.
 
 **Restricted evidence (0055, capture-and-review §5.1).** With an active suppression in `_suppressions/` (capture-and-review §5.3) retrieval uses only eligible evidence: older versions and full copies of a changed input are left out as sources; in a knowledge note a body line whose `^[src-…#¶n:hash]` references are all not live is blanked (line numbers hold), each claim is judged by its own passage reference, whatever the note's `sources` list says; a note that rests on a changed input and has a body line with no passage reference, or a fact no accepted timeline entry supports, is left out whole unless it is resolved for that input (`lineage_cleared`, or its suppression reconciled); a partly restricted note loses its `summary`, a timeline entry whose source or `passage` is not live is dropped, and a fact whose accepted entries are all dropped is dropped. A passage is live only while the latest version of its input holds it, so a reconciled cleanup never makes an excluded passage, an older source version or a claim citing it eligible again; a re-included passage stays restricted per claim until a Restore record names that note and passage, and the latest extract does not return its text meanwhile. A suppression directory that cannot be read (anything but an absent one) fails the same way. If any suppression record is unreadable the command fails with `SUPPRESSIONS_UNREADABLE`.
+
+#### 5.13.1 `brain query --read`
+
+Returns each named note in full, as retrieval may use it. It is how a skill reads a note for an answer: a file opened directly shows statements the user excluded, memories nobody approved and memories meant for another project, which this command leaves out (decision 0055; memory.md §2). Read-only.
+
+`--read` takes 1 to 20 distinct note ids separated by commas (a repeated id is read once and counts once; an empty id or more than 20 distinct ids is `USAGE`: `--read takes 1 to 20 note ids separated by commas`). `--limit` and `--types` are `USAGE` with it (`--<name> doesn't go with --read`). `--repo` names the caller, as for `--candidates`.
+
+```json
+{ "data": {
+    "context": { "repo": "acme-api", "project": "prj-9x4t1b7e", "area": "area-2m7c4h8n" },
+    "notes": [
+      { "id": "dec-7k2m9q4x", "status": "ok", "type": "decision", "title": "Use Supabase for auth", "path": "knowledge/decisions/2026-12-03-use-supabase-for-auth.md",
+        "lifecycle": "reviewed", "assessment": "accepted", "date": "2026-12-03", "restricted": false,
+        "frontmatter": { "id": "dec-7k2m9q4x", "type": "decision", "title": "Use Supabase for auth", "…": "…" },
+        "body": "Use Supabase for auth; Firebase is retired after launch.\n" },
+      { "id": "mem-4t8n2k6p", "status": "withheld", "reason": "not_eligible" }
+    ]
+} }
+```
+
+`notes` has one entry per id, in the order given. A note that is returned has `status: "ok"`:
+
+- **`frontmatter` and `body`** are the note as the restricted-evidence rule of §5.13 leaves it: a restricted body line is returned as spaces of the same length (line numbers hold), a restricted timeline entry or fact is dropped, and a partly restricted note has no `summary` or `aliases`. `restricted` is `true` when that rule changed anything.
+- `title`, `lifecycle`, `assessment`, `date` and `path` as in a candidate (`null` when the note has none); `superseded_by` only on a note with that relation.
+- **A memory** is returned when it is eligible for the caller (memory.md §2), or when it is one `brain recall --search --include-superseded` returns to the caller (memory.md §6.1: superseded, not a draft, in reach, evidence left in), so an answer can say what a rule replaced.
+
+A note that is not returned has `status: "withheld"` and a `reason`, and nothing else:
+
+| `reason` | When |
+|---|---|
+| `unknown` | no note has this id |
+| `restricted` | the restricted-evidence rule leaves the note out whole; or a view that rule leaves out (below) |
+| `not_eligible` | a memory the paragraph above does not return (the reason does not say which rule, so it tells nothing about a memory meant for another folder); or a proposal, which is never read here: it may propose what its evidence no longer supports |
+
+**Views (0055, capture-and-review §5.1).** A view (a Brief, a Decision log, an area Brief, a report) has no passage references, so it is never returned in part. While the brain has a suppression record, a view is withheld (`restricted`), and left out of `--candidates --types view`, in two cases:
+
+1. **A note it rests on.** Any note in its `generated_from`, or any note its body links, is restricted in any part (whole, a body line, a timeline entry, a fact, its summary) or no longer exists; a relative link in its body to a Markdown file (`.md`) that names no note and no file of the brain, or that leaves the brain, counts as a note that no longer exists. A link to anything else (a PDF, an image, a folder) or to a Markdown file that isn't a note (a `README.md`) neither withholds the view nor counts as a note it rests on. This holds for as long as the note is restricted, also after `brain views` or a refresh rewrote the view without the excluded text: the view comes back when the note's cleanup row is resolved.
+2. **A report older than the exclusion.** A report whose `generated_at` is not later than the `captured` time of an extract version that carries a suppression record. Both are compared as full timestamps (`2026-12-10T10:00:00Z`, the schema's form): the same second withholds, since the report may have been written first, and so does a time on either side that isn't a full timestamp (a date alone) or can't be read. A report is prose written by a skill and never edited by the brain, so a line may restate what that version removed without linking the note it came from. A refresh reads the notes through this command and writes a new `generated_at`, which clears this case.
+
+A view is navigation and never evidence (schema §4): an answer cites the notes, and a skill that finds a view withheld searches with `--candidates` instead. After upgrading, a brain with an aliased, wholly restricted note gets one `index-stale` lint warning until `brain index` runs.
+
+A withheld note is not an error: the exit code is 0. The skill never opens the file of a withheld note. Errors: `USAGE`; `SUPPRESSIONS_UNREADABLE` (exit 5) when a file of `_suppressions/` cannot be read, as for `--candidates`.
 
 ### 5.14 `brain sync …` (Notion helpers, CX-10)
 
