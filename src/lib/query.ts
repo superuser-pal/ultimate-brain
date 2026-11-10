@@ -236,3 +236,40 @@ function stringValue(value: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
 
+
+// --- `brain query --read` (spec/cli.md §5.13.1) ------------------------------------------------------------------------------
+
+export type ReadNote =
+  | { id: string; status: "withheld"; reason: "unknown" | "restricted" | "not_eligible" }
+  | { id: string; status: "ok"; type: string; title: string | null; path: string; lifecycle: string | null; assessment: string | null; date: string | null;
+      restricted: boolean; superseded_by?: string; frontmatter: Record<string, unknown>; body: string };
+
+/** Parse `--read`: 1 to 20 distinct ids separated by commas; a repeated id is read once and counts once. */
+export function readIds(value: string): string[] {
+  const ids = [...new Set(value.split(",").map((id) => id.trim()))];
+  if (ids.some((id) => id === "") || ids.length > 20) throw new BrainError("USAGE", "--read takes 1 to 20 note ids separated by commas");
+  return ids;
+}
+
+/**
+ * Each note in full, as retrieval may use it. `eligible` is the restricted-evidence rule (a note as it leaves it, or null);
+ * `memories` holds the memories the caller may be shown. A proposal is never read: it may propose what its evidence no longer supports.
+ */
+export function readNotes(notes: readonly Note[], ids: readonly string[], eligible: (note: Note) => Note | null, memories: ReadonlyMap<string, Note>): ReadNote[] {
+  const byId = new Map(notes.map((note) => [note.id, note]));
+  return ids.map((id): ReadNote => {
+    const note = byId.get(id);
+    if (note === undefined) return { id, status: "withheld", reason: "unknown" };
+    if (note.type === "proposal") return { id, status: "withheld", reason: "not_eligible" };
+    const kept = note.type === "memory" ? memories.get(id) ?? null : eligible(note);
+    if (kept === null) return { id, status: "withheld", reason: note.type === "memory" ? "not_eligible" : "restricted" };
+    const target = supersededBy(note);
+    return {
+      id, status: "ok", type: note.type, title: stringValue(kept.attributes.title), path: note.path,
+      lifecycle: stringValue(kept.attributes.lifecycle), assessment: stringValue(kept.attributes.assessment), date: stringValue(kept.attributes.date),
+      restricted: kept !== note,
+      ...(target === null ? {} : { superseded_by: target }),
+      frontmatter: kept.attributes, body: kept.body,
+    };
+  });
+}
