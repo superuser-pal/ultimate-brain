@@ -7,14 +7,15 @@ import { kitBytesIfAny, kitProblems, KIT_FILE, parseKitBytes, type Kit, type Tas
 import { compareCodePoints, type Note } from "./notes.ts";
 import { queryTerms, queryTypes, queryWords, rankCandidates } from "./query.ts";
 import { parseMarkdownTasks, readableLinesWithIndex, statusMap } from "./repo-tasks.ts";
-import { contextFor, eligibleNote, type Loaded } from "./suppressions.ts";
+import { answerNote, citeLabel, contextFor, eligibleNote, titleWithheld, type Loaded } from "./suppressions.ts";
 import type { Context } from "./eligibility.ts";
 
 // `brain recall` (spec/cli.md §5.33, spec/memory.md §2, §5, §6.1, decision 0074): computed from the files on every call, no cache (§7).
 
 export interface RecallCaller { repo: string | null; project: string | null; area: string | null; stacks: string[] }
 
-export interface PackMemory { id: string; text: string; scope: string; confidence: string; updated: string; path: string }
+/** `path` is null, and `cite` given, in the awaiting-cleanup form (memory.md §5.3). */
+export interface PackMemory { id: string; text: string; scope: string; confidence: string; updated: string; path: string | null; cite?: string }
 export interface SearchResult extends PackMemory { score: number; superseded_by?: string }
 export interface WorkItem { task: string; title: string; status: string; stopped: string | null; source: string }
 
@@ -120,7 +121,8 @@ function memoriesInReach(notes: readonly Note[], loaded: Loaded, caller: RecallC
     if (note.type !== "memory") continue;
     const level = reachLevel(note, caller, areas);
     if (level === null) continue;
-    const kept = eligibleNote(note, context);
+    // As every answer surface returns it (cli.md §5.13, "The awaiting-cleanup form").
+    const kept = answerNote(note, context);
     if (kept === null || sourcesAllLeftOut(note, byId, byKey, context)) continue;
     found.push({ note: kept, level, supersededBy: relationTarget(note, "superseded_by") });
   }
@@ -175,7 +177,8 @@ function cutAtWord(text: string): string {
 
 function packMemory(note: Note): PackMemory {
   const a = note.attributes;
-  return { id: note.id, text: memoryText(note), scope: String(a.scope), confidence: String(a.confidence), updated: String(a.updated ?? ""), path: note.path };
+  const withheld = titleWithheld(note);
+  return { id: note.id, text: memoryText(note), scope: String(a.scope), confidence: String(a.confidence), updated: String(a.updated ?? ""), path: withheld ? null : note.path, ...(withheld ? { cite: citeLabel(note) } : {}) };
 }
 
 function memoryLine(memory: PackMemory): string {

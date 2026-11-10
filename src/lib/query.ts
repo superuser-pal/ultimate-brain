@@ -6,6 +6,7 @@ import { readMarker } from "./brain-marker.ts";
 import { isCjkTerm, withCjkNgrams } from "./cjk.ts";
 import { BrainError } from "./errors.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
+import { citeLabel, titleWithheld } from "./suppressions.ts";
 
 /** V1 note types accepted by `brain query --types` (spec/cli.md §5.13). */
 export const QUERY_TYPES = [
@@ -36,7 +37,8 @@ export interface QueryCandidate {
   id: string;
   type: string;
   title: string | null;
-  path: string;
+  /** `null`, like `title` and `summary`, in the awaiting-cleanup form (cli.md §5.13). */
+  path: string | null;
   summary: string | null;
   lifecycle: string | null;
   assessment: string | null;
@@ -47,6 +49,8 @@ export interface QueryCandidate {
   snippets: QuerySnippet[];
   /** The target of a `superseded_by` relation; only on a note that has one. */
   superseded_by?: string;
+  /** The label to cite a note in the awaiting-cleanup form by; only on such a note (eligibility.md §6 rules 3 and 4). */
+  cite?: string;
 }
 
 /** Normalize a query or field into its query words (spec/cli.md §5.13). */
@@ -187,7 +191,7 @@ function candidateFor(note: Note, tokens: readonly string[], score: number): Que
     id: note.id,
     type: note.type,
     title: stringValue(note.attributes.title),
-    path: note.path,
+    path: titleWithheld(note) ? null : note.path,
     summary: stringValue(note.attributes.summary),
     lifecycle: stringValue(note.attributes.lifecycle),
     assessment: stringValue(note.attributes.assessment),
@@ -196,6 +200,7 @@ function candidateFor(note: Note, tokens: readonly string[], score: number): Que
     score,
     snippets: snippets(note, tokens),
     ...(target === null ? {} : { superseded_by: target }),
+    ...(titleWithheld(note) ? { cite: citeLabel(note) } : {}),
   };
 }
 
@@ -241,8 +246,8 @@ function stringValue(value: unknown): string | null {
 
 export type ReadNote =
   | { id: string; status: "withheld"; reason: "unknown" | "restricted" | "not_eligible" }
-  | { id: string; status: "ok"; type: string; title: string | null; path: string; lifecycle: string | null; assessment: string | null; date: string | null;
-      restricted: boolean; superseded_by?: string; frontmatter: Record<string, unknown>; body: string };
+  | { id: string; status: "ok"; type: string; title: string | null; path: string | null; cite?: string; lifecycle: string | null; assessment: string | null; date: string | null;
+      restricted: boolean; superseded_by?: string; historical?: true; frontmatter: Record<string, unknown>; body: string };
 
 /** Parse `--read`: 1 to 20 distinct ids separated by commas; a repeated id is read once and counts once. */
 export function readIds(value: string): string[] {
@@ -253,7 +258,9 @@ export function readIds(value: string): string[] {
 
 /**
  * Each note in full, as retrieval may use it. `eligible` is the restricted-evidence rule (a note as it leaves it, or null);
- * `memories` holds the memories the caller may be shown. A proposal is never read: it may propose what its evidence no longer supports.
+ * `memories` holds the memories the caller may be shown: the eligible ones, and with `--historical` also the superseded ones `recall
+ * --include-superseded` returns, which are labelled `historical` (eligibility.md §5). A proposal is never read: it may propose what its
+ * evidence no longer supports.
  */
 export function readNotes(notes: readonly Note[], ids: readonly string[], eligible: (note: Note) => Note | null, memories: ReadonlyMap<string, Note>): ReadNote[] {
   const byId = new Map(notes.map((note) => [note.id, note]));
@@ -264,11 +271,14 @@ export function readNotes(notes: readonly Note[], ids: readonly string[], eligib
     const kept = note.type === "memory" ? memories.get(id) ?? null : eligible(note);
     if (kept === null) return { id, status: "withheld", reason: note.type === "memory" ? "not_eligible" : "restricted" };
     const target = supersededBy(note);
+    const withheld = titleWithheld(kept);
     return {
-      id, status: "ok", type: note.type, title: stringValue(kept.attributes.title), path: note.path,
+      id, status: "ok", type: note.type, title: stringValue(kept.attributes.title), path: withheld ? null : note.path,
+      ...(withheld ? { cite: citeLabel(kept) } : {}),
       lifecycle: stringValue(kept.attributes.lifecycle), assessment: stringValue(kept.attributes.assessment), date: stringValue(kept.attributes.date),
       restricted: kept !== note,
       ...(target === null ? {} : { superseded_by: target }),
+      ...(note.type === "memory" && target !== null ? { historical: true as const } : {}),
       frontmatter: kept.attributes, body: kept.body,
     };
   });
