@@ -5,7 +5,7 @@ import type { Note } from "./notes.ts";
 import { bodyHash } from "./proposals.ts";
 import { cleanupItemView, CLEANUP_KINDS } from "./cleanup-row.ts";
 import { restrictedSources } from "./eligibility.ts";
-import { contextFor, eligibleNote, requireSuppressions } from "./suppressions.ts";
+import { contextFor, eligibleNote, requireSuppressions, restsOnlyOnExcluded } from "./suppressions.ts";
 import type { Workspace } from "./workspace.ts";
 
 // The Review page of a review_notes proposal with item ids (capture-and-review §7.2, §7.5): pure, no Notion calls.
@@ -98,6 +98,8 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
   stored.forEach((entry, index) => {
     const itemId = String(entry.item_id);
     let wholeDraft = false;
+    // The proposed wording of a change cites only excluded passages: the same rule as `brain apply` and `proposal new` (cli §5.7).
+    let textExcluded = false;
     let item: Pick<ReviewItem, "kind" | "heading" | "current" | "proposed" | "editable" | "why" | "effect" | "target" | "held"> & { base: string; now: string };
     if (CLEANUP_KINDS.includes(entry.kind as never)) {
       const view = cleanupItemView(proposal, entry, workspace);
@@ -118,6 +120,7 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
       const view = seen(typeof change.target === "string" ? workspace.get(change.target) : undefined);
       const targetTitle = titleOf(change.target, workspace);
       const why = String(change.why ?? a.why ?? "");
+      if (change.kind === "update_body" || change.kind === "add_to_note") textExcluded = restsOnlyOnExcluded(a.source, String(change.content ?? ""), context);
       if (change.kind === "update_fact") {
         item = { kind: "changes", heading: `Changes: ${label(String(change.field))} on ${targetTitle}`, current: (() => { const facts = view.note?.attributes.facts; const live = facts !== null && typeof facts === "object" ? (facts as Record<string, unknown>)[String(change.field)] : undefined; const shown = live === undefined ? change.before : live; return shown === undefined ? "(new)" : String(shown); })(), proposed: canon(String(change.after ?? "")), editable: true, why, effect: EFFECT.update_fact!, target: view.note, held: view.held, base: base(view.note !== undefined, change.before === undefined ? null : String(change.before)), now: base(view.note !== undefined, (() => { const facts = view.note?.attributes.facts; const value = facts !== null && typeof facts === "object" ? (facts as Record<string, unknown>)[String(change.field)] : undefined; return value === undefined ? null : String(value); })()) };
       } else if (change.kind === "update_body") {
@@ -130,7 +133,7 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
       }
     }
     // An item whose source is excluded shows no wording at all: the page is Notion's copy and the text would stay there (§5.1).
-    if (sourceRestricted) item.held = true;
+    if (sourceRestricted || textExcluded) item.held = true;
     const previous = (Array.isArray(a.revisions) ? a.revisions : []).filter(record).find((revision) => revision.item_id === itemId && revision.status === "drafted" && typeof revision.previous === "string")?.previous as string | undefined;
     const letter = itemLetter(index);
     const targetUrl = url(item.target?.attributes.notion);
@@ -151,7 +154,7 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
         `**What Accept does:** ${item.effect}`,
         "Decision: Pending",
       ]).join("\n");
-    result.push({ item_id: itemId, letter, kind: item.kind, heading: item.heading, current: item.held ? null : item.current, proposed: item.held ? "" : item.proposed, editable: !item.held && item.editable, why: whyLine, effect: item.held ? EFFECT.held! : item.effect, held: item.held, source_excluded: sourceRestricted || wholeDraft, target: item.target, proposed_hash: sha(item.held ? "" : item.proposed), base_hash: sha(item.base), current_base_hash: sha(item.now), section, rendered_hash: sha(section) });
+    result.push({ item_id: itemId, letter, kind: item.kind, heading: item.heading, current: item.held ? null : item.current, proposed: item.held ? "" : item.proposed, editable: !item.held && item.editable, why: whyLine, effect: item.held ? EFFECT.held! : item.effect, held: item.held, source_excluded: sourceRestricted || wholeDraft || textExcluded, target: item.target, proposed_hash: sha(item.held ? "" : item.proposed), base_hash: sha(item.base), current_base_hash: sha(item.now), section, rendered_hash: sha(section) });
   });
   return result;
 }

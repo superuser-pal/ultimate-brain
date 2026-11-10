@@ -326,8 +326,10 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
     return { result: "applied", action, notes: applied.notes, changes: applied.changes, ...(deferred === undefined ? {} : { deferred }) };
   }
   // Checked before apply, on every route: a proposal resting only on excluded evidence is closed stale and nothing is applied, even on an
-  // Approve (capture-and-review §5.1). An edit or a fix carries the user's own wording, which is not excluded evidence.
-  if (decision.action === "approve" && restsOnlyOnExcluded(p.source, proposedText(p), contextFor(workspace.notes, requireSuppressions(workspace.root)))) {
+  // Approve (capture-and-review §5.1). An edit or a fix is checked too unless it replaced the proposed wording or value with the user's own:
+  // a fix of a new note's title keeps the proposed body.
+  const ownWording = decision.action !== "approve" && (V !== undefined || !isDeepStrictEqual(proposedParts(fixed.q), proposedParts(p)));
+  if (!ownWording && restsOnlyOnExcluded(p.source, proposedText(p), contextFor(workspace.notes, requireSuppressions(workspace.root)))) {
     p.status = "closed";
     p.closed_reason = "stale";
     workspace.save(proposal.path, document);
@@ -349,6 +351,11 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
 function proposedText(p: Record<string, unknown>): string | null {
   for (const value of [p.content, p.answer, isRecord(p.note) ? p.note.body : undefined]) if (typeof value === "string") return value;
   return null;
+}
+
+/** What a fix or an edit can replace with the user's own: the proposed text and the proposed value. */
+function proposedParts(p: Record<string, unknown>): unknown[] {
+  return [p.content, p.answer, isRecord(p.note) ? p.note.body : undefined, p.after];
 }
 
 /** Whether an exclude or fix entry names an item of a review_notes (spec/schema.md §11.3). */

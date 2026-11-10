@@ -79,3 +79,56 @@ test("with no exclusion in the brain nothing is skipped or closed for it", async
   const out = await run(dir, ["apply"], approve(staged.json.data.created[0].id));
   assert.equal(out.json.data.decisions[0].result, "applied", out.stdout);
 });
+
+const LIVE_V2 = `A kept remark. ^[src-ex2a3b4c#¶1:${passageHash("A live paragraph.")}]`;
+
+test("a line with no passage reference beside a live claim does not make a proposal excluded (cli §5.7)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
+  const target = "dec-7k2m9q4x";
+  const before = await run(dir, ["proposal", "new"], { proposals: [addition(target, `${LIVE_LINE}\n\nSo we follow up next week. ^[inferred]`)] });
+  assert.equal(before.code, 0, before.stdout);
+  await exclude();
+  const out = await run(dir, ["proposal", "new"], { proposals: [
+    addition(target, `${LIVE_LINE}\n\nSo we follow up in two weeks. ^[inferred]`),
+    addition(target, `${LIVE_V2}\n\nSo we follow up in three weeks. ^[inferred]`, "src-ex2a3b4c"),
+    addition(target, `## Price\n\n${LIVE_V2}`, "src-ex2a3b4c"),
+    addition(target, `## Price\n\n${EXCLUDED_LINE}\n\nSo the budget is set. ^[inferred]`),
+  ] });
+  assert.equal(out.code, 0, out.stdout);
+  assert.deepEqual(out.json.data.skipped, [{ input_index: 3, reason: "SOURCE_EXCLUDED" }], "only the one whose every cited line is excluded");
+  const applied = await run(dir, ["apply"], approve(before.json.data.created[0].id));
+  assert.equal(applied.json.data.decisions[0].result, "applied", applied.stdout);
+});
+
+test("a fix that keeps the proposed text is checked like an approve; one that replaces it is the user's own wording", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
+  const item = { kind: "new_item", title: "New: price", why: "The call set it.", source: "src-ex1a3b4c",
+    note: { type: "decision", title: "Price set", frontmatter: { summary: "s", date: "2026-12-03", assessment: "provisional", projects: [PROJECT], sources: ["src-ex1a3b4c"] }, body: `${EXCLUDED_LINE}\n` } };
+  const staged = await run(dir, ["proposal", "new"], { proposals: [item, addition("dec-7k2m9q4x", EXCLUDED_LINE)] });
+  assert.equal(staged.code, 0, staged.stdout);
+  const [fresh, appendix] = staged.json.data.created as Array<{ id: string }>;
+  await exclude();
+  const out = await run(dir, ["apply"], { decisions: [
+    { proposal: fresh.id, action: "fix", note: "title: Pricing decision", fixes: [{ field: "title", value: "Pricing decision" }], decided_at: NOW, decided_by: "chat" },
+    { proposal: appendix.id, action: "fix", note: "say this instead", fixes: [{ value: "The price is agreed. ^[inferred]" }], decided_at: NOW, decided_by: "chat" },
+  ] });
+  const [kept, replaced] = out.json.data.decisions as Array<{ result: string; reason?: string }>;
+  assert.equal(kept.result, "closed", out.stdout);
+  assert.equal(kept.reason, "SOURCE_EXCLUDED");
+  // The user's own wording is not judged as excluded evidence; here the brain's lint then refuses it for another reason (an extract is cited by passage).
+  assert.notEqual(replaced.reason, "SOURCE_EXCLUDED", out.stdout);
+  const everything = (await brain(["query", "--candidates", "pricing decision price", "--brain", dir, "--json"])).stdout;
+  assert.ok(!everything.includes("The price was 95k"));
+});
+
+test("proposal new tells a person why an item was skipped", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
+  await exclude();
+  const file = join(dir, "..", "skip.json");
+  await writeFile(file, JSON.stringify({ proposals: [addition("dec-7k2m9q4x", EXCLUDED_LINE)] }));
+  const out = await brain(["proposal", "new", "--input", file, "--brain", dir, "--now", NOW]);
+  assert.match(out.stdout, /skipped proposals\[0\]: rests only on content you excluded from the brain/);
+});
