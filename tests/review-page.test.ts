@@ -291,3 +291,23 @@ test("a published Review row approved from chat and applied the 0045 way lists n
   const again = (await run(dir, ["sync", "render", "--changed"])).json.data.items.filter((item: { id: string }) => item.id === id);
   assert.deepEqual(again, [], "the row is not rendered again");
 });
+
+test("a change whose wording cites only an excluded passage is held on the Review page, whatever its source (cli §5.7, the one rule)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
+  const { passageHash } = await import("../src/lib/selection.ts");
+  const created = await run(dir, ["proposal", "new"], { proposals: [
+    { kind: "review_notes", source: SYNC, notes: [] },
+    { kind: "add_to_note", title: "Price", target: CONCEPT, content: `The price was 95k. ^[src-ex1a3b4c#¶2:${passageHash("Pricing was 95k.")}]`, why: "Said on the call.", source: SYNC },
+    { kind: "add_to_note", title: "Kept", target: CONCEPT, content: `A kept remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]\n\nSo we follow up. ^[inferred]`, why: "Said on the call.", source: SYNC },
+  ] });
+  assert.equal(created.code, 0, created.stdout);
+  const id = created.json.data.created[0].id as string;
+  await exclude();
+  const [page] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  assert.ok(!JSON.stringify(page).includes("95k"), "the excluded wording is not published");
+  assert.match(String(page.body), /Held: /);
+  assert.ok(String(page.body).includes("A kept remark."), "the change on a live passage is shown");
+  const held = Object.values(page.published["@review"].items as Record<string, { held?: boolean }>).filter((entry) => entry.held === true);
+  assert.equal(held.length, 1);
+});
