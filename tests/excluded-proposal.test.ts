@@ -132,3 +132,33 @@ test("proposal new tells a person why an item was skipped", async (context) => {
   const out = await brain(["proposal", "new", "--input", file, "--brain", dir, "--now", NOW]);
   assert.match(out.stdout, /skipped proposals\[0\]: rests only on content you excluded from the brain/);
 });
+
+test("a fix or an edit whose value still holds the excluded claim is closed, whatever the kind (cli §5.7)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
+  const target = "dec-7k2m9q4x";
+  const staged = await run(dir, ["proposal", "new"], { proposals: [
+    addition(target, EXCLUDED_LINE),
+    addition("dec-2p9f6h1r", EXCLUDED_LINE),
+    addition("per-3h8w2n6c", EXCLUDED_LINE),
+    { kind: "update_fact", title: "Budget", target: PROJECT, field: "budget", after: "95k", why: "The call set it.", source: "src-ex1a3b4c" },
+    { kind: "update_fact", title: "Owner", target: PROJECT, field: "owner_note", after: "95k", why: "The call set it.", source: "src-ex1a3b4c" },
+  ] });
+  assert.equal(staged.code, 0, staged.stdout);
+  const ids = (staged.json.data.created as Array<{ id: string }>).map((entry) => entry.id);
+  await exclude();
+  const decide = (proposal: string, action: string, extra: Record<string, unknown>) => ({ proposal, action, note: "n", decided_at: NOW, decided_by: "chat", ...extra });
+  const out = await run(dir, ["apply"], { decisions: [
+    decide(ids[0]!, "fix", { fixes: [{ value: EXCLUDED_LINE }] }),
+    decide(ids[1]!, "fix", { fixes: [{ value: EXCLUDED_LINE.replace("95k", "95K") }] }),
+    decide(ids[2]!, "edit", { value: EXCLUDED_LINE }),
+    decide(ids[3]!, "fix", { fixes: [{ value: "95k" }] }),
+    decide(ids[4]!, "fix", { fixes: [{ value: "Maria" }] }),
+  ] });
+  const results = (out.json.data.decisions as Array<{ result: string; reason?: string }>).map((entry) => [entry.result, entry.reason ?? null]);
+  assert.deepEqual(results.slice(0, 4), Array.from({ length: 4 }, () => ["closed", "SOURCE_EXCLUDED"]), out.stdout);
+  assert.notEqual(results[4]![1], "SOURCE_EXCLUDED", "a value of the user's own, with no passage, is not judged");
+  for (const path of ["knowledge/decisions/2026-12-03-use-supabase-for-auth.md", "knowledge/decisions/2026-10-01-use-firebase-for-auth.md", "projects/acme-website/project.md"]) {
+    assert.ok(!/95k/i.test(await readFile(join(dir, path), "utf8")), path);
+  }
+});
