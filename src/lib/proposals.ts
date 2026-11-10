@@ -11,6 +11,7 @@ import { checkNotionChange, defaultTitle, duplicateOf, resolveSetField } from ".
 import { newNotePath } from "./paths.ts";
 import { fingerprintProblem } from "./reflect.ts";
 import { loadSchemas } from "./schemas.ts";
+import { contextFor, requireSuppressions, restsOnlyOnExcluded } from "./suppressions.ts";
 import { formatDate } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 
@@ -39,7 +40,7 @@ export interface CreatedProposal {
 
 export interface SkippedProposal {
   input_index: number;
-  reason: "DUPLICATE_PENDING" | "ALREADY_LINKED" | "NOTHING_TO_REVIEW" | "ALREADY_ANSWERED" | "NO_CHANGE";
+  reason: "DUPLICATE_PENDING" | "ALREADY_LINKED" | "NOTHING_TO_REVIEW" | "ALREADY_ANSWERED" | "NO_CHANGE" | "SOURCE_EXCLUDED";
   existing?: string;
 }
 
@@ -81,11 +82,15 @@ export function stageProposals(
     if (typeof item.fingerprint === "string") checkFingerprint(workspace, item, `/proposals/${index}`);
     reviews.set(key, { index, item, links: [], changes: [] });
   });
+  const excluded = contextFor(workspace.notes, requireSuppressions(workspace.root));
   const start = workspace.checkpoint();
   try {
     (list as Array<Record<string, unknown>>).forEach((item, index) => {
       const pointer = `/proposals/${index}`;
       if (item.kind === "review_notes") return;
+      // A change that rests only on evidence the user excluded is not written (capture-and-review §5.1): it could never be applied.
+      const text = [item.content, item.answer, isRecord(item.note) ? item.note.body : undefined].find((value): value is string => typeof value === "string") ?? null;
+      if (restsOnlyOnExcluded(item.source, text, excluded)) { skipped.push({ input_index: index, reason: "SOURCE_EXCLUDED" }); return; }
       const fields = resolveFields(workspace, item, pointer, today);
       // A reflection answer: checked against its item, deduped on its fingerprint, never folded into a review_notes (§5.6).
       if (typeof item.fingerprint === "string") {
