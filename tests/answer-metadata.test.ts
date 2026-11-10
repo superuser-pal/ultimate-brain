@@ -201,3 +201,31 @@ test("query --read and --candidates withhold a note restricted whole with nothin
   assert.deepEqual(candidates.candidates, []);
   assertNoRestrictedText([read, candidates.candidates], "a note restricted whole");
 });
+
+test("a restricted timeline entry alone, or a fact it supported, puts a note in the awaiting-cleanup form (cli.md §5.13: a dropped timeline entry or fact is a restricted claim)", async (context) => {
+  const { dir, bare } = await freshBrain(context);
+  await input(dir);
+  const entry = (field: string, value: string, paragraph: [number, string], assessment: string) => ({ field, value, from: "2026-10-11", learned: "2026-10-11", source: "src-ex1a3b4c", passage: `src-ex1a3b4c#¶${paragraph[0]}:${passageHash(paragraph[1])}`, assessment });
+  const base = { type: "decision", lifecycle: "reviewed", assessment: "accepted", date: "2026-10-11", sources: ["src-ex1a3b4c"], lineage_cleared: [INPUT], created: "2026-10-11", updated: "2026-10-11" };
+  // Every body line is live. One note's only excluded claim is a past timeline entry; the other's is the entry behind a fact, so the fact goes too.
+  await put(dir, "knowledge/decisions/2026-10-11-budget-cut-timeline.md", { ...base, id: "dec-bbbb0006", title: "Budget cut to 40k timeline", tags: ["budget-cut"],
+    facts: { vendor: "Acme" }, timeline: [entry("vendor", "Acme", [1, LIVE], "accepted"), entry("budget", "40k", [2, SECRET], "superseded")] }, `${LIVE} ${LIVE_REF}\n`);
+  await put(dir, "knowledge/decisions/2026-10-11-budget-cut-fact.md", { ...base, id: "dec-bbbb0007", title: "Budget cut to 40k fact", tags: ["budget-cut"],
+    facts: { vendor: "Acme", budget: "40k" }, timeline: [entry("vendor", "Acme", [1, LIVE], "accepted"), entry("budget", "40k", [2, SECRET], "accepted")] }, `${LIVE} ${LIVE_REF}\n`);
+  await exclude(dir);
+  const read = await query(dir, "--read", "dec-bbbb0006,dec-bbbb0007", "--repo", bare);
+  assert.deepEqual(read.notes.map((note: Record<string, unknown>) => [note.id, note.status, note.title, note.path, note.cite, note.restricted]), [
+    ["dec-bbbb0006", "ok", null, null, "decision dec-bbbb0006, title withheld: awaiting cleanup", true],
+    ["dec-bbbb0007", "ok", null, null, "decision dec-bbbb0007, title withheld: awaiting cleanup", true],
+  ]);
+  assert.deepEqual(read.notes.map((note: { frontmatter: { facts: unknown; timeline: Array<{ field: string }> } }) => [note.frontmatter.facts, note.frontmatter.timeline.map((kept) => kept.field)]), [
+    [{ vendor: "Acme" }, ["vendor"]],
+    [{ vendor: "Acme" }, ["vendor"]],
+  ]);
+  const candidates = await query(dir, "--candidates", "vendor acme", "--types", "decision", "--repo", bare);
+  assert.deepEqual(candidates.candidates.map((candidate: Record<string, unknown>) => [candidate.id, candidate.title, candidate.path, candidate.cite]).sort(), [
+    ["dec-bbbb0006", null, null, "decision dec-bbbb0006, title withheld: awaiting cleanup"],
+    ["dec-bbbb0007", null, null, "decision dec-bbbb0007, title withheld: awaiting cleanup"],
+  ]);
+  assertNoRestrictedText([read, candidates.candidates], "a timeline entry or fact restricted alone");
+});
