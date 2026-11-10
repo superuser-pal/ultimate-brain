@@ -161,10 +161,13 @@ test("one brain upgrade on a 0.12.0 installation reaches the brain and its regis
     assert.equal(await repoStatus(), statusBefore, "the product checkout is unchanged");
   });
 
-  await context.test("a linked folder the brain has no path for", { todo: `${PHASE_2}: TODO(CC-182) decides how a linked project is found` }, async () => {
-    // brain.json `repos` is the only record of a project's path; `brain link` records none (cli.md §5.12: `.brain` "holds no machine
-    // paths"). Built here as the upgrade leaving it alone; CC-182 may instead have it reported, or registered by `brain link`.
+  await context.test("a folder linked with brain link alone is outside the upgrade, and the output says how to bring it in", { todo: PHASE_2 }, async () => {
+    // The user's choice of 2026-11-10 (spec/eligibility.md §11 step 3): only brain.json `repos` entries count; `brain link` records no
+    // path (cli.md §5.12). The exact wording comes from cli.md §5.15 once written.
     assert.deepEqual(changedPaths(before.get("unregistered")!, afterFirst.get("unregistered")!), []);
+    assert.equal(reported.has("unregistered"), false);
+    assert.match(human.stdout, /brain link/);
+    assert.match(human.stdout, /not (tracked|registered)|outside the upgrade|brain repo add/i);
   });
 });
 
