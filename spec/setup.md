@@ -32,7 +32,7 @@ A new user duplicates the published Notion template (0078 §1, CC-189), installs
 | 1 | **Prerequisites**, all checked at once (§6.1) | `prerequisites` | every required prerequisite passes |
 | 2 | **The settings screen** (§7), then its items applied: the Git identity, the private remote, the drop folder created, the `AGENTS.md` lines | `settings` | the user confirmed the screen and each required item of it passes |
 | 3 | **The template duplicated, and the agent connected to Notion** (§6.2) | `notion-mcp` | the MCP reaches the duplicated space's Brain Data page |
-| 4 | **"Connect the brain to Notion"** (brain-connect-notion): modules on or off, database ids, the Tasks database, the template version | `connect` | every database of Core and of the modules on is stored, and `notion.template_version` is set |
+| 4 | **"Connect the brain to Notion"** (brain-connect-notion): modules on or off, database ids, the Tasks database, the template version | `connect` | every database of Core and of the modules on is stored, and the template version is stored when the space has a Template version line (a space built from the prompts has none: the version stays unknown, §9, and the step is still done) |
 | 4a | **The minutes prompt**, walked through and checked (§6.3) | `minutes-prompt` | the check passes |
 | 4b | **Brain Assistant**, walked through and checked (§6.4) | `brain-assistant` | the check passes |
 | 5 | **Identities** (0037; brain-connect-notion step 6) | `identities` | `owner.person` is set |
@@ -53,7 +53,7 @@ On "set up my brain", the skill runs `brain status --json` and reads its `setup`
 3. **Starts at the first step of §2 that is unfinished**, saying in one line what is already done: "Setup: 6 of 9 done. Next: paste the minutes prompt." A step before it that fails a check (a Git identity removed since) is fixed first.
 4. When every step is done, says so and offers only what is left: the setup report if it was never offered, the schedule if it was never answered.
 
-A brain made before 0.14.0 that has every offline check passing and no `setup` line is treated as set up (`status` shows no setup line, cli.md §5.2); "set up my brain" on it runs §3 normally and records the steps it checks, so the user can use it to check an older brain.
+A brain made before 0.14.0 that has no `setup` line and whose `databases` and `owner_person` checks pass (§5) is treated as set up (`status` shows no setup line, cli.md §5.2); "set up my brain" on it runs §3 normally and records the steps it checks, so the user can use it to check an older brain.
 
 ## 4. What setup stores, and where
 
@@ -71,7 +71,7 @@ A brain made before 0.14.0 that has every offline check passing and no `setup` l
 | The remote | the brain repository's `origin` | `gh repo create --private` or the user (§7) |
 | The Notion connection | the agent's own MCP configuration | the user, following the skill's steps |
 
-The `AGENTS.md` lines are written only below `<!-- ultimate-brain:rules:end -->` (upgrades never touch that part), each on its own line, replacing an earlier line of the same name; they are committed on their own (`rules: drop folder and language`).
+The `AGENTS.md` lines are written under the `## My rules` heading, which follows the rules block's end marker `<!-- ultimate-brain:rules:end -->` (upgrades never touch anything after that marker): each on its own line, after the heading's comment, replacing an earlier line of the same name anywhere after the marker. When the heading is missing, the skill adds `## My rules` at the end of the file first. With the rules block's markers missing (cli.md §5.15 step 1), the skill writes nothing, says why, and setup stops at step 2 until the markers are restored; they are committed on their own (`rules: drop folder and language`).
 
 ### 4.1 The `setup` log line
 
@@ -79,9 +79,9 @@ The `AGENTS.md` lines are written only below `<!-- ultimate-brain:rules:end -->`
 - <timestamp> setup - step=<step> result=<done|failed|declined>[ <key>=<value>]…
 ```
 
-- `<step>` is one of §2's: `started`, `prerequisites`, `settings`, `notion-mcp`, `connect`, `minutes-prompt`, `brain-assistant`, `identities`, `seeding`, `first-value`, `schedule`, `finished`. `started` is written once, when the skill first runs in a brain with no `setup` line.
+- `<step>` is one of §2's: `started`, `prerequisites`, `settings`, `notion-mcp`, `connect`, `minutes-prompt`, `brain-assistant`, `identities`, `seeding`, `first-value`, `schedule`, `finished`, and `first-meeting`, written once by brain-catch-up after setup (§10.1), which `brain status` doesn't read. `started` is written once, when the skill first runs in a brain with no `setup` line.
 - `result=failed` adds `reason=<code>` from §12.2; `declined` is used only by `schedule` (the user chose off). A step can be logged several times; the latest line of a step is its state.
-- Extra keys: `prerequisites` adds `notion_ai=yes|no custom_agents=yes|no` (the plan, as the user answered); `first-value` adds `tasks=pass|fail report=pass|fail organised=pass|fail`; `seeding` adds `notes=<n> documents=<n>`.
+- Extra keys: `prerequisites` adds `notion_ai=yes|no custom_agents=yes|no` (the plan, as the user answered); `first-value` adds `tasks=pass|fail|skip report=pass|fail organised=pass|fail` (`skip` with Tasks off, §10); `seeding` adds `notes=<n> documents=<n>`.
 - Values carry no names, paths, ids or text (§12.1).
 
 ## 5. The offline checks (`brain status`, cli.md §5.2)
@@ -93,14 +93,14 @@ The `AGENTS.md` lines are written only below `<!-- ultimate-brain:rules:end -->`
 | `git_identity` | `git config user.name` and `git config user.email`, read in the brain folder, are both non-empty | yes |
 | `remote` | the brain is a Git repository with a remote `origin` that has a URL (`git remote get-url origin`). Whether it is private is checked online (§3) | yes |
 | `databases` | every `notion.databases` key of Core and of each module on is non-empty, and, with Tasks on, `notion.tasks.database` too | yes |
-| `drop_folder` | `AGENTS.md` has a `Drop folder:` line under "My rules" (§4) and its path (`~` expanded, backticks removed) is an existing folder | yes |
-| `language` | `AGENTS.md` has a `Language:` line under "My rules" | yes |
+| `drop_folder` | `AGENTS.md` has, after the line `<!-- ultimate-brain:rules:end -->` and outside HTML comments, a line starting with `Drop folder:` (the first one counts; §4) and its path (`~` expanded, backticks removed) is an existing folder | yes |
+| `language` | `AGENTS.md` has, read the same way, a line starting with `Language:` | yes |
 | `owner_person` | `owner.person` is set and names an existing person note | yes |
 | `template_version` | reported as its value, or `null` (unknown) | no |
 
 The other three of the nine required items (0078 §2) are the recorded steps `notion-mcp`, `minutes-prompt` and `brain-assistant` (§4.1, latest line `result=done`). So the count is: the six counted checks that pass, plus those three recorded as done, out of **9**.
 
-**Finished** when the latest `setup` line with `step=finished` exists; or, for a brain with no `setup` line at all, when the six counted checks pass (a brain set up before 0.14.0, §3). **Next** is the first item not done in §2's order (a check that fails, or a step not recorded as done), as cli.md §5.2 lists them.
+**Finished** when a `setup` line with `step=finished` exists; or, for a brain with no `setup` line at all, when `databases` and `owner_person` pass: a brain connected to Notion before 0.14.0 (§3), which may have no `Language:` or `Drop folder:` line, since nothing asked for them then. `required` and `next` are computed the same way whether or not setup is finished; once it is, they are information only, and `status` shows no setup line. **Next** is the first item not done in §2's order (a check that fails, or a step not recorded as done), as cli.md §5.2 lists them.
 
 ## 6. The checks the skill makes
 
