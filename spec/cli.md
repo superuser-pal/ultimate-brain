@@ -948,7 +948,7 @@ Returns ranked candidate notes for the query skill (CX-11); the skill reads them
 
 Returns each named note in full, as retrieval may use it. It is how a skill reads a note for an answer: a file opened directly shows statements the user excluded, memories nobody approved and memories meant for another project, which this command leaves out (decision 0055; memory.md §2). Read-only.
 
-`--read` takes 1 to 20 note ids separated by commas (a repeated id is read once; an empty id or more than 20 is `USAGE`: `--read takes 1 to 20 note ids separated by commas`). `--limit` and `--types` are `USAGE` with it (`--<name> doesn't go with --read`). `--repo` names the caller, as for `--candidates`.
+`--read` takes 1 to 20 distinct note ids separated by commas (a repeated id is read once and counts once; an empty id or more than 20 distinct ids is `USAGE`: `--read takes 1 to 20 note ids separated by commas`). `--limit` and `--types` are `USAGE` with it (`--<name> doesn't go with --read`). `--repo` names the caller, as for `--candidates`.
 
 ```json
 { "data": {
@@ -974,10 +974,12 @@ A note that is not returned has `status: "withheld"` and a `reason`, and nothing
 | `reason` | When |
 |---|---|
 | `unknown` | no note has this id |
-| `restricted` | the restricted-evidence rule leaves the note out whole |
+| `restricted` | the restricted-evidence rule leaves the note out whole; or a view that rule leaves out (below) |
 | `not_eligible` | a memory the paragraph above does not return (the reason does not say which rule, so it tells nothing about a memory meant for another folder); or a proposal, which is never read here: it may propose what its evidence no longer supports |
 
-A withheld note is not an error: the exit code is 0. The skill never opens the file of a withheld note. Errors: `USAGE`.
+**Views (0055, capture-and-review §5.1).** A view (a Brief, a Decision log, an area Brief, a report) has no passage references, so it is never returned in part. While the brain has a suppression record, a view is withheld (`restricted`), and left out of `--candidates --types view`, when any note in its `generated_from`, or any note its body links, is restricted in any part (whole, a body line, a timeline entry, a fact, its summary) or no longer exists. A report is never edited by the brain and a Brief waits for the next `brain views`, so either may still hold an excluded statement; this rule keeps it out of answers until the view is regenerated or refreshed from eligible notes. Stated limit: a report line that restates an excluded statement and links no note is not detected; a view is navigation and never evidence (schema §4), so an answer cites the notes it points to.
+
+A withheld note is not an error: the exit code is 0. The skill never opens the file of a withheld note. Errors: `USAGE`; `SUPPRESSIONS_UNREADABLE` (exit 5) when a file of `_suppressions/` cannot be read, as for `--candidates`.
 
 ### 5.14 `brain sync …` (Notion helpers, CX-10)
 

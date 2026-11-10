@@ -23,7 +23,7 @@ A memory is **eligible** for a caller when all of these hold:
 3. Its reach includes the caller (0009, §2.1).
 4. The restricted-evidence rule (cli.md §5.13) leaves it in: a memory that rule leaves out whole is not eligible. A memory with `sources` is not eligible either when that rule leaves out **every** one of them (a source it leaves out is no evidence, as `reflect` reads it, cli.md §5.32), since nothing then supports it (0055). A memory with no `sources` is judged on its own text.
 
-**One rule for every command and every answer.** `brain recall` and `brain query` both apply this section (cli.md §5.13 step 2, §5.13.1, §5.33), so no command returns a memory it makes ineligible. An agent answering a question uses a memory only when one of those commands returned it, and never a memory file it found by searching or opening the brain's folders: such a file may be unapproved or meant for another folder (0074 §2, §3).
+**One rule for every command and every answer.** `brain recall` and `brain query` both apply this section (cli.md §5.13 step 2, §5.13.1, §5.33), so neither returns a memory it makes ineligible. (`brain index --json` lists every memory file with its `lifecycle`, for tools; `index.md` lists none. It is not a retrieval surface and no skill reads memories from it.) An agent answering a question uses a memory only when one of those commands returned it, and never a memory file it found by searching or opening the brain's folders: such a file may be unapproved or meant for another folder (0074 §2, §3).
 
 ### 2.1 The caller and reach
 
