@@ -14,6 +14,7 @@ import { lintBrain } from "../lib/lint.ts";
 import { modulesOf, storedModules, withModules } from "../lib/modules.ts";
 import { scanNotes } from "../lib/notes.ts";
 import { assertPlainPath, installedProduct, SUB_AGENT } from "../lib/skills.ts";
+import { notionMigrations, notionMigrationsLine } from "../lib/notion-migrations.ts";
 import { competingCopies } from "../lib/skills-competing.ts";
 import { homeOf, LOCK, readLock, serializeLock, snapshotInvalid, type Lock } from "../lib/skills-pin.ts";
 import { comparePrecedence } from "../lib/skills-range.ts";
@@ -272,12 +273,14 @@ export const upgradeCommand: Command = {
         }
       }
     }
+    // The Notion migrations newer than the template (0078, §5.15): read only, the same with --dry-run.
+    const migrations = await notionMigrations(product.root, brain!.config);
     return {
       warnings,
       data: { dry_run: dryRun, dirty: dryRun ? await gitDirty(root) : undefined, version, files: changes.map(({ path, action }) => ({ path, action })), unchanged, converted: concepts.converted,
         skills: { from, to: { name: manifest!.name, version: manifest!.version }, retired, previous_cli: previousCli, competing },
-        lint: { errors: lint.filter((x) => x.severity === "error").length, warnings: lint.filter((x) => x.severity === "warning").length }, commit, pushed },
-      human: `${written.length} files ${dryRun ? "would change" : "changed"}, ${unchanged} unchanged\n`,
+        lint: { errors: lint.filter((x) => x.severity === "error").length, warnings: lint.filter((x) => x.severity === "warning").length }, notion_migrations: migrations, commit, pushed },
+      human: `${written.length} files ${dryRun ? "would change" : "changed"}, ${unchanged} unchanged\n${notionMigrationsLine(product.root, migrations)}\n`,
     };
   },
 };
