@@ -6,6 +6,8 @@
 
 Decisions referenced: 0003, 0006, 0007, 0009, 0011, 0013, 0014, 0015, 0016, 0017, 0018, 0021, 0023, 0024, 0026, 0027, 0041–0043, 0045, 0064, 0072.
 
+**Eligibility (0077, 0.13.0):** what search, a full read, a summary, a citation and a proposal's evidence may rest on is one rule, in [eligibility.md](eligibility.md); where a section here differs, that file wins until the task it names (its §13) changes the section.
+
 ---
 
 ## 1. Scope
@@ -14,7 +16,7 @@ The CLI does the **deterministic** work: IDs, file writes, validation, index, vi
 
 Rules for every command:
 - **No network.** The CLI never calls Notion or any other service. Notion data enters only as JSON files written by a skill.
-- **No Git, except `init`, `upgrade`, `repo`, `source extract` and `recover`.** Commands write files; the skill commits. `source extract` and `recover` commit and restore their own journaled files (§5.23, §5.24). `init` creates the repository and its first commit, `upgrade` commits its own files (§5.15), and `repo` reads a linked repo with read-only Git commands (§5.16, 0042). `repo new` runs `git init` in the repo it creates and makes its first commit there, and never pushes (§5.29). The `workflow` write commands commit their own records under `_workflows/` as one journaled operation, and never push (connected-workflows.md §12).
+- **No Git, except `init`, `upgrade`, `repo`, `source extract` and `recover`.** Commands write files; the skill commits. `source extract` and `recover` commit and restore their own journaled files (§5.23, §5.24). `init` creates the repository and its first commit, `upgrade` commits its own files (§5.15), and `repo` reads a linked repo with read-only Git commands (§5.16, 0042). `status` reads the brain's own Git identity and `origin` with read-only Git commands for its `setup` block (§5.2, 0078). `repo new` runs `git init` in the repo it creates and makes its first commit there, and never pushes (§5.29). The `workflow` write commands commit their own records under `_workflows/` as one journaled operation, and never push (connected-workflows.md §12).
 - **No LLM.** Same input and same brain give the same output, except for new random IDs and the clock (see `--now`).
 - **Writes only inside the brain**, except `init` (the new brain folder, and the global config file with `--set-default`), `link` (three files in the target repo), `repo kit write` (`brain-kit.json` in a linked repo) and `repo new` (the new repo's folder) (§5.29, 0066), and `workflow new` and `workflow set --pointer` (the pointer `.brain-workflow.json` in the working folder, connected-workflows.md §3.2).
 
@@ -25,6 +27,7 @@ Decision 0024 lists user-facing commands. Some are skills that call the CLI; som
 | User-facing (0024) | Runs as | CLI commands it calls |
 |---|---|---|
 | `brain init` | CLI | `init` |
+| "set up my brain" (0078) | skill `brain-setup` (CC-191, [setup.md](setup.md)) | `status`, `config set`, `modules`, `log` (`setup` lines), `schedule install`; and the calls of brain-connect-notion, Ultimate Assistant's ramble (seeding), brain-workflow-adopt and the ingest |
 | `brain connect-notion` | skill (CC-08) | `config set`, `modules` (the onboarding checklist, 0048) |
 | `brain ingest` | skill (CC-06) | `status`, `index`, `id new`, `note new`, `proposal new`, `views`, `lint`, `log`, `sync tasks`, `sync render`, `sync record`; the to-do tidy: `question drop` (0071) |
 | `brain apply` | skill (CC-09) | `sync plan`, `sync apply` (or `apply` in chat), `index`, `views`, `sync render`, `sync record` |
@@ -222,7 +225,7 @@ Write commands append to `log/<YYYY-MM>.md` (month of `--now`), creating it with
 - <timestamp> <op> <id> "<title>"[ <key>=<value>]…
 ```
 
-`"` and `\` in titles are escaped with `\`, and CR and LF become `\r` and `\n`, so every entry is exactly one line. Values with spaces, quotes, backslashes or line breaks are quoted and escaped the same way. The file is created exclusively with its header, then lines are appended; an unreadable log is an error, never a reason to start the file over. Ops written by the CLI: `init`, `note-new`, `proposal-new`, `apply`, `correct`, `sync-create`, `sync-update`, `upgrade`, `repo-add`, `repo-record`, `full-text` (before 0.6.0), `modules`, `report-new`, `report-refresh`, `report-fix`, `question-drop`, `assistant-dismiss`. Skills add their own (`ingest`, `publish`, `catch-up`, `query`, `assistant`, `reflect`) with `brain log` (§5.11). `index` and `views` do not log.
+`"` and `\` in titles are escaped with `\`, and CR and LF become `\r` and `\n`, so every entry is exactly one line. Values with spaces, quotes, backslashes or line breaks are quoted and escaped the same way. The file is created exclusively with its header, then lines are appended; an unreadable log is an error, never a reason to start the file over. Ops written by the CLI: `init`, `note-new`, `proposal-new`, `apply`, `correct`, `sync-create`, `sync-update`, `upgrade`, `repo-add`, `repo-record`, `full-text` (before 0.6.0), `modules`, `report-new`, `report-refresh`, `report-fix`, `question-drop`, `assistant-dismiss`. Skills add their own (`ingest`, `publish`, `catch-up`, `query`, `assistant`, `reflect`, `setup`) with `brain log` (§5.11). `setup` lines are setup.md §4.1's, and `brain status` reads them (§5.2). `index` and `views` do not log.
 
 **The catch-up line (0045, 0051).** An attended catch-up logs `catch-up - notes_read=<n> seconds=<s>`. An unattended one (§6.1) logs `catch-up - mode=unattended inputs=<n> left=<n> skipped=<n> waiting=<n> failed=<n>[ failures="<reason>; <reason>"] report=<yes|no> notes_read=<n> seconds=<s>`: `inputs` taken in (failed ones included), `left` the inputs beyond the budget, `skipped` the inputs skipped for a blocker, `waiting` the decided Review rows and report What to fix left for an attended run, `failed` the steps that failed, `failures` their reasons in a few words each ("Notion login"), `report` whether it wrote a Report row. A `catch-up` line without `mode=unattended` is attended, as every line before 0.7.0 is. `brain status` reads these lines (§5.2).
 
@@ -290,13 +293,11 @@ brain init ~/brain --owner "Alex" --set-default --json
 
 `created` lists every file written, sorted by path, including the `.gitkeep` placeholders of the empty note folders; the example above is shortened.
 
-**Human output** (without `--json`, CC-156): what was made, then the two next steps, with the checklist's path under `product.path` (§5.2):
+**Human output** (without `--json`): what was made, then **one next step** (0078 §2, from 0.14.0; before, CC-156's two steps named the checklist under `product.path`). It names no path under `product.path`: the setup skill gives the Notion template and every guide (setup.md §1).
 
 ```text
 Initialized Ultimate Brain at /Users/me/brain
-Next:
-  1. Build your Notion space: follow /usr/local/lib/node_modules/ultimate-brain/notion/CHECKLIST.md
-  2. Then, in /Users/me/brain, ask your agent: "connect the brain to Notion"
+Next: open Claude Code or Codex in /Users/me/brain and say "set up my brain"
 ```
 
 Errors: `TARGET_NOT_EMPTY`, `ALREADY_A_BRAIN`, `BRAIN_IS_PRODUCT_REPO`, `SKILLS_SNAPSHOT_INVALID`, `OUTSIDE_ROOT` (template path escapes, defensive).
@@ -326,13 +327,32 @@ Read-only health summary; the first call of every skill.
     "suppressions": { "active": 0, "reconciled": 0, "restricted_notes": 0, "unresolved_lineage": 0, "problems": [] },
     "last_log": "- 2026-12-03T10:22:00Z ingest mtg-8c4n2p7w \"Acme sync\" created=4 proposals=3",
     "skills": { "state": "pinned", "name": "ultimate-brain", "version": "0.9.0", "…": "§5.28" },
-    "product": { "path": "/usr/local/lib/node_modules/ultimate-brain" }
+    "product": { "path": "/usr/local/lib/node_modules/ultimate-brain" },
+    "setup": {
+      "checks": { "git_identity": true, "remote": true, "databases": true, "drop_folder": true, "language": true, "owner_person": true },
+      "recorded": { "notion-mcp": "2026-12-01T09:12:00Z", "minutes-prompt": null, "brain-assistant": null, "seeding": null, "first-value": null, "schedule": null },
+      "template_version": "0024",
+      "required": { "done": 7, "total": 9 },
+      "next": "minutes-prompt",
+      "finished": false
+    }
 } }
 ```
 
 `skills` (always present, 0059) is the brain's skill pin, defined in §5.28. `status` is exempt from the pin guard, so it reports every state.
 
 `product.path` (always present) is the absolute, symlink-resolved folder of the installed `ultimate-brain` package that is running: the folder holding its `package.json`, or the product repo's root when the CLI runs from source. The Notion build files ship under it, so a skill or a message names them as `<product.path>/<file>`: `notion/CHECKLIST.md`, `notion/prompts/`, `notion/modules/`, `notion/migrations/`, the other `notion/*.md` guides, and `docs/notion-space-design.md`.
+
+**Setup (0078, [setup.md](setup.md) §5).** `setup` (always present) is computed offline: no network call, Git read only through `git config` and `git remote get-url origin` in the brain folder.
+- `checks`: the six offline checks of setup.md §5 (`git_identity`, `remote`, `databases`, `drop_folder`, `language`, `owner_person`), each `true` or `false`.
+- `recorded`: for each step only an online or by-hand check proves (`notion-mcp`, `minutes-prompt`, `brain-assistant`, `seeding`, `first-value`, `schedule`), the timestamp of its latest `setup` log line (§3.9) when that line has `result=done` or `result=declined`, else `null`; read across the month files like `unattended`.
+- `template_version`: `notion.template_version`, or `null` when absent (unknown, setup.md §9).
+- `required`: `total` is 9, or 7 when the latest `setup` line with `step=prerequisites` has `notion_ai=no` (setup.md §13); `done` counts the six checks that pass plus `notion-mcp`, `minutes-prompt` and `brain-assistant` when recorded (only the first of the three without Notion AI).
+- `next`: the first item not done, in setup.md §2's order: `git_identity`, `remote`, `drop_folder`, `language` (step 2), `notion-mcp` (3), `databases` (4), `minutes-prompt`, `brain-assistant` (4a, 4b; left out without Notion AI), `owner_person` (5), `seeding`, `first-value`, `schedule`; a check is done when it passes, a step when it is recorded. `null` when every item is done.
+- `finished`: `true` when a `setup` line with `step=finished` exists, or when the brain has no `setup` line and `databases` and `owner_person` pass (a brain connected before 0.14.0, which may lack the `Language:` and `Drop folder:` lines). `required` and `next` are computed the same either way; with `finished` true they are information only.
+- A `setup` line with `step=first-meeting` (brain-catch-up, setup.md §10.1) is not read.
+
+**Human output** (without `--json`) starts, only while `finished` is `false`, with one line: `Setup: <done> of <total> done · next: <what>`, where `<what>` is, by `next` in that order: `set your Git identity`, `add a private remote`, `create the drop folder`, `say the language of your notes`, `connect your agent to Notion`, `connect Notion`, `paste the minutes prompt`, `set up Brain Assistant`, `set your identities`, `seed your work`, `check first value`, `choose the schedule`; then `say "set up my brain"`. Example: `Setup: 6 of 9 done · next: connect Notion · say "set up my brain"`. The rest of the human output is unchanged.
 
 `notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `domains`, `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `documents` (0045, 0049; a `references` key is reported as `documents`; a retired `concepts` key is not reported, 0071). `modules` (0048) has every module key, filled in as schema §12 says: all `true` except Domains when the block is absent, else each absent key at its default. `notes` counts every type, `reference` included (0045); `concept` is counted only when a brain still has concept notes (before `brain upgrade`, 0071). A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } }`. `unattended` (0051) sums the unattended catch-up lines (§3.9) written since the last attended `catch-up` line, across the month files: `since` is that attended line's timestamp (`null` when there is none), `runs` the unattended lines after it, `inputs` and `failed` their sums, `failures` their reasons in order without repeats, and `left`, `skipped`, `waiting` and `last` (its timestamp) from the latest one, since an input still skipped is counted again by every run. `catch_up` is `null` when no unattended line follows the last attended one. `backlog` is `true` when the last three unattended catch-up lines, attended or not in between, each have `left` above 0. The attended catch-up opens with this summary (§6.1). `repos` lists `brain.json` `repos` in order (empty when absent): `found` is whether `path` is a Git working tree. `views_stale` includes area briefs. Exit 0 even when stale.
 
@@ -355,6 +375,8 @@ brain config set notion.databases.projects '"2c4e6a80-1b3d-4f50-9a7c-8e6d4b2a0f1
 ```json
 { "data": { "path": "notion.databases.projects", "previous": "", "value": "2c4e6a80-1b3d-4f50-9a7c-8e6d4b2a0f13" } }
 ```
+
+**`notion.template_version`** (0078, from 0.14.0): the four-digit number of the last Notion migration the user's space includes, as a string (`'"0024"'`; schema §12, [setup.md](setup.md) §9). Written by brain-connect-notion from the System page's Template version line, and by brain-notion-change after it applies a newer migration. Anything but four digits fails the schema (`INPUT_INVALID`).
 
 Errors: `INPUT_INVALID` (value not JSON, result fails schema, `schema_version`), `USAGE` (`get` on a path that does not exist).
 
@@ -868,7 +890,7 @@ Consult it before you:
 - answer why something was decided, who someone is, or a date, budget or owner;
 - rely on a fact about the client or project that this repo does not state.
 
-How: use the `brain-query` skill, or run `brain query --candidates "<question>" --json` and read the notes it returns with `brain query --read <id> --json`, not by opening the brain's files: only these commands leave out what the user excluded or has not approved. Cite the note paths. Say when a fact is `contested` or `superseded`.
+How: use the `brain-query` skill, or run `brain query --candidates "<question>" --json` and read the notes it returns with `brain query --read <id> --json`, not by opening the brain's files: only these commands leave out what the user excluded or has not approved. Cite each note by its path, or by its `cite` when it has none. Say when a fact is `contested` or `superseded`; read a replaced memory only with `--historical`, for a question about the past.
 
 The brain is read-only from this repo. Never edit its files from here.
 <!-- ultimate-brain:end -->
@@ -921,16 +943,16 @@ Errors: `UNKNOWN_ID`, `OUTSIDE_ROOT`, `USAGE` (path missing or not a directory),
 
 ```text
 brain query --candidates "<question>" [--limit <n>] [--types <t>[,<t>…]] [--repo <path>]
-brain query --read <id>[,<id>…] [--repo <path>]
+brain query --read <id>[,<id>…] [--historical] [--repo <path>]
 ```
 
-Returns ranked candidate notes for the query skill (CX-11); the skill reads them and writes the answer. `--read` returns notes in full, as retrieval may use them (§5.13.1). `brain query` without `--candidates` or `--read`, with a question or without one (`brain query "what did we decide?"`), is `USAGE` with the message `brain query requires --candidates or --read; use the brain-query skill to answer questions`; with both it is `USAGE` (`brain query takes one of --candidates and --read`). With either, an extra argument is `USAGE` (`Unexpected argument: <it>`).
+Returns ranked candidate notes for the query skill (CX-11); the skill reads them and writes the answer. `--read` returns notes in full, as retrieval may use them (§5.13.1); `--historical` goes only with it. `brain query` without `--candidates` or `--read`, with a question or without one (`brain query "what did we decide?"`), is `USAGE` with the message `brain query requires --candidates or --read; use the brain-query skill to answer questions`; with both it is `USAGE` (`brain query takes one of --candidates and --read`). With either, an extra argument is `USAGE` (`Unexpected argument: <it>`).
 
 **Ranking (deterministic):**
 1. **Tokens:** NFKD, drop combining marks, lowercase, split on runs outside `[a-z0-9]`, drop tokens shorter than 2 and these stopwords: `a an and are as at be by did do does for from has have how in is it of on or that the this to was we what when where which who why will with` and `al como con de del el en es la las lo los para por que se su un una y`. These are the **words**; the commands that cite this step read them.
    - **Terms** (this command's ranking and snippets only): NFKC the text, then cut it into maximal runs of CJK characters and runs of anything else. A CJK character is a code point in U+1100–11FF, U+3040–309F, U+30A0–30FF, U+3100–312F, U+3130–318F, U+31A0–31BF, U+31F0–31FF, U+3400–4DBF, U+4E00–9FFF, U+A960–A97F, U+AC00–D7AF, U+D7B0–D7FF, U+F900–FAFF, U+FF66–FF9F, U+20000–2FA1F or U+30000–323AF. The terms are the words of the other runs joined by one space, then each CJK run's n-grams in order: its 1-character n-grams left to right, then its 2-character ones, then its 3-character ones (`東京の予算` gives `東 京 の 予 算 東京 京の の予 予算 東京の 京の予 の予算`). No stopword or length rule applies to an n-gram. The query's terms keep their order and repeats; the output's `tokens` lists them.
 2. **Searched:** knowledge notes and sources (default `--types`: all except view, proposal, memory), as the restricted-evidence rule below leaves them. A `memory` (searched only when `--types` names it) is searched only when it is **eligible** for the caller folder (memory.md §2: reviewed, not superseded, in the caller's reach, supported by eligible evidence), the caller being `--repo`, else the current directory (memory.md §2.1). So this command never returns a memory that `brain recall --search` withholds from the same folder.
-3. **Score:** Okapi BM25 (k1 = 1.5, b = 0.75) over the searched notes, each note one document whose terms are: the terms of its `title` and of each alias, three times; of its `summary`, twice; of every other frontmatter string value (facts and timeline values included), once; and of its body, once. A document's length |d| is its number of terms, repeats included; N is the number of searched notes and avgdl their mean length (1 when it is 0).
+3. **Score:** Okapi BM25 (k1 = 1.5, b = 0.75) over the searched notes, each note one document, as the restricted-evidence rule below leaves it (a field or line it withholds gives no term), whose terms are: the terms of its `title` and of each alias, three times; of its `summary`, twice; of every other frontmatter string value (facts and timeline values included), once; and of its body, once. A document's length |d| is its number of terms, repeats included; N is the number of searched notes and avgdl their mean length (1 when it is 0).
    - **Matching:** a query term that is a word matches every term of the document that starts with it (`deci` matches `decision`); an n-gram matches only itself. f(t, d) is the number of times the terms that t matches occur in d; df(t) is the number of documents where f(t, d) > 0.
    - **Sum:** over the query's terms in order (a repeated term counts each time), idf(t) · f(t, d) · (k1 + 1) / (f(t, d) + k1 · (1 − b + b · |d| / avgdl)), where idf(t) = ln(1 + (N − df(t) + 0.5) / (df(t) + 0.5)). A term with f(t, d) = 0 adds nothing.
    - The formula and the n-grams are adapted from claude-obsidian's `scripts/bm25-index.py` (commit `2e545563`, MIT License), as eval/retrieval-0.12 compared them (decision 0074 §5).
@@ -952,15 +974,22 @@ Returns ranked candidate notes for the query skill (CX-11); the skill reads them
 } }
 ```
 
-`assessment` and `date` are `null` when the type has none. A Document (`reference`) also has `origin` (absent = `part`), so the skill can say "a learned Document" (0071); other types have no `origin` key. A learned Document is a `reference`: `--types reference` finds it, and `--types concept` still matches a concept not yet converted by `brain upgrade`. Snippets: up to 3 body lines, in order, where a query term matches one of the line's terms as step 3 defines, each trimmed to 200 characters. Superseded notes are returned, not hidden; the skill labels them. A candidate with a `superseded_by` relation has `superseded_by`: that relation's target (the first, in file order); other candidates have no such key. Errors: `USAGE`.
+`assessment` and `date` are `null` when the type has none. A note in its **awaiting-cleanup form** (below) has `title`, `path` and `summary` `null` and a `cite` key, which no other candidate has. A Document (`reference`) also has `origin` (absent = `part`), so the skill can say "a learned Document" (0071); other types have no `origin` key. A learned Document is a `reference`: `--types reference` finds it, and `--types concept` still matches a concept not yet converted by `brain upgrade`. Snippets: up to 3 body lines, in order, where a query term matches one of the line's terms as step 3 defines, each trimmed to 200 characters. Superseded notes are returned, not hidden; the skill labels them. A candidate with a `superseded_by` relation has `superseded_by`: that relation's target (the first, in file order); other candidates have no such key. Errors: `USAGE`.
 
-**Restricted evidence (0055, capture-and-review §5.1).** With an active suppression in `_suppressions/` (capture-and-review §5.3) retrieval uses only eligible evidence: older versions and full copies of a changed input are left out as sources; in a knowledge note a body line whose `^[src-…#¶n:hash]` references are all not live is blanked (line numbers hold), each claim is judged by its own passage reference, whatever the note's `sources` list says; a note that rests on a changed input and has a body line with no passage reference, or a fact no accepted timeline entry supports, is left out whole unless it is resolved for that input (`lineage_cleared`, or its suppression reconciled); a partly restricted note loses its `summary`, a timeline entry whose source or `passage` is not live is dropped, and a fact whose accepted entries are all dropped is dropped. A passage is live only while the latest version of its input holds it, so a reconciled cleanup never makes an excluded passage, an older source version or a claim citing it eligible again; a re-included passage stays restricted per claim until a Restore record names that note and passage, and the latest extract does not return its text meanwhile. A suppression directory that cannot be read (anything but an absent one) fails the same way. If any suppression record is unreadable the command fails with `SUPPRESSIONS_UNREADABLE`.
+**Restricted evidence (0055, capture-and-review §5.1).** With an active suppression in `_suppressions/` (capture-and-review §5.3) retrieval uses only eligible evidence: older versions and full copies of a changed input are left out as sources; in a knowledge note a body line whose `^[src-…#¶n:hash]` references are all not live is blanked (line numbers hold), each claim is judged by its own passage reference, whatever the note's `sources` list says; a note that rests on a changed input and has a body line with no passage reference, or a fact no accepted timeline entry supports, is left out whole unless it is resolved for that input (`lineage_cleared`, or its suppression reconciled); a partly restricted note loses its `summary` and its `aliases`, a timeline entry whose source or `passage` is not live is dropped, and a fact whose accepted entries are all dropped is dropped. A passage is live only while the latest version of its input holds it, so a reconciled cleanup never makes an excluded passage, an older source version or a claim citing it eligible again; a re-included passage stays restricted per claim until a Restore record names that note and passage, and the latest extract does not return its text meanwhile. A suppression directory that cannot be read (anything but an absent one) fails the same way. If any suppression record is unreadable the command fails with `SUPPRESSIONS_UNREADABLE`.
+
+**The awaiting-cleanup form (eligibility.md §6 rules 2 to 4, 0077).** A note with a **restricted claim** (a body line blanked, a timeline entry or a fact dropped, by the rule above) is returned with its eligible lines and without the metadata that carries no passage reference, since none of it can be told apart from the excluded claim (a decision titled "Budget cut to 40k" whose budget line is excluded):
+- no `title`, `tags`, `summary` or `aliases`, and no `path`: in the output `title`, `path` and `summary` are `null`, and `cite` is the label an answer cites it by: `<type> <id>, title withheld: awaiting cleanup` (`decision dec-7k2m9q4x, title withheld: awaiting cleanup`);
+- of the rest of its frontmatter, only what names no content: `id`, `type`, `created`, `updated`, `lifecycle`, `assessment`, `date`, `valid_from`, `valid_until`, `lineage_cleared`, `area`, `projects`, `sources`, `relations`, `facts` and `timeline` (as the rule above leaves them; a timeline entry's free-text `note` is dropped), `notion`, `last_synced`, `notion_fields` (the Notion fields you set), and the ids, dates and enumerations of schema §4 (`domain`, `org`, `goal`, `client`, `people`, `attendees`, `source`, `decisions`, `questions`, `tasks`, `passage`, `decided_in`, `deciders`, `workflow`, `kind`, `raised_in`, `dropped`, `task`, `origin`, `promoted_from`, `scope`, `areas`, `stacks`, `confidence`, and a source's `source_key`, `content_hash`, `captured`, `origin_edited`, `attached_to`, `extract`, `extract_of`, `extract_version`, `transcript_hash`, `selection`, `passages`, `replaces`, `task_items`, `repo`, `commit`, `converter`, `notion_text`, `notion_parts`); a question's `answer` only when it is an id. Every other field is left out: the free text the ingest wrote (`why`, `digest`, `only_keep`, `keep`, `file_name`, `repo_path`, `notion_published`, which holds the published title) and any field the schema doesn't define, unless each of its values is a number, a boolean, an id or a date;
+- its body's **headings** (a line matching `^ {0,3}#{1,6}(\s|$)`) and **comments** (a line starting with `<!--`, through the line that closes it) are returned as spaces of the same length, as a restricted line is (line numbers hold), except a heading that is exactly one of the fixed sections schema §4 defines for the type, which names no content: a decision's `## Decision`, `## Context`, `## Consequences` and `## Sources`. A meeting's sections are the ingest skill's, not the schema's, and are withheld.
+
+None of the withheld parts adds a term to step 3's score or a snippet. A note whose only change is a dropped `summary` (it rests on a changed input it is not resolved for, but every claim it makes is live) has no restricted claim and keeps its title, path and headings (eligibility.md §6 rule 3, last sentences). The note comes back whole once it has no restricted claim: its cleanup item accepted as a removal or correction, or the note marked independent (capture-and-review §5.2, §5.3). `brain reflect --candidates` (§5.32) and `brain recall` (memory.md §5.3, §6.1) return the same form. The published surfaces (`index.md`, the views, Notion) are CC-183's (eligibility.md §6 rule 5).
 
 #### 5.13.1 `brain query --read`
 
 Returns each named note in full, as retrieval may use it. It is how a skill reads a note for an answer: a file opened directly shows statements the user excluded, memories nobody approved and memories meant for another project, which this command leaves out (decision 0055; memory.md §2). Read-only.
 
-`--read` takes 1 to 20 distinct note ids separated by commas (a repeated id is read once and counts once; an empty id or more than 20 distinct ids is `USAGE`: `--read takes 1 to 20 note ids separated by commas`). `--limit` and `--types` are `USAGE` with it (`--<name> doesn't go with --read`). `--repo` names the caller, as for `--candidates`.
+`--read` takes 1 to 20 distinct note ids separated by commas (a repeated id is read once and counts once; an empty id or more than 20 distinct ids is `USAGE`: `--read takes 1 to 20 note ids separated by commas`). `--limit` and `--types` are `USAGE` with it (`--<name> doesn't go with --read`), and `--historical` is `USAGE` with `--candidates` (`--historical doesn't go with --candidates`). `--repo` names the caller, as for `--candidates`.
 
 ```json
 { "data": {
@@ -970,6 +999,10 @@ Returns each named note in full, as retrieval may use it. It is how a skill read
         "lifecycle": "reviewed", "assessment": "accepted", "date": "2026-12-03", "restricted": false,
         "frontmatter": { "id": "dec-7k2m9q4x", "type": "decision", "title": "Use Supabase for auth", "…": "…" },
         "body": "Use Supabase for auth; Firebase is retired after launch.\n" },
+      { "id": "dec-2p9f6h1r", "status": "ok", "type": "decision", "title": null, "path": null, "cite": "decision dec-2p9f6h1r, title withheld: awaiting cleanup",
+        "lifecycle": "reviewed", "assessment": "accepted", "date": "2026-11-03", "restricted": true,
+        "frontmatter": { "id": "dec-2p9f6h1r", "type": "decision", "lifecycle": "reviewed", "…": "…" },
+        "body": "## Decision\n                                 \nVendor stays Acme. ^[src-4n8c2k7p#¶2:9f3a1c7e]\n" },
       { "id": "mem-4t8n2k6p", "status": "withheld", "reason": "not_eligible" }
     ]
 } }
@@ -977,9 +1010,10 @@ Returns each named note in full, as retrieval may use it. It is how a skill read
 
 `notes` has one entry per id, in the order given. A note that is returned has `status: "ok"`:
 
-- **`frontmatter` and `body`** are the note as the restricted-evidence rule of §5.13 leaves it: a restricted body line is returned as spaces of the same length (line numbers hold), a restricted timeline entry or fact is dropped, and a partly restricted note has no `summary` or `aliases`. `restricted` is `true` when that rule changed anything.
-- `title`, `lifecycle`, `assessment`, `date` and `path` as in a candidate (`null` when the note has none); `superseded_by` only on a note with that relation.
-- **A memory** is returned when it is eligible for the caller (memory.md §2), or when it is one `brain recall --search --include-superseded` returns to the caller (memory.md §6.1: superseded, not a draft, in reach, evidence left in), so an answer can say what a rule replaced.
+- **`frontmatter` and `body`** are the note as the restricted-evidence rule of §5.13 leaves it: a restricted body line is returned as spaces of the same length (line numbers hold), a restricted timeline entry or fact is dropped, and a partly restricted note has no `summary` or `aliases`. A note with a restricted claim is in its awaiting-cleanup form (§5.13): no `title`, `tags` or free-text field in `frontmatter`, its headings and comments as spaces. `restricted` is `true` when that rule changed anything.
+- `title`, `lifecycle`, `assessment`, `date` and `path` as in a candidate (`null` when the note has none; `title` and `path` `null`, and `cite` given, in the awaiting-cleanup form); `superseded_by` only on a note with that relation. An answer cites a note only by what this command returned: its title and path, or its `cite` (eligibility.md §6 rule 4).
+- **A memory** is returned when it is eligible for the caller (memory.md §2): reviewed, superseded by nothing, in reach, its evidence left in. A superseded memory is withheld `not_eligible`, unless the read is historical.
+- **The historical read (`--historical`, eligibility.md §5, 0077 §2).** With it, a memory with a `superseded_by` relation is also returned when it is one `brain recall --search --include-superseded` returns to the caller (memory.md §6.1: not a draft, in reach, evidence left in; being old does not make it approved), and it carries `"historical": true` beside its `superseded_by`, so the answer says it is history and what replaced it. Every other id is read exactly as without the option; no other entry has a `historical` key. A skill reads historically only for a question about the past ("what was the rule before?").
 
 A note that is not returned has `status: "withheld"` and a `reason`, and nothing else:
 
@@ -1544,10 +1578,13 @@ brain upgrade --json
     "converted": [],
     "skills": { "from": { "name": "ultimate-brain", "version": "0.2.2" }, "to": { "name": "ultimate-brain", "version": "0.2.3" }, "retired": [], "previous_cli": "0.2.2", "competing": [] },
     "lint": { "errors": 0, "warnings": 2 },
+    "notion_migrations": { "template_version": "0024", "newer": ["0025-weekly-review.md"] },
     "commit": "2c2d653",
     "pushed": true
   } }
 ```
+
+**Notion migrations newer than the template (0078, from 0.14.0; [setup.md](setup.md) §9).** `notion_migrations.template_version` is `brain.json` `notion.template_version` (`null` when absent). `newer` lists the file names in the installed package's `notion/migrations/` that match `^[0-9]{4}-.+\.md$` and whose number is higher than it, sorted; `[]` when there is none; `null` when the version is unknown, since nothing can be compared. It is read only: upgrade never writes the version, and `--dry-run` reports the same. Human output adds one line after the files: `Notion: 2 migrations newer than your space: <product.path>/notion/migrations/0025-….md, …. Ask your agent to apply them ("apply the Notion migrations").` with the full paths; `Notion: your space has every migration (template 0024).` for `[]`; `Notion: template version unknown, so upgrade can't tell which migrations your space needs; ask your agent which ones apply (<product.path>/notion/migrations/).` for `null`.
 
 `files` lists only the files created, updated, removed or skipped, sorted by path; `unchanged` counts the rest. `skills` (skills-delivery §6.3): `to` is the package snapshot; `retired` the retired skill names, sorted; `previous_cli` the old lock's `installed_by` when step 3a wrote over a valid lock, else `null`; `competing` per skills-delivery §5.2 for the package snapshot's skills, with warning `SKILLS_COMPETING` when non-empty (never a refusal). An immediate second upgrade with the same CLI reports `files: []`. `commit` is the short hash, or `null` when nothing was committed; `pushed` is `false` unless a push succeeded. `--dry-run` adds `dirty` and reports `commit: null`, `pushed: false`.
 
@@ -1662,7 +1699,7 @@ brain schedule list
 brain schedule remove <job>
 ```
 
-Runs a skill on a schedule, with nobody there, through local Claude Code (`claude -p`), the one scheduler that sees every input: the drop folder, linked repos and the user's Notion MCP (0051). It writes the machine's scheduler entry and nothing in the brain: no file, no log line, no commit. The skill's "Run on a schedule" section calls it and writes the settings (brain-catch-up). Reflection has no job in 0.11.0 (0076 §5): it runs attended only, and its weekly run is 0.13.0's brief (CC-111, 0075), which adds its own job then.
+Runs a skill on a schedule, with nobody there, through local Claude Code (`claude -p`), the one scheduler that sees every input: the drop folder, linked repos and the user's Notion MCP (0051). It writes the machine's scheduler entry and nothing in the brain: no file, no log line, no commit. The skill's "Run on a schedule" section calls it and writes the settings (brain-catch-up). Reflection has no job in 0.11.0 (0076 §5): it runs attended only, and its weekly run is 0.15.0's brief (CC-111, 0075; moved by 0077 and 0078), which adds its own job then.
 
 **Jobs.** Each job runs one fixed prompt in the brain folder, so the schedule starts the skill the same way every time:
 
@@ -1760,7 +1797,7 @@ The skill brain-catch-up, started by the prompt `catch up unattended` (a schedul
 
 **The one authority (assessment finding F-0007).** This section is the only place that says what an unattended run does. Its three tables below cover every question of the batch, every kind of decided row and Notion edit, and every selected input, Review item and module case of capture-and-review §4 to §8 (that file's §8 points here). The unattended tables in the skills (brain-catch-up's "One batch of questions" and its references) are renderings of these: where one differs, this section governs and the skill is corrected in the fork. A case none of the tables names is treated as a question with no default: the run skips that input and names it under Needs you.
 
-**Reflection runs attended only** in 0.11.0 (0076 §5): `catch up unattended` never runs brain-reflect, and no table here has a reflection row. 0.13.0's weekly brief adds them (CC-111, 0075).
+**Reflection runs attended only** in 0.11.0 (0076 §5): `catch up unattended` never runs brain-reflect, and no table here has a reflection row. 0.15.0's weekly brief adds them (CC-111, 0075; moved by 0077 and 0078).
 
 **Sequence.** read-only pass (as **Catch up**; a failed read, such as an expired Notion login, is a failure: the parts that need it are skipped, the rest goes on) → if nothing is waiting and nothing failed, stop: **no commit, no Notion call, no log line** → `proposal backlog` → `sync apply --input plan.json --skip-conflicted` (without `--record-only`) → the inputs within the budget, oldest first, each as **Ingest one meeting** or **Ingest a …** → `note new` per `document_requests` and `promote_requests` → with Reports on, `report new` with `refresh` per report to refresh (the table below: `refresh_requests` and the reports whose fixes are all decided; none for a report with a `report_fixes` item) and **Report** per Ask row → `views` → with `settings.publish: auto`, `sync render --changed --plan plan.json --skip-conflicted` + MCP → `sync record` → commit, and the boxes cleared → with Reports on and something for the user (below), the Report row → `log catch-up - mode=unattended …` (§3.9) → commit → push per `settings.push`.
 
@@ -2203,7 +2240,7 @@ The deterministic half of reflection: it finds **clusters**, places in the brain
 **Terms (normative).**
 - **Input:** a meeting, or a source of any kind except `minutes` (a meeting's minutes source is that meeting, so it counts once). An input's **date** is a meeting's `date`, or the UTC date of a source's `captured`; its **created** is its own `created`. Its **text** is its title, its `summary` and its body lines, Markdown headings (lines starting with `#`) left out: a meeting's fixed sections ("Action items") would otherwise recur everywhere.
 - **The window:** the inputs whose date is within the 30 days that end on `--now`'s date, both ends included (0052; fixed, not a setting).
-- **Restricted evidence** (0076 §6): §5.13's rule holds throughout, exactly as `query` applies it. A source it leaves out (an older version or a full copy of a changed input) is no input; a blanked line is no text; a note it leaves out whole is never a member and gives no names; a timeline entry or fact it drops is not read. An unreadable suppression record fails the command with `SUPPRESSIONS_UNREADABLE`.
+- **Restricted evidence** (0076 §6): §5.13's rule holds throughout, exactly as `query` applies it. A source it leaves out (an older version or a full copy of a changed input) is no input; a blanked line is no text; a note it leaves out whole is never a member and gives no names; a timeline entry or fact it drops is not read. A note with a restricted claim, member or input, is read in its awaiting-cleanup form (§5.13; eligibility.md §6 rule 3): its title and aliases give no names (no `near_duplicate`, no "an input names a note" by a name, and they carry no term away from `recurring_term`), its title, summary, headings and withheld frontmatter give no text or term, and in the output its `title`, `path` and `summary` are `null` and it has `cite`. Its id and a link to its file still name it. An unreadable suppression record fails the command with `SUPPRESSIONS_UNREADABLE`.
 - **Tokens:** §5.13 step 1's normalization (NFKD, combining marks dropped, lowercase, split on runs outside `[a-z0-9]`), keeping every token, stopwords and single letters included.
 - **Names of a note:** its `title` and each of its `aliases`. **Two names match** when they have the same number of tokens, at each position the two tokens are equal or one is a single letter equal to the other's first letter, and at least one position has equal tokens of two or more letters: `María López` and `M. Lopez`, `Acme Corp.` and `ACME corp`; not `Maria` and `Maria Lopez`, nor `M. L.` and `Mark Lee`.
 - **An input names a note** N when its frontmatter holds N's id (any field), its body links N's file, or its title or a body line holds the tokens of one of N's names consecutively (a one-token name only when that token has 3 or more characters).
@@ -2255,7 +2292,7 @@ A note is in as many clusters as it qualifies for. Three notes whose names match
 } }
 ```
 
-- `key` is `<signal>:<member ids, sorted, joined by +>`, or `recurring_term:<slug>`. `notes` are the members, sorted by id (`summary` as §5.13 restricts it). `names` is in the order of `notes`.
+- `key` is `<signal>:<member ids, sorted, joined by +>`, or `recurring_term:<slug>`. `notes` are the members, sorted by id (`summary` as §5.13 restricts it; a member or an `evidence` input in the awaiting-cleanup form has `title` and `path` `null` and a `cite` key). `names` is in the order of `notes`.
 - `evidence` lists **every** input of the cluster, by date descending, then id; the skill copies its ids into the proposal's `evidence` (schema §11.4). `lines`: up to 3 body lines that name the member (`overtaken`) or hold the term (`recurring_term`), trimmed to 200 characters; `[]` when only the title, the summary or the frontmatter does.
 - `fingerprint` is the cluster's own finding's, on `near_duplicate` and `recurring_term`. `held` (on `shared_ground` and `overtaken`): `{ fingerprint, state: "waiting" | "skipped", proposal }`, where `proposal` is the latest proposal with that fingerprint; sorted by fingerprint.
 - `read.notes` counts the knowledge notes read, `read.inputs` the inputs in the window.

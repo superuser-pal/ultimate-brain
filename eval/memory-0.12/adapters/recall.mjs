@@ -32,8 +32,9 @@ function brain(env, args) {
   return { data: parsed.data, stdout, bytes: Buffer.byteLength(stdout, "utf8"), ms: Number(process.hrtime.bigint() - started) / 1e6 };
 }
 
-const memoryLabels = (m) => [...(m.superseded_by ? ["superseded"] : []), ...(m.confidence === "inferred" ? ["inferred"] : [])];
+const memoryLabels = (m) => [...(m.superseded_by ? ["superseded"] : []), ...(m.historical === true ? ["historical"] : []), ...(m.confidence === "inferred" ? ["inferred"] : [])];
 const noteLabels = (c) => [
+  ...(c.lifecycle === "draft" ? ["draft"] : []), // a draft knowledge note is eligible and carries its lifecycle (eligibility.md §2)
   ...(c.lifecycle === "archived" || c.assessment === "superseded" ? ["superseded"] : []),
   ...(c.assessment === "contested" ? ["contested"] : []),
 ];
@@ -56,6 +57,7 @@ export default {
       const textBytes = Buffer.byteLength(data.text, "utf8");
       return {
         candidates,
+        output: pack.stdout, // everything the caller received (CC-185's forbidden_text)
         cost: {
           phase: "opening", tokens: countTokens(data.text), estimate: data.tokens, estimateFromBytes: Math.ceil(textBytes / 3),
           budget: data.budget, textBytes, omitted: data.omitted, workUnread: data.work_unread, bytes: pack.bytes, ms: pack.ms,
@@ -70,6 +72,7 @@ export default {
     ];
     return {
       candidates,
+      output: `${search.stdout}\n${query.stdout}`,
       cost: { phase: "later", tokens: countTokens(search.stdout) + countTokens(query.stdout), bytes: search.bytes + query.bytes, ms: search.ms + query.ms },
     };
   },

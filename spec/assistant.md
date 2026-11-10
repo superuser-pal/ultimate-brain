@@ -19,7 +19,7 @@ How this file fits: it holds the assistant's whole behaviour: what it reads, the
 
 ## 1. A session
 
-On demand only (0064): the user asks ("review my projects", "what's stalled in Clients?"). The scheduled run is CC-111 (0.13.0). **Report only** when the request it was given says `report only`. That is the one signal, and the skill never infers it: a session that delegates to the sub-agent writes it in its prompt (the sub-agent file and the brain's `AGENTS.md` row say so, §10), and a user may say it too. Then it runs steps 1, 2 and 4 to 6 and returns the report: it skips step 3, writes nothing (no proposal, no log line, no commit) and ends there. Every other run is interactive (`claude --agent ultimate-assistant`, whose first message is the user's own, an ordinary chat, a `claude -p` run): it runs steps 1 to 6 and waits. Where no answer comes (a `claude -p` run, a sub-agent delegated without `report only`), only step 3's writes are made (committed, §6.4), and nothing after them (no log line): every later write needs an answer, so the outcome is safe either way.
+On demand only (0064): the user asks ("review my projects", "what's stalled in Clients?"). The scheduled run is CC-111 (0.15.0; moved by 0077 and 0078). **Report only** when the request it was given says `report only`. That is the one signal, and the skill never infers it: a session that delegates to the sub-agent writes it in its prompt (the sub-agent file and the brain's `AGENTS.md` row say so, §10), and a user may say it too. Then it runs steps 1, 2 and 4 to 6 and returns the report: it skips step 3, writes nothing (no proposal, no log line, no commit) and ends there. Every other run is interactive (`claude --agent ultimate-assistant`, whose first message is the user's own, an ordinary chat, a `claude -p` run): it runs steps 1 to 6 and waits. Where no answer comes (a `claude -p` run, a sub-agent delegated without `report only`), only step 3's writes are made (committed, §6.4), and nothing after them (no log line): every later write needs an answer, so the outcome is safe either way.
 
 1. **Preconditions.** `brain status --json` resolves the brain. The skill commits nothing it didn't write.
 2. **Read Notion live** (§2.1) into the assistant snapshot. If Notion can't be read, the session runs **brain only** (§2.3).
@@ -106,7 +106,7 @@ When a Notion read fails (the MCP is missing, not logged in, or any query of §2
 | `REPORT_LIMIT` | 10 | findings shown per page (0072 §5) |
 | `DISMISS_DAYS` | 30 | a skip is remembered this long (0072 §6) |
 
-No setting changes them in 0.10.0; per-area preferences are 0.14.0.
+No setting changes them. 0.14.0's per-area tracking preferences (0061, kept by 0078) don't either: they steer what the ingest extracts ([setup.md](setup.md) §11, the user's choice of 2026-11-10).
 
 ### 3.3 The signals (normative; the names are stable)
 
