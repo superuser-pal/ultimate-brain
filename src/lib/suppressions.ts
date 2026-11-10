@@ -238,3 +238,19 @@ export function publishableNote(note: Note, context: Context): Note {
   // A note with nothing eligible left stays listed in its partly restricted form (§5.1, "Indexes").
   return partlyRestricted(note, restriction);
 }
+
+/**
+ * Whether a proposed change rests only on excluded evidence (capture-and-review §5.1, "Pending proposals resting on it"): such a proposal
+ * is never written and never applied. `text` is the wording it would put into the brain, when it has one. With passage references in the
+ * text, the text is judged as a note resting on `source` would be: excluded when nothing eligible is left of it. Without them, the change
+ * is excluded when `source` is an older version or a full copy of a changed input, which retrieval no longer returns.
+ */
+export function restsOnlyOnExcluded(source: unknown, text: string | null, context: Context): boolean {
+  if (context.suppressions.length === 0) return false;
+  const sources = typeof source === "string" ? [source] : [];
+  if (text !== null && [...text.matchAll(PASSAGE_REF)].length > 0) {
+    const note: Note = { id: "", type: "decision", path: "", attributes: { sources }, body: text, raw: text };
+    return eligibleNote(note, context) === null;
+  }
+  return sources.some((id) => restrictedSources(context).has(id));
+}
