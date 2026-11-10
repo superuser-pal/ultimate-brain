@@ -162,6 +162,28 @@ test("a legacy proposal applies when its input has no suppression record, and is
   assert.equal((await run(clean, ["apply"], approve(plain.json.data.created[0].id))).json.data.decisions[0].result, "applied");
 });
 
+test("a legacy proposal on the current version is withheld by its input; a stored text citing a passage outside its list is still judged (schema §11.5)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
+  const listed = await run(dir, ["proposal", "new"], { proposals: [{ kind: "add_to_note", title: "Kept", target: CONCEPT, content: `A kept remark. ^[${LIVE_P}]`, why: "Kept.", source: "src-ex1a3b4c", passages: [LIVE_P] }] });
+  assert.equal(listed.code, 0, listed.stdout);
+  const edited = listed.json.data.created[0] as { id: string; path: string };
+  // The file now cites an excluded passage its list does not name (written by hand, or by an older skill): the cited line is judged too.
+  const document = parseFrontmatter(await readFile(join(dir, edited.path), "utf8"));
+  await writeFile(join(dir, edited.path), serializeNewFile({ ...document.attributes, content: `A kept remark. ^[${LIVE_P}]\n\nThe price was 95k. ^[${EXCLUDED_P}]` }, document.body));
+  await exclude();
+  // Written on the current version after the exclusion, then read as legacy: no cited passage, so its input decides.
+  const current = await run(dir, ["proposal", "new"], { proposals: [budget([LIVE_P2], "src-ex2a3b4c", "91,000 EUR")] });
+  assert.equal(current.code, 0, current.stdout);
+  const onCurrent = current.json.data.created[0] as { id: string; path: string };
+  await legacy(dir, onCurrent.path);
+  const out = await run(dir, ["apply"], approve(edited.id, onCurrent.id));
+  const [text, fact] = out.json.data.decisions as Array<Record<string, unknown>>;
+  assert.deepEqual([text!.result, text!.reason, text!.legacy], ["closed", "SOURCE_EXCLUDED", undefined], out.stdout);
+  assert.deepEqual([fact!.result, fact!.reason, fact!.legacy], ["closed", "SOURCE_EXCLUDED", true], out.stdout);
+  assert.equal((await attributes(dir, "projects/acme-website/project.md")).facts.budget, "80000 EUR");
+});
+
 test("an older-layout review_notes approved whole drops only its unsupported items and applies the rest (eligibility §4.1, §9.3)", async (context) => {
   const dir = await fixtureCopy(context);
   const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
