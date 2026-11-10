@@ -6,6 +6,7 @@
 **Amended by:** [0069](0069-skills-from-the-fork-in-0-9-2.md) (CC-105 in 0.9.2); [0072](0072-ultimate-assistant.md) (the assistant is Ultimate Assistant; report first in a live chat, Review rows only when asked)
 **0.12.0 scope refined by:** [0074](0074-scoped-memory-handovers-and-bounded-recall.md) (scoped memories, work handovers, bounded hot context and surgical retrieval reuse)
 **0.13.0 scope refined by:** [0075](0075-weekly-review-and-targeted-corrections.md) (one weekly report with task analysis, shared attention limits and targeted correction checks)
+**Release order amended by:** [0077](0077-trust-repair-in-0-13-0.md) (2026-11-10): 0.13.0 is the trust repair, the weekly review (0075, CC-111) moves to 0.14.0, onboarding and the feature cutoff to 0.15.0
 **Keeps:** 0059 (0.9.0 scope, refined by 0066), 0052 (reflection's scope), 0061's feature cutoff at 0.14.0, the session-opening scope gate and every architecture rule
 
 ## Context

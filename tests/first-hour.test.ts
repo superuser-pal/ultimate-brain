@@ -31,7 +31,7 @@ test("query without --candidates points to the brain-query skill, with or withou
   for (const args of [["query", "what did we decide?"], ["query"]]) {
     const result = await brain([...args, "--brain", root, "--json"]);
     assert.equal(result.code, 2, result.stdout);
-    assert.deepEqual(result.json.error, { code: "USAGE", message: "brain query requires --candidates; use the brain-query skill to answer questions" });
+    assert.deepEqual(result.json.error, { code: "USAGE", message: "brain query requires --candidates or --read; use the brain-query skill to answer questions" });
   }
   const extra = await brain(["query", "--candidates", "launch", "extra", "--brain", root, "--json"]);
   assert.equal(extra.code, 2, extra.stdout);

@@ -231,6 +231,8 @@ export function publishableNote(note: Note, context: Context): Note {
   if (restriction.whole) {
     const attributes = { ...note.attributes };
     delete attributes.summary;
+    // Aliases are text the brain wrote from the note's evidence: they go with the summary.
+    delete attributes.aliases;
     if ("facts" in attributes) attributes.facts = {};
     if ("timeline" in attributes) attributes.timeline = [];
     return { ...note, attributes, body: "" };
@@ -263,4 +265,42 @@ export function restsOnlyOnExcluded(source: unknown, text: string | null, contex
 /** Whether a text carries a passage reference `^[src-…#¶n:hash]`. */
 export function citesPassage(text: string): boolean {
   return [...text.matchAll(PASSAGE_REF)].length > 0;
+}
+
+/** A frontmatter timestamp in the schema's form (`2026-11-10T09:30:00Z`, note.schema.json) as milliseconds; anything else is NaN. */
+function stamp(value: unknown): number {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(value) ? Date.parse(value) : Number.NaN;
+}
+
+/**
+ * A view as retrieval may use it: whole, or null. A view is text written from notes (a Brief, a Decision log) or by a skill (a report), with no
+ * passage references of its own, so it cannot be judged line by line. While the brain has a suppression record it is left out whole when
+ * (a) a note it was generated from, or links, is restricted in any part or is gone (`gone`: a `.md` link of its body that names no note and no file), or
+ * (b) it is a report not written after (a later second than) every extract version that carries a suppression record: its prose may restate what that version
+ * removed without linking the note it came from, and only a refresh, which reads through retrieval, clears it (capture-and-review §5.1).
+ * `linked` holds the ids the view's body links.
+ */
+export function eligibleView(view: Note, links: { linked: readonly string[]; gone: boolean }, byId: ReadonlyMap<string, Note>, context: Context): Note | null {
+  if (context.suppressions.length === 0) return view;
+  if (links.gone) return null;
+  const from = Array.isArray(view.attributes.generated_from) ? view.attributes.generated_from.filter((id): id is string => typeof id === "string") : [];
+  for (const id of new Set([...from, ...links.linked])) {
+    const note = byId.get(id);
+    if (note === undefined) return null;
+    const restriction = restrictionOf(note, context);
+    if (restriction.whole || restriction.lines.size > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0 || restriction.summary) return null;
+  }
+  if (view.attributes.view_kind === "report") {
+    const written = stamp(view.attributes.generated_at);
+    const captured = new Map<string, number>();
+    for (const note of byId.values()) {
+      const key = `${String(note.attributes.extract_of)}\u0000${String(note.attributes.extract_version)}`;
+      if (note.type === "source" && typeof note.attributes.extract_of === "string" && typeof note.attributes.extract_version === "number" && !captured.has(key)) captured.set(key, stamp(note.attributes.captured));
+    }
+    for (const record of context.suppressions) {
+      // Fail closed: a time on either side that isn't a full timestamp (a date alone), or the same second, keeps the report out.
+      if (!(written > (captured.get(`${record.input}\u0000${String(record.version)}`) ?? Number.NaN))) return null;
+    }
+  }
+  return view;
 }
