@@ -231,10 +231,30 @@ export function publishableNote(note: Note, context: Context): Note {
   if (restriction.whole) {
     const attributes = { ...note.attributes };
     delete attributes.summary;
+    // Aliases are text the brain wrote from the note's evidence: they go with the summary.
+    delete attributes.aliases;
     if ("facts" in attributes) attributes.facts = {};
     if ("timeline" in attributes) attributes.timeline = [];
     return { ...note, attributes, body: "" };
   }
   // A note with nothing eligible left stays listed in its partly restricted form (§5.1, "Indexes").
   return partlyRestricted(note, restriction);
+}
+
+/**
+ * A view as retrieval may use it: whole, or null. A view is text written from notes (a Brief, a Decision log) or by a skill (a report), with no
+ * passage references of its own, so it cannot be judged line by line: it is left out whole when any note it was generated from, or links, is
+ * restricted in any part or is gone (capture-and-review §5.1). A report is never edited by the brain and a Brief waits for the next `views`
+ * run, so either may still hold a statement the user excluded. `linked` holds the ids the view's body links.
+ */
+export function eligibleView(view: Note, linked: readonly string[], byId: ReadonlyMap<string, Note>, context: Context): Note | null {
+  if (context.suppressions.length === 0) return view;
+  const from = Array.isArray(view.attributes.generated_from) ? view.attributes.generated_from.filter((id): id is string => typeof id === "string") : [];
+  for (const id of new Set([...from, ...linked])) {
+    const note = byId.get(id);
+    if (note === undefined) return null;
+    const restriction = restrictionOf(note, context);
+    if (restriction.whole || restriction.lines.size > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0 || restriction.summary) return null;
+  }
+  return view;
 }

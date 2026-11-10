@@ -43,3 +43,18 @@ export function reportLinks(workspace: { notes: readonly Note[] }, body: string,
   }
   return { linked: [...linked], broken };
 }
+
+/** The ids of the notes a view's body links, by relative Markdown link from the view's own folder. */
+export function viewLinks(notes: readonly Note[], view: Note): string[] {
+  const byPath = new Map(notes.map((note) => [note.path, note.id]));
+  const linked = new Set<string>();
+  for (const match of view.body.matchAll(/\]\(\s*<?([^)\s>]+)>?\s*\)/g)) {
+    const target = match[1]!;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) continue;
+    let decoded = target.split(/[?#]/)[0]!;
+    try { decoded = decodeURIComponent(decoded); } catch { /* keep as written */ }
+    const id = byPath.get(posix.normalize(posix.join(posix.dirname(view.path), decoded)));
+    if (id !== undefined) linked.add(id);
+  }
+  return [...linked];
+}
