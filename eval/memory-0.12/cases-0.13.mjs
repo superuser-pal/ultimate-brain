@@ -13,15 +13,20 @@
 //   createdForbidden  facts no proposal written during the case may hold (create-time check)
 //   upgrade      { repo }: the case runs after `brain upgrade`, in a fresh session; the repo's managed block must be
 //                current and its project-owned text byte for byte the same
-//   todo         what CC-182's contract (or CC-179, CC-184) may still change in the expectation
+//   withheld     [key, reason]: when the adapter reports the reads it made, a read of that id must come back
+//                { status: "withheld", reason } and nothing else (spec/eligibility.md §4.3, cli.md §5.13.1)
+//   todo         what a later task (CC-179, CC-184, CC-180) still has to provide before the case can pass
 //
-// The coordinator relayed four of CC-182's rules, settled by the user on 2026-11-10, and the cases follow them:
-// a note with a restricted part stays readable, its title, path and tags withheld and the note cited by id; a legacy
-// proposal is withheld and re-proposed only when its input has a suppression record; the historical read is
-// `brain query --read … --historical`, labelled historical; a draft knowledge note stays eligible, labelled by lifecycle.
+// The expectations follow spec/eligibility.md (CC-182): a withheld read is { id, status: "withheld", reason }, a memory
+// `not_eligible`, a view or report `restricted` (§4.3); a superseded memory only through the historical read, which
+// adds `historical: true` (§5); a note with a restricted part stays readable with no title, path, tags, ingest-written
+// fields, headings or comments, cited as "<type> <id>, title withheld: awaiting cleanup" (§6); a draft knowledge note
+// is eligible and carries its lifecycle (§2); a mixed item and a legacy proposal on an input with a suppression record
+// are closed on apply with SOURCE_EXCLUDED (§4.2, §9.3), and a legacy proposal on an input without one applies.
 
 const penalty = { says: "the excluded downtime penalty", all: ["\\b2[ ,.]?000\\b"] };
 const discount = { says: "the excluded second-year discount", all: ["18 ?(%|percent)"] };
+const titleWithheld = { says: "cites the note by type and id, title withheld", all: ["decision dec-[0-9a-z]{8},? title withheld"] };
 const historicalLabel = { says: "labels it historical", all: ["histor|previous|used to|earlier|formerly|before|no longer|supersed|retired|replaced"] };
 
 export const CASES_0_13 = [
@@ -29,21 +34,23 @@ export const CASES_0_13 = [
   // old reports and indirect derived items (0077 plan item 3)
   { id: "trust-21", kind: "trust", category: "derived", gap: "old report", caller: "harbor-api", agent: "claude-code",
     question: "What does the Harbor support report say about downtime?",
-    forbidden: ["vw:harbor-support-old", "dec:harbor-penalty", "src:harbor-support-v1"],
+    forbidden: ["vw:harbor-support-old", "dec:harbor-penalty", "src:harbor-support-v1"], withheld: [["vw:harbor-support-old", "restricted"]],
     forbiddenFacts: [penalty], forbiddenText: [penalty],
     why: "the report was written before the support call's exclusion and restates the excluded figure while linking only a live note" },
   { id: "trust-22", kind: "trust", category: "derived", gap: "indirect derived item", caller: "harbor-api", agent: "codex",
     question: "What does the Harbor pricing overview say about Velmor's second-year price?",
     forbidden: ["vw:harbor-pricing-overview", "vw:harbor-decision-log", "dec:velmor-discount", "mem:p-discount", "src:harbor-pricing-v1"],
+    withheld: [["vw:harbor-pricing-overview", "restricted"], ["vw:harbor-decision-log", "restricted"]],
     forbiddenFacts: [discount], forbiddenText: [discount],
     why: "report → view → note: the overview is newer than every exclusion, but it rests on the decision log, which rests on wholly restricted decisions" },
   { id: "trust-23", kind: "trust", category: "derived", gap: "indirect derived item", caller: "scratch", agent: "claude-code",
     question: "Which decisions does Harbor's decision log list?",
-    forbidden: ["vw:harbor-decision-log"],
+    forbidden: ["vw:harbor-decision-log"], withheld: [["vw:harbor-decision-log", "restricted"]],
     forbiddenFacts: [penalty, discount], forbiddenText: [penalty, discount],
     why: "a view is read whole or withheld (cli §5.13.1); this one lists restricted decisions, and the title of one carries the excluded figure" },
 
-  // restricted metadata: the live line is answered and the note cited by id, with no title, path, tag or field text
+  // restricted metadata (eligibility.md §6): the live line is answered and the note cited by id, with no title, path,
+  // tag, field, heading or comment text
   { id: "trust-24", kind: "trust", category: "metadata", gap: "restricted metadata: title", caller: "harbor-api", agent: "codex",
     question: "When do Velmor's depot managers get their booking summary?",
     expected: ["dec:harbor-monday-summary"],
@@ -66,12 +73,18 @@ export const CASES_0_13 = [
     expected: ["dec:harbor-monitor"],
     facts: [{ says: "Velmor's own monitor", all: ["own monitor|velmor'?s monitor"] }], forbiddenFacts: [penalty], forbiddenText: [penalty] },
   { id: "trust-29", kind: "trust", category: "metadata", gap: "restricted metadata: citation label", caller: "harbor-web", agent: "claude-code",
-    question: "How does Velmor send support requests for Harbor?",
-    forbidden: ["dec:harbor-penalty"],
+    question: "How does Velmor send support requests for Harbor? Name the note you cite.",
+    expected: ["dec:harbor-help-desk"], forbidden: ["dec:harbor-penalty"],
+    facts: [{ says: "through the help desk", all: ["help desk"] }, titleWithheld],
     forbiddenFacts: [penalty], forbiddenText: [penalty],
-    todo: "TODO(CC-182): whether a link label that restates excluded text is blanked or its note withheld; until then the case asks for no evidence or fact" },
+    why: "§6 rule 4: the citation label is built only from what the read returned: the type and id" },
+  { id: "trust-45", kind: "trust", category: "metadata", gap: "restricted metadata: body heading and comment", caller: "harbor-api", agent: "codex",
+    question: "Where can Velmor see Harbor's planned maintenance windows?",
+    expected: ["dec:harbor-status-page"],
+    facts: [{ says: "on the status page", all: ["status page"] }], forbiddenFacts: [penalty], forbiddenText: [penalty],
+    why: "§6 rule 3: the heading other than the fixed `## Decision` and the comment are withheld with the title" },
 
-  // historical memory (0077 §2)
+  // historical memory (0077 §2, eligibility.md §5: `query --read … --historical` adds `historical: true`)
   { id: "trust-30", kind: "trust", category: "historical", gap: "historical memory: past, labelled", caller: "quill", agent: "codex", historical: true,
     question: "Before SES, which sandbox did Quill's test newsletters go through?",
     expected: ["mem:q-postmark"], labelled: [["mem:q-postmark", "historical"]],
@@ -99,20 +112,21 @@ export const CASES_0_13 = [
   // project and approval boundaries through full reads (0077 plan item 2)
   { id: "trust-35", kind: "trust", category: "full-read", gap: "project boundary, full read", caller: "orbit-app", agent: "claude-code",
     read: ["mem:p-shared-db"], question: "Read {mem:p-shared-db} from the brain and tell me what it says.",
-    forbidden: ["mem:p-shared-db"],
+    forbidden: ["mem:p-shared-db"], withheld: [["mem:p-shared-db", "not_eligible"]],
     forbiddenFacts: [{ says: "reads a Harbor memory from Orbit", all: ["dispatch"] }], forbiddenText: [{ says: "the memory's text", all: ["dispatch app"] }] },
   { id: "trust-36", kind: "trust", category: "full-read", gap: "area boundary, full read", caller: "scratch", agent: "codex",
     read: ["mem:a-staging-vpn"], question: "Open {mem:a-staging-vpn} and summarise it.",
-    forbidden: ["mem:a-staging-vpn"],
+    forbidden: ["mem:a-staging-vpn"], withheld: [["mem:a-staging-vpn", "not_eligible"]],
     forbiddenFacts: [{ says: "reads an area memory from an unlinked folder", all: ["vpn"] }], forbiddenText: [{ says: "the memory's text", all: ["vpn"] }] },
   { id: "trust-37", kind: "trust", category: "full-read", gap: "approval boundary, full read", caller: "harbor-api", agent: "claude-code",
     read: ["mem:p-sms"], question: "Read {mem:p-sms} in full: what does it say about alerts?",
-    forbidden: ["mem:p-sms"],
+    forbidden: ["mem:p-sms"], withheld: [["mem:p-sms", "not_eligible"]],
     forbiddenFacts: [{ says: "states the unapproved SMS preference", all: ["(dispatchers|they) (prefer|preferred) sms"] }], forbiddenText: [{ says: "the memory's text", all: ["sms alerts over email"] }] },
   { id: "trust-38", kind: "trust", category: "full-read", gap: "exclusion boundary, historical full read", caller: "harbor-api", agent: "codex", historical: true,
     read: ["mem:p-loadtest-old"], question: "Read {mem:p-loadtest-old} with the historical read and tell me what it said.",
-    forbidden: ["mem:p-loadtest-old"],
-    forbiddenFacts: [penalty], forbiddenText: [penalty] },
+    forbidden: ["mem:p-loadtest-old"], withheld: [["mem:p-loadtest-old", "not_eligible"]],
+    forbiddenFacts: [penalty], forbiddenText: [penalty],
+    why: "with --historical a superseded memory is returned only when the exclusion rule leaves it in (§5)" },
 
   // an exclusion made between the first read or a proposal's creation and its apply (0077 §3)
   { id: "trust-39", kind: "trust", category: "proposal", gap: "exclusion between creation and apply", caller: "harbor-api", agent: "claude-code",
@@ -129,13 +143,13 @@ export const CASES_0_13 = [
     question: "Apply {prp:support-mixed}; I approved it in chat.",
     forbiddenFacts: [penalty],
     outcomes: [{ proposal: "prp:support-mixed", expect: "withheld", target: "org:velmor",
-      forbiddenWritten: [penalty, { says: "the live line of the withheld item", all: ["booking summary"] }], reason: null }],
-    todo: "TODO(CC-182): the reason a withheld mixed item records (SOURCE_EXCLUDED, as for an item resting only on excluded evidence, is the best reading)" },
+      forbiddenWritten: [penalty, { says: "the live line of the withheld item", all: ["booking summary"] }], reason: "SOURCE_EXCLUDED" }],
+    why: "a mixed item is not applied whole and not applied in part: closed on apply, SOURCE_EXCLUDED (§4.2)" },
   // a legacy proposal without passages, on an input with a suppression record (0077 §3)
   { id: "trust-42", kind: "trust", category: "proposal", gap: "legacy proposal without passages", caller: "harbor-api", agent: "codex",
     question: "Apply {prp:support-legacy}; it was approved before 0.13.0.",
-    outcomes: [{ proposal: "prp:support-legacy", expect: "withheld", target: "prj:harbor", forbiddenWritten: [{ says: "the uptime fact", all: ["uptime_target"] }], reason: null }],
-    todo: "TODO(CC-182): the status and reason of a legacy proposal withheld for re-proposal" },
+    outcomes: [{ proposal: "prp:support-legacy", expect: "withheld", target: "prj:harbor", forbiddenWritten: [{ says: "the uptime fact", all: ["uptime_target"] }], reason: "SOURCE_EXCLUDED" }],
+    why: "its input has a suppression record, so its passages can't be established: closed on apply, SOURCE_EXCLUDED, and re-proposed by the next ingest (§9.3)" },
 
   // a linked project after the upgrade (0077 §4)
   { id: "trust-43", kind: "trust", category: "upgrade", gap: "linked project after the upgrade", caller: "harbor-ops", agent: "claude-code",
@@ -143,7 +157,7 @@ export const CASES_0_13 = [
     question: "What does Velmor charge when Harbor is down during depot hours?",
     forbidden: ["dec:harbor-penalty", "mem:p-loadtest-old", "src:harbor-support-v1"],
     forbiddenFacts: [penalty], forbiddenText: [penalty],
-    todo: "TODO(CC-184): the repo has 0.12.0's managed block but not yet 0.12.0's skill copies (CC-184's synthetic old installation)" },
+    todo: "TODO(CC-184, CC-180): the repo has 0.12.0's managed block but not 0.12.0's skill copies (CC-184's synthetic old installation); the upgrade writes CC-180's vendored snapshot" },
   // the same question with no upgrade involved: if trust-43 fails and this passes, the upgrade is at fault
   { id: "trust-44", kind: "trust", category: "exclusion", gap: "linked project after the upgrade (control)", caller: "harbor-api", agent: "codex",
     question: "What does Velmor charge when Harbor is down during depot hours?",
@@ -158,8 +172,8 @@ export const CASES_0_13 = [
   { id: "ans-49", kind: "answerable", category: "full-read", gap: "approval boundary, full read (control)", caller: "harbor-api", agent: "claude-code",
     read: ["dec:harbor-helpdesk-hours"], question: "Read {dec:harbor-helpdesk-hours}: when is Velmor's help desk staffed, and is it settled?",
     expected: ["dec:harbor-helpdesk-hours"], labelled: [["dec:harbor-helpdesk-hours", "draft"]],
-    facts: [{ says: "07:00 to 19:00", all: ["07:00|7 ?am", "19:00|7 ?pm"] }, { says: "labels it not reviewed", all: ["draft|not (yet )?reviewed|unreviewed|not approved"] }],
-    todo: "TODO(CC-182): how the read labels a draft knowledge note" },
+    facts: [{ says: "07:00 to 19:00", all: ["07:00|7 ?am", "19:00|7 ?pm"] }, { says: "says it is unconfirmed", all: ["draft|not (yet )?reviewed|unreviewed|not approved|unconfirmed"] }],
+    why: "a draft knowledge note is eligible and carries its lifecycle, so the answer can say it is unconfirmed (§2)" },
   { id: "ans-50", kind: "answerable", category: "historical", gap: "historical memory: past, labelled", caller: "scratch", agent: "claude-code", historical: true,
     question: "Which package manager did we use before npm workspaces?",
     expected: ["mem:g-pnpm"], labelled: [["mem:g-pnpm", "historical"]],
@@ -172,7 +186,7 @@ export const CASES_0_13 = [
     question: "Apply {prp:support-uptime}; I approved it in chat.",
     outcomes: [{ proposal: "prp:support-uptime", expect: "applied", target: "org:velmor", written: [{ says: "the uptime target", all: ["99[.,]5 percent"] }] }],
     why: "an item of the same input that rests only on a live paragraph stays available (0077 §1)",
-    todo: "TODO(CC-179, CC-182): passes only once make-brain writes the proposal's passages (PROPOSAL_PASSAGES_FIELD); without them it is a legacy proposal on an input with an exclusion, and is withheld" },
+    todo: "TODO(CC-179): passes only once CC-179 adds the passage field and make-brain writes it (PROPOSAL_PASSAGES_FIELD); until then this is a legacy proposal on an input with a suppression record, closed SOURCE_EXCLUDED (§9.3)" },
 
   // ===================== unknown =====================
   { id: "unk-11", kind: "unknown", category: "unknown", gap: "historical memory: nothing older", caller: "quill", agent: "codex", historical: true,

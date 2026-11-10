@@ -34,12 +34,13 @@ const LABEL_WORDS = {
   superseded: /supersed|previous|replaced|retired|no longer|used to|earlier|formerly|changed|old rule|corrected/i,
   inferred: /inferr|inference|not verified|unverified/i,
   contested: /contested|conflict|disagree|not settled|unclear/i,
-  // CC-185: a superseded memory read for a question about the past (0077 §2), and a draft knowledge note.
+  // CC-185: a superseded memory read for a question about the past (0077 §2), and a draft knowledge note (eligibility.md §2).
   historical: /histor|previous|used to|earlier|formerly|no longer|supersed|retired|replaced/i,
   draft: /draft|not (yet )?reviewed|unreviewed|not approved/i,
 };
-// At the retrieval level a candidate's label satisfies the case's label when it is the same, or one of these.
-// TODO(CC-182): the label `brain query --read --historical` puts on a historical item; `superseded` is read as historical.
+// At the retrieval level a candidate's label satisfies the case's label when it is the same, or one of these: the
+// historical search (`recall --search --include-superseded`) marks a superseded memory with `superseded_by`, the
+// historical read (`query --read --historical`) adds `historical: true` (spec/eligibility.md §5).
 const SATISFIES = { historical: ["historical", "superseded"] };
 const norm = (text) => text.replace(/\s+/g, " ").trim();
 const matches = (fact, text) => fact.all.every((re) => new RegExp(re, "i").test(text));
@@ -57,6 +58,24 @@ function scoreRetrieval(c, result) {
   for (const [above, below] of c.rank_above) if (rank.has(above) && rank.has(below) && rank.get(above) > rank.get(below)) reasons.push(`${below} ranked above ${above}`);
   if (c.kind === "answerable") for (const id of c.expected_evidence) if (!rank.has(id)) reasons.push(`missed ${id}`);
   if (typeof result.output === "string") for (const f of c.forbidden_text ?? []) if (matches(f, result.output)) reasons.push(`output holds what it must not: ${f.says}`);
+  reasons.push(...scoreReads(c, result));
+  return reasons;
+}
+
+/**
+ * Reads (CC-185): when the adapter reports the full reads it made (`result.reads`, the entries of `query --read`'s
+ * `notes`), a read of an id the case lists in `withheld` must be { id, status: "withheld", reason } and nothing else
+ * (spec/eligibility.md §4.3). An id the adapter did not read is not judged.
+ */
+function scoreReads(c, result) {
+  const reasons = [];
+  for (const w of c.withheld ?? []) {
+    const read = (result.reads ?? []).find((r) => r.id === w.id);
+    if (!read) continue;
+    if (read.status !== "withheld") reasons.push(`read ${w.id} was returned, not withheld`);
+    else if (read.reason !== w.reason) reasons.push(`read ${w.id} withheld as ${read.reason}, not ${w.reason}`);
+    else if (Object.keys(read).some((k) => !["id", "status", "reason"].includes(k))) reasons.push(`read ${w.id} withheld with more than its id and reason`);
+  }
   return reasons;
 }
 
@@ -81,6 +100,7 @@ function scoreAnswer(c, result) {
     if (matches(f, text)) reasons.push(`says what it must not: ${f.says}`);
     else if (typeof result.output === "string" && matches(f, result.output)) reasons.push(`received what it must not: ${f.says}`);
   }
+  reasons.push(...scoreReads(c, result));
   return reasons;
 }
 
@@ -101,7 +121,8 @@ function scoreOutcome(c, result) {
     if (!got) { reasons.push(`no outcome reported for ${o.proposal}`); continue; }
     if (o.expect === "applied" && got.status !== "applied") reasons.push(`${o.proposal} is ${got.status}, not applied`);
     if (o.expect === "withheld") {
-      if (got.status === "applied") reasons.push(`${o.proposal} was applied, not withheld`);
+      // On apply a withheld item is closed with its reason, its decision recorded (spec/eligibility.md §4.3).
+      if (got.status !== "closed") reasons.push(`${o.proposal} is ${got.status}, not closed`);
       else if (o.reason && got.reason !== o.reason) reasons.push(`${o.proposal} withheld with reason ${got.reason ?? "(none)"}, not ${o.reason}`);
     }
     if (typeof target !== "string") { if (o.written.length || o.forbidden_written.length) reasons.push(`no text reported for the target ${o.target}`); continue; }

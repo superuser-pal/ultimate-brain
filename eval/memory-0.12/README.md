@@ -7,7 +7,7 @@ A fixed synthetic test set for decision [0074](../../decisions/0074-scoped-memor
 | `world.mjs` | The synthetic world: areas, orgs, projects, sources, decisions, memories, linked repos and their task rows |
 | `world-0.13.mjs` | What CC-185 adds for 0.13.0's trust gaps: a second excluded input, notes with restricted metadata, a superseded memory on excluded evidence, a decision log and two reports, approved proposals, and a repo linked by 0.12.0 |
 | `cases.mjs` | The 77 cases of CC-165, written against the world's keys |
-| `cases-0.13.mjs` | The 30 cases CC-185 adds (decision [0077](../../decisions/0077-trust-repair-in-0-13-0.md) §5) |
+| `cases-0.13.mjs` | The 31 cases CC-185 adds (decision [0077](../../decisions/0077-trust-repair-in-0-13-0.md) §5) |
 | `make-brain.mjs` | Builds the brain and the linked repos, and writes `cases.json` with the keys resolved to ids: the 77 cases first, unchanged, then the added ones |
 | `cases.json` | The committed cases (generated; never edit by hand) |
 | `score.mjs` | Runs one adapter on every case and prints the gates |
@@ -36,7 +36,7 @@ node eval/memory-0.12/score.mjs /tmp/mem12 --adapter reference-answers
 
 ## Cases
 
-107 cases: CC-165's 77 (20 critical trust, 47 answerable, 10 unknown), then the 30 CC-185 added for 0.13.0 (24 critical trust, 5 answerable, 1 unknown; [below](#cases-for-0130-cc-185)). Each names its caller (the folder whose `.brain` gives project, area and stacks), the evidence a correct answer cites, and the facts it must contain.
+108 cases: CC-165's 77 (20 critical trust, 47 answerable, 10 unknown), then the 31 CC-185 added for 0.13.0 (25 critical trust, 5 answerable, 1 unknown; [below](#cases-for-0130-cc-185)). Each names its caller (the folder whose `.brain` gives project, area and stacks), the evidence a correct answer cites, and the facts it must contain.
 
 | Kind | Categories |
 |---|---|
@@ -65,12 +65,13 @@ The cases CC-185 added may also carry:
 | `historical` | the question is about the past: the explicit historical read (`brain query --read … --historical`) is the right tool, and a superseded item it returns is labelled historical (0077 §2) |
 | `read` | ids the caller asks to read in full (`brain query --read`); the question names them |
 | `forbidden_text` | facts that must not appear in anything the caller received, not only in the answer: an adapter's `output` (every title, path, alias, summary and field) as well as the answer's text |
-| `outcomes` | `{ proposal, expect: applied·withheld, target, target_path, written, forbidden_written, reason? }`: what a proposal must become when the case runs, and what its target note's file must hold or not hold afterwards. `reason: null` means CC-182 has not fixed the reason yet |
+| `outcomes` | `{ proposal, expect: applied·withheld, target, target_path, written, forbidden_written, reason? }`: what a proposal must become when the case runs, and what its target note's file must hold or not hold afterwards |
 | `created_forbidden` | facts no proposal written during the case may hold (the check at creation) |
+| `withheld` | `{ id, reason }`: a full read of that id must come back `{ id, status: "withheld", reason }` and nothing else ([spec/eligibility.md](../../spec/eligibility.md) §4.3; reasons in cli.md §5.13.1: a memory `not_eligible`, a view or report `restricted`). Judged when the adapter reports its reads (`result.reads`) |
 | `upgrade` | `{ repo, linked_by, managed_block: "current", project_text_sha256 }`: the case runs after `brain upgrade`, in a fresh session; the repo's managed block must be current and its text outside the block byte for byte the same |
-| `todo` | what CC-182's contract, CC-179 or CC-184 may still change in the expectation |
+| `todo` | what a later task (CC-179, CC-184, CC-180) must provide before the case can pass |
 
-Labels gain `historical` (a candidate labelled `superseded` satisfies it at the retrieval level) and `draft` (a draft knowledge note: eligible, labelled by its lifecycle).
+Labels gain `historical` (eligibility.md §5: `query --read --historical` adds `historical: true`; at the retrieval level a candidate labelled `superseded`, as the historical search marks it with `superseded_by`, satisfies it too) and `draft` (a draft knowledge note is eligible and carries its lifecycle, §2).
 
 ## Scoring rules
 
@@ -105,7 +106,7 @@ A case with `outcomes`, `created_forbidden` or `upgrade` is judged on `result.ou
 | Expectation | Passes when |
 |---|---|
 | `expect: applied` | the proposal's status is `applied`, and its target's text matches every `written` fact |
-| `expect: withheld` | the proposal is not `applied` (closed, or withheld for re-proposal), with `reason` when the case names one; its target's text matches no `forbidden_written` fact |
+| `expect: withheld` | the proposal is `closed` with the case's `reason` (on apply a withheld item is closed with its reason, eligibility.md §4.3); its target's text matches no `forbidden_written` fact |
 | `created_forbidden` | no proposal the run wrote holds one of these facts |
 | `upgrade` | the repo's managed block is `current` and its project-owned text has the recorded hash |
 
@@ -131,7 +132,7 @@ Decision 0077 §5 makes the final acceptance the 77 cases plus cases for the gap
 |---|---|---|---|
 | An old report | trust-21 | | a report written before the support call's exclusion that restates the excluded figure and links only a live note |
 | An indirect derived item (report → view → note) | trust-22, trust-23 | | a report newer than every exclusion that rests on Harbor's decision log, as 0.12.0's `brain views` wrote it, listing wholly restricted decisions |
-| Restricted metadata: title, path and tags, alias, summary, custom field, citation label | trust-24 to trust-29 | | six decisions that each cite a live and the excluded paragraph and carry the excluded figure in one channel; the live line is answered, the note cited by id |
+| Restricted metadata: title, path and tags, alias, summary, custom field, citation label, body heading and comment | trust-24 to trust-29, trust-45 | | seven decisions that each cite a live and the excluded paragraph and carry the excluded figure in one channel; the live line is answered and the note cited as `decision <id>, title withheld: awaiting cleanup` |
 | Historical memory: past (labelled) and present | trust-30 to trust-34 | ans-50, unk-11 | the existing superseded memories, and one that rests only on the excluded paragraph; the historical read still obeys reach, approval and exclusion |
 | Project and approval boundaries through full reads | trust-35 to trust-38 | ans-48, ans-49 | the existing memories out of reach, unapproved or excluded, read in full; a draft decision, eligible and labelled |
 | An exclusion between the first read or a proposal's creation and its apply | trust-39, trust-40 | | a proposal created and approved before the exclusion and applied after it; a proposal asked for after the passage was read and then excluded |
@@ -139,9 +140,11 @@ Decision 0077 §5 makes the final acceptance the 77 cases plus cases for the gap
 | A mixed excluded and live proposal | trust-41 | ans-52 | one item citing an excluded and a live paragraph (withheld whole) and an independent live item of the same input (applied) |
 | A linked project after the upgrade | trust-43 (control: trust-44) | | `harbor-ops`, linked by 0.12.0: its managed block still says to read what `query --candidates` returns, between project-owned text |
 
-The second excluded input is the Harbor support call: version 2 leaves out paragraph 2, a downtime penalty of 2000 EUR, a figure that appears nowhere else, so a case can forbid it in any field. The cases follow the rules of CC-182's contract that the user settled on 2026-11-10: a note with a restricted part stays readable while its title, path and tags are withheld and it is cited by id; a legacy proposal is withheld and re-proposed only when its input has a suppression record; the historical read is `brain query --read … --historical`, labelled historical; a draft knowledge note stays eligible, labelled by its lifecycle. What the contract may still change is the case's `todo` (`TODO(CC-182)` and the like in `cases-0.13.mjs` and `world-0.13.mjs`).
+The second excluded input is the Harbor support call: version 2 leaves out paragraph 2, a downtime penalty of 2000 EUR, a figure that appears nowhere else, so a case can forbid it in any field. The expectations follow [spec/eligibility.md](../../spec/eligibility.md) (CC-182): a withheld read shows only its id and reason (§4.3); a superseded memory comes only through the historical read, labelled `historical: true`, and a question about the present gets current memories only (§5); a note with a restricted part stays readable with no title, path, tags, ingest-written fields, body headings or comments (a decision's fixed sections excepted) and is cited by type and id (§6); a draft knowledge note is eligible and carries its lifecycle (§2); a mixed item, and a legacy proposal whose input has a suppression record, are closed on apply with `SOURCE_EXCLUDED`, while a legacy proposal whose input has none applies (§4.2, §9.3). A link label inside a note with no restricted part that restates an excluded paragraph is the uncited restatement, a stated limit (§9.6), so it is not a case.
 
-**Proposals' passages.** The proposals of the world carry the passages they rest on (0077 §3), but `make-brain.mjs` writes them only when `PROPOSAL_PASSAGES_FIELD` names the field, which CC-182 and CC-179 define; until then the proposal schema rejects the field, so every proposal is written as a legacy one and ans-52 cannot pass.
+**What waits for later tasks** (a `todo` on the case, `TODO(<task>)` in the code):
+- **Proposals' passages, CC-179.** The proposals of the world carry the passages they rest on (§9.1), but `make-brain.mjs` writes them only when `PROPOSAL_PASSAGES_FIELD` names the field, which CC-179 adds to schema §11; until then the proposal schema rejects it, every proposal is written as a legacy one, and ans-52 cannot pass.
+- **The upgrade's skill copies, CC-184 and CC-180.** `harbor-ops` has 0.12.0's managed block but not 0.12.0's skill copies or the `.brain` `skills` entry; they come from CC-184's synthetic old installation, and the corrected copies from CC-180's vendored snapshot.
 
 **A run's trace and identity (0077 §5).** A result counts only for the artifacts it names. Each run records, beside the results file:
 

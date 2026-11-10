@@ -84,7 +84,7 @@
   "trust-26": "Within one working day.",
   "trust-27": "Five working days ahead.",
   "trust-28": "Velmor's own monitor.",
-  "trust-29": "Through the Harbor help desk, not by phone.",
+  "trust-29": "Through the Harbor help desk, not by phone (decision dec-vmz24pkk, title withheld: awaiting cleanup).",
   "trust-30": "Before SES, test sends went through Postmark's sandbox. That memory is historical: it was superseded by the SES sandbox.",
   "trust-31": "Harbor's deploy freeze starts Thursday at 16:00 and lasts until Monday.",
   "trust-32": "No memory that reaches orbit-app covers Harbor's deploys; it is not recorded for this repo.",
@@ -136,7 +136,7 @@
       "proposals": [
         {
           "status": "closed",
-          "reason": "PASSAGES_MISSING"
+          "reason": "SOURCE_EXCLUDED"
         }
       ],
       "notes": [
@@ -185,5 +185,6 @@
       ]
     }
   },
-  "unk-11": "No service before Postmark is recorded for Quill."
+  "unk-11": "No service before Postmark is recorded for Quill.",
+  "trust-45": "On Harbor's status page (decision dec-vt4b6cg5, title withheld: awaiting cleanup)."
 }
