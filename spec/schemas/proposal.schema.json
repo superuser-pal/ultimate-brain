@@ -1486,7 +1486,7 @@
       "then": {
         "properties": {
           "status": {
-            "const": "applied"
+            "enum": ["applied", "closed"]
           }
         }
       }
