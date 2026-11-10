@@ -26,8 +26,10 @@ export default {
         ...(c.lifecycle === "archived" || c.assessment === "superseded" ? ["superseded"] : []),
         ...(c.confidence === "inferred" ? ["inferred"] : []), // not in today's output (§5.13), so never set
         ...(c.assessment === "contested" ? ["contested"] : []),
+        ...(c.lifecycle === "draft" ? ["draft"] : []), // CC-185: a draft knowledge note carries its lifecycle (eligibility.md §2)
       ],
     }));
-    return { candidates, cost: { phase: "later", bytes: Buffer.byteLength(stdout, "utf8"), ms } };
+    // `output`: everything the caller received, for the cases that forbid restricted text in any field (CC-185).
+    return { candidates, output: stdout, cost: { phase: "later", bytes: Buffer.byteLength(stdout, "utf8"), ms } };
   },
 };
