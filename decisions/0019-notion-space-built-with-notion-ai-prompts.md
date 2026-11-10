@@ -2,6 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-10-11
+**Refined by:** [0078](0078-onboarding-and-early-access-in-0-14-0.md) (2026-11-10): a new user duplicates a published template built in a dedicated workspace; the prompts stay for upgrading and rebuilding
 
 ## Decision
 - The Notion space is designed as a **duplicable product template** that also serves as the author's own workspace (0014).

@@ -3,7 +3,7 @@
 **Status:** Accepted; release order amended by [0064](0064-brain-assistant-before-reflection-hermes-after-1-0.md) (assistant 0.10.0, reflection 0.11.0, Hermes after 1.0)
 **Date:** 2026-10-31
 **Amends:** 0052, 0055, 0056 (reflection release placement); 0008 (memory loop delivery); 0030 (minimal onboarding preferences delivery)
-**Release order and cutoff amended by:** [0077](0077-trust-repair-in-0-13-0.md) (2026-11-10): trust repair in 0.13.0, weekly payback in 0.14.0, onboarding and the feature cutoff in 0.15.0
+**Release order and cutoff amended by:** [0077](0077-trust-repair-in-0-13-0.md) (2026-11-10): trust repair in 0.13.0, weekly payback in 0.14.0, onboarding and the feature cutoff in 0.15.0; then [0078](0078-onboarding-and-early-access-in-0-14-0.md) (2026-11-10): onboarding in 0.14.0 with early access for friends and family, the weekly review in 0.15.0, still the cutoff
 **Keeps:** 0038, 0039, 0040, 0044, 0046 and the permanent architecture rules
 
 ## Context
