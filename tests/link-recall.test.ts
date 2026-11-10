@@ -15,7 +15,7 @@ const BLOCK_START = "<!-- ultimate-brain:start -->\n## Ultimate Brain\n\nManaged
   + "The brain holds decisions, key facts, people and meeting history that this repo does not.\n\nConsult it before you:\n"
   + "- make or revisit a decision about scope, architecture, vendors or the client;\n- answer why something was decided, who someone is, or a date, budget or owner;\n"
   + "- rely on a fact about the client or project that this repo does not state.\n\n"
-  + "How: use the `brain-query` skill, or run `brain query --candidates \"<question>\" --json` and read the notes it returns. Cite the note paths. Say when a fact is `contested` or `superseded`.\n\n";
+  + "How: use the `brain-query` skill, or run `brain query --candidates \"<question>\" --json` and read the notes it returns with `brain query --read <id> --json`, not by opening the brain's files: only these commands leave out what the user excluded or has not approved. Cite the note paths. Say when a fact is `contested` or `superseded`.\n\n";
 const READ_ONLY = "The brain is read-only from this repo. Never edit its files from here.";
 const END = "\n<!-- ultimate-brain:end -->\n";
 const WORKFLOW = "To track this repo's work, the standard way or connected to a Notion Project or Area, use the `brain-workflow` skill; to take over its existing plans and tasks, use `brain-workflow-adopt`.\n\n";

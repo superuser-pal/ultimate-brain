@@ -43,3 +43,26 @@ export function reportLinks(workspace: { notes: readonly Note[] }, body: string,
   }
   return { linked: [...linked], broken };
 }
+
+/**
+ * The ids of the notes a view's body links, by relative Markdown link from the view's own folder. `gone` when a link to a Markdown file
+ * (`.md`) names no note and no file (`exists`, a path from the brain's root), or leaves the brain: a note that no longer exists.
+ * A link to anything else (a PDF, an image, a folder) or to a Markdown file that isn't a note (an `index.md`, a `README.md`) is neither.
+ */
+export function viewLinks(notes: readonly Note[], view: Note, exists: (path: string) => boolean = () => false): { linked: string[]; gone: boolean } {
+  const byPath = new Map(notes.map((note) => [note.path, note.id]));
+  const linked = new Set<string>();
+  let gone = false;
+  for (const match of view.body.matchAll(/\]\(\s*<?([^)\s>]+)>?\s*\)/g)) {
+    const target = match[1]!;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) continue;
+    let decoded = target.split(/[?#]/)[0]!;
+    try { decoded = decodeURIComponent(decoded); } catch { /* keep as written */ }
+    const path = posix.normalize(posix.join(posix.dirname(view.path), decoded));
+    const id = byPath.get(path);
+    if (id !== undefined) { linked.add(id); continue; }
+    if (!/\.md$/i.test(path)) continue;
+    if (path.startsWith("../") || path === ".." || posix.isAbsolute(path) || !exists(path)) gone = true;
+  }
+  return { linked: [...linked], gone };
+}

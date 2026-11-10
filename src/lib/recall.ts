@@ -130,6 +130,16 @@ function memoriesInReach(notes: readonly Note[], loaded: Loaded, caller: RecallC
 /** §2: reviewed and not superseded, besides reach and evidence. */
 const isEligible = (candidate: Candidate): boolean => candidate.note.attributes.lifecycle === "reviewed" && candidate.supersededBy === null;
 
+/**
+ * The memories a caller may be shown, as the restricted-evidence rule leaves them: the eligible ones (§2) and, with `superseded`, those
+ * `--include-superseded` returns (§6.1). `brain query` reads memory rows through this, so it returns what `brain recall` would (cli.md §5.13).
+ */
+export function shownMemories(notes: readonly Note[], loaded: Loaded, caller: RecallCaller, superseded: boolean): Map<string, Note> {
+  return new Map(memoriesInReach(notes, loaded, caller)
+    .filter((candidate) => isEligible(candidate) || (superseded && candidate.supersededBy !== null && candidate.note.attributes.lifecycle !== "draft"))
+    .map((candidate) => [candidate.note.id, candidate.note]));
+}
+
 /** §5.3: the summary as the rule leaves it, else the body's first paragraph; cut at a word boundary within 300 characters. */
 export function memoryText(note: Note): string {
   const summary = typeof note.attributes.summary === "string" ? note.attributes.summary.trim() : "";

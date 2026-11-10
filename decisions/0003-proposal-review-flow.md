@@ -2,6 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-10-11
+**Refined by:** [0077](0077-trust-repair-in-0-13-0.md) (every proposed change names its supporting passages, checked at creation and before apply)
 
 ## Context
 Agents propose changes (new decisions, fact updates, contradictions, memories). Options: Notion review queue, Git pull requests, chat only.
