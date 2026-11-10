@@ -44,7 +44,7 @@ export interface IndexEntry {
   id: string;
   type: string;
   title: string | null;
-  path: string;
+  path: string | null;
   summary: string | null;
   lifecycle: string | null;
   aliases: unknown[];
@@ -173,7 +173,8 @@ function toEntry(note: Note): IndexEntry {
     id: note.id,
     type: note.type,
     title: nullable(a.title) as string | null,
-    path: note.path,
+    // The file name repeats the title: a note in the awaiting-cleanup form has no path here either (cli §5.8).
+    path: titleWithheld(note) ? null : note.path,
     summary: nullable(a.summary) as string | null,
     lifecycle: NON_KNOWLEDGE.has(note.type) ? null : (nullable(a.lifecycle) as string | null),
     aliases: list(a.aliases),
