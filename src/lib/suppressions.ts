@@ -241,11 +241,16 @@ export function publishableNote(note: Note, context: Context): Note {
   return partlyRestricted(note, restriction);
 }
 
+/** A frontmatter timestamp in the schema's form (`2026-11-10T09:30:00Z`, note.schema.json) as milliseconds; anything else is NaN. */
+function stamp(value: unknown): number {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(value) ? Date.parse(value) : Number.NaN;
+}
+
 /**
  * A view as retrieval may use it: whole, or null. A view is text written from notes (a Brief, a Decision log) or by a skill (a report), with no
  * passage references of its own, so it cannot be judged line by line. While the brain has a suppression record it is left out whole when
- * (a) a note it was generated from, or links, is restricted in any part or is gone (`gone`: a link of its body that names no note), or
- * (b) it is a report written before the newest extract version that carries a suppression record: its prose may restate what that version
+ * (a) a note it was generated from, or links, is restricted in any part or is gone (`gone`: a `.md` link of its body that names no note and no file), or
+ * (b) it is a report not written after (a later second than) every extract version that carries a suppression record: its prose may restate what that version
  * removed without linking the note it came from, and only a refresh, which reads through retrieval, clears it (capture-and-review §5.1).
  * `linked` holds the ids the view's body links.
  */
@@ -260,12 +265,15 @@ export function eligibleView(view: Note, links: { linked: readonly string[]; gon
     if (restriction.whole || restriction.lines.size > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0 || restriction.summary) return null;
   }
   if (view.attributes.view_kind === "report") {
-    const written = typeof view.attributes.generated_at === "string" ? Date.parse(view.attributes.generated_at) : Number.NaN;
+    const written = stamp(view.attributes.generated_at);
+    const captured = new Map<string, number>();
+    for (const note of byId.values()) {
+      const key = `${String(note.attributes.extract_of)}\u0000${String(note.attributes.extract_version)}`;
+      if (note.type === "source" && typeof note.attributes.extract_of === "string" && typeof note.attributes.extract_version === "number" && !captured.has(key)) captured.set(key, stamp(note.attributes.captured));
+    }
     for (const record of context.suppressions) {
-      const extract = [...byId.values()].find((note) => note.type === "source" && note.attributes.extract_of === record.input && note.attributes.extract_version === record.version);
-      const captured = typeof extract?.attributes.captured === "string" ? Date.parse(extract.attributes.captured) : Number.NaN;
-      // Fail closed: an unreadable time on either side keeps the report out.
-      if (!(written >= captured)) return null;
+      // Fail closed: a time on either side that isn't a full timestamp (a date alone), or the same second, keeps the report out.
+      if (!(written > (captured.get(`${record.input}\u0000${String(record.version)}`) ?? Number.NaN))) return null;
     }
   }
   return view;
