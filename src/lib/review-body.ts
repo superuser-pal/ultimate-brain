@@ -5,7 +5,7 @@ import type { Note } from "./notes.ts";
 import { bodyHash } from "./proposals.ts";
 import { cleanupItemView, CLEANUP_KINDS } from "./cleanup-row.ts";
 import { restrictedSources } from "./eligibility.ts";
-import { citeLabel, contextFor, eligibleNote, publishableNote, requireSuppressions, restsOnlyOnExcluded, titleWithheld } from "./suppressions.ts";
+import { citeLabel, contextFor, eligibleNote, publishableNote, requireSuppressions, restsOnlyOnExcluded, titleWithheld, withoutWithheldLinks } from "./suppressions.ts";
 import type { Workspace } from "./workspace.ts";
 
 // The Review page of a review_notes proposal with item ids (capture-and-review §7.2, §7.5): pure, no Notion calls.
@@ -89,7 +89,10 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
   const seen = (note: Note | undefined): { note: Note | undefined; held: boolean; body: string } => {
     if (note === undefined) return { note: undefined, held: false, body: "" };
     const visible = eligibleNote(note, context);
-    return { note: visible ?? note, held: visible === null || visible.body !== note.body, body: visible === null ? "" : visible.body };
+    // A link to a note named by type and id keeps its text and loses its target in what the page shows (cli §5.14.4); it doesn't hold the item.
+    const shown = visible === null ? "" : withoutWithheldLinks(visible, context).body;
+    if (visible !== null && shown !== visible.body) withheld = true;
+    return { note: visible ?? note, held: visible === null || visible.body !== note.body, body: shown };
   };
   // A note is named by its published form: a note restricted whole, or with a restricted claim, by type and id (eligibility.md §6 rule 5).
   // `withheld` collects whether the item being built named one.
