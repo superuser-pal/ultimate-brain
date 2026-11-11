@@ -8,7 +8,9 @@ import { fixValueProblem, notionWrite, type NotionWrite } from "./notion-change.
 import { bodyHash, bodyOf, reviewTitle, sourceTitle, stageNewItem, writeProposal } from "./proposals.ts";
 import { reviewItems } from "./review-body.ts";
 import { loadSchemas } from "./schemas.ts";
-import { citesPassage, contextFor, requireSuppressions, restsOnExcluded } from "./suppressions.ts";
+import { lineageOf } from "./eligibility.ts";
+import { citedPassages, proposalWithheld, proposedText } from "./passages.ts";
+import { citesPassage, contextFor, requireSuppressions, withheldSupport } from "./suppressions.ts";
 import { formatDate, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 import type { LogEntry } from "./log.ts";
@@ -53,8 +55,12 @@ export interface ItemResult {
   /** applied review_notes only: what happened to each change, and the row holding the excluded items (0045). */
   changes?: ChangeResult[];
   deferred?: string;
-  /** review_notes with items: the `it-` ids withheld for excluded evidence (spec/cli.md §5.7). */
-  withheld?: string[];
+  /** review_notes: the items withheld for want of eligible support, `it-` ids, or `{change}`, `{note}`, `{link}` on a row without items (spec/cli.md §5.7). */
+  withheld?: Array<string | Record<string, unknown>>;
+  /** A proposal closed SOURCE_EXCLUDED: the input its source comes from, so the next ingest can propose it again (eligibility.md §9.3). */
+  input?: string;
+  /** A proposal closed SOURCE_EXCLUDED that was written before the passages field (schema §11.5). */
+  legacy?: boolean;
 }
 
 export interface ChangeResult {
@@ -186,7 +192,9 @@ interface Outcome {
   notes?: NoteResult[];
   changes?: ChangeResult[];
   deferred?: string;
-  withheld?: string[];
+  withheld?: Array<string | Record<string, unknown>>;
+  input?: string;
+  legacy?: boolean;
   /** Action actually applied, when it differs from the input's (an earlier, later-dated decision). */
   action?: string;
   /** awaiting_notion: the write the skill carries out (spec/cli.md §5.7). */
@@ -322,21 +330,28 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   const D = decision.decided_at.slice(0, 10);
   const V = decision.action === "edit" ? decision.value : fixed.value;
   if (p.kind === "review_notes") {
-    // A review_notes with items is judged item by item, by the Review page's rule, before apply on every route: an item resting on excluded
-    // evidence is withheld and the independent items apply (eligibility.md §4.1, §4.2; cli §5.7). An older-layout row is CC-179's.
-    const withheld = withheldItems(workspace, proposal, exclude);
+    // A review_notes is judged item by item before apply on every route: an item without eligible support is withheld and the independent
+    // items apply (eligibility.md §4.1, §4.2, §9.3; cli §5.7). With items, by the Review page's rule; without (older layout), each folded
+    // change, note and link alone, recorded in `dropped`.
+    const layered = Array.isArray(p.items);
+    const withheld = layered ? withheldItems(workspace, proposal, exclude) : olderLayoutWithheld(workspace, proposal, exclude);
     const applied = reviewNotes(workspace, fixed.q, "approve", exclude, today, D, fixed.noteFixes, withheld);
-    if (applied.dropped.length > 0) p.dropped = applied.dropped;
+    const dropped: Array<Record<string, unknown>> = [...applied.dropped];
+    if (!layered) {
+      dropped.push(...[...withheld.changes].map((change) => ({ change, reason: "source_excluded" })), ...[...withheld.notes].map((note) => ({ note, reason: "source_excluded" })), ...[...withheld.links].map((link) => ({ link, reason: "source_excluded" })));
+    }
+    if (dropped.length > 0) p.dropped = dropped;
     const withheldIds = [...withheld.ids];
-    if (withheldIds.length > 0) {
+    if (layered && withheldIds.length > 0) {
       p.item_decisions = [...list(p.item_decisions), ...withheldIds.map((item_id) => ({ item_id, decision: "reject", decided_at: decision.decided_at, decided_by: decision.decided_by, state: "closed", reason: "source_excluded" }))];
     }
-    const extra = { ...(withheldIds.length === 0 ? {} : { withheld: withheldIds }) };
+    const reported: Array<string | Record<string, unknown>> = layered ? withheldIds : [...[...withheld.changes].map((change) => ({ change })), ...[...withheld.notes].map((note) => ({ note })), ...[...withheld.links].map((link) => ({ link }))];
+    const extra = { ...(reported.length === 0 ? {} : { withheld: reported, ...reproposal(workspace, p, layered ? undefined : true) }) };
     if (withheld.all && exclude.length === 0) {
       p.status = "closed";
       p.closed_reason = "stale";
       workspace.save(proposal.path, document);
-      return { result: "closed", reason: "SOURCE_EXCLUDED", message: "every item rests on evidence the user excluded from the brain", action, notes: applied.notes, changes: applied.changes, ...extra };
+      return { result: "closed", reason: "SOURCE_EXCLUDED", message: "no item has eligible support: each rests on evidence the user excluded, or was written before passages and its input has excluded content", action, notes: applied.notes, changes: applied.changes, ...extra };
     }
     p.status = "applied";
     workspace.save(proposal.path, document);
@@ -347,18 +362,24 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   // live passage, is closed stale and nothing of it is applied, even on an Approve (eligibility.md §4.2, §9.2). What is judged is the wording
   // that would be written: the user's value on a fix or an edit, else the proposed text. Only a value that differs from the proposal and cites
   // no passage is the user's own wording: it is not judged, and it is attributed to the user, never to the proposal's source (§9.5).
+  // Its passages are judged too (`passages`; a legacy proposal by its input, schema §11.5), so a change with no text is judged by what it
+  // rests on. Only on a kind whose value is the whole change can the user's value be their own: a fix of a merge's survivor, a supersede's
+  // older note, a link or a new_item's fields still carries the proposal's claim (§9.5: an incidental edit does not launder).
   const proposed = proposedText(fixed.q);
   const written = typeof V === "string" ? V : proposed;
-  const own = decision.action !== "approve" && V !== undefined && !isDeepStrictEqual(V, proposedText(p) ?? p.after) && !(typeof V === "string" && citesPassage(V));
+  const own = OWN_VALUE_KINDS.has(String(p.kind)) && decision.action !== "approve" && V !== undefined && !isDeepStrictEqual(V, proposedText(p) ?? p.after) && !(typeof V === "string" && citesPassage(V));
   const context = contextFor(workspace.notes, requireSuppressions(workspace.root));
-  if (!own && restsOnExcluded(p.source, written, context)) {
+  // A value the user gave that cites passages is that wording's exact acceptance: it rests on the passages it cites, not on the proposal's
+  // whole list (cli §5.7, "Which decisions are checked"). Otherwise the proposal's passages are judged.
+  const revised = decision.action !== "approve" && typeof V === "string" && V !== proposed && citesPassage(V) && p.passages !== undefined;
+  if (!own && withheldSupport({ source: p.source, passages: revised ? citedPassages(V as string) : p.passages, text: written }, context)) {
     p.status = "closed";
     p.closed_reason = "stale";
     workspace.save(proposal.path, document);
-    return { result: "closed", reason: "SOURCE_EXCLUDED", message: "the proposal rests on evidence the user excluded from the brain", action };
+    return { result: "closed", reason: "SOURCE_EXCLUDED", message: p.passages === undefined ? "the proposal was written before passages and its input has content you excluded: it can be proposed again from that input's current version" : "the proposal rests on evidence the user excluded from the brain", action, ...reproposal(workspace, p, p.passages === undefined) };
   }
   // The user's own value replaces a proposal that rests on excluded evidence: the source's claim is not kept beside it (§9.4).
-  const sourceExcluded = own && restsOnExcluded(p.source, proposed, context);
+  const sourceExcluded = own && withheldSupport({ source: p.source, passages: p.passages, text: proposed }, context);
   const stale = applyKind(workspace, fixed.q, proposal.path, V, D, today, exclude as Array<{ field: string; value: unknown }>, own ? proposal.id : undefined, sourceExcluded);
   if (stale !== null) {
     p.status = "closed";
@@ -371,10 +392,32 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   return { result: "applied", action };
 }
 
-/** The wording a proposal would put into the brain, for §5.1's check: an appendix, a new body, an answer or a new note's body. */
-function proposedText(p: Record<string, unknown>): string | null {
-  for (const value of [p.content, p.answer, isRecord(p.note) ? p.note.body : undefined]) if (typeof value === "string") return value;
-  return null;
+/** The kinds whose value is the whole change, so a value the user typed in its place can be their own correction (cli §5.7, eligibility.md §9.5). */
+const OWN_VALUE_KINDS = new Set(["update_fact", "contradiction", "add_to_note", "update_body", "answer", "set_field"]);
+
+/** What a closed SOURCE_EXCLUDED result reports for re-proposal (eligibility.md §9.3): the input its source comes from, and whether it is legacy. */
+function reproposal(workspace: Workspace, p: Record<string, unknown>, legacy: boolean | undefined): { input?: string; legacy?: boolean } {
+  const context = contextFor(workspace.notes, { suppressions: [] });
+  const input = typeof p.source === "string" ? lineageOf(p.source, context.sources) : null;
+  return { ...(input === null ? {} : { input }), ...(legacy === true ? { legacy: true } : {}) };
+}
+
+/**
+ * The items of a review_notes without `items` (older layout) withheld for want of eligible support (eligibility.md §9.3; cli §5.7): each folded
+ * change, listed note and link alone, every one legacy. Excluded (deferred) items are not judged. `all`: every item left is withheld.
+ */
+function olderLayoutWithheld(workspace: Workspace, proposal: Note, exclude: Array<Record<string, unknown>>): { ids: Set<string>; changes: Set<number>; notes: Set<string>; links: Set<number>; all: boolean } {
+  const a = proposal.attributes;
+  const found = proposalWithheld(proposal, workspace, contextFor(workspace.notes, requireSuppressions(workspace.root)));
+  const links = reviewLinks(a);
+  const openChanges = list(a.changes).map((_change, index) => index).filter((index) => !exclude.some((item) => item.change === index));
+  const openNotes = list(a.notes).map(String).filter((id) => !exclude.some((item) => isNoteExclude(item) && item.note === id));
+  const openLinks = links.map((_link, index) => index).filter((index) => !exclude.some((item) => sameLink(links[index]!, item)));
+  const changes = new Set(openChanges.filter((index) => found.changes.has(index)));
+  const notes = new Set(openNotes.filter((id) => found.notes.has(id)));
+  const kept = new Set(openLinks.filter((index) => found.links.has(index)));
+  const open = openChanges.length + openNotes.length + openLinks.length;
+  return { ids: new Set(), changes, notes, links: kept, all: open > 0 && changes.size + notes.size + kept.size === open };
 }
 
 /** A text the user typed in place of the proposed one, citing no passage: theirs, attributed `user-correction:<proposal id>` (capture-and-review §7.7). */
@@ -539,12 +582,16 @@ function defer(workspace: Workspace, id: string, p: Record<string, unknown>, exc
   const changes = changeIndexes.map((index) => list(p.changes)[index]);
   const source = String(p.source);
   // A deferred item keeps its immutable id: it lives on in the new proposal under the same id, with its reference re-indexed (capture-and-review §7.6).
-  const oldItems = list(p.items) as Array<{ item_id: string; kind: string; ref: unknown }>;
-  const idOf = (kind: string, ref: unknown) => oldItems.find((entry) => entry.kind === kind && entry.ref === ref)?.item_id;
+  const oldItems = list(p.items) as Array<{ item_id: string; kind: string; ref: unknown; passages?: unknown }>;
+  // The item keeps its passages with its id (schema §11.5); a legacy item stays legacy.
+  const moved = (kind: string, ref: unknown, at: unknown) => {
+    const entry = oldItems.find((candidate) => candidate.kind === kind && candidate.ref === ref);
+    return { item_id: entry?.item_id, kind, ref: at, ...(entry?.passages === undefined ? {} : { passages: entry.passages }) };
+  };
   const items = oldItems.length === 0 ? undefined : [
-    ...changeIndexes.map((original, index) => ({ item_id: idOf("change", original), kind: "change", ref: index })),
-    ...notes.map((note) => ({ item_id: idOf("note", note), kind: "note", ref: note })),
-    ...linkIndexes.map((original, index) => ({ item_id: idOf("link", original), kind: "link", ref: index })),
+    ...changeIndexes.map((original, index) => moved("change", original, index)),
+    ...notes.map((note) => moved("note", note, note)),
+    ...linkIndexes.map((original, index) => moved("link", original, index)),
   ];
   const fields = {
     kind: "review_notes",
