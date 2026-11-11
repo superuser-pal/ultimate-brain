@@ -11,6 +11,7 @@ import { isRecord, readJsonInput } from "../lib/input.ts";
 import { databaseId, modulesOf } from "../lib/modules.ts";
 import { expandPath, linkedRepos, workTreeTop } from "../lib/repos.ts";
 import { unattendedRuns } from "../lib/runs.ts";
+import { setupLine, setupStatus } from "../lib/setup.ts";
 import { contextFor, indexNotes, loadSuppressions, restrictionOf } from "../lib/suppressions.ts";
 import { normalizeTimestamp } from "../lib/time.ts";
 import { installedProduct } from "../lib/skills.ts";
@@ -96,8 +97,11 @@ export const statusCommand: Command = {
       skills: statusSkills(brain!.root, installedProduct(), homeOf(environment.env)),
       // Where the Notion build files are: <path>/notion/…, <path>/docs/notion-space-design.md (§5.2).
       product: { path: installedProduct().root },
+      // How far the guided setup has got, offline (§5.2, spec/setup.md §5).
+      setup: await setupStatus(brain!.root, brain!.config, notes, environment.homeDirectory),
     };
-    return { data, human: `Owner: ${data.owner}\nNotes: ${notes.length}\n${taskNote === null ? "" : `${taskNote}\n`}` };
+    const setup = setupLine(data.setup);
+    return { data, human: `${setup === null ? "" : `${setup}\n`}Owner: ${data.owner}\nNotes: ${notes.length}\n${taskNote === null ? "" : `${taskNote}\n`}` };
   },
 };
 
