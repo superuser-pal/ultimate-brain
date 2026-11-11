@@ -461,23 +461,33 @@ function withheldNotePaths(notes: readonly Note[], context: Context): Set<string
   return paths;
 }
 
-const BODY_LINK = /\[((?:\\.|[^\]\\])*)\]\(\s*<?([^)\s>]+)>?\s*\)/g;
+// An inline link or image, with an optional title: `[text](target)`, `![alt](<target> "title")`.
+const BODY_LINK = /(!?)\[((?:\\.|[^\]\\])*)\]\(\s*(?:<([^>\n]*)>|([^)\s]+))(?:\s+(?:"[^"\n]*"|'[^'\n]*'|\([^)\n]*\)))?\s*\)/g;
+// A link reference definition: `[label]: target "title"`, a line of its own.
+const LINK_DEFINITION = /^ {0,3}\[(?:\\.|[^\]\\])+\]:[ \t]*(?:<([^>\n]*)>|(\S+))(?:[ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^)\n]*\)))?[ \t]*$/gm;
+// A target in angle brackets on its own: `<../decisions/budget-cut-to-40k.md>`.
+const ANGLE_TARGET = /<([^>\s:]+\.md(?:[?#][^>\s]*)?)>/gi;
 
 /**
- * The note with every relative link in its body to a note in `context.withheldPaths()` replaced by the link's text: `See [the decision](../decisions/
- * 2026-10-11-budget-cut-to-40k.md)` becomes `See the decision` (cli §5.13, "The awaiting-cleanup form", the user's answer of 2026-11-11 to
- * CC-176's question 4). The target is the note's file name, which repeats its title. Any other link is kept as written.
+ * The note with every relative link in its body to a note in `context.withheldPaths()` reduced to what names no file (cli §5.13, "A link to such a
+ * note", the user's answer of 2026-11-11 to CC-176's question 4): an inline link or image to its text (`See [the decision](../decisions/
+ * 2026-10-11-budget-cut-to-40k.md "Budget")` becomes `See the decision`), a reference definition to spaces of the same length (its uses then name
+ * nothing), a target in angle brackets to nothing. The target is the note's file name, which repeats its title. Any other link is kept as written.
  */
 export function withoutWithheldLinks<T extends Note>(note: T, context: Context): T {
   const withheld = context.withheldPaths?.();
-  if (withheld === undefined || withheld.size === 0 || !note.body.includes("](")) return note;
+  if (withheld === undefined || withheld.size === 0) return note;
   const folder = posix.dirname(note.path);
-  const body = note.body.replace(BODY_LINK, (link, text: string, target: string) => {
-    if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) return link;
+  const names = (target: string): boolean => {
+    if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) return false;
     let decoded = target.split(/[?#]/)[0]!;
     try { decoded = decodeURIComponent(decoded); } catch { /* keep as written */ }
-    return withheld.has(posix.normalize(posix.join(folder, decoded))) ? text : link;
-  });
+    return withheld.has(posix.normalize(posix.join(folder, decoded)));
+  };
+  const body = note.body
+    .replace(BODY_LINK, (link, _image: string, text: string, angled: string | undefined, bare: string | undefined) => names((angled ?? bare ?? "").trim()) ? text : link)
+    .replace(LINK_DEFINITION, (line, angled: string | undefined, bare: string | undefined) => names((angled ?? bare ?? "").trim()) ? " ".repeat(line.length) : line)
+    .replace(ANGLE_TARGET, (link, target: string) => names(target) ? "" : link);
   return body === note.body ? note : { ...note, body };
 }
 

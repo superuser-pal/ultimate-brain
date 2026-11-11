@@ -304,7 +304,7 @@ test("a live line's link to a note in the awaiting-cleanup form, or restricted w
   const name = (path: string) => path.split("/").pop()!;
   // A live meeting line and a live decision line link both, and the fixture's eligible decision.
   const meeting = join(dir, "knowledge/meetings/2026-12-03-acme-sync.md");
-  await writeFile(meeting, `${await readFile(meeting, "utf8")}\nSee [the price call](../decisions/${name(part.path)}), [the budget](../decisions/${name(whole.path)}) and [the auth choice](../decisions/2026-12-03-use-supabase-for-auth.md).\n`);
+  await writeFile(meeting, `${await readFile(meeting, "utf8")}\nSee [the price call](../decisions/${name(part.path)}), [the budget](../decisions/${name(whole.path)}) and [the auth choice](../decisions/2026-12-03-use-supabase-for-auth.md).\nAlso [titled](../decisions/${name(part.path)} "Price") and ![shown](<../decisions/${name(whole.path)}>), [by reference][p] and <../decisions/${name(part.path)}>.\n\n[p]: ../decisions/${name(part.path)} "Price"\n`);
   const decision = join(dir, LIVE_PATH);
   await writeFile(decision, `${await readFile(decision, "utf8")}\nRelated: [the price call](${name(part.path)}) and [Use Firebase for auth](2026-10-01-use-firebase-for-auth.md).\n`);
   const linked = (await read(dir, SYNC)).body as string;
@@ -315,6 +315,8 @@ test("a live line's link to a note in the awaiting-cleanup form, or restricted w
   const [sync, live] = read2.json.data.notes;
   assert.equal(sync.status, "ok");
   assert.ok(sync.body.includes("See the price call, the budget and [the auth choice](../decisions/2026-12-03-use-supabase-for-auth.md)."), "text kept, target dropped; the eligible link unchanged");
+  assert.ok(sync.body.includes("Also titled and shown, [by reference][p] and ."), "a titled link, an image, a reference and a target in angle brackets name no file");
+  assert.ok(/\n {10,}\n?$/.test(sync.body), "the reference definition is spaces of the same length");
   assert.equal(sync.title, "Acme sync", "the linking note is not restricted by it");
   assert.equal(sync.restricted, true);
   assert.ok(live.body.includes("Related: the price call and [Use Firebase for auth](2026-10-01-use-firebase-for-auth.md)."));
