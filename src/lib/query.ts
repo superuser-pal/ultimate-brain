@@ -51,6 +51,8 @@ export interface QueryCandidate {
   superseded_by?: string;
   /** The label to cite a note in the awaiting-cleanup form by; only on such a note (eligibility.md §6 rules 3 and 4). */
   cite?: string;
+  /** A memory's schema confidence; only on a memory `query --candidates` returns (cli.md §5.13). */
+  confidence?: string;
 }
 
 /** Normalize a query or field into its query words (spec/cli.md §5.13). */
@@ -346,6 +348,9 @@ function bm25Index(docs: readonly (readonly string[])[], exact: (term: string) =
 
 type Bm25Sums = ReturnType<typeof bm25Index>;
 
+/** Schema "memory"'s `confidence` values. */
+const CONFIDENCE = new Set(["verified", "inferred", "unverified"]);
+
 const SUBJECT_TYPES = new Set(["project", "area", "org", "person"]);
 const LINKS = ["projects", "project", "area", "client", "org", "people", "attendees"];
 
@@ -431,7 +436,13 @@ export function searchCandidates(
     .map((entry) => entry.candidate);
   const terms = groups.flat();
   const ordered = belowSuperseders(ranked);
-  const candidates = ordered.map((candidate, rank) => (rank < 50 ? { ...candidate, snippets: searchSnippets(byId.get(candidate.id)!, terms, groups, norm) } : candidate));
+  const candidates = ordered.map((candidate, rank) => {
+    const note = byId.get(candidate.id)!;
+    const shown = rank < 50 ? { ...candidate, snippets: searchSnippets(note, terms, groups, norm) } : candidate;
+    // A memory's confidence, from the memory as the rule leaves it (cli.md §5.13), so an inferred one can be labelled.
+    const confidence = note.type === "memory" ? note.attributes.confidence : undefined;
+    return typeof confidence === "string" && CONFIDENCE.has(confidence) ? { ...shown, confidence } : shown;
+  });
   return { candidates, unresolved: resolved.length > 0 ? null : unresolvedSubjects(searched, byId, names, words, groups, sums, ordered, context) };
 }
 
