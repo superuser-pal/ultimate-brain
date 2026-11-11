@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, posix } from "node:path";
 
 import { eligible, latestExtracts, lineageOf, noteReleased, restrictedSources, type Context, type SourceInfo, type Suppression } from "./eligibility.ts";
 import { BrainError } from "./errors.ts";
@@ -71,6 +71,8 @@ export function contextFor(notes: readonly Note[], loaded: Pick<Loaded, "suppres
   // Re-inclusion is derived from the persisted records: a passage the latest version holds again that an earlier suppression removed stays
   // restricted until a Restore record for that version names it (capture-and-review §4.6, §5.2).
   const context: Context = { sources, suppressions: loaded.suppressions, awaitingRestore: awaiting, restored };
+  let withheld: Set<string> | undefined;
+  context.withheldPaths = () => (withheld ??= withheldNotePaths(notes, context));
   const latest = latestExtracts(context);
   for (const [input, info] of latest) {
     const version = info.extract_version ?? 0;
@@ -250,7 +252,7 @@ export function publishableNote(note: Note, context: Context): AnswerNote {
     return note.type === "source" ? stripped : awaitingCleanup(stripped);
   }
   const kept = partlyRestricted(note, restriction);
-  return note.type !== "source" && hasRestrictedClaim(restriction) ? awaitingCleanup(kept) : kept;
+  return withoutWithheldLinks(note.type !== "source" && hasRestrictedClaim(restriction) ? awaitingCleanup(kept) : kept, context);
 }
 
 /** How a published surface names a note: its title, or the label of the awaiting-cleanup form. */
@@ -447,6 +449,48 @@ function awaitingCleanup(note: Note): AnswerNote {
   return { ...note, attributes, body, titleWithheld: true };
 }
 
+/** The paths of the notes the rule names by type and id (a restricted claim) or leaves out whole; a source, a proposal and a view are never among them. */
+function withheldNotePaths(notes: readonly Note[], context: Context): Set<string> {
+  const paths = new Set<string>();
+  if (context.suppressions.length === 0) return paths;
+  for (const note of notes) {
+    if (note.type === "source" || note.type === "proposal" || note.type === "view") continue;
+    const restriction = restrictionOf(note, context);
+    if (restriction.whole || hasRestrictedClaim(restriction) || nothingLeft(note, restriction)) paths.add(note.path);
+  }
+  return paths;
+}
+
+// An inline link or image, with an optional title: `[text](target)`, `![alt](<target> "title")`.
+const BODY_LINK = /(!?)\[((?:\\.|[^\]\\])*)\]\(\s*(?:<([^>\n]*)>|([^)\s]+))(?:\s+(?:"[^"\n]*"|'[^'\n]*'|\([^)\n]*\)))?\s*\)/g;
+// A link reference definition: `[label]: target "title"`, a line of its own.
+const LINK_DEFINITION = /^ {0,3}\[(?:\\.|[^\]\\])+\]:[ \t]*(?:<([^>\n]*)>|(\S+))(?:[ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^)\n]*\)))?[ \t]*$/gm;
+// A target in angle brackets on its own: `<../decisions/budget-cut-to-40k.md>`.
+const ANGLE_TARGET = /<([^>\s:]+\.md(?:[?#][^>\s]*)?)>/gi;
+
+/**
+ * The note with every relative link in its body to a note in `context.withheldPaths()` reduced to what names no file (cli §5.13, "A link to such a
+ * note", the user's answer of 2026-11-11 to CC-176's question 4): an inline link or image to its text (`See [the decision](../decisions/
+ * 2026-10-11-budget-cut-to-40k.md "Budget")` becomes `See the decision`), a reference definition to spaces of the same length (its uses then name
+ * nothing), a target in angle brackets to nothing. The target is the note's file name, which repeats its title. Any other link is kept as written.
+ */
+export function withoutWithheldLinks<T extends Note>(note: T, context: Context): T {
+  const withheld = context.withheldPaths?.();
+  if (withheld === undefined || withheld.size === 0) return note;
+  const folder = posix.dirname(note.path);
+  const names = (target: string): boolean => {
+    if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) return false;
+    let decoded = target.split(/[?#]/)[0]!;
+    try { decoded = decodeURIComponent(decoded); } catch { /* keep as written */ }
+    return withheld.has(posix.normalize(posix.join(folder, decoded)));
+  };
+  const body = note.body
+    .replace(BODY_LINK, (link, _image: string, text: string, angled: string | undefined, bare: string | undefined) => names((angled ?? bare ?? "").trim()) ? text : link)
+    .replace(LINK_DEFINITION, (line, angled: string | undefined, bare: string | undefined) => names((angled ?? bare ?? "").trim()) ? " ".repeat(line.length) : line)
+    .replace(ANGLE_TARGET, (link, target: string) => names(target) ? "" : link);
+  return body === note.body ? note : { ...note, body };
+}
+
 /**
  * A note as an answer surface returns it (`query --candidates` and `--read`, `recall`, `reflect --candidates`; eligibility.md §2, §6): the
  * restricted-evidence rule's form (`eligibleNote`), and, when a claim of it is restricted, the awaiting-cleanup form; null when the rule leaves it
@@ -456,7 +500,7 @@ export function answerNote(note: Note, context: Context): AnswerNote | null {
   const restriction = restrictionOf(note, context);
   if (restriction.whole || nothingLeft(note, restriction)) return null;
   const kept = partlyRestricted(note, restriction);
-  return hasRestrictedClaim(restriction) ? awaitingCleanup(kept) : kept;
+  return withoutWithheldLinks(hasRestrictedClaim(restriction) ? awaitingCleanup(kept) : kept, context);
 }
 
 /** Whether an answer surface withholds the note's title and path (the awaiting-cleanup form). */
