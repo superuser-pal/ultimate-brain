@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 
 import { parseFrontmatter, serializeFrontmatter } from "../src/lib/frontmatter.ts";
-import { brain, fixtureCopy } from "./helpers.ts";
+import { brain, fixtureCopy, withPassages } from "./helpers.ts";
 
 // CC-144: the proposal kinds notion_change and set_field (spec/assistant.md §6, schema §11, cli §5.6, §5.7, §5.14).
 const NOW = "2026-11-06T10:00:00Z";
@@ -24,7 +24,7 @@ const TASK_FINDING = `task_overdue:notion:${TASK_PAGE}`;
 let counter = 0;
 async function file(dir: string, value: unknown): Promise<string> {
   const path = join(dir, "..", `input-${counter += 1}.json`);
-  await writeFile(path, JSON.stringify(value));
+  await writeFile(path, JSON.stringify(withPassages(value)));
   return path;
 }
 

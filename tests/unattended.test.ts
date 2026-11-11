@@ -7,7 +7,7 @@ import { test, type TestContext } from "node:test";
 
 import { runCli } from "../src/cli.ts";
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
-import { brain, fixtureCopy } from "./helpers.ts";
+import { brain, fixtureCopy, withPassages } from "./helpers.ts";
 
 // Decision 0051, spec/cli.md §3.9, §5.2, §5.14, §5.21, §6.1 (CC-63).
 
@@ -20,7 +20,7 @@ async function run(dir: string, args: string[], input?: unknown) {
   const extra: string[] = [];
   if (input !== undefined) {
     const file = join(dir, "..", `input-${Math.random().toString(36).slice(2)}.json`);
-    await writeFile(file, JSON.stringify(input));
+    await writeFile(file, JSON.stringify(args[0] === "proposal" && args[1] === "new" ? withPassages(input) : input));
     extra.push("--input", file);
   }
   return brain([...args, ...extra, "--brain", dir, "--now", NOW, "--json"]);
