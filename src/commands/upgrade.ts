@@ -18,6 +18,7 @@ import { competingCopies } from "../lib/skills-competing.ts";
 import { homeOf, LOCK, readLock, serializeLock, snapshotInvalid, type Lock } from "../lib/skills-pin.ts";
 import { comparePrecedence } from "../lib/skills-range.ts";
 import { packageProblem, packageSnapshot, serializeManifest, TREES, type Manifest } from "../lib/skills-snapshot.ts";
+import { planProjects, projectsHuman, projectWarnings, nextLines, skillsDiffer, writeProjects } from "../lib/upgrade-projects.ts";
 
 const exec = promisify(execFile);
 const START = /^<!-- ultimate-brain:rules:start\b[^\n]*-->$/gm;
@@ -229,6 +230,9 @@ export const upgradeCommand: Command = {
     const dryRun = args.options["dry-run"] === true;
     if (!dryRun && await gitDirty(root)) throw new BrainError("BRAIN_DIRTY", "brain has uncommitted changes");
     if (refusal !== undefined) throw refusal;
+    // Step 9: every registered linked project is judged and planned before the first write, and written after the brain.
+    const home = homeOf(environment.env);
+    const projects = await planProjects({ brainRoot: root, config: brain!.config, notes: scanned.notes, manifest: manifest!, folder: pkg.folder, homeDirectory: environment.homeDirectory, home });
     if (!dryRun && written.length > 0) {
       await writeChanges(root, written);
       for (const [folder, self] of prune) await pruneEmpty(join(root, folder), self);
@@ -240,7 +244,6 @@ export const upgradeCommand: Command = {
     const { notes, problems } = dryRun ? { notes: concepts.notes, problems: scanned.problems } : await scanNotes(root);
     const plannedProductFiles = new Map<string, string | null>();
     for (const change of changes) if (change.action !== "skipped") plannedProductFiles.set(change.path, change.action === "removed" ? null : Buffer.from(change.content!).toString("utf8"));
-    const home = homeOf(environment.env);
     const lint = lintBrain({ root, notes, problems, brainConfig: brain!.config, indexMarkdown: dryRun && concepts.index !== null ? concepts.index : await readOptional(join(root, "index.md")),
       pendingPaths: dryRun ? new Set(concepts.changes.filter((change) => change.action === "created").map((change) => change.path)) : undefined, plannedProductFiles, skillsLock: lock, home });
     const competing = competingCopies({ treeRoot: root, names: manifest!.skills.map((skill) => skill.name), home, brainRoot: root, brainSettings: plannedProductFiles.get(".claude/settings.json") });
@@ -272,12 +275,25 @@ export const upgradeCommand: Command = {
         }
       }
     }
+    let definitionsDiffer = false;
+    if (!dryRun) {
+      await writeProjects(projects, manifest!);
+      const differs = await skillsDiffer(root, manifest!.skills);
+      if (differs !== null) {
+        definitionsDiffer = true;
+        warnings.push({ code: "DEFINITIONS_DIFFER", message: `${differs}; run brain upgrade again.` });
+      }
+    }
+    const reports = projects.map((project) => project.report);
+    warnings.push(...projectWarnings(reports));
     return {
       warnings,
+      exitCode: definitionsDiffer || reports.some((report) => report.state === "unfinished") ? 1 : 0,
       data: { dry_run: dryRun, dirty: dryRun ? await gitDirty(root) : undefined, version, files: changes.map(({ path, action }) => ({ path, action })), unchanged, converted: concepts.converted,
         skills: { from, to: { name: manifest!.name, version: manifest!.version }, retired, previous_cli: previousCli, competing },
-        lint: { errors: lint.filter((x) => x.severity === "error").length, warnings: lint.filter((x) => x.severity === "warning").length }, commit, pushed },
-      human: `${written.length} files ${dryRun ? "would change" : "changed"}, ${unchanged} unchanged\n`,
+        lint: { errors: lint.filter((x) => x.severity === "error").length, warnings: lint.filter((x) => x.severity === "warning").length }, commit, pushed,
+        projects: reports, next: nextLines(reports) },
+      human: `${written.length} files ${dryRun ? "would change" : "changed"}, ${unchanged} unchanged\n${projectsHuman(reports)}`,
     };
   },
 };
