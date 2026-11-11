@@ -20,7 +20,7 @@ export interface UnattendedCatchUp {
  * Counts that repeat from run to run (an input still skipped, a Fix still waiting) come from the latest run only.
  */
 export async function unattendedRuns(root: string): Promise<{ catch_up: UnattendedCatchUp | null; backlog: boolean }> {
-  const lines = await catchUpLines(root);
+  const lines = await logLinesOf(root, "catch-up");
   const unattended = (line: ParsedLogLine) => line.pairs.mode === "unattended";
   let lastAttended = -1;
   lines.forEach((line, index) => { if (!unattended(line)) lastAttended = index; });
@@ -54,8 +54,8 @@ function count(line: ParsedLogLine, key: string): number {
   return Number.isInteger(value) && value >= 0 ? value : 0;
 }
 
-/** Every `catch-up` line, oldest first, across the month files. An unreadable file is passed over: status is diagnostic. */
-async function catchUpLines(root: string): Promise<ParsedLogLine[]> {
+/** Every log line of one op (`catch-up`, `setup`), oldest first, across the month files. An unreadable file is passed over: status is diagnostic. */
+export async function logLinesOf(root: string, op: string): Promise<ParsedLogLine[]> {
   let files: string[];
   try {
     files = (await readdir(join(root, "log"))).filter((entry) => /^\d{4}-\d{2}\.md$/.test(entry)).sort();
@@ -72,7 +72,7 @@ async function catchUpLines(root: string): Promise<ParsedLogLine[]> {
     }
     for (const raw of text.split("\n")) {
       const line = parseLogLine(raw);
-      if (line !== null && line.op === "catch-up") lines.push(line);
+      if (line !== null && line.op === op) lines.push(line);
     }
   }
   return lines;
