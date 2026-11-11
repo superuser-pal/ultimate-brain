@@ -82,8 +82,8 @@ const rows = [];
 for (const c of chosen) {
   const result = adapter.run(c, { brain: brainDir, callerDir: callerDir(c.caller), cli });
   if (adapter.level === "retrieval") {
-    const r = scoreRetrieval(c, result.candidates);
-    rows.push({ id: c.id, kind: c.kind, subgroup: c.subgroup, split: c.split, pass: r.pass, reasons: r.reasons, rank: r.rank, sets: r.sets, prose: r.prose, bytes: result.cost?.bytes, ms: result.cost?.ms });
+    const r = scoreRetrieval(c, result.candidates, result.unresolved ?? []);
+    rows.push({ id: c.id, kind: c.kind, subgroup: c.subgroup, split: c.split, pass: r.pass, reasons: r.reasons, rank: r.rank, sets: r.sets, prose: r.prose, named: r.named, signaled: r.signaled, bytes: result.cost?.bytes, ms: result.cost?.ms });
   } else {
     const reasons = scoreAnswer(c, result.answer);
     rows.push({ id: c.id, kind: c.kind, split: c.split, pass: reasons.length === 0, reasons });
@@ -113,7 +113,11 @@ if (adapter.level === "retrieval") {
     const t = tally(kind);
     gates.push({ gate: `${kind}, first search, first ten`, got: `${t.pass}/${t.n}`, need: split === "all" ? `${need}/20` : "(all 20 needed)", pass: split === "all" && t.pass >= need });
   }
-  for (const kind of ["clarify", "unknown"]) { const t = tally(kind); gates.push({ gate: `${kind} (reported)`, got: `${t.pass}/${t.n}`, need: "-", pass: null }); }
+  const clarify = rows.filter((r) => r.kind === "clarify");
+  gates.push({ gate: `clarify (reported): two subjects visible (by evidence ${clarify.filter((r) => r.rank >= 2).length}, by the signal ${clarify.filter((r) => r.named >= 2).length})`, got: `${tally("clarify").pass}/${clarify.length}`, need: "-", pass: null });
+  { const t = tally("unknown"); gates.push({ gate: "unknown (reported)", got: `${t.pass}/${t.n}`, need: "-", pass: null }); }
+  const others = rows.filter((r) => r.kind !== "clarify");
+  gates.push({ gate: `signal on a fact, paraphrase or unknown case (reported; false positives)${others.some((r) => r.signaled) ? `: ${others.filter((r) => r.signaled).map((r) => r.id).join(", ")}` : ""}`, got: `${others.filter((r) => r.signaled).length}/${others.length}`, need: "-", pass: null });
 } else {
   const answerable = rows.filter((r) => r.kind === "fact" || r.kind === "paraphrase");
   gates.push({ gate: "answerable, correct and cited", got: `${answerable.filter((r) => r.pass).length}/${answerable.length}`, need: `${ANSWER_GATES.answerable}/40`, pass: split === "all" && answerable.filter((r) => r.pass).length >= ANSWER_GATES.answerable });
