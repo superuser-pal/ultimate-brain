@@ -1,11 +1,12 @@
 # Comparing retrieval changes on the frozen cases (CC-204)
 
-Decision [0080](../../../decisions/0080-english-retrieval-quality-in-0-13-0.md) lets four small changes to `brain query --candidates` be compared (spec/retrieval.md §4). This folder measures them, each alone and then in combinations, on CC-203's 80 cases. The product's `src/` is not changed here. CC-205 builds the chosen set into `src/lib/query.ts`, spec first.
+Decision [0080](../../../decisions/0080-english-retrieval-quality-in-0-13-0.md) lets four small changes to `brain query --candidates` be compared (spec/retrieval.md §4). This folder measures them, each alone and then in combinations, on CC-203's 80 cases. The product's `src/` is not changed here. CC-205 built the chosen set into `src/lib/query.ts`, spec first (`searchCandidates`; its results are in `../results-cc205.txt`). Since then `run.mjs`, which compares each variant with the product before CC-205, runs only in a checkout of the commit `results-cc204.txt` names (4f94b40), and stops elsewhere; `checkout.mjs` and the test of the variant still run at any commit.
 
 | File | What it is |
 |---|---|
 | `query-variant.ts` | `src/lib/query.ts` plus the changes, each off unless `UB_RETRIEVAL_VARIANT` names it |
 | `vocabulary.ts` | C2v's vocabulary map: 12 groups of general business English |
+| `query-command.ts` | `src/commands/query.ts` as CC-204 measured it, before CC-205 made it call `searchCandidates`; the checkout uses it with the variant |
 | `checkout.mjs` | A temporary checkout (this repo's tracked files, with the variant as `src/lib/query.ts`) in a git repository of its own |
 | `run.mjs` | Runs today's search and each variant; prints the kinds, the prose-only facts, the facts the snippets show, the originals, memory-0.12 at the retrieval level and the output tokens |
 | `results-dev.txt` | The development runs (dev cases only), before any held-back case ran |
