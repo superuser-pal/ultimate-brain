@@ -84,6 +84,10 @@
     "source": {
       "$ref": "note.schema.json#/$defs/sourceKey"
     },
+    "passages": {
+      "description": "0.13.0 on (0077 §3, spec/schema.md §11.5, eligibility.md §9.1): the passages the change rests on. Absent on a legacy proposal, written before the field, and on a review_notes (its items carry them) and a notion_change.",
+      "$ref": "#/$defs/passages"
+    },
     "status": {
       "enum": [
         "pending",
@@ -429,7 +433,8 @@
           "item_id": { "type": "string", "pattern": "^it-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
           "kind": { "enum": ["note", "link", "change", "remove", "restore", "independence"] },
           "n": { "description": "restore only: the paragraph number to restore.", "type": "integer", "minimum": 1 },
-          "ref": { "description": "A note id (kind note) or an index into links or changes.", "anyOf": [{ "type": "integer", "minimum": 0 }, { "$ref": "note.schema.json#/$defs/id" }] }
+          "ref": { "description": "A note id (kind note) or an index into links or changes.", "anyOf": [{ "type": "integer", "minimum": 0 }, { "$ref": "note.schema.json#/$defs/id" }] },
+          "passages": { "description": "note, link and change items from 0.13.0 on: the item's passages (spec/schema.md §11.5). An item without them is legacy.", "$ref": "#/$defs/passages" }
         }
       }
     },
@@ -491,9 +496,9 @@
       "type": "array",
       "minItems": 1,
       "items": {
+        "description": "stale: a change whose target changed first (spec/schema.md §11.3). source_excluded: an item of a review_notes without items, withheld for want of eligible support (§11.5); a note or a link is only ever source_excluded.",
         "type": "object",
         "required": [
-          "change",
           "reason"
         ],
         "additionalProperties": false,
@@ -502,10 +507,22 @@
             "type": "integer",
             "minimum": 0
           },
+          "note": {
+            "$ref": "note.schema.json#/$defs/id"
+          },
+          "link": {
+            "type": "integer",
+            "minimum": 0
+          },
           "reason": {
-            "const": "stale"
+            "enum": ["stale", "source_excluded"]
           }
-        }
+        },
+        "oneOf": [
+          {"required": ["change"]},
+          {"required": ["note"], "properties": {"reason": {"const": "source_excluded"}}},
+          {"required": ["link"], "properties": {"reason": {"const": "source_excluded"}}}
+        ]
       }
     },
     "answer": {
@@ -540,7 +557,8 @@
     {"description": "merge:<id>+<id> is a merge of those two notes.", "if": {"properties": {"fingerprint": {"pattern": "^merge:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "merge"}}}},
     {"description": "promotion:<target>:<source> is an add_to_note on that target from that source.", "if": {"properties": {"fingerprint": {"pattern": "^promotion:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "add_to_note"}}}},
     {"description": "theme:<term> is the draft learned Document's review_notes (a yes or later), or a new_item (a skip).", "if": {"properties": {"fingerprint": {"pattern": "^theme:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"enum": ["review_notes", "new_item"]}}}},
-    {"description": "notion_change (0072): its own fields, no fact or note fields.", "if": {"properties": {"kind": {"const": "notion_change"}}, "required": ["kind"]}, "then": {"required": ["database", "page", "page_title", "property", "value_before", "value_after"], "not": {"anyOf": [{"required": ["field"]}, {"required": ["before"]}, {"required": ["after"]}, {"required": ["content"]}, {"required": ["note"]}, {"required": ["links"]}, {"required": ["notes"]}, {"required": ["changes"]}, {"required": ["supersedes"]}, {"required": ["merge_into"]}, {"required": ["answer"]}, {"required": ["answer_note"]}]}}},
+    {"description": "notion_change (0072): its own fields, no fact or note fields.", "if": {"properties": {"kind": {"const": "notion_change"}}, "required": ["kind"]}, "then": {"required": ["database", "page", "page_title", "property", "value_before", "value_after"], "not": {"anyOf": [{"required": ["field"]}, {"required": ["before"]}, {"required": ["after"]}, {"required": ["content"]}, {"required": ["note"]}, {"required": ["links"]}, {"required": ["notes"]}, {"required": ["changes"]}, {"required": ["supersedes"]}, {"required": ["merge_into"]}, {"required": ["answer"]}, {"required": ["answer_note"]}, {"required": ["passages"]}]}}},
+    {"description": "A review_notes names its passages per item (spec/schema.md §11.5), not as a whole.", "if": {"properties": {"kind": {"const": "review_notes"}}, "required": ["kind"]}, "then": {"not": {"required": ["passages"]}}},
     {"description": "notion_change fields belong to notion_change only.", "if": {"anyOf": [{"required": ["database"]}, {"required": ["page"]}, {"required": ["page_title"]}, {"required": ["property"]}, {"required": ["value_before"]}, {"required": ["value_after"]}]}, "then": {"properties": {"kind": {"const": "notion_change"}}}},
     {"description": "area belongs to notion_change and set_field only.", "if": {"required": ["area"]}, "then": {"properties": {"kind": {"enum": ["notion_change", "set_field"]}}}},
     {"description": "A task has no note: no target; tasks take status, due, project, area.", "if": {"properties": {"database": {"const": "tasks"}}, "required": ["database"]}, "then": {"not": {"required": ["target"]}, "properties": {"property": {"enum": ["status", "due", "project", "area"]}}}},
@@ -1468,13 +1486,15 @@
       "then": {
         "properties": {
           "status": {
-            "const": "applied"
+            "enum": ["applied", "closed"]
           }
         }
       }
     }
   ],
   "$defs": {
+    "passage": {"description": "A passage reference src-…#¶<n>:<hash> (capture-and-review §5.1), or an input with no paragraph identities, or an entry that names no input (spec/schema.md §11).", "anyOf": [{"type": "string", "pattern": "^src-[0-9abcdefghjkmnpqrstvwxyz]{8}#¶[1-9][0-9]*:[0-9a-f]{8}$"}, {"$ref": "note.schema.json#/$defs/sourceKey"}]},
+    "passages": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/passage"}},
     "pageId": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
     "pageIds": {"type": "array", "items": {"$ref": "#/$defs/pageId"}, "uniqueItems": true},
     "notionValue": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}, {"type": "boolean"}, {"$ref": "#/$defs/pageIds"}]},
