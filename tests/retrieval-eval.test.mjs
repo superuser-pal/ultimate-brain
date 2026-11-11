@@ -37,6 +37,12 @@ test("answer level: answerable, clarify and unknown rules", () => {
   assert.match(scoreAnswer(factCase, { text: "The budget is €40,000.", citations: ["mtg-a"] }).join(), /complete evidence set/);
   assert.match(scoreAnswer(factCase, { text: "It's not recorded, maybe €40,000.", citations: ["prj-a"] }).join(), /abstained/);
   assert.match(scoreAnswer({ ...factCase, as_of: fact("for 2026", "2026") }, { text: "€40,000 [prj-a]", citations: ["prj-a"] }).join(), /time qualification/);
+  // A complete, cited answer that also states a forbidden claim fails, as in memory-0.12's answerable rule; so does citing forbidden evidence.
+  const conflicting = { ...factCase, forbidden_facts: [fact("€70,000", "70[,. ]?000")] };
+  assert.deepEqual(scoreAnswer(conflicting, { text: "The approved amount is €40,000 [prj-a].", citations: ["prj-a"] }), []);
+  assert.match(scoreAnswer(conflicting, { text: "The approved amount is €40,000. The amount is also €70,000.", citations: ["prj-a"] }).join(), /must not: €70,000/);
+  assert.match(scoreAnswer({ ...factCase, kind: "paraphrase", forbidden_facts: conflicting.forbidden_facts }, { text: "€40,000, or €70,000 [prj-a]", citations: ["prj-a"] }).join(), /must not/);
+  assert.match(scoreAnswer({ ...factCase, forbidden_evidence: ["mtg-x"] }, { text: "€40,000 [prj-a] [mtg-x]", citations: ["prj-a", "mtg-x"] }).join(), /cited forbidden mtg-x/);
   assert.deepEqual(scoreAnswer(clarifyCase, { text: "Do you mean the Alder app or the Alder site?", citations: [] }), []);
   assert.match(scoreAnswer(clarifyCase, { text: "The app has €40,000 and the site €9,000. Which one?", citations: [] }).join(), /states a subject's value/, "listing every value is not the default");
   assert.match(scoreAnswer(clarifyCase, { text: "The Alder app's budget is €40,000.", citations: ["prj-a"] }).join(), /asks no question/, "silently picking one subject fails");
