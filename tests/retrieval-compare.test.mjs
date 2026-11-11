@@ -10,7 +10,7 @@ import { pathToFileURL } from "node:url";
 import { variantCheckout } from "../eval/retrieval-0.13/compare/checkout.mjs";
 
 const root = variantCheckout();
-after(() => rmSync(root, { recursive: true, force: true }));
+after(() => rmSync(root, { recursive: true, force: true, maxRetries: 5 }));
 const variant = await import(pathToFileURL(join(root, "src/lib/query.ts")).href);
 const product = await import("../src/lib/query.ts");
 
