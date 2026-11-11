@@ -137,6 +137,8 @@ The answer-level gates are met by the native runs of CC-186, on the final packag
 
 ## 8. Native acceptance (0080 §9 item 5; 0077 §5)
 
+**Timing amended by [0082](../decisions/0082-native-smoke-run-per-release-full-native-acceptance-before-1-0.md) (2026-11-11):** this run, CC-206 with it, moves to 1.0.0; 0.13.0 is judged on §6.2's retrieval-level and cost gates, and the answer-level gates (answers, clarify, unknown, trust in the final answers) wait for this run.
+
 The 80 cases join CC-186's final acceptance: **one complete native run in Claude Code and one in Codex** on the final packaged CLI and skills snapshot, through CC-200's harness as extended by CC-206, with every trace, the package hash, the CLI version and commit, and the snapshot identity kept. Not three repetitions. A code change after a run invalidates the results it touches; the affected checks are rerun on the new head (eligibility.md §12).
 
 ## 9. 0080 mapped to this file
