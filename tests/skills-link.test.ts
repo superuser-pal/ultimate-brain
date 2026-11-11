@@ -105,7 +105,7 @@ const BLOCK_START = "<!-- ultimate-brain:start -->\n## Ultimate Brain\n\nManaged
   + "The brain holds decisions, key facts, people and meeting history that this repo does not.\n\nConsult it before you:\n"
   + "- make or revisit a decision about scope, architecture, vendors or the client;\n- answer why something was decided, who someone is, or a date, budget or owner;\n"
   + "- rely on a fact about the client or project that this repo does not state.\n\n"
-  + "How: use the `brain-query` skill, or run `brain query --candidates \"<question>\" --json` and read the notes it returns with `brain query --read <id> --json`, not by opening the brain's files: only these commands leave out what the user excluded or has not approved. Cite the note paths. Say when a fact is `contested` or `superseded`.\n\n";
+  + "How: use the `brain-query` skill, or run `brain query --candidates \"<question>\" --json` and read the notes it returns with `brain query --read <id> --json`, not by opening the brain's files: only these commands leave out what the user excluded or has not approved. Cite each note by its path, or by its `cite` when it has none. Say when a fact is `contested` or `superseded`; read a replaced memory only with `--historical`, for a question about the past.\n\n";
 const BLOCK_BEFORE = `${BLOCK_START}The brain is read-only from this repo. Never edit its files from here.\n<!-- ultimate-brain:end -->\n`;
 
 test("linking the workflow skills writes all three, lists them in .brain and adds the workflow lines to the block (skills-delivery §9.7)", async (context) => {
