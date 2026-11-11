@@ -6,8 +6,9 @@ import type { NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 import { fixValueProblem, notionWrite, type NotionWrite } from "./notion-change.ts";
 import { bodyHash, bodyOf, reviewTitle, sourceTitle, stageNewItem, writeProposal } from "./proposals.ts";
+import { reviewItems } from "./review-body.ts";
 import { loadSchemas } from "./schemas.ts";
-import { citesPassage, contextFor, requireSuppressions, restsOnlyOnExcluded } from "./suppressions.ts";
+import { citesPassage, contextFor, requireSuppressions, restsOnExcluded } from "./suppressions.ts";
 import { formatDate, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 import type { LogEntry } from "./log.ts";
@@ -52,6 +53,8 @@ export interface ItemResult {
   /** applied review_notes only: what happened to each change, and the row holding the excluded items (0045). */
   changes?: ChangeResult[];
   deferred?: string;
+  /** review_notes with items: the `it-` ids withheld for excluded evidence (spec/cli.md §5.7). */
+  withheld?: string[];
 }
 
 export interface ChangeResult {
@@ -59,7 +62,7 @@ export interface ChangeResult {
   kind: string;
   target: string;
   result: "applied" | "dropped" | "deferred";
-  reason?: "STALE_PROPOSAL";
+  reason?: "STALE_PROPOSAL" | "SOURCE_EXCLUDED";
 }
 
 export interface NoteResult {
@@ -183,6 +186,7 @@ interface Outcome {
   notes?: NoteResult[];
   changes?: ChangeResult[];
   deferred?: string;
+  withheld?: string[];
   /** Action actually applied, when it differs from the input's (an earlier, later-dated decision). */
   action?: string;
   /** awaiting_notion: the write the skill carries out (spec/cli.md §5.7). */
@@ -318,26 +322,44 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   const D = decision.decided_at.slice(0, 10);
   const V = decision.action === "edit" ? decision.value : fixed.value;
   if (p.kind === "review_notes") {
-    const applied = reviewNotes(workspace, fixed.q, "approve", exclude, today, D, fixed.noteFixes);
+    // A review_notes with items is judged item by item, by the Review page's rule, before apply on every route: an item resting on excluded
+    // evidence is withheld and the independent items apply (eligibility.md §4.1, §4.2; cli §5.7). An older-layout row is CC-179's.
+    const withheld = withheldItems(workspace, proposal, exclude);
+    const applied = reviewNotes(workspace, fixed.q, "approve", exclude, today, D, fixed.noteFixes, withheld);
     if (applied.dropped.length > 0) p.dropped = applied.dropped;
+    const withheldIds = [...withheld.ids];
+    if (withheldIds.length > 0) {
+      p.item_decisions = [...list(p.item_decisions), ...withheldIds.map((item_id) => ({ item_id, decision: "reject", decided_at: decision.decided_at, decided_by: decision.decided_by, state: "closed", reason: "source_excluded" }))];
+    }
+    const extra = { ...(withheldIds.length === 0 ? {} : { withheld: withheldIds }) };
+    if (withheld.all && exclude.length === 0) {
+      p.status = "closed";
+      p.closed_reason = "stale";
+      workspace.save(proposal.path, document);
+      return { result: "closed", reason: "SOURCE_EXCLUDED", message: "every item rests on evidence the user excluded from the brain", action, notes: applied.notes, changes: applied.changes, ...extra };
+    }
     p.status = "applied";
     workspace.save(proposal.path, document);
     const deferred = exclude.length === 0 ? undefined : defer(workspace, proposal.id, p, exclude, today);
-    return { result: "applied", action, notes: applied.notes, changes: applied.changes, ...(deferred === undefined ? {} : { deferred }) };
+    return { result: "applied", action, notes: applied.notes, changes: applied.changes, ...(deferred === undefined ? {} : { deferred }), ...extra };
   }
-  // Checked before apply, on every route: a proposal resting only on excluded evidence is closed stale and nothing is applied, even on an
-  // Approve (capture-and-review §5.1). What is judged is the wording that would be written: the user's value on a fix or an edit, else the
-  // proposed text. Only a value that differs from the proposal and cites no passage is the user's own wording, and is not judged.
+  // Checked before apply, on every route, with the suppression records as they are now: a proposal resting on excluded evidence, even beside a
+  // live passage, is closed stale and nothing of it is applied, even on an Approve (eligibility.md §4.2, §9.2). What is judged is the wording
+  // that would be written: the user's value on a fix or an edit, else the proposed text. Only a value that differs from the proposal and cites
+  // no passage is the user's own wording: it is not judged, and it is attributed to the user, never to the proposal's source (§9.5).
   const proposed = proposedText(fixed.q);
   const written = typeof V === "string" ? V : proposed;
   const own = decision.action !== "approve" && V !== undefined && !isDeepStrictEqual(V, proposedText(p) ?? p.after) && !(typeof V === "string" && citesPassage(V));
-  if (!own && restsOnlyOnExcluded(p.source, written, contextFor(workspace.notes, requireSuppressions(workspace.root)))) {
+  const context = contextFor(workspace.notes, requireSuppressions(workspace.root));
+  if (!own && restsOnExcluded(p.source, written, context)) {
     p.status = "closed";
     p.closed_reason = "stale";
     workspace.save(proposal.path, document);
-    return { result: "closed", reason: "SOURCE_EXCLUDED", message: "the proposal rests only on evidence the user excluded from the brain", action };
+    return { result: "closed", reason: "SOURCE_EXCLUDED", message: "the proposal rests on evidence the user excluded from the brain", action };
   }
-  const stale = applyKind(workspace, fixed.q, proposal.path, V, D, today, exclude as Array<{ field: string; value: unknown }>);
+  // The user's own value replaces a proposal that rests on excluded evidence: the source's claim is not kept beside it (§9.4).
+  const sourceExcluded = own && restsOnExcluded(p.source, proposed, context);
+  const stale = applyKind(workspace, fixed.q, proposal.path, V, D, today, exclude as Array<{ field: string; value: unknown }>, own ? proposal.id : undefined, sourceExcluded);
   if (stale !== null) {
     p.status = "closed";
     p.closed_reason = "stale";
@@ -353,6 +375,38 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
 function proposedText(p: Record<string, unknown>): string | null {
   for (const value of [p.content, p.answer, isRecord(p.note) ? p.note.body : undefined]) if (typeof value === "string") return value;
   return null;
+}
+
+/** A text the user typed in place of the proposed one, citing no passage: theirs, attributed `user-correction:<proposal id>` (capture-and-review §7.7). */
+function userWording(V: unknown, proposed: unknown, correctedBy: string | undefined): boolean {
+  return correctedBy !== undefined && typeof V === "string" && V !== proposed && !citesPassage(V);
+}
+
+/**
+ * The items of a review_notes with `items` that rest on excluded evidence, by the Review page's rule (`source_excluded`, cli §5.14.3), so
+ * every route withholds the same items. Items already decided or deferred by the decision are not judged. `all`: every item left is withheld.
+ */
+function withheldItems(workspace: Workspace, proposal: Note, exclude: Array<Record<string, unknown>>): { ids: Set<string>; changes: Set<number>; notes: Set<string>; links: Set<number>; all: boolean } {
+  const out = { ids: new Set<string>(), changes: new Set<number>(), notes: new Set<string>(), links: new Set<number>(), all: false };
+  const a = proposal.attributes;
+  if (!Array.isArray(a.items)) return out;
+  const decided = new Set(list(a.item_decisions).map(record).map((entry) => String(entry.item_id)));
+  const entries = new Map(list(a.items).map(record).map((entry) => [String(entry.item_id), entry]));
+  const links = reviewLinks(a);
+  const deferred = (entry: Record<string, unknown>): boolean => entry.kind === "note" ? exclude.some((item) => isNoteExclude(item) && item.note === entry.ref)
+    : entry.kind === "link" ? exclude.some((item) => links[Number(entry.ref)] !== undefined && sameLink(links[Number(entry.ref)]!, item))
+    : exclude.some((item) => item.change === Number(entry.ref));
+  const open = [...entries.values()].filter((entry) => !decided.has(String(entry.item_id)) && !deferred(entry));
+  for (const view of reviewItems(proposal, workspace)) {
+    const entry = entries.get(view.item_id);
+    if (entry === undefined || !view.source_excluded || !open.includes(entry)) continue;
+    out.ids.add(view.item_id);
+    if (entry.kind === "note") out.notes.add(String(entry.ref));
+    else if (entry.kind === "link") out.links.add(Number(entry.ref));
+    else out.changes.add(Number(entry.ref));
+  }
+  out.all = open.length > 0 && open.every((entry) => out.ids.has(String(entry.item_id)));
+  return out;
 }
 
 /** Whether an exclude or fix entry names an item of a review_notes (spec/schema.md §11.3). */
@@ -506,7 +560,7 @@ function defer(workspace: Workspace, id: string, p: Record<string, unknown>, exc
 }
 
 /** Apply a proposal's kind to its targets. Returns a message when the proposal is stale. */
-export function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPath: string, V: unknown, D: string, today: string, exclude: Array<{ field: string; value: unknown }> = [], correctedBy?: string): string | null {
+export function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPath: string, V: unknown, D: string, today: string, exclude: Array<{ field: string; value: unknown }> = [], correctedBy?: string, sourceExcluded = false): string | null {
   const kind = String(p.kind);
   if (kind === "new_item") {
     // Approving the row is the review: the note is written reviewed, so it gets its Notion page (0071).
@@ -532,7 +586,9 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
   switch (kind) {
     case "update_fact":
       // The user edited the proposed value and accepted it (capture-and-review §7.7): the source keeps its own claim, the correction is attributed to the user.
-      if (correctedBy !== undefined && V !== undefined && !isDeepStrictEqual(V, p.after)) setFactCorrected(a, field, V, p.after, String(p.from), D, String(p.source), correctedBy);
+      // When the proposal rests on excluded evidence, the source's value is excluded text: only the user's value is written (eligibility.md §9.4, §9.5).
+      if (correctedBy !== undefined && V !== undefined && !isDeepStrictEqual(V, p.after) && sourceExcluded) setFact(a, field, V, String(p.from), D, `user-correction:${correctedBy}`);
+      else if (correctedBy !== undefined && V !== undefined && !isDeepStrictEqual(V, p.after)) setFactCorrected(a, field, V, p.after, String(p.from), D, String(p.source), correctedBy);
       else setFact(a, field, V ?? p.after, String(p.from), D, String(p.source));
       break;
     case "contradiction":
@@ -542,13 +598,15 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
     case "add_to_note": {
       const content = String(V ?? p.content).replace(/\n+$/, "");
       const head = document.body.replace(/\n+$/, "");
-      document.body = `${head === "" ? "" : `${head}\n\n`}${content}\nSource: ${String(p.source)}\n`;
-      a.sources = union(list(a.sources), [p.source]);
+      // The user's own wording is a separately attributed correction: it never claims the source said it (eligibility.md §9.5, cli §5.7).
+      const theirs = userWording(V, p.content, correctedBy);
+      document.body = `${head === "" ? "" : `${head}\n\n`}${content}\nSource: ${theirs ? `user-correction:${correctedBy!}` : String(p.source)}\n`;
+      if (!theirs) a.sources = union(list(a.sources), [p.source]);
       break;
     }
     case "update_body":
       document.body = bodyOf(String(V ?? p.content));
-      a.sources = union(list(a.sources), [p.source]);
+      if (!userWording(V, p.content, correctedBy)) a.sources = union(list(a.sources), [p.source]);
       break;
     case "add_link":
       for (const link of proposalLinks(p)) if (!exclude.some((item) => item.field === link.field && isDeepStrictEqual(item.value, link.value)) && !list(a[String(link.field)]).some((value) => isDeepStrictEqual(value, link.value))) a[String(link.field)] = [...list(a[String(link.field)]), link.value];
@@ -586,13 +644,14 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
  * their fixes, and applies the links; reject archives the draft notes. Excluded entries stay as they
  * are; a note no longer `draft` is left alone and reported `unchanged`.
  */
-function reviewNotes(workspace: Workspace, p: Record<string, unknown>, action: "approve" | "reject", exclude: Array<Record<string, unknown>>, today: string, D: string, noteFixes: ReadonlyMap<string, Array<Record<string, unknown>>>): { notes: NoteResult[]; changes: ChangeResult[]; dropped: Array<{ change: number; reason: "stale" }> } {
+function reviewNotes(workspace: Workspace, p: Record<string, unknown>, action: "approve" | "reject", exclude: Array<Record<string, unknown>>, today: string, D: string, noteFixes: ReadonlyMap<string, Array<Record<string, unknown>>>, withheld?: { changes: ReadonlySet<number>; notes: ReadonlySet<string>; links: ReadonlySet<number> }): { notes: NoteResult[]; changes: ChangeResult[]; dropped: Array<{ change: number; reason: "stale" }> } {
   const changes: ChangeResult[] = [];
   const dropped: Array<{ change: number; reason: "stale" }> = [];
   if (action === "approve") {
     list(p.changes).map(record).forEach((change, index) => {
       const entry = { index, kind: String(change.kind), target: String(change.target) };
       if (exclude.some((excluded) => excluded.change === index)) { changes.push({ ...entry, result: "deferred" }); return; }
+      if (withheld?.changes.has(index) === true) { changes.push({ ...entry, result: "dropped", reason: "SOURCE_EXCLUDED" }); return; }
       const stale = applyKind(workspace, { ...change, source: p.source }, "", undefined, D, today);
       if (stale === null) changes.push({ ...entry, result: "applied" });
       else {
@@ -605,7 +664,9 @@ function reviewNotes(workspace: Workspace, p: Record<string, unknown>, action: "
   for (const id of list(p.notes).map(String)) {
     const note = existing(workspace, id);
     const excluded = exclude.some((entry) => isNoteExclude(entry) && entry.note === id);
-    const fixes = action === "approve" ? noteFixes.get(id) ?? [] : [];
+    // A withheld draft is archived, as an Accept on its held Review item does (cli §5.14.3); its fixes are not applied.
+    const held = action === "approve" && withheld?.notes.has(id) === true;
+    const fixes = action === "approve" && !held ? noteFixes.get(id) ?? [] : [];
     if (fixes.length > 0) {
       const document = workspace.edit(note);
       for (const { field, value } of fixes) {
@@ -620,17 +681,17 @@ function reviewNotes(workspace: Workspace, p: Record<string, unknown>, action: "
     if (lifecycle !== "draft") results.push({ id, result: "unchanged", lifecycle });
     else if (excluded) results.push({ id, result: "kept_draft", lifecycle });
     else {
-      const next = action === "approve" ? "reviewed" : "archived";
+      const next = action === "approve" && !held ? "reviewed" : "archived";
       const document = workspace.edit(workspace.get(id)!);
       document.attributes.lifecycle = next;
       document.attributes.updated = today;
       workspace.save(note.path, document);
-      results.push({ id, result: action === "approve" ? "reviewed" : "archived", lifecycle: next });
+      results.push({ id, result: next, lifecycle: next });
     }
   }
   if (action === "approve") {
-    for (const link of reviewLinks(p)) {
-      if (exclude.some((entry) => sameLink(link, entry))) continue;
+    for (const [index, link] of reviewLinks(p).entries()) {
+      if (exclude.some((entry) => sameLink(link, entry)) || withheld?.links.has(index) === true) continue;
       const target = existing(workspace, String(link.target));
       const document = workspace.edit(target);
       const values = list(document.attributes[String(link.field)]);
