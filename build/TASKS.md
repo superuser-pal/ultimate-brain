@@ -430,7 +430,7 @@ Moved to 0.13.0 by the user, 2026-11-11: merged early (#312), so it ships in 0.1
 A follow-up to CC-190: #296 merged before CC-213's contract (#314), so `status` on `main` still read CC-188's form. Owns `src/lib/setup.ts` and `tests/setup.test.ts`; starts after CC-213 is merged.
 Moved to 0.13.0 by the user, 2026-11-12: merged early (#321), so it ships in 0.13.0, with CC-190 (#296), which it corrects.
 
-### CC-222 · Record that CC-221 ships in 0.13.0: its PR merged before 0.13.0 was released · `review`
+### CC-222 · Record that CC-221 ships in 0.13.0: its PR merged before 0.13.0 was released · `done` (#322)
 **Release:** 0.13.0
 **Changelog:** development only: CC-221's row moves to 0.13.0, the release its merged code ships in.
 **Output:** CC-221's row moved verbatim from the 0.14.0 section to the 0.13.0 section, with **Release:** 0.13.0 and one "Moved to 0.13.0 by the user" line (the user's choice of 2026-11-12, as for CC-190 and CC-214). Only build/TASKS.md changes.
