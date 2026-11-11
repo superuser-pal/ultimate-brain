@@ -505,15 +505,66 @@ test("query --read returns a note in full as retrieval may use it, and withholds
   assert.equal(lines[0], `Launch in March. ^[src-ex1a3b4c#¶1:${live}]`);
   assert.match(lines[1], /^ +$/);
   assert.equal("summary" in launch.frontmatter, false);
-  assert.deepEqual([launch.type, launch.title, launch.lifecycle, launch.assessment, launch.date, launch.path], ["decision", "Launch in March", "reviewed", "accepted", "2026-10-11", "knowledge/decisions/2026-10-11-launch.md"]);
+  // A restricted claim puts it in the awaiting-cleanup form: cited by type and id, with no title or path (eligibility.md §6 rule 3).
+  assert.deepEqual([launch.type, launch.title, launch.lifecycle, launch.assessment, launch.date, launch.path, launch.cite], ["decision", null, "reviewed", "accepted", "2026-10-11", null, "decision dec-aaaa0001, title withheld: awaiting cleanup"]);
   // Withheld notes carry a reason and nothing else.
   assert.deepEqual(by["dec-aaaa0002"], { id: "dec-aaaa0002", status: "withheld", reason: "restricted" });
   for (const id of ["mem-aaaa0003", "mem-aaaa0008", "mem-aaaa0013", "prp-aaaa0001"]) assert.deepEqual(by[id], { id, status: "withheld", reason: "not_eligible" });
   assert.deepEqual(by["xyz-00000000"], { id: "xyz-00000000", status: "withheld", reason: "unknown" });
-  // A superseded memory in reach is readable, marked, so an answer can say what a rule replaced.
-  assert.equal(by["mem-aaaa0010"].status, "ok");
-  assert.equal(by["mem-aaaa0010"].superseded_by, "mem-aaaa0011");
+  // A superseded memory is read only by the explicit historical read (eligibility.md §5; the next test).
+  assert.deepEqual(by["mem-aaaa0010"], { id: "mem-aaaa0010", status: "withheld", reason: "not_eligible" });
   assert.equal(JSON.stringify(data).includes("95k"), false);
+});
+
+test("a superseded memory is read only with --historical, labelled historical; current reads and searches get current memories (eligibility.md §5, 0077 §2)", async (context) => {
+  const { dir, repo } = await world(context);
+  await eligibilityBrain(dir);
+  await marker(repo, LINKED);
+  // Superseded, but a draft; superseded, but out of reach; superseded, but restricted whole: none is read, historical or not.
+  await memory(dir, "mem-aaaa0016", "Superseded draft rule.", { scope: "project", projects: [PROJECT] }, { lifecycle: "draft", relations: [{ type: "superseded_by", target: "mem-aaaa0011" }] });
+  await memory(dir, "mem-aaaa0017", "Superseded rule of another project.", { scope: "project", projects: [OTHER_PROJECT] }, { lifecycle: "archived", relations: [{ type: "superseded_by", target: "mem-aaaa0003" }] });
+  await memory(dir, "mem-aaaa0018", "Superseded pricing lesson.", { scope: "general" }, { lifecycle: "archived", sources: ["src-ex1a3b4c"], relations: [{ type: "superseded_by", target: "mem-aaaa0001" }] }, `${SECRET}\n`);
+  const read = ["mem-aaaa0010", "mem-aaaa0012", "mem-aaaa0011", "mem-aaaa0016", "mem-aaaa0017", "mem-aaaa0018", PROJECT];
+  const withheld = (id: string) => ({ id, status: "withheld", reason: "not_eligible" });
+
+  // Without the option: the current memory is read, every superseded one withheld.
+  const current = await query(dir, "--read", read.join(","), "--repo", repo);
+  const now = Object.fromEntries(current.notes.map((note: { id: string }) => [note.id, note]));
+  for (const id of ["mem-aaaa0010", "mem-aaaa0012", "mem-aaaa0016", "mem-aaaa0017", "mem-aaaa0018"]) assert.deepEqual(now[id], withheld(id));
+  assert.equal(now["mem-aaaa0011"].status, "ok");
+  assert.equal(JSON.stringify(current).includes("historical"), false);
+
+  // With it: a superseded memory in reach, not a draft, its evidence left in, is returned with superseded_by and historical: true.
+  const past = await query(dir, "--read", read.join(","), "--historical", "--repo", repo);
+  const then = Object.fromEntries(past.notes.map((note: { id: string }) => [note.id, note]));
+  assert.deepEqual([then["mem-aaaa0010"].status, then["mem-aaaa0010"].superseded_by, then["mem-aaaa0010"].historical], ["ok", "mem-aaaa0011", true]);
+  assert.equal(then["mem-aaaa0010"].frontmatter.summary, "Old rule: run migrations freely.");
+  assert.deepEqual([then["mem-aaaa0012"].status, then["mem-aaaa0012"].superseded_by, then["mem-aaaa0012"].historical], ["ok", "mem-aaaa0001", true]);
+  for (const id of ["mem-aaaa0016", "mem-aaaa0017", "mem-aaaa0018"]) assert.deepEqual(then[id], withheld(id));
+  // Every other id is read exactly as without the option: the current memory has no historical key, the project note is unchanged.
+  assert.deepEqual(then["mem-aaaa0011"], now["mem-aaaa0011"]);
+  assert.deepEqual(then[PROJECT], now[PROJECT]);
+  assert.equal(JSON.stringify(past).includes("95k"), false);
+  // The historical search returns the same superseded memories; the current pack, search and query --types memory return none.
+  const historicalSearch = await recall(dir, "--search", "rule superseded lesson", "--repo", repo, "--include-superseded", "--limit", "50");
+  assert.deepEqual(historicalSearch.results.filter((result: { superseded_by?: string }) => result.superseded_by !== undefined).map((result: { id: string }) => result.id).sort(), ["mem-aaaa0010", "mem-aaaa0012"]);
+  const superseded = ["mem-aaaa0010", "mem-aaaa0012", "mem-aaaa0016", "mem-aaaa0017", "mem-aaaa0018"];
+  const currentIds = [
+    ...ids((await recall(dir, "--pack", "--repo", repo)).memories),
+    ...ids((await recall(dir, "--search", "rule superseded lesson", "--repo", repo, "--limit", "50")).results),
+    ...ids((await query(dir, "--candidates", "rule superseded lesson", "--types", "memory", "--repo", repo, "--limit", "50")).candidates),
+  ];
+  assert.equal(currentIds.some((id) => superseded.includes(id)), false, currentIds.join(","));
+});
+
+test("a listing is administrative: index --json lists a draft memory that query --read withholds (eligibility.md §7)", async (context) => {
+  const { dir, repo } = await world(context);
+  await eligibilityBrain(dir);
+  await marker(repo, LINKED);
+  const index = await brain(["index", "--json", "--brain", dir, "--now", NOW]);
+  assert.equal(index.code, 0, index.stdout);
+  assert.ok(JSON.stringify(index.json.data).includes("mem-aaaa0008"), "index --json keeps its listing for tools and lint");
+  assert.deepEqual((await query(dir, "--read", "mem-aaaa0008", "--repo", repo)).notes, [{ id: "mem-aaaa0008", status: "withheld", reason: "not_eligible" }]);
 });
 
 test("every USAGE case of query --read (cli.md §5.13.1)", async (context) => {
@@ -526,6 +577,8 @@ test("every USAGE case of query --read (cli.md §5.13.1)", async (context) => {
     [["--read", "dec-aaaa0001,"], "--read takes 1 to 20 note ids separated by commas"],
     [["--read", Array.from({ length: 21 }, (_, index) => `dec-aaaa00${String(index).padStart(2, "0")}`).join(",")], "--read takes 1 to 20 note ids separated by commas"],
     [["--read", "dec-aaaa0001", "extra"], "Unexpected argument: extra"],
+    [["--candidates", "x", "--historical"], "--historical doesn't go with --candidates"],
+    [["--historical"], "brain query requires --candidates or --read; use the brain-query skill to answer questions"],
   ];
   for (const [args, message] of cases) {
     const result = await brain(["query", ...args, "--repo", repo, "--brain", dir, "--json"]);
