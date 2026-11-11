@@ -142,3 +142,31 @@ Use row-level security.
   const lint = await brain(["lint", "--brain", dir, "--json"]);
   assert.equal(lint.json.data.errors, 0, JSON.stringify(lint.json.data.issues));
 });
+
+test("a decision archived with no successor is in neither section of the decision log; a superseded one and a draft stay (schema §16.2)", async (context) => {
+  const dir = await fixtureCopy(context);
+  await writeFile(join(dir, "knowledge/decisions/2026-12-05-use-postgres-row-level-security.md"), `---
+id: dec-4h6j8k2m
+type: decision
+title: Use Postgres row-level security
+summary: Acme uses row-level security on every table.
+lifecycle: archived
+date: 2026-12-05
+assessment: accepted
+projects: [prj-9x4t1b7e]
+sources: [mtg-8c4n2p7w]
+created: 2026-12-05
+updated: 2026-12-05
+---
+
+## Decision
+Use row-level security.
+`);
+
+  const run = await brain(["views", "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  const log = await readFile(join(dir, DECISION_LOG), "utf8");
+  assert.equal(run.json.data.written.includes(DECISION_LOG), false, "the archived decision changes nothing in the log");
+  assert.match(log, /## Current\n- 2026-12-03 — \[Use Supabase for auth\]\([^)]+\) — accepted — supersedes [^\n]+\n\n## Superseded\n- 2026-10-01 → 2026-12-03 — \[Use Firebase for auth\]/, "the draft and the superseded decision stay");
+  assert.doesNotMatch(log, /Use Postgres row-level security|dec-4h6j8k2m/, "the archived decision is in neither section nor generated_from");
+});

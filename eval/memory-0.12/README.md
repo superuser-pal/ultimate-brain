@@ -132,7 +132,7 @@ Costs are reported per phase: `opening` (the pack at the start of work, budget 8
 
 ## Cases for 0.13.0 (CC-185)
 
-Decision 0077 §5 makes the final acceptance the 77 cases plus cases for the gaps it closes, run once natively in Claude Code and once in Codex on the final package (CC-186). Each gap of its plan item 7 has at least one critical trust case; the answerable cases beside them are controls, so that withholding everything does not pass.
+Decision 0077 §5 makes the final acceptance the 77 cases plus cases for the gaps it closes, run once natively in Claude Code and once in Codex on the final package (CC-186). [Decision 0082](../../decisions/0082-native-smoke-run-per-release-full-native-acceptance-before-1-0.md) moves that complete run to 1.0.0, once beta testers are live; each release from 0.13.0 gates on a 15-case native smoke run instead. Each gap of its plan item 7 has at least one critical trust case; the answerable cases beside them are controls, so that withholding everything does not pass.
 
 | Gap (0077 plan item 7) | Critical trust | Controls (answerable, unknown) | What the world holds |
 |---|---|---|---|
