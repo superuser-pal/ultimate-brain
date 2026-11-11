@@ -353,7 +353,7 @@ Work packages (0061, kept): onboarding/diagnostic/preference contracts; probe-fi
 | CC-196 | The CLI reads the lean shape and the follow-ups | `src/lib/selection.ts`, `src/lib/extract.ts`, `src/commands/source.ts`, `src/lib/sync.ts` (the `sync tasks` input), their tests | after CC-195 is merged | `todo` |
 | CC-197 | The prompt, Check minutes, the paste guide and the prompt gate | `notion/minutes-format.md`, `notion/pasting-the-minutes-prompt.md`, `notion/brain-assistant.md`, `eval/minutes-0.14/` (new) | after CC-195 is merged; before CC-189 and CC-191 take the prompt | `todo` |
 | CC-198 | Ingest and catch-up: the lean shape and follow-up Tasks | the fork's `brain/brain-ingest/`, `brain/brain-catch-up/`; the vendored snapshot | after CC-196 is merged | `todo` |
-| CC-208 | Decision 0081 and these rows | `decisions/0081`, the 0078 pointer, roadmap lines, these rows | now | `review` |
+| CC-208 | Decision 0081 and these rows | `decisions/0081`, the 0078 pointer, roadmap lines, these rows | now | `done` (#308) |
 | CC-209 | Response style contracts | `settings.style` in `spec/schema.md` §12, its lines in `spec/cli.md` (§5.2, §5.3, §5.12, §5.15) and `spec/setup.md` | after CC-208 is merged | `todo` |
 | CC-210 | The CLI writes the style paragraph | `brain.schema.json`, `config`, `link`, `upgrade`, `status`, their tests | after CC-209 is merged | `todo` |
 | CC-211 | Working principles, reply rules, the setup item and the chat change | `templates/brain/AGENTS.md`; the fork's `brain/brain-setup/`, `brain/brain-howto/`; the vendored snapshot | after CC-209, CC-210 and CC-191 are merged | `todo` |
@@ -432,7 +432,7 @@ Work packages (0061, kept): onboarding/diagnostic/preference contracts; probe-fi
 **Output:** in the skills fork, through fork PRs, then one fork release vendored here with `scripts/vendor-skills.mjs`: `brain/brain-ingest/` (`references/selection.md`: the lean shape, and follow-ups to Tasks per CC-195's §6; `references/notion.md`: the For the brain toggle is not part of the minutes text a legacy read stores) and `brain/brain-catch-up/` (the report's count of follow-ups that became Tasks; unattended runs create them).
 **Acceptance:** a synthetic meeting in the lean shape ingests with its selection respected and one Task per unticked follow-up, and none on a second read; an inline-quote meeting creates no follow-up Task; the fork's checks pass; the vendored snapshot matches the fork release; `npm run test:package` and the leak check pass.
 
-### CC-208 · Record the response style, working principles and plain writing plan · `review`
+### CC-208 · Record the response style, working principles and plain writing plan · `done` (#308)
 **Release:** 0.14.0
 **Changelog:** development only: the response style grill is recorded as decision 0081 with its 0.14.0 tasks: a response style each user chooses, working principles and reply rules in the brain's rules, and plain writing for text people read.
 **Output:** decision 0081 from the user's 2026-11-11 review of three public skill collections and its grill (Q1 to Q6); a header pointer on 0078; the 0.14.0 intro paragraph, heading and plan rows CC-208 to CC-212 and their task rows; the 0.14.0 line of the roadmap table here and in docs/v2-ideas.md. Planning only: no CLI, spec, schema, skill, template, Notion or CHANGELOG change and no brain operation. The user's answers authorise recording this agreement; implementation remains Claude Code's, and independent review is required.
