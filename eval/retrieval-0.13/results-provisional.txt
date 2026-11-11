@@ -2,7 +2,7 @@
 
 ## score.mjs <out-dir> --rows
 
-commit: fc80f2c41b37d75e9c2cf144e7b0d23cb8b8a0fb
+commit: d1fc8440f622b0aec21b0bf20bb2a3daf65af88e
 adapter: query-candidates (retrieval): brain query --candidates <question> --repo <caller folder> --json (default limit 10, default types)
 cases: 80 (split: all); audit: passed
 
@@ -30,7 +30,7 @@ Facts by evidence subgroup (reported; prose alone = a set of meetings and minute
 | decision | 1/1 | 1/1 |
 | **all facts** | 19/20 | 17/20 |
 
-One cold CLI process per case (not the paired latency of costs.mjs): median 709 ms; output 4169 bytes on average (bytes, not tokens).
+One cold CLI process per case (not the paired latency of costs.mjs): median 699 ms; output 4179 bytes on average (bytes, not tokens).
 
 ## Rows
 
@@ -127,7 +127,7 @@ rq-u20	unknown	dev	pass	-
 
 ## score.mjs <out-dir> --adapter reference-answers
 
-commit: fc80f2c41b37d75e9c2cf144e7b0d23cb8b8a0fb
+commit: d1fc8440f622b0aec21b0bf20bb2a3daf65af88e
 adapter: reference-answers (answer): eval/retrieval-0.13/reference-answers.json
 cases: 80 (split: all); audit: passed
 
@@ -160,6 +160,8 @@ cli: src/cli.ts
 kept in the first ten: 36/36; first rank 28 (baseline 28); MRR 0.6060 (baseline 0.6060): pass
 
 ## costs.mjs <out-dir> --baseline . --candidate . --reps 5
+
+Measured at fc80f2c; `src/` is the same at the commits above (`git diff fc80f2c d1fc844 -- src/` is empty), so it was not run again.
 
 The baseline paired with itself: the tool's noise on this machine, not a comparison. Other agents shared the machine (see the load average); both sides ran interleaved under the same load.
 
