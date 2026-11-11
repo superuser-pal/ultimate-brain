@@ -74,6 +74,7 @@ The fields of `eval/memory-0.12` (`caller`, `facts`, `forbidden_facts`, `forbidd
 | `absent` | for `unknown`: `{ about: id, none: [patterns] }`: what no note about that subject holds (the audit checks it) |
 | `as_of` | for a time-qualified fact: the qualification the answer must keep (also in `facts`) |
 | `split` | `dev` or `held`: §5.4 |
+| `subgroup` | for `fact`: `body-only` (no typed-field or title alternative), `structured` (a typed field with a prose alternative) or `decision`; frozen with the cases (7, 12, 1) |
 | `audit` | one line: why the question is clear, which passage answers it, and why each other set is sufficient |
 
 The questions are clear on their own. A "current" question asks about what the evidence calls current; a dated value is asked with its date or its period.
@@ -101,6 +102,7 @@ A script check, run by the scorer before any run, fails the set when: an id in `
 | Gate | Set | Required |
 |---|---|---|
 | Facts, first search | the 20 `fact` cases, retrieval level | at least 18 of 20 |
+| **Facts in prose only, first search** | the 17 existing body-only facts: `eval/search-0.5`'s 10 `fact-in-body` questions (on the original brain) and the 7 `fact` cases with `subgroup: body-only` (no typed-field or title alternative) | **at least 16 of 17** (the user's choice of 2026-11-11: the combined fact score must not hide the original 0 of 10) |
 | Paraphrases, first search | the 20 `paraphrase` cases, retrieval level | at least 18 of 20 |
 | Originals kept | `eval/search-0.5`, 50 questions, `brain` retriever | each of the 36 questions in the first ten on the 0.12.0 baseline still is; first-rank count at least 28 and MRR at least 0.61 (`results-cc173.txt`); recall@1, @5, @10 and MRR per kind reported |
 | Trust kept | `eval/memory-0.12`, every adapter it runs at the retrieval level | no case that passes on the matched baseline fails; at CC-186, 100% of critical trust cases at both levels |
@@ -143,7 +145,7 @@ The 80 cases join CC-186's final acceptance: **one complete native run in Claude
 |---|---|---|
 | §1 English only | §1 | CC-203, CC-205 |
 | §2 the first search, first ten | §1, §6.1 | CC-203, CC-204 |
-| §3 gates | §6.2 | CC-203 (scorer), CC-204, CC-205, CC-186 |
+| §3 gates, the 16 of 17 prose-only fact gate included | §6.2 | CC-203 (scorer), CC-204, CC-205, CC-186 |
 | §4 clarifying question | §3, §6.1 | CC-205 (the CLI side), CC-186 (answers) |
 | §5 eighty cases, the 50 unchanged, held-back wording, alternatives | §5 | CC-203 |
 | §6 latency | §7.1 | CC-203 (the tool and baseline), CC-204, CC-205 |
