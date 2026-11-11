@@ -35,7 +35,9 @@ test("retrieval level: a clarify case needs evidence of two subjects in the firs
 test("answer level: answerable, clarify and unknown rules", () => {
   assert.deepEqual(scoreAnswer(factCase, { text: "The Alder app's budget is €40,000 [prj-a].", citations: ["prj-a"] }), []);
   assert.match(scoreAnswer(factCase, { text: "The budget is €40,000.", citations: ["mtg-a"] }).join(), /complete evidence set/);
-  assert.match(scoreAnswer(factCase, { text: "It's not recorded, maybe €40,000.", citations: ["prj-a"] }).join(), /abstained/);
+  assert.match(scoreAnswer(factCase, { text: "I couldn't find the budget in the brain.", citations: ["prj-a"] }).join(), /abstained/);
+  // Facts first (CC-201's rule): a caveat beside every required fact is not an abstention that fails the case.
+  assert.deepEqual(scoreAnswer(factCase, { text: "The budget is €40,000; no later change is recorded.", citations: ["prj-a"] }), []);
   assert.match(scoreAnswer({ ...factCase, as_of: fact("for 2026", "2026") }, { text: "€40,000 [prj-a]", citations: ["prj-a"] }).join(), /time qualification/);
   // A complete, cited answer that also states a forbidden claim fails, as in memory-0.12's answerable rule; so does citing forbidden evidence.
   const conflicting = { ...factCase, forbidden_facts: [fact("€70,000", "70[,. ]?000")] };
