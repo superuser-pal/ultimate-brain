@@ -930,11 +930,11 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
   return values;
 }
 
-/** A Review row's Name says which kind of row it is (cli §5.14.4, 0048). */
 /** A Review row's Name: `Held: <id>` when the row is held whole, else its title (with a Conflict or Answer lead); a Review summary names a deferred item's row by it (cli §5.14.4). */
 function reviewRowName(workspace: Workspace, note: Note, whole = proposalHeld(workspace, note).whole): unknown {
   return whole ? `Held: ${note.id}` : reviewName(note.attributes);
 }
+/** A Review row's Name says which kind of row it is (cli §5.14.4, 0048). */
 function reviewName(a: Record<string, unknown>): unknown {
   const prefix = ["contradiction", "supersede", "merge", "new_item"].includes(String(a.kind)) ? "Conflict: " : a.kind === "answer" ? "Answer: " : "";
   return typeof a.title === "string" && prefix !== "" && !a.title.startsWith(prefix) ? `${prefix}${a.title}` : a.title;
