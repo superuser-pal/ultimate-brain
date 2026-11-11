@@ -81,7 +81,7 @@ The `AGENTS.md` lines are written under the `## My rules` heading, which follows
 - <timestamp> setup - "" step=<step> result=<done|failed|declined>[ <key>=<value>]…
 ```
 
-- This is the line `brain log setup - step=<step> result=… [<key>=<value>…]` writes: with `-` for the id, the CLI writes an empty quoted title (cli.md §5.11). `brain status` reads a `setup` line with or without the `""` (the example before CC-191 showed it without; no behaviour change).
+- This is the line `brain log setup - step=<step> result=… [<key>=<value>…]` writes: with `-` for the id, the CLI writes an empty quoted title (cli.md §5.11). This is the form `brain status` reads (the example before CC-191 showed it without the `""`, which the CLI never wrote and `status` doesn't read; no behaviour change). Setup lines are written only through `brain log`.
 
 - `<step>` is one of §2's: `started`, `prerequisites`, `settings`, `notion-mcp`, `connect`, `minutes-prompt`, `brain-assistant`, `identities`, `seeding`, `first-value`, `schedule`, `finished`, and `first-meeting`, written once by brain-catch-up after setup (§10.1), which `brain status` doesn't read. `started` is written once, when the skill first runs in a brain with no `setup` line.
 - `result=failed` adds `reason=<code>` from §12.2; `declined` is used only by `schedule` (the user chose off). A step can be logged several times; the latest line of a step is its state.
