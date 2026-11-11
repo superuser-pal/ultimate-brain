@@ -227,6 +227,11 @@ function record_(workspace: Workspace, id: string, entry: Record<string, unknown
   workspace.save(proposal.path, document);
 }
 
+/** One item as it moves to the deferred proposal: its id, its new reference and its passages. */
+function carried(item: Record<string, unknown>, kind: string, ref: unknown): Record<string, unknown> {
+  return { item_id: String(item.item_id), kind, ref, ...(item.passages === undefined ? {} : { passages: item.passages }) };
+}
+
 /** The deferred items of a proposal, written as one new pending proposal under their own ids (the references re-indexed). */
 function deferItems(workspace: Workspace, id: string, itemIds: string[], today: string): string {
   const proposal = workspace.get(id)!;
@@ -243,10 +248,11 @@ function deferItems(workspace: Workspace, id: string, itemIds: string[], today: 
     kind: "review_notes",
     title: reviewTitle(workspace, source, changes.length, notes.length, links.length, "Deferred from"),
     notes, links, ...(changes.length === 0 ? {} : { changes }),
+    // A deferred item keeps its id and its passages (schema §11.5); a legacy one stays legacy.
     items: [
-      ...changeRefs.map((ref, index) => ({ item_id: String(pick("change").find((item) => Number(item.ref) === ref)!.item_id), kind: "change", ref: index })),
-      ...notes.map((note) => ({ item_id: String(pick("note").find((item) => item.ref === note)!.item_id), kind: "note", ref: note })),
-      ...linkRefs.map((ref, index) => ({ item_id: String(pick("link").find((item) => Number(item.ref) === ref)!.item_id), kind: "link", ref: index })),
+      ...changeRefs.map((ref, index) => carried(pick("change").find((item) => Number(item.ref) === ref)!, "change", index)),
+      ...notes.map((note) => carried(pick("note").find((item) => item.ref === note)!, "note", note)),
+      ...linkRefs.map((ref, index) => carried(pick("link").find((item) => Number(item.ref) === ref)!, "link", index)),
     ],
     deferred_from: id, why: p.why, source,
   };

@@ -1,5 +1,6 @@
 import { isRecord } from "./input.ts";
 import type { Note } from "./notes.ts";
+import { passageProblems } from "./passages.ts";
 import { bodyOf } from "./proposals.ts";
 import type { ReviewRevision } from "./review-plan.ts";
 import { linkValue, Skip, typed } from "./review-apply.ts";
@@ -38,7 +39,7 @@ export function recordRevisionRequests(workspace: Workspace, requests: readonly 
 export interface Revised { proposal: string; item_id: string; kind: string }
 
 /** Replace the stored proposal of a revision-requested item with the new draft, keeping the previous wording (`brain proposal revise`). Nothing is accepted. */
-export function reviseItem(workspace: Workspace, input: { proposal: string; item_id: string; proposed: string; previous: string }, now: Date, today: string): Revised {
+export function reviseItem(workspace: Workspace, input: { proposal: string; item_id: string; proposed: string; previous: string; passages?: unknown }, now: Date, today: string): Revised {
   const proposal = workspace.get(input.proposal);
   if (proposal === undefined || proposal.type !== "proposal") throw new Skip("UNKNOWN_ID", `No proposal ${input.proposal}`);
   const a = proposal.attributes;
@@ -50,7 +51,15 @@ export function reviseItem(workspace: Workspace, input: { proposal: string; item
   if (list(a.item_decisions).some((done) => record(done).item_id === input.item_id)) throw new Skip("ALREADY_DECIDED");
   if (input.proposed.trim() === "") throw new Skip("UNREADABLE_PROPOSED", "a revision cannot be empty");
   if (["remove", "restore", "independence"].includes(String(entry.kind))) throw new Skip("REVISION_NOT_SUPPORTED", "a cleanup item has no wording to revise");
+  // The revised item names its passages: the new list when given, else the ones it had; a legacy item without them stays legacy (cli §5.27).
+  const passages = input.passages ?? entry.passages;
+  if (passages !== undefined) {
+    const found = passageProblems(workspace, passages, "/passages", entry.kind === "link" ? null : input.proposed);
+    const problem = found.problems[0] ?? (found.unknown[0] === undefined ? undefined : { pointer: "/passages", message: `${found.unknown[0]} does not exist` });
+    if (problem !== undefined) throw new Skip("INPUT_INVALID", `${problem.pointer} ${problem.message}`);
+  }
   const document = workspace.edit(proposal);
+  if (input.passages !== undefined) document.attributes.items = list(document.attributes.items).map(record).map((item) => (item.item_id === input.item_id ? { ...item, passages: input.passages } : item));
   if (entry.kind === "note") {
     const note = workspace.get(String(entry.ref));
     if (note === undefined || note.attributes.lifecycle !== "draft") throw new Skip("NOT_A_DRAFT", `${String(entry.ref)} is not a draft`);
