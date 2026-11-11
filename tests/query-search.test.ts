@@ -90,6 +90,16 @@ test("a fact the projection drops adds no term and no snippet; a kept fact is sh
   assert.ok(kept.snippets.some((snippet) => snippet.text === "facts.budget: 40000 EUR"), JSON.stringify(kept.snippets));
 });
 
+test("a fact snippet carries its entry's line, or the facts: line when the facts are on one line (cli.md §5.13)", () => {
+  const block = note("prj-line0001", "project", { title: "Line block", facts: { budget: "40000 EUR" } }, "");
+  const raw = "---\nid: prj-line0002\ntype: project\ntitle: Line flow\nfacts: {budget: 9000 EUR}\ntags: [a]\n---\n";
+  const flow = { ...note("prj-line0002", "project", { title: "Line flow", facts: { budget: "9000 EUR" } }, ""), raw } as Note;
+  const by = Object.fromEntries(search([block, flow], "line budget").candidates.map((c) => [c.id, c.snippets]));
+  const blockLine = block.raw.split("\n").findIndex((line) => /^ {2}budget:/.test(line)) + 1;
+  assert.deepEqual(by["prj-line0001"], [{ line: blockLine, text: "facts.budget: 40000 EUR" }]);
+  assert.deepEqual(by["prj-line0002"], [{ line: 5, text: "facts.budget: 9000 EUR" }], "the facts: line, never 0");
+});
+
 test("an equivalence never surfaces a blanked line (§2.6)", () => {
   const blanked = (n: Note) => (n.id === "mtg-alder001" ? { ...n, body: n.body.replace(/^The money.*$/m, (line) => " ".repeat(line.length)) } as Note : n);
   for (const candidate of search(world(), "What is the budget for the Alder app?", NONE, blanked).candidates) {

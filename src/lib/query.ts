@@ -513,12 +513,15 @@ function searchSnippets(note: Note, terms: readonly string[], groups: readonly (
   const kept = note.attributes.facts;
   if (typeof kept === "object" && kept !== null && !Array.isArray(kept)) {
     const raw = note.raw.split(/\r?\n/);
-    const factsAt = raw.findIndex((line) => /^facts:\s*$/.test(line));
+    // The entry's line within the `facts:` block, else the `facts:` line itself (flow style, `facts: {budget: …}`).
+    const factsAt = raw.findIndex((line) => /^facts:/.test(line));
+    let blockEnd = factsAt + 1;
+    while (blockEnd < raw.length && /^\s/.test(raw[blockEnd]!)) blockEnd++;
     for (const [name, value] of Object.entries(kept)) {
       if (typeof value === "object" && value !== null) continue;
       if (!hitWords(lineTerms(`${name} ${String(value)}`))) continue;
-      const at = raw.findIndex((line, index) => index > factsAt && new RegExp(`^\\s+${name.replace(/[^\w]/g, "\\$&")}:`).test(line));
-      facts.push({ line: at + 1, text: `facts.${name}: ${String(value)}`.slice(0, 200) });
+      const at = raw.findIndex((line, index) => index > factsAt && index < blockEnd && new RegExp(`^\\s+${name.replace(/[^\w]/g, "\\$&")}:`).test(line));
+      facts.push({ line: (at === -1 ? factsAt : at) + 1, text: `facts.${name}: ${String(value)}`.slice(0, 200) });
     }
   }
   const lines = note.body.split(/\r?\n/).flatMap((text, index) => {
