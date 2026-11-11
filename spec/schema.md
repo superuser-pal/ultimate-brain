@@ -128,7 +128,7 @@ Each row lists fields **in addition to** §3. "Notion" names the database the ty
 An ongoing responsibility (e.g. "Clients", "Health").
 - `domain`: optional scalar `dom-` ID, naming at most one Domain (0055).
 - `notion_fields`: `archived` (bool). Before 0.9.0 it also held `type` (`Business`·`Personal`) from Areas · Type; the property moved to Domains (CC-120), lint still accepts the old value, and the next `sync apply` drops it.
-- `track`: optional list of 1 to 8 short lowercase strings, the kinds of thing worth extracting in this Area (`[budget, deadlines, scope changes, risks]`): the minimal per-area tracking preference (0061, from 0.14.0; [setup.md](setup.md) §11). Owner: brain; set in setup's seeding preview or on the user's request; not published to Notion. Absent means the ingest's generic list.
+- `track`: optional list of 1 to 8 short lowercase strings, the kinds of thing worth extracting in this Area (`[budget, deadlines, scope changes, risks]`): the minimal per-area tracking preference (0061, from 0.14.0; [setup.md](setup.md) §11). Owner: brain; set in setup's seeding preview or on the user's request; not published to Notion. Absent means the ingest's generic list. "Short" is at most 40 characters; a phrase has no capital letter in any script, no leading or trailing space, and no phrase repeats in the list. A `track` key on a note that isn't an area is not reported.
 - Body: description.
 
 ### domain · `domains/` · Notion: Domains (0055)
@@ -574,7 +574,8 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
   "schema_version": 1,
   "owner": { "name": "Alex", "person": "per-3h8w2n6c" },
   "budgets": { "ingest_max_notes": 8 },
-  "settings": { "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 }, "markitdown": "on", "gh": "on", "schedule": "off" },
+  "settings": { "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 }, "markitdown": "on", "gh": "on", "schedule": "off",
+                "style": { "preset": "simple", "length": "normal" } },
   "modules": { "domains": false, "knowledge": true, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true },
   "repos": [
     { "name": "acme-api", "path": "~/code/acme-api", "area": "area-2m7c4h8n",
@@ -607,6 +608,13 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 - `unattended.max_inputs` (0051): how many inputs one unattended run takes in, oldest first; an integer of at least 1, default 10. The rest waits for the next run (cli.md §6.1). `unattended` absent, or `max_inputs` absent from it, means 10.
 - `recall` (0074): `off` (default) or `opening`. With `opening`, `brain link` adds the recall paragraph to a linked repo's instruction block, so its agents load the opening context (cli.md §5.12, [memory.md](memory.md) §7). Setup asks once; absent means `off`.
 - `markitdown`, `gh`, `schedule` (0078, from 0.14.0; [setup.md](setup.md) §7): the optional items of the guided setup, each `on` or `off`; absent means `off`. They record the user's choice so setup never asks again: `markitdown` whether the user chose to install MarkItDown (the ingest still uses it whenever it is installed, as before, so a brain without the key converts files as it did), `gh` whether setup may use the GitHub CLI (the private remote, the setup report), `schedule` whether the user chose a scheduled catch-up (the entry itself is the machine's, cli.md §5.21).
+- `style` (0081, from 0.14.0): how the agent talks to the user, in its own words. An object with up to four keys, each optional, and no others:
+  - `preset`: `standard` or `simple`; absent means `standard`.
+  - `explain`: `expert`, `some` or `plain`; how much the agent explains.
+  - `length`: `short`, `normal` or `full`; how long its answers are.
+  - `directness`: `answer-first` or `context-first`; what comes first.
+
+  A dial that is set overrides the preset's value for that dial; a dial that isn't takes the preset's value. **`standard`** is `some`, `normal`, `context-first`: the agent's ordinary behaviour, so these three levels add no instruction. **`simple`** is `plain`, `short`, `answer-first`. `style` absent, or `{}`, is Standard. The CLI writes the style into the brain's `AGENTS.md` and into linked folders' blocks (cli.md §5.3.1); skills read it only through those. Setup offers it, and the user changes it in chat ([setup.md](setup.md) §7). The JSON schema gains it with CC-210.
 
 **Modules** (0048): the optional parts of the space. Core (Inbox, Meetings, Projects, Areas, People, Review) is always on and has no key.
 
@@ -747,7 +755,7 @@ The generated block contains these sections in this order; a section with no ite
 6. `## Recent meetings` — meetings whose `projects` contains the project; sorted by `date` descending, then id; at most 5: `- <date> — [<title>](<path>)`.
 
 ### 16.2 `decision-log.md` (`view_kind: decision_log`)
-The decision log lists every decision of the project, whatever its lifecycle: it is the history, not a summary of what you reviewed.
+The decision log lists every decision of the project, whatever its lifecycle: it is the history, not a summary of what you reviewed. One exception: an `archived` decision whose `assessment` is not `superseded` is in neither section and not in `generated_from` (CC-218). Archived without a successor means the decision was not taken: a draft you rejected in Review, one withheld because it rested only on excluded evidence (§11.5), or one you archived; listing it under Current would show it as decided (eligibility.md §8 rule 7). A draft still waiting in Review stays listed, and a superseded decision stays under Superseded.
 
 Two sections, each sorted by `date` descending (`valid_until` descending for superseded), then id; empty section renders `- None`:
 

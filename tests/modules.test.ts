@@ -22,16 +22,17 @@ test("a new brain starts with the onboarding defaults, and modules lists what ea
   const list = await brain(["modules", "--brain", target, "--json"], root);
   assert.equal(list.code, 0, list.stdout);
   assert.deepEqual(list.json.data.modules.map((module: { name: string; on: boolean }) => [module.name, module.on]), [
-    ["domains", false], ["knowledge", true], ["orgs", true], ["documents", false], ["reports", false], ["tasks", false], ["planning", false],
+    ["domains", false], ["knowledge", true], ["orgs", true], ["documents", true], ["reports", true], ["tasks", true], ["planning", false],
   ]);
   const byName = Object.fromEntries(list.json.data.modules.map((module: { name: string }) => [module.name, module]));
   assert.deepEqual(byName.knowledge.missing, ["decisions", "questions"]);
-  assert.deepEqual(byName.tasks, { name: "tasks", on: false, default: false, databases: [], missing: ["tasks"] });
+  // The new-brain block turns Tasks on (0078 §4); its default, for a key absent from a block, stays off.
+  assert.deepEqual(byName.tasks, { name: "tasks", on: true, default: false, databases: [], missing: ["tasks"] });
   // A report is a Documents row (0071): Reports uses the Documents database.
   assert.deepEqual([byName.reports.databases, byName.reports.missing], [["documents"], ["documents"]]);
 
   const status = await brain(["status", "--brain", target, "--json"], root);
-  assert.deepEqual(status.json.data.modules, { domains: false, knowledge: true, orgs: true, documents: false, reports: false, tasks: false, planning: false });
+  assert.deepEqual(status.json.data.modules, { domains: false, knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: false });
   assert.ok(status.json.data.notion.missing.includes("documents"));
 });
 
@@ -40,15 +41,16 @@ test("modules on and off switch one key, log the change, and write nothing when 
   const configPath = join(target, "brain.json");
   const before = JSON.parse(await readFile(configPath, "utf8"));
 
-  const on = await brain(["modules", "on", "documents", "--brain", target, "--now", NOW, "--json"], root);
+  // Planning is off in a new brain (0078 §4).
+  const on = await brain(["modules", "on", "planning", "--brain", target, "--now", NOW, "--json"], root);
   assert.equal(on.code, 0, on.stdout);
-  assert.deepEqual(on.json.data, { module: "documents", on: true, changed: true, missing: ["documents"] });
+  assert.deepEqual(on.json.data, { module: "planning", on: true, changed: true, missing: ["goals", "key_results"] });
   const after = JSON.parse(await readFile(configPath, "utf8"));
-  assert.deepEqual(after, { ...before, modules: { ...before.modules, documents: true } });
-  assert.match(await readFile(join(target, "log/2026-12.md"), "utf8"), /modules - "documents" state=on\n$/);
+  assert.deepEqual(after, { ...before, modules: { ...before.modules, planning: true } });
+  assert.match(await readFile(join(target, "log/2026-12.md"), "utf8"), /modules - "planning" state=on\n$/);
 
   const text = await readFile(configPath, "utf8");
-  const again = await brain(["modules", "on", "documents", "--brain", target, "--now", NOW, "--json"], root);
+  const again = await brain(["modules", "on", "planning", "--brain", target, "--now", NOW, "--json"], root);
   assert.equal(again.json.data.changed, false);
   assert.equal(await readFile(configPath, "utf8"), text);
 
