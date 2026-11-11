@@ -128,7 +128,7 @@ Each row lists fields **in addition to** §3. "Notion" names the database the ty
 An ongoing responsibility (e.g. "Clients", "Health").
 - `domain`: optional scalar `dom-` ID, naming at most one Domain (0055).
 - `notion_fields`: `archived` (bool). Before 0.9.0 it also held `type` (`Business`·`Personal`) from Areas · Type; the property moved to Domains (CC-120), lint still accepts the old value, and the next `sync apply` drops it.
-- `track`: optional list of 1 to 8 short lowercase strings, the kinds of thing worth extracting in this Area (`[budget, deadlines, scope changes, risks]`): the minimal per-area tracking preference (0061, from 0.14.0; [setup.md](setup.md) §11). Owner: brain; set in setup's seeding preview or on the user's request; not published to Notion. Absent means the ingest's generic list.
+- `track`: optional list of 1 to 8 short lowercase strings, the kinds of thing worth extracting in this Area (`[budget, deadlines, scope changes, risks]`): the minimal per-area tracking preference (0061, from 0.14.0; [setup.md](setup.md) §11). Owner: brain; set in setup's seeding preview or on the user's request; not published to Notion. Absent means the ingest's generic list. "Short" is at most 40 characters; a phrase has no capital letter in any script, no leading or trailing space, and no phrase repeats in the list. A `track` key on a note that isn't an area is not reported.
 - Body: description.
 
 ### domain · `domains/` · Notion: Domains (0055)

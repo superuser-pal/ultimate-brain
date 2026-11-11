@@ -9,21 +9,19 @@ import { brain, fixtureCopy, testPackageRoot } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 
-test("init's human output names the checklist under product.path and the connect step (cli.md §5.1)", async (context) => {
+test("init's human output names one next step and no path under product.path (cli.md §5.1, 0078 §2)", async (context) => {
   const parent = await mkdtemp(join(tmpdir(), "brain-init-"));
   context.after(() => rm(parent, { recursive: true, force: true }));
   const target = join(parent, "brain");
   const result = await brain(["init", target, "--owner", "Test Owner", "--no-git", "--now", NOW], parent);
   assert.equal(result.code, 0, result.stderr);
-  const checklist = join(realpathSync(await testPackageRoot()), "notion", "CHECKLIST.md");
   const made = realpathSync(target);
   assert.equal(result.stdout, [
     `Initialized Ultimate Brain at ${made}`,
-    "Next:",
-    `  1. Build your Notion space: follow ${checklist}`,
-    `  2. Then, in ${made}, ask your agent: "connect the brain to Notion"`,
+    `Next: open Claude Code or Codex in ${made} and say "set up my brain"`,
     "",
   ].join("\n"));
+  assert.equal(result.stdout.includes(realpathSync(await testPackageRoot())), false);
 });
 
 test("query without --candidates points to the brain-query skill, with or without a question (cli.md §5.13)", async (context) => {
