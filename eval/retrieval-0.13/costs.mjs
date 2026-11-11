@@ -5,7 +5,7 @@
 // The 130 questions are the 80 cases (on <out-dir>/brain, from their caller folders) and the 50 originals (on
 // <out-dir>/original, from a folder with no `.brain`).
 //   - Search latency: one cold `node <checkout>/src/cli.ts query --candidates … --json` process per question and side.
-//   - In-process ranking time: each side's own `rankCandidates` over notes it has already scanned (file reading not counted);
+//   - In-process ranking time: each side's own `searchCandidates` (from CC-205; `rankCandidates` before) over notes it has already scanned (file reading not counted);
 //   the warm-up pass checks that it returns the CLI's first ten.
 //   Both are paired and interleaved: one discarded warm-up pass, then --reps passes, the two sides alternating and their
 //   order swapped every pass and every question; a question's time is the median of its passes; the statistics are the
@@ -86,7 +86,9 @@ async function rankerFor(side) {
   return (q) => {
     const { notes, eligibleOf } = prepared.get(q.brain);
     const started = process.hrtime.bigint();
-    const ranked = query.rankCandidates(notes, query.queryTerms(q.q), query.queryTypes(undefined), contexts.get(q.caller), eligibleOf).slice(0, 10);
+    // What the side's command calls: searchCandidates (with the unresolved signal) from CC-205 on, rankCandidates before.
+    const args = [notes, query.queryTerms(q.q), query.queryTypes(undefined), contexts.get(q.caller), eligibleOf];
+    const ranked = (typeof query.searchCandidates === "function" ? query.searchCandidates(...args).candidates : query.rankCandidates(...args)).slice(0, 10);
     return { ms: Number(process.hrtime.bigint() - started) / 1e6, ids: ranked.map((c) => c.id) };
   };
 }
