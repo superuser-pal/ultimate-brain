@@ -134,17 +134,21 @@ function taskProperty(workspace: Workspace, property: string): string {
 }
 
 /** A value as a Review row and a default title show it (spec/cli.md §5.14.4). */
-export function shownValue(value: unknown, workspace: Workspace, noteIds = false): string {
+/** `title` names a note as the surface shows it: on a Review row, by its published form (cli §5.14.4, "Restricted notes"). */
+export function shownValue(value: unknown, workspace: Workspace, noteIds = false, title: NoteTitle = (note) => note.attributes.title): string {
   if (value === null || value === undefined) return "none";
   if (typeof value === "boolean") return value ? "yes" : "no";
-  if (Array.isArray(value)) return value.length === 0 ? "none" : value.map((id) => titleOfPage(workspace, String(id))).join(", ");
-  if (noteIds && typeof value === "string") return String(workspace.get(value)?.attributes.title ?? value);
+  if (Array.isArray(value)) return value.length === 0 ? "none" : value.map((id) => titleOfPage(workspace, String(id), title)).join(", ");
+  if (noteIds && typeof value === "string") { const note = workspace.get(value); return String((note === undefined ? undefined : title(note)) ?? value); }
   return String(value);
 }
 
-function titleOfPage(workspace: Workspace, page: string): string {
+type NoteTitle = (note: Note) => unknown;
+
+function titleOfPage(workspace: Workspace, page: string, title: NoteTitle): string {
   const note = workspace.notes.find((candidate) => candidate.attributes.notion === page);
-  return typeof note?.attributes.title === "string" ? note.attributes.title : page;
+  const shown = note === undefined ? undefined : title(note);
+  return typeof shown === "string" ? shown : page;
 }
 
 const cut = (title: string) => (title.length > 120 ? `${title.slice(0, 119)}…` : title);
@@ -201,16 +205,16 @@ export function decidedInChat(note: Note): boolean {
 }
 
 /** About, About Page, Now and Proposed of a Suggestion row (spec/cli.md §5.14.4). */
-export function suggestionText(a: Record<string, unknown>, workspace: Workspace): { name: string; about: string; aboutPage: string | null; now: string; proposed: string } {
+export function suggestionText(a: Record<string, unknown>, workspace: Workspace, title: NoteTitle = (note) => note.attributes.title): { name: string; about: string; aboutPage: string | null; now: string; proposed: string } {
   const name = typeof a.title === "string" && !a.title.startsWith("Suggestion: ") ? `Suggestion: ${a.title}` : String(a.title);
   const url = (page: unknown) => (typeof page === "string" ? `https://www.notion.so/${page.replaceAll("-", "")}` : null);
   if (a.kind === "notion_change") {
     const label = LABELS[String(a.property)];
-    return { name, about: a.database === "tasks" ? `${String(a.page_title)} (task)` : `${String(a.page_title)} (${String(a.target)})`, aboutPage: url(a.page), now: `${label}: ${shownValue(a.value_before, workspace)}`, proposed: `${label}: ${shownValue(a.value_after, workspace)}` };
+    return { name, about: a.database === "tasks" ? `${String(a.page_title)} (task)` : `${String(a.page_title)} (${String(a.target)})`, aboutPage: url(a.page), now: `${label}: ${shownValue(a.value_before, workspace, false, title)}`, proposed: `${label}: ${shownValue(a.value_after, workspace, false, title)}` };
   }
   const target = workspace.get(String(a.target));
   const label = LABELS[String(a.field)];
-  return { name, about: `${String(target?.attributes.title ?? a.target)} (${String(a.target)})`, aboutPage: url(target?.attributes.notion), now: `${label}: ${shownValue(a.before, workspace, true)}`, proposed: `${label}: ${shownValue(a.after, workspace, true)}` };
+  return { name, about: `${String((target === undefined ? undefined : title(target)) ?? a.target)} (${String(a.target)})`, aboutPage: url(target?.attributes.notion), now: `${label}: ${shownValue(a.before, workspace, true, title)}`, proposed: `${label}: ${shownValue(a.after, workspace, true, title)}` };
 }
 
 export interface SettleResult {

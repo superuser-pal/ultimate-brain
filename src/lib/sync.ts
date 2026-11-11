@@ -25,7 +25,7 @@ import { hasReportShape, reportLinks } from "./report-body.ts";
 import { gitBodyOf, parseWording, planWording, textHash, type AcceptedWording, type Wording, type WordingPlan } from "./wording.ts";
 import type { Context } from "./eligibility.ts";
 import { proposalWithheld, type Withheld } from "./passages.ts";
-import { contextFor, publishableNote, requireSuppressions } from "./suppressions.ts";
+import { citeLabel, contextFor, publishableNote, requireSuppressions, titleWithheld, viewDependencies, withheldView } from "./suppressions.ts";
 import { importedItems } from "./selection.ts";
 
 export const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "documents", "review", "inbox"] as const;
@@ -211,21 +211,30 @@ function publishedBaseline(row: SnapshotRow, rendered: Record<string, unknown>):
   return Object.fromEntries(Object.keys(rendered).filter((name) => Object.hasOwn(row.properties, name)).map((name) => [name, row.properties[name]]));
 }
 
-/** A note as Notion may show it: a restricted note in its eligible form, so a published copy changes (and is re-rendered) once content is excluded (capture-and-review §5.1). */
-const publishForms = new WeakMap<Workspace, { forms: Map<string, Note>; context: Context }>();
-function publishState(workspace: Workspace): { forms: Map<string, Note>; context: Context } {
+/** A note as Notion may show it (cli §5.14.4, "Restricted notes"; eligibility.md §6 rule 5, §8): a restricted note in its published form, and a
+ *  view the derived-content rule withholds (`withheld`; a report as a notice), so a published copy changes, and is re-rendered, once content is excluded. */
+const publishForms = new WeakMap<Workspace, { forms: Map<string, Note>; context: Context; withheld: Set<string> }>();
+const WITHHELD_REPORT = "Withheld: this report rests on content you excluded from the brain, or was written before you excluded it, so it is not shown. Tick Refresh asked to rebuild it from what the brain may use now.";
+const WITHHELD_VIEW = "Withheld: this view rests on a note awaiting cleanup, so it is not shown. brain views rebuilds it once that note is cleaned up.";
+function publishState(workspace: Workspace): { forms: Map<string, Note>; context: Context; withheld: Set<string> } {
   let state = publishForms.get(workspace);
   if (state === undefined) {
     const context = contextFor(workspace.notes, requireSuppressions(workspace.root));
-    state = {
-      forms: new Map(workspace.notes.map((candidate) => [candidate.id, candidate.type === "source" || candidate.type === "proposal" ? candidate : publishableNote(candidate, context)])),
-      context,
+    const dependencies = viewDependencies(workspace.notes, (path) => workspace.exists(path));
+    const withheld = new Set(workspace.notes.filter((note) => note.type === "view" && withheldView(note, dependencies, context) !== null).map((note) => note.id));
+    const form = (candidate: Note): Note => {
+      if (candidate.type === "source" || candidate.type === "proposal") return candidate;
+      if (withheld.has(candidate.id)) return isReport(candidate) ? { ...candidate, attributes: { ...candidate.attributes, title: `report ${candidate.id}, withheld: refresh to rebuild` }, body: `${WITHHELD_REPORT}\n` } : candidate;
+      return publishableNote(candidate, context);
     };
+    state = { forms: new Map(workspace.notes.map((candidate) => [candidate.id, form(candidate)])), context, withheld };
     publishForms.set(workspace, state);
   }
   return state;
 }
 function publishable(workspace: Workspace, note: Note): Note { return publishState(workspace).forms.get(note.id) ?? note; }
+/** How Notion names a note as text: its title, or, in the awaiting-cleanup form, `<type> <id>, title withheld: awaiting cleanup` (cli §5.14.4). */
+function shownTitle(workspace: Workspace, note: Note): unknown { const form = publishable(workspace, note); return titleWithheld(form) ? citeLabel(form) : form.attributes.title; }
 /**
  * What of a proposal Notion may not show (capture-and-review §5.1, eligibility.md §9.4, cli §5.7 "Excluded evidence"): `whole` when the proposal,
  * or every item of a review_notes, is withheld (a passage is not live; or it is legacy and its input has a suppression record or its source is
@@ -793,12 +802,14 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
         const after: Record<string, unknown> = { ...kept };
         for (const item of review.items) {
           const stored = isRecord(kept[item.item_id]) ? kept[item.item_id] as Record<string, unknown> : undefined;
-          if (stored === undefined || decided.has(item.item_id) || item.held || stored.rendered_hash === item.rendered_hash) continue;
+          if (stored === undefined || decided.has(item.item_id) || stored.rendered_hash === item.rendered_hash) continue;
           const drafted = (Array.isArray(note.attributes.revisions) ? note.attributes.revisions : []).filter(isRecord).some((entry) => entry.item_id === item.item_id && entry.status === "drafted");
-          const reason = drafted ? "revision_drafted" : stored.base_hash !== item.current_base_hash ? "base_changed" : undefined;
+          // A section that now names a note by type and id is rewritten too, held or not (cli §5.14.4, "Restricted notes"); the label stays after the cleanup.
+          const reason = item.held ? (item.title_withheld ? "title_withheld" : undefined)
+            : drafted ? "revision_drafted" : stored.base_hash !== item.current_base_hash ? "base_changed" : item.title_withheld ? "title_withheld" : undefined;
           if (reason === undefined) continue;
           itemUpdates.push({ item_id: item.item_id, reason, section: item.section });
-          after[item.item_id] = { rendered_hash: item.rendered_hash, proposed_hash: item.proposed_hash, base_hash: item.current_base_hash };
+          after[item.item_id] = { rendered_hash: item.rendered_hash, proposed_hash: item.proposed_hash, ...(reason === "title_withheld" ? { base_hash: stored.base_hash, ...(item.held || stored.held === true ? { held: true } : {}) } : { base_hash: item.current_base_hash }) };
         }
         if (itemUpdates.length > 0) publishedAfter = { "@review": { items: after } };
       }
@@ -808,13 +819,15 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     const contentChanged = content.hash !== undefined && !isDeepStrictEqual(content.hash, published["@content"]);
     // The Git body at this publish, the SG baseline of cli §5.14.7 (the skill adds @notion_body after it re-reads the page).
     // A workflow Document's body is the brain's, as a report's: each publish of it sets the baseline (connected-workflows.md §6.3).
-    if ((note.type === "reference" && note.attributes.origin === "promoted" && isCreate) || ((isReport(note) || (note.type === "reference" && note.attributes.origin === "workflow")) && (isCreate || contentChanged))) rendered["@git_body"] = textHash(gitBodyOf(note));
+    // A withheld report's notice is no refresh: it sets no baseline and leaves Refresh asked as you ticked it (cli §5.14.4, "Restricted notes").
+    const noticeOnly = publishState(workspace).withheld.has(note.id);
+    if ((note.type === "reference" && note.attributes.origin === "promoted" && isCreate) || ((isReport(note) || (note.type === "reference" && note.attributes.origin === "workflow")) && (isCreate || contentChanged) && !noticeOnly)) rendered["@git_body"] = textHash(gitBodyOf(note));
     // A report (0045): a refresh sends the body once and clears Refresh; a new fix clears What to fix.
     let reportDue = false;
     if (isReport(note)) {
       const fixes = Array.isArray(note.attributes.fixes) ? note.attributes.fixes.length : 0;
       const stored = typeof published["@fixes"] === "number" ? published["@fixes"] : 0;
-      if (!isCreate && contentChanged) properties["Refresh asked"] = { type: "checkbox", value: false };
+      if (!isCreate && contentChanged && !noticeOnly) properties["Refresh asked"] = { type: "checkbox", value: false };
       if (!isCreate && !contentChanged) content.body = null;
       if (fixes > stored) { properties["What to fix"] = { type: "rich_text", value: null }; reportDue = true; }
       rendered["@fixes"] = Math.max(fixes, stored);
@@ -851,8 +864,9 @@ const ORIGIN_LABEL: Readonly<Record<string, string>> = { whole: "Kept", part: "K
 function renderedBrainValues(note: Note, workspace: Workspace): Record<string, unknown> {
   const a = note.attributes; const values: Record<string, unknown> = {};
   const common = () => {
-    if (!NO_LIFECYCLE_PROPERTY.has(note.type)) return Object.assign(values, { Name: a.title, Summary: a.summary ?? null, Lifecycle: select(a.lifecycle), "Brain ID": note.id });
-    Object.assign(values, { Name: a.title, Summary: a.summary ?? null, "Brain ID": note.id });
+    const name = titleWithheld(note) ? citeLabel(note) : a.title;
+    if (!NO_LIFECYCLE_PROPERTY.has(note.type)) return Object.assign(values, { Name: name, Summary: a.summary ?? null, Lifecycle: select(a.lifecycle), "Brain ID": note.id });
+    Object.assign(values, { Name: name, Summary: a.summary ?? null, "Brain ID": note.id });
     // A note the brain retired (a merge or a supersession) ticks Archived once; Archived stays yours afterwards (0070).
     if (a.lifecycle === "archived" && !(isRecord(a.notion_fields) && a.notion_fields.archived === true)) values.Archived = true;
     return values;
@@ -869,13 +883,13 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     const reviewText = (value: unknown) => truncate(typeof value === "string" ? reviewMarkdown(value, target) : value);
     // A Suggestion row (0072, cli §5.14.4): Ultimate Assistant's notion_change or set_field, shown in the proposal's own Area, with no Source Meeting.
     if (a.kind === "notion_change" || a.kind === "set_field") {
-      const text = suggestionText(a, workspace);
+      const text = suggestionText(a, workspace, (shown) => shownTitle(workspace, shown));
       Object.assign(values, { Name: held.whole ? `Held: ${note.id}` : text.name, Kind: select(a.kind), About: text.about, "About Page": text.aboutPage, Now: held.whole ? HELD_TEXT : truncate(text.now), Proposed: held.whole ? HELD_TEXT : truncate(text.proposed), Why: held.whole ? HELD_TEXT : reviewText(a.why), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), State: select(proposalState(a.status)), "Brain ID": note.id });
       return values;
     }
     // A Review notes row names its source: the meeting for minutes, else the source (0041).
     const source = a.kind === "review_notes" && typeof a.source === "string" ? workspace.get(a.source) : undefined;
-    const targetText = source !== undefined ? `${source.attributes.title} (${source.id})` : target === undefined ? null : `${target.attributes.title} (${target.id})`;
+    const targetText = source !== undefined ? `${String(shownTitle(workspace, source))} (${source.id})` : target === undefined ? null : `${String(shownTitle(workspace, target))} (${target.id})`;
     const page = (source ?? target)?.attributes.notion;
     const meeting = typeof a.source === "string" ? workspace.get(a.source) : undefined;
     Object.assign(values, {
@@ -1000,11 +1014,13 @@ function proposalLinks(attributes: Record<string, unknown>): Array<{ field: unkn
   return attributes.field === undefined ? [] : [{ field: attributes.field, value: attributes.after }];
 }
 function renderedContent(note: Note, workspace: Workspace): { body: string | null; sections: Record<string, string> | null; hash?: string } {
-  if (note.type === "area") { const brief = workspace.notes.find((x) => x.type === "view" && x.attributes.view_kind === "area_brief" && x.attributes.area === note.id); if (brief === undefined) return { body: null, sections: null }; const sections = { Brief: notionMarkdown(generatedBlock(brief.body), brief, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; }
+  // A Brief or Decision log the derived-content rule withholds is a notice in its section (cli §5.14.4, "Restricted notes").
+  const section = (view: Note | undefined, base: Note): string => view !== undefined && publishState(workspace).withheld.has(view.id) ? WITHHELD_VIEW : notionMarkdown(generatedBlock(view?.body ?? ""), base, workspace);
+  if (note.type === "area") { const brief = workspace.notes.find((x) => x.type === "view" && x.attributes.view_kind === "area_brief" && x.attributes.area === note.id); if (brief === undefined) return { body: null, sections: null }; const sections = { Brief: section(brief, brief) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; }
   // A source's digest is written once (0043).
   if (note.type === "source") { if (!hasInboxBody(note)) return { body: null, sections: null }; const body = digestBody(note); return { body, sections: null, hash: hash(body) }; }
   if (isReport(note)) { const body = notionMarkdown(note.body.replace(/^\n+/, ""), note, workspace); return { body, sections: null, hash: hash(body) }; }
-  if (note.type === "decision" || note.type === "question" || note.type === "reference") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: notionMarkdown(generatedBlock(brief?.body ?? ""), note, workspace), "Decision log": notionMarkdown(generatedBlock(log?.body ?? ""), note, workspace) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
+  if (note.type === "decision" || note.type === "question" || note.type === "reference") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: section(brief, note), "Decision log": section(log, note) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
 function generatedBlock(body: string): string { const start = body.indexOf("<!-- @generated:start -->"); const end = body.indexOf("<!-- @generated:end -->"); return start >= 0 && end > start ? body.slice(start + "<!-- @generated:start -->".length, end).trim() : body.trim(); }
 function notionMarkdown(body: string, source: Note, workspace: Workspace): string { const fromFolder = source.path.includes("/") ? source.path.slice(0, source.path.lastIndexOf("/")) : ""; return body.replace(/\^\[(inferred|ambiguous)\]/g, (_, kind) => kind === "inferred" ? " (AI inference)" : " (ambiguous)").replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_all, title, link) => { const targetPath = normalizeRelative(fromFolder, link); const target = workspace.notes.find((note) => note.path === targetPath); return typeof target?.attributes.notion === "string" ? `[${title}](https://www.notion.so/${target.attributes.notion.replaceAll("-", "")})` : title; }); }
 function reviewMarkdown(body: string, target: Note | undefined): string {
@@ -1021,8 +1037,8 @@ function select(value: unknown): unknown { return typeof value === "string" ? va
 function proposalState(value: unknown): unknown { return ["pending", "approved", "edited", "rejected"].includes(String(value)) ? "Pending" : String(value) === "applied" ? "Applied" : String(value) === "closed" ? "Closed" : value; }
 function dateOutput(value: unknown): unknown { return typeof value === "string" && /^\d{4}-\d{2}$/.test(value) ? { start: `${value}-01`, end: null } : typeof value === "string" ? { start: value, end: null } : null; }
 function keyFactsText(value: unknown, workspace: Workspace): string { if (!isRecord(value)) return ""; return Object.keys(value).sort(compareCodePoints).map((key) => `${key[0]!.toUpperCase()}${key.slice(1).replaceAll("_", " ")}: ${personTitle(value[key], workspace)}`).join(" · "); }
-function personTitle(value: unknown, workspace: Workspace): unknown { return typeof value === "string" && workspace.get(value)?.type === "person" ? workspace.get(value)!.attributes.title : value; }
-function noteTitle(value: unknown, workspace: Workspace): unknown { return typeof value === "string" ? workspace.get(value)?.attributes.title ?? value : value ?? null; }
+function personTitle(value: unknown, workspace: Workspace): unknown { return typeof value === "string" && workspace.get(value)?.type === "person" ? shownTitle(workspace, workspace.get(value)!) : value; }
+function noteTitle(value: unknown, workspace: Workspace): unknown { const note = typeof value === "string" ? workspace.get(value) : undefined; return note !== undefined ? shownTitle(workspace, note) ?? value : value ?? null; }
 function fieldLabel(field: string): string { return field[0]?.toUpperCase() + field.slice(1).replaceAll("_", " "); }
 function truncate(value: unknown): unknown { return typeof value === "string" ? value.slice(0, 2000) : value; }
 /** The lettered lines of a Review notes row: its changes, then its notes, then its links (cli §5.14.4, 0045). */

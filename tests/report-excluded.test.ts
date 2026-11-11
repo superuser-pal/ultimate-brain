@@ -58,7 +58,7 @@ test("query --read and --candidates leave out a view that links a note resting o
   assert.equal((await read()).status, "ok", "while the evidence is live the report is read");
   assert.ok((await found()).includes(id));
   await exclude();
-  assert.deepEqual(await read(), { id, status: "withheld", reason: "restricted" });
+  assert.deepEqual(await read(), { id, status: "withheld", reason: "restricted", cause: "dependency", rebuild: "refresh" });
   assert.ok(!(await found()).includes(id), "and it is not a candidate");
   assert.ok(!JSON.stringify((await run(dir, ["query", "--candidates", "price 95k pricing", "--types", "view"])).json.data.candidates).includes("95k"));
 });
@@ -86,7 +86,7 @@ test("a report written before an exclusion is withheld until it is refreshed, an
   // The fixture's second version carries a date; a real extract carries the time it was captured, after the report was written.
   const v2 = join(dir, "sources/notion/2026-12-10-extract-v2.md");
   await writeFile(v2, (await readFile(v2, "utf8")).replace("captured: 2026-12-10", "captured: 2026-12-10T10:00:00Z"));
-  assert.deepEqual(await read(), { id, status: "withheld", reason: "restricted" }, "the report links no restricted note, and is still withheld: it is older than the exclusion");
+  assert.deepEqual(await read(), { id, status: "withheld", reason: "restricted", cause: "stale", rebuild: "refresh" }, "the report links no restricted note, and is still withheld: it is older than the exclusion");
   const refreshed = await brain(["report", "new", "--input", await inputFile(dir, { refresh: id, body: sections("No price is recorded.") }), "--brain", dir, "--now", "2026-12-10T11:00:00Z", "--json"]);
   assert.equal(refreshed.code, 0, refreshed.stdout);
   const after = await read();
@@ -94,7 +94,7 @@ test("a report written before an exclusion is withheld until it is refreshed, an
   assert.ok(!JSON.stringify(after).includes("95k"));
 
   await writeFile(join(dir, "reports/2026-12-10-hand.md"), `---\nid: vw-aaaa0009\ntype: view\ntitle: Hand report\ncreated: 2026-12-10\nupdated: 2026-12-10\nview_kind: report\nquestion: q\ngenerated_from: []\ngenerated_at: 2026-12-10T12:00:00Z\n---\n\n## Where it stands\n\nPrice is 95k ([gone](../knowledge/decisions/gone.md)).\n`);
-  assert.deepEqual((await run(dir, ["query", "--read", "vw-aaaa0009"])).json.data.notes[0], { id: "vw-aaaa0009", status: "withheld", reason: "restricted" });
+  assert.deepEqual((await run(dir, ["query", "--read", "vw-aaaa0009"])).json.data.notes[0], { id: "vw-aaaa0009", status: "withheld", reason: "restricted", cause: "dependency", rebuild: "refresh" });
 });
 
 test("a report's time and the extract's are compared as full timestamps: a date alone, or the same second, withholds the report (cli §5.13.1, Views)", async (context) => {
