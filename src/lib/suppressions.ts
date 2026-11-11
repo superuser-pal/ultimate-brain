@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join, posix } from "node:path";
 
-import { eligible, latestExtracts, lineageOf, noteReleased, restrictedSources, type Context, type SourceInfo, type Suppression } from "./eligibility.ts";
+import { eligible, isLive, latestExtracts, lineageOf, noteReleased, restrictedSources, type Context, type SourceInfo, type Suppression } from "./eligibility.ts";
 import { BrainError } from "./errors.ts";
 import type { Note } from "./notes.ts";
 import { viewLinks } from "./report-body.ts";
@@ -280,6 +280,43 @@ export function restsOnExcluded(source: unknown, text: string | null, context: C
     return restrictionOf(note, context).lines.size > 0;
   }
   return sources.some((id) => restrictedSources(context).has(id));
+}
+
+/** One passage a proposal names (schema §11 `passages`): a passage reference, without its `^[` `]`. */
+export const PASSAGE = /^(src-[0-9a-z]{8})#¶(\d+):([0-9a-f]{8})$/;
+
+/**
+ * Whether one passage a proposal names is live (eligibility.md §9.2, schema §11.5): a passage reference while the latest version of its input
+ * holds it (and no Restore is awaited); a whole input (a source or meeting id, a source key) while that input has no suppression record; an
+ * entry that names no input (a note id, an `agent:…` key) always.
+ */
+export function passageLive(passage: string, context: Context): boolean {
+  const ref = PASSAGE.exec(passage);
+  if (ref !== null) return isLive({ source: ref[1]!, passage: { n: Number(ref[2]), hash: ref[3]! } }, { entries: [] }, context);
+  if (!namesInput(passage, context)) return true;
+  return isLive({ source: passage }, { entries: [] }, context);
+}
+
+/** What one proposed item rests on: its `source`, its `passages` (`undefined` on a legacy item, written before the field) and the wording it would write. */
+export interface Support { source: unknown; passages: unknown; text: string | null }
+
+/**
+ * Whether one proposed item is withheld for want of eligible support (eligibility.md §4.2, §9.2, §9.3; cli §5.7 "Excluded evidence"). Only while
+ * the brain has a suppression record. With `passages`, they decide: withheld when any of them, or any passage reference in its text, is not live
+ * (a mixed item included), whatever version its `source` is. Legacy (no `passages`): withheld when a passage reference in its text is not live,
+ * when it cites none and its `source` is an older version or full copy of a changed input, and when the input of its `source`, read as a
+ * whole-source entry, has a suppression record (the user's reading of 0077 §3, 2026-11-10).
+ */
+export function withheldSupport(support: Support, context: Context): boolean {
+  if (context.suppressions.length === 0) return false;
+  if (support.passages === undefined) {
+    if (restsOnExcluded(support.source, support.text, context)) return true;
+    return typeof support.source !== "string" || !passageLive(support.source, context);
+  }
+  if (support.text !== null && citesPassage(support.text) && restsOnExcluded(support.source, support.text, context)) return true;
+  // Fail closed: a list the CLI cannot read is no established support.
+  if (!Array.isArray(support.passages) || support.passages.length === 0) return true;
+  return support.passages.some((passage) => typeof passage !== "string" || !passageLive(passage, context));
 }
 
 /** Whether a text carries a passage reference `^[src-…#¶n:hash]`. */
