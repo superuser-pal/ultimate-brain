@@ -72,7 +72,7 @@ A brain made before 0.14.0 that has no `setup` line and whose `databases` and `o
 | The remote | the brain repository's `origin` | `gh repo create --private` or the user (§7) |
 | The Notion connection | the agent's own MCP configuration | the user, following the skill's steps |
 
-The `AGENTS.md` lines are written under the `## My rules` heading, which follows the rules block's end marker `<!-- ultimate-brain:rules:end -->` (upgrades never touch anything after that marker except the style block, which the CLI keeps right after it, cli.md §5.3.1): each on its own line, after the heading's comment, replacing an earlier line of the same name anywhere after the marker. When the heading is missing, the skill adds `## My rules` at the end of the file first. With the rules block's markers missing (cli.md §5.15 step 1), the skill writes nothing, says why, and setup stops at step 2 until the markers are restored; they are committed on their own (`rules: drop folder and language`).
+The `AGENTS.md` lines are written under the `## My rules` heading, which follows the rules block's end marker `<!-- ultimate-brain:rules:end -->` (upgrades never touch anything after that marker except the style block, which the CLI keeps right after it, cli.md §5.3.1): each on its own line, after the heading's comment, replacing an earlier line of the same name anywhere after the marker, except between the style markers (`<!-- ultimate-brain:style:start -->` to `<!-- ultimate-brain:style:end -->`, cli.md §5.3.1): that block is the CLI's, and its lines are never read or replaced as "My rules" lines. When the heading is missing, the skill adds `## My rules` at the end of the file first. With the rules block's markers missing (cli.md §5.15 step 1), the skill writes nothing, says why, and setup stops at step 2 until the markers are restored; they are committed on their own (`rules: drop folder and language`).
 
 ### 4.1 The `setup` log line
 
@@ -177,7 +177,7 @@ The user changes the style in any later session in the brain by asking, in their
    - one dial ("shorter answers", "more detail", "explain less", "skip the jargon", "get to the point"): `settings.style.<dial>` set to that level (`'"short"'`), the other keys kept;
    - a request it can't map to one dial or preset gets one question with the choices, and nothing is written before the answer;
 2. commits `brain.json` and `AGENTS.md` when they changed (`settings: response style`), and pushes per `settings.push`;
-3. answers in one line, in the new style: what changed, and `Linked folders follow at their next brain link or brain upgrade.` when the brain has linked repos or folders.
+3. answers in one line, in the new style: what changed, and `Linked folders follow the next time brain link runs there, or brain upgrade for a linked project registered in the brain.` when the brain has linked repos or folders. A linked folder takes the change only when its block is written again (cli.md §5.3.1): by `brain link`, and from 0.13.0 by `brain upgrade` for a project in `brain.json` `repos`, since that upgrade writes what `brain link` would (0077 §4, CC-184).
 
 The new style applies from the agent's next reply. A request made in a linked folder is not written there (the brain is read-only from it): the agent says to ask in a session in the brain. The always-on reply rules and working principles in the rules block (0081 §1, §2) are not part of the style and don't change with it.
 
