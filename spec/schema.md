@@ -653,6 +653,7 @@ An applied proposal, or one closed as stale, holds nothing: the change is made, 
        | meeting | `date`, `project` (`projects`) |
        | reference | `origin`, `area`, `project` (`projects`) (0045, 0049) |
      - `aliases` segment only when the list is non-empty. `<lifecycle>` segment only when lifecycle is `disputed` or `archived`.
+     - **A note in the awaiting-cleanup form** (restricted whole, or with a restricted claim; cli.md §5.8, eligibility.md §6 rule 5): `- (title withheld: awaiting cleanup) — <id>[ · <field>: <value>]…[ · <lifecycle>]`, with no link, summary or aliases; it sorts as an empty title. A reference to it from another line renders its id.
   5. File ends with exactly one newline. Running `brain index` twice produces identical bytes.
 
   Example: `- [Acme website](projects/acme-website/project.md) — prj-9x4t1b7e · area: Clients · status: Active · client: Acme · Rebuild of Acme's marketing website, launching February 2027. · aliases: acme site`
@@ -713,7 +714,7 @@ Rule codes, output format and the folders scanned are in [cli.md](cli.md) §5.10
 
 ## 16. Derived view contract (normative)
 
-Views are rebuilt by `brain views` for every project and every area (CX-07, 0041); reports (§16.4) are not rebuilt. Inputs are canonical notes only. All links are relative to the view file. Dates render as stored. Every item line links to the note it came from (headings and `- None` lines have no link). The view's frontmatter `title` is `<project title> — brief`, `<project title> — decision log` or `<area title> — brief`; the body has no heading of its own. Its layout is: one blank line, the generated block, one blank line, the user block. Inside the generated block, sections are separated by one blank line.
+Views are rebuilt by `brain views` for every project and every area (CX-07, 0041); reports (§16.4) are not rebuilt. Inputs are canonical notes only, in the form the exclusion rule leaves them (cli.md §5.9). All links are relative to the view file. Dates render as stored. Every item line links to the note it came from (headings and `- None` lines have no link), except a note in the awaiting-cleanup form (cli.md §5.13): wherever a line would show `[<title>](<path>)` for it, it shows `<type> <id>, title withheld: awaiting cleanup`, with no link, and the note is not added to `generated_from`; it sorts as an empty title. The view's frontmatter `title` is `<project title> — brief`, `<project title> — decision log` or `<area title> — brief`; the body has no heading of its own. Its layout is: one blank line, the generated block, one blank line, the user block. Inside the generated block, sections are separated by one blank line.
 
 **Idempotence:** if the new generated block and `generated_from` equal the current ones, the file is not rewritten (so `generated_at` only changes when content changes). `generated_from` is the project's id plus the id of every note that produced an item line, sorted.
 
