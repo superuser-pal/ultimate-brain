@@ -79,6 +79,21 @@
           "description": "Opening recall in linked repos (decision 0074, spec/memory.md §7).",
           "enum": ["off", "opening"],
           "default": "off"
+        },
+        "markitdown": {
+          "description": "Guided setup's optional item: the user chose to install MarkItDown (decision 0078, spec/setup.md §7). Absent: off.",
+          "enum": ["on", "off"],
+          "default": "off"
+        },
+        "gh": {
+          "description": "Guided setup's optional item: setup may use the GitHub CLI (decision 0078, spec/setup.md §7). Absent: off.",
+          "enum": ["on", "off"],
+          "default": "off"
+        },
+        "schedule": {
+          "description": "Guided setup's optional item: the user chose a scheduled catch-up (decision 0078, spec/setup.md §7). Absent: off.",
+          "enum": ["on", "off"],
+          "default": "off"
         }
       }
     },
@@ -185,6 +200,11 @@
       ],
       "additionalProperties": false,
       "properties": {
+        "template_version": {
+          "description": "The number of the last Notion migration the user's space includes (decision 0078, spec/setup.md §9). Absent: unknown.",
+          "type": "string",
+          "pattern": "^[0-9]{4}$"
+        },
         "databases": {
           "type": "object",
           "additionalProperties": false,
