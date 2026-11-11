@@ -115,6 +115,7 @@ A report, a Brief, a Decision log, an area Brief, an index entry and a Notion pa
 4. **No navigation exception.** A view is never shown in part, and "navigation only" is never a reason to show prose that rule 1 to 3 would withhold (0077 plan 3).
 5. **Canonical material stays.** A withheld report or view withholds nothing else: a note it rests on that is eligible on its own stays readable and is what an answer cites (schema §4).
 6. **Withheld names its way back.** A withheld derived item names its reason and what rebuilds it: `brain views` for a Brief or Decision log once its notes are eligible, a report refresh, `brain index` for the index (CC-183).
+7. **An archived note is never shown as current.** A derived item never restates an `archived` note as current, accepted or open: a draft rejected in Review or closed on excluded evidence, or a note you archived, is history at most. A view that keeps history shows it only where the history belongs (a superseded decision under the decision log's Superseded, schema §16.2), and a decision archived with no successor is in no view (CC-218).
 
 ## 9. Proposals name their passages, checked twice (0077 §3, plan 4)
 
