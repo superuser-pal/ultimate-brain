@@ -1,6 +1,7 @@
 // CC-205: `brain query --candidates`'s 0.13.0 ranking (spec/cli.md §5.13 steps 1a, 3, 3a, the snippets and `unresolved`; 0080)
 // at spec/retrieval.md §2's trust seams and §7.3's checks, and the unresolved signal's rules (retrieval.md §3).
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -9,6 +10,8 @@ import { test } from "node:test";
 import { queryTerms, queryTypes, rankCandidates, searchCandidates, stem, VOCABULARY, type QueryContext } from "../src/lib/query.ts";
 import type { Note } from "../src/lib/notes.ts";
 import { brain, fixtureCopy } from "./helpers.ts";
+
+const REPO_ROOT = join(import.meta.dirname, "..");
 
 const NONE: QueryContext = { repo: null, project: null, area: null };
 const TYPES = queryTypes(undefined);
@@ -212,4 +215,54 @@ test("brain query --candidates reports unresolved from an area's .brain, and not
   const named = await brain(["query", "--candidates", "What is the budget for the Acme website?", "--repo", repo, ...ARGS]);
   assert.equal(named.code, 0, named.stdout);
   assert.equal("unresolved" in (named.json as { data: object }).data, false);
+});
+
+// ---- a memory candidate's confidence (cli.md §5.13; 0074 §2) ----
+
+test("a memory candidate carries its schema confidence; no other type and no memory without one does", () => {
+  const notes = [
+    note("mem-conf0001", "memory", { title: "Reviewers like screenshots", confidence: "inferred", lifecycle: "reviewed" }, "Screenshots help reviewers. ^[inferred]\n"),
+    note("mem-conf0002", "memory", { title: "Screenshots are attached to tickets", confidence: "verified", lifecycle: "reviewed" }, "Screenshots go on the ticket.\n"),
+    note("mem-conf0003", "memory", { title: "Screenshots may speed reviews", confidence: "unverified", lifecycle: "reviewed" }, "Maybe screenshots help.\n"),
+    note("mem-conf0004", "memory", { title: "Screenshots folder", lifecycle: "reviewed" }, "Screenshots live in the shared folder.\n"),
+    note("mem-conf0005", "memory", { title: "Screenshots odd value", confidence: "certain", lifecycle: "reviewed" }, "Screenshots.\n"),
+    note("dec-conf0006", "decision", { title: "Screenshots in every review", confidence: "inferred" }, "We attach screenshots.\n"),
+  ];
+  const types = new Set(["memory", "decision"]);
+  const by = Object.fromEntries(searchCandidates(notes, queryTerms("screenshots"), types, NONE).candidates.map((c) => [c.id, c]));
+  assert.equal(by["mem-conf0001"]!.confidence, "inferred");
+  assert.equal(by["mem-conf0002"]!.confidence, "verified");
+  assert.equal(by["mem-conf0003"]!.confidence, "unverified");
+  for (const id of ["mem-conf0004", "mem-conf0005", "dec-conf0006"]) assert.equal("confidence" in by[id]!, false, id);
+  const projected = (n: Note) => (n.id === "mem-conf0001" ? { ...n, attributes: { ...n.attributes, confidence: undefined } } as Note : n);
+  const withoutIt = searchCandidates(notes, queryTerms("screenshots"), types, NONE, projected).candidates.find((c) => c.id === "mem-conf0001")!;
+  assert.equal("confidence" in withoutIt, false, "read from the memory as the projection leaves it");
+});
+
+test("query --candidates on memory-0.12's brain: confidence on returned memories, the adapter's labels from it, and no draft, out-of-reach, excluded or superseded memory", async (context) => {
+  const out = await mkdtemp(join(tmpdir(), "brain-confidence-"));
+  context.after(() => rm(out, { recursive: true, force: true }));
+  execFileSync("node", [join(REPO_ROOT, "eval/memory-0.12/make-brain.mjs"), out], { stdio: "ignore" });
+  // memory-0.12's own adapter, unchanged, so its labels are what the scorer sees (an untyped .mjs module).
+  const adapterUrl = new URL("../eval/memory-0.12/adapters/query-candidates.mjs", import.meta.url).href;
+  const adapter = (await import(adapterUrl) as { default: { run: (c: object, env: object) => { output: string; candidates: Array<{ id: string; labels: string[] }> } } }).default;
+  const ask = (question: string, caller: string) => {
+    const run = adapter.run({ question }, { brain: join(out, "brain"), callerDir: join(out, "repos", caller) });
+    const data = JSON.parse(run.output).data as { candidates: Array<{ id: string; type: string; confidence?: string }> };
+    return { data, labels: new Map<string, string[]>(run.candidates.map((c) => [c.id, c.labels])) };
+  };
+  const inferred = ask("Should I send Velmor's reviewers screenshots of a UI change?", "harbor-web");
+  assert.equal(inferred.data.candidates.find((c) => c.id === "mem-d51jce91")?.confidence, "inferred", "trust-19's memory");
+  assert.ok(inferred.labels.get("mem-d51jce91")!.includes("inferred"), "the adapter labels it from the field");
+  const verified = ask("No hard wrapping in Markdown", "scratch");
+  assert.equal(verified.data.candidates.find((c) => c.id === "mem-1p1n8pz5")?.confidence, "verified");
+  assert.ok(!verified.labels.get("mem-1p1n8pz5")!.includes("inferred"));
+  for (const c of [...inferred.data.candidates, ...verified.data.candidates]) assert.equal("confidence" in c, c.type === "memory", c.id);
+  const withheld: Array<[string, string, string]> = [
+    ["Do Velmor's dispatchers prefer SMS alerts or email?", "harbor-api", "mem-wmt9qa5x"], // draft (trust-01)
+    ["Which languages must the user-facing screens be written in?", "harbor-api", "mem-cbg7c697"], // out of reach (trust-05)
+    ["What discount did Velmor get on the second year?", "harbor-api", "mem-5rmqmxn6"], // rests on the excluded paragraph (trust-10)
+    ["What is Harbor's deploy freeze rule right now?", "harbor-web", "mem-k80mrmt1"], // superseded (trust-31)
+  ];
+  for (const [question, caller, id] of withheld) assert.ok(!ask(question, caller).data.candidates.some((c) => c.id === id), `${id} is not returned`);
 });
