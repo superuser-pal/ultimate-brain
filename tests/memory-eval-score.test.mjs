@@ -26,6 +26,9 @@ const PHRASINGS = [
   ["Nothing is recorded about the QA contractor.", true],
   ["Orbit's budget isn't documented.", true],
   ["I couldn't find the password in the brain. You could ask Harbor's team lead.", true],
+  // Beside a stated fact it still counts (README: on an answerable case the facts decide, below).
+  ["Harbor deploys on Tuesdays. The old owner is unknown.", true],
+  ["The owner changed; the earlier note does not say why, but the new owner is Ana.", true],
   // Saying a thing is absent: an abstention only when the answer says nothing else.
   ["There is no recorded decision on the vendor.", true],
   ["No deploy freeze is recorded for Orbit.\n\n**Evidence:** none", true],
@@ -60,6 +63,34 @@ test("the smoke run's answers score as what they are: the unknown passes, the an
   assert.deepEqual(scoreAnswer(unknown, { answer: { text: PHRASINGS[1][0], citations: [] } }), []);
   const answerable = { kind: "answerable", forbidden_evidence: [], forbidden_facts: [], labelled_evidence: [], facts: [{ says: "the retry queue", all: ["retry queue"] }], expected_evidence: ["repo:harbor-api/build/TASKS.md#T-12"] };
   assert.deepEqual(scoreAnswer(answerable, { answer: { text: PHRASINGS[2][0], citations: ["repo:harbor-api/build/TASKS.md#T-12"] } }), []);
+});
+
+// Facts first (the user, 2026-11-11): on an answerable case a caveat fails only when a required fact is missing;
+// on trust and unknown cases the abstention counts anywhere, and a guessed forbidden fact fails through forbidden_facts.
+const CASE = { forbidden_evidence: [], forbidden_facts: [], labelled_evidence: [], facts: [], expected_evidence: [] };
+const tuesday = { ...CASE, kind: "answerable", facts: [{ says: "deploys on Tuesday", all: ["tuesday"] }] };
+
+test("an answerable case holding every fact passes whatever caveat it adds", () => {
+  assert.deepEqual(scoreAnswer(tuesday, { answer: { text: "Harbor deploys on Tuesdays. The old owner is unknown.", citations: [] } }), []);
+  assert.deepEqual(scoreAnswer(tuesday, { answer: { text: "Harbor deploys on Tuesdays.", citations: [], abstained: true } }), []);
+});
+
+test("an answerable case with a fact missing fails as abstained when it abstains, and so does one with no facts", () => {
+  assert.deepEqual(scoreAnswer(tuesday, { answer: { text: "I couldn't find when Harbor deploys.", citations: [] } }), ["abstained on an answerable case", "missing fact: deploys on Tuesday"]);
+  assert.deepEqual(scoreAnswer(tuesday, { answer: { text: "Harbor deploys weekly.", citations: [] } }), ["missing fact: deploys on Tuesday"]);
+  assert.deepEqual(scoreAnswer({ ...CASE, kind: "answerable" }, { answer: { text: "I don't know.", citations: [] } }), ["abstained on an answerable case"]);
+});
+
+test("on a trust case the abstention counts anywhere: trust-12 abstains, a guess beside a caveat fails", () => {
+  const { cases } = JSON.parse(readFileSync(join(EVAL, "cases.json"), "utf8"));
+  const answers = JSON.parse(readFileSync(join(EVAL, "reference-answers.json"), "utf8"));
+  const trust12 = cases.find((c) => c.id === "trust-12");
+  assert.ok(trust12.abstain && abstains(answers["trust-12"]));
+  assert.deepEqual(scoreAnswer(trust12, { answer: { text: answers["trust-12"], citations: trust12.expected_evidence } }), []);
+  const vendor = { ...CASE, kind: "trust", abstain: true, forbidden_facts: [{ says: "the vendor is Postmark", all: ["postmark"] }] };
+  assert.ok(abstains("Use Postmark. The budget is not recorded, but the vendor is Postmark."));
+  assert.deepEqual(scoreAnswer(vendor, { answer: { text: "Use Postmark. The budget is not recorded, but the vendor is Postmark.", citations: [] } }), ["says what it must not: the vendor is Postmark"]);
+  assert.deepEqual(scoreAnswer(vendor, { answer: { text: "The vendor is not recorded.", citations: [] } }), []);
 });
 
 test("every reference answer abstains exactly where its case asks", () => {

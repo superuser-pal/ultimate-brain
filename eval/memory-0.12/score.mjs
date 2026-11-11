@@ -113,7 +113,11 @@ export function scoreAnswer(c, result) {
   for (const { id, label } of c.labelled_evidence) if (cited.has(id) && !LABEL_WORDS[label].test(text)) reasons.push(`cites ${id} without saying it is ${label}`);
   if (c.kind === "unknown" || c.abstain) {
     if (!abstained) reasons.push("does not say the brain lacks the answer");
-  } else if (abstained && c.kind === "answerable") reasons.push("abstained on an answerable case");
+  } else if (abstained && c.kind === "answerable" && (!c.facts.length || c.facts.some((f) => !matches(f, text)))) {
+    // Facts first (the user, 2026-11-11, CC-201): an answer holding every required fact passes whatever caveat it adds.
+    // A case with no facts to show it answered (the proposal cases) keeps the plain rule.
+    reasons.push("abstained on an answerable case");
+  }
   if (c.kind !== "unknown") {
     for (const f of c.facts) if (!matches(f, text)) reasons.push(`missing fact: ${f.says}`);
     if (c.kind === "answerable") for (const id of c.expected_evidence) if (!cited.has(id)) reasons.push(`did not cite ${id}`);
