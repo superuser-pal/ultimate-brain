@@ -47,7 +47,7 @@ node eval/retrieval-0.13/costs.mjs $S --baseline <baseline checkout> --candidate
 
 | Kind | What it asks | dev | held |
 |---|---|---|---|
-| `fact` | a value in a note's body or in a typed field; includes numeric fields, values late in long lines, time-qualified values ("for the rest of 2026", "before it was raised in March 2026") and a subject given only by the caller's `.brain` | 14 | 6 |
+| `fact` | a value in a note's body or in a typed field, in three frozen subgroups (`subgroup`): `body-only` 7 (no typed-field or title alternative), `structured` 12 (a typed field on the project note, with a prose alternative), `decision` 1; includes numeric fields, values late in long lines, time-qualified values ("for the rest of 2026", "before it was raised in March 2026") and a subject given only by the caller's `.brain` | 14 | 6 |
 | `paraphrase` | the source's content in other English words ("money" for "budget", "go live" for "launch", "text message" for "SMS", "approves invoices" for "signs off every bill") | 14 | 6 |
 | `clarify` | an attribute two or more subjects hold, asked from a folder that doesn't resolve which (no `.brain`, or an area holding several) | 14 | 6 |
 | `unknown` | something the brain does not hold, often a near miss (the other project of the same client has it) | 14 | 6 |
@@ -66,7 +66,7 @@ Fields: those of `eval/memory-0.12` (`caller`, `facts`, `forbidden_facts`, `forb
 | `clarify` | evidence of two subjects is in the first ten (reported) | it asks a question, names two subjects, states no subject's value, does not abstain |
 | `unknown` | nothing forbidden returned (reported) | it abstains (`ABSTAIN`, the same pattern as `eval/memory-0.12/score.mjs`; CC-206 aligns both with CC-201's rule once that is merged) |
 
-Gates (spec/retrieval.md §6.2): facts 18 of 20 and paraphrases 18 of 20 at the retrieval level; at the answer level 36 of the 40 answerable, 20 of 20 clarify and 20 of 20 unknown. The answer gates are met by CC-186's native runs, not by the reference answers. A retrieval number is never evidence of answer or native quality.
+Gates (spec/retrieval.md §6.2), at the retrieval level: **facts in prose only, 16 of 17** (the user's choice of 2026-11-11, so that the combined fact score, which a project note's typed field can carry, cannot hide the original 0 of 10: `score.mjs` runs `eval/search-0.5`'s 10 fact-in-body questions once each on the original brain and adds the 7 `fact` cases with `subgroup: body-only`); facts 18 of 20; paraphrases 18 of 20; at the answer level 36 of the 40 answerable, 20 of 20 clarify and 20 of 20 unknown. The answer gates are met by CC-186's native runs, not by the reference answers. A retrieval number is never evidence of answer or native quality.
 
 ## Costs
 
@@ -77,15 +77,17 @@ Gates (spec/retrieval.md §6.2): facts 18 of 20 and paraphrases 18 of 20 at the 
 
 The cost of reading the answer in full (`query --read` of each answerable case's first evidence set) is reported, not gated. It prints the CPU, memory, OS, Node version, both commits and the load average before and after; a run under heavy load is repeated, not discounted.
 
-## Provisional baseline (this task's head, before the trust-safe search is merged)
+## Provisional baseline (this task's head)
 
-`results-provisional.txt` is labelled provisional: it was measured on `main`'s search code (CC-176's eligible-read changes not yet merged), so it is not the matched baseline of spec/retrieval.md §7. CC-204 and CC-205 measure against `main` once the trust-safe search is merged there. In brief, at the first search:
+`results-provisional.txt` was measured at this task's head, whose search code is `main`'s with the trust-safe search merged (CC-176 #295, CC-183 #300). It is labelled provisional: the matched baseline of spec/retrieval.md §7 is measured again by CC-204 and CC-205, paired with each candidate, on the `main` they are based on. These are baseline observations, not results of any improvement. At the first search:
 
-| | first ten |
-|---|---|
-| facts | 19 of 20 (gate met) |
-| paraphrases | 15 of 20 (gate not met) |
-| clarify, two subjects visible | 14 of 20 (reported) |
-| originals | 28/32/36 of 50, MRR 0.61, as `results-cc173.txt` |
+| | first ten | gate |
+|---|---|---|
+| **facts in prose only** (original fact-in-body 0 of 10, new body-only 6 of 7) | **6 of 17** | 16 of 17: **not met** |
+| facts, all 20 (body-only 6 of 7, structured 12 of 12, decision 1 of 1; by prose alone 17 of 20) | 19 of 20 | 18 of 20: met |
+| paraphrases | 15 of 20 | 18 of 20: not met |
+| clarify, two subjects visible | 14 of 20 | reported |
+| unknown, nothing forbidden returned | 20 of 20 | reported |
+| originals | 28/32/36 of 50, MRR 0.61, the 36 kept | as `results-cc173.txt` |
 
 Its cost section is the baseline paired with itself, which shows the tool's noise on this machine, not a comparison.
