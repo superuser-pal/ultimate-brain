@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-11-11
 **Release:** 0.13.0
+**§3 and §9 item 5 amended by:** [0082](0082-native-smoke-run-per-release-full-native-acceptance-before-1-0.md) (2026-11-11): 0.13.0 is judged on the first-search, trust-kept and cost gates; the final-answer gates and the native run of the eighty cases (CC-206) move to 1.0.0
 **Amends:** [0077](0077-trust-repair-in-0-13-0.md) (Out of scope only: "ranking or retrieval-quality changes not needed for eligibility" no longer excludes the English retrieval work below; every other exclusion and every 0077 rule stays)
 **Refines:** [0074](0074-scoped-memory-handovers-and-bounded-recall.md) §5 and §6 (which retrieval changes may be adopted, and how they are measured)
 **Keeps:** 0077's eligibility rule, release order and gates; [0078](0078-onboarding-and-early-access-in-0-14-0.md)'s order (onboarding and early access 0.14.0, the weekly review 0.15.0, the feature cutoff 0.15.0); 0074's 800-token opening recall, compact search and no automatic full-note expansion; [0016](0016-typescript-on-node.md)'s minimal dependencies; Markdown + Git canonical, no required vector database

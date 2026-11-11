@@ -189,6 +189,8 @@ brain-repos, brain-workflow, brain-workflow-adopt, brain-connect-notion and brai
 
 ## 12. Final acceptance (0077 §5, plan 7)
 
+**Timing amended by [0082](../decisions/0082-native-smoke-run-per-release-full-native-acceptance-before-1-0.md) (2026-11-11):** this complete run (CC-186) moves to 1.0.0, once beta testers are live; each release from 0.13.0 gates instead on 0082 §1's native smoke run of 15 cases per agent. The rules below are unchanged.
+
 **The evidence** (CC-185 adds the cases, CC-186 runs them):
 1. Synthetic unit, integration, package (`npm run test:package`), skill (the fork's checks) and leak checks pass on the head the release is cut from.
 2. **One complete native run in Claude Code and one in Codex** on the final packaged CLI and the vendored skills snapshot; not three repetitions. The cases: the 77 of `eval/memory-0.12` unchanged, plus CC-185's cases for old reports and indirect derived items, restricted metadata, historical memory (past and present questions), project and approval boundaries through full reads, an exclusion made between the first read or a proposal's creation and its apply, legacy proposals, a mixed proposal, and a linked project after the upgrade.
