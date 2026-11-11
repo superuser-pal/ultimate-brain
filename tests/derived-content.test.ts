@@ -7,7 +7,7 @@ import { test } from "node:test";
 
 import { passageHash } from "../src/lib/selection.ts";
 import { excludableDecision, INPUT } from "./exclusion-fixture.ts";
-import { approveNote, brain, fixtureCopy } from "./helpers.ts";
+import { approveNote, brain, fixtureCopy, withPassages } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const SYNC = "mtg-8c4n2p7w";
@@ -253,10 +253,11 @@ test("a Review page names a note with a restricted part by type and id: on creat
   const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
   const file = join(dir, note.path);
   await writeFile(file, (await readFile(file, "utf8")).replace(/^title: .*$/m, "title: Price set at 95k"));
-  const created = await run(dir, ["proposal", "new"], { proposals: [
+  // Passages as 0.13.0 takes them (eligibility.md §9.1): each item names its whole source.
+  const created = await run(dir, ["proposal", "new"], withPassages({ proposals: [
     { kind: "review_notes", source: SYNC, notes: [note.id] },
     { kind: "add_to_note", title: "RLS", target: "con-1s6t8e2b", content: "Carlos will use RLS for the auth migration.", why: "Carlos said so.", source: SYNC },
-  ] });
+  ] }));
   assert.equal(created.code, 0, created.stdout);
   const id = created.json.data.created[0].id as string;
   const render = async (plan?: string) => (await run(dir, ["sync", "render", "--ids", id, ...(plan === undefined ? [] : ["--plan", plan])])).json.data;
@@ -292,4 +293,43 @@ test("a Review page names a note with a restricted part by type and id: on creat
   const held = await render(plan);
   assert.deepEqual(held.items, []);
   assert.deepEqual(held.skipped, [{ id, reason: "REVIEW_PENDING" }]);
+});
+
+test("a live line's link to a note in the awaiting-cleanup form, or restricted whole, keeps its text and loses its target on every surface; a link to an eligible note is unchanged (cli §5.13, CC-176's question 4)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { note: part, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
+  const made = await run(dir, ["note", "new"], { notes: [{ type: "decision", title: "Budget cut to 40k", frontmatter: { summary: "s", date: "2026-12-03", assessment: "accepted", projects: [PROJECT], sources: [SYNC] }, body: `An unsourced remark.\n\nThe budget is cut. ${ref(2, SECRET)}\n` }] });
+  assert.equal(made.code, 0, made.stdout);
+  const whole = made.json.data.created[0] as { id: string; path: string };
+  const slug = (path: string) => path.split("/").pop()!.replace(/\.md$/, "");
+  const name = (path: string) => path.split("/").pop()!;
+  // A live meeting line and a live decision line link both, and the fixture's eligible decision.
+  const meeting = join(dir, "knowledge/meetings/2026-12-03-acme-sync.md");
+  await writeFile(meeting, `${await readFile(meeting, "utf8")}\nSee [the price call](../decisions/${name(part.path)}), [the budget](../decisions/${name(whole.path)}) and [the auth choice](../decisions/2026-12-03-use-supabase-for-auth.md).\nAlso [titled](../decisions/${name(part.path)} "Price") and ![shown](<../decisions/${name(whole.path)}>), [by reference][p] and <../decisions/${name(part.path)}>.\n\n[p]: ../decisions/${name(part.path)} "Price"\n`);
+  const decision = join(dir, LIVE_PATH);
+  await writeFile(decision, `${await readFile(decision, "utf8")}\nRelated: [the price call](${name(part.path)}) and [Use Firebase for auth](2026-10-01-use-firebase-for-auth.md).\n`);
+  const linked = (await read(dir, SYNC)).body as string;
+  assert.ok(linked.includes(name(part.path)) && linked.includes(name(whole.path)), "while the evidence is live the links are returned");
+
+  await exclude();
+  const read2 = await run(dir, ["query", "--read", `${SYNC},${LIVE_NOTE}`]);
+  const [sync, live] = read2.json.data.notes;
+  assert.equal(sync.status, "ok");
+  assert.ok(sync.body.includes("See the price call, the budget and [the auth choice](../decisions/2026-12-03-use-supabase-for-auth.md)."), "text kept, target dropped; the eligible link unchanged");
+  assert.ok(sync.body.includes("Also titled and shown, [by reference][p] and ."), "a titled link, an image, a reference and a target in angle brackets name no file");
+  assert.ok(/\n {10,}\n?$/.test(sync.body), "the reference definition is spaces of the same length");
+  assert.equal(sync.title, "Acme sync", "the linking note is not restricted by it");
+  assert.equal(sync.restricted, true);
+  assert.ok(live.body.includes("Related: the price call and [Use Firebase for auth](2026-10-01-use-firebase-for-auth.md)."));
+  const candidates = await run(dir, ["query", "--candidates", "price call budget auth choice"]);
+  for (const out of [read2, candidates]) for (const path of [part.path, whole.path]) {
+    assert.ok(!out.stdout.includes(slug(path)), `no slug ${slug(path)} in ${out.json.command}`);
+    assert.ok(!out.stdout.includes(path), "and no path");
+  }
+
+  // Published: the live decision's Notion body.
+  await approveNote(dir, LIVE_PATH);
+  const page = (await run(dir, ["sync", "render", "--ids", LIVE_NOTE])).json.data.items[0];
+  assert.ok(String(page.body).includes("Related: the price call and Use Firebase for auth."), String(page.body));
+  for (const path of [part.path, whole.path]) assert.ok(!JSON.stringify(page).includes(slug(path)));
 });

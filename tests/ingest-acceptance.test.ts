@@ -29,9 +29,9 @@ test("documented Markdown-only ingest replay is valid and idempotent", async (co
 
   const proposals = {
     proposals: [
-      { kind: "update_fact", title: "Acme budget: 80000 → 95000 EUR", target: "prj-9x4t1b7e", field: "budget", after: "95000 EUR", why: "Budget raised to 95000 EUR to cover the CMS licence.", source: "mtg-pcpyn31n" },
-      { kind: "update_fact", title: "Carlos Ruiz role: Developer → tech lead", target: "per-9t2c6m4a", field: "role", after: "tech lead", why: "Carlos is now tech lead for the website.", source: "mtg-pcpyn31n" },
-      { kind: "add_link", title: "Acme website: add Lucía Fernández to People", target: "prj-9x4t1b7e", field: "people", after: "per-zzvs98vn", why: "Lucía Fernández (Acme, marketing lead)", source: "mtg-pcpyn31n" },
+      { kind: "update_fact", title: "Acme budget: 80000 → 95000 EUR", target: "prj-9x4t1b7e", field: "budget", after: "95000 EUR", why: "Budget raised to 95000 EUR to cover the CMS licence.", source: "mtg-pcpyn31n", passages: ["mtg-pcpyn31n"] },
+      { kind: "update_fact", title: "Carlos Ruiz role: Developer → tech lead", target: "per-9t2c6m4a", field: "role", after: "tech lead", why: "Carlos is now tech lead for the website.", source: "mtg-pcpyn31n", passages: ["mtg-pcpyn31n"] },
+      { kind: "add_link", title: "Acme website: add Lucía Fernández to People", target: "prj-9x4t1b7e", field: "people", after: "per-zzvs98vn", why: "Lucía Fernández (Acme, marketing lead)", source: "mtg-pcpyn31n", passages: ["mtg-pcpyn31n"] },
     ],
   };
   const proposalInput = await input(dir, "proposals.json", proposals);

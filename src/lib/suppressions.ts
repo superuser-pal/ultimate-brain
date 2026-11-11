@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, posix } from "node:path";
 
-import { eligible, latestExtracts, lineageOf, noteReleased, restrictedSources, type Context, type SourceInfo, type Suppression } from "./eligibility.ts";
+import { eligible, isLive, latestExtracts, lineageOf, noteReleased, restrictedSources, type Context, type SourceInfo, type Suppression } from "./eligibility.ts";
 import { BrainError } from "./errors.ts";
 import type { Note } from "./notes.ts";
 import { viewLinks } from "./report-body.ts";
@@ -71,6 +71,8 @@ export function contextFor(notes: readonly Note[], loaded: Pick<Loaded, "suppres
   // Re-inclusion is derived from the persisted records: a passage the latest version holds again that an earlier suppression removed stays
   // restricted until a Restore record for that version names it (capture-and-review §4.6, §5.2).
   const context: Context = { sources, suppressions: loaded.suppressions, awaitingRestore: awaiting, restored };
+  let withheld: Set<string> | undefined;
+  context.withheldPaths = () => (withheld ??= withheldNotePaths(notes, context));
   const latest = latestExtracts(context);
   for (const [input, info] of latest) {
     const version = info.extract_version ?? 0;
@@ -250,7 +252,7 @@ export function publishableNote(note: Note, context: Context): AnswerNote {
     return note.type === "source" ? stripped : awaitingCleanup(stripped);
   }
   const kept = partlyRestricted(note, restriction);
-  return note.type !== "source" && hasRestrictedClaim(restriction) ? awaitingCleanup(kept) : kept;
+  return withoutWithheldLinks(note.type !== "source" && hasRestrictedClaim(restriction) ? awaitingCleanup(kept) : kept, context);
 }
 
 /** How a published surface names a note: its title, or the label of the awaiting-cleanup form. */
@@ -260,24 +262,61 @@ export function publishedTitle(note: Note): string | undefined {
 }
 
 /**
- * Whether a proposed change rests only on excluded evidence (capture-and-review §5.1, "Pending proposals resting on it"): such a proposal
- * is never written and never applied. `text` is the wording it would put into the brain, when it has one.
+ * Whether a proposed change rests on excluded evidence and is withheld whole (eligibility.md §4.2, cli §5.7 "Excluded evidence"): such a
+ * proposal is never written and never applied, neither whole nor in part. `text` is the wording it would put into the brain, when it has one.
  *
  * With passage references in the text, only the lines that carry one are judged, each as a claim of a note resting on `source`: the change is
- * excluded when every such line is restricted. A line with no reference (a heading, an `^[inferred]` sentence) is the agent's own framing
- * of the claims beside it and decides nothing. Without any reference, the change is excluded when `source` is an older version or a full
- * copy of a changed input, which retrieval no longer returns.
+ * withheld when any such line is restricted, even beside a live one (a mixed item). A line with no reference (a heading, an `^[inferred]`
+ * sentence) is the agent's own framing of the claims beside it and decides nothing. Without any reference, the change is withheld when
+ * `source` is an older version or a full copy of a changed input, which retrieval no longer returns.
  */
-export function restsOnlyOnExcluded(source: unknown, text: string | null, context: Context): boolean {
+export function restsOnExcluded(source: unknown, text: string | null, context: Context): boolean {
   if (context.suppressions.length === 0) return false;
   const sources = typeof source === "string" ? [source] : [];
   const claims = text === null ? [] : text.split(/\r?\n/).filter((line) => [...line.matchAll(PASSAGE_REF)].length > 0);
   if (claims.length > 0) {
     const body = claims.join("\n");
     const note: Note = { id: "", type: "decision", path: "", attributes: { sources }, body, raw: body };
-    return restrictionOf(note, context).lines.size === claims.length;
+    return restrictionOf(note, context).lines.size > 0;
   }
   return sources.some((id) => restrictedSources(context).has(id));
+}
+
+/** One passage a proposal names (schema §11 `passages`): a passage reference, without its `^[` `]`. */
+export const PASSAGE = /^(src-[0-9a-z]{8})#¶(\d+):([0-9a-f]{8})$/;
+
+/**
+ * Whether one passage a proposal names is live (eligibility.md §9.2, schema §11.5): a passage reference while the latest version of its input
+ * holds it (and no Restore is awaited); a whole input (a source or meeting id, a source key) while that input has no suppression record; an
+ * entry that names no input (a note id, an `agent:…` key) always.
+ */
+export function passageLive(passage: string, context: Context): boolean {
+  const ref = PASSAGE.exec(passage);
+  if (ref !== null) return isLive({ source: ref[1]!, passage: { n: Number(ref[2]), hash: ref[3]! } }, { entries: [] }, context);
+  if (!namesInput(passage, context)) return true;
+  return isLive({ source: passage }, { entries: [] }, context);
+}
+
+/** What one proposed item rests on: its `source`, its `passages` (`undefined` on a legacy item, written before the field) and the wording it would write. */
+export interface Support { source: unknown; passages: unknown; text: string | null }
+
+/**
+ * Whether one proposed item is withheld for want of eligible support (eligibility.md §4.2, §9.2, §9.3; cli §5.7 "Excluded evidence"). Only while
+ * the brain has a suppression record. With `passages`, they decide: withheld when any of them, or any passage reference in its text, is not live
+ * (a mixed item included), whatever version its `source` is. Legacy (no `passages`): withheld when a passage reference in its text is not live,
+ * when it cites none and its `source` is an older version or full copy of a changed input, and when the input of its `source`, read as a
+ * whole-source entry, has a suppression record (the user's reading of 0077 §3, 2026-11-10).
+ */
+export function withheldSupport(support: Support, context: Context): boolean {
+  if (context.suppressions.length === 0) return false;
+  if (support.passages === undefined) {
+    if (restsOnExcluded(support.source, support.text, context)) return true;
+    return typeof support.source !== "string" || !passageLive(support.source, context);
+  }
+  if (support.text !== null && citesPassage(support.text) && restsOnExcluded(support.source, support.text, context)) return true;
+  // Fail closed: a list the CLI cannot read is no established support.
+  if (!Array.isArray(support.passages) || support.passages.length === 0) return true;
+  return support.passages.some((passage) => typeof passage !== "string" || !passageLive(passage, context));
 }
 
 /** Whether a text carries a passage reference `^[src-…#¶n:hash]`. */
@@ -447,6 +486,48 @@ function awaitingCleanup(note: Note): AnswerNote {
   return { ...note, attributes, body, titleWithheld: true };
 }
 
+/** The paths of the notes the rule names by type and id (a restricted claim) or leaves out whole; a source, a proposal and a view are never among them. */
+function withheldNotePaths(notes: readonly Note[], context: Context): Set<string> {
+  const paths = new Set<string>();
+  if (context.suppressions.length === 0) return paths;
+  for (const note of notes) {
+    if (note.type === "source" || note.type === "proposal" || note.type === "view") continue;
+    const restriction = restrictionOf(note, context);
+    if (restriction.whole || hasRestrictedClaim(restriction) || nothingLeft(note, restriction)) paths.add(note.path);
+  }
+  return paths;
+}
+
+// An inline link or image, with an optional title: `[text](target)`, `![alt](<target> "title")`.
+const BODY_LINK = /(!?)\[((?:\\.|[^\]\\])*)\]\(\s*(?:<([^>\n]*)>|([^)\s]+))(?:\s+(?:"[^"\n]*"|'[^'\n]*'|\([^)\n]*\)))?\s*\)/g;
+// A link reference definition: `[label]: target "title"`, a line of its own.
+const LINK_DEFINITION = /^ {0,3}\[(?:\\.|[^\]\\])+\]:[ \t]*(?:<([^>\n]*)>|(\S+))(?:[ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^)\n]*\)))?[ \t]*$/gm;
+// A target in angle brackets on its own: `<../decisions/budget-cut-to-40k.md>`.
+const ANGLE_TARGET = /<([^>\s:]+\.md(?:[?#][^>\s]*)?)>/gi;
+
+/**
+ * The note with every relative link in its body to a note in `context.withheldPaths()` reduced to what names no file (cli §5.13, "A link to such a
+ * note", the user's answer of 2026-11-11 to CC-176's question 4): an inline link or image to its text (`See [the decision](../decisions/
+ * 2026-10-11-budget-cut-to-40k.md "Budget")` becomes `See the decision`), a reference definition to spaces of the same length (its uses then name
+ * nothing), a target in angle brackets to nothing. The target is the note's file name, which repeats its title. Any other link is kept as written.
+ */
+export function withoutWithheldLinks<T extends Note>(note: T, context: Context): T {
+  const withheld = context.withheldPaths?.();
+  if (withheld === undefined || withheld.size === 0) return note;
+  const folder = posix.dirname(note.path);
+  const names = (target: string): boolean => {
+    if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) return false;
+    let decoded = target.split(/[?#]/)[0]!;
+    try { decoded = decodeURIComponent(decoded); } catch { /* keep as written */ }
+    return withheld.has(posix.normalize(posix.join(folder, decoded)));
+  };
+  const body = note.body
+    .replace(BODY_LINK, (link, _image: string, text: string, angled: string | undefined, bare: string | undefined) => names((angled ?? bare ?? "").trim()) ? text : link)
+    .replace(LINK_DEFINITION, (line, angled: string | undefined, bare: string | undefined) => names((angled ?? bare ?? "").trim()) ? " ".repeat(line.length) : line)
+    .replace(ANGLE_TARGET, (link, target: string) => names(target) ? "" : link);
+  return body === note.body ? note : { ...note, body };
+}
+
 /**
  * A note as an answer surface returns it (`query --candidates` and `--read`, `recall`, `reflect --candidates`; eligibility.md §2, §6): the
  * restricted-evidence rule's form (`eligibleNote`), and, when a claim of it is restricted, the awaiting-cleanup form; null when the rule leaves it
@@ -456,7 +537,7 @@ export function answerNote(note: Note, context: Context): AnswerNote | null {
   const restriction = restrictionOf(note, context);
   if (restriction.whole || nothingLeft(note, restriction)) return null;
   const kept = partlyRestricted(note, restriction);
-  return hasRestrictedClaim(restriction) ? awaitingCleanup(kept) : kept;
+  return withoutWithheldLinks(hasRestrictedClaim(restriction) ? awaitingCleanup(kept) : kept, context);
 }
 
 /** Whether an answer surface withholds the note's title and path (the awaiting-cleanup form). */
