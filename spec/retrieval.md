@@ -51,7 +51,7 @@ Each is compared alone, then the smallest combinations of those that help (CC-20
 
 ### 5.1 Where
 
-`eval/retrieval-0.13/` (CC-203). Its generator builds **the original brain** of `eval/search-0.5/make-brain.mjs` (unchanged, same seeds, so its 1,982 notes and 600 sources are byte for byte the same) and then adds **the retrieval layer**: new projects, meetings, sources and facts written for the 80 cases, and caller folders with `.brain` markers. The 50 original questions run on the original brain only, and `eval/search-0.5/questions.json` stays byte for byte the same. The generator is deterministic (two runs, identical bytes) and its brain lints with no errors.
+`eval/retrieval-0.13/` (CC-203). Its generator builds **the original brain** of `eval/search-0.5/make-brain.mjs` (unchanged, same seeds, so its 1,982 notes and 600 sources are byte for byte the same) and then adds **the retrieval layer**: new projects, meetings, sources and facts written for the 80 cases, and caller folders with `.brain` markers. **The layer has the original brain's density:** each of its projects also gets companion decisions, meetings, references and open questions that name it (as each original project has about 25 such notes), from a seeded stream and neutral text that holds none of the cases' facts, so the note that answers competes with the subject's other notes as it does in a real brain. A layer whose subjects have only a few notes each puts all of them in the first ten and measures nothing. The 50 original questions run on the original brain only, and `eval/search-0.5/questions.json` stays byte for byte the same. The generator is deterministic (two runs give identical bytes, except the brain's own activity log, which `brain init` and `brain index` write with the clock) and its brain lints with no errors.
 
 ### 5.2 The four groups, 20 cases each
 
@@ -70,7 +70,8 @@ The fields of `eval/memory-0.12` (`caller`, `facts`, `forbidden_facts`, `forbidd
 |---|---|
 | `kind` | `fact`, `paraphrase`, `clarify` or `unknown` |
 | `evidence_sets` | for `fact` and `paraphrase`: a list of sets of ids; each set **independently sufficient** to answer (every required fact is in its notes' eligible text). Any one set counts |
-| `subjects` | for `clarify`: `{ id, evidence: [ids] }` for each competing subject, at least two |
+| `subjects` | for `clarify`: `{ id, name, value, evidence: [ids], stated? }` for each competing subject, at least two: how an answer names it, its value of the attribute, every note that states that value, and (optional) a narrower pattern for stating the value in an answer, where the bare value ("two") would also match "which of the two" |
+| `absent` | for `unknown`: `{ about: id, none: [patterns] }`: what no note about that subject holds (the audit checks it) |
 | `as_of` | for a time-qualified fact: the qualification the answer must keep (also in `facts`) |
 | `split` | `dev` or `held`: §5.4 |
 | `audit` | one line: why the question is clear, which passage answers it, and why each other set is sufficient |
@@ -83,7 +84,7 @@ In each group 6 of the 20 cases are `held`. The comparison (CC-204) chooses chan
 
 ### 5.5 The audit (CC-203)
 
-A script check, run by the scorer before any run, fails the set when: an id in `evidence_sets` or `subjects` is unknown, or not eligible for the caller; a set's eligible text does not match every `facts` regex; an `unknown` case's facts match any eligible note (the brain must truly not hold the answer); a `clarify` case's subjects are fewer than two, or its caller resolves one (§3); a question contains its own answer value; `eval/search-0.5/questions.json` or the original brain's bytes changed. A case is fixed only with a reason in its PR, never to make a candidate pass.
+A script check, run by the scorer before any run, fails the set when: an id in `evidence_sets` or `subjects` is unknown, or not eligible for the caller; a set's eligible text does not match every `facts` regex; a note about an `unknown` case's subject (the subject, notes that name it, its projects' notes and their minutes) holds what the case's `absent` says it lacks (the brain must truly not hold the answer); a `clarify` case's subjects are fewer than two, or its caller resolves one (§3); a question contains its own answer value; `eval/search-0.5/questions.json` or the original brain's bytes changed. Evidence text is read through `brain query --read` from the case's caller, so it is the text eligibility.md leaves; the layer has no suppression record, and the audit fails if one appears. A case is fixed only with a reason in its PR, never to make a candidate pass.
 
 ## 6. Scoring and gates (0080 §3, §6, §7)
 
@@ -92,7 +93,7 @@ A script check, run by the scorer before any run, fails the set when: an id in `
 | Kind | Retrieval level (the first search's ten candidates) | Answer level (text and citations) |
 |---|---|---|
 | `fact`, `paraphrase` | every id of at least one `evidence_sets` set is among the first ten; no `forbidden_evidence` | memory-0.12's answerable rule, with "every `expected_evidence` id is cited" read as "every id of one set is cited"; `as_of` kept |
-| `clarify` | evidence of at least two `subjects` among the first ten, or the CLI's signal names at least two (reported; no forbidden evidence) | the answer asks which subject, names at least two of `subjects`, states no subject's value (`forbidden_facts`) and does not abstain |
+| `clarify` | evidence of at least two `subjects` among the first ten, or the CLI's signal names at least two (reported; no forbidden evidence) | the answer asks a question, names at least two of `subjects` by their `name`, states no subject's value (`stated`, else `value`) and does not abstain |
 | `unknown` | no `forbidden_evidence` (reported) | memory-0.12's unknown rule: abstains honestly, no forbidden fact |
 
 ### 6.2 Gates
