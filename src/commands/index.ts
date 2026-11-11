@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -19,7 +20,8 @@ export const indexCommand: Command = {
     const root = brain!.root;
     const check = args.options.check === true;
     const { notes, problems } = await scanNotes(root);
-    const built = buildIndex(indexNotes(notes, requireSuppressions(root)));
+    // A view the derived-content rule withholds keeps no title in the JSON index (§5.8); index.md lists no views.
+    const built = buildIndex(indexNotes(notes, requireSuppressions(root), { exists: (path) => existsSync(join(root, path)) }));
 
     const warnings: Warning[] = [
       ...problems.map((problem) => ({ code: problem.code, message: `${problem.path}: ${problem.message}`, path: problem.path })),
