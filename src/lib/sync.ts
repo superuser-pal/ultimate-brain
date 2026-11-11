@@ -788,7 +788,7 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     let itemUpdates: Array<{ item_id: string; reason: string; section: string }> = [];
     let publishedAfter: Record<string, unknown> | undefined;
     if (reviewSections(workspace, note)) {
-      const review = renderReview(note, workspace);
+      const review = renderReview(note, workspace, (row) => String(reviewRowName(workspace, row)));
       content.body = isCreate ? review.body : null; content.sections = { "Review summary": review.summary }; content.hash = review.summary_hash; rendered["@content"] = review.summary_hash;
       const kept = isRecord(published["@review"]) && isRecord(published["@review"].items) ? published["@review"].items : undefined;
       // Only a render that writes the body records what was rendered; a published row with no record has none, and is never given one here.
@@ -893,7 +893,7 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     const page = (source ?? target)?.attributes.notion;
     const meeting = typeof a.source === "string" ? workspace.get(a.source) : undefined;
     Object.assign(values, {
-      Name: held.whole ? `Held: ${note.id}` : reviewName(a), Kind: select(a.kind), About: targetText,
+      Name: reviewRowName(workspace, note, held.whole), Kind: select(a.kind), About: targetText,
       "About Page": typeof page === "string" ? `https://www.notion.so/${page.replaceAll("-", "")}` : null,
       "Source Meeting": meeting?.type === "meeting" && typeof meeting.attributes.notion === "string" ? [meeting.attributes.notion] : [],
       Now: held.whole ? HELD_TEXT : reviewText(proposalBefore(a, workspace)), Proposed: held.whole ? HELD_TEXT : reviewSections(workspace, note) ? `${(a.items as unknown[]).length} ${(a.items as unknown[]).length === 1 ? "change" : "changes"}: decide each one in the page` : proposed !== undefined ? proposed : reviewText(after ?? proposalAfter(a, workspace)),
@@ -931,6 +931,10 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
 }
 
 /** A Review row's Name says which kind of row it is (cli §5.14.4, 0048). */
+/** A Review row's Name: `Held: <id>` when the row is held whole, else its title (with a Conflict or Answer lead); a Review summary names a deferred item's row by it (cli §5.14.4). */
+function reviewRowName(workspace: Workspace, note: Note, whole = proposalHeld(workspace, note).whole): unknown {
+  return whole ? `Held: ${note.id}` : reviewName(note.attributes);
+}
 function reviewName(a: Record<string, unknown>): unknown {
   const prefix = ["contradiction", "supersede", "merge", "new_item"].includes(String(a.kind)) ? "Conflict: " : a.kind === "answer" ? "Answer: " : "";
   return typeof a.title === "string" && prefix !== "" && !a.title.startsWith(prefix) ? `${prefix}${a.title}` : a.title;
