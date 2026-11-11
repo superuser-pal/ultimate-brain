@@ -214,7 +214,7 @@ This file wins in every row. "On `main`" is `main` at 07e74a5 (CC-176 #283, CC-1
 | 9 | capture-and-review §5.1, row "Pending proposals": "resting only on restricted claims" | resting on a passage that is not live, or without established support (§4.2, §9) | CC-177, CC-179 |
 | 10 | schema §11: no passage field; `closed_reason: stale` "rests only on excluded evidence" | the passage list (§9.1); `stale` also covers a mixed or unsupported item | CC-179 (field), CC-177 (reason) |
 | 11 | cli.md §5.7 "What the rule does not see": the uncited restatement | still a stated limit, narrowed (§9.6) | CC-177 (the wording), CC-179 |
-| 12 | cli.md §5.15: "The skills a linked repo or folder carries are refreshed by running `brain link` there again" | one upgrade reaches every registered project (§11) | CC-184 |
+| 12 | cli.md §5.15: "The skills a linked repo or folder carries are refreshed by running `brain link` there again" | one upgrade reaches every registered project (§11) | CC-184 (cli.md §5.15 step 9, §5.12) |
 | 13 | cli.md §6.2 step 2: brain-reflect reads members and inputs by their `path`s; §1.1's table lists no `query` command for brain-ingest or brain-reflect | through `query --read` (§10) | CC-180 |
 | 14 | cli.md §5.32 "Restricted evidence" (and `src/lib/reflect.ts`, through `eligibleNote`): a partly restricted member or input keeps its `title`, `path` and headings in the output, and its title and aliases give names (`near_duplicate`, "an input names a note") and terms | §6 rule 3: none of them is shown, named or tokenised while the note has a restricted part | CC-176 |
 
