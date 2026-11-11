@@ -33,6 +33,7 @@ A retrieval case passes only when the **first** `brain query --candidates` call,
 ### 3. Gates
 
 - **Body and structured facts:** at least 90% (18 of 20) in the first ten. **Paraphrases:** at least 90% (18 of 20), judged separately.
+- **Facts written only in prose: at least 90% (16 of 17)** in the first ten, across the 17 existing body-only cases: the 10 fact-in-body questions of the original set (0 of 10 today) and the 7 new body-only facts. Added by the user on 2026-11-11, after the new cases were built, so that the combined fact score, which a project note's typed field can carry, cannot hide the original prose failures. It adds no question and changes no evidence. The original 50 stay the historical retrieval comparison; this does not make them a native-answer suite.
 - **Nothing that passes today fails:** every original question found in the first ten stays there, and the original set's first-rank count and MRR do not fall.
 - **Critical trust: 100%,** at the retrieval level and in the final answers.
 - **Final answers:** at least 90% of answerable cases get a correct, sufficiently complete, cited answer. Candidates and final answers are scored separately.
@@ -90,6 +91,6 @@ Languages other than English; embeddings, a vector store, a persisted index or a
 
 ## Evidence
 
-- The user's grill and acceptance, 2026-11-11: English only; the first search, first ten; 90% per group with 20 cases each, nothing passing today failing, critical trust 100%, answers 90%; a clarifying question for an unresolved subject; eighty new cases, the 50 unchanged; latency and output tokens each at most 25% more at the median and 95th percentile; 0.13.0; the plan above.
+- The user's grill and acceptance, 2026-11-11: English only; the first search, first ten; 90% per group with 20 cases each, and (asked after the cases were built, the same day) 16 of the 17 existing body-only facts, nothing passing today failing, critical trust 100%, answers 90%; a clarifying question for an unresolved subject; eighty new cases, the 50 unchanged; latency and output tokens each at most 25% more at the median and 95th percentile; 0.13.0; the plan above.
 - The rerun of `eval/search-0.5` on `main` at 9cf6d26 (ranks identical to `results-cc173.txt`) and the read-only diagnosis of its misses (kept outside the repo).
 - [0074](0074-scoped-memory-handovers-and-bounded-recall.md) §5 and §6, [0077](0077-trust-repair-in-0-13-0.md), [0078](0078-onboarding-and-early-access-in-0-14-0.md), [eval/retrieval-0.12/RESULTS.md](../eval/retrieval-0.12/RESULTS.md).
