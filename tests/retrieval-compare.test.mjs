@@ -116,3 +116,16 @@ test("C2w's suffix rule (spec/retrieval.md §4 C2)", () => {
   const cases = { budgets: "budget", launching: "launch", launched: "launch", copies: "copy", planned: "plan", raise: "rais", raised: "rais", releases: "releas", status: "status", speed: "speed", string: "string", "2026": "2026", app: "app" };
   for (const [word, stem] of Object.entries(cases)) assert.equal(variant.stem(word), stem, word);
 });
+
+test("CC-205: the product's searchCandidates ranks and shows snippets as the measured chosen set does (C2,C3,C4)", () => {
+  const contexts = [NONE, { repo: "alder", project: "prj-alder", area: null }];
+  const withheld = (n) => (n.id === "mtg-birch" ? null : n);
+  for (const question of ["What is the budget for the Alder app?", "money", "Alder check-in", "card payments", "Birch budgets"]) {
+    for (const context of contexts) {
+      for (const eligible of [undefined, withheld]) {
+        const { candidates } = product.searchCandidates(world(), product.queryTerms(question), TYPES, context, eligible);
+        assert.deepEqual(candidates, rank(CHOSEN, world(), question, context, eligible), `${question} ${JSON.stringify(context)}`);
+      }
+    }
+  }
+});
