@@ -642,7 +642,7 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
   const reviewSkipped = plan.review_decisions.filter((item) => !reviewable.includes(item)).flatMap((item) => item.items.map((entry) => ({ proposal: item.proposal, item_id: entry.item_id, decision: entry.decision, result: "skipped", reason: "ROW_CONFLICTED" })));
   const review = recordOnly ? { results: reviewable.flatMap((item) => item.items.map((entry) => ({ proposal: item.proposal, item_id: entry.item_id, decision: entry.decision, result: "skipped", reason: "RECORD_ONLY" }))), log: [] as LogEntry[] } : applyReviewDecisions(workspace, reviewable, now);
   // A Request revision the plan read is recorded; the item stays pending (capture-and-review §7.8). Unattended runs never put one in the plan.
-  const revisions = recordOnly ? [] : recordRevisionRequests(workspace, plan.review_revisions.filter((item) => !conflictedIds.has(item.proposal) && !conflictedPages.has(item.page_id)), now, formatDate(now));
+  const revisions = recordOnly ? [] : recordRevisionRequests(workspace, plan.review_revisions.filter((item) => !conflictedIds.has(item.proposal) && !conflictedPages.has(item.page_id)), plan.as_of, now, formatDate(now));
   const wording = applyWording(workspace, plan.accepted_wording, now, recordOnly, conflictedIds, conflictedPages);
   const log: LogEntry[] = [
     ...create.filter((item) => item.result === "applied").map((item) => ({ op: "sync-create", id: String(item.id), title: String(workspace.get(String(item.id))?.attributes.title ?? item.id) })),

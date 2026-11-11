@@ -11,6 +11,7 @@ import { brain, fixtureCopy, withPassages } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const AFTER = "2026-12-10T09:10:00Z";
+const LATER = "2026-12-10T09:20:00Z";
 const SYNC = "mtg-8c4n2p7w";
 const PROJECT = "prj-9x4t1b7e";
 const CONCEPT = "con-1s6t8e2b";
@@ -392,6 +393,32 @@ test("Request revision is recorded, the new draft replaces the stored proposal w
   assert.match(section, /Decision: Pending/);
   assert.equal(item.body, null, "the page body is never rewritten");
   assert.equal(Object.keys(item.review_published_after["@review"].items).length, 4);
+  assert.deepEqual(await errors(dir), []);
+});
+
+test("applying an old plan again after the revision was drafted is a no-op (STALE_PLAN); a request read after the draft is recorded (cli §5.27)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids } = await published(dir);
+  const asked = decide(body, ids[0]!, "Request revision").replace(new RegExp(`(## \\[[a-z]+ · ${ids[0]}\\][\\s\\S]*?Decision: Request revision)`), "$1\nRevision request: make it April");
+  const { plan } = await submit(dir, id, asked);
+  const revised = await run(dir, ["proposal", "revise"], { proposal: id, item_id: ids[0], proposed: "2027-04", previous: "2027-03" }, AFTER);
+  assert.equal(revised.code, 0, revised.stdout);
+  const drafted = await attributes(dir, await pathOf(dir, id));
+  assert.equal(drafted.revisions[0].status, "drafted");
+
+  settle(dir);
+  const replay = await run(dir, ["sync", "apply"], plan, LATER);
+  assert.equal(replay.code, 0, replay.stdout);
+  assert.deepEqual(replay.json.data.revision_results.map((entry: { result: string; reason?: string }) => [entry.result, entry.reason]), [["skipped", "STALE_PLAN"]]);
+  assert.deepEqual(await attributes(dir, await pathOf(dir, id)), drafted, "the drafted revision and its previous wording are untouched");
+
+  const newer = structuredClone(plan);
+  newer.as_of = LATER;
+  newer.review_revisions[0].instruction = "make it May";
+  const fresh = await run(dir, ["sync", "apply"], newer, LATER);
+  assert.deepEqual(fresh.json.data.revision_results.map((entry: { result: string }) => entry.result), ["recorded"], "a request planned after the draft is recorded");
+  const proposal = await attributes(dir, await pathOf(dir, id));
+  assert.deepEqual([proposal.revisions[0].status, proposal.revisions[0].instruction], ["requested", "make it May"]);
   assert.deepEqual(await errors(dir), []);
 });
 
