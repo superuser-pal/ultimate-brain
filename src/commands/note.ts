@@ -40,5 +40,5 @@ export const noteNewCommand: Command = {
 function skipReason(skip: SkippedNote): string {
   if (skip.reason !== "WITHHELD_MATCH") return `same content as ${skip.existing}`;
   const type = skip.existing.startsWith("org-") ? "org" : "person";
-  return `matches ${type} ${skip.existing}, which awaits cleanup; not created again`;
+  return `matches ${type} ${skip.existing}, whose name the brain withholds; not created again`;
 }

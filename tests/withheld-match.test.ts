@@ -58,7 +58,7 @@ test("a new person matching one withheld whole is skipped WITHHELD_MATCH with it
   }
   assert.equal(await exists(join(dir, "knowledge/people/dana-whitfield-2.md")), false);
   const human = await noteNew(dir, [person("Dana Whitfield")]);
-  assert.equal(human.stdout, `skipped notes[0]: matches person ${dana.id}, which awaits cleanup; not created again\n`);
+  assert.equal(human.stdout, `skipped notes[0]: matches person ${dana.id}, whose name the brain withholds; not created again\n`);
 
   // The answer surface still shows nothing: the rule adds nothing to `brain query`.
   const candidates = await brain(["query", "--candidates", "Dana Whitfield", "--types", "person", "--brain", dir, "--json"]);
@@ -84,7 +84,7 @@ test("an awaiting-cleanup person matches by title and by alias; an org by its ow
   // A person is not compared with an org of the same name.
   assert.deepEqual(run.json.data.created.map((note: { type: string; path: string }) => [note.type, note.path]), [["person", "knowledge/people/northwind-labs.md"]]);
   const human = await noteNew(dir, [{ type: "org", title: "Northwind Labs", frontmatter: { summary: "A data company.", sources: [SYNC] }, body: "x\n" }], "--dry-run");
-  assert.equal(human.stdout, `skipped notes[0]: matches org ${northwind.id}, which awaits cleanup; not created again\n`);
+  assert.equal(human.stdout, `skipped notes[0]: matches org ${northwind.id}, whose name the brain withholds; not created again\n`);
 });
 
 test("a withheld alias of a note whose title is shown matches without cite; a shown name is not compared (CC-207)", async (context) => {
@@ -92,6 +92,8 @@ test("a withheld alias of a note whose title is shown matches without cite; a sh
   const run = await noteNew(dir, [person("O. Haddad"), person("Omar Haddad")], "--json", "--dry-run");
   assert.equal(run.code, 0, run.stdout);
   assert.deepEqual(run.json.data.skipped, [{ input_index: 0, reason: "WITHHELD_MATCH", existing: omar.id }]);
+  const human = await noteNew(dir, [person("O. Haddad")], "--dry-run");
+  assert.equal(human.stdout, `skipped notes[0]: matches person ${omar.id}, whose name the brain withholds; not created again\n`);
   // The title is what `brain query` shows: the ingest matches it there, and this rule leaves it to the ingest.
   assert.deepEqual(run.json.data.created.map((note: { path: string }) => note.path), ["knowledge/people/omar-haddad-2.md"]);
   const read = await brain(["query", "--read", omar.id, "--brain", dir, "--json"]);
