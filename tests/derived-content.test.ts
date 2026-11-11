@@ -7,7 +7,7 @@ import { test } from "node:test";
 
 import { passageHash } from "../src/lib/selection.ts";
 import { excludableDecision, INPUT } from "./exclusion-fixture.ts";
-import { approveNote, brain, fixtureCopy } from "./helpers.ts";
+import { approveNote, brain, fixtureCopy, withPassages } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const SYNC = "mtg-8c4n2p7w";
@@ -253,10 +253,11 @@ test("a Review page names a note with a restricted part by type and id: on creat
   const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
   const file = join(dir, note.path);
   await writeFile(file, (await readFile(file, "utf8")).replace(/^title: .*$/m, "title: Price set at 95k"));
-  const created = await run(dir, ["proposal", "new"], { proposals: [
+  // Passages as 0.13.0 takes them (eligibility.md §9.1): each item names its whole source.
+  const created = await run(dir, ["proposal", "new"], withPassages({ proposals: [
     { kind: "review_notes", source: SYNC, notes: [note.id] },
     { kind: "add_to_note", title: "RLS", target: "con-1s6t8e2b", content: "Carlos will use RLS for the auth migration.", why: "Carlos said so.", source: SYNC },
-  ] });
+  ] }));
   assert.equal(created.code, 0, created.stdout);
   const id = created.json.data.created[0].id as string;
   const render = async (plan?: string) => (await run(dir, ["sync", "render", "--ids", id, ...(plan === undefined ? [] : ["--plan", plan])])).json.data;

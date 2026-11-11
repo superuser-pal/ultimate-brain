@@ -24,7 +24,7 @@ const EXCLUDED_INPUTS = [EXCLUDED_INPUT, SUPPORT_INPUT];
 // The frontmatter field that names a proposal's passages (0077 §3, spec/eligibility.md §9.1). TODO(CC-179): null until
 // CC-179 adds the field to schema §11 and the proposal schema accepts it; then set it here, and the proposals with
 // `passages` carry it. Until then every proposal is written as a legacy one (§9.3).
-const PROPOSAL_PASSAGES_FIELD = null;
+const PROPOSAL_PASSAGES_FIELD = "passages";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const product = join(here, "../..");
