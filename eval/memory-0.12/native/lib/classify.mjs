@@ -186,6 +186,23 @@ function brainPath(path, ctx) {
   return null;
 }
 
+/**
+ * Absolute brain paths written inside a longer word (an inline script, a here-document line). Only paths spelled out
+ * from the brain's absolute folder are found; a path an interpreter builds at run time (from an environment variable,
+ * by joining strings) is not: the check's stated limit (README "The no-file-read check").
+ */
+function embeddedBrainPaths(word, ctx) {
+  const found = [];
+  for (const root of ctx.brainAliases ?? [ctx.brain]) {
+    const re = new RegExp(`${root.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:/[^\\s'"\`)\\];,]*)?(?![\\w.-])`, "g");
+    for (const m of word.matchAll(re)) {
+      const hit = brainPath(normalize(m[0]), ctx);
+      if (hit && !found.some((f) => f.path === hit.path)) found.push(hit);
+    }
+  }
+  return found;
+}
+
 /** The outcome for a set of brain paths a call touches. */
 function verdict(paths, reason) {
   if (paths.some((p) => p.access === "note")) return { kind: "brain-read", reason, paths };
@@ -209,7 +226,7 @@ function classifyShell(script, ctx) {
   let cwd = ctx.cwd;
   const brainCalls = [];
   const hits = [];
-  for (const { words: raw, redirects } of splitShell(script, vars)) {
+  for (const { words: raw, redirects, sub } of splitShell(script, vars)) {
     let words = raw;
     while (words.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(words[0])) words = words.slice(1);
     while (words.length && (KEYWORDS.has(words[0]) || WRAPPERS.has(words[0].split("/").pop()))) {
@@ -227,15 +244,24 @@ function classifyShell(script, ctx) {
     if (program === "cd" || program === "pushd") { cwd = absolute(words[1] ?? ctx.home, cwd); continue; }
     const skip = isBrainProgram(words);
     if (skip) { brainCalls.push(words.slice(skip)); continue; }
-    if (NOT_READING.has(program)) continue;
+    // A program that only names a path is exempt, except inside a substitution, whose output feeds another command
+    // (`cat $(echo /…/brain/a.md)`).
+    if (NOT_READING.has(program) && !sub) continue;
     const args = words.slice(1).map((w) => (w.startsWith("-") && w.includes("=") ? w.slice(w.indexOf("=") + 1) : w)).filter((w) => w && !w.startsWith("-"));
     // Standing in the brain folder, any program but the brain CLI and those above reads it (`cd brain && grep -r x`);
     // elsewhere, a path argument under the brain does (`cat ~/x/brain/decisions/a.md`, `ls ../../brain`).
     const inBrain = brainPath(cwd, ctx);
     if (inBrain) { hits.push({ ...inBrain, by: `${program} (in ${inBrain.rel || "the brain folder"})` }); continue; }
+    const named = new Set();
     for (const arg of args) {
       const hit = brainPath(absolute(arg, cwd), ctx);
-      if (hit) hits.push({ ...hit, by: program });
+      if (hit) { hits.push({ ...hit, by: program }); named.add(arg); }
+    }
+    // A brain path inside a word: an interpreter's inline script (`python3 -c "open('/…/brain/a.md')"`,
+    // `node -e …`) or a here-document's body, whose lines split into words like `open("/…/brain/a.md").read`.
+    for (const word of words) {
+      if (named.has(word)) continue;
+      for (const hit of embeddedBrainPaths(word, ctx)) hits.push({ ...hit, by: `${program} (a path inside its script)` });
     }
   }
   const result = verdict(hits, hits.length ? `shell: ${[...new Set(hits.map((h) => h.by))].join(", ")}` : "shell");

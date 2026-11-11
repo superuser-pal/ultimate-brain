@@ -59,6 +59,20 @@ test("the classifier flags shell reads, searches and listings of the brain howev
   assert.equal(kind("shell", { command: `/bin/zsh -lc 'sed -n 1,80p ${BRAIN}/knowledge/a.md'` }), "brain-read", "Codex's wrapped command");
 });
 
+test("the classifier flags a brain path inside an inline script, a here-document or a substitution (review of #303)", () => {
+  for (const [tool, command] of [
+    ["shell", `/bin/zsh -lc 'python3 -c "print(open(\\"${BRAIN}/a.md\\").read())"'`],
+    ["Bash", `node -e "require('fs').readFileSync('${BRAIN}/knowledge/x.md')"`],
+    ["Bash", `python3 - <<EOF\nprint(open("${BRAIN}/a.md").read())\nEOF`],
+    ["Bash", `cat $(echo ${BRAIN}/a.md)`],
+    ["Bash", "cat `echo $BRAIN_DIR/a.md`"],
+  ]) assert.equal(kind(tool, { command }), "brain-read", command);
+  assert.equal(kind("Bash", { command: `node -e "x('${BRAIN}y/a')"` }), "other", "a sibling folder whose name starts like the brain's");
+  assert.equal(kind("Bash", { command: `python3 -c "open('${BRAIN}/.claude/skills/x/SKILL.md')"` }), "product-read");
+  assert.equal(kind("Bash", { command: 'python3 -c "print(1)"' }), "other");
+  assert.equal(kind("Bash", { command: "echo $BRAIN_DIR" }), "other", "outside a substitution, naming the path is still not reading it");
+});
+
 test("the classifier records brain CLI calls by category and does not flag them", () => {
   const brain = (command) => classifyCall({ tool: "Bash", input: { command } }, ctx);
   const read = brain('brain query --candidates "x" --json; brain query --read dec-1 --json');
