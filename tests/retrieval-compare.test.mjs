@@ -124,7 +124,13 @@ test("CC-205: the product's searchCandidates ranks and shows snippets as the mea
     for (const context of contexts) {
       for (const eligible of [undefined, withheld]) {
         const { candidates } = product.searchCandidates(world(), product.queryTerms(question), TYPES, context, eligible);
-        assert.deepEqual(candidates, rank(CHOSEN, world(), question, context, eligible), `${question} ${JSON.stringify(context)}`);
+        // The one difference on purpose (the review of #320): a fact written on one line (`facts: {…}`, as this world writes
+        // them) is shown with the `facts:` line, where the measured variant gave line 0.
+        const factsLine = (id) => world().find((n) => n.id === id).raw.split("\n").findIndex((line) => line.startsWith("facts:")) + 1;
+        const measured = rank(CHOSEN, world(), question, context, eligible).map((c) => ({
+          ...c, snippets: c.snippets.map((s) => (s.line === 0 && s.text.startsWith("facts.") ? { ...s, line: factsLine(c.id) } : s)),
+        }));
+        assert.deepEqual(candidates, measured, `${question} ${JSON.stringify(context)}`);
       }
     }
   }
