@@ -167,6 +167,10 @@ export async function oldInstallation(context: TestContext): Promise<OldInstalla
   // The brain: `brain init` with Git, one area and one project, the index rebuilt, all committed.
   const init = JSON.parse((await exec(process.execPath, [cli, "init", brain, "--owner", "Fixture Owner", "--now", NOW, "--json"], { cwd: root, env })).stdout);
   assert.equal(init.ok, true);
+  // The brain's own identity, so the CLI under test, which runs Git with the process's environment, can commit there on a runner that
+  // has no global identity (CI).
+  await git(brain, ["config", "user.name", "Fixture"]);
+  await git(brain, ["config", "user.email", "fixture@example.invalid"]);
   await writeFile(join(brain, "areas", "sample-area.md"), note(AREA, "area", "Sample area", ""));
   await mkdir(join(brain, "projects", "sample-project"), { recursive: true });
   await writeFile(join(brain, "projects", "sample-project", "project.md"), note(PROJECT, "project", "Sample project", `area: ${AREA}\n`));
