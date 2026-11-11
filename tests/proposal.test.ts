@@ -3,13 +3,13 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { brain, fixtureCopy } from "./helpers.ts";
+import { brain, fixtureCopy, withPassages } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 
 async function proposalNew(dir: string, proposals: unknown, ...extra: string[]) {
   const file = join(dir, "..", "input.json");
-  await writeFile(file, JSON.stringify({ proposals }));
+  await writeFile(file, JSON.stringify(withPassages({ proposals })));
   return brain(["proposal", "new", "--input", file, "--brain", dir, "--now", NOW, "--json", ...extra]);
 }
 
@@ -45,6 +45,7 @@ after: 95000 EUR
 from: 2026-12-03
 why: Budget raised to 95k.
 source: mtg-8c4n2p7w
+passages: [mtg-8c4n2p7w]
 status: pending
 ---
 `,

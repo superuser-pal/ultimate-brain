@@ -3,7 +3,7 @@ import { serializeNewFile } from "./frontmatter.ts";
 import { generateId } from "./ids.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 import { formatDate, formatTimestamp } from "./time.ts";
-import { eligibleNote, eligibleNotes, contextFor, requireSuppressions, type Loaded } from "./suppressions.ts";
+import { eligibleNotes, contextFor, publishableNote, publishedTitle, requireSuppressions, type Loaded } from "./suppressions.ts";
 import { areaBriefPath, deriveView, generatedBlockRange, projectViewPath, type ViewKind } from "./views.ts";
 import type { Workspace } from "./workspace.ts";
 
@@ -32,8 +32,9 @@ export function stageViews(workspace: Workspace, targets: ViewTarget[], now: Dat
   for (const { owner: project, kind, path } of targets) {
     {
       const existing = workspace.notes.find((note) => note.path === path);
-      // The owner is rendered from its eligible form too: a restricted project or area never contributes its facts.
-      const owner = eligibleNote(project, context) ?? { ...project, attributes: { ...project.attributes, facts: {}, timeline: [] } };
+      // The owner is rendered from its published form too: a restricted project or area never contributes its facts or, with a restricted
+      // claim, its title (cli §5.9).
+      const owner = publishableNote(project, context);
       const derived = deriveView(owner, kind, notes);
       if (existing === undefined && workspace.exists(path)) {
         errors.push({ path, reason: "MARKERS_INVALID" });
@@ -44,7 +45,7 @@ export function stageViews(workspace: Workspace, targets: ViewTarget[], now: Dat
         if (!check) {
           const id = generateId("vw", ids);
           ids.add(id);
-          workspace.write(path, serializeNewFile(newViewAttributes(id, project, kind, derived.generatedFrom, now), `${derived.generatedBlock}\n\n<!-- @user:start -->\n<!-- @user:end -->\n`));
+          workspace.write(path, serializeNewFile(newViewAttributes(id, owner, kind, derived.generatedFrom, now), `${derived.generatedBlock}\n\n<!-- @user:start -->\n<!-- @user:end -->\n`));
         }
         continue;
       }
@@ -87,7 +88,7 @@ function newViewAttributes(id: string, owner: Note, kind: ViewKind, generatedFro
   return {
     id,
     type: "view",
-    title: `${String(owner.attributes.title)} — ${suffix}`,
+    title: `${String(publishedTitle(owner))} — ${suffix}`,
     view_kind: kind,
     ...(kind === "area_brief" ? { area: owner.id } : { project: owner.id }),
     generated_from: generatedFrom,
