@@ -1,10 +1,10 @@
 # Guided setup (contract, decision 0078)
 
-**Status:** contract for release 0.14.0 (CC-188). Built by CC-190 (the CLI side), CC-191 (the `brain-setup` skill and the skill changes it needs, in one fork release: brain-setup, brain-connect-notion, Ultimate Assistant's seeding, brain-ingest's use of `track`, brain-catch-up's first-meeting line, brain-notion-change's template version), CC-192 (the `repository` field of `package.json`) and CC-189 (the Notion template); measured by CC-193. Written by Claude Code.
+**Status:** contract for release 0.14.0 (CC-188). Built by CC-190 (the CLI side), CC-191 (the `brain-setup` skill and the skill changes it needs, in one fork release: brain-setup, brain-connect-notion, Ultimate Assistant's seeding, brain-ingest's use of `track`, brain-catch-up's first-meeting line, brain-notion-change's template version), CC-192 (the `repository` field of `package.json`) and CC-189 (the Notion template); measured by CC-193. The response style (0081: §4's row, §7 item 13, §7.1) is CC-209's contract, built by CC-210 (the CLI) and CC-211 (the setup item and the chat change). Written by Claude Code.
 
-How this file fits: it holds the whole first-time setup of a new user: what the `brain-setup` skill does and in what order, what it checks and how, what it stores and where, what seeding writes, how first value is checked, and the setup report. Command behaviour is in [cli.md](cli.md) (§5.1 `init`'s next step, §5.2 `status`'s `setup` block, §5.3 `notion.template_version`, §5.15 `upgrade`'s Notion migrations), and file formats are in [schema.md](schema.md) (§4 area `track`, §12 the new-brain modules and the new `brain.json` keys). What a read, an answer or a proposal may rest on is [eligibility.md](eligibility.md), and nothing here changes it.
+How this file fits: it holds the whole first-time setup of a new user: what the `brain-setup` skill does and in what order, what it checks and how, what it stores and where, what seeding writes, how first value is checked, and the setup report. Command behaviour is in [cli.md](cli.md) (§5.1 `init`'s next step, §5.2 `status`'s `setup` block, §5.3 `notion.template_version` and `settings.style`, §5.3.1 the style block, §5.15 `upgrade`'s Notion migrations), and file formats are in [schema.md](schema.md) (§4 area `track`, §12 the new-brain modules and the new `brain.json` keys). What a read, an answer or a proposal may rest on is [eligibility.md](eligibility.md), and nothing here changes it.
 
-**Decisions:** [0078](../decisions/0078-onboarding-and-early-access-in-0-14-0.md) (binding: §1 to §6); [0079](../decisions/0079-lean-minutes-and-follow-ups-as-tasks.md) (the minutes format the minutes check uses, and the follow-ups that become Tasks); 0015 (Notion through the MCP), 0037 (identities), 0048 (modules), 0061 (minimal per-area tracking preferences), 0064 and 0072 (Ultimate Assistant guides seeding), 0059 (project adoption), 0070 (lifecycle of structure notes), 0031 (owner rulings).
+**Decisions:** [0078](../decisions/0078-onboarding-and-early-access-in-0-14-0.md) (binding: §1 to §6); [0079](../decisions/0079-lean-minutes-and-follow-ups-as-tasks.md) (the minutes format the minutes check uses, and the follow-ups that become Tasks); [0081](../decisions/0081-response-style-working-principles-and-plain-writing.md) (the response style: §3 to §6); 0015 (Notion through the MCP), 0037 (identities), 0048 (modules), 0061 (minimal per-area tracking preferences), 0064 and 0072 (Ultimate Assistant guides seeding), 0059 (project adoption), 0070 (lifecycle of structure notes), 0031 (owner rulings).
 
 **The user's choices of 2026-11-10, filling gaps 0078 leaves** (asked through the coordinator during CC-188; each was the recommended option):
 1. **Per-area tracking preferences** are an optional `track` list in the area note's frontmatter, in Git only, with no Notion property in 0.14.0; seeding proposes it, the ingest uses it, and Ultimate Assistant's thresholds stay fixed (§11).
@@ -63,6 +63,7 @@ A brain made before 0.14.0 that has no `setup` line and whose `databases` and `o
 | The drop folder | the line `Drop folder: <path>` under "My rules" in the brain's `AGENTS.md` (as brain-ingest reads it today) | the skill, after the settings screen's yes |
 | The language notes are written in | the line `Language: <name>` under "My rules" in the brain's `AGENTS.md` | the skill, after the settings screen's yes |
 | Publish, push, recall | `brain.json` `settings.publish`, `settings.push`, `settings.recall` (schema §12) | `brain config set` |
+| The response style (0081) | `brain.json` `settings.style` (schema §12), and the style block it writes in the brain's `AGENTS.md` (cli.md §5.3.1) | `brain config set` |
 | MarkItDown, `gh`, the schedule (optional, choice 2) | `brain.json` `settings.markitdown`, `settings.gh`, `settings.schedule`: `on` or `off`; absent means `off` (schema §12) | `brain config set` |
 | Modules | `brain.json` `modules` (schema §12) | `brain modules on|off` |
 | The template version | `brain.json` `notion.template_version` (schema §12) | brain-connect-notion, with `brain config set` |
@@ -71,7 +72,7 @@ A brain made before 0.14.0 that has no `setup` line and whose `databases` and `o
 | The remote | the brain repository's `origin` | `gh repo create --private` or the user (§7) |
 | The Notion connection | the agent's own MCP configuration | the user, following the skill's steps |
 
-The `AGENTS.md` lines are written under the `## My rules` heading, which follows the rules block's end marker `<!-- ultimate-brain:rules:end -->` (upgrades never touch anything after that marker): each on its own line, after the heading's comment, replacing an earlier line of the same name anywhere after the marker. When the heading is missing, the skill adds `## My rules` at the end of the file first. With the rules block's markers missing (cli.md §5.15 step 1), the skill writes nothing, says why, and setup stops at step 2 until the markers are restored; they are committed on their own (`rules: drop folder and language`).
+The `AGENTS.md` lines are written under the `## My rules` heading, which follows the rules block's end marker `<!-- ultimate-brain:rules:end -->` (upgrades never touch anything after that marker except the style block, which the CLI keeps right after it, cli.md §5.3.1): each on its own line, after the heading's comment, replacing an earlier line of the same name anywhere after the marker. When the heading is missing, the skill adds `## My rules` at the end of the file first. With the rules block's markers missing (cli.md §5.15 step 1), the skill writes nothing, says why, and setup stops at step 2 until the markers are restored; they are committed on their own (`rules: drop folder and language`).
 
 ### 4.1 The `setup` log line
 
@@ -160,11 +161,25 @@ One screen, every item with its default filled in and a one-line explanation. Th
 | 10 | MarkItDown | `on` when `markitdown` is found, else `off` | "Turns PDFs, Word files and slides into exact text, so quotes are exact; off, the agent reads files itself." | optional | `settings.markitdown` |
 | 11 | `gh` | `on` when `gh auth status` passes, else `off` | "Lets setup create the private remote and file your setup report for you." | optional | `settings.gh` |
 | 12 | Scheduled catch-up | `off`; asked in step 8, after first value | "Catch-up runs on its own at set times; it only takes in what you've marked ready." | optional | `settings.schedule` |
+| 13 | How the brain talks to you (0081) | Standard | "Standard, Simple (plain words, short answers, the answer first) or Custom (you choose how much it explains, how long and how direct it is); change it any time by asking." | optional | `settings.style` |
 
-- Items 1 to 9 are on the screen in step 2; item 12 is shown there as "asked after your first check" and answered in step 8, where `on` runs brain-catch-up's "Run on a schedule" (its times, days, model and allow list, cli.md §5.21) and then writes `settings.schedule`.
+- Items 1 to 9 and 13 are on the screen in step 2; item 12 is shown there as "asked after your first check" and answered in step 8, where `on` runs brain-catch-up's "Run on a schedule" (its times, days, model and allow list, cli.md §5.21) and then writes `settings.schedule`.
 - The rest of the required items of 0078 §2 are steps, not values: the Notion MCP connection (step 3), the connection to the brain's databases (step 4), identities (step 5), the minutes prompt and Brain Assistant (steps 4a, 4b). The screen lists them under "Still to do after this screen", one line each, so the user sees the whole setup once.
 - **Optional means a value, not a skip** (0078 §2): `off` is recorded and never asked again; the user changes it by asking ("turn on markitdown").
+- **Item 13, the response style** (0081): Standard writes `{ "preset": "standard" }`; Simple writes `{ "preset": "simple" }`; Custom asks the three dials in one message, each with its levels and what they do (schema §12, cli.md §5.3.1), and writes the three chosen values with no preset. With Custom chosen, the screen shows the three choices on the item's line. The new style applies from the next message of the setup, as it does after a change in chat.
 - Applying the screen: set the Git identity (with the user's yes on the scope, global or this repository), create the remote (`gh repo create <name> --private --source <brain folder> --push` with `gh` on; else wait until `origin` exists), create the drop folder, write the two `AGENTS.md` lines (§4), `brain config set` each setting, `brain modules on|off` each module change, commit, push. Then `brain log setup - step=settings result=done`.
+
+### 7.1 Changing the response style later (0081 §5)
+
+The user changes the style in any later session in the brain by asking, in their own words. The agent:
+1. writes the change with `brain config set` (cli.md §5.3):
+   - the whole style ("talk to me more simply", "go back to normal", "use Standard"): `settings.style` set to `{ "preset": "simple" }` or `{ "preset": "standard" }`, which clears every dial set before;
+   - one dial ("shorter answers", "more detail", "explain less", "skip the jargon", "get to the point"): `settings.style.<dial>` set to that level (`'"short"'`), the other keys kept;
+   - a request it can't map to one dial or preset gets one question with the choices, and nothing is written before the answer;
+2. commits `brain.json` and `AGENTS.md` when they changed (`settings: response style`), and pushes per `settings.push`;
+3. answers in one line, in the new style: what changed, and `Linked folders follow at their next brain link or brain upgrade.` when the brain has linked repos or folders.
+
+The new style applies from the agent's next reply. A request made in a linked folder is not written there (the brain is read-only from it): the agent says to ask in a session in the brain. The always-on reply rules and working principles in the rules block (0081 §1, §2) are not part of the style and don't change with it.
 
 ## 8. Seeding (step 6; 0078 §3)
 
@@ -277,4 +292,4 @@ Time: 52 min (first setup line to the last)
 
 ## 14. Out of scope (0078)
 
-An interactive `brain init`; a new diagnostic command (status's `setup` block and the skill's checks are the diagnostics); telemetry; a synthetic sample meeting in the template (§6.3's sample text lives in the skill and is deleted after the check); rich profiles and specialised types (0030); the template gallery and the acquisition funnel (1.0); how the template link reaches testers, the npm channel and the number of testers (1.0's opening grill); any operation on the user's brain or Notion workspace without an explicit yes.
+An interactive `brain init`; a new diagnostic command (status's `setup` block and the skill's checks are the diagnostics); telemetry; a synthetic sample meeting in the template (§6.3's sample text lives in the skill and is deleted after the check); rich profiles and specialised types (0030); the template gallery and the acquisition funnel (1.0); how the template link reaches testers, the npm channel and the number of testers (1.0's opening grill); any operation on the user's brain or Notion workspace without an explicit yes. From 0081: the style changing text a command returns (post-1.0), a style per skill or per agent, and a style switched on per session.
