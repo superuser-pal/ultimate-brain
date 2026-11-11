@@ -93,7 +93,7 @@ The `AGENTS.md` lines are written under the `## My rules` heading, which follows
 | `git_identity` | `git config user.name` and `git config user.email`, read in the brain folder, are both non-empty | yes |
 | `remote` | the brain is a Git repository with a remote `origin` that has a URL (`git remote get-url origin`). Whether it is private is checked online (§3) | yes |
 | `databases` | every `notion.databases` key of Core and of each module on is non-empty, and, with Tasks on, `notion.tasks.database` too | yes |
-| `drop_folder` | `AGENTS.md` has, after the line `<!-- ultimate-brain:rules:end -->` and outside HTML comments, a line starting with `Drop folder:` (the first one counts; §4) and its path (`~` expanded, backticks removed) is an existing folder. (proposed, awaiting the user's confirmation) A relative path is read from the brain folder, and the `Drop folder:` and `Language:` lines may be indented | yes |
+| `drop_folder` | `AGENTS.md` has, after the line `<!-- ultimate-brain:rules:end -->` and outside HTML comments, a line starting with `Drop folder:` (the first one counts; §4) and its path (`~` expanded, backticks removed) is an existing folder. A relative path is read from the brain folder, and the `Drop folder:` and `Language:` lines may be indented | yes |
 | `language` | `AGENTS.md` has, read the same way, a line starting with `Language:` | yes |
 | `owner_person` | `owner.person` is set and names an existing person note | yes |
 | `template_version` | reported as its value, or `null` (unknown) | no |
