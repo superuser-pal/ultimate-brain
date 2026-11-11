@@ -166,7 +166,9 @@ function decisionLogSections(
   add: (note: Note) => string,
   link: (note: Note) => string,
 ): string[][] {
-  const decisions = notes.filter((note) => note.type === "decision" && belongsToProject(note, project));
+  // An archived decision that was not superseded was never taken (a rejected draft): it is in no section (schema §16.2, eligibility §8 rule 7).
+  const decisions = notes.filter((note) => note.type === "decision" && belongsToProject(note, project)
+    && (note.attributes.lifecycle !== "archived" || note.attributes.assessment === "superseded"));
   const current = decisions.filter((note) => CURRENT_ASSESSMENTS.has(String(note.attributes.assessment))).sort(sortDescendingBy("date"));
   const superseded = decisions.filter((note) => note.attributes.assessment === "superseded").sort(sortDescendingBy("valid_until"));
 
