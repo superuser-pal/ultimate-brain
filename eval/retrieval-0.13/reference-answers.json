@@ -1,0 +1,420 @@
+{
+  "rq-f01": {
+    "text": "The Kestrel booking app's budget is €65,000, raised from €58,000 in March 2026 when family accounts were added [prj-vpby5bzh] [mtg-k3dbhnn5].",
+    "citations": [
+      "prj-vpby5bzh",
+      "mtg-k3dbhnn5"
+    ]
+  },
+  "rq-f02": {
+    "text": "Five people work on the Kestrel booking app [prj-vpby5bzh] [mtg-yfczbgw9].",
+    "citations": [
+      "prj-vpby5bzh",
+      "mtg-yfczbgw9"
+    ]
+  },
+  "rq-f03": {
+    "text": "The Kestrel booking site must be live by 15 February 2026 [prj-2wrf762f] [mtg-erceh1k8].",
+    "citations": [
+      "prj-2wrf762f",
+      "mtg-erceh1k8"
+    ]
+  },
+  "rq-f04": {
+    "text": "Hosting the Orrin route planner at Hetzner costs €640 a month [prj-rfj0rpmb] [mtg-g9q72w50].",
+    "citations": [
+      "prj-rfj0rpmb",
+      "mtg-g9q72w50"
+    ]
+  },
+  "rq-f05": {
+    "text": "The Brightwater repairs app's warranty is 18 months from go-live [mtg-yvc4bh9w].",
+    "citations": [
+      "mtg-yvc4bh9w"
+    ]
+  },
+  "rq-f06": {
+    "text": "The Brightwater tenant portal includes 20 support hours a month after launch [prj-8q2t4m2m] [mtg-acmn56x5].",
+    "citations": [
+      "prj-8q2t4m2m",
+      "mtg-acmn56x5"
+    ]
+  },
+  "rq-f07": {
+    "text": "The Harlow website went live on 4 November 2025 [prj-eh3fctkx] [mtg-t5r94za3].",
+    "citations": [
+      "prj-eh3fctkx",
+      "mtg-t5r94za3"
+    ]
+  },
+  "rq-f08": {
+    "text": "As of the spend review of 2 July 2026, after the Q3 invoices, €31,500 remains for the rest of 2026 on the Brightwater tenant portal [mtg-gxqpjcyr].",
+    "citations": [
+      "mtg-gxqpjcyr"
+    ]
+  },
+  "rq-f09": {
+    "text": "The Harlow web shop now launches in April 2026; it moved from March because the payment provider's onboarding took longer [prj-9am1b46q] [mtg-gbgcbjqz].",
+    "citations": [
+      "prj-9am1b46q",
+      "mtg-gbgcbjqz"
+    ]
+  },
+  "rq-f10": {
+    "text": "We agreed €85 per hour for change requests on the Tamsin online shop [mtg-zczjsbxr].",
+    "citations": [
+      "mtg-zczjsbxr"
+    ]
+  },
+  "rq-f11": {
+    "text": "412 members registered on the Velde members site in the first four weeks after launch [mtg-vvr1c7s4].",
+    "citations": [
+      "mtg-vvr1c7s4"
+    ]
+  },
+  "rq-f12": {
+    "text": "The Studio time tracker has an internal allowance of €6,000 this year [prj-e19cmbyg] [mtg-0axc0938].",
+    "citations": [
+      "prj-e19cmbyg",
+      "mtg-0axc0938"
+    ]
+  },
+  "rq-f13": {
+    "text": "Urgent repairs at Brightwater must get a response within 4 hours of the report [mtg-yvc4bh9w].",
+    "citations": [
+      "mtg-yvc4bh9w"
+    ]
+  },
+  "rq-f14": {
+    "text": "The Tamsin online shop takes card payments with Mollie [dec-k4epmeae].",
+    "citations": [
+      "dec-k4epmeae"
+    ]
+  },
+  "rq-f15": {
+    "text": "The Orrin route planner's first phase covers seven depots; the rest follow in 2027 [prj-rfj0rpmb] [mtg-z2r648k0].",
+    "citations": [
+      "prj-rfj0rpmb",
+      "mtg-z2r648k0"
+    ]
+  },
+  "rq-f16": {
+    "text": "Harlow Provisions got a 10% discount on the website build for paying the full amount upfront [mtg-vbnj22hc].",
+    "citations": [
+      "mtg-vbnj22hc"
+    ]
+  },
+  "rq-f17": {
+    "text": "The Harlow website's budget was €18,000, fixed price [prj-eh3fctkx] [mtg-vbnj22hc].",
+    "citations": [
+      "prj-eh3fctkx",
+      "mtg-vbnj22hc"
+    ]
+  },
+  "rq-f18": {
+    "text": "Orders from the Harlow web shop ship from the four Harlow delis, not a central warehouse [prj-9am1b46q] [mtg-sjd524be].",
+    "citations": [
+      "prj-9am1b46q",
+      "mtg-sjd524be"
+    ]
+  },
+  "rq-f19": {
+    "text": "Before March 2026 the Kestrel booking app's budget was €58,000; it was raised to €65,000 for family accounts [prj-vpby5bzh] [mtg-k3dbhnn5].",
+    "citations": [
+      "prj-vpby5bzh",
+      "mtg-k3dbhnn5"
+    ]
+  },
+  "rq-f20": {
+    "text": "The Velde members site's sitemap ends up at 23 pages [mtg-xhhjvnxy].",
+    "citations": [
+      "mtg-xhhjvnxy"
+    ]
+  },
+  "rq-p01": {
+    "text": "The Harlow web shop's budget is €42,000, including the first year of maintenance [prj-9am1b46q] [mtg-sjd524be].",
+    "citations": [
+      "prj-9am1b46q",
+      "mtg-sjd524be"
+    ]
+  },
+  "rq-p02": {
+    "text": "The Brightwater tenant portal is planned to launch in September 2026, after the pilot with two estates [prj-8q2t4m2m] [mtg-acmn56x5].",
+    "citations": [
+      "prj-8q2t4m2m",
+      "mtg-acmn56x5"
+    ]
+  },
+  "rq-p03": {
+    "text": "Amara Okafor leads the visual design of the Brightwater tenant portal [per-qpkrj4f9] [mtg-acmn56x5].",
+    "citations": [
+      "per-qpkrj4f9",
+      "mtg-acmn56x5"
+    ]
+  },
+  "rq-p04": {
+    "text": "Six developers work on the Orrin route planner, led by Rafael Quint [prj-rfj0rpmb] [mtg-z2r648k0].",
+    "citations": [
+      "prj-rfj0rpmb",
+      "mtg-z2r648k0"
+    ]
+  },
+  "rq-p05": {
+    "text": "The Harlow web shop launch moved from March to April 2026 because the payment provider's onboarding took longer than planned [mtg-gbgcbjqz].",
+    "citations": [
+      "mtg-gbgcbjqz"
+    ]
+  },
+  "rq-p06": {
+    "text": "Theo Lindqvist signs off every bill for the Brightwater repairs app before it is paid [mtg-e5dbs47t].",
+    "citations": [
+      "mtg-e5dbs47t"
+    ]
+  },
+  "rq-p07": {
+    "text": "The Velde Cycling Club called off the separate mobile app: the members site works well on phones and an app would have doubled the cost [dec-nx8dfma6].",
+    "citations": [
+      "dec-nx8dfma6"
+    ]
+  },
+  "rq-p08": {
+    "text": "Tenants get an answer to a message on the Brightwater tenant portal within two working days [mtg-acmn56x5].",
+    "citations": [
+      "mtg-acmn56x5"
+    ]
+  },
+  "rq-p09": {
+    "text": "The Tamsin online shop opens in May 2026, in time for the spring book festival [prj-6asd2w19] [mtg-zczjsbxr].",
+    "citations": [
+      "prj-6asd2w19",
+      "mtg-zczjsbxr"
+    ]
+  },
+  "rq-p10": {
+    "text": "Kestrel's patients get an SMS reminder 24 hours before each appointment [mtg-yfczbgw9].",
+    "citations": [
+      "mtg-yfczbgw9"
+    ]
+  },
+  "rq-p11": {
+    "text": "Nightly copies of the Orrin driver app data are kept in Frankfurt for 30 days [dec-3n80pqy3].",
+    "citations": [
+      "dec-3n80pqy3"
+    ]
+  },
+  "rq-p12": {
+    "text": "Harlow Provisions pays each invoice within 30 days of receiving it [mtg-sjd524be].",
+    "citations": [
+      "mtg-sjd524be"
+    ]
+  },
+  "rq-p13": {
+    "text": "Theo Lindqvist, Brightwater's head of digital, is the day-to-day contact [per-mcdk9p81] [mtg-acmn56x5].",
+    "citations": [
+      "per-mcdk9p81",
+      "mtg-acmn56x5"
+    ]
+  },
+  "rq-p14": {
+    "text": "The Velde members site is in English and Dutch [mtg-xhhjvnxy].",
+    "citations": [
+      "mtg-xhhjvnxy"
+    ]
+  },
+  "rq-p15": {
+    "text": "Yes: Kestrel agreed we can present the booking app as a case study in talks once it is live [mtg-yfczbgw9].",
+    "citations": [
+      "mtg-yfczbgw9"
+    ]
+  },
+  "rq-p16": {
+    "text": "When someone quits, their Studio time tracker entries are kept for 12 months and then deleted [mtg-0axc0938].",
+    "citations": [
+      "mtg-0axc0938"
+    ]
+  },
+  "rq-p17": {
+    "text": "Orrin plans around 1,800 drops a day across the route planner's depots [mtg-z2r648k0].",
+    "citations": [
+      "mtg-z2r648k0"
+    ]
+  },
+  "rq-p18": {
+    "text": "Ines Holloway approves every deployment to the live Harlow web shop [mtg-gbgcbjqz].",
+    "citations": [
+      "mtg-gbgcbjqz"
+    ]
+  },
+  "rq-p19": {
+    "text": "If the Brightwater tenant portal is unavailable, tenants call the repairs line and the on-call developer is paged [mtg-gxqpjcyr].",
+    "citations": [
+      "mtg-gxqpjcyr"
+    ]
+  },
+  "rq-p20": {
+    "text": "Lena Marsh liked the month view of the Tamsin events calendar but found the filters confusing; Callum will cut them to three [mtg-q07mdgaf].",
+    "citations": [
+      "mtg-q07mdgaf"
+    ]
+  },
+  "rq-c01": {
+    "text": "Which Harlow project do you mean: the Harlow web shop or the Harlow website?",
+    "citations": []
+  },
+  "rq-c02": {
+    "text": "Which project do you mean? This folder is for the Retainer clients area, which has several: the Harlow web shop, the Harlow website, the Kestrel booking app and site, and Tamsin's online shop and events calendar.",
+    "citations": []
+  },
+  "rq-c03": {
+    "text": "Do you mean the Kestrel booking app or the Kestrel booking site?",
+    "citations": []
+  },
+  "rq-c04": {
+    "text": "Which Brightwater project: the tenant portal or the repairs app?",
+    "citations": []
+  },
+  "rq-c05": {
+    "text": "Which Brightwater project do you mean, the tenant portal or the repairs app?",
+    "citations": []
+  },
+  "rq-c06": {
+    "text": "For which Orrin project: the route planner or the driver app?",
+    "citations": []
+  },
+  "rq-c07": {
+    "text": "Which project's launch do you mean? This area has the Brightwater tenant portal and repairs app, the Orrin route planner and driver app, and the Velde members site.",
+    "citations": []
+  },
+  "rq-c08": {
+    "text": "Which Kestrel project: the booking app or the booking site?",
+    "citations": []
+  },
+  "rq-c09": {
+    "text": "Which Tamsin Books project: the online shop or the events calendar?",
+    "citations": []
+  },
+  "rq-c10": {
+    "text": "For which project: the Brightwater tenant portal or the Brightwater repairs app?",
+    "citations": []
+  },
+  "rq-c11": {
+    "text": "Which Harlow project do you mean: the web shop or the website?",
+    "citations": []
+  },
+  "rq-c12": {
+    "text": "Do you mean the Kestrel booking app or the Kestrel booking site?",
+    "citations": []
+  },
+  "rq-c13": {
+    "text": "For which Brightwater project: the tenant portal or the repairs app?",
+    "citations": []
+  },
+  "rq-c14": {
+    "text": "Which project's deadline: the Kestrel booking app, the Kestrel booking site or the Tamsin events calendar?",
+    "citations": []
+  },
+  "rq-c15": {
+    "text": "For which Orrin project: the route planner or the driver app?",
+    "citations": []
+  },
+  "rq-c16": {
+    "text": "For which Brightwater project: the tenant portal or the repairs app?",
+    "citations": []
+  },
+  "rq-c17": {
+    "text": "For which client: the Harlow web shop or the Tamsin online shop?",
+    "citations": []
+  },
+  "rq-c18": {
+    "text": "Which Harlow project: the web shop or the website?",
+    "citations": []
+  },
+  "rq-c19": {
+    "text": "Which project's budget: the Brightwater tenant portal, the Brightwater repairs app or the Orrin route planner?",
+    "citations": []
+  },
+  "rq-c20": {
+    "text": "Which Orrin team: the route planner or the driver app?",
+    "citations": []
+  },
+  "rq-u01": {
+    "text": "The brain doesn't record a budget for the Orrin driver app; I searched for it by name and budget.",
+    "citations": []
+  },
+  "rq-u02": {
+    "text": "No budget is recorded for the Velde members site.",
+    "citations": []
+  },
+  "rq-u03": {
+    "text": "The brain doesn't record a designer for the Tamsin events calendar.",
+    "citations": []
+  },
+  "rq-u04": {
+    "text": "Not recorded: there is no hosting decision for the Velde members site.",
+    "citations": []
+  },
+  "rq-u05": {
+    "text": "The brain has no Harlow mobile app; Harlow's projects are the website and the web shop, and no mobile app is recorded.",
+    "citations": []
+  },
+  "rq-u06": {
+    "text": "Kestrel Dental's revenue is not recorded in the brain.",
+    "citations": []
+  },
+  "rq-u07": {
+    "text": "The brain doesn't record how many tenants use the Brightwater tenant portal.",
+    "citations": []
+  },
+  "rq-u08": {
+    "text": "No decision about analytics is recorded for the Orrin route planner.",
+    "citations": []
+  },
+  "rq-u09": {
+    "text": "The brain doesn't record a warranty for the Harlow web shop.",
+    "citations": []
+  },
+  "rq-u10": {
+    "text": "No project manager is recorded for the Orrin driver app.",
+    "citations": []
+  },
+  "rq-u11": {
+    "text": "The brain doesn't record a hosting cost for the Kestrel booking app.",
+    "citations": []
+  },
+  "rq-u12": {
+    "text": "Not recorded: the brain says nothing about a CRM at Tamsin Books.",
+    "citations": []
+  },
+  "rq-u13": {
+    "text": "No discount for Kestrel Dental is recorded.",
+    "citations": []
+  },
+  "rq-u14": {
+    "text": "The brain doesn't record when the Studio time tracker was launched.",
+    "citations": []
+  },
+  "rq-u15": {
+    "text": "No team size is recorded for the Velde members site.",
+    "citations": []
+  },
+  "rq-u16": {
+    "text": "The brain doesn't record a treasurer for Velde Cycling Club.",
+    "citations": []
+  },
+  "rq-u17": {
+    "text": "No payment provider is recorded for the Harlow website (the Harlow web shop is a separate project).",
+    "citations": []
+  },
+  "rq-u18": {
+    "text": "No SLA is recorded for the Orrin route planner.",
+    "citations": []
+  },
+  "rq-u19": {
+    "text": "The brain doesn't record a hosting cost for the Brightwater repairs app.",
+    "citations": []
+  },
+  "rq-u20": {
+    "text": "Not recorded: the brain says nothing about who built Kestrel's previous website.",
+    "citations": []
+  }
+}
