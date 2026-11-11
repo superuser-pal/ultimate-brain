@@ -18,6 +18,8 @@ test("retrieval level: a fact passes only when one whole evidence set is in the 
   assert.equal(scoreRetrieval(factCase, ["x", "prj-a"]).pass, true);
   assert.equal(scoreRetrieval(factCase, ["x", "prj-a"]).rank, 2);
   assert.equal(scoreRetrieval(factCase, ["mtg-a", "src-a"]).pass, true);
+  assert.equal(scoreRetrieval(factCase, ["prj-a"]).prose, false, "a typed field alone is not prose");
+  assert.equal(scoreRetrieval({ ...factCase, evidence_sets: [["prj-a"], ["mtg-a"]] }, ["prj-a", "mtg-a"]).prose, true);
   assert.equal(scoreRetrieval(factCase, ["mtg-a", "x"]).pass, false, "half of a set is not a set");
   const late = [...Array.from({ length: 10 }, (_, i) => `n${i}`), "prj-a"];
   assert.equal(scoreRetrieval(factCase, late).pass, false, "the eleventh result does not count: no higher limit");
@@ -47,7 +49,10 @@ test("answer level: answerable, clarify and unknown rules", () => {
 function validSet() {
   const cases = [];
   for (const [kind, base] of [["fact", factCase], ["paraphrase", { ...factCase, kind: "paraphrase" }], ["clarify", clarifyCase], ["unknown", unknownCase]]) {
-    for (let i = 0; i < 20; i++) cases.push({ ...base, id: `${kind}-${i}`, split: i < 6 ? "held" : "dev" });
+    for (let i = 0; i < 20; i++) {
+      const subgroup = kind === "fact" ? (i < 7 ? "body-only" : i < 19 ? "structured" : "decision") : undefined;
+      cases.push({ ...base, id: `${kind}-${i}`, split: i < 6 ? "held" : "dev", ...(subgroup ? { subgroup } : {}) });
+    }
   }
   return { callers: { scratch: {}, "a-folder": { project: "prj-a" }, area: { area: "area-1" } }, project_area: { "prj-a": "area-1", "prj-b": "area-2" }, project_titles: { "prj-a": "Alder app", "prj-b": "Alder site" }, cases };
 }
@@ -78,6 +83,7 @@ test("the audit passes a valid set and fails each planted defect", () => {
   assert.match(planted((s) => { s.cases.pop(); }).join(), /unknown: 19 cases, not 20/);
   assert.match(planted((s) => { s.cases[10].split = "held"; }).join(), /fact: 7 held cases, not 6/);
   assert.match(planted((s) => { s.cases[1].id = s.cases[0].id; }).join(), /duplicate case id/);
+  assert.match(planted((s) => { s.cases[0].subgroup = "structured"; }).join(), /fact subgroup body-only: 6 cases, not 7/);
 });
 
 test("median and nearest-rank 95th percentile", () => {

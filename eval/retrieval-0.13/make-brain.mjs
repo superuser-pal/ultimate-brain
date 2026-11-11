@@ -239,7 +239,7 @@ for (const c of CALLERS) {
 // ---- 4. cases.json and reference-answers.json ----
 const resolveRef = (text) => text.replace(/\{([a-z]+:[a-z0-9-]+)\}/g, (_, key) => `[${idOf(key)}]`);
 const cases = CASES.map((c) => ({
-  id: c.id, kind: c.kind, split: c.split, caller: c.caller, question: c.question,
+  id: c.id, kind: c.kind, ...(c.subgroup ? { subgroup: c.subgroup } : {}), split: c.split, caller: c.caller, question: c.question,
   ...(c.sets ? { evidence_sets: c.sets.map((set) => set.map(idOf)) } : {}),
   facts: c.facts ?? [],
   ...(c.as_of ? { as_of: c.as_of } : {}),
