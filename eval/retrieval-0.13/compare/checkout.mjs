@@ -24,7 +24,7 @@ export function variantCheckout() {
   copyFileSync(join(here, "vocabulary.ts"), join(root, "src/lib/vocabulary.ts"));
   // A repository of its own, so score.mjs can name its commit; the message names the commit it was copied from.
   const head = execFileSync("git", ["-C", product, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
-  const git = (...args) => execFileSync("git", ["-C", root, "-c", "user.name=variant-checkout", "-c", "user.email=variant-checkout@localhost", ...args], { encoding: "utf8" });
+  const git = (...args) => execFileSync("git", ["-C", root, "-c", "user.name=variant-checkout", "-c", "user.email=variant-checkout@localhost", "-c", "core.fsmonitor=false", "-c", "gc.auto=0", "-c", "maintenance.auto=false", ...args], { encoding: "utf8" });
   git("init", "-q");
   writeFileSync(join(root, ".git/info/exclude"), "node_modules\n");
   git("add", "-A");
