@@ -5,7 +5,7 @@ import type { Context } from "./eligibility.ts";
 import { isRecord, type InputProblem } from "./input.ts";
 import type { Note } from "./notes.ts";
 import { PASSAGE_REF } from "./selection.ts";
-import { eligibleNote, PASSAGE, withheldSupport } from "./suppressions.ts";
+import { PASSAGE, restrictionOf, withheldSupport } from "./suppressions.ts";
 import type { Workspace } from "./workspace.ts";
 
 const CLEANUP_KINDS = new Set(["remove", "restore", "independence"]);
@@ -30,7 +30,8 @@ export function itemPassages(p: Record<string, unknown>, kind: "change" | "note"
 
 /**
  * Which of a proposal's items are withheld with the suppression records of `context` (schema §11.5). A `notion_change` and a cleanup row are
- * never judged. A note of a `review_notes` is also withheld when its draft is restricted in any part (capture-and-review §5.1).
+ * never judged. A note of a `review_notes` is also withheld when its draft is restricted in any part (capture-and-review §5.1); a legacy note
+ * is judged by its draft alone, and a legacy change or link by the legacy rule (schema §11.5).
  */
 export function proposalWithheld(proposal: Note, workspace: Workspace, context: Context): Withheld {
   const a = proposal.attributes;
@@ -47,9 +48,13 @@ export function proposalWithheld(proposal: Note, workspace: Workspace, context: 
   });
   for (const id of (Array.isArray(a.notes) ? a.notes : []).map(String)) {
     const note = workspace.get(id);
-    const visible = note === undefined ? null : eligibleNote(note, context);
-    const restricted = note !== undefined && (visible === null || visible.body !== note.body);
-    if (restricted || withheldSupport({ source: a.source, passages: itemPassages(a, "note", id), text: null }, context)) out.notes.add(id);
+    // Restricted in a claim: a body line, a timeline entry or a fact retrieval withholds, or uncited text that makes it restricted whole. The
+    // summary, which retrieval drops for any note on a suppressed input, is not a claim of the draft.
+    const restriction = note === undefined ? null : restrictionOf(note, context);
+    const restricted = restriction !== null && (restriction.whole || restriction.lines.size > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0);
+    // A legacy note is judged by its draft alone, by retrieval's rule (the user's choice of 2026-11-11, reading eligibility.md §9.3).
+    const passages = itemPassages(a, "note", id);
+    if (restricted || (passages !== undefined && withheldSupport({ source: a.source, passages, text: null }, context))) out.notes.add(id);
   }
   (Array.isArray(a.links) ? a.links : []).filter(isRecord).forEach((_link, index) => {
     if (withheldSupport({ source: a.source, passages: itemPassages(a, "link", index), text: null }, context)) out.links.add(index);

@@ -213,25 +213,66 @@ test("an older-layout review_notes approved whole drops only its unsupported ite
   assert.deepEqual((lint.json.data.issues as Array<{ severity: string; path: string }>).filter((issue) => issue.severity === "error" && issue.path.startsWith("_proposals/")), [], "dropped's source_excluded entry passes the schema");
 });
 
-test("an older-layout row on an input with a suppression record: every legacy item is withheld, the row closed (eligibility §9.3)", async (context) => {
+// Three drafts on the excluded input, each judged by its own claims (the user's choice of 2026-11-11, reading eligibility.md §9.3 for note items).
+async function drafts(dir: string): Promise<string[]> {
+  const draft = (title: string, body: string) => ({ type: "question", title, frontmatter: { summary: "Open.", kind: "question", projects: [PROJECT], sources: ["src-ex1a3b4c"] }, body });
+  const made = await run(dir, ["note", "new"], { notes: [
+    draft("Who pays for hosting", `Nobody said. ^[${LIVE_P}]\n`),
+    draft("What the price was", `The price was set. ^[${EXCLUDED_P}]\n`),
+    draft("Who runs support", `Support stays in house. ^[${LIVE_P}]\n`),
+  ] });
+  assert.equal(made.code, 0, made.stdout);
+  return (made.json.data.created as Array<{ id: string }>).map((entry) => entry.id);
+}
+
+test("an older-layout row on an excluded input: only the draft citing the excluded paragraph is withheld; its folded change and link keep the legacy rule (eligibility §9.3)", async (context) => {
   const dir = await fixtureCopy(context);
   const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
-  const draft = await run(dir, ["note", "new"], { notes: [{ type: "question", title: "Who pays for hosting", frontmatter: { summary: "Open.", kind: "question", projects: [PROJECT], sources: ["src-ex1a3b4c"] }, body: `Nobody said. ^[${LIVE_P}]\n` }] });
-  const note = draft.json.data.created[0].id as string;
+  const [live, excluded, other] = await drafts(dir);
   const staged = await run(dir, ["proposal", "new"], { proposals: [
-    { kind: "review_notes", source: "src-ex1a3b4c", notes: [note], note_passages: { [note]: [LIVE_P] } },
+    { kind: "review_notes", source: "src-ex1a3b4c", notes: [live, excluded, other], note_passages: { [live!]: [LIVE_P], [excluded!]: [EXCLUDED_P], [other!]: [LIVE_P] } },
+    budget([LIVE_P]),
     { kind: "add_link", title: "link", target: CONCEPT, field: "projects", after: PROJECT, why: "Said.", source: "src-ex1a3b4c", passages: [LIVE_P] },
   ] });
+  assert.equal(staged.code, 0, staged.stdout);
+  assert.equal(staged.json.data.created.length, 1, "the change and the link fold into the row");
   const row = staged.json.data.created[0] as { id: string; path: string };
   await legacy(dir, row.path, true);
   await exclude();
   const out = await run(dir, ["apply"], approve(row.id));
   const [result] = out.json.data.decisions as Array<Record<string, any>>;
-  assert.deepEqual([result!.result, result!.reason, result!.input, result!.legacy], ["closed", "SOURCE_EXCLUDED", INPUT, true], out.stdout);
-  assert.deepEqual(result!.withheld, [{ note }, { link: 0 }]);
-  assert.equal((await attributes(dir, row.path)).closed_reason, "stale");
-  // The literal reading of §9.3 (open with the user): the draft is withheld with the row's input, and archived.
-  assert.deepEqual(result!.notes.map((entry: Record<string, unknown>) => entry.result), ["archived"]);
+  assert.deepEqual([result!.result, result!.input, result!.legacy], ["applied", INPUT, true], out.stdout);
+  // The drafts whose own claims are live stay reviewable; the folded change and the link have no claims of their own and are withheld.
+  assert.deepEqual(result!.withheld, [{ change: 0 }, { note: excluded }, { link: 0 }]);
+  const notes = Object.fromEntries(result!.notes.map((entry: Record<string, unknown>) => [entry.id, entry.result]));
+  assert.equal(notes[excluded!], "archived");
+  assert.notEqual(notes[live!], "archived");
+  assert.notEqual(notes[other!], "archived");
+  assert.equal(notes[live!], notes[other!]);
+  const stored = await attributes(dir, row.path);
+  assert.deepEqual(stored.dropped, [{ change: 0, reason: "source_excluded" }, { note: excluded, reason: "source_excluded" }, { link: 0, reason: "source_excluded" }]);
+  assert.equal((await attributes(dir, "projects/acme-website/project.md")).facts.budget, "80000 EUR");
+});
+
+test("a 0.8.0-layout row with legacy items: a legacy draft is judged by its own claims, a legacy link by the row's input (eligibility §9.3)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
+  const [live, excluded] = await drafts(dir);
+  const staged = await run(dir, ["proposal", "new"], { proposals: [
+    { kind: "review_notes", source: "src-ex1a3b4c", notes: [live, excluded], note_passages: { [live!]: [LIVE_P], [excluded!]: [EXCLUDED_P] } },
+    { kind: "add_link", title: "link", target: CONCEPT, field: "projects", after: PROJECT, why: "Said.", source: "src-ex1a3b4c", passages: [LIVE_P] },
+  ] });
+  const row = staged.json.data.created[0] as { id: string; path: string };
+  await legacy(dir, row.path);
+  await exclude();
+  const out = await run(dir, ["apply"], approve(row.id));
+  const [result] = out.json.data.decisions as Array<Record<string, any>>;
+  assert.equal(result!.result, "applied", out.stdout);
+  const notes = Object.fromEntries(result!.notes.map((entry: Record<string, unknown>) => [entry.id, entry.result]));
+  assert.equal(notes[excluded!], "archived");
+  assert.notEqual(notes[live!], "archived");
+  const decided = ((await attributes(dir, row.path)).item_decisions as Array<Record<string, unknown>>).filter((entry) => entry.reason === "source_excluded");
+  assert.equal(decided.length, 2, "the excluded draft and the legacy link");
 });
 
 test("a 0.8.0-layout row: an item with live passages applies, a legacy item on the excluded input is withheld (schema §11.5)", async (context) => {
