@@ -25,6 +25,9 @@ export interface Context {
   awaitingRestore?: Set<string>;
   /** Accepted Restores, `${extract_of}|${transcript_hash}|${n}|${note id}`: one per claim. */
   restored?: Set<string>;
+  /** The paths of the notes a surface names by type and id or leaves out whole (`contextFor` sets it, computed once on first use): a link to one
+   *  keeps its text and loses its target (cli §5.13, "The awaiting-cleanup form"). */
+  withheldPaths?: () => ReadonlySet<string>;
 }
 
 const NOTION_KEY = /^notion:(.+)$/;

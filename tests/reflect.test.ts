@@ -6,7 +6,7 @@ import { test, type TestContext } from "node:test";
 
 import { serializeNewFile } from "../src/lib/frontmatter.ts";
 import { excludableDecision } from "./exclusion-fixture.ts";
-import { brain, fixtureCopy } from "./helpers.ts";
+import { brain, fixtureCopy, withPassages } from "./helpers.ts";
 
 const NOW = "2026-11-08T10:00:00Z";
 const SESSION = "agent:brain-reflect/20261108T100000Z";
@@ -50,7 +50,7 @@ async function lint(dir: string) {
 
 async function propose(dir: string, proposals: unknown[]) {
   const file = join(dir, "..", `proposals-${Math.random().toString(36).slice(2)}.json`);
-  await writeFile(file, JSON.stringify({ proposals }));
+  await writeFile(file, JSON.stringify(withPassages({ proposals })));
   return brain(["proposal", "new", "--input", file, "--brain", dir, "--now", NOW, "--json"]);
 }
 

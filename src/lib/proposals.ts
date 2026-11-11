@@ -11,7 +11,9 @@ import { checkNotionChange, defaultTitle, duplicateOf, resolveSetField } from ".
 import { newNotePath } from "./paths.ts";
 import { fingerprintProblem } from "./reflect.ts";
 import { loadSchemas } from "./schemas.ts";
-import { contextFor, requireSuppressions, restsOnlyOnExcluded } from "./suppressions.ts";
+import type { Context } from "./eligibility.ts";
+import { passageProblems, proposalWithheld } from "./passages.ts";
+import { contextFor, requireSuppressions, withheldSupport } from "./suppressions.ts";
 import { formatDate } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 
@@ -19,7 +21,7 @@ export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "update_body", "add
 export const PROPOSAL_STATUSES = ["pending", "approved", "rejected", "edited", "applied", "closed"] as const;
 
 /** Input keys of `proposal new`: the schema §11 fields the CLI does not set (spec/cli.md §5.6). */
-const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding", "fingerprint", "evidence"];
+const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding", "fingerprint", "evidence", "passages", "note_passages"];
 const ID = /^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{8}$/;
 const KNOWLEDGE_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 const ADD_LINK_FIELDS = new Set(["aliases", "tags", "projects", "people", "attendees", "deciders"]);
@@ -70,8 +72,10 @@ export function stageProposals(
   (list as Array<Record<string, unknown>>).forEach((item, index) => {
     if (item.kind === "new_item") checkNewItem(workspace, item.note as NoteInput, `/proposals/${index}/note`, today);
   });
+  // Every change names the passages it rests on; one without them is refused (eligibility.md §9.1, §9.2; cli §5.6).
+  (list as Array<Record<string, unknown>>).forEach((item, index) => checkPassages(workspace, item, `/proposals/${index}`));
   // One review_notes per source; it takes in that source's add_link items and changes (spec/cli.md §5.6, 0043, 0045).
-  const reviews = new Map<string, { index: number; item: Record<string, unknown>; links: Array<{ index: number; fields: Record<string, unknown> }>; changes: Array<{ index: number; change: Record<string, unknown> }> }>();
+  const reviews = new Map<string, { index: number; item: Record<string, unknown>; links: Array<{ index: number; fields: Record<string, unknown> }>; changes: Array<{ index: number; change: Record<string, unknown>; passages: unknown }> }>();
   (list as Array<Record<string, unknown>>).forEach((item, index) => {
     if (item.kind !== "review_notes") return;
     const source = String(item.source);
@@ -88,9 +92,9 @@ export function stageProposals(
     (list as Array<Record<string, unknown>>).forEach((item, index) => {
       const pointer = `/proposals/${index}`;
       if (item.kind === "review_notes") return;
-      // A change that rests only on evidence the user excluded is not written (capture-and-review §5.1): it could never be applied.
+      // A change any of whose passages is not live, even beside a live one, is not written (eligibility.md §4.2, §9.2): it could never be applied.
       const text = [item.content, item.answer, isRecord(item.note) ? item.note.body : undefined].find((value): value is string => typeof value === "string") ?? null;
-      if (restsOnlyOnExcluded(item.source, text, excluded)) { skipped.push({ input_index: index, reason: "SOURCE_EXCLUDED" }); return; }
+      if (item.kind !== "notion_change" && withheldSupport({ source: item.source, passages: item.passages, text }, excluded)) { skipped.push({ input_index: index, reason: "SOURCE_EXCLUDED" }); return; }
       const fields = resolveFields(workspace, item, pointer, today);
       // A reflection answer: checked against its item, deduped on its fingerprint, never folded into a review_notes (§5.6).
       if (typeof item.fingerprint === "string") {
@@ -139,7 +143,7 @@ export function stageProposals(
       }
       if (review !== undefined && CHANGE_KINDS.includes(String(item.kind))) {
         if (review.changes.some(({ change }) => sameChange(change, fields))) { skipped.push({ input_index: index, reason: "DUPLICATE_PENDING" }); return; }
-        review.changes.push({ index, change: changeEntry(fields) });
+        review.changes.push({ index, change: changeEntry(fields), passages: fields.passages });
         return;
       }
 
@@ -166,6 +170,8 @@ export function stageProposals(
       delete fields.field; delete fields.after;
       fields.title = group.length === 1 ? first.fields.title : groupedTitle(workspace, workspace.get(String(first.fields.target))!, group);
       fields.why = [...new Set(group.map(({ fields }) => String(fields.why)))].join(" · ");
+      // One proposal for the group: it rests on every passage its links name (eligibility.md §9.1).
+      fields.passages = [...new Set(group.flatMap(({ fields }) => fields.passages as string[]))];
       const proposal = createProposal(workspace, fields, group.map(({ index }) => index), today, `/proposals/${first.index}`, pointers, created);
       for (const link of group) createdLinks.set(JSON.stringify([link.fields.target, link.fields.source, link.fields.field, link.fields.after]), proposal.id);
     }
@@ -186,10 +192,12 @@ export function stageProposals(
       const taken = new Set<string>();
       const links = review.links.map(({ fields }) => ({ target: fields.target, field: fields.field, value: fields.after }));
       const fresh = () => { const id = generateItemId(taken); taken.add(id); return id; };
+      // Each item keeps the passages it rests on (schema §11.5): a change's and a link's from its own input item, a note's from note_passages.
+      const notePassages = review.item.note_passages as Record<string, unknown>;
       const items = [
-        ...changes.map((_, index) => ({ item_id: fresh(), kind: "change", ref: index })),
-        ...notes.map((note) => ({ item_id: fresh(), kind: "note", ref: note })),
-        ...links.map((_, index) => ({ item_id: fresh(), kind: "link", ref: index })),
+        ...changes.map(({ passages }, index) => ({ item_id: fresh(), kind: "change", ref: index, passages })),
+        ...notes.map((note) => ({ item_id: fresh(), kind: "note", ref: note, passages: notePassages[note] })),
+        ...review.links.map(({ fields }, index) => ({ item_id: fresh(), kind: "link", ref: index, passages: fields.passages })),
       ];
       const fields: Record<string, unknown> = {
         kind: "review_notes",
@@ -342,6 +350,43 @@ function groupedTitle(workspace: Workspace, target: Note, group: Array<{ fields:
   return title.length > 120 ? `${title.slice(0, 119)}…` : title;
 }
 
+/**
+ * The passages of one input item (cli §5.6, eligibility.md §9.1): required on every kind but `review_notes` (its notes' in `note_passages`,
+ * one list per listed note) and `notion_change` (none). Throws INPUT_INVALID or UNKNOWN_ID for the whole batch.
+ */
+function checkPassages(workspace: Workspace, item: Record<string, unknown>, pointer: string): void {
+  // An unknown source is reported as such first, not as a passage that names it.
+  if (typeof item.source === "string" && ID.test(item.source) && workspace.get(item.source) === undefined) {
+    throw new BrainError("UNKNOWN_ID", `${pointer}/source: no note with id ${item.source}`, [{ pointer: `${pointer}/source`, message: "does not exist" }]);
+  }
+  const problems: InputProblem[] = [];
+  const unknown: Array<{ pointer: string; id: string }> = [];
+  const check = (value: unknown, at: string, text: string | null) => {
+    const found = passageProblems(workspace, value, at, text);
+    problems.push(...found.problems);
+    unknown.push(...found.unknown.map((id) => ({ pointer: at, id })));
+  };
+  if (item.kind === "notion_change") {
+    if (item.passages !== undefined) problems.push({ pointer: `${pointer}/passages`, message: "a notion_change changes Notion, not the brain: it takes no passages" });
+  } else if (item.kind === "review_notes") {
+    if (item.passages !== undefined) problems.push({ pointer: `${pointer}/passages`, message: "a review_notes names its notes' passages in note_passages" });
+    const notes = Array.isArray(item.notes) ? item.notes.map(String) : [];
+    const given = item.note_passages;
+    if (notes.length > 0 && !isRecord(given)) problems.push({ pointer: `${pointer}/note_passages`, message: "is required: one list of passages per listed note (eligibility.md §9.1)" });
+    else if (given !== undefined && !isRecord(given)) problems.push({ pointer: `${pointer}/note_passages`, message: "must be an object: note id → passages" });
+    else {
+      const map = (given ?? {}) as Record<string, unknown>;
+      for (const key of Object.keys(map)) if (!notes.includes(key)) problems.push({ pointer: `${pointer}/note_passages/${key}`, message: "is not a note of notes" });
+      for (const note of notes) check(map[note], `${pointer}/note_passages/${note}`, null);
+    }
+  } else {
+    const text = [item.content, item.answer, isRecord(item.note) ? item.note.body : undefined].find((value): value is string => typeof value === "string") ?? null;
+    check(item.passages, `${pointer}/passages`, text);
+  }
+  assertNoProblems(problems);
+  const first = unknown[0];
+  if (first !== undefined) throw new BrainError("UNKNOWN_ID", `${first.pointer}: no note with id ${first.id}`, [{ pointer: first.pointer, message: `${first.id} does not exist` }]);
+}
 
 function checkShape(item: unknown, pointer: string): InputProblem[] {
   if (!isRecord(item)) return [{ pointer, message: "must be an object" }];
@@ -361,6 +406,7 @@ function checkShape(item: unknown, pointer: string): InputProblem[] {
   } else if (item.notes !== undefined) {
     at("notes", "is only allowed on review_notes");
   }
+  if (item.kind !== "review_notes" && item.note_passages !== undefined) at("note_passages", "is only allowed on review_notes");
   if (item.kind === "answer" && (typeof item.answer !== "string" || item.answer.trim() === "")) at("answer", "must be a non-empty string");
   if (item.kind === "update_body" && (typeof item.content !== "string" || item.content.trim() === "")) at("content", "must be the whole new body");
   if (item.kind !== "answer") {
@@ -522,13 +568,51 @@ export function stageNewItem(
 
 /** Proposals with these statuses and target, sorted by `created` then id (spec/cli.md §5.6). */
 export function listProposals(workspace: Workspace, statuses: readonly string[], target: string | undefined): Array<Record<string, unknown>> {
+  let loaded: Context | undefined;
+  const context = () => (loaded ??= contextFor(workspace.notes, requireSuppressions(workspace.root)));
   return workspace.notes
     .filter((note) => note.type === "proposal")
     .filter((note) => statuses.length === 0 || statuses.includes(String(note.attributes.status)))
     .filter((note) => target === undefined || note.attributes.target === target
       || (note.attributes.kind === "review_notes" && ((Array.isArray(note.attributes.notes) && note.attributes.notes.includes(target)) || reviewLinks(note.attributes).some((link) => link.target === target) || listOf(note.attributes.changes).some((change) => isRecord(change) && change.target === target))))
-    .map((note): Record<string, unknown> => ({ ...note.attributes, path: note.path }))
+    // A held proposal's path is made from its title, so it goes with the title (cli §5.6).
+    .map((note): Record<string, unknown> => { const form = heldForm(note, workspace, context()); return form.held === true || (Array.isArray(form.held) && form.title === undefined) ? form : { ...form, path: note.path }; })
     .sort((a, b) => compareCodePoints(String(a.created), String(b.created)) || compareCodePoints(String(a.id), String(b.id)));
+}
+
+/** What a held proposal is listed without: its wording, values and the metadata written from them (cli §5.6, eligibility.md §4.3, §9.4). */
+const HELD_WITHOUT = ["title", "why", "before", "after", "from", "content", "answer", "answer_note", "note", "links", "supersedes", "merge_into", "fingerprint", "notion_published", "revisions"];
+
+/** A proposal as `proposal list` shows it: whole, or, when withheld by cli §5.7's rule with the suppression records as they are now, marked
+ *  `held` without its wording; on a review_notes, each held item without its wording, and the row's title and why when every item is held. */
+function heldForm(note: Note, workspace: Workspace, context: Context): Record<string, unknown> {
+  const a = note.attributes;
+  const found = proposalWithheld(note, workspace, context);
+  if (a.kind !== "review_notes") {
+    if (!found.whole) return { ...a };
+    return { ...Object.fromEntries(Object.entries(a).filter(([key]) => !HELD_WITHOUT.includes(key))), held: true };
+  }
+  const changes = listOf(a.changes);
+  const links = listOf(a.links);
+  const notes = listOf(a.notes).map(String);
+  const heldChange = (index: number) => found.changes.has(index);
+  const heldNote = (id: string) => found.notes.has(id);
+  const heldLink = (index: number) => found.links.has(index);
+  const held = [
+    ...changes.flatMap((_change, index) => heldChange(index) ? [{ change: index }] : []),
+    ...notes.flatMap((id) => heldNote(id) ? [{ note: id }] : []),
+    ...links.flatMap((_link, index) => heldLink(index) ? [{ link: index }] : []),
+  ];
+  if (held.length === 0) return { ...a };
+  const out: Record<string, unknown> = { ...a, held };
+  out.changes = changes.map((change, index) => heldChange(index) && isRecord(change) ? Object.fromEntries(Object.entries(change).filter(([key]) => ["kind", "target", "field"].includes(key))) : change);
+  if (Array.isArray(a.links)) out.links = links.map((link, index) => heldLink(index) && isRecord(link) ? { target: link.target, field: link.field } : link);
+  if (a.changes === undefined) delete out.changes;
+  const itemIds = new Set(listOf(a.items).filter(isRecord).filter((item) => (item.kind === "change" && heldChange(Number(item.ref))) || (item.kind === "note" && heldNote(String(item.ref))) || (item.kind === "link" && heldLink(Number(item.ref)))).map((item) => String(item.item_id)));
+  if (Array.isArray(a.revisions)) out.revisions = a.revisions.filter((revision) => !(isRecord(revision) && itemIds.has(String(revision.item_id))));
+  delete out.notion_published;
+  if (held.length === changes.length + notes.length + links.length) { delete out.title; delete out.why; delete out.fingerprint; }
+  return out;
 }
 
 /**

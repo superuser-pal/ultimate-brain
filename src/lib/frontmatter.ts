@@ -40,7 +40,7 @@ const SOURCE_SYSTEM = ["notion_text", "notion_parts", "notion_text_requested", "
 /** Proposal key order: the spec/schema.md §11 example, then its table. */
 const PROPOSAL_ORDER = [
   "id", "type", "title", "created", "updated", "kind", "target", "field", "links", "notes", "answer", "answer_note", "before", "after", "from",
-  "content", "note", "supersedes", "merge_into", "why", "source", "status", "decision", "closed_reason",
+  "content", "note", "supersedes", "merge_into", "why", "source", "passages", "status", "decision", "closed_reason",
   "notion", "notion_published",
 ];
 

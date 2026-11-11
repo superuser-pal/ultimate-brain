@@ -114,3 +114,27 @@ export async function approveNote(dir: string, path: string): Promise<void> {
   const file = join(dir, path);
   await writeFile(file, (await readFile(file, "utf8")).replace(/^lifecycle: draft$/m, "lifecycle: reviewed"));
 }
+
+/**
+ * A `proposal new` input as 0.13.0 takes it (cli §5.6, eligibility.md §9.1): every item without `passages` names its whole source, and every
+ * review_notes names each listed note's. For tests of other rules, whose inputs were written before the field; a test of the passages rules
+ * writes its passages itself.
+ */
+export function withPassages<T>(input: T): T {
+  if (input === null || typeof input !== "object" || !Array.isArray((input as { proposals?: unknown }).proposals)) return input;
+  const proposals = ((input as unknown as { proposals: unknown[] }).proposals).map((item) => {
+    if (item === null || typeof item !== "object") return item;
+    const record = item as Record<string, unknown>;
+    if (record.kind === "notion_change") return record;
+    if (record.kind === "review_notes") {
+      if (record.note_passages !== undefined || !Array.isArray(record.notes) || typeof record.source !== "string") return record;
+      return { ...record, note_passages: Object.fromEntries(record.notes.map((id) => [String(id), [record.source]])) };
+    }
+    if (record.passages !== undefined || typeof record.source !== "string") return record;
+    const cited = [record.content, record.answer, (record.note as { body?: unknown } | undefined)?.body]
+      .filter((text): text is string => typeof text === "string")
+      .flatMap((text) => [...text.matchAll(/\^\[(src-[0-9a-z]{8}#¶\d+:[0-9a-f]{8})\]/g)].map((match) => match[1]!));
+    return { ...record, passages: cited.length > 0 ? [...new Set(cited)] : [record.source] };
+  });
+  return { ...(input as object), proposals } as T;
+}
