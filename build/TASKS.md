@@ -191,8 +191,8 @@ An independent assessment of `v0.12.0` (2026-11-09 and 2026-11-10; records outsi
 | CC-182 | The common eligibility contract | `spec/eligibility.md` (new), pointer and release lines in other spec files | after CC-181 is merged | `done` (#287) |
 | CC-176 | Filtered full read, shared memory eligibility, historical mode, metadata, administrative access kept apart from answering | its branch's files (#283) | reconciles after CC-182 is merged | `review` on its branch (#283, head 54feae1); back to `in progress` for the added scope |
 | CC-177 | Text proposals on create and apply, mixed text withheld whole, fixes and edits, exact re-acceptance of changed wording, the Review page | its branch's files (#284) | reconciles after CC-182 is merged | `done` (#284, #293) |
-| CC-183 | Derived content: indirect dependencies and freshness | the derived-content checks, decided by CC-182 | after CC-176 is merged | `todo` |
-| CC-179 | Passages on every proposal, no-text kinds, why/value/metadata, legacy proposals and old bundled Review rows, 0055's corrections | the proposal passage field and checks | after CC-177 is merged | `todo` (row on CC-177's branch) |
+| CC-183 | Derived content: indirect dependencies and freshness | the derived-content checks, decided by CC-182 | after CC-176 is merged | `done` (#299, #300) |
+| CC-179 | Passages on every proposal, no-text kinds, why/value/metadata, legacy proposals and old bundled Review rows, 0055's corrections | the proposal passage field and checks | after CC-177 is merged | `done` (#298) |
 | CC-178 | brain-query reads through the CLI only (skills fork #12) | the fork's `brain/brain-query/` | after CC-176 is merged | `done` (#301) |
 | CC-180 | The other affected skill flows, then one fork release with CC-178, vendored | the fork's other affected skills; `.agents/skills/` through `scripts/vendor-skills.mjs` only | after CC-178, CC-179 and CC-183 are merged | `done` (#301) |
 | CC-184 | The coordinated upgrade | `brain upgrade` and the managed-block code it shares with `link` | after CC-182 and CC-176 are merged | `todo` |
