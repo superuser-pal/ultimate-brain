@@ -83,7 +83,7 @@ for (const c of chosen) {
   const result = adapter.run(c, { brain: brainDir, callerDir: callerDir(c.caller), cli });
   if (adapter.level === "retrieval") {
     const r = scoreRetrieval(c, result.candidates);
-    rows.push({ id: c.id, kind: c.kind, split: c.split, pass: r.pass, reasons: r.reasons, rank: r.rank, bytes: result.cost?.bytes, ms: result.cost?.ms });
+    rows.push({ id: c.id, kind: c.kind, split: c.split, pass: r.pass, reasons: r.reasons, rank: r.rank, sets: r.sets, bytes: result.cost?.bytes, ms: result.cost?.ms });
   } else {
     const reasons = scoreAnswer(c, result.answer);
     rows.push({ id: c.id, kind: c.kind, split: c.split, pass: reasons.length === 0, reasons });
@@ -131,7 +131,7 @@ if (args.includes("--json")) {
   }
   if (args.includes("--rows")) {
     console.log("\n## Rows\n");
-    for (const r of rows) console.log(`${r.id}\t${r.kind}\t${r.split}\t${r.pass ? "pass" : "FAIL"}\t${r.rank ?? "-"}\t${r.reasons.join("; ")}`);
+    for (const r of rows) console.log(`${r.id}\t${r.kind}\t${r.split}\t${r.pass ? "pass" : "FAIL"}\t${r.rank ?? "-"}\t${r.sets ? `sets ${r.sets.map((x) => x ?? "-").join(",")}` : ""}\t${r.reasons.join("; ")}`);
   }
 }
 if (args.includes("--strict") && failedGates > 0) process.exit(1);
