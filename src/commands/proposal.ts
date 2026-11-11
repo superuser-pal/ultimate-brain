@@ -16,7 +16,7 @@ const SKIP_TEXT: Record<string, string> = {
   NOTHING_TO_REVIEW: "nothing to review",
   ALREADY_ANSWERED: "the question already has an answer",
   NO_CHANGE: "no change",
-  SOURCE_EXCLUDED: "rests only on content you excluded from the brain",
+  SOURCE_EXCLUDED: "rests on content you excluded from the brain",
 };
 
 /** `brain proposal new --input <file|-> [--dry-run]` (spec/cli.md §5.6). */
