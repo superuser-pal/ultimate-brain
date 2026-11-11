@@ -123,7 +123,11 @@ export function rankCandidates(
     // Restricted evidence is neither scored nor quoted (capture-and-review §5.1); statements are blanked, not removed, so line numbers hold.
     .flatMap((note) => { const kept = eligible === undefined ? note : eligible(note); return kept === null ? [] : [kept]; });
   const flags = variantFlags(types);
-  if (flags !== null) return belowSuperseders(rankVariant(searched, tokens, context, flags));
+  if (flags !== null) {
+    // Snippets only for the first 50 (the most --limit returns), after the order is final; the rest are never shown.
+    const { list, snippetsOf } = rankVariant(searched, tokens, context, flags);
+    return belowSuperseders(list).map((candidate, rank) => (rank < 50 ? { ...candidate, snippets: snippetsOf(candidate.id) } : candidate));
+  }
   const scores = bm25Scores(searched.map(documentTerms), tokens, isCjkTerm);
   const ranked = searched
     .map((note, index) => ({ note, score: round4(scores[index]! + boost(note, context)) }))
@@ -312,33 +316,65 @@ function queryGroup(term: string, norm: (term: string) => string, flags: Flags):
 }
 
 /** BM25 (bm25.ts's constants and formula) where each query item is a group of terms: its frequency in a document is the
- *  sum over every document word that any member matches, its df the documents with any. A one-term group is bm25Scores. */
-function bm25Groups(docs: readonly (readonly string[])[], query: readonly (readonly string[])[], exact: (term: string) => boolean): number[] {
+ *  sum over every document word that any member matches, its df the documents with any. A one-term group is bm25Scores
+ *  (the same floating-point operations in the same order). Built once per search: `contribution(group)` is each document's
+ *  term weight for that group, so the full score and the attribute score (C3) share one index. */
+function bm25Index(docs: readonly (readonly string[])[], exact: (term: string) => boolean, norm: ((term: string) => string) | null = null) {
   const K1 = 1.5;
   const B = 0.75;
-  const tfs = docs.map((terms) => { const tf = new Map<string, number>(); for (const term of terms) tf.set(term, (tf.get(term) ?? 0) + 1); return tf; });
   const n = docs.length;
   const avg = docs.reduce((sum, terms) => sum + terms.length, 0) / (n || 1) || 1;
-  const vocab = new Set(tfs.flatMap((tf) => [...tf.keys()]));
-  const perGroup = new Map<string, { freq: number[]; idf: number }>();
-  for (const group of query) {
-    const key = group.join("\u0000");
-    if (perGroup.has(key)) continue;
-    const matching = new Set(group.flatMap((term) => (exact(term) ? (vocab.has(term) ? [term] : []) : [...vocab].filter((word) => word.startsWith(term)))));
-    const freq = tfs.map((tf) => [...matching].reduce((sum, word) => sum + (tf.get(word) ?? 0), 0));
-    const df = freq.filter((f) => f > 0).length;
-    perGroup.set(key, { freq, idf: Math.log(1 + (n - df + 0.5) / (df + 0.5)) });
-  }
-  return docs.map((terms, i) => {
-    let score = 0;
-    for (const group of query) {
-      const { freq, idf } = perGroup.get(group.join("\u0000"))!;
-      const f = freq[i]!;
-      if (f === 0) continue;
-      score += (idf * f * (K1 + 1)) / (f + K1 * (1 - B + (B * terms.length) / avg));
-    }
-    return score;
+  const postings = new Map<string, { doc: number; count: number }[]>();
+  docs.forEach((terms, doc) => {
+    const tf = new Map<string, number>();
+    for (const term of terms) tf.set(term, (tf.get(term) ?? 0) + 1);
+    for (const [term, count] of tf) { let list = postings.get(term); if (list === undefined) { list = []; postings.set(term, list); } list.push({ doc, count }); }
   });
+  // C2w: each distinct word is stemmed once and the postings of words with one stem are merged, which is the same as
+  // stemming every occurrence (a stem's frequency in a document is the sum of its words'); the documents' lengths don't change.
+  if (norm !== null) {
+    const merged = new Map<string, Map<number, number>>();
+    for (const [word, list] of postings) {
+      const key = norm(word);
+      let into = merged.get(key);
+      if (into === undefined) { into = new Map(); merged.set(key, into); }
+      for (const { doc, count } of list) into.set(doc, (into.get(doc) ?? 0) + count);
+    }
+    postings.clear();
+    for (const [key, into] of merged) postings.set(key, [...into].map(([doc, count]) => ({ doc, count })));
+  }
+  const vocab = [...postings.keys()];
+  const prefixed = new Map<string, string[]>();
+  const words = (term: string) => {
+    let found = prefixed.get(term);
+    if (found === undefined) { found = exact(term) ? (postings.has(term) ? [term] : []) : vocab.filter((word) => word.startsWith(term)); prefixed.set(term, found); }
+    return found;
+  };
+  const cache = new Map<string, Float64Array>();
+  return {
+    contribution(group: readonly string[]): Float64Array {
+      const key = group.join("\u0000");
+      const known = cache.get(key);
+      if (known !== undefined) return known;
+      const freq = new Float64Array(n);
+      for (const word of new Set(group.flatMap(words))) for (const { doc, count } of postings.get(word)!) freq[doc] += count;
+      let df = 0;
+      for (const f of freq) if (f > 0) df++;
+      const idf = Math.log(1 + (n - df + 0.5) / (df + 0.5));
+      const weights = new Float64Array(n);
+      for (let i = 0; i < n; i++) {
+        const f = freq[i]!;
+        if (f !== 0) weights[i] = (idf * f * (K1 + 1)) / (f + K1 * (1 - B + (B * docs[i]!.length) / avg));
+      }
+      cache.set(key, weights);
+      return weights;
+    },
+    /** Each document's score for the groups, summed in their order (a repeated group counts each time). */
+    scores(groups: readonly (readonly string[])[]): number[] {
+      const parts = groups.map((group) => this.contribution(group));
+      return docs.map((_, i) => { let score = 0; for (const part of parts) { const w = part[i]!; if (w !== 0) score += w; } return score; });
+    },
+  };
 }
 
 const SUBJECT_TYPES = new Set(["project", "area", "org", "person"]);
@@ -375,11 +411,16 @@ function relatedTo(ids: readonly string[], searched: readonly Note[]): Set<strin
   return related;
 }
 
-function rankVariant(searched: readonly Note[], tokens: readonly string[], context: QueryContext, flags: Flags): QueryCandidate[] {
-  const norm = (term: string) => (flags.c2w && !isCjkTerm(term) ? stem(term) : term);
-  const docs = searched.map((note) => variantDocumentTerms(note, flags).map(norm));
+function rankVariant(searched: readonly Note[], tokens: readonly string[], context: QueryContext, flags: Flags): { list: QueryCandidate[]; snippetsOf: (id: string) => QuerySnippet[] } {
+  // Stems are cached for this search only, so a later search (or the in-process timing) gains nothing from this one.
+  const stems = new Map<string, string>();
+  const norm = flags.c2w
+    ? (term: string) => { let found = stems.get(term); if (found === undefined) { found = isCjkTerm(term) ? term : stem(term); stems.set(term, found); } return found; }
+    : (term: string) => term;
+  const docs = searched.map((note) => variantDocumentTerms(note, flags));
   const groups = tokens.map((token) => queryGroup(token, norm, flags));
-  const scores = bm25Groups(docs, groups, isCjkTerm);
+  const index = bm25Index(docs, isCjkTerm, flags.c2w ? norm : null);
+  const scores = index.scores(groups);
 
   // C3: the subject the question names (an eligible title or alias, every word of it in the question; the most specific
   // names win), else the caller's project. Its notes that hold an attribute term rank on that term twice.
@@ -392,7 +433,7 @@ function rankVariant(searched: readonly Note[], tokens: readonly string[], conte
   if (resolved.length === 0 && context.project !== null && ids.has(context.project)) resolved.push(context.project);
   const subjectWords = new Set(specific.flatMap((subject) => subject.words));
   const attributes = groups.filter((group) => !subjectWords.has(group[0]!));
-  const attributeScores = (flags.c3 || flags.c3a) && attributes.length > 0 ? bm25Groups(docs, attributes, isCjkTerm) : searched.map(() => 0);
+  const attributeScores = (flags.c3 || flags.c3a) && attributes.length > 0 ? index.scores(attributes) : searched.map(() => 0);
   const related = flags.c3 && resolved.length > 0 ? relatedTo(resolved, searched) : new Set<string>();
 
   const matchTerms = groups.flat();
@@ -404,12 +445,14 @@ function rankVariant(searched: readonly Note[], tokens: readonly string[], conte
       return { note, index, score: round4(lexical + subject + boost(note, context)) };
     })
     .filter((entry) => entry.score !== 0)
-    .map(({ note, index, score }) => ({ candidate: variantCandidate(note, matchTerms, groups, score, norm, flags), updated: stringValue(note.attributes.updated) ?? "", attribute: attributeScores[index]! }))
+    .map(({ note, index, score }) => ({ candidate: candidateFor(note, [], score), updated: stringValue(note.attributes.updated) ?? "", attribute: attributeScores[index]! }))
     .sort((left, right) => right.candidate.score - left.candidate.score
       || compareCodePoints(right.updated, left.updated)
       || compareCodePoints(left.candidate.id, right.candidate.id));
   const list = ranked.map((entry) => entry.candidate);
-  if (!flags.c3a || resolved.length > 0) return list;
+  const byId = new Map(searched.map((note) => [note.id, note]));
+  const done = (order: QueryCandidate[]) => ({ list: order, snippetsOf: (id: string) => variantSnippets(byId.get(id)!, matchTerms, groups, norm, flags) });
+  if (!flags.c3a || resolved.length > 0) return done(list);
 
   // C3a: an unresolved subject (§3). The projects the question names in part (a distinctive word of their name: one at most
   // five subject names share), else the caller's area's projects; when two or more, the best note holding an attribute term
@@ -418,7 +461,7 @@ function rankVariant(searched: readonly Note[], tokens: readonly string[], conte
   const shared = (word: string) => subjects.filter((subject) => subject.words.includes(word)).length;
   let open = [...new Set(projects.filter((subject) => subject.words.some((word) => words.has(word) && shared(word) <= 5)).map((subject) => subject.id))];
   if (open.length === 0 && context.area !== null) open = searched.filter((note) => note.type === "project" && note.attributes.area === context.area && !titleWithheld(note)).map((note) => note.id);
-  if (open.length < 2) return list;
+  if (open.length < 2) return done(list);
   const holds = new Map(ranked.map((entry) => [entry.candidate.id, entry.attribute > 0]));
   const representatives: string[] = [];
   const firstIndex = (id: string) => { const about = relatedTo([id], searched); return list.findIndex((candidate) => about.has(candidate.id) && holds.get(candidate.id) === true); };
@@ -426,19 +469,14 @@ function rankVariant(searched: readonly Note[], tokens: readonly string[], conte
   for (const { at } of best) if (!representatives.includes(list[at]!.id)) representatives.push(list[at]!.id);
   const top = list.slice(0, 10);
   const missing = representatives.filter((id) => !top.some((candidate) => candidate.id === id));
-  if (missing.length === 0) return list;
+  if (missing.length === 0) return done(list);
   const keep = new Set(representatives);
   const head: QueryCandidate[] = [];
   let drop = missing.length;
   for (let i = top.length - 1; i >= 0; i--) { if (drop > 0 && !keep.has(top[i]!.id)) { drop--; continue; } head.unshift(top[i]!); }
   const promoted = list.filter((candidate) => missing.includes(candidate.id));
   const shown = new Set([...head, ...promoted].map((candidate) => candidate.id));
-  return [...head, ...promoted, ...list.filter((candidate) => !shown.has(candidate.id))];
-}
-
-function variantCandidate(note: Note, terms: readonly string[], groups: readonly (readonly string[])[], score: number, norm: (term: string) => string, flags: Flags): QueryCandidate {
-  const candidate = candidateFor(note, [], score);
-  return { ...candidate, snippets: variantSnippets(note, terms, groups, norm, flags) };
+  return done([...head, ...promoted, ...list.filter((candidate) => !shown.has(candidate.id))]);
 }
 
 /** Snippets: lines whose words (normalised) match a term. Without C4, the first three such lines, each its first 200 characters,
@@ -446,7 +484,8 @@ function variantCandidate(note: Note, terms: readonly string[], groups: readonly
  *  three at most in all, in line order, each the 200-character window around its first match. */
 function variantSnippets(note: Note, terms: readonly string[], groups: readonly (readonly string[])[], norm: (term: string) => string, flags: Flags): QuerySnippet[] {
   const lineTerms = (text: string) => queryTerms(text).map(norm);
-  const hit = (text: string) => { const words = lineTerms(text); return terms.some((term) => matches(words, term)); };
+  const hitWords = (words: readonly string[]) => terms.some((term) => matches(words, term));
+  const hit = (text: string) => hitWords(lineTerms(text));
   const offset = note.raw.slice(0, note.raw.length - note.body.length).split(/\r?\n/).length;
   const lines = note.body.split(/\r?\n/);
   if (!flags.c4) {
@@ -471,10 +510,11 @@ function variantSnippets(note: Note, terms: readonly string[], groups: readonly 
       found.push({ line: at + 1, text: text.slice(0, 200) });
     }
   }
-  const scored = lines.map((text, index) => {
+  const scored = lines.flatMap((text, index) => {
     const words = lineTerms(text);
-    return { index, text, items: groups.filter((group) => group.some((term) => matches(words, term))).length };
-  }).filter((line) => line.items > 0).sort((a, b) => b.items - a.items || a.index - b.index);
+    if (!hitWords(words)) return [];
+    return [{ index, text, items: groups.filter((group) => group.some((term) => matches(words, term))).length }];
+  }).sort((a, b) => b.items - a.items || a.index - b.index);
   // Facts first, two at most while body lines match; the rest are the best body lines; three in all.
   const factCount = Math.min(found.length, scored.length > 0 ? 2 : 3);
   const body = scored.slice(0, 3 - factCount).sort((a, b) => a.index - b.index);
