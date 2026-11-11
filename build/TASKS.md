@@ -413,7 +413,7 @@ Moved to 0.13.0 by the user, 2026-11-11: merged early (#296), so it ships in 0.1
 **Choices within the handoff:** (1) the summary names each item's outcome by its letter and title but shows no wording or value (the handoff's illustrative "Applied: 18 March" is not followed): it answers which items still need the user with nothing to leak; agreed with the coordinator on 2026-11-11. (2) A pending held item reads "Held: … Reject or Defer it.", not "Waiting for your decision.", since it cannot be accepted.
 Moved to 0.13.0 by the user, 2026-11-11: merged early (#312), so it ships in 0.13.0; the first sync after the upgrade rewrites each live Review page's summary once (its items untouched).
 
-### CC-220 · Record that CC-214 ships in 0.13.0: its PR merged before 0.13.0 was released · `review`
+### CC-220 · Record that CC-214 ships in 0.13.0: its PR merged before 0.13.0 was released · `done` (#319)
 **Release:** 0.13.0
 **Changelog:** development only: CC-214's row moves to 0.13.0, the release its merged code ships in.
 **Output:** CC-214's row moved verbatim from the 0.14.0 section to the 0.13.0 section, with **Release:** 0.13.0 and one "Moved to 0.13.0 by the user" line (the user's choice of 2026-11-11, as for CC-190); the 0.14.0 plan table's CC-214 entry, if any, notes the move. Only build/TASKS.md changes.
