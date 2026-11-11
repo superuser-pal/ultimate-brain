@@ -11,7 +11,7 @@ import { checkNotionChange, defaultTitle, duplicateOf, resolveSetField } from ".
 import { newNotePath } from "./paths.ts";
 import { fingerprintProblem } from "./reflect.ts";
 import { loadSchemas } from "./schemas.ts";
-import { contextFor, requireSuppressions, restsOnlyOnExcluded } from "./suppressions.ts";
+import { contextFor, requireSuppressions, restsOnExcluded } from "./suppressions.ts";
 import { formatDate } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 
@@ -88,9 +88,9 @@ export function stageProposals(
     (list as Array<Record<string, unknown>>).forEach((item, index) => {
       const pointer = `/proposals/${index}`;
       if (item.kind === "review_notes") return;
-      // A change that rests only on evidence the user excluded is not written (capture-and-review §5.1): it could never be applied.
+      // A change that rests on evidence the user excluded, even beside a live passage, is not written (eligibility.md §4.2): it could never be applied.
       const text = [item.content, item.answer, isRecord(item.note) ? item.note.body : undefined].find((value): value is string => typeof value === "string") ?? null;
-      if (restsOnlyOnExcluded(item.source, text, excluded)) { skipped.push({ input_index: index, reason: "SOURCE_EXCLUDED" }); return; }
+      if (restsOnExcluded(item.source, text, excluded)) { skipped.push({ input_index: index, reason: "SOURCE_EXCLUDED" }); return; }
       const fields = resolveFields(workspace, item, pointer, today);
       // A reflection answer: checked against its item, deduped on its fingerprint, never folded into a review_notes (§5.6).
       if (typeof item.fingerprint === "string") {
