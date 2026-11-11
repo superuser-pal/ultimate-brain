@@ -5,8 +5,7 @@ import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { scanNotes, type Note } from "../lib/notes.ts";
 import { readCaller, shownMemories } from "../lib/recall.ts";
-import { viewLinks } from "../lib/report-body.ts";
-import { answerNote, contextFor, eligibleView, requireSuppressions } from "../lib/suppressions.ts";
+import { answerNote, contextFor, requireSuppressions, viewDependencies, withheldView } from "../lib/suppressions.ts";
 import { queryContext, queryTerms, queryTypes, rankCandidates, readIds, readNotes } from "../lib/query.ts";
 
 /** `brain query --candidates <question>` and `brain query --read <id>[,<id>…]` (spec/cli.md §5.13, §5.13.1). Read-only. */
@@ -37,21 +36,23 @@ export const queryCommand: Command = {
     const [context, scanned] = await Promise.all([queryContext(repo), scanNotes(brain!.root)]);
     const loaded = requireSuppressions(brain!.root);
     const eligibility = contextFor(scanned.notes, loaded);
-    const byId = new Map(scanned.notes.map((note) => [note.id, note]));
-    // A view has no passage references: it is returned whole or not at all (§5.13, "Views"). Any other note in its answer form (§5.13,
-    // "The awaiting-cleanup form").
-    const eligibleOf = (note: Note): Note | null => note.type === "view" ? eligibleView(note, viewLinks(scanned.notes, note, (path) => existsSync(join(brain!.root, path))), byId, eligibility) : answerNote(note, eligibility);
     const warnings = scanned.problems.map((problem) => ({ code: problem.code, message: `${problem.path}: ${problem.message}`, path: problem.path }));
     // A memory is returned only as `brain recall` would return it to this folder (memory.md §2): approval and reach, besides the evidence rule.
     const memories = async (superseded: boolean): Promise<Map<string, Note>> => shownMemories(scanned.notes, loaded, (await readCaller(repo)).caller, superseded);
+    // A view has no passage references: it is returned whole or withheld whole, judged with what it rests on to any depth, a memory as this
+    // command would return it to the caller (§5.13.1, "Views"; eligibility.md §8). Any other note in its answer form (§5.13).
+    const current = await memories(false);
+    const dependencies = viewDependencies(scanned.notes, (path) => existsSync(join(brain!.root, path)), (note) => current.has(note.id));
+    const viewWithheld = (note: Note) => withheldView(note, dependencies, eligibility);
+    const eligibleOf = (note: Note): Note | null => note.type === "view" ? (viewWithheld(note) === null ? note : null) : answerNote(note, eligibility);
 
     if (read !== undefined) {
       // A superseded memory only in the explicit historical read (eligibility.md §5, 0077 §2).
-      const notes = readNotes(scanned.notes, ids, eligibleOf, await memories(historical));
+      const notes = readNotes(scanned.notes, ids, eligibleOf, historical ? await memories(true) : current, viewWithheld);
       const withheld = notes.filter((note) => note.status === "withheld").length;
       return { data: { context, notes }, warnings, human: `${notes.length - withheld} read, ${withheld} withheld.\n` };
     }
-    const shown = types.has("memory") ? await memories(false) : new Map<string, Note>();
+    const shown = types.has("memory") ? current : new Map<string, Note>();
     const candidates = rankCandidates(scanned.notes, queryTerms(question!), types, context,
       (note) => note.type === "memory" ? shown.get(note.id) ?? null : eligibleOf(note)).slice(0, limit);
 
