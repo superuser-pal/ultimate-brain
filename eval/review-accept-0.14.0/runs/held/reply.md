@@ -1,16 +1,16 @@
 ```
-Done: 0 applied · 1 Review page updated
-Needs you: 2 rows still pending, both edited after you submitted them, so nothing was applied
-Next: decide again on both pages and click Submit decisions, then say "apply my reviews"
+Done: nothing applied · 0 written to Notion
+Needs you: 2 rows still pending. Both were edited after you clicked Submit, so neither submission counts
+Next: open each row, check the sections below, and click Submit decisions again; then say "apply my reviews"
 ```
 
-**Check**
+**From Acme sync** (submitted 10 Nov 09:30, edited 09:52)
+- **b · Row-level security:** when I re-read the page just before applying, the wording had changed from "Carlos will use RLS for the client portal." to "Carlos will use RLS for the client portal and the admin app." Because the page changed after your submission, the whole row is held, including c (the new note Launch in March), which you had accepted unchanged.
+- **a · Launch date on Acme website:** your Accept of 2027-03 could not be read in any case. The project's launch date is now 2027-05, not the 2027-02 the section shows as Current. Decide again whether 2027-03 should replace 2027-05.
+- **d · link to Acme website:** still on Pending; you have not decided it.
 
-- **From Acme sync:** when I re-read the page just before applying, it had been edited (09:52) after your submission (09:30), so none of it was applied.
-  - **b · Row-level security:** the wording now reads "Carlos will use RLS for the client portal and the admin app." You had submitted "Carlos will use RLS for the client portal." Submit again if the new wording is what you want.
-  - **a · Launch date on Acme website:** the note changed since this row was written. The launch date is now 2027-05, not 2027-02, and the proposal is still 2027-03. I updated Current on the page and set its Decision back to Pending.
-  - **c · Launch in March** (new note) is unchanged, but it waits with the rest of the row.
-  - **d · link from Row-level security to Acme website** has no decision yet.
-- **From Acme kickoff:** the page was edited at 09:45, after your 09:30 submission, so nothing on it was read. Submit it again.
+**From Acme kickoff** (submitted 09:30, edited 09:45)
+- The page was edited 15 minutes after the submission, so the row is held whole. Your Accept on a (adds "The kickoff agreed that every table gets a policy." to Row-level security) was not applied.
+- b (the new note Every table gets a policy) is still on Pending.
 
-I left Decided ticked on both rows; submitting again replaces it. Lint shows no errors from this run, but it does report that the installed skill files differ from the released ones (`brain upgrade` fixes that). The commit is not pushed because there is no remote.
+I did not update the Current value in section a on the Notion page, because the row holds a submission that has not been read. Separately, eight other pages have changes waiting to publish that are unrelated to these reviews; a sync will send them.
