@@ -56,6 +56,8 @@ export function scoreAnswer(c, answer) {
   const reasons = [];
   for (const id of c.forbidden_evidence ?? []) if (cited.has(id)) reasons.push(`cited forbidden ${id}`);
   if (c.kind === "fact" || c.kind === "paraphrase") {
+    // memory-0.12's answerable rule (spec/retrieval.md §6.1): a complete, cited answer still fails when it also states what it must not.
+    for (const f of c.forbidden_facts ?? []) if (matches(f, text)) reasons.push(`says what it must not: ${f.says}`);
     if (abstained) reasons.push("abstained on an answerable case");
     for (const f of c.facts) if (!matches(f, text)) reasons.push(`missing fact: ${f.says}`);
     if (c.as_of && !matches(c.as_of, text)) reasons.push(`missing time qualification: ${c.as_of.says}`);
