@@ -15,7 +15,9 @@ export default {
       env: { ...process.env, BRAIN_DIR: env.brain }, encoding: "utf8",
     });
     const ms = Number(process.hrtime.bigint() - started) / 1e6;
-    const candidates = JSON.parse(stdout).data.candidates.map((c) => c.id);
-    return { candidates, output: stdout, cost: { bytes: Buffer.byteLength(stdout, "utf8"), ms } };
+    const data = JSON.parse(stdout).data;
+    // The ids `unresolved` names (spec/cli.md §5.13), when the CLI has the key (0.13.0 on).
+    const unresolved = (data.unresolved?.subjects ?? []).map((s) => s.id);
+    return { candidates: data.candidates.map((c) => c.id), unresolved, output: stdout, cost: { bytes: Buffer.byteLength(stdout, "utf8"), ms } };
   },
 };
