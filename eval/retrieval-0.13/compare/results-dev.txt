@@ -1,0 +1,105 @@
+# CC-204: the dev-only comparison (spec/retrieval.md §4, §5.4). Measured 2026-11-11 on Apple M4 Pro, 12 cores, 24 GB, Darwin 25.6.0, node v26.5.0, shared with other agents' work (results are deterministic ranks; no latency here).
+# Three runs of compare/run.mjs <retrieval-out> <memory-out> --variants …, each against today's search at the commit it names.
+# The vocabulary map of the second and third runs is the one committed in 661b863. No held-back case was run.
+# "(uncommitted changes)" in runs 1 and 2: run 1 ran the harness as committed in 7c5d8ac with an empty map, before the commit; the
+# harness and the map were committed (7c5d8ac, 661b863) while run 2 ran, with the content it used. Run 3 ran on a clean 13a9447
+# (origin/main merged: no search-code change).
+
+## Run 1: each change alone (C1, C2w, C3, C3d, C3a, C4; C2v needs the map, in run 2)
+
+commit: da8e213dcd02feb2dd29a92067ef1c6c0c3c85e5 (uncommitted changes); split: dev (56 cases); C0 = the product's bytes on all 130 questions
+
+| variant | fact | paraphrase | clarify (2 subjects seen) | unknown | prose-only facts | facts shown in snippets | originals r1/r5/r10, MRR | 36 kept | memory-0.12 retrieval (lost) | tokens median, p95 (ratio) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| today | 13/14 | 10/14 | 12/14 | 14/14 | 1/12 | 19/28 | 28/32/36, 0.61 | 36/36 | 93/108 | 1146, 1306 |
+| C1 | 13/14 | 10/14 | 12/14 | 14/14 | 1/12 | 19/28 | 28/32/36, 0.61 | 36/36 | 93/108 | 1142, 1299 (0.997, 0.995) |
+| C2w | 14/14 | 11/14 | 12/14 | 14/14 | 2/12 | 20/28 | 28/32/36, 0.61 | 36/36 | 93/108 | 1148, 1318 (1.002, 1.009) |
+| C3 | 14/14 | 11/14 | 12/14 | 14/14 | 2/12 | 21/28 | 32/32/36, 0.65 | 36/36 | 93/108 | 1146, 1326 (1.000, 1.015) |
+| C3d | 13/14 | 10/14 | 12/14 | 14/14 | 1/12 | 19/28 | 28/32/36, 0.61 | 36/36 | 93/108 | 1146, 1306 (1.000, 1.000) |
+| C3a | 13/14 | 10/14 | 12/14 | 14/14 | 1/12 | 19/28 | 28/32/36, 0.61 | 36/36 | 93/108 | 1146, 1318 (1.000, 1.009) |
+| C4 | 13/14 | 10/14 | 12/14 | 14/14 | 1/12 | 23/28 | 28/32/36, 0.61 | 36/36 | 93/108 | 1148.5, 1320 (1.002, 1.011) |
+
+Originals by kind (r1/r5/r10, MRR):
+
+| variant | decision-by-topic | paraphrase | why | fact-in-body | person-role |
+|---|---|---|---|---|---|
+| today | 7/10/10, 0.85 | 1/2/6, 0.18 | 10/10/10, 1.00 | 0/0/0, 0.00 | 10/10/10, 1.00 |
+| C1 | 7/10/10, 0.85 | 1/2/6, 0.18 | 10/10/10, 1.00 | 0/0/0, 0.00 | 10/10/10, 1.00 |
+| C2w | 7/10/10, 0.85 | 1/2/6, 0.18 | 10/10/10, 1.00 | 0/0/0, 0.00 | 10/10/10, 1.00 |
+| C3 | 10/10/10, 1.00 | 2/2/6, 0.25 | 10/10/10, 1.00 | 0/0/0, 0.00 | 10/10/10, 1.00 |
+| C3d | 7/10/10, 0.85 | 1/2/6, 0.18 | 10/10/10, 1.00 | 0/0/0, 0.00 | 10/10/10, 1.00 |
+| C3a | 7/10/10, 0.85 | 1/2/6, 0.18 | 10/10/10, 1.00 | 0/0/0, 0.00 | 10/10/10, 1.00 |
+| C4 | 7/10/10, 0.85 | 1/2/6, 0.18 | 10/10/10, 1.00 | 0/0/0, 0.00 | 10/10/10, 1.00 |
+
+Cases whose result differs from today's (rank: today → variant; - = not in the first ten):
+
+- C1: rq-p11 pass@8 → pass@7
+- C2w: rq-f10 FAIL@- → pass@1; rq-p08 pass@4 → pass@7; rq-p09 pass@6 → pass@1; rq-p10 pass@9 → pass@1; rq-p20 FAIL@- → pass@9
+- C3: rq-f04 pass@2 → pass@1; rq-f10 FAIL@- → pass@8; rq-p03 pass@5 → pass@1; rq-p04 pass@7 → pass@10; rq-p05 pass@6 → pass@4; rq-p13 FAIL@- → pass@2
+- C3d: none
+- C3a: none
+- C4: none
+
+## Run 2: the map alone, then combinations
+
+commit: 661b8637e8d31e9f214b9b534ec67e1612aa9b1a (uncommitted changes); split: dev (56 cases); C0 = the product's bytes on all 130 questions
+
+| variant | fact | paraphrase | clarify (2 subjects seen) | unknown | prose-only facts | facts shown in snippets | originals r1/r5/r10, MRR | 36 kept | memory-0.12 retrieval (lost) | tokens median, p95 (ratio) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| today | 13/14 | 10/14 | 12/14 | 14/14 | 1/12 | 19/28 | 28/32/36, 0.61 | 36/36 | 93/108 | 1146, 1306 |
+| C2v | 14/14 | 11/14 | 12/14 | 14/14 | 12/12 | 21/28 | 33/42/46, 0.76 | 36/36 | 93/108 | 1147, 1331 (1.001, 1.019) |
+| C2 | 14/14 | 13/14 | 13/14 | 14/14 | 12/12 | 21/28 | 33/42/46, 0.76 | 36/36 | 93/108 | 1150.5, 1343 (1.004, 1.028) |
+| C2,C3 | 14/14 | 14/14 | 13/14 | 14/14 | 12/12 | 22/28 | 42/42/46, 0.85 | 36/36 | 93/108 | 1148.5, 1345 (1.002, 1.030) |
+| C1,C2,C3 | 14/14 | 14/14 | 13/14 | 14/14 | 12/12 | 22/28 | 42/42/46, 0.85 | 36/36 | 93/108 | 1147.5, 1341 (1.001, 1.027) |
+| C1,C2,C3,C3a | 14/14 | 14/14 | 13/14 | 14/14 | 12/12 | 22/28 | 42/42/46, 0.85 | 36/36 | 93/108 | 1149.5, 1341 (1.003, 1.027) |
+| C1,C2,C3,C3a,C3d | 14/14 | 14/14 | 13/14 | 14/14 | 12/12 | 22/28 | 42/42/46, 0.85 | 36/36 | 93/108 | 1149.5, 1341 (1.003, 1.027) |
+| C1,C2,C3,C3a,C4 | 14/14 | 14/14 | 13/14 | 14/14 | 12/12 | 26/28 | 42/42/46, 0.85 | 36/36 | 93/108 | 1153, 1355 (1.006, 1.038) |
+
+Originals by kind (r1/r5/r10, MRR):
+
+| variant | decision-by-topic | paraphrase | why | fact-in-body | person-role |
+|---|---|---|---|---|---|
+| today | 7/10/10, 0.85 | 1/2/6, 0.18 | 10/10/10, 1.00 | 0/0/0, 0.00 | 10/10/10, 1.00 |
+| C2v | 7/10/10, 0.85 | 1/2/6, 0.18 | 10/10/10, 1.00 | 6/10/10, 0.80 | 9/10/10, 0.95 |
+| C2 | 7/10/10, 0.85 | 1/2/6, 0.18 | 10/10/10, 1.00 | 6/10/10, 0.80 | 9/10/10, 0.95 |
+| C2,C3 | 10/10/10, 1.00 | 2/2/6, 0.25 | 10/10/10, 1.00 | 10/10/10, 1.00 | 10/10/10, 1.00 |
+| C1,C2,C3 | 10/10/10, 1.00 | 2/2/6, 0.25 | 10/10/10, 1.00 | 10/10/10, 1.00 | 10/10/10, 1.00 |
+| C1,C2,C3,C3a | 10/10/10, 1.00 | 2/2/6, 0.25 | 10/10/10, 1.00 | 10/10/10, 1.00 | 10/10/10, 1.00 |
+| C1,C2,C3,C3a,C3d | 10/10/10, 1.00 | 2/2/6, 0.25 | 10/10/10, 1.00 | 10/10/10, 1.00 | 10/10/10, 1.00 |
+| C1,C2,C3,C3a,C4 | 10/10/10, 1.00 | 2/2/6, 0.25 | 10/10/10, 1.00 | 10/10/10, 1.00 | 10/10/10, 1.00 |
+
+Cases whose result differs from today's (rank: today → variant; - = not in the first ten):
+
+- C2v: rq-f10 FAIL@- → pass@1; rq-p01 pass@6 → pass@1; rq-p02 FAIL@- → pass@9; rq-p05 pass@6 → pass@1; rq-p08 pass@4 → pass@1; rq-p10 pass@9 → pass@1; rq-c02 pass@6 → pass@4
+- C2: rq-f10 FAIL@- → pass@1; rq-p01 pass@6 → pass@1; rq-p02 FAIL@- → pass@9; rq-p05 pass@6 → pass@1; rq-p08 pass@4 → pass@1; rq-p09 pass@6 → pass@1; rq-p10 pass@9 → pass@1; rq-p11 pass@8 → pass@1; rq-p15 pass@9 → pass@1; rq-p18 FAIL@- → pass@1; rq-p20 FAIL@- → pass@9; rq-c02 pass@6 → pass@4; rq-c16 FAIL@1 → pass@2
+- C2,C3: rq-f04 pass@2 → pass@1; rq-f10 FAIL@- → pass@1; rq-p01 pass@6 → pass@1; rq-p02 FAIL@- → pass@1; rq-p03 pass@5 → pass@1; rq-p04 pass@7 → pass@10; rq-p05 pass@6 → pass@1; rq-p08 pass@4 → pass@1; rq-p09 pass@6 → pass@1; rq-p10 pass@9 → pass@1; rq-p11 pass@8 → pass@1; rq-p13 FAIL@- → pass@2; rq-p15 pass@9 → pass@1; rq-p18 FAIL@- → pass@1; rq-p20 FAIL@- → pass@9; rq-c02 pass@6 → pass@4; rq-c16 FAIL@1 → pass@2
+- C1,C2,C3: rq-f04 pass@2 → pass@1; rq-f10 FAIL@- → pass@1; rq-p01 pass@6 → pass@1; rq-p02 FAIL@- → pass@1; rq-p03 pass@5 → pass@1; rq-p04 pass@7 → pass@10; rq-p05 pass@6 → pass@1; rq-p08 pass@4 → pass@1; rq-p09 pass@6 → pass@1; rq-p10 pass@9 → pass@1; rq-p11 pass@8 → pass@1; rq-p13 FAIL@- → pass@2; rq-p15 pass@9 → pass@1; rq-p18 FAIL@- → pass@1; rq-p20 FAIL@- → pass@9; rq-c16 FAIL@1 → pass@2
+- C1,C2,C3,C3a: rq-f04 pass@2 → pass@1; rq-f10 FAIL@- → pass@1; rq-p01 pass@6 → pass@1; rq-p02 FAIL@- → pass@1; rq-p03 pass@5 → pass@1; rq-p04 pass@7 → pass@10; rq-p05 pass@6 → pass@1; rq-p08 pass@4 → pass@1; rq-p09 pass@6 → pass@1; rq-p10 pass@9 → pass@1; rq-p11 pass@8 → pass@1; rq-p13 FAIL@- → pass@2; rq-p15 pass@9 → pass@1; rq-p18 FAIL@- → pass@1; rq-p20 FAIL@- → pass@9; rq-c16 FAIL@1 → pass@2
+- C1,C2,C3,C3a,C3d: rq-f04 pass@2 → pass@1; rq-f10 FAIL@- → pass@1; rq-p01 pass@6 → pass@1; rq-p02 FAIL@- → pass@1; rq-p03 pass@5 → pass@1; rq-p04 pass@7 → pass@10; rq-p05 pass@6 → pass@1; rq-p08 pass@4 → pass@1; rq-p09 pass@6 → pass@1; rq-p10 pass@9 → pass@1; rq-p11 pass@8 → pass@1; rq-p13 FAIL@- → pass@2; rq-p15 pass@9 → pass@1; rq-p18 FAIL@- → pass@1; rq-p20 FAIL@- → pass@9; rq-c16 FAIL@1 → pass@2
+- C1,C2,C3,C3a,C4: rq-f04 pass@2 → pass@1; rq-f10 FAIL@- → pass@1; rq-p01 pass@6 → pass@1; rq-p02 FAIL@- → pass@1; rq-p03 pass@5 → pass@1; rq-p04 pass@7 → pass@10; rq-p05 pass@6 → pass@1; rq-p08 pass@4 → pass@1; rq-p09 pass@6 → pass@1; rq-p10 pass@9 → pass@1; rq-p11 pass@8 → pass@1; rq-p13 FAIL@- → pass@2; rq-p15 pass@9 → pass@1; rq-p18 FAIL@- → pass@1; rq-p20 FAIL@- → pass@9; rq-c16 FAIL@1 → pass@2
+
+## Run 3: the smallest set (each half of C2 with C3; C2, C3 and C4)
+
+commit: 13a9447feae80f8280bc73b827aba114bef07f85; split: dev (56 cases); C0 = the product's bytes on all 130 questions
+
+| variant | fact | paraphrase | clarify (2 subjects seen) | unknown | prose-only facts | facts shown in snippets | originals r1/r5/r10, MRR | 36 kept | memory-0.12 retrieval (lost) | tokens median, p95 (ratio) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| today | 13/14 | 10/14 | 12/14 | 14/14 | 1/12 | 19/28 | 28/32/36, 0.61 | 36/36 | 93/108 | 1146, 1306 |
+| C2v,C3 | 14/14 | 12/14 | 12/14 | 14/14 | 12/12 | 22/28 | 42/42/46, 0.85 | 36/36 | 93/108 | 1147, 1344 (1.001, 1.029) |
+| C2w,C3 | 14/14 | 12/14 | 12/14 | 14/14 | 2/12 | 21/28 | 32/32/36, 0.65 | 36/36 | 93/108 | 1146.5, 1331 (1.000, 1.019) |
+| C2,C3,C4 | 14/14 | 14/14 | 13/14 | 14/14 | 12/12 | 26/28 | 42/42/46, 0.85 | 36/36 | 93/108 | 1153, 1368 (1.006, 1.047) |
+
+Originals by kind (r1/r5/r10, MRR):
+
+| variant | decision-by-topic | paraphrase | why | fact-in-body | person-role |
+|---|---|---|---|---|---|
+| today | 7/10/10, 0.85 | 1/2/6, 0.18 | 10/10/10, 1.00 | 0/0/0, 0.00 | 10/10/10, 1.00 |
+| C2v,C3 | 10/10/10, 1.00 | 2/2/6, 0.25 | 10/10/10, 1.00 | 10/10/10, 1.00 | 10/10/10, 1.00 |
+| C2w,C3 | 10/10/10, 1.00 | 2/2/6, 0.25 | 10/10/10, 1.00 | 0/0/0, 0.00 | 10/10/10, 1.00 |
+| C2,C3,C4 | 10/10/10, 1.00 | 2/2/6, 0.25 | 10/10/10, 1.00 | 10/10/10, 1.00 | 10/10/10, 1.00 |
+
+Cases whose result differs from today's (rank: today → variant; - = not in the first ten):
+
+- C2v,C3: rq-f04 pass@2 → pass@1; rq-f10 FAIL@- → pass@1; rq-p01 pass@6 → pass@1; rq-p02 FAIL@- → pass@1; rq-p03 pass@5 → pass@1; rq-p04 pass@7 → pass@10; rq-p05 pass@6 → pass@1; rq-p08 pass@4 → pass@1; rq-p10 pass@9 → pass@1; rq-p13 FAIL@- → pass@2; rq-c02 pass@6 → pass@4
+- C2w,C3: rq-f04 pass@2 → pass@1; rq-f10 FAIL@- → pass@1; rq-p03 pass@5 → pass@1; rq-p04 pass@7 → pass@10; rq-p05 pass@6 → pass@4; rq-p08 pass@4 → pass@7; rq-p09 pass@6 → pass@1; rq-p10 pass@9 → pass@1; rq-p13 FAIL@- → pass@2; rq-p20 FAIL@- → pass@9
+- C2,C3,C4: rq-f04 pass@2 → pass@1; rq-f10 FAIL@- → pass@1; rq-p01 pass@6 → pass@1; rq-p02 FAIL@- → pass@1; rq-p03 pass@5 → pass@1; rq-p04 pass@7 → pass@10; rq-p05 pass@6 → pass@1; rq-p08 pass@4 → pass@1; rq-p09 pass@6 → pass@1; rq-p10 pass@9 → pass@1; rq-p11 pass@8 → pass@1; rq-p13 FAIL@- → pass@2; rq-p15 pass@9 → pass@1; rq-p18 FAIL@- → pass@1; rq-p20 FAIL@- → pass@9; rq-c02 pass@6 → pass@4; rq-c16 FAIL@1 → pass@2
