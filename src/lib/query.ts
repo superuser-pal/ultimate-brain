@@ -443,23 +443,34 @@ export function searchCandidates(
     const confidence = note.type === "memory" ? note.attributes.confidence : undefined;
     return typeof confidence === "string" && CONFIDENCE.has(confidence) ? { ...shown, confidence } : shown;
   });
-  return { candidates, unresolved: resolved.length > 0 ? null : unresolvedSubjects(searched, byId, names, words, groups, sums, ordered, context) };
+  // A question that names only orgs gets its projects as a hint too (the user's choice of 2026-11-11, option A); a named project, an
+  // area, a person or the caller's project resolves it.
+  const orgsOnly = specific.length > 0 && specific.every((name) => name.type === "org");
+  const unresolved = resolved.length === 0 || orgsOnly ? unresolvedSubjects(searched, byId, names, words, groups, sums, ordered, context, orgsOnly ? specific : []) : null;
+  return { candidates, unresolved };
 }
 
 /**
- * spec/retrieval.md §3 and cli.md §5.13's `unresolved`: with no subject resolved, the eligible projects the question could mean,
- * when two or more of them hold an attribute term. They are the projects one of whose names holds every name word the question
- * has (a word of some subject's name), or, when the question has none and the context names an area and no project, the area's
- * projects. Up to five, by the rank of their best note.
+ * spec/retrieval.md §3 and cli.md §5.13's `unresolved`: the eligible projects the question could mean, when two or more of them
+ * hold the attribute. With no subject resolved, they are the projects one of whose names holds every name word the question has
+ * (a word of some subject's name), or, when the question has none and the context names an area and no project, the area's
+ * projects; when the question names only orgs (`orgs`), the projects that link one of them. Up to five, by their best note's rank.
  */
 function unresolvedSubjects(searched: readonly Note[], byId: ReadonlyMap<string, Note>, names: readonly SubjectName[], words: ReadonlySet<string>,
-  groups: readonly (readonly string[])[], sums: Bm25Sums, ranked: readonly QueryCandidate[], context: QueryContext): Unresolved | null {
+  groups: readonly (readonly string[])[], sums: Bm25Sums, ranked: readonly QueryCandidate[], context: QueryContext, orgs: readonly SubjectName[]): Unresolved | null {
   const nameWords = new Set(names.flatMap((name) => name.words));
-  const asked = [...words].filter((word) => nameWords.has(word));
+  let asked: string[];
   let open: string[];
-  if (asked.length > 0) open = [...new Set(names.filter((name) => name.type === "project" && asked.every((word) => name.words.includes(word))).map((name) => name.id))];
-  else if (context.project === null && context.area !== null) open = searched.filter((note) => note.type === "project" && note.attributes.area === context.area).map((note) => note.id);
-  else return null;
+  if (orgs.length > 0) {
+    const ids = new Set(orgs.map((name) => name.id));
+    asked = [...new Set(orgs.flatMap((name) => name.words))];
+    open = searched.filter((note) => note.type === "project" && links(note).some((id) => ids.has(id))).map((note) => note.id);
+  } else {
+    asked = [...words].filter((word) => nameWords.has(word));
+    if (asked.length > 0) open = [...new Set(names.filter((name) => name.type === "project" && asked.every((word) => name.words.includes(word))).map((name) => name.id))];
+    else if (context.project === null && context.area !== null) open = searched.filter((note) => note.type === "project" && note.attributes.area === context.area).map((note) => note.id);
+    else return null;
+  }
   if (open.length < 2) return null;
   const attributes = groups.filter((group) => !asked.includes(group[0]!));
   if (attributes.length === 0) return null;
