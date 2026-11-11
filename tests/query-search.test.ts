@@ -179,6 +179,27 @@ test("at most five, by their best note's rank then id, with the rest counted in 
   assert.deepEqual(search(notes, "What is the Cedar budget?").unresolved, first, "deterministic");
 });
 
+test("a question naming only an org lists its projects that hold the attribute (the user's choice of 2026-11-11, option A)", () => {
+  const notes = [
+    note("org-hazel001", "org", { title: "Hazel" }, ""),
+    note("prj-hazel001", "project", { title: "Hazel portal", client: "org-hazel001" }, ""),
+    note("prj-hazel002", "project", { title: "Hazel kiosk", client: "org-hazel001" }, ""),
+    note("prj-hazel003", "project", { title: "Hazel signage", client: "org-hazel001" }, ""),
+    note("mtg-hazel001", "meeting", { title: "Portal check-in", projects: ["prj-hazel001"] }, "The budget is €12,000.\n"),
+    note("mtg-hazel002", "meeting", { title: "Kiosk check-in", projects: ["prj-hazel002"] }, "The budget is €3,000.\n"),
+    note("mtg-hazel003", "meeting", { title: "Signage check-in", projects: ["prj-hazel003"] }, "The screens arrive in May.\n"),
+  ];
+  const { unresolved, candidates } = search(notes, "What is the Hazel budget?");
+  assert.deepEqual(unresolved!.subjects.map((s) => s.id).sort(), ["prj-hazel001", "prj-hazel002"], "the org's projects that hold it, not the signage");
+  assert.doesNotMatch(JSON.stringify(unresolved), /12,000|3,000/);
+  assert.equal(search(notes, "What is the budget for the Hazel portal?").unresolved, null, "a named project resolves");
+  assert.equal(search(notes, "When do the Hazel screens arrive?").unresolved, null, "one project holds it");
+  assert.equal(search(notes, "What is the Hazel budget?", { repo: "x", project: "prj-hazel002", area: null }).unresolved?.subjects.length, 2, "the org named in the question is still the subject");
+  assert.ok(candidates.length > 0);
+  const withheldKiosk = (n: Note) => (n.id === "mtg-hazel002" ? null : n);
+  assert.equal(search(notes, "What is the Hazel budget?", NONE, withheldKiosk).unresolved, null, "withheld evidence holds nothing");
+});
+
 test("a project holding under half of the strongest project's items is not listed (cli.md §5.13 unresolved, item 3)", () => {
   const notes = (second: string) => [
     note("prj-kite0001", "project", { title: "Kite booking app" }, ""),
@@ -211,6 +232,10 @@ test("brain query --candidates reports unresolved from an area's .brain, and not
   assert.deepEqual(unresolved.subjects.map((s) => s.title).sort(), ["Acme mobile app", "Acme website"]);
   assert.equal(unresolved.more, 0);
   assert.doesNotMatch(JSON.stringify(unresolved), /30000|80000/);
+
+  const org = await brain(["query", "--candidates", "What is the Acme budget?", ...ARGS]);
+  assert.equal(org.code, 0, org.stdout);
+  assert.deepEqual((org.json as { data: { unresolved: { subjects: Array<{ title: string }> } } }).data.unresolved.subjects.map((s) => s.title).sort(), ["Acme mobile app", "Acme website"], "a named org with two projects holding it (option A's hint)");
 
   const named = await brain(["query", "--candidates", "What is the budget for the Acme website?", "--repo", repo, ...ARGS]);
   assert.equal(named.code, 0, named.stdout);
