@@ -1,6 +1,6 @@
 === _proposals/2026-11-10-from-acme-sync-2-changes-1-new-note-and-1-link.md
 ---
-id: prp-a5x2bn3r
+id: prp-hsrh19s4
 type: proposal
 title: "From Acme sync: 2 changes, 1 new note and 1 link"
 created: 2026-11-10
@@ -10,7 +10,7 @@ links:
   - target: con-1s6t8e2b
     field: projects
     value: prj-9x4t1b7e
-notes: [dec-7b4zaf5r]
+notes: [dec-qsenx20d]
 why: What came in from Acme sync
 source: mtg-8c4n2p7w
 status: pending
@@ -27,19 +27,19 @@ changes:
     why: Carlos said so in the sync.
     content: Carlos will use RLS for the client portal.
 items:
-  - item_id: it-d06er1qd
+  - item_id: it-d2v8j2dp
     kind: change
     ref: 0
     passages: [mtg-8c4n2p7w]
-  - item_id: it-9g5wkdf8
+  - item_id: it-kegk0x7b
     kind: change
     ref: 1
     passages: [mtg-8c4n2p7w]
-  - item_id: it-606nddrj
+  - item_id: it-x44nmfe5
     kind: note
-    ref: dec-7b4zaf5r
+    ref: dec-qsenx20d
     passages: [mtg-8c4n2p7w]
-  - item_id: it-r9ekryet
+  - item_id: it-x2rrs1my
     kind: link
     ref: 0
     passages: [mtg-8c4n2p7w]
@@ -55,48 +55,48 @@ notion_published:
   Why: What came in from Acme sync
   Area: [<id 4>]
   State: Pending
-  Brain ID: prp-a5x2bn3r
+  Brain ID: prp-hsrh19s4
   "@content": sha256:c07a1757a96a20d1a294f205bb66b8299bee414a868f1f344bba0119bf0b1296
   "@review":
     items:
-      it-d06er1qd:
-        rendered_hash: 0197ff4c8bb21a479231b2b079b22e8526a1c6fbcfebbe0159577bc35e0fe3fc
+      it-d2v8j2dp:
+        rendered_hash: ce5e7d25c23092868df6478ccbe49f8806b26ebca5c4e5160c4d42e75c7e23e8
         proposed_hash: b620abe2beae4c67df0d0a79fc2b18d0c12f9f943ce3812b1c6632fe6bc1b4d2
         base_hash: bb18f00cf0ef96919ea397bf84abbfa881741d26814cd8742c70012358853abf
-      it-9g5wkdf8:
-        rendered_hash: a7efddf338437c03d2b9a40bf28608deee8dabc735ed70c486d0ce1f7cac4374
+      it-kegk0x7b:
+        rendered_hash: 89345507f156787f3de3b2ff5df62a3913739175245ccb1a76def31de796547a
         proposed_hash: 438cd5ce552553f3f3aec7c2343f8016313258f13db1aacc176c42ce5bb5915e
         base_hash: 6f37c186b652d1a4adf70a918d5e06fb2593fdc9851d308b513b4da2bd4e0245
-      it-606nddrj:
-        rendered_hash: 7a3f5d06814821f70cec19b87e0b0df53f73d8e6c1b9c21c3d9c967007a6e034
+      it-x44nmfe5:
+        rendered_hash: a35a309c7c9ee6db1e9fdcf3154e177b47bcac7bd200dce67037592d566ae983
         proposed_hash: a30fbd1bd273c38926a8545490c735403c0385d3a56158b17e945aa011eb03d1
         base_hash: 60b9a4f1599e7f815881867f57adee6d41d4595c40319ee911595e331aaf93d4
-      it-r9ekryet:
-        rendered_hash: ce04c5c86d52304d80d25e0f3d67ac2e5b8528dc22a67046c8b88b02af4fb5a1
+      it-x2rrs1my:
+        rendered_hash: 4477757c26a872253067ab633a49e7aa4b2817f60d31f8b190f8369df5c5ea45
         proposed_hash: 2bf248fba10700a4f2c68508e55d571bdd527cbc550b80a9ee47a49c3a9da2f3
         base_hash: 65f607d2e00644fbddb419837979e5c33cf8dc8d7bfa2360df0396a6cc837324
 item_decisions:
-  - item_id: it-d06er1qd
+  - item_id: it-d2v8j2dp
     decision: accept
     decided_at: 2026-11-10T09:30:00Z
     decided_by: notion
     proposed_hash: d9a9d4681e081dd92ad529b4e100df06690bf03334959f07214c0e8c3a293658
     base_hash: bb18f00cf0ef96919ea397bf84abbfa881741d26814cd8742c70012358853abf
-    snapshot_hash: 70b3ad456bde19afc5c7725902a97c062442f305271fc993958e07068ae0bff9
+    snapshot_hash: 69694ffdffbeb7f494947431b311e7752e7d480bc2d24897092c1300fe23c6ef
     state: applied
     edited: true
-  - item_id: it-9g5wkdf8
+  - item_id: it-kegk0x7b
     decision: accept
     decided_at: 2026-11-10T09:30:00Z
     decided_by: notion
     proposed_hash: 438cd5ce552553f3f3aec7c2343f8016313258f13db1aacc176c42ce5bb5915e
     base_hash: 6f37c186b652d1a4adf70a918d5e06fb2593fdc9851d308b513b4da2bd4e0245
-    snapshot_hash: b0801f6444e51cf7e62b5cd7347b7808be1c514f73266dd19ecdd48b54d50805
+    snapshot_hash: d5c7e8f61c6a3fc575d7dabd17e84f945ac10e173a9d220669e6fddc1f1d182c
     state: applied
 ---
 === _proposals/2026-11-11-from-acme-kickoff-1-new-note.md
 ---
-id: prp-gsdq7pbp
+id: prp-z7k5ec7m
 type: proposal
 title: "From Acme kickoff: 1 new note"
 created: 2026-11-11
@@ -119,11 +119,11 @@ notion_published:
   Why: Notes from Acme kickoff waiting for your review
   Area: [<id 4>]
   State: Pending
-  Brain ID: prp-gsdq7pbp
+  Brain ID: prp-z7k5ec7m
 ---
 === _proposals/2026-11-11-from-acme-sync-3-new-notes.md
 ---
-id: prp-1asv3z4t
+id: prp-a7bvhp6k
 type: proposal
 title: "From Acme sync: 3 new notes"
 created: 2026-11-11
@@ -149,5 +149,5 @@ notion_published:
   Why: Notes from Acme sync waiting for your review
   Area: [<id 4>]
   State: Pending
-  Brain ID: prp-1asv3z4t
+  Brain ID: prp-a7bvhp6k
 ---

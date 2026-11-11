@@ -1,8 +1,8 @@
 diff --git a/knowledge/decisions/2026-11-09-launch-in-march.md b/knowledge/decisions/2026-11-09-launch-in-march.md
-index 710beaf..24e0342 100644
+index e055524..8a0d908 100644
 --- a/knowledge/decisions/2026-11-09-launch-in-march.md
 +++ b/knowledge/decisions/2026-11-09-launch-in-march.md
-@@ -3,13 +3,13 @@ id: dec-xzw5qq9p
+@@ -3,13 +3,13 @@ id: dec-dyffnrgh
  type: decision
  title: Launch in March
  summary: Launch in March.
@@ -19,14 +19,14 @@ index 710beaf..24e0342 100644
  
  Launch moves to March.
 diff --git a/knowledge/meetings/2026-10-01-acme-kickoff.md b/knowledge/meetings/2026-10-01-acme-kickoff.md
-index 39ee443..b1f43ec 100644
+index 39ee443..4c612b3 100644
 --- a/knowledge/meetings/2026-10-01-acme-kickoff.md
 +++ b/knowledge/meetings/2026-10-01-acme-kickoff.md
 @@ -14,6 +14,18 @@ sources: [src-2k6m9p3t]
  created: 2026-10-01
  updated: 2026-10-01
  notion: <id 1>
-+last_synced: 2026-11-11T13:32:46Z
++last_synced: 2026-11-11T18:01:56Z
 +notion_published:
 +  Decisions: []
 +  Questions: []
@@ -42,14 +42,14 @@ index 39ee443..b1f43ec 100644
  
  ## Summary
 diff --git a/knowledge/meetings/2026-12-03-acme-sync.md b/knowledge/meetings/2026-12-03-acme-sync.md
-index 1672e9c..f414f75 100644
+index 1672e9c..a53f6a8 100644
 --- a/knowledge/meetings/2026-12-03-acme-sync.md
 +++ b/knowledge/meetings/2026-12-03-acme-sync.md
 @@ -16,6 +16,18 @@ sources: [src-7w3c9k5m]
  created: 2026-12-03
  updated: 2026-12-03
  notion: <id 5>
-+last_synced: 2026-11-11T13:32:46Z
++last_synced: 2026-11-11T18:01:56Z
 +notion_published:
 +  Decisions: []
 +  Questions: [<id 6>]
@@ -65,7 +65,7 @@ index 1672e9c..f414f75 100644
  
  ## Summary
 diff --git a/knowledge/orgs/acme.md b/knowledge/orgs/acme.md
-index 6cc0d6c..f98e69c 100644
+index 6cc0d6c..09b0fdb 100644
 --- a/knowledge/orgs/acme.md
 +++ b/knowledge/orgs/acme.md
 @@ -11,11 +11,15 @@ sources: [mtg-5r2k8v3a]
@@ -73,7 +73,7 @@ index 6cc0d6c..f98e69c 100644
  updated: 2026-10-01
  notion: <id 7>
 -last_synced: 2026-12-05T08:31:00Z
-+last_synced: 2026-11-11T13:32:46Z
++last_synced: 2026-11-11T18:01:56Z
  notion_fields:
    as_of: 2026-12-05T08:31:00Z
    relationship: Client
@@ -86,7 +86,7 @@ index 6cc0d6c..f98e69c 100644
  
  Retail client since October 2026. Main contact: [Maria López](../people/maria-lopez.md).
 diff --git a/knowledge/people/maria-lopez.md b/knowledge/people/maria-lopez.md
-index 5c2bc07..fac4d01 100644
+index 5c2bc07..292b600 100644
 --- a/knowledge/people/maria-lopez.md
 +++ b/knowledge/people/maria-lopez.md
 @@ -27,10 +27,17 @@ timeline:
@@ -94,7 +94,7 @@ index 5c2bc07..fac4d01 100644
  updated: 2026-12-05
  notion: <id 2>
 -last_synced: 2026-12-05T08:31:00Z
-+last_synced: 2026-11-11T13:32:46Z
++last_synced: 2026-11-11T18:01:56Z
  notion_fields:
    as_of: 2026-12-05T08:31:00Z
    email: maria@acme.example
@@ -109,14 +109,14 @@ index 5c2bc07..fac4d01 100644
  
  Main contact at Acme for the website project.
 diff --git a/knowledge/questions/who-owns-the-acme-mobile-app.md b/knowledge/questions/who-owns-the-acme-mobile-app.md
-index 27b43aa..5dd1f1a 100644
+index 27b43aa..9c9f305 100644
 --- a/knowledge/questions/who-owns-the-acme-mobile-app.md
 +++ b/knowledge/questions/who-owns-the-acme-mobile-app.md
 @@ -15,9 +15,20 @@ relations:
  created: 2026-12-03
  updated: 2026-12-03
  notion: <id 6>
-+last_synced: 2026-11-11T13:32:46Z
++last_synced: 2026-11-11T18:01:56Z
  notion_fields:
    as_of: 2026-12-05T08:31:00Z
    status: Open
@@ -153,7 +153,7 @@ index 214ddc3..dbf2c64 100644
 +Carlos will use RLS for the client portal.
 +Source: mtg-8c4n2p7w
 diff --git a/projects/acme-website/brief.md b/projects/acme-website/brief.md
-index 6e9c19c..e4c31af 100644
+index 6e9c19c..5616740 100644
 --- a/projects/acme-website/brief.md
 +++ b/projects/acme-website/brief.md
 @@ -5,16 +5,16 @@ title: Acme website — brief
@@ -161,7 +161,7 @@ index 6e9c19c..e4c31af 100644
  project: prj-9x4t1b7e
  generated_from: [gol-4p9r2w6t, mtg-5r2k8v3a, mtg-8c4n2p7w, per-3h8w2n6c, per-9t2c6m4a, prj-9x4t1b7e]
 -generated_at: 2026-12-05T08:31:00Z
-+generated_at: 2026-11-11T13:31:54Z
++generated_at: 2026-11-11T18:01:04Z
  created: 2026-10-01
 -updated: 2026-12-05
 +updated: 2026-11-11
@@ -177,7 +177,7 @@ index 6e9c19c..e4c31af 100644
  ## Goal
  - [Grow consulting to 10k EUR per month](../../goals/grow-consulting-to-10k-eur-per-month.md)
 diff --git a/projects/acme-website/decision-log.md b/projects/acme-website/decision-log.md
-index e1638cb..aac59b0 100644
+index e1638cb..1121631 100644
 --- a/projects/acme-website/decision-log.md
 +++ b/projects/acme-website/decision-log.md
 @@ -4,15 +4,16 @@ type: view
@@ -186,8 +186,8 @@ index e1638cb..aac59b0 100644
  project: prj-9x4t1b7e
 -generated_from: [dec-2p9f6h1r, dec-7k2m9q4x, prj-9x4t1b7e]
 -generated_at: 2026-12-04T08:20:00Z
-+generated_from: [dec-2p9f6h1r, dec-7k2m9q4x, dec-xzw5qq9p, prj-9x4t1b7e]
-+generated_at: 2026-11-11T13:31:54Z
++generated_from: [dec-2p9f6h1r, dec-7k2m9q4x, dec-dyffnrgh, prj-9x4t1b7e]
++generated_at: 2026-11-11T18:01:04Z
  created: 2026-10-01
 -updated: 2026-12-04
 +updated: 2026-11-11
@@ -201,7 +201,7 @@ index e1638cb..aac59b0 100644
  ## Superseded
  - 2026-10-01 → 2026-12-03 — [Use Firebase for auth](../../knowledge/decisions/2026-10-01-use-firebase-for-auth.md) — superseded by [Use Supabase for auth](../../knowledge/decisions/2026-12-03-use-supabase-for-auth.md)
 diff --git a/projects/acme-website/project.md b/projects/acme-website/project.md
-index aa2ff67..33f555c 100644
+index aa2ff67..42dba8a 100644
 --- a/projects/acme-website/project.md
 +++ b/projects/acme-website/project.md
 @@ -11,7 +11,7 @@ people: [per-3h8w2n6c, per-9t2c6m4a]
@@ -232,14 +232,14 @@ index aa2ff67..33f555c 100644
 +    value: 2027-04
 +    from: 2026-12-03
 +    learned: 2026-11-11
-+    source: user-correction:prp-seg23q44
++    source: user-correction:prp-wrxr7f7h
      assessment: accepted
  created: 2026-10-01
 -updated: 2026-12-04
 +updated: 2026-11-11
  notion: <id 3>
 -last_synced: 2026-12-05T08:31:00Z
-+last_synced: 2026-11-11T13:32:46Z
++last_synced: 2026-11-11T18:01:56Z
  notion_fields:
    as_of: 2026-12-05T08:31:00Z
    status: Active

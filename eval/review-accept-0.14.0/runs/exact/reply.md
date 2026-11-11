@@ -1,25 +1,20 @@
 ```
 Done: 2 applied · 1 closed (rejected) · 8 pages published
-Needs you: 1 item still pending on From Acme sync (d) · the Acme website Decision log was not updated in Notion · Carlos Ruiz's page was not created · push failed (no remote), 3 commits not pushed
-Next: decide d on the Review row (Decision, then Submit decisions) and say "apply my reviews"
+Needs you: 1 item still pending on From Acme sync (d) · the project's Decision log was not republished · Carlos Ruiz's new page is not recorded
+Next: decide d on the Review page (type the Decision, then Submit decisions), or tell me here
 ```
 
 **What changed**
-- Acme website launch date is now 2027-04. This is your value: it replaces 2027-02, and the source's 2027-03 is kept in the history as superseded.
-- Row-level security now ends with "Carlos will use RLS for the client portal.", sourced to Acme sync.
-- The new decision "Launch in March" was rejected and is archived.
+- Acme website: launch date is now 2027-04. This is your value: the brain had proposed 2027-03 from the Acme sync, and that source value is kept in the fact's history.
+- Row-level security: added "Carlos will use RLS for the client portal.", sourced to the Acme sync.
+- The new decision note "Launch in March" was rejected and is archived.
 - The Review row's summary now reads "3 of 4 decided: 2 applied, 1 closed, 1 waiting for you", and its Decided, Decided at and Accept all are cleared.
 
 **Check**
-- **d (link Row-level security to Acme website):** it was left on Pending, so nothing was applied for it.
-- **Decision log held back:** after the rejection, the regenerated Decision log for Acme website lists "Launch in March" under Current as accepted. I did not write that section to Notion, so Notion still shows the old log; the brain's own copy of the log does carry the wrong line. This is a product bug, and the next publish will try to send the section again.
-- **Carlos Ruiz:** the publish wanted to create his People page (still Draft). I did not create it, because this session cannot return a page id to record. He is therefore not yet linked on the Acme website People or the two meetings' Attendees.
-- **Acme website summary:** it still says "launching February 2027". No proposal changed it; say so if you want a change proposed.
-- **Other pages:** the publish also re-sent six pages this review did not change (Clients, Maria López, Acme, the open question, both meetings).
-- **Lint:** it reports 7 product-file errors (skill files and the assistant file differ from the released version). They were there before this run.
+- **d · link Row-level security to Acme website:** its Decision line still says Pending, so nothing was applied for it.
+- **Decision log on the Acme website page:** I held this one section back. The regenerated log lists the rejected "Launch in March" under Current as accepted, so publishing it would show a decision you rejected. The page keeps its existing log and the next publish will send the section again. This looks like a product bug; I can draft a finding for you to review before filing.
+- **Acme website summary:** it still says "launching February 2027". No proposal covered the summary, so I left it.
+- **Carlos Ruiz:** the publish creates his People page, still a draft. The simulated create returned no page id, so it is not recorded, and his link on Acme website's People waits for the next publish.
+- **Lint:** it reports 7 product-file errors (skills and the assistant file differ from the shipped versions). They were there before this run, in files it did not touch; `brain upgrade` clears them.
 
-**Finding to file** — the rejected note in the Decision log. Here is the issue text; say "file it" and I'll create it with the dogfood label:
-
-> **A rejected draft decision appears as Current in the project's decision log**
-> A Review row with item sections proposes a new decision note for a project. The user sets that item to Reject and submits. `sync apply` closes the item and sets the note to `lifecycle: archived` (its `assessment` stays `accepted`). `brain views` then adds the note to the project's decision log under "Current" as accepted, and `sync render --changed` sends that Decision log section for Notion. Before the rejection, while the note was a draft, it was not in the log.
-> Expected: an archived (rejected) decision never appears in the decision log or its rendered section.
+All 14 would-be Notion writes are logged in `exact-sim/writes.md`. Everything is committed, but the push failed because there is no remote: 3 commits are not pushed.
