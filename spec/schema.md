@@ -574,7 +574,8 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
   "schema_version": 1,
   "owner": { "name": "Alex", "person": "per-3h8w2n6c" },
   "budgets": { "ingest_max_notes": 8 },
-  "settings": { "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 }, "markitdown": "on", "gh": "on", "schedule": "off" },
+  "settings": { "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 }, "markitdown": "on", "gh": "on", "schedule": "off",
+                "style": { "preset": "simple", "length": "normal" } },
   "modules": { "domains": false, "knowledge": true, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true },
   "repos": [
     { "name": "acme-api", "path": "~/code/acme-api", "area": "area-2m7c4h8n",
@@ -607,6 +608,13 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 - `unattended.max_inputs` (0051): how many inputs one unattended run takes in, oldest first; an integer of at least 1, default 10. The rest waits for the next run (cli.md §6.1). `unattended` absent, or `max_inputs` absent from it, means 10.
 - `recall` (0074): `off` (default) or `opening`. With `opening`, `brain link` adds the recall paragraph to a linked repo's instruction block, so its agents load the opening context (cli.md §5.12, [memory.md](memory.md) §7). Setup asks once; absent means `off`.
 - `markitdown`, `gh`, `schedule` (0078, from 0.14.0; [setup.md](setup.md) §7): the optional items of the guided setup, each `on` or `off`; absent means `off`. They record the user's choice so setup never asks again: `markitdown` whether the user chose to install MarkItDown (the ingest still uses it whenever it is installed, as before, so a brain without the key converts files as it did), `gh` whether setup may use the GitHub CLI (the private remote, the setup report), `schedule` whether the user chose a scheduled catch-up (the entry itself is the machine's, cli.md §5.21).
+- `style` (0081, from 0.14.0): how the agent talks to the user, in its own words. An object with up to four keys, each optional, and no others:
+  - `preset`: `standard` or `simple`; absent means `standard`.
+  - `explain`: `expert`, `some` or `plain`; how much the agent explains.
+  - `length`: `short`, `normal` or `full`; how long its answers are.
+  - `directness`: `answer-first` or `context-first`; what comes first.
+
+  A dial that is set overrides the preset's value for that dial; a dial that isn't takes the preset's value. **`standard`** is `some`, `normal`, `context-first`: the agent's ordinary behaviour, so these three levels add no instruction. **`simple`** is `plain`, `short`, `answer-first`. `style` absent, or `{}`, is Standard. The CLI writes the style into the brain's `AGENTS.md` and into linked folders' blocks (cli.md §5.3.1); skills read it only through those. Setup offers it, and the user changes it in chat ([setup.md](setup.md) §7). The JSON schema gains it with CC-210.
 
 **Modules** (0048): the optional parts of the space. Core (Inbox, Meetings, Projects, Areas, People, Review) is always on and has no key.
 
