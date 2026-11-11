@@ -14,8 +14,8 @@ const record = (value: unknown): Record<string, unknown> => (isRecord(value) ? v
 export interface Revision { item_id: string; instruction: string; requested_at: string; status: "requested" | "drafted"; previous?: string; drafted_at?: string }
 export const revisionsOf = (proposal: Note): Revision[] => list(proposal.attributes.revisions).filter(isRecord) as unknown as Revision[];
 
-/** Record each `Request revision` the plan read (an attended run only: an unattended run never reads revision text, 0051). The item stays pending. */
-export function recordRevisionRequests(workspace: Workspace, requests: readonly ReviewRevision[], now: Date, today: string): Array<{ proposal: string; item_id: string; result: "recorded" | "skipped"; reason?: string }> {
+/** Record each `Request revision` the plan read (an attended run only: an unattended run never reads revision text, 0051). The item stays pending. `asOf` is the plan's. */
+export function recordRevisionRequests(workspace: Workspace, requests: readonly ReviewRevision[], asOf: string, now: Date, today: string): Array<{ proposal: string; item_id: string; result: "recorded" | "skipped"; reason?: string }> {
   const out: Array<{ proposal: string; item_id: string; result: "recorded" | "skipped"; reason?: string }> = [];
   for (const request of requests) {
     const skip = (reason: string) => out.push({ proposal: request.proposal, item_id: request.item_id, result: "skipped", reason });
@@ -26,6 +26,8 @@ export function recordRevisionRequests(workspace: Workspace, requests: readonly 
     if (["remove", "restore", "independence"].includes(String(record(list(proposal.attributes.items).find((item) => record(item).item_id === request.item_id)).kind))) { skip("REVISION_NOT_SUPPORTED"); continue; }
     const existing = revisionsOf(proposal).find((entry) => entry.item_id === request.item_id);
     if (existing?.status === "requested" && existing.instruction === request.instruction) { skip("ALREADY_REQUESTED"); continue; }
+    // A plan read before the draft was written cannot be asking about it: replaying it is a no-op (cli §5.27, CC-218).
+    if (existing?.status === "drafted" && (existing.drafted_at === undefined || Date.parse(asOf) <= Date.parse(existing.drafted_at))) { skip("STALE_PLAN"); continue; }
     const document = workspace.edit(proposal);
     const entry: Revision = { item_id: request.item_id, instruction: request.instruction.trim(), requested_at: now.toISOString().replace(/\.\d{3}Z$/, "Z"), status: "requested" };
     document.attributes.revisions = [...revisionsOf(proposal).filter((candidate) => candidate.item_id !== request.item_id), entry];
