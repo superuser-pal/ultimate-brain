@@ -1,0 +1,153 @@
+=== _proposals/2026-11-10-from-acme-sync-2-changes-1-new-note-and-1-link.md
+---
+id: prp-a5x2bn3r
+type: proposal
+title: "From Acme sync: 2 changes, 1 new note and 1 link"
+created: 2026-11-10
+updated: 2026-11-11
+kind: review_notes
+links:
+  - target: con-1s6t8e2b
+    field: projects
+    value: prj-9x4t1b7e
+notes: [dec-7b4zaf5r]
+why: What came in from Acme sync
+source: mtg-8c4n2p7w
+status: pending
+changes:
+  - kind: update_fact
+    target: prj-9x4t1b7e
+    why: Maria moved the launch to March.
+    field: launch_date
+    before: 2027-02
+    after: 2027-03
+    from: 2026-12-03
+  - kind: add_to_note
+    target: con-1s6t8e2b
+    why: Carlos said so in the sync.
+    content: Carlos will use RLS for the client portal.
+items:
+  - item_id: it-d06er1qd
+    kind: change
+    ref: 0
+    passages: [mtg-8c4n2p7w]
+  - item_id: it-9g5wkdf8
+    kind: change
+    ref: 1
+    passages: [mtg-8c4n2p7w]
+  - item_id: it-606nddrj
+    kind: note
+    ref: dec-7b4zaf5r
+    passages: [mtg-8c4n2p7w]
+  - item_id: it-r9ekryet
+    kind: link
+    ref: 0
+    passages: [mtg-8c4n2p7w]
+notion: <id 1>
+notion_published:
+  Name: "From Acme sync: 2 changes, 1 new note and 1 link"
+  Kind: Review Notes
+  About: Acme sync (mtg-8c4n2p7w)
+  About Page: https://www.notion.so/<id 2>
+  Source Meeting: [<id 3>]
+  Now: null
+  Proposed: "4 changes: decide each one in the page"
+  Why: What came in from Acme sync
+  Area: [<id 4>]
+  State: Pending
+  Brain ID: prp-a5x2bn3r
+  "@content": sha256:c07a1757a96a20d1a294f205bb66b8299bee414a868f1f344bba0119bf0b1296
+  "@review":
+    items:
+      it-d06er1qd:
+        rendered_hash: 0197ff4c8bb21a479231b2b079b22e8526a1c6fbcfebbe0159577bc35e0fe3fc
+        proposed_hash: b620abe2beae4c67df0d0a79fc2b18d0c12f9f943ce3812b1c6632fe6bc1b4d2
+        base_hash: bb18f00cf0ef96919ea397bf84abbfa881741d26814cd8742c70012358853abf
+      it-9g5wkdf8:
+        rendered_hash: a7efddf338437c03d2b9a40bf28608deee8dabc735ed70c486d0ce1f7cac4374
+        proposed_hash: 438cd5ce552553f3f3aec7c2343f8016313258f13db1aacc176c42ce5bb5915e
+        base_hash: 6f37c186b652d1a4adf70a918d5e06fb2593fdc9851d308b513b4da2bd4e0245
+      it-606nddrj:
+        rendered_hash: 7a3f5d06814821f70cec19b87e0b0df53f73d8e6c1b9c21c3d9c967007a6e034
+        proposed_hash: a30fbd1bd273c38926a8545490c735403c0385d3a56158b17e945aa011eb03d1
+        base_hash: 60b9a4f1599e7f815881867f57adee6d41d4595c40319ee911595e331aaf93d4
+      it-r9ekryet:
+        rendered_hash: ce04c5c86d52304d80d25e0f3d67ac2e5b8528dc22a67046c8b88b02af4fb5a1
+        proposed_hash: 2bf248fba10700a4f2c68508e55d571bdd527cbc550b80a9ee47a49c3a9da2f3
+        base_hash: 65f607d2e00644fbddb419837979e5c33cf8dc8d7bfa2360df0396a6cc837324
+item_decisions:
+  - item_id: it-d06er1qd
+    decision: accept
+    decided_at: 2026-11-10T09:30:00Z
+    decided_by: notion
+    proposed_hash: d9a9d4681e081dd92ad529b4e100df06690bf03334959f07214c0e8c3a293658
+    base_hash: bb18f00cf0ef96919ea397bf84abbfa881741d26814cd8742c70012358853abf
+    snapshot_hash: 70b3ad456bde19afc5c7725902a97c062442f305271fc993958e07068ae0bff9
+    state: applied
+    edited: true
+  - item_id: it-9g5wkdf8
+    decision: accept
+    decided_at: 2026-11-10T09:30:00Z
+    decided_by: notion
+    proposed_hash: 438cd5ce552553f3f3aec7c2343f8016313258f13db1aacc176c42ce5bb5915e
+    base_hash: 6f37c186b652d1a4adf70a918d5e06fb2593fdc9851d308b513b4da2bd4e0245
+    snapshot_hash: b0801f6444e51cf7e62b5cd7347b7808be1c514f73266dd19ecdd48b54d50805
+    state: applied
+---
+=== _proposals/2026-11-11-from-acme-kickoff-1-new-note.md
+---
+id: prp-gsdq7pbp
+type: proposal
+title: "From Acme kickoff: 1 new note"
+created: 2026-11-11
+updated: 2026-11-11
+kind: review_notes
+links: []
+notes: [per-9t2c6m4a]
+why: Notes from Acme kickoff waiting for your review
+source: mtg-5r2k8v3a
+status: pending
+notion: <id 5>
+notion_published:
+  Name: "From Acme kickoff: 1 new note"
+  Kind: Review Notes
+  About: Acme kickoff (mtg-5r2k8v3a)
+  About Page: https://www.notion.so/<id 6>
+  Source Meeting: [<id 7>]
+  Now: null
+  Proposed: "a) Person: Carlos Ruiz"
+  Why: Notes from Acme kickoff waiting for your review
+  Area: [<id 4>]
+  State: Pending
+  Brain ID: prp-gsdq7pbp
+---
+=== _proposals/2026-11-11-from-acme-sync-3-new-notes.md
+---
+id: prp-1asv3z4t
+type: proposal
+title: "From Acme sync: 3 new notes"
+created: 2026-11-11
+updated: 2026-11-11
+kind: review_notes
+links: []
+notes: [dec-7k2m9q4x, mtg-8c4n2p7w, que-8n3v5x1d]
+why: Notes from Acme sync waiting for your review
+source: mtg-8c4n2p7w
+status: pending
+notion: <id 8>
+notion_published:
+  Name: "From Acme sync: 3 new notes"
+  Kind: Review Notes
+  About: Acme sync (mtg-8c4n2p7w)
+  About Page: https://www.notion.so/<id 2>
+  Source Meeting: [<id 3>]
+  Now: null
+  Proposed: |-
+    a) Decision: Use Supabase for auth
+    b) Meeting: Acme sync
+    c) Question: Who owns the Acme mobile app?
+  Why: Notes from Acme sync waiting for your review
+  Area: [<id 4>]
+  State: Pending
+  Brain ID: prp-1asv3z4t
+---

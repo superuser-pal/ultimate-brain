@@ -1,0 +1,2 @@
+M	_proposals/2026-11-10-from-acme-sync-2-changes-1-new-note-and-1-link.md
+M	log/2026-11.md

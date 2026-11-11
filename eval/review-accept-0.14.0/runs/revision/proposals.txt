@@ -1,0 +1,94 @@
+=== _proposals/2026-11-10-from-acme-sync-2-changes-1-new-note-and-1-link.md
+---
+id: prp-xz48ra8t
+type: proposal
+title: "From Acme sync: 2 changes, 1 new note and 1 link"
+created: 2026-11-10
+updated: 2026-11-11
+kind: review_notes
+links:
+  - target: con-1s6t8e2b
+    field: projects
+    value: prj-9x4t1b7e
+notes: [dec-3x27wvx1]
+why: What came in from Acme sync
+source: mtg-8c4n2p7w
+status: pending
+changes:
+  - kind: update_fact
+    target: prj-9x4t1b7e
+    why: Maria moved the launch to March.
+    field: launch_date
+    before: 2027-02
+    after: 2027-04
+    from: 2026-12-03
+  - kind: add_to_note
+    target: con-1s6t8e2b
+    why: Carlos said so in the sync.
+    content: Carlos will use RLS for the client portal.
+items:
+  - item_id: it-e1b1ac4z
+    kind: change
+    ref: 0
+    passages: [mtg-8c4n2p7w]
+  - item_id: it-t003rtb8
+    kind: change
+    ref: 1
+    passages: [mtg-8c4n2p7w]
+  - item_id: it-tey03sdr
+    kind: note
+    ref: dec-3x27wvx1
+    passages: [mtg-8c4n2p7w]
+  - item_id: it-97mayxv2
+    kind: link
+    ref: 0
+    passages: [mtg-8c4n2p7w]
+notion: <id 1>
+notion_published:
+  Name: "From Acme sync: 2 changes, 1 new note and 1 link"
+  Kind: Review Notes
+  About: Acme sync (mtg-8c4n2p7w)
+  About Page: https://www.notion.so/<id 2>
+  Source Meeting: [<id 3>]
+  Now: null
+  Proposed: "4 changes: decide each one in the page"
+  Why: What came in from Acme sync
+  Area: [<id 4>]
+  State: Pending
+  Brain ID: prp-xz48ra8t
+  "@content": sha256:c5266e4bf3223eaea1808c538402cd157907207490d3fd696aa680597021fbc9
+  "@review":
+    items:
+      it-e1b1ac4z:
+        rendered_hash: 6ffca40e1cc790457f06e6bf6bd4abda61f2f18ee2f99910547ea80a1bddf834
+        proposed_hash: d9a9d4681e081dd92ad529b4e100df06690bf03334959f07214c0e8c3a293658
+        base_hash: bb18f00cf0ef96919ea397bf84abbfa881741d26814cd8742c70012358853abf
+      it-t003rtb8:
+        rendered_hash: abe4259ff42147a2e82afe985d3c6d09547ac593c582a254601ffce383d6d7eb
+        proposed_hash: 438cd5ce552553f3f3aec7c2343f8016313258f13db1aacc176c42ce5bb5915e
+        base_hash: 6f37c186b652d1a4adf70a918d5e06fb2593fdc9851d308b513b4da2bd4e0245
+      it-tey03sdr:
+        rendered_hash: 53adb6a28596e80997f7ba794dd7c6c2dcb9eb558c10e449852a223601085bc6
+        proposed_hash: a30fbd1bd273c38926a8545490c735403c0385d3a56158b17e945aa011eb03d1
+        base_hash: 60b9a4f1599e7f815881867f57adee6d41d4595c40319ee911595e331aaf93d4
+      it-97mayxv2:
+        rendered_hash: 555b70404b0d1b477670ef50f09c0f4c5a971460f6a3cdd23b002e417c423516
+        proposed_hash: 2bf248fba10700a4f2c68508e55d571bdd527cbc550b80a9ee47a49c3a9da2f3
+        base_hash: 65f607d2e00644fbddb419837979e5c33cf8dc8d7bfa2360df0396a6cc837324
+item_decisions:
+  - item_id: it-t003rtb8
+    decision: accept
+    decided_at: 2026-11-10T09:30:00Z
+    decided_by: notion
+    proposed_hash: 438cd5ce552553f3f3aec7c2343f8016313258f13db1aacc176c42ce5bb5915e
+    base_hash: 6f37c186b652d1a4adf70a918d5e06fb2593fdc9851d308b513b4da2bd4e0245
+    snapshot_hash: 96d88baaa44ef18bc8e0bfa0a74bf2a7286e701ab8c0288dabf3d964245ee541
+    state: applied
+revisions:
+  - item_id: it-e1b1ac4z
+    instruction: make it April, Maria said the agency needs one more month
+    requested_at: 2026-11-11T13:34:36Z
+    status: drafted
+    previous: 2027-03
+    drafted_at: 2026-11-11T13:34:43Z
+---

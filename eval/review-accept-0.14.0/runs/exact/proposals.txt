@@ -1,0 +1,104 @@
+=== _proposals/2026-11-10-from-acme-sync-2-changes-1-new-note-and-1-link.md
+---
+id: prp-seg23q44
+type: proposal
+title: "From Acme sync: 2 changes, 1 new note and 1 link"
+created: 2026-11-10
+updated: 2026-11-11
+kind: review_notes
+links:
+  - target: con-1s6t8e2b
+    field: projects
+    value: prj-9x4t1b7e
+notes: [dec-xzw5qq9p]
+why: What came in from Acme sync
+source: mtg-8c4n2p7w
+status: pending
+changes:
+  - kind: update_fact
+    target: prj-9x4t1b7e
+    why: Maria moved the launch to March.
+    field: launch_date
+    before: 2027-02
+    after: 2027-03
+    from: 2026-12-03
+  - kind: add_to_note
+    target: con-1s6t8e2b
+    why: Carlos said so in the sync.
+    content: Carlos will use RLS for the client portal.
+items:
+  - item_id: it-87e8gnft
+    kind: change
+    ref: 0
+    passages: [mtg-8c4n2p7w]
+  - item_id: it-e4pjqajq
+    kind: change
+    ref: 1
+    passages: [mtg-8c4n2p7w]
+  - item_id: it-qrv3m5jb
+    kind: note
+    ref: dec-xzw5qq9p
+    passages: [mtg-8c4n2p7w]
+  - item_id: it-0sjh8tee
+    kind: link
+    ref: 0
+    passages: [mtg-8c4n2p7w]
+notion: <id 1>
+notion_published:
+  Name: "From Acme sync: 2 changes, 1 new note and 1 link"
+  Kind: Review Notes
+  About: Acme sync (mtg-8c4n2p7w)
+  About Page: https://www.notion.so/<id 2>
+  Source Meeting: [<id 3>]
+  Now: null
+  Proposed: "4 changes: decide each one in the page"
+  Why: What came in from Acme sync
+  Area: [<id 4>]
+  State: Pending
+  Brain ID: prp-seg23q44
+  "@content": sha256:ca5e243e138bcd8095375a34f3ed3ec2e9fd94051b9c9c3cf801d1c271010d98
+  "@review":
+    items:
+      it-87e8gnft:
+        rendered_hash: 3d04a0142c3aaa45524706abd8a11ad07dc4c2c32693780e8c66a18414cda85d
+        proposed_hash: b620abe2beae4c67df0d0a79fc2b18d0c12f9f943ce3812b1c6632fe6bc1b4d2
+        base_hash: bb18f00cf0ef96919ea397bf84abbfa881741d26814cd8742c70012358853abf
+      it-e4pjqajq:
+        rendered_hash: a50e7b6ec4d515e71e2ee991e173d057a64fe6c7ce491f495213af72081681b8
+        proposed_hash: 438cd5ce552553f3f3aec7c2343f8016313258f13db1aacc176c42ce5bb5915e
+        base_hash: 6f37c186b652d1a4adf70a918d5e06fb2593fdc9851d308b513b4da2bd4e0245
+      it-qrv3m5jb:
+        rendered_hash: 586afed552a108b4f440467615b39545b05bfd62d43a05d465a15e20309741ed
+        proposed_hash: a30fbd1bd273c38926a8545490c735403c0385d3a56158b17e945aa011eb03d1
+        base_hash: 60b9a4f1599e7f815881867f57adee6d41d4595c40319ee911595e331aaf93d4
+      it-0sjh8tee:
+        rendered_hash: 78210b22d1b4844f698492b893325560a77a38138af0b343b9b9869fde9b6779
+        proposed_hash: 2bf248fba10700a4f2c68508e55d571bdd527cbc550b80a9ee47a49c3a9da2f3
+        base_hash: 65f607d2e00644fbddb419837979e5c33cf8dc8d7bfa2360df0396a6cc837324
+item_decisions:
+  - item_id: it-87e8gnft
+    decision: accept
+    decided_at: 2026-11-10T09:30:00Z
+    decided_by: notion
+    proposed_hash: d9a9d4681e081dd92ad529b4e100df06690bf03334959f07214c0e8c3a293658
+    base_hash: bb18f00cf0ef96919ea397bf84abbfa881741d26814cd8742c70012358853abf
+    snapshot_hash: 2dc8ccd4d487c2518e966716bbc99930507f4f131c0174b372f1b99e2582d15c
+    state: applied
+    edited: true
+  - item_id: it-e4pjqajq
+    decision: accept
+    decided_at: 2026-11-10T09:30:00Z
+    decided_by: notion
+    proposed_hash: 438cd5ce552553f3f3aec7c2343f8016313258f13db1aacc176c42ce5bb5915e
+    base_hash: 6f37c186b652d1a4adf70a918d5e06fb2593fdc9851d308b513b4da2bd4e0245
+    snapshot_hash: 2ca6148372ab4a6ad288aaf0ee837a28f7b9d8b31d236489cec8e2450b696df1
+    state: applied
+  - item_id: it-qrv3m5jb
+    decision: reject
+    decided_at: 2026-11-10T09:30:00Z
+    decided_by: notion
+    proposed_hash: a30fbd1bd273c38926a8545490c735403c0385d3a56158b17e945aa011eb03d1
+    base_hash: 60b9a4f1599e7f815881867f57adee6d41d4595c40319ee911595e331aaf93d4
+    snapshot_hash: 779af2717abd8af1cc7dee6fd6010d512d3b1eb5cd96fbafd4f0265c450e85cc
+    state: closed
+---
