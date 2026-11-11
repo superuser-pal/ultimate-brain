@@ -4,7 +4,7 @@
 **Date:** 2026-11-06
 **Release:** 0.12.0
 **Refines:** [0061](0061-roadmap-and-launch-boundary.md) and [0064](0064-brain-assistant-before-reflection-hermes-after-1-0.md) (0.12.0 scope and acceptance)
-**Refined by:** [0077](0077-trust-repair-in-0-13-0.md) (superseded memories only in an explicit historical read; one eligibility rule for every read; one native run per agent on the final package)
+**Refined by:** [0077](0077-trust-repair-in-0-13-0.md) (superseded memories only in an explicit historical read; one eligibility rule for every read; one native run per agent on the final package); [0080](0080-english-retrieval-quality-in-0-13-0.md) (§5 and §6 for English retrieval in 0.13.0: the first search, eighty added cases, latency and output-token caps)
 **Keeps:** [0003](0003-proposal-review-flow.md), [0008](0008-agent-memory-store.md), [0009](0009-memory-scope-levels.md), [0016](0016-typescript-on-node.md), [0055](0055-domains-capture-and-review.md), the existing workflow boundaries and the feature cutoff at 0.14.0
 
 ## Context

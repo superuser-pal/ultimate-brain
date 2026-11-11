@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
-import { approveNote, brain, fixtureCopy } from "./helpers.ts";
+import { approveNote, brain, fixtureCopy, withPassages } from "./helpers.ts";
 
 // CC-124, decision 0071: a report is a Documents row with Origin = Report; its Ask rows stay on the Inbox.
 
@@ -27,7 +27,7 @@ async function run(dir: string, args: string[], input?: unknown) {
   const extra: string[] = [];
   if (input !== undefined) {
     const file = join(dir, "..", `input-${Math.random().toString(36).slice(2)}.json`);
-    await writeFile(file, JSON.stringify(input));
+    await writeFile(file, JSON.stringify(args[0] === "proposal" && args[1] === "new" ? withPassages(input) : input));
     extra.push("--input", file);
   }
   return brain([...args, ...extra, "--brain", dir, "--now", NOW, "--json"]);

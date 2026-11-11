@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
 import { passageHash } from "../src/lib/selection.ts";
 import { excludableDecision } from "./exclusion-fixture.ts";
-import { brain, fixtureCopy } from "./helpers.ts";
+import { brain, fixtureCopy, withPassages } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const SYNC = "mtg-8c4n2p7w";
@@ -17,7 +17,7 @@ const LIVE_LINE = `A kept remark. ^[src-ex1a3b4c#¶1:${passageHash("A live parag
 
 async function run(dir: string, args: string[], input: unknown) {
   const file = join(dir, "..", `in-${Math.random().toString(36).slice(2)}.json`);
-  await writeFile(file, JSON.stringify(input));
+  await writeFile(file, JSON.stringify(args[0] === "proposal" && args[1] === "new" ? withPassages(input) : input));
   return brain([...args, "--input", file, "--brain", dir, "--now", NOW, "--json"]);
 }
 
@@ -63,13 +63,16 @@ test("proposal new skips a change that rests on excluded evidence, a mixed one w
     addition(target, `${LIVE_LINE}\n\n${EXCLUDED_LINE}`),
   ] });
   assert.equal(out.code, 0, out.stdout);
-  // CC-177 before 0077 kept the mixed text (index 4); 0077 §1 withholds it whole (eligibility.md §4.2).
+  // CC-177 before 0077 kept the mixed text (index 4); 0077 §1 withholds it whole (eligibility.md §4.2). Since CC-179 every item names its
+  // passages (here, withPassages names the whole source for a text that cites none): the current version as a whole input that has a
+  // suppression record is not live either (index 3), so only the item on a live paragraph is written (eligibility.md §9.2, schema §11.5).
   assert.deepEqual(out.json.data.skipped, [
     { input_index: 0, reason: "SOURCE_EXCLUDED" },
     { input_index: 2, reason: "SOURCE_EXCLUDED" },
+    { input_index: 3, reason: "SOURCE_EXCLUDED" },
     { input_index: 4, reason: "SOURCE_EXCLUDED" },
-  ], "an excluded passage, an older version with no passage named, and a mixed text; a live passage and the current version are kept");
-  assert.equal(out.json.data.created.length, 2);
+  ], "an excluded passage, an older version and the current version as whole inputs, and a mixed text; a live passage is kept");
+  assert.equal(out.json.data.created.length, 1);
 });
 
 test("with no exclusion in the brain nothing is skipped or closed for it", async (context) => {
@@ -130,7 +133,7 @@ test("proposal new tells a person why an item was skipped", async (context) => {
   const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
   await exclude();
   const file = join(dir, "..", "skip.json");
-  await writeFile(file, JSON.stringify({ proposals: [addition("dec-7k2m9q4x", EXCLUDED_LINE)] }));
+  await writeFile(file, JSON.stringify(withPassages({ proposals: [addition("dec-7k2m9q4x", EXCLUDED_LINE)] })));
   const out = await brain(["proposal", "new", "--input", file, "--brain", dir, "--now", NOW]);
   assert.match(out.stdout, /skipped proposals\[0\]: rests on content you excluded from the brain/);
 });
