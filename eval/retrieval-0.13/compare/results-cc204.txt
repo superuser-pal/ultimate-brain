@@ -1,0 +1,211 @@
+# CC-204: the chosen set (C2, C3, C4) on all 80 cases, the one held-back run (spec/retrieval.md §5.4), with its gates and paired costs.
+# Measured 2026-11-11, 19:23 to 19:58, on Apple M4 Pro, 12 cores, 24 GB, Darwin 25.6.0, node v26.5.0, shared with other agents' work (load averages below).
+#
+# Provenance. This is the comparison variant, not a product package: the CLI is src/ at the source commit with
+# eval/retrieval-0.13/compare/query-variant.ts as src/lib/query.ts, run with UB_RETRIEVAL_VARIANT=C2,C3,C4.
+#   source commit (baseline side; its src/ is main's after #310): 4f94b4001e9b556193c898cefe2cc8470d1097fb
+#   candidate: compare/checkout.mjs's repository, commit 015460eafc34b12701b49aa49469139cdeac57ac ("variant checkout of 4f94b40…", local only)
+#   query-variant.ts sha256 307008426d81d3ef20b053069bb11c2e4219c41808398943abf49654c8bdf287 (= the checkout's src/lib/query.ts: 307008426d81d3ef20b053069bb11c2e4219c41808398943abf49654c8bdf287)
+#   vocabulary.ts sha256 83bb1f14a21ed08bd221cc3b182f49c4b5b5f46e4a8f7618b51b3d2fa8a91649 (committed in 661b863, before any held-back case ran; unchanged since)
+#   to rebuild it: in a worktree at 4f94b40 (this branch keeps it), `node eval/retrieval-0.13/compare/checkout.mjs`. The new
+#   checkout's commit id differs (it records the time); it is the same candidate when its src/lib/query.ts and src/lib/vocabulary.ts
+#   have the two sha256 above and the rest of its files are 4f94b40's (`git -C <checkout> ls-files` and `git diff --no-index`).
+#   At a later commit of this branch the checkout takes that commit's src/, which merges from main changed outside query.ts.
+# The variant's code changed after the first held-back run (a131b86: one BM25 index per search, stems per distinct word, snippets
+# for the first 50), with the same output: the CLI output of both versions is byte for byte the same on all 130 questions. Every
+# result below is from this version. The ranking rules and the map did not change after the dev runs (results-dev.txt).
+# "(uncommitted changes)" on run.mjs's first line: compare/README.md was being written, untracked; no code.
+
+## compare/run.mjs <retrieval-out> <memory-out> --split all --variants "C2,C3,C4"
+
+commit: 4f94b4001e9b556193c898cefe2cc8470d1097fb (uncommitted changes); split: all (80 cases); C0 = the product's bytes on all 130 questions
+
+| variant | fact | paraphrase | clarify (2 subjects seen) | unknown | prose-only facts | facts shown in snippets | originals r1/r5/r10, MRR | 36 kept | memory-0.12 retrieval (lost) | tokens median, p95 (ratio) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| today | 19/20 | 15/20 | 14/20 | 20/20 | 6/17 | 26/40 | 28/32/36, 0.61 | 36/36 | 93/108 | 1146, 1306 |
+| C2,C3,C4 | 20/20 | 20/20 | 15/20 | 20/20 | 17/17 | 33/40 | 42/42/46, 0.85 | 36/36 | 93/108 | 1153, 1368 (1.006, 1.047) |
+
+Originals by kind (r1/r5/r10, MRR):
+
+| variant | decision-by-topic | paraphrase | why | fact-in-body | person-role |
+|---|---|---|---|---|---|
+| today | 7/10/10, 0.85 | 1/2/6, 0.18 | 10/10/10, 1.00 | 0/0/0, 0.00 | 10/10/10, 1.00 |
+| C2,C3,C4 | 10/10/10, 1.00 | 2/2/6, 0.25 | 10/10/10, 1.00 | 10/10/10, 1.00 | 10/10/10, 1.00 |
+
+Cases whose result differs from today's (rank: today → variant; - = not in the first ten):
+
+- C2,C3,C4: rq-f04 pass@2 → pass@1; rq-f10 FAIL@- → pass@1; rq-p01 pass@6 → pass@1; rq-p02 FAIL@- → pass@1; rq-p03 pass@5 → pass@1; rq-p04 pass@7 → pass@10; rq-p05 pass@6 → pass@1; rq-p06 pass@5 → pass@1; rq-p08 pass@4 → pass@1; rq-p09 pass@6 → pass@1; rq-p10 pass@9 → pass@1; rq-p11 pass@8 → pass@1; rq-p12 FAIL@- → pass@7; rq-p13 FAIL@- → pass@2; rq-p15 pass@9 → pass@1; rq-p16 pass@3 → pass@5; rq-p17 pass@1 → pass@2; rq-p18 FAIL@- → pass@1; rq-p20 FAIL@- → pass@9; rq-c02 pass@6 → pass@4; rq-c16 FAIL@1 → pass@2
+
+## UB_RETRIEVAL_VARIANT=C2,C3,C4 <checkout>/eval/retrieval-0.13/score.mjs <retrieval-out> --rows
+
+commit: 015460eafc34b12701b49aa49469139cdeac57ac
+adapter: query-candidates (retrieval): brain query --candidates <question> --repo <caller folder> --json (default limit 10, default types)
+cases: 80 (split: all); audit: passed
+
+| kind | dev | held | all |
+|---|---|---|---|
+| fact | 14/14 | 6/6 | 20/20 |
+| paraphrase | 14/14 | 6/6 | 20/20 |
+| clarify | 13/14 | 2/6 | 15/20 |
+| unknown | 14/14 | 6/6 | 20/20 |
+
+| gate | got | needs | |
+|---|---|---|---|
+| **facts in prose only** (original fact-in-body 10/10 + new body-only 7/7) | 17/17 | 16/17 | pass |
+| fact, first search, first ten | 20/20 | 18/20 | pass |
+| paraphrase, first search, first ten | 20/20 | 18/20 | pass |
+| clarify (reported) | 15/20 | - | reported |
+| unknown (reported) | 20/20 | - | reported |
+
+Facts by evidence subgroup (reported; prose alone = a set of meetings and minutes only):
+
+| subgroup | first ten | prose alone |
+|---|---|---|
+| body-only | 7/7 | 7/7 |
+| structured | 12/12 | 10/12 |
+| decision | 1/1 | 1/1 |
+| **all facts** | 20/20 | 18/20 |
+
+One cold CLI process per case (not the paired latency of costs.mjs): median 752 ms; output 4320 bytes on average (bytes, not tokens).
+
+## Rows
+
+original	fact-in-body	-	pass	1		What is the budget for the Marzel shop?
+original	fact-in-body	-	pass	1		What is the budget for the Nortor website?
+original	fact-in-body	-	pass	1		What is the budget for the Kipsel intranet?
+original	fact-in-body	-	pass	1		What is the budget for the Talquo CRM migration?
+original	fact-in-body	-	pass	1		What is the budget for the Selbren website?
+original	fact-in-body	-	pass	1		What is the budget for the Dunvik CRM migration?
+original	fact-in-body	-	pass	1		What is the budget for the Quopex shop?
+original	fact-in-body	-	pass	1		What is the budget for the Nortor intranet?
+original	fact-in-body	-	pass	1		What is the budget for the Talquo mobile app?
+original	fact-in-body	-	pass	1		What is the budget for the Lumvik booking platform?
+rq-f01	fact/structured	dev	pass	1	sets 3,1,2	
+rq-f02	fact/structured	dev	pass	1	sets 1,-,-	
+rq-f03	fact/structured	dev	pass	1	sets 1,8,10	
+rq-f04	fact/structured	dev	pass	1	sets 4,1,2	
+rq-f05	fact/body-only	held	pass	1	sets 1,2	
+rq-f06	fact/structured	dev	pass	1	sets 2,1,3	
+rq-f07	fact/structured	dev	pass	1	sets 4,1,2	
+rq-f08	fact/body-only	held	pass	1	sets 1,2	
+rq-f09	fact/structured	dev	pass	1	sets 1,2,3	
+rq-f10	fact/body-only	dev	pass	1	sets 2,1	
+rq-f11	fact/body-only	held	pass	1	sets 2,1	
+rq-f12	fact/structured	dev	pass	1	sets 1,-,-	
+rq-f13	fact/body-only	held	pass	1	sets 2,1	
+rq-f14	fact/decision	dev	pass	1	sets 1,2,3	
+rq-f15	fact/structured	dev	pass	1	sets 3,2,1	
+rq-f16	fact/body-only	dev	pass	1	sets 2,1	
+rq-f17	fact/structured	dev	pass	1	sets 3,1,2	
+rq-f18	fact/structured	held	pass	1	sets 3,2,1	
+rq-f19	fact/structured	dev	pass	1	sets 5,3,4,2,1	
+rq-f20	fact/body-only	held	pass	2	sets 2,3	
+rq-p01	paraphrase	dev	pass	1	sets 3,1,2	
+rq-p02	paraphrase	dev	pass	1	sets 5,1,3	
+rq-p03	paraphrase	dev	pass	1	sets 8,1,6	
+rq-p04	paraphrase	dev	pass	10	sets -,10,-	
+rq-p05	paraphrase	dev	pass	1	sets 1,2	
+rq-p06	paraphrase	held	pass	1	sets 2,1	
+rq-p07	paraphrase	dev	pass	1	sets 1,-,-	
+rq-p08	paraphrase	dev	pass	1	sets 1,2	
+rq-p09	paraphrase	dev	pass	1	sets 1,7,10	
+rq-p10	paraphrase	dev	pass	1	sets 2,1	
+rq-p11	paraphrase	dev	pass	1	sets 1,3,2	
+rq-p12	paraphrase	held	pass	7	sets -,7	
+rq-p13	paraphrase	dev	pass	2	sets -,5,2	
+rq-p14	paraphrase	held	pass	9	sets 9,-	
+rq-p15	paraphrase	dev	pass	1	sets 2,1	
+rq-p16	paraphrase	held	pass	5	sets 5,-	
+rq-p17	paraphrase	held	pass	2	sets 2,7	
+rq-p18	paraphrase	dev	pass	1	sets 1,2	
+rq-p19	paraphrase	held	pass	1	sets 2,1	
+rq-p20	paraphrase	dev	pass	9	sets 9,-	
+rq-c01	clarify	dev	pass	2		
+rq-c02	clarify	dev	pass	4		
+rq-c03	clarify	dev	pass	2		
+rq-c04	clarify	held	pass	2		
+rq-c05	clarify	dev	pass	2		
+rq-c06	clarify	dev	pass	2		
+rq-c07	clarify	dev	pass	5		
+rq-c08	clarify	held	FAIL	1		evidence of 1 subject in the first ten, not two
+rq-c09	clarify	dev	pass	2		
+rq-c10	clarify	dev	FAIL	1		evidence of 1 subject in the first ten, not two
+rq-c11	clarify	dev	pass	2		
+rq-c12	clarify	held	FAIL	1		evidence of 1 subject in the first ten, not two
+rq-c13	clarify	dev	pass	2		
+rq-c14	clarify	dev	pass	3		
+rq-c15	clarify	held	pass	2		
+rq-c16	clarify	dev	pass	2		
+rq-c17	clarify	held	FAIL	1		evidence of 1 subject in the first ten, not two
+rq-c18	clarify	dev	pass	2		
+rq-c19	clarify	dev	pass	3		
+rq-c20	clarify	held	FAIL	0		evidence of 0 subjects in the first ten, not two
+rq-u01	unknown	dev	pass	-		
+rq-u02	unknown	dev	pass	-		
+rq-u03	unknown	dev	pass	-		
+rq-u04	unknown	dev	pass	-		
+rq-u05	unknown	held	pass	-		
+rq-u06	unknown	dev	pass	-		
+rq-u07	unknown	held	pass	-		
+rq-u08	unknown	dev	pass	-		
+rq-u09	unknown	dev	pass	-		
+rq-u10	unknown	dev	pass	-		
+rq-u11	unknown	dev	pass	-		
+rq-u12	unknown	held	pass	-		
+rq-u13	unknown	dev	pass	-		
+rq-u14	unknown	held	pass	-		
+rq-u15	unknown	dev	pass	-		
+rq-u16	unknown	held	pass	-		
+rq-u17	unknown	dev	pass	-		
+rq-u18	unknown	held	pass	-		
+rq-u19	unknown	dev	pass	-		
+rq-u20	unknown	dev	pass	-		
+
+## UB_RETRIEVAL_VARIANT=C2,C3,C4 <checkout>/eval/retrieval-0.13/originals.mjs <retrieval-out>
+
+cli: src/cli.ts
+
+| kind | recall@1 | recall@5 | recall@10 | MRR | baseline (cc173) |
+|---|---|---|---|---|---|
+| decision-by-topic | 10/10 | 10/10 | 10/10 | 1.00 | 7/10/10, 0.85 |
+| paraphrase | 2/10 | 2/10 | 6/10 | 0.25 | 1/2/6, 0.18 |
+| why | 10/10 | 10/10 | 10/10 | 1.00 | 10/10/10, 1.00 |
+| fact-in-body | 10/10 | 10/10 | 10/10 | 1.00 | 0/0/0, 0.00 |
+| person-role | 10/10 | 10/10 | 10/10 | 1.00 | 10/10/10, 1.00 |
+| **all** | 42/50 | 42/50 | 46/50 | 0.85 | 28/32/36, 0.61 |
+
+kept in the first ten: 36/36; first rank 42 (baseline 28); MRR 0.8494 (baseline 0.6060): pass
+
+## UB_RETRIEVAL_VARIANT=C2,C3,C4 costs.mjs <retrieval-out> --baseline . --candidate <checkout> --reps 5
+
+baseline: commit 4f94b4001e9b556193c898cefe2cc8470d1097fb
+candidate: commit 015460eafc34b12701b49aa49469139cdeac57ac
+machine: Apple M4 Pro, 12 cores, 24 GB, Darwin 25.6.0, node v26.5.0; load average 6.15 9.44 9.74 before, 10.55 7.65 7.56 after
+questions: 130 (80 cases, 50 originals); passes: 5 after one warm-up; tokenizer: gpt-tokenizer 4.1.0, o200k_base
+
+| measure | baseline median | baseline p95 | candidate median | candidate p95 | ratio median | ratio p95 | gate (<= 1.25) |
+|---|---|---|---|---|---|---|---|
+| search latency, cold CLI (ms) | 686 | 715 | 701 | 732 | 1.023 | 1.024 | pass |
+| in-process ranking (ms) | 65.63 | 78.87 | 77.25 | 91.02 | 1.177 | 1.154 | pass |
+| output tokens (o200k) | 1146 | 1306 | 1153 | 1368 | 1.006 | 1.047 | pass |
+| output bytes (reported) | 4176 | 4793 | 4204 | 4950 | 1.007 | 1.033 | reported |
+
+full filtered read of the first evidence set (candidate, reported): 40 cases, median 378 tokens, p95 497
+
+## The first held-back run's paired costs, before a131b86 (variant as at 7183ff5; its ranks and outputs are the ones above)
+
+In-process ranking failed the 1.25 cap; the cold CLI and tokens passed. a131b86 changed only how the variant computes, not what it returns.
+
+baseline: commit 7183ff56ac38cdccd4769cff54e027d2a1446bd5
+candidate: commit unknown
+machine: Apple M4 Pro, 12 cores, 24 GB, Darwin 25.6.0, node v26.5.0; load average 13.72 32.70 31.65 before, 3.72 4.50 10.60 after
+questions: 130 (80 cases, 50 originals); passes: 5 after one warm-up; tokenizer: gpt-tokenizer 4.1.0, o200k_base
+
+| measure | baseline median | baseline p95 | candidate median | candidate p95 | ratio median | ratio p95 | gate (<= 1.25) |
+|---|---|---|---|---|---|---|---|
+| search latency, cold CLI (ms) | 686 | 712 | 711 | 754 | 1.036 | 1.058 | pass |
+| in-process ranking (ms) | 63.94 | 77.28 | 90.00 | 125 | 1.408 | 1.611 | FAIL |
+| output tokens (o200k) | 1146 | 1306 | 1153 | 1368 | 1.006 | 1.047 | pass |
+| output bytes (reported) | 4176 | 4793 | 4204 | 4950 | 1.007 | 1.033 | reported |
+
+full filtered read of the first evidence set (candidate, reported): 40 cases, median 378 tokens, p95 497
