@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { eligible, latestExtracts, lineageOf, noteReleased, restrictedSources, type Context, type SourceInfo, type Suppression } from "./eligibility.ts";
 import { BrainError } from "./errors.ts";
 import type { Note } from "./notes.ts";
+import { viewLinks } from "./report-body.ts";
 import { PASSAGE_REF } from "./selection.ts";
 
 /** A Restore record (cli §5.23): the user accepted the Restore of passages that a later extract version holds again. */
@@ -212,21 +213,31 @@ function partlyRestricted(note: Note, restriction: Restriction): Note {
   return { ...note, body, attributes };
 }
 
-/** The notes a derived view may render: restricted notes are left out, restricted statements, timeline entries and facts removed (§5.1). */
-export function eligibleNotes(notes: readonly Note[], loaded: Pick<Loaded, "suppressions"> & Partial<Pick<Loaded, "restores">>): Note[] {
+/** The notes a derived view may render (cli §5.9): a note restricted whole, or with nothing eligible left, is left out; restricted statements,
+ *  timeline entries and facts are removed; a note with a restricted claim is in the awaiting-cleanup form, which a view shows by type and id. */
+export function eligibleNotes(notes: readonly Note[], loaded: Pick<Loaded, "suppressions"> & Partial<Pick<Loaded, "restores">>): AnswerNote[] {
   const context = contextFor(notes, loaded);
-  return notes.flatMap((note) => { const kept = eligibleNote(note, context); return kept === null ? [] : [kept]; });
+  return notes.flatMap((note) => { const kept = answerNote(note, context); return kept === null ? [] : [kept]; });
 }
 
-/** The notes the index may describe: a restricted note stays listed (it may be independently supported) but without its summary or facts, and a
- *  partly restricted note loses what may carry excluded text (capture-and-review §5.1, "Indexes"). */
-export function indexNotes(notes: readonly Note[], loaded: Pick<Loaded, "suppressions"> & Partial<Pick<Loaded, "restores">>): Note[] {
+/** The notes the index may describe: every note stays listed (it may be independently supported), each in its published form (cli §5.8). A view
+ *  the derived-content rule withholds keeps no title or summary when `views` is given (eligibility.md §6 rule 5, §8). */
+export function indexNotes(notes: readonly Note[], loaded: Pick<Loaded, "suppressions"> & Partial<Pick<Loaded, "restores">>, views?: { exists: (path: string) => boolean }): AnswerNote[] {
   const context = contextFor(notes, loaded);
-  return notes.map((note) => publishableNote(note, context));
+  const dependencies = views === undefined ? undefined : viewDependencies(notes, views.exists);
+  return notes.map((note) => {
+    if (note.type === "view" && dependencies !== undefined && withheldView(note, dependencies, context) !== null) return withheldViewForm(note);
+    return publishableNote(note, context);
+  });
 }
 
-/** One note in the form a surface that is not retrieval may show: the index, and Notion (`sync plan` and `sync render`, capture-and-review §5.1). */
-export function publishableNote(note: Note, context: Context): Note {
+/**
+ * One note in the form a published surface shows (the index, the views' owners, Notion's `sync plan` and `sync render`; eligibility.md §6
+ * rule 5, cli §5.8 and §5.14.4): a note restricted whole, or with a restricted claim, in the awaiting-cleanup form with no title, aliases,
+ * summary, tags or free text (restricted whole: no body, facts or timeline either); a note whose only change is a dropped summary keeps its title.
+ * A source keeps its title, the name of the input it records; one restricted whole loses its summary, aliases and body.
+ */
+export function publishableNote(note: Note, context: Context): AnswerNote {
   const restriction = restrictionOf(note, context);
   if (restriction.whole) {
     const attributes = { ...note.attributes };
@@ -235,10 +246,17 @@ export function publishableNote(note: Note, context: Context): Note {
     delete attributes.aliases;
     if ("facts" in attributes) attributes.facts = {};
     if ("timeline" in attributes) attributes.timeline = [];
-    return { ...note, attributes, body: "" };
+    const stripped = { ...note, attributes, body: "" };
+    return note.type === "source" ? stripped : awaitingCleanup(stripped);
   }
-  // A note with nothing eligible left stays listed in its partly restricted form (§5.1, "Indexes").
-  return partlyRestricted(note, restriction);
+  const kept = partlyRestricted(note, restriction);
+  return note.type !== "source" && hasRestrictedClaim(restriction) ? awaitingCleanup(kept) : kept;
+}
+
+/** How a published surface names a note: its title, or the label of the awaiting-cleanup form. */
+export function publishedTitle(note: Note): string | undefined {
+  if (titleWithheld(note)) return citeLabel(note);
+  return typeof note.attributes.title === "string" ? note.attributes.title : undefined;
 }
 
 /**
@@ -272,37 +290,94 @@ function stamp(value: unknown): number {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(value) ? Date.parse(value) : Number.NaN;
 }
 
+/** Why a view is withheld and what rebuilds it (cli §5.13.1, "Views"; eligibility.md §8 rule 6). */
+export interface WithheldView { readonly cause: "dependency" | "stale" | "unreadable"; readonly rebuild: "refresh" | "views" }
+
+/** What judging a view needs: the notes by id, the notes a view's body links (`gone` when a `.md` link names no note and no file), and,
+ *  on an answer surface, whether a memory is one the caller may be shown. */
+export interface ViewDependencies {
+  readonly byId: ReadonlyMap<string, Note>;
+  readonly links: (view: Note) => { linked: readonly string[]; gone: boolean };
+  readonly memory?: (note: Note) => boolean;
+}
+
+/** The dependencies of the views of a brain read from `notes`, with `exists` saying whether a path from the brain's root is a file. */
+export function viewDependencies(notes: readonly Note[], exists: (path: string) => boolean, memory?: (note: Note) => boolean): ViewDependencies {
+  const cache = new Map<string, { linked: readonly string[]; gone: boolean }>();
+  return {
+    byId: new Map(notes.map((note) => [note.id, note])),
+    links: (view) => { let links = cache.get(view.id); if (links === undefined) { links = viewLinks(notes, view, exists); cache.set(view.id, links); } return links; },
+    ...(memory === undefined ? {} : { memory }),
+  };
+}
+
 /**
- * A view as retrieval may use it: whole, or null. A view is text written from notes (a Brief, a Decision log) or by a skill (a report), with no
- * passage references of its own, so it cannot be judged line by line. While the brain has a suppression record it is left out whole when
- * (a) a note it was generated from, or links, is restricted in any part or is gone (`gone`: a `.md` link of its body that names no note and no file), or
- * (b) it is a report not written after (a later second than) every extract version that carries a suppression record: its prose may restate what that version
- * removed without linking the note it came from, and only a refresh, which reads through retrieval, clears it (capture-and-review §5.1).
- * `linked` holds the ids the view's body links.
+ * Whether a view is withheld whole, and why (cli §5.13.1, "Views"; eligibility.md §8). A view is text written from notes (a Brief, a Decision log)
+ * or by a skill (a report), with no passage references of its own, so it is one item, read whole or withheld whole. While the brain has a
+ * suppression record it is withheld when, in this order:
+ * - `dependency`: a note in its `generated_from` or linked from its body is restricted in any part, not eligible (a proposal; a memory not
+ *   eligible), gone, or a view this rule withholds, followed to any depth and each view once (a cycle adds nothing);
+ * - `stale`: it is a report not written after (a later second than) every extract version that carries a suppression record, active or
+ *   reconciled: a cleanup never makes an older report fresh, only a refresh does;
+ * - `unreadable`: its `generated_from` is not a list of ids, or, for a report, a time on either side can't be read (fail closed).
  */
-export function eligibleView(view: Note, links: { linked: readonly string[]; gone: boolean }, byId: ReadonlyMap<string, Note>, context: Context): Note | null {
-  if (context.suppressions.length === 0) return view;
-  if (links.gone) return null;
-  const from = Array.isArray(view.attributes.generated_from) ? view.attributes.generated_from.filter((id): id is string => typeof id === "string") : [];
-  for (const id of new Set([...from, ...links.linked])) {
-    const note = byId.get(id);
-    if (note === undefined) return null;
-    const restriction = restrictionOf(note, context);
-    if (restriction.whole || restriction.lines.size > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0 || restriction.summary) return null;
+export function withheldView(view: Note, dependencies: ViewDependencies, context: Context): WithheldView | null {
+  if (context.suppressions.length === 0) return null;
+  const rebuild = view.attributes.view_kind === "report" ? "refresh" : "views";
+  const verdict = judgeView(view, dependencies, context, new Set());
+  return verdict === null ? null : { cause: verdict, rebuild };
+}
+
+function judgeView(view: Note, dependencies: ViewDependencies, context: Context, judging: Set<string>): WithheldView["cause"] | null {
+  judging.add(view.id);
+  const from = view.attributes.generated_from;
+  const provenance = Array.isArray(from) && from.every((id) => typeof id === "string") ? from as string[] : null;
+  const links = dependencies.links(view);
+  if (links.gone) return "dependency";
+  for (const id of new Set([...(provenance ?? []), ...links.linked])) {
+    const note = dependencies.byId.get(id);
+    if (note === undefined || !dependencyEligible(note, dependencies, context, judging)) return "dependency";
   }
-  if (view.attributes.view_kind === "report") {
-    const written = stamp(view.attributes.generated_at);
-    const captured = new Map<string, number>();
-    for (const note of byId.values()) {
-      const key = `${String(note.attributes.extract_of)}\u0000${String(note.attributes.extract_version)}`;
-      if (note.type === "source" && typeof note.attributes.extract_of === "string" && typeof note.attributes.extract_version === "number" && !captured.has(key)) captured.set(key, stamp(note.attributes.captured));
-    }
-    for (const record of context.suppressions) {
-      // Fail closed: a time on either side that isn't a full timestamp (a date alone), or the same second, keeps the report out.
-      if (!(written > (captured.get(`${record.input}\u0000${String(record.version)}`) ?? Number.NaN))) return null;
-    }
+  if (view.attributes.view_kind !== "report") return provenance === null ? "unreadable" : null;
+  const written = stamp(view.attributes.generated_at);
+  const captured = new Map<string, number>();
+  for (const note of dependencies.byId.values()) {
+    const key = `${String(note.attributes.extract_of)}\u0000${String(note.attributes.extract_version)}`;
+    if (note.type === "source" && typeof note.attributes.extract_of === "string" && typeof note.attributes.extract_version === "number" && !captured.has(key)) captured.set(key, stamp(note.attributes.captured));
   }
-  return view;
+  let unreadable = provenance === null || Number.isNaN(written);
+  for (const record of context.suppressions) {
+    // A record of either status: the report may restate what that version removed, and the cleanup never edited it.
+    const time = captured.get(`${record.input}\u0000${String(record.version)}`) ?? Number.NaN;
+    if (Number.isNaN(time)) unreadable = true;
+    else if (!Number.isNaN(written) && !(written > time)) return "stale";
+  }
+  return unreadable ? "unreadable" : null;
+}
+
+/** Whether a note a view rests on leaves it safe to show: a view by this rule (each once), a memory as the surface would show it, any other
+ *  note with no restricted part at all. A proposal is never evidence. */
+function dependencyEligible(note: Note, dependencies: ViewDependencies, context: Context, judging: Set<string>): boolean {
+  if (note.type === "proposal") return false;
+  if (note.type === "view") return judging.has(note.id) || judgeView(note, dependencies, context, judging) === null;
+  if (note.type === "memory" && !(dependencies.memory?.(note) ?? currentMemory(note))) return false;
+  const restriction = restrictionOf(note, context);
+  return !(restriction.whole || restriction.lines.size > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0 || restriction.summary);
+}
+
+/** A memory a published surface may rest on, with no caller to judge reach by: reviewed and superseded by nothing (memory.md §2 rules 1, 2). */
+function currentMemory(note: Note): boolean {
+  const superseded = Array.isArray(note.attributes.relations) && note.attributes.relations.some((relation) => relation !== null && typeof relation === "object" && (relation as { type?: unknown }).type === "superseded_by");
+  return note.attributes.lifecycle === "reviewed" && !superseded;
+}
+
+/** A view the rule withholds, as a published surface lists it: no title, summary or aliases (cli §5.8). */
+function withheldViewForm(view: Note): AnswerNote {
+  const attributes = { ...view.attributes };
+  delete attributes.title;
+  delete attributes.summary;
+  delete attributes.aliases;
+  return { ...view, attributes, titleWithheld: true };
 }
 
 // --- The answer surfaces' form of a note (CC-176; spec/eligibility.md §6 rules 2 to 4, cli.md §5.13 "The awaiting-cleanup form") ---------
@@ -375,7 +450,7 @@ function awaitingCleanup(note: Note): AnswerNote {
 /**
  * A note as an answer surface returns it (`query --candidates` and `--read`, `recall`, `reflect --candidates`; eligibility.md §2, §6): the
  * restricted-evidence rule's form (`eligibleNote`), and, when a claim of it is restricted, the awaiting-cleanup form; null when the rule leaves it
- * out whole. The published surfaces keep `eligibleNote` and `publishableNote` until CC-183 (eligibility.md §6 rule 5).
+ * out whole. The published surfaces use `publishableNote` (eligibility.md §6 rule 5).
  */
 export function answerNote(note: Note, context: Context): AnswerNote | null {
   const restriction = restrictionOf(note, context);
