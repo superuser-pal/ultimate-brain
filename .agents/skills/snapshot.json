@@ -5,13 +5,13 @@
   "cli": ">=0.13.0-0 <0.14.0",
   "source": {
     "repository": "https://github.com/superuser-pal/ultimate-brain-skills",
-    "commit": "7c96ed1a6156950f83d1824a15f170833a9a87d5"
+    "commit": "3f391443980823fad9bc0e700f98af6814b15bf0"
   },
   "upstream": {
     "repository": "https://github.com/mattpocock/skills",
     "commit": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
   },
-  "integrity": "sha256-6194c58ebcf22cb8abcc6a3a91497775d8ec7a0c07343e8f68558fe7f71b6fe5",
+  "integrity": "sha256-70de6c016b7a911bb55f87a284d463420ebaeebdc01e260916a8e51fd7efaa61",
   "skills": [
     {
       "name": "brain-apply",
@@ -70,8 +70,8 @@
         },
         {
           "path": "references/everyday-guide.md",
-          "sha256": "934ec908819f04ffe796fe72475e1cc653f103b00b6d96723d7e03ae980d7221",
-          "bytes": 12207
+          "sha256": "b4f8707c942381c204da306b059ac02f00ede3ef60be8d71334865758e7fc375",
+          "bytes": 12230
         },
         {
           "path": "references/guide.md",
