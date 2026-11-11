@@ -200,7 +200,7 @@ function instructionBlock(project: Note | undefined, area: Note | undefined, lin
     "- answer why something was decided, who someone is, or a date, budget or owner;",
     "- rely on a fact about the client or project that this repo does not state.",
     "",
-    "How: use the `brain-query` skill, or run `brain query --candidates \"<question>\" --json` and read the notes it returns with `brain query --read <id> --json`, not by opening the brain's files: only these commands leave out what the user excluded or has not approved. Cite the note paths. Say when a fact is `contested` or `superseded`.",
+    "How: use the `brain-query` skill, or run `brain query --candidates \"<question>\" --json` and read the notes it returns with `brain query --read <id> --json`, not by opening the brain's files: only these commands leave out what the user excluded or has not approved. Cite each note by its path, or by its `cite` when it has none. Say when a fact is `contested` or `superseded`; read a replaced memory only with `--historical`, for a question about the past.",
   );
   if (recall) lines.push("", RECALL_PARAGRAPH);
   const workflow = linked.includes("brain-workflow");
