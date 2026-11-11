@@ -67,12 +67,18 @@ try {
   assert.equal(JSON.parse(lint.stdout).ok, true);
   const upgrade = await exec("npx", ["--no-install", "ultimate-brain", "upgrade", "--brain", "brain", "--json"], { cwd: temp, env });
   assert.deepEqual(JSON.parse(upgrade.stdout).data.files, []);
-  // init's human output (spec/cli.md §5.1, CC-156) names a checklist that exists in the packed install, and the connect step.
+  // init's human output (spec/cli.md §5.1, 0078 §2) names one next step, "set up my brain", and no path under the installed package.
   const told = (await exec("npx", ["--no-install", "ultimate-brain", "init", "told-brain", "--no-git"], { cwd: temp, env })).stdout;
-  assert.match(told, /ask your agent: "connect the brain to Notion"/);
-  const checklist = /follow (.+CHECKLIST\.md)$/m.exec(told)?.[1];
-  assert.equal(checklist, join(productPath, "notion", "CHECKLIST.md"));
-  await access(checklist);
+  assert.match(told, /^Next: open Claude Code or Codex in .+told-brain and say "set up my brain"$/m);
+  assert.ok(!told.includes(productPath), told);
+  // upgrade names the packed Notion migrations newer than the template version, by full paths that exist (spec/cli.md §5.15).
+  const toldConfig = JSON.parse(await readFile(join(temp, "told-brain", "brain.json"), "utf8"));
+  toldConfig.notion.template_version = "0001";
+  await writeFile(join(temp, "told-brain", "brain.json"), `${JSON.stringify(toldConfig, null, 2)}\n`);
+  const migrated = JSON.parse((await exec("npx", ["--no-install", "ultimate-brain", "upgrade", "--brain", "told-brain", "--dry-run", "--json"], { cwd: temp, env })).stdout);
+  const newer = migrated.data.notion_migrations.newer;
+  assert.ok(newer.length > 0 && !newer.some((file) => file.startsWith("0001-")), JSON.stringify(newer));
+  for (const file of newer) await access(join(productPath, "notion", "migrations", file));
   // DOCUMENTS_TURNED_ON (spec/cli.md §5.15 step 5) names a migration file that exists in the packed install.
   await exec("npx", ["--no-install", "ultimate-brain", "init", "reports-brain", "--no-git", "--json"], { cwd: temp, env });
   const reportsConfig = JSON.parse(await readFile(join(temp, "reports-brain", "brain.json"), "utf8"));

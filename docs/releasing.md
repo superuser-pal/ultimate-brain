@@ -55,6 +55,20 @@ JSON
 
 ## Each release
 
+**First, the native smoke run** (decision [0082](../decisions/0082-native-smoke-run-per-release-full-native-acceptance-before-1-0.md) §1): from 0.13.0 on, a release (patches included) is cut only after 0082's 15 cases pass in Claude Code and in Codex on a package of the head you are about to release. In the main checkout, after `git pull` (the logins are the harness's, [eval/memory-0.12/native/README.md](../eval/memory-0.12/native/README.md)):
+
+```sh
+npm ci --prefix eval/memory-0.12/adapters        # once: the tokenizer for retrieval costs
+rm -rf /tmp/ub-smoke && mkdir /tmp/ub-smoke && npm pack --pack-destination /tmp/ub-smoke
+node eval/memory-0.12/native/run.mjs --package /tmp/ub-smoke/ultimate-brain-*.tgz --commit "$(git rev-parse HEAD)" \
+  --out ~/ub-smoke-runs/<version> --claude-config ~/agent-logins/claude --codex-home ~/agent-logins/codex \
+  --cases trust-01,trust-04,trust-10,trust-14,trust-18,trust-19,trust-22,trust-29,trust-34,trust-35,trust-39,trust-43,ans-01,ans-39,unk-05
+```
+
+In `results.md`, for each agent: critical trust 12 of 12, every session clean in the no-file-read check, isolation clean. Answerable and unknown are reported, not gated, and `met` includes the 90% answerable gate, so judge from those three columns. A failure holds the release: fix it as its own task and rerun on the new head; running the same package again doesn't count. Keep the run folder; nothing is committed. `release.mjs` doesn't check the smoke run. If `main` moves before you release, run it again.
+
+Then:
+
 ```sh
 cd ~/GitHub/ultimate-brain
 git pull
