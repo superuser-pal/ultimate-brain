@@ -7,7 +7,7 @@
 //   --json      print the full result as JSON instead of text
 //   --strict    exit 1 when a gate fails (the baseline is not expected to pass, so the default exits 0)
 // The scoring rules are in README.md; this file is their implementation.
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -168,7 +168,7 @@ function scoreOutcome(c, result) {
 }
 
 // Run as a script: score the adapter on every case. Imported (tests), it only exports the rules.
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main();
+if (process.argv[1] && realpathSync(resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url))) await main();
 
 async function main() {
   const argv = process.argv.slice(2);
