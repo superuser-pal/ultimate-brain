@@ -1,5 +1,6 @@
 // Pure scoring and audit rules of the 0.13.0 English retrieval evaluation (CC-203; spec/retrieval.md §5.5, §6).
 // score.mjs feeds them the brain and an adapter's results; tests/retrieval-eval.test.mjs feeds them synthetic ones.
+import { abstains } from "../memory-0.12/score.mjs";
 
 export const LIMIT = 10;
 export const KINDS = ["fact", "paraphrase", "clarify", "unknown"];
@@ -12,9 +13,9 @@ export const PROSE_FACT_GATE = { need: 16, of: 17 };
 /** Answer gates: 36 of the 40 answerable cases (90%); every clarify and every unknown case. */
 export const ANSWER_GATES = { answerable: 36, clarify: 20, unknown: 20 };
 
-// An answer abstains when it says the brain does not hold the answer. eval/memory-0.12/score.mjs's `ABSTAIN` pattern, kept
-// the same here so the two sets judge an abstention alike (CC-206 aligns both with CC-201's rule once it is merged).
-export const ABSTAIN = /(\bno\b[^.]{0,60}\b(is|are) recorded|not recorded|no record|isn't recorded|no (approved )?memor(y|ies)|nothing (is )?(recorded|in the brain)|not in the brain|don't know|do not know|\bunknown\b|no evidence|not (stated|known|found)|doesn't (say|hold|record)|does not (say|hold|record))/i;
+// An answer abstains as eval/memory-0.12/score.mjs judges it (CC-201's rule over the answer's clauses), so the two sets judge an
+// abstention alike; on an answerable case the facts decide (below).
+export { abstains };
 
 const norm = (text) => text.replace(/[‘’]/g, "'").replace(/\s+/g, " ");
 /** A fact is present when every one of its regular expressions matches (case-insensitive). */
@@ -52,11 +53,14 @@ export function scoreRetrieval(c, candidateIds) {
 export function scoreAnswer(c, answer) {
   const text = norm(answer?.text ?? "");
   const cited = new Set(answer?.citations ?? []);
-  const abstained = answer?.abstained === true || ABSTAIN.test(text);
+  const abstained = answer?.abstained === true || abstains(answer?.text ?? "");
   const reasons = [];
   for (const id of c.forbidden_evidence ?? []) if (cited.has(id)) reasons.push(`cited forbidden ${id}`);
   if (c.kind === "fact" || c.kind === "paraphrase") {
-    if (abstained) reasons.push("abstained on an answerable case");
+    // memory-0.12's answerable rule (spec/retrieval.md §6.1): a complete, cited answer still fails when it also states what it must not.
+    for (const f of c.forbidden_facts ?? []) if (matches(f, text)) reasons.push(`says what it must not: ${f.says}`);
+    // Facts first, as memory-0.12 (CC-201, the user's choice of 2026-11-11): an answer holding every required fact passes whatever caveat it adds.
+    if (abstained && (c.facts.length === 0 || c.facts.some((f) => !matches(f, text)))) reasons.push("abstained on an answerable case");
     for (const f of c.facts) if (!matches(f, text)) reasons.push(`missing fact: ${f.says}`);
     if (c.as_of && !matches(c.as_of, text)) reasons.push(`missing time qualification: ${c.as_of.says}`);
     if (!c.evidence_sets.some((set) => set.every((id) => cited.has(id)))) reasons.push("cites no complete evidence set");

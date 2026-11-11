@@ -64,7 +64,7 @@ Fields: those of `eval/memory-0.12` (`caller`, `facts`, `forbidden_facts`, `forb
 |---|---|---|
 | `fact`, `paraphrase` | every id of one evidence set is in the first ten | every fact (and `as_of`) is present, every id of one set is cited, it does not abstain |
 | `clarify` | evidence of two subjects is in the first ten (reported) | it asks a question, names two subjects, states no subject's value, does not abstain |
-| `unknown` | nothing forbidden returned (reported) | it abstains (`ABSTAIN`, the same pattern as `eval/memory-0.12/score.mjs`; CC-206 aligns both with CC-201's rule once that is merged) |
+| `unknown` | nothing forbidden returned (reported) | it abstains (`abstains` of `eval/memory-0.12/score.mjs`, CC-201's rule); no forbidden fact |
 
 Gates (spec/retrieval.md §6.2), at the retrieval level: **facts in prose only, 16 of 17** (the user's choice of 2026-11-11, so that the combined fact score, which a project note's typed field can carry, cannot hide the original 0 of 10: `score.mjs` runs `eval/search-0.5`'s 10 fact-in-body questions once each on the original brain and adds the 7 `fact` cases with `subgroup: body-only`); facts 18 of 20; paraphrases 18 of 20; at the answer level 36 of the 40 answerable, 20 of 20 clarify and 20 of 20 unknown. The answer gates are met by CC-186's native runs, not by the reference answers. A retrieval number is never evidence of answer or native quality.
 

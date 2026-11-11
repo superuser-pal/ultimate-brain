@@ -309,7 +309,7 @@ export const CASES = [
     ref: "Not recorded: there is no hosting decision for the Velde members site." },
   { id: "rq-u05", kind: "unknown", split: "held", caller: "scratch", question: "When does the Harlow mobile app launch?",
     absent: [{ about: "org:harlow", none: ["mobile app"] }], audit: "Harlow has no mobile app project",
-    ref: "The brain has no Harlow mobile app; Harlow's projects are the website and the web shop, and no mobile app is recorded." },
+    ref: "I couldn't find a Harlow mobile app in the brain, so its launch date isn't recorded; Harlow's projects are the website and the web shop." },
   { id: "rq-u06", kind: "unknown", split: "dev", caller: "scratch", question: "What is Kestrel Dental's annual revenue?",
     absent: [{ about: "org:kestrel", none: ["revenue|turnover"] }], audit: "no revenue for Kestrel",
     ref: "Kestrel Dental's revenue is not recorded in the brain." },

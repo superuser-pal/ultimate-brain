@@ -5,7 +5,8 @@
 // The 130 questions are the 80 cases (on <out-dir>/brain, from their caller folders) and the 50 originals (on
 // <out-dir>/original, from a folder with no `.brain`).
 //   - Search latency: one cold `node <checkout>/src/cli.ts query --candidates … --json` process per question and side.
-//   - In-process ranking time: each side's own `rankCandidates` over notes it has already scanned (file reading not counted).
+//   - In-process ranking time: each side's own `rankCandidates` over notes it has already scanned (file reading not counted);
+//   the warm-up pass checks that it returns the CLI's first ten.
 //   Both are paired and interleaved: one discarded warm-up pass, then --reps passes, the two sides alternating and their
 //   order swapped every pass and every question; a question's time is the median of its passes; the statistics are the
 //   median and the 95th percentile (nearest rank) over the questions; the gate is candidate / baseline <= 1.25 for each.
@@ -60,20 +61,21 @@ function cliRun(side, q) {
   return { ms: Number(process.hrtime.bigint() - started) / 1e6, stdout };
 }
 
-// ---- in-process ranking, each side with its own modules (as src/commands/query.ts builds the call) ----
+// ---- in-process ranking, each side with its own modules, its eligible notes built as src/commands/query.ts builds them ----
+// (answerNote for a note, withheldView for a view; the default types search no memory, so a memory is never shown).
 async function rankerFor(side) {
   const root = resolve(sides[side]);
   const load = (path) => import(pathToFileURL(join(root, "src/lib", path)).href);
-  const [notesLib, supp, report, query] = await Promise.all([load("notes.ts"), load("suppressions.ts"), load("report-body.ts"), load("query.ts")]);
+  const [notesLib, supp, query] = await Promise.all([load("notes.ts"), load("suppressions.ts"), load("query.ts")]);
   const prepared = new Map();
   const prepare = async (brain) => {
     if (prepared.has(brain)) return prepared.get(brain);
     const scanned = await notesLib.scanNotes(brain);
     const loaded = supp.requireSuppressions(brain);
     const eligibility = supp.contextFor(scanned.notes, loaded);
-    const byId = new Map(scanned.notes.map((n) => [n.id, n]));
     const { existsSync } = await import("node:fs");
-    const eligibleOf = (n) => (n.type === "view" ? supp.eligibleView(n, report.viewLinks(scanned.notes, n, (p) => existsSync(join(brain, p))), byId, eligibility) : supp.eligibleNote(n, eligibility));
+    const dependencies = supp.viewDependencies(scanned.notes, (p) => existsSync(join(brain, p)), () => false);
+    const eligibleOf = (n) => (n.type === "memory" ? null : n.type === "view" ? (supp.withheldView(n, dependencies, eligibility) === null ? n : null) : supp.answerNote(n, eligibility));
     const value = { notes: scanned.notes, eligibleOf, loaded };
     prepared.set(brain, value);
     return value;
@@ -84,8 +86,8 @@ async function rankerFor(side) {
   return (q) => {
     const { notes, eligibleOf } = prepared.get(q.brain);
     const started = process.hrtime.bigint();
-    query.rankCandidates(notes, query.queryTerms(q.q), query.queryTypes(undefined), contexts.get(q.caller), eligibleOf).slice(0, 10);
-    return Number(process.hrtime.bigint() - started) / 1e6;
+    const ranked = query.rankCandidates(notes, query.queryTerms(q.q), query.queryTypes(undefined), contexts.get(q.caller), eligibleOf).slice(0, 10);
+    return { ms: Number(process.hrtime.bigint() - started) / 1e6, ids: ranked.map((c) => c.id) };
   };
 }
 
@@ -99,10 +101,16 @@ for (let pass = -1; pass < reps; pass++) {
     const order = (pass + i) % 2 === 0 ? ["baseline", "candidate"] : ["candidate", "baseline"];
     for (const side of order) {
       const run = cliRun(side, q);
-      const rankMs = rankers[side](q);
-      if (pass < 0) { firstOutput[side][i] = run.stdout; continue; }
+      const ranked = rankers[side](q);
+      if (pass < 0) {
+        // The in-process ranking must rank what the CLI returns, or its time measures something else.
+        const cliIds = JSON.parse(run.stdout).data.candidates.map((c) => c.id).join(",");
+        if (ranked.ids.join(",") !== cliIds) { console.error(`${side}, ${q.label}: the in-process ranking differs from the CLI's`); process.exit(2); }
+        firstOutput[side][i] = run.stdout;
+        continue;
+      }
       times.cli[side][i].push(run.ms);
-      times.rank[side][i].push(rankMs);
+      times.rank[side][i].push(ranked.ms);
     }
   }
 }
