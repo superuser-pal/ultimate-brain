@@ -5,7 +5,8 @@ import type { Note } from "./notes.ts";
 import { bodyHash } from "./proposals.ts";
 import { cleanupItemView, CLEANUP_KINDS } from "./cleanup-row.ts";
 import { restrictedSources } from "./eligibility.ts";
-import { contextFor, eligibleNote, requireSuppressions, restsOnExcluded } from "./suppressions.ts";
+import { proposalWithheld } from "./passages.ts";
+import { contextFor, eligibleNote, requireSuppressions } from "./suppressions.ts";
 import type { Workspace } from "./workspace.ts";
 
 // The Review page of a review_notes proposal with item ids (capture-and-review §7.2, §7.5): pure, no Notion calls.
@@ -96,19 +97,18 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
   const sourceUrl = url(source?.attributes.notion);
   const result: ReviewItem[] = [];
   const stored = (Array.isArray(a.items) ? a.items : []).filter(record);
+  // Each item is judged by its own passages, a legacy one by its input, a note by its draft too (schema §11.5, cli §5.7).
+  const withheld = proposalWithheld(proposal, workspace, context);
   stored.forEach((entry, index) => {
     const itemId = String(entry.item_id);
-    // The draft this item creates holds a restricted line or is restricted whole: a mixed item is withheld whole (eligibility.md §4.2).
-    let draftExcluded = false;
-    // The proposed wording of a change cites a passage that is not live: the same rule as `brain apply` and `proposal new` (cli §5.7).
-    let textExcluded = false;
+    // The item has no eligible support (its passages, its legacy input, its wording, the draft it creates): withheld whole (eligibility.md §4.2, §9).
+    const itemExcluded = entry.kind === "note" ? withheld.notes.has(String(entry.ref)) : entry.kind === "link" ? withheld.links.has(Number(entry.ref)) : entry.kind === "change" ? withheld.changes.has(Number(entry.ref)) : false;
     let item: Pick<ReviewItem, "kind" | "heading" | "current" | "proposed" | "editable" | "why" | "effect" | "target" | "held"> & { base: string; now: string };
     if (CLEANUP_KINDS.includes(entry.kind as never)) {
       const view = cleanupItemView(proposal, entry, workspace);
       item = { kind: "changes", heading: view.heading, current: view.current, proposed: canon(view.proposed), editable: view.editable, why: view.why, effect: view.effect, target: view.target, held: false, base: view.base, now: view.base };
     } else if (entry.kind === "note") {
       const view = seen(workspace.get(String(entry.ref)));
-      draftExcluded = view.held;
       item = { kind: "creates", heading: `Creates: ${titleOf(entry.ref, workspace)}`, current: null, proposed: canon(view.body), editable: true, why: String(a.why ?? ""), effect: EFFECT.creates!, target: view.note, held: view.held, base: base(view.note !== undefined, bodyHash(workspace.get(String(entry.ref))?.body ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(entry.ref))?.body ?? "")) };
     } else if (entry.kind === "link") {
       const link = links[Number(entry.ref)] ?? {};
@@ -122,7 +122,6 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
       const view = seen(typeof change.target === "string" ? workspace.get(change.target) : undefined);
       const targetTitle = titleOf(change.target, workspace);
       const why = String(change.why ?? a.why ?? "");
-      if (change.kind === "update_body" || change.kind === "add_to_note") textExcluded = restsOnExcluded(a.source, String(change.content ?? ""), context);
       if (change.kind === "update_fact") {
         item = { kind: "changes", heading: `Changes: ${label(String(change.field))} on ${targetTitle}`, current: (() => { const facts = view.note?.attributes.facts; const live = facts !== null && typeof facts === "object" ? (facts as Record<string, unknown>)[String(change.field)] : undefined; const shown = live === undefined ? change.before : live; return shown === undefined ? "(new)" : String(shown); })(), proposed: canon(String(change.after ?? "")), editable: true, why, effect: EFFECT.update_fact!, target: view.note, held: view.held, base: base(view.note !== undefined, change.before === undefined ? null : String(change.before)), now: base(view.note !== undefined, (() => { const facts = view.note?.attributes.facts; const value = facts !== null && typeof facts === "object" ? (facts as Record<string, unknown>)[String(change.field)] : undefined; return value === undefined ? null : String(value); })()) };
       } else if (change.kind === "update_body") {
@@ -135,7 +134,9 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
       }
     }
     // An item whose source is excluded shows no wording at all: the page is Notion's copy and the text would stay there (§5.1).
-    if (sourceRestricted || textExcluded) item.held = true;
+    // A cleanup item keeps the rule it had: held while the row's source is excluded. Every other item is held when it is withheld (§11.5).
+    const cleanupHeld = sourceRestricted && CLEANUP_KINDS.includes(entry.kind as never);
+    if (cleanupHeld || itemExcluded) item.held = true;
     const previous = (Array.isArray(a.revisions) ? a.revisions : []).filter(record).find((revision) => revision.item_id === itemId && revision.status === "drafted" && typeof revision.previous === "string")?.previous as string | undefined;
     const letter = itemLetter(index);
     const targetUrl = url(item.target?.attributes.notion);
@@ -156,7 +157,7 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
         `**What Accept does:** ${item.effect}`,
         "Decision: Pending",
       ]).join("\n");
-    result.push({ item_id: itemId, letter, kind: item.kind, heading: item.heading, current: item.held ? null : item.current, proposed: item.held ? "" : item.proposed, editable: !item.held && item.editable, why: whyLine, effect: item.held ? EFFECT.held! : item.effect, held: item.held, source_excluded: sourceRestricted || draftExcluded || textExcluded, target: item.target, proposed_hash: sha(item.held ? "" : item.proposed), base_hash: sha(item.base), current_base_hash: sha(item.now), section, rendered_hash: sha(section) });
+    result.push({ item_id: itemId, letter, kind: item.kind, heading: item.heading, current: item.held ? null : item.current, proposed: item.held ? "" : item.proposed, editable: !item.held && item.editable, why: whyLine, effect: item.held ? EFFECT.held! : item.effect, held: item.held, source_excluded: cleanupHeld || itemExcluded, target: item.target, proposed_hash: sha(item.held ? "" : item.proposed), base_hash: sha(item.base), current_base_hash: sha(item.now), section, rendered_hash: sha(section) });
   });
   return result;
 }

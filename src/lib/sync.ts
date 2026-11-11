@@ -23,7 +23,8 @@ import { decidedInChat, suggestionText } from "./notion-change.ts";
 import { parseReviewPageInput, planReviewRow, type ItemDecision, type ReviewDecision, type ReviewHeld, type ReviewPage, type ReviewRevision } from "./review-plan.ts";
 import { hasReportShape, reportLinks } from "./report-body.ts";
 import { gitBodyOf, parseWording, planWording, textHash, type AcceptedWording, type Wording, type WordingPlan } from "./wording.ts";
-import { restrictedSources } from "./eligibility.ts";
+import type { Context } from "./eligibility.ts";
+import { proposalWithheld, type Withheld } from "./passages.ts";
 import { contextFor, publishableNote, requireSuppressions } from "./suppressions.ts";
 import { importedItems } from "./selection.ts";
 
@@ -211,22 +212,34 @@ function publishedBaseline(row: SnapshotRow, rendered: Record<string, unknown>):
 }
 
 /** A note as Notion may show it: a restricted note in its eligible form, so a published copy changes (and is re-rendered) once content is excluded (capture-and-review §5.1). */
-const publishForms = new WeakMap<Workspace, { forms: Map<string, Note>; restricted: Set<string> }>();
-function publishState(workspace: Workspace): { forms: Map<string, Note>; restricted: Set<string> } {
+const publishForms = new WeakMap<Workspace, { forms: Map<string, Note>; context: Context }>();
+function publishState(workspace: Workspace): { forms: Map<string, Note>; context: Context } {
   let state = publishForms.get(workspace);
   if (state === undefined) {
     const context = contextFor(workspace.notes, requireSuppressions(workspace.root));
     state = {
       forms: new Map(workspace.notes.map((candidate) => [candidate.id, candidate.type === "source" || candidate.type === "proposal" ? candidate : publishableNote(candidate, context)])),
-      restricted: restrictedSources(context),
+      context,
     };
     publishForms.set(workspace, state);
   }
   return state;
 }
 function publishable(workspace: Workspace, note: Note): Note { return publishState(workspace).forms.get(note.id) ?? note; }
-/** A proposal whose source is an older version or full copy of a changed input: its wording rests on excluded content and is not published (capture-and-review §5.1). */
-function proposalExcluded(workspace: Workspace, note: Note): boolean { return note.type === "proposal" && typeof note.attributes.source === "string" && publishState(workspace).restricted.has(note.attributes.source); }
+/**
+ * What of a proposal Notion may not show (capture-and-review §5.1, eligibility.md §9.4, cli §5.7 "Excluded evidence"): `whole` when the proposal,
+ * or every item of a review_notes, is withheld (a passage is not live; or it is legacy and its input has a suppression record or its source is
+ * an older version or full copy of a changed input); `items`, the withheld items of a review_notes.
+ */
+function proposalHeld(workspace: Workspace, note: Note): { whole: boolean; items: Withheld } {
+  const none: Withheld = { whole: false, changes: new Set(), notes: new Set(), links: new Set() };
+  if (note.type !== "proposal") return { whole: false, items: none };
+  const items = proposalWithheld(note, workspace, publishState(workspace).context);
+  const a = note.attributes;
+  const count = (Array.isArray(a.changes) ? a.changes.length : 0) + (Array.isArray(a.notes) ? a.notes.length : 0) + (Array.isArray(a.links) ? a.links.length : 0);
+  const held = items.changes.size + items.notes.size + items.links.size;
+  return { whole: items.whole || (a.kind === "review_notes" && count > 0 && held === count), items };
+}
 
 /** Whether a Review row is rendered as a page with item sections (capture-and-review §10): it was published that way (`@review`), or it is not published yet and the space has the Decided property (`notion.review_sections`, set by migration 0013 or a fresh setup). A row published the old way keeps the old layout. */
 const HELD_TEXT = "Held: this rests on content you excluded from the brain, so it is not shown.";
@@ -847,16 +860,17 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
   if (note.type === "proposal") {
     const target = typeof a.target === "string" ? workspace.get(a.target) : undefined;
     const addLink = a.kind === "add_link";
+    const held = proposalHeld(workspace, note);
     const after = addLink
       ? proposalLinks(a).map((link) => `${fieldLabel(String(link.field))}: ${noteTitle(link.value, workspace)}`).join("\n")
-      : a.kind === "review_notes" ? reviewNotesAfter(a, workspace) : a.kind === "update_body" ? bodyChange(a, workspace)?.join("\n") ?? null : undefined;
+      : a.kind === "review_notes" ? reviewNotesAfter(a, workspace, held.items) : a.kind === "update_body" ? bodyChange(a, workspace)?.join("\n") ?? null : undefined;
     // A body diff can only be shown while the target's body is the one proposed against; then S keeps it (0045).
     const proposed = staleBody(a, workspace) && isRecord(a.notion_published) && Object.hasOwn(a.notion_published, "Proposed") ? a.notion_published.Proposed : undefined;
     const reviewText = (value: unknown) => truncate(typeof value === "string" ? reviewMarkdown(value, target) : value);
     // A Suggestion row (0072, cli §5.14.4): Ultimate Assistant's notion_change or set_field, shown in the proposal's own Area, with no Source Meeting.
     if (a.kind === "notion_change" || a.kind === "set_field") {
       const text = suggestionText(a, workspace);
-      Object.assign(values, { Name: text.name, Kind: select(a.kind), About: text.about, "About Page": text.aboutPage, Now: truncate(text.now), Proposed: truncate(text.proposed), Why: reviewText(a.why), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), State: select(proposalState(a.status)), "Brain ID": note.id });
+      Object.assign(values, { Name: held.whole ? `Held: ${note.id}` : text.name, Kind: select(a.kind), About: text.about, "About Page": text.aboutPage, Now: held.whole ? HELD_TEXT : truncate(text.now), Proposed: held.whole ? HELD_TEXT : truncate(text.proposed), Why: held.whole ? HELD_TEXT : reviewText(a.why), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), State: select(proposalState(a.status)), "Brain ID": note.id });
       return values;
     }
     // A Review notes row names its source: the meeting for minutes, else the source (0041).
@@ -865,11 +879,11 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     const page = (source ?? target)?.attributes.notion;
     const meeting = typeof a.source === "string" ? workspace.get(a.source) : undefined;
     Object.assign(values, {
-      Name: reviewName(a), Kind: select(a.kind), About: targetText,
+      Name: held.whole ? `Held: ${note.id}` : reviewName(a), Kind: select(a.kind), About: targetText,
       "About Page": typeof page === "string" ? `https://www.notion.so/${page.replaceAll("-", "")}` : null,
       "Source Meeting": meeting?.type === "meeting" && typeof meeting.attributes.notion === "string" ? [meeting.attributes.notion] : [],
-      Now: proposalExcluded(workspace, note) ? HELD_TEXT : reviewText(proposalBefore(a, workspace)), Proposed: proposalExcluded(workspace, note) ? HELD_TEXT : reviewSections(workspace, note) ? `${(a.items as unknown[]).length} ${(a.items as unknown[]).length === 1 ? "change" : "changes"}: decide each one in the page` : proposed !== undefined ? proposed : reviewText(after ?? proposalAfter(a, workspace)),
-      Why: proposalExcluded(workspace, note) ? HELD_TEXT : reviewText(a.why), Area: relationPages(reviewArea(a, workspace), workspace), State: select(proposalState(a.status)), "Brain ID": note.id,
+      Now: held.whole ? HELD_TEXT : reviewText(proposalBefore(a, workspace)), Proposed: held.whole ? HELD_TEXT : reviewSections(workspace, note) ? `${(a.items as unknown[]).length} ${(a.items as unknown[]).length === 1 ? "change" : "changes"}: decide each one in the page` : proposed !== undefined ? proposed : reviewText(after ?? proposalAfter(a, workspace)),
+      Why: held.whole ? HELD_TEXT : reviewText(a.why), Area: relationPages(reviewArea(a, workspace), workspace), State: select(proposalState(a.status)), "Brain ID": note.id,
     });
     return values;
   }
@@ -1012,19 +1026,22 @@ function noteTitle(value: unknown, workspace: Workspace): unknown { return typeo
 function fieldLabel(field: string): string { return field[0]?.toUpperCase() + field.slice(1).replaceAll("_", " "); }
 function truncate(value: unknown): unknown { return typeof value === "string" ? value.slice(0, 2000) : value; }
 /** The lettered lines of a Review notes row: its changes, then its notes, then its links (cli §5.14.4, 0045). */
-function reviewNotesAfter(attributes: Record<string, unknown>, workspace: Workspace): string {
-  const changes = (Array.isArray(attributes.changes) ? attributes.changes.filter(isRecord) : []).map((change) => {
+function reviewNotesAfter(attributes: Record<string, unknown>, workspace: Workspace, held?: Withheld): string {
+  const HELD_LINE = "Held: this rests on content you excluded from the brain";
+  const changes = (Array.isArray(attributes.changes) ? attributes.changes.filter(isRecord) : []).map((change, index) => {
+    if (held?.changes.has(index) === true) return HELD_LINE;
     const target = String(noteTitle(change.target, workspace));
     if (change.kind === "update_fact") return `⚠ ${fieldLabel(String(change.field))} on ${target}: ${change.before === undefined ? "(new)" : String(noteTitle(change.before, workspace))} → ${String(noteTitle(change.after, workspace))}`;
     if (change.kind === "update_body") return `⚠ ${target}: ${bodyChange(change, workspace)?.length ?? 0} lines changed`;
     return `Add to ${target}: ${String(change.content ?? "").split("\n")[0]!.slice(0, 80)}`;
   });
   const notes = (Array.isArray(attributes.notes) ? attributes.notes : []).map((id) => {
+    if (held?.notes.has(String(id)) === true) return HELD_LINE;
     const note = workspace.get(String(id));
     return `${note === undefined ? "Note" : fieldLabel(note.type)}: ${String(noteTitle(id, workspace))}`;
   });
-  const links = (Array.isArray(attributes.links) ? attributes.links.filter(isRecord) : []).map((link) =>
-    `${fieldLabel(String(link.field))} on ${String(noteTitle(link.target, workspace))}: ${String(noteTitle(link.value, workspace))}`);
+  const links = (Array.isArray(attributes.links) ? attributes.links.filter(isRecord) : []).map((link, index) =>
+    held?.links.has(index) === true ? HELD_LINE : `${fieldLabel(String(link.field))} on ${String(noteTitle(link.target, workspace))}: ${String(noteTitle(link.value, workspace))}`);
   return [...changes, ...notes, ...links].map((line, index) => `${letters(index)}) ${line}`).join("\n");
 }
 
