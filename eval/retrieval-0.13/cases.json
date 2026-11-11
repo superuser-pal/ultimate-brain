@@ -48,6 +48,7 @@
     {
       "id": "rq-f01",
       "kind": "fact",
+      "subgroup": "structured",
       "split": "dev",
       "caller": "scratch",
       "question": "What is the budget for the Kestrel booking app?",
@@ -77,6 +78,7 @@
     {
       "id": "rq-f02",
       "kind": "fact",
+      "subgroup": "structured",
       "split": "dev",
       "caller": "scratch",
       "question": "What is the team size on the Kestrel booking app?",
@@ -106,6 +108,7 @@
     {
       "id": "rq-f03",
       "kind": "fact",
+      "subgroup": "structured",
       "split": "dev",
       "caller": "scratch",
       "question": "When is the deadline for the Kestrel booking site?",
@@ -135,6 +138,7 @@
     {
       "id": "rq-f04",
       "kind": "fact",
+      "subgroup": "structured",
       "split": "dev",
       "caller": "scratch",
       "question": "What is the monthly hosting cost of the Orrin route planner?",
@@ -164,6 +168,7 @@
     {
       "id": "rq-f05",
       "kind": "fact",
+      "subgroup": "body-only",
       "split": "held",
       "caller": "scratch",
       "question": "How long is the warranty on the Brightwater repairs app?",
@@ -190,6 +195,7 @@
     {
       "id": "rq-f06",
       "kind": "fact",
+      "subgroup": "structured",
       "split": "dev",
       "caller": "scratch",
       "question": "How many support hours per month does the Brightwater tenant portal include?",
@@ -219,6 +225,7 @@
     {
       "id": "rq-f07",
       "kind": "fact",
+      "subgroup": "structured",
       "split": "dev",
       "caller": "scratch",
       "question": "When did the Harlow website launch?",
@@ -248,6 +255,7 @@
     {
       "id": "rq-f08",
       "kind": "fact",
+      "subgroup": "body-only",
       "split": "held",
       "caller": "scratch",
       "question": "How much money is left on the Brightwater tenant portal for the rest of 2026?",
@@ -280,6 +288,7 @@
     {
       "id": "rq-f09",
       "kind": "fact",
+      "subgroup": "structured",
       "split": "dev",
       "caller": "scratch",
       "question": "What is the current launch date for the Harlow web shop?",
@@ -309,6 +318,7 @@
     {
       "id": "rq-f10",
       "kind": "fact",
+      "subgroup": "body-only",
       "split": "dev",
       "caller": "scratch",
       "question": "What hourly rate did we agree with Tamsin Books for the online shop?",
@@ -335,6 +345,7 @@
     {
       "id": "rq-f11",
       "kind": "fact",
+      "subgroup": "body-only",
       "split": "held",
       "caller": "scratch",
       "question": "How many members registered on the Velde members site in the first four weeks?",
@@ -361,6 +372,7 @@
     {
       "id": "rq-f12",
       "kind": "fact",
+      "subgroup": "structured",
       "split": "dev",
       "caller": "timetracker",
       "question": "What is our budget for this project?",
@@ -390,6 +402,7 @@
     {
       "id": "rq-f13",
       "kind": "fact",
+      "subgroup": "body-only",
       "split": "held",
       "caller": "scratch",
       "question": "How fast must Brightwater's urgent repairs get a response?",
@@ -416,6 +429,7 @@
     {
       "id": "rq-f14",
       "kind": "fact",
+      "subgroup": "decision",
       "split": "dev",
       "caller": "scratch",
       "question": "Which payment provider did the Tamsin online shop choose?",
@@ -445,6 +459,7 @@
     {
       "id": "rq-f15",
       "kind": "fact",
+      "subgroup": "structured",
       "split": "dev",
       "caller": "scratch",
       "question": "How many depots does the Orrin route planner cover at launch?",
@@ -474,6 +489,7 @@
     {
       "id": "rq-f16",
       "kind": "fact",
+      "subgroup": "body-only",
       "split": "dev",
       "caller": "scratch",
       "question": "What discount did Harlow Provisions get on the website?",
@@ -500,6 +516,7 @@
     {
       "id": "rq-f17",
       "kind": "fact",
+      "subgroup": "structured",
       "split": "dev",
       "caller": "scratch",
       "question": "What was the budget for the Harlow website?",
@@ -529,6 +546,7 @@
     {
       "id": "rq-f18",
       "kind": "fact",
+      "subgroup": "structured",
       "split": "held",
       "caller": "scratch",
       "question": "How many stores will the Harlow web shop ship from?",
@@ -558,6 +576,7 @@
     {
       "id": "rq-f19",
       "kind": "fact",
+      "subgroup": "structured",
       "split": "dev",
       "caller": "scratch",
       "question": "What was the Kestrel booking app budget before it was raised in March 2026?",
@@ -599,6 +618,7 @@
     {
       "id": "rq-f20",
       "kind": "fact",
+      "subgroup": "body-only",
       "split": "held",
       "caller": "scratch",
       "question": "How many pages does the Velde members site have?",

@@ -33,7 +33,9 @@ export function scoreRetrieval(c, candidateIds) {
     const sets = c.evidence_sets.map((set) => (set.every((id) => top.includes(id)) ? Math.max(...set.map((id) => top.indexOf(id))) + 1 : null));
     const ranks = sets.filter((r) => r !== null);
     if (ranks.length === 0) reasons.push("no sufficient evidence set in the first ten");
-    return { pass: reasons.length === 0, reasons, rank: ranks.length ? Math.min(...ranks) : null, sets };
+    // Prose alone (reported): a set of meetings and minutes only, so a typed field or a title can't carry the case.
+    const prose = c.evidence_sets.some((set, i) => sets[i] !== null && set.every((id) => /^(mtg|src)-/.test(id)));
+    return { pass: reasons.length === 0, reasons, rank: ranks.length ? Math.min(...ranks) : null, sets, prose };
   }
   if (c.kind === "clarify") {
     const seen = c.subjects.filter((s) => s.evidence.some((id) => top.includes(id))).length;
@@ -84,6 +86,11 @@ export function audit(set, brain) {
   for (const path of brain.originalChanged) add(null, `the layer changed an original note: ${path}`);
   if (brain.questionsChanged) add(null, "eval/search-0.5/questions.json changed");
   const byKind = Object.fromEntries(KINDS.map((k) => [k, set.cases.filter((c) => c.kind === k)]));
+  const subgroups = { "body-only": 7, structured: 12, decision: 1 };
+  for (const [g, n] of Object.entries(subgroups)) {
+    const got = byKind.fact.filter((c) => c.subgroup === g).length;
+    if (got !== n) add(null, `fact subgroup ${g}: ${got} cases, not ${n}`);
+  }
   for (const k of KINDS) {
     if (byKind[k].length !== 20) add(null, `${k}: ${byKind[k].length} cases, not 20`);
     const held = byKind[k].filter((c) => c.split === "held").length;

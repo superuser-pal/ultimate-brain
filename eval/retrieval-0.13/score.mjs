@@ -83,7 +83,7 @@ for (const c of chosen) {
   const result = adapter.run(c, { brain: brainDir, callerDir: callerDir(c.caller), cli });
   if (adapter.level === "retrieval") {
     const r = scoreRetrieval(c, result.candidates);
-    rows.push({ id: c.id, kind: c.kind, split: c.split, pass: r.pass, reasons: r.reasons, rank: r.rank, sets: r.sets, bytes: result.cost?.bytes, ms: result.cost?.ms });
+    rows.push({ id: c.id, kind: c.kind, subgroup: c.subgroup, split: c.split, pass: r.pass, reasons: r.reasons, rank: r.rank, sets: r.sets, prose: r.prose, bytes: result.cost?.bytes, ms: result.cost?.ms });
   } else {
     const reasons = scoreAnswer(c, result.answer);
     rows.push({ id: c.id, kind: c.kind, split: c.split, pass: reasons.length === 0, reasons });
@@ -125,13 +125,20 @@ if (args.includes("--json")) {
   console.log("\n| gate | got | needs | |\n|---|---|---|---|");
   for (const g of gates) console.log(`| ${g.gate} | ${g.got} | ${g.need} | ${g.pass === null ? "reported" : g.pass ? "pass" : "FAIL"} |`);
   if (adapter.level === "retrieval") {
+    const facts = rows.filter((r) => r.kind === "fact");
+    console.log("\nFacts by evidence subgroup (reported; prose alone = a set of meetings and minutes only):\n\n| subgroup | first ten | prose alone |\n|---|---|---|");
+    for (const g of ["body-only", "structured", "decision"]) {
+      const of = facts.filter((r) => r.subgroup === g);
+      if (of.length) console.log(`| ${g} | ${of.filter((r) => r.pass).length}/${of.length} | ${of.filter((r) => r.prose).length}/${of.length} |`);
+    }
+    if (facts.length) console.log(`| **all facts** | ${facts.filter((r) => r.pass).length}/${facts.length} | ${facts.filter((r) => r.prose).length}/${facts.length} |`);
     const ms = rows.map((r) => r.ms).sort((a, b) => a - b);
     const bytes = rows.map((r) => r.bytes);
     console.log(`\nOne cold CLI process per case (not the paired latency of costs.mjs): median ${Math.round(ms[Math.floor(ms.length / 2)])} ms; output ${Math.round(bytes.reduce((a, b) => a + b, 0) / bytes.length)} bytes on average (bytes, not tokens).`);
   }
   if (args.includes("--rows")) {
     console.log("\n## Rows\n");
-    for (const r of rows) console.log(`${r.id}\t${r.kind}\t${r.split}\t${r.pass ? "pass" : "FAIL"}\t${r.rank ?? "-"}\t${r.sets ? `sets ${r.sets.map((x) => x ?? "-").join(",")}` : ""}\t${r.reasons.join("; ")}`);
+    for (const r of rows) console.log(`${r.id}\t${r.kind}${r.subgroup ? `/${r.subgroup}` : ""}\t${r.split}\t${r.pass ? "pass" : "FAIL"}\t${r.rank ?? "-"}\t${r.sets ? `sets ${r.sets.map((x) => x ?? "-").join(",")}` : ""}\t${r.reasons.join("; ")}`);
   }
 }
 if (args.includes("--strict") && failedGates > 0) process.exit(1);
