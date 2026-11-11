@@ -292,8 +292,6 @@ test("a Git failure after the files were written rolls the operation back at onc
   await rm(join(dir, ".git", "hooks", "pre-commit"));
   const again = await brain(["sync", "apply", "--input", await planFile(dir, plan), "--brain", dir, "--now", AFTER, "--json"]);
   assert.equal(again.code, 0, again.stdout);
-  console.log("AGAIN", JSON.stringify(again.json.data.revision_results), JSON.stringify(again.json.data.review_results));
-  console.log("PROPOSAL", JSON.stringify((await attributes(dir, await pathOf(dir, id))).revisions), JSON.stringify((await attributes(dir, await pathOf(dir, id))).item_decisions));
   assert.equal(again.json.data.review_results[0].result, "applied");
   assert.equal(existsSync(join(dir, "_journal")), false);
 });
