@@ -18,7 +18,6 @@ const norm = (text) => text.replace(/[‘’]/g, "'").replace(/\s+/g, " ");
 export const matches = (fact, text) => fact.all.every((re) => new RegExp(re, "i").test(norm(text)));
 
 /** The sets of ids that are all among `ids`. */
-const fullSets = (sets, ids) => sets.filter((set) => set.every((id) => ids.includes(id)));
 
 /**
  * Retrieval level: the first search's candidates (ids in rank order), cut to the first ten.
@@ -30,9 +29,11 @@ export function scoreRetrieval(c, candidateIds) {
   const reasons = [];
   for (const id of c.forbidden_evidence ?? []) if (top.includes(id)) reasons.push(`returned forbidden ${id}`);
   if (c.kind === "fact" || c.kind === "paraphrase") {
-    const ranks = fullSets(c.evidence_sets, top).map((set) => Math.max(...set.map((id) => top.indexOf(id))) + 1);
+    // Each set's rank: where its last note is, or null when it is not whole in the first ten.
+    const sets = c.evidence_sets.map((set) => (set.every((id) => top.includes(id)) ? Math.max(...set.map((id) => top.indexOf(id))) + 1 : null));
+    const ranks = sets.filter((r) => r !== null);
     if (ranks.length === 0) reasons.push("no sufficient evidence set in the first ten");
-    return { pass: reasons.length === 0, reasons, rank: ranks.length ? Math.min(...ranks) : null };
+    return { pass: reasons.length === 0, reasons, rank: ranks.length ? Math.min(...ranks) : null, sets };
   }
   if (c.kind === "clarify") {
     const seen = c.subjects.filter((s) => s.evidence.some((id) => top.includes(id))).length;
