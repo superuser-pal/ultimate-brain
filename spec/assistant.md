@@ -106,7 +106,7 @@ When a Notion read fails (the MCP is missing, not logged in, or any query of §2
 | `REPORT_LIMIT` | 10 | findings shown per page (0072 §5) |
 | `DISMISS_DAYS` | 30 | a skip is remembered this long (0072 §6) |
 
-No setting changes them in 0.10.0; per-area preferences are 0.14.0 (0061, kept by 0078).
+No setting changes them. 0.14.0's per-area tracking preferences (0061, kept by 0078) don't either: they steer what the ingest extracts ([setup.md](setup.md) §11, the user's choice of 2026-11-10).
 
 ### 3.3 The signals (normative; the names are stable)
 

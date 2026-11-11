@@ -128,7 +128,8 @@ Each row lists fields **in addition to** §3. "Notion" names the database the ty
 An ongoing responsibility (e.g. "Clients", "Health").
 - `domain`: optional scalar `dom-` ID, naming at most one Domain (0055).
 - `notion_fields`: `archived` (bool). Before 0.9.0 it also held `type` (`Business`·`Personal`) from Areas · Type; the property moved to Domains (CC-120), lint still accepts the old value, and the next `sync apply` drops it.
-- Body: description; optional "What to track" section is v2 (docs/v2-ideas.md).
+- `track`: optional list of 1 to 8 short lowercase strings, the kinds of thing worth extracting in this Area (`[budget, deadlines, scope changes, risks]`): the minimal per-area tracking preference (0061, from 0.14.0; [setup.md](setup.md) §11). Owner: brain; set in setup's seeding preview or on the user's request; not published to Notion. Absent means the ingest's generic list.
+- Body: description.
 
 ### domain · `domains/` · Notion: Domains (0055)
 A work or life context that groups Areas; distinct from an Org.
@@ -573,7 +574,7 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
   "schema_version": 1,
   "owner": { "name": "Alex", "person": "per-3h8w2n6c" },
   "budgets": { "ingest_max_notes": 8 },
-  "settings": { "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } },
+  "settings": { "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 }, "markitdown": "on", "gh": "on", "schedule": "off" },
   "modules": { "domains": false, "knowledge": true, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true },
   "repos": [
     { "name": "acme-api", "path": "~/code/acme-api", "area": "area-2m7c4h8n",
@@ -582,6 +583,7 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
       "patterns": ["docs/**"], "never_read": [".env*"], "commit": "", "kit": { "sha256": "sha256:<64 hex>" } }
   ],
   "notion": {
+    "template_version": "0024",
     "databases": { "domains": "", "areas": "", "goals": "", "key_results": "", "projects": "", "meetings": "",
                    "people": "", "orgs": "", "decisions": "", "questions": "", "review": "", "inbox": "",
                    "documents": "" },
@@ -604,26 +606,29 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 - `push`: `auto` (default) pushes the brain after a run's commits; `remind` leaves it to you, and the report says how many commits are not pushed.
 - `unattended.max_inputs` (0051): how many inputs one unattended run takes in, oldest first; an integer of at least 1, default 10. The rest waits for the next run (cli.md §6.1). `unattended` absent, or `max_inputs` absent from it, means 10.
 - `recall` (0074): `off` (default) or `opening`. With `opening`, `brain link` adds the recall paragraph to a linked repo's instruction block, so its agents load the opening context (cli.md §5.12, [memory.md](memory.md) §7). Setup asks once; absent means `off`.
+- `markitdown`, `gh`, `schedule` (0078, from 0.14.0; [setup.md](setup.md) §7): the optional items of the guided setup, each `on` or `off`; absent means `off`. They record the user's choice so setup never asks again: `markitdown` whether the user chose to install MarkItDown (the ingest still uses it whenever it is installed, as before, so a brain without the key converts files as it did), `gh` whether setup may use the GitHub CLI (the private remote, the setup report), `schedule` whether the user chose a scheduled catch-up (the entry itself is the machine's, cli.md §5.21).
 
 **Modules** (0048): the optional parts of the space. Core (Inbox, Meetings, Projects, Areas, People, Review) is always on and has no key.
 
-| Key | Default | Databases (`notion.databases` keys) and what else it covers |
-|---|---|---|
-| `domains` | `false` | `domains` |
-| `knowledge` | `true` | `decisions`, `questions` (`concepts` until 0.9.1, 0071) |
-| `orgs` | `true` | `orgs` |
-| `documents` | `false` | `documents` (0049) |
-| `reports` | `false` | `documents`, shared with the Documents module: a report is a Documents row (0071); Ask rows on the Inbox (0043, 0045). **Needs `documents` on:** Reports counts as off while Documents is off; `brain modules` turns Documents on with Reports and Reports off with Documents (cli.md §5.20), and `brain upgrade` turns Documents on in a brain that has Reports on (cli.md §5.15) |
-| `tasks` | `false` | `notion.tasks` |
-| `planning` | `false` | `goals`, `key_results` |
+| Key | Default | New brain (0.14.0) | Databases (`notion.databases` keys) and what else it covers |
+|---|---|---|---|
+| `domains` | `false` | `false`; seeding turns it on (below) | `domains` |
+| `knowledge` | `true` | `true` | `decisions`, `questions` (`concepts` until 0.9.1, 0071) |
+| `orgs` | `true` | `true` | `orgs` |
+| `documents` | `false` | `true` | `documents` (0049) |
+| `reports` | `false` | `true` | `documents`, shared with the Documents module: a report is a Documents row (0071); Ask rows on the Inbox (0043, 0045). **Needs `documents` on:** Reports counts as off while Documents is off; `brain modules` turns Documents on with Reports and Reports off with Documents (cli.md §5.20), and `brain upgrade` turns Documents on in a brain that has Reports on (cli.md §5.15) |
+| `tasks` | `false` | `true` | `notion.tasks` |
+| `planning` | `false` | `false` | `goals`, `key_results` |
 
-- **`modules` absent:** every module except Domains is on; Domains is off. That is every brain made before 0.6.0; `brain upgrade` writes the block with every key `true` except Domains (cli.md §5.15). **A key absent from a present block** takes its default. New brains get the block from onboarding.
+- **`modules` absent:** every module except Domains is on; Domains is off. That is every brain made before 0.6.0; `brain upgrade` writes the block with every key `true` except Domains (cli.md §5.15). **A key absent from a present block** takes its default. **A new brain** (0078 §4, from 0.14.0) gets the block from `templates/brain/brain.json` with the "New brain" column: Knowledge, Orgs, Documents, Reports and Tasks on, Planning and Domains off; setup's seeding turns Domains on when the user's work has two or more contexts ([setup.md](setup.md) §8). The Default column is unchanged, so a brain made before 0.14.0 keeps its modules.
 - **A module off** means the CLI neither reads nor writes Notion for it: `sync plan` ignores its databases' rows, `sync render` publishes none of its notes and leaves out the relations to them, `sync tasks` refuses with `MODULE_OFF`, and reports are not published (cli.md §5.14, §5.20). It is off even when its database ids are set. **Nothing is deleted:** the notes stay in Git and are still indexed, linted and listed; Notion keeps its databases and rows. Turning it on again publishes what changed meanwhile.
 - **The Domains database is in every Notion space** (0065), with the module on or off; `notion.databases.domains` is set whenever it exists. Like any module, Domains off means the brain neither reads nor writes it.
 - **A module on with an empty database id** behaves as today: its notes are skipped with `DATABASE_NOT_CONFIGURED`.
 - Written by `brain modules` (cli.md §5.20) and `brain config`.
 
 **Repos** (0042): the linked repos the brain reads, never writes. Each has a unique `name` (lowercase kebab-case), a `path` (absolute or starting with `~/`; the machine's own clone), the `area` its knowledge belongs to (an existing `area-` id), `patterns` (non-empty list of Git glob pathspecs, relative to the repo root, e.g. `decisions/**`), and `commit`, the last commit ingested (40 hex, or `""` before the first ingest). Written by `brain repo add` and `brain repo record` (cli.md §5.16), and `path` also by `brain repo refresh --path` (§5.29); `repos` absent means none. Three optional keys come from a link kit (0066, [linked-repos.md](linked-repos.md) §5): `never_read` (Git glob pathspecs never read, even when a pattern matches; absent means none), `project` (a `prj-` id the repo is placed under) and `kit` (`{ "sha256": "sha256:<64 hex>" }`, the kit last applied). With `kit`, `area`, `patterns`, `never_read` and `project` are copies of the kit, written only by `repo add --kit` and `repo refresh`; removed by `repo unlink` (cli.md §5.29).
+
+**Template version** (0078, from 0.14.0): `notion.template_version` is the four-digit number of the last Notion migration the user's space includes, as a string (`"0024"`), from the Notion template's System page; absent means unknown, never guessed. `brain upgrade` names the migrations with a higher number (cli.md §5.15, [setup.md](setup.md) §9). The JSON schema gains it, and the three settings above, with CC-190.
 
 **Databases:** `inbox` is the database formerly called Capture Inbox; a `brain.json` that still has `capture_inbox` is read as `inbox` when `inbox` is absent, and `brain upgrade` renames the key (cli.md §5.15). `documents` holds reference notes, shown as Documents (0045, 0049), learned ones included (0071), and a brain without the key publishes none (warning `DATABASE_NOT_CONFIGURED`, cli.md §5.14.4). A `brain.json` that still has `references` is read as `documents` when `documents` is absent, and `brain upgrade` renames the key (cli.md §5.15). `concepts` is retired in 0.9.1 (0071): a `brain.json` that still has it is valid, the key is never read, and `brain upgrade` removes it (cli.md §5.15 step 5).
 
