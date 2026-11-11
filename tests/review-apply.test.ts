@@ -140,6 +140,24 @@ test("every item rejected closes the row; a rejected draft is archived", async (
   assert.deepEqual(await errors(dir), []);
 });
 
+test("a draft decision rejected in Review is in no section of the project's decision log; a superseded one stays (schema §16.2)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids, draft } = await published(dir);
+  const views = await run(dir, ["views"]);
+  assert.equal(views.code, 0, views.stdout);
+  const logPath = join(dir, "projects/acme-website/decision-log.md");
+  assert.match(await readFile(logPath, "utf8"), /Launch in March/, "while it waits in Review, the draft is in the history");
+  await submit(dir, id, decide(body, ids[2]!, "Reject"));
+  assert.equal((await attributes(dir, draft.path)).lifecycle, "archived");
+  const rebuilt = await run(dir, ["views"]);
+  assert.equal(rebuilt.code, 0, rebuilt.stdout);
+  const log = await readFile(logPath, "utf8");
+  assert.doesNotMatch(log, /Launch in March/, "a rejected draft is not a decision");
+  assert.doesNotMatch(log, new RegExp(draft.id), "nor is it in generated_from");
+  assert.match(log, /## Superseded\n- 2026-10-01 → 2026-12-03 — \[Use Firebase for auth\]/, "a superseded decision stays in the history");
+  assert.deepEqual(await errors(dir), []);
+});
+
 test("Defer moves the item, under its own id, to a new pending proposal", async (context) => {
   const dir = await fixtureCopy(context);
   const { id, body, ids } = await published(dir);
