@@ -428,7 +428,7 @@ The user's response style, from the brain's `settings.style`. It shapes your own
 {lines}
 ```
 
-The style is changed only from a session in the brain; a linked folder takes the change the next time its block is written.
+The style is changed only from a session in the brain; a linked folder takes the change the next time its block is written: by `brain link` there, and from 0.13.0 by `brain upgrade` for a project registered in `brain.json` `repos`, whose upgrade writes what `brain link` would (0077 §4, CC-184).
 
 ### 5.4 `brain id new`
 
