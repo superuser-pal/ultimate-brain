@@ -90,4 +90,4 @@ The cost of reading the answer in full (`query --read` of each answerable case's
 | unknown, nothing forbidden returned | 20 of 20 | reported |
 | originals | 28/32/36 of 50, MRR 0.61, the 36 kept | as `results-cc173.txt` |
 
-Its cost section is the baseline paired with itself, which shows the tool's noise on this machine, not a comparison.
+Its cost section is the baseline paired with itself, which shows the tool's noise on this machine, not a comparison: over 5 interleaved passes, cold CLI median 674 ms and p95 691 to 693 ms, in-process ranking median about 65 ms, output median 1,143 and p95 1,303 tokens, every ratio between 1.000 and 1.017 (Apple M4 Pro, shared with other agents' work).
