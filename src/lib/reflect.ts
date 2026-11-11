@@ -3,7 +3,7 @@ import { posix } from "node:path";
 import { decodePath, linkTargets } from "./lint-links.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 import { QUERY_STOPWORDS } from "./query.ts";
-import { contextFor, eligibleNote, type Loaded } from "./suppressions.ts";
+import { answerNote, citeLabel, contextFor, titleWithheld, type Loaded } from "./suppressions.ts";
 import { formatDate, formatTimestamp } from "./time.ts";
 
 /** Reflection: `brain reflect --candidates` (spec/cli.md §5.32), its holds (spec/schema.md §11.4) and the checks lint shares with it. */
@@ -252,10 +252,16 @@ export interface Candidates {
   clusters: Cluster[];
 }
 
-/** The eligible notes as reflection sees them (§5.32 "Restricted evidence"): restricted statements blanked, notes restricted whole left out. */
+/** The eligible notes as reflection sees them (§5.32 "Restricted evidence"): restricted statements blanked, notes restricted whole left out, and a
+ *  note with a restricted claim in its awaiting-cleanup form (§5.13), so its title, aliases and headings give no name, text or term. */
 export function reflectionNotes(notes: readonly Note[], loaded: Pick<Loaded, "suppressions"> & Partial<Pick<Loaded, "restores">>): Note[] {
   const context = contextFor(notes, loaded);
-  return notes.flatMap((note) => { const kept = eligibleNote(note, context); return kept === null ? [] : [kept]; });
+  return notes.flatMap((note) => { const kept = answerNote(note, context); return kept === null ? [] : [kept]; });
+}
+
+/** A note's `path` in the output, and its `cite` in the awaiting-cleanup form (eligibility.md §6 rules 3 and 4). Its path still matches links. */
+function shownPath(note: Note): { path: string | null; cite?: string } {
+  return titleWithheld(note) ? { path: null, cite: citeLabel(note) } : { path: note.path };
 }
 
 /** The near_duplicate pairs of §5.32 among `notes`, each `[a, b]` sorted by id, with the two names that matched. */
@@ -305,14 +311,14 @@ export function reflectCandidates(all: readonly Note[], loaded: Pick<Loaded, "su
   const window = inputs.filter((input) => input.date >= from && input.date <= to);
   const held = holds(all.filter((note) => note.type === "proposal"), inputs, byId);
   const member = (note: Note): Record<string, unknown> => ({
-    id: note.id, type: note.type, title: note.attributes.title ?? null, path: note.path,
+    id: note.id, type: note.type, title: note.attributes.title ?? null, ...shownPath(note),
     lifecycle: note.attributes.lifecycle ?? null, updated: note.attributes.updated ?? null,
     summary: typeof note.attributes.summary === "string" ? note.attributes.summary : null,
   });
   const evidenceOf = (chosen: Input[], linesOf: (input: Input) => Array<{ line: number; text: string }>) => [...chosen]
     .sort((a, b) => compareCodePoints(b.date, a.date) || compareCodePoints(a.note.id, b.note.id))
     .map((input) => ({
-      id: input.note.id, type: input.note.type, title: input.note.attributes.title ?? null, path: input.note.path, date: input.date, created: input.created,
+      id: input.note.id, type: input.note.type, title: input.note.attributes.title ?? null, ...shownPath(input.note), date: input.date, created: input.created,
       lines: linesOf(input).slice(0, 3).map(({ line, text }) => ({ line, text: text.trim().slice(0, 200) })),
     }));
   const memberHolds = (members: readonly Note[]): Hold[] => [...held.values()]

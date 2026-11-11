@@ -5,7 +5,7 @@ import { test } from "node:test";
 
 import { parseFrontmatter, serializeFrontmatter } from "../src/lib/frontmatter.ts";
 import { gitBodyOf, textHash } from "../src/lib/wording.ts";
-import { approveNote, brain, fixtureCopy } from "./helpers.ts";
+import { approveNote, brain, fixtureCopy, withPassages } from "./helpers.ts";
 
 const NOW = "2026-12-10T10:05:00Z";
 const PAGE = "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d";
@@ -16,7 +16,7 @@ async function run(dir: string, args: string[], input?: unknown) {
   const extra: string[] = [];
   if (input !== undefined) {
     const file = join(dir, "..", `input-${Math.random().toString(36).slice(2)}.json`);
-    await writeFile(file, JSON.stringify(input));
+    await writeFile(file, JSON.stringify(args[0] === "proposal" && args[1] === "new" ? withPassages(input) : input));
     extra.push("--input", file);
   }
   return brain([...args, ...extra, "--brain", dir, "--now", NOW, "--json"]);
