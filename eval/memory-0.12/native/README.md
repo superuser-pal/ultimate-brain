@@ -45,6 +45,16 @@ Each agent needs a login of its own that loads nothing global. Make one folder p
 - Claude Code: `CLAUDE_CONFIG_DIR=~/agent-logins/claude claude`, then `/login` and `/exit`.
 - Codex: `CODEX_HOME=~/agent-logins/codex codex login`.
 
+## Method choices (the user's, 2026-11-11)
+
+These five choices are made by no decision; the user accepted them as #303 proposed them, and the sections below carry them out:
+
+1. **Logins.** Each agent logs in from a dedicated folder (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`), never `~/.claude` or `~/.codex`, inside a temporary HOME; on macOS that HOME links only `Library/Keychains`, where Claude Code's login is.
+2. **Prompt.** The case's question, after "I'm working on `<task>` in this repo." when the case names a task, then one fixed line asking for `Evidence: <ids>`; only that line's ids are citations.
+3. **Fresh copies.** Every case runs on its own fresh copy of the world, not only the cases with outcomes.
+4. **Claude Code's tools.** Read, Glob, Grep, Skill and Bash in Claude Code's sandbox; Edit, Write, sub-agents and the web are off.
+5. **Product files.** A read of `brain.json` or the brain's product files (`.agents/`, `.claude/`, `AGENTS.md`, `CLAUDE.md`) is recorded, not a violation.
+
 ## The sandbox
 
 `<run>/world/home` is a HOME holding `memory-0.12-eval/{brain,repos}` from `make-brain.mjs`, so `brain.json`'s repo paths (`~/memory-0.12-eval/repos/<name>`) resolve inside it. The brain is committed (a brain is a Git repo), and every repo with a `.brain` and no managed block is linked with the package's own `brain link`: `harbor-api`, `harbor-web`, `orbit-app`, `quill`, `studio-site`. `scratch` stays unlinked (it has no `.brain`), and `harbor-ops` keeps the block 0.12.0 wrote: only `brain upgrade` changes it, and the case that follows the upgrade runs `brain upgrade` before its session.
