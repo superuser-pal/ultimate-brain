@@ -2,7 +2,10 @@
 # unresolved signal and the memory candidates' confidence, and the paired costs on the matched baseline.
 # Measured 2026-11-11 on Apple M4 Pro, 12 cores, 24 GB, Darwin 25.6.0, node v26.5.0, shared with other agents' work (load below).
 #
-# Provenance. Candidate: commit b56b64d (src/ final for this task; later commits change only TASKS.md, READMEs and this file).
+# Provenance. Candidate: commit b56b64d. One later src/ change, from the review of #320 (the commit after
+# "CC-205: spec: a fact written on one line…"): a fact written on one line (`facts: {…}`) is shown with the `facts:` line
+# instead of line 0. No note in either eval world writes facts that way (all 323 with facts use the block form), and the
+# CLI output after the fix is byte for byte the measured set's on all 130 questions, so every number below stands.
 # Matched baseline: main 96ad66d, the commit this branch is based on. The cost run used two clones pinned at those commits,
 # src/ and eval/ read-only, clean at start and end, with the same sha256 over src/ and eval/retrieval-0.13 at start and end:
 #   baseline 96ad66d31fe5f4b1ce1b4030ab2f6523eada9f20  b6b4a9bb9a84eba0dc50fd7773d20b3a20ad9beffcb0b243e22419876119e9b8
