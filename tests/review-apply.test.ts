@@ -319,6 +319,37 @@ test("an Accept on an item that rests only on excluded evidence closes it stale 
   assert.equal(decisions[0].reason, "source_excluded");
 });
 
+test("an exclusion made after the render is caught by sync apply: an Accept closes a mixed change and a mixed draft whole, and an independent item applies (eligibility §4.2, §9.2)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { note: draft, exclude } = await excludableDecision(dir, SYNC, PROJECT, true); // the draft cites a live and an excluded passage
+  const { passageHash } = await import("../src/lib/selection.ts");
+  const live = `A kept remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]`;
+  const created = await run(dir, ["proposal", "new"], { proposals: [
+    { kind: "review_notes", source: SYNC, notes: [draft.id] },
+    { kind: "add_to_note", title: "Mixed", target: CONCEPT, content: `A mixed remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]\n\nThe price was 95k. ^[src-ex1a3b4c#¶2:${passageHash("Pricing was 95k.")}]`, why: "Said.", source: SYNC },
+    { kind: "add_to_note", title: "Live", target: CONCEPT, content: live, why: "Said.", source: SYNC },
+  ] });
+  assert.equal(created.code, 0, created.stdout);
+  const id = created.json.data.created[0].id as string;
+  const [item] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  await run(dir, ["sync", "record"], { records: [{ id, notion: PAGE, synced_at: NOW, published: item.published }] });
+  const body = item.body as string;
+  assert.ok(body.includes("A mixed remark."), "before the exclusion every item is shown");
+  const ids = [...body.matchAll(/^## \[[a-z]+ · (it-[0-9a-z]{8})\] (.+)$/gm)].map((m) => [m[1]!, m[2]!] as const);
+  await exclude(); // made after the page was published and the user read it
+  const accepted = ids.reduce((text, [itemId]) => decide(text, itemId, "Accept"), body);
+  const { results } = await submit(dir, id, accepted);
+  const outcome = ids.map(([itemId, heading]) => { const entry = results.find((result) => result.item_id === itemId); return [heading, entry?.result, entry?.reason ?? null]; });
+  assert.deepEqual(outcome, [
+    ["Changes: Row-level security", "closed", "source_excluded"],
+    ["Changes: Row-level security", "applied", null],
+    ["Creates: Pricing call", "closed", "source_excluded"],
+  ]);
+  assert.equal((await attributes(dir, draft.path)).lifecycle, "archived", "the mixed draft is not reviewed");
+  const concept = await readFile(join(dir, "knowledge/references/row-level-security.md"), "utf8");
+  assert.ok(concept.includes("A kept remark.") && !concept.includes("A mixed remark.") && !concept.includes("95k"));
+});
+
 test("Request revision is recorded, the new draft replaces the stored proposal with the previous wording kept, and only that section is re-rendered", async (context) => {
   const dir = await fixtureCopy(context);
   const { id, body, ids } = await published(dir);

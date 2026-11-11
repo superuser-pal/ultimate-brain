@@ -7,8 +7,10 @@ import { command, fail, ROOT, slug, taskEntries, tryCommand } from "./common.mjs
 
 // `start <id> --from <branch>` stacks the task on another task's branch (decision 0046); its row may exist only there.
 // `start <id> --new "<title>" --release <x.y.z>` starts a task that has no row yet and writes its row into the worktree.
+// `start <id> --resume` continues a task whose row is already `in progress` on a new branch, when no unmerged branch of it is open
+// (its first part merged and its row carries the rest, as CC-176 and CC-177 under decision 0077); the row is left as it is.
 // `clean` removes every task worktree, and its branch, that is merged into origin/main; it keeps a worktree with uncommitted changes.
-const usage = "Usage: node scripts/task.mjs start <CC-N|CX-N> [--from <branch>] [--new <title> --release <x.y.z>] | done <CC-N|CX-N> | clean";
+const usage = "Usage: node scripts/task.mjs start <CC-N|CX-N> [--from <branch>] [--new <title> --release <x.y.z> | --resume] | done <CC-N|CX-N> | clean";
 const [action, ...args] = process.argv.slice(2);
 const id = action === "clean" ? undefined : args.shift();
 const flags = parseFlags(args);
@@ -17,6 +19,7 @@ if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
   || (action !== "clean" && !/^(CC|CX)-\d+$/.test(id ?? ""))
   || (action !== "start" && Object.keys(flags).length > 0)
   || ((flags["--new"] === undefined) !== (flags["--release"] === undefined))
+  || (flags["--resume"] !== undefined && flags["--new"] !== undefined)
   || (flags["--new"] !== undefined && (flags["--new"].trim() === "" || /[·`\n\r]/.test(flags["--new"]) || !semver.test(flags["--release"])))) {
   fail(usage);
 } else if (action === "clean") {
@@ -34,6 +37,7 @@ if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
 } else {
   const from = flags["--from"];
   const title = flags["--new"]?.trim();
+  const resume = flags["--resume"] === true;
   const base = from === undefined ? "origin/main" : `origin/${from}`;
   const shown = from === undefined && title === undefined ? { ok: true, stdout: undefined } : tryCommand("git", ["show", `${base}:build/TASKS.md`]);
   // A new id must also be unused among the done rows in build/HISTORY.md (CC-94).
@@ -47,7 +51,9 @@ if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
   else if (title !== undefined && openBranches(id).length > 0) fail(`${id} is already used by ${openBranches(id).join(", ")}`);
   else if (title !== undefined && new RegExp(`^## ${flags["--release"].replace(/[.]/g, "\\.")}(?: |$)`, "m").test(history.stdout)) fail(`${flags["--release"]} is a done release in build/HISTORY.md`);
   else if (task === undefined) fail(`Unknown task ${id}`);
-  else if (action === "start" && title === undefined && task.status !== "todo") fail(`${id} is ${task.status}, not todo`);
+  else if (resume && task.status !== "in progress") fail(`${id} is ${task.status}, not in progress: --resume continues an in-progress task`);
+  else if (resume && unmergedBranches(id, base).length > 0) fail(`${id} is still open on ${unmergedBranches(id, base).join(", ")}: work there instead of resuming`);
+  else if (action === "start" && title === undefined && !resume && task.status !== "todo") fail(`${id} is ${task.status}, not todo${task.status === "in progress" ? " (if its branch merged and its row carries the rest, use --resume)" : ""}`);
   else if (action === "start") {
     const branch = `${id.startsWith("CC-") ? "claude" : "codex"}/${id}-${slug(task.title)}`;
     const path = resolve(ROOT, "..", `ub-${id}`);
@@ -58,7 +64,7 @@ if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
       command("git", ["config", "core.hooksPath", ".githooks"], { cwd: path });
       const tasksPath = resolve(path, "build/TASKS.md");
       const current = readFileSync(tasksPath, "utf8");
-      const tasks = title === undefined
+      const tasks = resume ? current : title === undefined
         ? current.replace(`### ${id} · ${task.title} · \`todo\``, `### ${id} · ${task.title} · \`in progress\``)
         : insertRow(current, id, title, flags["--release"]);
       writeFileSync(tasksPath, tasks);
@@ -94,13 +100,17 @@ function skillsIntegrationLine(worktree) {
   try { return JSON.parse(result.stdout).summary; } catch { return "skills integration: status unknown (the check did not run)"; }
 }
 
-/** `--name value` pairs; undefined when a flag is unknown, repeated or has no value. */
+/** `--name value` pairs and the bare `--resume`; undefined when a flag is unknown, repeated or has no value. */
 function parseFlags(list) {
   const result = {};
-  for (let index = 0; index < list.length; index += 2) {
-    const [name, value] = [list[index], list[index + 1]];
-    if (!["--from", "--new", "--release"].includes(name) || value === undefined || name in result) return undefined;
+  for (let index = 0; index < list.length; index += 1) {
+    const name = list[index];
+    if (name in result) return undefined;
+    if (name === "--resume") { result[name] = true; continue; }
+    const value = list[index + 1];
+    if (!["--from", "--new", "--release"].includes(name) || value === undefined) return undefined;
     result[name] = value;
+    index += 1;
   }
   return result;
 }
@@ -158,6 +168,11 @@ function compareVersions(left, right) {
 function removeMerged(worktree, branch) {
   const removed = tryCommand("git", ["worktree", "remove", worktree]);
   return removed.ok ? tryCommand("git", ["branch", "-D", branch]) : removed;
+}
+
+/** Remote branches of `taskId` that are not merged into `base`: a merged one is history, so a resumed task may reuse its name. */
+function unmergedBranches(taskId, base) {
+  return openBranches(taskId).filter((branch) => !tryCommand("git", ["merge-base", "--is-ancestor", branch, base]).ok);
 }
 
 /** Remote task branches, so open PRs, that already use `taskId`. */
