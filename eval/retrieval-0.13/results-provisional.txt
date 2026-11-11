@@ -1,0 +1,180 @@
+# Provisional baseline, eval/retrieval-0.13 (CC-203). Measured on 2026-11-11; <out-dir> is make-brain.mjs's output folder.
+
+## score.mjs <out-dir> --rows
+
+commit: d1fc8440f622b0aec21b0bf20bb2a3daf65af88e
+adapter: query-candidates (retrieval): brain query --candidates <question> --repo <caller folder> --json (default limit 10, default types)
+cases: 80 (split: all); audit: passed
+
+| kind | dev | held | all |
+|---|---|---|---|
+| fact | 13/14 | 6/6 | 19/20 |
+| paraphrase | 10/14 | 5/6 | 15/20 |
+| clarify | 12/14 | 2/6 | 14/20 |
+| unknown | 14/14 | 6/6 | 20/20 |
+
+| gate | got | needs | |
+|---|---|---|---|
+| **facts in prose only** (original fact-in-body 0/10 + new body-only 6/7) | 6/17 | 16/17 | FAIL |
+| fact, first search, first ten | 19/20 | 18/20 | pass |
+| paraphrase, first search, first ten | 15/20 | 18/20 | FAIL |
+| clarify (reported) | 14/20 | - | reported |
+| unknown (reported) | 20/20 | - | reported |
+
+Facts by evidence subgroup (reported; prose alone = a set of meetings and minutes only):
+
+| subgroup | first ten | prose alone |
+|---|---|---|
+| body-only | 6/7 | 6/7 |
+| structured | 12/12 | 10/12 |
+| decision | 1/1 | 1/1 |
+| **all facts** | 19/20 | 17/20 |
+
+One cold CLI process per case (not the paired latency of costs.mjs): median 699 ms; output 4179 bytes on average (bytes, not tokens).
+
+## Rows
+
+original	fact-in-body	-	FAIL	-		What is the budget for the Marzel shop?
+original	fact-in-body	-	FAIL	-		What is the budget for the Nortor website?
+original	fact-in-body	-	FAIL	-		What is the budget for the Kipsel intranet?
+original	fact-in-body	-	FAIL	-		What is the budget for the Talquo CRM migration?
+original	fact-in-body	-	FAIL	-		What is the budget for the Selbren website?
+original	fact-in-body	-	FAIL	-		What is the budget for the Dunvik CRM migration?
+original	fact-in-body	-	FAIL	-		What is the budget for the Quopex shop?
+original	fact-in-body	-	FAIL	-		What is the budget for the Nortor intranet?
+original	fact-in-body	-	FAIL	-		What is the budget for the Talquo mobile app?
+original	fact-in-body	-	FAIL	-		What is the budget for the Lumvik booking platform?
+rq-f01	fact/structured	dev	pass	1	sets 1,7,-	
+rq-f02	fact/structured	dev	pass	1	sets 1,-,-	
+rq-f03	fact/structured	dev	pass	1	sets 1,8,10	
+rq-f04	fact/structured	dev	pass	2	sets 4,2,3	
+rq-f05	fact/body-only	held	pass	1	sets 1,2	
+rq-f06	fact/structured	dev	pass	1	sets 3,1,2	
+rq-f07	fact/structured	dev	pass	1	sets 3,1,2	
+rq-f08	fact/body-only	held	pass	1	sets 1,2	
+rq-f09	fact/structured	dev	pass	1	sets 1,7,8	
+rq-f10	fact/body-only	dev	FAIL	-	sets -,-	no sufficient evidence set in the first ten
+rq-f11	fact/body-only	held	pass	1	sets 2,1	
+rq-f12	fact/structured	dev	pass	1	sets 1,-,-	
+rq-f13	fact/body-only	held	pass	1	sets 2,1	
+rq-f14	fact/decision	dev	pass	1	sets 1,2,3	
+rq-f15	fact/structured	dev	pass	1	sets 3,2,1	
+rq-f16	fact/body-only	dev	pass	1	sets 2,1	
+rq-f17	fact/structured	dev	pass	1	sets 3,1,2	
+rq-f18	fact/structured	held	pass	1	sets 3,1,2	
+rq-f19	fact/structured	dev	pass	1	sets 3,6,7,2,1	
+rq-f20	fact/body-only	held	pass	2	sets 2,4	
+rq-p01	paraphrase	dev	pass	6	sets -,6,10	
+rq-p02	paraphrase	dev	FAIL	-	sets -,-,-	no sufficient evidence set in the first ten
+rq-p03	paraphrase	dev	pass	5	sets -,5,9	
+rq-p04	paraphrase	dev	pass	7	sets -,7,-	
+rq-p05	paraphrase	dev	pass	6	sets 6,7	
+rq-p06	paraphrase	held	pass	5	sets 5,8	
+rq-p07	paraphrase	dev	pass	1	sets 1,-,-	
+rq-p08	paraphrase	dev	pass	4	sets 5,4	
+rq-p09	paraphrase	dev	pass	6	sets 10,6,9	
+rq-p10	paraphrase	dev	pass	9	sets 10,9	
+rq-p11	paraphrase	dev	pass	8	sets 10,8,-	
+rq-p12	paraphrase	held	FAIL	-	sets -,-	no sufficient evidence set in the first ten
+rq-p13	paraphrase	dev	FAIL	-	sets -,-,-	no sufficient evidence set in the first ten
+rq-p14	paraphrase	held	pass	9	sets 9,-	
+rq-p15	paraphrase	dev	pass	9	sets 9,10	
+rq-p16	paraphrase	held	pass	3	sets 3,-	
+rq-p17	paraphrase	held	pass	1	sets 1,4	
+rq-p18	paraphrase	dev	FAIL	-	sets -,-	no sufficient evidence set in the first ten
+rq-p19	paraphrase	held	pass	1	sets 2,1	
+rq-p20	paraphrase	dev	FAIL	-	sets -,-	no sufficient evidence set in the first ten
+rq-c01	clarify	dev	pass	2		
+rq-c02	clarify	dev	pass	6		
+rq-c03	clarify	dev	pass	2		
+rq-c04	clarify	held	pass	2		
+rq-c05	clarify	dev	pass	2		
+rq-c06	clarify	dev	pass	2		
+rq-c07	clarify	dev	pass	5		
+rq-c08	clarify	held	FAIL	1		evidence of 1 subject in the first ten, not two
+rq-c09	clarify	dev	pass	2		
+rq-c10	clarify	dev	FAIL	1		evidence of 1 subject in the first ten, not two
+rq-c11	clarify	dev	pass	2		
+rq-c12	clarify	held	FAIL	1		evidence of 1 subject in the first ten, not two
+rq-c13	clarify	dev	pass	2		
+rq-c14	clarify	dev	pass	3		
+rq-c15	clarify	held	pass	2		
+rq-c16	clarify	dev	FAIL	1		evidence of 1 subject in the first ten, not two
+rq-c17	clarify	held	FAIL	1		evidence of 1 subject in the first ten, not two
+rq-c18	clarify	dev	pass	2		
+rq-c19	clarify	dev	pass	3		
+rq-c20	clarify	held	FAIL	0		evidence of 0 subjects in the first ten, not two
+rq-u01	unknown	dev	pass	-		
+rq-u02	unknown	dev	pass	-		
+rq-u03	unknown	dev	pass	-		
+rq-u04	unknown	dev	pass	-		
+rq-u05	unknown	held	pass	-		
+rq-u06	unknown	dev	pass	-		
+rq-u07	unknown	held	pass	-		
+rq-u08	unknown	dev	pass	-		
+rq-u09	unknown	dev	pass	-		
+rq-u10	unknown	dev	pass	-		
+rq-u11	unknown	dev	pass	-		
+rq-u12	unknown	held	pass	-		
+rq-u13	unknown	dev	pass	-		
+rq-u14	unknown	held	pass	-		
+rq-u15	unknown	dev	pass	-		
+rq-u16	unknown	held	pass	-		
+rq-u17	unknown	dev	pass	-		
+rq-u18	unknown	held	pass	-		
+rq-u19	unknown	dev	pass	-		
+rq-u20	unknown	dev	pass	-		
+
+## score.mjs <out-dir> --adapter reference-answers
+
+commit: d1fc8440f622b0aec21b0bf20bb2a3daf65af88e
+adapter: reference-answers (answer): eval/retrieval-0.13/reference-answers.json
+cases: 80 (split: all); audit: passed
+
+| kind | dev | held | all |
+|---|---|---|---|
+| fact | 14/14 | 6/6 | 20/20 |
+| paraphrase | 14/14 | 6/6 | 20/20 |
+| clarify | 14/14 | 6/6 | 20/20 |
+| unknown | 14/14 | 6/6 | 20/20 |
+
+| gate | got | needs | |
+|---|---|---|---|
+| answerable, correct and cited | 40/40 | 36/40 | pass |
+| clarify | 20/20 | 20/20 | pass |
+| unknown | 20/20 | 20/20 | pass |
+
+## originals.mjs <out-dir>
+
+cli: src/cli.ts
+
+| kind | recall@1 | recall@5 | recall@10 | MRR | baseline (cc173) |
+|---|---|---|---|---|---|
+| decision-by-topic | 7/10 | 10/10 | 10/10 | 0.85 | 7/10/10, 0.85 |
+| paraphrase | 1/10 | 2/10 | 6/10 | 0.18 | 1/2/6, 0.18 |
+| why | 10/10 | 10/10 | 10/10 | 1.00 | 10/10/10, 1.00 |
+| fact-in-body | 0/10 | 0/10 | 0/10 | 0.00 | 0/0/0, 0.00 |
+| person-role | 10/10 | 10/10 | 10/10 | 1.00 | 10/10/10, 1.00 |
+| **all** | 28/50 | 32/50 | 36/50 | 0.61 | 28/32/36, 0.61 |
+
+kept in the first ten: 36/36; first rank 28 (baseline 28); MRR 0.6060 (baseline 0.6060): pass
+
+## costs.mjs <out-dir> --baseline . --candidate . --reps 5
+
+Measured at fc80f2c; `src/` is the same at the commits above (`git diff fc80f2c d1fc844 -- src/` is empty), so it was not run again.
+
+The baseline paired with itself: the tool's noise on this machine, not a comparison. Other agents shared the machine (see the load average); both sides ran interleaved under the same load.
+
+baseline: commit fc80f2c41b37d75e9c2cf144e7b0d23cb8b8a0fb
+candidate: commit fc80f2c41b37d75e9c2cf144e7b0d23cb8b8a0fb
+machine: Apple M4 Pro, 12 cores, 24 GB, Darwin 25.6.0, node v26.5.0; load average 6.65 12.53 14.94 before, 2.24 3.15 6.41 after
+questions: 130 (80 cases, 50 originals); passes: 5 after one warm-up; tokenizer: gpt-tokenizer 4.1.0, o200k_base
+
+| measure | baseline median | baseline p95 | candidate median | candidate p95 | ratio median | ratio p95 | gate (<= 1.25) |
+|---|---|---|---|---|---|---|---|
+| search latency, cold CLI (ms) | 674 | 691 | 674 | 693 | 1.000 | 1.003 | pass |
+| in-process ranking (ms) | 64.93 | 77.58 | 65.50 | 78.91 | 1.009 | 1.017 | pass |
+| output tokens (o200k) | 1143 | 1303 | 1143 | 1303 | 1.000 | 1.000 | pass |
+| output bytes (reported) | 4166 | 4783 | 4166 | 4783 | 1.000 | 1.000 | reported |
+
+full filtered read of the first evidence set (candidate, reported): 40 cases, median 375 tokens, p95 494
