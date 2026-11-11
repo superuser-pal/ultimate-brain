@@ -7,6 +7,10 @@
 #   candidate: compare/checkout.mjs's repository, commit 015460eafc34b12701b49aa49469139cdeac57ac ("variant checkout of 4f94b40…", local only)
 #   query-variant.ts sha256 307008426d81d3ef20b053069bb11c2e4219c41808398943abf49654c8bdf287 (= the checkout's src/lib/query.ts: 307008426d81d3ef20b053069bb11c2e4219c41808398943abf49654c8bdf287)
 #   vocabulary.ts sha256 83bb1f14a21ed08bd221cc3b182f49c4b5b5f46e4a8f7618b51b3d2fa8a91649 (committed in 661b863, before any held-back case ran; unchanged since)
+#   to rebuild it: in a worktree at 4f94b40 (this branch keeps it), `node eval/retrieval-0.13/compare/checkout.mjs`. The new
+#   checkout's commit id differs (it records the time); it is the same candidate when its src/lib/query.ts and src/lib/vocabulary.ts
+#   have the two sha256 above and the rest of its files are 4f94b40's (`git -C <checkout> ls-files` and `git diff --no-index`).
+#   At a later commit of this branch the checkout takes that commit's src/, which merges from main changed outside query.ts.
 # The variant's code changed after the first held-back run (a131b86: one BM25 index per search, stems per distinct word, snippets
 # for the first 50), with the same output: the CLI output of both versions is byte for byte the same on all 130 questions. Every
 # result below is from this version. The ranking rules and the map did not change after the dev runs (results-dev.txt).
