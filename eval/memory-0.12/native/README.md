@@ -80,7 +80,9 @@ Isolation is checked per session and reported: every brain command must have run
 | `intake` | a brain path the caller names as the new input being taken in (§10); the cases name none | recorded, not a violation |
 | `other` | anything else: the caller repo's own files, its linked skills | none |
 
-The check is about the agent's tool calls. It does not judge what a `brain` command returned; that is what the cases score.
+A brain path written inside a longer word also counts: an interpreter's inline script (`python3 -c "open('…/brain/a.md')"`, `node -e …`), a here-document's body, or a `$(…)` whose output feeds another command (`cat $(echo …/brain/a.md)`; there even `echo` counts).
+
+**Stated limit.** The check finds paths the call spells out: absolute, relative, or through `~`, `$HOME` or `$BRAIN_DIR` as the shell expands them. A path an interpreter builds at run time (`os.environ["BRAIN_DIR"] + "/a.md"`, joined strings, a path read from a file) is not found. The trace keeps every such call for a reader to see. The check is about the agent's tool calls. It does not judge what a `brain` command returned; that is what the cases score.
 
 ## What a session leaves
 
