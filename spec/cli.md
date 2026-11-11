@@ -354,7 +354,7 @@ Read-only health summary; the first call of every skill.
 
 **Human output** (without `--json`) starts, only while `finished` is `false`, with one line: `Setup: <done> of <total> done · next: <what>`, where `<what>` is, by `next` in that order: `set your Git identity`, `add a private remote`, `create the drop folder`, `say the language of your notes`, `connect your agent to Notion`, `connect Notion`, `paste the minutes prompt`, `set up Brain Assistant`, `set your identities`, `seed your work`, `check first value`, `choose the schedule`; then `say "set up my brain"`. Example: `Setup: 6 of 9 done · next: connect Notion · say "set up my brain"`. The rest of the human output is unchanged.
 
-`notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `domains`, `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `documents` (0045, 0049; a `references` key is reported as `documents`; a retired `concepts` key is not reported, 0071). `modules` (0048) has every module key, filled in as schema §12 says: all `true` except Domains when the block is absent, else each absent key at its default. `notes` counts every type, `reference` included (0045); `concept` is counted only when a brain still has concept notes (before `brain upgrade`, 0071). A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } }`. `unattended` (0051) sums the unattended catch-up lines (§3.9) written since the last attended `catch-up` line, across the month files: `since` is that attended line's timestamp (`null` when there is none), `runs` the unattended lines after it, `inputs` and `failed` their sums, `failures` their reasons in order without repeats, and `left`, `skipped`, `waiting` and `last` (its timestamp) from the latest one, since an input still skipped is counted again by every run. `catch_up` is `null` when no unattended line follows the last attended one. `backlog` is `true` when the last three unattended catch-up lines, attended or not in between, each have `left` above 0. The attended catch-up opens with this summary (§6.1). `repos` lists `brain.json` `repos` in order (empty when absent): `found` is whether `path` is a Git working tree. `views_stale` includes area briefs. Exit 0 even when stale.
+`notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `domains`, `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `documents` (0045, 0049; a `references` key is reported as `documents`; a retired `concepts` key is not reported, 0071). `modules` (0048) has every module key, filled in as schema §12 says: all `true` except Domains when the block is absent, else each absent key at its default. `notes` counts every type, `reference` included (0045); `concept` is counted only when a brain still has concept notes (before `brain upgrade`, 0071). A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } }`. From 0.14.0 it also has `style` (0081), always with all four keys: the stored `preset` (`standard` when absent) and each dial's effective value (§5.3.1), e.g. `{ "preset": "simple", "explain": "plain", "length": "normal", "directness": "answer-first" }` for the stored `{ "preset": "simple", "length": "normal" }`; Standard is `{ "preset": "standard", "explain": "some", "length": "normal", "directness": "context-first" }`. `unattended` (0051) sums the unattended catch-up lines (§3.9) written since the last attended `catch-up` line, across the month files: `since` is that attended line's timestamp (`null` when there is none), `runs` the unattended lines after it, `inputs` and `failed` their sums, `failures` their reasons in order without repeats, and `left`, `skipped`, `waiting` and `last` (its timestamp) from the latest one, since an input still skipped is counted again by every run. `catch_up` is `null` when no unattended line follows the last attended one. `backlog` is `true` when the last three unattended catch-up lines, attended or not in between, each have `left` above 0. The attended catch-up opens with this summary (§6.1). `repos` lists `brain.json` `repos` in order (empty when absent): `found` is whether `path` is a Git working tree. `views_stale` includes area briefs. Exit 0 even when stale.
 
 **Suppressions (0055).** `suppressions` counts the records of `_suppressions/` (capture-and-review §5.3) that are `active` and `reconciled`, the knowledge notes with a restricted statement or restricted whole (`restricted_notes`), those restricted whole (`unresolved_lineage`: their text cannot be mapped to passages, or their lineage is unknown), and lists any unreadable record under `problems`.
 
@@ -378,7 +378,57 @@ brain config set notion.databases.projects '"2c4e6a80-1b3d-4f50-9a7c-8e6d4b2a0f1
 
 **`notion.template_version`** (0078, from 0.14.0): the four-digit number of the last Notion migration the user's space includes, as a string (`'"0024"'`; schema §12, [setup.md](setup.md) §9). Written by brain-connect-notion from the System page's Template version line, and by brain-notion-change after it applies a newer migration. Anything but four digits fails the schema (`INPUT_INVALID`).
 
-Errors: `INPUT_INVALID` (value not JSON, result fails schema, `schema_version`), `USAGE` (`get` on a path that does not exist).
+**`settings.style`** (0081, from 0.14.0; schema §12). A `set` whose path is `settings`, `settings.style` or a path under it (`settings.style.length`) also rewrites the brain's style block (§5.3.1) from the result, after `brain.json` is written, and `data` gains `files`: `[ { "path": "AGENTS.md", "action": "created" | "updated" | "removed" | "unchanged" | "skipped" } ]` (`created` when a block is added, `removed` when one is taken out). Any other path leaves `AGENTS.md` alone and has no `files`. A symbolic `AGENTS.md` is `OUTSIDE_ROOT` before any write, `brain.json` included. `AGENTS.md` missing, or its rules or style markers missing, out of order or duplicated: `brain.json` is still written, `AGENTS.md` is `skipped` with warning `AGENTS_BLOCK_NOT_FOUND`, and `brain upgrade` restores the file. `config` never commits; the skill commits both files.
+
+```sh
+brain config set settings.style '{ "preset": "simple" }' --json
+```
+```json
+{ "data": { "path": "settings.style", "previous": null, "value": { "preset": "simple" },
+            "files": [ { "path": "AGENTS.md", "action": "created" } ] } }
+```
+
+Errors: `INPUT_INVALID` (value not JSON, result fails schema, `schema_version`), `USAGE` (`get` on a path that does not exist), `OUTSIDE_ROOT` (a symbolic `AGENTS.md` on a `settings.style` write).
+
+#### 5.3.1 The style block and the style lines (0081)
+
+The brain's `settings.style` (schema §12) reaches the agent as text in the instructions it reads every session: a **style block** in the brain's `AGENTS.md`, and a **style paragraph** in each linked folder's instruction block (§5.12). Both are made of the **style lines**, one per dial whose effective value isn't Standard's, in the order explain, length, directness:
+
+| Dial | Level | Style line (normative) |
+|---|---|---|
+| explain | `expert` | `Don't define terms: the user knows them.` |
+| explain | `plain` | `Use plain words and no jargon. When a term is needed, explain it with a short example the first time you use it.` |
+| length | `short` | `Keep answers short: show at most five items at a time, say how many more there are, and show them when the user says "more".` |
+| length | `full` | `Give full answers: the details and the reasons, not only the outcome.` |
+| directness | `answer-first` | `Put the answer or the next action on the first line. In work with several steps, say where the user is ("step 3 of 5") in every reply.` |
+
+`some`, `normal` and `context-first` have no line: they are the agent's ordinary behaviour. **No style lines** (Standard, `style` absent or `{}`, or every dial set to Standard's level) means **no block and no paragraph**, and a command that writes them removes one written before.
+
+**The style block** in the brain's `AGENTS.md`, `{lines}` being the style lines, each as `- <line>`:
+
+```markdown
+<!-- ultimate-brain:style:start -->
+## How to answer me
+
+Written by `brain` from `settings.style` in `brain.json`; edits inside this block are overwritten. To change it, ask in this brain ("talk to me more simply", "shorter answers", "go back to normal"). It shapes your own words only: show text a command returns, such as a report, exactly as it is.
+
+{lines}
+<!-- ultimate-brain:style:end -->
+```
+
+- **Where:** right after the rules block's end marker `<!-- ultimate-brain:rules:end -->`, outside the rules block, which `brain upgrade` copies byte for byte from the template (§5.15 step 1). A new block is inserted as one blank line and then the block, directly after the end marker's line, so the text that followed the marker (the blank line and `## My rules` in the template) follows the block's end marker unchanged. An existing block (both style markers, once each, in order) is replaced in place. Removing a block deletes its lines and the one blank line before its start marker, so adding and then removing it leaves the file's bytes as they were.
+- **Written by** `brain config set` on a style path (§5.3) and `brain upgrade` (§5.15 step 1a). `brain init` writes none: a new brain is Standard.
+- **Not written** when `AGENTS.md` is missing or a symbolic link, or its rules markers or style markers are missing, out of order or duplicated (warning `AGENTS_BLOCK_NOT_FOUND`, as §5.15 step 1). Nothing outside the style markers changes.
+- `brain lint` does not check the style block: it is written from `brain.json`, and `brain upgrade` rewrites it.
+
+**The style paragraph** in a linked folder's instruction block (§5.12), with the same lines, each as `- <line>`:
+
+```markdown
+The user's response style, from the brain's `settings.style`. It shapes your own words only; show text a command returns exactly as it is.
+{lines}
+```
+
+The style is changed only from a session in the brain; a linked folder takes the change the next time its block is written: by `brain link` there, and from 0.13.0 by `brain upgrade` for a project registered in `brain.json` `repos`, whose upgrade writes what `brain link` would (0077 §4, CC-184).
 
 ### 5.4 `brain id new`
 
@@ -941,6 +991,8 @@ At the start of substantive work, run `brain recall --pack --json` here and read
 ```
 
 When `settings.recall` is `off` or absent, there is no recall paragraph, and a run of `brain link` removes one an earlier run wrote.
+
+**Style paragraph** (0081, from 0.14.0; §5.3.1). When the brain's `settings.style` has style lines, the style paragraph goes right before the read-only line (after the workflow paragraph when there is one), with one blank line before and after it. With no style lines there is none, and a run of `brain link` removes one an earlier run wrote. The block of a brain with no style lines is exactly as before 0.14.0.
 
 3. **Skills** (0029, 0038, 0059; skills-delivery §6.2): the **linked skills** are the skills of the source whose `targets` include `linked_repo`.
    - **Source.** A pinned brain (state `pinned` or `drift`): the files its lock lists, copied from the brain's `.agents/skills/<name>/`; before any write each must be a regular file with the locked bytes, and the first that isn't refuses `SKILLS_SNAPSHOT_MISSING` (§5.28) naming it. Unlisted files there and the brain's `.claude/skills` copy are ignored (lint covers them). An `unpinned` brain: the package snapshot, which must be compatible (else `SKILLS_SNAPSHOT_INVALID`), with warning `SKILLS_UNPINNED`.
@@ -1571,6 +1623,7 @@ Brings the product-owned files of an existing brain up to the installed version 
 1. **`AGENTS.md` rules block.** Replace everything from the line `<!-- ultimate-brain:rules:start … -->` through `<!-- ultimate-brain:rules:end -->` with the same block from `templates/brain/AGENTS.md`. Text outside the markers is kept byte for byte.
    - `AGENTS.md` missing → written from the template (`created`).
    - Markers missing, out of order or duplicated → the file is left alone (`skipped`) with warning `AGENTS_BLOCK_NOT_FOUND`; the user restores the markers or merges by hand.
+1a. **The style block** (0081, from 0.14.0; §5.3.1), in the same file, after step 1: written, replaced or removed from `brain.json` `settings.style`, so a brain with no style lines has none. An `AGENTS.md` created by step 1 gets it too. When step 1 skipped the file, or the style markers are missing, out of order or duplicated, the file is left alone (`skipped`, warning `AGENTS_BLOCK_NOT_FOUND`). `AGENTS.md` appears once in `files`, `updated` when either step changed it.
 2. **`CLAUDE.md`:** written as `@AGENTS.md` only if missing. One that exists in any form (a file, or a link to `AGENTS.md`) is left alone.
 2a. **The sub-agent (0.10.0, [assistant.md](assistant.md) §10).** `.claude/agents/ultimate-assistant.md` is written from `templates/brain/.claude/agents/ultimate-assistant.md` (creating `.claude/agents/` when needed) when it is missing (`created`) or its bytes differ (`updated`): the whole file is product-owned. A path that is a symbolic link or a folder is `OUTSIDE_ROOT` before any write. Other files in `.claude/agents/` are the user's and are left alone.
 3. **Skills (0029, 0038, 0059).** For each skill of the package snapshot, in **both** `.agents/skills/<name>/` (Codex) and `.claude/skills/<name>/` (Claude Code):
