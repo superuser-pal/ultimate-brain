@@ -11,7 +11,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
 
-import { ANSWER_GATES, KINDS, RETRIEVAL_GATES, audit, scoreAnswer, scoreRetrieval } from "./lib.mjs";
+import { ANSWER_GATES, KINDS, LIMIT, PROSE_FACT_GATE, RETRIEVAL_GATES, audit, scoreAnswer, scoreRetrieval } from "./lib.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const product = join(here, "../..");
@@ -90,6 +90,15 @@ for (const c of chosen) {
   }
 }
 
+// The prose-only fact gate also runs eval/search-0.5's 10 fact-in-body questions, each once, on the original brain.
+const originalFacts = adapter.level === "retrieval" && split === "all"
+  ? JSON.parse(readFileSync(join(product, "eval/search-0.5/questions.json"), "utf8")).filter((q) => q.kind === "fact-in-body").map((q) => {
+    const result = adapter.run({ id: q.q, question: q.q }, { brain: join(out, "original"), callerDir: callerDir("scratch"), cli });
+    const rank = result.candidates.slice(0, LIMIT).indexOf(q.answer) + 1 || null;
+    return { q: q.q, rank, pass: rank !== null };
+  })
+  : [];
+
 // ---- report ----
 const tally = (kind, which = rows) => {
   const of = which.filter((r) => r.kind === kind);
@@ -97,6 +106,9 @@ const tally = (kind, which = rows) => {
 };
 const gates = [];
 if (adapter.level === "retrieval") {
+  const proseNew = rows.filter((r) => r.subgroup === "body-only");
+  const proseGot = proseNew.filter((r) => r.pass).length + originalFacts.filter((r) => r.pass).length;
+  gates.push({ gate: `**facts in prose only** (original fact-in-body ${originalFacts.filter((r) => r.pass).length}/${originalFacts.length} + new body-only ${proseNew.filter((r) => r.pass).length}/${proseNew.length})`, got: `${proseGot}/${originalFacts.length + proseNew.length}`, need: split === "all" ? `${PROSE_FACT_GATE.need}/${PROSE_FACT_GATE.of}` : "(all 17 needed)", pass: split === "all" && proseGot >= PROSE_FACT_GATE.need && originalFacts.length + proseNew.length === PROSE_FACT_GATE.of });
   for (const [kind, need] of Object.entries(RETRIEVAL_GATES)) {
     const t = tally(kind);
     gates.push({ gate: `${kind}, first search, first ten`, got: `${t.pass}/${t.n}`, need: split === "all" ? `${need}/20` : "(all 20 needed)", pass: split === "all" && t.pass >= need });
@@ -110,7 +122,7 @@ if (adapter.level === "retrieval") {
 const failedGates = gates.filter((g) => g.pass === false).length;
 
 if (args.includes("--json")) {
-  console.log(JSON.stringify({ adapter: adapter.name, level: adapter.level, split, gates, rows }, null, 2));
+  console.log(JSON.stringify({ adapter: adapter.name, level: adapter.level, split, gates, rows, original_fact_in_body: originalFacts }, null, 2));
 } else {
   const git = (...a) => execFileSync("git", ["-C", product, ...a], { encoding: "utf8" }).trim();
   const dirty = git("status", "--porcelain", "--", "src", "eval/retrieval-0.13", ":!eval/retrieval-0.13/results-*.txt") ? " (with uncommitted changes in src/ or eval/retrieval-0.13/)" : "";
@@ -138,6 +150,7 @@ if (args.includes("--json")) {
   }
   if (args.includes("--rows")) {
     console.log("\n## Rows\n");
+    for (const r of originalFacts) console.log(`original\tfact-in-body\t-\t${r.pass ? "pass" : "FAIL"}\t${r.rank ?? "-"}\t\t${r.q}`);
     for (const r of rows) console.log(`${r.id}\t${r.kind}${r.subgroup ? `/${r.subgroup}` : ""}\t${r.split}\t${r.pass ? "pass" : "FAIL"}\t${r.rank ?? "-"}\t${r.sets ? `sets ${r.sets.map((x) => x ?? "-").join(",")}` : ""}\t${r.reasons.join("; ")}`);
   }
 }

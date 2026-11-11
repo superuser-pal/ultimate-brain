@@ -6,6 +6,9 @@ export const KINDS = ["fact", "paraphrase", "clarify", "unknown"];
 
 /** Retrieval gates (spec/retrieval.md §6.2): at least 18 of 20 on the first search. */
 export const RETRIEVAL_GATES = { fact: 18, paraphrase: 18 };
+/** The prose-only fact gate (the user's choice of 2026-11-11, spec/retrieval.md §6.2): at least 16 of the 17 existing body-only
+ *  facts, eval/search-0.5's 10 fact-in-body questions and the 7 `fact` cases with `subgroup: body-only`. */
+export const PROSE_FACT_GATE = { need: 16, of: 17 };
 /** Answer gates: 36 of the 40 answerable cases (90%); every clarify and every unknown case. */
 export const ANSWER_GATES = { answerable: 36, clarify: 20, unknown: 20 };
 
