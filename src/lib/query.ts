@@ -6,7 +6,7 @@ import { readMarker } from "./brain-marker.ts";
 import { isCjkTerm, withCjkNgrams } from "./cjk.ts";
 import { BrainError } from "./errors.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
-import { citeLabel, titleWithheld } from "./suppressions.ts";
+import { citeLabel, titleWithheld, type WithheldView } from "./suppressions.ts";
 
 /** V1 note types accepted by `brain query --types` (spec/cli.md §5.13). */
 export const QUERY_TYPES = [
@@ -245,7 +245,7 @@ function stringValue(value: unknown): string | null {
 // --- `brain query --read` (spec/cli.md §5.13.1) ------------------------------------------------------------------------------
 
 export type ReadNote =
-  | { id: string; status: "withheld"; reason: "unknown" | "restricted" | "not_eligible" }
+  | { id: string; status: "withheld"; reason: "unknown" | "restricted" | "not_eligible"; cause?: WithheldView["cause"]; rebuild?: WithheldView["rebuild"] }
   | { id: string; status: "ok"; type: string; title: string | null; path: string | null; cite?: string; lifecycle: string | null; assessment: string | null; date: string | null;
       restricted: boolean; superseded_by?: string; historical?: true; frontmatter: Record<string, unknown>; body: string };
 
@@ -262,12 +262,16 @@ export function readIds(value: string): string[] {
  * --include-superseded` returns, which are labelled `historical` (eligibility.md §5). A proposal is never read: it may propose what its
  * evidence no longer supports.
  */
-export function readNotes(notes: readonly Note[], ids: readonly string[], eligible: (note: Note) => Note | null, memories: ReadonlyMap<string, Note>): ReadNote[] {
+export function readNotes(notes: readonly Note[], ids: readonly string[], eligible: (note: Note) => Note | null, memories: ReadonlyMap<string, Note>,
+  viewWithheld?: (view: Note) => WithheldView | null): ReadNote[] {
   const byId = new Map(notes.map((note) => [note.id, note]));
   return ids.map((id): ReadNote => {
     const note = byId.get(id);
     if (note === undefined) return { id, status: "withheld", reason: "unknown" };
     if (note.type === "proposal") return { id, status: "withheld", reason: "not_eligible" };
+    // A withheld view names why and what rebuilds it (§5.13.1, "Views"; eligibility.md §8 rule 6).
+    const view = note.type === "view" ? viewWithheld?.(note) ?? null : null;
+    if (view !== null) return { id, status: "withheld", reason: "restricted", cause: view.cause, rebuild: view.rebuild };
     const kept = note.type === "memory" ? memories.get(id) ?? null : eligible(note);
     if (kept === null) return { id, status: "withheld", reason: note.type === "memory" ? "not_eligible" : "restricted" };
     const target = supersededBy(note);
