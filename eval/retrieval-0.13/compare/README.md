@@ -43,4 +43,6 @@ UB_RETRIEVAL_VARIANT=C2,C3,C4 node $CK/eval/retrieval-0.13/score.mjs $S --rows
 UB_RETRIEVAL_VARIANT=C2,C3,C4 node eval/retrieval-0.13/costs.mjs $S --baseline . --candidate $CK --reps 5
 ```
 
+The candidate `results-cc204.txt` measured is rebuilt from the commit its provenance names (4f94b40) with `checkout.mjs`; its checkout commit id differs on every build, so the two sha256 it records identify it.
+
 Before any run, `run.mjs` checks the vocabulary map's bounds: at most 40 groups of at most 6 words, and every word found in a `dev` case's question or evidence, or in `eval/search-0.5`'s questions or answer notes.
