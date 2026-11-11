@@ -226,7 +226,7 @@ Text on `main` that already agrees: memory.md §2 (one rule for `recall` and `qu
 - **Not semantic truth.** A passage check proves that evidence is allowed, not that a change or an answer is true (0077 §3). New source links do not prove correctness mechanically.
 - **No deletion** from Git history or from the original Notion sources (0032, 0055).
 - **No new store or platform.** No provenance database, service or index: the passages live in the proposal's frontmatter and the notes' existing references; everything else is computed from the files on each run.
-- **No ranking change** beyond scoring the note as the rule leaves it (§2), and no new feature, engine or connector.
+- **No ranking change** beyond scoring the note as the rule leaves it (§2), and no new feature, engine or connector. **Amended by [0080](../decisions/0080-english-retrieval-quality-in-0-13-0.md) (2026-11-11):** English retrieval changes ship in 0.13.0 under [retrieval.md](retrieval.md), whose §2 keeps this file's rule ahead of every term, score and snippet.
 
 ## 15. 0077 mapped to this file
 
