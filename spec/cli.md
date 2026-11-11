@@ -331,6 +331,7 @@ Read-only health summary; the first call of every skill.
     "setup": {
       "checks": { "git_identity": true, "remote": true, "databases": true, "drop_folder": true, "language": true, "owner_person": true },
       "recorded": { "notion-mcp": "2026-12-01T09:12:00Z", "minutes-prompt": null, "brain-assistant": null, "seeding": null, "first-value": null, "schedule": null },
+      "first_value": null,
       "template_version": "0024",
       "required": { "done": 7, "total": 9 },
       "next": "minutes-prompt",
@@ -345,7 +346,8 @@ Read-only health summary; the first call of every skill.
 
 **Setup (0078, [setup.md](setup.md) §5).** `setup` (always present) is computed offline: no network call, Git read only through `git config` and `git remote get-url origin` in the brain folder.
 - `checks`: the six offline checks of setup.md §5 (`git_identity`, `remote`, `databases`, `drop_folder`, `language`, `owner_person`), each `true` or `false`.
-- `recorded`: for each step only an online or by-hand check proves (`notion-mcp`, `minutes-prompt`, `brain-assistant`, `seeding`, `first-value`, `schedule`), the timestamp of its latest `setup` log line (§3.9) when that line has `result=done` or `result=declined`, else `null`; read across the month files like `unattended`.
+- `recorded`: for each step only an online or by-hand check proves (`notion-mcp`, `minutes-prompt`, `brain-assistant`, `seeding`, `first-value`, `schedule`), the timestamp of its latest `setup` log line (§3.9) when that line has `result=done` or `result=declined`, else `null`; read across the month files like `unattended`. For `first-value` the latest line must also pass (setup.md §5, §10): `report`, `organised` and `answer` each `pass`, and `tasks` `pass`, or `skip` while the Tasks module is off. A `result=done` line with a `fail` or without one of the four checks (CC-188's form) leaves it `null`: first value is unresolved, and `next` stays `first-value`.
+- `first_value`: the latest `first-value` line, `{ "at": <its timestamp>, "tasks": …, "report": …, "organised": …, "answer": … }`, each check `pass`, `fail`, `unsuitable`, `skip` or `null` (not run yet: the line leaves it out; any other value is reported as `fail`); `null` when there is no `first-value` line. The skill reads it to resume only the checks not passed, and compares `at` with the latest `seeding` line to run all four again after new seeding (setup.md §3).
 - `template_version`: `notion.template_version`, or `null` when absent (unknown, setup.md §9).
 - `required`: `total` is 9, or 7 when the latest `setup` line with `step=prerequisites` has `notion_ai=no` (setup.md §13); `done` counts the six checks that pass plus `notion-mcp`, `minutes-prompt` and `brain-assistant` when recorded (only the first of the three without Notion AI).
 - `next`: the first item not done, in setup.md §2's order: `git_identity`, `remote`, `drop_folder`, `language` (step 2), `notion-mcp` (3), `databases` (4), `minutes-prompt`, `brain-assistant` (4a, 4b; left out without Notion AI), `owner_person` (5), `seeding`, `first-value`, `schedule`; a check is done when it passes, a step when it is recorded. `null` when every item is done.
