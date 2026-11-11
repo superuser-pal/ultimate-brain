@@ -257,7 +257,7 @@ First meeting in: 3 tasks for you (1 from a quick follow-up), 4 notes, 2 people 
 ```
 
 - Counted from that meeting's ingest: the owner's Tasks created, of which the quick follow-ups that became Tasks (0079 §4); notes written; attendees matched to existing people and new person notes.
-- "First" is read from the log: a `setup` line with `step=first-value` and none with `step=first-meeting`. A brain with no `setup` line never shows it.
+- "First" is read from the log: `first-value` recorded as done (§5: its latest `setup` line with `step=first-value` passes) and no line with `step=first-meeting`. A `first-value` line from an unresolved attempt (`result=failed`, or a check not passed) does not count, so a catch-up while first value is unresolved shows nothing. A brain with no `setup` line never shows it.
 
 ## 11. Minimal per-area tracking preferences (0061, choice 1)
 
