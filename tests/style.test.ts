@@ -377,6 +377,13 @@ test("upgrade leaves an AGENTS.md with damaged style markers alone, and reads an
   await storeStyle(target, "simple");
   await cli("upgrade");
   assert.equal(await agents(), original, "a style that isn't an object reads as {}");
+
+  // A brain.json that isn't JSON leaves the style block as it is, while the rules block is still brought up to date.
+  await writeFile(join(target, "AGENTS.md"), withBlock(original, [LINE.full]).replace(rulesBlock(original), "<!-- ultimate-brain:rules:start v0 -->\nold rules\n<!-- ultimate-brain:rules:end -->"));
+  await writeFile(join(target, "brain.json"), "{ not json\n");
+  const unparseable = await cli("upgrade");
+  assert.ok(unparseable.json.warnings.some((warning: { code: string }) => warning.code === "BRAIN_JSON_UNPARSEABLE"), unparseable.stdout);
+  assert.equal(await agents(), withBlock(original, [LINE.full]));
 });
 
 test("upgrade writes the style paragraph in a registered linked project, as brain link would", async (context) => {
