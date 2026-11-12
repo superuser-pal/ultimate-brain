@@ -1,10 +1,10 @@
 # Guided setup (contract, decision 0078)
 
-**Status:** contract for release 0.14.0 (CC-188). Built by CC-190 (the CLI side), CC-191 (the `brain-setup` skill and the skill changes it needs, in one fork release: brain-setup, brain-connect-notion, Ultimate Assistant's seeding, brain-ingest's use of `track`, brain-catch-up's first-meeting line, brain-notion-change's template version), CC-192 (the `repository` field of `package.json`) and CC-189 (the Notion template); measured by CC-193. The response style (0081: §4's row, §7 item 13, §7.1) is CC-209's contract, built by CC-210 (the CLI) and CC-211 (the setup item and the chat change). First value (§2, §3, §4.1, §5, §10, §12) was corrected by CC-213: an attempt is not a pass. Written by Claude Code.
+**Status:** contract for release 0.14.0 (CC-188). Built by CC-190 (the CLI side), CC-191 (the `brain-setup` skill and the skill changes it needs, in one fork release: brain-setup, brain-connect-notion, Ultimate Assistant's seeding, brain-ingest's use of `track`, brain-catch-up's first-meeting line, brain-notion-change's template version), CC-192 (the `repository` field of `package.json`) and CC-189 (the Notion template); measured by CC-193. The response style (0081: §4's row, §7 item 13, §7.1) is CC-209's contract, built by CC-210 (the CLI) and CC-211 (the setup item and the chat change). First value (§2, §3, §4.1, §5, §10, §12) was corrected by CC-213: an attempt is not a pass. The template's Example rows (0084: §2 step 4, §3, §4.1, §6.5, §12, §14) are CC-227's, built in the skills fork (brain-setup, brain-ingest, brain-catch-up, brain-sync). Written by Claude Code.
 
 How this file fits: it holds the whole first-time setup of a new user: what the `brain-setup` skill does and in what order, what it checks and how, what it stores and where, what seeding writes, how first value is checked, and the setup report. Command behaviour is in [cli.md](cli.md) (§5.1 `init`'s next step, §5.2 `status`'s `setup` block, §5.3 `notion.template_version` and `settings.style`, §5.3.1 the style block, §5.15 `upgrade`'s Notion migrations), and file formats are in [schema.md](schema.md) (§4 area `track`, §12 the new-brain modules and the new `brain.json` keys). What a read, an answer or a proposal may rest on is [eligibility.md](eligibility.md), and nothing here changes it.
 
-**Decisions:** [0078](../decisions/0078-onboarding-and-early-access-in-0-14-0.md) (binding: §1 to §6); [0079](../decisions/0079-lean-minutes-and-follow-ups-as-tasks.md) (the minutes format the minutes check uses, and the follow-ups that become Tasks); [0081](../decisions/0081-response-style-working-principles-and-plain-writing.md) (the response style: §3 to §6); 0015 (Notion through the MCP), 0037 (identities), 0048 (modules), 0061 (minimal per-area tracking preferences), 0064 and 0072 (Ultimate Assistant guides seeding), 0059 (project adoption), 0070 (lifecycle of structure notes), 0031 (owner rulings).
+**Decisions:** [0078](../decisions/0078-onboarding-and-early-access-in-0-14-0.md) (binding: §1 to §6); [0079](../decisions/0079-lean-minutes-and-follow-ups-as-tasks.md) (the minutes format the minutes check uses, and the follow-ups that become Tasks); [0081](../decisions/0081-response-style-working-principles-and-plain-writing.md) (the response style: §3 to §6); [0084](../decisions/0084-the-notion-template-is-the-authors-emptied-space-with-example-rows.md) (the template's Example rows, removed at step 4, and the guard: §6.5); 0015 (Notion through the MCP), 0037 (identities), 0048 (modules), 0061 (minimal per-area tracking preferences), 0064 and 0072 (Ultimate Assistant guides seeding), 0059 (project adoption), 0070 (lifecycle of structure notes), 0031 (owner rulings).
 
 **The user's choices of 2026-11-10, filling gaps 0078 leaves** (asked through the coordinator during CC-188; each was the recommended option):
 1. **Per-area tracking preferences** are an optional `track` list in the area note's frontmatter, in Git only, with no Notion property in 0.14.0; seeding proposes it, the ingest uses it, and Ultimate Assistant's thresholds stay fixed (§11).
@@ -34,7 +34,7 @@ A new user duplicates the published Notion template (0078 §1, CC-189), installs
 | 1 | **Prerequisites**, all checked at once (§6.1) | `prerequisites` | every required prerequisite passes |
 | 2 | **The settings screen** (§7), then its items applied: the Git identity, the private remote, the drop folder created, the `AGENTS.md` lines | `settings` | the user confirmed the screen and each required item of it passes |
 | 3 | **The template duplicated, and the agent connected to Notion** (§6.2) | `notion-mcp` | the MCP reaches the duplicated space's Brain Data page |
-| 4 | **"Connect the brain to Notion"** (brain-connect-notion): modules on or off, database ids, the Tasks database, the template version | `connect` | every database of Core and of the modules on is stored, and the template version is stored when the space has a Template version line (a space built from the prompts has none: the version stays unknown, §9, and the step is still done) |
+| 4 | **"Connect the brain to Notion"** (brain-connect-notion): modules on or off, database ids, the Tasks database, the template version | `connect` | every database of Core and of the modules on is stored, and the template version is stored when the space has a Template version line (a space built from the prompts has none: the version stays unknown, §9, and the step is still done); in a duplicate of the template, no `Example · ` row is left on Brain Data (§6.5) |
 | 4a | **The minutes prompt**, walked through and checked (§6.3) | `minutes-prompt` | the check passes |
 | 4b | **Brain Assistant**, walked through and checked (§6.4) | `brain-assistant` | the check passes |
 | 5 | **Identities** (0037; brain-connect-notion step 6) | `identities` | `owner.person` is set |
@@ -50,7 +50,7 @@ A new user duplicates the published Notion template (0078 §1, CC-189), installs
 
 On "set up my brain", the skill runs `brain status --json` and reads its `setup` block (cli.md §5.2), then:
 
-1. **Re-checks online** what the block can't see and is cheap to re-check: the Notion MCP reaches Brain Data (step 3), and, when `gh` is `on`, the remote is private (`gh repo view --json isPrivate`). A recorded step whose online check now fails is unfinished again.
+1. **Re-checks online** what the block can't see and is cheap to re-check: the Notion MCP reaches Brain Data (step 3), and, when `gh` is `on`, the remote is private (`gh repo view --json isPrivate`). A recorded step whose online check now fails is unfinished again. In a duplicate of the template (`notion.template_version` stored) with no `connect` line `result=done` yet, step 4 is unfinished even when `databases` passes: the Example rows were not yet found gone (§6.5), so step 4 runs again.
 2. **Never re-runs a by-hand check that is recorded as done** (the minutes prompt, Brain Assistant): the `setup` line is the proof (choice 2). The user can ask for it again ("check the minutes prompt again").
 3. **Resumes an unresolved first value check by check** (§10), from the block's `first_value`: the checks that passed in the latest `first-value` line are kept, and only the others run again (`fail`, `unsuitable`, or not run yet). All four run again when a `seeding` line is newer than that `first-value` line, since the material changed; `tasks` runs again when it was `skip` and the Tasks module is now on.
 4. **Starts at the first step of §2 that is unfinished**, saying in one line what is already done: "Setup: 6 of 9 done. Next: paste the minutes prompt." A step before it that fails a check (a Git identity removed since) is fixed first.
@@ -87,7 +87,7 @@ The `AGENTS.md` lines are written under the `## My rules` heading, which follows
 
 - `<step>` is one of §2's: `started`, `prerequisites`, `settings`, `notion-mcp`, `connect`, `minutes-prompt`, `brain-assistant`, `identities`, `seeding`, `first-value`, `schedule`, `finished`, and `first-meeting`, written once by brain-catch-up after setup (§10.1), which `brain status` doesn't read. `started` is written once, when the skill first runs in a brain with no `setup` line.
 - `result=failed` adds `reason=<code>` from §12.2; `declined` is used only by `schedule` (the user chose off). `first-value` is `done` only when first value passes, else `failed` with `reason=first-value-unresolved` (§10). A step can be logged several times; the latest line of a step is its state.
-- Extra keys: `prerequisites` adds `notion_ai=yes|no custom_agents=yes|no` (the plan, as the user answered); `first-value` adds `tasks=`, `report=`, `organised=` and `answer=`, each `pass`, `fail` or `unsuitable` (`tasks` also `skip`, with Tasks off), and leaves out a check not run yet (§10); `seeding` adds `notes=<n> documents=<n>`.
+- Extra keys: `prerequisites` adds `notion_ai=yes|no custom_agents=yes|no` (the plan, as the user answered); `connect` adds `examples=<n>`, the Example rows this run moved to the trash (`0` when none was left, or in a space built from the prompts; §6.5); `first-value` adds `tasks=`, `report=`, `organised=` and `answer=`, each `pass`, `fail` or `unsuitable` (`tasks` also `skip`, with Tasks off), and leaves out a check not run yet (§10); `seeding` adds `notes=<n> documents=<n>`.
 - Values carry no names, paths, ids or text (§12.1).
 
 ## 5. The offline checks (`brain status`, cli.md §5.2)
@@ -149,6 +149,25 @@ Walked through: the skill gives the steps of `<product.path>/notion/brain-assist
 1. With the user's yes, the skill creates one Task in the brain's Tasks database through the MCP: `Setup check: delete me`, Due today. With Tasks off, no task is created: step 2 then passes when `/Today` lists nothing from outside the brain's databases.
 2. The user runs `/Today` in Notion and pastes or describes the answer. It passes when it lists that task and nothing that isn't in the brain's Tasks database (no page from elsewhere in the workspace).
 3. The skill then sets the test task's Status to the mapped closed-without-doing status (`notion.tasks.wont_do_status`), with the same yes, and records `brain-assistant` done; a fail names what came back that shouldn't have, and the likely cause (the agent's access isn't limited to Brain Data).
+
+### 6.5 The Example rows (step 4; 0084 §3, §4)
+
+The published template carries seven invented rows that show a filled space: one Domain, Area, Project, Person, Org, Meeting (short lean minutes, Not Reviewed) and Task, each titled with the prefix **`Example · `** (the word `Example`, a space, the middle dot U+00B7, a space; matched exactly, case included). Nothing in the brain is ever made from one.
+
+**Removed at step 4,** in a duplicate of the template only: a space whose System page has a Template version line (§9). A space built from the prompts has no Example rows, and nothing is searched in it.
+1. After brain-connect-notion has found and stored the databases (its steps 2 to 4a), the skill queries **every database on the duplicate's Brain Data page**, whether its module is on or off, for the rows whose title starts with `Example · ` (all pages of each). A database elsewhere in the workspace, such as the user's own tasks database (0018), is never searched.
+2. **None found:** log `step=connect result=done examples=0` and go on.
+3. **Some found:** show their titles, one per line with their database, and ask once: "Your template still has these 7 example rows. I'll move them to Notion's trash now, so nothing in your brain is made from them. OK?" On the yes, move each to the trash through the MCP (the page updated with `in_trash: true`; `archived: true` on API versions before 2025-09), query again, and when none is left, log `step=connect result=done examples=<n>`.
+4. **Declined, or some still there** (a failed write): log `step=connect result=failed reason=examples-left`, say the rows must go before anything reads the space (the user may also delete them in Notion), and stop at step 4, as at any required item (§2).
+5. **Resume** (§3): a duplicate with no `connect` line `result=done` runs step 4 again. brain-connect-notion's re-run leaves correct ids alone; the query finds only the rows still there. A row already gone is fine, and none left passes at once.
+
+- A row the user renamed so its title no longer starts with `Example · ` is the user's own, and is left alone; so is every row without the prefix.
+- Step 4 comes before identities (5), seeding and its publish (6, whose pull reads Notion), the minutes and Brain Assistant checks (4a, 4b) and any catch-up, so no step reads an Example row.
+
+**The guard,** for a brain connected before its Example rows were removed (brain-connect-notion run on its own, outside setup): the skills that read Notion rows into the brain leave out every row whose title starts with `Example · `.
+- **brain-sync's pull** leaves it out of the snapshot it gives `brain sync plan`, so it is never imported (0021), corrected or matched. Catch-up's pull is brain-sync's, and brain-ingest's first-run sync too.
+- **brain-ingest and brain-catch-up** skip such a meeting or Inbox row without taking it in: no source, note, proposal, Task or report line. The run's report names how many it skipped, once ("2 example rows skipped: delete them in Notion, or say "set up my brain" to remove them").
+- The CLI has no part in it: it never reads Notion, and receives only what the skills send. A CLI skip in `sync plan` is 0084's follow-up, if a leftover example ever reaches a brain.
 
 ## 7. The settings screen (step 2; 0078 §2)
 
@@ -284,7 +303,7 @@ Time: 52 min (first setup line to the last)
 1 prerequisites: done
 2 settings: done (markitdown off, gh on)
 3 notion-mcp: failed once (notion-unreachable), then done
-4 connect: done (template 0024)
+4 connect: done (template 0024, 7 examples removed)
 4a minutes-prompt: failed once (shape-wrong), then done
 4b brain-assistant: done (custom agent)
 5 identities: done
@@ -299,7 +318,7 @@ Time: 52 min (first setup line to the last)
 
 ### 12.2 Reason codes
 
-`missing-prerequisite`, `notion-ai-missing`, `notion-unreachable`, `brain-data-not-found`, `database-missing`, `shape-wrong` (minutes), `assistant-reads-outside` (Brain Assistant), `remote-failed`, `push-failed`, `user-stopped`, `first-value-unresolved` (first value, §10), and a CLI error code (cli.md §3.5) when a command failed.
+`missing-prerequisite`, `notion-ai-missing`, `notion-unreachable`, `brain-data-not-found`, `database-missing`, `shape-wrong` (minutes), `assistant-reads-outside` (Brain Assistant), `remote-failed`, `push-failed`, `user-stopped`, `examples-left` (the template's Example rows not removed, §6.5), `first-value-unresolved` (first value, §10), and a CLI error code (cli.md §3.5) when a command failed.
 
 ## 13. Without Notion AI (0078 §6)
 
@@ -313,4 +332,4 @@ Time: 52 min (first setup line to the last)
 
 ## 14. Out of scope (0078)
 
-An interactive `brain init`; a new diagnostic command (status's `setup` block and the skill's checks are the diagnostics); telemetry; a synthetic sample meeting in the template (§6.3's sample text lives in the skill and is deleted after the check); rich profiles and specialised types (0030); the template gallery and the acquisition funnel (1.0); how the template link reaches testers, the npm channel and the number of testers (1.0's opening grill); any operation on the user's brain or Notion workspace without an explicit yes. From 0081: the style changing text a command returns (post-1.0), a style per skill or per agent, and a style switched on per session.
+An interactive `brain init`; a new diagnostic command (status's `setup` block and the skill's checks are the diagnostics); telemetry; anything in the brain made from an Example row (0084: the template's seven Example rows, a meeting among them, are removed at step 4 and skipped by the skills, §6.5; §6.3's sample text lives in the skill and is deleted after the check); rich profiles and specialised types (0030); the template gallery and the acquisition funnel (1.0); how the template link reaches testers, the npm channel and the number of testers (1.0's opening grill); any operation on the user's brain or Notion workspace without an explicit yes. From 0081: the style changing text a command returns (post-1.0), a style per skill or per agent, and a style switched on per session.
