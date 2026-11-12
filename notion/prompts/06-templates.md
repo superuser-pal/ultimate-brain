@@ -46,7 +46,7 @@ Create a default page template for each database below. Each item "Heading: data
   Then a toggle "My notes".
 - Meetings:
   A gray callout containing a heading 3 "Before marking Reviewed", a divider, and the to-do items "Attendees linked", "Project linked", "Minutes follow the format", "Minutes checked and corrected", then a gray line "Check the minutes, fix them, then set Brain Status to Reviewed. Fixed them after the brain took them in? Set Reviewed again: it reads only what changed."
-  A gray callout (the notice, decision 0055): "All subjects included unless marked Meeting only. Mark Reviewed to confirm." followed by a gray line "To leave a subject out, change its line to Selection: Meeting only. To leave one item out, write Meeting only: at its start. Nothing is added to the brain until you set Reviewed."
+  A gray callout (the notice, decision 0055): "All subjects included unless marked Meeting only. Mark Reviewed to confirm." followed by a gray line "Tick the quick follow-ups you've done: the ones left unticked become Tasks when you set Reviewed. To leave a subject out, open For the brain and change its line to Selection: Meeting only. To leave one item out, write Meeting only: at the start of its quote line there. Nothing is added to the brain until you set Reviewed."
   A Notion AI meeting notes block.
   A toggle "My notes".
 [Knowledge]   A toggle "Decisions" containing a linked view of Decisions where Decided In is this page.

@@ -1,0 +1,7 @@
+For the brain toggle: details
+In one line: yes; subjects: s1, s2, s3; Attendees yes, Projects yes, sentence yes
+Items with an id and quotes that occur, each in exactly one paragraph: 13 of 13
+Items with a quote entry: 13 of 13; with at least one quote found: 13
+Quotes: 16, over 12 words: 0; readable lines over 15 words (gists aside): 1
+Follow-ups with a q id: 3 of 3
+Bar (0079 §6): toggle pass, items pass, follow-ups pass → PASS
