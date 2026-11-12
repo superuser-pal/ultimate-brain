@@ -166,7 +166,7 @@ The published template carries seven invented rows that show a filled space: one
 
 **The guard,** for a brain connected before its Example rows were removed (brain-connect-notion run on its own, outside setup): the skills that read Notion rows into the brain leave out every row whose title starts with `Example · `.
 - **brain-sync's pull** leaves it out of the snapshot it gives `brain sync plan`, so it is never imported (0021), corrected or matched. Catch-up's pull is brain-sync's, and brain-ingest's first-run sync too.
-- **brain-ingest and brain-catch-up** skip such a meeting or Inbox row without taking it in: no source, note, proposal, Task or report line. The run's report names how many it skipped, once ("2 example rows skipped: delete them in Notion, or say "set up my brain" to remove them").
+- **brain-ingest and brain-catch-up** skip such a meeting or Inbox row without taking it in: no source, note, proposal, Task, or line in a report the brain writes. The run's own report names how many it skipped, once ("2 example rows skipped: delete them in Notion, or say "set up my brain" to remove them").
 - The CLI has no part in it: it never reads Notion, and receives only what the skills send. A CLI skip in `sync plan` is 0084's follow-up, if a leftover example ever reaches a brain.
 
 ## 7. The settings screen (step 2; 0078 §2)
