@@ -34,7 +34,7 @@ The space is a core (Inbox, Meetings, Projects, Areas, People, Review) plus the 
 - [ ] [6 · Templates](prompts/06-templates.md)
 - [ ] [7 · Spaces and views](prompts/07-spaces-views.md): one prompt per page (Home, Review, Meetings, Tasks, Projects, Plan, Knowledge, Archive)
 - [ ] (optional) [8 · Navigation](prompts/08-navigation.md)
-- [ ] [9 · Brain Assistant's skills and the guide](prompts/09-assistant-and-guide.md): the Brain Assistant Skills database on System, and How it works
+- [ ] [9 · Brain Assistant's skills and the guide](prompts/09-assistant-and-guide.md): the Skills database (Brain Assistant's skills) on System, and How it works
 - [ ] **Buttons and page layouts, by hand** (the API and Notion AI can't create buttons or set page layouts): for each module you chose, do the "By hand" steps of its file in [modules/](modules/), then set each database's page layout as in [views-guide.md](views-guide.md) §9.
 
 Prefer to build Spaces and views by hand? [views-guide.md](views-guide.md) spells out every view (filters, sorts, grouping, visible properties, use case), the database page layouts and the navigation. It replaces steps 7 and 8.
@@ -44,7 +44,7 @@ Prefer to build Spaces and views by hand? [views-guide.md](views-guide.md) spell
 - [ ] Tell your agent "connect the brain to Notion". The connect-notion skill records your modules (`brain modules`), finds the databases by name through the Notion MCP and writes their IDs into `brain.json` (decision 0015).
 - [ ] Using your own Tasks database? Tell the agent which one. It maps its property names into `brain.json` `notion.tasks` (decision 0018). The title property is required; a relation to Meetings is preferred for the backlink.
 - [ ] Ask the agent to verify the live space against the design. It reports any property, option or relation that differs (decision 0022).
-- [ ] Set up Brain Assistant: "Setup" in [brain-assistant.md](brain-assistant.md) (its skills are already in Brain Assistant Skills), and paste the minutes prompt ([pasting-the-minutes-prompt.md](pasting-the-minutes-prompt.md)).
+- [ ] Set up Brain Assistant: "Setup" in [brain-assistant.md](brain-assistant.md) (its skills are already in the Skills database), and paste the minutes prompt ([pasting-the-minutes-prompt.md](pasting-the-minutes-prompt.md)).
 
 ## Changes for spaces built with the earlier prompts
 
