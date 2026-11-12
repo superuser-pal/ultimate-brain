@@ -6,6 +6,7 @@ import { BrainError } from "./errors.ts";
 import { atomicWriteFile, ensureDirectory } from "./fs-safe.ts";
 import type { Note } from "./notes.ts";
 import { assertPlainPath } from "./skills.ts";
+import { styleLines, styleParagraph } from "./style.ts";
 import { TREES, type Manifest, type SnapshotSkill } from "./skills-snapshot.ts";
 
 /**
@@ -41,7 +42,7 @@ export async function planLinkedRepo(root: string, input: {
   const retired = (existingMarker.value.skills?.names ?? []).filter((name) => !names.includes(name));
   const project = marker.project === undefined ? undefined : noteOf(notes, marker.project, "project");
   const area = marker.area === undefined ? undefined : noteOf(notes, marker.area, "area");
-  const block = instructionBlock(project, area, names, recallOpening(input.config));
+  const block = instructionBlock(project, area, names, recallOpening(input.config), styleLines(input.config));
 
   const agents = await readOptional(root, "AGENTS.md");
   const agentText = replaceOrAppend(agents, block, "AGENTS.md");
@@ -149,9 +150,10 @@ export function recallOpening(config: Record<string, unknown>): boolean {
 
 /**
  * The block of cli.md §5.12; the recall paragraph follows the `How:` paragraph when `settings.recall` is `opening`,
- * and the workflow lines join it when brain-workflow is among the linked skills (skills-delivery §9.7).
+ * the workflow lines join it when brain-workflow is among the linked skills (skills-delivery §9.7), and the style paragraph
+ * goes right before the read-only line when the brain's `settings.style` has style lines (§5.3.1).
  */
-export function instructionBlock(project: Note | undefined, area: Note | undefined, linked: readonly string[], recall: boolean): string {
+export function instructionBlock(project: Note | undefined, area: Note | undefined, linked: readonly string[], recall: boolean, style: readonly string[] = []): string {
   const lines = [
     START,
     "## Ultimate Brain",
@@ -179,6 +181,7 @@ export function instructionBlock(project: Note | undefined, area: Note | undefin
     const adopt = linked.includes("brain-workflow-adopt") ? "; to take over its existing plans and tasks, use `brain-workflow-adopt`." : ".";
     lines.push("", `To track this repo's work, the standard way or connected to a Notion Project or Area, use the \`brain-workflow\` skill${adopt}`);
   }
+  if (style.length > 0) lines.push("", styleParagraph(style));
   lines.push(
     "",
     `The brain is read-only from this repo. Never edit its files from here.${workflow ? " A connected workflow's records change only through `brain workflow` commands." : ""}`,
