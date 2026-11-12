@@ -242,6 +242,38 @@ check("5b. with the toggle's tags dropped, the plan blocks (SELECTION_UNREADABLE
   assert.ok(plan5b.problems.some((problem) => problem.code === "SELECTION_UNREADABLE"));
 });
 
+// ======================= Scenario 6: an inline-quote summary with escaped ids =======================
+say();
+say("## 6. An inline-quote summary as Notion's Markdown may return it, its ids escaped (`\\[s1.i1\\]`)");
+say();
+say("selection.md \"Which flow?\": an id counts escaped or not; only a summary with no id either way and no For the brain toggle is legacy (stored whole). The rule as the skill states it, and the naive test it replaces:");
+const ESCAPED = INLINE.replace(/\[(s\d+(?:\.i\d+)?|q\d+)\]/g, "\\[$1\\]");
+const hasId = (text) => /\[s\d+(?:\.i\d+)?\]/.test(text);
+const hasToggle = (text) => /<summary>\s*\**For the brain\**:?\s*\**\s*<\/summary>/i.test(text);
+const skillRoute = (text) => (hasToggle(text) || hasId(text.replace(/\\([[\]])/g, "$1")) ? "selection" : "legacy: stored whole");
+const naiveRoute = (text) => (hasToggle(text) || hasId(text) ? "selection" : "legacy: stored whole");
+say("```");
+say(`escaped ids on the page: ${(ESCAPED.match(/\\\[s\d/g) ?? []).length}`);
+say(`raw text, ids read literally (1.8.0): ${naiveRoute(ESCAPED)}`);
+say(`ids read escaped or not (this fix):   ${skillRoute(ESCAPED)}`);
+say("```");
+check("6a. the skill's rule routes the escaped summary to selection, never to the legacy whole store", () => {
+  assert.equal(naiveRoute(ESCAPED), "legacy: stored whole", "the gap this closes");
+  assert.equal(skillRoute(ESCAPED), "selection");
+  assert.equal(skillRoute(LEAN), "selection"); assert.equal(skillRoute(INLINE), "selection");
+  assert.equal(skillRoute(readFileSync(join(FIX, "legacy-summary.md"), "utf8")), "legacy: stored whole", "a real legacy summary stays legacy");
+});
+say();
+say("**§2 step 3:** the summary goes to `extract-plan` as read, escapes included:");
+const ESC_PAGE = "0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c10";
+const plan6 = brain(["source", "extract-plan", "--page", ESC_PAGE, "--summary", file("inline-escaped.md", ESCAPED), "--transcript", TRANS], (data) => ({ ok: data.ok, problems: data.problems.slice(0, 4), passages: data.passages.map((entry) => `¶${entry.n} ← ${entry.items.join(", ")}`) })).json.data;
+check("6b. nothing is stored whole: the CLI either reads the escaped ids as the unescaped summary or blocks (body null)", () => {
+  if (plan6.ok) assert.deepEqual(plan6.passages, plan4.passages);
+  else assert.equal(plan6.body, null);
+});
+say();
+say(plan6.ok ? "The CLI reads the escaped ids: the same passages as the unescaped summary." : "This CLI does not read escaped ids yet, so the input blocks (fail closed) and nothing is written: never the whole transcript.");
+
 // ======================= Summary =======================
 say();
 say("## Checks");
