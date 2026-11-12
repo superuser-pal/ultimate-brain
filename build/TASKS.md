@@ -475,7 +475,7 @@ Work packages (0061, kept): onboarding/diagnostic/preference contracts; probe-fi
 | CC-195 | Lean minutes contracts | their lines in `spec/capture-and-review.md` and `spec/cli.md` | after CC-194 is merged | `done` (#330) |
 | CC-196 | The CLI reads the lean shape and the follow-ups | `src/lib/lean-minutes.ts` (new), `src/lib/selection.ts`, `src/lib/extract.ts`, `src/lib/sync.ts` (the `sync tasks` input), `src/lib/cleanup.ts`, their tests | after CC-195 is merged | `done` (#333) |
 | CC-197 | The prompt, Check minutes, the paste guide and the prompt gate | `notion/minutes-format.md`, `notion/pasting-the-minutes-prompt.md`, `notion/brain-assistant.md`, `eval/minutes-0.14/` (new) | after CC-195 is merged; before CC-189 and CC-191 take the prompt | `todo` |
-| CC-198 | Ingest and catch-up: the lean shape and follow-up Tasks | the fork's `brain/brain-ingest/`, `brain/brain-catch-up/`; the vendored snapshot | after CC-196 is merged | `in progress` |
+| CC-198 | Ingest and catch-up: the lean shape and follow-up Tasks | the fork's `brain/brain-ingest/`, `brain/brain-catch-up/`; the vendored snapshot | after CC-196 is merged | `review` |
 | CC-208 | Decision 0081 and these rows | `decisions/0081`, the 0078 pointer, roadmap lines, these rows | now | `done` (#308) |
 | CC-209 | Response style contracts | `settings.style` in `spec/schema.md` §12, its lines in `spec/cli.md` (§5.2, §5.3, §5.12, §5.15) and `spec/setup.md` | after CC-208 is merged | `done` (#309) |
 | CC-210 | The CLI writes the style paragraph | `brain.schema.json`, `config`, `link`, `upgrade`, `status`, their tests | after CC-209 is merged | `done` (#328) |
@@ -560,7 +560,7 @@ Evidence:
 **Output:** `notion/minutes-format.md`: the new prompt and its "What you do with it" (where to mark `Meeting only`, ticking follow-ups before Reviewed, what becomes a Task); `notion/pasting-the-minutes-prompt.md` for the switch; Brain Assistant's Check minutes in `notion/brain-assistant.md` for the new shape (it still accepts the earlier ones). The gate: the prompt run on a synthetic transcript under `eval/minutes-0.14/` (new), its output and the counts against 0079 §6's bar (9 of 10 items with an id and quotes that occur in the transcript, every follow-up with a `q` id). Running Notion AI on a test page needs the user's yes; synthetic data only. If the bar is not met, report it and take the format back to the user.
 **Acceptance:** the prompt, the guide and Check minutes agree with CC-195's contract; the gate's output and counts are committed and meet the bar, or the shortfall is reported on the PR; the leak and PR format checks pass.
 
-### CC-198 · The ingest and catch-up skills read the lean minutes and create follow-up Tasks (0079 §4) · `in progress`
+### CC-198 · The ingest and catch-up skills read the lean minutes and create follow-up Tasks (0079 §4) · `review`
 **Release:** 0.14.0
 **Changelog:** catch-up turns the quick follow-ups you left unticked into Tasks when it ingests a reviewed meeting, and its report says how many.
 **Output:** in the skills fork, through fork PRs, then one fork release vendored here with `scripts/vendor-skills.mjs`: `brain/brain-ingest/` (`references/selection.md`: the lean shape, and follow-ups to Tasks per CC-195's §6; `references/notion.md`: the For the brain toggle is not part of the minutes text a legacy read stores) and `brain/brain-catch-up/` (the report's count of follow-ups that became Tasks; unattended runs create them).
