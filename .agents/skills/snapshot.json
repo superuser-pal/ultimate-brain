@@ -1,17 +1,17 @@
 {
   "format": 1,
   "name": "ultimate-brain-skills",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "cli": ">=0.14.0-0 <0.15.0",
   "source": {
     "repository": "https://github.com/superuser-pal/ultimate-brain-skills",
-    "commit": "cc28a70072e236c122d5f004e425ad8929ff6c9b"
+    "commit": "1da533a8c6d44ad4721a25b536cc1d2c9df7ff86"
   },
   "upstream": {
     "repository": "https://github.com/mattpocock/skills",
     "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa"
   },
-  "integrity": "sha256-8d2a9694c25c79ee316d235977875a66424b0b321524bb8c25fdc77c53181218",
+  "integrity": "sha256-6fd3ebe1eee30db52b5a28e3c397edce3f08fd40b4a6cb2cec99bcebd73a9b61",
   "skills": [
     {
       "name": "brain-apply",
@@ -21,13 +21,13 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "e2cfe24d6197048ad3e3fb46a3dee241c259aec798e9530d5ad2b188e0c8e010",
-          "bytes": 21613
+          "sha256": "041c83b294b8723c40b6a0e3c419f3ef0bffd779ba819886fbf4cac7df2eef6b",
+          "bytes": 22141
         },
         {
           "path": "references/review-items.md",
-          "sha256": "79d36b37b15d2d3f77637c900a2b940bc49e4b2a31930e2f0df64cc29cd96623",
-          "bytes": 8861
+          "sha256": "749a7c3cc0ef9b558f194302f1edb3bd5c78602f195243bc89e0ba1a0e1b38b1",
+          "bytes": 8910
         }
       ]
     },
@@ -39,8 +39,8 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "83326fc336070575220bba5e61af3cd49c24fbf1834bbc47d32ecf03e1d4d259",
-          "bytes": 44940
+          "sha256": "ac932263b5e756dd2652904d73cdcbe67e02c7db259c537dba41494fbec276e3",
+          "bytes": 45016
         }
       ]
     },
@@ -52,8 +52,8 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "e4af3cc46af2dc5e6462ef6d6dcec9420b2499eb369da3e3d4901e935a703a5b",
-          "bytes": 16318
+          "sha256": "60c530bf3bf7888a2c0b7de6e645af661219e8c82ee40ab34d2de749460c700b",
+          "bytes": 17001
         }
       ]
     },
@@ -70,13 +70,13 @@
         },
         {
           "path": "references/everyday-guide.md",
-          "sha256": "b4f8707c942381c204da306b059ac02f00ede3ef60be8d71334865758e7fc375",
-          "bytes": 12230
+          "sha256": "a4015d1cbe8362ba0f2885c5321ae8467e55fb5eb6dc54f1a167f68cc18b4219",
+          "bytes": 12968
         },
         {
           "path": "references/guide.md",
-          "sha256": "88e73ef491f655939549babaadeeebe9a19741fa9de5c29267d94f1d943c0538",
-          "bytes": 52334
+          "sha256": "c9a9e1b4a07c57f4c2c713140e6e254cb7b78d1806e8c7a1cb2148fbcc4f3539",
+          "bytes": 53671
         }
       ]
     },
@@ -136,8 +136,8 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "7005af700a20f8cd8f1f119825433db456c7bdf4ccb2d42dac9167308cc38a12",
-          "bytes": 11305
+          "sha256": "8196f30a80b397cecdd5cd0b6bcdae63363f48b73e425ff762d553bd7bee24a2",
+          "bytes": 11339
         }
       ]
     },
@@ -224,8 +224,8 @@
         },
         {
           "path": "references/notion.md",
-          "sha256": "f5c4fdc4cbda8a6793df2bf63cb3767574a43a29cbde8baf5d27343b3ddb03a8",
-          "bytes": 11582
+          "sha256": "81b970a7ab77a92a7c739ccc2817ab8bab058285a9723820699342bea0a3a373",
+          "bytes": 11872
         },
         {
           "path": "references/prerequisites.md",
@@ -234,8 +234,8 @@
         },
         {
           "path": "references/report.md",
-          "sha256": "2910a1f3b15d7e00f8aea73c26c22a256360f68340a473a90c354320baa341fc",
-          "bytes": 5364
+          "sha256": "996e0002341c84d71ddbbd93e8dad0fc5e19e0526cb72d3644dac9023b1f62cc",
+          "bytes": 5365
         },
         {
           "path": "references/seeding.md",
@@ -338,8 +338,8 @@
         },
         {
           "path": "references/snapshot.md",
-          "sha256": "9616fd7cbc83060dd26cd889ebf043f058094aa98766069e95053aacacd3ea16",
-          "bytes": 5412
+          "sha256": "b8f15c9b36648b36e1342a9ebd676690e23de4c6469404852a35976f01d7130a",
+          "bytes": 5794
         }
       ]
     }
