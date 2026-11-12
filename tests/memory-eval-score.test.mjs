@@ -235,6 +235,10 @@ const PHRASINGS_CC225 = [
   ["No. Harbor's freeze is recorded in the runbook: Thursday to Monday.", false],
   ["Quill holds no stock; the shop ships on demand.", false],
   ["Yes. Orbit's release cadence is recorded: fewer, larger releases.", false],
+  // The review of #326: "No," answering before a fact, and one note lacking a field.
+  ["No, Postmark was chosen and is recorded.", false],
+  ["No vendor decision was made at first, and the later choice is recorded in the kickoff notes.", false],
+  ["Use npm workspaces. The migration note has no owner.", false],
 ];
 
 test("the abstain rule reads CC-225's phrasings as the README says", () => {
