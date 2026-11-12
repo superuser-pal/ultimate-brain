@@ -81,14 +81,18 @@ export function abstains(text) {
 //   "under" and it. Up to twelve words, with no colon, quote or sentence end, may stand between the verb and its "for"
 //   or "under" ("searched the brain's memories (including replaced ones) and its notes for "…"", CC-225; "searched both
 //   the notes and the session memories, including replaced ones, under "…"", CC-231).
-// "Nothing" or "None of" (CC-231) denies with up to four words before its verb, or up to eight when it opens the clause
-// ("Nothing in the notes or the session memories records that …").
+// "Nothing" denies with up to four words of any kind before its verb (CC-223). Since CC-231 "Nothing" or "None of" also
+// denies with up to eight words before it when every one is a FILLER word: determiners, prepositions, pronouns, the brain's
+// stores and retrieval words, or a possessive ("Nothing in the notes or the session memories records that …", "None of
+// the memories or notes the brain returned says that …"). Any other word, such as "is", "because" or "doubt", ends it:
+// "Nothing is missing because the note records that …" states what follows.
 // Sentences end at . ! ? ; followed by a space, and at a line break. A match spanning two sentences is a statement.
 const DENIED = "(?:says?|said|records?|recorded|holds?|held|shows?|showed|states?|stated|mentions?|mentioned|confirms?|confirmed|suggests?|indicates?)";
+const FILLER = "(?:the|a|an|this|these|those|my|your|its|their|our|any|other|of|in|on|from|among|across|within|under|and|or|i|it|they|them|we|us|what|brain|repo|notes?|memor(?:y|ies)|sessions?|records?|sources?|search(?:es)?|results?|files?|replaced|current|approved|returned|found|read|searched|checked|holds?|has|have|[a-z]+'s)";
 const CUES = [
   /\b(?:whether|if)\b/,
-  new RegExp(`\\b(?:nothing|none of)\\b(?: \\S+){0,4}? ${DENIED}\\b`),
-  new RegExp(`^\\s*(?:nothing|none of)\\b(?: \\S+){0,8}? ${DENIED}\\b`),
+  new RegExp(`\\bnothing\\b(?: \\S+){0,4}? ${DENIED}\\b`),
+  new RegExp(`\\b(?:nothing|none of)(?: ${FILLER}){0,8}? ${DENIED}\\b`),
   /\bno (?:\w+ )?(?:notes?|records?|memor(?:y|ies)|evidence|sources?|sessions?|mentions?)\b/,
   /(?:\bnot|n't|\bnever) (?:\w+ ){0,2}(?:says?|said|records?|recorded|holds?|held|shows?|showed|states?|stated|mentions?|mentioned|confirms?|confirmed|verify|verified|establish|established|find|found)\b/,
 ];

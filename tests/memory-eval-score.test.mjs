@@ -344,8 +344,8 @@ test("the abstain rule reads CC-231's phrasings as the README says", () => {
   for (const [text, expected] of PHRASINGS_CC231) assert.equal(abstains(text), expected, text);
 });
 
-// CC-231's statements: a sentence or clause that opens with "Nothing" or "None of" and denies that anything records,
-// says or holds the fact, and a quoted search query after "searched … under", are not statements; a fact stated after
+// CC-231's statements: "Nothing" or "None of", up to eight filler words (README), then a verb denying that anything
+// records, says or holds the fact, and a quoted search query after "searched … under", are not statements; a fact stated after
 // the denial, a figure the question doesn't hold, or unquoted text after "under" still is.
 const STATEMENTS_CC231 = [
   [SMS_PAST, ASK_EARLIER, SMOKE_D2CF805[1][1], false],
@@ -365,6 +365,10 @@ const STATEMENTS_CC231 = [
   [SMS_PAST, ASK_EARLIER, "None of that matters: Velmor's dispatchers preferred SMS alerts.", true],
   [SMS_PAST, ASK_EARLIER, "Nothing in the brain contradicts that Velmor's dispatchers preferred SMS alerts.", true],
   [SMS, ASK_SMS, "None of the notes doubt that Velmor's dispatchers prefer SMS alerts.", true],
+  // The review of #339: a word outside the filler list ends the denial, so what the note records is stated.
+  [SMS, ASK_SMS, "Nothing is missing because the note records that dispatchers prefer SMS alerts.", true],
+  [SMS, ASK_SMS, "None of us doubt the note records that Velmor's dispatchers prefer SMS alerts.", true],
+  [SMS_PAST, ASK_EARLIER, "Nothing in the brain changed after the session recorded that the dispatchers preferred SMS alerts.", true],
   [PENALTY, ASK_DOWNTIME, "None of the notes records that the penalty is 2,000 euros.", true],
   [PENALTY, ASK_DOWNTIME, "Nothing in the notes or the session memories records a 2,000 euro penalty.", true],
   [SMS, ASK_SMS, "I searched under \"alerts\" and the note says \"Velmor's dispatchers prefer SMS alerts\".", true],
