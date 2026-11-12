@@ -107,13 +107,13 @@ $ brain source extract --page 0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d --title Commu
 {
  "result": "WRITTEN",
  "created": [
-  "src-b8mp0jqs"
+  "src-pz58bz0j"
  ],
  "path": "sources/notion/2027-03-10-community-garden-call.md",
  "suppression": null,
  "views": [],
  "version": 1,
- "op": "op-e9392e6f"
+ "op": "op-f2d23019"
 }
 ```
 
@@ -123,7 +123,7 @@ $ brain id new meeting  →  exit 0
 {
  "type": "meeting",
  "ids": [
-  "mtg-gjr16gta"
+  "mtg-tsr7veef"
  ]
 }
 ```
@@ -131,14 +131,14 @@ $ brain note new --input <notes.json>  →  exit 0
 ```json
 {
  "created": [
-  "mtg-gjr16gta"
+  "mtg-tsr7veef"
  ],
  "skipped": []
 }
 ```
 
 **§6, Tasks** (in the publish's Tasks step): the owner's items s1.i3 (its Scope's due) and s3.i2, and each `quick` entry with `task: true` as `{ title, follow_up, projects }`. s1.i4 carries `Track: Waiting On —`: a Waiting On Task; this fixture maps no owner property, so the title keeps the line's `Waiting on Ben:` start, as §6 says.
-$ brain sync tasks --source src-b8mp0jqs --input <tasks-1.json>  →  exit 0
+$ brain sync tasks --source src-pz58bz0j --input <tasks-1.json>  →  exit 0
 ```json
 [
  {
@@ -181,14 +181,14 @@ $ brain sync record --input <record-1.json>  →  exit 0
  "dry_run": false,
  "records": [
   {
-   "id": "src-b8mp0jqs",
+   "id": "src-pz58bz0j",
    "result": "recorded",
    "changed": [
     "sources/notion/2027-03-10-community-garden-call.md"
    ]
   },
   {
-   "id": "mtg-gjr16gta",
+   "id": "mtg-tsr7veef",
    "result": "recorded",
    "changed": [
     "knowledge/meetings/2027-03-10-community-garden-call.md"
@@ -202,8 +202,8 @@ Report's Done line: "5 tasks created (2 from quick follow-ups)". Check: nothing 
 
 ## 2. The same page set back to Reviewed, unchanged: a second read
 
-**§2 step 2:** the lookup finds ["notion/2027-03-10-community-garden-call.md"]: the latest, `--previous src-b8mp0jqs`.
-$ brain source extract-plan --page 0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d --summary <lean-summary.md> --transcript <transcript.md> --previous src-b8mp0jqs  →  exit 0
+**§2 step 2:** the lookup finds ["notion/2027-03-10-community-garden-call.md"]: the latest, `--previous src-pz58bz0j`.
+$ brain source extract-plan --page 0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d --summary <lean-summary.md> --transcript <transcript.md> --previous src-pz58bz0j  →  exit 0
 ```json
 {
  "ok": true,
@@ -289,7 +289,7 @@ $ brain source extract-plan --page 0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d --summar
   }
  ],
  "previous": {
-  "id": "src-b8mp0jqs",
+  "id": "src-pz58bz0j",
   "kind": "extract",
   "version": 1,
   "transcript_changed": false,
@@ -303,7 +303,7 @@ $ brain source extract-plan --page 0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d --summar
 ```
 
 **§6:** no `quick` entry has `task: true`, and every item id is in `task_items`: no Task. The CLI's own guard, had a session sent q1 anyway:
-$ brain sync tasks --source src-b8mp0jqs --input <tasks-2.json>  →  exit 4
+$ brain sync tasks --source src-pz58bz0j --input <tasks-2.json>  →  exit 4
 ```json
 {
  "code": "INPUT_INVALID",
@@ -321,7 +321,7 @@ Report: no Tasks on the Done line; under Check, "Community garden call: q1 and q
 
 ## 3. The user unticks q2 and sets the page back to Reviewed
 
-$ brain source extract-plan --page 0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d --summary <lean-summary-3.md> --transcript <transcript.md> --previous src-b8mp0jqs  →  exit 0
+$ brain source extract-plan --page 0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d --summary <lean-summary-3.md> --transcript <transcript.md> --previous src-pz58bz0j  →  exit 0
 ```json
 {
  "ok": true,
@@ -407,7 +407,7 @@ $ brain source extract-plan --page 0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d --summar
   }
  ],
  "previous": {
-  "id": "src-b8mp0jqs",
+  "id": "src-pz58bz0j",
   "kind": "extract",
   "version": 1,
   "transcript_changed": false,
@@ -419,7 +419,7 @@ $ brain source extract-plan --page 0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d --summar
  }
 }
 ```
-$ brain sync tasks --source src-b8mp0jqs --input <tasks-3.json>  →  exit 0
+$ brain sync tasks --source src-pz58bz0j --input <tasks-3.json>  →  exit 0
 ```json
 [
  {
@@ -540,6 +540,48 @@ $ brain source extract-plan --page 0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0f --summar
 }
 ```
 
+## 6. An inline-quote summary as Notion's Markdown may return it, its ids escaped (`\[s1.i1\]`)
+
+selection.md "Which flow?": an id counts escaped or not; only a summary with no id either way and no For the brain toggle is legacy (stored whole). The rule as the skill states it, and the naive test it replaces:
+```
+escaped ids on the page: 15
+raw text, ids read literally (1.8.0): legacy: stored whole
+ids read escaped or not (this fix):   selection
+```
+
+**§2 step 3:** the summary goes to `extract-plan` as read, escapes included:
+$ brain source extract-plan --page 0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c10 --summary <inline-escaped.md> --transcript <transcript.md>  →  exit 0
+```json
+{
+ "ok": false,
+ "problems": [
+  {
+   "code": "SELECTION_UNREADABLE",
+   "id": null,
+   "reason": "unreadable selection control: Selection: Use in brain"
+  },
+  {
+   "code": "SELECTION_UNREADABLE",
+   "id": null,
+   "reason": "unreadable selection control: Selection: Meeting only"
+  },
+  {
+   "code": "SELECTION_UNREADABLE",
+   "id": null,
+   "reason": "unreadable selection control: Selection: Meeting only"
+  },
+  {
+   "code": "UNNUMBERED_LINE",
+   "id": null,
+   "reason": "list line without an id: \\[s0.i1\\] Planting day moves to April. “move the spring planting day to the seco"
+  }
+ ],
+ "passages": []
+}
+```
+
+This CLI does not read escaped ids yet, so the input blocks (fail closed) and nothing is written: never the whole transcript.
+
 ## Checks
 
 | Check | Result |
@@ -561,3 +603,5 @@ $ brain source extract-plan --page 0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0f --summar
 | 4b. so the skill creates no follow-up Task: zero items with task: true | pass |
 | 5a. the toggle kept whole, its lines tab-indented, plans as the fixture does | pass |
 | 5b. with the toggle's tags dropped, the plan blocks (SELECTION_UNREADABLE): nothing may be written | pass |
+| 6a. the skill's rule routes the escaped summary to selection, never to the legacy whole store | pass |
+| 6b. nothing is stored whole: the CLI either reads the escaped ids as the unescaped summary or blocks (body null) | pass |
