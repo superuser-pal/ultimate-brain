@@ -76,7 +76,7 @@ test("an edited Remove that still holds an excluded statement is refused and cha
   const dir = await fixtureCopy(context);
   const { note, id, body, ids } = await setup(dir, true);
   const before = await readFile(join(dir, note.path), "utf8");
-  const stuck = decide(body, ids[0]!, "Accept").replace(/(Proposed final wording<\/summary>[\s\S]*?)(\n<\/details>)/, `$1\n\nSECRET Pricing was 95k. ^[src-ex1a3b4c#¶2:${before.match(/¶2:([0-9a-f]{8})/)![1]}]$2`);
+  const stuck = decide(body, ids[0]!, "Accept").replace(/(Proposed final wording<\/summary>[\s\S]*?)(\n<\/details>)/, `$1\n\nSECRET Pricing was 95,000. ^[src-ex1a3b4c#¶2:${before.match(/¶2:([0-9a-f]{8})/)![1]}]$2`);
   const refused = await submit(dir, id, stuck);
   assert.deepEqual(refused.results.map((entry) => [entry.result, entry.reason]), [["skipped", "STILL_RESTRICTED"]], refused.applied.stdout);
   assert.equal(await readFile(join(dir, note.path), "utf8"), before);

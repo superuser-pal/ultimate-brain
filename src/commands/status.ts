@@ -12,6 +12,7 @@ import { databaseId, modulesOf } from "../lib/modules.ts";
 import { expandPath, linkedRepos, workTreeTop } from "../lib/repos.ts";
 import { unattendedRuns } from "../lib/runs.ts";
 import { setupLine, setupStatus } from "../lib/setup.ts";
+import { effectiveStyle, type Style } from "../lib/style.ts";
 import { contextFor, indexNotes, loadSuppressions, restrictionOf } from "../lib/suppressions.ts";
 import { normalizeTimestamp } from "../lib/time.ts";
 import { installedProduct } from "../lib/skills.ts";
@@ -116,13 +117,15 @@ function readNotion(config: Record<string, unknown>): { configured: string[]; mi
   return { configured, missing, tasks_database: typeof tasks.database === "string" && tasks.database !== "" };
 }
 
-function readSettings(config: Record<string, unknown>): { publish: string; push: string; unattended: { max_inputs: number } } {
+function readSettings(config: Record<string, unknown>): { publish: string; push: string; unattended: { max_inputs: number }; style: Style } {
   const settings = isRecord(config.settings) ? config.settings : {};
   const unattended = isRecord(settings.unattended) ? settings.unattended : {};
   return {
     publish: settings.publish === "auto" ? "auto" : "ask",
     push: settings.push === "remind" ? "remind" : "auto",
     unattended: { max_inputs: typeof unattended.max_inputs === "number" ? unattended.max_inputs : 10 },
+    // The stored preset and each dial's effective value (0081, §5.2, §5.3.1).
+    style: effectiveStyle(config),
   };
 }
 
