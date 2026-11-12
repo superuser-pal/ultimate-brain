@@ -9,7 +9,7 @@ import { brain, fixtureCopy } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const PAGE = "11111111-2222-4333-8444-555555555555";
-const TRANSCRIPT = "The launch moves to February.\n\nPricing is 95k, keep it between us.\n\nMaria sends the contract on Friday.";
+const TRANSCRIPT = "The launch moves to February.\n\nPricing is 95,000, keep it between us.\n\nMaria sends the contract on Friday.";
 const SUMMARY = (pricing: "Use in brain" | "Meeting only") => `## [s1] Launch\n- [s1.i1] Launch moves “The launch moves to February”\n\n## [s2] Pricing\nSelection: ${pricing}\n- [s2.i1] Price “keep it between us”\n\n## [s3] Contract\n- [s3.i1] Contract “sends the contract on Friday”\n`;
 
 const git = (dir: string, ...args: string[]) => execFileSync("git", args, { cwd: dir, encoding: "utf8" });
@@ -38,7 +38,7 @@ test("source extract writes the extract as one committed operation and removes t
   assert.equal(first.json.data.version, 1);
   assert.equal(first.json.data.suppression, null, "a first version suppresses nothing");
   const file = await readFile(join(dir, first.json.data.path), "utf8");
-  assert.ok(file.includes("Maria sends the contract") && !file.includes("95k"), "only the selected paragraphs");
+  assert.ok(file.includes("Maria sends the contract") && !file.includes("95,000"), "only the selected paragraphs");
   assert.ok(git(dir, "log", "-1", "--format=%B").includes(`Op: ${first.json.data.op}`), "the commit carries the Op trailer");
   assert.equal(existsSync(join(dir, "_journal")), false, "the journal is gone");
   assert.equal(git(dir, "status", "--porcelain").trim(), "");
@@ -184,7 +184,7 @@ test("cleanup-plan lists restricted claims, the claims that stay, Tasks of exclu
   const concept = join(dir, "knowledge/references/row-level-security.md");
   const original = await readFile(concept, "utf8");
   const withSource = original.replace(/\nsources:[^\n]*\n/, "\n").replace(/\n---\n/, `\nsources:\n  - ${id}\n---\n`);
-  await writeFile(concept, `${withSource}\nPricing was 95k. ^[${id}#¶2:${hashes.get(2)}]\nThe contract goes Friday. ^[${id}#¶3:${hashes.get(3)}]\n`);
+  await writeFile(concept, `${withSource}\nPricing was 95,000. ^[${id}#¶2:${hashes.get(2)}]\nThe contract goes Friday. ^[${id}#¶3:${hashes.get(3)}]\n`);
   const task = "6a7b0000-0000-4000-8000-000000000009";
   const rec = join(dir, "..", "rec.json");
   await writeFile(rec, JSON.stringify({ records: [{ id, synced_at: NOW, tasks: [task], task_items: { "s2.i1": task } }] }));
@@ -195,7 +195,7 @@ test("cleanup-plan lists restricted claims, the claims that stay, Tasks of exclu
   const plan = await brain(["source", "cleanup-plan", "--page", PAGE, "--brain", dir, "--json"]);
   assert.equal(plan.code, 0, plan.stdout);
   const entry = plan.json.data.notes.find((n: { note: string }) => n.note.startsWith("con-"));
-  assert.ok(entry.restricted.some((r: { text: string }) => r.text.includes("95k")), "the pricing claim is restricted");
+  assert.ok(entry.restricted.some((r: { text: string }) => r.text.includes("95,000")), "the pricing claim is restricted");
   assert.ok(entry.kept.some((r: { text: string }) => r.text.includes("Friday")), "the independently supported claim stays");
   assert.deepEqual(plan.json.data.tasks, [{ task, item: "s2.i1", reason: "item no longer selected" }]);
   assert.equal(plan.json.data.latest_extract, v2.json.data.created[0]);
