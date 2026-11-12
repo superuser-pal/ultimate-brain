@@ -424,8 +424,11 @@ export function planExtract(summary: Summary, transcript: string): Plan {
   const byId = new Map(summary.items.map((entry) => [entry.id, entry]));
   // A quick line stays in Notion, outside the brain: depending on it is depending on excluded context (decision 0067, §4.7). One whose
   // effective selection is `meeting only` is read as an excluded item, so its paragraphs stay out (fail closed).
-  const quickIds = new Set(summary.quickItems.map((entry) => entry.id));
-  const all = [...summary.items, ...summary.quickItems.filter((entry) => effectiveOf(entry, subjects) === "meeting only")];
+  // The lean shape's quote entries with no readable line are the same (decision 0079, §4.1 "The join"): they have no text, so they stay
+  // outside the brain, and one that is effectively `meeting only` still keeps its paragraphs out.
+  const orphans = summary.orphans ?? [];
+  const quickIds = new Set([...summary.quickItems, ...orphans].map((entry) => entry.id));
+  const all = [...summary.items, ...[...summary.quickItems, ...orphans].filter((entry) => effectiveOf(entry, subjects) === "meeting only")];
   for (const entry of all) byId.set(entry.id, entry);
   const passages = new Map<string, number[]>();
   const broken = new Set<string>();
@@ -509,7 +512,7 @@ export function planExtract(summary: Summary, transcript: string): Plan {
     }
   }
   const covered = new Set(citers.keys());
-  const ok = problems.every((problem) => problem.code === "DEPENDS_ON_EXCLUDED");
+  const ok = problems.every((problem) => NOT_BLOCKERS.has(problem.code));
   return { mappings, copied: ok ? copied : copied.filter((entry) => entry.items.every((id) => !broken.has(id))), uncovered: paras.filter((entry) => !covered.has(entry.n)).length, problems, unnumbered: summary.unnumbered, quotes, unplaced_items: unplaced, quick: summary.quick, scopes: summary.scopes, ok };
 }
 

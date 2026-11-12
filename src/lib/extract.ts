@@ -1,6 +1,7 @@
 import { BrainError } from "./errors.ts";
 import type { Note } from "./notes.ts";
-import { extractBody, paragraphs, parseSummary, planExtract, type Plan, type Selection } from "./selection.ts";
+import { readSummary } from "./lean-minutes.ts";
+import { extractBody, paragraphs, planExtract, type LeanItem, type Plan, type Selection } from "./selection.ts";
 
 // Planning a selected extract (spec/cli.md §5.22, decision 0062): pure, no I/O.
 
@@ -18,6 +19,8 @@ export interface ExtractPlan {
   copied: { n: number; text: string; items: string[] }[]; unnumbered: Plan["unnumbered"];
   uncovered: number;
   quotes: Plan["quotes"]; unplaced_items: string[]; quick: Plan["quick"]; scopes: Plan["scopes"];
+  /** The lean shape only (decision 0079, cli §5.22): absent for the other shapes, so their output is as before 0.14.0. */
+  shape?: "lean"; items?: LeanItem[];
   body: string | null; previous?: PreviousInfo;
 }
 
@@ -36,6 +39,9 @@ export function chainOf(start: Note, notes: readonly Note[]): Note[] {
   return chain;
 }
 
+/** A follow-up's id: `q` and one or more digits, lower case (capture-and-review §4.1, §6.3). */
+export const FOLLOW_UP = /^q\d+$/;
+
 const strings = (value: unknown): string[] => Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
 const sameJson = (left: unknown, right: unknown): boolean => JSON.stringify(left) === JSON.stringify(right);
 
@@ -52,7 +58,7 @@ export function buildExtractPlan(notes: readonly Note[], input: { page: string; 
     if (previousNote.attributes.extract !== true && ofPage.some((note) => note.attributes.extract === true)) invalid("NOT_LATEST", "an extract of this input exists: pass the latest extract");
   }
 
-  const summary = parseSummary(input.summary);
+  const summary = readSummary(input.summary);
   const plan = planExtract(summary, input.transcript);
   const { transcript_hash: hash, paragraphs: paras } = paragraphs(input.transcript);
   const selection = [
@@ -65,16 +71,29 @@ export function buildExtractPlan(notes: readonly Note[], input: { page: string; 
     ok: plan.ok, write_required: true, transcript_hash: hash, selection, problems: plan.problems, passages,
     copied: plan.copied.map((entry) => ({ n: entry.n, text: entry.text, items: entry.items })), unnumbered: plan.unnumbered,
     uncovered: plan.uncovered, quotes: plan.quotes, unplaced_items: plan.unplaced_items, quick: plan.quick, scopes: plan.scopes,
+    ...(summary.shape === "lean" ? { shape: summary.shape, items: summary.readable ?? [] } : {}),
     body: plan.ok ? extractBody(plan) : null,
   };
+  const chain = previousNote === undefined ? [] : chainOf(previousNote, notes);
+  // A follow-up's `q` id is the only identity of its Task (capture-and-review §6.3): one recorded along the replaces chain gets no second.
+  const recorded = new Map<string, string>();
+  for (const source of chain) {
+    const items = source.attributes.task_items;
+    if (items !== null && typeof items === "object") for (const [key, task] of Object.entries(items as Record<string, unknown>)) if (FOLLOW_UP.test(key) && typeof task === "string" && !recorded.has(key)) recorded.set(key, task);
+  }
+  for (const entry of result.quick) {
+    if (entry.follow_up == null || !recorded.has(entry.follow_up)) continue;
+    entry.recorded = recorded.get(entry.follow_up)!;
+    entry.task = false;
+  }
   if (previousNote === undefined) return result;
 
-  const chain = chainOf(previousNote, notes);
   const itemIds = new Set(selection.map((entry) => entry.id));
   const mapped = new Set<string>();
   for (const source of chain) {
     const items = source.attributes.task_items;
-    if (items !== null && typeof items === "object") for (const [item, task] of Object.entries(items as Record<string, unknown>)) if (itemIds.has(item) && typeof task === "string") mapped.add(task);
+    // A Task mapped to an item of the current plan, or to a follow-up's `q` id (always mapped, §6.3), is not a legacy Task.
+    if (items !== null && typeof items === "object") for (const [item, task] of Object.entries(items as Record<string, unknown>)) if ((itemIds.has(item) || FOLLOW_UP.test(item)) && typeof task === "string") mapped.add(task);
   }
   const legacy = [...new Set(chain.flatMap((source) => strings(source.attributes.tasks)))].filter((task) => !mapped.has(task));
   const isExtract = previousNote.attributes.extract === true;
