@@ -21,7 +21,7 @@ Leave the pages empty for now. Do not add any databases yet.
 
 **By hand:** link the words "Get started" in the callout to the **Get started** section of the Ultimate Brain README on GitHub.
 
-The published template's System page also starts with a line `Template version: NNNN` (docs/notion-space-design.md §10). Don't add it here: a space built from the prompts has no version line, so the brain records its version as unknown and never guesses one (spec/setup.md §9).
+The published template also has a line `Template version: NNNN`, in the System callout on its top page (docs/notion-space-design.md §10, decision 0085). Don't add it here: a space built from the prompts has no version line, so the brain records its version as unknown and never guesses one (spec/setup.md §9).
 
 ## Verify
 - [ ] "Ultimate Brain" starts with the "Start here." callout, its "Get started" linked, then contains the empty pages above, in that order (nine with every module; seven with neither Tasks nor Planning), and "System" contains "Archive" and "How it works".
