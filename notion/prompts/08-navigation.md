@@ -1,6 +1,6 @@
 # Prompt 8 — Navigation
 
-Optional. Paste into Notion AI. Before: [Prompt 7](07-spaces-views.md). Afterwards: "After building" in [../CHECKLIST.md](../CHECKLIST.md).
+Optional. Paste into Notion AI. Before: [Prompt 7](07-spaces-views.md). Next: [Prompt 9](09-assistant-and-guide.md).
 
 Two tiers of synced navigation, edited once on "System" and shown on every Space (docs/notion-space-design.md §5).
 
