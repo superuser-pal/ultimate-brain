@@ -13,7 +13,7 @@ import { brain, fixtureCopy } from "./helpers.ts";
 const NOW = "2026-12-10T09:00:00Z";
 const SYNC = "mtg-8c4n2p7w";
 const PROJECT = "prj-9x4t1b7e";
-const SECRET = "Pricing was 95k.";
+const SECRET = "Pricing was 95,000.";
 const LIVE = "A live paragraph.";
 /** ¶2 of the input's first version: excluded once `exclude()` runs. ¶1 stays live in every version. */
 const EXCLUDED_P = `src-ex1a3b4c#¶2:${passageHash(SECRET)}`;
@@ -170,7 +170,7 @@ test("a legacy proposal on the current version is withheld by its input; a store
   const edited = listed.json.data.created[0] as { id: string; path: string };
   // The file now cites an excluded passage its list does not name (written by hand, or by an older skill): the cited line is judged too.
   const document = parseFrontmatter(await readFile(join(dir, edited.path), "utf8"));
-  await writeFile(join(dir, edited.path), serializeNewFile({ ...document.attributes, content: `A kept remark. ^[${LIVE_P}]\n\nThe price was 95k. ^[${EXCLUDED_P}]` }, document.body));
+  await writeFile(join(dir, edited.path), serializeNewFile({ ...document.attributes, content: `A kept remark. ^[${LIVE_P}]\n\nThe price was 95,000. ^[${EXCLUDED_P}]` }, document.body));
   await exclude();
   // Written on the current version after the exclusion, then read as legacy: no cited passage, so its input decides.
   const current = await run(dir, ["proposal", "new"], { proposals: [budget([LIVE_P2], "src-ex2a3b4c", "91,000 EUR")] });
@@ -191,7 +191,7 @@ test("an older-layout review_notes approved whole drops only its unsupported ite
   const note = draft.json.data.created[0].id as string;
   const staged = await run(dir, ["proposal", "new"], { proposals: [
     { kind: "review_notes", source: SYNC, notes: [note], note_passages: { [note]: [SYNC] } },
-    { kind: "add_to_note", title: "price", target: CONCEPT, content: `The price was 95k. ^[${EXCLUDED_P}]`, why: "Said.", source: SYNC, passages: [EXCLUDED_P] },
+    { kind: "add_to_note", title: "price", target: CONCEPT, content: `The price was 95,000. ^[${EXCLUDED_P}]`, why: "Said.", source: SYNC, passages: [EXCLUDED_P] },
     { kind: "add_to_note", title: "sync", target: CONCEPT, content: "The sync agreed on row-level security.", why: "Said.", source: SYNC, passages: [SYNC] },
     { kind: "add_link", title: "link", target: CONCEPT, field: "projects", after: PROJECT, why: "Said.", source: SYNC, passages: [SYNC] },
   ] });
@@ -208,7 +208,7 @@ test("an older-layout review_notes approved whole drops only its unsupported ite
   const stored = await attributes(dir, row.path);
   assert.deepEqual(stored.dropped, [{ change: 0, reason: "source_excluded" }]);
   const concept = await readFile(join(dir, "knowledge/references/row-level-security.md"), "utf8");
-  assert.ok(concept.includes("The sync agreed") && concept.includes(PROJECT) && !concept.includes("was 95k"));
+  assert.ok(concept.includes("The sync agreed") && concept.includes(PROJECT) && !concept.includes("was 95,000"));
   const lint = await brain(["lint", "--brain", dir, "--json"]);
   assert.deepEqual((lint.json.data.issues as Array<{ severity: string; path: string }>).filter((issue) => issue.severity === "error" && issue.path.startsWith("_proposals/")), [], "dropped's source_excluded entry passes the schema");
 });
@@ -305,10 +305,10 @@ test("proposal list marks a held item without its wording; a proposal that is no
   const dir = await fixtureCopy(context);
   const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
   const staged = await run(dir, ["proposal", "new"], { proposals: [
-    { kind: "add_to_note", title: "Price: 95k", target: TARGET, content: `The price was 95k. ^[${EXCLUDED_P}]`, why: "The price was 95k.", source: "src-ex1a3b4c", passages: [EXCLUDED_P] },
+    { kind: "add_to_note", title: "Price: 95,000", target: TARGET, content: `The price was 95,000. ^[${EXCLUDED_P}]`, why: "The price was 95,000.", source: "src-ex1a3b4c", passages: [EXCLUDED_P] },
     { kind: "add_to_note", title: "Kept remark", target: TARGET, content: `A kept remark. ^[${LIVE_P}]`, why: "Kept.", source: "src-ex1a3b4c", passages: [LIVE_P] },
     { kind: "review_notes", source: SYNC, notes: [] },
-    { kind: "update_fact", title: "Budget 95k", target: PROJECT, field: "budget", after: "95k", why: "95k.", source: SYNC, passages: [EXCLUDED_P] },
+    { kind: "update_fact", title: "Budget 95,000", target: PROJECT, field: "budget", after: "95,000", why: "95,000.", source: SYNC, passages: [EXCLUDED_P] },
     { kind: "add_to_note", title: "sync", target: CONCEPT, content: "The sync agreed on row-level security.", why: "Said.", source: SYNC, passages: [SYNC] },
   ] });
   assert.equal(staged.code, 0, staged.stdout);
@@ -324,17 +324,17 @@ test("proposal list marks a held item without its wording; a proposal that is no
   assert.deepEqual(row.changes[0], { kind: "update_fact", target: PROJECT, field: "budget" });
   assert.equal(row.changes[1].content, "The sync agreed on row-level security.");
   assert.ok(typeof row.title === "string", "one item is not held, so the row keeps its title");
-  // Ids are random and may hold the letters "95k", so the held wording itself is looked for.
-  for (const wording of ["The price was 95k", "Price: 95k", "Budget 95k", "95k.", "price-95k"]) assert.ok(!list.stdout.includes(wording), `no held wording in the listing: ${wording}`);
+  // The held wording itself is looked for, and the slug its title would give.
+  for (const wording of ["The price was 95,000", "Price: 95,000", "Budget 95,000", "95,000.", "price-95-000"]) assert.ok(!list.stdout.includes(wording), `no held wording in the listing: ${wording}`);
   const human = await brain(["proposal", "list", "--status", "pending", "--brain", dir]);
   assert.match(human.stdout, /held: rests on content you excluded from the brain/);
-  assert.ok(!human.stdout.includes("Price: 95k") && !human.stdout.includes("Budget 95k"));
+  assert.ok(!human.stdout.includes("Price: 95,000") && !human.stdout.includes("Budget 95,000"));
 });
 
 test("sync render publishes a held standalone proposal with no title, wording or why (eligibility §9.4, cli §5.14.4)", async (context) => {
   const dir = await fixtureCopy(context);
   const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
-  const staged = await run(dir, ["proposal", "new"], { proposals: [{ ...budget([EXCLUDED_P], SYNC, "95k"), title: "Budget: 95k", why: "Pricing was 95k." }] });
+  const staged = await run(dir, ["proposal", "new"], { proposals: [{ ...budget([EXCLUDED_P], SYNC, "95,000"), title: "Budget: 95,000", why: "Pricing was 95,000." }] });
   const id = staged.json.data.created[0].id as string;
   await exclude();
   const render = await brain(["sync", "render", "--ids", id, "--brain", dir, "--now", NOW, "--json"]);
@@ -342,5 +342,5 @@ test("sync render publishes a held standalone proposal with no title, wording or
   const item = (render.json.data.items as Array<Record<string, any>>).find((entry) => entry.id === id)!;
   const values = Object.fromEntries(Object.entries(item.properties as Record<string, any>).map(([name, value]) => [name, JSON.stringify(value)]));
   assert.match(values.Name!, new RegExp(`Held: ${id}`));
-  for (const wording of ["Budget: 95k", "Pricing was 95k", "\"95k\""]) assert.ok(!JSON.stringify(item).includes(wording), JSON.stringify(item.properties));
+  for (const wording of ["Budget: 95,000", "Pricing was 95,000", "\"95,000\""]) assert.ok(!JSON.stringify(item).includes(wording), JSON.stringify(item.properties));
 });
