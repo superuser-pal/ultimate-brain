@@ -142,6 +142,11 @@ async function memoryRows(root, variant) {
 }
 
 // ---- the self-check, then the variants ----
+// "today" is the product before CC-205; since CC-205 the product ranks with the chosen set, so this record is rerun at 4f94b40.
+if (!readFileSync(join(product, "src/commands/query.ts"), "utf8").includes("rankCandidates(")) {
+  console.error("run.mjs compares the variants with the product before CC-205 (its \"today\" row and C0's check); run it in a checkout of 4f94b40, the commit results-cc204.txt names");
+  process.exit(2);
+}
 const root = variantCheckout();
 const productCli = join(product, "src/cli.ts");
 const variantCli = join(root, "src/cli.ts");
