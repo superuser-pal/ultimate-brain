@@ -1,6 +1,7 @@
 // A temporary checkout for CC-204's comparison: this repo's tracked files as they are in the working tree, with
-// compare/query-variant.ts as src/lib/query.ts and compare/vocabulary.ts beside it. The variant is chosen per run by
-// UB_RETRIEVAL_VARIANT, so one checkout serves every variant. Never part of the product; src/ itself is not changed.
+// compare/query-variant.ts as src/lib/query.ts, compare/vocabulary.ts beside it and compare/query-command.ts as the command.
+// The variant is chosen per run by UB_RETRIEVAL_VARIANT, so one checkout serves every variant. Never part of the product;
+// src/ itself is not changed.
 import { execFileSync } from "node:child_process";
 import { copyFileSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -22,6 +23,8 @@ export function variantCheckout() {
   symlinkSync(join(product, "node_modules"), join(root, "node_modules"));
   copyFileSync(join(here, "query-variant.ts"), join(root, "src/lib/query.ts"));
   copyFileSync(join(here, "vocabulary.ts"), join(root, "src/lib/vocabulary.ts"));
+  // The command the variant was measured with: since CC-205 the product's command calls searchCandidates, which the variant lacks.
+  copyFileSync(join(here, "query-command.ts"), join(root, "src/commands/query.ts"));
   // A repository of its own, so score.mjs can name its commit; the message names the commit it was copied from.
   const head = execFileSync("git", ["-C", product, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   const git = (...args) => execFileSync("git", ["-C", root, "-c", "user.name=variant-checkout", "-c", "user.email=variant-checkout@localhost", "-c", "core.fsmonitor=false", "-c", "gc.auto=0", "-c", "maintenance.auto=false", ...args], { encoding: "utf8" });

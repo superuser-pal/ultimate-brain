@@ -1,0 +1,195 @@
+# CC-205: the 0.13.0 search (spec/cli.md §5.13, decision 0080) on the 80 cases, the 50 originals and memory-0.12, with the
+# unresolved signal and the memory candidates' confidence, and the paired costs on the matched baseline.
+# Measured 2026-11-11 on Apple M4 Pro, 12 cores, 24 GB, Darwin 25.6.0, node v26.5.0, shared with other agents' work (load below).
+#
+# Provenance. Candidate: commit b56b64d. One later src/ change, from the review of #320 (the commit after
+# "CC-205: spec: a fact written on one line…"): a fact written on one line (`facts: {…}`) is shown with the `facts:` line
+# instead of line 0. No note in either eval world writes facts that way (all 323 with facts use the block form), and the
+# CLI output after the fix is byte for byte the measured set's on all 130 questions, so every number below stands.
+# Matched baseline: main 96ad66d, the commit this branch is based on. The cost run used two clones pinned at those commits,
+# src/ and eval/ read-only, clean at start and end, with the same sha256 over src/ and eval/retrieval-0.13 at start and end:
+#   baseline 96ad66d31fe5f4b1ce1b4030ab2f6523eada9f20  b6b4a9bb9a84eba0dc50fd7773d20b3a20ad9beffcb0b243e22419876119e9b8
+#   candidate b56b64d37686f2d22227aa975e38a7533e7ded33 9a588909abc459eccb25f332d37c6daaa66ffefd42ccd9774e292c3aabcf0e4a
+# The signal and the confidence key are in the measured output. The worlds: eval/retrieval-0.13/make-brain.mjs and
+# eval/memory-0.12/make-brain.mjs (deterministic).
+#
+# The signal's rule was fixed on the dev cases alone (14 of 14 clarify, 0 of 42 other cases) and frozen in debd856. The user's
+# choice of 2026-11-11 (option A) then added a named org's projects (4ee0b9f). The held-back cases had already been used by
+# CC-204's ranking run, so the all-80 numbers below validate the signal; they are not an unseen test.
+#
+# An earlier paired run at 81a5dd3 (before the confidence key) is diagnostic only: a source edit was live in its candidate
+# working tree for about a minute. Its ratios were 1.011/1.001 (cold CLI), 1.104/1.082 (in-process), 1.010/1.074 (tokens).
+
+## eval/retrieval-0.13/score.mjs <world> --rows (all 80 cases)
+
+commit: b56b64d37686f2d22227aa975e38a7533e7ded33 (with uncommitted changes in src/ or eval/retrieval-0.13/)
+(the uncommitted change was eval/retrieval-0.13/README.md, prose only; src/ was b56b64d's)
+adapter: query-candidates (retrieval): brain query --candidates <question> --repo <caller folder> --json (default limit 10, default types)
+cases: 80 (split: all); audit: passed
+
+| kind | dev | held | all |
+|---|---|---|---|
+| fact | 14/14 | 6/6 | 20/20 |
+| paraphrase | 14/14 | 6/6 | 20/20 |
+| clarify | 14/14 | 4/6 | 18/20 |
+| unknown | 14/14 | 6/6 | 20/20 |
+
+| gate | got | needs | |
+|---|---|---|---|
+| **facts in prose only** (original fact-in-body 10/10 + new body-only 7/7) | 17/17 | 16/17 | pass |
+| fact, first search, first ten | 20/20 | 18/20 | pass |
+| paraphrase, first search, first ten | 20/20 | 18/20 | pass |
+| clarify (reported): two subjects visible (by evidence 15, by the signal 17) | 18/20 | - | reported |
+| unknown (reported) | 20/20 | - | reported |
+| signal on a fact, paraphrase or unknown case (reported; false positives): rq-p12, rq-p17, rq-u12 | 3/60 | - | reported |
+
+Facts by evidence subgroup (reported; prose alone = a set of meetings and minutes only):
+
+| subgroup | first ten | prose alone |
+|---|---|---|
+| body-only | 7/7 | 7/7 |
+| structured | 12/12 | 10/12 |
+| decision | 1/1 | 1/1 |
+| **all facts** | 20/20 | 18/20 |
+
+One cold CLI process per case (not the paired latency of costs.mjs): median 787 ms; output 4371 bytes on average (bytes, not tokens).
+
+## Rows
+
+original	fact-in-body	-	pass	1		What is the budget for the Marzel shop?
+original	fact-in-body	-	pass	1		What is the budget for the Nortor website?
+original	fact-in-body	-	pass	1		What is the budget for the Kipsel intranet?
+original	fact-in-body	-	pass	1		What is the budget for the Talquo CRM migration?
+original	fact-in-body	-	pass	1		What is the budget for the Selbren website?
+original	fact-in-body	-	pass	1		What is the budget for the Dunvik CRM migration?
+original	fact-in-body	-	pass	1		What is the budget for the Quopex shop?
+original	fact-in-body	-	pass	1		What is the budget for the Nortor intranet?
+original	fact-in-body	-	pass	1		What is the budget for the Talquo mobile app?
+original	fact-in-body	-	pass	1		What is the budget for the Lumvik booking platform?
+rq-f01	fact/structured	dev	pass	1	sets 3,1,2	
+rq-f02	fact/structured	dev	pass	1	sets 1,-,-	
+rq-f03	fact/structured	dev	pass	1	sets 1,8,10	
+rq-f04	fact/structured	dev	pass	1	sets 4,1,2	
+rq-f05	fact/body-only	held	pass	1	sets 1,2	
+rq-f06	fact/structured	dev	pass	1	sets 2,1,3	
+rq-f07	fact/structured	dev	pass	1	sets 4,1,2	
+rq-f08	fact/body-only	held	pass	1	sets 1,2	
+rq-f09	fact/structured	dev	pass	1	sets 1,2,3	
+rq-f10	fact/body-only	dev	pass	1	sets 2,1	
+rq-f11	fact/body-only	held	pass	1	sets 2,1	
+rq-f12	fact/structured	dev	pass	1	sets 1,-,-	
+rq-f13	fact/body-only	held	pass	1	sets 2,1	
+rq-f14	fact/decision	dev	pass	1	sets 1,2,3	
+rq-f15	fact/structured	dev	pass	1	sets 3,2,1	
+rq-f16	fact/body-only	dev	pass	1	sets 2,1	
+rq-f17	fact/structured	dev	pass	1	sets 3,1,2	
+rq-f18	fact/structured	held	pass	1	sets 3,2,1	
+rq-f19	fact/structured	dev	pass	1	sets 5,3,4,2,1	
+rq-f20	fact/body-only	held	pass	2	sets 2,3	
+rq-p01	paraphrase	dev	pass	1	sets 3,1,2	
+rq-p02	paraphrase	dev	pass	1	sets 5,1,3	
+rq-p03	paraphrase	dev	pass	1	sets 8,1,6	
+rq-p04	paraphrase	dev	pass	10	sets -,10,-	
+rq-p05	paraphrase	dev	pass	1	sets 1,2	
+rq-p06	paraphrase	held	pass	1	sets 2,1	
+rq-p07	paraphrase	dev	pass	1	sets 1,-,-	
+rq-p08	paraphrase	dev	pass	1	sets 1,2	
+rq-p09	paraphrase	dev	pass	1	sets 1,7,10	
+rq-p10	paraphrase	dev	pass	1	sets 2,1	
+rq-p11	paraphrase	dev	pass	1	sets 1,3,2	
+rq-p12	paraphrase	held	pass	7	sets -,7	
+rq-p13	paraphrase	dev	pass	2	sets -,5,2	
+rq-p14	paraphrase	held	pass	9	sets 9,-	
+rq-p15	paraphrase	dev	pass	1	sets 2,1	
+rq-p16	paraphrase	held	pass	5	sets 5,-	
+rq-p17	paraphrase	held	pass	2	sets 2,7	
+rq-p18	paraphrase	dev	pass	1	sets 1,2	
+rq-p19	paraphrase	held	pass	1	sets 2,1	
+rq-p20	paraphrase	dev	pass	9	sets 9,-	
+rq-c01	clarify	dev	pass	2		
+rq-c02	clarify	dev	pass	4		
+rq-c03	clarify	dev	pass	2		
+rq-c04	clarify	held	pass	2		
+rq-c05	clarify	dev	pass	2		
+rq-c06	clarify	dev	pass	2		
+rq-c07	clarify	dev	pass	5		
+rq-c08	clarify	held	pass	1		
+rq-c09	clarify	dev	pass	2		
+rq-c10	clarify	dev	pass	1		
+rq-c11	clarify	dev	pass	2		
+rq-c12	clarify	held	FAIL	1		evidence of 1 subject in the first ten and 0 named by the signal, not two
+rq-c13	clarify	dev	pass	2		
+rq-c14	clarify	dev	pass	3		
+rq-c15	clarify	held	pass	2		
+rq-c16	clarify	dev	pass	2		
+rq-c17	clarify	held	FAIL	1		evidence of 1 subject in the first ten and 0 named by the signal, not two
+rq-c18	clarify	dev	pass	2		
+rq-c19	clarify	dev	pass	3		
+rq-c20	clarify	held	pass	0		
+rq-u01	unknown	dev	pass	-		
+rq-u02	unknown	dev	pass	-		
+rq-u03	unknown	dev	pass	-		
+rq-u04	unknown	dev	pass	-		
+rq-u05	unknown	held	pass	-		
+rq-u06	unknown	dev	pass	-		
+rq-u07	unknown	held	pass	-		
+rq-u08	unknown	dev	pass	-		
+rq-u09	unknown	dev	pass	-		
+rq-u10	unknown	dev	pass	-		
+rq-u11	unknown	dev	pass	-		
+rq-u12	unknown	held	pass	-		
+rq-u13	unknown	dev	pass	-		
+rq-u14	unknown	held	pass	-		
+rq-u15	unknown	dev	pass	-		
+rq-u16	unknown	held	pass	-		
+rq-u17	unknown	dev	pass	-		
+rq-u18	unknown	held	pass	-		
+rq-u19	unknown	dev	pass	-		
+rq-u20	unknown	dev	pass	-		
+
+## eval/retrieval-0.13/originals.mjs <world>
+
+cli: src/cli.ts
+
+| kind | recall@1 | recall@5 | recall@10 | MRR | baseline (cc173) |
+|---|---|---|---|---|---|
+| decision-by-topic | 10/10 | 10/10 | 10/10 | 1.00 | 7/10/10, 0.85 |
+| paraphrase | 2/10 | 2/10 | 6/10 | 0.25 | 1/2/6, 0.18 |
+| why | 10/10 | 10/10 | 10/10 | 1.00 | 10/10/10, 1.00 |
+| fact-in-body | 10/10 | 10/10 | 10/10 | 1.00 | 0/0/0, 0.00 |
+| person-role | 10/10 | 10/10 | 10/10 | 1.00 | 10/10/10, 1.00 |
+| **all** | 42/50 | 42/50 | 46/50 | 0.85 | 28/32/36, 0.61 |
+
+kept in the first ten: 36/36; first rank 42 (baseline 28); MRR 0.8494 (baseline 0.6060): pass
+
+## eval/memory-0.12/score.mjs <memory world>, retrieval level
+
+main 96ad66d: 93/108 pass; critical trust 43/45 (trust-19, trust-20: "returned <memory> without the label inferred": the candidate had no confidence key)
+this branch: 95/108 pass; critical trust 45/45; lost against main: 0; gained: trust-19, trust-20
+answerable at the retrieval level (memory-0.12 gate, reported here): 40/52 (main 40/52)
+
+## eval/retrieval-0.13/costs.mjs (the paired run on the pinned clones)
+
+command: node /private/tmp/ub-cc205-snap-cand/eval/retrieval-0.13/costs.mjs /tmp/ub-cc205-world --baseline /private/tmp/ub-cc205-snap-base --candidate /private/tmp/ub-cc205-snap-cand --reps 5
+Wed Nov 11 21:15:09 CET 2026
+21:15  up 26 days, 23:24, 7 users, load averages: 2.46 5.30 6.13
+baseline: commit 96ad66d31fe5f4b1ce1b4030ab2f6523eada9f20
+candidate: commit b56b64d37686f2d22227aa975e38a7533e7ded33
+machine: Apple M4 Pro, 12 cores, 24 GB, Darwin 25.6.0, node v26.5.0; load average 2.46 5.30 6.13 before, 3.02 3.20 4.19 after
+questions: 130 (80 cases, 50 originals); passes: 5 after one warm-up; tokenizer: gpt-tokenizer 4.1.0, o200k_base
+
+| measure | baseline median | baseline p95 | candidate median | candidate p95 | ratio median | ratio p95 | gate (<= 1.25) |
+|---|---|---|---|---|---|---|---|
+| search latency, cold CLI (ms) | 679 | 694 | 686 | 702 | 1.010 | 1.011 | pass |
+| in-process ranking (ms) | 64.57 | 76.60 | 72.04 | 84.70 | 1.116 | 1.106 | pass |
+| output tokens (o200k) | 1146 | 1306 | 1158 | 1402 | 1.010 | 1.074 | pass |
+| output bytes (reported) | 4176 | 4793 | 4204 | 4982 | 1.007 | 1.039 | reported |
+
+full filtered read of the first evidence set (candidate, reported): 40 cases, median 378 tokens, p95 497
+costs exit 0
+Wed Nov 11 21:35:22 CET 2026
+
+## The memory-0.12 questions with the adapter's types (memories included), once per side on the same clones (reported)
+
+memory-0.12 questions: 108; outputs that differ: 105; with a confidence key: 101
+o200k tokens median 1181 -> 1212 (1.026), p95 1439 -> 1447 (1.006)

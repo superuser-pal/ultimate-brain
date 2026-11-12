@@ -6,7 +6,7 @@ import { BrainError } from "../lib/errors.ts";
 import { scanNotes, type Note } from "../lib/notes.ts";
 import { readCaller, shownMemories } from "../lib/recall.ts";
 import { answerNote, contextFor, requireSuppressions, viewDependencies, withheldView } from "../lib/suppressions.ts";
-import { queryContext, queryTerms, queryTypes, rankCandidates, readIds, readNotes } from "../lib/query.ts";
+import { queryContext, queryTerms, queryTypes, readIds, readNotes, searchCandidates } from "../lib/query.ts";
 
 /** `brain query --candidates <question>` and `brain query --read <id>[,<id>…]` (spec/cli.md §5.13, §5.13.1). Read-only. */
 export const queryCommand: Command = {
@@ -53,11 +53,12 @@ export const queryCommand: Command = {
       return { data: { context, notes }, warnings, human: `${notes.length - withheld} read, ${withheld} withheld.\n` };
     }
     const shown = types.has("memory") ? current : new Map<string, Note>();
-    const candidates = rankCandidates(scanned.notes, queryTerms(question!), types, context,
-      (note) => note.type === "memory" ? shown.get(note.id) ?? null : eligibleOf(note)).slice(0, limit);
+    const found = searchCandidates(scanned.notes, queryTerms(question!), types, context,
+      (note) => note.type === "memory" ? shown.get(note.id) ?? null : eligibleOf(note));
+    const candidates = found.candidates.slice(0, limit);
 
     return {
-      data: { query: question, tokens: queryTerms(question!), context, candidates },
+      data: { query: question, tokens: queryTerms(question!), context, candidates, ...(found.unresolved === null ? {} : { unresolved: found.unresolved }) },
       warnings,
       human: `${candidates.length} candidate${candidates.length === 1 ? "" : "s"}.\n`,
     };
