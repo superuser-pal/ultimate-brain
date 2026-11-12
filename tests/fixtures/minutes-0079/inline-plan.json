@@ -1,0 +1,197 @@
+{
+  "ok": true,
+  "write_required": true,
+  "transcript_hash": "0e544beaa1917107c0c57f5570533dae6be909376b21036d506580df2f465054",
+  "selection": [
+    {
+      "id": "s1",
+      "effective": "use",
+      "explicit": "use"
+    },
+    {
+      "id": "s2",
+      "effective": "meeting only",
+      "explicit": "meeting only"
+    },
+    {
+      "id": "s3",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s4",
+      "effective": "meeting only",
+      "explicit": "meeting only"
+    },
+    {
+      "id": "s0.i1",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s0.i2",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s1.i1",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s1.i2",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s1.i3",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s2.i1",
+      "effective": "meeting only",
+      "explicit": null
+    },
+    {
+      "id": "s3.i1",
+      "effective": "meeting only",
+      "explicit": "meeting only"
+    },
+    {
+      "id": "s3.i2",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s4.i1",
+      "effective": "meeting only",
+      "explicit": null
+    },
+    {
+      "id": "s4.i2",
+      "effective": "use",
+      "explicit": "use"
+    }
+  ],
+  "problems": [],
+  "passages": [
+    {
+      "n": 2,
+      "hash": "d55634d0",
+      "items": [
+        "s0.i1",
+        "s1.i1"
+      ]
+    },
+    {
+      "n": 3,
+      "hash": "f7a4d9b4",
+      "items": [
+        "s1.i2"
+      ]
+    },
+    {
+      "n": 6,
+      "hash": "ff132b86",
+      "items": [
+        "s0.i2"
+      ]
+    },
+    {
+      "n": 7,
+      "hash": "bfb31a69",
+      "items": [
+        "s1.i3"
+      ]
+    },
+    {
+      "n": 9,
+      "hash": "e2694f16",
+      "items": [
+        "s4.i2"
+      ]
+    },
+    {
+      "n": 10,
+      "hash": "9b626343",
+      "items": [
+        "s3.i2"
+      ]
+    }
+  ],
+  "copied": [
+    {
+      "n": 2,
+      "text": "We agreed to move the spring planting day to the second Saturday of April because the soil delivery slipped.",
+      "items": [
+        "s0.i1",
+        "s1.i1"
+      ]
+    },
+    {
+      "n": 3,
+      "text": "Ben said he will confirm the soil delivery date with the supplier by Wednesday.",
+      "items": [
+        "s1.i2"
+      ]
+    },
+    {
+      "n": 6,
+      "text": "I will draft the volunteer rota for planting day and share it before the next call.",
+      "items": [
+        "s0.i2"
+      ]
+    },
+    {
+      "n": 7,
+      "text": "We are still not sure whether the school group can join on the planting day.",
+      "items": [
+        "s1.i3"
+      ]
+    },
+    {
+      "n": 9,
+      "text": "One idea was to add a small herb spiral beside the shed if there is soil left over.",
+      "items": [
+        "s4.i2"
+      ]
+    },
+    {
+      "n": 10,
+      "text": "I will also email the council about the tap repair warranty this week.",
+      "items": [
+        "s3.i2"
+      ]
+    }
+  ],
+  "unnumbered": [],
+  "uncovered": 1,
+  "quotes": [],
+  "unplaced_items": [],
+  "quick": [
+    {
+      "subject": null,
+      "id": null,
+      "text": "Send Ben the supplier's phone number [q1]",
+      "done": false
+    },
+    {
+      "subject": null,
+      "id": null,
+      "text": "Share the call notes with Carla",
+      "done": true
+    }
+  ],
+  "scopes": [
+    {
+      "item": "s0.i2",
+      "done_when": "the rota is shared with the group",
+      "due": "2027-03-20",
+      "project": null,
+      "notes": null,
+      "problems": []
+    }
+  ],
+  "body": "<!-- passage ¶2 item s0.i1,s1.i1 -->\nWe agreed to move the spring planting day to the second Saturday of April because the soil delivery slipped.\n\n<!-- passage ¶3 item s1.i2 -->\nBen said he will confirm the soil delivery date with the supplier by Wednesday.\n\n<!-- passage ¶6 item s0.i2 -->\nI will draft the volunteer rota for planting day and share it before the next call.\n\n<!-- passage ¶7 item s1.i3 -->\nWe are still not sure whether the school group can join on the planting day.\n\n<!-- passage ¶9 item s4.i2 -->\nOne idea was to add a small herb spiral beside the shed if there is soil left over.\n\n<!-- passage ¶10 item s3.i2 -->\nI will also email the council about the tap repair warranty this week.\n"
+}

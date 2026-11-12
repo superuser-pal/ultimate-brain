@@ -3,7 +3,10 @@ import { createHash } from "node:crypto";
 // Subject/item selection and passage mapping (capture-and-review §4.1 to §4.8). Pure functions: no I/O, no AI-authored numbers.
 
 export type Selection = "use" | "meeting only";
-export type SelectionCode = "SELECTION_UNREADABLE" | "SELECTION_UNMAPPABLE" | "DEPENDS_ON_EXCLUDED" | "UNNUMBERED_LINE";
+export type SelectionCode = "SELECTION_UNREADABLE" | "SELECTION_UNMAPPABLE" | "DEPENDS_ON_EXCLUDED" | "UNNUMBERED_LINE"
+  | "NO_QUOTE_ENTRY" | "ORPHAN_QUOTE_ENTRY" | "DUPLICATE_FOLLOW_UP";
+/** The problems that never make `ok` false (cli §5.22; the last three are the lean shape's, decision 0079). */
+const NOT_BLOCKERS: ReadonlySet<SelectionCode> = new Set(["DEPENDS_ON_EXCLUDED", "NO_QUOTE_ENTRY", "ORPHAN_QUOTE_ENTRY", "DUPLICATE_FOLLOW_UP"]);
 
 export interface Subject { id: string; title: string; selection: Selection; raw: string | null }
 export interface Item {
@@ -14,29 +17,42 @@ export interface Problem { code: SelectionCode; id: string | null; reason: strin
 /** A list line without an id: never an item, never imported, always listed (capture-and-review §4.1, parser tolerance). */
 export interface Unnumbered { subject: string | null; text: string }
 /** A line of a Quick follow-ups group: stays in Notion, never an item, never imported, never a blocker (decision 0067, capture-and-review §4.1). */
-export interface Quick { subject: string | null; id: string | null; text: string; done: boolean }
+export interface Quick {
+  subject: string | null; id: string | null; text: string; done: boolean;
+  /** The lean shape only (decision 0079, capture-and-review §6.3): the line's `q` id, whether it becomes a Task, and the Task already recorded for it. */
+  follow_up?: string | null; task?: boolean; recorded?: string | null;
+}
 /** The fields of a Scope toggle and what is wrong with them; a Scope problem holds back the item's Task, never the input (decision 0067). */
 export interface Scope { item: string | null; done_when: string | null; due: string | null; project: string | null; notes: string | null; problems: string[] }
 /** `quickItems` are the quick lines that carry an id, read like items: one whose effective selection is `meeting only` still keeps its paragraphs out (fail closed). */
-export interface Summary { subjects: Subject[]; items: Item[]; problems: Problem[]; lines: string[]; unnumbered: Unnumbered[]; quick: Quick[]; quickItems: Item[]; scopes: Scope[] }
+export interface Summary {
+  subjects: Subject[]; items: Item[]; problems: Problem[]; lines: string[]; unnumbered: Unnumbered[]; quick: Quick[]; quickItems: Item[]; scopes: Scope[];
+  /** The lean shape only (decision 0079): its readable item lines as `extract-plan` lists them, and the quote entries with no readable line. */
+  shape?: "lean"; readable?: LeanItem[]; orphans?: Item[];
+}
+/** A readable item line of lean minutes joined to its quote entry (cli §5.22, `items`). */
+export interface LeanItem {
+  id: string; subject: string | null; place: "tasks" | "subject"; prefix: "decided" | "open" | "concern" | "waiting_on" | "idea" | null;
+  name: string | null; track: boolean; text: string; anchors: string[]; depends_on: string[];
+}
 /** `text` is whitespace-normalized (for matching and hashing); `raw` is the paragraph as written, which is what an extract stores and a preview shows. */
 export interface Paragraph { n: number; text: string; raw: string; hash: string }
 
-const SUBJECT = /^(?:#{1,6}\s*)?\[(s\d+)\]\s*(.*)$/;
-const ITEM = /^(?:[-*+]\s+|\d+[.)]\s+)?(?:\[[ xX]\]\s+)?\[(s\d+\.i\d+)\]\s*(.*)$/;
-const TODO = /^(?:[-*+]|\d+[.)])\s+\[([ xX])\](?:\s+(.*))?$/;
-const TICKED = /^(?:[-*+]|\d+[.)])\s+\[[xX]\]/;
-const LIST = /^(?:[-*+]|\d+[.)])\s+/;
+export const SUBJECT = /^(?:#{1,6}\s*)?\[(s\d+)\]\s*(.*)$/;
+export const ITEM = /^(?:[-*+]\s+|\d+[.)]\s+)?(?:\[[ xX]\]\s+)?\[(s\d+\.i\d+)\]\s*(.*)$/;
+export const TODO = /^(?:[-*+]|\d+[.)])\s+\[([ xX])\](?:\s+(.*))?$/;
+export const TICKED = /^(?:[-*+]|\d+[.)])\s+\[[xX]\]/;
+export const LIST = /^(?:[-*+]|\d+[.)])\s+/;
 const GROUP = /^#{0,6}\s*(quick follow[- ]?ups|tasks|my actions)\s*(?:\([^)]*\))?\s*:?$/i;
 /** The other section names of the minutes format: a heading or a label line with one of them ends a group (§4.1). */
-const SECTION = /^#{0,6}\s*(highlights|decisions|other commitments|open questions|concerns raised|attendees|projects|commitments|ideas to explore)\s*(?:\([^)]*\))?\s*:?$/i;
+export const SECTION = /^#{0,6}\s*(highlights|decisions|other commitments|open questions|concerns raised|attendees|projects|commitments|ideas to explore)\s*(?:\([^)]*\))?\s*:?$/i;
 const SCOPE_FIELDS: Record<string, "done_when" | "due" | "project" | "notes"> = { "done when": "done_when", due: "due", project: "project", notes: "notes" };
 const SCOPE_LABELS = { done_when: "Done when", due: "Due", project: "Project", notes: "Notes" } as const;
-const SCOPE_FIELD = /^(?:[-*+]\s+)?[*_]*(done when|due|project|notes)[*_]*\s*:[*_]*\s*(.*)$/i;
+export const SCOPE_FIELD = /^(?:[-*+]\s+)?[*_]*(done when|due|project|notes)[*_]*\s*:[*_]*\s*(.*)$/i;
 const ABSENT = /^(?:none|n\/a|-|—)?$/i;
-const SELECTION_LINE = /^(?:[-*+]\s+)?selection\s*:\s*(.*)$/i;
-const QUOTE = /[“"]([^“”"]+)[”"]/g;
-const DEPENDS = /\(\s*depends on\s+((?:\[[^\]]+\](?:\s*,\s*)?)+)\s*\)\s*$/i;
+export const SELECTION_LINE = /^(?:[-*+]\s+)?selection\s*:\s*(.*)$/i;
+export const QUOTE = /[“"]([^“”"]+)[”"]/g;
+export const DEPENDS = /\(\s*depends on\s+((?:\[[^\]]+\](?:\s*,\s*)?)+)\s*\)\s*$/i;
 
 /** Whitespace-normalized text: markdown bold/italic marks and list bullets are formatting, not content. */
 export function normalize(text: string): string {
@@ -68,7 +84,7 @@ function sha(text: string): string {
   return createHash("sha256").update(text).digest("hex");
 }
 
-function selectionOf(raw: string): Selection | null {
+export function selectionOf(raw: string): Selection | null {
   const value = normalize(raw.replace(/[*_`]/g, "")).toLowerCase();
   return value === "use in brain" ? "use" : value === "meeting only" ? "meeting only" : null;
 }
@@ -81,16 +97,16 @@ const PHRASE_BRACKETED = /[[({][^\])}]*(?:meeting[\s-]*only|use[\s-]+in[\s-]+(?:
 
 /** Text that is shaped like a selection control without being one: it must block, never default to inclusion (§4.3). Prose that mentions
  *  the words further into a sentence ("share notes from the meeting only with Bob") is not a control. */
-function controlLike(text: string): boolean {
+export function controlLike(text: string): boolean {
   const body = text.replace(LEAD, "");
   return PHRASE_START.test(body) || PHRASE_BRACKETED.test(text) || /^selection\b/i.test(body);
 }
 
 /** A word that mixes Latin letters with Cyrillic or Greek ones (`Meetіng` with a Cyrillic і) is a look-alike spelling of a control. */
-function mixedScript(text: string): boolean {
+export function mixedScript(text: string): boolean {
   return text.replace(QUOTE, " ").split(/\s+/).slice(0, 8).some((word) => /\p{Script=Latin}/u.test(word) && /[\p{Script=Cyrillic}\p{Script=Greek}]/u.test(word));
 }
-const ID_IN_LINE = /\[s\d+(?:\.i\d+)?\]/i;
+export const ID_IN_LINE = /\[s\d+(?:\.i\d+)?\]/i;
 const TOKEN_WORDS = /\b(meeting|brain|only|private|confidential|exclude|excluded|secret|skip)\b/i;
 
 function distance(left: string, right: string): number {
@@ -103,11 +119,137 @@ function distance(left: string, right: string): number {
 }
 
 /** An item that starts like a selection token but is not one (`Meetng only:`) must block, never default to inclusion (§4.3). */
-function looksLikeToken(rest: string): boolean {
+export function looksLikeToken(rest: string): boolean {
   const prefix = /^([A-Za-z][A-Za-z _-]{1,30}?)\s*:/.exec(rest);
   if (prefix === null || /^track\b/i.test(prefix[1]!)) return false;
   const word = normalize(prefix[1]!.replace(/[-_]/g, " ")).toLowerCase();
   return TOKEN_WORDS.test(word) || TOKENS.some((token) => distance(word, token) <= 3);
+}
+
+/** The summary text as every shape reads it (§4.3): NFKC folds full-width forms; zero-width and format characters inside words are removed;
+ *  the §4.4 notice (with an icon, in a callout, or wrapped over lines) is not a control; HTML-escaped `>` and `<` are formatting; toggle tags
+ *  are put on lines of their own, so a closing tag at the end of a content line closes. */
+export function summaryLines(markdown: string): string[] {
+  return markdown.normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "").replace(NOTICE_TEXT, "").replace(/&gt;/g, ">").replace(/&lt;/g, "<")
+    .replace(/<details>/gi, "\n<details>\n").replace(/<\/details>/gi, "\n</details>\n").replace(/<\/summary>/gi, "</summary>\n").split("\n");
+}
+
+/** One line as every shape reads it: blockquote markers and emphasis around the whole line are formatting, not content; a `* ` bullet keeps
+ *  its marker. Null for an empty line, or one with only an icon or rule left of the notice. */
+export function foldLine(rawLine: string): string | null {
+  const line = normalize(rawLine.replace(/\*\*/g, "")).replace(/^(?:>\s*)+/, "").replace(/^[_*]+(?=\S)|(?<=\S)[_*]+$/g, "").trim();
+  return line === "" || /^[^\p{L}\p{N}\[]*$/u.test(line) ? null : line;
+}
+
+/** Where a line is read, for the Scope toggles: the item line a Scope would belong to, whether the line is in a Quick follow-ups group, and
+ *  which lines end a Scope (each shape recognises its own headings and item lines). */
+export interface ToggleContext {
+  lastItem: string | null; quick: boolean; subject: string | null;
+  /** A heading, a subject heading or a `Selection:` line: it ends any Scope and is read as usual. */
+  ends: (line: string) => boolean;
+  /** An item line, a group or section line, or a list line that is not a field: it ends a Scope that is never closed. */
+  endsUnclosed: (line: string, bare: string) => boolean;
+  isItem: (line: string) => boolean;
+}
+
+/** The toggles of a summary (cli §5.14.7: `<details><summary>…</summary> … </details>`) and the Scope toggles' fields (decision 0067, §4.1).
+ *  Only a Scope toggle is read differently; other toggles' lines are read as before. */
+export class ScopeToggles {
+  // The open toggles (true for a Scope), the Scope being read, the items that already have one, and the line of the last opening tag.
+  private readonly toggles: boolean[] = [];
+  private scope: { entry: Scope; field: keyof typeof SCOPE_LABELS | null; seen: Set<string>; closed: boolean } | null = null;
+  private readonly scoped = new Set<string>();
+  private opened = -1;
+
+  private readonly rawLines: readonly string[];
+  private readonly scopes: Scope[];
+  private readonly problems: Problem[];
+
+  constructor(rawLines: readonly string[], scopes: Scope[], problems: Problem[]) {
+    this.rawLines = rawLines;
+    this.scopes = scopes;
+    this.problems = problems;
+  }
+
+  /** Closes every open toggle: the lean shape's For the brain toggle starts. */
+  reset(): void {
+    this.toggles.length = 0;
+    this.scope = null;
+  }
+
+  /** Whether the toggle opened on line `from` has its closing tag further down. */
+  private closes(from: number): boolean {
+    let depth = 1;
+    for (let index = from + 1; index < this.rawLines.length; index += 1) {
+      if (/<details>/i.test(this.rawLines[index]!)) depth += 1;
+      else if (/<\/details>/i.test(this.rawLines[index]!) && (depth -= 1) === 0) return true;
+    }
+    return false;
+  }
+
+  /** Reads one folded line: null when the toggle tags or a Scope consumed it, else the line (or what follows a tag on it) to read as usual. */
+  read(index: number, input: string, at: ToggleContext): string | null {
+    let line = input;
+    const open = /^<details>\s*(.*)$/i.exec(line);
+    if (open !== null) {
+      this.toggles.push(false);
+      this.opened = index;
+      const rest = open[1] ?? "";
+      if (rest === "") return null;
+      line = rest;
+    }
+    const summaryTag = /^<summary>\s*(.*?)\s*<\/summary>\s*(.*)$/i.exec(line);
+    if (summaryTag !== null && this.toggles.length > 0 && !this.toggles.includes(true)) {
+      if (normalize((summaryTag[1] ?? "").replace(/[*_`]/g, "")).toLowerCase() === "scope") {
+        this.toggles[this.toggles.length - 1] = true;
+        if (!at.quick) {
+          const entry: Scope = { item: at.lastItem, done_when: null, due: null, project: null, notes: null, problems: [] };
+          if (at.lastItem === null) entry.problems.push("a Scope with no item line directly above it");
+          else if (this.scoped.has(at.lastItem)) entry.problems.push(`a second Scope for ${at.lastItem}`);
+          else this.scoped.add(at.lastItem);
+          this.scopes.push(entry);
+          this.scope = { entry, field: null, seen: new Set(), closed: this.closes(this.opened) };
+        }
+      }
+      if ((summaryTag[2] ?? "") === "") return null;
+      line = summaryTag[2] ?? "";
+    }
+    if (/^<\/details>$/i.test(line)) {
+      if (this.toggles.pop() === true) this.scope = null;
+      return null;
+    }
+    const bare = line.replace(/[*_]/g, "").trim();
+    // Fail closed: a heading, a subject or a Selection line ends any Scope, and is read as usual, so a Scope never hides a subject or its
+    // selection. A Scope that is never closed also ends at an item, a group or section line, or a list line that is not a field.
+    if (this.toggles.includes(true) && (at.ends(line) || (this.scope !== null && !this.scope.closed && at.endsUnclosed(line, bare)))) {
+      while (this.toggles.includes(true)) this.toggles.pop();
+      this.scope = null;
+    }
+    if (!this.toggles.includes(true)) return line;
+    // Inside a Scope: fields, never items, unnumbered lines or controls. Inside a Scope in Quick follow-ups: nothing.
+    const scope = this.scope;
+    if (scope === null) return null;
+    if (at.isItem(line)) { this.problems.push({ code: "SELECTION_UNREADABLE", id: at.subject, reason: `an item line inside a Scope: ${line.slice(0, 60)}` }); return null; }
+    const field = SCOPE_FIELD.exec(line);
+    if (field !== null) {
+      const key = SCOPE_FIELDS[(field[1] ?? "").toLowerCase()]!;
+      if (scope.seen.has(key)) { scope.entry.problems.push(`${SCOPE_LABELS[key]} given twice`); scope.field = null; return null; }
+      scope.seen.add(key);
+      scope.field = key;
+      const value = normalize(field[2] ?? "");
+      if (ABSENT.test(value)) return null;
+      if (key === "due" && !isDate(value)) { scope.entry.problems.push(`Due is not a date (YYYY-MM-DD): ${value}`); return null; }
+      scope.entry[key] = value;
+    } else if (scope.field === null) {
+      if (scope.seen.size === 0) scope.entry.problems.push(`text before the first field: ${line.slice(0, 60)}`);
+    } else if (scope.field === "due") scope.entry.problems.push(`Due continues on another line: ${line.slice(0, 60)}`);
+    else {
+      const key = scope.field;
+      const text = line.replace(LIST, "");
+      scope.entry[key] = scope.entry[key] === null ? text : `${scope.entry[key]}\n${text}`;
+    }
+    return null;
+  }
 }
 
 /** Reads the summary text: subject headings, `Selection:` lines and item lines (§4.1, §4.3). Bullets and straight quotes are tolerated (T2, T6). */
@@ -121,93 +263,22 @@ export function parseSummary(markdown: string): Summary {
   const scopes: Scope[] = [];
   const quickItems: Item[] = [];
   let current: Subject | null = null;
-  // Decision 0067: the group the line is in, the item line a Scope would belong to, and the open toggles (true for a Scope).
+  // Decision 0067: the group the line is in and the item line a Scope would belong to.
   let group: "quick" | "other" | null = null;
   let lastItem: string | null = null;
-  const toggles: boolean[] = [];
-  let scope: { entry: Scope; field: keyof typeof SCOPE_LABELS | null; seen: Set<string>; closed: boolean } | null = null;
-  const scoped = new Set<string>();
-  // NFKC folds full-width forms; zero-width and format characters inside words are removed; the §4.4 notice (with an icon, in a callout, or
-  // wrapped over lines) is not a control.
-  // HTML-escaped `>` and `<` are formatting; toggle tags are put on lines of their own, so a closing tag at the end of a content line closes.
-  const cleaned = markdown.normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "").replace(NOTICE_TEXT, "").replace(/&gt;/g, ">").replace(/&lt;/g, "<")
-    .replace(/<details>/gi, "\n<details>\n").replace(/<\/details>/gi, "\n</details>\n").replace(/<\/summary>/gi, "</summary>\n");
-  const rawLines = cleaned.split("\n");
-  /** Whether the toggle opened on line `from` has its closing tag further down. */
-  const closes = (from: number): boolean => {
-    let depth = 1;
-    for (let index = from + 1; index < rawLines.length; index += 1) {
-      if (/<details>/i.test(rawLines[index]!)) depth += 1;
-      else if (/<\/details>/i.test(rawLines[index]!) && (depth -= 1) === 0) return true;
-    }
-    return false;
-  };
-  let opened = -1;
+  const rawLines = summaryLines(markdown);
+  const toggles = new ScopeToggles(rawLines, scopes, problems);
   for (const [index, rawLine] of rawLines.entries()) {
-    // Blockquote markers and emphasis around the whole line are formatting, not content; a `* ` bullet keeps its marker.
-    let line = normalize(rawLine.replace(/\*\*/g, "")).replace(/^(?:>\s*)+/, "").replace(/^[_*]+(?=\S)|(?<=\S)[_*]+$/g, "").trim();
-    if (line === "" || /^[^\p{L}\p{N}\[]*$/u.test(line)) continue; // empty, or only an icon / rule left of the notice
-    // Toggles (cli §5.14.7: `<details><summary>…</summary> … </details>`). Only a Scope toggle is read differently; other toggles' lines are read as before.
-    const open = /^<details>\s*(.*)$/i.exec(line);
-    if (open !== null) {
-      toggles.push(false);
-      opened = index;
-      const rest = open[1] ?? "";
-      if (rest === "") continue;
-      line = rest;
-    }
-    const summaryTag = /^<summary>\s*(.*?)\s*<\/summary>\s*(.*)$/i.exec(line);
-    if (summaryTag !== null && toggles.length > 0 && !toggles.includes(true)) {
-      if (normalize((summaryTag[1] ?? "").replace(/[*_`]/g, "")).toLowerCase() === "scope") {
-        toggles[toggles.length - 1] = true;
-        if (group !== "quick") {
-          const entry: Scope = { item: lastItem, done_when: null, due: null, project: null, notes: null, problems: [] };
-          if (lastItem === null) entry.problems.push("a Scope with no item line directly above it");
-          else if (scoped.has(lastItem)) entry.problems.push(`a second Scope for ${lastItem}`);
-          else scoped.add(lastItem);
-          scopes.push(entry);
-          scope = { entry, field: null, seen: new Set(), closed: closes(opened) };
-        }
-      }
-      if ((summaryTag[2] ?? "") === "") continue;
-      line = summaryTag[2] ?? "";
-    }
-    if (/^<\/details>$/i.test(line)) {
-      if (toggles.pop() === true) scope = null;
-      continue;
-    }
+    const folded = foldLine(rawLine);
+    if (folded === null) continue;
+    const line = toggles.read(index, folded, {
+      lastItem, quick: group === "quick", subject: current?.id ?? null,
+      ends: (text) => text.startsWith("#") || SUBJECT.test(text) || SELECTION_LINE.test(text),
+      endsUnclosed: (text, bare) => ITEM.test(text) || GROUP.test(bare) || SECTION.test(bare) || (LIST.test(text) && !SCOPE_FIELD.test(text)),
+      isItem: (text) => ITEM.test(text),
+    });
+    if (line === null) continue;
     const bare = line.replace(/[*_]/g, "").trim();
-    // Fail closed: a heading, a subject or a Selection line ends any Scope, and is read as usual, so a Scope never hides a subject or its
-    // selection. A Scope that is never closed also ends at an item, a group or section line, or a list line that is not a field.
-    if (toggles.includes(true) && (line.startsWith("#") || SUBJECT.test(line) || SELECTION_LINE.test(line)
-      || (scope !== null && !scope.closed && (ITEM.test(line) || GROUP.test(bare) || SECTION.test(bare) || (LIST.test(line) && !SCOPE_FIELD.test(line)))))) {
-      while (toggles.includes(true)) toggles.pop();
-      scope = null;
-    }
-    if (toggles.includes(true)) {
-      // Inside a Scope: fields, never items, unnumbered lines or controls. Inside a Scope in Quick follow-ups: nothing.
-      if (scope === null) continue;
-      if (ITEM.test(line)) { problems.push({ code: "SELECTION_UNREADABLE", id: current?.id ?? null, reason: `an item line inside a Scope: ${line.slice(0, 60)}` }); continue; }
-      const field = SCOPE_FIELD.exec(line);
-      if (field !== null) {
-        const key = SCOPE_FIELDS[(field[1] ?? "").toLowerCase()]!;
-        if (scope.seen.has(key)) { scope.entry.problems.push(`${SCOPE_LABELS[key]} given twice`); scope.field = null; continue; }
-        scope.seen.add(key);
-        scope.field = key;
-        const value = normalize(field[2] ?? "");
-        if (ABSENT.test(value)) continue;
-        if (key === "due" && !isDate(value)) { scope.entry.problems.push(`Due is not a date (YYYY-MM-DD): ${value}`); continue; }
-        scope.entry[key] = value;
-      } else if (scope.field === null) {
-        if (scope.seen.size === 0) scope.entry.problems.push(`text before the first field: ${line.slice(0, 60)}`);
-      } else if (scope.field === "due") scope.entry.problems.push(`Due continues on another line: ${line.slice(0, 60)}`);
-      else {
-        const key = scope.field;
-        const text = line.replace(LIST, "");
-        scope.entry[key] = scope.entry[key] === null ? text : `${scope.entry[key]}\n${text}`;
-      }
-      continue;
-    }
     const groupLine = GROUP.exec(bare);
     if (groupLine !== null) {
       group = /^quick/i.test(groupLine[1] ?? "") ? "quick" : "other";
@@ -353,8 +424,11 @@ export function planExtract(summary: Summary, transcript: string): Plan {
   const byId = new Map(summary.items.map((entry) => [entry.id, entry]));
   // A quick line stays in Notion, outside the brain: depending on it is depending on excluded context (decision 0067, §4.7). One whose
   // effective selection is `meeting only` is read as an excluded item, so its paragraphs stay out (fail closed).
-  const quickIds = new Set(summary.quickItems.map((entry) => entry.id));
-  const all = [...summary.items, ...summary.quickItems.filter((entry) => effectiveOf(entry, subjects) === "meeting only")];
+  // The lean shape's quote entries with no readable line are the same (decision 0079, §4.1 "The join"): they have no text, so they stay
+  // outside the brain, and one that is effectively `meeting only` still keeps its paragraphs out.
+  const orphans = summary.orphans ?? [];
+  const quickIds = new Set([...summary.quickItems, ...orphans].map((entry) => entry.id));
+  const all = [...summary.items, ...[...summary.quickItems, ...orphans].filter((entry) => effectiveOf(entry, subjects) === "meeting only")];
   for (const entry of all) byId.set(entry.id, entry);
   const passages = new Map<string, number[]>();
   const broken = new Set<string>();
@@ -438,7 +512,7 @@ export function planExtract(summary: Summary, transcript: string): Plan {
     }
   }
   const covered = new Set(citers.keys());
-  const ok = problems.every((problem) => problem.code === "DEPENDS_ON_EXCLUDED");
+  const ok = problems.every((problem) => NOT_BLOCKERS.has(problem.code));
   return { mappings, copied: ok ? copied : copied.filter((entry) => entry.items.every((id) => !broken.has(id))), uncovered: paras.filter((entry) => !covered.has(entry.n)).length, problems, unnumbered: summary.unnumbered, quotes, unplaced_items: unplaced, quick: summary.quick, scopes: summary.scopes, ok };
 }
 
