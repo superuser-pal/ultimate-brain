@@ -511,6 +511,19 @@ The CLI writes `lifecycle: reviewed` for `origin: whole` (the source's own text 
 
 **Source dedupe:** a source is a duplicate if an existing source, or one earlier in the same batch, has the same `content_hash`, **or** the same `source_key` when that key is `file:` (the same original file, whatever the converter produced) or the source's `kind` is `capture` (the same Inbox row, even after an edit) (0032). **A version (0045):** a source with `replaces` is compared by `content_hash` only, so a corrected capture or file can be read again; the same text is still a `DUPLICATE_SOURCE`. A duplicate is not written and is reported in `skipped` with the existing id. This is how the ingest skips minutes it has already ingested (synthesis §5 step 2). Other items in the batch that reference the skipped source's input `id` are an error, so the skill must check `skipped` with `--dry-run` first, or snapshot the source in its own batch.
 
+**A person or org the brain withholds (CC-207; eligibility.md §6, §7).** The ingest finds the people and orgs a new input names through `brain query`, which returns no name it withholds: a note restricted whole shows nothing, a note in the awaiting-cleanup form (§5.13) shows no title or aliases, and a note whose only change is a dropped summary shows no aliases. Without this rule the ingest would write a second note for the same person (`dana-whitfield-2.md`) on every input that names them. So a `person` or `org` item is **not written** when the slug (§3.8) of its `title`, or of one of its `frontmatter.aliases`, equals the slug of a **withheld name** of an existing note of the same type: its title and aliases when an answer surface leaves it out whole or returns it in the awaiting-cleanup form, and otherwise each alias the answer surface leaves out. It is reported in `skipped`:
+
+```json
+{ "input_index": 2, "reason": "WITHHELD_MATCH", "existing": "per-3k8m2q7x", "cite": "person per-3k8m2q7x, title withheld: awaiting cleanup" }
+```
+
+- `existing` is the matching note's id (when several match, the lowest id), and `cite` the label an answer cites it by (eligibility.md §6 rules 3 and 4), present only when its title is withheld. A note whose title is shown (only an alias matched) has no `cite`: `brain query --read <existing>` returns its title and path. The skip never carries the note's title, path, aliases or any other field, and the human output names it by id: `skipped notes[2]: matches person per-3k8m2q7x, whose name the brain withholds; not created again`.
+- **Administrative, not an answer** (eligibility.md §7). The rule runs only on this write path, against a name the caller supplied, and returns an id and a label, as a lookup by `source_key` returns a location. It is no wider than the `-2` a taken slug already gives a title. `brain query` does not change, and the skip is never answer evidence: an agent that asks "is Dana Whitfield in the brain?" reads `query`, which still shows nothing.
+- **Names the brain shows are not compared.** A person `brain query` returns by name is the ingest's to match and judge (a namesake at another org is a question for the user); this rule doesn't refuse a duplicate of it.
+- **`distinct_from`** (optional item key, a list of ids): the user said the new person or org is not that note ("that's another Dana"). A note it lists is not a match, so the item is written (with the usual `-2` path when the slug is taken). Each entry must be the id of an existing note of the item's type (`INPUT_INVALID` otherwise); it goes only with `person` and `org` and is not written to the file. A `new_item`'s `note` (§5.6) does not take it.
+- **Where it applies:** `brain note new` only. A `new_item` the user approved (§5.7) and a Notion row the user created (`sync apply`, §5.14) are the user's own and are written as before.
+- As for a duplicate source, other items in the batch that reference the skipped item's input `id` are an error: the skill runs `--dry-run` first and uses `existing` in their place (a meeting's `attendees`, a project's `people`). With no suppression record in the brain nothing is withheld and nothing is compared. A batch with a `person` or `org` item reads `_suppressions/`, and an unreadable record fails it with `SUPPRESSIONS_UNREADABLE` (eligibility.md §3).
+
 Input ids are checked (`ID_IN_USE`) before dedupe, so re-running a batch that supplies its own ids fails instead of being skipped; skills that re-run should let the CLI generate ids or check with `--dry-run`. A body's CRLF line endings are written as LF, except in a source, where they are an `INPUT_INVALID` error (its hash covers the exact bytes). The batch is refused if it adds a lint error to **any** note, not only the new ones (for example a new meeting whose id an existing question already names in `raised_in`).
 
 Each written note logs `note-new <id> "<title>"`.
@@ -525,9 +538,9 @@ Each written note logs `note-new <id> "<title>"`.
     "dry_run": false
 } }
 ```
-Skipped item: `{ "input_index": 0, "reason": "DUPLICATE_SOURCE", "existing": "src-7w3c9k5m" }` (or `ALREADY_KEPT` with a `ref-` id).
+Skipped item: `{ "input_index": 0, "reason": "DUPLICATE_SOURCE", "existing": "src-7w3c9k5m" }` (or `ALREADY_KEPT` with a `ref-` id, or `WITHHELD_MATCH` with a `per-` or `org-` id and, when its title is withheld, `cite`).
 
-Errors: `INPUT_UNREADABLE`, `INPUT_INVALID` (incl. refused type, forbidden key, missing reference, lint error in a new file), `ID_IN_USE`.
+Errors: `INPUT_UNREADABLE`, `INPUT_INVALID` (incl. refused type, forbidden key, missing reference, lint error in a new file, a bad `distinct_from`), `ID_IN_USE`, `SUPPRESSIONS_UNREADABLE` (exit 5; a batch with a `person` or `org` item).
 
 ### 5.6 `brain proposal new` / `brain proposal list`
 

@@ -1,6 +1,6 @@
 import type { Command } from "../lib/command.ts";
 import { assertNoProblems, isRecord, readJsonInput, unknownKeys } from "../lib/input.ts";
-import { assertStagedValid, checkNoteInput, stageNotes, type NoteInput } from "../lib/note-new.ts";
+import { assertStagedValid, checkNoteInput, stageNotes, type NoteInput, type SkippedNote } from "../lib/note-new.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { lintWarnings } from "../lib/warnings.ts";
 
@@ -18,12 +18,12 @@ export const noteNewCommand: Command = {
     const record = input as Record<string, unknown>;
     const problems = unknownKeys(record, ["notes"], "");
     if (!Array.isArray(record.notes)) problems.push({ pointer: "/notes", message: "must be a list" });
-    else record.notes.forEach((item, index) => problems.push(...checkNoteInput(item, `/notes/${index}`)));
+    else record.notes.forEach((item, index) => problems.push(...checkNoteInput(item, `/notes/${index}`, true, true)));
     assertNoProblems(problems);
 
     const dryRun = args.options["dry-run"] === true;
     const workspace = await Workspace.open(brain!);
-    const staged = stageNotes(workspace, record.notes as NoteInput[], (index) => `/notes/${index}`, { now });
+    const staged = stageNotes(workspace, record.notes as NoteInput[], (index) => `/notes/${index}`, { now, withheldMatch: true });
     assertStagedValid(workspace, staged.pointers, "/notes");
     const warnings = lintWarnings(workspace.warnings());
 
@@ -31,7 +31,14 @@ export const noteNewCommand: Command = {
       await workspace.commit(staged.created.map((note) => ({ op: "note-new", id: note.id, title: note.title })), now);
     }
     const human = staged.created.map((note) => `${dryRun ? "would create" : "created"} ${note.path}\n`).join("")
-      + staged.skipped.map((skip) => `skipped notes[${skip.input_index}]: same content as ${skip.existing}\n`).join("");
+      + staged.skipped.map((skip) => `skipped notes[${skip.input_index}]: ${skipReason(skip)}\n`).join("");
     return { data: { created: staged.created, skipped: staged.skipped, dry_run: dryRun }, warnings, human: human || "Nothing to write.\n" };
   },
 };
+
+/** The human line of a skip: a withheld match names the note by type and id only (spec/cli.md §5.5, CC-207). */
+function skipReason(skip: SkippedNote): string {
+  if (skip.reason !== "WITHHELD_MATCH") return `same content as ${skip.existing}`;
+  const type = skip.existing.startsWith("org-") ? "org" : "person";
+  return `matches ${type} ${skip.existing}, whose name the brain withholds; not created again`;
+}

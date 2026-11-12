@@ -5,7 +5,9 @@ import { modulesOf } from "./modules.ts";
 import { serializeNewFile } from "./frontmatter.ts";
 import { generateId, TYPE_PREFIX } from "./ids.ts";
 import { assertNoProblems, escapePointer, isRecord, unknownKeys, type InputProblem } from "./input.ts";
-import { newNotePath } from "./paths.ts";
+import { compareCodePoints, type Note } from "./notes.ts";
+import { newNotePath, slugify } from "./paths.ts";
+import { answerNote, citeLabel, contextFor, requireSuppressions, titleWithheld } from "./suppressions.ts";
 import { formatDate, formatTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 
@@ -13,6 +15,8 @@ import type { Workspace } from "./workspace.ts";
 export interface NoteInput {
   type: string;
   id?: string;
+  /** `brain note new` only, on a person or org: notes the user said this one is not (spec/cli.md §5.5, CC-207). */
+  distinct_from?: string[];
   title: string;
   file_date?: string;
   frontmatter: Record<string, unknown>;
@@ -28,8 +32,10 @@ export interface CreatedNote {
 
 export interface SkippedNote {
   input_index: number;
-  reason: "DUPLICATE_SOURCE" | "ALREADY_KEPT";
+  reason: "DUPLICATE_SOURCE" | "ALREADY_KEPT" | "WITHHELD_MATCH";
   existing: string;
+  /** `WITHHELD_MATCH` only, when the matching note's title is withheld: the label an answer cites it by (eligibility.md §6 rule 3). */
+  cite?: string;
 }
 
 export interface StagedNotes {
@@ -40,6 +46,8 @@ export interface StagedNotes {
 }
 
 const ITEM_KEYS = ["type", "id", "title", "file_date", "frontmatter", "body"];
+/** Types `note new` compares with the names the brain withholds (spec/cli.md §5.5, CC-207). */
+const ENTITY_TYPES = new Set(["person", "org"]);
 const KNOWLEDGE_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 /** Types you create, or the brain writes only after your yes: no Lifecycle in Notion, `reviewed` from creation (0070). */
 export const NO_LIFECYCLE_PROPERTY = new Set(["domain", "area", "goal", "project", "org"]);
@@ -55,11 +63,16 @@ function isDate(value: unknown): boolean {
   return !Number.isNaN(time) && new Date(time).toISOString().startsWith(value);
 }
 
-/** Shape problems of one input item; `withId: false` for a proposal's `note`, which has no id. */
-export function checkNoteInput(value: unknown, pointer: string, withId = true): InputProblem[] {
+/** Shape problems of one input item; `withId: false` for a proposal's `note`, which has no id; `distinctFrom` for `brain note new`'s items. */
+export function checkNoteInput(value: unknown, pointer: string, withId = true, distinctFrom = false): InputProblem[] {
   if (!isRecord(value)) return [{ pointer, message: "must be an object" }];
-  const problems = unknownKeys(value, withId ? ITEM_KEYS : ITEM_KEYS.filter((key) => key !== "id"), pointer);
+  const keys = withId ? ITEM_KEYS : ITEM_KEYS.filter((key) => key !== "id");
+  const problems = unknownKeys(value, distinctFrom ? [...keys, "distinct_from"] : keys, pointer);
   const at = (key: string, message: string) => problems.push({ pointer: `${pointer}/${key}`, message });
+  if (distinctFrom && value.distinct_from !== undefined) {
+    if (!ENTITY_TYPES.has(String(value.type))) at("distinct_from", "goes only with a person or an org");
+    else if (!Array.isArray(value.distinct_from) || value.distinct_from.length === 0 || value.distinct_from.some((id) => typeof id !== "string")) at("distinct_from", "must be a non-empty list of note ids");
+  }
 
   if (value.type === "concept") {
     at("type", "concept is retired since 0.9.1: write a reference with origin: learned (decision 0071)");
@@ -99,6 +112,8 @@ export interface StageOptions {
   now: Date;
   /** Lifecycle of new knowledge notes; `sync apply` keeps the one set in Notion. Default `draft` (0003). */
   lifecycle?: string;
+  /** `brain note new`: skip a person or org whose name matches one the brain withholds (`WITHHELD_MATCH`, spec/cli.md §5.5, CC-207). */
+  withheldMatch?: boolean;
 }
 
 /**
@@ -159,6 +174,13 @@ export function stageNotes(
     if (repo !== undefined && !repoNames.has(repo)) parents.push({ pointer: `${pointerOf(index)}/frontmatter/repo`, message: `${String(repo)} is not a linked repo in brain.json repos` });
   });
   parents.push(...documentProblems(workspace, items, pointerOf));
+  // distinct_from names existing notes of the item's type (spec/cli.md §5.5).
+  items.forEach((item, index) => {
+    (item.distinct_from ?? []).forEach((id, position) => {
+      const type = workspace.get(id)?.type;
+      if (type !== item.type) parents.push({ pointer: `${pointerOf(index)}/distinct_from/${position}`, message: type === undefined ? `${id} is not an existing note` : `${id} is a ${type}, not a ${item.type}` });
+    });
+  });
   assertNoProblems(parents);
   assertPlacesExist(workspace, items, pointerOf);
 
@@ -166,6 +188,7 @@ export function stageNotes(
   const taken = new Set([...existing, ...seen]);
   const result: StagedNotes = { created: [], skipped: [], pointers: new Map() };
   const wholeKept = new Map<string, string>();
+  const withheld = options.withheldMatch === true && items.some((item) => ENTITY_TYPES.has(item.type)) ? withheldNames(workspace.root, workspace.notes) : undefined;
 
   items.forEach((item, index) => {
     const lf = item.body.replace(/\r\n?/g, "\n");
@@ -207,6 +230,15 @@ export function stageNotes(
       attributes.content_hash = hash;
       attributes.captured ??= formatTimestamp(options.now);
     }
+    if (withheld !== undefined && ENTITY_TYPES.has(item.type)) {
+      const names = [item.title, ...(Array.isArray(item.frontmatter.aliases) ? item.frontmatter.aliases : [])].filter((name): name is string => typeof name === "string");
+      const slugs = new Set(names.map(slugify));
+      const match = withheld.find((entry) => entry.type === item.type && !(item.distinct_from ?? []).includes(entry.id) && entry.slugs.some((slug) => slugs.has(slug)));
+      if (match !== undefined) {
+        result.skipped.push({ input_index: index, reason: "WITHHELD_MATCH", existing: match.id, ...(match.cite === undefined ? {} : { cite: match.cite }) });
+        return;
+      }
+    }
     const id = item.id ?? generateId(TYPE_PREFIX[item.type]!, taken);
     taken.add(id);
     attributes.id = id;
@@ -221,6 +253,31 @@ export function stageNotes(
     if (item.type === "reference" && attributes.origin === "whole") wholeKept.set(String((attributes.sources as unknown[])[0]), id);
     result.pointers.set(path, pointerOf(index));
   });
+  return result;
+}
+
+interface WithheldNames { id: string; type: string; slugs: string[]; cite?: string }
+
+/**
+ * The names of existing people and orgs that an answer surface withholds (spec/cli.md §5.5, eligibility.md §6, CC-207), lowest id first: the
+ * title and aliases of a note left out whole or in the awaiting-cleanup form (with its cite label), else the aliases the surface leaves out.
+ * Empty without suppression records. An unreadable record fails closed (`SUPPRESSIONS_UNREADABLE`).
+ */
+function withheldNames(root: string, notes: readonly Note[]): WithheldNames[] {
+  const people = notes.filter((note) => ENTITY_TYPES.has(note.type));
+  if (people.length === 0) return [];
+  const loaded = requireSuppressions(root);
+  if (loaded.suppressions.length === 0) return [];
+  const context = contextFor(notes, loaded);
+  const result: WithheldNames[] = [];
+  for (const note of [...people].sort((a, b) => compareCodePoints(a.id, b.id))) {
+    const names = (attributes: Record<string, unknown>) => [attributes.title, ...(Array.isArray(attributes.aliases) ? attributes.aliases : [])].filter((name): name is string => typeof name === "string" && name !== "");
+    const shown = answerNote(note, context);
+    const hidden = shown === null || titleWithheld(shown);
+    const visible = new Set(hidden ? [] : names(shown.attributes).map(slugify));
+    const slugs = [...new Set(names(note.attributes).map(slugify))].filter((slug) => !visible.has(slug));
+    if (slugs.length > 0) result.push({ id: note.id, type: note.type, slugs, ...(hidden ? { cite: citeLabel(note) } : {}) });
+  }
   return result;
 }
 
