@@ -37,7 +37,8 @@ async function setConfig(dir: string, change: (config: Record<string, any>) => v
 
 test("max_inputs: status shows 10 by default and the value set; 0 and a fraction are refused", async (context) => {
   const dir = await fixtureCopy(context);
-  assert.deepEqual((await run(dir, ["status"])).json.data.settings, { publish: "ask", push: "auto", unattended: { max_inputs: 10 } });
+  assert.deepEqual((await run(dir, ["status"])).json.data.settings, { publish: "ask", push: "auto", unattended: { max_inputs: 10 },
+    style: { preset: "standard", explain: "some", length: "normal", directness: "context-first" } });
   assert.equal((await run(dir, ["config", "set", "settings.unattended.max_inputs", "4"])).code, 0);
   assert.equal((await run(dir, ["status"])).json.data.settings.unattended.max_inputs, 4);
   for (const value of ["0", "2.5", '"10"']) {
