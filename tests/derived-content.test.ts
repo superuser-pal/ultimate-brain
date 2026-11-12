@@ -16,7 +16,7 @@ const LIVE_NOTE = "dec-7k2m9q4x"; // "Use Supabase for auth": cites the fixture'
 const LIVE_PATH = "knowledge/decisions/2026-12-03-use-supabase-for-auth.md";
 const V2 = "sources/notion/2026-12-10-extract-v2.md";
 const LIVE = "A live paragraph.";
-const SECRET = "Pricing was 95k.";
+const SECRET = "Pricing was 95,000.";
 const ref = (n: number, text: string) => `^[src-ex1a3b4c#¶${n}:${passageHash(text)}]`;
 
 async function run(dir: string, args: string[], input?: unknown, now = NOW) {
@@ -71,7 +71,7 @@ test("a report that links a view resting on an excluded note is withheld, to any
   const decision = await read(dir, note.id);
   assert.equal(decision.status, "ok");
   assert.equal(decision.title, null);
-  assert.ok(decision.body.includes("Kept statement.") && !decision.body.includes("95k"));
+  assert.ok(decision.body.includes("Kept statement.") && !decision.body.includes("95,000"));
   const live = await read(dir, LIVE_NOTE);
   assert.equal(live.status, "ok");
   assert.equal(live.title, "Use Supabase for auth");
@@ -91,7 +91,7 @@ test("a report that links a view resting on an excluded note is withheld, to any
 test("a report written before an exclusion stays withheld after the note is cleaned, and is read again after a refresh (eligibility.md §8 rule 2)", async (context) => {
   const dir = await fixtureCopy(context);
   const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
-  const created = await run(dir, ["report", "new"], { title: "Price: where we stand", question: "Where does the price stand?", body: reportBody("Price is 95k, said on the call.", [`Auth chosen ([Use Supabase for auth](../${LIVE_PATH}))`]) });
+  const created = await run(dir, ["report", "new"], { title: "Price: where we stand", question: "Where does the price stand?", body: reportBody("Price is 95,000, said on the call.", [`Auth chosen ([Use Supabase for auth](../${LIVE_PATH}))`]) });
   assert.equal(created.code, 0, created.stdout);
   const id = created.json.data.id as string;
   assert.equal((await read(dir, id)).status, "ok");
@@ -118,7 +118,7 @@ test("a report written before an exclusion stays withheld after the note is clea
   assert.equal(refreshed.code, 0, refreshed.stdout);
   const after = await read(dir, id);
   assert.equal(after.status, "ok", "the refresh is read");
-  assert.ok(!JSON.stringify(after).includes("95k"));
+  assert.ok(!JSON.stringify(after).includes("95,000"));
 });
 
 test("a report whose provenance or freshness can't be read is withheld whole, naming only its id, reason, cause and rebuild (eligibility.md §8 rule 3)", async (context) => {
@@ -157,20 +157,20 @@ test("index.md, the JSON index and the views keep no title, alias or summary of 
   // Whole: an unmapped remark in the lineage of the changed input. Part: a live line beside the excluded one.
   const { note: whole, exclude } = await excludableDecision(dir, SYNC, PROJECT, "unmapped");
   const wholeFile = join(dir, whole.path);
-  await writeFile(wholeFile, (await readFile(wholeFile, "utf8")).replace(/^title: .*$/m, "title: Budget cut to 40k").replace(/^summary: .*$/m, "summary: Budget cut to 40k for launch").replace(/^sources:/m, "aliases: [budget 40k]\ntags: [budget-40k]\nsources:"));
-  const made = await run(dir, ["note", "new"], { notes: [{ type: "decision", title: "Price set at 95k", frontmatter: { summary: "Price set at 95k.", aliases: ["price 95k"], date: "2026-12-04", assessment: "accepted", projects: [PROJECT], sources: [SYNC] }, body: `Vendor stays Acme. ${ref(1, LIVE)}\n\nThe price is set at 95k. ${ref(2, SECRET)}\n` }] });
+  await writeFile(wholeFile, (await readFile(wholeFile, "utf8")).replace(/^title: .*$/m, "title: Budget cut to 40,000").replace(/^summary: .*$/m, "summary: Budget cut to 40,000 for launch").replace(/^sources:/m, "aliases: ['budget 40,000']\ntags: [budget-40k]\nsources:"));
+  const made = await run(dir, ["note", "new"], { notes: [{ type: "decision", title: "Price set at 95,000", frontmatter: { summary: "Price set at 95,000.", aliases: ["price 95,000"], date: "2026-12-04", assessment: "accepted", projects: [PROJECT], sources: [SYNC] }, body: `Vendor stays Acme. ${ref(1, LIVE)}\n\nThe price is set at 95,000. ${ref(2, SECRET)}\n` }] });
   assert.equal(made.code, 0, made.stdout);
   const part = made.json.data.created[0] as { id: string; path: string };
   await approveNote(dir, whole.path);
   await approveNote(dir, part.path);
   assert.equal((await run(dir, ["index"])).code, 0);
   assert.equal((await run(dir, ["views"])).code, 0);
-  assert.ok((await readFile(join(dir, "index.md"), "utf8")).includes("Price set at 95k"), "listed with its title while the evidence is live");
+  assert.ok((await readFile(join(dir, "index.md"), "utf8")).includes("Price set at 95,000"), "listed with its title while the evidence is live");
 
   await exclude();
   assert.equal((await run(dir, ["index"])).code, 0);
   assert.equal((await run(dir, ["views"])).code, 0);
-  const restricted = ["40k", "95k", "Budget cut", "budget-40k", "Price set", "price 95k"];
+  const restricted = ["40,000", "95,000", "Budget cut", "budget-40k", "Price set", "price 95,000"];
   const index = await readFile(join(dir, "index.md"), "utf8");
   for (const text of restricted) assert.ok(!index.includes(text), `index.md holds no "${text}"`);
   assert.ok(index.includes(`- (title withheld: awaiting cleanup) — ${whole.id} · date: 2026-12-03 · assessment: accepted`), "the whole note stays listed, by id");
@@ -206,17 +206,17 @@ test("sync render publishes a note with a restricted part in the awaiting-cleanu
   await writeFile(join(dir, "brain.json"), `${JSON.stringify(config, null, 2)}\n`);
   const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
   const file = join(dir, note.path);
-  await writeFile(file, (await readFile(file, "utf8")).replace(/^title: .*$/m, "title: Price set at 95k"));
+  await writeFile(file, (await readFile(file, "utf8")).replace(/^title: .*$/m, "title: Price set at 95,000"));
   await approveNote(dir, note.path);
-  const report = await run(dir, ["report", "new"], { title: "Price: where we stand", question: "Where does the price stand?", body: reportBody("Price is 95k, said on the call.", [`Auth chosen ([Use Supabase for auth](../${LIVE_PATH}))`]) });
+  const report = await run(dir, ["report", "new"], { title: "Price: where we stand", question: "Where does the price stand?", body: reportBody("Price is 95,000, said on the call.", [`Auth chosen ([Use Supabase for auth](../${LIVE_PATH}))`]) });
   assert.equal(report.code, 0, report.stdout);
   const reportId = report.json.data.id as string;
   const render = async (id: string) => (await run(dir, ["sync", "render", "--ids", id])).json.data.items[0];
 
   const before = await render(note.id);
-  assert.equal(before.properties.Name.value, "Price set at 95k");
+  assert.equal(before.properties.Name.value, "Price set at 95,000");
   const beforeReport = await render(reportId);
-  assert.ok(String(beforeReport.body).includes("95k"));
+  assert.ok(String(beforeReport.body).includes("95,000"));
 
   await exclude();
   await captureAt(dir, "2026-12-10T10:00:00Z");
@@ -224,14 +224,14 @@ test("sync render publishes a note with a restricted part in the awaiting-cleanu
   assert.equal(after.action, before.action, "the same page: rewritten in place, never deleted");
   assert.equal(after.properties.Name.value, `decision ${note.id}, title withheld: awaiting cleanup`);
   assert.ok(String(after.body).includes("Kept statement."), "the live line is still published");
-  assert.ok(!JSON.stringify(after).includes("95k") && !JSON.stringify(after).includes("Price set"), "no title or excluded line in the payload");
+  assert.ok(!JSON.stringify(after).includes("95,000") && !JSON.stringify(after).includes("Price set"), "no title or excluded line in the payload");
   assert.notEqual(after.published["@content"], before.published["@content"], "the content moves, so a published page is re-rendered");
   assert.notEqual(after.published.Name, before.published.Name, "and so does its Name");
 
   const withheld = await render(reportId);
   assert.equal(withheld.properties.Name.value, `report ${reportId}, withheld: refresh to rebuild`);
   assert.match(String(withheld.body), /^Withheld: this report rests on content you excluded/);
-  assert.ok(!JSON.stringify(withheld).includes("95k"), "the report's prose isn't published");
+  assert.ok(!JSON.stringify(withheld).includes("95,000"), "the report's prose isn't published");
   assert.equal(withheld.properties["Refresh asked"], undefined, "a notice is no refresh: Refresh asked stays as you ticked it");
   assert.equal(withheld.published["@git_body"], undefined, "and it sets no wording baseline");
 
@@ -244,7 +244,7 @@ test("sync render publishes a note with a restricted part in the awaiting-cleanu
   // The Decision log section of the project page: the regenerated view shows the note by type and id.
   assert.equal((await run(dir, ["views", "--project", PROJECT])).code, 0);
   const project = await render(PROJECT);
-  assert.ok(!JSON.stringify(project).includes("95k") && !JSON.stringify(project).includes("Price set"));
+  assert.ok(!JSON.stringify(project).includes("95,000") && !JSON.stringify(project).includes("Price set"));
   assert.ok(String(project.sections["Decision log"]).includes(`decision ${note.id}, title withheld: awaiting cleanup`));
 });
 
@@ -252,7 +252,7 @@ test("a Review page names a note with a restricted part by type and id: on creat
   const dir = await fixtureCopy(context);
   const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
   const file = join(dir, note.path);
-  await writeFile(file, (await readFile(file, "utf8")).replace(/^title: .*$/m, "title: Price set at 95k"));
+  await writeFile(file, (await readFile(file, "utf8")).replace(/^title: .*$/m, "title: Price set at 95,000"));
   // Passages as 0.13.0 takes them (eligibility.md §9.1): each item names its whole source.
   const created = await run(dir, ["proposal", "new"], withPassages({ proposals: [
     { kind: "review_notes", source: SYNC, notes: [note.id] },
@@ -262,13 +262,13 @@ test("a Review page names a note with a restricted part by type and id: on creat
   const id = created.json.data.created[0].id as string;
   const render = async (plan?: string) => (await run(dir, ["sync", "render", "--ids", id, ...(plan === undefined ? [] : ["--plan", plan])])).json.data;
   const before = (await render()).items[0];
-  assert.ok(String(before.body).includes("Creates: Price set at 95k"), "while the evidence is live the page names the note");
+  assert.ok(String(before.body).includes("Creates: Price set at 95,000"), "while the evidence is live the page names the note");
 
   await exclude();
   const fresh = (await render()).items[0];
   assert.equal(fresh.action, "create");
   assert.ok(String(fresh.body).includes(`Held: decision ${note.id}, title withheld: awaiting cleanup`), "a page created after the exclusion names it by type and id");
-  assert.ok(!JSON.stringify(fresh).includes("Price set") && !JSON.stringify(fresh).includes("95k"));
+  assert.ok(!JSON.stringify(fresh).includes("Price set") && !JSON.stringify(fresh).includes("95,000"));
 
   // The page was published before the exclusion: record that render, then render again.
   const recorded = await run(dir, ["sync", "record"], { records: [{ id, notion: "6a7b0000-0000-4000-8000-0000000000aa", synced_at: NOW, published: before.published }] });
@@ -279,7 +279,7 @@ test("a Review page names a note with a restricted part by type and id: on creat
   assert.equal(update.item_updates.length, 1, "only the item that names the note is rewritten: the other section and its hash stay");
   assert.equal(update.item_updates[0].reason, "title_withheld");
   assert.ok(update.item_updates[0].section.includes(`decision ${note.id}, title withheld: awaiting cleanup`));
-  assert.ok(!JSON.stringify(update).includes("Price set") && !JSON.stringify(update).includes("95k"));
+  assert.ok(!JSON.stringify(update).includes("Price set") && !JSON.stringify(update).includes("95,000"));
   const kept = before.published["@review"].items;
   const after = update.review_published_after["@review"].items;
   const itemId = update.item_updates[0].item_id as string;
@@ -298,7 +298,7 @@ test("a Review page names a note with a restricted part by type and id: on creat
 test("a live line's link to a note in the awaiting-cleanup form, or restricted whole, keeps its text and loses its target on every surface; a link to an eligible note is unchanged (cli §5.13, CC-176's question 4)", async (context) => {
   const dir = await fixtureCopy(context);
   const { note: part, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
-  const made = await run(dir, ["note", "new"], { notes: [{ type: "decision", title: "Budget cut to 40k", frontmatter: { summary: "s", date: "2026-12-03", assessment: "accepted", projects: [PROJECT], sources: [SYNC] }, body: `An unsourced remark.\n\nThe budget is cut. ${ref(2, SECRET)}\n` }] });
+  const made = await run(dir, ["note", "new"], { notes: [{ type: "decision", title: "Budget cut to 40,000", frontmatter: { summary: "s", date: "2026-12-03", assessment: "accepted", projects: [PROJECT], sources: [SYNC] }, body: `An unsourced remark.\n\nThe budget is cut. ${ref(2, SECRET)}\n` }] });
   assert.equal(made.code, 0, made.stdout);
   const whole = made.json.data.created[0] as { id: string; path: string };
   const slug = (path: string) => path.split("/").pop()!.replace(/\.md$/, "");
