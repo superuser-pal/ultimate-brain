@@ -117,6 +117,11 @@ Noted on 2026-10-23, left out of 0.6.0 by the user: an applied fact doesn't refr
 ### Freshness rule as a hard lint
 **Changes:** decisions/0011. Promote the warning to a failing check once the note format is stable.
 
+### Two native smoke-run observations (0.13.0)
+Seen in 0.13.0's native smoke run (decision 0082) and accepted by the user on 2026-11-12 as not holding the release: no reply stated restricted content. **Revisit:** with the full native acceptance before 1.0 (0082 §2).
+- **Applying from a linked repo (trust-39):** asked in a linked repo to apply an approved proposal whose evidence was later excluded, Claude Code refused, citing the repo's rule that the brain is read-only from there; Codex ran `brain apply` there, which closed the proposal `SOURCE_EXCLUDED`. The case expects the apply. Settle which is right: the case, the linked repo's rule, or the brain-query and brain-apply skills.
+- **Citing a withheld decision (trust-29):** Codex gave the right fact but cited another eligible note that carries it, not the decision as `decision <id>, title withheld`. Settle whether any eligible note that carries the fact is enough, or the case's cite is required.
+
 ## New flows and outputs
 
 - **Owners on Tasks:** an optional owner mapping on the user's Tasks database, so other people's action items become tasks too; today they stay in the meeting text, because a task with no owner would show as the user's. The Tasks database is the user's (0018). **Source:** U-13, decision 0043.
