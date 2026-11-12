@@ -16,6 +16,7 @@ import { scanNotes } from "../lib/notes.ts";
 import { assertPlainPath, installedProduct, SUB_AGENT } from "../lib/skills.ts";
 import { notionMigrations, notionMigrationsLine } from "../lib/notion-migrations.ts";
 import { competingCopies } from "../lib/skills-competing.ts";
+import { styleLines, withStyleBlock } from "../lib/style.ts";
 import { homeOf, LOCK, readLock, serializeLock, snapshotInvalid, type Lock } from "../lib/skills-pin.ts";
 import { comparePrecedence } from "../lib/skills-range.ts";
 import { packageProblem, packageSnapshot, serializeManifest, TREES, type Manifest } from "../lib/skills-snapshot.ts";
@@ -49,16 +50,21 @@ export const upgradeCommand: Command = {
     const template = await readFile(join(product.root, "templates/brain/AGENTS.md"), "utf8");
     await assertPlainPath(root, "AGENTS.md");
     const current = await readOptional(join(root, "AGENTS.md"));
-    if (current === null) changes.push({ path: "AGENTS.md", action: "created", content: template });
-    else {
-      const block = rulesBlock(template)!;
-      const own = rulesBlock(current);
-      if (own === undefined) {
-        changes.push({ path: "AGENTS.md", action: "skipped" });
-        warnings.push({ code: "AGENTS_BLOCK_NOT_FOUND", message: "AGENTS.md has no single ultimate-brain rules block; left unchanged." });
-      } else if (own === block) unchanged += 1;
-      else changes.push({ path: "AGENTS.md", action: "updated", content: current.replace(own, () => block) });
-    }
+    // Step 1, the rules block from the template; step 1a, the style block from settings.style (§5.3.1), in the same file.
+    const own = current === null ? undefined : rulesBlock(current);
+    const rules = current === null ? template : own === undefined ? undefined : current.replace(own, () => rulesBlock(template)!);
+    // A brain.json that isn't JSON (step 5) leaves the style block as it is: brain!.config is then {}, which would read as Standard.
+    const readable = await parses(join(root, "brain.json"));
+    const styled = rules === undefined ? undefined : readable ? withStyleBlock(rules, styleLines(brain!.config)) : { text: rules };
+    if (rules === undefined) {
+      changes.push({ path: "AGENTS.md", action: "skipped" });
+      warnings.push({ code: "AGENTS_BLOCK_NOT_FOUND", message: "AGENTS.md has no single ultimate-brain rules block; left unchanged." });
+    } else if (styled === undefined) {
+      changes.push({ path: "AGENTS.md", action: "skipped" });
+      warnings.push({ code: "AGENTS_BLOCK_NOT_FOUND", message: "AGENTS.md's style markers are missing, out of order or duplicated; left unchanged." });
+    } else if (current === null) changes.push({ path: "AGENTS.md", action: "created", content: styled.text });
+    else if (styled.text === current) unchanged += 1;
+    else changes.push({ path: "AGENTS.md", action: "updated", content: styled.text });
     if (!(await exists(join(root, "CLAUDE.md")))) changes.push({ path: "CLAUDE.md", action: "created", content: "@AGENTS.md\n" });
     else unchanged += 1;
     // 0.10.0: the Ultimate Assistant sub-agent, product-owned as a whole file (spec/cli.md §5.15 step 2a).
@@ -354,6 +360,10 @@ async function listFiles(folder: string): Promise<string[]> {
   }
   await visit(folder);
   return files;
+}
+
+async function parses(path: string): Promise<boolean> {
+  try { JSON.parse((await readOptional(path)) ?? ""); return true; } catch { return false; }
 }
 
 async function exists(path: string): Promise<boolean> {
