@@ -6,6 +6,9 @@ import type { TestContext } from "node:test";
 
 import { runCli, type CliIo } from "../src/cli.ts";
 import { setInstalledProductRootForTests } from "../src/lib/skills.ts";
+import { disableGitAutoMaintenance } from "./git-env.ts";
+
+export { disableGitAutoMaintenance };
 
 export const FIXTURE_BRAIN = join(import.meta.dirname, "fixtures", "brain-acme");
 const REPO = join(import.meta.dirname, "..");
@@ -13,21 +16,7 @@ const REPO = join(import.meta.dirname, "..");
 const TOP_LEVEL = new Set(["snapshot.json", "LICENSE", "NOTICE.md", "README.md"]);
 const skillFolder = (source: string) => (path: string) => !(dirname(path) === source && TOP_LEVEL.has(basename(path)));
 
-/**
- * Since Git 2.5x every commit starts a detached `git maintenance run --auto`, which can still be writing into `.git/objects`
- * while a test removes its temp brain, and the removal fails with ENOTEMPTY (CC-158). Every git a test starts, directly or
- * through the in-process CLI, inherits this environment, so automatic maintenance and gc are off for the whole test process.
- * Added after any GIT_CONFIG_* entries already set, so those keep their meaning.
- */
-export function disableGitAutoMaintenance(env: NodeJS.ProcessEnv = process.env): void {
-  const count = Number(env.GIT_CONFIG_COUNT ?? 0) || 0;
-  const entries: Array<[string, string]> = [["maintenance.auto", "false"], ["gc.auto", "0"]];
-  entries.forEach(([key, value], index) => {
-    env[`GIT_CONFIG_KEY_${count + index}`] = key;
-    env[`GIT_CONFIG_VALUE_${count + index}`] = value;
-  });
-  env.GIT_CONFIG_COUNT = String(count + entries.length);
-}
+// No background git maintenance in a test that imports these helpers (CC-158).
 disableGitAutoMaintenance();
 
 /** Removal of a test's temp folder retries a busy or still-filling directory instead of failing the test (CC-158). */
