@@ -3,6 +3,10 @@
   "version": "0.14.0-rc.1",
   "description": "CLI for an AI-assisted Markdown and Git second brain",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/superuser-pal/ultimate-brain.git"
+  },
   "keywords": [
     "second-brain",
     "knowledge-management",
@@ -26,6 +30,7 @@
     ".agents/skills",
     "notion",
     "docs/notion-space-design.md",
+    "docs/setup.md",
     "README.md",
     "LICENSE"
   ],
