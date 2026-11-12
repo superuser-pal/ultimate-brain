@@ -2,7 +2,7 @@
 
 **Status:** Proposed design, ready to build with Notion AI. Not built.
 **Date:** 2026-10-11
-**Built from:** [hub-and-spoke pattern](notion-space-architecture.md), [Easlo vs Ultimate Brain comparison](notion-second-brain-template-comparison.md), [Easlo appendix](easlo-second-brain-factual-architecture-appendix.md), [Ultimate Brain appendix](ultimate-brain-for-notion-factual-architecture-appendix.md), [synthesis](../synthesis/synthesis.md), decisions 0003, 0005, 0007, 0011, 0012, 0015, 0018–0021; updated for 0041–0045 and 0048–0050.
+**Built from:** [hub-and-spoke pattern](notion-space-architecture.md), [Easlo vs Ultimate Brain comparison](notion-second-brain-template-comparison.md), [Easlo appendix](easlo-second-brain-factual-architecture-appendix.md), [Ultimate Brain appendix](ultimate-brain-for-notion-factual-architecture-appendix.md), [synthesis](../synthesis/synthesis.md), decisions 0003, 0005, 0007, 0011, 0012, 0015, 0018–0021; updated for 0041–0045 and 0048–0050, and for 0078 (the published Notion template, §10).
 
 ---
 
@@ -91,7 +91,7 @@ Each is found by its exact name and its children replaced. Before appending one 
 
 ## 3. Databases
 
-Up to fourteen databases, all on the backend page **Brain Data**: the six of Core plus those of the modules you chose (§1). Naming: plural Title Case database names, Title Case property names, no emoji in property names (the agent addresses them by name through the Notion MCP).
+Up to fourteen databases, all on the backend page **Brain Data**: the six of Core plus those of the modules you chose (§1). One more database, **Brain Assistant Skills**, sits on **System**: it holds Brain Assistant's skills, and the brain never reads it (§5). Naming: plural Title Case database names, Title Case property names, no emoji in property names (the agent addresses them by name through the Notion MCP).
 
 **Common properties** on every brain-mirrored database (Areas, Goals, Projects, People, Orgs, Decisions, Questions, Documents):
 
@@ -496,6 +496,7 @@ No template uses a callout to show a property: a callout can't display one, and 
 ## 5. Layout (hub-and-spoke)
 
 ```text
+Ultimate Brain                ← top page: the "Start here" callout (§10), then the pages below
 Home                          ← hub: my day, quick capture, "needs you"
 ├── Tasks                     ← Space
 ├── Meetings                  ← Space
@@ -505,7 +506,8 @@ Home                          ← hub: my day, quick capture, "needs you"
 ├── Knowledge                 ← Space
 └── (backend, never navigated)
     ├── Brain Data            ← the databases of Core and your modules
-    └── System                ← synced nav, Archive, How it works
+    └── System                ← synced nav, Archive, How it works, Brain Assistant Skills;
+                                 the Template version line in the published template (§10)
 ```
 
 Each Space: the synced Spaces navigation in a narrow left column, then one tabs block whose tabs hold the linked views (Knowledge: one tab per database, each holding one linked view with several views). Views are named by the question they answer; tab labels are short. Each view shows what you need to act on from that view, usually 2–4 properties; everything else is on the page.
@@ -523,13 +525,13 @@ Each Space: the synced Spaces navigation in a narrow left column, then one tabs 
 
 Every view, with its filters, sort and properties, is in [notion/views-guide.md](../notion/views-guide.md) and Prompts 7a–7h.
 
-**Brain Assistant** is a Notion Custom Agent for daily use ([notion/brain-assistant.md](../notion/brain-assistant.md)): Instructions with the rules, and eleven skills (Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report). Its Tools and access hold only Brain Data, How it works and its skills database, so same-named databases elsewhere in the workspace can't be confused. It reads and answers; only Check minutes, Tidy capture, Voice summary, Clean email, Write up and Refresh report may edit (the last two from their buttons, §3.17), and only the page text you own (0035, 0045). How-to questions are answered from the "How it works" page, a copy of the user guide.
+**Brain Assistant** is a Notion Custom Agent for daily use ([notion/brain-assistant.md](../notion/brain-assistant.md)): Instructions with the rules, and eleven skills (Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report). Its Tools and access hold only Brain Data, How it works and its skills database, **Brain Assistant Skills** (on System, one page per skill; a space built before 0.14.0 keeps it wherever it was made), so same-named databases elsewhere in the workspace can't be confused. It reads and answers; only Check minutes, Tidy capture, Voice summary, Clean email, Write up and Refresh report may edit (the last two from their buttons, §3.17), and only the page text you own (0035, 0045). How-to questions are answered from the "How it works" page, a copy of the user guide (the brain-howto skill's [references/guide.md](../.agents/skills/brain-howto/references/guide.md)).
 
 ---
 
 ## 6. Notion AI build prompts
 
-The prompts live in [notion/prompts/](../notion/prompts/), each with its **Verify** list. Run them in the order of [notion/CHECKLIST.md](../notion/CHECKLIST.md), one per message, on a new empty teamspace page. They are written so Notion AI does not invent extra properties.
+A new user duplicates the published template instead (§10, 0078 §1); the prompts stay for building the template itself, for anyone who prefers to build, and as the reference the migrations bring older spaces up to. They live in [notion/prompts/](../notion/prompts/), each with its **Verify** list. Run them in the order of [notion/CHECKLIST.md](../notion/CHECKLIST.md), one per message, on a new empty teamspace page. They are written so Notion AI does not invent extra properties.
 
 | # | Prompt | Builds |
 |---|---|---|
@@ -541,11 +543,12 @@ The prompts live in [notion/prompts/](../notion/prompts/), each with its **Verif
 | 6 | [Templates](../notion/prompts/06-templates.md) | the templates of §4 |
 | 7 | [Spaces and views](../notion/prompts/07-spaces-views.md) | the views of §5, one prompt per Space, plus Tasks (7g) and Archive (7h) |
 | 8 (optional) | [Navigation](../notion/prompts/08-navigation.md) | tier 1 and tier 2 synced navigation |
+| 9 | [Brain Assistant's skills and the guide](../notion/prompts/09-assistant-and-guide.md) | the Brain Assistant Skills database on System with its skills, and How it works filled from the guide |
 
 When this design changes, update the matching prompt file in the same change (decision 0022). Spaces that already exist get a migration in [notion/migrations/](../notion/migrations/), written by the `brain-notion-change` skill.
 
 ### After building
-See "After building" in [notion/CHECKLIST.md](../notion/CHECKLIST.md): connect the brain to Notion, map your Tasks database (0018), verify the live space (0022).
+See "After building" in [notion/CHECKLIST.md](../notion/CHECKLIST.md): connect the brain to Notion, map your Tasks database (0018), verify the live space (0022), set up Brain Assistant and paste the minutes prompt.
 
 ---
 
@@ -583,3 +586,24 @@ See "After building" in [notion/CHECKLIST.md](../notion/CHECKLIST.md): connect t
 ## 9. Minutes format prompt (for the Meetings template)
 
 The text lives in [notion/minutes-format.md](../notion/minutes-format.md). It gives every summary the same shape: Attendees, Projects, the overview (Highlights, Quick follow-ups, Tasks), then one section per subject with ids and quotes (0055; before it, 0043's eleven headings). Since 0.9.0 the owner's actions are split into **Quick follow-ups**, to-do checkboxes that stay in Notion, and **Tasks**, each with an editable **Scope** toggle (Done when, Due, Project, Notes) that the ingest carries into the Notion task (0067; pasting it: [notion/pasting-the-minutes-prompt.md](../notion/pasting-the-minutes-prompt.md)). Consistent minutes make the ingest more accurate (0024). Paste it into Notion AI when you ask it to summarise a meeting, or use it to check minutes against the "Minutes follow the format" item of the checklist. The Meetings template (reworked by hand on 2026-10-13) no longer holds it in a callout; on 2026-10-14 we chose to keep that template as it is.
+
+**Lean minutes (0079, 0.14.0).** The prompt then writes a readable part (In one line, Quick follow-ups each with a `q` id, Tasks for the brain, one lean block per subject) and a collapsed **For the brain** toggle (Attendees, Projects, each subject's `Selection:` line, the id → quote list); a quick follow-up still unticked when the meeting is marked Reviewed becomes a Task. The text, Check minutes and the paste guide are CC-197's (spec/capture-and-review.md defines the shape). The Meetings database and its template don't change, so the published template (§10) doesn't carry the prompt: setup walks the user through pasting it and checks it (spec/setup.md §6.3), and the template's Brain Assistant Skills hold 0079's Check minutes. If the test duplicate shows the prompt can live inside the Meetings template (0078 §2, CC-193), this section and §10 change to carry it.
+
+## 10. The published Notion template (0078 §1)
+
+A new user **duplicates a published template** instead of building from the prompts. It is built in a **dedicated Notion workspace that holds only the template**, never copied from anyone's own space, with **every module** (§1), and published with duplication allowed. Its link and version are kept once, in [notion/TEMPLATE.md](../notion/TEMPLATE.md), which also lists what a duplicate contains and the steps it still needs; the README, docs/setup.md and the `brain-setup` skill take them from there (spec/setup.md §6.2). Two templates exist, and user-facing text names them apart: the **brain folder** (`templates/brain/`, the Git repository `brain init` creates) and the **Notion template**.
+
+What the template has beyond a space built from the prompts:
+
+| Part | Where | Exact form | In the prompts? |
+|---|---|---|---|
+| **Start here** callout | the top page "Ultimate Brain", first block, above the pages | A callout (Notion's default icon), two lines. Line 1, bold: **Start here.** Line 2: "This is the Notion half of Ultimate Brain. Next: install Ultimate Brain, and in your brain folder tell your agent "set up my brain". Get started shows every step." "Get started" links to the **Get started** section of the product README on GitHub (`#get-started`; the repository's address is `package.json` `repository`, CC-192) | yes: [Prompt 1](../notion/prompts/01-pages.md) writes it with "Get started" as plain text; the link is added by hand |
+| **Template version** line | System, first block | One plain paragraph, exactly `Template version: NNNN`: the four-digit number of the last migration in [notion/migrations/](../notion/migrations/) the template includes (spec/setup.md §9). Nothing else on that line | **no**: a space built from the prompts has no line, so its version is unknown, never guessed (spec/setup.md §2 step 4, §9) |
+| **How it works** filled | System → How it works | The user guide, the brain-howto skill's [references/guide.md](../.agents/skills/brain-howto/references/guide.md), as of the release the template is built from | yes: [Prompt 9](../notion/prompts/09-assistant-and-guide.md) |
+| **Brain Assistant Skills** with its eleven skills | System | Name (title) and Description (text); one page per skill of [notion/brain-assistant.md](../notion/brain-assistant.md) "Skills": the name is the title, its Description line goes in Description, its text block is the page body | yes: [Prompt 9](../notion/prompts/09-assistant-and-guide.md) |
+
+**What a duplicate can't carry:** the agent's Notion connection (MCP), the brain's connection to the databases, the minutes prompt (§9) and Brain Assistant itself (a Custom Agent, or personal Instructions on a plan without them, given access to the duplicate's Brain Data, How it works and Brain Assistant Skills). Setup walks through and checks each one (spec/setup.md §2 steps 3–4b). The test duplicate (0078 §5, CC-193) records what survives duplication: the Custom Agent and its access, the buttons that message it, relations and the Home buttons; notion/TEMPLATE.md gets the result.
+
+**Modules in a duplicate.** The template holds every module's databases and page parts. The brain uses the modules `brain.json` turns on (a new brain: Knowledge, Orgs, Documents, Reports and Tasks; Domains after seeding; spec/schema.md §12); the parts of a module that is off stay in the duplicate, unused, as the Domains database does with its module off (0065). Turning one on later needs no Notion step beyond connecting it, since its databases exist.
+
+**Keeping it current (0022).** The template follows this design like any space: when a release adds a migration, the migration is applied in the template workspace, its last step updates the System line, and notion/TEMPLATE.md's version changes in the same release. A duplicate made earlier is brought up to date by the migrations `brain upgrade` names (spec/cli.md §5.15).
