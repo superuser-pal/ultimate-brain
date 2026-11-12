@@ -147,7 +147,7 @@ test("a Review page never shows text a suppression restricts: the item is held a
   const dir = await fixtureCopy(context);
   const page = "11111111-2222-4333-8444-555555555555";
   const { passageHash } = await import("../src/lib/selection.ts");
-  const live = "A live paragraph.", secret = "Pricing was 95k.";
+  const live = "A live paragraph.", secret = "Pricing was 95,000.";
   const extract = (id: string, version: number, replaces: string | null, paragraphs: Array<[number, string]>) =>
     `---\nid: ${id}\ntype: source\ntitle: Launch extract v${version}\nsource_key: notion:${page}\nkind: minutes\nextract: true\nextract_of: ${page}\nextract_version: ${version}\n${replaces === null ? "" : `replaces: ${replaces}\n`}transcript_hash: ${"a".repeat(64)}\nselection:\n  - id: s1\n    effective: use\n    explicit: null\npassages:\n${paragraphs.map(([n, text]) => `  - n: ${n}\n    hash: ${passageHash(text)}\n    items:\n      - s1.i1\n`).join("")}content_hash: sha256:${String(version).repeat(64)}\ncaptured: 2026-12-10T09:00:00Z\n---\n${paragraphs.map(([n, text]) => `<!-- passage ¶${n} item s1.i1 -->\n${text}\n`).join("\n")}`;
   await writeFile(join(dir, "sources/notion/2026-12-10-extract-v1.md"), extract("src-ex1a3b4c", 1, null, [[1, live], [2, secret]]));
@@ -162,7 +162,7 @@ test("a Review page never shows text a suppression restricts: the item is held a
   await mkdir(join(dir, "_suppressions"), { recursive: true });
   await writeFile(join(dir, "_suppressions", `${page}.json`), JSON.stringify({ input: page, records: [{ version: 2, passages: [{ extract_of: page, transcript_hash: "a".repeat(64), n: 2 }], full_copies: [], status: "active" }] }));
   const [after] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
-  assert.ok(!String(after.body).includes("SECRET") && !JSON.stringify(after).includes("95k"), "the restricted text is not in the page or the payload");
+  assert.ok(!String(after.body).includes("SECRET") && !JSON.stringify(after).includes("95,000"), "the restricted text is not in the page or the payload");
   assert.match(String(after.body), /## \[a · it-[0-9a-z]{8}\] Held: /);
   assert.ok(Object.values(after.published["@review"].items as Record<string, { held?: boolean }>).every((entry) => entry.held === true));
 });
@@ -247,17 +247,17 @@ test("a Review row whose source is an excluded version publishes no wording, in 
   // A change proposed from version 1 of the input, whose second version drops the paragraph.
   const created = await run(dir, ["proposal", "new"], { proposals: [
     { kind: "review_notes", source: "src-ex1a3b4c", notes: [] },
-    { kind: "update_fact", title: "A", target: PROJECT, field: "launch_date", after: "2027-03 (95k)", why: "Pricing was 95k per the call", source: "src-ex1a3b4c" },
+    { kind: "update_fact", title: "A", target: PROJECT, field: "launch_date", after: "2027-03 (95,000)", why: "Pricing was 95,000 per the call", source: "src-ex1a3b4c" },
   ] });
   assert.equal(created.code, 0, created.stdout);
   const id = created.json.data.created[0].id as string;
   await exclude();
   const [page] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
-  assert.ok(!JSON.stringify(page).includes("95k"), "sections layout");
+  assert.ok(!JSON.stringify(page).includes("95,000"), "sections layout");
   assert.match(String(page.body), /Held: /);
   await withoutReviewSections(dir);
   const [old] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
-  assert.ok(!JSON.stringify(old).includes("95k"), "old layout");
+  assert.ok(!JSON.stringify(old).includes("95,000"), "old layout");
 });
 
 test("sync plan reads a published restricted note in its eligible form: no conflict, no correction", async (context) => {
@@ -298,16 +298,16 @@ test("a change whose wording cites only an excluded passage is held on the Revie
   const { passageHash } = await import("../src/lib/selection.ts");
   const created = await run(dir, ["proposal", "new"], { proposals: [
     { kind: "review_notes", source: SYNC, notes: [] },
-    { kind: "add_to_note", title: "Price", target: CONCEPT, content: `The price was 95k. ^[src-ex1a3b4c#¶2:${passageHash("Pricing was 95k.")}]`, why: "Said on the call.", source: SYNC },
+    { kind: "add_to_note", title: "Price", target: CONCEPT, content: `The price was 95,000. ^[src-ex1a3b4c#¶2:${passageHash("Pricing was 95,000.")}]`, why: "Said on the call.", source: SYNC },
     { kind: "add_to_note", title: "Kept", target: CONCEPT, content: `A kept remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]\n\nSo we follow up. ^[inferred]`, why: "Said on the call.", source: SYNC },
     // A mixed change: a live cited line beside an excluded one is held whole (eligibility.md §4.2).
-    { kind: "add_to_note", title: "Mixed", target: CONCEPT, content: `A mixed remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]\n\nThe price was 95k too. ^[src-ex1a3b4c#¶2:${passageHash("Pricing was 95k.")}]`, why: "The mixed why.", source: SYNC },
+    { kind: "add_to_note", title: "Mixed", target: CONCEPT, content: `A mixed remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]\n\nThe price was 95,000 too. ^[src-ex1a3b4c#¶2:${passageHash("Pricing was 95,000.")}]`, why: "The mixed why.", source: SYNC },
   ] });
   assert.equal(created.code, 0, created.stdout);
   const id = created.json.data.created[0].id as string;
   await exclude();
   const [page] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
-  assert.ok(!JSON.stringify(page).includes("95k"), "the excluded wording is not published");
+  assert.ok(!JSON.stringify(page).includes("95,000"), "the excluded wording is not published");
   assert.match(String(page.body), /Held: /);
   assert.ok(String(page.body).includes("A kept remark."), "the change on a live passage is shown");
   assert.ok(!String(page.body).includes("A mixed remark.") && !String(page.body).includes("The mixed why."), "no wording or why of the mixed item is published, not even its live line");

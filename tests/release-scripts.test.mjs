@@ -7,6 +7,11 @@ import test from "node:test";
 
 import { withBlock } from "../scripts/skills-integration.mjs";
 import { forkState, PACKAGE_INTEGRITY, PRODUCT, prBody, releaseNotes, sha, startMock, TOKEN, writePackage } from "./fixtures/github-mock.mjs";
+import { disableGitAutoMaintenance } from "./git-env.ts";
+
+// Every git these tests start, directly or through a script, runs without a detached `git maintenance` that could still be
+// writing into a temp repo while the test removes it (ENOTEMPTY, CC-230).
+disableGitAutoMaintenance();
 
 const source = resolve(import.meta.dirname, "..");
 /** A vendored fork snapshot (phase B, skills-delivery §9) that the mock's release brain-v1.0.0 matches; its range admits every version the tests use. */
@@ -1430,6 +1435,18 @@ test("merge-ready stays red on a stacked PR until its base is main (decision 004
   const status = readFileSync(join(root, "status"), "utf8");
   assert.match(status, /^state=failure$/m);
   assert.match(status, /base is claude\/CC-1-below: merge the PR below first, then retarget this one to main/);
+});
+
+test("a commit in the release scripts' tests starts no background git maintenance (CC-230)", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "ultimate-brain-git-env-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  command(root, ["init", "-q", "-b", "main"]);
+  writeFileSync(join(root, "note.md"), "one\n");
+  command(root, ["add", "-A"]);
+  const commit = spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "-m", "one"], { cwd: root, encoding: "utf8", env: { ...process.env, GIT_TRACE: "1" } });
+  assert.equal(commit.status, 0, commit.stderr);
+  assert.match(commit.stderr, /trace: built-in: git commit/);
+  assert.doesNotMatch(commit.stderr, /maintenance run/);
 });
 
 test("the pre-commit hook refuses a staged edit of a vendored skill file and accepts a whole vendored release (skills-delivery §9.3)", (t) => {

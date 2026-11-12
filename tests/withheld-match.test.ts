@@ -12,7 +12,7 @@ const NOW = "2026-12-10T09:00:00Z";
 const SYNC = "mtg-8c4n2p7w";
 const PROJECT = "prj-9x4t1b7e";
 const LIVE = `Works on the data platform. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]`;
-const EXCLUDED = `Was offered 95k. ^[src-ex1a3b4c#¶2:${passageHash("Pricing was 95k.")}]`;
+const EXCLUDED = `Was offered 95,000. ^[src-ex1a3b4c#¶2:${passageHash("Pricing was 95,000.")}]`;
 
 async function noteNew(dir: string, notes: unknown[], ...extra: string[]) {
   const file = join(dir, "..", `in-${Math.random().toString(36).slice(2)}.json`);
