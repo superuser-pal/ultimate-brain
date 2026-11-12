@@ -175,6 +175,7 @@ test("status on a fresh brain: no check passes, nothing recorded, template versi
   assert.deepEqual(data.setup, {
     checks: { git_identity: false, remote: false, databases: false, drop_folder: false, language: false, owner_person: false },
     recorded: { "notion-mcp": null, "minutes-prompt": null, "brain-assistant": null, seeding: null, "first-value": null, schedule: null },
+    first_value: null,
     template_version: null,
     required: { done: 0, total: 9 },
     next: "git_identity",
@@ -219,7 +220,7 @@ test("status counts each check and recorded step, and next walks setup's order (
   await expectNext("seeding", 9, "seed your work");
   await logSetup(target, "2026-12-10T09:40:00Z", ["step=seeding", "result=done", "notes=12", "documents=3"]);
   await expectNext("first-value", 9, "check first value");
-  await logSetup(target, "2026-12-10T09:50:00Z", ["step=first-value", "result=done", "tasks=pass", "report=pass", "organised=fail"]);
+  await logSetup(target, "2026-12-10T09:50:00Z", ["step=first-value", "result=done", "tasks=pass", "report=pass", "organised=pass", "answer=pass"]);
   await expectNext("schedule", 9, "choose the schedule");
   await logSetup(target, "2026-12-10T09:55:00Z", ["step=schedule", "result=declined"]);
   const setup = await expectNext(null, 9, null);
@@ -234,6 +235,84 @@ test("status counts each check and recorded step, and next walks setup's order (
   assert.equal(done.data.setup.finished, true);
   assert.deepEqual([done.data.setup.next, done.data.setup.required], [null, { done: 9, total: 9 }]);
   assert.equal(done.human.split("\n")[0], "Owner: Test Owner");
+});
+
+/** A brain whose setup has reached first value (setup.md §2 step 7): every check passes, every step before it is recorded. */
+async function brainAtFirstValue(context: TestContext): Promise<{ home: string; target: string }> {
+  const { home, target } = await freshBrain(context);
+  await git(target, ["init", "-q"]);
+  await git(target, ["config", "user.name", "Test Owner"]);
+  await git(target, ["config", "user.email", "owner@example.test"]);
+  await git(target, ["remote", "add", "origin", "git@example.test:owner/brain.git"]);
+  await mkdir(join(home, "drop"));
+  await appendRules(target, `Drop folder: ${join(home, "drop")}\nLanguage: English`);
+  await connectDatabases(target);
+  await addOwnerPerson(target);
+  for (const [minute, step] of ["notion-mcp", "minutes-prompt", "brain-assistant", "seeding"].entries()) {
+    await logSetup(target, `2026-12-10T09:0${minute}:00Z`, [`step=${step}`, "result=done"]);
+  }
+  const { data } = await status(target, home);
+  assert.deepEqual([data.setup.next, data.setup.required], ["first-value", { done: 9, total: 9 }]);
+  return { home, target };
+}
+
+test("first value is recorded only by a passing line: a result=done line with a failed or missing check is unresolved (setup.md §5, §10; cli.md §5.2)", async (context) => {
+  const { home, target } = await brainAtFirstValue(context);
+  const expectUnresolved = async (firstValue: unknown) => {
+    const { data, human } = await status(target, home);
+    assert.equal(data.setup.recorded["first-value"], null);
+    assert.equal(data.setup.next, "first-value");
+    assert.deepEqual(data.setup.first_value, firstValue);
+    assert.equal(human.split("\n")[0], `Setup: 9 of 9 done · next: check first value · ${SET_UP}`);
+  };
+
+  // A result=done line with a check that failed.
+  await logSetup(target, "2026-12-10T10:00:00Z", ["step=first-value", "result=done", "tasks=pass", "report=pass", "organised=fail", "answer=pass"]);
+  await expectUnresolved({ at: "2026-12-10T10:00:00Z", tasks: "pass", report: "pass", organised: "fail", answer: "pass" });
+  // CC-188's form: three checks, no answer. Never read as success.
+  await logSetup(target, "2026-12-10T10:05:00Z", ["step=first-value", "result=done", "tasks=pass", "report=pass", "organised=pass"]);
+  await expectUnresolved({ at: "2026-12-10T10:05:00Z", tasks: "pass", report: "pass", organised: "pass", answer: null });
+  // An unresolved attempt as CC-213's contract writes it.
+  await logSetup(target, "2026-12-10T10:10:00Z", ["step=first-value", "result=failed", "reason=first-value-unresolved", "tasks=pass", "report=pass", "organised=fail", "answer=unsuitable"]);
+  await expectUnresolved({ at: "2026-12-10T10:10:00Z", tasks: "pass", report: "pass", organised: "fail", answer: "unsuitable" });
+  // Every check passes, but the line says failed: still unresolved.
+  await logSetup(target, "2026-12-10T10:15:00Z", ["step=first-value", "result=failed", "reason=first-value-unresolved", "tasks=pass", "report=pass", "organised=pass", "answer=pass"]);
+  await expectUnresolved({ at: "2026-12-10T10:15:00Z", tasks: "pass", report: "pass", organised: "pass", answer: "pass" });
+  // The user stopped after one check: the others are left out of the line and read null.
+  await logSetup(target, "2026-12-10T10:20:00Z", ["step=first-value", "result=failed", "reason=first-value-unresolved", "report=pass"]);
+  await expectUnresolved({ at: "2026-12-10T10:20:00Z", tasks: null, report: "pass", organised: null, answer: null });
+  // Any value but the four is reported as fail, and skip counts only for tasks.
+  await logSetup(target, "2026-12-10T10:25:00Z", ["step=first-value", "result=done", "tasks=pass", "report=skip", "organised=yes", "answer=PASS"]);
+  await expectUnresolved({ at: "2026-12-10T10:25:00Z", tasks: "pass", report: "fail", organised: "fail", answer: "fail" });
+
+  // A later passing line resolves it, and next moves to the schedule.
+  await logSetup(target, "2026-12-10T10:30:00Z", ["step=first-value", "result=done", "tasks=pass", "report=pass", "organised=pass", "answer=pass"]);
+  let { data, human } = await status(target, home);
+  assert.equal(data.setup.recorded["first-value"], "2026-12-10T10:30:00Z");
+  assert.equal(data.setup.next, "schedule");
+  assert.deepEqual(data.setup.first_value, { at: "2026-12-10T10:30:00Z", tasks: "pass", report: "pass", organised: "pass", answer: "pass" });
+  assert.equal(human.split("\n")[0], `Setup: 9 of 9 done · next: choose the schedule · ${SET_UP}`);
+
+  // The latest line is the state: a later unresolved attempt undoes it (setup.md §4.1).
+  await logSetup(target, "2026-12-10T10:35:00Z", ["step=first-value", "result=failed", "reason=first-value-unresolved", "tasks=fail", "report=pass", "organised=pass", "answer=pass"]);
+  ({ data } = await status(target, home));
+  assert.deepEqual([data.setup.recorded["first-value"], data.setup.next, data.setup.first_value.tasks], [null, "first-value", "fail"]);
+});
+
+test("a tasks check skipped passes first value only while the Tasks module is off (setup.md §10)", async (context) => {
+  const { home, target } = await brainAtFirstValue(context);
+  await logSetup(target, "2026-12-10T10:00:00Z", ["step=first-value", "result=done", "tasks=skip", "report=pass", "organised=pass", "answer=pass"]);
+  let { data } = await status(target, home);
+  assert.deepEqual([data.setup.recorded["first-value"], data.setup.next, data.setup.first_value.tasks], [null, "first-value", "skip"]);
+
+  await editConfig(target, (config) => { config.modules.tasks = false; });
+  ({ data } = await status(target, home));
+  assert.deepEqual([data.setup.recorded["first-value"], data.setup.next, data.setup.first_value.tasks], ["2026-12-10T10:00:00Z", "schedule", "skip"]);
+
+  // Turned on again, the skipped check no longer passes.
+  await editConfig(target, (config) => { config.modules.tasks = true; });
+  ({ data } = await status(target, home));
+  assert.deepEqual([data.setup.recorded["first-value"], data.setup.next], [null, "first-value"]);
 });
 
 test("status reads a step's latest setup line across month files: a later failure undoes an earlier done (setup.md §4.1)", async (context) => {

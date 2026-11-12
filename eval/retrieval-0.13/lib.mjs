@@ -26,9 +26,11 @@ export const matches = (fact, text) => fact.all.every((re) => new RegExp(re, "i"
 /**
  * Retrieval level: the first search's candidates (ids in rank order), cut to the first ten.
  * Returns { pass, reasons, rank } where `rank` is the rank at which the first sufficient set was complete (fact,
- * paraphrase), or the number of subjects with evidence in the first ten (clarify).
+ * paraphrase), or the number of subjects with evidence in the first ten (clarify). `signal` is the ids the CLI's `unresolved`
+ * names (spec/cli.md §5.13): a clarify case is also visible when it names two of its subjects (spec/retrieval.md §6.1); on any
+ * other kind it is reported as `signaled`, never counted for it.
  */
-export function scoreRetrieval(c, candidateIds) {
+export function scoreRetrieval(c, candidateIds, signal = []) {
   const top = candidateIds.slice(0, LIMIT);
   const reasons = [];
   for (const id of c.forbidden_evidence ?? []) if (top.includes(id)) reasons.push(`returned forbidden ${id}`);
@@ -39,14 +41,15 @@ export function scoreRetrieval(c, candidateIds) {
     if (ranks.length === 0) reasons.push("no sufficient evidence set in the first ten");
     // Prose alone (reported): a set of meetings and minutes only, so a typed field or a title can't carry the case.
     const prose = c.evidence_sets.some((set, i) => sets[i] !== null && set.every((id) => /^(mtg|src)-/.test(id)));
-    return { pass: reasons.length === 0, reasons, rank: ranks.length ? Math.min(...ranks) : null, sets, prose };
+    return { pass: reasons.length === 0, reasons, rank: ranks.length ? Math.min(...ranks) : null, sets, prose, signaled: signal.length > 0 };
   }
   if (c.kind === "clarify") {
     const seen = c.subjects.filter((s) => s.evidence.some((id) => top.includes(id))).length;
-    if (seen < 2) reasons.push(`evidence of ${seen} subject${seen === 1 ? "" : "s"} in the first ten, not two`);
-    return { pass: reasons.length === 0, reasons, rank: seen };
+    const named = c.subjects.filter((s) => signal.includes(s.id)).length;
+    if (seen < 2 && named < 2) reasons.push(`evidence of ${seen} subject${seen === 1 ? "" : "s"} in the first ten and ${named} named by the signal, not two`);
+    return { pass: reasons.length === 0, reasons, rank: seen, named };
   }
-  return { pass: reasons.length === 0, reasons, rank: null };
+  return { pass: reasons.length === 0, reasons, rank: null, signaled: signal.length > 0 };
 }
 
 /** Answer level: `answer` is { text, citations: [id…], abstained? }. Returns the reasons it fails (empty: it passes). */

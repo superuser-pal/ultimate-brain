@@ -66,7 +66,9 @@ test("query applies linked repository project context and explicit type selectio
   });
   const plainDecision = plain.json.data.candidates.find((candidate: { id: string }) => candidate.id === "dec-7k2m9q4x");
   const contextDecision = contextual.json.data.candidates.find((candidate: { id: string }) => candidate.id === "dec-7k2m9q4x");
-  assert.ok(Math.abs(contextDecision.score - (plainDecision.score + 3)) <= 0.0001 + 1e-9, "the boost adds 3 before rounding");
+  // The context's project is the subject when the question names none (step 3a): its note adds the attribute terms' sum (here
+  // every term, so step 3's sum again) and the boost adds 3, before rounding.
+  assert.ok(Math.abs(contextDecision.score - (2 * plainDecision.score + 3)) <= 0.0002 + 1e-9, "the subject's sum and the boost of 3");
 
   const views = await brain(["query", "--candidates", "acme", "--types", "view", ...BRAIN]);
   assert.equal(views.code, 0, views.stdout);
@@ -115,7 +117,7 @@ test("query reads the .brain that brain link writes: plain (no context), --proje
   assert.equal(contextual.json.data.context.project, "prj-9x4t1b7e");
   assert.equal(contextual.json.data.context.area, "area-2m7c4h8n");
   const find = (run: { json: { data: { candidates: Array<{ id: string; score: number }> } } }) => run.json.data.candidates.find((candidate) => candidate.id === "dec-7k2m9q4x")!.score;
-  assert.ok(Math.abs(find(contextual) - (find(plain) + 3)) <= 0.0001 + 1e-9, "the boost adds 3 before rounding");
+  assert.ok(Math.abs(find(contextual) - (2 * find(plain) + 3)) <= 0.0002 + 1e-9, "the project is the subject (step 3a) and the boost adds 3");
 
   // From inside the repo, without --repo: the CLI reads the current folder's .brain (cli.md §5.13 step 4).
   const previous = process.cwd();

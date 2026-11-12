@@ -2,6 +2,38 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.13.0 — 2026-11-12
+
+- CC-181 (#285): development only: the trust repair agreement is recorded as decision 0077 with 0.13.0's task plan; the weekly review moves to 0.14.0, and onboarding and the feature cutoff to 0.15.0.
+- CC-176 (#295): `brain query --read <id>` gives an agent a note's full text with what you excluded, haven't approved or scoped elsewhere left out, so answers no longer need to open the brain's files; `brain query --types memory` now returns only the memories `brain recall` would. A memory that was replaced is read only with `brain query --read <id> --historical`, and a note with an excluded line is returned to agents without its title, path, tags or headings, cited by its type and id until its cleanup is done. After upgrading, run `brain link` again in each linked repo: its copy of the instructions and of brain-query changes only then.
+- CC-177 (#293): A proposed change that rests on content you excluded, even beside content you kept, is no longer written to Review, and approving an older one closes it whole instead of adding any of its wording to a note; a value you type yourself is kept as your own correction.
+- CC-178 (#301): Answers no longer open or grep the brain's files: the brain-query skill searches and reads through `brain`, so what you excluded, haven't approved or scoped to another project stays out of answers.
+- CC-179 (#298): Every proposed change now names the passages it rests on, so a fact change, link, merge or supersession that rests on content you excluded is closed instead of applied, as is an older proposal whose input has excluded content, and each item of a Review row written before 0.8.0 is judged on its own.
+- CC-180 (#301): Ingest, tidying, catch-up and the assistant read what the brain holds only through `brain`, name the passages every change they propose rests on, and never write a statement from content you excluded.
+- CC-182 (#287): development only: one contract says what an answer, a summary, a citation and a proposal may rest on, and how the upgrade and the final acceptance are judged.
+- CC-183 (#299, #300): A report, view or index entry that rests, directly or through another report or view, on something you excluded, haven't approved or scoped elsewhere is withheld until it is rebuilt, even after its source is cleaned.
+- CC-184 (#297): `brain upgrade` updates your brain's instructions and skills and every linked project's copies in one step, keeps what each project wrote itself, and lists any project it could not finish; start fresh agent sessions afterwards.
+- CC-185 (#288): development only: the memory evaluation gains cases for old reports, metadata, historical memory, project and approval boundaries, exclusions made before apply, legacy proposals and a linked project's upgrade.
+- CC-147 (#241): development only: the 0.13.0 opening grill is recorded, covering weekly report history, task analysis, shared five-decision/five-target limits and targeted correction checks.
+- CC-199 (#292): development only: `scripts/task.mjs start <id> --resume` makes the worktree for a task whose first part merged while its row, still `in progress`, carries the rest.
+- CC-202 (#305): development only: the English retrieval-quality agreement is recorded as decision 0080, with its contract (spec/retrieval.md) and 0.13.0's retrieval tasks.
+- CC-203 (#310): development only: eighty audited English retrieval cases (facts, paraphrases, unresolved subjects, unknowns) are scored separately as first-search candidates and as final answers, with latency and output tokens measured against a matched baseline.
+- CC-204 (#318): development only: four small retrieval changes are measured alone and in combination on the frozen cases, and only those that help are chosen.
+- CC-205 (#320): A question in everyday English now finds the fact it asks about on the first search, in a note's text or its fields (`budgets` finds a budget, money for the rest of the year answers a budget question), and when the question could mean two projects the answer asks which one.
+- CC-200 (#303): development only: a harness runs every memory-evaluation case as a fresh native Claude Code or Codex session on a packaged CLI, keeps each session's trace and token use, and checks that no session read a brain file for an answer.
+- CC-201 (#304): development only: the memory evaluation's scorer recognises an honest "I couldn't find it" as an abstention, and no longer takes an answer that mentions "no recorded decision" beside its facts for one.
+- CC-190 (#296): `brain init` names one next step, "set up my brain"; a new brain starts with Documents, Reports and Tasks on; `brain status` shows how far setup has got and what's next; `brain upgrade` names the Notion migrations newer than your template.
+- CC-217 (#313): development only: decision 0082 gates each release on a native smoke run of 15 evaluation cases per agent, and moves the complete native acceptance in Claude Code and Codex to 1.0, once beta testers are live.
+- CC-218 (#317): a draft decision you reject in Review no longer appears in the project's decision log as accepted, and applying an old plan again no longer resets a revision the brain already drafted.
+- CC-214 (#312): the summary at the top of a Review page now lists each item by its letter and title with what happened to it (applied, rejected, closed, deferred with a link to the row it moved to, a revision on its way, or waiting for you), so you no longer work out from counts which items still need you; the first sync after upgrading updates the summary of each Review row still in Notion once.
+- CC-220 (#319): development only: CC-214's row moves to 0.13.0, the release its merged code ships in.
+- CC-221 (#321): brain status no longer counts setup's first-value check as done when one of its checks failed, and shows each check's outcome so setup can resume only what is left.
+- CC-222 (#322): development only: CC-221's row moves to 0.13.0, the release its merged code ships in.
+- CC-223 (#323): development only: the memory evaluation's scorer no longer counts an answer that restates or denies the question ("nothing says whether the dispatchers prefer SMS") as stating the forbidden fact, and reads "I couldn't establish" as an honest unknown.
+- CC-224 (#324): development only: two observations from 0.13.0's native smoke run, accepted by the user as not holding the release, are recorded in the backlog.
+
+Skills: ultimate-brain-skills 1.6.0 (sha256-eedfe9042341a426a37bf5f93867dd148277d32ec6bb0e2cb936fde09e18bbff)
+
 ## 0.12.0 — 2026-11-09
 
 - CC-146 (#238): development only: the 0.12.0 opening grill is recorded, covering scoped memory, work handovers, an initial 800-token hot-context budget and surgical TypeScript retrieval reuse.
