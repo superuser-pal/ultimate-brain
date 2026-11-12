@@ -1,10 +1,10 @@
 # Guided setup (contract, decision 0078)
 
-**Status:** contract for release 0.14.0 (CC-188). Built by CC-190 (the CLI side), CC-191 (the `brain-setup` skill and the skill changes it needs, in one fork release: brain-setup, brain-connect-notion, Ultimate Assistant's seeding, brain-ingest's use of `track`, brain-catch-up's first-meeting line, brain-notion-change's template version), CC-192 (the `repository` field of `package.json`) and CC-189 (the Notion template); measured by CC-193. Written by Claude Code.
+**Status:** contract for release 0.14.0 (CC-188). Built by CC-190 (the CLI side), CC-191 (the `brain-setup` skill and the skill changes it needs, in one fork release: brain-setup, brain-connect-notion, Ultimate Assistant's seeding, brain-ingest's use of `track`, brain-catch-up's first-meeting line, brain-notion-change's template version), CC-192 (the `repository` field of `package.json`) and CC-189 (the Notion template); measured by CC-193. The response style (0081: §4's row, §7 item 13, §7.1) is CC-209's contract, built by CC-210 (the CLI) and CC-211 (the setup item and the chat change). First value (§2, §3, §4.1, §5, §10, §12) was corrected by CC-213: an attempt is not a pass. Written by Claude Code.
 
-How this file fits: it holds the whole first-time setup of a new user: what the `brain-setup` skill does and in what order, what it checks and how, what it stores and where, what seeding writes, how first value is checked, and the setup report. Command behaviour is in [cli.md](cli.md) (§5.1 `init`'s next step, §5.2 `status`'s `setup` block, §5.3 `notion.template_version`, §5.15 `upgrade`'s Notion migrations), and file formats are in [schema.md](schema.md) (§4 area `track`, §12 the new-brain modules and the new `brain.json` keys). What a read, an answer or a proposal may rest on is [eligibility.md](eligibility.md), and nothing here changes it.
+How this file fits: it holds the whole first-time setup of a new user: what the `brain-setup` skill does and in what order, what it checks and how, what it stores and where, what seeding writes, how first value is checked, and the setup report. Command behaviour is in [cli.md](cli.md) (§5.1 `init`'s next step, §5.2 `status`'s `setup` block, §5.3 `notion.template_version` and `settings.style`, §5.3.1 the style block, §5.15 `upgrade`'s Notion migrations), and file formats are in [schema.md](schema.md) (§4 area `track`, §12 the new-brain modules and the new `brain.json` keys). What a read, an answer or a proposal may rest on is [eligibility.md](eligibility.md), and nothing here changes it.
 
-**Decisions:** [0078](../decisions/0078-onboarding-and-early-access-in-0-14-0.md) (binding: §1 to §6); [0079](../decisions/0079-lean-minutes-and-follow-ups-as-tasks.md) (the minutes format the minutes check uses, and the follow-ups that become Tasks); 0015 (Notion through the MCP), 0037 (identities), 0048 (modules), 0061 (minimal per-area tracking preferences), 0064 and 0072 (Ultimate Assistant guides seeding), 0059 (project adoption), 0070 (lifecycle of structure notes), 0031 (owner rulings).
+**Decisions:** [0078](../decisions/0078-onboarding-and-early-access-in-0-14-0.md) (binding: §1 to §6); [0079](../decisions/0079-lean-minutes-and-follow-ups-as-tasks.md) (the minutes format the minutes check uses, and the follow-ups that become Tasks); [0081](../decisions/0081-response-style-working-principles-and-plain-writing.md) (the response style: §3 to §6); 0015 (Notion through the MCP), 0037 (identities), 0048 (modules), 0061 (minimal per-area tracking preferences), 0064 and 0072 (Ultimate Assistant guides seeding), 0059 (project adoption), 0070 (lifecycle of structure notes), 0031 (owner rulings).
 
 **The user's choices of 2026-11-10, filling gaps 0078 leaves** (asked through the coordinator during CC-188; each was the recommended option):
 1. **Per-area tracking preferences** are an optional `track` list in the area note's frontmatter, in Git only, with no Notion property in 0.14.0; seeding proposes it, the ingest uses it, and Ultimate Assistant's thresholds stay fixed (§11).
@@ -37,12 +37,12 @@ A new user duplicates the published Notion template (0078 §1, CC-189), installs
 | 4b | **Brain Assistant**, walked through and checked (§6.4) | `brain-assistant` | the check passes |
 | 5 | **Identities** (0037; brain-connect-notion step 6) | `identities` | `owner.person` is set |
 | 6 | **Seeding** (§8) | `seeding` | the preview was answered and its writes published, or the user said there is nothing to seed |
-| 7 | **The first-value check** (§10) | `first-value` | the three checks were run (passed or not, §10) |
-| 8 | **The scheduled catch-up**, offered only after step 7 (§7, item 12) | `schedule` | the user chose on (and `brain schedule install` succeeded) or off |
-| — | **The setup report**, offered (§12) | `finished` | always the last line |
+| 7 | **The first-value check** (§10) | `first-value` | first value passes: every applicable check passes (§10). Running the checks records an attempt, not a pass |
+| 8 | **The scheduled catch-up**, offered only after first value passes (§7, item 12) | `schedule` | the user chose on (and `brain schedule install` succeeded) or off |
+| — | **The setup report**, offered (§12) | `finished` | always the last line, written only once steps 1 to 8 are done, so never while first value is unresolved |
 
 - **Required items stop setup** until done (0078 §2): setup says what is missing and how to fix it, and stops there; asked again later, it resumes at that step. There is **no skip list**: a required item can't be skipped, and an optional one is a setting whose value is recorded (§7), so it never counts as unfinished.
-- **The order is fixed** because each step needs the one before: the settings screen chooses the remote and the drop folder that later steps use; Notion is connected before seeding (0078 §3); first value needs seeded material; the schedule is offered only once first value works (0078 §2).
+- **The order is fixed** because each step needs the one before: the settings screen chooses the remote and the drop folder that later steps use; Notion is connected before seeding (0078 §3); first value needs seeded material; the schedule is offered only once first value passes (0078 §2).
 
 ## 3. Resume (0078 §2)
 
@@ -50,8 +50,9 @@ On "set up my brain", the skill runs `brain status --json` and reads its `setup`
 
 1. **Re-checks online** what the block can't see and is cheap to re-check: the Notion MCP reaches Brain Data (step 3), and, when `gh` is `on`, the remote is private (`gh repo view --json isPrivate`). A recorded step whose online check now fails is unfinished again.
 2. **Never re-runs a by-hand check that is recorded as done** (the minutes prompt, Brain Assistant): the `setup` line is the proof (choice 2). The user can ask for it again ("check the minutes prompt again").
-3. **Starts at the first step of §2 that is unfinished**, saying in one line what is already done: "Setup: 6 of 9 done. Next: paste the minutes prompt." A step before it that fails a check (a Git identity removed since) is fixed first.
-4. When every step is done, says so and offers only what is left: the setup report if it was never offered, the schedule if it was never answered.
+3. **Resumes an unresolved first value check by check** (§10), from the block's `first_value`: the checks that passed in the latest `first-value` line are kept, and only the others run again (`fail`, `unsuitable`, or not run yet). All four run again when a `seeding` line is newer than that `first-value` line, since the material changed; `tasks` runs again when it was `skip` and the Tasks module is now on.
+4. **Starts at the first step of §2 that is unfinished**, saying in one line what is already done: "Setup: 6 of 9 done. Next: paste the minutes prompt." A step before it that fails a check (a Git identity removed since) is fixed first.
+5. When every step is done, says so and offers only what is left: the setup report if it was never offered, the schedule if it was never answered.
 
 A brain made before 0.14.0 that has no `setup` line and whose `databases` and `owner_person` checks pass (§5) is treated as set up (`status` shows no setup line, cli.md §5.2); "set up my brain" on it runs §3 normally and records the steps it checks, so the user can use it to check an older brain.
 
@@ -63,6 +64,7 @@ A brain made before 0.14.0 that has no `setup` line and whose `databases` and `o
 | The drop folder | the line `Drop folder: <path>` under "My rules" in the brain's `AGENTS.md` (as brain-ingest reads it today) | the skill, after the settings screen's yes |
 | The language notes are written in | the line `Language: <name>` under "My rules" in the brain's `AGENTS.md` | the skill, after the settings screen's yes |
 | Publish, push, recall | `brain.json` `settings.publish`, `settings.push`, `settings.recall` (schema §12) | `brain config set` |
+| The response style (0081) | `brain.json` `settings.style` (schema §12), and the style block it writes in the brain's `AGENTS.md` (cli.md §5.3.1) | `brain config set` |
 | MarkItDown, `gh`, the schedule (optional, choice 2) | `brain.json` `settings.markitdown`, `settings.gh`, `settings.schedule`: `on` or `off`; absent means `off` (schema §12) | `brain config set` |
 | Modules | `brain.json` `modules` (schema §12) | `brain modules on|off` |
 | The template version | `brain.json` `notion.template_version` (schema §12) | brain-connect-notion, with `brain config set` |
@@ -71,7 +73,7 @@ A brain made before 0.14.0 that has no `setup` line and whose `databases` and `o
 | The remote | the brain repository's `origin` | `gh repo create --private` or the user (§7) |
 | The Notion connection | the agent's own MCP configuration | the user, following the skill's steps |
 
-The `AGENTS.md` lines are written under the `## My rules` heading, which follows the rules block's end marker `<!-- ultimate-brain:rules:end -->` (upgrades never touch anything after that marker): each on its own line, after the heading's comment, replacing an earlier line of the same name anywhere after the marker. When the heading is missing, the skill adds `## My rules` at the end of the file first. With the rules block's markers missing (cli.md §5.15 step 1), the skill writes nothing, says why, and setup stops at step 2 until the markers are restored; they are committed on their own (`rules: drop folder and language`).
+The `AGENTS.md` lines are written under the `## My rules` heading, which follows the rules block's end marker `<!-- ultimate-brain:rules:end -->` (upgrades never touch anything after that marker except the style block, which the CLI keeps right after it, cli.md §5.3.1): each on its own line, after the heading's comment, replacing an earlier line of the same name anywhere after the marker, except between the style markers (`<!-- ultimate-brain:style:start -->` to `<!-- ultimate-brain:style:end -->`, cli.md §5.3.1): that block is the CLI's, and its lines are never read or replaced as "My rules" lines. When the heading is missing, the skill adds `## My rules` at the end of the file first. With the rules block's markers missing (cli.md §5.15 step 1), the skill writes nothing, says why, and setup stops at step 2 until the markers are restored; they are committed on their own (`rules: drop folder and language`).
 
 ### 4.1 The `setup` log line
 
@@ -80,8 +82,8 @@ The `AGENTS.md` lines are written under the `## My rules` heading, which follows
 ```
 
 - `<step>` is one of §2's: `started`, `prerequisites`, `settings`, `notion-mcp`, `connect`, `minutes-prompt`, `brain-assistant`, `identities`, `seeding`, `first-value`, `schedule`, `finished`, and `first-meeting`, written once by brain-catch-up after setup (§10.1), which `brain status` doesn't read. `started` is written once, when the skill first runs in a brain with no `setup` line.
-- `result=failed` adds `reason=<code>` from §12.2; `declined` is used only by `schedule` (the user chose off). A step can be logged several times; the latest line of a step is its state.
-- Extra keys: `prerequisites` adds `notion_ai=yes|no custom_agents=yes|no` (the plan, as the user answered); `first-value` adds `tasks=pass|fail|skip report=pass|fail organised=pass|fail` (`skip` with Tasks off, §10); `seeding` adds `notes=<n> documents=<n>`.
+- `result=failed` adds `reason=<code>` from §12.2; `declined` is used only by `schedule` (the user chose off). `first-value` is `done` only when first value passes, else `failed` with `reason=first-value-unresolved` (§10). A step can be logged several times; the latest line of a step is its state.
+- Extra keys: `prerequisites` adds `notion_ai=yes|no custom_agents=yes|no` (the plan, as the user answered); `first-value` adds `tasks=`, `report=`, `organised=` and `answer=`, each `pass`, `fail` or `unsuitable` (`tasks` also `skip`, with Tasks off), and leaves out a check not run yet (§10); `seeding` adds `notes=<n> documents=<n>`.
 - Values carry no names, paths, ids or text (§12.1).
 
 ## 5. The offline checks (`brain status`, cli.md §5.2)
@@ -93,12 +95,14 @@ The `AGENTS.md` lines are written under the `## My rules` heading, which follows
 | `git_identity` | `git config user.name` and `git config user.email`, read in the brain folder, are both non-empty | yes |
 | `remote` | the brain is a Git repository with a remote `origin` that has a URL (`git remote get-url origin`). Whether it is private is checked online (§3) | yes |
 | `databases` | every `notion.databases` key of Core and of each module on is non-empty, and, with Tasks on, `notion.tasks.database` too | yes |
-| `drop_folder` | `AGENTS.md` has, after the line `<!-- ultimate-brain:rules:end -->` and outside HTML comments, a line starting with `Drop folder:` (the first one counts; §4) and its path (`~` expanded, backticks removed) is an existing folder | yes |
+| `drop_folder` | `AGENTS.md` has, after the line `<!-- ultimate-brain:rules:end -->` and outside HTML comments, a line starting with `Drop folder:` (the first one counts; §4) and its path (`~` expanded, backticks removed) is an existing folder. A relative path is read from the brain folder, and the `Drop folder:` and `Language:` lines may be indented | yes |
 | `language` | `AGENTS.md` has, read the same way, a line starting with `Language:` | yes |
 | `owner_person` | `owner.person` is set and names an existing person note | yes |
 | `template_version` | reported as its value, or `null` (unknown) | no |
 
 The other three of the nine required items (0078 §2) are the recorded steps `notion-mcp`, `minutes-prompt` and `brain-assistant` (§4.1, latest line `result=done`). So the count is: the six counted checks that pass, plus those three recorded as done, out of **9**.
+
+**`first-value` is recorded as done only when its latest line passes** (§10): `result=done`, `report`, `organised` and `answer` each `pass`, and `tasks` `pass`, or `skip` while the Tasks module is off. Any other latest line leaves first value unresolved, so `next` stays `first-value` and the schedule is not offered. That includes a `result=done` line with a `fail` or without one of the four checks, as CC-188's contract wrote it: it is never read as success.
 
 **Finished** when a `setup` line with `step=finished` exists; or, for a brain with no `setup` line at all, when `databases` and `owner_person` pass: a brain connected to Notion before 0.14.0 (§3), which may have no `Language:` or `Drop folder:` line, since nothing asked for them then. `required` and `next` are computed the same way whether or not setup is finished; once it is, they are information only, and `status` shows no setup line. **Next** is the first item not done in §2's order (a check that fails, or a step not recorded as done), as cli.md §5.2 lists them.
 
@@ -160,11 +164,25 @@ One screen, every item with its default filled in and a one-line explanation. Th
 | 10 | MarkItDown | `on` when `markitdown` is found, else `off` | "Turns PDFs, Word files and slides into exact text, so quotes are exact; off, the agent reads files itself." | optional | `settings.markitdown` |
 | 11 | `gh` | `on` when `gh auth status` passes, else `off` | "Lets setup create the private remote and file your setup report for you." | optional | `settings.gh` |
 | 12 | Scheduled catch-up | `off`; asked in step 8, after first value | "Catch-up runs on its own at set times; it only takes in what you've marked ready." | optional | `settings.schedule` |
+| 13 | How the brain talks to you (0081) | Standard | "Standard, Simple (plain words, short answers, the answer first) or Custom (you choose how much it explains, how long and how direct it is); change it any time by asking." | optional | `settings.style` |
 
-- Items 1 to 9 are on the screen in step 2; item 12 is shown there as "asked after your first check" and answered in step 8, where `on` runs brain-catch-up's "Run on a schedule" (its times, days, model and allow list, cli.md §5.21) and then writes `settings.schedule`.
+- Items 1 to 9 and 13 are on the screen in step 2; item 12 is shown there as "asked after your first check" and answered in step 8, where `on` runs brain-catch-up's "Run on a schedule" (its times, days, model and allow list, cli.md §5.21) and then writes `settings.schedule`.
 - The rest of the required items of 0078 §2 are steps, not values: the Notion MCP connection (step 3), the connection to the brain's databases (step 4), identities (step 5), the minutes prompt and Brain Assistant (steps 4a, 4b). The screen lists them under "Still to do after this screen", one line each, so the user sees the whole setup once.
 - **Optional means a value, not a skip** (0078 §2): `off` is recorded and never asked again; the user changes it by asking ("turn on markitdown").
+- **Item 13, the response style** (0081): Standard writes `{ "preset": "standard" }`; Simple writes `{ "preset": "simple" }`; Custom asks the three dials in one message, each with its levels and what they do (schema §12, cli.md §5.3.1), and writes the three chosen values with no preset. With Custom chosen, the screen shows the three choices on the item's line. The new style applies from the next message of the setup, as it does after a change in chat.
 - Applying the screen: set the Git identity (with the user's yes on the scope, global or this repository), create the remote (`gh repo create <name> --private --source <brain folder> --push` with `gh` on; else wait until `origin` exists), create the drop folder, write the two `AGENTS.md` lines (§4), `brain config set` each setting, `brain modules on|off` each module change, commit, push. Then `brain log setup - step=settings result=done`.
+
+### 7.1 Changing the response style later (0081 §5)
+
+The user changes the style in any later session in the brain by asking, in their own words. The agent:
+1. writes the change with `brain config set` (cli.md §5.3):
+   - the whole style ("talk to me more simply", "go back to normal", "use Standard"): `settings.style` set to `{ "preset": "simple" }` or `{ "preset": "standard" }`, which clears every dial set before;
+   - one dial ("shorter answers", "more detail", "explain less", "skip the jargon", "get to the point"): `settings.style.<dial>` set to that level (`'"short"'`), the other keys kept;
+   - a request it can't map to one dial or preset gets one question with the choices, and nothing is written before the answer;
+2. commits `brain.json` and `AGENTS.md` when they changed (`settings: response style`), and pushes per `settings.push`;
+3. answers in one line, in the new style: what changed, and `Linked folders follow the next time brain link runs there, or brain upgrade for a linked project registered in the brain.` when the brain has linked repos or folders. A linked folder takes the change only when its block is written again (cli.md §5.3.1): by `brain link`, and from 0.13.0 by `brain upgrade` for a project in `brain.json` `repos`, since that upgrade writes what `brain link` would (0077 §4, CC-184).
+
+The new style applies from the agent's next reply. A request made in a linked folder is not written there (the brain is read-only from it): the agent says to ask in a session in the brain. The always-on reply rules and working principles in the rules block (0081 §1, §2) are not part of the style and don't change with it.
 
 ## 8. Seeding (step 6; 0078 §3)
 
@@ -205,17 +223,30 @@ A folder or repo the user points to is adopted through 0.9.0's project adoption 
 
 ## 10. First value (step 7; 0078 §5)
 
-Every user's setup ends with the three checks of 0078 §5, **on a seeded document and a report on the user's main project, with no meeting needed**. The skill runs each, shows its evidence, and asks the user to judge the parts only they can ("are these your commitments?"):
+Every user's setup ends with the three checks of 0078 §5, **on a seeded document and a report on the user's main project, with no meeting needed**, and a fourth that walks the loop the brain is for: capture, review, a cited answer (0061's "fresh-user first capture, review and cited answer"; CC-213). The fourth adds to the three and replaces none. The skill runs each, shows its evidence, and asks the user to judge the parts only they can ("are these your commitments?"):
 
-| Check | What is done | Passes when |
-|---|---|---|
-| **Correct tasks** | the tasks the ingest created from one seeded document (§8.3; Tasks on), shown with their Project and Due | the tasks created are exactly the owner's own commitments in that document, with the right Project and due date, and none of someone else's; the user confirms |
-| **A report** | the user asks "report on <main project>" (brain-query report mode) | the report lands in Documents, linked from the project, citing the seeded document |
-| **The information organised** | the skill lists each note the seeding and the document's Review wrote, under its Area and Project | each note sits under the Area and Project the user expects, and no person appears twice; the user confirms |
+| Check | Key | What is done | Passes when |
+|---|---|---|---|
+| **Correct tasks** | `tasks` | the tasks the ingest created from one seeded document (§8.3; Tasks on), shown with their Project and Due | the tasks created are exactly the owner's own commitments in that document, with the right Project and due date, and none of someone else's; the user confirms |
+| **A report** | `report` | the user asks "report on <main project>" (brain-query report mode) | the report lands in Documents, linked from the project, citing the seeded document |
+| **The information organised** | `organised` | the skill lists each note the seeding and the document's Review wrote, under its Area and Project | each note sits under the Area and Project the user expects, and no person appears twice; the user confirms |
+| **A cited answer** | `answer` | the user accepts one item the ingest read from a seeded document, in that document's Review row (§8.3), and it is applied as usual (brain-apply); then the user asks one question about it that they would really ask, and the agent answers (brain-query), showing the answer and the source passage it cites | the answer rests on the applied item and cites the seeded document; the user confirms that the answer is useful and that the passage supports it |
 
-- Each check passes or fails on its own; a failure names what was wrong and is not retried in setup (it goes in the report, §12). Step 7 is done when the three were run: `brain log setup - step=first-value result=done tasks=pass report=pass organised=fail`.
-- With Tasks off (the user turned it off on the screen), the first check is `tasks=skip` and the report says so.
-- **The release gate** (CC-193) runs the same three checks on a synthetic persona with one meeting, in a clean duplicate of the template; it is CC-193's contract, not the skill's.
+A published report that cites a document does not by itself show a useful, supported answer: that is the fourth check's job.
+
+**An attempt is not a pass.** Running the checks records an attempt: one `first-value` line (§4.1), written when the attempt's checks are done or the user stops, with each check's own outcome:
+- `pass`: the check passed, and the user confirmed what only they can judge.
+- `fail`: it ran and something was wrong; the skill names what ("this task is someone else's commitment", "the person appears twice").
+- `unsuitable`: the material can't show it: no seeded document holds a commitment of the owner, there is no main project to report on, a document's Review row holds no item to accept, or no useful question can be answered from the accepted item. The skill says why. **It never invents** a commitment, a proposal, a Review item or an answer to pass a check.
+- `skip`: `tasks` only, with the Tasks module off (the user turned it off on the screen). It is shown as `skipped (Tasks off)`, never as a pass.
+- A check not run in this attempt (the user stopped first) is left out of the line.
+
+**First value passes** only when every applicable check passes: `report`, `organised` and `answer` are `pass`, and `tasks` is `pass` or, while Tasks is off, `skip`. The line is then `result=done`: `brain log setup - step=first-value result=done tasks=pass report=pass organised=pass answer=pass`. Otherwise first value is **unresolved**, and the line is `result=failed` with the checks as they stand: `brain log setup - step=first-value result=failed reason=first-value-unresolved tasks=pass report=pass organised=fail answer=unsuitable`.
+
+- **Unresolved, setup stops at step 7**, as it does at a required item (§2). The skill shows one line per check not passed: what failed or could not be shown, the smallest next action (move a note under its Area, choose another document that holds one of your commitments, decide one item in Review) and how to resume (say "set up my brain" again). The schedule (step 8) is not offered, and no `finished` line is written.
+- **Resume** (§3) runs only the checks not passed and carries the passed ones into the new line unchanged, unless the material or the Tasks module changed (§3 step 3). The user can ask for any check again ("check the report again"). After the user's fix, the attempt that passes every applicable check is `result=done`, and setup goes on to step 8.
+- **The setup report** can be shown at any point (§12), also while first value is unresolved. Showing or filing it marks nothing done and unlocks nothing: only a passing `first-value` line lets step 8 be offered.
+- **The release gate** (CC-193) runs the same four checks on a synthetic persona with one meeting, in a clean duplicate of the template; its record names the reviewed item, the question, the answer and its supporting passage. It is CC-193's contract, not the skill's.
 
 ### 10.1 The first meeting (0078 §5, 0079)
 
@@ -226,7 +257,7 @@ First meeting in: 3 tasks for you (1 from a quick follow-up), 4 notes, 2 people 
 ```
 
 - Counted from that meeting's ingest: the owner's Tasks created, of which the quick follow-ups that became Tasks (0079 §4); notes written; attendees matched to existing people and new person notes.
-- "First" is read from the log: a `setup` line with `step=first-value` and none with `step=first-meeting`. A brain with no `setup` line never shows it.
+- "First" is read from the log: `first-value` recorded as done (§5: its latest `setup` line with `step=first-value` passes) and no line with `step=first-meeting`. A `first-value` line from an unresolved attempt (`result=failed`, or a check not passed) does not count, so a catch-up while first value is unresolved shows nothing. A brain with no `setup` line never shows it.
 
 ## 11. Minimal per-area tracking preferences (0061, choice 1)
 
@@ -237,7 +268,7 @@ First meeting in: 3 tasks for you (1 from a quick follow-up), 4 notes, 2 people 
 
 ## 12. The setup report (0078 §6)
 
-At the end (and when the user asks "show my setup report"), the skill writes the report and shows it **whole**, then asks: "Send this to the product as a `beta-setup` issue, to help fix setup? Nothing else is sent." It files **only after a yes**: with `settings.gh` `on`, `gh issue create --repo <product repository> --label beta-setup --title "Setup report: <CLI version>, <agent>" --body <report>`; with `gh` off, it gives the text and the repository's new-issue link for the user to paste. The product repository is the one named by the `repository` field of `<product.path>/package.json` (added by CC-192). No telemetry: nothing is sent any other way.
+At the end (and when the user asks "show my setup report", at any point, also while first value is unresolved, §10), the skill writes the report and shows it **whole**, then asks: "Send this to the product as a `beta-setup` issue, to help fix setup? Nothing else is sent." It files **only after a yes**: with `settings.gh` `on`, `gh issue create --repo <product repository> --label beta-setup --title "Setup report: <CLI version>, <agent>" --body <report>`; with `gh` off, it gives the text and the repository's new-issue link for the user to paste. The product repository is the one named by the `repository` field of `<product.path>/package.json` (added by CC-192). No telemetry: nothing is sent any other way.
 
 ### 12.1 Fields (no names, no content)
 
@@ -254,16 +285,17 @@ Time: 52 min (first setup line to the last)
 4b brain-assistant: done (custom agent)
 5 identities: done
 6 seeding: done (14 notes, 4 documents)
-7 first value: tasks pass · report pass · organised fail
+7 first value: passed on attempt 2 · tasks pass · report pass · organised pass · answer pass
 8 schedule: off
 ```
 
 - From the `setup` log lines (§4.1), `brain status` and the agent's own name; counts and codes only.
+- Step 7 is `passed on attempt <n>` or `unresolved after <n> attempts`, counting its `first-value` lines, then each check from the latest line (`not run` for a check left out, `skip (Tasks off)`). While first value is unresolved, step 8 is `not offered (first value unresolved)`.
 - **Never:** a person, org, project, area or document name, a path, a Notion id or URL, an email, the user's words, an error message as printed (only its code, §12.2). The skill checks the text against the brain's titles and aliases before showing it, and drops any line that matches one.
 
 ### 12.2 Reason codes
 
-`missing-prerequisite`, `notion-ai-missing`, `notion-unreachable`, `brain-data-not-found`, `database-missing`, `shape-wrong` (minutes), `assistant-reads-outside` (Brain Assistant), `remote-failed`, `push-failed`, `user-stopped`, and a CLI error code (cli.md §3.5) when a command failed.
+`missing-prerequisite`, `notion-ai-missing`, `notion-unreachable`, `brain-data-not-found`, `database-missing`, `shape-wrong` (minutes), `assistant-reads-outside` (Brain Assistant), `remote-failed`, `push-failed`, `user-stopped`, `first-value-unresolved` (first value, §10), and a CLI error code (cli.md §3.5) when a command failed.
 
 ## 13. Without Notion AI (0078 §6)
 
@@ -277,4 +309,4 @@ Time: 52 min (first setup line to the last)
 
 ## 14. Out of scope (0078)
 
-An interactive `brain init`; a new diagnostic command (status's `setup` block and the skill's checks are the diagnostics); telemetry; a synthetic sample meeting in the template (§6.3's sample text lives in the skill and is deleted after the check); rich profiles and specialised types (0030); the template gallery and the acquisition funnel (1.0); how the template link reaches testers, the npm channel and the number of testers (1.0's opening grill); any operation on the user's brain or Notion workspace without an explicit yes.
+An interactive `brain init`; a new diagnostic command (status's `setup` block and the skill's checks are the diagnostics); telemetry; a synthetic sample meeting in the template (§6.3's sample text lives in the skill and is deleted after the check); rich profiles and specialised types (0030); the template gallery and the acquisition funnel (1.0); how the template link reaches testers, the npm channel and the number of testers (1.0's opening grill); any operation on the user's brain or Notion workspace without an explicit yes. From 0081: the style changing text a command returns (post-1.0), a style per skill or per agent, and a style switched on per session.

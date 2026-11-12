@@ -7,10 +7,11 @@ import { test } from "node:test";
 
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
 import { excludableDecision } from "./exclusion-fixture.ts";
-import { brain, fixtureCopy } from "./helpers.ts";
+import { brain, fixtureCopy, withPassages } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const AFTER = "2026-12-10T09:10:00Z";
+const LATER = "2026-12-10T09:20:00Z";
 const SYNC = "mtg-8c4n2p7w";
 const PROJECT = "prj-9x4t1b7e";
 const CONCEPT = "con-1s6t8e2b";
@@ -29,7 +30,7 @@ async function run(dir: string, args: string[], input?: unknown, now = NOW) {
   const extra: string[] = [];
   if (input !== undefined) {
     const file = join(dir, "..", `input-${Math.random().toString(36).slice(2)}.json`);
-    await writeFile(file, JSON.stringify(input));
+    await writeFile(file, JSON.stringify(args[0] === "proposal" && args[1] === "new" ? withPassages(input) : input));
     extra.push("--input", file);
   }
   return brain([...args, ...extra, "--brain", dir, "--now", now, "--json"]);
@@ -137,6 +138,24 @@ test("every item rejected closes the row; a rejected draft is archived", async (
   assert.equal(proposal.status, "closed");
   assert.equal(proposal.decision.action, "reject");
   assert.equal((await attributes(dir, draft.path)).lifecycle, "archived");
+  assert.deepEqual(await errors(dir), []);
+});
+
+test("a draft decision rejected in Review is in no section of the project's decision log; a superseded one stays (schema §16.2)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids, draft } = await published(dir);
+  const views = await run(dir, ["views"]);
+  assert.equal(views.code, 0, views.stdout);
+  const logPath = join(dir, "projects/acme-website/decision-log.md");
+  assert.match(await readFile(logPath, "utf8"), /Launch in March/, "while it waits in Review, the draft is in the history");
+  await submit(dir, id, decide(body, ids[2]!, "Reject"));
+  assert.equal((await attributes(dir, draft.path)).lifecycle, "archived");
+  const rebuilt = await run(dir, ["views"]);
+  assert.equal(rebuilt.code, 0, rebuilt.stdout);
+  const log = await readFile(logPath, "utf8");
+  assert.doesNotMatch(log, /Launch in March/, "a rejected draft is not a decision");
+  assert.doesNotMatch(log, new RegExp(draft.id), "nor is it in generated_from");
+  assert.match(log, /## Superseded\n- 2026-10-01 → 2026-12-03 — \[Use Firebase for auth\]/, "a superseded decision stays in the history");
   assert.deepEqual(await errors(dir), []);
 });
 
@@ -319,6 +338,37 @@ test("an Accept on an item that rests only on excluded evidence closes it stale 
   assert.equal(decisions[0].reason, "source_excluded");
 });
 
+test("an exclusion made after the render is caught by sync apply: an Accept closes a mixed change and a mixed draft whole, and an independent item applies (eligibility §4.2, §9.2)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { note: draft, exclude } = await excludableDecision(dir, SYNC, PROJECT, true); // the draft cites a live and an excluded passage
+  const { passageHash } = await import("../src/lib/selection.ts");
+  const live = `A kept remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]`;
+  const created = await run(dir, ["proposal", "new"], { proposals: [
+    { kind: "review_notes", source: SYNC, notes: [draft.id] },
+    { kind: "add_to_note", title: "Mixed", target: CONCEPT, content: `A mixed remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]\n\nThe price was 95k. ^[src-ex1a3b4c#¶2:${passageHash("Pricing was 95k.")}]`, why: "Said.", source: SYNC },
+    { kind: "add_to_note", title: "Live", target: CONCEPT, content: live, why: "Said.", source: SYNC },
+  ] });
+  assert.equal(created.code, 0, created.stdout);
+  const id = created.json.data.created[0].id as string;
+  const [item] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  await run(dir, ["sync", "record"], { records: [{ id, notion: PAGE, synced_at: NOW, published: item.published }] });
+  const body = item.body as string;
+  assert.ok(body.includes("A mixed remark."), "before the exclusion every item is shown");
+  const ids = [...body.matchAll(/^## \[[a-z]+ · (it-[0-9a-z]{8})\] (.+)$/gm)].map((m) => [m[1]!, m[2]!] as const);
+  await exclude(); // made after the page was published and the user read it
+  const accepted = ids.reduce((text, [itemId]) => decide(text, itemId, "Accept"), body);
+  const { results } = await submit(dir, id, accepted);
+  const outcome = ids.map(([itemId, heading]) => { const entry = results.find((result) => result.item_id === itemId); return [heading, entry?.result, entry?.reason ?? null]; });
+  assert.deepEqual(outcome, [
+    ["Changes: Row-level security", "closed", "source_excluded"],
+    ["Changes: Row-level security", "applied", null],
+    ["Creates: Pricing call", "closed", "source_excluded"],
+  ]);
+  assert.equal((await attributes(dir, draft.path)).lifecycle, "archived", "the mixed draft is not reviewed");
+  const concept = await readFile(join(dir, "knowledge/references/row-level-security.md"), "utf8");
+  assert.ok(concept.includes("A kept remark.") && !concept.includes("A mixed remark.") && !concept.includes("95k"));
+});
+
 test("Request revision is recorded, the new draft replaces the stored proposal with the previous wording kept, and only that section is re-rendered", async (context) => {
   const dir = await fixtureCopy(context);
   const { id, body, ids } = await published(dir);
@@ -343,6 +393,32 @@ test("Request revision is recorded, the new draft replaces the stored proposal w
   assert.match(section, /Decision: Pending/);
   assert.equal(item.body, null, "the page body is never rewritten");
   assert.equal(Object.keys(item.review_published_after["@review"].items).length, 4);
+  assert.deepEqual(await errors(dir), []);
+});
+
+test("applying an old plan again after the revision was drafted is a no-op (STALE_PLAN); a request read after the draft is recorded (cli §5.27)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids } = await published(dir);
+  const asked = decide(body, ids[0]!, "Request revision").replace(new RegExp(`(## \\[[a-z]+ · ${ids[0]}\\][\\s\\S]*?Decision: Request revision)`), "$1\nRevision request: make it April");
+  const { plan } = await submit(dir, id, asked);
+  const revised = await run(dir, ["proposal", "revise"], { proposal: id, item_id: ids[0], proposed: "2027-04", previous: "2027-03" }, AFTER);
+  assert.equal(revised.code, 0, revised.stdout);
+  const drafted = await attributes(dir, await pathOf(dir, id));
+  assert.equal(drafted.revisions[0].status, "drafted");
+
+  settle(dir);
+  const replay = await run(dir, ["sync", "apply"], plan, LATER);
+  assert.equal(replay.code, 0, replay.stdout);
+  assert.deepEqual(replay.json.data.revision_results.map((entry: { result: string; reason?: string }) => [entry.result, entry.reason]), [["skipped", "STALE_PLAN"]]);
+  assert.deepEqual(await attributes(dir, await pathOf(dir, id)), drafted, "the drafted revision and its previous wording are untouched");
+
+  const newer = structuredClone(plan);
+  newer.as_of = LATER;
+  newer.review_revisions[0].instruction = "make it May";
+  const fresh = await run(dir, ["sync", "apply"], newer, LATER);
+  assert.deepEqual(fresh.json.data.revision_results.map((entry: { result: string }) => entry.result), ["recorded"], "a request planned after the draft is recorded");
+  const proposal = await attributes(dir, await pathOf(dir, id));
+  assert.deepEqual([proposal.revisions[0].status, proposal.revisions[0].instruction], ["requested", "make it May"]);
   assert.deepEqual(await errors(dir), []);
 });
 

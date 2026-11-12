@@ -1,5 +1,6 @@
 import { isRecord } from "./input.ts";
 import type { Note } from "./notes.ts";
+import { passageProblems } from "./passages.ts";
 import { bodyOf } from "./proposals.ts";
 import type { ReviewRevision } from "./review-plan.ts";
 import { linkValue, Skip, typed } from "./review-apply.ts";
@@ -13,8 +14,8 @@ const record = (value: unknown): Record<string, unknown> => (isRecord(value) ? v
 export interface Revision { item_id: string; instruction: string; requested_at: string; status: "requested" | "drafted"; previous?: string; drafted_at?: string }
 export const revisionsOf = (proposal: Note): Revision[] => list(proposal.attributes.revisions).filter(isRecord) as unknown as Revision[];
 
-/** Record each `Request revision` the plan read (an attended run only: an unattended run never reads revision text, 0051). The item stays pending. */
-export function recordRevisionRequests(workspace: Workspace, requests: readonly ReviewRevision[], now: Date, today: string): Array<{ proposal: string; item_id: string; result: "recorded" | "skipped"; reason?: string }> {
+/** Record each `Request revision` the plan read (an attended run only: an unattended run never reads revision text, 0051). The item stays pending. `asOf` is the plan's. */
+export function recordRevisionRequests(workspace: Workspace, requests: readonly ReviewRevision[], asOf: string, now: Date, today: string): Array<{ proposal: string; item_id: string; result: "recorded" | "skipped"; reason?: string }> {
   const out: Array<{ proposal: string; item_id: string; result: "recorded" | "skipped"; reason?: string }> = [];
   for (const request of requests) {
     const skip = (reason: string) => out.push({ proposal: request.proposal, item_id: request.item_id, result: "skipped", reason });
@@ -25,6 +26,8 @@ export function recordRevisionRequests(workspace: Workspace, requests: readonly 
     if (["remove", "restore", "independence"].includes(String(record(list(proposal.attributes.items).find((item) => record(item).item_id === request.item_id)).kind))) { skip("REVISION_NOT_SUPPORTED"); continue; }
     const existing = revisionsOf(proposal).find((entry) => entry.item_id === request.item_id);
     if (existing?.status === "requested" && existing.instruction === request.instruction) { skip("ALREADY_REQUESTED"); continue; }
+    // A plan read before the draft was written cannot be asking about it: replaying it is a no-op (cli §5.27, CC-218).
+    if (existing?.status === "drafted" && (existing.drafted_at === undefined || Date.parse(asOf) <= Date.parse(existing.drafted_at))) { skip("STALE_PLAN"); continue; }
     const document = workspace.edit(proposal);
     const entry: Revision = { item_id: request.item_id, instruction: request.instruction.trim(), requested_at: now.toISOString().replace(/\.\d{3}Z$/, "Z"), status: "requested" };
     document.attributes.revisions = [...revisionsOf(proposal).filter((candidate) => candidate.item_id !== request.item_id), entry];
@@ -38,7 +41,7 @@ export function recordRevisionRequests(workspace: Workspace, requests: readonly 
 export interface Revised { proposal: string; item_id: string; kind: string }
 
 /** Replace the stored proposal of a revision-requested item with the new draft, keeping the previous wording (`brain proposal revise`). Nothing is accepted. */
-export function reviseItem(workspace: Workspace, input: { proposal: string; item_id: string; proposed: string; previous: string }, now: Date, today: string): Revised {
+export function reviseItem(workspace: Workspace, input: { proposal: string; item_id: string; proposed: string; previous: string; passages?: unknown }, now: Date, today: string): Revised {
   const proposal = workspace.get(input.proposal);
   if (proposal === undefined || proposal.type !== "proposal") throw new Skip("UNKNOWN_ID", `No proposal ${input.proposal}`);
   const a = proposal.attributes;
@@ -50,7 +53,15 @@ export function reviseItem(workspace: Workspace, input: { proposal: string; item
   if (list(a.item_decisions).some((done) => record(done).item_id === input.item_id)) throw new Skip("ALREADY_DECIDED");
   if (input.proposed.trim() === "") throw new Skip("UNREADABLE_PROPOSED", "a revision cannot be empty");
   if (["remove", "restore", "independence"].includes(String(entry.kind))) throw new Skip("REVISION_NOT_SUPPORTED", "a cleanup item has no wording to revise");
+  // The revised item names its passages: the new list when given, else the ones it had; a legacy item without them stays legacy (cli §5.27).
+  const passages = input.passages ?? entry.passages;
+  if (passages !== undefined) {
+    const found = passageProblems(workspace, passages, "/passages", entry.kind === "link" ? null : input.proposed);
+    const problem = found.problems[0] ?? (found.unknown[0] === undefined ? undefined : { pointer: "/passages", message: `${found.unknown[0]} does not exist` });
+    if (problem !== undefined) throw new Skip("INPUT_INVALID", `${problem.pointer} ${problem.message}`);
+  }
   const document = workspace.edit(proposal);
+  if (input.passages !== undefined) document.attributes.items = list(document.attributes.items).map(record).map((item) => (item.item_id === input.item_id ? { ...item, passages: input.passages } : item));
   if (entry.kind === "note") {
     const note = workspace.get(String(entry.ref));
     if (note === undefined || note.attributes.lifecycle !== "draft") throw new Skip("NOT_A_DRAFT", `${String(entry.ref)} is not a draft`);
