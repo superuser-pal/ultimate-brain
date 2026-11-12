@@ -1,17 +1,17 @@
 {
   "format": 1,
   "name": "ultimate-brain-skills",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "cli": ">=0.14.0-0 <0.15.0",
   "source": {
     "repository": "https://github.com/superuser-pal/ultimate-brain-skills",
-    "commit": "dda8150c83686600dd3cade7049327b20b6a5ad3"
+    "commit": "cc28a70072e236c122d5f004e425ad8929ff6c9b"
   },
   "upstream": {
     "repository": "https://github.com/mattpocock/skills",
     "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa"
   },
-  "integrity": "sha256-236c8e2f1ef0909d249f82d02f135beb21743dff6cc2035414828cab36ecac5b",
+  "integrity": "sha256-8d2a9694c25c79ee316d235977875a66424b0b321524bb8c25fdc77c53181218",
   "skills": [
     {
       "name": "brain-apply",
@@ -39,8 +39,8 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "4e6db26031f99bd69998887527a022e99a3eb888323eaf8b196d74bd4496e98e",
-          "bytes": 44788
+          "sha256": "83326fc336070575220bba5e61af3cd49c24fbf1834bbc47d32ecf03e1d4d259",
+          "bytes": 44940
         }
       ]
     },
@@ -88,8 +88,8 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "6c1c49a6a614225af474f9649a5e5f0cb59a816b59dbbca42a8372a97f4bad94",
-          "bytes": 23799
+          "sha256": "9ad23e744354540460c086c068e49fc93c3e16df02d8d2413d5e10e6cc9714da",
+          "bytes": 23841
         },
         {
           "path": "references/cli-inputs.md",
@@ -108,13 +108,13 @@
         },
         {
           "path": "references/notion.md",
-          "sha256": "6aac5ea0211f5934a268f0ea44c1d8ea48fd93300e1086e28eca2029b648af93",
-          "bytes": 14886
+          "sha256": "0d9d949124fabd9554e709b850e4fe996ac2a6f1a2a772b79614c192ea50e079",
+          "bytes": 14948
         },
         {
           "path": "references/selection.md",
-          "sha256": "50c4b4018a704573eb37460775f7972b21d75e3807d19f3a8095b258e00d65e1",
-          "bytes": 23206
+          "sha256": "9ea8165c1cbb7dab7f2f1a8fb03b7dedb1a4b1c3f526ea1565aafd5cc09915bf",
+          "bytes": 23482
         },
         {
           "path": "references/sources.md",
