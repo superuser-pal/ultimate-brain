@@ -31,6 +31,8 @@ const ORDER: ReadonlyArray<readonly [item: string, what: string]> = [
   ["first-value", "check first value"],
   ["schedule", "choose the schedule"],
 ];
+/** First value's four checks, in a `first-value` line's keys (spec/setup.md §4.1, §10). */
+const FIRST_VALUE_CHECKS = ["tasks", "report", "organised", "answer"] as const;
 /** Left out of the count and of `next` without Notion AI (spec/setup.md §13). */
 const NEEDS_NOTION_AI = new Set(["minutes-prompt", "brain-assistant"]);
 
@@ -43,9 +45,16 @@ export interface SetupChecks {
   owner_person: boolean;
 }
 
+/** One first-value check's outcome; null when the line leaves the check out (not run yet). */
+export type FirstValueOutcome = "pass" | "fail" | "unsuitable" | "skip" | null;
+
+/** The latest `first-value` line (cli.md §5.2): its timestamp and each check's outcome. */
+export type FirstValue = { at: string } & Record<(typeof FIRST_VALUE_CHECKS)[number], FirstValueOutcome>;
+
 export interface SetupStatus {
   checks: SetupChecks;
   recorded: Record<(typeof RECORDED)[number], string | null>;
+  first_value: FirstValue | null;
   template_version: string | null;
   required: { done: number; total: number };
   next: string | null;
@@ -70,9 +79,15 @@ export async function setupStatus(root: string, config: Record<string, unknown>,
   const lines = await logLinesOf(root, "setup");
   const latest = new Map<string, (typeof lines)[number]>();
   for (const line of lines) if (line.pairs.step !== undefined) latest.set(line.pairs.step, line);
+  const firstValueLine = latest.get("first-value");
+  const firstValue = firstValueLine === undefined ? null : firstValueOf(firstValueLine.timestamp, firstValueLine.pairs);
+  const tasksOff = !modulesOf(config).tasks;
   const recorded = Object.fromEntries(RECORDED.map((step) => {
     const line = latest.get(step);
-    return [step, line !== undefined && (line.pairs.result === "done" || line.pairs.result === "declined") ? line.timestamp : null];
+    if (line === undefined) return [step, null];
+    // First value counts only when its latest line passes, never an attempt (setup.md §5, §10).
+    if (step === "first-value") return [step, line.pairs.result === "done" && firstValuePasses(firstValue!, tasksOff) ? line.timestamp : null];
+    return [step, line.pairs.result === "done" || line.pairs.result === "declined" ? line.timestamp : null];
   })) as SetupStatus["recorded"];
   const notionAi = latest.get("prerequisites")?.pairs.notion_ai !== "no";
 
@@ -84,6 +99,7 @@ export async function setupStatus(root: string, config: Record<string, unknown>,
   return {
     checks,
     recorded,
+    first_value: firstValue,
     template_version: typeof notion.template_version === "string" ? notion.template_version : null,
     required: { done: required.filter(doneOf).length, total: required.length },
     next: items.find((item) => !doneOf(item)) ?? null,
@@ -97,6 +113,23 @@ export function setupLine(setup: SetupStatus): string | null {
   if (setup.finished) return null;
   const what = ORDER.find(([item]) => item === setup.next)?.[1];
   return `Setup: ${setup.required.done} of ${setup.required.total} done · ${what === undefined ? "" : `next: ${what} · `}say "set up my brain"`;
+}
+
+/** Each check's outcome as the line has it: left out is null, `skip` is kept only for `tasks`, any other value is `fail` (cli.md §5.2). */
+function firstValueOf(at: string, pairs: Readonly<Record<string, string>>): FirstValue {
+  const outcome = (check: (typeof FIRST_VALUE_CHECKS)[number]): FirstValueOutcome => {
+    const value = pairs[check];
+    if (value === undefined) return null;
+    if (value === "pass" || value === "fail" || value === "unsuitable" || (value === "skip" && check === "tasks")) return value;
+    return "fail";
+  };
+  return { at, tasks: outcome("tasks"), report: outcome("report"), organised: outcome("organised"), answer: outcome("answer") };
+}
+
+/** Every applicable check passes: `report`, `organised` and `answer` pass, and `tasks` passes or, with Tasks off, is skipped (setup.md §10). */
+function firstValuePasses(firstValue: FirstValue, tasksOff: boolean): boolean {
+  return firstValue.report === "pass" && firstValue.organised === "pass" && firstValue.answer === "pass"
+    && (firstValue.tasks === "pass" || (tasksOff && firstValue.tasks === "skip"));
 }
 
 async function gitValue(root: string, args: string[]): Promise<string> {

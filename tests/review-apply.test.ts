@@ -11,6 +11,7 @@ import { brain, fixtureCopy, withPassages } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const AFTER = "2026-12-10T09:10:00Z";
+const LATER = "2026-12-10T09:20:00Z";
 const SYNC = "mtg-8c4n2p7w";
 const PROJECT = "prj-9x4t1b7e";
 const CONCEPT = "con-1s6t8e2b";
@@ -137,6 +138,24 @@ test("every item rejected closes the row; a rejected draft is archived", async (
   assert.equal(proposal.status, "closed");
   assert.equal(proposal.decision.action, "reject");
   assert.equal((await attributes(dir, draft.path)).lifecycle, "archived");
+  assert.deepEqual(await errors(dir), []);
+});
+
+test("a draft decision rejected in Review is in no section of the project's decision log; a superseded one stays (schema §16.2)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids, draft } = await published(dir);
+  const views = await run(dir, ["views"]);
+  assert.equal(views.code, 0, views.stdout);
+  const logPath = join(dir, "projects/acme-website/decision-log.md");
+  assert.match(await readFile(logPath, "utf8"), /Launch in March/, "while it waits in Review, the draft is in the history");
+  await submit(dir, id, decide(body, ids[2]!, "Reject"));
+  assert.equal((await attributes(dir, draft.path)).lifecycle, "archived");
+  const rebuilt = await run(dir, ["views"]);
+  assert.equal(rebuilt.code, 0, rebuilt.stdout);
+  const log = await readFile(logPath, "utf8");
+  assert.doesNotMatch(log, /Launch in March/, "a rejected draft is not a decision");
+  assert.doesNotMatch(log, new RegExp(draft.id), "nor is it in generated_from");
+  assert.match(log, /## Superseded\n- 2026-10-01 → 2026-12-03 — \[Use Firebase for auth\]/, "a superseded decision stays in the history");
   assert.deepEqual(await errors(dir), []);
 });
 
@@ -400,6 +419,32 @@ test("a drafted revision is applied only after a new submission accepts its exac
   const applied = await run(dir, ["sync", "apply"], submitted, LATER);
   assert.deepEqual(applied.json.data.review_results.map((r: { item_id: string; result: string }) => [r.item_id, r.result]), [[ids[0], "applied"]], "only the newly accepted draft applies; the item applied before is not applied again");
   assert.equal((await attributes(dir, projectPath)).facts.launch_date, "2027-04");
+  assert.deepEqual(await errors(dir), []);
+});
+
+test("applying an old plan again after the revision was drafted is a no-op (STALE_PLAN); a request read after the draft is recorded (cli §5.27)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids } = await published(dir);
+  const asked = decide(body, ids[0]!, "Request revision").replace(new RegExp(`(## \\[[a-z]+ · ${ids[0]}\\][\\s\\S]*?Decision: Request revision)`), "$1\nRevision request: make it April");
+  const { plan } = await submit(dir, id, asked);
+  const revised = await run(dir, ["proposal", "revise"], { proposal: id, item_id: ids[0], proposed: "2027-04", previous: "2027-03" }, AFTER);
+  assert.equal(revised.code, 0, revised.stdout);
+  const drafted = await attributes(dir, await pathOf(dir, id));
+  assert.equal(drafted.revisions[0].status, "drafted");
+
+  settle(dir);
+  const replay = await run(dir, ["sync", "apply"], plan, LATER);
+  assert.equal(replay.code, 0, replay.stdout);
+  assert.deepEqual(replay.json.data.revision_results.map((entry: { result: string; reason?: string }) => [entry.result, entry.reason]), [["skipped", "STALE_PLAN"]]);
+  assert.deepEqual(await attributes(dir, await pathOf(dir, id)), drafted, "the drafted revision and its previous wording are untouched");
+
+  const newer = structuredClone(plan);
+  newer.as_of = LATER;
+  newer.review_revisions[0].instruction = "make it May";
+  const fresh = await run(dir, ["sync", "apply"], newer, LATER);
+  assert.deepEqual(fresh.json.data.revision_results.map((entry: { result: string }) => entry.result), ["recorded"], "a request planned after the draft is recorded");
+  const proposal = await attributes(dir, await pathOf(dir, id));
+  assert.deepEqual([proposal.revisions[0].status, proposal.revisions[0].instruction], ["requested", "make it May"]);
   assert.deepEqual(await errors(dir), []);
 });
 

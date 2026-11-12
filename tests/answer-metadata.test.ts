@@ -129,7 +129,8 @@ test("query --candidates scores and returns a note with a restricted claim witho
   const by = Object.fromEntries(data.candidates.map((candidate: { id: string }) => [candidate.id, candidate]));
   const awaiting = by["dec-bbbb0001"];
   assert.deepEqual([awaiting.title, awaiting.path, awaiting.summary, awaiting.cite], [null, null, null, CITE]);
-  assert.deepEqual(awaiting.snippets.map((snippet: { text: string }) => snippet.text), [`${LIVE} ${LIVE_REF}`]);
+  // Its kept fact (the rule leaves `facts.vendor`, as --read shows) comes first, then its live line (cli.md §5.13 snippets, 0080).
+  assert.deepEqual(awaiting.snippets.map((snippet: { text: string }) => snippet.text), ["facts.vendor: Acme", `${LIVE} ${LIVE_REF}`]);
   assertNoRestrictedText(data, "query --candidates");
   // The note with no restricted claim keeps its title and path; only its summary is gone.
   const kept = by["dec-bbbb0002"];
