@@ -186,6 +186,16 @@ test("lean shape blockers: tokens and Selection lines on the readable part, togg
   assert.ok(twice.problems.some((problem) => problem.code === "SELECTION_UNMAPPABLE" && problem.reason === "duplicate id"));
 });
 
+test("a readable line moved into Quick follow-ups is read like an item, failing closed", () => {
+  const moved = plan(swap(swap(LEAN, "The raised beds have a budget for this year. [s2.i1]\n", ""), "- [x] Share the call notes with Carla [q2]", "- [x] Share the call notes with Carla [q2]\n- [ ] The raised beds have a budget for this year. [s2.i1]"));
+  assert.equal(moved.ok, false, "outside its subject's block it blocks");
+  assert.ok(moved.problems.some((problem) => problem.code === "SELECTION_UNREADABLE" && /not under its subject s2/.test(problem.reason)));
+  assert.deepEqual(moved.quick.find((entry) => entry.id === "s2.i1"), { subject: null, id: "s2.i1", text: "The raised beds have a budget for this year.", done: false, follow_up: null, task: false, recorded: null });
+  assert.ok(!moved.problems.some((problem) => problem.code === "ORPHAN_QUOTE_ENTRY"), "its quote entry is joined to it");
+  const token = plan(swap(LEAN, "- [x] Share the call notes with Carla [q2]", "- [x] Share the call notes with Carla [q2]\n- [ ] Meeting only: a note [s0.i7]"));
+  assert.ok(token.problems.some((problem) => problem.code === "SELECTION_UNREADABLE" && problem.id === "s0.i7"));
+});
+
 test("a Tasks for the brain line may name s0 or any subject, and a Scope under it is read", () => {
   const data = plan(swap(swap(LEAN, "- Email the council about the tap repair warranty [s3.i2]", "- Email the council about the tap repair warranty [s0.i1]"), "[s3.i2] →", "[s0.i1] →"));
   assert.equal(data.ok, true, JSON.stringify(data.problems));
