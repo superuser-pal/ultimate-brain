@@ -227,7 +227,7 @@ test("a row decided as a whole names each item: deferred, closed because its not
     `- c · decision ${draft.id}, title withheld: awaiting cleanup — Closed without applying: it rests on text you excluded.`,
     `- d · Row-level security — Deferred to "${movedTitle}", which awaits publication.`,
   ].join("\n"));
-  assert.ok(!summary.includes("Pricing") && !summary.includes("95k"), "a restricted title and its text stay withheld");
+  assert.ok(!summary.includes("Pricing") && !summary.includes("95,000"), "a restricted title and its text stay withheld");
 });
 
 test("a held pending item is named by its withheld title and told to Reject or Defer", async (context) => {
