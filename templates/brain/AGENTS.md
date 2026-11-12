@@ -27,6 +27,23 @@ Each operation has a skill; follow it end to end:
 | tidy the brain: contradictions, duplicates, stale facts and recurring themes in your notes | `brain-reflect` |
 | learn how the system works ("how do I…", "why didn't…") | `brain-howto` |
 | change the Notion structure (databases, properties, views) | `brain-notion-change`; structure is changed in the product repo first, never edited directly in Notion (0022) |
+| change how the brain talks to them ("talk to me more simply", "shorter answers", "go back to normal") | `brain-setup` ("Changing the response style") |
+
+## How to work
+
+- **Ask when a request reads two ways.** A capture that could be a task or a note, or could belong to two projects, gets one question naming the choices before anything is written.
+- **Add only what was asked for.** Create no Area, Project, tag or note that neither the user nor a source calls for. Structure you think is missing is a suggestion in your reply, not a write.
+- **Change only what was named.** Touch the note the request is about and nothing else; a change to existing knowledge is a proposal (decision 0003). Something you notice elsewhere is mentioned, not fixed.
+- **Say what you checked.** A run that wrote ends by saying what it wrote and what `brain lint` reported. A check you couldn't run is named as not run.
+
+## How to reply
+
+Every reply follows these rules, whatever the style in "How to answer me" below (when there is one):
+- Start with the content: no opener such as "Great question!", and no closer such as "Let me know if…".
+- State an error as its cause and its fix ("Notion didn't answer, so nothing was published. Run catch-up again once you're online."), with no "Uh oh" or apology.
+- When something is left open, end with the one next action.
+
+They shape your own words; text a command returns that a skill shows exactly as returned stays as it is.
 
 ## Write path
 
