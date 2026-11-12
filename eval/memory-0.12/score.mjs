@@ -24,7 +24,7 @@ const GATES = { trust: 1.0, answerable: 0.9 };
 //   the two, or is NEUTRAL; or when the answer opens with it (LEADS_ABSENT, CC-225).
 // - LEADS_ABSENT: the answer's first sentence (cut at . ! ? only, so a ";" keeps what follows in it) that is not
 //   NEUTRAL or a bare "no" is "No <thing> is / are / was / were / has been recorded / noted / held / documented", with
-//   no ";". Said first, the absence is the answer; after an answer it is a remark beside it.
+//   no ";", and no comma or colon in <thing> ("No, Postmark was chosen and is recorded" is an answer, not an absence). Said first, the absence is the answer; after an answer it is a remark beside it.
 // - NEUTRAL: the `Evidence:` line, and narration of the search ("I searched the brain for …").
 const SAYS_UNKNOWN = [
   /\b(?:couldn't|could not|can't|cannot|can not|didn't|did not|wasn't able to|was not able to|unable to) (?:find|locate)\b/,
@@ -37,11 +37,13 @@ const SAYS_UNKNOWN = [
   /\b(?:don't|do not) know\b/,
   /\bunknown\b/,
   /\b(?:doesn't|does not) (?:say|hold|record)\b/,
-  // CC-225: the brain or its stores as the subject ("the brain holds no rule", "my memories have no note on it").
-  /\b(?:brain|memor(?:y|ies)|notes?) (?:\w+ )?(?:holds?|has|have|records?|contains?|keeps?) no\b/,
+  // CC-225: the brain or its stores as the subject ("the brain holds no rule", "my memories have no note on it"); one
+  // note lacking something ("the migration note has no owner") is not the brain lacking the answer.
+  /\b(?:brain|memories|notes) (?:\w+ )?(?:holds?|has|have|records?|contains?|keeps?) no\b/,
 ];
-const SAYS_ABSENT = [/\bno\b[^.;]{0,60}\b(?:recorded|documented)\b/, /\bno\b[^.;]{0,60}\bin the brain\b/];
-const LEADS_ABSENT = /^(?:no, )?no\b[^.;]{0,60}\b(?:is|are|was|were|has been|have been) (?:\w+ )?(?:recorded|documented|noted|held)\b/;
+// No comma or colon between "no" and its verb (CC-225): "No, Postmark was chosen and is recorded" answers.
+const SAYS_ABSENT = [/\bno [^.;,:]{0,60}?\b(?:recorded|documented)\b/, /\bno [^.;,:]{0,60}?\bin the brain\b/];
+const LEADS_ABSENT = /^(?:no, )?no [^.;,:]{0,60}?\b(?:is|are|was|were|has been|have been) (?:\w+ )?(?:recorded|documented|noted|held)\b/;
 const NEUTRAL = [/^evidence\b/, /^i(?: have|'ve)? (?:searched|checked|looked|queried|ran|read)\b/];
 const MARKUP = /^[\s#>*_`-]+|[\s*_`]+$/g;
 
