@@ -17,7 +17,7 @@
 
 The user kept their own layout ("I like better the design and location I have") and the shorter name ("skills is a better name"):
 
-1. **System is a callout on the template's top page,** holding the links to Brain Data, Archive, How it works and Skills. The **Template version** line is a plain line of its own inside that callout, exactly `Template version: NNNN`. brain-connect-notion reads the top page's text, including the blocks inside its callouts, for that exact line (spec/setup.md §9). A space built from the prompts keeps its System page and has no version line, as before.
+1. **System is a callout on the template's top page,** holding the links to Brain Data, Archive, How it works and Skills. The **Template version** line is a line of its own inside that callout, exactly `Template version: NNNN`; the user formats it as inline code, on purpose, after a line break in the callout's text block. brain-connect-notion reads the top page's text, including the blocks inside its callouts, for that line, as a block of its own or a line within a block, with or without inline-code formatting (spec/setup.md §9). A space built from the prompts keeps its System page and has no version line, as before.
 2. **The database Brain Assistant reads its skills from is named Skills.** Product text names it "Skills", or "the Skills database (Brain Assistant's skills)" where the bare word could be confused. A space built before this keeps its old name, "Brain Assistant Skills": the user renames nothing, and nothing the brain does may depend on the name (the brain never reads that database; Brain Assistant reaches it through its Tools and access).
 
 ### Out of scope

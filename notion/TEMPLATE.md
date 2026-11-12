@@ -9,7 +9,7 @@ Two templates exist; this one is the **Notion template**. The **brain folder** (
 | **Link** | **NOT PUBLISHED YET.** Placeholder: U-27 publishes the template and replaces this cell with its link, adding one `scripts/leak-allow.txt` entry for it in the same change. Until then there is nothing to duplicate. |
 | **Template version** | **NOT RECORDED YET.** Placeholder: the number of the last migration in [migrations/](migrations/) when U-27 builds the template (`0023` today, CC-197's lean minutes; a later 0.14.0 task may add one first). U-27 records it here with the link. |
 
-**Template version** is the four-digit number of the last migration in [migrations/](migrations/) the template includes. The template shows the same number as a plain line of its own in the System callout on its top page, `Template version: NNNN`, and the connect step stores it in `brain.json` as `notion.template_version`; `brain upgrade` then names the migrations newer than it (spec/setup.md §9, spec/cli.md §5.15).
+**Template version** is the four-digit number of the last migration in [migrations/](migrations/) the template includes. The template shows the same number as a line of its own in the System callout on its top page (as inline code or plain text, spec/setup.md §9), `Template version: NNNN`, and the connect step stores it in `brain.json` as `notion.template_version`; `brain upgrade` then names the migrations newer than it (spec/setup.md §9, spec/cli.md §5.15).
 
 ## What a duplicate contains
 
@@ -17,7 +17,7 @@ Everything a space built from every prompt has (the build prompts include every 
 
 **Pages**
 - **Ultimate Brain**, the top page, starting with the **Start here** callout: line 1, bold, "Start here."; line 2, "This is the Notion half of Ultimate Brain. Next: install Ultimate Brain, and in your brain folder tell your agent "set up my brain". Get started shows every step.", with "Get started" linked to the Get started section of the product README on GitHub.
-- **System**, a callout on the top page, not a page (decision 0085): the links to **Brain Data**, **Archive**, **How it works** (filled with the user guide) and the **Skills** database (Brain Assistant's skills), and the plain line `Template version: NNNN` (the version above) on its own.
+- **System**, a callout on the top page, not a page (decision 0085): the links to **Brain Data**, **Archive**, **How it works** (filled with the user guide) and the **Skills** database (Brain Assistant's skills), and the line `Template version: NNNN` (the version above) on its own, formatted as inline code.
 - Home, Tasks, Meetings, Projects, Plan, Review, Knowledge, with their views, buttons and synced navigation.
 - **Brain Data**, holding the databases below.
 
