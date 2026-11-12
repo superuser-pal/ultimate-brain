@@ -12,7 +12,8 @@ Each operation has a skill; follow it end to end:
 
 | The user wants to… | Skill |
 |---|---|
-| connect the brain to Notion (after building the space) | `brain-connect-notion` |
+| set up the brain the first time, or continue setup ("set up my brain"): settings, Notion, your work, the first check | `brain-setup` |
+| connect the brain to Notion, or turn a module on or off | `brain-connect-notion` |
 | catch up: do everything that's waiting (decided reviews, reviewed meetings, the Inbox and its attachments, the drop folder, linked repos, reports asked for) | `brain-catch-up` |
 | ingest one input: reviewed minutes, a document, a web page, a pasted email or note, the Inbox, the drop folder, a linked repo | `brain-ingest` |
 | turn open questions that are really to-dos into tasks, or drop them (once, after a yes for each, 0071) | `brain-ingest` |
