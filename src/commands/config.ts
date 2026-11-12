@@ -1,7 +1,12 @@
-import type { Command } from "../lib/command.ts";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+
+import type { Command, Warning } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { atomicWriteFile } from "../lib/fs-safe.ts";
 import { describeErrors, loadSchemas } from "../lib/schemas.ts";
+import { assertPlainPath } from "../lib/skills.ts";
+import { styleLines, withStyleBlock } from "../lib/style.ts";
 
 /** `brain config get [<dot.path>]` (spec/cli.md §5.3). */
 export const configGetCommand: Command = {
@@ -49,13 +54,38 @@ export const configSetCommand: Command = {
     if (!schemas.brain(next)) {
       throw new BrainError("INPUT_INVALID", `brain.json would be invalid: ${describeErrors(schemas.brain.errors).join("; ")}`);
     }
+    // A settings.style path also rewrites the brain's style block (spec/cli.md §5.3, §5.3.1); a symbolic AGENTS.md refuses before any write.
+    const style = segments[0] === "settings" && (segments.length === 1 || segments[1] === "style");
+    if (style) await assertPlainPath(brain!.root, "AGENTS.md");
     await atomicWriteFile(brain!.root, "brain.json", `${JSON.stringify(next, null, 2)}\n`);
+    const warnings: Warning[] = [];
+    const files = style ? [{ path: "AGENTS.md", action: await writeStyleBlock(brain!.root, next, warnings) }] : undefined;
     return {
-      data: { path, previous: previous ?? null, value },
-      human: `${path}: ${JSON.stringify(previous)} → ${JSON.stringify(value)}\n`,
+      data: { path, previous: previous ?? null, value, ...(files === undefined ? {} : { files }) },
+      warnings,
+      human: `${path}: ${JSON.stringify(previous)} → ${JSON.stringify(value)}\n${files === undefined ? "" : `AGENTS.md: ${files[0]!.action}\n`}`,
     };
   },
 };
+
+/** Write, replace or remove the style block in the brain's AGENTS.md; `skipped` when the file or its markers can't take it. */
+async function writeStyleBlock(root: string, config: Record<string, unknown>, warnings: Warning[]): Promise<string> {
+  let text: string;
+  try {
+    text = await readFile(join(root, "AGENTS.md"), "utf8");
+  } catch (error) {
+    if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error;
+    warnings.push({ code: "AGENTS_BLOCK_NOT_FOUND", message: "AGENTS.md is missing; brain.json was written. Run brain upgrade to restore it." });
+    return "skipped";
+  }
+  const written = withStyleBlock(text, styleLines(config));
+  if (written === undefined) {
+    warnings.push({ code: "AGENTS_BLOCK_NOT_FOUND", message: "AGENTS.md's rules or style markers are missing, out of order or duplicated; brain.json was written, AGENTS.md left unchanged." });
+    return "skipped";
+  }
+  if (written.action !== "unchanged") await atomicWriteFile(root, "AGENTS.md", written.text);
+  return written.action;
+}
 
 function readPath(config: Record<string, unknown>, path: string): unknown {
   const segments = parsePath(path);

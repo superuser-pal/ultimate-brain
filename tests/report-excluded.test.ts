@@ -38,10 +38,10 @@ test("sync render publishes a restricted note in its eligible form, so a copy pu
   const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
   await approveNote(dir, note.path);
   const before = (await run(dir, ["sync", "render", "--ids", note.id])).json.data.items[0];
-  assert.ok(String(before.body).includes("95k"), "while the paragraph is live it is published");
+  assert.ok(String(before.body).includes("95,000"), "while the paragraph is live it is published");
   await exclude();
   const after = (await run(dir, ["sync", "render", "--ids", note.id])).json.data.items[0];
-  assert.ok(!JSON.stringify(after).includes("95k"), "the excluded text is not in the payload");
+  assert.ok(!JSON.stringify(after).includes("95,000"), "the excluded text is not in the payload");
   assert.ok(String(after.body).includes("Kept statement"), "what stays is still published");
   assert.notEqual(after.published["@content"], before.published["@content"], "the content hash moves, so a published copy is re-rendered");
 });
@@ -49,35 +49,35 @@ test("sync render publishes a restricted note in its eligible form, so a copy pu
 test("query --read and --candidates leave out a view that links a note resting on excluded content (cli §5.13.1, Views)", async (context) => {
   const dir = await fixtureCopy(context);
   const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT);
-  const body = `## Where it stands\n\nThe price is 95k ([Pricing call](../${note.path})).\n\n## Timeline\n\n- None\n\n## Decisions in force\n\n- None\n\n## Open questions and risks\n\n- None\n\n## People involved\n\n- None\n\n## Gaps\n\n- None\n`;
+  const body = `## Where it stands\n\nThe price is 95,000 ([Pricing call](../${note.path})).\n\n## Timeline\n\n- None\n\n## Decisions in force\n\n- None\n\n## Open questions and risks\n\n- None\n\n## People involved\n\n- None\n\n## Gaps\n\n- None\n`;
   const created = await run(dir, ["report", "new"], { title: "Pricing: where we stand", question: "Where does pricing stand?", body });
   assert.equal(created.code, 0, created.stdout);
   const id = created.json.data.id as string;
   const read = async () => (await run(dir, ["query", "--read", id])).json.data.notes[0];
-  const found = async () => (await run(dir, ["query", "--candidates", "price 95k pricing", "--types", "view"])).json.data.candidates.map((candidate: { id: string }) => candidate.id);
+  const found = async () => (await run(dir, ["query", "--candidates", "price 95,000 pricing", "--types", "view"])).json.data.candidates.map((candidate: { id: string }) => candidate.id);
   assert.equal((await read()).status, "ok", "while the evidence is live the report is read");
   assert.ok((await found()).includes(id));
   await exclude();
   assert.deepEqual(await read(), { id, status: "withheld", reason: "restricted", cause: "dependency", rebuild: "refresh" });
   assert.ok(!(await found()).includes(id), "and it is not a candidate");
-  assert.ok(!JSON.stringify((await run(dir, ["query", "--candidates", "price 95k pricing", "--types", "view"])).json.data.candidates).includes("95k"));
+  assert.ok(!JSON.stringify((await run(dir, ["query", "--candidates", "price 95,000 pricing", "--types", "view"])).json.data.candidates).includes("95,000"));
 });
 
 test("the index lists no alias of a wholly restricted note", async (context) => {
   const dir = await fixtureCopy(context);
   const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, "unmapped");
   const file = join(dir, note.path);
-  await writeFile(file, (await readFile(file, "utf8")).replace("\nsummary:", "\naliases: [Budget 95k]\nsummary:"));
+  await writeFile(file, (await readFile(file, "utf8")).replace("\nsummary:", "\naliases: ['Budget 95,000']\nsummary:"));
   await exclude();
   assert.equal((await run(dir, ["index"])).code, 0);
-  assert.ok(!(await readFile(join(dir, "index.md"), "utf8")).includes("95k"));
+  assert.ok(!(await readFile(join(dir, "index.md"), "utf8")).includes("95,000"));
 });
 
 test("a report written before an exclusion is withheld until it is refreshed, and a link that names no note withholds a view (cli §5.13.1, Views)", async (context) => {
   const dir = await fixtureCopy(context);
   const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
   const sections = (first: string) => `## Where it stands\n\n${first}\n\n## Timeline\n\n- 2026-12-03 · Auth chosen ([Use Supabase for auth](../knowledge/decisions/2026-12-03-use-supabase-for-auth.md))\n\n## Decisions in force\n\n- None\n\n## Open questions and risks\n\n- None\n\n## People involved\n\n- None\n\n## Gaps\n\n- None\n`;
-  const created = await run(dir, ["report", "new"], { title: "Price: where we stand", question: "Where does the price stand?", body: sections("Price is 95k, said on the call.") });
+  const created = await run(dir, ["report", "new"], { title: "Price: where we stand", question: "Where does the price stand?", body: sections("Price is 95,000, said on the call.") });
   assert.equal(created.code, 0, created.stdout);
   const id = created.json.data.id as string;
   const read = async () => (await run(dir, ["query", "--read", id])).json.data.notes[0];
@@ -91,9 +91,9 @@ test("a report written before an exclusion is withheld until it is refreshed, an
   assert.equal(refreshed.code, 0, refreshed.stdout);
   const after = await read();
   assert.equal(after.status, "ok", "a refresh after the exclusion is read again");
-  assert.ok(!JSON.stringify(after).includes("95k"));
+  assert.ok(!JSON.stringify(after).includes("95,000"));
 
-  await writeFile(join(dir, "reports/2026-12-10-hand.md"), `---\nid: vw-aaaa0009\ntype: view\ntitle: Hand report\ncreated: 2026-12-10\nupdated: 2026-12-10\nview_kind: report\nquestion: q\ngenerated_from: []\ngenerated_at: 2026-12-10T12:00:00Z\n---\n\n## Where it stands\n\nPrice is 95k ([gone](../knowledge/decisions/gone.md)).\n`);
+  await writeFile(join(dir, "reports/2026-12-10-hand.md"), `---\nid: vw-aaaa0009\ntype: view\ntitle: Hand report\ncreated: 2026-12-10\nupdated: 2026-12-10\nview_kind: report\nquestion: q\ngenerated_from: []\ngenerated_at: 2026-12-10T12:00:00Z\n---\n\n## Where it stands\n\nPrice is 95,000 ([gone](../knowledge/decisions/gone.md)).\n`);
   assert.deepEqual((await run(dir, ["query", "--read", "vw-aaaa0009"])).json.data.notes[0], { id: "vw-aaaa0009", status: "withheld", reason: "restricted", cause: "dependency", rebuild: "refresh" });
 });
 

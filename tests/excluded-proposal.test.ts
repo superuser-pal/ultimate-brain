@@ -11,8 +11,8 @@ import { brain, fixtureCopy, withPassages } from "./helpers.ts";
 const NOW = "2026-12-10T09:00:00Z";
 const SYNC = "mtg-8c4n2p7w";
 const PROJECT = "prj-9x4t1b7e";
-const SECRET = "Pricing was 95k.";
-const EXCLUDED_LINE = `The price was 95k. ^[src-ex1a3b4c#¶2:${passageHash(SECRET)}]`;
+const SECRET = "Pricing was 95,000.";
+const EXCLUDED_LINE = `The price was 95,000. ^[src-ex1a3b4c#¶2:${passageHash(SECRET)}]`;
 const LIVE_LINE = `A kept remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]`;
 
 async function run(dir: string, args: string[], input: unknown) {
@@ -47,7 +47,7 @@ test("apply closes an approved proposal that rests only on excluded evidence, an
   assert.deepEqual((closed.decision as { action: string }).action, "approve", "the user's decision is still recorded");
   const note = await readFile(join(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md"), "utf8");
   assert.ok(note.includes("A kept remark."), "the live addition is in the note");
-  assert.ok(!note.includes("95k"), "the excluded wording was not added to the note");
+  assert.ok(!note.includes("95,000"), "the excluded wording was not added to the note");
 });
 
 test("proposal new skips a change that rests on excluded evidence, a mixed one whole (cli §5.6, eligibility §4.2)", async (context) => {
@@ -125,7 +125,7 @@ test("a fix that keeps the proposed text is checked like an approve; one that re
   // The user's own wording is not judged as excluded evidence; here the brain's lint then refuses it for another reason (an extract is cited by passage).
   assert.notEqual(replaced.reason, "SOURCE_EXCLUDED", out.stdout);
   const everything = (await brain(["query", "--candidates", "pricing decision price", "--brain", dir, "--json"])).stdout;
-  assert.ok(!everything.includes("The price was 95k"));
+  assert.ok(!everything.includes("The price was 95,000"));
 });
 
 test("proposal new tells a person why an item was skipped", async (context) => {
@@ -146,8 +146,8 @@ test("a fix or an edit whose value still holds the excluded claim is closed, wha
     addition(target, EXCLUDED_LINE),
     addition("dec-2p9f6h1r", EXCLUDED_LINE),
     addition("per-3h8w2n6c", EXCLUDED_LINE),
-    { kind: "update_fact", title: "Budget", target: PROJECT, field: "budget", after: "95k", why: "The call set it.", source: "src-ex1a3b4c" },
-    { kind: "update_fact", title: "Owner", target: PROJECT, field: "owner_note", after: "95k", why: "The call set it.", source: "src-ex1a3b4c" },
+    { kind: "update_fact", title: "Budget", target: PROJECT, field: "budget", after: "95,000", why: "The call set it.", source: "src-ex1a3b4c" },
+    { kind: "update_fact", title: "Owner", target: PROJECT, field: "owner_note", after: "95,000", why: "The call set it.", source: "src-ex1a3b4c" },
   ] });
   assert.equal(staged.code, 0, staged.stdout);
   const ids = (staged.json.data.created as Array<{ id: string }>).map((entry) => entry.id);
@@ -155,16 +155,16 @@ test("a fix or an edit whose value still holds the excluded claim is closed, wha
   const decide = (proposal: string, action: string, extra: Record<string, unknown>) => ({ proposal, action, note: "n", decided_at: NOW, decided_by: "chat", ...extra });
   const out = await run(dir, ["apply"], { decisions: [
     decide(ids[0]!, "fix", { fixes: [{ value: EXCLUDED_LINE }] }),
-    decide(ids[1]!, "fix", { fixes: [{ value: EXCLUDED_LINE.replace("95k", "95K") }] }),
+    decide(ids[1]!, "fix", { fixes: [{ value: EXCLUDED_LINE.replace("The price", "THE PRICE") }] }),
     decide(ids[2]!, "edit", { value: EXCLUDED_LINE }),
-    decide(ids[3]!, "fix", { fixes: [{ value: "95k" }] }),
+    decide(ids[3]!, "fix", { fixes: [{ value: "95,000" }] }),
     decide(ids[4]!, "fix", { fixes: [{ value: "Maria" }] }),
   ] });
   const results = (out.json.data.decisions as Array<{ result: string; reason?: string }>).map((entry) => [entry.result, entry.reason ?? null]);
   assert.deepEqual(results.slice(0, 4), Array.from({ length: 4 }, () => ["closed", "SOURCE_EXCLUDED"]), out.stdout);
   assert.notEqual(results[4]![1], "SOURCE_EXCLUDED", "a value of the user's own, with no passage, is not judged");
   for (const path of ["knowledge/decisions/2026-12-03-use-supabase-for-auth.md", "knowledge/decisions/2026-10-01-use-firebase-for-auth.md", "projects/acme-website/project.md"]) {
-    assert.ok(!/95k/i.test(await readFile(join(dir, path), "utf8")), path);
+    assert.ok(!/95,000/i.test(await readFile(join(dir, path), "utf8")), path);
   }
 });
 
@@ -184,7 +184,7 @@ test("an answer that rests only on an excluded passage is closed on approve and 
     { proposal: second!.id, action: "fix", note: "n", fixes: [{ value: EXCLUDED_LINE }], decided_at: NOW, decided_by: "chat" },
   ] });
   assert.deepEqual((out.json.data.decisions as Array<{ result: string; reason?: string }>).map((entry) => [entry.result, entry.reason]), [["closed", "SOURCE_EXCLUDED"], ["closed", "SOURCE_EXCLUDED"]], out.stdout);
-  for (const entry of question.slice(0, 2)) assert.ok(!(await readFile(join(dir, entry.path), "utf8")).includes("95k"), entry.path);
+  for (const entry of question.slice(0, 2)) assert.ok(!(await readFile(join(dir, entry.path), "utf8")).includes("95,000"), entry.path);
 });
 
 const MIXED_LIVE = `A mixed remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]`;
@@ -208,7 +208,7 @@ test("a mixed item is withheld whole on apply, an independent live one applies, 
   const closed = parseFrontmatter(await readFile(join(dir, mixed!.path), "utf8")).attributes;
   assert.deepEqual([closed.status, closed.closed_reason], ["closed", "stale"]);
   let note = await readFile(join(dir, TARGET_PATH), "utf8");
-  assert.ok(!note.includes("95k") && !note.includes("A mixed remark."), "neither the whole mixed text nor its live part is written");
+  assert.ok(!note.includes("95,000") && !note.includes("A mixed remark."), "neither the whole mixed text nor its live part is written");
   assert.ok(note.includes("A kept remark."), "the independent live item is applied");
 
   // Re-proposed from the live passage alone: a new pending item, which the earlier Approve does not reach.
@@ -222,7 +222,7 @@ test("a mixed item is withheld whole on apply, an independent live one applies, 
   const accepted = await run(dir, ["apply"], approve(fresh.id));
   assert.equal(accepted.json.data.decisions[0].result, "applied", accepted.stdout);
   note = await readFile(join(dir, TARGET_PATH), "utf8");
-  assert.ok(note.includes("A mixed remark.") && !note.includes("95k"));
+  assert.ok(note.includes("A mixed remark.") && !note.includes("95,000"));
 });
 
 test("on a mixed item, a fix that keeps the wording is closed, and one that keeps only the live cited line is applied (eligibility §9.5)", async (context) => {
@@ -237,7 +237,7 @@ test("on a mixed item, a fix that keeps the wording is closed, and one that keep
   assert.deepEqual((out.json.data.decisions as Array<{ result: string; reason?: string }>).map((entry) => [entry.result, entry.reason ?? null]), [["closed", "SOURCE_EXCLUDED"], ["applied", null]], out.stdout);
   const note = await readFile(join(dir, TARGET_PATH), "utf8");
   assert.ok(note.includes(`${MIXED_LIVE}\nSource: src-ex1a3b4c`), "the user's exact wording, still that claim of the source");
-  assert.ok(!note.includes("95k"));
+  assert.ok(!note.includes("95,000"));
 });
 
 test("a value the user typed that restates excluded content is applied as their own correction, user-correction:<prp id> (eligibility §9.5)", async (context) => {
@@ -290,7 +290,7 @@ test("an approved Review row of the new layout, applied from chat, withholds its
   assert.deepEqual(proposal.item_decisions.map((entry: Record<string, unknown>) => [entry.decision, entry.state, entry.reason]), [["reject", "closed", "source_excluded"], ["reject", "closed", "source_excluded"]]);
   const concept = await readFile(join(dir, "knowledge/references/row-level-security.md"), "utf8");
   assert.ok(concept.includes("A kept remark.") && concept.includes(PROJECT), "the live change and the link apply");
-  assert.ok(!concept.includes("95k") && !concept.includes("A mixed remark."));
+  assert.ok(!concept.includes("95,000") && !concept.includes("A mixed remark."));
 });
 
 async function input(dir: string, value: unknown): Promise<string> {
