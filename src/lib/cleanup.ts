@@ -1,5 +1,5 @@
 import { lineageOf } from "./eligibility.ts";
-import { chainOf } from "./extract.ts";
+import { chainOf, FOLLOW_UP } from "./extract.ts";
 import type { Note } from "./notes.ts";
 import { importedItems, PASSAGE_REF } from "./selection.ts";
 import { contextFor, restrictionOf, type Loaded } from "./suppressions.ts";
@@ -68,6 +68,7 @@ export function cleanupPlan(notes: readonly Note[], loaded: Loaded, input: strin
     for (const task of Array.isArray(source.attributes.tasks) ? source.attributes.tasks : []) {
       if (typeof task !== "string" || result.tasks.some((entry) => entry.task === task)) continue;
       const item = mapped.get(task) ?? null;
+      if (item !== null && FOLLOW_UP.test(item)) continue; // a follow-up's Task is always mapped, never "created from excluded content" (§6.3)
       if (item === null) result.tasks.push({ task, item: null, reason: "unknown item" });
       else if (selection.find((entry) => entry.id === item)?.effective !== "use" || !(latest !== undefined && importedItems(latest.body).has(item))) result.tasks.push({ task, item, reason: "item no longer selected" });
     }
