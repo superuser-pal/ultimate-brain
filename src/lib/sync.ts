@@ -27,6 +27,7 @@ import type { Context } from "./eligibility.ts";
 import { proposalWithheld, type Withheld } from "./passages.ts";
 import { citeLabel, contextFor, publishableNote, requireSuppressions, titleWithheld, viewDependencies, withheldView } from "./suppressions.ts";
 import { importedItems } from "./selection.ts";
+import { chainOf, FOLLOW_UP } from "./extract.ts";
 
 export const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "documents", "review", "inbox"] as const;
 const CREATABLE = new Set(["domains", "areas", "goals", "projects", "people", "orgs"]);
@@ -1120,8 +1121,11 @@ export function renderTasks(workspace: Workspace, targetId: string | undefined, 
   if (target === undefined) throw new BrainError("UNKNOWN_ID", `No meeting or source has id ${targetId}`);
   if (target.type !== "meeting" && !sourceMode) throw new BrainError("INPUT_INVALID", `${targetId} is not a meeting or source`);
   if (sourceMode && target.attributes.kind === undefined) throw new BrainError("INPUT_INVALID", "minutes sources use their meeting for tasks");
+  const followUps = new Set<string>();
   const tasks = input.items.map((item, index) => {
     if (!isRecord(item) || typeof item.title !== "string" || item.title === "") throw new BrainError("INPUT_INVALID", "each task needs a title");
+    const followUp = item.follow_up;
+    if (followUp !== undefined) checkFollowUp(workspace, target, item, index, followUps);
     const projects = taskProjects(workspace, sourceMode ? undefined : target, item.projects, index);
     const properties: Record<string, unknown> = {};
     const pending_relations: Array<Record<string, unknown>> = [];
@@ -1148,7 +1152,7 @@ export function renderTasks(workspace: Workspace, targetId: string | undefined, 
     put("brain_id", "rich_text", target.id);
     const itemId = isRecord(item) ? item.item : undefined;
     // A Task from an extract names the item that authorized it (capture-and-review §6, §4.8): without it nothing ties the Task to a selected item.
-    if (itemId === undefined && target.attributes.extract === true) throw new BrainError("INPUT_INVALID", "a Task from an extract needs the item that authorized it", [{ pointer: `/items/${index}/item`, message: "must name an item of the extract" }]);
+    if (itemId === undefined && followUp === undefined && target.attributes.extract === true) throw new BrainError("INPUT_INVALID", "a Task from an extract needs the item that authorized it", [{ pointer: `/items/${index}/item`, message: "must name an item of the extract" }]);
     if (itemId !== undefined) {
       const items = (Array.isArray(target.attributes.selection) ? target.attributes.selection : []).map((entry) => (isRecord(entry) ? entry.id : undefined));
       if (target.attributes.extract !== true || typeof itemId !== "string" || !items.includes(itemId)) throw new BrainError("INPUT_INVALID", `${String(itemId)} is not an item of the extract`, [{ pointer: `/items/${index}/item`, message: "must be an item id of the extract's selection" }]);
@@ -1156,9 +1160,28 @@ export function renderTasks(workspace: Workspace, targetId: string | undefined, 
       const entry = (Array.isArray(target.attributes.selection) ? target.attributes.selection : []).find((candidate) => isRecord(candidate) && candidate.id === itemId);
       if (isRecord(entry) && (entry.effective !== "use" || !importedItems(target.body).has(itemId as string))) throw new BrainError("INPUT_INVALID", `${String(itemId)} is excluded from the brain or none of its paragraphs was copied, so it creates no Task`, [{ pointer: `/items/${index}/item`, message: "must be an item that is included (Use in brain)" }]);
     }
-    return { database_id: config.database, properties, pending_relations, ...(itemId === undefined ? {} : { item: itemId }) };
+    return { database_id: config.database, properties, pending_relations, ...(itemId === undefined ? {} : { item: itemId }), ...(followUp === undefined ? {} : { follow_up: followUp }) };
   });
   return { items: tasks };
+}
+
+/**
+ * A follow-up (0079, cli §5.14.5, capture-and-review §6.3): an unticked quick follow-up of lean minutes, only from an extract source, with
+ * no item, due date, status or owner, and never a second Task for a `q` id recorded along the replaces chain or given twice in one input.
+ */
+function checkFollowUp(workspace: Workspace, target: Note, item: Record<string, unknown>, index: number, seen: Set<string>): void {
+  const refuse = (key: string, message: string): never => { throw new BrainError("INPUT_INVALID", message, [{ pointer: `/items/${index}/${key}`, message }]); };
+  const followUp = item.follow_up;
+  if (target.type !== "source" || target.attributes.extract !== true) refuse("follow_up", "a follow-up Task comes only from an extract source (--source)");
+  if (typeof followUp !== "string" || !FOLLOW_UP.test(followUp)) refuse("follow_up", "a follow-up is a q id: q and digits, lower case");
+  for (const key of ["item", "due", "status", "owner"]) if (item[key] !== undefined) refuse(key, `a follow-up Task has no ${key}`);
+  const id = followUp as string;
+  if (seen.has(id)) refuse("follow_up", `${id} is given twice`);
+  seen.add(id);
+  for (const source of chainOf(target, workspace.notes)) {
+    const task = isRecord(source.attributes.task_items) ? source.attributes.task_items[id] : undefined;
+    if (typeof task === "string") refuse("follow_up", `${id} already has its Task: ${task}`);
+  }
 }
 
 /**
@@ -1170,6 +1193,7 @@ function renderDirectTasks(workspace: Workspace, items: unknown[]): Record<strin
   const tasks = items.map((item, index) => {
     if (!isRecord(item) || typeof item.title !== "string" || item.title === "") throw new BrainError("INPUT_INVALID", "each task needs a title", [{ pointer: `/items/${index}/title`, message: "must be a non-empty string" }]);
     if (item.item !== undefined) throw new BrainError("INPUT_INVALID", "a task from a chat has no extract item", [{ pointer: `/items/${index}/item`, message: "is only allowed with --source" }]);
+    if (item.follow_up !== undefined) throw new BrainError("INPUT_INVALID", "a task from a chat is not a follow-up", [{ pointer: `/items/${index}/follow_up`, message: "is only allowed with --source naming an extract" }]);
     if (item.status !== undefined && item.status !== "waiting_on") throw new BrainError("INPUT_INVALID", "a task status can only be waiting_on", [{ pointer: `/items/${index}/status`, message: "must be waiting_on, or absent" }]);
     const waiting = item.status === "waiting_on";
     if (waiting && (typeof item.owner !== "string" || item.owner.trim() === "")) throw new BrainError("INPUT_INVALID", "a Waiting On task needs the owner's name", [{ pointer: `/items/${index}/owner`, message: "must be the name of the person you wait on" }]);
@@ -1218,14 +1242,15 @@ function taskProjects(workspace: Workspace, meeting: Note | undefined, value: un
 function publishedPages(value: unknown, workspace: Workspace): string[] { return (Array.isArray(value) ? value : []).map((id) => workspace.get(String(id))?.attributes.notion).filter((id): id is string => typeof id === "string"); }
 function tasksConfig(workspace: Workspace): { database: string; properties: Record<string, string>; new_task_status: string; waiting_on_status: string; status_type: "status" | "select" } { if (!loadSchemas().brain(workspace.config)) throw new BrainError("BRAIN_CONFIG_INVALID", "brain.json fails its schema"); const notion = workspace.config.notion as Record<string, unknown>; const tasks = notion.tasks as Record<string, unknown>; if (typeof tasks.database !== "string" || tasks.database === "") throw new BrainError("BRAIN_CONFIG_INVALID", "Tasks database is not configured"); return { database: tasks.database as string, properties: tasks.properties as Record<string, string>, new_task_status: tasks.new_task_status as string, waiting_on_status: typeof tasks.waiting_on_status === "string" ? tasks.waiting_on_status : "Waiting On", status_type: tasks.status_type === "status" ? "status" : "select" }; }
 
-/** `task_items` of a record (cli §5.14.6, 0055): item id to Notion task page id, on an extract source only. */
+/** `task_items` of a record (cli §5.14.6, 0055): item id (or a follow-up's `q` id, 0079) to Notion task page id, on an extract source only. */
 function bindTaskItems(note: Note, attributes: Record<string, unknown>, value: unknown, recordTasks: unknown): void {
   if (!isRecord(value) || note.type !== "source" || attributes.extract !== true) throw new Error("INVALID_RESULT");
   const items = new Set((Array.isArray(attributes.selection) ? attributes.selection : []).map((entry) => (isRecord(entry) ? entry.id : undefined)));
   const known = new Set([...(Array.isArray(recordTasks) ? recordTasks : []), ...(Array.isArray(attributes.tasks) ? attributes.tasks : [])]);
   const current = isRecord(attributes.task_items) ? { ...attributes.task_items } : {};
   for (const [item, task] of Object.entries(value)) {
-    if (!items.has(item) || typeof task !== "string" || !known.has(task)) throw new Error("INVALID_RESULT");
+    // A key is an item of the selection, or a follow-up's `q` id (0079, capture-and-review §6.3).
+    if ((!items.has(item) && !FOLLOW_UP.test(item)) || typeof task !== "string" || !known.has(task)) throw new Error("INVALID_RESULT");
     if (current[item] !== undefined && current[item] !== task) throw new Error("TASK_ITEM_EXISTS");
     current[item] = task;
   }

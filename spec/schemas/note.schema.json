@@ -1194,7 +1194,7 @@
           }
         },
         "task_items": {
-          "description": "On an extract: the Notion task page each item authorized (system, 0055).",
+          "description": "On an extract: the Notion task page each item authorized (system, 0055); from 0.14.0 a key may also be a follow-up's q id, the Task an unticked quick follow-up became (0079).",
           "type": "object",
           "additionalProperties": {
             "type": "string",
