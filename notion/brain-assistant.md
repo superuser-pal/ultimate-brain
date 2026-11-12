@@ -8,7 +8,7 @@ It has three parts, all set up by hand in Notion ([migration 0004](migrations/00
 |---|---|---|
 | **The agent** | Its own chat, scoped to Ultimate Brain | Agents → Brain Assistant |
 | **Instructions** | Standing rules: scope, never edit, how to answer, how-to questions | The agent's Instructions |
-| **Eleven skills** | Reusable workflows you run with `/Name`: Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report | A skills database "Brain Assistant Skills" |
+| **Eleven skills** | Reusable workflows you run with `/Name`: Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report | A skills database "Skills" ("Brain Assistant Skills" in a space built before 0.14.0) |
 
 ## Why a Custom Agent, not personal Instructions
 
@@ -19,9 +19,9 @@ Notion docs: [Custom Agents](https://www.notion.com/help/custom-agents), [Instru
 ## Setup
 
 1. **Create the agent:** Agents → New Custom Agent, named **Brain Assistant**, no triggers.
-2. **Tools and access:** add only the page **Brain Data**, the page **How it works**, and the database **Brain Assistant Skills**. Leave "Pages shared with everyone" off. Edit access is needed only on Meetings, Inbox and Documents, for the skills that may change page text; view access everywhere else.
+2. **Tools and access:** add only the page **Brain Data**, the page **How it works**, and the database **Skills** (Brain Assistant's skills; in a space built before 0.14.0 it may be called **Brain Assistant Skills**). Leave "Pages shared with everyone" off. Edit access is needed only on Meetings, Inbox and Documents, for the skills that may change page text; view access everywhere else.
 3. **Instructions:** paste the block below. Replace each *[@…]* with a real @mention of that page.
-4. **Skills:** create the database **Brain Assistant Skills** (title, plus a **Description** text property). One page per skill below: the name is the title, the description goes in Description, the body is the page content. Keep **Use automatically** on.
+4. **Skills:** create the database **Skills** (title, plus a **Description** text property); a space that already has it, under that name or as **Brain Assistant Skills**, keeps it. One page per skill below: the name is the title, the description goes in Description, the body is the page content. Keep **Use automatically** on.
 5. **Test:** in the agent's chat, `/Today` lists only Ultimate Brain tasks; "how do I approve a change?" answers from How it works.
 
 ## Instructions
