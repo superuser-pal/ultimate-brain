@@ -1,0 +1,301 @@
+{
+  "ok": true,
+  "write_required": true,
+  "transcript_hash": "62b7dfa4ceb0f4c9d9dfd20e9bc9e61a7e41bc026ec3e84ee069059844c146bf",
+  "selection": [
+    {
+      "id": "s1",
+      "effective": "use",
+      "explicit": "use"
+    },
+    {
+      "id": "s2",
+      "effective": "use",
+      "explicit": "use"
+    },
+    {
+      "id": "s3",
+      "effective": "use",
+      "explicit": "use"
+    },
+    {
+      "id": "s4",
+      "effective": "use",
+      "explicit": "use"
+    },
+    {
+      "id": "s0.i1",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s0.i2",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s0.i3",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s0.i4",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s1.i1",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s1.i2",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s1.i3",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s2.i1",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s3.i1",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s3.i2",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s3.i3",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s4.i1",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s4.i2",
+      "effective": "use",
+      "explicit": null
+    },
+    {
+      "id": "s4.i3",
+      "effective": "use",
+      "explicit": null
+    }
+  ],
+  "problems": [],
+  "passages": [
+    {
+      "n": 2,
+      "hash": "6f492a1f",
+      "items": [
+        "s0.i1"
+      ]
+    },
+    {
+      "n": 4,
+      "hash": "af8ab920",
+      "items": [
+        "s1.i3"
+      ]
+    },
+    {
+      "n": 5,
+      "hash": "0b4929c4",
+      "items": [
+        "s1.i1"
+      ]
+    },
+    {
+      "n": 6,
+      "hash": "2c04be54",
+      "items": [
+        "s1.i2"
+      ]
+    },
+    {
+      "n": 7,
+      "hash": "5266aa79",
+      "items": [
+        "s0.i3",
+        "s2.i1"
+      ]
+    },
+    {
+      "n": 9,
+      "hash": "fb3bd663",
+      "items": [
+        "s0.i3"
+      ]
+    },
+    {
+      "n": 12,
+      "hash": "d813e14b",
+      "items": [
+        "s3.i1",
+        "s3.i2"
+      ]
+    },
+    {
+      "n": 13,
+      "hash": "651e75b1",
+      "items": [
+        "s3.i3"
+      ]
+    },
+    {
+      "n": 19,
+      "hash": "d4683c6b",
+      "items": [
+        "s0.i2",
+        "s4.i3"
+      ]
+    },
+    {
+      "n": 20,
+      "hash": "b6371970",
+      "items": [
+        "s4.i2"
+      ]
+    },
+    {
+      "n": 21,
+      "hash": "27db1b77",
+      "items": [
+        "s0.i4",
+        "s4.i1"
+      ]
+    }
+  ],
+  "copied": [
+    {
+      "n": 2,
+      "text": "Priya Shah: Thanks Jordan. So the main thing from my side is that the pilot with the two warehouses went well overall, but the scanning app crashed about four times a day at the Leeds site, which is mostly a memory issue on the older handhelds that we never upgraded last year.",
+      "items": [
+        "s0.i1"
+      ]
+    },
+    {
+      "n": 4,
+      "text": "Sam Ortiz: Budget-wise, the hardware line for this quarter is already spent, so realistically we fix the app, and we look at new handhelds in the April planning round if the numbers still say so.",
+      "items": [
+        "s1.i3"
+      ]
+    },
+    {
+      "n": 5,
+      "text": "Jordan Lee: Okay, then we agree: we fix the memory issue in the app first and park the hardware question until April. Everyone fine with that?",
+      "items": [
+        "s1.i1"
+      ]
+    },
+    {
+      "n": 6,
+      "text": "Priya Shah: Yes, fine by me. My team can take the memory fix, we think it's about two weeks of work.",
+      "items": [
+        "s1.i2"
+      ]
+    },
+    {
+      "n": 7,
+      "text": "Jordan Lee: Good. I'll write up the rollout plan for the remaining six warehouses so the steering group can sign it off, and I want that ready by the 18th of December because the steering group meets on the 21st.",
+      "items": [
+        "s0.i3",
+        "s2.i1"
+      ]
+    },
+    {
+      "n": 9,
+      "text": "Jordan Lee: Yes, I'll put the training schedule in as a section of the rollout plan.",
+      "items": [
+        "s0.i3"
+      ]
+    },
+    {
+      "n": 12,
+      "text": "Dana Kim: And I'll forward everyone the site leads' feedback survey results by Friday, they came in yesterday and they're mostly positive but there are a few complaints about the label printers.",
+      "items": [
+        "s3.i1",
+        "s3.i2"
+      ]
+    },
+    {
+      "n": 13,
+      "text": "Priya Shah: On the label printers, honestly we could maybe switch to the thermal ones the Bristol site uses, but I'm not sure, we'd need to check the cost first.",
+      "items": [
+        "s3.i3"
+      ]
+    },
+    {
+      "n": 19,
+      "text": "Jordan Lee: Ha, okay, back to work. One more risk I want to flag: if the memory fix slips past mid January, the Glasgow warehouse go-live on the 1st of February is at risk, because Glasgow uses the same old handhelds as Leeds.",
+      "items": [
+        "s0.i2",
+        "s4.i3"
+      ]
+    },
+    {
+      "n": 20,
+      "text": "Priya Shah: That's fair. We'll know by the 5th of January whether the fix holds.",
+      "items": [
+        "s4.i2"
+      ]
+    },
+    {
+      "n": 21,
+      "text": "Jordan Lee: Okay. Last thing, I'll also review the data migration checklist for Glasgow with Dana before the end of next week, so we don't repeat the duplicate stock records problem we had in the pilot.",
+      "items": [
+        "s0.i4",
+        "s4.i1"
+      ]
+    }
+  ],
+  "unnumbered": [],
+  "uncovered": 12,
+  "quotes": [],
+  "unplaced_items": [],
+  "quick": [
+    {
+      "subject": null,
+      "id": null,
+      "text": "Send Sam the link to the pilot dashboard",
+      "done": false
+    },
+    {
+      "subject": null,
+      "id": null,
+      "text": "Book a 15-minute call with procurement to ask the cost of the Bristol thermal printers",
+      "done": false
+    }
+  ],
+  "scopes": [
+    {
+      "item": "s0.i3",
+      "done_when": "The rollout plan, with a training schedule section, is ready for the steering group to sign off.",
+      "due": "2026-12-18",
+      "project": "Northwind rollout",
+      "notes": "The steering group meets on the 21st. Dana asked for the training schedule because the site leads keep asking when their people get trained.",
+      "problems": []
+    },
+    {
+      "item": "s0.i4",
+      "done_when": "The Glasgow data migration checklist has been reviewed with Dana.",
+      "due": null,
+      "project": "Northwind rollout",
+      "notes": "Dana proposed Thursday; the exact date was not stated. The aim is not to repeat the duplicate stock records problem from the pilot.",
+      "problems": []
+    }
+  ],
+  "body": "<!-- passage ¶2 item s0.i1 -->\nPriya Shah: Thanks Jordan. So the main thing from my side is that the pilot with the two warehouses went well overall, but the scanning app crashed about four times a day at the Leeds site, which is mostly a memory issue on the older handhelds that we never upgraded last year.\n\n<!-- passage ¶4 item s1.i3 -->\nSam Ortiz: Budget-wise, the hardware line for this quarter is already spent, so realistically we fix the app, and we look at new handhelds in the April planning round if the numbers still say so.\n\n<!-- passage ¶5 item s1.i1 -->\nJordan Lee: Okay, then we agree: we fix the memory issue in the app first and park the hardware question until April. Everyone fine with that?\n\n<!-- passage ¶6 item s1.i2 -->\nPriya Shah: Yes, fine by me. My team can take the memory fix, we think it's about two weeks of work.\n\n<!-- passage ¶7 item s0.i3,s2.i1 -->\nJordan Lee: Good. I'll write up the rollout plan for the remaining six warehouses so the steering group can sign it off, and I want that ready by the 18th of December because the steering group meets on the 21st.\n\n<!-- passage ¶9 item s0.i3 -->\nJordan Lee: Yes, I'll put the training schedule in as a section of the rollout plan.\n\n<!-- passage ¶12 item s3.i1,s3.i2 -->\nDana Kim: And I'll forward everyone the site leads' feedback survey results by Friday, they came in yesterday and they're mostly positive but there are a few complaints about the label printers.\n\n<!-- passage ¶13 item s3.i3 -->\nPriya Shah: On the label printers, honestly we could maybe switch to the thermal ones the Bristol site uses, but I'm not sure, we'd need to check the cost first.\n\n<!-- passage ¶19 item s0.i2,s4.i3 -->\nJordan Lee: Ha, okay, back to work. One more risk I want to flag: if the memory fix slips past mid January, the Glasgow warehouse go-live on the 1st of February is at risk, because Glasgow uses the same old handhelds as Leeds.\n\n<!-- passage ¶20 item s4.i2 -->\nPriya Shah: That's fair. We'll know by the 5th of January whether the fix holds.\n\n<!-- passage ¶21 item s0.i4,s4.i1 -->\nJordan Lee: Okay. Last thing, I'll also review the data migration checklist for Glasgow with Dana before the end of next week, so we don't repeat the duplicate stock records problem we had in the pilot.\n"
+}
