@@ -6,7 +6,7 @@ import { passageHash } from "../src/lib/selection.ts";
 import { brain } from "./helpers.ts";
 
 export const INPUT = "11111111-2222-4333-8444-555555555555";
-const SECRET = "Pricing was 95k.";
+const SECRET = "Pricing was 95,000.";
 
 function extract(id: string, version: number, replaces: string | null, paragraphs: Array<[number, string]>): string {
   const body = paragraphs.map(([n, text]) => `<!-- passage ¶${n} item s1 -->\n${text}\n`).join("\n");
