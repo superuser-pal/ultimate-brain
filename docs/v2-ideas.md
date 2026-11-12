@@ -164,6 +164,9 @@ Unattended ingest and sync with n8n or Hermes. **Source:** vision. **Decided in 
 ### Notion-triggered runs
 **Raised 2026-10-29 (decision 0054).** 0.7.1 uses Notion's "send message to agent" only from deliberate button clicks, running Brain Assistant inside Notion. Left here: a bridge from a Notion button or automation to a local or Hermes catch-up (a webhook action, https://www.notion.com/help/webhook-actions); event-driven triggers (a property change, a new row, a schedule), which official docs didn't confirm for that action; and replacing the 0.7.0 schedules with Notion triggers. **Revisit:** after U-22 measures what the buttons cost.
 
+### One brain on two machines
+**Raised 2026-11-12 ([0086](../decisions/0086-the-brain-works-on-main-and-early-access-requires-gh.md), out of scope there).** A brain is pushed after each run but never pulled, so a second machine (or a scheduled run elsewhere) that pushed first makes the next push fail. Today "fix my backup" names that case and merges nothing. Left here: pulling before a run, and how a diverged history is merged without the user knowing Git. **Trigger:** a tester runs the brain on two machines.
+
 ### Hermes as an always-on brain operator
 **Post-1.0 ([0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md); designed in [0060](../decisions/0060-hermes-operator-and-learning.md), previously planned for 0.11.0).** The paragraph below records the earlier investigation; unattended catch-up has since shipped in 0.7.0. The new milestone includes native operation, private Telegram, scoped learning and prepared handoffs; external worker execution and supervision remain post-1.0.
 
