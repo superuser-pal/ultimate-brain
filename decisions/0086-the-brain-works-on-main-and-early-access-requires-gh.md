@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-11-12
 **Release:** 0.14.0
-**Amends:** [0078](0078-onboarding-and-early-access-in-0-14-0.md) §2, two sentences: "Optional, explained and stored as a setting rather than skipped: MarkItDown, the schedule and `gh`" (`gh` is required for early access; MarkItDown and the schedule stay optional) and "a private remote (created with `gh repo create --private` when `gh` is signed in, otherwise the steps)" (for early access, always created with `gh`; the steps for another Git host return at 1.0)
+**Amends:** [0078](0078-onboarding-and-early-access-in-0-14-0.md) §2, two sentences: "**Optional,** explained and stored as a setting rather than skipped: MarkItDown, the schedule and `gh`" (`gh` is required for early access; MarkItDown and the schedule stay optional) and "a private remote (created with `gh repo create --private` when `gh` is signed in, otherwise the steps)" (for early access, always created with `gh`; the steps for another Git host return at 1.0)
 **Keeps:** every other rule of 0078; 0038's `settings.push` default `auto`; 0040 and 0073 (this product repository's own pull requests, merged by the author on GitHub, are unchanged); Markdown + Git canonical with a private remote (docs/vision.md)
 
 ## Context
