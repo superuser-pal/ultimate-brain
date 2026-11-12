@@ -18,13 +18,17 @@ const GATES = { trust: 1.0, answerable: 0.9 };
 // Abstention (README "Abstention", CC-201): an answer abstains when the adapter says so, or when its text says the brain
 // does not hold what was asked. The text is cut into clauses: lines, then sentences at . ! ? ; followed by a space.
 // - SAYS_UNKNOWN: the speaker or the brain lacks the answer ("I couldn't find", "not in the brain", "no record of",
-//   "is not recorded", "I don't know"). One anywhere in the answer is an abstention.
+//   "is not recorded", "I don't know", "the brain holds no rule"). One anywhere in the answer is an abstention.
 // - SAYS_ABSENT: a thing is absent ("no recorded decision", "no deploy freeze is recorded"). An answer can state that as
 //   a fact beside its answer, so it is an abstention only when the answer says nothing else: every clause holds one of
-//   the two, or is NEUTRAL.
+//   the two, or is NEUTRAL; or when the answer opens with it (LEADS_ABSENT, CC-225).
+// - LEADS_ABSENT: the answer's first sentence (cut at . ! ? only, so a ";" keeps what follows in it) that is not
+//   NEUTRAL or a bare "no" is "No <thing> is / are / was / were / has been recorded / noted / held / documented", with
+//   no ";", and no comma or colon in <thing> ("No, Postmark was chosen and is recorded" is an answer, not an absence). Said first, the absence is the answer; after an answer it is a remark beside it.
 // - NEUTRAL: the `Evidence:` line, and narration of the search ("I searched the brain for …").
 const SAYS_UNKNOWN = [
   /\b(?:couldn't|could not|can't|cannot|can not|didn't|did not|wasn't able to|was not able to|unable to) (?:find|locate)\b/,
+  /\b(?:couldn't|could not) (?:establish|confirm|determine)\b/,
   /(?:\bnot|n't|\bnothing) (?:\w+ )?in the brain\b/,
   /\bno (?:records?|information|mention|evidence)\b/,
   /\bno (?:approved |eligible )?memor(?:y|ies)\b/,
@@ -33,15 +37,22 @@ const SAYS_UNKNOWN = [
   /\b(?:don't|do not) know\b/,
   /\bunknown\b/,
   /\b(?:doesn't|does not) (?:say|hold|record)\b/,
+  // CC-225: the brain or its stores as the subject ("the brain holds no rule", "my memories have no note on it"); one
+  // note lacking something ("the migration note has no owner") is not the brain lacking the answer.
+  /\b(?:brain|memories|notes) (?:\w+ )?(?:holds?|has|have|records?|contains?|keeps?) no\b/,
 ];
-const SAYS_ABSENT = [/\bno\b[^.;]{0,60}\b(?:recorded|documented)\b/, /\bno\b[^.;]{0,60}\bin the brain\b/];
+// No comma or colon between "no" and its verb (CC-225): "No, Postmark was chosen and is recorded" answers.
+const SAYS_ABSENT = [/\bno [^.;,:]{0,60}?\b(?:recorded|documented)\b/, /\bno [^.;,:]{0,60}?\bin the brain\b/];
+const LEADS_ABSENT = /^(?:no, )?no [^.;,:]{0,60}?\b(?:is|are|was|were|has been|have been) (?:\w+ )?(?:recorded|documented|noted|held)\b/;
 const NEUTRAL = [/^evidence\b/, /^i(?: have|'ve)? (?:searched|checked|looked|queried|ran|read)\b/];
 const MARKUP = /^[\s#>*_`-]+|[\s*_`]+$/g;
 
+/** An answer's lines, plain and lower case, with curly apostrophes straight. */
+const plainLines = (text) => String(text ?? "").replace(/[‘’]/g, "'").toLowerCase().split("\n").map((l) => l.replace(MARKUP, ""));
+
 /** The clauses of an answer: its lines, each cut into sentences except the Evidence line; plain, lower case. */
-function clauses(text) {
-  const lines = String(text ?? "").replace(/[‘’]/g, "'").toLowerCase().split("\n").map((l) => l.replace(MARKUP, ""));
-  return lines.flatMap((line) => (/^evidence\b/.test(line) ? [line] : line.split(/[.!?;]+(?=\s|$)/))).map((c) => c.replace(MARKUP, "")).filter(Boolean);
+function clauses(text, cut = /[.!?;]+(?=\s|$)/) {
+  return plainLines(text).flatMap((line) => (/^evidence\b/.test(line) ? [line] : line.split(cut))).map((c) => c.replace(MARKUP, "")).filter(Boolean);
 }
 
 /** Whether an answer's text says the brain does not hold what was asked (README "Abstention"). */
@@ -49,8 +60,72 @@ export function abstains(text) {
   const parts = clauses(text);
   const any = (patterns, clause) => patterns.some((re) => re.test(clause));
   if (parts.some((c) => any(SAYS_UNKNOWN, c))) return true;
+  const lead = clauses(text, /[.!?]+(?=\s|$)/).find((c) => !any(NEUTRAL, c) && c !== "no");
+  if (lead && !lead.includes(";") && LEADS_ABSENT.test(lead)) return true;
   return parts.some((c) => any(SAYS_ABSENT, c)) && parts.every((c) => any(SAYS_ABSENT, c) || any(NEUTRAL, c));
 }
+
+// Forbidden facts (README "Forbidden facts", CC-223): a forbidden fact counts only where the answer states it. A pattern's
+// match is not a statement when both hold:
+// - it only repeats the question: its text appears in the case's question (lower case, curly apostrophes straight), so a
+//   figure or a wording the question doesn't hold counts wherever it stands, even inside a denial;
+// - its sentence asks, restates or denies the question: the sentence ends with "?", or one of CUES comes before the match
+//   in the same clause (the text since the last , : dash or "but"); or the match is inside a quoted search query
+//   ("searched for "…""), with only other quoted terms between the search verb's "for" and it. Up to ten words, with no
+//   comma, colon or quote, may stand between the verb and its "for" ("searched the brain's memories (including replaced
+//   ones) and its notes for "…"", CC-225).
+// Sentences end at . ! ? ; followed by a space, and at a line break. A match spanning two sentences is a statement.
+const CUES = [
+  /\b(?:whether|if)\b/,
+  /\bnothing\b(?: \S+){0,4}? (?:says?|said|records?|recorded|holds?|held|shows?|showed|states?|stated|mentions?|mentioned|confirms?|confirmed|suggests?|indicates?)\b/,
+  /\bno (?:\w+ )?(?:notes?|records?|memor(?:y|ies)|evidence|sources?|sessions?|mentions?)\b/,
+  /(?:\bnot|n't|\bnever) (?:\w+ ){0,2}(?:says?|said|records?|recorded|holds?|held|shows?|showed|states?|stated|mentions?|mentioned|confirms?|confirmed|verify|verified|establish|established|find|found)\b/,
+];
+const SEARCHED = /\b(?:search(?:es|ed|ing)?|quer(?:y|ies|ied)|look(?:s|ed|ing)?) (?:[^\s,.;:!?"“”]+ ){0,10}?for\b/g;
+const CLAUSE_BREAK = /[,:\u2013\u2014]| - | but /;
+const straight = (text) => text.replace(/[‘’]/g, "'").toLowerCase();
+
+/** An answer's whitespace-collapsed text (as norm()) and its sentences as spans of that text. */
+function sentences(raw) {
+  const lined = String(raw ?? "").replace(/\s+/g, (ws) => (ws.includes("\n") ? "\n" : " ")).trim();
+  const spans = [];
+  let start = 0;
+  for (const m of lined.matchAll(/[.!?;]+(?=\s|$)|\n/g)) {
+    const end = m.index + m[0].length;
+    spans.push({ start, end, asks: m[0].includes("?") });
+    start = end;
+  }
+  if (start < lined.length) spans.push({ start, end: lined.length, asks: false });
+  return { text: lined.replace(/\n/g, " "), spans };
+}
+
+/** Whether a match only repeats the question inside a sentence that asks, restates or denies it. */
+function repeatsQuestion(m, text, spans, question) {
+  const said = straight(m[0]);
+  if (!said.trim() || !question.includes(said)) return false;
+  const span = spans.find((s) => m.index >= s.start && m.index < s.end);
+  if (!span || m.index + m[0].length > span.end) return false;
+  if (span.asks) return true;
+  const before = straight(text.slice(span.start, m.index));
+  if (inSearchQuery(before)) return true;
+  return CUES.some((cue) => cue.test(before.split(CLAUSE_BREAK).pop()));
+}
+
+/** Whether the text before a match ends inside a quoted search query: a search verb, then only quoted terms and an open quote. */
+function inSearchQuery(before) {
+  const verbs = [...before.matchAll(SEARCHED)];
+  if (!verbs.length) return false;
+  const after = before.slice(verbs.at(-1).index + verbs.at(-1)[0].length).replace(/[“”]/g, '"');
+  return after.replace(/"[^"]*"/g, " ").replace(/"[^"]*$/, '"').replace(/\b(?:and|or|plus)\b|[\s,]/g, "") === '"';
+}
+
+/** Whether an answer states a forbidden fact: every pattern has a match that is a statement (README "Forbidden facts"). */
+export function statesFact(fact, answerText, question) {
+  const { text, spans } = sentences(answerText);
+  const asked = straight(norm(String(question ?? "")));
+  return fact.all.every((re) => [...text.matchAll(new RegExp(re, "gi"))].some((m) => !repeatsQuestion(m, text, spans, asked)));
+}
+
 // The words that label a cited item in an answer.
 const LABEL_WORDS = {
   superseded: /supersed|previous|replaced|retired|no longer|used to|earlier|formerly|changed|old rule|corrected/i,
@@ -109,7 +184,7 @@ export function scoreAnswer(c, result) {
   const cited = new Set(answer.citations ?? []);
   const abstained = answer.abstained === true || abstains(answer.text);
   for (const id of c.forbidden_evidence) if (cited.has(id)) reasons.push(`cited forbidden ${id}`);
-  for (const f of c.forbidden_facts) if (matches(f, text)) reasons.push(`says what it must not: ${f.says}`);
+  for (const f of c.forbidden_facts) if (statesFact(f, answer.text, c.question)) reasons.push(`says what it must not: ${f.says}`);
   for (const { id, label } of c.labelled_evidence) if (cited.has(id) && !LABEL_WORDS[label].test(text)) reasons.push(`cites ${id} without saying it is ${label}`);
   if (c.kind === "unknown" || c.abstain) {
     if (!abstained) reasons.push("does not say the brain lacks the answer");
