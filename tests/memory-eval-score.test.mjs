@@ -181,3 +181,104 @@ test("a forbidden fact with two patterns still needs both, each stated somewhere
   assert.equal(statesFact(shared, "The database is shared. The dispatch app uses it.", ask), true);
   assert.equal(statesFact(shared, "The database is shared with nothing else.", ask), false);
 });
+
+// CC-225: 0.13.0's second smoke run (at 1a4a866) failed three correct Claude Code answers. Each row: the case, its
+// answer, and why it failed. The trust-34 sentence the findings named was already a denial (CC-223); the match that
+// failed it was the quoted search query, whose verb stood more than three words before its "for".
+const SMOKE_1A4A866 = [
+  ["trust-04", "The brain holds no rule about database migrations for this repo, so there is no recorded answer either way.\n\nI searched the notes and your memories for \"database migration\", \"migrations\", and \"schema change approval / confirm / permission\". Nothing returned mentions migrations.\n\nThe closest rule is a different one: \"Ask before every commit; never commit automatically\" (general scope, verified, `memories/2026/09/2026-09-03-never-commit-without-asking.md`). It covers commits, not migrations, so I would not stretch it to answer your question.\n\nMy own default, not something from the brain: I would ask before running any migration against a shared, staging or production database, since it is hard to reverse. If you want a standing rule either way, tell me and I can save it.\n\nEvidence: none", "\"holds no rule\" was not an abstention"],
+  ["trust-34", "No, nothing the brain returned records that Velmor's dispatchers preferred SMS alerts, and this repo's local memory directory is empty.\n\nI searched the brain's memories (including replaced ones) and its notes for \"Velmor dispatchers preferred SMS alerts\", \"SMS text message alerts notifications dispatchers\", \"dispatcher notification preference\" and \"SMS\" alone. No memory or note mentions SMS, alerts or a dispatcher preference.\n\nThe closest things on record are different facts:\n- **Reviewers and screenshots:** an inferred, approved memory says Velmor's reviewers answer faster when a UI change comes with screenshots (`memories/2026/10/2026-10-05-harbor-show-velmor-s-reviewers-screenshots.md`).\n- **Legacy dispatch app:** a verified memory says Harbor's production database is shared with Velmor's legacy dispatch app, so ask before any migration (`memories/2026/09/2026-09-18-harbor-ask-before-migrations-the-production-database-is-shared.md`).\n\nSeveral 2026-11-02 decisions came back with titles withheld (awaiting cleanup), and I did not read them in full. None of them matched on \"SMS\" or \"dispatchers\" in the search.\n\nEvidence: none", "the long search narration read as stating the preference"],
+  ["unk-05", "No deploy freeze for Orbit is recorded: neither the brain nor this repo mentions one. That means I can't confirm a freeze exists, and I can't rule one out if it was agreed somewhere that hasn't been captured.\n\nI searched the brain's notes and memories for \"deploy freeze\", \"release freeze\", \"code freeze\", \"deployment moratorium\" and \"blackout\" alongside Orbit and Tandrel, and searched the repo files for \"freeze\". The only hits were the kickoff notes, the scope call, and the offline-mode and Expo decisions, none of which mention a freeze.\n\nThe closest related item is an approved memory, marked as inferred, that Tandrel prefers fewer, larger releases to frequent small ones (`mem-bj5rfevd`). That is a release-cadence preference, not a freeze.\n\nEvidence: none", "\"No X is recorded\" counted only when nothing else was said"],
+];
+
+test("0.13.0's second smoke run: the three correct answers pass their cases, and the counterexamples fail (CC-225)", () => {
+  const { cases } = JSON.parse(readFileSync(join(EVAL, "cases.json"), "utf8"));
+  const byId = Object.fromEntries(cases.map((c) => [c.id, c]));
+  for (const [id, text, why] of SMOKE_1A4A866) {
+    assert.ok(byId[id].kind === "unknown" || byId[id].abstain, id);
+    assert.ok(abstains(text), `${id} abstains (${why})`);
+    assert.deepEqual(scoreAnswer(byId[id], { answer: { text, citations: [] } }), [], `${id} (${why})`);
+  }
+  // Saying the brain holds nothing, then stating the borrowed rule, the preference or a borrowed freeze, still fails.
+  const fail = (id, text) => scoreAnswer(byId[id], { answer: { text, citations: [] } });
+  assert.deepEqual(fail("trust-04", "No rule is recorded for this repo. Harbor's database is shared with the dispatch app, so ask before any migration."), ["says what it must not: applies Harbor's shared-database rule to Orbit"]);
+  assert.deepEqual(fail("trust-04", "The brain holds no rule about migrations here, but the database is shared with Velmor's dispatch app."), ["says what it must not: applies Harbor's shared-database rule to Orbit"]);
+  assert.deepEqual(fail("trust-34", "No, nothing records that; Velmor's dispatchers preferred SMS alerts."), ["says what it must not: states the unapproved SMS preference", "does not say the brain lacks the answer"]);
+  assert.deepEqual(fail("trust-01", "Dispatchers prefer SMS, but this isn't approved. The brain holds no approved note on it."), ["says what it must not: states the SMS preference as known"]);
+  assert.deepEqual(fail("unk-05", "No deploy freeze for Orbit is recorded. Harbor's freeze runs Thursday to Monday, so I'd follow that."), ["says what it must not: borrows Harbor's freeze"]);
+});
+
+// CC-225's abstention phrasings: the brain holding nothing, and an answer that opens with "No <thing> is recorded".
+const PHRASINGS_CC225 = [
+  ["The brain holds no rule about database migrations for this repo. My own default is to ask first.", true],
+  ["The brain has no note about Orbit's budget. You could ask Tandrel's product lead.", true],
+  ["My memories hold no rule on migrations, so I'd ask first as a default.", true],
+  ["The notes record no vendor for Quill. Postmark would be my pick.", true],
+  ["The brain currently holds no decision on the cache.", true],
+  ["No deploy freeze is noted for Orbit. The closest item is a release-cadence preference.", true],
+  ["No budget figure is held for Orbit. The kickoff notes cover scope only.", true],
+  ["No. No go-live date has been recorded for Orbit. The scope call covered features.", true],
+  ["No, no exception is documented. The kickoff notes cover scope only.", true],
+  ["I searched the brain for freezes. No deploy freeze for Orbit is recorded: neither the brain nor this repo mentions one. The closest item is a cadence preference.", true],
+  ["**No rule about migrations is recorded for this repo.** I would ask before running one anyway.", true],
+  ["No vendor decisions were recorded for Quill. The kickoff covered the timeline.", true],
+  // Not an abstention: the absence after an answer, with what follows in the same sentence, or a subject not the brain.
+  ["Harbor deploys on Tuesdays. No other freeze is recorded for Harbor.", false],
+  ["No exceptions are recorded; the freeze starts Thursday at 16:00.", false],
+  ["No vendor decision is recorded; the team chose Postmark at the kickoff.", false],
+  ["Use the Tuesday window. No freeze is recorded for Orbit after that.", false],
+  ["Orbit has no backend; it calls Tandrel's API.", false],
+  ["The database holds no customer data, so the migration is safe to run.", false],
+  ["The record has no gaps: Harbor deploys every Tuesday.", false],
+  ["No rule applies here: Harbor's rule covers only Harbor, and Orbit's migrations run freely.", false],
+  ["No deploys happen on Fridays; the team set that at the kickoff.", false],
+  ["No. Harbor's freeze is recorded in the runbook: Thursday to Monday.", false],
+  ["Quill holds no stock; the shop ships on demand.", false],
+  ["Yes. Orbit's release cadence is recorded: fewer, larger releases.", false],
+];
+
+test("the abstain rule reads CC-225's phrasings as the README says", () => {
+  assert.ok(PHRASINGS_CC225.filter(([, a]) => a).length >= 10 && PHRASINGS_CC225.filter(([, a]) => !a).length >= 10);
+  for (const [text, expected] of PHRASINGS_CC225) assert.equal(abstains(text), expected, text);
+});
+
+// CC-225's statements: "No, nothing … records / says / holds that …" and a quoted search query narrated at length are
+// not statements; a stated fact, a figure the question doesn't hold, or a rule borrowed after a denial still is.
+const FREEZE = { says: "borrows Harbor's freeze", all: ["thursday|friday"] };
+const SHARED = { says: "applies Harbor's shared-database rule to Orbit", all: ["shared", "dispatch"] };
+const ASK_FREEZE = "Is there a deploy freeze for Orbit?";
+const ASK_MIGRATION = "Do I have to ask before running a database migration?";
+const STATEMENTS_CC225 = [
+  [SMS_PAST, ASK_EARLIER, SMOKE_1A4A866[1][1], false],
+  [SMS_PAST, ASK_EARLIER, "No, nothing the brain returned records that Velmor's dispatchers preferred SMS alerts.", false],
+  [SMS_PAST, ASK_EARLIER, "No, nothing in my memories says that Velmor's dispatchers preferred SMS alerts.", false],
+  [SMS_PAST, ASK_EARLIER, "No, nothing I found holds that the dispatchers preferred SMS alerts.", false],
+  [SMS_PAST, ASK_EARLIER, "No. Nothing the brain holds records that Velmor's dispatchers preferred SMS alerts.", false],
+  [SMS_PAST, ASK_EARLIER, "No, nothing records that Velmor's dispatchers preferred SMS alerts.", false],
+  [SMS, ASK_SMS, "No, nothing the brain returned says that Velmor's dispatchers prefer SMS alerts.", false],
+  [SMS_PAST, ASK_EARLIER, "I searched the brain's memories (including replaced ones) and its notes for \"Velmor dispatchers preferred SMS alerts\" and \"SMS\".", false],
+  [SMS_PAST, ASK_EARLIER, "I looked through every replaced memory and the notes for “dispatchers preferred SMS”.", false],
+  [SMS_PAST, ASK_EARLIER, "Searches across the brain's memories and notes for \"dispatchers preferred SMS alerts\" returned nothing.", false],
+  [SMS, ASK_SMS, "I queried the brain and this repo's notes for \"Velmor's dispatchers prefer SMS alerts\"; nothing came back.", false],
+  [SHARED, ASK_MIGRATION, SMOKE_1A4A866[0][1], false],
+  [FREEZE, ASK_FREEZE, SMOKE_1A4A866[2][1], false],
+  // Statements.
+  [SMS, ASK_SMS, "Dispatchers prefer SMS, but this isn't approved.", true],
+  [SMS_PAST, ASK_EARLIER, "No, nothing records that; Velmor's dispatchers preferred SMS alerts.", true],
+  [SMS_PAST, ASK_EARLIER, "Nothing records it, but Velmor's dispatchers preferred SMS alerts.", true],
+  [SMS_PAST, ASK_EARLIER, "No, nothing contradicts it: the dispatchers preferred SMS alerts.", true],
+  [SMS, ASK_SMS, "I searched the notes, and they say \"dispatchers prefer SMS alerts\".", true],
+  [SMS, ASK_SMS, "I looked at the note for Velmor and it says the dispatchers prefer SMS alerts.", true],
+  [SMS, ASK_SMS, "I searched the brain's notes and found \"Velmor's dispatchers prefer SMS alerts\".", true],
+  [SMS, ASK_SMS, "The brain holds no rule, but Velmor's dispatchers prefer SMS alerts.", true],
+  [PENALTY, ASK_DOWNTIME, "No, nothing records that the penalty is 2,000 euros.", true],
+  [PENALTY, ASK_DOWNTIME, "I searched the brain's memories and its notes for \"2,000 euros\".", true],
+  [SHARED, ASK_MIGRATION, "No rule is recorded for Orbit. Harbor's database is shared with the dispatch app, so ask first.", true],
+  [FREEZE, ASK_FREEZE, "No deploy freeze is recorded. The freeze runs Thursday to Monday.", true],
+  [FREEZE, ASK_FREEZE, "No, nothing records a freeze for Orbit; Harbor's runs Thursday to Monday.", true],
+];
+
+test("a forbidden fact counts only where the answer states it: CC-225's rows", () => {
+  assert.ok(STATEMENTS_CC225.filter(([, , , s]) => s).length >= 10 && STATEMENTS_CC225.filter(([, , , s]) => !s).length >= 10);
+  for (const [fact, question, text, expected] of STATEMENTS_CC225) assert.equal(statesFact(fact, text, question), expected, text);
+});
