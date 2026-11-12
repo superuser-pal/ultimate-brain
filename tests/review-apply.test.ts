@@ -396,6 +396,32 @@ test("Request revision is recorded, the new draft replaces the stored proposal w
   assert.deepEqual(await errors(dir), []);
 });
 
+test("a drafted revision is applied only after a new submission accepts its exact wording (§7.3, §7.8)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { id, body, ids } = await published(dir);
+  const projectPath = "projects/acme-website/project.md";
+  const asked = decide(decide(body, ids[0]!, "Request revision"), ids[1]!, "Accept").replace(new RegExp(`(## \\[[a-z]+ · ${ids[0]}\\][\\s\\S]*?Decision: Request revision)`), "$1\nRevision request: make it April");
+  const first = await submit(dir, id, asked);
+  assert.deepEqual(first.results.map((r) => [r.item_id, r.result]), [[ids[1], "applied"]], "the accepted item applies in the same submission");
+  const revised = await run(dir, ["proposal", "revise"], { proposal: id, item_id: ids[0], proposed: "2027-04", previous: "2027-03" });
+  assert.equal(revised.code, 0, revised.stdout);
+  assert.equal((await attributes(dir, projectPath)).facts.launch_date, "2027-02", "a revision request applies nothing");
+  const [rendered] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  const drafted = rendered.item_updates[0].section as string;
+  const page = asked.replace(new RegExp(`## \\[[a-z]+ · ${ids[0]}\\][\\s\\S]*?(?=\\n## |$)`), drafted.trimEnd());
+  assert.match(page, /Decision: Pending/);
+  const LATER = "2026-12-10T09:20:00Z";
+  const unsubmitted = (await run(dir, ["sync", "plan"], { as_of: LATER, rows: [row(id, page, { decided: false, decided_at: null, page_edited_at: LATER })] }, LATER)).json.data;
+  assert.deepEqual(unsubmitted.review_decisions, [], "a draft on the page is not a decision until the user submits");
+  const accepted = decide(page, ids[0]!, "Accept");
+  const submitted = (await run(dir, ["sync", "plan"], { as_of: LATER, rows: [row(id, accepted, { decided_at: LATER, page_edited_at: LATER })] }, LATER)).json.data;
+  for (const decision of submitted.review_decisions) for (const item of decision.items) item.verified = { snapshot_hash: item.snapshot_hash, proposed_hash: item.proposed_hash };
+  const applied = await run(dir, ["sync", "apply"], submitted, LATER);
+  assert.deepEqual(applied.json.data.review_results.map((r: { item_id: string; result: string }) => [r.item_id, r.result]), [[ids[0], "applied"]], "only the newly accepted draft applies; the item applied before is not applied again");
+  assert.equal((await attributes(dir, projectPath)).facts.launch_date, "2027-04");
+  assert.deepEqual(await errors(dir), []);
+});
+
 test("applying an old plan again after the revision was drafted is a no-op (STALE_PLAN); a request read after the draft is recorded (cli §5.27)", async (context) => {
   const dir = await fixtureCopy(context);
   const { id, body, ids } = await published(dir);
