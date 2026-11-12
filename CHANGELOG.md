@@ -2,6 +2,11 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.14.0-rc.1 — 2026-11-12
+
+
+Skills: ultimate-brain-skills 1.8.1 (sha256-8d2a9694c25c79ee316d235977875a66424b0b321524bb8c25fdc77c53181218)
+
 ## 0.13.0 — 2026-11-12
 
 - CC-181 (#285): development only: the trust repair agreement is recorded as decision 0077 with 0.13.0's task plan; the weekly review moves to 0.14.0, and onboarding and the feature cutoff to 0.15.0.
