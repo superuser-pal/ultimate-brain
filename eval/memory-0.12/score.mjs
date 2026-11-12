@@ -25,6 +25,9 @@ const GATES = { trust: 1.0, answerable: 0.9 };
 // - LEADS_ABSENT: the answer's first sentence (cut at . ! ? only, so a ";" keeps what follows in it) that is not
 //   NEUTRAL or a bare "no" is "No <thing> is / are / was / were / has been recorded / noted / held / documented", with
 //   no ";", and no comma or colon in <thing> ("No, Postmark was chosen and is recorded" is an answer, not an absence). Said first, the absence is the answer; after an answer it is a remark beside it.
+//   Since CC-231 it may also be "There is / 's / are / was / were no recorded <thing>" or "There is no <thing> recorded /
+//   documented / noted / held", with no "is", "are", "was", "were", "be", "been", "that" or "but" in <thing> ("There is
+//   no doubt the freeze was recorded" is an answer).
 // - NEUTRAL: the `Evidence:` line, and narration of the search ("I searched the brain for …").
 const SAYS_UNKNOWN = [
   /\b(?:couldn't|could not|can't|cannot|can not|didn't|did not|wasn't able to|was not able to|unable to) (?:find|locate)\b/,
@@ -43,7 +46,10 @@ const SAYS_UNKNOWN = [
 ];
 // No comma or colon between "no" and its verb (CC-225): "No, Postmark was chosen and is recorded" answers.
 const SAYS_ABSENT = [/\bno [^.;,:]{0,60}?\b(?:recorded|documented)\b/, /\bno [^.;,:]{0,60}?\bin the brain\b/];
-const LEADS_ABSENT = /^(?:no, )?no [^.;,:]{0,60}?\b(?:is|are|was|were|has been|have been) (?:\w+ )?(?:recorded|documented|noted|held)\b/;
+const LEADS_ABSENT = [
+  /^(?:no, )?no [^.;,:]{0,60}?\b(?:is|are|was|were|has been|have been) (?:\w+ )?(?:recorded|documented|noted|held)\b/,
+  /^(?:no, )?there(?: is|'s| are| was| were) no (?:(?!\b(?:is|are|was|were|be|been|that|but)\b)[^.;,:]){0,60}?\b(?:recorded|documented|noted|held)\b/,
+];
 const NEUTRAL = [/^evidence\b/, /^i(?: have|'ve)? (?:searched|checked|looked|queried|ran|read)\b/];
 const MARKUP = /^[\s#>*_`-]+|[\s*_`]+$/g;
 
@@ -61,7 +67,7 @@ export function abstains(text) {
   const any = (patterns, clause) => patterns.some((re) => re.test(clause));
   if (parts.some((c) => any(SAYS_UNKNOWN, c))) return true;
   const lead = clauses(text, /[.!?]+(?=\s|$)/).find((c) => !any(NEUTRAL, c) && c !== "no");
-  if (lead && !lead.includes(";") && LEADS_ABSENT.test(lead)) return true;
+  if (lead && !lead.includes(";") && any(LEADS_ABSENT, lead)) return true;
   return parts.some((c) => any(SAYS_ABSENT, c)) && parts.every((c) => any(SAYS_ABSENT, c) || any(NEUTRAL, c));
 }
 
@@ -71,17 +77,22 @@ export function abstains(text) {
 //   figure or a wording the question doesn't hold counts wherever it stands, even inside a denial;
 // - its sentence asks, restates or denies the question: the sentence ends with "?", or one of CUES comes before the match
 //   in the same clause (the text since the last , : dash or "but"); or the match is inside a quoted search query
-//   ("searched for "…""), with only other quoted terms between the search verb's "for" and it. Up to ten words, with no
-//   comma, colon or quote, may stand between the verb and its "for" ("searched the brain's memories (including replaced
-//   ones) and its notes for "…"", CC-225).
+//   ("searched for "…"", or "under "…"" since CC-231), with only other quoted terms between the search verb's "for" or
+//   "under" and it. Up to twelve words, with no colon, quote or sentence end, may stand between the verb and its "for"
+//   or "under" ("searched the brain's memories (including replaced ones) and its notes for "…"", CC-225; "searched both
+//   the notes and the session memories, including replaced ones, under "…"", CC-231).
+// "Nothing" or "None of" (CC-231) denies with up to four words before its verb, or up to eight when it opens the clause
+// ("Nothing in the notes or the session memories records that …").
 // Sentences end at . ! ? ; followed by a space, and at a line break. A match spanning two sentences is a statement.
+const DENIED = "(?:says?|said|records?|recorded|holds?|held|shows?|showed|states?|stated|mentions?|mentioned|confirms?|confirmed|suggests?|indicates?)";
 const CUES = [
   /\b(?:whether|if)\b/,
-  /\bnothing\b(?: \S+){0,4}? (?:says?|said|records?|recorded|holds?|held|shows?|showed|states?|stated|mentions?|mentioned|confirms?|confirmed|suggests?|indicates?)\b/,
+  new RegExp(`\\b(?:nothing|none of)\\b(?: \\S+){0,4}? ${DENIED}\\b`),
+  new RegExp(`^\\s*(?:nothing|none of)\\b(?: \\S+){0,8}? ${DENIED}\\b`),
   /\bno (?:\w+ )?(?:notes?|records?|memor(?:y|ies)|evidence|sources?|sessions?|mentions?)\b/,
   /(?:\bnot|n't|\bnever) (?:\w+ ){0,2}(?:says?|said|records?|recorded|holds?|held|shows?|showed|states?|stated|mentions?|mentioned|confirms?|confirmed|verify|verified|establish|established|find|found)\b/,
 ];
-const SEARCHED = /\b(?:search(?:es|ed|ing)?|quer(?:y|ies|ied)|look(?:s|ed|ing)?) (?:[^\s,.;:!?"“”]+ ){0,10}?for\b/g;
+const SEARCHED = /\b(?:search(?:es|ed|ing)?|quer(?:y|ies|ied)|look(?:s|ed|ing)?) (?:[^\s.;:!?"“”]+ ){0,12}?(?:for|under)\b/g;
 const CLAUSE_BREAK = /[,:\u2013\u2014]| - | but /;
 const straight = (text) => text.replace(/[‘’]/g, "'").toLowerCase();
 
