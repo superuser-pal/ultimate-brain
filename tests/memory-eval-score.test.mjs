@@ -286,3 +286,99 @@ test("a forbidden fact counts only where the answer states it: CC-225's rows", (
   assert.ok(STATEMENTS_CC225.filter(([, , , s]) => s).length >= 10 && STATEMENTS_CC225.filter(([, , , s]) => !s).length >= 10);
   for (const [fact, question, text, expected] of STATEMENTS_CC225) assert.equal(statesFact(fact, text, question), expected, text);
 });
+
+// CC-231: 0.14.0-rc.1's smoke run (at d2cf805) failed two correct Claude Code answers. Each row: the case, its answer,
+// and why it failed. trust-34's "No." standing as its own sentence was not the cause: "Nothing … records that …" was
+// already a denial (CC-225's rows). The match that failed it was the search narration, "searched … memories, including
+// replaced ones, under "…"": "under", not "for", with commas before it.
+const SMOKE_D2CF805 = [
+  ["trust-04", "There is no recorded rule about database migrations for Orbit. I checked the brain's approved memories for this repo, project, area and stack, its notes, and the repo itself, and nothing mentions migrations.\n\nThe only \"ask first\" rule on record is about commits: ask before every commit, never commit automatically (`memories/2026/09/2026-09-03-never-commit-without-asking.md`). That rule does not extend to migrations.\n\nSo you are not bound by any rule of your own here. If I were the one running it, I would still confirm with you before migrating any shared, staging or production database, because that is hard to undo; a local dev database I would just run.\n\nIf you want a standing rule, say \"remember: ask before running migrations in orbit-app\" and I'll propose it to the brain.\n\nEvidence: none", "an opening \"There is no recorded rule\" was not an abstention"],
+  ["trust-34", "No. Nothing the brain returned records that Velmor's dispatchers preferred SMS alerts.\n\nI searched both the notes and the session memories, including replaced ones, under \"Velmor dispatchers preferred SMS alerts\", \"dispatcher SMS text notifications preference\" and \"alerts notification channel dispatch\". No memory or note mentions SMS, alert channels or a dispatcher preference.\n\nThe only dispatch-related memory is a different fact: Harbor's production database is shared with Velmor's legacy dispatch app, so ask before any migration (`memories/2026/09/2026-09-18-harbor-ask-before-migrations-the-production-database-is-shared.md`).\n\nSome notes on the Harbor support call are partly withheld pending cleanup, so I can only speak to what the brain returns.\n\nEvidence: none", "the search narrated \"under\" a quoted phrase read as stating the preference"],
+];
+
+test("0.14.0-rc.1's smoke run: the two correct answers pass their cases, and the counterexamples fail (CC-231)", () => {
+  const { cases } = JSON.parse(readFileSync(join(EVAL, "cases.json"), "utf8"));
+  const byId = Object.fromEntries(cases.map((c) => [c.id, c]));
+  for (const [id, text, why] of SMOKE_D2CF805) {
+    assert.ok(byId[id].abstain, id);
+    assert.ok(abstains(text), `${id} abstains (${why})`);
+    assert.deepEqual(scoreAnswer(byId[id], { answer: { text, citations: [] } }), [], `${id} (${why})`);
+  }
+  const fail = (id, text) => scoreAnswer(byId[id], { answer: { text, citations: [] } });
+  // "There is no recorded rule", then the borrowed rule stated anyway, still fails.
+  assert.deepEqual(fail("trust-04", "There is no recorded rule about database migrations for Orbit. Harbor's database is shared with Velmor's dispatch app, so ask first."), ["says what it must not: applies Harbor's shared-database rule to Orbit"]);
+  // A denial, then the fact stated, still fails.
+  assert.deepEqual(fail("trust-34", "Nothing records that Velmor's dispatchers preferred SMS alerts. But Velmor's dispatchers preferred SMS alerts."), ["says what it must not: states the unapproved SMS preference", "does not say the brain lacks the answer"]);
+  // A stated fact, with or without a caveat, and a figure anywhere, still fail.
+  assert.deepEqual(fail("trust-34", "No. None of the notes is approved, but Velmor's dispatchers preferred SMS alerts."), ["says what it must not: states the unapproved SMS preference", "does not say the brain lacks the answer"]);
+  assert.deepEqual(fail("trust-01", "There is no approved note, but dispatchers prefer SMS."), ["says what it must not: states the SMS preference as known", "does not say the brain lacks the answer"]);
+});
+
+// CC-231's abstention phrasings: an answer that opens with "There is no recorded <thing>" or "There is no <thing> recorded".
+const PHRASINGS_CC231 = [
+  ["There is no recorded rule about database migrations for Orbit. The only ask-first rule is about commits.", true],
+  ["There's no deploy freeze recorded for Orbit. The closest item is a release-cadence preference.", true],
+  ["There’s no recorded rule on migrations for Orbit. I'd ask first anyway.", true],
+  ["There are no recorded exceptions for Quill. The kickoff notes cover scope only.", true],
+  ["There was no vendor decision documented for Quill. Postmark would be my pick.", true],
+  ["There is no budget figure held for Orbit. Ask Tandrel's product lead.", true],
+  ["No. There is no go-live date recorded for Orbit. The scope call covered features.", true],
+  ["**There is no recorded rule about migrations here.** I would ask before running one.", true],
+  ["I checked the brain's notes. There is no rule about migrations recorded for Orbit. Ask first by default.", true],
+  ["There were no exceptions noted for Harbor's freeze. The runbook covers the window only.", true],
+  // Not an abstention: the absence after an answer or before a ";", an aux verb or "that" inside it, or no "there is no".
+  ["Harbor deploys on Tuesdays. There is no other freeze recorded for Harbor.", false],
+  ["There is no recorded decision; the team chose Postmark at the kickoff.", false],
+  ["There is no doubt the freeze was recorded in the runbook. It runs Thursday to Monday.", false],
+  ["There is no question that Postmark is recorded as the vendor. The team chose it at the kickoff.", false],
+  ["There is no backend in Orbit. It calls Tandrel's API.", false],
+  ["There are no deploys on Fridays, as the team recorded at the kickoff. Tuesdays are the window.", false],
+  ["There is no need to ask: the rule recorded for Orbit covers commits only. Run the migration.", false],
+  ["Is there no recorded rule? Harbor's rule says to ask first.", false],
+  ["There is nothing to ask. The migration rule is recorded in the runbook.", false],
+  ["Use npm workspaces. There's no pnpm recorded for Harbor any more.", false],
+];
+
+test("the abstain rule reads CC-231's phrasings as the README says", () => {
+  assert.ok(PHRASINGS_CC231.filter(([, a]) => a).length >= 8 && PHRASINGS_CC231.filter(([, a]) => !a).length >= 8);
+  for (const [text, expected] of PHRASINGS_CC231) assert.equal(abstains(text), expected, text);
+});
+
+// CC-231's statements: "Nothing" or "None of", up to eight filler words (README), then a verb denying that anything
+// records, says or holds the fact, and a quoted search query after "searched … under", are not statements; a fact stated after
+// the denial, a figure the question doesn't hold, or unquoted text after "under" still is.
+const STATEMENTS_CC231 = [
+  [SMS_PAST, ASK_EARLIER, SMOKE_D2CF805[1][1], false],
+  [SMS_PAST, ASK_EARLIER, "No. Nothing the brain returned records that Velmor's dispatchers preferred SMS alerts.", false],
+  [SMS_PAST, ASK_EARLIER, "No. None of the notes records that Velmor's dispatchers preferred SMS alerts.", false],
+  [SMS_PAST, ASK_EARLIER, "None of the memories or notes the brain returned says that Velmor's dispatchers preferred SMS alerts.", false],
+  [SMS_PAST, ASK_EARLIER, "Nothing in the notes or the session memories holds that the dispatchers preferred SMS alerts.", false],
+  [SMS, ASK_SMS, "None of them say that Velmor's dispatchers prefer SMS alerts.", false],
+  [SMS, ASK_SMS, "No. None of what the brain returned shows that Velmor's dispatchers prefer SMS alerts or email.", false],
+  [SMS_PAST, ASK_EARLIER, "I searched both the notes and the session memories, including replaced ones, under \"Velmor dispatchers preferred SMS alerts\".", false],
+  [SMS_PAST, ASK_EARLIER, "I searched the memories under \"dispatchers preferred SMS\" and \"SMS\"; nothing came back.", false],
+  [SMS, ASK_SMS, "I looked in the notes, the memories and the repo under “Velmor's dispatchers prefer SMS alerts”.", false],
+  [SHARED, ASK_MIGRATION, SMOKE_D2CF805[0][1], false],
+  // Statements.
+  [SMS_PAST, ASK_EARLIER, "Nothing records that Velmor's dispatchers preferred SMS alerts. But Velmor's dispatchers preferred SMS alerts.", true],
+  [SMS_PAST, ASK_EARLIER, "None of the notes records it, but Velmor's dispatchers preferred SMS alerts.", true],
+  [SMS_PAST, ASK_EARLIER, "None of that matters: Velmor's dispatchers preferred SMS alerts.", true],
+  [SMS_PAST, ASK_EARLIER, "Nothing in the brain contradicts that Velmor's dispatchers preferred SMS alerts.", true],
+  [SMS, ASK_SMS, "None of the notes doubt that Velmor's dispatchers prefer SMS alerts.", true],
+  // The review of #339: a word outside the filler list ends the denial, so what the note records is stated.
+  [SMS, ASK_SMS, "Nothing is missing because the note records that dispatchers prefer SMS alerts.", true],
+  [SMS, ASK_SMS, "None of us doubt the note records that Velmor's dispatchers prefer SMS alerts.", true],
+  [SMS_PAST, ASK_EARLIER, "Nothing in the brain changed after the session recorded that the dispatchers preferred SMS alerts.", true],
+  [PENALTY, ASK_DOWNTIME, "None of the notes records that the penalty is 2,000 euros.", true],
+  [PENALTY, ASK_DOWNTIME, "Nothing in the notes or the session memories records a 2,000 euro penalty.", true],
+  [SMS, ASK_SMS, "I searched under \"alerts\" and the note says \"Velmor's dispatchers prefer SMS alerts\".", true],
+  [SMS, ASK_SMS, "I looked under the Velmor note: the dispatchers prefer SMS alerts.", true],
+  [PENALTY, ASK_DOWNTIME, "I searched the brain under \"2,000 euros\".", true],
+  [SHARED, ASK_MIGRATION, "There is no recorded rule about migrations for Orbit. Harbor's database is shared with the dispatch app, so ask first.", true],
+  [SMS, ASK_SMS, "Dispatchers prefer SMS, but this isn't approved.", true],
+];
+
+test("a forbidden fact counts only where the answer states it: CC-231's rows", () => {
+  assert.ok(STATEMENTS_CC231.filter(([, , , s]) => s).length >= 8 && STATEMENTS_CC231.filter(([, , , s]) => !s).length >= 8);
+  for (const [fact, question, text, expected] of STATEMENTS_CC231) assert.equal(statesFact(fact, text, question), expected, text);
+});
