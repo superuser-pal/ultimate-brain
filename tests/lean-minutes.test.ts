@@ -214,6 +214,55 @@ test("the inline-quote and legacy shapes read exactly as before 0.14.0", () => {
   assert.equal(JSON.stringify(plan(fixture("inline-summary.md"))), JSON.stringify(golden("inline-plan.json")), "key for key, in order");
 });
 
+// ---- CC-229: Markdown escapes (capture-and-review §4.3). The Notion API's markdown export writes `\[s1.i1\]`; the reader reads `[s1.i1]`. ----
+
+/** Every ASCII punctuation character escaped, as a Markdown writer may: the text Markdown reads is unchanged. */
+const escapeAll = (text: string): string => text.replace(/[!-/:-@[-`{-~]/g, "\\$&");
+const unescapeBrackets = (text: string): string => text.replace(/\\([[\]])/g, "$1");
+
+test("minutes read through Notion's markdown export keep their ids, tags and quotes (the CC-197 gate's run 1)", () => {
+  const escaped = fixture("notion-export-summary.md");
+  const transcript = fixture("notion-export-transcript.md");
+  assert.ok(escaped.includes("\\[s1.i1\\]") && escaped.includes("\\[q1\\]"), "the fixture holds the export's escaped brackets");
+  const data = plan(escaped, transcript);
+  assert.equal(data.shape, "lean");
+  assert.equal(data.ok, true, JSON.stringify(data.problems));
+  assert.deepEqual(data.problems, []);
+  assert.deepEqual(data.items!.map((item) => item.id), ["s1.i1", "s1.i2", "s1.i3", "s1.i4", "s2.i1", "s2.i2", "s2.i3", "s2.i4"]);
+  assert.deepEqual(data.items!.find((item) => item.id === "s1.i2")?.text, "Decided: Move the public launch from 10 February to 3 March 2027.");
+  assert.deepEqual(data.items!.find((item) => item.id === "s1.i2")?.anchors, ["We move the public launch from the tenth of February", "to the third of March 2027"]);
+  assert.deepEqual(data.selection.slice(0, 2), [{ id: "s1", effective: "use", explicit: "use" }, { id: "s2", effective: "use", explicit: "use" }]);
+  assert.deepEqual(data.quick.map((entry) => [entry.follow_up, entry.task, entry.text]), [["q1", true, "Forward the city regulation PDF to Tomas"]]);
+  assert.deepEqual(data.unnumbered, []);
+  assert.ok(data.body !== null && !data.body.includes("\\["), "the extract holds the transcript's paragraphs as written");
+  const plain = unescapeBrackets(escaped);
+  assert.ok(!plain.includes("\\"));
+  assert.equal(JSON.stringify(data), JSON.stringify(plan(plain, transcript)), "byte-identical to the same minutes with no escape");
+});
+
+test("a Markdown escape on any punctuation reads as the character, in every shape: the goldens stay the same", () => {
+  assert.equal(JSON.stringify(plan(escapeAll(LEAN))), JSON.stringify(plan(LEAN)), "lean");
+  const golden = (name: string) => JSON.stringify(JSON.parse(fixture(name)));
+  assert.equal(JSON.stringify(plan(escapeAll(fixture("inline-summary.md")))), golden("inline-plan.json"), "inline-quote");
+  assert.equal(JSON.stringify(plan(escapeAll(fixture("legacy-summary.md")))), golden("legacy-plan.json"), "legacy");
+  const R = join(import.meta.dirname, "fixtures", "minutes-0067");
+  assert.equal(JSON.stringify(plan(escapeAll(readFileSync(join(R, "blind-summary.md"), "utf8")), readFileSync(join(R, "transcript.md"), "utf8"))), golden("inline-0067-plan.json"), "0067 inline-quote");
+  // A backslash before a letter, a digit or a space is not an escape, and a doubled one is one backslash: both stay in the text read.
+  const kept = plan(swap(LEAN, "- Open: whether the school group can join [s1.i5]", "- Open: whether C:\\temp or 2\\3 \\ can join \\\\[s1.i5]"));
+  assert.equal(kept.items!.find((item) => item.id === "s1.i5")?.text, "Open: whether C:\\temp or 2\\3 \\ can join \\", "only the escape is removed");
+});
+
+test("an escaped bracket inside a quote still places the quote", () => {
+  const transcript = swap(TRANSCRIPT, "We agreed to move the spring planting day", "We agreed to move the [spring] planting day");
+  const summary = swap(LEAN, "[s1.i2] → “We agreed to move the spring planting day”", "\\[s1.i2\\] → “We agreed to move the \\[spring\\] planting day”");
+  const data = plan(summary, transcript);
+  assert.equal(data.ok, true, JSON.stringify(data.problems));
+  assert.deepEqual(data.items!.find((item) => item.id === "s1.i2")?.anchors, ["We agreed to move the [spring] planting day"]);
+  assert.equal(JSON.stringify(data), JSON.stringify(plan(unescapeBrackets(summary), transcript)), "the same plan as the unescaped minutes");
+  assert.deepEqual(data.passages.find((entry) => entry.n === 2)?.items, ["s1.i1", "s1.i2"]);
+  assert.ok(!data.quotes.some((entry) => entry.item === "s1.i2"), "placed word for word");
+});
+
 // ---- The CLI: extract, sync tasks, sync record, legacy_tasks and the cleanup plan ----
 
 const git = (dir: string, ...args: string[]) => execFileSync("git", args, { cwd: dir, encoding: "utf8" });
