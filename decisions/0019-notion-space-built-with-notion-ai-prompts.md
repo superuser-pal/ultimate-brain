@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-10-11
 **Refined by:** [0078](0078-onboarding-and-early-access-in-0-14-0.md) (2026-11-10): a new user duplicates a published template built in a dedicated workspace; the prompts stay for upgrading and rebuilding
+**Refined by:** [0084](0084-the-notion-template-is-the-authors-emptied-space-with-example-rows.md) (2026-11-12): the published template is the author's own space, copied and emptied, not a dedicated workspace
 
 ## Decision
 - The Notion space is designed as a **duplicable product template** that also serves as the author's own workspace (0014).
