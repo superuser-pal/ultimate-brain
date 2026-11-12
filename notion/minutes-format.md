@@ -23,7 +23,7 @@ Write the hiring plan for the support team [s2.i4]
 Directly below each task line, a toggle titled "Scope" holding exactly these four lines:
 Done when: <what finished looks like, in one sentence>
 Due: <the date as YYYY-MM-DD when one was said; otherwise leave it empty>
-Project: <the project's name as it was said; otherwise leave it empty>
+Project: <a name from the Projects line, only when the task belongs to that project; otherwise leave it empty>
 Notes: <context I will need to do it; otherwise leave it empty>
 A task's tag names the subject it was discussed in (4) and takes the next item number of that subject: [s2.i4] when that subject's own lines use i1 to i3. A task that belongs to no subject is [s0.i1], [s0.i2], ... Never invent a date, a project or a criterion for a Scope: leave the line empty. Leave out the heading when there are none.
 
@@ -42,7 +42,7 @@ At most 5 lines per subject, the gist line included. No sub-headings and no othe
 5. THE TOGGLE FOR THE BRAIN
 Last, one toggle block (a toggle, not a toggle heading) titled exactly "For the brain", collapsed, holding these plain lines in this order:
 Attendees: <full names separated by commas, each with their organization, team or role when mentioned>
-Projects: <every project the meeting touched, separated by commas, each name as it was said>
+Projects: <every project the meeting named as a project (a product, client or initiative with that name), separated by commas, each name as it was said. A subject of the meeting is not a project: never list a subject's title>
 All subjects included unless marked Meeting only. Mark Reviewed to confirm.
 Then the quote lines of any [s0] tasks, then for each subject in page order its selection line followed by one quote line for each of its items, its tasks included:
 [s1] Selection: Use in brain
