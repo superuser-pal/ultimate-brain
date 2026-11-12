@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-11-11
 **Release:** 0.13.0
+**§1 amended by:** [0083](0083-release-on-a-reviewed-reading-when-the-scorer-fails-a-smoke-run.md) (2026-11-12): a failed critical-trust case whose every failure is the scorer's may be released on the user's yes after a reviewed reading of the failing replies; the scorer is fixed before the next release's smoke run
 **Amends:** [0077](0077-trust-repair-in-0-13-0.md) §5 (the release gate: 0.13.0 no longer waits for one complete native run per agent; the complete run moves to 1.0.0) and [0080](0080-english-retrieval-quality-in-0-13-0.md) §3 (the final-answer gates' timing) and §9 item 5 (the eighty cases join the complete native run at 1.0.0, not 0.13.0)
 **Keeps:** every other rule of 0077 and 0080: 0077 §1 to §4 and §6, and §5's gates, evidence and rerun rule for the complete run, now held at 1.0.0; 0080's first-search, trust-kept and cost gates for 0.13.0, its cases, its trust invariants and its exclusions; [0074](0074-scoped-memory-handovers-and-bounded-recall.md) §6's gates and token accounting; [0078](0078-onboarding-and-early-access-in-0-14-0.md)'s order (onboarding and early access 0.14.0, the weekly review and the feature cutoff 0.15.0); [0061](0061-roadmap-and-launch-boundary.md)'s 1.0 scope; every architecture rule
 

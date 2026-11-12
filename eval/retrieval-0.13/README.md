@@ -15,6 +15,7 @@ Eighty audited cases for decision [0080](../../decisions/0080-english-retrieval-
 | `originals.mjs` | The 50 questions of `eval/search-0.5` on the original brain, compared with `results-cc173.txt` |
 | `costs.mjs` | Paired latency and output tokens, baseline against candidate (§7) |
 | `results-provisional.txt` | The provisional baseline at this task's head (below) |
+| `results-cc205.txt` | The 0.13.0 search (CC-205) on the 80 cases, the originals and memory-0.12, with the unresolved signal and the paired costs on the matched baseline |
 
 ## Run it
 
@@ -63,10 +64,10 @@ Fields: those of `eval/memory-0.12` (`caller`, `facts`, `forbidden_facts`, `forb
 | Kind | Retrieval level (the first search, first ten) | Answer level |
 |---|---|---|
 | `fact`, `paraphrase` | every id of one evidence set is in the first ten | every fact (and `as_of`) is present, every id of one set is cited, it does not abstain |
-| `clarify` | evidence of two subjects is in the first ten (reported) | it asks a question, names two subjects, states no subject's value, does not abstain |
+| `clarify` | evidence of two subjects is in the first ten, or the CLI's `unresolved` names two of them (spec/cli.md §5.13, from CC-205; reported) | it asks a question, names two subjects, states no subject's value, does not abstain |
 | `unknown` | nothing forbidden returned (reported) | it abstains (`abstains` of `eval/memory-0.12/score.mjs`, CC-201's rule); no forbidden fact |
 
-Gates (spec/retrieval.md §6.2), at the retrieval level: **facts in prose only, 16 of 17** (the user's choice of 2026-11-11, so that the combined fact score, which a project note's typed field can carry, cannot hide the original 0 of 10: `score.mjs` runs `eval/search-0.5`'s 10 fact-in-body questions once each on the original brain and adds the 7 `fact` cases with `subgroup: body-only`); facts 18 of 20; paraphrases 18 of 20; at the answer level 36 of the 40 answerable, 20 of 20 clarify and 20 of 20 unknown. The answer gates are met by CC-186's native runs, not by the reference answers. A retrieval number is never evidence of answer or native quality.
+Gates (spec/retrieval.md §6.2), at the retrieval level: **facts in prose only, 16 of 17** (the user's choice of 2026-11-11, so that the combined fact score, which a project note's typed field can carry, cannot hide the original 0 of 10: `score.mjs` runs `eval/search-0.5`'s 10 fact-in-body questions once each on the original brain and adds the 7 `fact` cases with `subgroup: body-only`); facts 18 of 20; paraphrases 18 of 20; at the answer level 36 of the 40 answerable, 20 of 20 clarify and 20 of 20 unknown. The answer gates are met by CC-186's native runs, not by the reference answers. [Decision 0082](../../decisions/0082-native-smoke-run-per-release-full-native-acceptance-before-1-0.md) moves those native runs, with these eighty cases, to 1.0.0's complete run, once beta testers are live. A retrieval number is never evidence of answer or native quality.
 
 ## Costs
 
