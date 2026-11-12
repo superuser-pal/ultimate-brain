@@ -1,0 +1,295 @@
+{
+ "notes": [
+  {
+   "id": "src-4athafty",
+   "type": "source",
+   "title": "Setup: my work (owner ruling)",
+   "frontmatter": {
+    "kind": "note",
+    "source_key": "agent:claude-code/2026-11-11-setup-seeding"
+   },
+   "body": "Q: Tell me about your work in a few sentences: what you do, for whom, and with whom. Add any other part of your life you want the brain to hold (a second business, personal projects). If there is a folder or a repo with a project's plans, name it too.\nA: I'm a project lead at a small renovation studio, Northwind Interiors. My main client is Harbor Lane Homes: we're renovating their kitchen and bath, the Harbor Lane renovation, due in spring. I'm also pitching a cafe fit-out for Bluebird Cafe. I work most with Robin Vale, the site manager at Harbor Lane Homes; Jamie Ortiz, a freelance electrician; Priya Shah, my partner at the studio; Leo Brandt, who owns Bluebird Cafe; and Mina Cho, our supplier at Tilecraft. At home I'm planning a garden redesign this summer. No folder or repo to adopt.\n\nQ: The seeding preview (Domains, Areas, Projects, Orgs, People, Key documents). Answer with \"yes to all\", a range, a change, or \"drop N\".\nA: yes to all\n"
+  },
+  {
+   "id": "org-j3bqzkdv",
+   "type": "org",
+   "title": "Northwind Interiors",
+   "frontmatter": {
+    "summary": "A small renovation studio; the owner is a project lead there.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ]
+   },
+   "body": ""
+  },
+  {
+   "id": "org-kss5302a",
+   "type": "org",
+   "title": "Harbor Lane Homes",
+   "frontmatter": {
+    "summary": "Main client of the studio.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ]
+   },
+   "body": ""
+  },
+  {
+   "id": "org-ht6fkvzs",
+   "type": "org",
+   "title": "Bluebird Cafe",
+   "frontmatter": {
+    "summary": "A cafe the studio is pitching a fit-out to.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ]
+   },
+   "body": ""
+  },
+  {
+   "id": "org-jqq8cr1z",
+   "type": "org",
+   "title": "Tilecraft",
+   "frontmatter": {
+    "summary": "The studio's tile supplier.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ]
+   },
+   "body": ""
+  },
+  {
+   "id": "dom-j0zr2t6e",
+   "type": "domain",
+   "title": "Northwind Interiors",
+   "frontmatter": {
+    "summary": "Work at the renovation studio.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ],
+    "org": "org-j3bqzkdv"
+   },
+   "body": ""
+  },
+  {
+   "id": "dom-2st1qwee",
+   "type": "domain",
+   "title": "Home",
+   "frontmatter": {
+    "summary": "Life at home.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ]
+   },
+   "body": ""
+  },
+  {
+   "id": "area-qh9ek5x7",
+   "type": "area",
+   "title": "Clients",
+   "frontmatter": {
+    "summary": "The studio's client work.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ],
+    "domain": "dom-j0zr2t6e",
+    "track": [
+     "budget",
+     "deadlines",
+     "scope changes",
+     "risks",
+     "client sign-offs"
+    ]
+   },
+   "body": ""
+  },
+  {
+   "id": "area-xa0tgxyg",
+   "type": "area",
+   "title": "House and garden",
+   "frontmatter": {
+    "summary": "Projects at home.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ],
+    "domain": "dom-2st1qwee",
+    "track": [
+     "plans",
+     "budget",
+     "dates"
+    ]
+   },
+   "body": ""
+  },
+  {
+   "id": "prj-7p0x7vkr",
+   "type": "project",
+   "title": "Harbor Lane renovation",
+   "frontmatter": {
+    "summary": "Renovating Harbor Lane Homes' kitchen and bath, due in spring.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ],
+    "area": "area-qh9ek5x7",
+    "client": "org-kss5302a"
+   },
+   "body": "Renovate Harbor Lane Homes' kitchen and bath, due in spring.\n"
+  },
+  {
+   "id": "prj-fs1y580c",
+   "type": "project",
+   "title": "Bluebird Cafe fit-out pitch",
+   "frontmatter": {
+    "summary": "Pitching a cafe fit-out for Bluebird Cafe.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ],
+    "area": "area-qh9ek5x7",
+    "client": "org-ht6fkvzs"
+   },
+   "body": "Pitch a cafe fit-out for Bluebird Cafe.\n"
+  },
+  {
+   "id": "prj-djefznfv",
+   "type": "project",
+   "title": "Garden redesign",
+   "frontmatter": {
+    "summary": "Planning a garden redesign this summer.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ],
+    "area": "area-xa0tgxyg"
+   },
+   "body": "Redesign the garden this summer.\n"
+  },
+  {
+   "id": "per-62p6g6er",
+   "type": "person",
+   "title": "Robin Vale",
+   "frontmatter": {
+    "summary": "The site manager at Harbor Lane Homes.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ],
+    "org": "org-kss5302a",
+    "facts": {
+     "role": "Site manager"
+    },
+    "timeline": [
+     {
+      "field": "role",
+      "value": "Site manager",
+      "from": "2026-11-11",
+      "learned": "2026-11-11",
+      "source": "agent:claude-code/2026-11-11-setup-seeding",
+      "assessment": "accepted"
+     }
+    ]
+   },
+   "body": ""
+  },
+  {
+   "id": "per-te5mtrt8",
+   "type": "person",
+   "title": "Jamie Ortiz",
+   "frontmatter": {
+    "summary": "A freelance electrician.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ],
+    "facts": {
+     "role": "Electrician"
+    },
+    "timeline": [
+     {
+      "field": "role",
+      "value": "Electrician",
+      "from": "2026-11-11",
+      "learned": "2026-11-11",
+      "source": "agent:claude-code/2026-11-11-setup-seeding",
+      "assessment": "accepted"
+     }
+    ]
+   },
+   "body": ""
+  },
+  {
+   "id": "per-0ean1pq1",
+   "type": "person",
+   "title": "Priya Shah",
+   "frontmatter": {
+    "summary": "The owner's partner at the studio.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ],
+    "org": "org-j3bqzkdv",
+    "facts": {
+     "role": "Partner"
+    },
+    "timeline": [
+     {
+      "field": "role",
+      "value": "Partner",
+      "from": "2026-11-11",
+      "learned": "2026-11-11",
+      "source": "agent:claude-code/2026-11-11-setup-seeding",
+      "assessment": "accepted"
+     }
+    ]
+   },
+   "body": ""
+  },
+  {
+   "id": "per-k0r3p4xe",
+   "type": "person",
+   "title": "Leo Brandt",
+   "frontmatter": {
+    "summary": "Owns Bluebird Cafe.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ],
+    "org": "org-ht6fkvzs",
+    "facts": {
+     "role": "Owner"
+    },
+    "timeline": [
+     {
+      "field": "role",
+      "value": "Owner",
+      "from": "2026-11-11",
+      "learned": "2026-11-11",
+      "source": "agent:claude-code/2026-11-11-setup-seeding",
+      "assessment": "accepted"
+     }
+    ]
+   },
+   "body": ""
+  },
+  {
+   "id": "per-2ycq5czs",
+   "type": "person",
+   "title": "Mina Cho",
+   "frontmatter": {
+    "summary": "The studio's supplier at Tilecraft.",
+    "sources": [
+     "agent:claude-code/2026-11-11-setup-seeding"
+    ],
+    "org": "org-jqq8cr1z",
+    "facts": {
+     "role": "Supplier"
+    },
+    "timeline": [
+     {
+      "field": "role",
+      "value": "Supplier",
+      "from": "2026-11-11",
+      "learned": "2026-11-11",
+      "source": "agent:claude-code/2026-11-11-setup-seeding",
+      "assessment": "accepted"
+     }
+    ]
+   },
+   "body": ""
+  }
+ ]
+}
