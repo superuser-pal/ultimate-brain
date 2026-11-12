@@ -13,7 +13,7 @@ Two templates exist; this one is the **Notion template**. The **brain folder** (
 
 ## What a duplicate contains
 
-Everything a space built from every prompt has (the build prompts include every migration up to the version above), with **every module**, plus what only the template carries, and **seven Example rows**. Nothing from anyone's own space: the template is a copy of the author's space, emptied and scrubbed (decision 0084; "Building and updating the template" below).
+Everything a space built from every prompt has (the build prompts include every migration up to the version above), with **every module**, plus what only the template carries, and **an Example row in every database on Brain Data**. Nothing from anyone's own space: the template is a copy of the author's space, emptied and scrubbed (decision 0084; "Building and updating the template" below).
 
 **Pages**
 - **Ultimate Brain**, the top page, starting with the **Start here** callout: line 1, bold, "Start here."; line 2, "This is the Notion half of Ultimate Brain. Next: install Ultimate Brain, and in your brain folder tell your agent "set up my brain". Get started shows every step.", with "Get started" linked to the Get started section of the product README on GitHub.
@@ -34,19 +34,29 @@ Everything a space built from every prompt has (the build prompts include every 
 | Goals, Key Results | Brain Data | Planning |
 | Brain Assistant Skills (one page per skill: Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report) | System | Brain Assistant; the brain never reads it |
 
-**Example rows** (decision 0084 §3). Seven invented rows show what a filled space looks like, each titled with the prefix `Example · ` (the word, a space, the middle dot `·`, a space):
+**Example rows** (decisions 0084 §3, 0087 §1). Fifteen invented rows show what a filled space looks like, at least one in every database on Brain Data, all from one story (a kickoff with Northwind Studio about refreshing its website) and related to each other, so each page links to the next. Each is titled with the prefix `Example · ` (the word, a space, the middle dot `·`, a space), and each is in a state no skill acts on. Their exact content, and the Notion AI prompts that create them, are in [template-examples.md](template-examples.md).
 
-| Database | Example row (the titles are suggestions; the prefix is fixed) | Related to |
-|---|---|---|
-| Domains | `Example · Work` | |
-| Areas | `Example · Clients` | the Domain |
-| Projects | `Example · Website refresh` | the Area |
-| People | `Example · Sam Rivera` | the Org |
-| Orgs | `Example · Northwind Studio` | |
-| Meetings | `Example · Kickoff with Northwind`, Not Reviewed, with short lean minutes (decision 0079) | the Project, the Person |
-| Tasks | `Example · Send the project plan`, not started | the Project, the Meeting |
+| Database | Example row | State | Related to |
+|---|---|---|---|
+| Domains | `Example · Work` | | |
+| Areas | `Example · Clients` | | the Domain |
+| Projects | `Example · Website refresh` | | the Area |
+| People | `Example · Sam Rivera` | | the Org |
+| Orgs | `Example · Northwind Studio` | | |
+| Meetings | `Example · Kickoff with Northwind` | Not Reviewed, with short lean minutes (decision 0079) | the Project, the Person |
+| Tasks | `Example · Send the project plan` | not started (To Do) | the Project, the Meeting |
+| Tasks | `Example · Brand guidelines from Sam` | Waiting On | the Project, the Meeting |
+| Inbox | `Example · Notes from a call with Sam` | Brain Status Done, Kind Capture, a Summary | the Project, the Person |
+| Decisions | `Example · Keep the blog as it is` | Lifecycle Draft, Assessment Accepted | Decided In the Meeting, the Project |
+| Questions | `Example · Can the site go live by the end of March?` | Status Open, Lifecycle Draft, Kind Question | Raised In the Meeting, the Project |
+| Documents | `Example · Website refresh brief` | Origin Kept, Lifecycle Reviewed, Accepted unticked, nothing asked | the Project; Sources the Inbox row |
+| Review | `Example · From Kickoff with Northwind: 1 decision, 1 question` | State Pending, Your call empty, Decided unticked; the page in the section format (one section per item, `Decision: Pending`) | Source Meeting the Meeting, Area the Area |
+| Goals | `Example · Launch three client websites this year` | Status Active | Area the Area, Projects the Project |
+| Key Results | `Example · Sites launched` | Kind Number, Start 0, Target 3, Current 1 | Goal the Goal |
 
-No other database has rows: no Review, Inbox, Decisions, Questions, Documents, Goals or Key Results row. The Brain Assistant Skills database holds the skills, which are product text. "Set up my brain" moves the Example rows to Notion's trash when it connects the brain (step 4, with the user's yes), and the skills that read Notion never take anything in from one that is left (spec/setup.md §6.5).
+**The Brain Data callout.** The first block of Brain Data is a callout: "These are examples. Every row titled "Example · " is a sample. When you say "set up my brain", it moves them all to Notion's trash after one yes. You can also delete them yourself." It is product text and stays after setup.
+
+Only the Brain Assistant Skills database has no Example row: it holds the skills, which are product text. "Set up my brain" moves the Example rows to Notion's trash when it connects the brain (step 4, with the user's yes), and the skills that read Notion never take anything in from one that is left (spec/setup.md §6.5).
 
 Fourteen databases on Brain Data and one on System. Each database's templates, page layout and buttons are as in [prompts/](prompts/), [modules/](modules/) and [views-guide.md](views-guide.md) §9.
 
@@ -82,7 +92,7 @@ The template is a **copy of the author's own Ultimate Brain space, emptied**, ma
    - **Comments** on any page or row.
    - **The public page:** the workspace's name, icon and `notion.site` domain shown on a published page name nothing personal.
 6. **Every module.** Compare the copy with the table above. A module or part your space never had is added from [modules/](modules/) (or its migration), so the template holds every module (0078 §1).
-7. **Add the Example rows** of "What a duplicate contains", related as its table says. The Meeting's minutes are a short invented meeting in the lean format ([minutes-format.md](minutes-format.md)), written by hand; leave the Meeting Not Reviewed and the Task not started.
+7. **Add the Example rows and the Brain Data callout** of "What a duplicate contains", related as its table says, with the content and the Notion AI prompts of [template-examples.md](template-examples.md), run on the copy's Brain Data page. Leave each row in its state there: the Meeting Not Reviewed, the Review row Pending and not submitted, nothing ticked.
 8. **Start here.** Check the callout on the top page, and link its "Get started" to the README's Get started section.
 9. **Template version.** The first line of System is `Template version: NNNN`, the number of the last migration in [migrations/](migrations/) applied to the copy. Record the same number in the table above.
 10. **The coordinator's read-only scan.** Give the coordinator session in this repository the copy's top page, shared with its Notion connection. Reading only, through the Notion MCP, it lists every row, database template, select option, mention and page title it can reach, and flags anything that is not an Example row or the product's own text. Fix each finding by hand, then ask for the scan again until it finds nothing. What the API can't read (button contents, view filters) is checked by your ticks in step 5 alone.
