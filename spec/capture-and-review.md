@@ -76,7 +76,7 @@ The **For the brain** toggle holds, in this order: the `Attendees:` and `Project
 
 The word and line limits are the generator's rules: the CLI counts neither words nor lines, and a long line is read exactly like a short one (Brain Assistant's Check minutes may point it out, CC-197). How each line is read is §4.1 ("The lean shape"); minutes in the 0067 shape above, minutes from before it, and the voice format (§3.1) are read exactly as before (§4.1, "Shapes").
 
-**No Notion migration.** The lean shape changes no database, property, view, button or template: the summary is Notion AI's text, and follow-up Tasks carry no marker. What changes is the prompt the user pastes once into Notion AI's settings (notion/minutes-format.md and the paste guide, CC-197) and Brain Assistant's Check minutes (notion/brain-assistant.md, CC-197), which the published Notion template (U-27, 0078 §1) is built with.
+**Migration 0023, text only.** The lean shape changes no database, property, view or button: the summary is Notion AI's text, and follow-up Tasks carry no marker. What changes is the prompt the user pastes once into Notion AI's settings (notion/minutes-format.md and the paste guide, CC-197), Brain Assistant's Check minutes (notion/brain-assistant.md, CC-197), and the gray line under the notice in the Meetings default template, which says where `Meeting only` goes in the lean shape (CC-197). Existing spaces take all three with migration 0023 (notion/migrations/0023-lean-minutes.md); the published Notion template (U-27, 0078 §1) is built with them.
 
 ## 4. Selection of what enters the brain
 
