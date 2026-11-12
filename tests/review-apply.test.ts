@@ -345,7 +345,7 @@ test("an exclusion made after the render is caught by sync apply: an Accept clos
   const live = `A kept remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]`;
   const created = await run(dir, ["proposal", "new"], { proposals: [
     { kind: "review_notes", source: SYNC, notes: [draft.id] },
-    { kind: "add_to_note", title: "Mixed", target: CONCEPT, content: `A mixed remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]\n\nThe price was 95k. ^[src-ex1a3b4c#¶2:${passageHash("Pricing was 95k.")}]`, why: "Said.", source: SYNC },
+    { kind: "add_to_note", title: "Mixed", target: CONCEPT, content: `A mixed remark. ^[src-ex1a3b4c#¶1:${passageHash("A live paragraph.")}]\n\nThe price was 95,000. ^[src-ex1a3b4c#¶2:${passageHash("Pricing was 95,000.")}]`, why: "Said.", source: SYNC },
     { kind: "add_to_note", title: "Live", target: CONCEPT, content: live, why: "Said.", source: SYNC },
   ] });
   assert.equal(created.code, 0, created.stdout);
@@ -366,7 +366,7 @@ test("an exclusion made after the render is caught by sync apply: an Accept clos
   ]);
   assert.equal((await attributes(dir, draft.path)).lifecycle, "archived", "the mixed draft is not reviewed");
   const concept = await readFile(join(dir, "knowledge/references/row-level-security.md"), "utf8");
-  assert.ok(concept.includes("A kept remark.") && !concept.includes("A mixed remark.") && !concept.includes("95k"));
+  assert.ok(concept.includes("A kept remark.") && !concept.includes("A mixed remark.") && !concept.includes("95,000"));
 });
 
 test("Request revision is recorded, the new draft replaces the stored proposal with the previous wording kept, and only that section is re-rendered", async (context) => {
