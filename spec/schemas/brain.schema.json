@@ -94,6 +94,17 @@
           "description": "Guided setup's optional item: the user chose a scheduled catch-up (decision 0078, spec/setup.md §7). Absent: off.",
           "enum": ["on", "off"],
           "default": "off"
+        },
+        "style": {
+          "description": "How the agent talks to the user, in its own words (decision 0081, spec/schema.md §12, cli.md §5.3.1). A set dial overrides the preset's value. Absent or {}: Standard.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "preset": { "enum": ["standard", "simple"], "default": "standard" },
+            "explain": { "description": "How much the agent explains.", "enum": ["expert", "some", "plain"] },
+            "length": { "description": "How long its answers are.", "enum": ["short", "normal", "full"] },
+            "directness": { "description": "What comes first.", "enum": ["answer-first", "context-first"] }
+          }
         }
       }
     },
