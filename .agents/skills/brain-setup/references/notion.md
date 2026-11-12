@@ -19,17 +19,17 @@ The Notion half of setup: the template, the agent's connection, the brain's data
 Run the brain-connect-notion skill's procedure, with two differences:
 
 - **Skip its step 0:** the modules were chosen on the settings screen.
-- **The template version** is stored by its step 4a (from the System page's `Template version: NNNN` line). A space without the line (built from the prompts, or older) leaves it unknown; that is not a failure.
+- **The template version** is stored by its step 4a (from the `Template version: NNNN` line in the System callout on the space's top page). A space without the line (built from the prompts, or older) leaves it unknown; that is not a failure.
 
 A database still missing: log `result=failed reason=database-missing`, name the databases missing (from `notion.missing`), and stop: in a duplicate of the template, a missing database means the duplicate is incomplete or the connection can't see it.
 
 Once `brain status` shows `checks.databases` passing, commit with brain-connect-notion's own commit, then remove the Example rows (below). Step 4 is done only after that: log `step=connect result=done examples=<n>`, commit `setup: connect`.
 
-### The Example rows (decision 0084)
+### The Example rows (decisions 0084, 0087)
 
-The Notion template carries seven invented rows that show a filled space (a Domain, an Area, a Project, a Person, an Org, a Meeting and a Task), each titled with the prefix **`Example · `**: the word `Example`, a space, the middle dot `·` (U+00B7), a space, matched exactly, case included. Nothing in the brain may ever be made from one, so they go now, before identities, seeding, a sync or an ingest reads Notion.
+The Notion template carries fifteen invented rows that show a filled space, at least one in every database on Brain Data (a Domain, an Area, a Project, a Person, an Org, a Meeting, two Tasks, an Inbox row, a Decision, a Question, a Document, a Review row, a Goal and a Key Result), each titled with the prefix **`Example · `**: the word `Example`, a space, the middle dot `·` (U+00B7), a space, matched exactly, case included. Nothing in the brain may ever be made from one, so they go now, before identities, seeding, a sync or an ingest reads Notion.
 
-1. **Only in a duplicate of the template:** `notion.template_version` was stored by step 4a. Without it (a space built from the prompts, which has no Example rows, or a duplicate whose Template version line was deleted, which can't be told from one), search nothing: log `step=connect result=done examples=0`. The skills that read Notion still leave out any Example row (brain-sync, brain-ingest, brain-catch-up).
+1. **Only in a duplicate of the template:** `notion.template_version` was stored by step 4a. Without it (a space built from the prompts, which has no Example rows, or a duplicate whose Template version line was deleted, which can't be told from one), search nothing: log `step=connect result=done examples=0`. The skills that read Notion still leave out any Example row (brain-sync, brain-ingest, brain-catch-up, brain-apply, ultimate-assistant).
 2. **Find them.** Query **every database on the duplicate's Brain Data page** (each id stored in `notion.databases`, and `notion.tasks.database` only when it is the Tasks database on Brain Data), whether its module is on or off, for the rows whose title starts with `Example · `, all pages of each (a title `starts_with` filter, or read the titles and match them yourself). Never search a database outside Brain Data, such as the user's own tasks database (decision 0018).
 3. **None found:** log `step=connect result=done examples=0`, and go on.
 4. **Some found:** show them, one line each with its database ("Projects · Example · Website refresh"), and ask once: "Your template still has these <n> example rows. I'll move them to Notion's trash now, so nothing in your brain is made from them. OK?" On the yes, move each to the trash through the MCP (update the page with `in_trash: true`; `archived: true` on API versions before 2025-09). Query again: none left → log `step=connect result=done examples=<n moved>`.
@@ -73,7 +73,7 @@ It has two subjects (the kitchen layout, the schedule), one decision (the island
 Brain Assistant is the Notion AI agent the user chats with in Notion (`/Today`, Check minutes, the buttons that message it).
 
 1. **Walk through.** Give the steps from `<product.path>/notion/TEMPLATE.md` for a duplicate when it has them (pointing the agent at the copy), else the "Setup" of `<product.path>/notion/brain-assistant.md`, as text in the chat:
-   - **A Custom Agent** when the `prerequisites` line has `custom_agents=yes`: Tools and access limited to Brain Data, How it works and Brain Assistant Skills.
+   - **A Custom Agent** when the `prerequisites` line has `custom_agents=yes`: Tools and access limited to Brain Data, How it works and the Skills database (Brain Assistant's skills; "Brain Assistant Skills" in a space built before 0.14.0).
    - **Personal Instructions** otherwise: the same Instructions text in the user's personal Notion AI Instructions, and the skills as personal skills.
 
    Wait for "done".
