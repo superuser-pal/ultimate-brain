@@ -12,6 +12,8 @@ How this file fits: it holds the whole first-time setup of a new user: what the 
 3. **The drop folder and the notes' language** stay lines of the user's part of the brain's `AGENTS.md`: `Drop folder: <path>` and `Language: <name>`; `brain status` reads the first (§4).
 4. **The template version** is the number of the last Notion migration the template includes (`0024`); `brain upgrade` names the migrations with a higher number (§9).
 
+**The user's choice of 2026-11-11** (asked through the coordinator during CC-191): seeded People are written `draft`, like every new person, since `brain note new` writes a person as `draft` (§8.2).
+
 **Calls taken in this contract** (confirmed by the coordinator on 2026-11-10): a module key absent from a present `modules` block keeps its old default, so only the template's block turns Documents, Reports and Tasks on and existing brains are unchanged (schema §12); `status`'s human setup line shows only while setup is unfinished (cli.md §5.2); 0079 (merged in #289) is followed where it touches setup (§6.3, §10.1).
 
 ---
@@ -78,8 +80,10 @@ The `AGENTS.md` lines are written under the `## My rules` heading, which follows
 ### 4.1 The `setup` log line
 
 ```text
-- <timestamp> setup - step=<step> result=<done|failed|declined>[ <key>=<value>]…
+- <timestamp> setup - "" step=<step> result=<done|failed|declined>[ <key>=<value>]…
 ```
+
+- This is the line `brain log setup - step=<step> result=… [<key>=<value>…]` writes: with `-` for the id, the CLI writes an empty quoted title (cli.md §5.11). This is the form `brain status` reads (the example before CC-191 showed it without the `""`, which the CLI never wrote and `status` doesn't read; no behaviour change). Setup lines are written only through `brain log`.
 
 - `<step>` is one of §2's: `started`, `prerequisites`, `settings`, `notion-mcp`, `connect`, `minutes-prompt`, `brain-assistant`, `identities`, `seeding`, `first-value`, `schedule`, `finished`, and `first-meeting`, written once by brain-catch-up after setup (§10.1), which `brain status` doesn't read. `started` is written once, when the skill first runs in a brain with no `setup` line.
 - `result=failed` adds `reason=<code>` from §12.2; `declined` is used only by `schedule` (the user chose off). `first-value` is `done` only when first value passes, else `failed` with `reason=first-value-unresolved` (§10). A step can be logged several times; the latest line of a step is its state.
@@ -202,7 +206,7 @@ The new style applies from the agent's next reply. A request made in a linked fo
 ### 8.2 The writes, after the yes
 
 - **The description is a source.** The user's description and the preview's answers, verbatim, are kept as one owner-ruling source note (0031, as brain-connect-notion's identities step does): `title` `Setup: my work (owner ruling)`, `source_key` `agent:<agent>/<date>-setup-seeding`. Every seeded note lists it in `sources`, and each role is a `facts.role` with a timeline entry citing it (schema §5).
-- **Order:** Orgs, Domains (and `brain modules on domains` when there are any), Areas, Projects, People, so each relation names an existing id. Each with `brain note new`; `lifecycle: reviewed` (0070 for Domains, Areas, Projects and Orgs; the preview's yes is the review for People, as assistant.md §7's yes is).
+- **Order:** Orgs, Domains (and `brain modules on domains` when there are any), Areas, Projects, People, so each relation names an existing id. Each with `brain note new`; `lifecycle: reviewed` for Domains, Areas, Projects and Orgs (0070). People are written `draft`, like every new person (cli.md §5.5): they are published as Draft, so the first meeting matches them, and the user marks them Reviewed in Notion when they like (the user's choice of 2026-11-11, asked through the coordinator during CC-191).
 - Then `brain index`, `brain views`, `brain lint`, one commit (`setup: seed my work`), and **one publish** of every seeded note (`brain sync render --ids …`, the MCP, `brain sync record`, commit): the preview's yes covers this publish, whatever `settings.publish` says.
 - `brain log setup - step=seeding result=done notes=<n> documents=<n>`.
 
