@@ -126,11 +126,15 @@ export function looksLikeToken(rest: string): boolean {
   return TOKEN_WORDS.test(word) || TOKENS.some((token) => distance(word, token) <= 3);
 }
 
+/** A Markdown escape: a backslash before an ASCII punctuation character (`\[`, `\*`, `\\`). */
+const ESCAPE = /\\([!-/:-@[-`{-~])/g;
+
 /** The summary text as every shape reads it (§4.3): NFKC folds full-width forms; zero-width and format characters inside words are removed;
- *  the §4.4 notice (with an icon, in a callout, or wrapped over lines) is not a control; HTML-escaped `>` and `<` are formatting; toggle tags
- *  are put on lines of their own, so a closing tag at the end of a content line closes. */
+ *  a Markdown escape is the character it escapes (the Notion API's markdown export writes `\[s1.i1\]`, CC-229); the §4.4 notice (with an
+ *  icon, in a callout, or wrapped over lines) is not a control; HTML-escaped `>` and `<` are formatting; toggle tags are put on lines of
+ *  their own, so a closing tag at the end of a content line closes. */
 export function summaryLines(markdown: string): string[] {
-  return markdown.normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "").replace(NOTICE_TEXT, "").replace(/&gt;/g, ">").replace(/&lt;/g, "<")
+  return markdown.normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "").replace(ESCAPE, "$1").replace(NOTICE_TEXT, "").replace(/&gt;/g, ">").replace(/&lt;/g, "<")
     .replace(/<details>/gi, "\n<details>\n").replace(/<\/details>/gi, "\n</details>\n").replace(/<\/summary>/gi, "</summary>\n").split("\n");
 }
 
