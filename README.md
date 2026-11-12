@@ -4,50 +4,95 @@ An AI-assisted second brain for solo knowledge workers. Knowledge lives in Markd
 
 This repository is the **product**: CLI, agent skills, schema, templates and the Notion space design. Each user's brain lives in its own private repository.
 
-**Status:** v1, in use by its author. Expect changes.
+**Status:** early access for friends and family. Anyone can follow Get started below. Expect changes, and tell us what was hard.
 
-## Install
+## Get started
 
-Needs Node 22.6 or later.
+Six steps take you from nothing to a working brain. Steps 1 to 4 take about ten minutes; step 5 takes about an hour, and you can stop and pick it up later.
+
+Ultimate Brain uses two templates, and you meet both here: the **Notion template**, which you duplicate in step 2, and the **brain folder**, which `brain init` creates in step 4.
+
+### 1. Check what you need
+
+- **Node 22.6 or later.** Check with `node --version`. Install it from [nodejs.org](https://nodejs.org).
+- **Git.** Check with `git --version`. Install it from [git-scm.com](https://git-scm.com/downloads).
+- **Claude Code or Codex**, the agent that runs your brain.
+- **A Notion plan with Notion AI.** Notion AI writes your meeting minutes and runs Brain Assistant. Custom Agents (Business and Enterprise plans) are a plus, not a must.
+
+Nice to have: the GitHub CLI (`gh`), so setup can create your private backup for you. Setup explains it when you get there.
+
+### 2. Duplicate the Notion template
+
+Open the Notion template and choose **Duplicate**, into the workspace you'll use for your brain:
+
+<!-- TEMPLATE-LINK --> **Template link: not published yet.** It is added here, from `notion/TEMPLATE.md`, before this release ships.
+
+Leave the copy as it is. Its example rows go away when setup connects it.
+
+### 3. Install the CLI
 
 ```sh
 npm install -g ultimate-brain
-brain init ~/brain --set-default   # a new brain repository
-brain --help
 ```
-
-The agent skills come with it: `brain init` copies them into the brain, in `.agents/skills/` for Codex and `.claude/skills/` for Claude Code, so both agents run the same version (decision 0038).
-
-**The Notion build files come with it too:** the checklist that builds your Notion space (`notion/CHECKLIST.md`), the Notion AI build prompts (`notion/prompts/`), each module's steps (`notion/modules/`), the migrations for a space built by an earlier release (`notion/migrations/`) and the space design (`docs/notion-space-design.md`). They are in the installed package's folder, which `brain status --json` reports as `data.product.path`; with a global install that is `$(npm root -g)/ultimate-brain`:
 
 ```sh
-ls "$(npm root -g)/ultimate-brain/notion"   # CHECKLIST.md, prompts/, modules/, migrations/, …
+brain --version
 ```
 
-**Next, after `brain init`** (it prints both steps with your paths):
-1. **Build your Notion space** by following the checklist: `$(npm root -g)/ultimate-brain/notion/CHECKLIST.md`.
-2. **Connect the brain to it:** open your agent (Claude Code or Codex) in the brain folder (`cd ~/brain`) and say "connect the brain to Notion".
-
-**To ingest Word, PowerPoint, Excel and saved HTML files** (optional), install [MarkItDown](https://github.com/microsoft/markitdown), the converter the ingest uses for them (decision 0032); it is also the first choice for web pages given by URL (decision 0036). In Claude Code, PDFs and images need nothing extra. In Codex, MarkItDown also converts PDFs, and images are read with Codex's image tool.
+### 4. Create your brain folder
 
 ```sh
-pipx install 'markitdown[all]'
-markitdown --version
+brain init ~/brain --set-default
 ```
+
+This makes `~/brain`: a Git repository of Markdown notes, where everything your brain knows lives. Choose another folder if you like. `--set-default` lets `brain` find it from anywhere.
+
+### 5. Say "set up my brain"
+
+Open your agent in the brain folder:
+
+```sh
+cd ~/brain
+```
+
+```sh
+claude
+```
+
+(or `codex`). Then type:
+
+```text
+set up my brain
+```
+
+Your agent walks you through the rest, one step at a time: your settings, connecting Notion, the meeting minutes prompt, Brain Assistant, the names you appear under, a short description of your work, and a first check. Stop whenever you like. Say "set up my brain" again to pick up where you left off.
+
+### 6. What you'll have at the end
+
+- **Your brain:** Markdown notes in a private Git repository, backed up to a private remote.
+- **Your Notion space,** connected: your Areas, Projects, the people you work with and a few key documents are already in it.
+- **Meetings that feed your brain:** Notion AI writes the minutes, you mark the meeting Reviewed, and the next catch-up turns it into your tasks and notes.
+- **Brain Assistant** in Notion, for `/Today` and the other buttons.
+- **A first check that passed:** tasks that are really yours, a report on your main project, notes in the right place, and an answer that cites its source.
+
+Why each step is there, every setting, and what to do when something fails: [docs/setup.md](docs/setup.md).
+
+**Something went wrong, or felt hard?** Tell your agent "show my setup report". It shows a short report with no names or content, and sends it to us only if you say yes.
 
 ## Update
 
 ```sh
 npm install -g ultimate-brain@latest
 brain --version   # check it's the version you expect before upgrading
-cd ~/brain && brain upgrade
+cd ~/brain
+brain upgrade
 ```
 
 `brain upgrade` refreshes the brain's product-owned rules and skills, then commits and pushes. It never touches your notes, and it refuses to run on a brain with uncommitted changes.
 
 To try a release candidate: `npm install -g ultimate-brain@next`. To go back: `npm install -g ultimate-brain@latest`.
 
-## Start here
+## How it's built
 
 | Document | What it is |
 |---|---|
