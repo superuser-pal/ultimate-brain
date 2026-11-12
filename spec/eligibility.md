@@ -115,6 +115,7 @@ A report, a Brief, a Decision log, an area Brief, an index entry and a Notion pa
 4. **No navigation exception.** A view is never shown in part, and "navigation only" is never a reason to show prose that rule 1 to 3 would withhold (0077 plan 3).
 5. **Canonical material stays.** A withheld report or view withholds nothing else: a note it rests on that is eligible on its own stays readable and is what an answer cites (schema §4).
 6. **Withheld names its way back.** A withheld derived item names its reason and what rebuilds it: `brain views` for a Brief or Decision log once its notes are eligible, a report refresh, `brain index` for the index (CC-183).
+7. **An archived note is never shown as current.** A derived item never restates an `archived` note as current, accepted or open: a draft rejected in Review or closed on excluded evidence, or a note you archived, is history at most. A view that keeps history shows it only where the history belongs (a superseded decision under the decision log's Superseded, schema §16.2), and a decision archived with no successor is in no view (CC-218).
 
 ## 9. Proposals name their passages, checked twice (0077 §3, plan 4)
 
@@ -189,6 +190,8 @@ brain-repos, brain-workflow, brain-workflow-adopt, brain-connect-notion and brai
 
 ## 12. Final acceptance (0077 §5, plan 7)
 
+**Timing amended by [0082](../decisions/0082-native-smoke-run-per-release-full-native-acceptance-before-1-0.md) (2026-11-11):** this complete run (CC-186) moves to 1.0.0, once beta testers are live; each release from 0.13.0 gates instead on 0082 §1's native smoke run of 15 cases per agent. The rules below are unchanged.
+
 **The evidence** (CC-185 adds the cases, CC-186 runs them):
 1. Synthetic unit, integration, package (`npm run test:package`), skill (the fork's checks) and leak checks pass on the head the release is cut from.
 2. **One complete native run in Claude Code and one in Codex** on the final packaged CLI and the vendored skills snapshot; not three repetitions. The cases: the 77 of `eval/memory-0.12` unchanged, plus CC-185's cases for old reports and indirect derived items, restricted metadata, historical memory (past and present questions), project and approval boundaries through full reads, an exclusion made between the first read or a proposal's creation and its apply, legacy proposals, a mixed proposal, and a linked project after the upgrade.
@@ -214,7 +217,7 @@ This file wins in every row. "On `main`" is `main` at 07e74a5 (CC-176 #283, CC-1
 | 9 | capture-and-review §5.1, row "Pending proposals": "resting only on restricted claims" | resting on a passage that is not live, or without established support (§4.2, §9) | CC-177, CC-179 |
 | 10 | schema §11: no passage field; `closed_reason: stale` "rests only on excluded evidence" | the passage list (§9.1); `stale` also covers a mixed or unsupported item | CC-179 (field), CC-177 (reason) |
 | 11 | cli.md §5.7 "What the rule does not see": the uncited restatement | still a stated limit, narrowed (§9.6) | CC-177 (the wording), CC-179 |
-| 12 | cli.md §5.15: "The skills a linked repo or folder carries are refreshed by running `brain link` there again" | one upgrade reaches every registered project (§11) | CC-184 |
+| 12 | cli.md §5.15: "The skills a linked repo or folder carries are refreshed by running `brain link` there again" | one upgrade reaches every registered project (§11) | CC-184 (cli.md §5.15 step 9, §5.12) |
 | 13 | cli.md §6.2 step 2: brain-reflect reads members and inputs by their `path`s; §1.1's table lists no `query` command for brain-ingest or brain-reflect | through `query --read` (§10) | CC-180 |
 | 14 | cli.md §5.32 "Restricted evidence" (and `src/lib/reflect.ts`, through `eligibleNote`): a partly restricted member or input keeps its `title`, `path` and headings in the output, and its title and aliases give names (`near_duplicate`, "an input names a note") and terms | §6 rule 3: none of them is shown, named or tokenised while the note has a restricted part | CC-176 |
 
@@ -226,7 +229,7 @@ Text on `main` that already agrees: memory.md §2 (one rule for `recall` and `qu
 - **Not semantic truth.** A passage check proves that evidence is allowed, not that a change or an answer is true (0077 §3). New source links do not prove correctness mechanically.
 - **No deletion** from Git history or from the original Notion sources (0032, 0055).
 - **No new store or platform.** No provenance database, service or index: the passages live in the proposal's frontmatter and the notes' existing references; everything else is computed from the files on each run.
-- **No ranking change** beyond scoring the note as the rule leaves it (§2), and no new feature, engine or connector.
+- **No ranking change** beyond scoring the note as the rule leaves it (§2), and no new feature, engine or connector. **Amended by [0080](../decisions/0080-english-retrieval-quality-in-0-13-0.md) (2026-11-11):** English retrieval changes ship in 0.13.0 under [retrieval.md](retrieval.md), whose §2 keeps this file's rule ahead of every term, score and snippet.
 
 ## 15. 0077 mapped to this file
 

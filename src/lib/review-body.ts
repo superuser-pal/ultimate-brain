@@ -1,11 +1,13 @@
 import { createHash } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 
 import { lineDiff } from "./diff.ts";
 import type { Note } from "./notes.ts";
 import { bodyHash } from "./proposals.ts";
 import { cleanupItemView, CLEANUP_KINDS } from "./cleanup-row.ts";
 import { restrictedSources } from "./eligibility.ts";
-import { contextFor, eligibleNote, requireSuppressions, restsOnlyOnExcluded } from "./suppressions.ts";
+import { proposalWithheld } from "./passages.ts";
+import { citeLabel, contextFor, eligibleNote, publishableNote, requireSuppressions, titleWithheld, withoutWithheldLinks } from "./suppressions.ts";
 import type { Workspace } from "./workspace.ts";
 
 // The Review page of a review_notes proposal with item ids (capture-and-review §7.2, §7.5): pure, no Notion calls.
@@ -15,7 +17,10 @@ export interface ReviewItem {
   current: string | null; proposed: string; editable: boolean; why: string; effect: string;
   /** The item rests on text a suppression restricts: only a stub is shown and it cannot be accepted (capture-and-review §5.1). */
   held: boolean;
-  /** The item rests only on restricted evidence: its source is an older version or full copy of a changed input, or the draft it creates is restricted whole. Accepting it closes it stale (§5.1). */
+  /** The section names a note in the awaiting-cleanup form, by `<type> <id>, title withheld: awaiting cleanup` (cli §5.14.4, "Restricted notes"). */
+  title_withheld: boolean;
+  /** The item rests on excluded evidence (eligibility.md §4.2): its source is an older version or full copy of a changed input, the draft it creates has a restricted line or is restricted whole,
+   *  or its wording cites a passage that is not live, even beside a live one. Accepting it closes it stale (§5.1). An item held only for its target is not one. */
   source_excluded: boolean;
   /** `proposed_hash` is over the canonical proposed text (what a parser reads back after `unescapeSection`); `base_hash` over what it was proposed against. */
   proposed_hash: string; base_hash: string;
@@ -29,7 +34,6 @@ export interface ReviewRender { items: ReviewItem[]; body: string; summary: stri
 const sha = (text: string): string => createHash("sha256").update(text, "utf8").digest("hex");
 const record = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 const label = (field: string): string => `${field[0]?.toUpperCase() ?? ""}${field.slice(1).replaceAll("_", " ")}`;
-const titleOf = (value: unknown, workspace: Workspace): string => (typeof value === "string" ? String(workspace.get(value)?.attributes.title ?? value) : String(value ?? ""));
 
 /** Canonical text: LF endings, NFC, no trailing blanks on a line, no blank edges. Notion strips what this strips, so a hash over it is stable across a round trip. */
 export function canon(text: string): string {
@@ -88,25 +92,40 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
   const seen = (note: Note | undefined): { note: Note | undefined; held: boolean; body: string } => {
     if (note === undefined) return { note: undefined, held: false, body: "" };
     const visible = eligibleNote(note, context);
-    return { note: visible ?? note, held: visible === null || visible.body !== note.body, body: visible === null ? "" : visible.body };
+    // A link to a note named by type and id keeps its text and loses its target in what the page shows (cli §5.14.4); it doesn't hold the item.
+    const shown = visible === null ? "" : withoutWithheldLinks(visible, context).body;
+    if (visible !== null && shown !== visible.body) namesWithheld = true;
+    return { note: visible ?? note, held: visible === null || visible.body !== note.body, body: shown };
+  };
+  // A note is named by its published form: a note restricted whole, or with a restricted claim, by type and id (eligibility.md §6 rule 5).
+  // `namesWithheld` collects whether the item being built named one.
+  let namesWithheld = false;
+  const titleOf = (value: unknown, _workspace?: Workspace): string => {
+    if (typeof value !== "string") return String(value ?? "");
+    const note = workspace.get(value);
+    if (note === undefined) return value;
+    const form = note.type === "source" || note.type === "proposal" ? note : publishableNote(note, context);
+    if (titleWithheld(form)) { namesWithheld = true; return citeLabel(form); }
+    return String(note.attributes.title ?? value);
   };
   const source = typeof a.source === "string" ? workspace.get(a.source) : undefined;
   const sourceRestricted = typeof a.source === "string" && restrictedSources(context).has(a.source);
   const sourceUrl = url(source?.attributes.notion);
   const result: ReviewItem[] = [];
   const stored = (Array.isArray(a.items) ? a.items : []).filter(record);
+  // Each item is judged by its own passages, a legacy one by its input, a note by its draft too (schema §11.5, cli §5.7).
+  const withheld = proposalWithheld(proposal, workspace, context);
   stored.forEach((entry, index) => {
     const itemId = String(entry.item_id);
-    let wholeDraft = false;
-    // The proposed wording of a change cites only excluded passages: the same rule as `brain apply` and `proposal new` (cli §5.7).
-    let textExcluded = false;
+    namesWithheld = false;
+    // The item has no eligible support (its passages, its legacy input, its wording, the draft it creates): withheld whole (eligibility.md §4.2, §9).
+    const itemExcluded = entry.kind === "note" ? withheld.notes.has(String(entry.ref)) : entry.kind === "link" ? withheld.links.has(Number(entry.ref)) : entry.kind === "change" ? withheld.changes.has(Number(entry.ref)) : false;
     let item: Pick<ReviewItem, "kind" | "heading" | "current" | "proposed" | "editable" | "why" | "effect" | "target" | "held"> & { base: string; now: string };
     if (CLEANUP_KINDS.includes(entry.kind as never)) {
       const view = cleanupItemView(proposal, entry, workspace);
       item = { kind: "changes", heading: view.heading, current: view.current, proposed: canon(view.proposed), editable: view.editable, why: view.why, effect: view.effect, target: view.target, held: false, base: view.base, now: view.base };
     } else if (entry.kind === "note") {
       const view = seen(workspace.get(String(entry.ref)));
-      wholeDraft = view.held && view.body.trim() === "" && (workspace.get(String(entry.ref))?.body ?? "").trim() !== "";
       item = { kind: "creates", heading: `Creates: ${titleOf(entry.ref, workspace)}`, current: null, proposed: canon(view.body), editable: true, why: String(a.why ?? ""), effect: EFFECT.creates!, target: view.note, held: view.held, base: base(view.note !== undefined, bodyHash(workspace.get(String(entry.ref))?.body ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(entry.ref))?.body ?? "")) };
     } else if (entry.kind === "link") {
       const link = links[Number(entry.ref)] ?? {};
@@ -120,7 +139,6 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
       const view = seen(typeof change.target === "string" ? workspace.get(change.target) : undefined);
       const targetTitle = titleOf(change.target, workspace);
       const why = String(change.why ?? a.why ?? "");
-      if (change.kind === "update_body" || change.kind === "add_to_note") textExcluded = restsOnlyOnExcluded(a.source, String(change.content ?? ""), context);
       if (change.kind === "update_fact") {
         item = { kind: "changes", heading: `Changes: ${label(String(change.field))} on ${targetTitle}`, current: (() => { const facts = view.note?.attributes.facts; const live = facts !== null && typeof facts === "object" ? (facts as Record<string, unknown>)[String(change.field)] : undefined; const shown = live === undefined ? change.before : live; return shown === undefined ? "(new)" : String(shown); })(), proposed: canon(String(change.after ?? "")), editable: true, why, effect: EFFECT.update_fact!, target: view.note, held: view.held, base: base(view.note !== undefined, change.before === undefined ? null : String(change.before)), now: base(view.note !== undefined, (() => { const facts = view.note?.attributes.facts; const value = facts !== null && typeof facts === "object" ? (facts as Record<string, unknown>)[String(change.field)] : undefined; return value === undefined ? null : String(value); })()) };
       } else if (change.kind === "update_body") {
@@ -133,11 +151,15 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
       }
     }
     // An item whose source is excluded shows no wording at all: the page is Notion's copy and the text would stay there (§5.1).
-    if (sourceRestricted || textExcluded) item.held = true;
+    // A cleanup item keeps the rule it had: held while the row's source is excluded. Every other item is held when it is withheld (§11.5).
+    const cleanupHeld = sourceRestricted && CLEANUP_KINDS.includes(entry.kind as never);
+    if (cleanupHeld || itemExcluded) item.held = true;
     const previous = (Array.isArray(a.revisions) ? a.revisions : []).filter(record).find((revision) => revision.item_id === itemId && revision.status === "drafted" && typeof revision.previous === "string")?.previous as string | undefined;
     const letter = itemLetter(index);
     const targetUrl = url(item.target?.attributes.notion);
-    const links2 = [targetUrl === null ? null : `[${canon(String(item.target?.attributes.title ?? "target")).replace(/[[\]]/g, "")}](${targetUrl})`, sourceUrl === null ? null : `[source](${sourceUrl})`].filter(Boolean).join(" · ");
+    // An Exclusion cleanup item shows the user the excluded text to decide on (capture-and-review §5.2), so it keeps the title.
+    const targetName = item.target === undefined ? "target" : CLEANUP_KINDS.includes(entry.kind as never) ? String(item.target.attributes.title ?? "target") : titleOf(item.target.id);
+    const links2 = [targetUrl === null ? null : `[${canon(targetName).replace(/[[\]]/g, "")}](${targetUrl})`, sourceUrl === null ? null : `[source](${sourceUrl})`].filter(Boolean).join(" · ");
     const heading = `## [${letter} · ${itemId}] ${item.held ? `Held: ${item.heading.replace(/^[^:]+: /, "")}` : item.heading}`.replace(/\n/g, " ");
     // The why is one line; every free text is escaped so it cannot imitate a heading, a toggle tag or a Decision line.
     const whyLine = canon(item.why).replace(/\s*\n\s*/g, " ");
@@ -154,24 +176,89 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
         `**What Accept does:** ${item.effect}`,
         "Decision: Pending",
       ]).join("\n");
-    result.push({ item_id: itemId, letter, kind: item.kind, heading: item.heading, current: item.held ? null : item.current, proposed: item.held ? "" : item.proposed, editable: !item.held && item.editable, why: whyLine, effect: item.held ? EFFECT.held! : item.effect, held: item.held, source_excluded: sourceRestricted || wholeDraft || textExcluded, target: item.target, proposed_hash: sha(item.held ? "" : item.proposed), base_hash: sha(item.base), current_base_hash: sha(item.now), section, rendered_hash: sha(section) });
+    result.push({ item_id: itemId, letter, kind: item.kind, heading: item.heading, current: item.held ? null : item.current, proposed: item.held ? "" : item.proposed, editable: !item.held && item.editable, why: whyLine, effect: item.held ? EFFECT.held! : item.effect, held: item.held, title_withheld: namesWithheld, source_excluded: cleanupHeld || itemExcluded, target: item.target, proposed_hash: sha(item.held ? "" : item.proposed), base_hash: sha(item.base), current_base_hash: sha(item.now), section, rendered_hash: sha(section) });
   });
   return result;
 }
 
-/** The brain-owned summary at the top of the page, rebuilt entirely from the proposal file (§7.4): applied and closed never go into an item section. */
-export function reviewSummary(proposal: Note): string {
+/** How the summary names another Review row: its Name as `sync render` sends it (cli §5.14.4). */
+export type RowName = (proposal: Note) => string;
+
+export type Counted = "applied" | "closed" | "deferred" | "waiting";
+export interface ItemOutcome { item_id: string; letter: string; title: string; outcome: string; counted: Counted }
+
+const oneLine = (text: string): string => text.replace(/\s+/g, " ").trim();
+const entries = (value: unknown): Array<Record<string, unknown>> => (Array.isArray(value) ? value.filter(record) : []);
+
+/** The row a deferred item waits in now: the proposal deferred from this one that holds the item, followed through later deferrals (cli §5.14.4). */
+function destination(workspace: Workspace, from: string, itemId: string): Note | undefined {
+  let found: Note | undefined;
+  for (let current = from, hops = 0; hops < 50; hops += 1) {
+    const next = workspace.notes.find((note) => note.type === "proposal" && note.attributes.deferred_from === current && entries(note.attributes.items).some((item) => item.item_id === itemId));
+    if (next === undefined) break;
+    found = next;
+    current = next.id;
+  }
+  return found;
+}
+
+function deferredTo(workspace: Workspace, from: string, itemId: string, rowName: RowName): string {
+  const row = destination(workspace, from, itemId);
+  if (row === undefined) return "Deferred.";
+  const name = oneLine(rowName(row));
+  const published = record(row.attributes.notion_published) ? row.attributes.notion_published : {};
+  const page = url(row.attributes.notion);
+  if (page === null) return `Deferred to "${name}", which awaits publication.`;
+  if (published["@trashed"] !== undefined) return `Deferred to "${name}".`;
+  return `Deferred to [${name.replace(/[[\]]/g, "")}](${page}).`;
+}
+
+/**
+ * Each item's current outcome, read from the proposal file by its immutable id, never by its letter (capture-and-review §7.4 a, cli §5.14.4).
+ * The title is the one the item's section heading shows now, so a restricted title stays withheld; no wording or value is shown.
+ */
+export function itemOutcomes(proposal: Note, workspace: Workspace, items: readonly ReviewItem[], rowName: RowName): ItemOutcome[] {
   const a = proposal.attributes;
-  const total = (Array.isArray(a.items) ? a.items : []).length;
-  const decisions = (Array.isArray(a.item_decisions) ? a.item_decisions : []).filter(record);
-  const count = (state: string) => decisions.filter((entry) => entry.state === state).length;
-  let applied = count("applied"), closed = count("closed");
-  const deferred = count("deferred");
-  // A proposal decided as a whole before items were tracked (a 0045 approve or reject) has no item decisions: its state is the row's.
-  if (decisions.length === 0 && a.status === "applied") applied = total;
-  if (decisions.length === 0 && a.status === "closed") closed = total;
-  const waiting = total - applied - closed - deferred;
-  return `**Review summary** (the brain keeps this up to date; do not edit): ${total - waiting} of ${total} decided: ${applied} applied, ${closed} closed${deferred > 0 ? `, ${deferred} deferred` : ""}, ${waiting} waiting for you.`;
+  const stored = entries(a.items);
+  const decisions = entries(a.item_decisions);
+  const decision = record(a.decision) ? a.decision : {};
+  const exclude = entries(decision.exclude);
+  const links = entries(a.links);
+  const revisions = entries(a.revisions);
+  return items.map((item) => {
+    const entry = stored.find((candidate) => String(candidate.item_id) === item.item_id) ?? {};
+    const rejected = (): string => (entry.kind === "note" && workspace.get(String(entry.ref))?.attributes.lifecycle === "archived" ? "Rejected; the draft is archived." : "Rejected.");
+    const result = (outcome: string, counted: Counted): ItemOutcome => ({ item_id: item.item_id, letter: item.letter, title: oneLine(item.heading.replace(/^[^:]+: /, "")), outcome, counted });
+    const decided = decisions.find((candidate) => candidate.item_id === item.item_id);
+    if (decided !== undefined) {
+      if (decided.state === "applied") return result(decided.edited === true ? "Applied, with your wording." : "Applied.", "applied");
+      if (decided.state === "deferred") return result(deferredTo(workspace, proposal.id, item.item_id, rowName), "deferred");
+      if (decided.state === "closed") return result(decided.reason === "source_excluded" ? "Closed without applying: it rests on text you excluded." : rejected(), "closed");
+    }
+    // A row decided as a whole (0045) records no item decisions: each item's outcome follows from the decision, its exclusions and what apply dropped.
+    if (decided === undefined && a.status === "applied") {
+      const excluded = exclude.some((excluded) => (entry.kind === "change" && excluded.change === entry.ref) || (entry.kind === "note" && excluded.note === entry.ref)
+        || (entry.kind === "link" && ["target", "field", "value"].every((key) => isDeepStrictEqual(excluded[key], links[Number(entry.ref)]?.[key]))));
+      if (excluded) return result(deferredTo(workspace, proposal.id, item.item_id, rowName), "deferred");
+      if (entry.kind === "change" && entries(a.dropped).some((dropped) => dropped.change === entry.ref && dropped.reason === "stale")) return result("Closed without applying: the note changed first.", "closed");
+      return result("Applied.", "applied");
+    }
+    if (decided === undefined && a.status === "closed") return result(a.closed_reason === "stale" ? "Closed without applying." : rejected(), "closed");
+    if (item.held) return result("Held: it rests on text you excluded. Reject or Defer it.", "waiting");
+    const revision = revisions.find((candidate) => candidate.item_id === item.item_id);
+    if (revision?.status === "drafted") return result("Revised wording ready: waiting for your decision.", "waiting");
+    if (revision?.status === "requested") return result("Revision requested: waiting for the new wording.", "waiting");
+    return result("Waiting for your decision.", "waiting");
+  });
+}
+
+/** The brain-owned summary at the top of the page, rebuilt entirely from the proposal file (§7.4): applied and closed never go into an item section. */
+export function reviewSummary(proposal: Note, workspace: Workspace, items: readonly ReviewItem[], rowName: RowName): string {
+  const outcomes = itemOutcomes(proposal, workspace, items, rowName);
+  const count = (counted: Counted) => outcomes.filter((entry) => entry.counted === counted).length;
+  const [applied, closed, deferred, waiting] = [count("applied"), count("closed"), count("deferred"), count("waiting")];
+  const head = `**Review summary** (the brain keeps this up to date; do not edit): ${outcomes.length - waiting} of ${outcomes.length} decided: ${applied} applied, ${closed} closed${deferred > 0 ? `, ${deferred} deferred` : ""}, ${waiting} waiting for you.`;
+  return outcomes.length === 0 ? head : [head, "", ...outcomes.map((entry) => `- ${entry.letter} · ${entry.title} — ${entry.outcome}`)].join("\n");
 }
 
 const FIRST_USE = [
@@ -179,9 +266,9 @@ const FIRST_USE = [
   "> Nothing is read until you click **Submit decisions** at the top of the row. **Submit and accept all** accepts every section still on Pending. You can decide some sections now and leave the rest.",
 ].join("\n");
 
-export function renderReview(proposal: Note, workspace: Workspace): ReviewRender {
+export function renderReview(proposal: Note, workspace: Workspace, rowName: RowName): ReviewRender {
   const items = reviewItems(proposal, workspace);
-  const summary = reviewSummary(proposal);
+  const summary = reviewSummary(proposal, workspace, items, rowName);
   // `## Review summary` is a heading the skill finds by name, like the "Brief" heading of a project page (cli §5.14.4).
   const body = [FIRST_USE, "", "## Review summary", summary, "", ...items.flatMap((item) => [item.section, ""])].join("\n").replace(/\n+$/, "\n");
   return { items, body, summary, summary_hash: `sha256:${sha(summary)}` };
