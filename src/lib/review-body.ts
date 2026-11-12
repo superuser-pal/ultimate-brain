@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 
 import { lineDiff } from "./diff.ts";
 import type { Note } from "./notes.ts";
@@ -180,19 +181,84 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
   return result;
 }
 
-/** The brain-owned summary at the top of the page, rebuilt entirely from the proposal file (§7.4): applied and closed never go into an item section. */
-export function reviewSummary(proposal: Note): string {
+/** How the summary names another Review row: its Name as `sync render` sends it (cli §5.14.4). */
+export type RowName = (proposal: Note) => string;
+
+export type Counted = "applied" | "closed" | "deferred" | "waiting";
+export interface ItemOutcome { item_id: string; letter: string; title: string; outcome: string; counted: Counted }
+
+const oneLine = (text: string): string => text.replace(/\s+/g, " ").trim();
+const entries = (value: unknown): Array<Record<string, unknown>> => (Array.isArray(value) ? value.filter(record) : []);
+
+/** The row a deferred item waits in now: the proposal deferred from this one that holds the item, followed through later deferrals (cli §5.14.4). */
+function destination(workspace: Workspace, from: string, itemId: string): Note | undefined {
+  let found: Note | undefined;
+  for (let current = from, hops = 0; hops < 50; hops += 1) {
+    const next = workspace.notes.find((note) => note.type === "proposal" && note.attributes.deferred_from === current && entries(note.attributes.items).some((item) => item.item_id === itemId));
+    if (next === undefined) break;
+    found = next;
+    current = next.id;
+  }
+  return found;
+}
+
+function deferredTo(workspace: Workspace, from: string, itemId: string, rowName: RowName): string {
+  const row = destination(workspace, from, itemId);
+  if (row === undefined) return "Deferred.";
+  const name = oneLine(rowName(row));
+  const published = record(row.attributes.notion_published) ? row.attributes.notion_published : {};
+  const page = url(row.attributes.notion);
+  if (page === null) return `Deferred to "${name}", which awaits publication.`;
+  if (published["@trashed"] !== undefined) return `Deferred to "${name}".`;
+  return `Deferred to [${name.replace(/[[\]]/g, "")}](${page}).`;
+}
+
+/**
+ * Each item's current outcome, read from the proposal file by its immutable id, never by its letter (capture-and-review §7.4 a, cli §5.14.4).
+ * The title is the one the item's section heading shows now, so a restricted title stays withheld; no wording or value is shown.
+ */
+export function itemOutcomes(proposal: Note, workspace: Workspace, items: readonly ReviewItem[], rowName: RowName): ItemOutcome[] {
   const a = proposal.attributes;
-  const total = (Array.isArray(a.items) ? a.items : []).length;
-  const decisions = (Array.isArray(a.item_decisions) ? a.item_decisions : []).filter(record);
-  const count = (state: string) => decisions.filter((entry) => entry.state === state).length;
-  let applied = count("applied"), closed = count("closed");
-  const deferred = count("deferred");
-  // A proposal decided as a whole before items were tracked (a 0045 approve or reject) has no item decisions: its state is the row's.
-  if (decisions.length === 0 && a.status === "applied") applied = total;
-  if (decisions.length === 0 && a.status === "closed") closed = total;
-  const waiting = total - applied - closed - deferred;
-  return `**Review summary** (the brain keeps this up to date; do not edit): ${total - waiting} of ${total} decided: ${applied} applied, ${closed} closed${deferred > 0 ? `, ${deferred} deferred` : ""}, ${waiting} waiting for you.`;
+  const stored = entries(a.items);
+  const decisions = entries(a.item_decisions);
+  const decision = record(a.decision) ? a.decision : {};
+  const exclude = entries(decision.exclude);
+  const links = entries(a.links);
+  const revisions = entries(a.revisions);
+  return items.map((item) => {
+    const entry = stored.find((candidate) => String(candidate.item_id) === item.item_id) ?? {};
+    const rejected = (): string => (entry.kind === "note" && workspace.get(String(entry.ref))?.attributes.lifecycle === "archived" ? "Rejected; the draft is archived." : "Rejected.");
+    const result = (outcome: string, counted: Counted): ItemOutcome => ({ item_id: item.item_id, letter: item.letter, title: oneLine(item.heading.replace(/^[^:]+: /, "")), outcome, counted });
+    const decided = decisions.find((candidate) => candidate.item_id === item.item_id);
+    if (decided !== undefined) {
+      if (decided.state === "applied") return result(decided.edited === true ? "Applied, with your wording." : "Applied.", "applied");
+      if (decided.state === "deferred") return result(deferredTo(workspace, proposal.id, item.item_id, rowName), "deferred");
+      if (decided.state === "closed") return result(decided.reason === "source_excluded" ? "Closed without applying: it rests on text you excluded." : rejected(), "closed");
+    }
+    // A row decided as a whole (0045) records no item decisions: each item's outcome follows from the decision, its exclusions and what apply dropped.
+    if (decided === undefined && a.status === "applied") {
+      const excluded = exclude.some((excluded) => (entry.kind === "change" && excluded.change === entry.ref) || (entry.kind === "note" && excluded.note === entry.ref)
+        || (entry.kind === "link" && ["target", "field", "value"].every((key) => isDeepStrictEqual(excluded[key], links[Number(entry.ref)]?.[key]))));
+      if (excluded) return result(deferredTo(workspace, proposal.id, item.item_id, rowName), "deferred");
+      if (entry.kind === "change" && entries(a.dropped).some((dropped) => dropped.change === entry.ref && dropped.reason === "stale")) return result("Closed without applying: the note changed first.", "closed");
+      return result("Applied.", "applied");
+    }
+    if (decided === undefined && a.status === "closed") return result(a.closed_reason === "stale" ? "Closed without applying." : rejected(), "closed");
+    if (item.held) return result("Held: it rests on text you excluded. Reject or Defer it.", "waiting");
+    const revision = revisions.find((candidate) => candidate.item_id === item.item_id);
+    if (revision?.status === "drafted") return result("Revised wording ready: waiting for your decision.", "waiting");
+    if (revision?.status === "requested") return result("Revision requested: waiting for the new wording.", "waiting");
+    return result("Waiting for your decision.", "waiting");
+  });
+}
+
+/** The brain-owned summary at the top of the page, rebuilt entirely from the proposal file (§7.4): applied and closed never go into an item section. */
+export function reviewSummary(proposal: Note, workspace: Workspace, items: readonly ReviewItem[], rowName: RowName): string {
+  const outcomes = itemOutcomes(proposal, workspace, items, rowName);
+  const count = (counted: Counted) => outcomes.filter((entry) => entry.counted === counted).length;
+  const [applied, closed, deferred, waiting] = [count("applied"), count("closed"), count("deferred"), count("waiting")];
+  const head = `**Review summary** (the brain keeps this up to date; do not edit): ${outcomes.length - waiting} of ${outcomes.length} decided: ${applied} applied, ${closed} closed${deferred > 0 ? `, ${deferred} deferred` : ""}, ${waiting} waiting for you.`;
+  return outcomes.length === 0 ? head : [head, "", ...outcomes.map((entry) => `- ${entry.letter} · ${entry.title} — ${entry.outcome}`)].join("\n");
 }
 
 const FIRST_USE = [
@@ -200,9 +266,9 @@ const FIRST_USE = [
   "> Nothing is read until you click **Submit decisions** at the top of the row. **Submit and accept all** accepts every section still on Pending. You can decide some sections now and leave the rest.",
 ].join("\n");
 
-export function renderReview(proposal: Note, workspace: Workspace): ReviewRender {
+export function renderReview(proposal: Note, workspace: Workspace, rowName: RowName): ReviewRender {
   const items = reviewItems(proposal, workspace);
-  const summary = reviewSummary(proposal);
+  const summary = reviewSummary(proposal, workspace, items, rowName);
   // `## Review summary` is a heading the skill finds by name, like the "Brief" heading of a project page (cli §5.14.4).
   const body = [FIRST_USE, "", "## Review summary", summary, "", ...items.flatMap((item) => [item.section, ""])].join("\n").replace(/\n+$/, "\n");
   return { items, body, summary, summary_hash: `sha256:${sha(summary)}` };

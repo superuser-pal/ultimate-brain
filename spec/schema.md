@@ -755,7 +755,7 @@ The generated block contains these sections in this order; a section with no ite
 6. `## Recent meetings` — meetings whose `projects` contains the project; sorted by `date` descending, then id; at most 5: `- <date> — [<title>](<path>)`.
 
 ### 16.2 `decision-log.md` (`view_kind: decision_log`)
-The decision log lists every decision of the project, whatever its lifecycle: it is the history, not a summary of what you reviewed.
+The decision log lists every decision of the project, whatever its lifecycle: it is the history, not a summary of what you reviewed. One exception: an `archived` decision whose `assessment` is not `superseded` is in neither section and not in `generated_from` (CC-218). Archived without a successor means the decision was not taken: a draft you rejected in Review, one withheld because it rested only on excluded evidence (§11.5), or one you archived; listing it under Current would show it as decided (eligibility.md §8 rule 7). A draft still waiting in Review stays listed, and a superseded decision stays under Superseded.
 
 Two sections, each sorted by `date` descending (`valid_until` descending for superseded), then id; empty section renders `- None`:
 
