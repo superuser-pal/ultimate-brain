@@ -31,10 +31,17 @@ export function pageLabels(passages: readonly string[]): Labels {
 
 /** Wording as the page shows it: a `[¶n]` the source wrote is escaped, then each passage reference is its short label. */
 export function shorten(text: string, labels: Labels): string {
-  return text.replace(/\[¶/g, "\\[¶").replace(PASSAGE_REF, (whole, source: string, n: string, hash: string) => {
+  // Notion's markdown escapes brackets both ways (§9.5): a literal `[¶` is sent as `\\[¶`, which Notion stores as `\[¶` and reads back as
+  // `\\\[¶`; `fromNotion` turns that into `\[¶`, the escaped form `expand` keeps as text.
+  return text.replace(/\[¶/g, "\\\\[¶").replace(PASSAGE_REF, (whole, source: string, n: string, hash: string) => {
     const label = labels.byRef.get(`${source}#¶${n}:${hash}`);
     return label === undefined ? whole : `[${label}]`;
   });
+}
+
+/** Undo Notion's markdown escapes of a backslash and of brackets (`\\`, `\[`, `\]`), left to right: a marker reads back as `\[¶4\]` (§9.5). */
+export function fromNotion(text: string): string {
+  return text.replace(/\\([\\[\]])/g, "$1");
 }
 
 /** The inverse of `shorten`: each label back to its full reference. `unknown` lists the labels the page doesn't hold. */
@@ -159,7 +166,7 @@ function readSection(id: string, part: string[], unconvertible: string): Section
       if (title !== null && title.toLowerCase() === NOTE_TOGGLE.toLowerCase()) {
         sawToggle = true;
         const text = children.join("\n");
-        noteText = text.includes(unconvertible) ? null : canon2(unescape2(canon2(text), true));
+        noteText = text.includes(unconvertible) ? null : canon2(unescape2(fromNotion(canon2(text)), true));
         if (noteText === null) broken = true;
       } else if (title === null || title.toLowerCase() !== "previous proposal") broken = true;
       continue;
@@ -173,7 +180,7 @@ function readSection(id: string, part: string[], unconvertible: string): Section
     if (line.includes(unconvertible)) { broken = true; continue; }
     wording.push(line);
   }
-  const visible = canon2(unescape2(canon2(wording.join("\n"))));
+  const visible = canon2(unescape2(fromNotion(canon2(wording.join("\n")))));
   const text = sawToggle ? noteText : visible;
   const decisionText = decisions.length === 1 ? decisions[0]! : null;
   const revision = revisions.length === 1 ? revisions[0]! : null;
