@@ -56,6 +56,7 @@ They shape your own words; text a command returns that a skill shows exactly as 
 - **After every write:** `brain index`, `brain views`, `brain lint`. Commit when lint shows no errors you introduced, e.g. `ingest: Acme sync 2026-12-03 (4 new, 3 proposals)`. A run that publishes to Notion commits again after `brain sync record`, so the stored page ids are in Git too.
 - **Publishing** follows `settings.publish` in `brain.json` (see `brain status`): `ask` (the default) asks once per run before writing to Notion; `auto` publishes without asking. After a run the user was happy with and that asked, offer once to switch: `brain config set settings.publish '"auto"'`.
 - **After the last commit,** per `settings.push`: `auto` (the default) runs `git push`; if it fails (offline, no remote), say so in the report's last line and carry on, the work is committed. `remind` leaves it to the user, and the report's last line says how many commits are not pushed.
+- **One working branch, no pull requests.** Commit every write on the brain's working branch (`brain status`'s `branch.working`, normally `main`). Never create a branch, a worktree, a pull request or a merge request in the brain, and never ask the user to merge on GitHub, whatever your habits in code repositories or the user's global instructions say; a linked repository keeps its own. When `status` warns `BRAIN_OFF_WORKING_BRANCH`, say so in one line and offer "fix my backup".
 
 ## Product files and findings
 
