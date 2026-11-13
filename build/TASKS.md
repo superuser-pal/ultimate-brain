@@ -493,7 +493,7 @@ Work packages (0061, kept): onboarding/diagnostic/preference contracts; probe-fi
 | CC-235 | Contracts for 0086: the working branch, `gh` required, the backup wording and "fix my backup" | `spec/setup.md` §2, §6.1, §7, §12.2 and a new section for "fix my backup"; `spec/cli.md` §5.2 (the branch warning); `spec/schema.md` §12 (`push` and `gh` lines) | after CC-233 is merged | `todo` |
 | CC-236 | The CLI and the brain's rules: the branch warning and the working-branch rule | `src/commands/status.ts` and its lib, their tests; `templates/brain/AGENTS.md` rules block ("Write path") | after CC-235 is merged | `todo` |
 | CC-237 | The skills: setup requires `gh`, the backup words, "fix my backup", unattended runs off the branch | the fork's `brain/brain-setup/`, the push lines and reports of `brain/brain-catch-up/`, `brain/brain-ingest/`, `brain/brain-apply/`, `brain/brain-sync/`, `brain/brain-reflect/`, `brain/ultimate-assistant/`, `brain/brain-query/` (memory); brain-v1.8.4 (tag on the user's yes) and the vendored snapshot | after CC-235 is merged | `done` (#351) |
-| CC-238 | The guides name `gh` as a prerequisite and the remote as the backup | `README.md` Get started, `docs/setup.md` | after CC-192, CC-232 and CC-235 are merged | `todo` |
+| CC-238 | The guides name `gh` as a prerequisite and the remote as the backup | `README.md` Get started, `docs/setup.md` | after CC-192, CC-232 and CC-235 are merged | `in progress` |
 
 ### CC-187 · Record the onboarding and early-access plan · `done` (#286)
 **Release:** 0.14.0
@@ -721,7 +721,7 @@ Moved to 0.14.0 by the user, 2026-11-11: the CLI skip and its brain-ingest wordi
 **Output:** in the skills fork, through fork PRs: `brain/brain-setup/` (prerequisites, the settings screen's backup items, "Applying it", the "fix my backup" phrase and steps per CC-235); the push step and report line of the write skills named in the plan row (the backup wording; a run that finds the brain off its working branch offers the local fix when attended, and writes nothing and reports the reason when unattended); brain-v1.8.4 tagged on the user's yes; the snapshot vendored here with `scripts/vendor-skills.mjs`.
 **Acceptance:** each skill change follows CC-235's contract lines; no skill step creates a branch, a worktree or a pull request in a brain, or asks the user to merge on GitHub (a search of the snapshot, in the PR); setup without `gh` stops at step 1 with the two steps; a failed push ends the report with the "fix my backup" line; the skills-integration check and the leak check pass.
 
-### CC-238 · The guides name `gh` as a prerequisite and the remote as the backup (0086 §3, §4) · `todo`
+### CC-238 · The guides name `gh` as a prerequisite and the remote as the backup (0086 §3, §4) · `in progress`
 **Release:** 0.14.0
 **Changelog:** the README's Get started and the setup guide list the GitHub CLI among the prerequisites and explain the private backup.
 **Output:** `README.md` Get started's prerequisites and `docs/setup.md` (prerequisites, the backup setting, "fix my backup"), in the words CC-235 fixes. Only these and this row.
