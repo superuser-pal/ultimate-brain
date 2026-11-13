@@ -1,14 +1,14 @@
 # Guided setup (contract, decision 0078)
 
-**Status:** contract for release 0.14.0 (CC-188). Built by CC-190 (the CLI side), CC-191 (the `brain-setup` skill and the skill changes it needs, in one fork release: brain-setup, brain-connect-notion, Ultimate Assistant's seeding, brain-ingest's use of `track`, brain-catch-up's first-meeting line, brain-notion-change's template version), CC-192 (the `repository` field of `package.json`) and CC-189 (the Notion template); measured by CC-193. The response style (0081: §4's row, §7 item 13, §7.1) is CC-209's contract, built by CC-210 (the CLI) and CC-211 (the setup item and the chat change). First value (§2, §3, §4.1, §5, §10, §12) was corrected by CC-213: an attempt is not a pass. The template's Example rows (0084: §2 step 4, §3, §4.1, §6.5, §12, §14) are CC-227's, built in the skills fork (brain-setup, brain-ingest, brain-catch-up, brain-sync); 0087's rows in every database and the wider guard (§6.5) are CC-234's (brain-apply, brain-catch-up, ultimate-assistant). Written by Claude Code.
+**Status:** contract for release 0.14.0 (CC-188). Built by CC-190 (the CLI side), CC-191 (the `brain-setup` skill and the skill changes it needs, in one fork release: brain-setup, brain-connect-notion, Ultimate Assistant's seeding, brain-ingest's use of `track`, brain-catch-up's first-meeting line, brain-notion-change's template version), CC-192 (the `repository` field of `package.json`) and CC-189 (the Notion template); measured by CC-193. The response style (0081: §4's row, §7 item 13, §7.1) is CC-209's contract, built by CC-210 (the CLI) and CC-211 (the setup item and the chat change). First value (§2, §3, §4.1, §5, §10, §12) was corrected by CC-213: an attempt is not a pass. The template's Example rows (0084: §2 step 4, §3, §4.1, §6.5, §12, §14) are CC-227's, built in the skills fork (brain-setup, brain-ingest, brain-catch-up, brain-sync); 0087's rows in every database and the wider guard (§6.5) are CC-234's (brain-apply, brain-catch-up, ultimate-assistant). The backup and `gh` required for early access (0086: §2, §3, §4, §6.1, §7, §12.2, §15) are CC-235's contract, built by CC-236 (the CLI's working branch, cli.md §5.2, and the brain's rules block), CC-237 (the skills) and CC-238 (the guides). Written by Claude Code.
 
 How this file fits: it holds the whole first-time setup of a new user: what the `brain-setup` skill does and in what order, what it checks and how, what it stores and where, what seeding writes, how first value is checked, and the setup report. Command behaviour is in [cli.md](cli.md) (§5.1 `init`'s next step, §5.2 `status`'s `setup` block, §5.3 `notion.template_version` and `settings.style`, §5.3.1 the style block, §5.15 `upgrade`'s Notion migrations), and file formats are in [schema.md](schema.md) (§4 area `track`, §12 the new-brain modules and the new `brain.json` keys). What a read, an answer or a proposal may rest on is [eligibility.md](eligibility.md), and nothing here changes it.
 
-**Decisions:** [0078](../decisions/0078-onboarding-and-early-access-in-0-14-0.md) (binding: §1 to §6); [0079](../decisions/0079-lean-minutes-and-follow-ups-as-tasks.md) (the minutes format the minutes check uses, and the follow-ups that become Tasks); [0081](../decisions/0081-response-style-working-principles-and-plain-writing.md) (the response style: §3 to §6); [0084](../decisions/0084-the-notion-template-is-the-authors-emptied-space-with-example-rows.md) (the template's Example rows, removed at step 4, and the guard: §6.5); [0087](../decisions/0087-the-template-shows-an-example-in-every-database.md) (an Example row in every database, the Brain Data callout, and the guard's wider list: §6.5); 0015 (Notion through the MCP), 0037 (identities), 0048 (modules), 0061 (minimal per-area tracking preferences), 0064 and 0072 (Ultimate Assistant guides seeding), 0059 (project adoption), 0070 (lifecycle of structure notes), 0031 (owner rulings).
+**Decisions:** [0078](../decisions/0078-onboarding-and-early-access-in-0-14-0.md) (binding: §1 to §6); [0079](../decisions/0079-lean-minutes-and-follow-ups-as-tasks.md) (the minutes format the minutes check uses, and the follow-ups that become Tasks); [0081](../decisions/0081-response-style-working-principles-and-plain-writing.md) (the response style: §3 to §6); [0084](../decisions/0084-the-notion-template-is-the-authors-emptied-space-with-example-rows.md) (the template's Example rows, removed at step 4, and the guard: §6.5); [0087](../decisions/0087-the-template-shows-an-example-in-every-database.md) (an Example row in every database, the Brain Data callout, and the guard's wider list: §6.5); [0086](../decisions/0086-the-brain-works-on-main-and-early-access-requires-gh.md) (one working branch and no pull request, `gh` required for early access, the backup: §6.1, §7, §15; it amends two sentences of 0078 §2, and only those); 0015 (Notion through the MCP), 0037 (identities), 0048 (modules), 0061 (minimal per-area tracking preferences), 0064 and 0072 (Ultimate Assistant guides seeding), 0059 (project adoption), 0070 (lifecycle of structure notes), 0031 (owner rulings).
 
 **The user's choices of 2026-11-10, filling gaps 0078 leaves** (asked through the coordinator during CC-188; each was the recommended option):
 1. **Per-area tracking preferences** are an optional `track` list in the area note's frontmatter, in Git only, with no Notion property in 0.14.0; seeding proposes it, the ingest uses it, and Ultimate Assistant's thresholds stay fixed (§11).
-2. **What setup records:** each step that only an online or by-hand check can prove is recorded as a `setup` log line (`brain log`), which `brain status` reads offline; the optional items are `brain.json` settings, `settings.markitdown`, `settings.gh` and `settings.schedule`, each `on` or `off`, absent meaning `off` (§4, §5).
+2. **What setup records:** each step that only an online or by-hand check can prove is recorded as a `setup` log line (`brain log`), which `brain status` reads offline; the optional items are `brain.json` settings, `settings.markitdown`, `settings.gh` and `settings.schedule`, each `on` or `off`, absent meaning `off` (§4, §5). Since 0086, `gh` is required for early access and setup always writes `settings.gh` `on` (§6.1, §7); the choice stays as recorded for MarkItDown and the schedule.
 3. **The drop folder and the notes' language** stay lines of the user's part of the brain's `AGENTS.md`: `Drop folder: <path>` and `Language: <name>`; `brain status` reads the first (§4).
 4. **The template version** is the number of the last Notion migration the template includes (`0024`); `brain upgrade` names the migrations with a higher number (§9).
 
@@ -32,7 +32,7 @@ A new user duplicates the published Notion template (0078 §1, CC-189), installs
 | # | Step | `setup` log step (§4.1) | Done when |
 |---|---|---|---|
 | 1 | **Prerequisites**, all checked at once (§6.1) | `prerequisites` | every required prerequisite passes |
-| 2 | **The settings screen** (§7), then its items applied: the Git identity, the private remote, the drop folder created, the `AGENTS.md` lines | `settings` | the user confirmed the screen and each required item of it passes |
+| 2 | **The settings screen** (§7), then its items applied: the Git identity, the backup (the private remote, §7), the drop folder created, the `AGENTS.md` lines | `settings` | the user confirmed the screen and each required item of it passes |
 | 3 | **The template duplicated, and the agent connected to Notion** (§6.2) | `notion-mcp` | the MCP reaches the duplicated space's Brain Data page |
 | 4 | **"Connect the brain to Notion"** (brain-connect-notion): modules on or off, database ids, the Tasks database, the template version | `connect` | every database of Core and of the modules on is stored, and the template version is stored when the space has a Template version line (a space built from the prompts has none: the version stays unknown, §9, and the step is still done); in a duplicate of the template, no `Example · ` row is left on Brain Data (§6.5) |
 | 4a | **The minutes prompt**, walked through and checked (§6.3) | `minutes-prompt` | the check passes |
@@ -50,7 +50,7 @@ A new user duplicates the published Notion template (0078 §1, CC-189), installs
 
 On "set up my brain", the skill runs `brain status --json` and reads its `setup` block (cli.md §5.2), then:
 
-1. **Re-checks online** what the block can't see and is cheap to re-check: the Notion MCP reaches Brain Data (step 3), and, when `gh` is `on`, the remote is private (`gh repo view --json isPrivate`). A recorded step whose online check now fails is unfinished again. In a duplicate of the template (`notion.template_version` stored) with no `connect` line `result=done` yet, step 4 is unfinished even when `databases` passes: the Example rows were not yet found gone (§6.5), so step 4 runs again.
+1. **Re-checks online** what the block can't see and is cheap to re-check: the Notion MCP reaches Brain Data (step 3), and the backup is private (`gh repo view --json isPrivate`; `gh` is required, §6.1). A recorded step whose online check now fails is unfinished again. In a duplicate of the template (`notion.template_version` stored) with no `connect` line `result=done` yet, step 4 is unfinished even when `databases` passes: the Example rows were not yet found gone (§6.5), so step 4 runs again.
 2. **Never re-runs a by-hand check that is recorded as done** (the minutes prompt, Brain Assistant): the `setup` line is the proof (choice 2). The user can ask for it again ("check the minutes prompt again").
 3. **Resumes an unresolved first value check by check** (§10), from the block's `first_value`: the checks that passed in the latest `first-value` line are kept, and only the others run again (`fail`, `unsuitable`, or not run yet). All four run again when a `seeding` line is newer than that `first-value` line, since the material changed; `tasks` runs again when it was `skip` and the Tasks module is now on.
 4. **Starts at the first step of §2 that is unfinished**, saying in one line what is already done: "Setup: 6 of 9 done. Next: paste the minutes prompt." A step before it that fails a check (a Git identity removed since) is fixed first.
@@ -67,12 +67,13 @@ A brain made before 0.14.0 that has no `setup` line and whose `databases` and `o
 | The language notes are written in | the line `Language: <name>` under "My rules" in the brain's `AGENTS.md` | the skill, after the settings screen's yes |
 | Publish, push, recall | `brain.json` `settings.publish`, `settings.push`, `settings.recall` (schema §12) | `brain config set` |
 | The response style (0081) | `brain.json` `settings.style` (schema §12), and the style block it writes in the brain's `AGENTS.md` (cli.md §5.3.1) | `brain config set` |
-| MarkItDown, `gh`, the schedule (optional, choice 2) | `brain.json` `settings.markitdown`, `settings.gh`, `settings.schedule`: `on` or `off`; absent means `off` (schema §12) | `brain config set` |
+| MarkItDown, the schedule (optional, choice 2) | `brain.json` `settings.markitdown`, `settings.schedule`: `on` or `off`; absent means `off` (schema §12) | `brain config set` |
+| `gh` (required for early access, 0086 §3) | `brain.json` `settings.gh`, always written `on` by setup (schema §12) | `brain config set`, when the screen is applied |
 | Modules | `brain.json` `modules` (schema §12) | `brain modules on|off` |
 | The template version | `brain.json` `notion.template_version` (schema §12) | brain-connect-notion, with `brain config set` |
 | Database ids, the Tasks mapping, `owner.person` | `brain.json` `notion`, `owner` (schema §12) | brain-connect-notion |
 | Git identity | Git's own configuration (global, or the brain repository's when the user prefers) | `git config`, after the screen's yes |
-| The remote | the brain repository's `origin` | `gh repo create --private` or the user (§7) |
+| The backup (the remote) | the brain repository's `origin`, and `refs/remotes/origin/HEAD` naming the working branch (cli.md §5.2) | `gh repo create --private`, then `git remote set-head` (§7); the user's own steps only on 1.0's path |
 | The Notion connection | the agent's own MCP configuration | the user, following the skill's steps |
 
 The `AGENTS.md` lines are written under the `## My rules` heading, which follows the rules block's end marker `<!-- ultimate-brain:rules:end -->` (upgrades never touch anything after that marker except the style block, which the CLI keeps right after it, cli.md §5.3.1): each on its own line, after the heading's comment, replacing an earlier line of the same name anywhere after the marker, except between the style markers (`<!-- ultimate-brain:style:start -->` to `<!-- ultimate-brain:style:end -->`, cli.md §5.3.1): that block is the CLI's, and its lines are never read or replaced as "My rules" lines. When the heading is missing, the skill adds `## My rules` at the end of the file first. With the rules block's markers missing (cli.md §5.15 step 1), the skill writes nothing, says why, and setup stops at step 2 until the markers are restored; they are committed on their own (`rules: drop folder and language`).
@@ -120,11 +121,24 @@ The other three of the nine required items (0078 §2) are the recorded steps `no
 | Git, with an identity | `git --version`; `git config user.name` and `user.email` (set on the settings screen when missing) | yes (the identity can be set in step 2) |
 | Claude Code or Codex | the agent running the skill; its name goes in the setup report | yes |
 | The Notion MCP connection | a Notion tool is available in the session (reached in step 3) | yes (connected in step 3) |
-| `gh` | `gh --version` and `gh auth status` | no: the settings screen's `gh` item (§7) |
+| `gh`, signed in | `gh --version`, then `gh auth status --hostname github.com` | yes for early access (0086 §3) |
 | MarkItDown | `markitdown --version` | no: the settings screen's `markitdown` item (§7) |
 | The Notion plan | **asked**, since the API can't read it: "Does your Notion plan include Notion AI? And Custom Agents?" | Notion AI: yes for early access (§13) |
 
-All are shown in one list (`✓ Node 22.11`, `✗ Git identity: set on the next screen`, `? Notion AI: asked below`). A missing required prerequisite that the next steps don't set (Node, Git, the agent, Notion AI) stops setup with its fix: a link or one command, never a path under `npm root -g`.
+All are shown in one list (`✓ Node 22.11`, `✗ Git identity: set on the next screen`, `? Notion AI: asked below`). A missing required prerequisite that the next steps don't set (Node, Git, the agent, Notion AI, `gh`) stops setup with its fix: a link or one command, never a path under `npm root -g`.
+
+**`gh` missing or signed out** (`gh --version` fails: `gh-missing`; or `gh auth status --hostname github.com` exits non-zero: `gh-signed-out`; only github.com is checked, so a broken sign-in to another host doesn't stop setup) stops setup at step 1 with this message, the first step's command chosen by the platform (`darwin` gets `brew install gh`, any other the link):
+
+```text
+Setup needs the GitHub CLI (gh), signed in, to create your backup. Two steps:
+1. Install it: brew install gh
+   (not on a Mac: follow https://cli.github.com)
+2. In your terminal, run: gh auth login
+   When it asks, choose to let it set up Git's credentials.
+Then say "set up my brain" again.
+```
+
+With `gh` installed but signed out, step 1 of the message is left out and step 2 is numbered 1. It is logged `prerequisites result=failed reason=gh-missing` or `reason=gh-signed-out` (§12.2). Asked again, setup re-runs step 1's checks and goes on once `gh auth status --hostname github.com` passes. No other path is offered in early access: the manual steps of §7 are 1.0's.
 
 ### 6.2 The template and the Notion connection (step 3)
 
@@ -180,29 +194,36 @@ The published template carries fifteen invented rows that show a filled space, o
 
 ## 7. The settings screen (step 2; 0078 §2)
 
-One screen, every item with its default filled in and a one-line explanation. The user answers once ("keep these", or changes: "drop folder ~/Inbox/brain", "push: remind"); the skill shows the screen again with the changes, and applies it on a yes. It also shows **where the brain lives**: the folder, and the remote once there is one.
+One screen, every item with its default filled in and a one-line explanation. The user answers once ("keep these", or changes: "drop folder ~/Inbox/brain", "push: remind"); the skill shows the screen again with the changes, and applies it on a yes. It also shows **where the brain lives**: the folder, and the backup once there is one. What the user reads calls the remote **the backup** and uses no Git word (0086 §4): items 3 and 8 below give the words; Git's own words (`origin`, push, branch) appear only when the user asks for the details.
 
 | # | Item | Default filled in | One-line explanation shown | Required | Stored (§4) |
 |---|---|---|---|---|---|
 | 1 | Brain folder | the folder `brain init` made | "Your brain: Markdown notes in a Git repository. Everything the brain knows is here." | shown | the folder; `~/.config/ultimate-brain/config.json` when `init --set-default` was used |
 | 2 | Git identity | the current `user.name` and `user.email`, else the owner name and an empty email the user must fill | "Every change the brain makes is a commit with this name; without it nothing is saved." | required | Git configuration |
-| 3 | Private remote | with `gh` signed in: a new private repository named after the brain folder, created with `gh repo create --private`; else the steps to create one on the user's Git host | "A private copy of your brain, so nothing is lost and another machine can use it." | required | `origin` |
+| 3 | Backup | the current `origin` when there is one; else a new private GitHub repository named after the brain folder, created with `gh repo create --private` (0086 §3). Shown as `Backup: a private GitHub repository, created for you` | "A private copy of your brain on GitHub, so nothing is lost and another machine can use it." | required | `origin` |
 | 4 | Drop folder | `~/Documents/brain-dropbox/` (created) | "Files you drop here are read by the next catch-up: documents, exports, notes." | required (created) | `Drop folder:` line |
 | 5 | Language notes are written in | the language the user writes to the skill in | "The brain writes its notes in this language, whatever the language of the source." | required | `Language:` line |
 | 6 | Modules | Knowledge, Orgs, Documents, Reports, Tasks on; Planning off; Domains decided by seeding (§8) | "Which parts of your Notion space the brain uses; you can change this any time." | shown | `modules` |
 | 7 | Publish | `ask` | "Ask before the brain publishes to Notion, or publish after each run." | shown | `settings.publish` |
-| 8 | Push | `auto` | "Push your brain to its remote after each run, or remind you." | shown | `settings.push` |
+| 8 | Back up after each run | `auto`, shown as `on`; `remind` is shown as `remind me` | "Back up your brain after each run, or remind you to." | shown | `settings.push` |
 | 9 | Opening recall in linked repos | `off` | "Agents in your linked repos load what the brain remembers about them when a session opens." | shown | `settings.recall` |
 | 10 | MarkItDown | `on` when `markitdown` is found, else `off` | "Turns PDFs, Word files and slides into exact text, so quotes are exact; off, the agent reads files itself." | optional | `settings.markitdown` |
-| 11 | `gh` | `on` when `gh auth status` passes, else `off` | "Lets setup create the private remote and file your setup report for you." | optional | `settings.gh` |
+| 11 | GitHub CLI (`gh`) | `on`: step 1 already checked it is signed in (§6.1) | "Creates your backup, checks it stays private, and files your setup report for you." | required for early access (0086 §3): shown, not changed | `settings.gh` |
 | 12 | Scheduled catch-up | `off`; asked in step 8, after first value | "Catch-up runs on its own at set times; it only takes in what you've marked ready." | optional | `settings.schedule` |
 | 13 | How the brain talks to you (0081) | Standard | "Standard, Simple (plain words, short answers, the answer first) or Custom (you choose how much it explains, how long and how direct it is); change it any time by asking." | optional | `settings.style` |
 
 - Items 1 to 9 and 13 are on the screen in step 2; item 12 is shown there as "asked after your first check" and answered in step 8, where `on` runs brain-catch-up's "Run on a schedule" (its times, days, model and allow list, cli.md §5.21) and then writes `settings.schedule`.
 - The rest of the required items of 0078 §2 are steps, not values: the Notion MCP connection (step 3), the connection to the brain's databases (step 4), identities (step 5), the minutes prompt and Brain Assistant (steps 4a, 4b). The screen lists them under "Still to do after this screen", one line each, so the user sees the whole setup once.
 - **Optional means a value, not a skip** (0078 §2): `off` is recorded and never asked again; the user changes it by asking ("turn on markitdown").
+- **Item 11 is not a choice in early access** (0086 §3): the screen shows it `on`, and a user asking to turn it off is told in one line that early access needs it, and nothing is written. Item 8 is changed with the words shown ("back up: remind me"); the setting keeps its values `auto` and `remind` (schema §12).
 - **Item 13, the response style** (0081): Standard writes `{ "preset": "standard" }`; Simple writes `{ "preset": "simple" }`; Custom asks the three dials in one message, each with its levels and what they do (schema §12, cli.md §5.3.1), and writes the three chosen values with no preset. With Custom chosen, the screen shows the three choices on the item's line. The new style applies from the next message of the setup, as it does after a change in chat.
-- Applying the screen: set the Git identity (with the user's yes on the scope, global or this repository), create the remote (`gh repo create <name> --private --source <brain folder> --push` with `gh` on; else wait until `origin` exists), create the drop folder, write the two `AGENTS.md` lines (§4), `brain config set` each setting, `brain modules on|off` each module change, commit, push. Then `brain log setup - step=settings result=done`.
+- Applying the screen: set the Git identity (with the user's yes on the scope, global or this repository); create the backup; create the drop folder; write the two `AGENTS.md` lines (§4); `brain config set` each setting, `settings.gh` `on` among them; `brain modules on|off` each module change; commit; push. Then `brain log setup - step=settings result=done`.
+- **Creating the backup** (0086 §3), always with `gh`, on the working branch (cli.md §5.2; a new brain has one branch):
+  1. With no `origin`: `gh repo create <brain folder name> --private --source <brain folder> --push`. A failure (the name is taken, no network) is `remote-failed`: setup says which, offers another name, and stops at step 2 until it succeeds.
+  2. With an `origin` already set, it is kept, and nothing is created.
+  3. After the push that ends applying the screen (`git push -u origin <working branch>`, which creates `origin/<working branch>`): `git remote set-head origin <working branch>`, so `brain status` finds the working branch from `origin/HEAD` from then on (cli.md §5.2, `from: origin-head`). It writes only in `.git`, not a file of the brain.
+  4. The privacy check: `gh repo view --json isPrivate` must say `true`. A public backup stops step 2 with `remote-public`, and setup offers, on a yes, `gh repo edit --visibility private --accept-visibility-change-consequences`; an `origin` `gh` can't read (another host, or no access) stops with `remote-failed`, since another host is 1.0's path.
+- **Another Git host, the manual steps (1.0's path, 0086 §3; not offered in early access):** create an empty private repository (no README) on the host; copy the URL it shows (`https:` or `ssh`); in the brain folder, `git remote add origin <that URL>` and `git push -u origin HEAD`, which also needs a token or an SSH key for the host; then setup checks that `git remote get-url origin` has a URL and `git ls-remote origin` lists the branch, else `remote-failed`. The skill keeps these steps written and doesn't offer them before 1.0, whose opening grill decides how `gh` becomes optional again (0061).
 
 ### 7.1 Changing the response style later (0081 §5)
 
@@ -300,7 +321,7 @@ First meeting in: 3 tasks for you (1 from a quick follow-up), 4 notes, 2 people 
 
 ## 12. The setup report (0078 §6)
 
-At the end (and when the user asks "show my setup report", at any point, also while first value is unresolved, §10), the skill writes the report and shows it **whole**, then asks: "Send this to the product as a `beta-setup` issue, to help fix setup? Nothing else is sent." It files **only after a yes**: with `settings.gh` `on`, `gh issue create --repo <product repository> --label beta-setup --title "Setup report: <CLI version>, <agent>" --body <report>`; with `gh` off, it gives the text and the repository's new-issue link for the user to paste. The product repository is the one named by the `repository` field of `<product.path>/package.json` (added by CC-192). No telemetry: nothing is sent any other way.
+At the end (and when the user asks "show my setup report", at any point, also while first value is unresolved, §10), the skill writes the report and shows it **whole**, then asks: "Send this to the product as a `beta-setup` issue, to help fix setup? Nothing else is sent." It files **only after a yes**: with `settings.gh` `on`, `gh issue create --repo <product repository> --label beta-setup --title "Setup report: <CLI version>, <agent>" --body <report>`; with `gh` off (a brain set up before 0.14.0; setup itself always records `on`, §7), it gives the text and the repository's new-issue link for the user to paste. The product repository is the one named by the `repository` field of `<product.path>/package.json` (added by CC-192). No telemetry: nothing is sent any other way.
 
 ### 12.1 Fields (no names, no content)
 
@@ -327,7 +348,7 @@ Time: 52 min (first setup line to the last)
 
 ### 12.2 Reason codes
 
-`missing-prerequisite`, `notion-ai-missing`, `notion-unreachable`, `brain-data-not-found`, `database-missing`, `shape-wrong` (minutes), `assistant-reads-outside` (Brain Assistant), `remote-failed`, `push-failed`, `user-stopped`, `examples-left` (the template's Example rows not removed, §6.5), `first-value-unresolved` (first value, §10), and a CLI error code (cli.md §3.5) when a command failed.
+`missing-prerequisite`, `gh-missing` (`gh` not installed, §6.1), `gh-signed-out` (`gh auth status --hostname github.com` fails, §6.1), `notion-ai-missing`, `notion-unreachable`, `brain-data-not-found`, `database-missing`, `shape-wrong` (minutes), `assistant-reads-outside` (Brain Assistant), `remote-failed`, `remote-public` (the backup is a public repository, §7), `push-failed`, `user-stopped`, `examples-left` (the template's Example rows not removed, §6.5), `first-value-unresolved` (first value, §10), and a CLI error code (cli.md §3.5) when a command failed.
 
 ## 13. Without Notion AI (0078 §6)
 
@@ -341,4 +362,54 @@ Time: 52 min (first setup line to the last)
 
 ## 14. Out of scope (0078)
 
-An interactive `brain init`; a new diagnostic command (status's `setup` block and the skill's checks are the diagnostics); telemetry; anything in the brain made from an Example row (0084, 0087: the template's fifteen Example rows, a meeting and a Review row among them, are removed at step 4 and skipped by the skills, §6.5; §6.3's sample text lives in the skill and is deleted after the check); rich profiles and specialised types (0030); the template gallery and the acquisition funnel (1.0); how the template link reaches testers, the npm channel and the number of testers (1.0's opening grill); any operation on the user's brain or Notion workspace without an explicit yes. From 0081: the style changing text a command returns (post-1.0), a style per skill or per agent, and a style switched on per session.
+An interactive `brain init`; a new diagnostic command (status's `setup` block and the skill's checks are the diagnostics); telemetry; anything in the brain made from an Example row (0084, 0087: the template's fifteen Example rows, a meeting and a Review row among them, are removed at step 4 and skipped by the skills, §6.5; §6.3's sample text lives in the skill and is deleted after the check); rich profiles and specialised types (0030); the template gallery and the acquisition funnel (1.0); how the template link reaches testers, the npm channel and the number of testers (1.0's opening grill); any operation on the user's brain or Notion workspace without an explicit yes. From 0081: the style changing text a command returns (post-1.0), a style per skill or per agent, and a style switched on per session. From 0086: Git hosts other than GitHub in early access (§7's manual steps are 1.0's); a brain used from two machines (pulling before a push, or merging a backup that moved, `docs/v2-ideas.md`); any automatic merge of diverged histories; the product repository's own pull requests (0040, 0073).
+
+## 15. The backup, and "fix my backup" (0086 §2, §4)
+
+### 15.1 What the user reads
+
+The remote is **the backup** in everything a user reads: the settings screen (§7, items 3 and 8), setup's messages, and the last line of a run's report (a skill's, or setup's own). Git words (`origin`, push, branch, commit, merge) appear only when the user asks for the details ("what happened exactly?"), and then with Git's own message.
+
+The last line of a report, by what happened after the run's last commit:
+
+| Situation | Last line |
+|---|---|
+| `settings.push` `auto`, the push succeeded | none about the backup (nothing to do) |
+| `settings.push` `remind` | `<n> changes not backed up yet (Back up after each run: remind me).` |
+| a push that failed | `Not backed up: <reason>. Say "fix my backup".` |
+| an unattended run that stopped off the working branch (cli.md §6.1) | `Not run: off-working-branch. The brain is not on its working branch; say "fix my backup" in a session in the brain.` (in the scheduler's log) |
+
+`<n>` is `git rev-list --count @{u}..HEAD`, or every commit when there is no upstream. `<reason>` is the first of these that matches the failure, in these words:
+
+| The failure | `<reason>` |
+|---|---|
+| no `origin` (`git remote get-url origin` fails) | `no backup is set up` |
+| `HEAD` not on the working branch (`brain status`'s warning `BRAIN_OFF_WORKING_BRANCH`, cli.md §5.2) | `the brain is not on its working branch` |
+| Git refuses the push because the backup has commits this copy lacks (`rejected`, `non-fast-forward` or `fetch first`) | `your backup has changes this copy doesn't have` |
+| an authentication failure (`Authentication failed`, `Permission denied`, HTTP 401 or 403) | `GitHub sign-in needed` |
+| a network failure (`Could not resolve host`, `unable to access`, a timeout) | `GitHub can't be reached; check your connection` |
+| anything else | `the push failed` |
+
+### 15.2 "Fix my backup"
+
+The user says **"fix my backup"** (or the session offers it, after `brain status`'s warning `BRAIN_OFF_WORKING_BRANCH` or a failed push), in a session in the brain. The skill runs the checks below **in this order**. A check that passes goes on to the next. A check that fails is fixed on the user's yes, when the skill can fix it, and checked again; when only the user can fix it, or the user says no, the skill gives the one step the user must take and **stops there**, with nothing after it run. Every message uses §15.1's words. Nothing is ever done through a pull request or on GitHub's website.
+
+| # | Check | Passes when | On a yes, the skill fixes it by | Or the one step for the user |
+|---|---|---|---|---|
+| 1 | `gh` signed in | `gh --version` and `gh auth status --hostname github.com` succeed | — | §6.1's two steps (install, then `gh auth login` letting it set up Git's credentials), then "fix my backup" again |
+| 2 | The backup is set up | `git remote get-url origin` has a URL | `gh repo create <brain folder name> --private --source <brain folder> --remote origin`, without `--push`: the push waits for check 5, so no branch is pushed before check 4 | on `remote-failed`: the reason, and another name to try |
+| 3 | The backup is private | `gh repo view --json isPrivate` says `true` | `gh repo edit --visibility private --accept-visibility-change-consequences` | when `gh` can't read it (another host, no access): "Your backup isn't a GitHub repository I can check: make sure it is private." The skill goes on only once the user says it is |
+| 4 | The brain is on its working branch | `brain status`'s `branch` is non-null, with `working` non-null, `on_working` `true` and `unmerged` empty (no warning `BRAIN_OFF_WORKING_BRANCH`) | bringing the work back, below | below |
+| 5 | A push | `git push` (`git push -u origin <working>` when the branch has no upstream) succeeds, or there is nothing to push | — (any failure is named, below) | below |
+
+**Check 4, bringing the work back locally** (0086 §2), after one yes for the whole of it, which names what will happen ("Your work on add-notes, 2 changes, will be brought back into your brain's main copy, and add-notes removed."):
+1. **Uncommitted changes** (`git status --porcelain` non-empty) stop it before anything changes: the files are named, and the step for the user is to say whether to keep them (the skill commits them, `backup: keep uncommitted changes`, on the branch they are on) or not (the user discards them; the skill never discards).
+2. **`working` `null`**: one question, listing the local branches, "Which of these is your brain?"; the answer becomes the working branch: `git push -u origin <it>`, then `git remote set-head origin <it>`, and `brain status` is run again.
+3. **Off the working branch:** remember `HEAD` (the branch, or the commit when detached), then `git switch <working>`. A branch checked out in another worktree of the brain stops it: the worktree's path is named, and the step for the user is to close what runs there; the skill then runs `git worktree remove <path>` on a yes, only when that worktree has no uncommitted change.
+4. **Each `unmerged` entry, in its order** (the detached `HEAD`'s commits first, by the commit remembered): `git merge --no-edit <branch or commit>`, then, for a branch, `git branch -d <branch>`. A branch already merged and left (not in `unmerged`) is not touched.
+5. **A conflict** stops it: `git merge --abort`, the conflicting files named (`git diff --name-only --diff-filter=U`, read before the abort), and nothing pushed; the brain stays on its working branch, with the branches merged so far. The step for the user: "Two changes touch the same lines in <files>. Tell me which to keep, or fix them in your editor, then say "fix my backup" again."
+6. `brain status` again: check 4 passes when the warning is gone.
+
+**Check 5, the push:** a push Git refuses because the backup has commits this copy lacks is **named and not merged** (0086 §4, Out of scope): "Your backup has changes this copy doesn't have, from another machine or from GitHub's website. I haven't merged them: nothing was lost on either side." Nothing is pulled, merged or forced. Any other failure gives §15.1's `<reason>` and its step (sign in again with `gh auth login`; check the connection). After a push that succeeds, `git remote set-head origin <working>` runs when `git symbolic-ref --quiet refs/remotes/origin/HEAD` fails or names another branch, so `brain status` finds the working branch from then on (cli.md §5.2).
+
+**The end:** one line, `Backup fixed: <n> changes backed up.` (or `Backup checked: nothing to fix.`), plus the details on request. "Fix my backup" writes no log line and no `setup` line: it is not a setup step, and Git's history holds what it did.
