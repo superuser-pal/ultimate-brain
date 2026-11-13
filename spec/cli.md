@@ -953,9 +953,9 @@ The skill rules (`product-file` for skills, `skills-*`, `skill-*`) have `line` 1
 | `id-duplicate` | error | same ID in two files |
 | `wrong-folder` | error | type outside its folder (schema §2); a source outside the folder of its key (`sources/notion/`, `sources/files/`, `sources/text/`); a view outside the folder of its `view_kind` |
 | `missing-ref` | error | frontmatter reference or relation target does not exist |
-| `broken-link` | error | relative Markdown link to a missing file |
-| `wikilink` | error | `[[…]]` in a body |
-| `unknown-marker` | error | `^[…]` other than `^[inferred]`, `^[ambiguous]` |
+| `broken-link` | error | relative Markdown link to a missing file, in a note the brain writes: not checked in a source or a Document with `origin: whole` (0091) |
+| `wikilink` | error | `[[…]]` in the body of a note the brain writes (0002): not checked in a source or a Document with `origin: whole`, whose text is kept as it is (0091) |
+| `unknown-marker` | error | `^[…]` other than `^[inferred]`, `^[ambiguous]`, in a note the brain writes: not checked in a source or a Document with `origin: whole` (0091) |
 | `source-hash` | error | source body does not match `content_hash` |
 | `view-cited` | error | a note's `sources` cites a view |
 | `fact-timeline` | error | `facts` key without matching accepted timeline entry (unless contested) |
@@ -1582,6 +1582,12 @@ Each item:
   - `body` (sources other than captures, 0043; reports): as above. No `sections` on a source: Full text is retired (0049).
   - Goals, people, orgs, meetings, captures and proposals: `body` and `sections` are both `null`.
   - Rendering: `^[inferred]` → ` (AI inference)`, `^[ambiguous]` → ` (ambiguous)`, and relative links to published notes become `https://www.notion.so/<page id without dashes>` (unpublished → plain title text).
+  - **A whole Document's links (0091).** The body of a Document with `origin: whole` is its source's text, someone else's, so its links are read against the repo the file came from, not against the brain. Its **repo** is its source's `repo` and its **repo path** is the source's `repo_path` (schema §4 source); a **file match** for a target `t` is a Document with `origin: whole`, other than this one, whose source (`sources[0]`) has the same `repo` and a `repo_path` that is `t` or `t.md`, or whose last segment, without `.md`, is `t`. Outside fenced code and inline code:
+    - `[[t]]`, `[[t|label]]`, `[[t#heading]]`, `[[t#heading|label]]` and the embed `![[…]]` of each show `label`, or `t` when there is no label (`[[t\|label]]`, as written inside a table, reads as `[[t|label]]`); the heading goes. That text links to `https://www.notion.so/<page id without dashes>` of the one file match when there is **exactly one** and it has a Notion page (`notion`); otherwise (no match, two or more, a match not yet published, or a Document with no repo) it is plain text: the brain never guesses.
+    - A relative Markdown link `[text](p)` is resolved against the folder of the repo path (`#…` and `?…` dropped, `%xx` decoded) and linked the same way to the one Document whose source has that `repo` and that `repo_path`; otherwise it shows `text`. A link with a scheme (`https:`, `mailto:`) is kept as written; an anchor alone (`#…`) shows its text.
+    - The markers are rendered as above; nothing else in the body changes. The page changes on the next render after the target is ingested and published (its B of `@content` differs from S); the files never change.
+
+    Example: two whole Documents kept from `notes/alpha.md` and `notes/beta.md` of repo `vault`, both published. In alpha's page, `See [[beta|the beta note]] and [[gamma]].` renders as `See [the beta note](https://www.notion.so/<beta page>) and gamma.`; once `gamma.md` is ingested and its Document published, the next `sync render --changed` updates alpha's body to link `gamma` too.
 
 `data` = `{ "items": […], "errors": [ { "id": "…", "reason": "MEETING_NOT_PUBLISHED" } ], "skipped": [ { "id": "…", "reason": "ROW_CONFLICTED" | "FIX_WAITING" | "NOT_REVIEWED" | "WORDING_PENDING" | … } ] }` (`ROW_CONFLICTED` and `FIX_WAITING` only with `--skip-conflicted`; `NOT_REVIEWED` only with `--ids`; `WORDING_PENDING` only with `--plan`, and it holds only the body when the note's item is also in `items`, §5.14.7), items sorted by database (table order), then id. Exit 1 if `errors` is non-empty (the other items are still returned); `UNKNOWN_ID` for `--ids` is a whole-command error.
 
