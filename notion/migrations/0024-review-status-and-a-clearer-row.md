@@ -12,7 +12,7 @@
   Status is a formula, so it changes by itself when you click Submit. The brain never writes it.
 - **Kind leaves every view and the page.** Type says the kind of row.
 - **A row from a source stops repeating its page.** From 0.14.0 the brain leaves About, Now, Proposed and Why empty on such a row, and the layout hides each of them while it is empty.
-- **Your call and What to fix move.** They leave the heading for the top of the property group, where they still decide a Conflict, Answer or Suggestion row.
+- **Your call and What to fix move.** They leave the heading for the first group of the property panel, Your decision, where they still decide a Conflict, Answer or Suggestion row. The other properties follow in three more groups: What's proposed, Where it comes from, Submitted.
 
 Nothing is renamed or deleted, and no Review row changes its content. A row the brain already published with About, Now, Proposed and Why filled gets them cleared at the next publish after the upgrade.
 
@@ -54,7 +54,13 @@ Set these property descriptions. Read each one back afterwards.
 
 Open any Review row → **⋯** → **Customize layout**:
 - **Heading:** **Status**, **Submit**, **Submit all**, **About Page**, in that order.
-- **Property group:** **Your call** and **What to fix** first, then Type, Area, Source Meeting, Decided, Decided at, Accept all. After them come **About**, **Now**, **Proposed** and **Why**: set each of these four to **Hide when empty**.
+- **Property panel,** in four groups, in this order:
+  1. **Your decision:** **Your call**, **What to fix**.
+  2. **What's proposed:** **About**, **Now**, **Proposed**, **Why**. Set each of these four to **Hide when empty**. On a row from a meeting, email or document all four are empty, so the whole group disappears.
+  3. **Where it comes from:** Type, Area, Source Meeting.
+  4. **Submitted:** Decided, Decided at, Accept all. Collapse this group if Notion lets you.
+
+  Where Notion's layout editor has no groups, keep the same order without the headings.
 - **Hidden:** Kind, State, Brain ID, Created time, Last edited time. Leave anything else as it is.
 
 ## 4 · Review views, Home and the area homes (Notion AI)
@@ -113,7 +119,7 @@ If the System callout on your top page reads `Template version: …` with a lowe
 
   Delete the test row afterwards.
 - [ ] No Review view shows Kind, and no row's page shows it outside **Show all properties**. "What needs my decision?" and "Where do sources disagree?" show Status first.
-- [ ] A Review row's heading reads Status, Submit decisions, Submit and accept all, About Page. Your call and What to fix open the property group.
+- [ ] A Review row's heading reads Status, Submit decisions, Submit and accept all, About Page. The property panel shows Your decision (Your call, What to fix), What's proposed (About, Now, Proposed, Why), Where it comes from (Type, Area, Source Meeting) and Submitted (Decided, Decided at, Accept all), in that order; without groups, the same order.
 - [ ] On a row from a source, after the next publish, About, Now, Proposed and Why don't show. On a Conflict or Answer row, the ones with a value still show.
 - [ ] Home's "What's waiting for you?" lists only rows whose Status starts with "Needs you". A row you submit leaves it.
 - [ ] `/Today` and `/Review queue` talk about Status and Type, never Kind.

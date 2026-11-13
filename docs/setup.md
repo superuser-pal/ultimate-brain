@@ -4,7 +4,7 @@ The README's [Get started](../README.md#get-started) gives the steps. This page 
 
 ## The two templates
 
-- **The Notion template** is a ready-made Notion space: every database, view, button and page, plus a few example rows. You duplicate it into your own workspace. Its link and version are in [notion/TEMPLATE.md](../notion/TEMPLATE.md).
+- **The Notion template** is a ready-made Notion space: every database, view, button and page, plus fifteen example rows, one or more in every database on Brain Data ([notion/template-examples.md](../notion/template-examples.md) lists them). You duplicate it into your own workspace. Its link and version are in [notion/TEMPLATE.md](../notion/TEMPLATE.md).
 - **The brain folder** is the Git repository `brain init` creates. Your notes live here, as Markdown files.
 
 The brain folder is where your knowledge is kept. Notion is where you read it, review what the brain proposes and capture new things. The brain publishes its notes to Notion, and reads back what you capture and review there.
