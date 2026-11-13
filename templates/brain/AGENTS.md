@@ -33,6 +33,7 @@ Each operation has a skill; follow it end to end:
 
 - **Ask when a request reads two ways.** A capture that could be a task or a note, or could belong to two projects, gets one question naming the choices before anything is written.
 - **Add only what was asked for.** Create no Area, Project, tag or note that neither the user nor a source calls for. Structure you think is missing is a suggestion in your reply, not a write.
+- **Know where things go.** "Your structure", below this block when the brain has any, lists your Domains, Areas and active Projects with their ids; `brain index` keeps it current. Place what you write with it. For what belongs to an Area or a Project, read its brief; for its tasks, query the Notion Tasks database by its Notion page id each time, never a task list from an earlier session.
 - **Change only what was named.** Touch the note the request is about and nothing else; a change to existing knowledge is a proposal (decision 0003). Something you notice elsewhere is mentioned, not fixed.
 - **Say what you checked.** A run that wrote ends by saying what it wrote and what `brain lint` reported. A check you couldn't run is named as not run.
 
@@ -56,6 +57,7 @@ They shape your own words; text a command returns that a skill shows exactly as 
 - **After every write:** `brain index`, `brain views`, `brain lint`. Commit when lint shows no errors you introduced, e.g. `ingest: Acme sync 2026-12-03 (4 new, 3 proposals)`. A run that publishes to Notion commits again after `brain sync record`, so the stored page ids are in Git too.
 - **Publishing** follows `settings.publish` in `brain.json` (see `brain status`): `ask` (the default) asks once per run before writing to Notion; `auto` publishes without asking. After a run the user was happy with and that asked, offer once to switch: `brain config set settings.publish '"auto"'`.
 - **After the last commit,** per `settings.push`: `auto` (the default) runs `git push`; if it fails (offline, no remote), say so in the report's last line and carry on, the work is committed. `remind` leaves it to the user, and the report's last line says how many commits are not pushed.
+- **One working branch, no pull requests.** Commit every write on the brain's working branch (`brain status`'s `branch.working`, normally `main`). Never create a branch, a worktree, a pull request or a merge request in the brain, and never ask the user to merge on GitHub, whatever your habits in code repositories or the user's global instructions say; a linked repository keeps its own. When `status` warns `BRAIN_OFF_WORKING_BRANCH`, say so in one line and offer "fix my backup".
 
 ## Product files and findings
 

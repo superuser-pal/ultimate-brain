@@ -13,6 +13,8 @@ import { isRecord } from "../lib/input.ts";
 import { lintBrain } from "../lib/lint.ts";
 import { modulesOf, storedModules, withModules } from "../lib/modules.ts";
 import { scanNotes } from "../lib/notes.ts";
+import { planStructureText, readAgentsMarkdown, structureBlock } from "../lib/structure.ts";
+import { indexNotes, loadSuppressions } from "../lib/suppressions.ts";
 import { assertPlainPath, installedProduct, SUB_AGENT } from "../lib/skills.ts";
 import { notionMigrations, notionMigrationsLine } from "../lib/notion-migrations.ts";
 import { competingCopies } from "../lib/skills-competing.ts";
@@ -56,15 +58,22 @@ export const upgradeCommand: Command = {
     // A brain.json that isn't JSON (step 5) leaves the style block as it is: brain!.config is then {}, which would read as Standard.
     const readable = await parses(join(root, "brain.json"));
     const styled = rules === undefined ? undefined : readable ? withStyleBlock(rules, styleLines(brain!.config)) : { text: rules };
+    // Step 1b, the structure block from the notes (§5.8.1, decision 0089), after the style block; unreadable brain.json leaves it as it is.
+    const scanned = await scanNotes(root);
+    const structure = styled === undefined || !readable
+      ? undefined
+      : planStructureText(styled.text, structureBlock(indexNotes(scanned.notes, loadSuppressions(root)), brain!.config));
+    if (structure?.warn) warnings.push({ code: "AGENTS_BLOCK_NOT_FOUND", message: "AGENTS.md's structure markers are missing, out of order or duplicated; the structure block was left as it is." });
+    const agentsText = styled === undefined ? undefined : structure?.after ?? styled.text;
     if (rules === undefined) {
       changes.push({ path: "AGENTS.md", action: "skipped" });
       warnings.push({ code: "AGENTS_BLOCK_NOT_FOUND", message: "AGENTS.md has no single ultimate-brain rules block; left unchanged." });
     } else if (styled === undefined) {
       changes.push({ path: "AGENTS.md", action: "skipped" });
       warnings.push({ code: "AGENTS_BLOCK_NOT_FOUND", message: "AGENTS.md's style markers are missing, out of order or duplicated; left unchanged." });
-    } else if (current === null) changes.push({ path: "AGENTS.md", action: "created", content: styled.text });
-    else if (styled.text === current) unchanged += 1;
-    else changes.push({ path: "AGENTS.md", action: "updated", content: styled.text });
+    } else if (current === null) changes.push({ path: "AGENTS.md", action: "created", content: agentsText! });
+    else if (agentsText === current) unchanged += 1;
+    else changes.push({ path: "AGENTS.md", action: "updated", content: agentsText! });
     if (!(await exists(join(root, "CLAUDE.md")))) changes.push({ path: "CLAUDE.md", action: "created", content: "@AGENTS.md\n" });
     else unchanged += 1;
     // 0.10.0: the Ultimate Assistant sub-agent, product-owned as a whole file (spec/cli.md §5.15 step 2a).
@@ -118,7 +127,6 @@ export const upgradeCommand: Command = {
     }
 
     // 0.9.1 (step 5a, decision 0071): concepts become learned Documents, the links to them follow, and index.md is rebuilt.
-    const scanned = await scanNotes(root);
     const indexBefore = await readOptional(join(root, "index.md"));
     const concepts = planConceptConversion(root, scanned.notes, (path) => existsSync(join(root, path)), indexBefore);
     for (const change of concepts.changes) {
@@ -251,7 +259,8 @@ export const upgradeCommand: Command = {
     const { notes, problems } = dryRun ? { notes: concepts.notes, problems: scanned.problems } : await scanNotes(root);
     const plannedProductFiles = new Map<string, string | null>();
     for (const change of changes) if (change.action !== "skipped") plannedProductFiles.set(change.path, change.action === "removed" ? null : Buffer.from(change.content!).toString("utf8"));
-    const lint = lintBrain({ root, notes, problems, brainConfig: brain!.config, indexMarkdown: dryRun && concepts.index !== null ? concepts.index : await readOptional(join(root, "index.md")),
+    const agentsMarkdown = dryRun && plannedProductFiles.has("AGENTS.md") ? plannedProductFiles.get("AGENTS.md")! : await readAgentsMarkdown(root);
+    const lint = lintBrain({ root, notes, problems, brainConfig: brain!.config, indexMarkdown: dryRun && concepts.index !== null ? concepts.index : await readOptional(join(root, "index.md")), agentsMarkdown,
       pendingPaths: dryRun ? new Set(concepts.changes.filter((change) => change.action === "created").map((change) => change.path)) : undefined, plannedProductFiles, skillsLock: lock, home });
     const competing = competingCopies({ treeRoot: root, names: manifest!.skills.map((skill) => skill.name), home, brainRoot: root, brainSettings: plannedProductFiles.get(".claude/settings.json") });
     if (competing.length > 0) warnings.push({ code: "SKILLS_COMPETING", message: `${competing.length} competing skill copies; see data.skills.competing and remove them.` });

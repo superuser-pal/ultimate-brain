@@ -6,6 +6,7 @@ import { BrainError } from "./errors.ts";
 import { atomicWriteFile, ensureDirectory } from "./fs-safe.ts";
 import type { Note } from "./notes.ts";
 import { assertPlainPath } from "./skills.ts";
+import { modulesOf } from "./modules.ts";
 import { styleLines, styleParagraph } from "./style.ts";
 import { TREES, type Manifest, type SnapshotSkill } from "./skills-snapshot.ts";
 
@@ -42,7 +43,7 @@ export async function planLinkedRepo(root: string, input: {
   const retired = (existingMarker.value.skills?.names ?? []).filter((name) => !names.includes(name));
   const project = marker.project === undefined ? undefined : noteOf(notes, marker.project, "project");
   const area = marker.area === undefined ? undefined : noteOf(notes, marker.area, "area");
-  const block = instructionBlock(project, area, names, recallOpening(input.config), styleLines(input.config));
+  const block = instructionBlock(project, area, names, recallOpening(input.config), styleLines(input.config), domainOf(area, notes, input.config));
 
   const agents = await readOptional(root, "AGENTS.md");
   const agentText = replaceOrAppend(agents, block, "AGENTS.md");
@@ -153,7 +154,20 @@ export function recallOpening(config: Record<string, unknown>): boolean {
  * the workflow lines join it when brain-workflow is among the linked skills (skills-delivery §9.7), and the style paragraph
  * goes right before the read-only line when the brain's `settings.style` has style lines (§5.3.1).
  */
-export function instructionBlock(project: Note | undefined, area: Note | undefined, linked: readonly string[], recall: boolean, style: readonly string[] = []): string {
+/**
+ * The Area's Domain for the `- Domain:` line (0089, cli §5.12): only with the Domains module on, and only a domain note that isn't archived.
+ * A linked folder shows its own place, never the rest of the brain's structure.
+ */
+function domainOf(area: Note | undefined, notes: readonly Note[], config: Record<string, unknown>): Note | undefined {
+  if (area === undefined || !modulesOf(config).domains || typeof area.attributes.domain !== "string") return undefined;
+  const domain = notes.find((note) => note.id === area.attributes.domain && note.type === "domain");
+  if (domain === undefined || domain.attributes.lifecycle === "archived") return undefined;
+  const notionFields = domain.attributes.notion_fields;
+  const archived = typeof notionFields === "object" && notionFields !== null && (notionFields as Record<string, unknown>).archived === true;
+  return archived ? undefined : domain;
+}
+
+export function instructionBlock(project: Note | undefined, area: Note | undefined, linked: readonly string[], recall: boolean, style: readonly string[] = [], domain?: Note): string {
   const lines = [
     START,
     "## Ultimate Brain",
@@ -164,6 +178,7 @@ export function instructionBlock(project: Note | undefined, area: Note | undefin
   ];
   if (project !== undefined) lines.push(`- Project: ${String(project.attributes.title)} (\`${project.id}\`)`);
   if (area !== undefined) lines.push(`- Area: ${String(area.attributes.title)} (\`${area.id}\`)`);
+  if (domain !== undefined) lines.push(`- Domain: ${String(domain.attributes.title)} (\`${domain.id}\`)`);
   lines.push(
     "",
     "The brain holds decisions, key facts, people and meeting history that this repo does not.",
