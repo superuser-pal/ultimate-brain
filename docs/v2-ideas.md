@@ -123,6 +123,9 @@ Conflict, Answer and Suggestion rows would become pages with one section each, d
 ### Review claims instead of edits
 Ingest would propose the claims it read (a decision, a fact, a person on a project) and derive the edits (a fact, a body addition, a link) from the claims the user accepts, so one decision is reviewed once instead of as three items. It touches the proposal format, ingest, apply and every skill that reads proposals. **Source:** [0090](../decisions/0090-review-by-grill-notion-ai-reviews-with-you-and-your-call-decides.md) §7 (2026-11-13: a live grill test asked about one decision three times). **Revisit:** if repeats stay common in Review pages after 0.15.0, counted from the brain-context toggle's Repeats.
 
+### Area editable from Notion on a Document
+Changing a Document's Area relation in Notion would move it in the brain, instead of the change being ignored at sync (`NOT_CORRECTABLE`). It needs Documents' Area to become a correctable field in `sync plan`, with its own rule for a whole Document and its source. **Source:** [0092](../decisions/0092-move-a-note-to-another-area.md) (dogfood #345, 2026-11-13: moving notes after an ingest goes through `set_field` in chat). **Revisit:** if users keep trying to move Documents from Notion after 1.0.
+
 ### Two native smoke-run observations (0.13.0)
 Seen in 0.13.0's native smoke run (decision 0082) and accepted by the user on 2026-11-12 as not holding the release: no reply stated restricted content. **Revisit:** with the full native acceptance before 1.0 (0082 §2).
 - **Applying from a linked repo (trust-39):** asked in a linked repo to apply an approved proposal whose evidence was later excluded, Claude Code refused, citing the repo's rule that the brain is read-only from there; Codex ran `brain apply` there, which closed the proposal `SOURCE_EXCLUDED`. The case expects the apply. Settle which is right: the case, the linked repo's rule, or the brain-query and brain-apply skills.
