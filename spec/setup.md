@@ -8,7 +8,7 @@ How this file fits: it holds the whole first-time setup of a new user: what the 
 
 **The user's choices of 2026-11-10, filling gaps 0078 leaves** (asked through the coordinator during CC-188; each was the recommended option):
 1. **Per-area tracking preferences** are an optional `track` list in the area note's frontmatter, in Git only, with no Notion property in 0.14.0; seeding proposes it, the ingest uses it, and Ultimate Assistant's thresholds stay fixed (§11).
-2. **What setup records:** each step that only an online or by-hand check can prove is recorded as a `setup` log line (`brain log`), which `brain status` reads offline; the optional items are `brain.json` settings, `settings.markitdown`, `settings.gh` and `settings.schedule`, each `on` or `off`, absent meaning `off` (§4, §5).
+2. **What setup records:** each step that only an online or by-hand check can prove is recorded as a `setup` log line (`brain log`), which `brain status` reads offline; the optional items are `brain.json` settings, `settings.markitdown`, `settings.gh` and `settings.schedule`, each `on` or `off`, absent meaning `off` (§4, §5). Since 0086, `gh` is required for early access and setup always writes `settings.gh` `on` (§6.1, §7); the choice stays as recorded for MarkItDown and the schedule.
 3. **The drop folder and the notes' language** stay lines of the user's part of the brain's `AGENTS.md`: `Drop folder: <path>` and `Language: <name>`; `brain status` reads the first (§4).
 4. **The template version** is the number of the last Notion migration the template includes (`0024`); `brain upgrade` names the migrations with a higher number (§9).
 
@@ -32,7 +32,7 @@ A new user duplicates the published Notion template (0078 §1, CC-189), installs
 | # | Step | `setup` log step (§4.1) | Done when |
 |---|---|---|---|
 | 1 | **Prerequisites**, all checked at once (§6.1) | `prerequisites` | every required prerequisite passes |
-| 2 | **The settings screen** (§7), then its items applied: the Git identity, the private remote, the drop folder created, the `AGENTS.md` lines | `settings` | the user confirmed the screen and each required item of it passes |
+| 2 | **The settings screen** (§7), then its items applied: the Git identity, the backup (the private remote, §7), the drop folder created, the `AGENTS.md` lines | `settings` | the user confirmed the screen and each required item of it passes |
 | 3 | **The template duplicated, and the agent connected to Notion** (§6.2) | `notion-mcp` | the MCP reaches the duplicated space's Brain Data page |
 | 4 | **"Connect the brain to Notion"** (brain-connect-notion): modules on or off, database ids, the Tasks database, the template version | `connect` | every database of Core and of the modules on is stored, and the template version is stored when the space has a Template version line (a space built from the prompts has none: the version stays unknown, §9, and the step is still done); in a duplicate of the template, no `Example · ` row is left on Brain Data (§6.5) |
 | 4a | **The minutes prompt**, walked through and checked (§6.3) | `minutes-prompt` | the check passes |
@@ -121,13 +121,13 @@ The other three of the nine required items (0078 §2) are the recorded steps `no
 | Git, with an identity | `git --version`; `git config user.name` and `user.email` (set on the settings screen when missing) | yes (the identity can be set in step 2) |
 | Claude Code or Codex | the agent running the skill; its name goes in the setup report | yes |
 | The Notion MCP connection | a Notion tool is available in the session (reached in step 3) | yes (connected in step 3) |
-| `gh`, signed in | `gh --version`, then `gh auth status` | yes for early access (0086 §3) |
+| `gh`, signed in | `gh --version`, then `gh auth status --hostname github.com` | yes for early access (0086 §3) |
 | MarkItDown | `markitdown --version` | no: the settings screen's `markitdown` item (§7) |
 | The Notion plan | **asked**, since the API can't read it: "Does your Notion plan include Notion AI? And Custom Agents?" | Notion AI: yes for early access (§13) |
 
 All are shown in one list (`✓ Node 22.11`, `✗ Git identity: set on the next screen`, `? Notion AI: asked below`). A missing required prerequisite that the next steps don't set (Node, Git, the agent, Notion AI, `gh`) stops setup with its fix: a link or one command, never a path under `npm root -g`.
 
-**`gh` missing or signed out** (`gh --version` fails, or `gh auth status` exits non-zero) stops setup at step 1 with this message, the first step's command chosen by the platform (`darwin` gets `brew install gh`, any other the link):
+**`gh` missing or signed out** (`gh --version` fails: `gh-missing`; or `gh auth status --hostname github.com` exits non-zero: `gh-signed-out`; only github.com is checked, so a broken sign-in to another host doesn't stop setup) stops setup at step 1 with this message, the first step's command chosen by the platform (`darwin` gets `brew install gh`, any other the link):
 
 ```text
 Setup needs the GitHub CLI (gh), signed in, to create your backup. Two steps:
@@ -138,7 +138,7 @@ Setup needs the GitHub CLI (gh), signed in, to create your backup. Two steps:
 Then say "set up my brain" again.
 ```
 
-With `gh` installed but signed out, step 1 of the message is left out and step 2 is numbered 1. It is logged `prerequisites result=failed reason=gh-missing` or `reason=gh-signed-out` (§12.2). Asked again, setup re-runs step 1's checks and goes on once `gh auth status` passes. No other path is offered in early access: the manual steps of §7 are 1.0's.
+With `gh` installed but signed out, step 1 of the message is left out and step 2 is numbered 1. It is logged `prerequisites result=failed reason=gh-missing` or `reason=gh-signed-out` (§12.2). Asked again, setup re-runs step 1's checks and goes on once `gh auth status --hostname github.com` passes. No other path is offered in early access: the manual steps of §7 are 1.0's.
 
 ### 6.2 The template and the Notion connection (step 3)
 
@@ -348,7 +348,7 @@ Time: 52 min (first setup line to the last)
 
 ### 12.2 Reason codes
 
-`missing-prerequisite`, `gh-missing` (`gh` not installed, §6.1), `gh-signed-out` (`gh auth status` fails, §6.1), `notion-ai-missing`, `notion-unreachable`, `brain-data-not-found`, `database-missing`, `shape-wrong` (minutes), `assistant-reads-outside` (Brain Assistant), `remote-failed`, `remote-public` (the backup is a public repository, §7), `push-failed`, `user-stopped`, `examples-left` (the template's Example rows not removed, §6.5), `first-value-unresolved` (first value, §10), and a CLI error code (cli.md §3.5) when a command failed.
+`missing-prerequisite`, `gh-missing` (`gh` not installed, §6.1), `gh-signed-out` (`gh auth status --hostname github.com` fails, §6.1), `notion-ai-missing`, `notion-unreachable`, `brain-data-not-found`, `database-missing`, `shape-wrong` (minutes), `assistant-reads-outside` (Brain Assistant), `remote-failed`, `remote-public` (the backup is a public repository, §7), `push-failed`, `user-stopped`, `examples-left` (the template's Example rows not removed, §6.5), `first-value-unresolved` (first value, §10), and a CLI error code (cli.md §3.5) when a command failed.
 
 ## 13. Without Notion AI (0078 §6)
 
@@ -396,7 +396,7 @@ The user says **"fix my backup"** (or the session offers it, after `brain status
 
 | # | Check | Passes when | On a yes, the skill fixes it by | Or the one step for the user |
 |---|---|---|---|---|
-| 1 | `gh` signed in | `gh --version` and `gh auth status` succeed | — | §6.1's two steps (install, then `gh auth login` letting it set up Git's credentials), then "fix my backup" again |
+| 1 | `gh` signed in | `gh --version` and `gh auth status --hostname github.com` succeed | — | §6.1's two steps (install, then `gh auth login` letting it set up Git's credentials), then "fix my backup" again |
 | 2 | The backup is set up | `git remote get-url origin` has a URL | `gh repo create <brain folder name> --private --source <brain folder> --remote origin`, without `--push`: the push waits for check 5, so no branch is pushed before check 4 | on `remote-failed`: the reason, and another name to try |
 | 3 | The backup is private | `gh repo view --json isPrivate` says `true` | `gh repo edit --visibility private --accept-visibility-change-consequences` | when `gh` can't read it (another host, no access): "Your backup isn't a GitHub repository I can check: make sure it is private." The skill goes on only once the user says it is |
 | 4 | The brain is on its working branch | `brain status`'s `branch` is non-null, with `working` non-null, `on_working` `true` and `unmerged` empty (no warning `BRAIN_OFF_WORKING_BRANCH`) | bringing the work back, below | below |

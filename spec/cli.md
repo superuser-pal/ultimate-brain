@@ -367,7 +367,7 @@ Read-only health summary; the first call of every skill.
 - `unmerged`: each local branch other than `working` with commits `working` lacks, as `{ "branch": <name>, "commits": <git rev-list --count <working>..<name>> }`, sorted by name; with `HEAD` detached and holding commits `working` lacks, `{ "branch": null, "commits": <git rev-list --count <working>..HEAD> }` comes first. A branch with no such commit (already merged) is not listed. Empty when `working` is `null`.
 
 A brain whose `working` is non-null, `on_working` `true` and `unmerged` empty gets no warning: a new brain, on one branch, never does. Otherwise `status` adds **one** warning `BRAIN_OFF_WORKING_BRANCH`, with no `path` or `id` (the fields are `branch`'s), whose message is the first that applies:
-- `working` `null`: `Can't tell which branch is the brain's working branch: <n> branches, none of them main. Say "fix my backup".`
+- `working` `null`: `Can't tell which branch is the brain's working branch: <n> branches, none of them main or master. Say "fix my backup".`
 - `HEAD` detached: `The brain is on a detached HEAD, not its working branch <working>. Say "fix my backup".`
 - another branch checked out: `The brain is on branch <current>, not its working branch <working>. Say "fix my backup".`
 - `unmerged` non-empty: `Branch <branch> has <commits> commit(s) that <working> lacks. Say "fix my backup".`, with ` (and <k> more branches)` before the full stop when `unmerged` has more than one entry. A detached `HEAD` entry is reported by the case above it, so this case names a branch.
