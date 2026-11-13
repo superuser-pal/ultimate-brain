@@ -1,6 +1,6 @@
 # Results: the 0.14.0 release gate (CC-193)
 
-One run, with Claude Code. The Codex run was taken out of this gate's scope by the author on 2026-11-13; see "Scope" below.
+One run, with Claude Code, from `npm install` to the first-meeting line. The Codex run was taken out of this gate's scope by the author on 2026-11-13; see "Scope" below.
 
 ## Run 1: Claude Code
 
@@ -23,6 +23,7 @@ From the brain's `setup` log lines (UTC). Wall time includes the time the person
 | Seeding: preview, 14 notes, 3 documents | 20:17 | 14 |
 | First value (Review decided, four checks) | 20:38 | 21 |
 | Total to first value | | 2 h 38 |
+| First meeting: catch-up, two turns (the minutes by hand not timed) | 22:44 | 10 |
 
 The 88 minutes of Brain Assistant were mostly finding why `/Today` read another space (problem 4) and a break; the 28 of the minutes prompt were two failed runs (problem 3).
 
@@ -47,20 +48,36 @@ Schedule offered only after `result=done`: yes (answered "not now"; `settings.sc
 
 | Item | Survived | Note |
 |---|---|---|
-| Brain Assistant (Custom Agent) and its access | | |
-| Buttons that message it | | |
+| Brain Assistant (Custom Agent) and its access | yes | Checked by the tester in the duplicate after the first meeting; its database access came with the duplicate. Its skills reached the wrong space through the @ picker (problem 4). |
+| Buttons that message it | yes | Checked by the tester after the first meeting. |
 | Relations | yes | Seeding, the documents and the Review apply wrote and read every relation they use (Area › Domain, Project › Area, People › Org, Documents › Project, Tasks › Project). |
-| Home buttons | | |
-| Minutes prompt in the Meetings template | | |
+| Home buttons | yes | Checked by the tester after the first meeting. |
+| Minutes prompt in the Meetings template | yes | Checked by the tester after the first meeting. |
 | The Skills database and its rows | yes | The duplicate's Today skill points at the duplicate's Brain Data. But its rows did not appear in the @ picker (problem 4). |
 | The Example rows and the Brain Data callout | yes | 15 Example rows, all trashed by setup after one yes; a second query found none. |
 
 ### First meeting
 
+The Rider App 2.0 sync was made from the Meetings template, its minutes written by Notion AI in the chat with the line "Write the minutes on this page, below the transcript, and nothing else.", no follow-up ticked, and set to Reviewed (about 22:33 UTC). Then "catch up" in a fresh headless session of the same brain, in two turns:
+
+1. The first turn found the meeting but ingested nothing: the page held the minutes and the For the brain toggle, but no transcript, and the brain stores only the transcript paragraphs each quote points to (problem 8). It asked for the transcript on the page or as a file.
+2. The second turn was given the transcript as a file (the path the skill offered) and a yes to publish. It ingested the meeting, created the Tasks and published.
+
 ```text
+First meeting in: 4 tasks for you, 5 notes, 4 people matched, 0 new people. Anything wrong? Say "that's wrong: …".
 ```
 
+```text
+setup - "" step=first-meeting result=done
+```
+
+Against persona.md: the two dated tasks are Ines's (the onboarding copy, due 2026-12-12; the pilot pricing brief, due 2026-12-17), and the other two are the unticked quick follow-ups (book the call with the payment provider; forward the regulation PDF and send the font files). Tomas's and Dario's commitments stayed text in the meeting note. 4 people matched, **0 new people**: as expected. The 5 notes are the meeting, three decisions and one question, as drafts, with one Review row for the changes to existing notes.
+
+The catch-up's two turns took 3 min 15 s and 7 min 6 s (43 and 66 turns) and cost about 15 USD in all (4.34 + 10.57; problem 9).
+
 ### The brain at the end
+
+Checked again after the first meeting (step 6), with the same results.
 
 - Working branch, nothing unpushed: yes. On `main`, a clean tree, 0 commits ahead of the remote, which is private.
 - No branch, worktree or pull request opened by setup: yes. One worktree, no pull request on the backup repository.
@@ -103,6 +120,10 @@ Each is described as it would happen to any tester; none is fixed here (a fix is
 5. **Review decisions arrived as row-level Approve.** Two rows were applied as a row-level Approve rather than per-item `Decision:` lines, and the third arrived with no decision; the tester first asked whether to decide "in the property or in the body". The apply was correct, but deciding in the page body is not what a first-time user reaches for. Decision 0090 (merged after rc.2, release 0.15.0) already moves the decision to Your call and adds a guided review in Notion AI.
 6. **The Decision log showed a decision before it was reviewed.** The project's Decision log in Notion listed the 12-station decision while its Review row was still waiting.
 7. **Dead links in new Inbox rows.** Notion turned the file name in the first line of each of the three Inbox rows the drop-folder ingest made into a link that leads nowhere.
+
+8. **The transcript doesn't stay on the meeting page.** After the minutes step the page held the minutes and the For the brain toggle but no transcript, so the first catch-up ingested nothing and asked for it (the meeting stayed Reviewed). Run 1's problem 1 already saw Notion AI replace the transcript; the line asking it to write below the transcript wasn't enough here. Neither setup nor the minutes guide says where the transcript must be (the meeting-notes block, or the page body) or checks it before the meeting is marked Reviewed.
+9. **One meeting's catch-up cost about 15 USD.** The two turns ran 109 agent turns (4.34 and 10.57 USD), with the setup notes' Review rows, the report and 16 Notion pages in the same run. For a tester on a usage plan that is a large first bill.
+10. **Setup's own report asks for Accept before it can be refreshed.** The catch-up wouldn't republish "Rider App 2.0: where we stand" because "its wording has not been accepted yet", although setup made it minutes earlier and nobody edited it; a first-time user is asked to click Accept on a page they never changed.
 
 Minor, not product problems: the persona's documents are dated after the run (the agent noted it and copied the dates as written); Notion AI filled "Me" in the sample meeting's Attendees with the Notion account's own name, so test pages are never copied into this repository.
 
