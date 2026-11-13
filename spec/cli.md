@@ -1486,13 +1486,13 @@ A source with `attached_to` is never selected: it has no Inbox row (0042). Notes
   - **Produced** relations also include every note whose `sources` lists the id of a source **attached** to this one (0042).
   - **Body (0043):** a capture's body is yours: `body` and `sections` are `null`. Any other source's `body` is its digest, written once (its content never changes, so B of `@content` = S after the first publish):
     ```text
-    *<Kind> · <file_name, else the URL, else "pasted text"> · <the date in the file name> · <word count> words[ · <part count> slides]*
+    *<Kind> · <`file_name` as a code span, else the URL, else "pasted text"> · <the date in the file name> · <word count> words[ · <part count> slides]*
 
     <summary>
 
     <digest>
     ```
-    A missing `summary` or `digest` leaves out its paragraph; `[ · <part count> slides]` only when the body has slide markers. The date is the one in the source's file name: `file_date` when `note new` was given one, else `created` (§5.5); `file_date` is not stored, so `render` reads it from the path. The words are the body's runs of non-space characters.
+    A missing `summary` or `digest` leaves out its paragraph; `[ · <part count> slides]` only when the body has slide markers. **The file name is a code span** (CC-263): `` `notes.md` ``, never the bare name, because Notion turns a name that ends like a domain (`notes.md`, `plan.io`, `deck.ai`) into a link to that address, which leads nowhere. The span follows CommonMark: its backtick fence is one longer than the longest run of backticks in the name, with a space inside each fence when the name starts or ends with a backtick (a name with a backtick: ``` ``a`b`` ```; one starting with one: ``` `` `a `` ```). A URL stays as it is, since Notion's link to it is the right one, and so does `pasted text`. Example: `` *Document · `roadmap.md` · 2026-12-01 · 25 words* ``. The date is the one in the source's file name: `file_date` when `note new` was given one, else `created` (§5.5); `file_date` is not stored, so `render` reads it from the path. The words are the body's runs of non-space characters.
   - **Full text (0043) is retired in 0.6.0 (0049):** no `Full text` section or checkbox is sent, and `@full_text` in S is left as it is. Rows that already show a Full text toggle keep it.
   - `published` holds what was sent, so a later ingest that produces more notes from the same source (or publishes a pending one) re-renders only the changed relations.
 - **Meetings** (0007; the page is yours): never Name, Date or body. *(add)* relations carry `"mode": "add"`: the skill adds the listed pages and keeps those you linked. *(if empty)* relations carry `"mode": "if_empty"`: the skill writes them only when the property is empty in Notion (design §3.5: "brain fills if empty"). Brain Status = `Ingested` and Ingested At = `{start: <meeting created>}` go out once, because S then holds them.
