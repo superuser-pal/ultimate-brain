@@ -1,6 +1,6 @@
 # The template's Example rows
 
-The exact content of every `Example · ` row in the published Notion template, and the Notion AI prompts that create them, so a maintainer can rebuild them (decisions 0084 §3, 0087). [TEMPLATE.md](TEMPLATE.md) lists the rows; "Building and updating the template", step 7, uses this file.
+The exact content of every `Example · ` row in the published Notion template, the Notion AI prompts that create them and the step that relates them, so a maintainer can rebuild them (decisions 0084 §3, 0087). [TEMPLATE.md](TEMPLATE.md) lists the rows; "Building and updating the template", step 7, uses this file.
 
 Every row is invented. They tell one story with synthetic names only: a kickoff meeting with Sam Rivera of Northwind Studio, a client, about refreshing its website. Each title starts with `Example · ` (the word, a space, the middle dot `·`, a space), and each row is left in a state no skill acts on (spec/setup.md §6.5). "Set up my brain" moves them all to Notion's trash after one yes.
 
@@ -40,7 +40,7 @@ Only these rows have a body. Every other Example row's page is empty below its p
 
 ### Row 6: the Meeting's minutes
 
-Short lean minutes (decision 0079, [minutes-format.md](minutes-format.md)). There is no transcript: the quotes are invented, like the meeting. `▸` is a toggle, and the lines under it are its children.
+Short lean minutes (decision 0079, [minutes-format.md](minutes-format.md)). They go below the blocks the Meetings template puts on the page (the "Before marking Reviewed" callout, the gray notice, the Meeting notes block and the toggles), which all stay. There is no transcript: the quotes are invented, like the meeting. `▸` is a toggle, and the lines under it are its children.
 
 ```text
 In one line: Kickoff for the Northwind website refresh: the blog stays as it is, and the launch date waits on the brand guidelines.
@@ -171,7 +171,7 @@ Decision: Pending
 
 ## The prompts
 
-Run each prompt in Notion AI **on the copy's Brain Data page** (open Brain Data in the template copy, then ask Notion AI there), in this order. Each one starts by limiting itself to that page's databases, so a same-named database elsewhere in your workspace is never touched. Check the result after each prompt; run one again if something is missing: each prompt leaves alone what is already there.
+Run each prompt in Notion AI **on the copy's Brain Data page** (open Brain Data in the template copy, then ask Notion AI there), in this order, then step 7, which sets the relations. Each prompt starts by limiting itself to that page's databases, so a same-named database elsewhere in your workspace is never touched. Check the result after each prompt; run one again if something is missing: each prompt leaves alone what is already there.
 
 Rows 1 to 7 may already exist from U-27; prompt 2 adds only the ones missing, and prompt 3 writes the minutes only when the Meeting lacks the lines rows 8 to 13 come from.
 
@@ -208,24 +208,26 @@ Paste the minutes of "Row 6: the Meeting's minutes" above where the prompt says 
 ```text
 Use only the databases on this page. Open the Meetings row "Example · Kickoff with Northwind". If its page already has minutes with a line starting "Decided: keep the blog as it is", a line starting "Open: can the site go live by the end of March?" and a line containing "Waiting on Sam: send the brand guidelines", change nothing and say so.
 
-Otherwise, replace the page's body with exactly the minutes below. Write "In one line:" as a paragraph, each "## " line as a heading 2, "- [ ]" lines as unticked to-do checkboxes, each "▸" line as a toggle (not a toggle heading) whose children are the indented lines under it, collapsed, and every other line as a plain paragraph. Copy every character as written, the tags in square brackets and the quotes included. Don't change any property.
+Otherwise, add the minutes below at the end of the page, below every block the page already has. Keep every existing block exactly as it is, where it is: the "Before marking Reviewed" callout, the gray notice, the Meeting notes block and the toggles. Don't delete, move, replace or edit any of them, and don't write inside them. Write "In one line:" as a paragraph, each "## " line as a heading 2, "- [ ]" lines as unticked to-do checkboxes, each "▸" line as a toggle (not a toggle heading) whose children are the indented lines under it, collapsed, and every other line as a plain paragraph. Copy every character as written, the tags in square brackets and the quotes included. Don't change any property.
 
 <the minutes>
 ```
 
 ### Prompt 4: 0087's eight rows
 
-```text
-Use only the databases on this page. Don't change any row that already exists, and don't create anything except the rows below. A row "exists" when its database has a row with exactly that title. Relations point to the rows with exactly these titles, which are on this page. Create each missing row with these properties, and leave every other property empty and every checkbox unticked:
+This prompt sets no relation: Notion AI created these rows but left every relation empty. Step 7 sets them.
 
-1. Tasks: "Example · Brand guidelines from Sam". Status: Waiting On. Project: Example · Website refresh. Meeting: Example · Kickoff with Northwind.
-2. Inbox: "Example · Notes from a call with Sam". Kind: Capture. Brain Status: Done. Summary: "Sam's brief for the website refresh, kept as a document; the brand guidelines are still to come." Project: Example · Website refresh. People: Example · Sam Rivera.
-3. Decisions: "Example · Keep the blog as it is". Lifecycle: Draft. Assessment: Accepted. Summary: "Northwind keeps its blog as it is; the refresh covers the other pages." Decided In: Example · Kickoff with Northwind. Project: Example · Website refresh.
-4. Questions: "Example · Can the site go live by the end of March?". Status: Open. Lifecycle: Draft. Kind: Question. Summary: "Can the new site go live by the end of March? It depends on the brand guidelines." Raised In: Example · Kickoff with Northwind. Project: Example · Website refresh.
-5. Documents: "Example · Website refresh brief". Origin: Kept. Lifecycle: Reviewed. Summary: "What the Northwind website refresh covers, what it leaves out, and when it launches." Project: Example · Website refresh. Sources: Example · Notes from a call with Sam.
-6. Review: "Example · From Kickoff with Northwind: 1 decision, 1 question". Kind: Review Notes. State: Pending. Leave Your call, What to fix, About, Now, Proposed, Why and Decided at empty, and Decided and Accept all unticked. Source Meeting: Example · Kickoff with Northwind. Area: Example · Clients.
-7. Goals: "Example · Launch three client websites this year". Status: Active. Why: "Each site launched is a reference for the next client." Area: Example · Clients. Projects: Example · Website refresh.
-8. Key Results: "Example · Sites launched". Kind: Number. Start: 0. Current: 1. Target: 3. Goal: Example · Launch three client websites this year.
+```text
+Use only the databases on this page. Don't change any row that already exists, and don't create anything except the rows below. A row "exists" when its database has a row with exactly that title. Create each missing row with these properties, and leave every other property empty, every relation empty and every checkbox unticked:
+
+1. Tasks: "Example · Brand guidelines from Sam". Status: Waiting On.
+2. Inbox: "Example · Notes from a call with Sam". Kind: Capture. Brain Status: Done. Summary: "Sam's brief for the website refresh, kept as a document; the brand guidelines are still to come."
+3. Decisions: "Example · Keep the blog as it is". Lifecycle: Draft. Assessment: Accepted. Summary: "Northwind keeps its blog as it is; the refresh covers the other pages."
+4. Questions: "Example · Can the site go live by the end of March?". Status: Open. Lifecycle: Draft. Kind: Question. Summary: "Can the new site go live by the end of March? It depends on the brand guidelines."
+5. Documents: "Example · Website refresh brief". Origin: Kept. Lifecycle: Reviewed. Summary: "What the Northwind website refresh covers, what it leaves out, and when it launches."
+6. Review: "Example · From Kickoff with Northwind: 1 decision, 1 question". Kind: Review Notes. State: Pending. Leave Your call, What to fix, About, Now, Proposed, Why and Decided at empty, and Decided and Accept all unticked.
+7. Goals: "Example · Launch three client websites this year". Status: Active. Why: "Each site launched is a reference for the next client."
+8. Key Results: "Example · Sites launched". Kind: Number. Start: 0. Current: 1. Target: 3.
 
 Then list each of the eight titles with "created" or "already there", and any property you could not set.
 ```
@@ -269,10 +271,45 @@ Copy every character as written. Don't change any property, and don't tick Decid
 <the Review page>
 ```
 
+### Step 7: the relations, and the properties Notion AI missed (agent, through the API, with your yes; or by hand)
+
+Notion AI creates the rows but doesn't reliably set relations, so this step sets them outside Notion AI. **The agent** (the `brain-notion-change` skill, on the copy, after your yes) finds each row on the copy's Brain Data by its exact title, sets what's missing below, and reads every row back: the API can answer 200 and still ignore a write. **By hand:** open each row and pick the related rows in the property. Only fill what is empty: a value already there stays.
+
+The relations of prompt 4's rows. Each relation points to the row with exactly that title:
+
+| Row | Relation | Points to |
+|---|---|---|
+| Tasks `Example · Brand guidelines from Sam` | Project | `Example · Website refresh` |
+| | Meeting | `Example · Kickoff with Northwind` |
+| Inbox `Example · Notes from a call with Sam` | Project | `Example · Website refresh` |
+| | People | `Example · Sam Rivera` |
+| Decisions `Example · Keep the blog as it is` | Decided In | `Example · Kickoff with Northwind` |
+| | Project | `Example · Website refresh` |
+| Questions `Example · Can the site go live by the end of March?` | Raised In | `Example · Kickoff with Northwind` |
+| | Project | `Example · Website refresh` |
+| Documents `Example · Website refresh brief` | Project | `Example · Website refresh` |
+| | Sources | `Example · Notes from a call with Sam` |
+| Review `Example · From Kickoff with Northwind: 1 decision, 1 question` | Source Meeting | `Example · Kickoff with Northwind` |
+| | Area | `Example · Clients` |
+| Goals `Example · Launch three client websites this year` | Area | `Example · Clients` |
+| | Projects | `Example · Website refresh` |
+| Key Results `Example · Sites launched` | Goal | `Example · Launch three client websites this year` |
+
+What prompt 2 can miss, set the same way:
+
+| Row | Property | Value |
+|---|---|---|
+| People `Example · Sam Rivera` | Role | `Marketing lead` |
+| Orgs `Example · Northwind Studio` | Relationship | Client |
+| Meetings `Example · Kickoff with Northwind` | Date | the day you build it |
+| | Area | `Example · Clients` (a relation) |
+
+Then check prompt 2's other relations against "The story" (Domain on the Area, Org on Sam, Area on the Project, Project and Attendees on the Meeting, Project and Meeting on `Example · Send the project plan`) and set any that are empty.
+
 ## Check by hand
 
 - Brain Data starts with the callout, word for word.
-- Each of the fifteen rows exists once, with its title exactly as in "The story" (the prefix `Example · ` with the middle dot), its state and its relations; every Brain ID is empty.
-- The Meeting is **Not Reviewed**. The Review row is **Pending**, with Your call empty, Decided unticked and Status **Needs you · decide in the page**; its page opens with the note, then "Review summary", then two sections, each with a collapsed **Proposed final wording** toggle and `Decision: Pending`. The Inbox row is **Done**. Nothing on the Document is ticked.
+- Each of the fifteen rows exists once, with its title exactly as in "The story" (the prefix `Example · ` with the middle dot), its state and every relation of step 7 and "The story"; every Brain ID is empty. Sam's Role is Marketing lead, Northwind's Relationship is Client, and the Meeting has its Date and Area.
+- The Meeting is **Not Reviewed**, and its page still has the template's blocks (the "Before marking Reviewed" callout, the notice, the Meeting notes block and the toggles), with the minutes below them. The Review row is **Pending**, with Your call empty, Decided unticked and Status **Needs you · decide in the page**; its page opens with the note, then "Review summary", then two sections, each with a collapsed **Proposed final wording** toggle and `Decision: Pending`. The Inbox row is **Done**. Nothing on the Document is ticked.
 - The pages link to each other: the Project page lists the Meeting, both Tasks, the Inbox row, the Decision, the Question and the Document; the Area page shows the Review row waiting; Plan shows the Goal at 33%.
 - The coordinator's read-only scan (TEMPLATE.md, step 10) lists these fifteen rows as Example rows, and nothing else.
