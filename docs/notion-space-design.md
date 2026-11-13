@@ -385,7 +385,7 @@ Archived and Done (on a milestone) stay checkboxes: they describe a state, not a
 | Database | Pinned at the top | Collapsed |
 |---|---|---|
 | Inbox | Keep, Tidy, Brain Status, Project, Area | Brain ID, Last Synced, Created |
-| Review | Status, Submit, Submit all, About Page (0088: Your call and What to fix open the property group; About, Now, Proposed and Why are set to Hide when empty) | Kind, State, Brain ID, Created time, Last edited time |
+| Review | Status, Submit, Submit all, About Page (0088). The property panel has four groups: **Your decision** (Your call, What to fix); **What's proposed** (About, Now, Proposed, Why, each set to Hide when empty, so the group disappears on a row from a source); **Where it comes from** (Type, Area, Source Meeting); **Submitted** (Decided, Decided at, Accept all), collapsed where Notion allows. Where the layout editor has no groups, the same order applies without headings | Kind, State, Brain ID, Created time, Last edited time |
 | Decisions | Promote, Lifecycle | Brain ID, Last Synced |
 | Documents | Write, Update, Accept, Refresh asked, What to fix, Lifecycle, Project, Area, Sources | Origin, Brain ID, Last Synced, Created time, Last edited time |
 | Areas | At a glance | Brain ID, Last Synced |
