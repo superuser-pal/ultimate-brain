@@ -25,7 +25,7 @@ Nice to have: the GitHub CLI (`gh`), so setup can create your private backup for
 
 Open the Notion template and choose **Duplicate**, into the workspace you'll use for your brain:
 
-<!-- TEMPLATE-LINK --> **Template link: not published yet.** It is added here, from `notion/TEMPLATE.md`, before this release ships.
+**[The Ultimate Brain Notion template](https://sentina.notion.site/TEMPLATE-Ultimate-Brain-416495661e99806ea2dcca48eb4e55ff)**
 
 Leave the copy as it is. Its example rows go away when setup connects it.
 
