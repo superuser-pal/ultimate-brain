@@ -14,7 +14,7 @@ Ignore the module names in square brackets at the start of lines.
 6. In "Areas", add a rollup property "People via projects" over the relation "Projects", property People, calculated as Show original.
 [Orgs] 7. In "Areas", add a rollup property "Clients via projects" over the relation "Projects", property Client, calculated as Show original.
 [Orgs] 8. In "Orgs", add a rollup property "Meetings via projects" over the relation "Projects", property "Meetings", calculated as Show original.
-9. In "Review", add a formula property "Type" that returns text: "From source" when Kind is Review Notes, Update Fact, Add To Note, Update Body or Add Link; "Conflict" when Kind is Contradiction, Supersede, Merge or New Item; "Answer" when Kind is Answer; "Suggestion" when Kind is Notion Change or Set Field.
+9. In "Review", add a formula property "Type" that returns text: "From source" when Kind is Review Notes, Update Fact, Add To Note, Update Body or Add Link; "Conflict" when Kind is Contradiction, Supersede, Merge or New Item; "Answer" when Kind is Answer; "Suggestion" when Kind is Notion Change or Set Field. Then add a formula property "Status" that returns text, checked in this order: "Done" when State is Applied; "Closed" when State is Closed; "Submitted: waiting for the brain" when Decided is checked or Your call is not empty; "Needs you · decide in the page" when Proposed is empty or contains "decide each one in the page"; otherwise "Needs you · set Your call".
 10. In "Areas", add a formula property "To review" that returns the number of pages in the relation "Review" whose State is Pending.
 11. In "Areas", add a formula property "Meetings to review" that returns the number of pages in the relation "Meetings" whose Brain Status is Not Reviewed and whose Date is today or earlier.
 [Tasks] 12. In "Areas", add a formula property "Due" that returns the number of pages in the relation "Tasks" whose Status is neither Done nor Won't Do and whose Due is today or earlier.
@@ -46,6 +46,16 @@ if(or(prop("Kind") == "Review Notes", prop("Kind") == "Update Fact", prop("Kind"
   if(prop("Kind") == "Answer", "Answer",
     if(or(prop("Kind") == "Notion Change", prop("Kind") == "Set Field"), "Suggestion",
       if(empty(prop("Kind")), "", "Conflict"))))
+```
+
+Review Status (decision 0088; the brain never writes it):
+
+```text
+if(prop("State") == "Applied", "Done",
+  if(prop("State") == "Closed", "Closed",
+    if(or(prop("Decided"), not(empty(prop("Your call")))), "Submitted: waiting for the brain",
+      if(or(empty(prop("Proposed")), contains(prop("Proposed"), "decide each one in the page")), "Needs you · decide in the page",
+        "Needs you · set Your call"))))
 ```
 
 Areas To review, Meetings to review and, with Tasks, Due (0050), in that order:
@@ -90,5 +100,5 @@ Mapping your own tasks database? Build Task Progress and Due over your own Tasks
 - [ ] (Planning) Create a test goal with two key results: a Number one (Start 4, Current 6, Target 10) shows 33%; a Milestone one with Done checked shows 100%. The goal's Progress shows 67%.
 - [ ] (Planning) Give the test goal a Deadline 10 days from today: Countdown shows "10 days left". Set Status to Achieved: Countdown is empty.
 - [ ] (Tasks) Create a project with eight Done and two Won't Do: Task Progress shows 8 completed · 2 dropped · 100%. With three dropped and no other tasks it shows 0 completed · 3 dropped; with no tasks it shows no active tasks.
-- [ ] In Review, a test row with Kind Answer shows Type "Answer"; Kind Merge shows "Conflict"; Kind Notion Change shows "Suggestion". In Areas, link that row to a test area: To review shows 1 and At a glance shows "1 to review"; unlink it: At a glance shows "all clear".
+- [ ] In Review, a test row with Kind Answer shows Type "Answer"; Kind Merge shows "Conflict"; Kind Notion Change shows "Suggestion". The same row, State Pending, Proposed empty, shows Status "Needs you · decide in the page"; type text in Proposed: "Needs you · set Your call"; set Your call: "Submitted: waiting for the brain"; clear it and tick Decided: the same; set State to Applied: "Done"; to Closed: "Closed". In Areas, link that row to a test area: To review shows 1 and At a glance shows "1 to review"; unlink it: At a glance shows "all clear".
 - [ ] Delete the test goal, key results, project, tasks, Review row and area.

@@ -205,7 +205,7 @@ test("a plan with a malformed review_pending entry is refused", async (context) 
   assert.equal(out.json.error.code, "INPUT_INVALID");
 });
 
-test("without notion.review_sections the row keeps the old layout; with it a new row is a page and its Proposed is a pointer", async (context) => {
+test("without notion.review_sections the row keeps the old layout; with it a new row is a page with About, Now, Proposed and Why empty", async (context) => {
   const dir = await fixtureCopy(context);
   const created = await run(dir, ["proposal", "new"], { proposals: [
     { kind: "review_notes", source: SYNC, notes: [] },
@@ -214,11 +214,35 @@ test("without notion.review_sections the row keeps the old layout; with it a new
   const id = created.json.data.created[0].id as string;
   const [sections] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
   assert.ok(String(sections.body).includes("Proposed final wording"));
-  assert.match(sections.properties.Proposed.value, /1 change: decide each one in the page/);
+  for (const name of ["About", "Now", "Proposed", "Why"]) assert.equal(sections.properties[name].value, null, `${name} is empty on a row with sections (0088)`);
+  assert.match(sections.properties.Name.value, /^From /, "the Name still says where it came from");
+  assert.ok(sections.properties["Brain ID"].value === id && sections.properties.State.value === "Pending");
   await withoutReviewSections(dir);
   const [old] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
   assert.equal(old.body, null, "no sections without the Decided property");
   assert.match(old.properties.Proposed.value, /2027-03/, "the old layout carries the detail");
+  assert.ok(typeof old.properties.About.value === "string" && typeof old.properties.Why.value === "string", "a row without sections keeps About and Why");
+});
+
+test("a section row published with the old pointer is selected by --changed once, to send About, Now, Proposed and Why empty (0088)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const created = await run(dir, ["proposal", "new"], { proposals: [
+    { kind: "review_notes", source: SYNC, notes: [] },
+    { kind: "update_fact", title: "A", target: PROJECT, field: "launch_date", after: "2027-03", why: "w", source: SYNC },
+  ] });
+  const id = created.json.data.created[0].id as string;
+  const [first] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
+  // What a 0.13 render recorded: the four properties filled, the pointer in Proposed.
+  const published = { ...first.published, About: "Acme sync (src-x)", Now: null, Proposed: "1 change: decide each one in the page", Why: "w" };
+  await run(dir, ["sync", "record"], { records: [{ id, notion: "6a7b0000-0000-4000-8000-0000000000dd", synced_at: NOW, published }] });
+  const changed = (await run(dir, ["sync", "render", "--changed"])).json.data.items.filter((item: { id: string }) => item.id === id);
+  assert.equal(changed.length, 1, "the row is selected once");
+  assert.equal(changed[0].action, "update");
+  assert.equal(changed[0].body, null, "the body is never rewritten");
+  for (const name of ["About", "Proposed", "Why"]) assert.equal(changed[0].properties[name]?.value, null, `${name} is sent empty`);
+  await run(dir, ["sync", "record"], { records: [{ id, notion: "6a7b0000-0000-4000-8000-0000000000dd", synced_at: NOW, published: changed[0].published }] });
+  const again = (await run(dir, ["sync", "render", "--changed"])).json.data.items.filter((item: { id: string }) => item.id === id);
+  assert.equal(again.length, 0, "and not again");
 });
 
 test("a row already published as a page stays a page when the flag is turned off, and its revisions and base changes still reach it", async (context) => {
@@ -236,12 +260,12 @@ test("a row already published as a page stays a page when the flag is turned off
   await writeFile(project, (await readFile(project, "utf8")).replace(/^(\s+)launch_date: .*/m, "$1launch_date: 2027-02-15"));
   const [again] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
   assert.ok(again, "the published page is still updated");
-  assert.match(again.properties.Proposed?.value ?? "1 change: decide each one in the page", /decide each one in the page/);
+  assert.equal(again.properties.Proposed?.value ?? null, null, "a page row's Proposed stays empty");
   assert.equal(again.item_updates.length, 1, "the changed base reaches the page");
   void file;
 });
 
-test("a Review row whose source is an excluded version publishes no wording, in either layout", async (context) => {
+test("a Review row whose source is an excluded version publishes no wording, in either layout; held, a section row still leaves About, Now, Proposed and Why empty (0088)", async (context) => {
   const dir = await fixtureCopy(context);
   const { exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
   // A change proposed from version 1 of the input, whose second version drops the paragraph.
@@ -255,9 +279,12 @@ test("a Review row whose source is an excluded version publishes no wording, in 
   const [page] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
   assert.ok(!JSON.stringify(page).includes("95,000"), "sections layout");
   assert.match(String(page.body), /Held: /);
+  assert.match(String(page.properties.Name.value), /^Held: /, "the Name says the row is held");
+  for (const name of ["About", "Now", "Proposed", "Why"]) assert.equal(page.properties[name].value, null, `${name} is empty on a held section row`);
   await withoutReviewSections(dir);
   const [old] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
   assert.ok(!JSON.stringify(old).includes("95,000"), "old layout");
+  for (const name of ["Now", "Proposed", "Why"]) assert.ok(typeof old.properties[name].value === "string" && old.properties[name].value !== "", `${name} says held on a row without sections`);
 });
 
 test("sync plan reads a published restricted note in its eligible form: no conflict, no correction", async (context) => {
