@@ -7,6 +7,7 @@
 **Release amendment:** [0056](0056-buttons-move-into-0-8-0.md), 2026-10-31, moves this decision's tasks from 0.7.1 to 0.8.0; "0.7.1" below is historical.
 **Acceptance amendment:** [0057](0057-reports-are-not-proposal-targets.md) (reports are not proposal targets) and [0058](0058-acceptance-is-current-as-of-the-click-minute.md) (what "accepted exactly" means), 2026-10-31.
 **Later amendment:** [0055](0055-domains-capture-and-review.md), accepted 2026-10-30, leaves this decision's 0.7.1 scope unchanged, extends exact accepted wording to Review in 0.8.0, and moves reflection to 0.9.0. References below to an unchanged 0.8.0 reflection release describe the original plan.
+**Amended by:** [0090](0090-review-by-grill-notion-ai-reviews-with-you-and-your-call-decides.md) (2026-11-13; built in 0.15.0): a Review with me button runs the Grill review skill, which may write into a Review page's item sections after the user's yes; it never sets Your call
 
 ## Context
 Notion now lets a button send a message to an agent. The user confirmed that a button can target **Brain Assistant**, our Notion Custom Agent (0035); Notion's button, database-button and automation help pages didn't yet describe the "send message to agent" action when this was researched (Evidence). The user grilled the idea with Codex on 2026-10-29 and accepted the scope below ("yes, log this"), for release 0.7.1. It builds on an open thread from the same day: a promoted Document is only a seed, and what the user writes in it never comes back to Git.

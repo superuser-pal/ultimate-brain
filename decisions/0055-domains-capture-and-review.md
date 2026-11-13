@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-10-30
 **Amended by:** [0088](0088-a-review-row-says-it-needs-you-and-a-review-page-reads-plainly.md) (2026-11-13; built in 0.15.0): a Review page explains Accept once at the top and in each item's plain heading, not in a line per item; *Current* only for a fact or body change; the people or aliases added to one note are one item; wording shown without a toggle except for new notes
+**Amended by:** [0090](0090-review-by-grill-notion-ai-reviews-with-you-and-your-call-decides.md) (2026-11-13; built in 0.15.0): on a row with item sections, Your call Approve submits the page as it reads and Request revision with What to fix asks for redrafts; the Submit buttons leave the layout
 **Amends:** 0043 (minutes format), 0045 (Review presentation and corrections), 0048 (modules and Review controls), 0052 (release placement only)
 **Release amendment:** [0056](0056-buttons-move-into-0-8-0.md), 2026-10-31, builds 0054's buttons in 0.8.0 too; 0.7.1 becomes a small patch.
 **Refined by:** [0077](0077-trust-repair-in-0-13-0.md) (one operational eligibility rule; an item without established eligible support is withheld whole); [0079](0079-lean-minutes-and-follow-ups-as-tasks.md) (the selection tokens and quotes move into the minutes' For the brain toggle; the selection is unchanged)
