@@ -147,12 +147,13 @@ With `gh` installed but signed out, step 1 of the message is left out and step 2
 
 ### 6.3 The minutes prompt (step 4a; 0078 §2, 0079)
 
-Walked through: the skill gives the prompt's text (from `<product.path>/notion/`, the file CC-197 names) and where it goes (the user's Notion AI settings for Meetings, as `notion/pasting-the-minutes-prompt.md` says). Checked:
+Walked through: the skill gives the prompt's text (from `<product.path>/notion/`, the file CC-197 names) and how it runs, as `notion/pasting-the-minutes-prompt.md` says (CC-258, capture-and-review §3.4). The user opens the meeting page, with the transcript on it, and opens the Notion AI chat there. They paste the prompt, then the line **"Write the minutes on this page, below the transcript, and nothing else."**, and send it. The transcript stays on the page: in the meeting-notes block's Transcript when Notion recorded the meeting, or in the page body above the minutes when it was pasted. Checked:
 
-1. The skill gives a short synthetic meeting text (two subjects, one commitment of the owner, one decision; written by the skill from a fixed sample in the setup skill, never from the user's material) and asks the user to paste it into a new Meetings page and run the prompt.
+1. The skill gives a short synthetic meeting text (two subjects, one commitment of the owner, one decision; written by the skill from a fixed sample in the setup skill, never from the user's material). It asks the user to paste it into the body of a new Meetings page and run the prompt there, in the chat, as above.
 2. It reads the page through the MCP and checks the shape that `spec/capture-and-review.md` defines for the current format (0079 §2): the readable part with **In one line**, **Quick follow-ups** each with a `q` id, **Tasks for the brain** with item ids, one block per subject with its `s` id; and the collapsed **For the brain** toggle with each subject's `Selection:` line and the id → quote list, every quote found in the pasted text. Until 0079's contract (CC-195) is merged, the shape is the one `notion/minutes-format.md` defines (subjects, `Selection:` lines, item ids).
-3. Pass → `minutes-prompt` done. Fail → the skill names what is missing ("no `Selection:` line under subject 2"), says the likely cause (the prompt pasted only in part, or in the wrong place) and offers to check again.
-4. The test page is never marked Reviewed, so no catch-up reads it; the skill asks the user to delete it after the check.
+3. **The transcript is still on the page.** Every line of the sample is on the page word for word (spacing aside), outside the minutes and the For the brain toggle: in the page body above the minutes, or in the meeting-notes block's Transcript. When the page has the minutes but not the sample, the check fails with **`transcript-missing`**, whatever the shape. The skill names the fix: "Notion AI replaced the transcript. Put it back on the page above the minutes: restore an earlier version from Notion's version history, or paste the sample again. Keep the minutes. Next time, run the prompt in the Notion AI chat on the page and add: Write the minutes on this page, below the transcript, and nothing else." It names any shape problem in the same message and offers to check again. A page with no minutes at all is `shape-wrong`, as before.
+4. Pass (the shape and the transcript) → `minutes-prompt` done. Fail → the skill names what is missing ("no `Selection:` line under subject 2"), says the likely cause (the prompt pasted only in part, or run outside the page's chat) and offers to check again.
+5. The test page is never marked Reviewed, so no catch-up reads it; the skill asks the user to delete it after the check.
 
 **If the minutes prompt can live inside the Meetings template** (checked once by CC-193 on the test duplicate, 0078 §2), the template carries it and step 4a becomes the check alone.
 
@@ -348,7 +349,7 @@ Time: 52 min (first setup line to the last)
 
 ### 12.2 Reason codes
 
-`missing-prerequisite`, `gh-missing` (`gh` not installed, §6.1), `gh-signed-out` (`gh auth status --hostname github.com` fails, §6.1), `notion-ai-missing`, `notion-unreachable`, `brain-data-not-found`, `database-missing`, `shape-wrong` (minutes), `assistant-reads-outside` (Brain Assistant), `remote-failed`, `remote-public` (the backup is a public repository, §7), `push-failed`, `user-stopped`, `examples-left` (the template's Example rows not removed, §6.5), `first-value-unresolved` (first value, §10), and a CLI error code (cli.md §3.5) when a command failed.
+`missing-prerequisite`, `gh-missing` (`gh` not installed, §6.1), `gh-signed-out` (`gh auth status --hostname github.com` fails, §6.1), `notion-ai-missing`, `notion-unreachable`, `brain-data-not-found`, `database-missing`, `shape-wrong` (minutes), `transcript-missing` (the test page has minutes but no transcript, §6.3), `assistant-reads-outside` (Brain Assistant), `remote-failed`, `remote-public` (the backup is a public repository, §7), `push-failed`, `user-stopped`, `examples-left` (the template's Example rows not removed, §6.5), `first-value-unresolved` (first value, §10), and a CLI error code (cli.md §3.5) when a command failed.
 
 ## 13. Without Notion AI (0078 §6)
 
