@@ -818,7 +818,7 @@ Moved to 0.14.0 by the user, 2026-11-11: the CLI skip and its brain-ingest wordi
 **Output:** contract first: spec/schema.md §16.2 (and its Notion publish, cli.md §5.14.4): a `draft` decision keeps its place in the history but shows as waiting for review, in the words of the Brief's waiting line (§16.1), with no link in Notion, where a draft has no page (0071); a reviewed decision is unchanged. Then `brain views` and the render.
 **Acceptance:** tests on a synthetic project with a draft and a reviewed decision: the view and the published section mark the draft and link the reviewed one; after the draft is approved, the next `brain views` lists it as reviewed; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 
-### CC-262 · A report the brain wrote refreshes without an Accept (gate problem 10) · `todo`
+### CC-262 · A report the brain wrote refreshes without an Accept (gate problem 10) · `in progress`
 **Release:** 0.14.0
 **Changelog:** a report the brain published and you haven't edited is refreshed by the next catch-up without asking you to click Accept.
 **Output:** find why the gate's catch-up had no record of the wording setup had just published on its report (spec/cli.md §5.14.6 and §5.14.7), fix the contract first if it causes it, then the code: the wording the brain publishes is recorded, so an unedited page is the brain's own, and Accept is asked only when the page differs from it.
