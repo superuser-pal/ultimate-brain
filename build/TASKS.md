@@ -749,7 +749,7 @@ Moved to 0.14.0 by the user, 2026-11-11: the CLI skip and its brain-ingest wordi
 
 **Added by [0089](../decisions/0089-the-brains-structure-in-agents-md.md)** (the author's conversation of 2026-11-13): a patch after 0.14.0, not a 0.15.0 feature. `brain index` writes a structure block in the brain's `AGENTS.md` (Domains › Areas › active Projects, with ids), refreshed by every write that creates, finds or changes the structure; a linked folder gets only its own Domain, Area and Project; the project and Area briefs list their Documents; and a session reads an Area's or Project's tasks live from Notion. Contract and CLI first (CC-245), then the skills (CC-246).
 
-### CC-244 · Record decision 0089: the brain's structure in AGENTS.md, documents in briefs, tasks read live · `review`
+### CC-244 · Record decision 0089: the brain's structure in AGENTS.md, documents in briefs, tasks read live · `done` (#350)
 **Release:** 0.14.1
 **Changelog:** Decision 0089 records how every session in a brain knows its Domains, Areas and active Projects, which documents belong to each, and where to read their tasks.
 **Output:** `decisions/0089-the-brains-structure-in-agents-md.md`; this section with CC-245 and CC-246 as `todo`. No spec, code, skill or Notion change.
