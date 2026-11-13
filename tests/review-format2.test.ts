@@ -25,6 +25,8 @@ const PASSAGES = [
   "Launch moves to April 2027, Maria said.",
   "Carlos would rather launch in May 2027.",
   "Supabase handles auth for the site.",
+  "Ana listed eleven candidate depots from the survey.",
+  "Lee said the pilot itself starts with nine depots.",
 ];
 const P = PASSAGES.map((text, index) => `${SRC}#¶${index + 1}:${passageHash(text)}`);
 
@@ -389,4 +391,19 @@ test("a page read back as Notion returns it is not an edit: escaped markers, no 
   const decided = out.review_decisions[0].items as Array<{ item_id: string; proposed: string; edited: boolean; proposed_hash: string; rendered_proposed_hash: string }>;
   for (const item of decided) { assert.equal(item.edited, false, item.item_id); assert.equal(item.proposed_hash, item.rendered_proposed_hash, item.item_id); }
   assert.equal(decided[1]!.proposed, `Section [¶9] of the contract stays. ^[${P[2]}]`, "the literal stays text, the marker expands");
+});
+
+test("VALUE_NOT_IN_PASSAGE on the live run's case: 9 cited on the passage of eleven candidates names the passage that says nine (0090 §4)", async (context) => {
+  const dir = await format2Brain(context);
+  const depots = { kind: "update_fact", title: "Depots", target: PROJECT, field: "pilot_depots", after: "11", why: "Ana listed the candidates.", source: SYNC, passages: [P[3], P[4]], unsure: ["¶4 says eleven candidates, ¶5 says the pilot starts with nine"] };
+  const { id, body, items } = await published(dir, [depots]);
+  const factItem = items[0]!.item_id;
+  assert.match(body, /\n11 \[¶4\] \[¶5\]\n/);
+  const wrong = await plan(dir, [row(id, decide(body.replace("11 [¶4] [¶5]", "9 [¶4]"), factItem, "Accept"), { "Your call": "Approve" })]);
+  assert.deepEqual(wrong.review_held, [{ proposal: id, page_id: PAGE, item_id: factItem, reason: "VALUE_NOT_IN_PASSAGE", detail: "¶5 says 9" }]);
+  const right = await plan(dir, [row(id, decide(body.replace("11 [¶4] [¶5]", "9 [¶5]"), factItem, "Accept"), { "Your call": "Approve" })]);
+  assert.deepEqual(right.review_held, []);
+  assert.equal(right.review_decisions[0].items[0].proposed, `9 ^[${P[4]}]`);
+  // Approve alone never accepts it: the item is flagged.
+  assert.deepEqual((await plan(dir, [row(id, body, { "Your call": "Approve" })])).review_held.map((held: { reason: string }) => held.reason), ["NEEDS_EXPLICIT_ACCEPT"]);
 });
