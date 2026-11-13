@@ -265,7 +265,7 @@ test("a row already published as a page stays a page when the flag is turned off
   void file;
 });
 
-test("a Review row whose source is an excluded version publishes no wording, in either layout", async (context) => {
+test("a Review row whose source is an excluded version publishes no wording, in either layout; held, a section row still leaves About, Now, Proposed and Why empty (0088)", async (context) => {
   const dir = await fixtureCopy(context);
   const { exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
   // A change proposed from version 1 of the input, whose second version drops the paragraph.
@@ -279,9 +279,12 @@ test("a Review row whose source is an excluded version publishes no wording, in 
   const [page] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
   assert.ok(!JSON.stringify(page).includes("95,000"), "sections layout");
   assert.match(String(page.body), /Held: /);
+  assert.match(String(page.properties.Name.value), /^Held: /, "the Name says the row is held");
+  for (const name of ["About", "Now", "Proposed", "Why"]) assert.equal(page.properties[name].value, null, `${name} is empty on a held section row`);
   await withoutReviewSections(dir);
   const [old] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
   assert.ok(!JSON.stringify(old).includes("95,000"), "old layout");
+  for (const name of ["Now", "Proposed", "Why"]) assert.ok(typeof old.properties[name].value === "string" && old.properties[name].value !== "", `${name} says held on a row without sections`);
 });
 
 test("sync plan reads a published restricted note in its eligible form: no conflict, no correction", async (context) => {
