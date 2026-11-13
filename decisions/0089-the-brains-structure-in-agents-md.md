@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-11-13
 **Release:** 0.14.1
+**Release amendment:** 2026-11-13 (CC-247): folded into 0.14.0 on the author's choice, so testers start with it; nothing else changes.
 **Amends:** [0013](0013-ingest-context-and-index.md) (`index.md` stays navigation; `brain index` also writes the structure block); schema §16.1 and §16.3 (each brief gains a Documents section)
 **Keeps:** 0081's style block and its placement rules; 0018 (tasks live only in Notion); 0022 (structure is changed in the product repo first); the rules block's "Add only what was asked for"; trust rule 2 (answers come from `brain query` and `brain recall`); the restricted-evidence rules of `index.md` (cli.md §5.8)
 
