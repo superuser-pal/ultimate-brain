@@ -1,6 +1,6 @@
 # The weekly review (contract, decisions 0075 and 0093)
 
-**Status:** contract for release 0.15.0 (CC-111). Written by Claude Code. The implementation tasks it splits into are in build/TASKS.md under CC-111. The numbers in §12 come from the resource-budget trials, run read-only in the author's brain (0075 §7, 0093 §4, §6).
+**Status:** contract for release 0.15.0 (CC-111). Written by Claude Code. It is built by CC-253 (the CLI), CC-254 (correction checks), CC-255 (the skill and the schedule offer) and CC-256 (`/Weekly review`), and tried in the author's brain by U-29. The numbers in §12 come from the resource-budget trials, run read-only in the author's brain (0075 §7, 0093 §4, §6).
 
 How this file fits: it holds the whole weekly review. That covers what a run reads, the report and its identity, the three sections, the change window and coverage, the two shared limits, repetition and dismissals, the correction queue and its claim groups, budgets and partial runs, delivery, the schedule, Brain Assistant's `/Weekly review` and the acceptance scenarios. It reuses what exists. Ultimate Assistant's findings ([assistant.md](assistant.md) §3, cli.md §5.31) are the work stream. `brain reflect --candidates` (cli.md §5.32, §6.2) is the knowledge stream, the only scheduled reflection (0076 §5). Proposals and Review rows (schema §11, cli.md §5.6, §5.14.4), the report destination (schema §4 view, §16) and `brain schedule` (cli.md §5.21) are used as they are. The command surface (`brain weekly`) is cli.md §5.34; the fields are in schema §2, §4 view, §11 and §12.
 
@@ -342,7 +342,7 @@ Brain Assistant's `/Weekly review` skill (notion/brain-assistant.md) becomes the
 
 ## 14. Acceptance (0075 §8)
 
-**Synthetic scenarios.** These are automated tests in the implementation tasks, run on synthetic brains with a failing `gh` stub and a Notion stand-in, never a real brain. They are not trials: 0093 §6 moved 0075 §8's synthetic scenarios here.
+**Synthetic scenarios.** These are automated tests in CC-253 (busy, quiet, missed week, partial, repeated finding, same-week rerun) and CC-254 (correction), run on synthetic brains with a failing `gh` stub and a Notion stand-in, never a real brain. They are not trials: 0093 §6 moved 0075 §8's synthetic scenarios here.
 
 | Scenario | Setup | Pass |
 |---|---|---|
@@ -364,4 +364,4 @@ Plus the following cases:
 
 The reading and deciding targets (two minutes to read, five to decide) are checked by the word cap and by the attended trial.
 
-**One attended trial in the user's private brain** (a U task, 0075 §8). It runs one scheduled week and one rerun, then `/Weekly review`, and is judged on usefulness: meaningful selection, task recommendations, and the reading and deciding times. Personal evidence stays outside the product repo, and only non-personal summaries of outcomes and timing come back. U-21's weekly step joins it (0076 §9): reflection findings respect excluded material.
+**One attended trial in the user's private brain** (U-29, 0075 §8). It runs one scheduled week and one rerun, then `/Weekly review`, and is judged on usefulness: meaningful selection, task recommendations, and the reading and deciding times. Personal evidence stays outside the product repo, and only non-personal summaries of outcomes and timing come back. U-21's weekly step joins it (0076 §9): reflection findings respect excluded material.
