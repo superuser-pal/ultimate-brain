@@ -109,6 +109,7 @@ With no item, the section is `- Nothing needs your decision this week.`.
 ## 4. The change window and coverage
 
 ### 4.1 The window
+- **Clusters in the window.** `plan` passes the reflection clusters whose members were `updated`, or whose inputs are dated, between `window.from` and `window.to` (§12, the trials). Other clusters are not this week's: they are not omitted, and the attended brain-reflect still sees them.
 - `window.from` is `covered_to` of the **last successful report of an earlier week** in `_weekly/state.json` (§9.5). With none (a first run), it is `as_of` minus 7 days (0075 §1). A rerun in the same week keeps this week's `from`.
 - `window.to` is `as_of`.
 - A partial run moves `covered_to` only as far as it covered (§10), so its uncovered changes are carried into the next window. Nothing omitted is silently marked as handled (0075 §1).
@@ -208,6 +209,7 @@ Otherwise it is not an item. It is counted in `<n> earlier findings are still op
 A **meaning change** that was approved and applied after `corrections.checked_through` (§9.5), read from the Git record by `weekly plan`. Nothing is written when the correction is applied, so `apply` and `sync apply` are unchanged:
 - a timeline entry with `assessment: accepted`, `learned` after the cursor, on a field whose previous accepted value differed. This covers an applied `update_fact`, a `contradiction` resolved to one value, an accepted or edited Review item that changed a fact, and a correction made in Notion that `sync apply` wrote to `facts` (dates and owners are facts too);
 - a decision superseded (a `supersede` proposal applied after the cursor);
+- a **title** that changed (a Name correction from Notion, or an applied rename): its old title, and each alias it drops, is the old value. The trials found a renamed Area still named the old way in a project's body;
 - an `add_to_note` that the user approved from a reflection **promotion** (a lasting rule), when it replaces nothing. It queues only the check for other notes that contradict the rule; §8.2 judges whether any do.
 
 Not queued: formatting-only and body changes with no fact or rule (`update_body`, a link), Notion-owned live statuses (`notion_change`), and `merge` (its references are already rewritten by apply).
@@ -303,18 +305,30 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
 
 ## 12. Resource budgets and the model default (from the trials)
 
-**Status: open.** The trials of 0075 §7 and 0093 §4 have not run (on hold, 2026-11-13: the user is deciding whether they run on their own brain as well as synthetic ones). This section is filled from them **before any implementation task is committed**, and it invents no number until then.
+**The trials** (0075 §7, 0093 §4, §6) ran on 2026-11-13. Each was the weekly flow as a prototype prompt, read-only, in the author's brain, through `claude -p --output-format stream-json`. The tool allowlist permitted no writes and no Notion writes, the brain's `git status` and HEAD were unchanged after every run, and each run was capped at 10 USD. The brain held about 180 knowledge notes, 91 sources, 84 tasks, 13 projects and 10 Areas, and `reflect --candidates` gave 360 clusters in its 30-day window. Each run judged at most 30 clusters or 20 minutes. Only numbers are recorded here; the reports stay outside the repo (0093 §6).
 
-What the trials measure, per scenario of §14 and per model (Sonnet and Opus on the same weeks, through `claude -p --output-format json`): input, cache-read, cache-write and output tokens; cost; turns; wall time; notes and lines read; the report's word count; and whether the run met §14's checks. Source-byte counts are not token evidence (0075 §7).
+| Run | Model | Cost (USD) | Wall time (s) | Turns | Input / cache read / cache write / output tokens | Notion calls | Notes read | Clusters judged | Findings (knowledge / work / structure / corrections) | Decision items · targets | Words (first three sections) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| sonnet-1 | Sonnet | 0.58 | 136 | 37 | 30 / 1,028,559 / 73,935 / 17,610 | 6 | 3 | 30 | 1 / 11 / 8 / 1 | 3 · 5 | 492 |
+| sonnet-2 | Sonnet | 0.75 | 201 | 45 | 42 / 1,616,389 / 78,273 / 27,248 | 6 | 4 | 6 | 4 / 15 / 5 / 2 | 5 · 5 | 526 |
+| opus-1 | Opus | 2.14 | 283 | 44 | 54 / 2,500,746 / 118,921 / 34,248 | 7 | 19 | 30 | 1 / 11 / 11 / 1 | 5 · 5 | 468 |
 
-What this section will record:
+**What the trials showed:**
+- **The cost is mostly re-reading cached context.** Cache reads are about 95% of the input, and they grow with turns. Fewer turns save more than shorter notes do. That is the reason for a deterministic `plan` and `select` (§1).
+- **Notion reads are large.** Tasks, Projects and Areas came to about 265,000 characters of raw MCP results for 107 rows. Claude Code kept them out of the context only because the results were saved to files and read with `jq`. The skill must do the same, and `weekly plan` must take the snapshot as a file (cli.md §5.34), not inline.
+- **The judging varied.** Sonnet judged 30 clusters in one run and 6 in the other, and read 3 to 4 notes. Opus read 19 and gave the most specific reasons in Task analysis. The deterministic half removes most of that variation.
+- **Clusters must be limited to the window.** 360 clusters against a cap of 30 would make nearly every week partial. `plan` therefore passes only the clusters whose members were `updated`, or whose inputs are dated, within the window (§4.1), and omission (§10) counts among those alone.
+- **Every run drafted more than 450 words** (468 to 526). The word cap stays (§3.4): `record` refuses, and the skill shortens.
+- **Known limit:** the prototype passed the snapshot to `brain assistant findings` through a stdin heredoc, which the read-only allowlist refused. Each run worked out its task findings from the same rows by hand. The cost of that CLI call (no model tokens) is therefore not in the table.
 
-| Setting (schema §12 `settings.weekly`) | Default | From |
+**The defaults** (schema §12 `settings.weekly`):
+
+| Setting | Default | Why |
 |---|---|---|
-| `minutes` | *trials* | the busy scenario's wall time on the default model, × 2 |
-| `max_judged` | *trials* | the clusters plus targets a busy run judges within `minutes` |
-| `max_usd` (the hard ceiling) | *trials* | the busy scenario's cost on the default model, × 3 |
-| the default model | Sonnet (0093 §4), *to confirm* | quality on §14's checks at the measured cost; changed only with the reason recorded here |
+| `minutes` | 10 | the slowest Sonnet run, 201 s, × 3 for a heavier week, rounded |
+| `max_judged` | 30 | clusters plus correction targets; Sonnet judged up to 30 within the time above |
+| `max_usd` | 3 | the dearest Sonnet run, 0.75, × 4. On Opus, the skill's schedule offer sets 8 (opus-1, 2.14, × 4) |
+| the default model | **Sonnet, confirmed** | it covered every section within the limits at about a third of Opus's cost (0.58 to 0.75 against 2.14 a week). Opus read more and reasoned more specifically, which the attended trial (§14) checks; the user can pin Opus when turning on the schedule (0093 §4) |
 
 ## 13. `/Weekly review` in Notion (0093 §2)
 
