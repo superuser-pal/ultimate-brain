@@ -342,7 +342,7 @@ When the user's words leave the scope ambiguous (two rows or items match), the r
 
 *7.12.1 Which rows, and the one rebuild.*
 - **The format is recorded.** The render that writes a format-2 body records `published["@review"].format = 2`. A `@review` without `format` is format 1. The parser and the rules of a row follow its recorded format, never a guess from the page.
-- **New rows are format 2** whenever item sections are on (`notion.review_sections`, §10).
+- **New rows are format 2** whenever item sections are on (`notion.review_sections`, §10), unless `brain.json` `notion.review_format` is `1` (schema §12), which keeps new pages in format 1 and rebuilds nothing.
 - **Untouched rows are rebuilt once (0088 Q8).** A published pending `review_notes` row of format 1 is rebuilt as a new format-2 page at the first publish that knows it is untouched: the plan read its page (`review` in the snapshot), every section is there once with `Decision: Pending`, no Proposed was edited, no `Revision request:` line has text, Decided is unticked, Your call is empty, and the proposal has no `item_decisions` and no `revisions`. `sync plan` lists such rows in `review_untouched`; `sync render --plan` rebuilds them (cli §5.14.4). The skill creates the new page, writes its body, records it, then moves the old page to Notion's trash; the report says how many rows were rebuilt. A row the plan did not read, or that anyone touched, keeps format 1 and its rules until it is done. A rebuilt row keeps its proposal, its items and their ids; only the page is new.
 
 *7.12.2 The page, top to bottom.* In this order:
