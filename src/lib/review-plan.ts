@@ -80,7 +80,8 @@ export function planReviewRow(
 
   const call = String(row.properties["Your call"] ?? "").toLowerCase();
   // An untouched format-1 row is rebuilt once as a format-2 page (capture-and-review §7.12.1): read, every section there once, nothing typed or edited.
-  const untouched = sections !== undefined && !pending && review?.decided !== true && call === "" && !isRecord(proposal.attributes.cleanup)
+  const keepFormat1 = isRecord(workspace.config.notion) && workspace.config.notion.review_format === 1;
+  const untouched = !keepFormat1 && sections !== undefined && !pending && review?.decided !== true && call === "" && !isRecord(proposal.attributes.cleanup)
     && !(Array.isArray(proposal.attributes.item_decisions) && proposal.attributes.item_decisions.length > 0) && !(Array.isArray(proposal.attributes.revisions) && proposal.attributes.revisions.length > 0)
     && itemStates.every((entry) => { const section = sections.get(entry.item_id); return section !== undefined && !section.duplicate && section.decision === "pending" && section.proposed !== null; });
   if (untouched) out.review_untouched.push({ proposal: id, page_id: row.page_id });
