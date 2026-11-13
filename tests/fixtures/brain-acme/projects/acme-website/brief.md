@@ -32,6 +32,9 @@ updated: 2026-12-05
 ## Recent meetings
 - 2026-12-03 — [Acme sync](../../knowledge/meetings/2026-12-03-acme-sync.md)
 - 2026-10-01 — [Acme kickoff](../../knowledge/meetings/2026-10-01-acme-kickoff.md)
+
+## Documents
+- None
 <!-- @generated:end -->
 
 <!-- @user:start -->
