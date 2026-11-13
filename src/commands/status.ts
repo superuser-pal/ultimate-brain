@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
+import { branchCheck } from "../lib/branch.ts";
 import { buildIndex } from "../lib/index-builder.ts";
 import { lintBrain } from "../lib/lint.ts";
 import { scanNotes } from "../lib/notes.ts";
@@ -82,6 +83,8 @@ export const statusCommand: Command = {
       unresolved_lineage: restrictions.filter((entry) => entry.whole).length,
       problems: loaded.problems,
     };
+    // The working branch and the warning when the brain is off it, read-only (§5.2, 0086 §1, §2).
+    const { branch, warning } = await branchCheck(brain!.root);
     const data = {
       schema_version: brain!.config.schema_version,
       owner: (brain!.config.owner as Record<string, unknown>).name,
@@ -102,9 +105,11 @@ export const statusCommand: Command = {
       product: { path: installedProduct().root },
       // How far the guided setup has got, offline (§5.2, spec/setup.md §5).
       setup: await setupStatus(brain!.root, brain!.config, notes, environment.homeDirectory),
+      branch,
     };
     const setup = setupLine(data.setup);
-    return { data, human: `${setup === null ? "" : `${setup}\n`}Owner: ${data.owner}\nNotes: ${notes.length}\n${taskNote === null ? "" : `${taskNote}\n`}` };
+    const first = [setup, warning?.message ?? null].filter((line) => line !== null).map((line) => `${line}\n`).join("");
+    return { data, warnings: warning === null ? [] : [warning], human: `${first}Owner: ${data.owner}\nNotes: ${notes.length}\n${taskNote === null ? "" : `${taskNote}\n`}` };
   },
 };
 
