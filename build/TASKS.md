@@ -468,7 +468,7 @@ Work packages (0061, kept): onboarding/diagnostic/preference contracts; probe-fi
 | U-27 | Copy your own space, empty and scrub it, add the Example rows, and publish it as the template (0084) | the template copy in your workspace | after CC-189 and CC-227 are merged | `todo` |
 | CC-190 | The CLI side of setup; moved to 0.13.0 by the user (merged early, #296; its row is in the 0.13.0 section) | `init`, `status`, `upgrade`, `config`, `templates/brain/brain.json` | after CC-188 is merged | `done` (#296) |
 | CC-191 | The `brain-setup` skill and the connect changes | the fork's `brain/brain-setup/`, `brain/brain-connect-notion/`, `brain/ultimate-assistant/` (vendored by CC-219 through brain-v1.7.0) | after CC-188 and CC-190 are merged | `done` (#302) |
-| CC-192 | The guides: product README, `docs/setup.md`, the skills repo README block | `README.md`, `docs/setup.md` (new), `package.json` `files` and `repository`; the fork's `README.md` top block | after CC-191 and U-27 | `review` |
+| CC-192 | The guides: product README, `docs/setup.md`, the skills repo README block | `README.md`, `docs/setup.md` (new), `package.json` `files` and `repository`; the fork's `README.md` top block | after CC-191 and U-27 | `done` (#340) |
 | CC-193 | The release gate: a fresh user end to end | `eval/setup-0.14/` (new) and its row | last, after every other 0.14.0 task | `todo` |
 | U-28 | Invite friends and family | — | after 0.14.0 is released | `todo` |
 | CC-194 | Decision 0079 and these rows | `decisions/0079`, pointers, roadmap lines, these rows | now | `done` (#289) |
@@ -527,7 +527,7 @@ Evidence:
 - The harness, the prompts and each run's fork commit, skills and starting state are in `eval/setup-skill-0.14/` (RESULTS.md), so every run can be repeated.
 **Spec questions:** answered: seeded People are written `draft`, like every new person, since `brain note new` writes a person as `draft`; setup.md §8.2 said `reviewed` (the user's choice of 2026-11-11, (A); fixed in setup.md in this PR).
 
-### CC-192 · The guides: README Get started, docs/setup.md and the skills repo's pointer (0078 §6) · `review`
+### CC-192 · The guides: README Get started, docs/setup.md and the skills repo's pointer (0078 §6) · `done` (#340)
 **Release:** 0.14.0
 **Changelog:** the README's Get started takes a new user from nothing to "set up my brain" in six steps, with the link to duplicate the Notion template, and docs/setup.md explains every setting and how to recover from common failures.
 **Output:** `README.md`: the status line becomes early access for friends and family, written as live (anyone can follow it); "Get started" with the prerequisites (Node 22.6+, Git, Claude Code or Codex, a Notion plan with Notion AI), duplicate the template (the link from `notion/TEMPLATE.md`), install, `brain init`, "set up my brain", what you'll have at the end; Update stays; the two templates named apart (brain folder, Notion template). `package.json`: a `repository` field naming the product repository, which the setup report's issue target reads (spec/setup.md §12; CC-188's build split). `docs/setup.md` (new, added to `package.json` `files`): each setting and why, recovery from common failures, the path without Notion AI (for 1.0). The skills fork's `README.md` gains one block at its top pointing to the product's Get started; upstream's text stays (a fork PR).
