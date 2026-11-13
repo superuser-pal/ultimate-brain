@@ -7,7 +7,7 @@ Two templates exist; this one is the **Notion template**. The **brain folder** (
 | | |
 |---|---|
 | **Link** | https://sentina.notion.site/TEMPLATE-Ultimate-Brain-416495661e99806ea2dcca48eb4e55ff |
-| **Template version** | `0023` |
+| **Template version** | `0024` |
 
 **Template version** is the four-digit number of the last migration in [migrations/](migrations/) the template includes. The template shows the same number as a line of its own in the System callout on its top page (as inline code or plain text, spec/setup.md §9), `Template version: NNNN`, and the connect step stores it in `brain.json` as `notion.template_version`; `brain upgrade` then names the migrations newer than it (spec/setup.md §9, spec/cli.md §5.15).
 
@@ -50,7 +50,7 @@ Everything a space built from every prompt has (the build prompts include every 
 | Decisions | `Example · Keep the blog as it is` | Lifecycle Draft, Assessment Accepted | Decided In the Meeting, the Project |
 | Questions | `Example · Can the site go live by the end of March?` | Status Open, Lifecycle Draft, Kind Question | Raised In the Meeting, the Project |
 | Documents | `Example · Website refresh brief` | Origin Kept, Lifecycle Reviewed, Accepted unticked, nothing asked | the Project; Sources the Inbox row |
-| Review | `Example · From Kickoff with Northwind: 1 decision, 1 question` | State Pending, Your call empty, Decided unticked; the page in the section format (one section per item, `Decision: Pending`) | Source Meeting the Meeting, Area the Area |
+| Review | `Example · From Kickoff with Northwind: 1 decision, 1 question` | State Pending, Your call empty, Decided unticked, About, Now, Proposed and Why empty, so Status reads Needs you · decide in the page; the page in the section format (one section per item, `Decision: Pending`) | Source Meeting the Meeting, Area the Area |
 | Goals | `Example · Launch three client websites this year` | Status Active | Area the Area, Projects the Project |
 | Key Results | `Example · Sites launched` | Kind Number, Start 0, Target 3, Current 1 | Goal the Goal |
 

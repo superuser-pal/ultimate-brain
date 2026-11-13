@@ -56,7 +56,7 @@ Source: the databases inside [@Brain Data] only.
 
 1. Tasks: Status To Do or Doing, Due on or before today. Overdue first. Show name, project, due.
 2. Meetings: Date is today. Show time, name, project, attendees.
-3. Review: rows with State Pending. Show the count by Type (From source, Conflict, Answer, Suggestion) and the three newest names.
+3. Review: rows whose Status starts with "Needs you". Show the count by Type (From source, Conflict, Answer, Suggestion) and the three newest names.
 4. Meetings: Brain Status Not Reviewed and Date on or before today. Show the count.
 5. Projects: Status Active and Countdown says Overdue. Show the names.
 
@@ -69,16 +69,16 @@ Read only. Don't edit anything.
 
 ```text
 Goal: help me decide on the brain's pending proposals.
-Source: the Review database inside [@Brain Data], and the meetings its rows link to.
+Source: the Review database inside [@Brain Data], the pages of its rows, and the meetings they link to.
 
-1. Take the rows with State Pending, newest first, grouped by Type: From source, Conflict, Answer, Suggestion.
-2. For each row: About, Now → Proposed, the sentence in Why, the source it links to, and what Approve would do for its Kind:
-   Review Notes applies its lettered items (⚠ marks a fact change; "all except b" in What to fix sets b aside on a row of its own); Contradiction keeps both values as contested; Supersede archives the older note; Merge folds a duplicate in; Answer answers a question; Notion Change (a Suggestion from Ultimate Assistant) changes the one Notion field it names, a task's Status, Due, Project or Area, a project's Status or an Area's Archived, the next time the brain applies decisions; Set Field (a Suggestion) moves a project to another Area or puts an Area in a Domain. Fix applies it as corrected in What to fix.
-3. Point out rows that conflict with each other.
-4. List rows worth a closer look, and why.
+1. Take the rows whose Status starts with "Needs you", newest first, grouped by Type: From source, Conflict, Answer, Suggestion.
+2. A row whose Status is "Needs you · decide in the page": read its page. For each change section, say in one line what accepting it does (a new note becomes Reviewed; a change to a note is made with the wording shown; a link is added), and mark a ⚠ change as one to read closely. Then remind me: type Accept, Reject, Defer or Request revision on each Decision line, and click Submit decisions.
+3. A row whose Status is "Needs you · set Your call": About, Now → Proposed, the sentence in Why, the source it links to, and what Approve would do for its Type: a Conflict keeps both values as contested, archives the older decision, or folds a duplicate in; an Answer answers the question; a Suggestion makes the one Notion change it names (a task's Status, Due, Project or Area, a project's Status or Area, an Area's Archived or Domain) the next time the brain applies decisions. An older row from a source applies its lettered items (⚠ marks a fact change; "all except b" in What to fix sets b aside on a row of its own). Fix applies it as corrected in What to fix.
+4. Point out rows that conflict with each other.
+5. List changes worth a closer look, and why.
 
 Output: one block per Type, two or three lines per row.
-Never recommend Approve or Reject: the decision is mine. Read only.
+Never recommend Approve, Reject or Accept: the decision is mine. Read only.
 ```
 
 ### Check minutes

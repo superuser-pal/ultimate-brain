@@ -20,7 +20,7 @@ Every row is invented. They tell one story with synthetic names only: a kickoff 
 | 10 | Decisions | `Example · Keep the blog as it is` | Lifecycle Draft, Assessment Accepted, Summary below; Promote asked unticked, Brain ID empty | Decided In → 6, Project → 5 |
 | 11 | Questions | `Example · Can the site go live by the end of March?` | Status Open, Lifecycle Draft, Kind Question, Summary below; Brain ID empty | Raised In → 6, Project → 5 |
 | 12 | Documents | `Example · Website refresh brief` | Origin Kept, Lifecycle Reviewed, Summary below; Accepted unticked, Accepted at empty, Refresh asked unticked, What to fix empty, Brain ID empty | Project → 5, Sources → 9 |
-| 13 | Review | `Example · From Kickoff with Northwind: 1 decision, 1 question` | Kind Review Notes, State Pending, Your call empty, What to fix empty, Decided and Accept all unticked, Decided at empty, Brain ID empty; the page below | Source Meeting → 6, Area → 2 |
+| 13 | Review | `Example · From Kickoff with Northwind: 1 decision, 1 question` | Kind Review Notes, State Pending, Your call empty, What to fix empty, Decided and Accept all unticked, Decided at empty, About, Now, Proposed and Why empty (decision 0088), Brain ID empty, so Status reads **Needs you · decide in the page**; the page below | Source Meeting → 6, Area → 2 |
 | 14 | Goals | `Example · Launch three client websites this year` | Status Active, Why below | Area → 2, Projects → 5 |
 | 15 | Key Results | `Example · Sites launched` | Kind Number, Start 0, Current 1, Target 3 | Goal → 14 |
 
@@ -223,7 +223,7 @@ Use only the databases on this page. Don't change any row that already exists, a
 3. Decisions: "Example · Keep the blog as it is". Lifecycle: Draft. Assessment: Accepted. Summary: "Northwind keeps its blog as it is; the refresh covers the other pages." Decided In: Example · Kickoff with Northwind. Project: Example · Website refresh.
 4. Questions: "Example · Can the site go live by the end of March?". Status: Open. Lifecycle: Draft. Kind: Question. Summary: "Can the new site go live by the end of March? It depends on the brand guidelines." Raised In: Example · Kickoff with Northwind. Project: Example · Website refresh.
 5. Documents: "Example · Website refresh brief". Origin: Kept. Lifecycle: Reviewed. Summary: "What the Northwind website refresh covers, what it leaves out, and when it launches." Project: Example · Website refresh. Sources: Example · Notes from a call with Sam.
-6. Review: "Example · From Kickoff with Northwind: 1 decision, 1 question". Kind: Review Notes. State: Pending. Leave Your call, What to fix and Decided at empty, and Decided and Accept all unticked. Source Meeting: Example · Kickoff with Northwind. Area: Example · Clients.
+6. Review: "Example · From Kickoff with Northwind: 1 decision, 1 question". Kind: Review Notes. State: Pending. Leave Your call, What to fix, About, Now, Proposed, Why and Decided at empty, and Decided and Accept all unticked. Source Meeting: Example · Kickoff with Northwind. Area: Example · Clients.
 7. Goals: "Example · Launch three client websites this year". Status: Active. Why: "Each site launched is a reference for the next client." Area: Example · Clients. Projects: Example · Website refresh.
 8. Key Results: "Example · Sites launched". Kind: Number. Start: 0. Current: 1. Target: 3. Goal: Example · Launch three client websites this year.
 
@@ -273,6 +273,6 @@ Copy every character as written. Don't change any property, and don't tick Decid
 
 - Brain Data starts with the callout, word for word.
 - Each of the fifteen rows exists once, with its title exactly as in "The story" (the prefix `Example · ` with the middle dot), its state and its relations; every Brain ID is empty.
-- The Meeting is **Not Reviewed**. The Review row is **Pending**, with Your call empty and Decided unticked; its page opens with the note, then "Review summary", then two sections, each with a collapsed **Proposed final wording** toggle and `Decision: Pending`. The Inbox row is **Done**. Nothing on the Document is ticked.
+- The Meeting is **Not Reviewed**. The Review row is **Pending**, with Your call empty, Decided unticked and Status **Needs you · decide in the page**; its page opens with the note, then "Review summary", then two sections, each with a collapsed **Proposed final wording** toggle and `Decision: Pending`. The Inbox row is **Done**. Nothing on the Document is ticked.
 - The pages link to each other: the Project page lists the Meeting, both Tasks, the Inbox row, the Decision, the Question and the Document; the Area page shows the Review row waiting; Plan shows the Goal at 33%.
 - The coordinator's read-only scan (TEMPLATE.md, step 10) lists these fifteen rows as Example rows, and nothing else.

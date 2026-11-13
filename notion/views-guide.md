@@ -46,7 +46,7 @@ Nothing sits above the two columns (#143, decision 0053).
 |---|---|---|---|---|---|---|---|---|
 | 0 | Areas | How are my areas? | Areas | List | Archived is unchecked | Name | Name, At a glance | Your areas, each line readable on its own: "Day job · 3 to review · 1 meeting", or "all clear" (#145). Open one for its home (0050). The first tab |
 | 0b | Areas | What's due across areas? *(Tasks)* | Tasks | List, 5 rows | Status is not Done · Status is not Won't Do · Due is on or before today | Due, ascending | Name, Area, Due | Due today or overdue, in every area |
-| 1 | — | What's waiting for you? | Review | List, grouped by Type (counts shown), 5 rows per group | State is Pending | Created time, descending | Name, About Page | Where reviewing starts (0045): one Review Notes row per meeting or document, plus the other changes. On a Review Notes row, About Page opens the meeting or Inbox row it came from; on the others, the note it changes; click a row to decide it in the Review Space |
+| 1 | — | What's waiting for you? | Review | List, grouped by Type (counts shown), 5 rows per group | Status starts with "Needs you" | Created time, descending | Status, Name | Where reviewing starts (0045, 0088): only the rows that need you, one per meeting or document, plus the other changes; a row you submitted leaves the list. Status says where to decide it: in the page, or in Your call. Click a row to open it |
 | 2 | — | Which minutes need review? | Meetings | List, 5 rows | Brain Status is Not Reviewed · Date is on or before today | Date, descending | Name | Minutes to check before the brain may ingest them. Upcoming meetings stay out |
 | 3 | Tasks *(Tasks)* | What's due today? | Tasks | List | Status is To Do or Doing · Due is on or before today | Due, ascending | Name, Project, Due | Today's work, overdue first |
 | 4 | Meetings | Which meetings are today? | Meetings | List | Date is today | Date, ascending | Name, Date, Project | Today's meetings, with time and project |
@@ -136,32 +136,29 @@ All views use the Tasks database. Using your own Tasks database (0018)? Map the 
 
 ## 6. Review (decide on proposals)
 
-**Job:** approve, reject or fix every change the brain proposes to your existing knowledge (decision 0003), and accept the notes each ingest made (Review Notes rows, 0041).
+**Job:** decide every change the brain proposes to your existing knowledge (decision 0003), and accept the notes each ingest made (0041).
 
-Above the tabs, a gray line: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. To correct something, pick Fix in Your call and say what's wrong in What to fix." (0043, 0045). A decided row leaves Review 30 days after the decision: the catch-up moves it to Notion's trash, and the brain keeps it in Git. On a **Review Notes** row, Proposed lists everything the source brings, lettered a), b)…: fact changes first (⚠), then text added to notes, then new notes, then links. Approve accepts them all; Approve with "all except b, d" in What to fix moves those to a row of their own that waits for you; Fix with "a: March" applies it, corrected; Reject archives the new notes and drops the changes. On an **Answer** row, Approve marks the question Answered.
+Above the tabs, a gray line: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. Status says what each row needs. Needs you · decide in the page: open the row, type your decision on each change's Decision line and click Submit decisions. Needs you · set Your call: pick Approve or Reject, or Fix and say what's wrong in What to fix." (0043, 0045, 0088). A decided row leaves Review 30 days after the decision: the catch-up moves it to Notion's trash, and the brain keeps it in Git.
+
+**Status** (a formula, decision 0088) is the first thing on every row and in every view: **Needs you · decide in the page** (a row from a meeting, email or document: a page with one section per change, decision 0055), **Needs you · set Your call** (a Conflict, Answer or Suggestion row, or a row from before 0.8.0), **Submitted: waiting for the brain** (you clicked Submit or set Your call; "apply my reviews" or the next catch-up takes it), **Done** or **Closed**.
 
 | # | Tab | View name | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|
-| 1 | Needs my decision | What needs my decision? | Table | State is Pending | Created time, descending | Name, Type, Now, Proposed, Your call, What to fix | Your main queue. Set Your call here, and What to fix when you want something different: with Fix, what's wrong ("a: March"); with Approve, what to leave out ("all except b, d"), which moves to a row of its own. To see Why or the source, open the row |
+| 1 | Needs my decision | What needs my decision? | Table | State is Pending | Created time, descending | Status, Name, Type, Your call, Area | Your main queue. Open a row that needs you in the page; set Your call here on the others (Fix: say what's wrong in What to fix, on the row). Submitted rows stay here until the brain applies them |
 | 2 | Sources disagree | Where do sources disagree? | Table | Kind is Contradiction · State is Pending | Created time, ascending | Name, Now, Proposed, Your call | Approve keeps both claims as contested. Fix, with the true value in What to fix, sets it |
 | 3 | Approved | What did I approve recently? | List | State is Applied · Last edited time is within *Past month* (relative) | Last edited time, descending | Name, Type, Proposed | Audit trail of what changed |
 | 4 | Rejected | What did I reject? | List | State is Closed | Last edited time, descending | Name, Type | Rejected or stale proposals. The brain may propose one again on the next ingest |
 
-**Three kinds of row** (0048): the **Type** column says From source (everything one input brings, lettered), Conflict (sources disagree, a newer decision replaces an older one, or a possible duplicate) or Answer; the Name starts the same way. Kind stays on the row for the brain and for the table below; hide it in every view.
+**Four types of row** (0048, 0088): the **Type** column says which, and the Name starts the same way. Kind is the brain's own field: hide it in every view and on the page.
 
-**How to decide:**
+| Type | Where you decide | What accepting does | To correct it |
+|---|---|---|---|
+| From source | In the page: one section per change. Type `Accept`, `Reject`, `Defer` or `Request revision` on its Decision line, then click **Submit decisions** (or **Submit and accept all**) | A new note becomes Reviewed and gets its page; a change to a note is made with the wording shown; a link is added | Edit the wording in the section before you accept it, or type `Request revision` and say what you want on the `Revision request:` line |
+| Conflict | Your call | Two sources disagree: both claims are kept as contested. A newer decision replaces an older one: the older is archived. A possible duplicate: it is folded into the other record | Fix, and say in What to fix the true value or the right note |
+| Answer | Your call | The question gets this answer and shows as Answered | Fix, and write the answer in What to fix |
+| Suggestion | Your call | The change Ultimate Assistant suggested (a task's Status or Due, a project's Area) is made in Notion at the brain's next run | Fix, and write the right value in What to fix |
 
-| Kind | Approve means | Fix means (0045) |
-|---|---|---|
-| Review Notes | Every item is applied: fact changes, added text, the new notes become Reviewed, the links are added | Each item you name is applied as you corrected it ("a: March"); "all except b" moves b to a row of its own |
-| Update Fact | The new value replaces the old one; history is kept | Your value is used instead |
-| Add To Note | The text is appended to the note | Your wording is used instead |
-| Update Body | The Document gets the new text | Your corrected text is used instead |
-| Contradiction | Both claims are kept as contested | Your value becomes the accepted truth |
-| Supersede | The newer note replaces the older one, which is archived | It replaces the note you name instead |
-| Merge | The duplicate is folded into the survivor | It is folded into the record you name instead |
-| New Item | The new note is created as Reviewed, with its page | It is created with your corrections |
-| Answer | The question gets this answer and shows as Answered | Your text becomes the answer |
+A row from a source written before 0.8.0 has no sections: Status says "set Your call", and Approve, Reject or Fix (with "a: March", or "all except b, d" to leave items out) work as before (0045).
 
 ---
 
@@ -218,7 +215,7 @@ Notion lets you shape how each database page opens. Set it once per database: op
 - **Hidden:** shown only on *Show all properties*.
 - **Backlinks:** *Show always*, *On hover* or *Off*.
 
-**The rule** (decision 0048; docs/notion-space-design.md §3.15): what you act on is **pinned in the heading**; what the brain wrote comes next, in the property group; system fields (Brain ID, Last Synced, State, the Review Kind, timestamps) are **hidden**. Relations the template already shows as linked views (meetings, tasks, questions) stay in the panel, out of the way. A property of a module you left off isn't there: skip it.
+**The rule** (decision 0048; docs/notion-space-design.md §3.15): what you act on is **pinned in the heading**; what the brain wrote comes next, in the property group; system fields (Brain ID, Last Synced, State, the Review Kind, timestamps) are **hidden**. Review's Status, a formula over State, is the exception: it says what a row needs, so it is pinned first (0088). Relations the template already shows as linked views (meetings, tasks, questions) stay in the panel, out of the way. A property of a module you left off isn't there: skip it.
 
 **Buttons** (decision 0048) are properties too, so they go in the heading; the box each one ticks goes at the top of the property group (#144). The API can't create them; add each by hand: database `•••` → Properties → **New property** → **Button**, action **Edit property** on **This page**:
 
@@ -256,7 +253,7 @@ A message without the page reference makes Brain Assistant stop and say so. The 
 | Orgs | Relationship, Website | Panel · Meetings via projects, People, Projects, Summary, Archived | Brain ID, Last Synced | On hover | — |
 | Decisions | Promote, Lifecycle | Panel · Promote asked, Assessment, Date, Project, Area, Decided In, Supersedes, Superseded By, Sources, Documents, Summary | Brain ID, Last Synced | Show always | The body is brain-written; backlinks show supersede chains and mentions |
 | Questions | Status, Kind, Project | Panel · Area, Raised In, Sources, Summary, Lifecycle | Brain ID, Last Synced, Created time | Off | You set Status |
-| Review | Submit, Submit all, Your call, What to fix, About Page | Main · Decided, Decided at, Accept all, Type, Now, Proposed, Why, About, Area, Source Meeting | Kind, State, Brain ID, Created time, Last edited time | Off | A row from a source is a page with a section per change (decision 0055): decide there and click Submit. Older rows are decided in the heading (Your call, What to fix) |
+| Review | Status, Submit, Submit all, About Page | Main · Your call, What to fix, Type, Area, Source Meeting, Decided, Decided at, Accept all, then About, Now, Proposed, Why, each set to **Hide when empty** | Kind, State, Brain ID, Created time, Last edited time | Off | Status says where to decide (decision 0088). A row from a source is a page with a section per change (decision 0055): decide there and click Submit; its About, Now, Proposed and Why are empty, so they don't show. A Conflict, Answer or Suggestion row is decided in Your call, at the top of the property group |
 | Inbox | Keep, Tidy, Brain Status, Project, Area | Main · Document asked, Only keep, Kind, Summary, Decisions, Questions, Documents, People, Tasks, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
 | Documents | Write, Update, Accept, Lifecycle, Project, Area, Sources | Panel · Accepted, Accepted at, Refresh asked, What to fix, Asked in, Origin, From decision, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |
 | Tasks | Status, Due | Panel · Project, Area, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
@@ -283,7 +280,7 @@ A message without the page reference makes Brain Assistant stop and say so. The 
 - [ ] Tasks has the statuses Waiting On and Someday, and the Done tab groups by week.
 - [ ] Archive is on System and linked from the navigation; "What's finished?" is no longer in Projects.
 - [ ] View names match this guide exactly, question marks included.
-- [ ] Home "What's waiting for you?" shows only Pending rows, grouped by Type with counts; Knowledge "What changed our minds?" shows only Superseded decisions.
+- [ ] Home "What's waiting for you?" shows only rows whose Status starts with "Needs you", grouped by Type with counts; Knowledge "What changed our minds?" shows only Superseded decisions.
 - [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status Ready; New meeting and New project open a page with the default template.
 - [ ] Brain ID and Last Synced are hidden in every view and page layout.
 - [ ] Editing Tier 1 nav on System updates every Space.
