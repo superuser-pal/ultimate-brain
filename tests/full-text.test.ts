@@ -203,7 +203,7 @@ test("render: an area page gets its Brief section from the area Brief, with link
   const result = await run(dir, ["sync", "render", "--ids", "area-2m7c4h8n"]);
   const [item] = result.json.data.items;
   assert.equal(item.body, null);
-  assert.deepEqual(item.sections, { Brief: "## Projects\n- [Acme website](https://www.notion.so/2b3c4d5e6f7a4b9c8d1e2f3a4b5c6d7e) — Active\n\n## Recent decisions\n- Nothing reviewed yet: 1 note waiting in Review\n\n## Open questions\n- Nothing reviewed yet: 1 note waiting in Review" });
+  assert.deepEqual(item.sections, { Brief: "## Projects\n- [Acme website](https://www.notion.so/2b3c4d5e6f7a4b9c8d1e2f3a4b5c6d7e) — Active\n\n## Recent decisions\n- Nothing reviewed yet: 1 note waiting in Review\n\n## Open questions\n- Nothing reviewed yet: 1 note waiting in Review\n\n## Documents\n- None" });
 });
 
 const REPORT_BODY = [
