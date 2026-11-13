@@ -777,7 +777,7 @@ Moved to 0.14.0 by the user, 2026-11-11: the CLI skip and its brain-ingest wordi
 
 **Patch after 0.14.0 (decision [0091](../decisions/0091-other-peoples-text-keeps-its-links.md)):** dogfood fixes triaged on 2026-11-13.
 
-### CC-249 · Triage dogfood 344 and 345: decisions 0091 and 0092, two tasks · `in progress`
+### CC-249 · Triage dogfood 344 and 345: decisions 0091 and 0092, two tasks · `review`
 **Release:** 0.14.1
 **Changelog:** development only: dogfood issues #344 and #345 are triaged into decisions 0091 and 0092 and tasks CC-250 (0.14.1) and CC-251 (0.15.0).
 **Output:** decision 0091 (#344: a source and its whole Document keep their links; 0002 binds the text the brain writes) and decision 0092 (#345: `set_field` with `area` on decisions, questions, Documents and sources), from the author's triage answers of 2026-11-13 (option A for both, 0.14.1 and 0.15.0); the rows CC-250 and CC-251; a 0.14.1 section; "Area editable from Notion on a Document" in docs/v2-ideas.md; the planning log line and the untriaged count. Planning only: no CLI, spec, schema, skill, template, Notion or CHANGELOG change, and no brain operation.
