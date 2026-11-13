@@ -44,12 +44,12 @@ Both modes run the same steps and write the same things. The one difference is t
 - **The week** is the ISO 8601 week (`2026-W46`) of the run's **local date**: the date in the machine's time zone when step 2 starts (`as_of` stays UTC, as everywhere). The schedule runs on Monday at 08:00 local (§11), so a scheduled run always opens a new week.
 - **The file** is `reports/<Monday of the week, YYYY-MM-DD>-weekly-review.md`, for example `reports/2026-11-09-weekly-review.md`. A `view` with `view_kind: weekly_review` (schema §4 view): its `title` is `Weekly review · <D Mon>–<D Mon YYYY>` (the Monday and Sunday of the week; `Weekly review · 9–15 Nov 2026`, or `30 Nov–6 Dec 2026` across a month).
 - **A rerun in the same week updates that file in place**, as a report refresh does (schema §16.4, "Refreshing"). It gets new sections, `generated_at`, `generated_from`, `window.to` and coverage. The path, id, `week`, `window.from` and `notion` stay the same. Git keeps each version. A new week gets a new file, so past reviews stay browsable (0075 §5). There is one file per week, never one living file for every week.
-- **Frontmatter** (schema §4 view, the `weekly_review` rows): `week`, `window` `{ from, to }` (timestamps, §4), `coverage` (`complete` or `partial`), `omitted` (§10), `counts` `{ decisions, new_items, targets, queued }`, `generated_from`, `generated_at`, `notion`, `last_synced`, `notion_published`.
+- **Frontmatter** (schema §4 view, the `weekly_review` rows): `week`, `window` `{ from, to }` (timestamps, §4), `coverage` (`complete` or `partial`), `omitted` `{ clusters, correction_targets }` (§10), `counts` `{ decisions, new_items, targets, queued }`, `generated_from`, `generated_at`, `notion`, `last_synced`, `notion_published`.
 - **What a weekly review is not:** it is never evidence (lint rejects a note that cites it), never a proposal target, and never reviewed. It has no Lifecycle, as a report has none (schema §4 view). It has no Refresh asked and no What to fix: on its Documents row these are ignored (`NOT_A_REPORT`, cli.md §5.14.2), and a rerun is the refresh.
 
 ## 3. The body: three sections
 
-The body is exactly these, in this order, with nothing before the first. Links are relative to the report file. A line that rests on a `draft` note ends ` *(not reviewed)*`, as in every report.
+The body is the two-line header of §3.1, then exactly these three `##` sections, in this order, with nothing between the header and the first. Links are relative to the report file. A line that rests on a `draft` note ends ` *(not reviewed)*`, as in every report.
 
 ```markdown
 Week of 9 Nov 2026 · changes since Mon 2 Nov 08:04 · Notion read live
@@ -97,14 +97,14 @@ The current outstanding work, older tasks included (0075 §1):
 - Nothing here changes a priority, date or status (0075 §1).
 
 ### 3.4 `## What needs your decision`
-Rendered by `brain weekly record`, never by the skill. There are at most **5 numbered items** (§5). Each is one line, `<n>. <Kind> · <subject> · <what to decide> → <link>`, where the link is the Review row or the task (§6.1). A correction item adds `(<k> of <size> shown)` (§8.4). After the items come only the lines that apply:
+Rendered by `brain weekly record`, never by the skill. There are at most **5 numbered items** (§5). Each is one line, `<n>. <Kind> · <subject> · <what to decide> → <link>`. **The link in Git** never needs Notion: for a Review row, it is a relative link to the proposal file (`../_proposals/…`), which exists when `record` runs (step 8 is before step 9); for a task, it is the task's page URL from the snapshot, or, brain only, the task's title with no link. **In Notion**, `sync render` turns a proposal link into a link to that proposal's Review row when the proposal has `notion`, and into the plain text `Review row (after the next publish)` when it has none. The Git report is never rewritten after a publish, and the render of the same report is updated at the next publish once its rows exist. A correction item adds `(<k> of <size> shown)` (§8.4). After the items come only the lines that apply:
 - `<n> more findings wait for next week.` (the queued remainder, §5.3);
 - `<n> earlier findings are still open in Review.` (§7);
 - a partial run's line (§10).
 
 With no item, the section is `- Nothing needs your decision this week.`.
 
-**Shape check** (`record`, `INPUT_INVALID`): the header has two lines; there are exactly the three `##` sections, in order; the bullet and item caps hold; every link resolves; and the body is at most 450 words, counting neither the header nor link targets. Over 450 words, `record` refuses (`WEEKLY_TOO_LONG`), and the skill shortens its own prose (the What changed and Task analysis bullets), never the decision items.
+**Shape check** (`record`, `INPUT_INVALID`): the header has two lines; there are exactly the three `##` sections, in order; the bullet and item caps hold; every link resolves (a relative link to a note or a proposal file, or a Notion page URL for a task); and the body is at most 450 words, counting neither the header nor link targets. Over 450 words, `record` refuses (`WEEKLY_TOO_LONG`), and the skill shortens its own prose (the What changed and Task analysis bullets), never the decision items.
 
 ## 4. The change window and coverage
 
@@ -112,7 +112,7 @@ With no item, the section is `- Nothing needs your decision this week.`.
 - **Clusters in the window.** `plan` passes the reflection clusters whose members were `updated`, or whose inputs are dated, between `window.from` and `window.to` (§12, the trials). Other clusters are not this week's: they are not omitted, and the attended brain-reflect still sees them.
 - `window.from` is `covered_to` of the **last successful report of an earlier week** in `_weekly/state.json` (§9.5). With none (a first run), it is `as_of` minus 7 days (0075 §1). A rerun in the same week keeps this week's `from`.
 - `window.to` is `as_of`.
-- A partial run moves `covered_to` only as far as it covered (§10), so its uncovered changes are carried into the next window. Nothing omitted is silently marked as handled (0075 §1).
+- What changed is never cut by the budget: it is deterministic, and every change in the window is covered, as a bullet or by count (§4.3). `covered_to` is therefore always `window.to` of a report that was written. A partial run omits **judgments** only (clusters and correction targets, §10), and those are carried forward explicitly, so nothing omitted is silently marked as handled (0075 §1).
 
 ### 4.2 What counts as a change (deterministic, `weekly plan`)
 Each candidate has a `kind`, a `ref` (a note id or a Notion task page id), a `date`, and a `weight` used for ordering:
@@ -129,7 +129,7 @@ Meetings and sources are not changes of their own. They are where changes come f
 
 ### 4.3 Coverage
 - **Normal:** with 8 or fewer changes, every change is a bullet. With more, the 8 with the highest weight are bullets (newest first among equal weights), and the rest are **covered by count**: line 2 says `Covered: <n> changes from <m> meetings and <s> sources.` and, when some aren't bullets, `<k> not shown: <counts by label>.`
-- **A large gap** (the window is longer than 14 days: a missed week, a schedule that didn't run): the same 8 by weight, and line 2 begins `Gap of <n> days since the last review.` (0075 §1).
+- **A long window** (longer than 14 days): the same 8 by weight, and line 2 begins `<n> days since the last review.` (0075 §1). Quiet runs write no state (§9.1), so a long window may span quiet weeks as well as missed ones. The line states only the length of the window, never that a run was missed.
 - Counted is not omitted: a change is covered when it was a bullet or counted in line 2. Only a partial run omits (§10).
 
 ## 5. The two shared limits
@@ -206,11 +206,13 @@ Otherwise it is not an item. It is counted in `<n> earlier findings are still op
 ## 8. The correction queue (0075 §4)
 
 ### 8.1 What queues a check
-A **meaning change** that was approved and applied after `corrections.checked_through` (§9.5), read from the Git record by `weekly plan`. Nothing is written when the correction is applied, so `apply` and `sync apply` are unchanged:
-- a timeline entry with `assessment: accepted`, `learned` after the cursor, on a field whose previous accepted value differed. This covers an applied `update_fact`, a `contradiction` resolved to one value, an accepted or edited Review item that changed a fact, and a correction made in Notion that `sync apply` wrote to `facts` (dates and owners are facts too);
+A **meaning change** that is new to the cursor (§9.5), read from the Git record by `weekly plan`. Nothing is written when the correction is applied, so `apply` and `sync apply` are unchanged:
+- a timeline entry with `assessment: accepted`, new to the cursor, on a field whose previous accepted value differed. This covers an applied `update_fact`, a `contradiction` resolved to one value, an accepted or edited Review item that changed a fact, and a correction made in Notion that `sync apply` wrote to `facts` (dates and owners are facts too);
 - a decision superseded (a `supersede` proposal applied after the cursor);
 - a **title** that changed (a Name correction from Notion, or an applied rename): its old title, and each alias it drops, is the old value. The trials found a renamed Area still named the old way in a project's body;
 - an `add_to_note` that the user approved from a reflection **promotion** (a lasting rule), when it replaces nothing. It queues only the check for other notes that contradict the rule; §8.2 judges whether any do.
+
+**The cursor is a date with the claims done on it** (`corrections` `{ checked_on, done_on_date }`, §9.5), because `learned` and a proposal's applied `updated` are dates. A meaning change is **new** when its date is after `checked_on`, or on `checked_on` with a claim key not in `done_on_date`. When a run finishes claims, `checked_on` becomes the run's local date: `done_on_date` lists the claims finished that day, and it is emptied when the date moves on. So a correction applied on the day of a run is neither missed nor checked twice.
 
 Not queued: formatting-only and body changes with no fact or rule (`update_body`, a link), Notion-owned live statuses (`notion_change`), and `merge` (its references are already rewritten by apply).
 
@@ -239,12 +241,14 @@ Only well-supported fixes are proposed: a restatement gets a fix only when the n
 - One **`review_notes`** proposal per claim, with `correction` = the claim key (schema §11) and `title` = `Correction: <note title> <field>: <old> → <new> (<size> notes)`. `source` is the corrected claim's source, and `why` is the correction's own why. Its `changes` are the admitted restatements, one item per target (update_fact or replace_line), each with before/after visible. Its uncertain matches are listed in its body as `needs clarification`, with no items. The user selects each change, item by item (0075 §2), in the existing Review page (cli.md §5.14.4).
 - **Size** is the number of restatements plus uncertain matches. A group larger than the targets left this week shows its first targets by note id and says `(<k> of <size> shown)`. Its remaining targets stay **queued under the same claim key**: next week's run proposes them as a new group for the same claim (a deeper path, on request: `weekly review corrections`).
 - **Retries and stale bases.** Before proposing, `plan` re-reads each target. A target whose line or fact no longer holds the old value is dropped (already fixed). A pending group for the same claim is reused (`DUPLICATE_PENDING`), never duplicated. A target whose change the user rejected is never proposed again for that claim (`item_decisions` reject). A target changed after the proposal was written is caught at apply by the stale rules (schema §11.3).
-- **The cursor** advances past a claim when every candidate target is proposed, rejected, judged independent or historical, or uncertain and named. A claim with queued targets stays in `corrections.open`.
+- **The cursor** (§8.1) advances past a claim when every candidate target is proposed, rejected, judged independent or historical, or uncertain and named. A claim with queued targets stays in `corrections.open`.
 
 ## 9. What a run writes
 
 ### 9.1 Quiet runs write nothing
 A run is **quiet** when, after repetition (§7) and dismissals, there is: no change in the window (§4.2); no eligible decision candidate; no queued correction target; no Task analysis problem new since the last report (by `shown`); and no failure. Then the run writes nothing (step 4): no report, no commit, no Notion write, no log line, and no state or attempt marker. A quiet week gets no empty page (0075 §5).
+
+**A rerun in the same week** is quiet when nothing differs from this week's report: `plan` computes `input_hash`, the sha256 of its deterministic candidates (the changes, the findings with their evidence, the clusters, the correction targets) and the snapshot's task values they read, and `weeks.<week>.input_hash` (§9.5) holds the one the report was written from. Equal, and no failure: the rerun is quiet and writes nothing. A rerun that only re-covers changes this week's report already covered is quiet too: the window's `from` stays the same, but the inputs are unchanged.
 
 A run that is **not** quiet because of a failure alone (Notion unreachable with nothing else to say) writes no report. It writes the log line (§9.4), so the failure is surfaced.
 
@@ -272,10 +276,11 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
 {
   "version": 1,
   "last_success": { "week": "2026-W46", "report": "vw-7d2k9m4q", "covered_to": "2026-11-09T07:04:12Z", "coverage": "complete" },
-  "weeks": { "2026-W46": { "report": "vw-7d2k9m4q", "window_from": "2026-11-02T07:03:55Z", "counts": { "decisions": 5, "new_items": 4, "targets": 5, "queued": 4 }, "items": ["correction:knw-…:budget", "task_overdue:notion:…"] } },
+  "weeks": { "2026-W46": { "report": "vw-7d2k9m4q", "window_from": "2026-11-02T07:03:55Z", "input_hash": "sha256:…", "counts": { "decisions": 5, "new_items": 4, "targets": 5, "queued": 4 }, "items": ["correction:knw-…:budget", "task_overdue:notion:…"] } },
   "shown": [ { "key": "task_overdue:notion:2b8c…", "week": "2026-W46", "category": "overdue", "evidence_hash": "sha256:…", "days_late": 8 } ],
   "queued": [ { "key": "area_empty:area-…", "week": "2026-W46" } ],
-  "corrections": { "checked_through": "2026-11-09T07:04:12Z", "open": [ { "claim": "prj-…:budget", "targets": ["per-…"] } ] }
+  "carry": { "clusters": ["overtaken:per-…"] },
+  "corrections": { "checked_on": "2026-11-09", "done_on_date": ["prj-…:launch_date"], "open": [ { "claim": "prj-…:budget", "targets": ["per-…"] } ] }
 }
 ```
 
@@ -288,7 +293,7 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
 - **Bounded reads first.** `plan` selects deterministically. The skill reads only what a cluster or a target needs (the members and the cited lines, `brain query --read`). It doesn't open notes for What changed beyond each bullet's note, and it never runs an open-ended search or another agent.
 - **The soft budget** (the skill): `settings.weekly.minutes` of wall time from step 2, and `settings.weekly.max_judged`, the number of clusters plus correction targets judged. Both are checked before each judgment. When either is reached, the run stops judging, and everything not judged is **omitted**.
 - **The hard ceiling** (the schedule): `claude -p … --max-budget-usd <settings.weekly.max_usd>` (cli.md §5.21). A run stopped there writes no report. Its attempt marker surfaces it (§9.5), and nothing it hadn't committed is half-written, because every write is a CLI write that is checked and committed at step 9.
-- **A partial report** has `coverage: partial` and `omitted` `{ clusters, correction_targets, changes }`. Header line 2 ends `Partial: <n> checks not done (budget); they come first next week.`, and What needs your decision ends with the same line. Omitted correction targets stay in `corrections.open`. Omitted clusters come back through `plan` next week, because nothing holds them. `covered_to` becomes the `date` of the last change covered when What changed was cut, else `window.to`.
+- **A partial report** has `coverage: partial` and `omitted` `{ clusters, correction_targets }`. Header line 2 ends `Partial: <n> checks not done (budget); they come first next week.`, and What needs your decision ends with the same line. Omitted correction targets stay in `corrections.open`. Omitted cluster keys go to the state's `carry` (§9.5), and next week's `plan` passes them first, before the window's own clusters, even when they fall outside the new window, until they are judged or no longer returned by `reflect --candidates`. `covered_to` is `window.to` (§4.1).
 - **No silent increase:** the run never raises a budget or a limit, and never calls partial coverage complete (0075 §7). Under a tight budget, D, I and T are unchanged.
 - These budgets are separate from 0074's 800-token opening budget, and from catch-up's `max_inputs`.
 
@@ -348,7 +353,7 @@ Brain Assistant's `/Weekly review` skill (notion/brain-assistant.md) becomes the
 |---|---|---|
 | busy | first run; knowledge and work problems in both streams, more than 5 candidates | one report, three sections, ≤ 450 words; D, I, T ≤ 5; priority order of §5.2; every What changed bullet cited and dated; a task order with supported reasons; zero proposals applied; the rest counted as queued |
 | quiet | nothing new since the last report, every finding already shown | no file, commit, Notion call or log line (Git and the stand-in's call log unchanged) |
-| missed-week | last success 4 weeks ago | `Gap of 28 days…`, the 8 most consequential changes, the rest counted |
+| missed-week | last success 4 weeks ago | `28 days since the last review.`, the 8 most consequential changes, the rest counted |
 | partial | a budget too small for the clusters | `coverage: partial`, honest omitted counts, the queue intact, limits unchanged; next week's run covers the omitted first |
 | repeated-finding | last week's report showed the same findings with the same evidence | they are counted, not items; one with new evidence and one newly overdue are items again; a dismissed and a rejected one stay out |
 | correction | an applied fact change restated in 3 current notes, plus one independent line, one historical meeting and one uncertain match | one claim group, 3 selectable items with before/after; the independent, historical and immutable texts untouched; the uncertain match named and not drafted; a rerun reuses the group; a rejected item is not proposed again |
