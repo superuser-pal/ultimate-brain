@@ -72,3 +72,5 @@ eval/acceptance-0.10.0/planted.json:0a10[0-9a-f]{2}00-0000-4000-8000-0{10}[0-9]{
 eval/follow-ups-0.14/run.mjs:0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c(0[def]|10)
 eval/follow-ups-0.14/runs/steps.md:0a0b0c0d-1e2f-4a3b-8c4d-5e6f7a8b9c(0[def]|10)
 eval/follow-ups-0.14/runs/steps.md:7e5a0000-0000-4000-8000-0000000000[0-9]{2}
+notion/TEMPLATE.md:sentina\.notion\.site/TEMPLATE-Ultimate-Brain-416495661e99806ea2dcca48eb4e55ff
+README.md:sentina\.notion\.site/TEMPLATE-Ultimate-Brain-416495661e99806ea2dcca48eb4e55ff

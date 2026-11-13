@@ -3,6 +3,7 @@
 **Status:** Accepted (by the user, 2026-11-03)
 **Date:** 2026-11-03
 **Release:** 0.9.0
+**Amended by:** [0088](0088-a-review-row-says-it-needs-you-and-a-review-page-reads-plainly.md) (2026-11-13; built in 0.15.0): a pending Review row nobody has touched is rebuilt once as a new page; the markdown write still goes only to a page just created
 **Amends:** 0037 (its 2026-10-18 amendment: "Projects are created in Notion, never by the agent"), 0043 (the block API stays the rule for sections, with one exception)
 **Keeps:** 0003, 0021, 0026, 0033, 0041, 0055
 

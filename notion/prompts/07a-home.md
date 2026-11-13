@@ -12,7 +12,7 @@ Ignore the module names in square brackets at the start of lines.
 On this page ("Home"):
 
 In the left column, under the navigation, add a heading 3 "Needs you", a gray paragraph "Start here: approving makes the brain's notes trusted.", and two linked views, List layout, at most 5 rows each:
-1. "What's waiting for you?" of "Review": filter State is Pending; group by Type, with group counts shown; sort Created time descending; show Name, About Page.
+1. "What's waiting for you?" of "Review": filter Status starts with "Needs you"; group by Type, with group counts shown; sort Created time descending; show Status, Name.
 2. "Which minutes need review?" of "Meetings": filter Brain Status is Not Reviewed and Date is on or before today; sort Date descending; show Name.
 
 In the right column add, in one row:
@@ -41,7 +41,7 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 ```
 
 ## Verify
-- [ ] "Needs you" shows two short lists, the Review one grouped by Type (From source, Conflict, Answer, Suggestion); a meeting dated tomorrow is not in "Which minutes need review?".
+- [ ] "Needs you" shows two short lists, the Review one grouped by Type (From source, Conflict, Answer, Suggestion), holding only rows whose Status starts with "Needs you" (a submitted row leaves it); a meeting dated tomorrow is not in "Which minutes need review?".
 - [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status **Ready**; New meeting and New project open a page with the default template.
 - [ ] "What's on today?" has its tabs: Areas, Tasks (Tasks module), Meetings, Projects, Inbox; nothing sits above the two columns (#143).
 - [ ] The Areas tab's "How are my areas?" shows one line per area that reads on its own: "Agency · 4 to review · 1 meeting", or "all clear" (decisions 0050, #145).

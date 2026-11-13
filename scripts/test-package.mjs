@@ -27,6 +27,8 @@ try {
   }
   const packedPaths = new Set(packed.files.map((file) => file.path));
   for (const file of notionFiles) assert.ok(packedPaths.has(file), `npm pack does not list ${file}`);
+  // The setup guide ships, so the skill and the reader see the same text (0078 §6, CC-192).
+  assert.ok(packedPaths.has("docs/setup.md"), "npm pack does not list docs/setup.md");
   await exec("npm", ["install", "--ignore-scripts", tarball], { cwd: temp });
   // HOME is a temp folder, so the user's global skill folders never show up as competing copies (spec/skills-delivery.md §5.2).
   const home = join(temp, "home");
@@ -36,7 +38,11 @@ try {
   const installed = join(temp, "node_modules", "ultimate-brain");
   const { validateSnapshot } = await import(pathToFileURL(join(installed, "dist", "lib", "skills-snapshot.js")).href);
   const { satisfies } = await import(pathToFileURL(join(installed, "dist", "lib", "skills-range.js")).href);
-  const packedVersion = JSON.parse(await readFile(join(installed, "package.json"), "utf8")).version;
+  const packedManifest = JSON.parse(await readFile(join(installed, "package.json"), "utf8"));
+  const packedVersion = packedManifest.version;
+  // The setup report's issue target is the packed package.json's repository (spec/setup.md §12, CC-192).
+  const repository = typeof packedManifest.repository === "string" ? packedManifest.repository : packedManifest.repository?.url;
+  assert.match(repository ?? "", /github\.com[/:][^/\s]+\/ultimate-brain(\.git)?$/, `packed package.json repository: ${repository}`);
   const shipped = validateSnapshot(join(installed, ".agents", "skills"));
   assert.equal(shipped.reason, null, `packed snapshot: ${shipped.reason}`);
   assert.ok(satisfies(packedVersion, shipped.manifest.cli), `packed snapshot range ${shipped.manifest.cli} excludes ${packedVersion}`);
