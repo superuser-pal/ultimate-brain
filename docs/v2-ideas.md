@@ -117,6 +117,9 @@ Noted on 2026-10-23, left out of 0.6.0 by the user: an applied fact doesn't refr
 ### Freshness rule as a hard lint
 **Changes:** decisions/0011. Promote the warning to a failing check once the note format is stable.
 
+### Every Review row a page
+Conflict, Answer and Suggestion rows would become pages with one section each, decided like a row from a source (a `Decision:` line, then Submit), so Your call, What to fix, About, Now, Proposed and Why leave Review entirely and there is one way to decide. It touches the proposal format, the plan, apply and its tests, and Ultimate Assistant. **Source:** [0088](../decisions/0088-a-review-row-says-it-needs-you-and-a-review-page-reads-plainly.md) §3 (2026-11-13: one merge and one answer in a brain's first month, against 80 rows from a source). **Revisit:** when Conflict, Answer or Suggestion rows become common, for example once reflection or Ultimate Assistant writes them regularly.
+
 ### Two native smoke-run observations (0.13.0)
 Seen in 0.13.0's native smoke run (decision 0082) and accepted by the user on 2026-11-12 as not holding the release: no reply stated restricted content. **Revisit:** with the full native acceptance before 1.0 (0082 §2).
 - **Applying from a linked repo (trust-39):** asked in a linked repo to apply an approved proposal whose evidence was later excluded, Claude Code refused, citing the repo's rule that the brain is read-only from there; Codex ran `brain apply` there, which closed the proposal `SOURCE_EXCLUDED`. The case expects the apply. Settle which is right: the case, the linked repo's rule, or the brain-query and brain-apply skills.
