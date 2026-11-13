@@ -9,7 +9,7 @@ import { bodyHash, bodyOf, reviewTitle, sourceTitle, stageNewItem, writeProposal
 import { reviewItems } from "./review-body.ts";
 import { loadSchemas } from "./schemas.ts";
 import { lineageOf } from "./eligibility.ts";
-import { citedPassages, proposalWithheld, proposedText } from "./passages.ts";
+import { citedPassages, linkRefs, proposalWithheld, proposedText } from "./passages.ts";
 import { citesPassage, contextFor, requireSuppressions, withheldSupport } from "./suppressions.ts";
 import { formatDate, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
@@ -437,7 +437,7 @@ function withheldItems(workspace: Workspace, proposal: Note, exclude: Array<Reco
   const entries = new Map(list(a.items).map(record).map((entry) => [String(entry.item_id), entry]));
   const links = reviewLinks(a);
   const deferred = (entry: Record<string, unknown>): boolean => entry.kind === "note" ? exclude.some((item) => isNoteExclude(item) && item.note === entry.ref)
-    : entry.kind === "link" ? exclude.some((item) => links[Number(entry.ref)] !== undefined && sameLink(links[Number(entry.ref)]!, item))
+    : entry.kind === "link" ? linkRefs(entry.ref).some((ref) => exclude.some((item) => links[ref] !== undefined && sameLink(links[ref]!, item)))
     : exclude.some((item) => item.change === Number(entry.ref));
   const open = [...entries.values()].filter((entry) => !decided.has(String(entry.item_id)) && !deferred(entry));
   for (const view of reviewItems(proposal, workspace)) {
@@ -445,7 +445,7 @@ function withheldItems(workspace: Workspace, proposal: Note, exclude: Array<Reco
     if (entry === undefined || !view.source_excluded || !open.includes(entry)) continue;
     out.ids.add(view.item_id);
     if (entry.kind === "note") out.notes.add(String(entry.ref));
-    else if (entry.kind === "link") out.links.add(Number(entry.ref));
+    else if (entry.kind === "link") for (const ref of linkRefs(entry.ref)) out.links.add(ref);
     else out.changes.add(Number(entry.ref));
   }
   out.all = open.length > 0 && open.every((entry) => out.ids.has(String(entry.item_id)));
@@ -582,16 +582,21 @@ function defer(workspace: Workspace, id: string, p: Record<string, unknown>, exc
   const changes = changeIndexes.map((index) => list(p.changes)[index]);
   const source = String(p.source);
   // A deferred item keeps its immutable id: it lives on in the new proposal under the same id, with its reference re-indexed (capture-and-review §7.6).
-  const oldItems = list(p.items) as Array<{ item_id: string; kind: string; ref: unknown; passages?: unknown }>;
+  const oldItems = list(p.items) as Array<{ item_id: string; kind: string; ref: unknown; passages?: unknown; unsure?: unknown; repeat?: unknown }>;
   // The item keeps its passages with its id (schema §11.5); a legacy item stays legacy.
   const moved = (kind: string, ref: unknown, at: unknown) => {
     const entry = oldItems.find((candidate) => candidate.kind === kind && candidate.ref === ref);
-    return { item_id: entry?.item_id, kind, ref: at, ...(entry?.passages === undefined ? {} : { passages: entry.passages }) };
+    return { ...(entry ?? {}), item_id: entry?.item_id, kind, ref: at };
   };
+  // A grouped link item (schema §11) moves as one item with the links of it that are deferred, re-indexed.
+  const linkItems = oldItems.filter((candidate) => candidate.kind === "link" && linkRefs(candidate.ref).some((ref) => linkIndexes.includes(ref))).map((candidate) => {
+    const at = linkRefs(candidate.ref).filter((ref) => linkIndexes.includes(ref)).map((ref) => linkIndexes.indexOf(ref));
+    return { ...candidate, ref: Array.isArray(candidate.ref) ? at : at[0] };
+  });
   const items = oldItems.length === 0 ? undefined : [
     ...changeIndexes.map((original, index) => moved("change", original, index)),
     ...notes.map((note) => moved("note", note, note)),
-    ...linkIndexes.map((original, index) => moved("link", original, index)),
+    ...linkItems,
   ];
   const fields = {
     kind: "review_notes",

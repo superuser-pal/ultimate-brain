@@ -315,6 +315,15 @@ export function lintBrain(input: LintInput): Issue[] {
       for (const entry of list(a.items) as Array<{ item_id?: string; kind?: string; ref?: unknown }>) {
         if (typeof entry.item_id !== "string" || seenIds.has(entry.item_id)) err("proposal-items", lineOfKey(note, "items"), `item id ${String(entry.item_id)} is missing or used twice`);
         else seenIds.add(entry.item_id);
+        // A grouped link item (0.15.0, schema §11) covers each of its indexes; they share one target and field.
+        if (entry.kind === "link" && Array.isArray(entry.ref)) {
+          const refs = entry.ref as unknown[];
+          const members = refs.map((ref) => (Number.isInteger(ref) ? links[ref as number] : undefined));
+          const first = members[0] as Record<string, unknown> | undefined;
+          if (refs.length === 0 || members.some((member) => member === undefined || !isRecord2(member) || (member as Record<string, unknown>).target !== first?.target || (member as Record<string, unknown>).field !== first?.field)) err("proposal-items", lineOfKey(note, "items"), `item ${String(entry.item_id)} groups links that are missing or don't share one target and field`);
+          for (const ref of refs) { const key = `link:${String(ref)}`; if (covered.has(key)) err("proposal-items", lineOfKey(note, "items"), `${key} has two items`); covered.add(key); }
+          continue;
+        }
         const key = `${entry.kind}:${String(entry.ref)}${entry.kind === "restore" ? `:${String((entry as { n?: unknown }).n)}` : ""}`;
         const resolves = ["remove", "restore", "independence"].includes(String(entry.kind)) ? isRecord2(a.cleanup) && byId.get(String(entry.ref)) !== undefined : entry.kind === "note" ? notes.includes(String(entry.ref)) : entry.kind === "link" ? Number.isInteger(entry.ref) && (entry.ref as number) < links.length : entry.kind === "change" && Number.isInteger(entry.ref) && (entry.ref as number) < changes.length;
         if (!resolves) err("proposal-items", lineOfKey(note, "items"), `item ${String(entry.item_id)} refers to ${key}, which this proposal does not hold`);
