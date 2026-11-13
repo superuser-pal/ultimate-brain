@@ -47,6 +47,7 @@ Future implementation tasks are decomposed by Claude Code after their opening sc
 > - **2026-11-10, CC-181 (planning):** the trust repair grill, after the assessment of 0.12.0: decision [0077](../decisions/0077-trust-repair-in-0-13-0.md) makes the repair 0.13.0 (the branches' 0.12.1 is not released), moves the weekly review (0075, CC-111) to 0.14.0 and onboarding and the feature cutoff to 0.15.0; CC-176 to CC-180 keep their identities and CC-182 to CC-186 are added (the 0.13.0 section).
 > - **2026-11-10, CC-187 (planning):** the onboarding grill: decision [0078](../decisions/0078-onboarding-and-early-access-in-0-14-0.md) makes onboarding 0.14.0 and starts early access for friends and family on it (the README's Get started, `docs/setup.md` and the published Notion template ship with it), moves the weekly review (0075, CC-111) to 0.15.0, still the feature cutoff, and keeps the trust repair 0.13.0 and first; CC-188 to CC-193 and U-27, U-28 are added (the 0.14.0 section).
 > - **2026-11-11, CC-217 (planning):** decision [0082](../decisions/0082-native-smoke-run-per-release-full-native-acceptance-before-1-0.md): each release from 0.13.0 gates on a native smoke run (15 cases per agent, every critical-trust kind) and the automated checks; the complete native acceptance (CC-186) and the retrieval cases' native harness (CC-206) move to the 1.0.0 section, run once beta testers are live and the core has no critical revision left; 0.13.0's retrieval is judged at the candidate level.
+> - **2026-11-13, CC-252 (planning):** the 0.15.0 scope grill, decision [0093](../decisions/0093-the-0-15-0-scope-grill.md): CC-111 beside the Review-page stack, one weekly experience through `/Weekly review`, the Reports offer, Sonnet by default.
 > - **Untriaged `dogfood` issues:** 0 (#220 → CC-136, #221 → CC-135, 2026-11-05; #143–#146 → CC-68, 2026-10-29; #137 → CC-59).
 > - **Earlier:** v1 waves 1–4 and dogfood findings 1–24 (the Wave 4 table) are in [HISTORY.md](HISTORY.md).
 
@@ -779,11 +780,14 @@ Work packages: contracts and representative resource-budget trials; shared diges
 
 **Added by [0088](../decisions/0088-a-review-row-says-it-needs-you-and-a-review-page-reads-plainly.md) (2026-11-13):** a Review page you can read, CC-240 and CC-241, on the user's decision in CC-239's grill. The weekly review's scope is unchanged.
 
+**Scope grill, 2026-11-13 ([0093](../decisions/0093-the-0-15-0-scope-grill.md)):** CC-111 runs beside the CC-240 → CC-241 stack, contracts and trials first; `/Weekly review` in Notion is the way into the weekly report; the weekly schedule offers Reports once; Sonnet by default for the scheduled run. No new feature joins 0.15.0.
+
 ### CC-111 · The brain assistant's scheduled weekly review (decisions 0064, 0051) · `todo`
 **Release:** 0.15.0
 **Changelog:** the brain assistant can review your projects every week on a schedule, leaving a report and Review rows and changing nothing directly.
 **Output:** the assistant's unattended mode per 0051 (its schedule, the report, Review rows only, no direct changes, no questions), shared with the weekly digest where they overlap; detailed at 0.15.0's opening grill. Its knowledge stream comes from `brain reflect --candidates` within 0075's shared limits, the only scheduled reflection (0076).
 **Acceptance:** a scheduled run on a synthetic brain writes one report and at most the capped Review rows, applies nothing, and a run with nothing found writes nothing; U-21's weekly step (a scheduled run in the user's brain whose reflection findings respect excluded material) joins 0.15.0's attended trial (0076).
+**Added by [0093](../decisions/0093-the-0-15-0-scope-grill.md):** contracts and the resource-budget trials first, in their own worktree beside CC-240 and CC-241, then the implementation tasks split out; Brain Assistant's `/Weekly review` opens this week's report and walks its What needs your decision items in the 0090 grill style, or says how to run one when there is none, and builds no digest of its own (notion/brain-assistant.md and a Notion migration); turning on the weekly schedule offers Reports once, and with Reports off the report stays a file plus a summary at the next attended session; the scheduled run defaults to Sonnet, and the trials measure Sonnet and Opus on the same synthetic weeks, with the contract recording the numbers and the default. Acceptance adds: the trials' numbers and the model default are in the contract before implementation; `/Weekly review` on a test space with a report and with none; the Reports offer asked once, with yes and no paths tested on a synthetic brain.
 
 ### CC-240 · A Review page you can read: contract and CLI (0088, 0090) · `todo`
 **Release:** 0.15.0
@@ -804,6 +808,12 @@ Work packages: contracts and representative resource-budget trials; shared diges
 **Changelog:** development only: the review by grill is recorded as decision 0090, and CC-240 and CC-241 take it on in 0.15.0.
 **Output:** decision 0090 from the author's test and answers of 2026-11-13 (this session), amending 0054, 0055 and 0088 §2, with a header pointer on each; CC-240 and CC-241 rescoped with 0090's additions; "Review claims instead of edits" in docs/v2-ideas.md. Planning only: no CLI, spec, schema, skill, template, Notion or CHANGELOG change, and no brain operation. The test rows in the author's test space are not part of this PR.
 **Acceptance:** 0090 records every answer of the author (Your call instead of Submit, rounds of three to five questions, options with the recommended one) and maps every problem found in both test rounds to how it is handled, with its status; 0054, 0055 and 0088 point to it without being rewritten; CC-240 and CC-241 name each 0090 rule in their Output and test it in their Acceptance; 0.15.0 stays the feature cutoff; only Markdown planning files change; the leak and PR format checks pass.
+
+### CC-252 · Record decision 0093: the 0.15.0 scope grill · `in progress`
+**Release:** 0.15.0
+**Changelog:** development only: 0.15.0's scope grill is recorded as decision 0093, and CC-111 takes on its answers.
+**Output:** decision 0093 from the author's answers of 2026-11-13 (the recommended option in each of five questions): CC-111 beside the CC-240 → CC-241 stack with its contracts and trials first; `/Weekly review` in Notion becomes the way into the weekly report; turning on the weekly schedule offers Reports once; Sonnet by default for the scheduled run, measured against Opus in the trials; CC-251 keeps 0092's scope. CC-111's row gains 0093's additions; the 0.15.0 intro and the planning log record the grill. Planning only: no CLI, spec, schema, skill, template, Notion or CHANGELOG change, and no brain operation.
+**Acceptance:** 0093 records each answer, what it refines and what it keeps; CC-111 names each 0093 rule in its Output and tests it in its Acceptance; 0075's scope and limits are unchanged; 0.15.0 stays the feature cutoff; only Markdown planning files change; the leak and PR format checks pass.
 
 ## 1.0.0 — Productisation, translation, funnel and launch (decision 0061)
 
