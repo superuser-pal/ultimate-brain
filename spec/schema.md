@@ -295,7 +295,7 @@ Generated; never evidence (lint error if any note's `sources` cites a view).
 | `generated_from` | list of IDs | ✔ |
 | `generated_at` | timestamp | ✔ |
 | `notion`, `last_synced`, `notion_published` | as §3.2 (system) | `report` and `weekly_review` only |
-| `week`, `window`, `coverage`, `omitted`, `counts` | the ISO week (`2026-W46`); `{from, to}` timestamps; `complete`·`partial`; `{clusters, correction_targets, changes}`; `{decisions, new_items, targets, queued}` | ✔ for `weekly_review` ([weekly-review.md](weekly-review.md) §2, §10; 0.15.0), absent otherwise |
+| `week`, `window`, `coverage`, `omitted`, `counts` | the ISO week (`2026-W46`); `{from, to}` timestamps; `complete`·`partial`; `{clusters, correction_targets}`; `{decisions, new_items, targets, queued}` | ✔ for `weekly_review` ([weekly-review.md](weekly-review.md) §2, §10; 0.15.0), absent otherwise |
 Body of `brief`, `decision_log` and `area_brief`: `<!-- @generated:start -->` … `<!-- @generated:end -->`, then optional `<!-- @user:start -->` … `<!-- @user:end -->`. Tools replace only the generated block. The content of each view kind is fixed in §16.
 
 **A weekly review** (`weekly_review`, 0075, 0.15.0) is a report of its own shape: three sections, one file per ISO week, rewritten in place by a rerun in the same week, published to Documents with Origin Report, never evidence, never a proposal target, never reviewed ([weekly-review.md](weekly-review.md) §2, §3). The rest of this paragraph is about `report`.
