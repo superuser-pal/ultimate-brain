@@ -358,3 +358,35 @@ test("the parser finds items by their ref line, reads the note toggle and ignore
   assert.equal(section.decision_text, "Accept");
   assert.equal(section.agreed, "kept it short");
 });
+
+/**
+ * The page as Notion's markdown read returns it (capture-and-review §9.5, observed 2026-11-13): brackets escaped (`\[¶1\]`, a backslash as `\\`),
+ * blank lines gone, `\+` read as `+`, and a toggle's children indented by a tab. Lines of page structure (headings, tags, spans) are left as they are.
+ */
+function asNotionReads(body: string): string {
+  let inToggle = false;
+  return body.split("\n").filter((line) => line !== "").map((line) => {
+    if (/^<details>/.test(line)) { inToggle = true; return line; }
+    if (/^<\/details>/.test(line)) { inToggle = false; return line; }
+    if (/^(#|<summary|<span|\t)/.test(line)) return line;
+    // Notion stores the markdown's text (its escapes undone), then writes that text back with `\`, `[` and `]` escaped.
+    const stored = line.replace(/\\([\\[\]+])/g, "$1");
+    const text = stored.replace(/[\\[\]]/g, (char) => `\\${char}`);
+    return inToggle ? `\t${text}` : text;
+  }).join("\n");
+}
+
+test("a page read back as Notion returns it is not an edit: escaped markers, no blank lines, + lines, indented toggles (§9.5)", async (context) => {
+  const dir = await format2Brain(context);
+  const literal = { ...addition, content: `Section [¶9] of the contract stays. ^[${P[2]}]` };
+  const { id, body, items } = await published(dir, [fact(), literal, alias("Supabase auth"), alias("Auth on Supabase")]);
+  assert.match(body, /Section \\\\\[¶9\] of the contract stays\. \[¶3\]/, "a literal [¶ is sent with an escaped backslash");
+  const notion = asNotionReads(body);
+  assert.match(notion, /2027-04 \\\[¶1\\\]/);
+  assert.deepEqual((await plan(dir, [row(id, notion)])).review_pending, [], "the read-back is not an edit");
+  const out = await plan(dir, [row(id, decide(notion, items[0]!.item_id, "Accept"), { "Your call": "Approve" })]);
+  assert.deepEqual(out.review_held, []);
+  const decided = out.review_decisions[0].items as Array<{ item_id: string; proposed: string; edited: boolean; proposed_hash: string; rendered_proposed_hash: string }>;
+  for (const item of decided) { assert.equal(item.edited, false, item.item_id); assert.equal(item.proposed_hash, item.rendered_proposed_hash, item.item_id); }
+  assert.equal(decided[1]!.proposed, `Section [¶9] of the contract stays. ^[${P[2]}]`, "the literal stays text, the marker expands");
+});
