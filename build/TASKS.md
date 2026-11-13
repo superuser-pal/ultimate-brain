@@ -802,7 +802,7 @@ Work packages: contracts and representative resource-budget trials; shared diges
 
 **Scope grill, 2026-11-13 ([0093](../decisions/0093-the-0-15-0-scope-grill.md)):** CC-111 runs beside the CC-240 → CC-241 stack, contracts and trials first; `/Weekly review` in Notion is the way into the weekly report; the weekly schedule offers Reports once; Sonnet by default for the scheduled run. No new feature joins 0.15.0.
 
-### CC-111 · The brain assistant's scheduled weekly review (decisions 0064, 0051) · `in progress`
+### CC-111 · The brain assistant's scheduled weekly review (decisions 0064, 0051) · `review`
 **Release:** 0.15.0
 **Changelog:** development only: the weekly review's contract and its resource-budget trials; the feature itself ships through CC-253 to CC-256.
 **Output:** the assistant's unattended mode per 0051 (its schedule, the report, Review rows only, no direct changes, no questions), shared with the weekly digest where they overlap; detailed at 0.15.0's opening grill. Its knowledge stream comes from `brain reflect --candidates` within 0075's shared limits, the only scheduled reflection (0076).
