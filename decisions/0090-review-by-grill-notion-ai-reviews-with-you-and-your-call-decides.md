@@ -58,14 +58,22 @@ Never: a heading, a `ref` line, either toggle's structure, the brain-context tog
 The brain's read-back (`sync plan`), on top of today's rules:
 - **Headings are derived and never read.** The parser finds each item by its `ref` line; `render` rebuilds headings from the item's state, so a heading the AI or the user edited changes nothing.
 - **`Agreed in review:` lines are not wording.** They are excluded from the hashed text and stored with the item's decision (`item_decisions`), so the reason for a correction stays in Git.
-- **Markers:** a marker must be one of the item's listed passages, as today (0077). **New for a fact change:** the value must appear in one of the passages its markers cite (numbers matched as digits or words). If it doesn't, the item is held, never applied, with the reason `VALUE_NOT_IN_PASSAGE` and, when another listed passage holds the value, its label ("¶4 says 9"). The live run's `9 [¶1]` would be held.
+- **Markers:** a marker must be one of the item's listed passages, as today (0077). **New for a fact change** (an `update_fact` item, whatever its value's type): the value must appear in one of the passages its markers cite, matched by type:
+  - a number, as digits or as words ("9", "nine");
+  - a date, in any form that names the same day, month or year at the value's precision ("2027-03", "March 2027");
+  - a name, the value or one of the target note's aliases, ignoring case;
+  - a status or any other select value, the option's name, ignoring case;
+  - any other value, its exact text, ignoring case and surrounding punctuation.
+
+  If it doesn't, the item is held: it stays Pending, is never applied, Approve leaves it (§5), and the page and the report show the reason `VALUE_NOT_IN_PASSAGE` with, when another listed passage holds the value, its label ("¶4 says 9"). The live run's `9 [¶1]` would be held until the marker is ¶4 or the user removes the change.
 - Anything else outside the rules (a missing `ref` line, a broken `Decision:` line, an unknown marker) keeps today's outcome: the item is unreadable, stays Pending, and is shown, never applied by interpretation.
 
 ### 5. Your call decides a page (amends 0055 and capture-and-review §7.3, §7.9)
 On a row with item sections:
-- **Approve** submits the page as it reads now: each item's `Decision:` line is its decision, an item still on Pending is read as Accept (as Submit and accept all does today), and items not eligible (a requested revision, a changed base, held, unreadable) are not applied and are named in the report. Edited wording no longer blocks Approve: `EDITED_PROPOSED_NEEDS_SUBMIT` is retired for these rows.
+- **Approve** submits the page as it reads now: each item's `Decision:` line is its decision, and an item still on Pending is read as Accept (as Submit and accept all does today), **except** a ⚠ fact change or an item with an unsure flag: those are accepted only by an explicit `Decision: Accept`, so Approve leaves them Pending and the row keeps needing the user. Items not eligible (a requested revision, a changed base, held, unreadable) are not applied either. The report names every item Approve left, and why. Edited wording no longer blocks Approve: `EDITED_PROPOSED_NEEDS_SUBMIT` is retired for these rows.
 - **Request revision** with What to fix asks for redrafts: the next **attended** run drafts what What to fix asks for, item by item, as §7.8's revisions, and sets Your call back to empty so the row needs the user again. Request revision without What to fix is the conflict `REVISION_WITHOUT_TEXT`. `ROW_REVISION_NOT_SUPPORTED` is retired for these rows.
-- **Reject** rejects every item still on Pending; an item with an explicit `Decision:` keeps it.
+- **Reject** rejects every item still on Pending; an item with an explicit `Decision:` keeps it. Rejecting changes nothing in the brain: a rejected fact change leaves the field as it is now (an empty field stays empty), a rejected addition or link is not made, and a rejected new note is archived (0041).
+- **What the guide and the grill's preview say,** in these words or close: "Reject leaves the note as it is now. Approve accepts what's still Pending, except ⚠ changes and flagged items, which need Accept on their line. A redraft you ask for comes back on this page after your next catch-up, and the row needs you again."
 - **The submission time** is the row's last edit, as for a row-level call today, with 0058's click-minute limit stated in the guide.
 - **The Submit decisions and Submit and accept all buttons leave the Review layout** (a migration hides them; the properties Decided, Decided at and Accept all stay, unused for new rows, so rows already submitted with them still apply).
 - **Rows rendered before this change** keep their rules until they are done (0088's rule for touched rows).
@@ -89,7 +97,7 @@ Every problem found, and how this decision handles it:
 |---|---|---|---|
 | A first-time user doesn't know what to read, change or how to ask | the author; round 1 | the grill asks, the user answers in words; the top of the page says what to do in three steps | addressed |
 | Readers can't find where to ask for a change | round 1, every version | asking is the conversation; Request revision with What to fix on the row; the `Revision request:` line stays visible under each item | addressed |
-| Does Reject empty a field, does accepting all accept ⚠, when does a redraft come back | round 1, every reader | the grill's preview says what each decision does before writing; the guide answers all three once | addressed |
+| Does Reject empty a field, does accepting all accept ⚠, when does a redraft come back | round 1, every reader | §5 states all three (Reject leaves the note as it is; Approve never accepts a ⚠ or flagged item still on Pending; a redraft comes back after the next attended catch-up); the grill's preview and the guide say it in those words | addressed |
 | The page proposed an error the brain could have caught | round 1, reader C | unsure flags at ingest (§6), and the grill asks about each first | mitigated: only flagged kinds are caught |
 | The same decision appears in several items | both rounds | repeats marked in the toggle, asked in the grill | mitigated: the root cause is §7, not now |
 | The assistant speculates or adds Notion content | round 1, reader C | Notion items are named as Notion-only and enter only with the user's yes, attributed to them | mitigated: rule in the skill, not checkable by the CLI |
@@ -104,7 +112,7 @@ Every problem found, and how this decision handles it:
 | No Notion AI | risk | the page can be decided by hand | addressed |
 
 - **Roadmap (the author's yes, 2026-11-13).** 0.15.0 keeps its scope and gains this one; still the feature cutoff. CC-240 adds the toggle, derived headings, the read-back rules and §5 to its contract and CLI work; CC-241 adds the Grill review skill, the button, the migration and the guide. 0088 §2's page stays: the user still reads it before Your call.
-- **Spec:** capture-and-review §7.1 to §7.4, §7.8 and §7.9; cli.md §5.14.2 to §5.14.4 (the conflicts retired and added); schema.md §11 (`item_decisions` gains the agreed line; the unsure flags in the proposal file).
+- **Spec:** capture-and-review §7.1 to §7.4 (with §7.3's Precedence paragraph, which today refuses a row-level Approve after an edited Proposed, and §7.3's click-minute text), §7.8 (a revision is read after a Submit today; from here also from Your call's Request revision) and §7.9; cli.md §5.14.2 to §5.14.4 (the conflicts retired and added); schema.md §11 (`item_decisions` gains the agreed line; the unsure flags in the proposal file).
 - **Notion:** a migration for the button, the Submit buttons hidden, Your call's description; Brain Assistant's Instructions gain the one exception for Grill review; notion/brain-assistant.md gains the skill.
 - **Skills fork:** brain-ingest writes the unsure flags and repeats; brain-apply and brain-catch-up read §5; the guide's "Deciding in Review" describes the grill and the hand path.
 - **Not changed:** what an unattended run may apply (0051); the hashes, base checks and eligibility (0077); Conflict, Answer and Suggestion rows (0088 §3).
@@ -113,5 +121,6 @@ Every problem found, and how this decision handles it:
 
 - The author's test and grill notes, 2026-11-13, in CC-248's session: the Review page of a test brain, the proposal to let Notion AI grill, and the answers recorded here (Your call instead of Submit, rounds of three to five, options with a recommendation, a test before deciding).
 - Round 1: four fresh sub-agents on a synthetic scenario (Example · Courier App 3), with today's page, the 0088 page with a guide, and that page with the assistant's walkthrough.
+- CC-193's release-gate run 1 (on its branch, `eval/setup-0.14/RESULTS.md`, finding 5): a first-time tester decided Review rows with a row-level Approve and asked whether to decide "in the property or in the body".
 - The live run: Test Brain Data, a Review row "Example · From Depot survey (grill test)" written through the API after the author's yes, the draft Grill review skill run by the author in Brain Assistant, the page read back through the API; 3 credits reported by the author.
 - src/lib/review-plan.ts (`ROW_REVISION_NOT_SUPPORTED`, `EDITED_PROPOSED_NEEDS_SUBMIT`); spec/capture-and-review.md §7; decisions 0054, 0055, 0077, 0088.
