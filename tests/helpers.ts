@@ -5,7 +5,10 @@ import { basename, dirname, join } from "node:path";
 import type { TestContext } from "node:test";
 
 import { runCli, type CliIo } from "../src/cli.ts";
+import { scanNotes } from "../src/lib/notes.ts";
 import { setInstalledProductRootForTests } from "../src/lib/skills.ts";
+import { planStructure } from "../src/lib/structure.ts";
+import { indexNotes, loadSuppressions } from "../src/lib/suppressions.ts";
 import { disableGitAutoMaintenance } from "./git-env.ts";
 
 export { disableGitAutoMaintenance };
@@ -53,6 +56,10 @@ export async function fixtureCopy(context: TestContext): Promise<string> {
   await cp(shipped, join(brain, ".claude", "skills"), { recursive: true, filter: skillFolder(shipped) });
   await cp(join(REPO, "templates", "brain", "AGENTS.md"), join(brain, "AGENTS.md"));
   await cp(join(REPO, "templates", "brain", ".claude", "agents"), join(brain, ".claude", "agents"), { recursive: true });
+  // The structure block, as `brain index` writes it after the fixture's notes (cli.md §5.8.1), so the copy is current.
+  const config = JSON.parse(await readFile(join(brain, "brain.json"), "utf8")) as Record<string, unknown>;
+  const structure = await planStructure(brain, indexNotes((await scanNotes(brain)).notes, loadSuppressions(brain)), config);
+  if (structure.after !== undefined) await writeFile(join(brain, "AGENTS.md"), structure.after);
   return brain;
 }
 

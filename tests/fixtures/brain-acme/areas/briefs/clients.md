@@ -19,6 +19,9 @@ updated: 2026-12-05
 
 ## Open questions
 - Nothing reviewed yet: 1 note waiting in Review
+
+## Documents
+- None
 <!-- @generated:end -->
 
 <!-- @user:start -->

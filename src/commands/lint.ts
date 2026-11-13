@@ -7,6 +7,7 @@ import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { lintBrain } from "../lib/lint.ts";
 import { scanNotes } from "../lib/notes.ts";
+import { readAgentsMarkdown } from "../lib/structure.ts";
 import { homeOf } from "../lib/skills-pin.ts";
 
 /** `brain lint [<path>…] [--strict]` (spec/cli.md §5.10). */
@@ -26,9 +27,10 @@ export const lintCommand: Command = {
       indexMarkdown = null;
     }
 
-    const all = lintBrain({ root, notes, problems, brainConfig: brain!.config, indexMarkdown, home: homeOf(environment.env) });
+    const agentsMarkdown = await readAgentsMarkdown(root);
+    const all = lintBrain({ root, notes, problems, brainConfig: brain!.config, indexMarkdown, agentsMarkdown, home: homeOf(environment.env) });
     // Path filters: note files, brain-relative folders (prefix match), brain.json, index.md. brain.json is always checked.
-    const known = new Set([...notes.map((note) => note.path), ...problems.map((problem) => problem.path), "brain.json", "index.md"]);
+    const known = new Set([...notes.map((note) => note.path), ...problems.map((problem) => problem.path), "brain.json", "index.md", "AGENTS.md"]);
     const filters = args.positionals.map((path) => posix.normalize(path).replace(/^\.\//, "").replace(/\/$/, ""));
     for (const filter of filters) {
       if (!known.has(filter) && ![...known].some((path) => path.startsWith(`${filter}/`))) {

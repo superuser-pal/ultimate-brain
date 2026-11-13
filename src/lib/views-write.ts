@@ -1,6 +1,7 @@
 import { BrainError } from "./errors.ts";
 import { serializeNewFile } from "./frontmatter.ts";
 import { generateId } from "./ids.ts";
+import { typeIsOn } from "./modules.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 import { formatDate, formatTimestamp } from "./time.ts";
 import { eligibleNotes, contextFor, publishableNote, publishedTitle, requireSuppressions, type Loaded } from "./suppressions.ts";
@@ -35,7 +36,7 @@ export function stageViews(workspace: Workspace, targets: ViewTarget[], now: Dat
       // The owner is rendered from its published form too: a restricted project or area never contributes its facts or, with a restricted
       // claim, its title (cli §5.9).
       const owner = publishableNote(project, context);
-      const derived = deriveView(owner, kind, notes);
+      const derived = deriveView(owner, kind, notes, { documents: typeIsOn(workspace.config, "reference") });
       if (existing === undefined && workspace.exists(path)) {
         errors.push({ path, reason: "MARKERS_INVALID" });
         continue;

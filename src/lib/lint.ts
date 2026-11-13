@@ -8,6 +8,8 @@ import { comparePrecedence, satisfies } from "./skills-range.ts";
 import { packageSnapshot, type Manifest } from "./skills-snapshot.ts";
 
 import { buildIndex } from "./index-builder.ts";
+import { typeIsOn } from "./modules.ts";
+import { planStructureText, structureBlock, structureStale } from "./structure.ts";
 import { compareCodePoints, type Note, type ScanProblem } from "./notes.ts";
 import { rangesProblem, splitParts } from "./parts.ts";
 import { sourceFolder } from "./paths.ts";
@@ -40,6 +42,8 @@ export interface LintInput {
   brainConfig: unknown;
   /** Current index.md bytes, or null when missing. Undefined skips the index-stale check. */
   indexMarkdown: string | null | undefined;
+  /** Current AGENTS.md bytes (null: missing or a symbolic link) for the structure block's index-stale check (cli §5.8.1); undefined skips it. */
+  agentsMarkdown?: string | null;
   /** Files that exist in memory but not yet on disk (a write being validated, spec/cli.md §3.6.1). */
   pendingPaths?: ReadonlySet<string>;
   /** Product-owned paths as an upgrade would leave them; undefined reads disk. */
@@ -214,7 +218,8 @@ export function lintBrain(input: LintInput): Issue[] {
       const range = generatedBlockRange(note.body);
       if (project?.type === (a.view_kind === "area_brief" ? "area" : "project") && range !== undefined) {
         viewNotes ??= eligibleNotes(input.notes, loadSuppressions(input.root));
-        const derived = deriveView(project, a.view_kind as ViewKind, viewNotes);
+        const config = typeof input.brainConfig === "object" && input.brainConfig !== null ? input.brainConfig as Record<string, unknown> : {};
+        const derived = deriveView(project, a.view_kind as ViewKind, viewNotes, { documents: typeIsOn(config, "reference") });
         const generatedFrom = Array.isArray(a.generated_from) ? a.generated_from : [];
         if (note.body.slice(range.start, range.end) !== derived.generatedBlock || !sameStringList(generatedFrom, derived.generatedFrom)) {
           warn("view-stale", 1, "generated block is out of date; run brain views");
@@ -390,6 +395,13 @@ export function lintBrain(input: LintInput): Issue[] {
 
   if (input.indexMarkdown !== undefined && input.indexMarkdown !== buildIndex(indexNotes(input.notes, loadSuppressions(input.root))).markdown) {
     add("warning", "index-stale", "index.md", 1, null, "index.md is out of date; run brain index");
+  }
+  if (input.agentsMarkdown !== undefined) {
+    const config = typeof input.brainConfig === "object" && input.brainConfig !== null ? input.brainConfig as Record<string, unknown> : {};
+    const block = structureBlock(indexNotes(input.notes, loadSuppressions(input.root)), config);
+    if (structureStale(planStructureText(input.agentsMarkdown, block))) {
+      add("warning", "index-stale", "AGENTS.md", 1, null, "the structure block of AGENTS.md is out of date; run brain index");
+    }
   }
 
   lintProductFiles(input, add);

@@ -356,7 +356,7 @@ Read-only health summary; the first call of every skill.
 
 **Human output** (without `--json`) starts, only while `finished` is `false`, with one line: `Setup: <done> of <total> done · next: <what>`, where `<what>` is, by `next` in that order: `set your Git identity`, `add a private remote`, `create the drop folder`, `say the language of your notes`, `connect your agent to Notion`, `connect Notion`, `paste the minutes prompt`, `set up Brain Assistant`, `set your identities`, `seed your work`, `check first value`, `choose the schedule`; then `say "set up my brain"`. Example: `Setup: 6 of 9 done · next: connect Notion · say "set up my brain"`. With `next` `null` and `finished` still `false` (every item done, no `finished` line yet), the line has no `next:` part: `Setup: 9 of 9 done · say "set up my brain"`. The rest of the human output is unchanged.
 
-`notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `domains`, `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `documents` (0045, 0049; a `references` key is reported as `documents`; a retired `concepts` key is not reported, 0071). `modules` (0048) has every module key, filled in as schema §12 says: all `true` except Domains when the block is absent, else each absent key at its default. `notes` counts every type, `reference` included (0045); `concept` is counted only when a brain still has concept notes (before `brain upgrade`, 0071). A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } }`. From 0.14.0 it also has `style` (0081), always with all four keys: the stored `preset` (`standard` when absent) and each dial's effective value (§5.3.1), e.g. `{ "preset": "simple", "explain": "plain", "length": "normal", "directness": "answer-first" }` for the stored `{ "preset": "simple", "length": "normal" }`; Standard is `{ "preset": "standard", "explain": "some", "length": "normal", "directness": "context-first" }`. `unattended` (0051) sums the unattended catch-up lines (§3.9) written since the last attended `catch-up` line, across the month files: `since` is that attended line's timestamp (`null` when there is none), `runs` the unattended lines after it, `inputs` and `failed` their sums, `failures` their reasons in order without repeats, and `left`, `skipped`, `waiting` and `last` (its timestamp) from the latest one, since an input still skipped is counted again by every run. `catch_up` is `null` when no unattended line follows the last attended one. `backlog` is `true` when the last three unattended catch-up lines, attended or not in between, each have `left` above 0. The attended catch-up opens with this summary (§6.1). `repos` lists `brain.json` `repos` in order (empty when absent): `found` is whether `path` is a Git working tree. `views_stale` includes area briefs. Exit 0 even when stale.
+`notion.configured`/`missing` list keys of `brain.json` `notion.databases` with non-empty / empty values, among `domains`, `areas`, `goals`, `key_results`, `projects`, `meetings`, `people`, `orgs`, `decisions`, `questions`, `review`, `inbox`, `documents` (0045, 0049; a `references` key is reported as `documents`; a retired `concepts` key is not reported, 0071). `modules` (0048) has every module key, filled in as schema §12 says: all `true` except Domains when the block is absent, else each absent key at its default. `notes` counts every type, `reference` included (0045); `concept` is counted only when a brain still has concept notes (before `brain upgrade`, 0071). A `capture_inbox` key is reported as `inbox` (schema §12). `settings` (schema §12) is added with defaults filled in: `{ "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 } }`. From 0.14.0 it also has `style` (0081), always with all four keys: the stored `preset` (`standard` when absent) and each dial's effective value (§5.3.1), e.g. `{ "preset": "simple", "explain": "plain", "length": "normal", "directness": "answer-first" }` for the stored `{ "preset": "simple", "length": "normal" }`; Standard is `{ "preset": "standard", "explain": "some", "length": "normal", "directness": "context-first" }`. `unattended` (0051) sums the unattended catch-up lines (§3.9) written since the last attended `catch-up` line, across the month files: `since` is that attended line's timestamp (`null` when there is none), `runs` the unattended lines after it, `inputs` and `failed` their sums, `failures` their reasons in order without repeats, and `left`, `skipped`, `waiting` and `last` (its timestamp) from the latest one, since an input still skipped is counted again by every run. `catch_up` is `null` when no unattended line follows the last attended one. `backlog` is `true` when the last three unattended catch-up lines, attended or not in between, each have `left` above 0. The attended catch-up opens with this summary (§6.1). `repos` lists `brain.json` `repos` in order (empty when absent): `found` is whether `path` is a Git working tree. `views_stale` includes area briefs. `index_stale` is `true` when `index.md` or the structure block of `AGENTS.md` is out of date (§5.8.1, 0089). Exit 0 even when stale.
 
 **Suppressions (0055).** `suppressions` counts the records of `_suppressions/` (capture-and-review §5.3) that are `active` and `reconciled`, the knowledge notes with a restricted statement or restricted whole (`restricted_notes`), those restricted whole (`unresolved_lineage`: their text cannot be mapped to passages, or their lineage is unknown), and lists any unreadable record under `problems`.
 
@@ -418,7 +418,7 @@ Written by `brain` from `settings.style` in `brain.json`; edits inside this bloc
 <!-- ultimate-brain:style:end -->
 ```
 
-- **Where:** right after the rules block's end marker `<!-- ultimate-brain:rules:end -->`, outside the rules block, which `brain upgrade` copies byte for byte from the template (§5.15 step 1). A new block is inserted as one blank line and then the block, directly after the end marker's line, so the text that followed the marker (the blank line and `## My rules` in the template) follows the block's end marker unchanged. An existing block (both style markers, once each, in order) is replaced in place. Removing a block deletes its lines and the one blank line before its start marker, so adding and then removing it leaves the file's bytes as they were.
+- **Where:** right after the rules block's end marker `<!-- ultimate-brain:rules:end -->`, before the structure block when there is one (§5.8.1), outside the rules block, which `brain upgrade` copies byte for byte from the template (§5.15 step 1). A new block is inserted as one blank line and then the block, directly after the end marker's line, so the text that followed the marker (the blank line and `## My rules` in the template) follows the block's end marker unchanged. An existing block (both style markers, once each, in order) is replaced in place. Removing a block deletes its lines and the one blank line before its start marker, so adding and then removing it leaves the file's bytes as they were.
 - **Written by** `brain config set` on a style path (§5.3) and `brain upgrade` (§5.15 step 1a). `brain init` writes none: a new brain is Standard.
 - **Not written** when `AGENTS.md` is missing or a symbolic link, or its rules markers or style markers are missing, out of order or duplicated (warning `AGENTS_BLOCK_NOT_FOUND`, as §5.15 step 1). A style block whose start marker comes before the rules block's end marker is out of order. Nothing outside the style markers changes.
 - `brain lint` does not check the style block: it is written from `brain.json`, and `brain upgrade` rewrites it.
@@ -770,7 +770,7 @@ After `apply`, skills run `index`, `views`, `lint`, then commit.
 brain index [--check]
 ```
 
-Regenerates `index.md` exactly as schema §13 specifies (CX-04). `--check` writes nothing and exits 1 if `index.md` would change. A file whose frontmatter cannot be parsed is left out, with a warning `UNPARSEABLE` (lint reports it as an error); a duplicate ID keeps the first by path order, with a warning `DUPLICATE_ID`. Index never fails on content problems.
+Regenerates `index.md` exactly as schema §13 specifies (CX-04), and from 0.14.1 the structure block of the brain's `AGENTS.md` (§5.8.1, 0089). `--check` writes nothing and exits 1 if `index.md` or the structure block would change. A file whose frontmatter cannot be parsed is left out, with a warning `UNPARSEABLE` (lint reports it as an error); a duplicate ID keeps the first by path order, with a warning `DUPLICATE_ID`. Index never fails on content problems.
 
 `data` (the agent-facing index):
 ```json
@@ -815,7 +815,8 @@ Regenerates `index.md` exactly as schema §13 specifies (CX-04). `--check` write
   | area, reference | — (a reference's place is in `area` and `projects`, 0045) |
 
 - `backlinks` (schema §6): computed inverses. Keyed by target id (sorted); each list sorted by `type`, then `source`. Built from relation types `about` → `mentioned_in`, `depends_on` → `needed_by`, `contradicts` → `contradicts`, `derived_from` → `used_by`, `related_to` → `related_to`, and from fields `projects` → `project_of`, `area` → `area_of`, `goal` → `goal_of`, `client` → `client_of`, `org` → `member`, `attendees` → `attended`, `decided_in` → `decisions`, `raised_in` → `questions`. The persisted pair `supersedes`/`superseded_by` is not included. Links to missing IDs are left out (lint reports them). Notes with no backlinks have no key.
-- `written`: the file was rewritten (only when its bytes change). `stale`: `index.md` is still out of date after the command, so it is `true` only with `--check`.
+- `written`: the file was rewritten (only when its bytes change). `stale`: `index.md` or the structure block is still out of date after the command, so it is `true` only with `--check`.
+- `structure` (0089, §5.8.1): `{ "path": "AGENTS.md", "action": "created"·"updated"·"removed"·"unchanged"·"skipped" }`, what the command did to the structure block; with `--check`, what a run would do, and nothing is written. `skipped` comes with warning `AGENTS_BLOCK_NOT_FOUND` when there was a block to write or remove.
 - Scan warnings: `UNPARSEABLE`, `NOT_A_NOTE` (no frontmatter, or no `id`), `UNREADABLE`, `SKIPPED_SYMLINK` (symbolic links are not followed), `DUPLICATE_ID`. A leading byte-order mark is ignored.
 
 **Restricted evidence (0055, capture-and-review §5.1; eligibility.md §6 rule 5, §8).** The index is a published surface: it describes each note in the form the exclusion rule leaves it, and every note stays listed, since it may be independently supported.
@@ -825,6 +826,56 @@ Regenerates `index.md` exactly as schema §13 specifies (CX-04). `--check` write
 - **A view the derived-content rule withholds** (§5.13.1, "Views", judged with no caller as §5.14.4 says) has `title` and `summary` `null` in the JSON index. Views are not listed in `index.md`.
 
 The entry comes back in full at the next `brain index` once the note has no restricted claim. `brain lint` and `brain status` compute `index-stale` the same way, so an exclusion or a cleanup makes `index.md` stale until `brain index` runs. A damaged suppression record fails the command with `SUPPRESSIONS_UNREADABLE`.
+
+#### 5.8.1 The structure block (0089, from 0.14.1)
+
+The brain's Domains, Areas and active Projects reach every session as a **structure block** in the brain's `AGENTS.md`, which `CLAUDE.md` imports. It orients: it says where things go, never authorises a new Domain, Area or Project ("Add only what was asked for"), and is never a source for an answer (trust rule 2).
+
+**Who is listed.** Built from the notes in the form `index.md` uses (§5.8, restricted evidence):
+- **Live** means not `lifecycle: archived` and not `notion_fields.archived: true`.
+- **Domains:** every live domain, only when the Domains module is on (schema §12).
+- **Areas:** every live area.
+- **Projects:** every live project whose `notion_fields.status` is `Active` or absent (absent: written and not yet synced). `Planned`, `On Hold`, `Done` and any other status are left out.
+- Nothing else: no goal, task, Document, person or other type.
+
+**Where each one goes.** With the Domains module on, an Area is under its `domain` when that is a listed Domain, else under the entry `No domain`, last among the Domains. With it off there is no Domain level: the Areas are at the top. A Project is under its `area` when that is a listed Area, else under the entry `No area`, last at the top level. A Domain with no listed Area, and an Area with no listed Project, are still listed. Within each level, entries are sorted as `index.md` sorts a section (schema §13 item 3; a note in the awaiting-cleanup form as an empty title), then by id.
+
+**No block.** When nothing is listed (no live Area, no listed Project, and no live Domain with the module on), there is no block, and a command that writes it removes one written before.
+
+**The block** (normative; `{entries}` are the nested list lines, two spaces of indent per level):
+
+```markdown
+<!-- ultimate-brain:structure:start -->
+## Your structure
+
+Written by `brain index` from your Domain, Area and Project notes (active Projects only); edits inside this block are overwritten. Use it to place what you write. It never authorises a new Domain, Area or Project, and it is not a source for an answer.
+
+{entries}
+
+For what belongs to an Area or a Project, read its brief: find it with `brain query --candidates "<its title>" --types view --json` and read it with `brain query --read <id> --json`. For its tasks, query the Notion Tasks database filtered by its Notion page id, every time: never act on a task list from an earlier session.
+<!-- ultimate-brain:structure:end -->
+```
+
+- **An entry** is `- <title> — <id>`, followed by ` · Notion <page id>` when the note has `notion`. `<title>` is the title on one line, as schema §13 item 4 turns line breaks into spaces; nothing is escaped. A note in the awaiting-cleanup form is `- (title withheld: awaiting cleanup) — <id>`, with its Notion page id.
+- **The grouping entries** are `- No domain` and `- No area`, with no id.
+
+Example, Domains on:
+
+```markdown
+- Acme — dom-3k8m2p4q · Notion 6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d
+  - Clients — area-2m7c4h8n · Notion 9b8a7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d
+    - Acme website — prj-9x4t1b7e · Notion 2c4e6a80-1b3d-4f50-9a7c-8e6d4b2a0f13
+- No domain
+  - Health — area-5t2v8k1m
+```
+
+**Where:** after the rules block's end marker and, when there is one, after the style block's end marker (§5.3.1); never inside either block or below `## My rules`. A new block is inserted as one blank line and then the block, directly after the line of the last of those end markers. An existing block (both structure markers, once each, in order, after those end markers) is replaced in place. Removing a block deletes its lines and the one blank line before its start marker, so adding then removing restores the bytes. Writing the style block keeps a structure block after it (§5.3.1).
+
+**Written by** `brain index` (every skill runs it after every write, so every path that creates, takes in, renames, archives, merges or moves a Domain, Area or Project refreshes the block) and `brain upgrade` (§5.15 step 1b). `brain init` writes none: a new brain has no structure.
+
+**Not written** when `AGENTS.md` is missing or a symbolic link, or its rules, style or structure markers are missing, out of order or duplicated: `action` `skipped`. A symbolic link or bad markers also give warning `AGENTS_BLOCK_NOT_FOUND` when there is a block to write or one to remove; a missing `AGENTS.md` gives none (`brain upgrade` creates it, with the block). Nothing outside the structure markers changes, and `index.md` is still written.
+
+**Stale:** `brain index --check`, and the `index-stale` check of `brain lint` and `brain status` (§5.10, §5.2), count a structure block that `brain index` would write, replace or remove. A file it would skip is not stale.
 
 ### 5.9 `brain views`
 
@@ -925,7 +976,7 @@ The skill rules (`product-file` for skills, `skills-*`, `skill-*`) have `line` 1
 | `summary-length` | warning | summary longer than 200 characters |
 | `no-sources` | warning | knowledge note without `sources`, except area, goal and project (often created in Notion) and decisions (an error, above) |
 | `view-stale` | warning | a view's generated block is out of date |
-| `index-stale` | warning | `index.md` would change on `brain index` |
+| `index-stale` | warning | `index.md` would change on `brain index` (path `index.md`), or the structure block of `AGENTS.md` would (path `AGENTS.md`, §5.8.1) |
 
 ### 5.11 `brain log`
 
@@ -959,7 +1010,7 @@ Connects a consuming repo, or any working folder, to the brain (0006, 0009; CX-0
    `repo` = `--repo-name`, else the folder name. `skills` (0059, skills-delivery §6.2) is replaced on every run: `{ "name", "version", "integrity", "names" }` of the snapshot the linked skills came from, `names` sorted; an existing `.brain` whose `skills` is not an object of three strings and a `names` list of kebab-case skill names fails `INPUT_INVALID`. `stacks`: lowercase kebab-case, deduped, sorted. If `.brain` exists, options given replace their keys; others are kept. When `--project` is given without `--area`, `area` is set to that project's `area` (replacing any old value). All keys optional; `project`/`area` must exist in the brain. Written as JSON with 2-space indent, keys in the order `repo`, `project`, `area`, `stacks`, `skills` (absent keys left out), and a trailing newline.
 2. **Instruction block** in `AGENTS.md` (created if missing). If `CLAUDE.md` exists and has no line `@AGENTS.md`, the block is also written there; if `CLAUDE.md` does not exist, it is created with the single line `@AGENTS.md`. If `CLAUDE.md` is a symbolic link that resolves to this repo's `AGENTS.md` (a regular file), it is left alone and reported `unchanged`: the block reaches it through the link. Any other symbolic `CLAUDE.md` (to another file, out of the repo, or dangling) is refused with `INSTRUCTIONS_SYMLINK` before any write, and the message says to replace it with a file holding the line `@AGENTS.md` or to point it at `AGENTS.md` (CC-132). A symbolic `AGENTS.md` is still refused with `OUTSIDE_ROOT`. The block sits between the lines `<!-- ultimate-brain:start -->` and `<!-- ultimate-brain:end -->`; an existing block is replaced in place, otherwise it is appended after one blank line. Nothing outside the markers changes.
 
-Block text (normative; `{…}` filled from the brain; the `- Project:` and `- Area:` lines are left out when `.brain` has no project or area, and the line before them then ends with `.` instead of `:`; the workflow lines below are added when their skills are linked):
+Block text (normative; `{…}` filled from the brain; the `- Project:` and `- Area:` lines are left out when `.brain` has no project or area, and the line before them then ends with `.` instead of `:`; the `- Domain:` line (0089, from 0.14.1) is there only when the brain's Domains module is on and the Area's `domain` names a domain note that is not archived (`lifecycle: archived` or `notion_fields.archived: true`): a linked folder shows its own place, never the rest of the brain's structure, because its block is committed in a repository other people may read; the workflow lines below are added when their skills are linked):
 
 ```markdown
 <!-- ultimate-brain:start -->
@@ -970,6 +1021,7 @@ Managed by `brain link`; edits inside this block are overwritten.
 This repo is linked to the user's second brain:
 - Project: {project title} (`{project id}`)
 - Area: {area title} (`{area id}`)
+- Domain: {domain title} (`{domain id}`)
 
 The brain holds decisions, key facts, people and meeting history that this repo does not.
 
@@ -1702,6 +1754,7 @@ Brings the product-owned files of an existing brain up to the installed version 
    - `AGENTS.md` missing → written from the template (`created`).
    - Markers missing, out of order or duplicated → the file is left alone (`skipped`) with warning `AGENTS_BLOCK_NOT_FOUND`; the user restores the markers or merges by hand.
 1a. **The style block** (0081, from 0.14.0; §5.3.1), in the same file, after step 1: written, replaced or removed from `brain.json` `settings.style`, so a brain with no style lines has none. An `AGENTS.md` created by step 1 gets it too. When step 1 skipped the file, or the style markers are missing, out of order or duplicated, the file is left alone (`skipped`, warning `AGENTS_BLOCK_NOT_FOUND`). `AGENTS.md` appears once in `files`, `updated` when either step changed it. The upgrade also runs on a `brain.json` that fails the schema: a `settings.style` key whose value the schema doesn't allow counts as absent, and a `style` that isn't an object as `{}`. A `brain.json` that isn't valid JSON (step 5) leaves the style block as it is.
+1b. **The structure block** (0089, from 0.14.1; §5.8.1), in the same file, after step 1a: written, replaced or removed from the notes as `brain index` would. When step 1 or 1a skipped the file, or the structure markers are missing, out of order or duplicated, the block is left as it is (warning `AGENTS_BLOCK_NOT_FOUND` when there was one to write or remove). `AGENTS.md` appears once in `files`.
 2. **`CLAUDE.md`:** written as `@AGENTS.md` only if missing. One that exists in any form (a file, or a link to `AGENTS.md`) is left alone.
 2a. **The sub-agent (0.10.0, [assistant.md](assistant.md) §10).** `.claude/agents/ultimate-assistant.md` is written from `templates/brain/.claude/agents/ultimate-assistant.md` (creating `.claude/agents/` when needed) when it is missing (`created`) or its bytes differ (`updated`): the whole file is product-owned. A path that is a symbolic link or a folder is `OUTSIDE_ROOT` before any write. Other files in `.claude/agents/` are the user's and are left alone.
 3. **Skills (0029, 0038, 0059).** For each skill of the package snapshot, in **both** `.agents/skills/<name>/` (Codex) and `.claude/skills/<name>/` (Claude Code):
