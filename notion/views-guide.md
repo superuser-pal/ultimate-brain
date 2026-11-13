@@ -145,7 +145,7 @@ Above the tabs, a gray line: "Approving makes these notes trusted: they appear i
 | # | Tab | View name | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|
 | 1 | Needs my decision | What needs my decision? | Table | State is Pending | Created time, descending | Status, Name, Type, Your call, Area | Your main queue. Open a row that needs you in the page; set Your call here on the others (Fix: say what's wrong in What to fix, on the row). Submitted rows stay here until the brain applies them |
-| 2 | Sources disagree | Where do sources disagree? | Table | Kind is Contradiction · State is Pending | Created time, ascending | Name, Now, Proposed, Your call | Approve keeps both claims as contested. Fix, with the true value in What to fix, sets it |
+| 2 | Sources disagree | Where do sources disagree? | Table | Kind is Contradiction · State is Pending | Created time, ascending | Status, Name, Now, Proposed, Your call | Approve keeps both claims as contested. Fix, with the true value in What to fix, sets it |
 | 3 | Approved | What did I approve recently? | List | State is Applied · Last edited time is within *Past month* (relative) | Last edited time, descending | Name, Type, Proposed | Audit trail of what changed |
 | 4 | Rejected | What did I reject? | List | State is Closed | Last edited time, descending | Name, Type | Rejected or stale proposals. The brain may propose one again on the next ingest |
 
