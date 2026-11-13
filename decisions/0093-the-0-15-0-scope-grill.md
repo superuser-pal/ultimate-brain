@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-11-13
 **Release:** 0.15.0
-**Refines:** [0075](0075-weekly-review-and-targeted-corrections.md) (the weekly review's surfaces and default model; its scope, limits and acceptance are unchanged); [0051](0051-unattended-catch-up-and-schedules.md) (a schedule pins a model)
+**Refines:** [0075](0075-weekly-review-and-targeted-corrections.md) (the weekly review's surfaces and default model, and where §7's trials run (§6 here); its scope and limits are unchanged); [0051](0051-unattended-catch-up-and-schedules.md) (a schedule pins a model)
 **Keeps:** 0075 in full; [0088](0088-a-review-row-says-it-needs-you-and-a-review-page-reads-plainly.md) §2 and [0090](0090-review-by-grill-notion-ai-reviews-with-you-and-your-call-decides.md) (the Review page and the review by grill, CC-240 and CC-241); [0092](0092-move-a-note-to-another-area.md) (CC-251); 0.15.0 as the feature cutoff ([0061](0061-roadmap-and-launch-boundary.md))
 
 ## Context
@@ -41,8 +41,15 @@ The author chose the recommended option in each question.
    - On a no, 0075 §5 holds: a file in the brain and a summary at the next attended session.
 
    The weekly report never publishes with Reports off.
-4. **The scheduled weekly run uses Sonnet by default.** The resource-budget trials measure Sonnet and Opus on the same synthetic weeks. The contract records the numbers and confirms the default, or changes it with the reason. The user can pick another model when turning the schedule on (0051).
+4. **The scheduled weekly run uses Sonnet by default.** The resource-budget trials (§6) measure Sonnet and Opus. The contract records the numbers and confirms the default, or changes it with the reason. The user can pick another model when turning the schedule on (0051).
 5. **#345 brings no more work into 0.15.0.** CC-251 keeps 0092's scope. Anything else found while building it is filed as an issue and triaged as usual.
+
+6. **The resource-budget trials run in the author's real brain, not on synthetic brains.** The author chose this in a second round of the same day, for fidelity, after hearing the plan for six synthetic scenarios. It refines 0075 §7 and §8: the trials come before production code, as 0075 says, but on the real brain.
+   - **Runs:** two on Sonnet and one on Opus, each capped at 10 USD.
+   - **What a run does:** it runs the weekly flow as a prototype in the brain. It reads the brain and the live Notion work state. It writes its output only outside the brain's files and outside this repo, and it changes nothing: no note, no proposal, no Review row, no commit, no apply. The brain's `git status` is the same before and after each run.
+   - **No synthetic trial runs.** The edge cases 0075 §8 names (quiet, missed week, partial, repeated finding, correction) are covered by the automated tests of the implementation tasks, on synthetic brains, and by the attended trial after the build.
+   - **One report page in Notion Documents** (Reports on). It holds the weekly report as 0075 §1 shapes it, at most five items under What needs your decision, then an **Everything found** section listing every finding beyond the caps: knowledge to fix, stalled or overdue tasks, structural cleanup. It applies nothing and makes no Review rows. It is written only after the author's yes on the finished page. If Reports are off, turning them on is a separate yes.
+   - **What reaches this repo:** only numbers (tokens, reads, run time, cost, counts of findings) and the model default. The report's text and the raw outputs stay outside the repo (the author's brain folder or `~/Documents`).
 
 ## Consequences
 
