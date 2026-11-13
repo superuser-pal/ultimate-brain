@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-11-13
-**Release:** 0.14.1
+**Release:** 0.14.0 (moved from 0.14.1 by CC-257 on the author's choice of 2026-11-14, with the release gate's fixes in rc.3)
 **Amends:** [0002](0002-link-syntax.md) (its rule binds text the brain writes, not text it keeps); spec/schema.md §15 (lint)
 **Keeps:** 0002 for every note the brain writes, a `part` or `learned` Document included; sources are immutable (schema §4 source); a `whole` Document's body is its source's body byte for byte (cli.md §5.5); linked repos (0042, 0066)
 
@@ -38,7 +38,7 @@ The author chose, on 2026-11-13, to keep such text as it is (option A of the tri
 - A vault, or any file using wikilinks, ingests the same way every time, and its source's body is the file.
 - Lint no longer finds a broken link inside a source or a whole Document. None is the brain's to fix.
 - The Notion renderer needs a resolution step for whole Documents. Search and `brain query` read the text as it is.
-- Work: CC-250 (0.14.1). The contract comes first (spec/schema.md links row and §15, cli.md lint table and the Documents render), then lint, the renderer and a fork PR for brain-ingest.
+- Work: CC-250 (0.14.0, moved from 0.14.1 by CC-257). The contract comes first (spec/schema.md links row and §15, cli.md lint table and the Documents render), then lint, the renderer and a fork PR for brain-ingest.
 
 ## Evidence
 
