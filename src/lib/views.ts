@@ -16,7 +16,7 @@ export interface DerivedView {
 const CURRENT_ASSESSMENTS = new Set(["accepted", "provisional", "contested"]);
 
 /** Render one project view, or an area's brief, from canonical notes only (spec/schema.md §16). */
-export function deriveView(project: Note, kind: ViewKind, notes: readonly Note[]): DerivedView {
+export function deriveView(project: Note, kind: ViewKind, notes: readonly Note[], options: { documents?: boolean } = {}): DerivedView {
   const canonical = notes.filter((note) => note.type !== "view");
   const byId = new Map(canonical.map((note) => [note.id, note]));
   const generated = new Set<string>([project.id]);
@@ -33,6 +33,11 @@ export function deriveView(project: Note, kind: ViewKind, notes: readonly Note[]
     : kind === "area_brief"
       ? areaBriefSections(project, canonical, byId, title, add)
       : decisionLogSections(project, canonical, byId, title, add, link);
+  // `## Documents` closes both briefs when the Documents module is on (0089, schema §16.1 item 7, §16.3 item 4).
+  if (options.documents === true && kind !== "decision_log") {
+    const belongs = kind === "brief" ? (note: Note) => belongsToProject(note, project) : belongsToArea(project, byId);
+    sections.push(documentsSection(canonical, belongs, add));
+  }
   const generatedBlock = ["<!-- @generated:start -->", ...sections.flatMap((section, index) => index === 0 ? section : ["", ...section]), "<!-- @generated:end -->"].join("\n");
   return { kind, generatedBlock, generatedFrom: [...generated].sort(compareCodePoints) };
 }
@@ -120,9 +125,7 @@ function areaBriefSections(
     const status = scalar(record(project.attributes.notion_fields).status);
     return `- ${add(project)}${status === undefined ? "" : ` — ${status}`}`;
   }))];
-  // A note belongs to the area through its own area or the area of one of its projects.
-  const belongs = (note: Note) => note.attributes.area === area.id
-    || list(note.attributes.projects).some((id) => typeof id === "string" && byId.get(id)?.attributes.area === area.id);
+  const belongs = belongsToArea(area, byId);
   return [projectsSection, recentDecisions(notes, belongs, add), openQuestions(notes, belongs, add, 10)];
 }
 
@@ -191,6 +194,31 @@ function relationTarget(note: Note, type: string, byId: ReadonlyMap<string, Note
     if (recordValue.type === type && typeof recordValue.target === "string") return byId.get(recordValue.target);
   }
   return undefined;
+}
+
+/** A note belongs to the area through its own area or the area of one of its projects (schema §16.3). */
+function belongsToArea(area: Note, byId: ReadonlyMap<string, Note>): (note: Note) => boolean {
+  return (note) => note.attributes.area === area.id
+    || list(note.attributes.projects).some((id) => typeof id === "string" && byId.get(id)?.attributes.area === area.id);
+}
+
+/**
+ * `## Documents`: reviewed Documents that belong, not archived, last updated first, at most 10, then `- N more` (schema §16.1 item 7).
+ * With none reviewed, the drafts that would qualify make the waiting line.
+ */
+function documentsSection(notes: readonly Note[], belongs: (note: Note) => boolean, add: (note: Note) => string): string[] {
+  const updated = (note: Note) => text(note.attributes.updated ?? note.attributes.created);
+  const candidates = notes
+    .filter((note) => note.type === "reference" && belongs(note) && note.attributes.lifecycle !== "archived")
+    .sort((left, right) => compareCodePoints(updated(right), updated(left)) || compareCodePoints(left.id, right.id));
+  const reviewed = candidates.filter((note) => note.attributes.lifecycle === "reviewed");
+  if (reviewed.length === 0) return reviewedSection("## Documents", candidates, 10, () => "");
+  const lines = reviewed.slice(0, 10).map((document) => {
+    const origin = scalar(document.attributes.origin);
+    return `- ${add(document)}${origin === undefined ? "" : ` — ${origin}`}`;
+  });
+  if (reviewed.length > 10) lines.push(`- ${reviewed.length - 10} more`);
+  return ["## Documents", ...lines];
 }
 
 function belongsToProject(note: Note, project: Note): boolean {
