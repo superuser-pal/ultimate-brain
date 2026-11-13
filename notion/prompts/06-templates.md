@@ -15,7 +15,7 @@ Create a default page template for each database below. Each item "Heading: data
   "What needs me here?": a tabs block with these tabs, each holding one linked view filtered to this area, with the database title hidden:
 [Tasks]     tab "Today": Tasks where Area is this page, Status is not Done and Status is not Won't Do and Due is on or before today, sorted Due ascending, showing Name, Project, Due.
     tab "Meetings": Meetings where Area is this page, Brain Status is Not Reviewed and Date is on or before today, sorted Date descending, showing Name, Date, Project.
-    tab "Review waiting": Review where Area is this page and State is Pending, grouped by Type, sorted Created time ascending, showing Name, Your call, What to fix.
+    tab "Review waiting": Review where Area is this page and State is Pending, grouped by Type, sorted Created time ascending, showing Status, Name.
     tab "Inbox": Inbox where Area is this page and Brain Status is New or Ready, sorted Created ascending, showing Name, Kind, Brain Status.
 [Planning]   "What am I working toward here?": Goals where Area is this page and Status is Active, showing Name, Progress, Countdown.
   "What's active here?": Projects where Area is this page (views: "Active" Status is Active; "Planned" Status is Planned; "Done" Status is Done), showing Name, Status, Countdown.

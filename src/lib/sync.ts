@@ -897,9 +897,11 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
       Name: reviewRowName(workspace, note, held.whole), Kind: select(a.kind), About: targetText,
       "About Page": typeof page === "string" ? `https://www.notion.so/${page.replaceAll("-", "")}` : null,
       "Source Meeting": meeting?.type === "meeting" && typeof meeting.attributes.notion === "string" ? [meeting.attributes.notion] : [],
-      Now: held.whole ? HELD_TEXT : reviewText(proposalBefore(a, workspace)), Proposed: held.whole ? HELD_TEXT : reviewSections(workspace, note) ? `${(a.items as unknown[]).length} ${(a.items as unknown[]).length === 1 ? "change" : "changes"}: decide each one in the page` : proposed !== undefined ? proposed : reviewText(after ?? proposalAfter(a, workspace)),
+      Now: held.whole ? HELD_TEXT : reviewText(proposalBefore(a, workspace)), Proposed: held.whole ? HELD_TEXT : proposed !== undefined ? proposed : reviewText(after ?? proposalAfter(a, workspace)),
       Why: held.whole ? HELD_TEXT : reviewText(a.why), Area: relationPages(reviewArea(a, workspace), workspace), State: select(proposalState(a.status)), "Brain ID": note.id,
     });
+    // A row with item sections leaves About, Now, Proposed and Why empty, held or not: its page holds them and Notion hides them (0088, cli §5.14.4).
+    if (reviewSections(workspace, note)) Object.assign(values, { About: null, Now: null, Proposed: null, Why: null });
     return values;
   }
   // A report is a Documents row since 0.9.1 (0071); its Ask rows stay on the Inbox and link back through Asked in.
