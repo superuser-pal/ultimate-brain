@@ -3,10 +3,13 @@ import { isDeepStrictEqual } from "node:util";
 
 import { lineDiff } from "./diff.ts";
 import type { Note } from "./notes.ts";
-import { bodyHash } from "./proposals.ts";
+import { bodyHash, sourceTitle } from "./proposals.ts";
 import { cleanupItemView, CLEANUP_KINDS } from "./cleanup-row.ts";
+import { CONTEXT_HEADING, escape2, NOTE_TOGGLE, pageLabels, shorten, wordingSha, type Labels } from "./review-format2.ts";
+import { extractPassages } from "./selection.ts";
+import { PASSAGE } from "./suppressions.ts";
 import { restrictedSources } from "./eligibility.ts";
-import { proposalWithheld } from "./passages.ts";
+import { linkRefs, proposalWithheld } from "./passages.ts";
 import { citeLabel, contextFor, eligibleNote, publishableNote, requireSuppressions, titleWithheld, withoutWithheldLinks } from "./suppressions.ts";
 import type { Workspace } from "./workspace.ts";
 
@@ -27,9 +30,21 @@ export interface ReviewItem {
   /** What the target holds in Git now, hashed the same way: a plan compares it with the `base_hash` recorded at render (a difference is `base_changed`, §7.5). */
   current_base_hash: string;
   target: Note | undefined; section: string; rendered_hash: string;
+  /** The page format the item was built for (capture-and-review §7.12.1). */
+  format: 1 | 2;
+  /** Format 2: its group, whether it is a ⚠ fact change, its flags, its repeat key, its passages, what Accept does (the brain-context line). */
+  group: Group; warn: boolean; flags: string[]; repeat?: string; passages: string[]; what: string;
+  /** A link item's values, each with its index into `links`, its title and the names it may be written as (lower case). */
+  link_values?: LinkValue[];
+  /** How the summary names the item. */
+  summary_title: string;
+  /** The page's passage labels (format 2). */
+  labels: Labels;
 }
 
-export interface ReviewRender { items: ReviewItem[]; body: string; summary: string; summary_hash: string }
+export type Group = "summary" | "changes" | "notes" | "links";
+export interface LinkValue { index: number; title: string; names: string[] }
+
 
 const sha = (text: string): string => createHash("sha256").update(text, "utf8").digest("hex");
 const record = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -83,7 +98,20 @@ const EFFECT: Record<string, string> = {
 /** The base an item was proposed against, with its own marker for "the target is missing" (a missing target is `base_changed`, §7.5). */
 const base = (exists: boolean, value: unknown): string => JSON.stringify(exists ? { v: value ?? null } : { missing: true });
 
-export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] {
+/** The format a Review row's page has (capture-and-review §7.12.1): recorded in `@review.format`; a row not yet published gets format 2; an exclusion cleanup row stays format 1. */
+export function reviewFormat(proposal: Note, config?: Record<string, unknown>): 1 | 2 {
+  if (record(proposal.attributes.cleanup)) return 1;
+  const published = proposal.attributes.notion_published;
+  const review = record(published) && record(published["@review"]) ? published["@review"] : undefined;
+  // A new page follows `notion.review_format` (schema §12): absent or 2 is format 2.
+  if (review === undefined) return record(config?.notion) && config.notion.review_format === 1 ? 1 : 2;
+  return review.format === 2 ? 2 : 1;
+}
+
+/** The plain name of a note type in a format-2 heading ("New person: …"). */
+const TYPE_NAME: Record<string, string> = { reference: "Document", org: "organization" };
+
+export function reviewItems(proposal: Note, workspace: Workspace, format: 1 | 2 = reviewFormat(proposal, workspace.config)): ReviewItem[] {
   const a = proposal.attributes;
   const links = (Array.isArray(a.links) ? a.links : []).filter(record);
   const changes = (Array.isArray(a.changes) ? a.changes : []).filter(record);
@@ -111,51 +139,99 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
   const source = typeof a.source === "string" ? workspace.get(a.source) : undefined;
   const sourceRestricted = typeof a.source === "string" && restrictedSources(context).has(a.source);
   const sourceUrl = url(source?.attributes.notion);
-  const result: ReviewItem[] = [];
   const stored = (Array.isArray(a.items) ? a.items : []).filter(record);
   // Each item is judged by its own passages, a legacy one by its input, a note by its draft too (schema §11.5, cli §5.7).
   const withheld = proposalWithheld(proposal, workspace, context);
-  stored.forEach((entry, index) => {
-    const itemId = String(entry.item_id);
+  // Two fact changes on one target and field with different values: both are flagged by the CLI (capture-and-review §7.12.8).
+  const factValues = new Map<string, Set<string>>();
+  for (const change of changes) if (change.kind === "update_fact") { const key = `${String(change.target)}\u0000${String(change.field)}`; factValues.set(key, (factValues.get(key) ?? new Set()).add(String(change.after))); }
+  type Draft = Pick<ReviewItem, "kind" | "heading" | "current" | "proposed" | "editable" | "why" | "effect" | "target" | "held"> & { base: string; now: string; v2: V2 };
+  const drafts: Array<{ entry: Record<string, unknown>; item: Draft; namesWithheld: boolean; itemExcluded: boolean }> = [];
+  stored.forEach((entry) => {
     namesWithheld = false;
+    const refs = linkRefs(entry.ref);
     // The item has no eligible support (its passages, its legacy input, its wording, the draft it creates): withheld whole (eligibility.md §4.2, §9).
-    const itemExcluded = entry.kind === "note" ? withheld.notes.has(String(entry.ref)) : entry.kind === "link" ? withheld.links.has(Number(entry.ref)) : entry.kind === "change" ? withheld.changes.has(Number(entry.ref)) : false;
-    let item: Pick<ReviewItem, "kind" | "heading" | "current" | "proposed" | "editable" | "why" | "effect" | "target" | "held"> & { base: string; now: string };
+    const itemExcluded = entry.kind === "note" ? withheld.notes.has(String(entry.ref)) : entry.kind === "link" ? refs.some((ref) => withheld.links.has(ref)) : entry.kind === "change" ? withheld.changes.has(Number(entry.ref)) : false;
+    let item: Draft;
     if (CLEANUP_KINDS.includes(entry.kind as never)) {
       const view = cleanupItemView(proposal, entry, workspace);
-      item = { kind: "changes", heading: view.heading, current: view.current, proposed: canon(view.proposed), editable: view.editable, why: view.why, effect: view.effect, target: view.target, held: false, base: view.base, now: view.base };
+      item = { kind: "changes", heading: view.heading, current: view.current, proposed: canon(view.proposed), editable: view.editable, why: view.why, effect: view.effect, target: view.target, held: false, base: view.base, now: view.base, v2: { group: "changes", head: view.heading, now: null, wording: canon(view.proposed), why: "", warn: false, what: view.effect } };
     } else if (entry.kind === "note") {
-      const view = seen(workspace.get(String(entry.ref)));
-      item = { kind: "creates", heading: `Creates: ${titleOf(entry.ref, workspace)}`, current: null, proposed: canon(view.body), editable: true, why: String(a.why ?? ""), effect: EFFECT.creates!, target: view.note, held: view.held, base: base(view.note !== undefined, bodyHash(workspace.get(String(entry.ref))?.body ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(entry.ref))?.body ?? "")) };
+      const note = workspace.get(String(entry.ref));
+      const view = seen(note);
+      const title = titleOf(entry.ref, workspace);
+      const summary = note?.type === "meeting" && note.id === a.source;
+      const typeName = TYPE_NAME[String(note?.type)] ?? String(note?.type ?? "note");
+      item = { kind: "creates", heading: `Creates: ${title}`, current: null, proposed: canon(view.body), editable: true, why: String(a.why ?? ""), effect: EFFECT.creates!, target: view.note, held: view.held, base: base(view.note !== undefined, bodyHash(note?.body ?? "")), now: base(view.note !== undefined, bodyHash(note?.body ?? "")),
+        v2: { group: summary ? "summary" : "notes", head: summary ? title : `New ${typeName}: ${title}`, now: null, wording: canon(view.body), why: "", warn: false, what: `a draft ${typeName}; Accept makes it Reviewed, Reject archives it.` } };
     } else if (entry.kind === "link") {
-      const link = links[Number(entry.ref)] ?? {};
+      const members = refs.map((ref) => links[ref] ?? {});
+      const link = members[0] ?? {};
       const view = seen(typeof link.target === "string" ? workspace.get(link.target) : undefined);
       const field = String(link.field);
       const values = view.note !== undefined && Array.isArray(view.note.attributes[field]) ? (view.note.attributes[field] as unknown[]) : [];
       const current = values.map((value) => titleOf(value, workspace)).join(", ");
-      item = { kind: "changes", heading: `Changes: ${titleOf(link.target, workspace)}`, current: `${label(field)}: ${current || "(none)"}`, proposed: canon(titleOf(link.value, workspace)), editable: true, why: String(a.why ?? ""), effect: EFFECT.add_link!, target: view.note, held: view.held, base: base(view.note !== undefined, [...values.map(String)].sort()), now: base(view.note !== undefined, [...values.map(String)].sort()) };
+      const target = titleOf(link.target, workspace);
+      const linkValues = refs.map((ref) => {
+        const value = links[ref]?.value;
+        const note = typeof value === "string" ? workspace.get(value) : undefined;
+        const title = titleOf(value, workspace);
+        const aliases = note === undefined || namesWithheld ? [] : (Array.isArray(note.attributes.aliases) ? note.attributes.aliases.map(String) : []);
+        return { index: ref, title, names: [...new Set([title, String(value ?? ""), ...aliases].map((name) => name.toLowerCase()))] };
+      });
+      item = { kind: "changes", heading: `Changes: ${target}`, current: `${label(field)}: ${current || "(none)"}`, proposed: canon(members.map((member) => titleOf(member.value, workspace)).join("\n")), editable: true, why: String(a.why ?? ""), effect: EFFECT.add_link!, target: view.note, held: view.held, base: base(view.note !== undefined, [...values.map(String)].sort()), now: base(view.note !== undefined, [...values.map(String)].sort()),
+        v2: { group: "links", head: field === "aliases" ? `New alias for ${target}` : `${label(field)} on ${target}`, now: null, wording: linkValues.map((value) => value.title).join("\n"), why: "", warn: false, what: `now ${current || "none"}; Accept adds each name still listed.`, link_values: linkValues } };
     } else {
       const change = changes[Number(entry.ref)] ?? {};
       const view = seen(typeof change.target === "string" ? workspace.get(change.target) : undefined);
       const targetTitle = titleOf(change.target, workspace);
       const why = String(change.why ?? a.why ?? "");
+      const specific = typeof change.why === "string" && change.why !== a.why ? change.why : "";
       if (change.kind === "update_fact") {
-        item = { kind: "changes", heading: `Changes: ${label(String(change.field))} on ${targetTitle}`, current: (() => { const facts = view.note?.attributes.facts; const live = facts !== null && typeof facts === "object" ? (facts as Record<string, unknown>)[String(change.field)] : undefined; const shown = live === undefined ? change.before : live; return shown === undefined ? "(new)" : String(shown); })(), proposed: canon(String(change.after ?? "")), editable: true, why, effect: EFFECT.update_fact!, target: view.note, held: view.held, base: base(view.note !== undefined, change.before === undefined ? null : String(change.before)), now: base(view.note !== undefined, (() => { const facts = view.note?.attributes.facts; const value = facts !== null && typeof facts === "object" ? (facts as Record<string, unknown>)[String(change.field)] : undefined; return value === undefined ? null : String(value); })()) };
+        const facts = view.note?.attributes.facts;
+        const live = facts !== null && typeof facts === "object" ? (facts as Record<string, unknown>)[String(change.field)] : undefined;
+        const shown = live === undefined ? change.before : live;
+        const current = shown === undefined ? "(new)" : String(shown);
+        const value = String(change.after ?? "");
+        const markers = (Array.isArray(entry.passages) ? entry.passages : []).map(String).filter((passage) => PASSAGE.test(passage)).map((passage) => ` ^[${passage}]`).join("");
+        const field = label(String(change.field));
+        item = { kind: "changes", heading: `Changes: ${field} on ${targetTitle}`, current, proposed: canon(value), editable: true, why, effect: EFFECT.update_fact!, target: view.note, held: view.held, base: base(view.note !== undefined, change.before === undefined ? null : String(change.before)), now: base(view.note !== undefined, live === undefined ? null : String(live)),
+          v2: { group: "changes", head: change.before === undefined ? `${field} on ${targetTitle}: ${value} (new)` : `⚠ ${field} on ${targetTitle}: ${String(change.before)} → ${value}`, now: change.before === undefined && live === undefined ? null : `> Now: ${current}`, wording: canon(`${value}${markers}`), why: specific, warn: change.before !== undefined, what: `now ${current}; Accept sets it to the wording's value. The source's value stays in its history.`, fact_key: `${String(change.target)}\u0000${String(change.field)}`, fact_label: `${field} on ${targetTitle}` } };
       } else if (change.kind === "update_body") {
         const existing = canon(view.body);
         const lines = view.note === undefined ? 0 : lineDiff(view.note.body, String(change.content ?? "")).length;
-        item = { kind: "changes", heading: `Changes: ${targetTitle}`, current: `${lines} line${lines === 1 ? "" : "s"} change. The text now in the note:\n${existing === "" ? "(empty)" : existing}`, proposed: canon(String(change.content ?? "")), editable: true, why, effect: EFFECT.update_body!, target: view.note, held: view.held, base: base(view.note !== undefined, String(change.before_hash ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")) };
+        item = { kind: "changes", heading: `Changes: ${targetTitle}`, current: `${lines} line${lines === 1 ? "" : "s"} change. The text now in the note:\n${existing === "" ? "(empty)" : existing}`, proposed: canon(String(change.content ?? "")), editable: true, why, effect: EFFECT.update_body!, target: view.note, held: view.held, base: base(view.note !== undefined, String(change.before_hash ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")),
+          v2: { group: "changes", head: `New text for ${targetTitle}`, now: ["> Now:", ...canon(existing === "" ? "(empty)" : existing).split("\n").map((line) => `> ${line}`)].join("\n"), wording: canon(String(change.content ?? "")), why: specific, warn: false, what: "Accept replaces the note's text with the wording." } };
       } else {
         const tail = canon(view.body).split("\n").filter((line) => line !== "").slice(-5).join("\n");
-        item = { kind: "changes", heading: `Changes: ${targetTitle}`, current: `The end of the note now (the text is appended after it):\n${tail === "" ? "(empty)" : tail}`, proposed: canon(String(change.content ?? "")), editable: true, why, effect: EFFECT.add_to_note!, target: view.note, held: view.held, base: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")) };
+        const last = tail.split("\n").at(-1) ?? "";
+        item = { kind: "changes", heading: `Changes: ${targetTitle}`, current: `The end of the note now (the text is appended after it):\n${tail === "" ? "(empty)" : tail}`, proposed: canon(String(change.content ?? "")), editable: true, why, effect: EFFECT.add_to_note!, target: view.note, held: view.held, base: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")),
+          v2: { group: "changes", head: `Adds to ${targetTitle}`, now: null, wording: canon(String(change.content ?? "")), why: specific, warn: false, what: `${last === "" ? "the note is empty now" : `the note now ends with "${oneLine(last)}"`}; Accept appends the wording, with its source.` } };
       }
     }
+    drafts.push({ entry, item, namesWithheld, itemExcluded });
+  });
+  // The page's passages: those of every item it shows, in order (capture-and-review §7.12.4); a held item's are never listed.
+  const labels = pageLabels(drafts.filter(({ item, entry, itemExcluded }) => !item.held && !itemExcluded && !(sourceRestricted && CLEANUP_KINDS.includes(entry.kind as never))).flatMap(({ entry }) => (Array.isArray(entry.passages) ? entry.passages : []).map(String)));
+  return drafts.map(({ entry, item, namesWithheld: named, itemExcluded }, index) => {
+    const itemId = String(entry.item_id);
     // An item whose source is excluded shows no wording at all: the page is Notion's copy and the text would stay there (§5.1).
     // A cleanup item keeps the rule it had: held while the row's source is excluded. Every other item is held when it is withheld (§11.5).
     const cleanupHeld = sourceRestricted && CLEANUP_KINDS.includes(entry.kind as never);
     if (cleanupHeld || itemExcluded) item.held = true;
     const previous = (Array.isArray(a.revisions) ? a.revisions : []).filter(record).find((revision) => revision.item_id === itemId && revision.status === "drafted" && typeof revision.previous === "string")?.previous as string | undefined;
     const letter = itemLetter(index);
+    const flags = [...(Array.isArray(entry.unsure) ? entry.unsure.map(String) : [])];
+    if (item.v2.fact_key !== undefined && (factValues.get(item.v2.fact_key)?.size ?? 0) > 1) flags.push(`Two values for ${item.v2.fact_label}: ${[...factValues.get(item.v2.fact_key)!].join(" and ")}.`);
+    const passages = (Array.isArray(entry.passages) ? entry.passages : []).map(String);
+    const common = { item_id: itemId, letter, kind: item.kind, current: item.held ? null : item.current, editable: !item.held && item.editable, held: item.held, title_withheld: named, source_excluded: cleanupHeld || itemExcluded, target: item.target, base_hash: sha(item.base), current_base_hash: sha(item.now), format, group: item.v2.group, warn: item.v2.warn, flags, ...(typeof entry.repeat === "string" ? { repeat: entry.repeat } : {}), passages, what: item.v2.what, ...(item.v2.link_values === undefined ? {} : { link_values: item.v2.link_values }) };
+    if (format === 2) {
+      const title = item.held ? `Held: ${oneLine(item.v2.head.replace(/^⚠ /, "").replace(/:.*$/, ""))}` : item.v2.head;
+      const heading = `${flags.length > 0 && !item.held ? "⚑ " : ""}${title}`.replace(/\n/g, " ");
+      const proposed = item.held ? "" : item.v2.wording;
+      const section = renderSection2({ heading, held: item.held, group: item.v2.group, now: item.v2.now, wording: proposed, why: item.v2.why, itemId, previous, labels, link: item.v2.link_values !== undefined });
+      return { ...common, heading, summary_title: oneLine(heading.replace(/^⚑ /, "").replace(/^⚠ /, "")), proposed, why: item.v2.why, effect: item.held ? EFFECT.held! : item.effect, proposed_hash: wordingSha(proposed), section, rendered_hash: sha(section), labels };
+    }
     const targetUrl = url(item.target?.attributes.notion);
     // An Exclusion cleanup item shows the user the excluded text to decide on (capture-and-review §5.2), so it keeps the title.
     const targetName = item.target === undefined ? "target" : CLEANUP_KINDS.includes(entry.kind as never) ? String(item.target.attributes.title ?? "target") : titleOf(item.target.id);
@@ -176,10 +252,37 @@ export function reviewItems(proposal: Note, workspace: Workspace): ReviewItem[] 
         `**What Accept does:** ${item.effect}`,
         "Decision: Pending",
       ]).join("\n");
-    result.push({ item_id: itemId, letter, kind: item.kind, heading: item.heading, current: item.held ? null : item.current, proposed: item.held ? "" : item.proposed, editable: !item.held && item.editable, why: whyLine, effect: item.held ? EFFECT.held! : item.effect, held: item.held, title_withheld: namesWithheld, source_excluded: cleanupHeld || itemExcluded, target: item.target, proposed_hash: sha(item.held ? "" : item.proposed), base_hash: sha(item.base), current_base_hash: sha(item.now), section, rendered_hash: sha(section) });
+    return { ...common, heading: item.heading, summary_title: oneLine(item.heading.replace(/^[^:]+: /, "")), proposed: item.held ? "" : item.proposed, why: whyLine, effect: item.held ? EFFECT.held! : item.effect, proposed_hash: sha(item.held ? "" : item.proposed), section, rendered_hash: sha(section), labels };
   });
-  return result;
 }
+
+interface V2 {
+  group: Group; head: string; now: string | null; wording: string; why: string; warn: boolean; what: string;
+  link_values?: LinkValue[]; fact_key?: string; fact_label?: string;
+}
+
+/** One item section of a format-2 page (capture-and-review §7.12.3). */
+function renderSection2(input: { heading: string; held: boolean; group: Group; now: string | null; wording: string; why: string; itemId: string; previous: string | undefined; labels: Labels; link: boolean }): string {
+  const ref = `<span color="gray">ref ${input.itemId}</span>`;
+  if (input.held) return [`### ${input.heading}`, ref, "Decision: Pending"].join("\n");
+  const shown = shorten(input.wording, input.labels);
+  const note = input.group === "summary" || input.group === "notes";
+  const wording = note
+    ? ["<details>", `<summary>${NOTE_TOGGLE}</summary>`, "", escape2(shown, true), "", "</details>"]
+    : input.link ? shown.split("\n").map((name) => `\\+ ${escape2(name).replace(/^\\/, "")}`) : [escape2(shown)];
+  return [
+    `### ${input.heading}`,
+    ...(input.now === null ? [] : [escape2Quote(input.now), ""]),
+    ...wording,
+    ...(input.why === "" ? [] : [`*Why: ${oneLine(input.why).replace(/\*/g, "\\*")}*`]),
+    ref,
+    "Decision: Pending",
+    ...(input.previous === undefined ? [] : ["<details>", "<summary>Previous proposal</summary>", "", escape2(shorten(canon(input.previous), input.labels), true), "", "</details>"]),
+  ].join("\n");
+}
+
+/** A Now quote is brain text: its lines are quoted as they are, the toggle tags in it escaped. */
+const escape2Quote = (quoted: string): string => quoted.split("\n").map((line) => line.replace(/^(> ?)(\s*<\/?(?:details|summary))/i, "$1\\$2")).join("\n");
 
 /** How the summary names another Review row: its Name as `sync render` sends it (cli §5.14.4). */
 export type RowName = (proposal: Note) => string;
@@ -228,7 +331,7 @@ export function itemOutcomes(proposal: Note, workspace: Workspace, items: readon
   return items.map((item) => {
     const entry = stored.find((candidate) => String(candidate.item_id) === item.item_id) ?? {};
     const rejected = (): string => (entry.kind === "note" && workspace.get(String(entry.ref))?.attributes.lifecycle === "archived" ? "Rejected; the draft is archived." : "Rejected.");
-    const result = (outcome: string, counted: Counted): ItemOutcome => ({ item_id: item.item_id, letter: item.letter, title: oneLine(item.heading.replace(/^[^:]+: /, "")), outcome, counted });
+    const result = (outcome: string, counted: Counted): ItemOutcome => ({ item_id: item.item_id, letter: item.letter, title: item.summary_title, outcome, counted });
     const decided = decisions.find((candidate) => candidate.item_id === item.item_id);
     if (decided !== undefined) {
       if (decided.state === "applied") return result(decided.edited === true ? "Applied, with your wording." : "Applied.", "applied");
@@ -253,12 +356,33 @@ export function itemOutcomes(proposal: Note, workspace: Workspace, items: readon
 }
 
 /** The brain-owned summary at the top of the page, rebuilt entirely from the proposal file (§7.4): applied and closed never go into an item section. */
-export function reviewSummary(proposal: Note, workspace: Workspace, items: readonly ReviewItem[], rowName: RowName): string {
+/** Held reasons a plan gave for pending items, shown on their summary line (cli §5.14.4, format 2). */
+export type Holds = ReadonlyMap<string, string>;
+
+/** The brain-owned summary at the top of the page, rebuilt entirely from the proposal file (§7.4): applied and closed never go into an item section. */
+export function reviewSummary(proposal: Note, workspace: Workspace, items: readonly ReviewItem[], rowName: RowName, holds?: Holds): string {
   const outcomes = itemOutcomes(proposal, workspace, items, rowName);
   const count = (counted: Counted) => outcomes.filter((entry) => entry.counted === counted).length;
   const [applied, closed, deferred, waiting] = [count("applied"), count("closed"), count("deferred"), count("waiting")];
-  const head = `**Review summary** (the brain keeps this up to date; do not edit): ${outcomes.length - waiting} of ${outcomes.length} decided: ${applied} applied, ${closed} closed${deferred > 0 ? `, ${deferred} deferred` : ""}, ${waiting} waiting for you.`;
-  return outcomes.length === 0 ? head : [head, "", ...outcomes.map((entry) => `- ${entry.letter} · ${entry.title} — ${entry.outcome}`)].join("\n");
+  const decided = `${outcomes.length - waiting} of ${outcomes.length} decided: ${applied} applied, ${closed} closed${deferred > 0 ? `, ${deferred} deferred` : ""}, ${waiting} waiting for you.`;
+  if (items[0]?.format !== 2) {
+    const head = `**Review summary** (the brain keeps this up to date; do not edit): ${decided}`;
+    return outcomes.length === 0 ? head : [head, "", ...outcomes.map((entry) => `- ${entry.letter} · ${entry.title} — ${entry.outcome}`)].join("\n");
+  }
+  // Format 2 (capture-and-review §7.12.2): while nothing is decided and nothing held, the status counts what waits by group.
+  const held = (id: string) => holds?.get(id);
+  if (waiting === outcomes.length && !items.some((item) => held(item.item_id) !== undefined)) return `**Status:** waiting for you: ${groupCounts(items)}.`;
+  return [`**Status:** ${decided}`, "", ...outcomes.map((entry) => `- ${entry.title} — ${entry.counted === "waiting" && held(entry.item_id) !== undefined ? `Held: ${held(entry.item_id)}` : entry.outcome}`)].join("\n");
+}
+
+/** "2 changes, 3 new notes and 3 links": the groups that have items, a link counting each value (cli §5.6's counts). */
+function groupCounts(items: readonly ReviewItem[]): string {
+  const changes = items.filter((item) => item.group === "changes").length;
+  const notes = items.filter((item) => item.group === "notes" || item.group === "summary").length;
+  const links = items.filter((item) => item.group === "links").reduce((sum, item) => sum + (item.link_values?.length ?? 1), 0);
+  const parts = [[changes, "change", "changes"], [notes, "new note", "new notes"], [links, "link", "links"]] as const;
+  const words = parts.filter(([n]) => n > 0).map(([n, one, many]) => `${n} ${n === 1 ? one : many}`);
+  return words.length <= 1 ? (words[0] ?? "nothing") : `${words.slice(0, -1).join(", ")} and ${words.at(-1)}`;
 }
 
 const FIRST_USE = [
@@ -266,13 +390,84 @@ const FIRST_USE = [
   "> Nothing is read until you click **Submit decisions** at the top of the row. **Submit and accept all** accepts every section still on Pending. You can decide some sections now and leave the rest.",
 ].join("\n");
 
-export function renderReview(proposal: Note, workspace: Workspace, rowName: RowName): ReviewRender {
-  const items = reviewItems(proposal, workspace);
-  const summary = reviewSummary(proposal, workspace, items, rowName);
-  // `## Review summary` is a heading the skill finds by name, like the "Brief" heading of a project page (cli §5.14.4).
-  const body = [FIRST_USE, "", "## Review summary", summary, "", ...items.flatMap((item) => [item.section, ""])].join("\n").replace(/\n+$/, "\n");
-  return { items, body, summary, summary_hash: `sha256:${sha(summary)}` };
+const GROUP_HEADINGS: Record<Group, string> = { summary: "What this meeting was about", changes: "Changes to what you know", notes: "New notes", links: "Links" };
+
+export interface ReviewRender { items: ReviewItem[]; body: string; summary: string; summary_hash: string; context?: string }
+
+export function renderReview(proposal: Note, workspace: Workspace, rowName: RowName, format: 1 | 2 = reviewFormat(proposal, workspace.config), holds?: Holds): ReviewRender {
+  const items = reviewItems(proposal, workspace, format);
+  const summary = reviewSummary(proposal, workspace, items, rowName, holds);
+  if (format === 1) {
+    // `## Review summary` is a heading the skill finds by name, like the "Brief" heading of a project page (cli §5.14.4).
+    const body = [FIRST_USE, "", "## Review summary", summary, "", ...items.flatMap((item) => [item.section, ""])].join("\n").replace(/\n+$/, "\n");
+    return { items, body, summary, summary_hash: `sha256:${sha(summary)}` };
+  }
+  const context = brainContext(proposal, workspace, items);
+  const groups = (["summary", "changes", "notes", "links"] as const).filter((group) => items.some((item) => item.group === group));
+  const body = [
+    ...top(proposal, workspace, items), "",
+    "## Review summary", summary, "",
+    ...groups.flatMap((group) => [`## ${GROUP_HEADINGS[group]}`, ...items.filter((item) => item.group === group).flatMap((item) => [item.section, ""])]),
+    `## ${CONTEXT_HEADING} {toggle="true"}`, ...context.split("\n").map((line) => (line === "" ? "" : `\t${line}`)),
+  ].join("\n").replace(/\n+$/, "\n");
+  return { items, body, summary, context, summary_hash: `sha256:${sha(`${summary}\n\n${context}`)}` };
 }
+
+/** The top of a format-2 page (capture-and-review §7.12.2): what the source brings, what the marks mean, what to do, the source. */
+function top(proposal: Note, workspace: Workspace, items: readonly ReviewItem[]): string[] {
+  const a = proposal.attributes;
+  const source = typeof a.source === "string" ? workspace.get(a.source) : undefined;
+  const title = typeof a.source === "string" ? sourceTitle(workspace, a.source) : "this source";
+  const marks = [items.some((item) => item.warn && !item.held) ? "⚠ marks a change to something you already know" : null, items.some((item) => item.flags.length > 0 && !item.held) ? "⚑ something the brain is unsure about" : null].filter(Boolean);
+  const marked = marks.length === 0 ? "" : ` ${marks.join(" and ")}: Approve leaves ${marks.length === 2 ? "both" : "it"} until ${marks.length === 2 ? "their" : "its"} line says Decision: Accept.`;
+  const link = url(source?.attributes.notion);
+  return [
+    `**From ${escapeInline(title)}:** ${groupCounts(items)}.${marked}`,
+    "**What to do:** 1. Read the sections below, or click **Review with me** to go through them with Brain Assistant. 2. Correct a wording where it stands, or type Accept, Reject, Defer or Request revision on an item's Decision line. 3. Set **Your call**: Approve, Request revision (say what in What to fix) or Reject.",
+    ...(link === null ? [] : [`Source: [${title.replace(/[[\]]/g, "")}](${link})`]),
+  ];
+}
+
+const escapeInline = (text: string): string => oneLine(text).replace(/\*/g, "\\*");
+
+/** The brain-context toggle (capture-and-review §7.12.5, 0090 §2): never read back, rebuilt by every render that sends the row. */
+export function brainContext(proposal: Note, workspace: Workspace, items: readonly ReviewItem[]): string {
+  const a = proposal.attributes;
+  const labels = items[0]?.labels ?? pageLabels([]);
+  const passages = [...labels.byRef.entries()].map(([ref, label]) => {
+    const [, src, n] = PASSAGE.exec(ref)!;
+    const note = workspace.get(src!);
+    const text = note === undefined ? undefined : extractPassages(note.body).find((entry) => entry.n === Number(n))?.text;
+    return `- [${label}] ${text === undefined ? "(the text is not in the brain)" : escapeContext(oneLine(text))}`;
+  });
+  const shown = items.filter((item) => !item.held);
+  const what = shown.map((item) => `- ${escapeContext(item.summary_title)} (${item.item_id}): ${escapeContext(item.what)}`);
+  const unsure = shown.flatMap((item) => item.flags.map((flag) => `- ${escapeContext(item.summary_title)} (${item.item_id}): ${escapeContext(flag)}`));
+  const repeats = new Map<string, ReviewItem[]>();
+  for (const item of shown) if (item.repeat !== undefined) repeats.set(item.repeat, [...(repeats.get(item.repeat) ?? []), item]);
+  const repeatLines = [...repeats.entries()].filter(([, group]) => group.length > 1).map(([key, group]) => `- ${group.map((item) => escapeContext(item.summary_title)).join(", ")} record: ${escapeContext(key)}`);
+  const source = typeof a.source === "string" ? workspace.get(a.source) : undefined;
+  const related: string[] = [];
+  const page = (label: string, note: Note | undefined) => { if (note === undefined) return; const link = url(note.attributes.notion); const title = String(note.attributes.title ?? note.id).replace(/[[\]]/g, ""); related.push(`- ${label}: ${link === null ? escapeContext(title) : `[${title}](${link})`}`); };
+  page(source?.type === "meeting" ? "Meeting" : "Source", source);
+  for (const project of Array.isArray(source?.attributes.projects) ? source.attributes.projects : []) page("Project", workspace.get(String(project)));
+  if (typeof source?.attributes.area === "string") page("Area", workspace.get(source.attributes.area));
+  return [
+    "**Source passages**", ...(passages.length === 0 ? ["- None cited."] : passages), "",
+    "**What each item changes**", ...(what.length === 0 ? ["- Nothing to show."] : what), "",
+    "**Where the brain is unsure**", ...(unsure.length === 0 ? ["- Nothing flagged."] : unsure), "",
+    "**Repeats**", ...(repeatLines.length === 0 ? ["- None marked."] : repeatLines), "",
+    "**Related pages**", ...(related.length === 0 ? ["- None."] : related), "",
+    "**Rules for writing into this page**",
+    "- Write only inside an item section: its wording, its Decision line (Accept, Reject or Defer) and its Revision request line, after the user's yes to a preview.",
+    "- Move a [¶n] marker only when the wording changed, and only to a passage listed under Source passages that holds the new text. Never invent one.",
+    "- Under a section you changed, add one line \"Agreed in review: …\" with what the user decided and why, in a few words.",
+    "- Never change a heading, a ref line, a toggle's structure, this toggle, any property or Your call.",
+  ].join("\n");
+}
+
+/** A line of the toggle never reads as item structure. */
+const escapeContext = (text: string): string => text.replace(/\n/g, " ").replace(/^(\s*)(ref |Decision:|Revision request:|Agreed in review:)/i, "$1\\$2");
 
 // ── Reading the page back (capture-and-review §7.3) ──────────────────────────────────────────────
 
