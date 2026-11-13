@@ -305,7 +305,7 @@ Answer with "yes 1, 2b", a change ("1: due Friday"), "skip 4 because …", or "p
 - **"yes 1, 2b"** makes those changes now: "yes 1" is the first suggestion (a), "2b" the second. "yes to all" takes every a). When a change needs something from you (a new due date, which Domain), it asks first. You can also say the change yourself: "1: due Friday", "3: mark it Waiting On".
 - **"propose 5"** writes the change as a **Suggestion** row in Review instead, so you can decide it later in Notion like any other row. Once you approve it, the next "apply my reviews", "catch up" or review session makes the change.
 - **"skip 4 because it's a personal area"** stops it being flagged. When a status says why (a task Waiting On or Someday, a project On Hold), it offers to set it; otherwise it remembers the skip for 30 days, with your reason. "show the skipped ones" lists them, and "unskip s2" brings one back. Rejecting a Suggestion row counts as a skip for 30 days too.
-- **"done"** ends the session: it tidies up, commits and pushes, and says what changed.
+- **"done"** ends the session: it tidies up, saves your brain and backs it up (or reminds you to), and says what changed.
 
 **Tell it what's on your mind.** Say several things at once ("the Acme quote is done, I should call Lucía about the contract by the 13th, and maybe a blog series on onboarding") and it lists where each goes: a change to an existing task or project, a new task in Tasks (with its project and due date), a new project from your template, or an Inbox capture for the next catch-up. Nothing lands until you say "yes to all", or yes to the ones you want; "later 17" keeps that one as a New capture.
 
@@ -358,7 +358,7 @@ Say "run catch-up every morning" (or "twice a day", "on weekdays") and the agent
 **Where you find out what it did.**
 - Your next **"catch up"** opens with one line: "Since last time: 4 scheduled runs, 6 inputs in, 1 skipped, 1 Fix waiting, 1 failed: Notion login". It also warns "Backlog growing" when three runs in a row left inputs over: run it more often or raise the budget.
 - With **Reports** on and **publish: auto**, a run that needs you or failed also adds one row to the Inbox, of Kind Catch-up ("Catch-up 29 Oct: 2 in, 1 needs you"). A run that went well adds nothing.
-- With publish **ask** (the default), a scheduled run commits and pushes but publishes nothing to Notion; your next catch-up publishes. Say "publish automatically" to change that.
+- With publish **ask** (the default), a scheduled run saves your brain and backs it up (or reminds you to) but publishes nothing to Notion; your next catch-up publishes. Say "publish automatically" to change that.
 
 **Check or stop it:** "what is scheduled?" lists it, "stop the scheduled catch-up" removes it, and asking again with other times replaces it. If Claude Code's login to Notion expires, scheduled runs can't read Notion: that shows as a failure in the summary, and signing in again fixes it.
 
@@ -402,6 +402,21 @@ Your agent follows a **response style** you choose: how much it explains, how lo
 Say "talk to me more simply", "shorter answers", "more detail", "skip the jargon", "get to the point", or "go back to normal" for Standard. The agent saves it in your brain's settings, says in one line what changed, and answers that way from its next reply. Folders you linked follow the next time you run `brain link` there; a linked project registered in the brain also follows at the next `brain upgrade`. Ask in a session in your brain folder: a linked folder reads the brain but doesn't change it.
 
 The style covers what the agent says to you in its own words. Reports and summaries a command produces are shown as they are. Some rules hold whatever the style: no "Great question!" or "Let me know if…", an error comes with its cause and its fix, and a reply that leaves something open ends with the one next action.
+
+---
+
+## Where your work sits
+
+Your agent knows how your work is organised from the start of every session. Your brain's `AGENTS.md` (the instructions every agent reads) has a section **Your structure**: your Domains, the Areas in each, and the active Projects in each, with their ids.
+
+- **You don't edit it.** The brain rewrites it after every change, so a new Area, a renamed Project or one you archive shows up there at the next run. Anything typed inside it is lost; your own rules go under **My rules**.
+- **Only active Projects are listed.** A Project you set to Planned, On Hold or Done, or archive, leaves the list; one just created and not yet synced is in it. An Area with no Domain is under **No domain**, and a Project with no Area under **No area**.
+- **It doesn't let the agent invent structure.** The agent uses it to place what it writes. It creates a Domain, Area or Project only when you ask, or say yes to its suggestion.
+- **To change your structure,** say it to your agent ("add an Area for hiring under the studio") or change it in Notion; the list follows.
+
+**What belongs to a Project or an Area.** Ask "what's in Acme website?" or "what's open in Clients?". The agent reads the page's **Brief**, which lists its recent decisions, open questions, meetings and, when Documents is on, its Documents (an Area's Brief also lists its Projects), and reads the tasks live from Notion each time, so you always get today's status.
+
+**Linked folders** show only their own place: the Project, its Area and the Area's Domain. The block there is committed in that repository, which other people may read, so the rest of your structure stays in your brain.
 
 ---
 

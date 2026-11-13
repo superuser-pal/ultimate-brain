@@ -1,17 +1,17 @@
 {
   "format": 1,
   "name": "ultimate-brain-skills",
-  "version": "1.8.3",
+  "version": "1.8.4",
   "cli": ">=0.14.0-0 <0.15.0",
   "source": {
     "repository": "https://github.com/superuser-pal/ultimate-brain-skills",
-    "commit": "ed80c301e8f9b9bdfb00201efd787299245a0f17"
+    "commit": "f57948ddae4dbdc662cf6effd58df33556a9c9d3"
   },
   "upstream": {
     "repository": "https://github.com/mattpocock/skills",
     "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa"
   },
-  "integrity": "sha256-6c8290c563e89c9ba8739ab90ea8d06851fd1b42a6273ed3275e219682aaf1a9",
+  "integrity": "sha256-6c69a85b4dc040dc50b63174b538ed16ad25a699b16d568f0f5b8dddcdf323aa",
   "skills": [
     {
       "name": "brain-apply",
@@ -21,8 +21,8 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "041c83b294b8723c40b6a0e3c419f3ef0bffd779ba819886fbf4cac7df2eef6b",
-          "bytes": 22141
+          "sha256": "4955186491cdaa2c7e4e092e7eccb8c84a13763dd0140c12137c85ca6a8ec7a0",
+          "bytes": 22881
         },
         {
           "path": "references/review-items.md",
@@ -39,8 +39,8 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "ac932263b5e756dd2652904d73cdcbe67e02c7db259c537dba41494fbec276e3",
-          "bytes": 45016
+          "sha256": "fb557c7374c4d02c48cae20c46f65b0cb90275bc140b4bbf682515eb80c19dd4",
+          "bytes": 46836
         }
       ]
     },
@@ -65,8 +65,8 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "721474914cf6d50ed2970eafded438ad7069780383c35e4aad8350bba0ae1787",
-          "bytes": 6143
+          "sha256": "f97b6a703877d7e439b55c8480df147377feeed42de599212a9ef592fbb15205",
+          "bytes": 6216
         },
         {
           "path": "references/everyday-guide.md",
@@ -75,8 +75,8 @@
         },
         {
           "path": "references/guide.md",
-          "sha256": "066addcd34984184a421ece94e02195510a31d4e589a1f41ca4f45ed330d5b83",
-          "bytes": 53611
+          "sha256": "129e1b7e4b8671f2fa3424084c7b88024e448a5bbbc4fc4bb445cb1c9221d604",
+          "bytes": 55347
         }
       ]
     },
@@ -88,8 +88,8 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "9ad23e744354540460c086c068e49fc93c3e16df02d8d2413d5e10e6cc9714da",
-          "bytes": 23841
+          "sha256": "9b0cd1908e638536c8cdc1dca183121e67a1f042352ee7e7495c9c2329e3c13d",
+          "bytes": 24515
         },
         {
           "path": "references/cli-inputs.md",
@@ -123,8 +123,8 @@
         },
         {
           "path": "references/todo-tidy.md",
-          "sha256": "a87a0eab0c53cc9e6d71aa1e0d36e977b556d570fc98016342e1d2a2dcfe8155",
-          "bytes": 5593
+          "sha256": "49443ce19c4a7c8d92a64ba930319063a19f975872b4fa37ef8154393978d204",
+          "bytes": 5968
         }
       ]
     },
@@ -150,13 +150,13 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "c82c76844bcc7cd490db643a29c20dd61e605ddc5bb81c57f28170030d24f248",
-          "bytes": 22421
+          "sha256": "680d096c969ee659461f56ce57811df91f1dcd78ad495635d1feb4363f8630ea",
+          "bytes": 23713
         },
         {
           "path": "references/memory.md",
-          "sha256": "b29a4c293b892b30fb1d8492e7bacde85925744f9da564d2a45c3b56349cf0be",
-          "bytes": 8829
+          "sha256": "a28777bb3caa1ca4b3f37767eb75cfdf1c82c2dbc419ff04cc9499874c64d703",
+          "bytes": 9535
         },
         {
           "path": "references/writing.md",
@@ -173,8 +173,8 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "d360fff3f7c94249ab28e4971be2b6052b8bd199d648eec251e758207e4f93d9",
-          "bytes": 12247
+          "sha256": "77e389ec3db62636062a6818fbd545714c152649b5cbd916b417b6ac91371860",
+          "bytes": 12900
         },
         {
           "path": "references/answers.md",
@@ -214,8 +214,13 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "dc20e646fc06af3572dd7a8d53d575b212c27318cff6ceac8a7747c15afccde3",
-          "bytes": 13057
+          "sha256": "7a90764697cafde7b31f29982f87e872176df1879244717020778c4fe1158a29",
+          "bytes": 14358
+        },
+        {
+          "path": "references/backup.md",
+          "sha256": "27302e2db447e2bb39d326735bf3d6af20f31db1c70d5fb2d2f47f92d5133bc1",
+          "bytes": 9254
         },
         {
           "path": "references/first-value.md",
@@ -229,13 +234,13 @@
         },
         {
           "path": "references/prerequisites.md",
-          "sha256": "9d1790dee40a356deaf969d4aa89097f461cf3fa5f09754a4a44c9b5b8a5e001",
-          "bytes": 2935
+          "sha256": "0b1a0d4024cd86615eef636a13ee4f2154685655cb712bbc76c95fe0c7cee67c",
+          "bytes": 4296
         },
         {
           "path": "references/report.md",
-          "sha256": "996e0002341c84d71ddbbd93e8dad0fc5e19e0526cb72d3644dac9023b1f62cc",
-          "bytes": 5365
+          "sha256": "40951de2cb8884e8e35b9130fec7c2f7187232597e8842a397b80c1b143fe133",
+          "bytes": 5647
         },
         {
           "path": "references/seeding.md",
@@ -244,8 +249,8 @@
         },
         {
           "path": "references/settings.md",
-          "sha256": "a40ed7025ce8652de7254b0a37bc1f13a12613f82ded83762a3ffc64a404984b",
-          "bytes": 12760
+          "sha256": "b440ea3ff6156c525ca563e24cd781b84a13befb7c641aca9b94250ebf8c87a5",
+          "bytes": 14397
         }
       ]
     },
@@ -257,8 +262,8 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "a92f3bb747ad452ae50e03914aa4bf4c147193108771fc83a60d3320fcb169b4",
-          "bytes": 28199
+          "sha256": "f7f03d7e0d9fbd154bd724b905f33b2ec652020fee8c8e39c5240cf3056cdf9b",
+          "bytes": 28873
         },
         {
           "path": "references/formats.md",
@@ -286,8 +291,8 @@
         },
         {
           "path": "references/setup.md",
-          "sha256": "0e3140f7d3422b77a69cee9b4738d0e8ff31c9d01f5371dc6ad26e551ed7b06a",
-          "bytes": 7252
+          "sha256": "33e805dbd5db5b77db383a27d766dc502cf2f2e485437a431a80810f4a9f3dee",
+          "bytes": 7411
         }
       ]
     },
@@ -318,8 +323,8 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "e52aa622dc4f28b17b7f937c129894da2593695733b83316a948d71553b1ce16",
-          "bytes": 12034
+          "sha256": "63772d61cc55864d75e64372ab63d6fe77aaee62aa3277d962680ee888e1884d",
+          "bytes": 12726
         },
         {
           "path": "references/answers.md",
@@ -328,8 +333,8 @@
         },
         {
           "path": "references/ramble.md",
-          "sha256": "d7db130a933116ecb9e2d90a90508430efb2f7bd04f107629f99e3c87b1c3f91",
-          "bytes": 10416
+          "sha256": "c5c85b5c5d52f28169cf0a6888db669950310b6c1135c7a17ae0a3c49c2b326f",
+          "bytes": 10683
         },
         {
           "path": "references/skips.md",
