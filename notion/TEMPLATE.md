@@ -6,8 +6,8 @@ Two templates exist; this one is the **Notion template**. The **brain folder** (
 
 | | |
 |---|---|
-| **Link** | **NOT PUBLISHED YET.** Placeholder: U-27 publishes the template and replaces this cell with its link, adding one `scripts/leak-allow.txt` entry for it in the same change. Until then there is nothing to duplicate. |
-| **Template version** | **NOT RECORDED YET.** Placeholder: the number of the last migration in [migrations/](migrations/) when U-27 builds the template (`0023` today, CC-197's lean minutes; a later 0.14.0 task may add one first). U-27 records it here with the link. |
+| **Link** | https://sentina.notion.site/TEMPLATE-Ultimate-Brain-416495661e99806ea2dcca48eb4e55ff |
+| **Template version** | `0023` |
 
 **Template version** is the four-digit number of the last migration in [migrations/](migrations/) the template includes. The template shows the same number as a line of its own in the System callout on its top page (as inline code or plain text, spec/setup.md §9), `Template version: NNNN`, and the connect step stores it in `brain.json` as `notion.template_version`; `brain upgrade` then names the migrations newer than it (spec/setup.md §9, spec/cli.md §5.15).
 
