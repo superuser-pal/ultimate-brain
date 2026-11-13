@@ -7,7 +7,7 @@ Status says where each row is decided (decision 0088). A row from a source is a 
 ```text
 On this page ("Review"), first add one gray paragraph: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. Status says what each row needs. Needs you · decide in the page: open the row, type your decision on each change's Decision line and click Submit decisions. Needs you · set Your call: pick Approve or Reject, or Fix and say what's wrong in What to fix." Then add four tabs, each a linked view of "Review":
 1. Tab "Needs my decision": Table, named "What needs my decision?": filter State is Pending; sort Created time descending; show Status, Name, Type, Your call, Area.
-2. Tab "Sources disagree": Table, named "Where do sources disagree?": filter Kind is Contradiction and State is Pending; sort Created time ascending; show Name, Now, Proposed, Your call.
+2. Tab "Sources disagree": Table, named "Where do sources disagree?": filter Kind is Contradiction and State is Pending; sort Created time ascending; show Status, Name, Now, Proposed, Your call.
 3. Tab "Approved": List, named "What did I approve recently?": filter State is Applied and Last edited time is within the past month (relative date); sort Last edited time descending; show Name, Type, Proposed.
 4. Tab "Rejected": List, named "What did I reject?": filter State is Closed; sort Last edited time descending; show Name, Type.
 

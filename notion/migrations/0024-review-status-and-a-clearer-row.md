@@ -65,7 +65,8 @@ Paste on the **Review** page:
 Use only the databases on Brain Data. On this page ("Review"):
 1. Replace the text of the gray paragraph above the tabs with exactly: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. Status says what each row needs. Needs you · decide in the page: open the row, type your decision on each change's Decision line and click Submit decisions. Needs you · set Your call: pick Approve or Reject, or Fix and say what's wrong in What to fix." Keep it gray.
 2. In the view "What needs my decision?", show exactly Status, Name, Type, Your call, Area, in that order. Keep its filter and sort.
-3. In every view on this page, hide the property Kind. Where Status is shown, it comes first.
+3. In the view "Where do sources disagree?", show exactly Status, Name, Now, Proposed, Your call, in that order. Keep its filter and sort.
+4. In every view on this page, hide the property Kind. Where Status is shown, it comes first.
 Change nothing else.
 ```
 
@@ -111,7 +112,7 @@ If the System callout on your top page reads `Template version: …` with a lowe
   - set State to Applied: **Done**; to Closed: **Closed**.
 
   Delete the test row afterwards.
-- [ ] No Review view shows Kind, and no row's page shows it outside **Show all properties**.
+- [ ] No Review view shows Kind, and no row's page shows it outside **Show all properties**. "What needs my decision?" and "Where do sources disagree?" show Status first.
 - [ ] A Review row's heading reads Status, Submit decisions, Submit and accept all, About Page. Your call and What to fix open the property group.
 - [ ] On a row from a source, after the next publish, About, Now, Proposed and Why don't show. On a Conflict or Answer row, the ones with a value still show.
 - [ ] Home's "What's waiting for you?" lists only rows whose Status starts with "Needs you". A row you submit leaves it.
