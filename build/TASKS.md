@@ -775,7 +775,7 @@ Moved to 0.14.0 by the user, 2026-11-11: the CLI skip and its brain-ingest wordi
 
 ## 0.14.1
 
-**Patch after 0.14.0 (decision [0091](../decisions/0091-other-peoples-text-keeps-its-links.md)):** dogfood fixes triaged on 2026-11-13.
+**A patch cut after 0.14.0 final is released (decision [0091](../decisions/0091-other-peoples-text-keeps-its-links.md)):** dogfood fixes triaged on 2026-11-13. Nothing here ships in 0.14.0.
 
 ### CC-249 · Triage dogfood 344 and 345: decisions 0091 and 0092, two tasks · `review`
 **Release:** 0.14.1
