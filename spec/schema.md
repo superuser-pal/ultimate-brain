@@ -753,6 +753,7 @@ The generated block contains these sections in this order; a section with no ite
 
 **Waiting line (0041).** In sections 4 and 5, when no note qualifies but N ≥ 1 notes would qualify if their `lifecycle` were `reviewed` (they are `draft`), the section renders the single line `- Nothing reviewed yet: N notes waiting in Review` (`1 note` for one) in place of `- None`. Those draft notes produce no item line and are not in `generated_from`.
 6. `## Recent meetings` — meetings whose `projects` contains the project; sorted by `date` descending, then id; at most 5: `- <date> — [<title>](<path>)`.
+7. `## Documents` (0089, from 0.14.1; only when the Documents module is on) — Documents (`reference`) whose `projects` contains the project, not `archived`; only `reviewed` ones make item lines, with the waiting line of items 4 and 5 when none qualifies; sorted by `updated` descending (`created` when absent), then id; at most 10: `- [<title>](<path>)[ — <origin>]`, then, when more qualify, one last line `- <N> more` with no link.
 
 ### 16.2 `decision-log.md` (`view_kind: decision_log`)
 The decision log lists every decision of the project, whatever its lifecycle: it is the history, not a summary of what you reviewed. One exception: an `archived` decision whose `assessment` is not `superseded` is in neither section and not in `generated_from` (CC-218). Archived without a successor means the decision was not taken: a draft you rejected in Review, one withheld because it rested only on excluded evidence (§11.5), or one you archived; listing it under Current would show it as decided (eligibility.md §8 rule 7). A draft still waiting in Review stays listed, and a superseded decision stays under Superseded.
@@ -770,6 +771,7 @@ One per area, rebuilt with the project views; `<area slug>` is the slug of the a
 1. `## Projects` — projects whose `area` is the area and whose `notion_fields.archived` is not `true`, sorted by title then id: `- [<title>](<path>)[ — <notion_fields.status>]`.
 2. `## Recent decisions` — decisions that belong to the area, with the filters and format of §16.1 item 4; at most 5.
 3. `## Open questions` — questions that belong to the area, with the filters and format of §16.1 item 5; at most 10.
+4. `## Documents` (0089, from 0.14.1; only when the Documents module is on) — Documents that belong to the area, with the filters, order, cap and format of §16.1 item 7.
 
 `generated_from` is the area's id plus every note that produced an item line, sorted. The publish writes the generated block into the "Brief" toggle heading of the area page (cli.md §5.14.4).
 
