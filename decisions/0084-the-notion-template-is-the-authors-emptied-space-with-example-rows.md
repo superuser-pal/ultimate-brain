@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-11-12
 **Release:** 0.14.0
+**§3 and §4 amended by:** [0087](0087-the-template-shows-an-example-in-every-database.md) (2026-11-12): the template carries an Example row in every database on Brain Data (fifteen, all from the same story) and a callout on Brain Data saying they are examples; brain-apply and Ultimate Assistant skip Example rows too
 **Amends:** [0078](0078-onboarding-and-early-access-in-0-14-0.md) §1, one sentence: "The template is built in a dedicated Notion workspace holding only the template, never copied from the author's space" (it is now a copy of the author's own Ultimate Brain space, emptied and scrubbed, in the author's one workspace); and 0078's Out of scope, one item: "a synthetic sample meeting in the template" (the template now carries one Example meeting among seven Example rows, removed when setup connects the brain)
 **Keeps:** every other rule of 0078: the published template with every module, published with duplication allowed; its link and version kept once in `notion/TEMPLATE.md` with one leak-allow entry; the Start here callout; the Template version line and `notion.template_version`; the two templates named apart; §2 to §6 (the guided setup, seeding, the new-brain defaults, the three-way evidence with CC-193's release gate in a separate test space, early access); its other exclusions
 
