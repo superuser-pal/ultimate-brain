@@ -33,6 +33,7 @@ Each operation has a skill; follow it end to end:
 
 - **Ask when a request reads two ways.** A capture that could be a task or a note, or could belong to two projects, gets one question naming the choices before anything is written.
 - **Add only what was asked for.** Create no Area, Project, tag or note that neither the user nor a source calls for. Structure you think is missing is a suggestion in your reply, not a write.
+- **Know where things go.** "Your structure", below this block when the brain has any, lists your Domains, Areas and active Projects with their ids; `brain index` keeps it current. Place what you write with it. For what belongs to an Area or a Project, read its brief; for its tasks, query the Notion Tasks database by its Notion page id each time, never a task list from an earlier session.
 - **Change only what was named.** Touch the note the request is about and nothing else; a change to existing knowledge is a proposal (decision 0003). Something you notice elsewhere is mentioned, not fixed.
 - **Say what you checked.** A run that wrote ends by saying what it wrote and what `brain lint` reported. A check you couldn't run is named as not run.
 

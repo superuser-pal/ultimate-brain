@@ -17,6 +17,7 @@ import { contextFor, indexNotes, loadSuppressions, restrictionOf } from "../lib/
 import { normalizeTimestamp } from "../lib/time.ts";
 import { installedProduct } from "../lib/skills.ts";
 import { homeOf, statusSkills } from "../lib/skills-pin.ts";
+import { readAgentsMarkdown } from "../lib/structure.ts";
 
 const NOTE_TYPES = ["domain", "area", "project", "person", "org", "meeting", "decision", "question", "source", "view", "goal", "memory", "reference"];
 const PROPOSAL_STATUSES = ["pending", "approved", "edited", "rejected", "applied", "closed"];
@@ -61,6 +62,7 @@ export const statusCommand: Command = {
       problems,
       brainConfig: brain!.config,
       indexMarkdown: currentIndex,
+      agentsMarkdown: await readAgentsMarkdown(brain!.root),
     });
     const viewStale = issues.filter((issue) => issue.rule === "view-stale").map((issue) => issue.path);
 
@@ -91,7 +93,7 @@ export const statusCommand: Command = {
       settings,
       unattended: await unattendedRuns(brain!.root),
       repos,
-      index_stale: currentIndex !== index,
+      index_stale: currentIndex !== index || issues.some((issue) => issue.rule === "index-stale" && issue.path === "AGENTS.md"),
       views_stale: viewStale,
       suppressions,
       last_log: lastLog,
