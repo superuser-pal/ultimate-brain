@@ -2,6 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-10-22
+**Amended by:** [0088](0088-a-review-row-says-it-needs-you-and-a-review-page-reads-plainly.md) (2026-11-13): on a Review row with item sections, About, Now, Proposed and Why are left empty and hidden, and Your call and What to fix leave the row's heading; a Status formula says whether the row needs you
 **Amends:** 0003, 0026, 0041, 0043
 **Refines:** 0007, 0032, 0035
 
