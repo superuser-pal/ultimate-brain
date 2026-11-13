@@ -6,6 +6,7 @@ One run, with Claude Code, from `npm install` to the first-meeting line. The Cod
 
 - **Date:** 2026-11-13
 - **Package:** `ultimate-brain@0.14.0-rc.2` (npm `next`) · **skills snapshot:** ultimate-brain-skills 1.8.4 (`skills.lock.json` `installed_by` 0.14.0-rc.2) · **template version:** 0024
+- **Why rc.2 stands for 0.14.0:** the gate ran on the last release candidate on purpose. Between `v0.14.0-rc.2` and the gate's end, nothing under `src/`, `.agents/skills/`, `templates/`, `spec/schemas/` or `package.json` changed on `main` (`git log v0.14.0-rc.2..origin/main -- src .agents/skills templates package.json spec/schemas` is empty): only planning files merged (#358 to #360, decisions 0090 to 0093). So 0.14.0 ships the same first-value path. A product change merged before the release would mean running this gate again.
 - **Agent:** Claude Code, a fresh headless session (`claude -p`, resumed turn by turn) in a new brain made with `brain init` (without `--set-default`, so the machine's existing brain stayed the default). The person running the gate played Ines from [persona.md](persona.md); the steps in Notion (the minutes prompt, Brain Assistant, Review, the meeting) were done by hand in a fresh duplicate of the published template.
 - **Notion:** a duplicate of the published template in a test page of a workspace that also holds a real brain's space and the template itself (three spaces with the same page and database names).
 
