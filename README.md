@@ -18,8 +18,13 @@ Ultimate Brain uses two templates, and you meet both here: the **Notion template
 - **Git.** Check with `git --version`. Install it from [git-scm.com](https://git-scm.com/downloads).
 - **Claude Code or Codex**, the agent that runs your brain.
 - **A Notion plan with Notion AI.** Notion AI writes your meeting minutes and runs Brain Assistant. Custom Agents (Business and Enterprise plans) are a plus, not a must.
+- **The GitHub CLI (`gh`), signed in.** Setup uses it to create your backup: a private copy of your brain on GitHub. Install it with `brew install gh` (not on a Mac: follow [cli.github.com](https://cli.github.com)), then sign in:
 
-Nice to have: the GitHub CLI (`gh`), so setup can create your private backup for you. Setup explains it when you get there.
+  ```sh
+  gh auth login
+  ```
+
+  When it asks, choose to let it set up Git's credentials. Check with `gh auth status`.
 
 ### 2. Duplicate the Notion template
 

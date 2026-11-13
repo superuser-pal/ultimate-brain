@@ -18,10 +18,10 @@ The brain folder is where your knowledge is kept. Notion is where you read it, r
 | Claude Code or Codex | The agent does the work: it reads your material, writes notes and talks to Notion. | Yes |
 | Notion AI | It writes your meeting minutes and runs Brain Assistant. | Yes, for early access. See [Without Notion AI](#without-notion-ai). |
 | Custom Agents (Business and Enterprise plans) | Brain Assistant runs as a Custom Agent whose access you limit to your brain's pages. Without them, it runs from your personal Instructions. | No |
-| The GitHub CLI (`gh`) | Setup can create your private remote and send your setup report for you. | No |
+| The GitHub CLI (`gh`), signed in | Setup creates your backup with it, checks that the backup stays private, and sends your setup report if you say yes. | Yes, for early access. |
 | MarkItDown | It turns PDFs, Word files, slides, spreadsheets and saved web pages into exact text, so quotes are exact. | No |
 
-Setup checks all of these at once, at the start. It asks you about your Notion plan, since nothing can read it.
+Setup checks all of these at once, at the start. It asks you about your Notion plan, since nothing can read it. Install `gh` and sign in to it before you say "set up my brain", as Get started's step 1 shows: without it, setup stops at step 1 (see [`gh` is missing or signed out](#gh-is-missing-or-signed-out-gh-missing-gh-signed-out)).
 
 ## The steps
 
@@ -30,7 +30,7 @@ Setup checks all of these at once, at the start. It asks you about your Notion p
 | # | Step | What you do | Why it is here |
 |---|---|---|---|
 | 1 | Prerequisites | Answer one question about your Notion plan. | Everything after needs them. |
-| 2 | Settings | Read one screen, then say "keep these" or change a line. | Later steps use your remote and drop folder. |
+| 2 | Settings | Read one screen, then say "keep these" or change a line. | Setup creates your backup, and later steps use your drop folder. |
 | 3 | Notion template and connection | Duplicate the template, connect your agent to Notion, restart the agent. | The brain needs a space to write to. |
 | 4 | Connect the brain to Notion | Say yes to moving the template's example rows to Notion's trash. | The brain stores each database's id and the template's version. The example rows go before anything reads your space, so none of them ever enters your brain. |
 | 4a | The minutes prompt | Paste the prompt into your Notion AI settings, then run it on a short invented meeting. Delete the test page afterwards. | Your meeting minutes come out in the shape the brain reads. |
@@ -57,16 +57,16 @@ You judge the parts only you can ("are these your commitments?"). Setup never in
 
 ## The settings
 
-Step 2 shows one screen with every setting filled in. Change any of them later by asking your agent in your brain folder, for example "turn on markitdown", "change my drop folder" or "push: remind".
+Step 2 shows one screen with every setting filled in. Change any of them later by asking your agent in your brain folder, for example "turn on markitdown", "change my drop folder" or "back up: remind me".
 
 1. **Brain folder.** The folder `brain init` made. Everything the brain knows is here. `--set-default` records it, so `brain` finds it from anywhere.
 2. **Git identity.** Your name and email, for all your repositories or for this one only. Every change the brain makes is a commit with this name, so you can see and undo it.
-3. **Private remote.** A private copy of your brain on GitHub or another Git host. It is your backup, and it lets another machine use the brain. It must be private: your notes are about real people and real work. With `gh`, setup creates it for you, named after your brain folder. Without `gh`, it gives you the steps.
+3. **Backup.** A private copy of your brain on GitHub, so nothing is lost and another machine can use it. The screen shows `Backup: a private GitHub repository, created for you`: setup creates it with `gh`, named after your brain folder, unless your brain already has one, which it keeps. It must be private, since your notes are about real people and real work: setup checks that it is, and stops if it isn't (see [Your backup is public](#your-backup-is-public-remote-public)).
 4. **Drop folder.** Default `~/Documents/brain-dropbox/`, created for you. The next catch-up reads the files you drop here: documents, exports, notes.
 5. **The language your notes are written in.** Default: the language you write to your agent in. The brain writes every note in this language, whatever the language of the source, so search and answers stay consistent.
 6. **Modules.** Default: Knowledge, Orgs, Documents, Reports and Tasks on, Planning off, and Domains decided when you describe your work (on when you name two or more contexts, such as work and personal). These are the parts of your Notion space the brain uses. The template holds every part, so turning a module on later needs no work in Notion.
 7. **Publish.** Default `ask`: the brain asks before it publishes to Notion. With `auto`, it publishes after each run.
-8. **Push.** Default `auto`: the brain pushes to your remote after each run, so your backup stays current. With `remind`, it reminds you instead.
+8. **Back up after each run.** Default `on`: the brain backs up after each run, so your backup stays current. With `remind me`, it reminds you instead, and the last line of each report says how many changes aren't backed up yet. Change it by saying "back up: remind me".
 9. **Opening recall in linked repos.** Default `off`. When you link a project's repository to the brain, agents working there can load what the brain remembers about that project when a session opens.
 10. **MarkItDown.** Default `on` when it is installed, else `off`. On, PDFs, Word files and slides become exact text. Off, the agent reads files itself: in Claude Code, PDFs and images need nothing extra; in Codex, images are read with its image tool, and PDFs need MarkItDown. To install it:
 
@@ -78,11 +78,7 @@ Step 2 shows one screen with every setting filled in. Change any of them later b
     markitdown --version
     ```
 
-11. **`gh`.** Default `on` when `gh auth status` passes, else `off`. It lets setup create your private remote and send your setup report. Install it from [cli.github.com](https://cli.github.com), then sign in:
-
-    ```sh
-    gh auth login
-    ```
+11. **GitHub CLI (`gh`).** Shown `on`, since step 1 already checked that it is signed in. It creates your backup, checks that it stays private, and files your setup report for you. Early access needs it, so it can't be turned off.
 
 12. **Scheduled catch-up.** Default `off`, and asked in step 8. Catch-up then runs on its own at the times you choose. It only takes in what you've marked ready. It is offered only after first value passes, so it never runs on a brain that hasn't proved it works.
 13. **How the brain talks to you.** Default Standard. Simple uses plain words, short answers and the answer first. Custom lets you choose how much it explains, how long its answers are and what comes first. Change it any time: "talk to me more simply", "shorter answers", "go back to normal".
@@ -114,32 +110,43 @@ Git had no name and email yet. Nothing is lost: the files are there, and step 2 
 
 Install what setup names: Node 22.6 or later from [nodejs.org](https://nodejs.org), Git from [git-scm.com](https://git-scm.com/downloads). Then say "set up my brain" again. Setup runs in Claude Code or Codex: open one of them in your brain folder.
 
+### `gh` is missing or signed out (`gh-missing`, `gh-signed-out`)
+
+Setup needs the GitHub CLI, signed in, to create your backup. It stops at step 1 with two steps:
+
+1. Install it. On a Mac:
+
+   ```sh
+   brew install gh
+   ```
+
+   Not on a Mac: follow [cli.github.com](https://cli.github.com).
+2. In your terminal, sign in:
+
+   ```sh
+   gh auth login
+   ```
+
+   When it asks, choose to let it set up Git's credentials.
+
+Then say "set up my brain" again. With `gh` installed but signed out, only the second step is shown. Setup checks only your sign-in to github.com.
+
 ### Your Notion plan has no Notion AI (`notion-ai-missing`)
 
 Early access needs Notion AI. Add it to your plan, then say "set up my brain" again. Not sure what your plan includes? It is in Notion's settings, or ask your workspace's admin. There is also a path without Notion AI, which becomes supported at 1.0: see [Without Notion AI](#without-notion-ai).
 
-### The private remote couldn't be created (`remote-failed`)
+### The backup couldn't be created (`remote-failed`)
 
-- **The name is taken:** choose another name when setup asks.
-- **Without `gh`:** on your Git host, create an empty private repository with no README, and copy its URL. Then, in your brain folder:
+- **The name is taken, or there is no network:** setup says which and offers another name. It stays at step 2 until the backup is created.
+- **Your brain already has a backup that `gh` can't read** (on another Git host, or one your GitHub account can't access): early access supports only a backup on GitHub. A backup on another Git host becomes possible at 1.0.
 
-  ```sh
-  git remote add origin <the URL>
-  ```
+### Your backup is public (`remote-public`)
 
-  ```sh
-  git push -u origin HEAD
-  ```
-
-  Say "done", and setup checks it.
+Your brain already had a backup, and it is a public repository. Setup stops at step 2 and offers to make it private. Say yes, and it does, then goes on.
 
 ### A push failed (`push-failed`)
 
-Setup goes on: your work is saved in the brain folder. Usually your Git host needs you to sign in (`gh auth login` for GitHub). Then push from your brain folder:
-
-```sh
-git push
-```
+Setup goes on: your work is saved in the brain folder. Say "fix my backup" (see [Your backup](#your-backup-and-fix-my-backup)).
 
 ### Your agent can't reach Notion (`notion-unreachable`)
 
@@ -203,6 +210,37 @@ Then say "set up my brain": only the checks that didn't pass run again. The sche
 ### Something else
 
 Ask "where am I in setup?" or run `brain status`. Say "show my setup report" to see every step and what failed. It holds no names or content, and goes to us only if you say yes.
+
+## Your backup, and "fix my backup"
+
+Your backup is the private copy of your brain on GitHub that setup creates. After a run, the brain backs up on its own (or reminds you, with "Back up after each run: remind me"). What you read calls it **the backup**. Git's own words (`origin`, push, branch) appear only when you ask for the details, such as "what happened exactly?".
+
+When a backup fails, the last line of the report says so and why:
+
+```text
+Not backed up: <reason>. Say "fix my backup".
+```
+
+| The reason | What happened |
+|---|---|
+| `no backup is set up` | the brain has no backup yet |
+| `the brain is not on its working branch` | the brain's work is on a side copy, not on the one that is backed up |
+| `your backup has changes this copy doesn't have` | the backup was changed from another machine or on GitHub's website |
+| `GitHub sign-in needed` | `gh` or Git needs you to sign in again |
+| `GitHub can't be reached; check your connection` | no network, or GitHub didn't answer |
+| `the push failed` | anything else |
+
+With "Back up after each run: remind me", the last line is instead `<n> changes not backed up yet (Back up after each run: remind me).` A scheduled catch-up that finds the brain off its working branch runs nothing and writes, in the scheduler's log: `Not run: off-working-branch. The brain is not on its working branch; say "fix my backup" in a session in the brain.`
+
+**Say "fix my backup"** to your agent in your brain folder. It also offers this itself when `brain status` warns that the brain is off its working branch, or after a failed backup. It checks these in order, fixes each on your yes, and stops at the first one only you can fix, with the one step you take:
+
+1. **`gh` is signed in.** If not, you get the two steps above (install `gh`, then `gh auth login`). Then say "fix my backup" again.
+2. **The backup is set up.** If not, it creates one, private, named after your brain folder. If the name is taken, it offers another.
+3. **The backup is private.** If not, it makes it private. If it isn't a GitHub repository it can check, it asks you to make sure it is private, and goes on once you say it is.
+4. **The brain is on its working branch.** If your work is on a side copy, it brings it back into your brain's main copy, after one yes that names what will happen, for example "Your work on add-notes, 2 changes, will be brought back into your brain's main copy, and add-notes removed." Changes not yet saved stop it first: it names the files and asks whether to keep them; it never discards them. If two changes touch the same lines, it changes nothing, names the files and asks which to keep.
+5. **The backup.** It backs up. If your backup has changes this copy doesn't have, it says so and merges nothing: "Your backup has changes this copy doesn't have, from another machine or from GitHub's website. I haven't merged them: nothing was lost on either side."
+
+It ends with one line: `Backup fixed: <n> changes backed up.` or `Backup checked: nothing to fix.` Nothing is done through a pull request or on GitHub's website.
 
 ## Without Notion AI
 
