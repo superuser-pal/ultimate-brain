@@ -779,7 +779,7 @@ Work packages: contracts and representative resource-budget trials; shared diges
 
 **Added by [0088](../decisions/0088-a-review-row-says-it-needs-you-and-a-review-page-reads-plainly.md) (2026-11-13):** a Review page you can read, CC-240 and CC-241, on the user's decision in CC-239's grill. The weekly review's scope is unchanged.
 
-### CC-111 · The brain assistant's scheduled weekly review (decisions 0064, 0051) · `todo`
+### CC-111 · The brain assistant's scheduled weekly review (decisions 0064, 0051) · `in progress`
 **Release:** 0.15.0
 **Changelog:** the brain assistant can review your projects every week on a schedule, leaving a report and Review rows and changing nothing directly.
 **Output:** the assistant's unattended mode per 0051 (its schedule, the report, Review rows only, no direct changes, no questions), shared with the weekly digest where they overlap; detailed at 0.15.0's opening grill. Its knowledge stream comes from `brain reflect --candidates` within 0075's shared limits, the only scheduled reflection (0076).
