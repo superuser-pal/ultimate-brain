@@ -1,6 +1,6 @@
 # The 0.14.0 release gate: a fresh user from template to first value (CC-193)
 
-A fresh user, Ines Varga, goes from `npm install` to the first-meeting line in a clean duplicate of the published Notion template, once with Claude Code and once with Codex. The runs measure what an early-access tester gets (0078 §5), so they use the published package and template, never a product checkout.
+A fresh user, Ines Varga, goes from `npm install` to the first-meeting line in a clean duplicate of the published Notion template, with Claude Code. (A second run with Codex was planned; the author took it out of this gate on 2026-11-13.) The runs measure what an early-access tester gets (0078 §5), so they use the published package and template, never a product checkout.
 
 Everything is synthetic: [persona.md](persona.md) holds the description, the scripted answers and the expected result of each check; [documents/](documents/) holds the three key documents. The meeting is the Rider App 2.0 sync of [../minutes-0.14/transcript.md](../minutes-0.14/transcript.md).
 
@@ -19,7 +19,7 @@ Everything is synthetic: [persona.md](persona.md) holds the description, the scr
 
 ## The run
 
-1. In the empty folder, start a fresh agent session (Claude Code, or Codex) with no other context. Say **"set up my brain"**.
+1. In the empty folder, start a fresh Claude Code session with no other context. Say **"set up my brain"**.
 2. Act as Ines with [persona.md](persona.md): paste her description, give her scripted answers, drop the three documents into the drop folder when asked. An unscripted question stops the run; record it.
 3. At first value, judge each check against persona.md's table, not against what the skill shows. Do as the skill asks to fix a failure, and record the attempt.
 4. After `result=done`, check the schedule is offered only then (answer "not now").
