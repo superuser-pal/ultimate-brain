@@ -52,7 +52,7 @@ The product repository's own review and merge flow (0040, 0073); Git hosts other
 
 ## Consequences
 
-- [build/TASKS.md](../build/TASKS.md) gains CC-235 (contracts), CC-236 (the CLI and the brain's rules block), CC-237 (the skills, through the fork and a brain-v1.8.2 release) and CC-238 (the guides' prerequisites) in 0.14.0, and CC-193's gate checks that setup opened no branch or pull request.
+- [build/TASKS.md](../build/TASKS.md) gains CC-235 (contracts), CC-236 (the CLI and the brain's rules block), CC-237 (the skills, through the fork and a brain-v1.8.4 release; 1.8.2 and 1.8.3 shipped since with other work) and CC-238 (the guides' prerequisites) in 0.14.0, and CC-193's gate checks that setup opened no branch or pull request.
 - 0078 gets a header pointer to this decision; its body stays as recorded.
 - This is a planning record: no CLI, spec, skill, template or README change starts with it.
 
