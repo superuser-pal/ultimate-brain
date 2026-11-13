@@ -3,7 +3,7 @@ import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { brain, fixtureCopy, FIXTURE_BRAIN } from "./helpers.ts";
+import { approveNote, brain, fixtureCopy, FIXTURE_BRAIN } from "./helpers.ts";
 
 const BRIEF = "projects/acme-website/brief.md";
 const DECISION_LOG = "projects/acme-website/decision-log.md";
@@ -167,6 +167,55 @@ Use row-level security.
   assert.equal(run.code, 0, run.stdout);
   const log = await readFile(join(dir, DECISION_LOG), "utf8");
   assert.equal(run.json.data.written.includes(DECISION_LOG), false, "the archived decision changes nothing in the log");
-  assert.match(log, /## Current\n- 2026-12-03 — \[Use Supabase for auth\]\([^)]+\) — accepted — supersedes [^\n]+\n\n## Superseded\n- 2026-10-01 → 2026-12-03 — \[Use Firebase for auth\]/, "the draft and the superseded decision stay");
+  assert.match(log, /## Current\n- 2026-12-03 — \[Use Supabase for auth\]\([^)]+\) — waiting in Review — supersedes [^\n]+\n\n## Superseded\n- 2026-10-01 → 2026-12-03 — \[Use Firebase for auth\]/, "the draft and the superseded decision stay");
   assert.doesNotMatch(log, /Use Postgres row-level security|dec-4h6j8k2m/, "the archived decision is in neither section nor generated_from");
+});
+
+test("the decision log marks a draft as waiting in Review and links a reviewed one, here and in Notion; approved, it reads as reviewed (CC-261)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const draftPath = "knowledge/decisions/2026-12-05-use-postgres-row-level-security.md";
+  // A synthetic draft that once had a Draft row (a page from before 0.9.1): its line still links nowhere in Notion (0071).
+  await writeFile(join(dir, draftPath), `---
+id: dec-4h6j8k2m
+type: decision
+title: Use Postgres row-level security
+summary: Acme uses row-level security on every table.
+lifecycle: draft
+date: 2026-12-05
+assessment: accepted
+projects: [prj-9x4t1b7e]
+sources: [mtg-8c4n2p7w]
+notion: 4c5d6e7f-8a9b-4c0d-8e1f-2a3b4c5d6e7f
+created: 2026-12-05
+updated: 2026-12-05
+---
+
+## Decision
+Use row-level security.
+`);
+  // The fixture's Supabase decision is reviewed here.
+  await approveNote(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
+  const supabasePath = join(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
+  await writeFile(supabasePath, (await readFile(supabasePath, "utf8")).replace("lifecycle: reviewed\n", "lifecycle: reviewed\nnotion: 5d6e7f8a-9b0c-4d1e-8f2a-3b4c5d6e7f8a\n"));
+
+  const run = await brain(["views", "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(run.code, 0, run.stdout);
+  const log = await readFile(join(dir, DECISION_LOG), "utf8");
+  assert.match(log, /^## Current\n- 2026-12-05 — \[Use Postgres row-level security\]\(\.\.\/\.\.\/knowledge\/decisions\/2026-12-05-use-postgres-row-level-security\.md\) — waiting in Review\n- 2026-12-03 — \[Use Supabase for auth\]\([^)]+\) — accepted — supersedes /m);
+  assert.match(log, /^generated_from: \[dec-2p9f6h1r, dec-4h6j8k2m, dec-7k2m9q4x, prj-9x4t1b7e\]$/m, "the draft keeps its place in the history");
+
+  const render = await brain(["sync", "render", "--brain", dir, "--ids", "prj-9x4t1b7e", "--now", NOW, "--json"]);
+  assert.equal(render.code, 0, render.stdout);
+  const section: string = render.json.data.items[0].sections["Decision log"];
+  assert.match(section, /^- 2026-12-05 — Use Postgres row-level security — waiting in Review$/m, "the draft is marked, with no link");
+  assert.match(section, /^- 2026-12-03 — \[Use Supabase for auth\]\(https:\/\/www\.notion\.so\/5d6e7f8a9b0c4d1e8f2a3b4c5d6e7f8a\) — accepted — supersedes /m, "the reviewed one links its page");
+  assert.doesNotMatch(section, /4c5d6e7f8a9b4c0d8e1f2a3b4c5d6e7f/);
+
+  await approveNote(dir, draftPath);
+  const again = await brain(["views", "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(again.code, 0, again.stdout);
+  assert.ok(again.json.data.written.includes(DECISION_LOG), "the log is rewritten");
+  const approved = await readFile(join(dir, DECISION_LOG), "utf8");
+  assert.match(approved, /^- 2026-12-05 — \[Use Postgres row-level security\]\([^)]+\) — accepted$/m);
+  assert.doesNotMatch(approved, /waiting in Review/);
 });
