@@ -193,6 +193,28 @@ updated: 2026-12-05
 ## Decision
 Use row-level security.
 `);
+  // A draft under Superseded (not one the CLI writes itself) is marked after its link.
+  await writeFile(join(dir, "knowledge/decisions/2026-11-20-use-auth0-for-auth.md"), `---
+id: dec-3g5h7j9k
+type: decision
+title: Use Auth0 for auth
+summary: Acme considered Auth0.
+lifecycle: draft
+date: 2026-11-20
+assessment: superseded
+valid_until: 2026-12-03
+projects: [prj-9x4t1b7e]
+sources: [mtg-8c4n2p7w]
+relations:
+  - type: superseded_by
+    target: dec-7k2m9q4x
+created: 2026-11-20
+updated: 2026-11-20
+---
+
+## Decision
+Use Auth0.
+`);
   // The fixture's Supabase decision is reviewed here.
   await approveNote(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
   const supabasePath = join(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
@@ -202,7 +224,8 @@ Use row-level security.
   assert.equal(run.code, 0, run.stdout);
   const log = await readFile(join(dir, DECISION_LOG), "utf8");
   assert.match(log, /^## Current\n- 2026-12-05 — \[Use Postgres row-level security\]\(\.\.\/\.\.\/knowledge\/decisions\/2026-12-05-use-postgres-row-level-security\.md\) — waiting in Review\n- 2026-12-03 — \[Use Supabase for auth\]\([^)]+\) — accepted — supersedes /m);
-  assert.match(log, /^generated_from: \[dec-2p9f6h1r, dec-4h6j8k2m, dec-7k2m9q4x, prj-9x4t1b7e\]$/m, "the draft keeps its place in the history");
+  assert.match(log, /^- 2026-11-20 → 2026-12-03 — \[Use Auth0 for auth\]\([^)]+\) — waiting in Review — superseded by \[Use Supabase for auth\]/m);
+  assert.match(log, /^generated_from: \[dec-2p9f6h1r, dec-3g5h7j9k, dec-4h6j8k2m, dec-7k2m9q4x, prj-9x4t1b7e\]$/m, "the drafts keep their place in the history");
 
   const render = await brain(["sync", "render", "--brain", dir, "--ids", "prj-9x4t1b7e", "--now", NOW, "--json"]);
   assert.equal(render.code, 0, render.stdout);
@@ -217,5 +240,5 @@ Use row-level security.
   assert.ok(again.json.data.written.includes(DECISION_LOG), "the log is rewritten");
   const approved = await readFile(join(dir, DECISION_LOG), "utf8");
   assert.match(approved, /^- 2026-12-05 — \[Use Postgres row-level security\]\([^)]+\) — accepted$/m);
-  assert.doesNotMatch(approved, /waiting in Review/);
+  assert.doesNotMatch(approved, /Use Postgres row-level security\]\([^)]+\) — waiting in Review/);
 });
