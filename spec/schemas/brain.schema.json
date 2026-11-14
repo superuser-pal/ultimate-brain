@@ -75,6 +75,17 @@
             }
           }
         },
+        "weekly": {
+          "description": "The weekly review's budgets and schedule choice (decisions 0075, 0093; spec/weekly-review.md §10 to §12). Absent keys take the defaults from the trials.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "minutes": { "description": "Wall time from the Notion read before the run stops judging (the soft budget).", "type": "integer", "minimum": 1, "default": 10 },
+            "max_judged": { "description": "Clusters plus correction targets one run judges (the soft budget).", "type": "integer", "minimum": 1, "default": 30 },
+            "max_usd": { "description": "The scheduled run's hard ceiling, claude -p --max-budget-usd.", "type": "number", "exclusiveMinimum": 0, "default": 3 },
+            "schedule": { "description": "Whether the user chose the weekly schedule (the entry itself is the machine's, cli.md §5.21).", "enum": ["on", "off"], "default": "off" }
+          }
+        },
         "recall": {
           "description": "Opening recall in linked repos (decision 0074, spec/memory.md §7).",
           "enum": ["off", "opening"],

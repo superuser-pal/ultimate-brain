@@ -29,6 +29,7 @@ const START = /^<!-- ultimate-brain:rules:start\b[^\n]*-->$/gm;
 const END = /^<!-- ultimate-brain:rules:end -->$/gm;
 
 type Action = "created" | "updated" | "removed" | "skipped";
+const WEEKLY_IGNORE = "_weekly/attempt.json";
 interface Change { path: string; action: Action; content?: string | Buffer }
 
 /** `brain upgrade` (spec/cli.md §5.15): bring the product-owned files of a brain up to the installed package. */
@@ -83,6 +84,14 @@ export const upgradeCommand: Command = {
     if (agentBefore === null) changes.push({ path: SUB_AGENT, action: "created", content: agentTemplate });
     else if (agentBefore.equals(agentTemplate)) unchanged += 1;
     else changes.push({ path: SUB_AGENT, action: "updated", content: agentTemplate });
+
+    // 0.15.0: the weekly review's attempt marker is never committed (spec/cli.md §5.15 step 2b, weekly-review.md §9.5).
+    await assertPlainPath(root, ".gitignore");
+    const ignoreBefore = await readOptionalBuffer(join(root, ".gitignore"));
+    const ignoreText = ignoreBefore?.toString("utf8") ?? null;
+    if (ignoreText === null) changes.push({ path: ".gitignore", action: "created", content: `${WEEKLY_IGNORE}\n` });
+    else if (ignoreText.split(/\r?\n/).some((line) => line.trim() === WEEKLY_IGNORE)) unchanged += 1;
+    else changes.push({ path: ".gitignore", action: "updated", content: `${ignoreText}${ignoreText === "" || ignoreText.endsWith("\n") ? "" : "\n"}${WEEKLY_IGNORE}\n` });
 
     // 0.3.0: Inbox is the former Capture Inbox; 0.6.0: Documents are the former References (0049).
     // Keep each database id, but retire the old key. 0.6.0 also writes the modules block (0048).
