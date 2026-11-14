@@ -12,7 +12,7 @@ import { newNotePath } from "./paths.ts";
 import { fingerprintProblem } from "./reflect.ts";
 import { loadSchemas } from "./schemas.ts";
 import type { Context } from "./eligibility.ts";
-import { passageProblems, proposalWithheld } from "./passages.ts";
+import { linkRefs, passageProblems, proposalWithheld } from "./passages.ts";
 import { contextFor, requireSuppressions, withheldSupport } from "./suppressions.ts";
 import { formatDate } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
@@ -21,7 +21,7 @@ export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "update_body", "add
 export const PROPOSAL_STATUSES = ["pending", "approved", "rejected", "edited", "applied", "closed"] as const;
 
 /** Input keys of `proposal new`: the schema §11 fields the CLI does not set (spec/cli.md §5.6). */
-const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding", "fingerprint", "evidence", "passages", "note_passages"];
+const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding", "fingerprint", "evidence", "passages", "note_passages", "note_flags", "unsure", "repeat"];
 const ID = /^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{8}$/;
 const KNOWLEDGE_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 const ADD_LINK_FIELDS = new Set(["aliases", "tags", "projects", "people", "attendees", "deciders"]);
@@ -75,7 +75,7 @@ export function stageProposals(
   // Every change names the passages it rests on; one without them is refused (eligibility.md §9.1, §9.2; cli §5.6).
   (list as Array<Record<string, unknown>>).forEach((item, index) => checkPassages(workspace, item, `/proposals/${index}`));
   // One review_notes per source; it takes in that source's add_link items and changes (spec/cli.md §5.6, 0043, 0045).
-  const reviews = new Map<string, { index: number; item: Record<string, unknown>; links: Array<{ index: number; fields: Record<string, unknown> }>; changes: Array<{ index: number; change: Record<string, unknown>; passages: unknown }> }>();
+  const reviews = new Map<string, { index: number; item: Record<string, unknown>; links: Array<{ index: number; fields: Record<string, unknown>; flags: Flags }>; changes: Array<{ index: number; change: Record<string, unknown>; passages: unknown; flags: Flags }> }>();
   (list as Array<Record<string, unknown>>).forEach((item, index) => {
     if (item.kind !== "review_notes") return;
     const source = String(item.source);
@@ -124,6 +124,9 @@ export function stageProposals(
       }
       const folds = item.kind === "add_link" || CHANGE_KINDS.includes(String(item.kind));
       const review = folds ? reviews.get(String(fields.source)) : undefined;
+      // Flags and repeats live on a Review page's items: only an item a review_notes folds takes them (cli §5.6, capture-and-review §7.12.8).
+      if (review === undefined && (item.unsure !== undefined || item.repeat !== undefined)) assertNoProblems([{ pointer: `${pointer}/${item.unsure !== undefined ? "unsure" : "repeat"}`, message: "is only allowed on an item a review_notes of the same input folds" }]);
+      const flags = flagsOf(item);
 
       if (item.kind === "add_link" && listField(workspace.get(String(fields.target))!, String(fields.field)).some((value) => isDeepStrictEqual(value, fields.after))) {
         skipped.push({ input_index: index, reason: "ALREADY_LINKED" });
@@ -143,7 +146,7 @@ export function stageProposals(
       }
       if (review !== undefined && CHANGE_KINDS.includes(String(item.kind))) {
         if (review.changes.some(({ change }) => sameChange(change, fields))) { skipped.push({ input_index: index, reason: "DUPLICATE_PENDING" }); return; }
-        review.changes.push({ index, change: changeEntry(fields), passages: fields.passages });
+        review.changes.push({ index, change: changeEntry(fields), passages: fields.passages, flags });
         return;
       }
 
@@ -151,7 +154,7 @@ export function stageProposals(
         const key = JSON.stringify([fields.target, fields.source, fields.field, fields.after]);
         if (linkKeys.has(key)) { duplicateLinks.push({ input_index: index, key }); return; }
         linkKeys.set(key, index);
-        if (review !== undefined) review.links.push({ index, fields });
+        if (review !== undefined) review.links.push({ index, fields, flags });
         else links.push({ item, index, fields });
         return;
       }
@@ -194,10 +197,20 @@ export function stageProposals(
       const fresh = () => { const id = generateItemId(taken); taken.add(id); return id; };
       // Each item keeps the passages it rests on (schema §11.5): a change's and a link's from its own input item, a note's from note_passages.
       const notePassages = review.item.note_passages as Record<string, unknown>;
+      const noteFlags = (isRecord(review.item.note_flags) ? review.item.note_flags : {}) as Record<string, Flags>;
+      // The links of one target and field are one item, decided together (0088 Q5, schema §11): its ref lists their indexes.
+      const linkGroups = new Map<string, number[]>();
+      review.links.forEach(({ fields }, index) => { const key = JSON.stringify([fields.target, fields.field]); linkGroups.set(key, [...(linkGroups.get(key) ?? []), index]); });
       const items = [
-        ...changes.map(({ passages }, index) => ({ item_id: fresh(), kind: "change", ref: index, passages })),
-        ...notes.map((note) => ({ item_id: fresh(), kind: "note", ref: note, passages: notePassages[note] })),
-        ...review.links.map(({ fields }, index) => ({ item_id: fresh(), kind: "link", ref: index, passages: fields.passages })),
+        ...changes.map(({ passages, flags }, index) => ({ item_id: fresh(), kind: "change", ref: index, passages, ...flags })),
+        ...notes.map((note) => ({ item_id: fresh(), kind: "note", ref: note, passages: notePassages[note], ...flagsOf(noteFlags[note] ?? {}) })),
+        ...[...linkGroups.values()].map((indexes) => {
+          const members = indexes.map((index) => review.links[index]!);
+          const passages = [...new Set(members.flatMap(({ fields }) => (Array.isArray(fields.passages) ? fields.passages : []) as string[]))];
+          const unsure = members.flatMap(({ flags }) => flags.unsure ?? []);
+          const repeat = members.find(({ flags }) => flags.repeat !== undefined)?.flags.repeat;
+          return { item_id: fresh(), kind: "link", ref: indexes, passages, ...(unsure.length === 0 ? {} : { unsure }), ...(repeat === undefined ? {} : { repeat }) };
+        }),
       ];
       const fields: Record<string, unknown> = {
         kind: "review_notes",
@@ -388,6 +401,19 @@ function checkPassages(workspace: Workspace, item: Record<string, unknown>, poin
   if (first !== undefined) throw new BrainError("UNKNOWN_ID", `${first.pointer}: no note with id ${first.id}`, [{ pointer: first.pointer, message: `${first.id} does not exist` }]);
 }
 
+/** An item's flags (capture-and-review §7.12.8): `unsure`, one-line strings, and `repeat`, a one-line key; empty when absent. */
+type Flags = { unsure?: string[]; repeat?: string };
+function flagsOf(item: Record<string, unknown>): Flags {
+  return { ...(Array.isArray(item.unsure) ? { unsure: item.unsure.map(String) } : {}), ...(typeof item.repeat === "string" ? { repeat: item.repeat } : {}) };
+}
+const oneLine = (value: unknown): boolean => typeof value === "string" && value.trim() !== "" && !value.includes("\n");
+function flagProblems(value: Record<string, unknown>, pointer: string): InputProblem[] {
+  const problems: InputProblem[] = [];
+  if (value.unsure !== undefined && (!Array.isArray(value.unsure) || value.unsure.length === 0 || !value.unsure.every(oneLine))) problems.push({ pointer: `${pointer}/unsure`, message: "must be a non-empty list of one-line strings" });
+  if (value.repeat !== undefined && !oneLine(value.repeat)) problems.push({ pointer: `${pointer}/repeat`, message: "must be a one-line string" });
+  return problems;
+}
+
 function checkShape(item: unknown, pointer: string): InputProblem[] {
   if (!isRecord(item)) return [{ pointer, message: "must be an object" }];
   const problems = unknownKeys(item, INPUT_KEYS, pointer);
@@ -407,6 +433,20 @@ function checkShape(item: unknown, pointer: string): InputProblem[] {
     at("notes", "is only allowed on review_notes");
   }
   if (item.kind !== "review_notes" && item.note_passages !== undefined) at("note_passages", "is only allowed on review_notes");
+  if (item.kind !== "review_notes" && item.note_flags !== undefined) at("note_flags", "is only allowed on review_notes");
+  if (item.unsure !== undefined || item.repeat !== undefined) {
+    if (item.kind !== "add_link" && !CHANGE_KINDS.includes(String(item.kind))) at(item.unsure !== undefined ? "unsure" : "repeat", "is only allowed on an item a review_notes folds");
+    else problems.push(...flagProblems(item, pointer));
+  }
+  if (item.kind === "review_notes" && item.note_flags !== undefined) {
+    if (!isRecord(item.note_flags)) at("note_flags", "must be an object: note id → { unsure?, repeat? }");
+    else for (const [note, flags] of Object.entries(item.note_flags)) {
+      const at2 = `${pointer}/note_flags/${note}`;
+      if (!Array.isArray(item.notes) || !item.notes.includes(note)) problems.push({ pointer: at2, message: "is not a note of notes" });
+      else if (!isRecord(flags)) problems.push({ pointer: at2, message: "must be an object" });
+      else problems.push(...unknownKeys(flags, ["unsure", "repeat"], at2), ...flagProblems(flags, at2));
+    }
+  }
   if (item.kind === "answer" && (typeof item.answer !== "string" || item.answer.trim() === "")) at("answer", "must be a non-empty string");
   if (item.kind === "update_body" && (typeof item.content !== "string" || item.content.trim() === "")) at("content", "must be the whole new body");
   if (item.kind !== "answer") {
@@ -608,7 +648,7 @@ function heldForm(note: Note, workspace: Workspace, context: Context): Record<st
   out.changes = changes.map((change, index) => heldChange(index) && isRecord(change) ? Object.fromEntries(Object.entries(change).filter(([key]) => ["kind", "target", "field"].includes(key))) : change);
   if (Array.isArray(a.links)) out.links = links.map((link, index) => heldLink(index) && isRecord(link) ? { target: link.target, field: link.field } : link);
   if (a.changes === undefined) delete out.changes;
-  const itemIds = new Set(listOf(a.items).filter(isRecord).filter((item) => (item.kind === "change" && heldChange(Number(item.ref))) || (item.kind === "note" && heldNote(String(item.ref))) || (item.kind === "link" && heldLink(Number(item.ref)))).map((item) => String(item.item_id)));
+  const itemIds = new Set(listOf(a.items).filter(isRecord).filter((item) => (item.kind === "change" && heldChange(Number(item.ref))) || (item.kind === "note" && heldNote(String(item.ref))) || (item.kind === "link" && linkRefs(item.ref).some(heldLink))).map((item) => String(item.item_id)));
   if (Array.isArray(a.revisions)) out.revisions = a.revisions.filter((revision) => !(isRecord(revision) && itemIds.has(String(revision.item_id))));
   delete out.notion_published;
   if (held.length === changes.length + notes.length + links.length) { delete out.title; delete out.why; delete out.fingerprint; }

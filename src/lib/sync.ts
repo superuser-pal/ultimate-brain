@@ -18,9 +18,10 @@ import { databaseId, moduleForDatabase, modulesOf, typeIsOn } from "./modules.ts
 import { bodyHash, bodyOf } from "./proposals.ts";
 import { applyReviewDecisions } from "./review-apply.ts";
 import { recordRevisionRequests } from "./review-revision.ts";
-import { renderReview } from "./review-body.ts";
+import { renderReview, reviewFormat } from "./review-body.ts";
+import { CONTEXT_HEADING } from "./review-format2.ts";
 import { decidedInChat, suggestionText } from "./notion-change.ts";
-import { parseReviewPageInput, planReviewRow, type ItemDecision, type ReviewDecision, type ReviewHeld, type ReviewPage, type ReviewRevision } from "./review-plan.ts";
+import { parseReviewPageInput, planReviewRow, planReviewRow2, type ItemDecision, type ReviewDecision, type ReviewHeld, type ReviewPage, type ReviewRevision } from "./review-plan.ts";
 import { hasReportShape, reportLinks } from "./report-body.ts";
 import { gitBodyOf, parseWording, planWording, textHash, type AcceptedWording, type Wording, type WordingPlan } from "./wording.ts";
 import type { Context } from "./eligibility.ts";
@@ -62,6 +63,10 @@ export interface SyncPlan {
   review_held: ReviewHeld[];
   /** Items the user asked to revise: the attended skill drafts a new proposal; an unattended run never reads the instruction. */
   review_revisions: ReviewRevision[];
+  /** Format-2 rows whose Your call is Request revision, with What to fix: the attended skill maps the text to items (capture-and-review §7.12.7). */
+  review_row_revisions: Array<{ proposal: string; page_id: string; instruction: string }>;
+  /** Format-1 rows nobody touched, rebuilt once as format-2 pages by `sync render --plan` (capture-and-review §7.12.1). */
+  review_untouched: Array<{ proposal: string; page_id: string }>;
   conflicts: Array<Record<string, unknown>>;
   ignored: Array<Record<string, unknown>>;
 }
@@ -125,7 +130,7 @@ export function parseSnapshot(input: unknown): Snapshot {
 
 /** Compute the deterministic, no-network Notion pull plan (cli §5.14.2). */
 export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
-  const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], decisions: [], document_requests: [], promote_requests: [], refresh_requests: [], report_fixes: [], accepted_wording: [], wording_waiting: [], wording_held: [], clear_accepted: [], review_pending: [], review_decisions: [], review_held: [], review_revisions: [], conflicts: [], ignored: [] };
+  const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], decisions: [], document_requests: [], promote_requests: [], refresh_requests: [], report_fixes: [], accepted_wording: [], wording_waiting: [], wording_held: [], clear_accepted: [], review_pending: [], review_decisions: [], review_held: [], review_revisions: [], review_row_revisions: [], review_untouched: [], conflicts: [], ignored: [] };
   const createsByPage = new Map<string, { id: string; type: string }>();
   for (const row of snapshot.rows) if (CREATABLE.has(row.database) && blank(property(row.properties, "Brain ID"))) {
     const existing = noteByNotion(workspace, row.page_id);
@@ -330,6 +335,8 @@ function planKeyFacts(row: SnapshotRow, note: Note, published: Record<string, un
 function planReviewState(workspace: Workspace, asOf: string, row: SnapshotRow, proposal: Note, out: SyncPlan): void {
   if (property(row.properties, "State") !== "Pending") return;
   if (["applied", "closed"].includes(String(proposal.attributes.status))) { out.ignored.push({ database: row.database, page_id: row.page_id, brain_id: proposal.id, reason: "ALREADY_TERMINAL" }); return; }
+  // A format-2 page is read by its ref lines and decided by Your call (capture-and-review §7.12).
+  if (reviewFormat(proposal) === 2) { planReviewRow2(workspace, row, row.review, proposal, asOf, out, (code, message, property) => { out.conflicts.push(conflict(row, code, message, property, property === undefined ? undefined : row.properties[property] ?? null)); }); return; }
   planReviewRow(workspace, row, row.review, proposal, asOf, out,
     (action) => { out.decisions.push({ proposal: proposal.id, action, decided_at: row.last_edited, decided_by: "notion" }); },
     (code, message) => { out.conflicts.push(conflict(row, code, message)); });
@@ -549,21 +556,25 @@ export function parseKeyFacts(value: unknown): Record<string, unknown> {
 /** Input validation and execution for `sync apply`. */
 export function parsePlan(input: unknown): SyncPlan {
   if (!isRecord(input)) assertNoProblems([{ pointer: "", message: "must be an object" }]);
-  const p = input as Record<string, unknown>; const problems = unknownKeys(p, ["as_of", "create", "updates", "corrections", "decisions", "document_requests", "promote_requests", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "review_decisions", "review_held", "review_revisions", "conflicts", "ignored"], "");
-  for (const key of ["document_requests", "promote_requests", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "review_decisions", "review_held", "review_revisions"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
+  const p = input as Record<string, unknown>; const problems = unknownKeys(p, ["as_of", "create", "updates", "corrections", "decisions", "document_requests", "promote_requests", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "review_decisions", "review_held", "review_revisions", "review_row_revisions", "review_untouched", "conflicts", "ignored"], "");
+  for (const key of ["document_requests", "promote_requests", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "review_decisions", "review_held", "review_revisions", "review_row_revisions", "review_untouched"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   if (!isTimestamp(p.as_of)) problems.push({ pointer: "/as_of", message: "must be an ISO 8601 UTC timestamp" });
   for (const key of ["create", "updates", "corrections", "decisions", "conflicts", "ignored"]) if (!Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   (Array.isArray(p.review_pending) ? p.review_pending : []).forEach((item, index) => { if (!isRecord(item) || typeof item.proposal !== "string" || typeof item.page_id !== "string") problems.push({ pointer: `/review_pending/${index}`, message: "must be { proposal, page_id }" }); });
   (Array.isArray(p.review_decisions) ? p.review_decisions : []).forEach((item, index) => {
     const at = `/review_decisions/${index}`;
     if (!isRecord(item) || typeof item.proposal !== "string" || typeof item.page_id !== "string" || !isTimestamp(item.decided_at) || !Array.isArray(item.items)) { problems.push({ pointer: at, message: "must be { proposal, page_id, decided_at, items }" }); return; }
+    if ((item.format !== undefined && item.format !== 2) || (item.call !== undefined && item.call !== "approve" && item.call !== "reject")) problems.push({ pointer: at, message: "format must be 2 and call approve or reject" });
     (item.items as unknown[]).forEach((entry, position) => {
       const hex = (value: unknown) => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
       const wording = isRecord(entry) && entry.decision === "accept";
       if (!isRecord(entry) || typeof entry.item_id !== "string" || !["accept", "reject", "defer", "stale"].includes(String(entry.decision)) || !hex(entry.proposed_hash) || !hex(entry.snapshot_hash) || !hex(entry.base_hash) || (wording && (typeof entry.proposed !== "string" || entry.proposed.trim() === ""))) problems.push({ pointer: `${at}/items/${position}`, message: "must be { item_id, decision, proposed_hash, snapshot_hash, base_hash } with the final wording for an accept" });
+      else if ((entry.values !== undefined && (!Array.isArray(entry.values) || !entry.values.every((value) => Number.isInteger(value) && (value as number) >= 0))) || (entry.agreed !== undefined && typeof entry.agreed !== "string")) problems.push({ pointer: `${at}/items/${position}`, message: "values must be a list of link indexes and agreed a string" });
       else if (entry.verified !== undefined && (!isRecord(entry.verified) || !hex(entry.verified.snapshot_hash) || !hex(entry.verified.proposed_hash))) problems.push({ pointer: `${at}/items/${position}/verified`, message: "must be { snapshot_hash, proposed_hash }" });
     });
   });
+  (Array.isArray(p.review_untouched) ? p.review_untouched : []).forEach((item, index) => { if (!isRecord(item) || typeof item.proposal !== "string" || typeof item.page_id !== "string") problems.push({ pointer: `/review_untouched/${index}`, message: "must be { proposal, page_id }" }); });
+  (Array.isArray(p.review_row_revisions) ? p.review_row_revisions : []).forEach((item, index) => { if (!isRecord(item) || typeof item.proposal !== "string" || typeof item.page_id !== "string" || typeof item.instruction !== "string") problems.push({ pointer: `/review_row_revisions/${index}`, message: "must be { proposal, page_id, instruction }" }); });
   for (const key of ["review_held", "review_revisions"]) (Array.isArray(p[key]) ? p[key] as unknown[] : []).forEach((item, index) => { if (!isRecord(item) || typeof item.proposal !== "string" || typeof item.page_id !== "string" || (key === "review_revisions" && typeof item.item_id !== "string") || (key === "review_held" && typeof item.reason !== "string")) problems.push({ pointer: `/${key}/${index}`, message: "has the wrong shape" }); });
   (Array.isArray(p.create) ? p.create : []).forEach((item, index) => {
     if (!isRecord(item)) { problems.push({ pointer: `/create/${index}`, message: "must be an object" }); return; }
@@ -589,7 +600,7 @@ export function parsePlan(input: unknown): SyncPlan {
     if (key === "accepted_wording" && item.verified !== undefined && (!isRecord(item.verified) || typeof item.verified.fingerprint !== "string" || typeof item.verified.page_edited_at !== "string")) problems.push({ pointer: `${at}/verified`, message: "must be { fingerprint, page_edited_at }" });
   });
   assertNoProblems(problems);
-  return { ...p, document_requests: p.document_requests ?? [], promote_requests: p.promote_requests ?? [], refresh_requests: p.refresh_requests ?? [], report_fixes: p.report_fixes ?? [], accepted_wording: p.accepted_wording ?? [], wording_waiting: p.wording_waiting ?? [], wording_held: p.wording_held ?? [], clear_accepted: p.clear_accepted ?? [], review_pending: p.review_pending ?? [], review_decisions: p.review_decisions ?? [], review_held: p.review_held ?? [], review_revisions: p.review_revisions ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
+  return { ...p, document_requests: p.document_requests ?? [], promote_requests: p.promote_requests ?? [], refresh_requests: p.refresh_requests ?? [], report_fixes: p.report_fixes ?? [], accepted_wording: p.accepted_wording ?? [], wording_waiting: p.wording_waiting ?? [], wording_held: p.wording_held ?? [], clear_accepted: p.clear_accepted ?? [], review_pending: p.review_pending ?? [], review_decisions: p.review_decisions ?? [], review_held: p.review_held ?? [], review_revisions: p.review_revisions ?? [], review_row_revisions: p.review_row_revisions ?? [], review_untouched: p.review_untouched ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
 }
 
 export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, recordOnly: boolean, skipConflicted = false): Record<string, unknown> {
@@ -654,7 +665,18 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
   ];
   updates.push(...skippedUpdates);
   const correctionsOut = [...corrections, ...skippedCorrections] as Array<Record<string, unknown>>; const decisionsOut = [...decisionResult, ...skippedDecisions] as Array<Record<string, unknown>>;
-  return { create, updates, corrections: correctionsOut, decisions: decisionsOut, notion_writes: decisionApply.notion_writes, review_results: [...review.results, ...reviewSkipped], revision_results: revisions, document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, accepted_wording: wording.results, wording_waiting: plan.wording_waiting, wording_held: plan.wording_held, clear_accepted: plan.clear_accepted.filter((item) => !conflictedIds.has(item.note) && !conflictedPages.has(item.page_id) && !updates.some((update) => update.id === item.note && update.result === "failed") && workspace.get(item.note) !== undefined), conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...wording.results, ...updates, ...correctionsOut, ...decisionsOut, ...review.results, ...reviewSkipped].map((item) => ({ ...item }))), log };
+  // A format-2 row whose Your call this run consumed: the skill empties Your call and What to fix (capture-and-review §7.12.7). A Request revision is
+  // consumed only when the attended skill's per-item revisions were all recorded; an unattended run adds none, so the row is left as it is (0051).
+  const reviewClear: Array<{ proposal: string; page_id: string; properties: string[] }> = [];
+  if (!recordOnly) {
+    for (const item of reviewable) if (item.format === 2 && item.call !== undefined) reviewClear.push({ proposal: item.proposal, page_id: item.page_id, properties: ["Your call", "What to fix"] });
+    for (const row of plan.review_row_revisions) {
+      if (conflictedIds.has(row.proposal) || conflictedPages.has(row.page_id) || reviewClear.some((entry) => entry.page_id === row.page_id)) continue;
+      const mine = revisions.filter((entry) => entry.proposal === row.proposal);
+      if (mine.length > 0 && mine.every((entry) => entry.result === "recorded" || entry.reason === "ALREADY_REQUESTED")) reviewClear.push({ proposal: row.proposal, page_id: row.page_id, properties: ["Your call", "What to fix"] });
+    }
+  }
+  return { create, updates, corrections: correctionsOut, decisions: decisionsOut, notion_writes: decisionApply.notion_writes, review_results: [...review.results, ...reviewSkipped], revision_results: revisions, review_clear: reviewClear, document_requests: plan.document_requests, promote_requests: plan.promote_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, accepted_wording: wording.results, wording_waiting: plan.wording_waiting, wording_held: plan.wording_held, clear_accepted: plan.clear_accepted.filter((item) => !conflictedIds.has(item.note) && !conflictedPages.has(item.page_id) && !updates.some((update) => update.id === item.note && update.result === "failed") && workspace.get(item.note) !== undefined), conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...wording.results, ...updates, ...correctionsOut, ...decisionsOut, ...review.results, ...reviewSkipped].map((item) => ({ ...item }))), log };
 }
 
 /**
@@ -728,7 +750,7 @@ function relationOrder(creates: readonly SyncPlan["create"][number][]): { order:
 }
 function summarize(items: readonly Record<string, unknown>[]): Record<string, number> { const result: Record<string, number> = { applied: 0, closed: 0, recorded: 0, awaiting_notion: 0, corrected: 0, skipped: 0, failed: 0 }; for (const item of items) if (typeof item.result === "string" && Object.hasOwn(result, item.result)) result[item.result] += 1; return result; }
 
-export interface RenderItem { template?: { type: "default" }; item_updates?: Array<{ item_id: string; reason: string; section: string }>; review_published_after?: Record<string, unknown>; id: string; type: string; database: string; database_id: string; page_id: string | null; action: "create" | "update" | "trash"; properties: Record<string, unknown>; body: string | null; sections: Record<string, string> | null; pending_relations: Array<Record<string, unknown>>; published: Record<string, unknown> }
+export interface RenderItem { template?: { type: "default" }; item_updates?: Array<{ item_id: string; reason: string; section: string }>; review_published_after?: Record<string, unknown>; id: string; type: string; database: string; database_id: string; page_id: string | null; action: "create" | "update" | "trash" | "rebuild"; replaces?: string; properties: Record<string, unknown>; body: string | null; sections: Record<string, string> | null; pending_relations: Array<Record<string, unknown>>; published: Record<string, unknown> }
 
 /** The types whose page waits for review (cli §5.14.4, 0071). */
 const REVIEWED_PAGE_TYPES = new Set(["decision", "question", "concept", "reference"]);
@@ -752,7 +774,10 @@ export function unpublishDrafts(workspace: Workspace, now: Date): RenderItem[] {
   return items.sort((a, b) => DATABASES.indexOf(a.database as never) - DATABASES.indexOf(b.database as never) || compareCodePoints(a.id, b.id));
 }
 
-export function render(workspace: Workspace, now: Date, ids?: readonly string[], held?: ReadonlyMap<string, Set<string>>): { items: RenderItem[]; errors: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id?: string }>; skipped: Array<{ id: string; reason: string }> } {
+/** What a plan tells the render about Review rows (cli §5.14.4, format 2): the untouched format-1 rows to rebuild once, and each pending item a plan held, with its reason in words. */
+export interface ReviewRenderOptions { rebuild?: ReadonlySet<string>; holds?: ReadonlyMap<string, ReadonlyMap<string, string>> }
+
+export function render(workspace: Workspace, now: Date, ids?: readonly string[], held?: ReadonlyMap<string, Set<string>>, reviewOptions: ReviewRenderOptions = {}): { items: RenderItem[]; errors: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id?: string }>; skipped: Array<{ id: string; reason: string }> } {
   const selected = ids === undefined
     ? workspace.notes.filter((note) => (PUBLISHED_TYPES.has(note.type) && !(note.type === "source" && note.attributes.kind === undefined)) || isReport(note))
     : ids.map((id) => workspace.get(id)!).filter(Boolean);
@@ -781,22 +806,27 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     for (const name of offRelations(workspace.config, database)) delete rendered[name];
     const properties: Record<string, unknown> = {}; const pending: Array<Record<string, unknown>> = []; const heldProperties = held?.get(note.id) ?? new Set<string>();
     const isCreate = note.attributes.notion === undefined && capturePage === undefined;
+    // The one rebuild of an untouched format-1 Review row as a new format-2 page (capture-and-review §7.12.1): every property and the body, as a create.
+    const rebuild = !isCreate && note.type === "proposal" && reviewOptions.rebuild?.has(note.id) === true && note.attributes.status === "pending" && reviewSections(workspace, note) && reviewFormat(note) === 1 && !isRecord(note.attributes.cleanup) && !(isRecord(workspace.config.notion) && workspace.config.notion.review_format === 1);
     // A report last published on the Inbox (no Origin in S) was moved to Documents by migration 0019: every property goes out once (cli §5.14.4, 0071).
     const moved = isReport(note) && !isCreate && !Object.hasOwn(published, "Origin");
-    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || moved || !Object.hasOwn(published, name) || !sameValue(value, RENAMED_VALUES[name]?.[String(published[name])] ?? published[name]))) properties[name] = encoded; }
+    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || rebuild || moved || !Object.hasOwn(published, name) || !sameValue(value, RENAMED_VALUES[name]?.[String(published[name])] ?? published[name]))) properties[name] = encoded; }
     const content = renderedContent(form, workspace); if (content.hash !== undefined) rendered["@content"] = content.hash;
     // A Review row with item ids (0055): its body is written once, at create. Afterwards only the brain-owned summary at the top is sent;
     // the item sections belong to the user (capture-and-review §7.4, §7.10), and the hashes of what was rendered are kept in S.
     let itemUpdates: Array<{ item_id: string; reason: string; section: string }> = [];
     let publishedAfter: Record<string, unknown> | undefined;
     if (reviewSections(workspace, note)) {
-      const review = renderReview(note, workspace, (row) => String(reviewRowName(workspace, row)));
-      content.body = isCreate ? review.body : null; content.sections = { "Review summary": review.summary }; content.hash = review.summary_hash; rendered["@content"] = review.summary_hash;
-      const kept = isRecord(published["@review"]) && isRecord(published["@review"].items) ? published["@review"].items : undefined;
+      const format = rebuild ? 2 : reviewFormat(note, workspace.config);
+      const review = renderReview(note, workspace, (row) => String(reviewRowName(workspace, row)), format, reviewOptions.holds?.get(note.id));
+      const writesBody = isCreate || rebuild;
+      const tag = format === 2 ? { format: 2 } : {};
+      content.body = writesBody ? review.body : null; content.sections = format === 2 ? { "Review summary": review.summary, [CONTEXT_HEADING]: review.context ?? "" } : { "Review summary": review.summary }; content.hash = review.summary_hash; rendered["@content"] = review.summary_hash;
+      const kept = !rebuild && isRecord(published["@review"]) && isRecord(published["@review"].items) ? published["@review"].items : undefined;
       // Only a render that writes the body records what was rendered; a published row with no record has none, and is never given one here.
-      if (isCreate) rendered["@review"] = { items: Object.fromEntries(review.items.map((item) => [item.item_id, { rendered_hash: item.rendered_hash, proposed_hash: item.proposed_hash, base_hash: item.base_hash, ...(item.held ? { held: true } : {}) }])) };
+      if (writesBody) rendered["@review"] = { ...tag, items: Object.fromEntries(review.items.map((item) => [item.item_id, { rendered_hash: item.rendered_hash, proposed_hash: item.proposed_hash, base_hash: item.base_hash, ...(item.held ? { held: true } : {}) }])) };
       else if (kept !== undefined) {
-        rendered["@review"] = { items: kept };
+        rendered["@review"] = { ...tag, items: kept };
         // Item sections the user must see something in (capture-and-review §7.4 b): a drafted revision or a changed base. An applied or closed status is never written into one.
         const decided = new Set((Array.isArray(note.attributes.item_decisions) ? note.attributes.item_decisions : []).filter(isRecord).map((entry) => String(entry.item_id)));
         // A row decided the 0045 way (applied or closed with no item decisions, e.g. approved from chat) has no pending item (#196).
@@ -813,7 +843,7 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
           itemUpdates.push({ item_id: item.item_id, reason, section: item.section });
           after[item.item_id] = { rendered_hash: item.rendered_hash, proposed_hash: item.proposed_hash, ...(reason === "title_withheld" ? { base_hash: stored.base_hash, ...(item.held || stored.held === true ? { held: true } : {}) } : { base_hash: item.current_base_hash }) };
         }
-        if (itemUpdates.length > 0) publishedAfter = { "@review": { items: after } };
+        if (itemUpdates.length > 0) publishedAfter = { "@review": { ...tag, items: after } };
       }
     }
     // A promoted Document's body is yours once its page exists (0049): sent on create only.
@@ -835,11 +865,12 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
       rendered["@fixes"] = Math.max(fixes, stored);
     }
     // Full text (0043) is retired (0049): nothing is sent, and `@full_text` in S stays as it is.
-    if (!isCreate && Object.keys(properties).length === 0 && !contentChanged && !reportDue && itemUpdates.length === 0) {
+    if (!isCreate && !rebuild && Object.keys(properties).length === 0 && !contentChanged && !reportDue && itemUpdates.length === 0) {
       // A page whose only news is a relation to a note this render creates: nothing to write, but the skill renders again after publishing it (0071).
       if (pending.length > 0) waiting.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: typeof note.attributes.notion === "string" ? note.attributes.notion : capturePage ?? null, action: "update", properties: {}, body: null, sections: null, pending_relations: pending, published: rendered });
       continue;
     }
+    if (rebuild) { items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: null, action: "rebuild", replaces: String(note.attributes.notion), properties, body: content.body, sections: content.sections, pending_relations: pending, published: rendered }); continue; }
     if (!isCreate && note.type !== "meeting" && note.type !== "proposal") properties["Last Synced"] = { type: "date", value: { start: formatTimestamp(now), end: null } };
     // A new project's page comes from the space's default Projects template, its toggles, views and My notes (0068).
     items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: typeof note.attributes.notion === "string" ? note.attributes.notion : capturePage ?? null, action: isCreate ? "create" : "update", ...(isCreate && note.type === "project" ? { template: { type: "default" as const } } : {}), ...(itemUpdates.length === 0 ? {} : { item_updates: itemUpdates, review_published_after: publishedAfter }), properties, body: content.body, sections: content.sections, pending_relations: pending, published: rendered });
@@ -1278,7 +1309,13 @@ export function record(workspace: Workspace, input: unknown): { records: Array<R
   for (const entry of input.records) { if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note);
     // A Draft page moved to the trash (--unpublish-drafts, 0071): the note has no page again, until it is approved.
     if (REVIEWED_PAGE_TYPES.has(note.type) && isRecord(entry.published) && entry.published["@trashed"] !== undefined) { if (typeof doc.attributes.notion !== "string" || doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); for (const key of ["notion", "notion_published", "last_synced"]) delete doc.attributes[key]; workspace.save(note.path, doc); if (workspace.newErrors().length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); continue; }
-    if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; if (entry.task_items !== undefined) bindTaskItems(note, doc.attributes, entry.task_items, entry.tasks); workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); if (bodyWithoutReadBack(entry.published)) warnings.push({ code: "NOTION_BODY_MISSING", message: `${note.id}: a body was published without the read-back of its page, so the next plan holds it (cli §5.14.6, §5.14.7)`, id: note.id }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && (error.message === "NOTION_ID_MISMATCH" || error.message === "TASK_ITEM_EXISTS") ? error.message : "INVALID_RESULT", changed: [] }); } }
+    // A rebuild record (cli §5.14.6, capture-and-review §7.12.1): the row's new page replaces the old one, and its baseline replaces the old baseline whole.
+    if (entry.replaces !== undefined) {
+      if (note.type !== "proposal" || typeof entry.replaces !== "string" || typeof entry.notion !== "string" || !isRecord(entry.published)) throw new Error("INVALID_RESULT");
+      if (doc.attributes.notion === entry.notion && isDeepStrictEqual(doc.attributes.notion_published, entry.published)) { records.push({ id: entry.id, result: "recorded", changed: [] }); continue; }
+      if (doc.attributes.notion !== entry.replaces) throw new Error("NOTION_ID_MISMATCH");
+      doc.attributes.notion = entry.notion; doc.attributes.notion_published = entry.published;
+    } else if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; if (entry.task_items !== undefined) bindTaskItems(note, doc.attributes, entry.task_items, entry.tasks); workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); if (bodyWithoutReadBack(entry.published)) warnings.push({ code: "NOTION_BODY_MISSING", message: `${note.id}: a body was published without the read-back of its page, so the next plan holds it (cli §5.14.6, §5.14.7)`, id: note.id }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && (error.message === "NOTION_ID_MISMATCH" || error.message === "TASK_ITEM_EXISTS") ? error.message : "INVALID_RESULT", changed: [] }); } }
   return { records, warnings };
 }
 
