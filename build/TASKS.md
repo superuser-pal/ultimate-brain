@@ -788,61 +788,63 @@ Moved to 0.14.0 by the user, 2026-11-11: the CLI skip and its brain-ingest wordi
 **Output:** decision 0091 (#344: a source and its whole Document keep their links; 0002 binds the text the brain writes) and decision 0092 (#345: `set_field` with `area` on decisions, questions, Documents and sources), from the author's triage answers of 2026-11-13 (option A for both, 0.14.1 and 0.15.0); the rows CC-250 and CC-251; a 0.14.1 section; "Area editable from Notion on a Document" in docs/v2-ideas.md; the planning log line and the untriaged count. Planning only: no CLI, spec, schema, skill, template, Notion or CHANGELOG change, and no brain operation.
 **Acceptance:** 0091 and 0092 record each answer and each cause the issues and the code show, and name what they amend and keep; CC-250 and CC-251 name each rule of their decision in their Output and test it in their Acceptance; 0.15.0 stays the feature cutoff; only Markdown planning files change; the PR closes #344 and #345; the leak and PR format checks pass.
 
-### CC-250 · Other people's text keeps its links: sources and whole Documents with wikilinks (0091) · `todo`
+### CC-250 · Other people's text keeps its links: sources and whole Documents with wikilinks (0091) · `done` (#368)
 **Release:** 0.14.0
 **Changelog:** a linked repo or file that uses `[[wikilinks]]` is ingested as it is, and on a Document's Notion page its links lead to the other Documents kept from the same repo.
 **Output:** per 0091, contract first: spec/schema.md (the links row, §15's lint list), spec/cli.md (the lint table's `wikilink`, `broken-link` and `unknown-marker` rows, and the render of a whole Document's body), then `src/lib/lint.ts` (the three checks skipped on a source and on a Document with `origin: whole`) and the renderer (a wikilink shows its label or target, linked to another whole Document's page when exactly one whole Document was kept from a file of the same repo with that name or path; a relative Markdown link resolved against the file's repo path; plain text otherwise). A fork PR: brain-ingest's references/sources.md (and its linked-repo step) snapshots wiki-style files unchanged with `converter: verbatim`, never stripping or rewriting links; a note the brain writes that quotes such text follows 0002. The fork release is tagged on the user's yes and vendored with `scripts/vendor-skills.mjs` (its own task if it ships separately).
 **Acceptance:** tests on a synthetic vault: a source holding `[[a]]`, `[[a|label]]`, `[[a#h|label]]`, `![[a]]`, a relative link to a file not in the brain and an inline footnote `^[…]` passes `note new` and lint, and so does its whole Document; its `content_hash` is the file's text; a decision, a question and a `part` or `learned` Document holding `[[x]]` are still refused (`wikilink`); a changed source body still fails `source-hash`; the render links a wikilink to the page of the one matching whole Document, and leaves it plain text when nothing or two files match, and when the target was never ingested; the page links once the target is ingested and published, with no file changed; the fork PR's checks pass and it is reviewed with this PR; spec and code agree; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 
-### CC-258 · The transcript stays on the meeting page, and setup says where the minutes prompt goes (gate problems 1, 8) · `todo`
+### CC-258 · The transcript stays on the meeting page, and setup says where the minutes prompt goes (gate problems 1, 8) · `done` (#365)
 **Release:** 0.14.0
 **Changelog:** setup and the minutes guide say where the transcript goes and how to run the minutes prompt, and setup checks that the transcript is still on the page.
 **Output:** contract first (spec/setup.md, the minutes-prompt step and its check; docs/setup.md, notion/pasting-the-minutes-prompt.md and notion/minutes-format.md's "What you do with it"): the transcript stays on the meeting page, and the guides name where; the minutes prompt runs in the Notion AI chat on the page with the line "Write the minutes on this page, below the transcript, and nothing else."; setup's minutes-prompt check fails with a reason of its own when the page has the minutes but no transcript, naming the fix; brain-catch-up's message for a Reviewed meeting with minutes and no transcript names the same fix. A fork PR for brain-setup, brain-catch-up and the guide in brain-howto.
 **Acceptance:** setup's check on a synthetic page with minutes and no transcript fails with the new reason, and on one with both it passes; setup.md, the guides and the skills name the same place and the same line; the fork PR's checks pass and it is reviewed with this PR; only synthetic names; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 
-### CC-259 · A second brain on the same machine gets its own drop folder (gate problem 2) · `todo`
+### CC-259 · A second brain on the same machine gets its own drop folder (gate problem 2) · `done` (#371)
 **Release:** 0.14.0
 **Changelog:** setting up a second brain on a machine proposes a drop folder of its own instead of the first brain's.
 **Output:** contract first (spec/setup.md's settings step and wherever the default drop folder is defined), then the CLI or brain-setup (fork PR if the skill proposes it): when the default drop folder already exists and another brain on the machine uses it, the settings screen proposes a folder named after the new brain, says why, and never proposes a folder another brain reads.
 **Acceptance:** a test with two synthetic brains: the second brain's settings propose a folder of its own; a first brain still gets the default; the fork PR, if any, passes its checks and is reviewed with this PR; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 
-### CC-260 · Brain Assistant's skills in a Custom Agent: how to run them and which Skills database to give it (gate problem 4) · `todo`
+### CC-260 · Brain Assistant's skills in a Custom Agent: how to run them and which Skills database to give it (gate problem 4) · `done` (#372)
 **Release:** 0.14.0
 **Changelog:** setup and the guide say how to run Brain Assistant's skills in a Custom Agent and how to give it this space's databases only.
 **Output:** notion/brain-assistant.md, docs/setup.md, spec/setup.md's Brain Assistant step and, in a fork PR, brain-setup and the guide in brain-howto: a skill is run in a Custom Agent by asking for it by name or mentioning its page, not as a `/` command; giving the agent access names the databases by their space (the top page's name), so another space's Skills database is never picked; the step's check confirms that Today reads this space's tasks.
-**Acceptance:** every text says the same way to run a skill and to pick the databases; no text tells a Custom Agent user to type `/Today`; CC-266's re-run shows Today in a fresh duplicate reading only that space; the fork PR's checks pass and it is reviewed with this PR; the leak check passes.
+**Acceptance:** every text says the same way to run a skill and to pick the databases; no text tells a Custom Agent user to type `/Today`; setup's check step names this space's Tasks database and says what to do when Today reads another space (amended 2026-11-14, the author's choice: checked from setup's text); the fork PR's checks pass and it is reviewed with this PR; the leak check passes.
 
-### CC-261 · The Decision log marks a decision still waiting in Review (gate problem 6) · `todo`
+### CC-261 · The Decision log marks a decision still waiting in Review (gate problem 6) · `done` (#367)
 **Release:** 0.14.0
 **Changelog:** a project's Decision log marks a decision you haven't reviewed yet instead of listing it like a reviewed one.
 **Output:** contract first: spec/schema.md §16.2 (and its Notion publish, cli.md §5.14.4): a `draft` decision keeps its place in the history but shows as waiting for review, in the words of the Brief's waiting line (§16.1), with no link in Notion, where a draft has no page (0071); a reviewed decision is unchanged. Then `brain views` and the render.
 **Acceptance:** tests on a synthetic project with a draft and a reviewed decision: the view and the published section mark the draft and link the reviewed one; after the draft is approved, the next `brain views` lists it as reviewed; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 
-### CC-262 · A report the brain wrote refreshes without an Accept (gate problem 10) · `todo`
+### CC-262 · A report the brain wrote refreshes without an Accept (gate problem 10) · `done` (#369)
 **Release:** 0.14.0
 **Changelog:** a report the brain published and you haven't edited is refreshed by the next catch-up without asking you to click Accept.
 **Output:** find why the gate's catch-up had no record of the wording setup had just published on its report (spec/cli.md §5.14.6 and §5.14.7), fix the contract first if it causes it, then the code: the wording the brain publishes is recorded, so an unedited page is the brain's own, and Accept is asked only when the page differs from it.
 **Acceptance:** tests on a synthetic brain: a report published by setup and not edited is refreshed by the next catch-up with no Accept; one edited in Notion still waits for Accept and shows the difference; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 
-### CC-263 · No dead link in a new Inbox row's first line (gate problem 7) · `todo`
+### CC-263 · No dead link in a new Inbox row's first line (gate problem 7) · `done` (#366)
 **Release:** 0.14.0
 **Changelog:** a new Inbox row's first line names its file without a link that leads nowhere.
 **Output:** the Inbox row body the ingest writes (spec/cli.md §5.14.4) names the file so Notion doesn't turn it into a link; contract first, then the render.
 **Acceptance:** a render test with file names Notion links (one with a domain-like ending, as in the gate) shows no link; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 
-### CC-264 · Where a first catch-up spends, and its quick wins (gate problem 9) · `todo`
+### CC-264 · Where a first catch-up spends, and its quick wins (gate problem 9) · `done` (#373)
 **Release:** 0.14.0
 **Changelog:** the first catch-up after setup does less work, so a tester's first meeting costs less.
-**Output:** a measured breakdown, numbers only, of the gate's first-meeting catch-up and of a synthetic catch-up of the same shape (setup's leftover rows, one meeting, the report, the publish): agent turns, tokens and cost per phase; the quick wins it shows, each a small change to a skill (fork PR) or the CLI; anything larger written as a 1.0.0 task. Bounded: it doesn't redesign catch-up.
-**Acceptance:** the same synthetic catch-up measured before and after, with the cost lower and the result the same; the breakdown is in the PR with no personal content; the fork PR, if any, passes its checks and is reviewed with this PR; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
+**Output:** a measured breakdown, numbers only, of the gate's first-meeting catch-up (eval/cc-264/RESULTS.md): model calls, tokens and cost per phase, and what fills the context; the quick wins it shows, each a small change to a skill (fork PR) or the CLI; anything larger written as a 1.0.0 task (CC-267 to CC-270). Bounded: it doesn't redesign catch-up. The quick wins, in brain-catch-up only: the Unattended and Run on a schedule sections move to references read only by those runs; each skill and reference is read at its step, and only when the step has work; an input's text is never printed when the command that takes it returns it.
+**Acceptance:** the breakdown is in eval/cc-264/RESULTS.md and the PR with no personal content, and corrects the gate's total (the second run's cost includes the first); each quick win names the gate's numbers it reduces; the sections moved keep their headings in SKILL.md, so every reference to brain-catch-up's "Unattended" or "Run on a schedule" still resolves; the fork PR passes its checks and is reviewed with this PR; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
+**Amended by the author's choice of 2026-11-14:** no synthetic before/after runs, and no re-run of the gate on rc.3 (CC-266 dropped the same day): the cost after the quick wins is unmeasured and will show in the author's normal use. The publish in a sub-agent is CC-267 in 1.0.0, not a quick win.
 
-### CC-265 · Vendor the skills for 0.14.0-rc.3 · `todo`
+### CC-265 · Vendor the skills for 0.14.0-rc.3 · `done` (#376)
 **Release:** 0.14.0
 **Changelog:** the skills of 0.14.0-rc.3: the transcript check, the drop folder, Brain Assistant in a Custom Agent, wikilinked sources and the catch-up's quick wins.
 **Output:** after the fork PRs of CC-250 and CC-258 to CC-264 are merged in the fork, the fork release is tagged on the author's yes and vendored with `scripts/vendor-skills.mjs` in one commit, classified in the skills-integration issue.
 **Acceptance:** `vendor-skills.mjs --check` passes on the snapshot; the snapshot holds every merged fork PR; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 
-### CC-266 · The gate's changed steps on 0.14.0-rc.3 (CC-193's problems 1, 4, 8, 9, 10) · `todo`
+### CC-266 · The gate's changed steps on 0.14.0-rc.3 (CC-193's problems 1, 4, 8, 9, 10) · `dropped` (the author's choice, 2026-11-14)
+**Dropped by the author on 2026-11-14:** no re-run of the gate on rc.3. The author checks these flows in normal use instead; a problem found there comes in as a dogfood issue. CC-260 checks Today from setup's text, and CC-264's cost after its quick wins stays unmeasured.
 **Release:** 0.14.0
 **Changelog:** development only: the steps of the release gate the fixes changed pass on 0.14.0-rc.3.
 **Output:** after the author cuts rc.3 (CC-250 and CC-258 to CC-265 merged), in a fresh duplicate of the published template with the same persona (eval/setup-0.14/): the minutes and the transcript check, the first meeting and its catch-up with its cost, Brain Assistant's Today in a Custom Agent, and the report refreshed without an Accept; recorded as run 2 in eval/setup-0.14/RESULTS.md. The four first-value checks are not re-run (the author's choice of 2026-11-14). Only the results files and this row change; a needed fix is its own task.
@@ -923,6 +925,30 @@ After the feature cutoff, scope packaging/install/upgrade guidance, consistent N
 **Output:** in CC-200's harness, a case-set option and an adapter for `eval/retrieval-0.13`: its brain and caller folders, each case a fresh session in its caller folder, the answer scored by CC-203's answer level (`clarify` included), the first search's tool call and output tokens recorded from the trace, the no-file-read check kept. No case or scoring rule changes.
 **Acceptance:** with no agent, its parsing and scoring tests on synthetic traces (a clarifying answer, a dump of every subject's value, an honest unknown, a cited fact); a smoke run of one case per group per agent on a package packed from its branch completes, its figures in the PR body, not committed as acceptance; `npm test`, `npm run test:scripts`, the leak and PR format checks pass.
 **Moved by [0082](../decisions/0082-native-smoke-run-per-release-full-native-acceptance-before-1-0.md) (2026-11-11):** from 0.13.0 to 1.0.0 with CC-186 (its `**Release:**` was 0.13.0; the rest of the row is as recorded): 0.13.0's retrieval is judged by CC-203's scorer at the candidate level, and the eighty cases are asked as final answers only in CC-186's run. It is built before that run, after CC-203 is merged.
+
+### CC-267 · The catch-up's publish runs in a sub-agent with a fresh context (gate problem 9) · `todo`
+**Release:** 1.0.0
+**Changelog:** a catch-up writes its Notion pages and Tasks in a fresh context, so a long run no longer runs out of context while it publishes.
+**Output:** from CC-264's breakdown: the gate's first-meeting publish made 34 Notion calls with 250k to 350k tokens of context, about 70% of the second run's cost, and the session compacted itself mid-publish, against decision 0043's bar that a catch-up never runs out of context. Contract first (brain-catch-up step 4.1, with the rule that a sub-agent never writes amended for this one): the Pages and Tasks writes (4.1.1, 4.1.2) run in one sub-agent given the brain path, `plan.json`, the render and the run's temp folder; it reads brain-ingest references/notion.md "Publish" and brain-sync's Push itself, writes, records with `sync record`, and returns the counts and failures; the main run keeps the other publish steps. A fork PR.
+**Acceptance:** a synthetic catch-up with simulated Notion (eval/unattended-0.7.0's pattern) over one meeting, setup's leftover rows and a report, before and after: the same pages written and recorded, the same report, a lower cost and a peak context under 200k tokens with no compaction; the fork PR's checks pass; the leak check passes.
+
+### CC-268 · Incremental pull: read only the Notion rows edited since the last pull · `todo`
+**Release:** 1.0.0
+**Changelog:** a sync or catch-up reads only the Notion rows changed since the last pull, so a brain with many rows syncs faster and cheaper.
+**Output:** from CC-264's breakdown: the gate's pull read every row of 11 databases (about 103k characters of query replies) and copied them by hand into the snapshot, though only a few changed since setup. Contract first (spec/cli.md §5.14, a decision if it amends U-18's "every row of every database"): the CLI gives the cut-off (`brain status` or `sync plan`), the skill queries each database filtered on `last_edited_time` at or after it, and `sync plan` treats a row it wasn't sent as unchanged, never as removed; the first pull, a lost cut-off and Accepted wording's own selection still read everything they read now.
+**Acceptance:** tests: a row not sent is unchanged in the plan; a row edited after the cut-off is planned as now; a missing cut-off asks for a full read; a fork PR for brain-sync and brain-catch-up; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
+
+### CC-269 · The CLI turns Notion's query replies into the snapshot · `todo`
+**Release:** 1.0.0
+**Changelog:** a sync no longer copies every Notion row by hand into its snapshot: the CLI converts the rows itself.
+**Output:** from CC-264's breakdown: in the gate the agent wrote the snapshot of every row as a script by hand (about 8.8k output tokens, one call of 13% of the first run's cost, over a minute). Contract first (spec/cli.md §5.14, brain-sync references/formats.md): `brain sync snapshot --input <files>` takes the Notion query replies as saved files and writes `snapshot.json` with formats.md's normalized values, leaving out the `Example · ` rows; the skill saves each reply to the run's temp folder instead of retyping it. A fork PR for brain-sync.
+**Acceptance:** tests on synthetic query replies of each database (every property type of formats.md's table, a relation, an empty value, an example row, a paged reply) give the snapshot the skill writes today; `sync plan` takes it unchanged; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
+
+### CC-270 · Page bodies are read as Markdown, not as blocks · `todo`
+**Release:** 1.0.0
+**Changelog:** a sync reads a Document's or report's Notion text as Markdown, a fraction of the size of its blocks.
+**Output:** from CC-264's breakdown: the gate read one report body as blocks (about 46k characters of block JSON) and three project and area pages before writing their sections (about 41k). Contract first (brain-sync "Accepted wording" steps 2, 3 and 6, decision 0054's fingerprint): read a body with the Markdown read, with a conversion that gives the same fingerprint as today's block conversion, or a migration of the recorded baselines; the project sections' writes keep decision 0037's needs. A fork PR for brain-sync and brain-ingest's references/notion.md.
+**Acceptance:** for synthetic pages of each block type that "Accepted wording" step 3 names, the Markdown read gives the same text and fingerprint as the block read, or the baselines migrate with no page held by mistake; an unconvertible block is still refused; the fork PR's checks pass; the leak check passes.
 
 ## Your tasks
 

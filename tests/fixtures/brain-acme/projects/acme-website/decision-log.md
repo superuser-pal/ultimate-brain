@@ -12,7 +12,7 @@ updated: 2026-12-04
 
 <!-- @generated:start -->
 ## Current
-- 2026-12-03 — [Use Supabase for auth](../../knowledge/decisions/2026-12-03-use-supabase-for-auth.md) — accepted — supersedes [Use Firebase for auth](../../knowledge/decisions/2026-10-01-use-firebase-for-auth.md)
+- 2026-12-03 — [Use Supabase for auth](../../knowledge/decisions/2026-12-03-use-supabase-for-auth.md) — waiting in Review — supersedes [Use Firebase for auth](../../knowledge/decisions/2026-10-01-use-firebase-for-auth.md)
 
 ## Superseded
 - 2026-10-01 → 2026-12-03 — [Use Firebase for auth](../../knowledge/decisions/2026-10-01-use-firebase-for-auth.md) — superseded by [Use Supabase for auth](../../knowledge/decisions/2026-12-03-use-supabase-for-auth.md)
