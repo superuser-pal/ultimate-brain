@@ -173,6 +173,8 @@ Failure:
 | `SKILLS_DOWNGRADE` | 5 | `upgrade` would lower the pin's version under the same snapshot name (§5.28) |
 | `RECOVERY_NEEDED` | 5 | an interrupted multi-file write left `_journal/<op>.json`: every command except `recover` refuses until `brain recover` ran (capture-and-review §7.11) |
 | `DISMISSALS_UNREADABLE` | 5 | `_assistant/dismissals.json` cannot be read or fails its schema: `assistant findings` and `assistant dismiss` refuse rather than show skipped findings again or replace the file (`lint` flags it; [assistant.md](assistant.md) §8) |
+| `WEEKLY_STATE_UNREADABLE` | 5 | `_weekly/state.json` cannot be read or fails its schema: `weekly plan` and `weekly record` refuse rather than show every finding again or replace the file (`lint` flags it; [weekly-review.md](weekly-review.md) §9.5; 0.15.0) |
+| `WEEKLY_TOO_LONG` | 4 | `weekly record`: the report's body is over 450 words, the header and link targets not counted; nothing is written, and the skill shortens its own prose ([weekly-review.md](weekly-review.md) §3.4; 0.15.0) |
 | `SUPPRESSIONS_UNREADABLE` | 5 | a `_suppressions/` record cannot be read or is malformed: `query`, `views`, `source extract` and `source cleanup-plan` refuse rather than treat the brain as unrestricted, and never replace the damaged file (`status` reports it, `lint` flags it; capture-and-review §5.3) |
 | `DIRTY_TREE` | 5 | `source extract` found the brain not a Git work tree, or with uncommitted changes and no journal |
 | `INTERNAL` | 10 | unexpected failure |
@@ -225,7 +227,7 @@ Write commands append to `log/<YYYY-MM>.md` (month of `--now`), creating it with
 - <timestamp> <op> <id> "<title>"[ <key>=<value>]…
 ```
 
-`"` and `\` in titles are escaped with `\`, and CR and LF become `\r` and `\n`, so every entry is exactly one line. Values with spaces, quotes, backslashes or line breaks are quoted and escaped the same way. The file is created exclusively with its header, then lines are appended; an unreadable log is an error, never a reason to start the file over. Ops written by the CLI: `init`, `note-new`, `proposal-new`, `apply`, `correct`, `sync-create`, `sync-update`, `upgrade`, `repo-add`, `repo-record`, `full-text` (before 0.6.0), `modules`, `report-new`, `report-refresh`, `report-fix`, `question-drop`, `assistant-dismiss`. Skills add their own (`ingest`, `publish`, `catch-up`, `query`, `assistant`, `reflect`, `setup`) with `brain log` (§5.11). `setup` lines are setup.md §4.1's, and `brain status` reads them (§5.2). `index` and `views` do not log.
+`"` and `\` in titles are escaped with `\`, and CR and LF become `\r` and `\n`, so every entry is exactly one line. Values with spaces, quotes, backslashes or line breaks are quoted and escaped the same way. The file is created exclusively with its header, then lines are appended; an unreadable log is an error, never a reason to start the file over. Ops written by the CLI: `init`, `note-new`, `proposal-new`, `apply`, `correct`, `sync-create`, `sync-update`, `upgrade`, `repo-add`, `repo-record`, `full-text` (before 0.6.0), `modules`, `report-new`, `report-refresh`, `report-fix`, `question-drop`, `assistant-dismiss`. Skills add their own (`ingest`, `publish`, `catch-up`, `query`, `assistant`, `reflect`, `setup`; `weekly` is written by `brain weekly record`, weekly-review.md §9.2) with `brain log` (§5.11). `setup` lines are setup.md §4.1's, and `brain status` reads them (§5.2). `index` and `views` do not log.
 
 **The catch-up line (0045, 0051).** An attended catch-up logs `catch-up - notes_read=<n> seconds=<s>`. An unattended one (§6.1) logs `catch-up - mode=unattended inputs=<n> left=<n> skipped=<n> waiting=<n> failed=<n>[ failures="<reason>; <reason>"] report=<yes|no> notes_read=<n> seconds=<s>`: `inputs` taken in (failed ones included), `left` the inputs beyond the budget, `skipped` the inputs skipped for a blocker, `waiting` the decided Review rows and report What to fix left for an attended run, `failed` the steps that failed, `failures` their reasons in a few words each ("Notion login"), `report` whether it wrote a Report row. A `catch-up` line without `mode=unattended` is attended, as every line before 0.7.0 is. `brain status` reads these lines (§5.2).
 
@@ -975,6 +977,7 @@ The skill rules (`product-file` for skills, `skills-*`, `skill-*`) have `line` 1
 | `report-source-excluded` | warning | a line of a report links a note that a suppression restricts (whole, or some of its lines, timeline entries or facts): flagged "(source excluded)" at that line, never edited by the brain; the next refresh is written from `brain query`, which leaves the restricted claims out (capture-and-review §5.1) |
 | `workflow-record` | error | a record under `_workflows/` that isn't readable JSON or fails its `spec/schemas/workflow.schema.json` definition, a record whose id isn't its file name, or an item's `depends_on`, an artifact's `item`, an operation's `target` or an adoption map entry naming a record that doesn't exist (connected-workflows.md §12) |
 | `assistant-dismissals` | error | `_assistant/dismissals.json` (when present) isn't readable JSON, fails `$defs/dismissals` of `spec/schemas/assistant.schema.json`, or repeats a `key` ([assistant.md](assistant.md) §8); `assistant findings` refuses with `DISMISSALS_UNREADABLE`. One issue per problem, at that path, line 1 |
+| `weekly-state` | error | `_weekly/state.json` (when present) isn't readable JSON, fails the state schema of `spec/schemas/weekly.schema.json`, or repeats a `key` in `shown` or `queued` or a week in `weeks` ([weekly-review.md](weekly-review.md) §9.5; 0.15.0); `weekly plan` refuses with `WEEKLY_STATE_UNREADABLE`. One issue per problem, at that path, line 1 |
 | `suppression-record` | error | a file of `_suppressions/` (or the folder) cannot be read or is malformed (0055, capture-and-review §5.3); retrieval commands refuse with `SUPPRESSIONS_UNREADABLE` |
 | `proposal-items` | error | a `review_notes` `items` list that does not give every note, link and change exactly one immutable `it-` id, an item that refers to something the proposal does not hold, or an `item_decisions` entry that names no item or repeats one (0055, capture-and-review §7.2) |
 | `proposal-fingerprint` | error | a proposal's `fingerprint` that doesn't match it (schema §11.4): its `target`, `field`, merge pair (`target` and `merge_into`, different and sorted), a promotion's `source`, a theme's one learned Document; or an `evidence` id that names no meeting or source (0052, 0076) |
@@ -1986,18 +1989,20 @@ brain schedule list
 brain schedule remove <job>
 ```
 
-Runs a skill on a schedule, with nobody there, through local Claude Code (`claude -p`), the one scheduler that sees every input: the drop folder, linked repos and the user's Notion MCP (0051). It writes the machine's scheduler entry and nothing in the brain: no file, no log line, no commit. The skill's "Run on a schedule" section calls it and writes the settings (brain-catch-up). Reflection has no job in 0.11.0 (0076 §5): it runs attended only, and its weekly run is 0.15.0's brief (CC-111, 0075; moved by 0077 and 0078), which adds its own job then.
+Runs a skill on a schedule, with nobody there, through local Claude Code (`claude -p`), the one scheduler that sees every input: the drop folder, linked repos and the user's Notion MCP (0051). It writes the machine's scheduler entry and nothing in the brain: no file, no log line, no commit. The skill's "Run on a schedule" section calls it and writes the settings (brain-catch-up). Reflection has no job of its own (0076 §5): it runs attended, and its weekly run is the weekly review's knowledge stream, job `weekly-review` (0.15.0, CC-111, [weekly-review.md](weekly-review.md) §11). Its default is Monday at 08:00 local (`--at 08:00 --days mon`), it is a separate entry from `catch-up`, and the run is capped by `--max-budget-usd` (below).
 
 **Jobs.** Each job runs one fixed prompt in the brain folder, so the schedule starts the skill the same way every time:
 
 | `<job>` | Prompt | Needs |
 |---|---|---|
 | `catch-up` | `catch up unattended` | brain-catch-up |
+| `weekly-review` | `weekly review unattended` | brain-weekly-review (0.15.0, [weekly-review.md](weekly-review.md) §11) |
 
 **Options.**
 - `--at`: one or more local times, 24-hour `HH:MM`, comma-separated, kept sorted and without repeats (`07:00,13:00`). Required.
 - `--days`: `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`, comma-separated. Absent: every day.
 - `--model`: the Claude model the run pins (0051: the skills are tested on Claude models only), a full id starting with `claude-` (`claude-sonnet-5-5`), never an alias that moves (`sonnet`). Required; anything else → `USAGE`.
+- `--max-budget-usd`: `weekly-review` only (0.15.0): a positive number, added to the command as `--max-budget-usd <n>`; the hard ceiling of weekly-review.md §10, its default from `settings.weekly.max_usd` (§12 there). On any other job → `USAGE`.
 - `--dry-run`: returns what `install` would write, and writes nothing.
 
 **The command it schedules.** `<claude> -p "<prompt>" --model <id>`, run in the brain folder (the resolved brain, §4). `<claude>` is the absolute path of `claude` found on `PATH` at install time (none → `CLAUDE_NOT_FOUND`), because a scheduler's `PATH` is short. `PATH` for the run is the folders of `claude`, `node` and `brain` at install time, then `/usr/bin:/bin:/usr/sbin:/sbin`. No permission flag is added: the run has the tools the brain's own Claude Code settings allow (`.claude/settings.json` in the brain), and a tool they don't allow is refused, which the run logs as a failure. The skill offers the allow list when it sets the schedule (CC-64).
@@ -2085,6 +2090,7 @@ The only writer of an extract. **Identity:** `--page` is the Notion page id of t
 | **Sync** (CC-08) | as §5.14 |
 | **Query** (CC-10) | `query --candidates` → read the top notes → answer with citations → `log query - notes_read=<n> seconds=<s>` (0045) |
 | **Reflect** (0052, 0076) | `status` → `reflect --candidates` → the skill judges each cluster → the report, 10 findings at a time → per answer: yes (`proposal new` + `apply`, decided in chat), later (`proposal new`), skip (`proposal new` + `apply` reject) → `index` → `views` → `lint` → commit → at the end, `sync render --changed` + MCP → `sync record` → commit → `log reflect …`. Attended only. §6.2 |
+| **Weekly review** (0075, 0093) | `status` → Notion read → `weekly plan` → quiet: stop, nothing written → attempt marker → the skill judges clusters and correction targets within the budget → `weekly select` → `proposal new` (all pending) → `weekly record` → `index` → `views` → `lint` → commit → per [weekly-review.md](weekly-review.md) §9.3, `sync render --changed` + MCP → `sync record` → commit → push. Applies nothing, asks nothing unattended. [weekly-review.md](weekly-review.md) §1 |
 
 A run never leaves lint errors it introduced: if `lint` reports new errors after a write, the skill stops before committing and reports them.
 
@@ -2094,7 +2100,7 @@ The skill brain-catch-up, started by the prompt `catch up unattended` (a schedul
 
 **The one authority (assessment finding F-0007).** This section is the only place that says what an unattended run does. Its three tables below cover every question of the batch, every kind of decided row and Notion edit, and every selected input, Review item and module case of capture-and-review §4 to §8 (that file's §8 points here). The unattended tables in the skills (brain-catch-up's "One batch of questions" and its references) are renderings of these: where one differs, this section governs and the skill is corrected in the fork. A case none of the tables names is treated as a question with no default: the run skips that input and names it under Needs you.
 
-**Reflection runs attended only** in 0.11.0 (0076 §5): `catch up unattended` never runs brain-reflect, and no table here has a reflection row. 0.15.0's weekly brief adds them (CC-111, 0075; moved by 0077 and 0078).
+**Reflection runs attended only** (0076 §5): `catch up unattended` never runs brain-reflect, and no table here has a reflection row. The weekly review (0.15.0, [weekly-review.md](weekly-review.md)) is its scheduled run: a separate job and skill that ingests nothing and applies nothing, so this section is unchanged by it (0075 §6).
 
 **Off the working branch (0086 §2).** The run's first command is `brain status`. When its `branch` has `on_working` `false` (another branch checked out, a detached `HEAD`) or `working` `null` (§5.2), the run stops there: no read, no Notion call, no commit, no push and no log line, nothing written in the brain or in Notion. Its last line of output, which the scheduler's log keeps (§5.21), is `Not run: off-working-branch. The brain is not on its working branch; say "fix my backup" in a session in the brain.`, with `off-working-branch` the reason. The next attended session sees the warning `BRAIN_OFF_WORKING_BRANCH` in `status` and offers the fix (setup.md §15). A branch with commits the working branch lacks, while the brain is on its working branch (`unmerged` alone), doesn't stop the run: its writes land on the working branch, and the warning waits for the attended session.
 
@@ -2611,3 +2617,20 @@ Read-only. `--pack` builds the opening context for the caller (memory.md §5): t
 The `.brain` is read by the one reader every command shares (§5.13 step 4, CC-152): one that is not valid JSON, or has a key §5.12 doesn't list, is `USAGE` naming the folder.
 
 Errors: `USAGE` (neither or both of `--pack` and `--search`, an extra argument, a value out of range, a flag the mode doesn't take, a `--repo` that isn't a folder, an invalid `.brain`), `SUPPRESSIONS_UNREADABLE`. No new error or warning code.
+
+### 5.34 `brain weekly` (0075, 0093, [weekly-review.md](weekly-review.md))
+
+```text
+brain weekly plan --snapshot <file|-> [--now <ts>]
+brain weekly select --input <file|->
+brain weekly record --input <file|->
+```
+
+The deterministic half of the weekly review. The skill `brain-weekly-review` reads Notion, judges clusters and correction targets, and writes the prose; these commands do the rest. Behaviour is normative in weekly-review.md. This section names the commands; their JSON shapes (`plan`'s output, the judged input to `select`, `record`'s input) go in `spec/schemas/weekly.schema.json`, which is CC-253's first commit, reviewed on its PR before any code.
+
+- **`plan`** writes nothing. It takes the assistant snapshot (assistant.md §2.1) and returns `week`, `window`, `as_of`, the What changed candidates (weekly-review.md §4.2), every assistant finding (§5.31's rules, no page cap), the reflection clusters (§5.32's rules, with `--limit` = `settings.weekly.max_judged`), the correction claims and their candidate targets (weekly-review.md §8.1, §8.2), each candidate's repetition state (§7), this week's counts from `_weekly/state.json`, `input_hash` and `quiet` (§9.1, a same-week rerun included). Errors: `INPUT_INVALID`, `WEEKLY_STATE_UNREADABLE`, `SUPPRESSIONS_UNREADABLE`, `DISMISSALS_UNREADABLE`.
+- **`select`** writes nothing. It takes `plan`'s output with the skill's judgments and returns the decision items, the queued remainder and the counts, by weekly-review.md §5 to §7.
+- **`record`** writes the report (§2, §3; `INPUT_INVALID`, `WEEKLY_TOO_LONG`) and `_weekly/state.json` (§9.5) in one atomic step, and logs the `weekly` line (§3.9; weekly-review.md §9.2). Rerunning it for the same week rewrites that week's report in place. `data` = `{ "id", "path", "week", "coverage", "counts", "changed" }`.
+
+`brain status` gains `unattended.weekly` (weekly-review.md §9.3, §9.5), `null` when the log has no `weekly` line and there is no attempt marker. From the **last `weekly` log line** (weekly-review.md §9.2): `last` is its timestamp; `week`, `coverage` (`complete`, `partial` or `none`) and `decisions` are its fields; `failed` is its `failed` count; `failures` is its `failures` value split on `; ` (`[]` when absent). `report` is the path of that week's report from `_weekly/state.json` `weeks.<week>.report`, or `null` (a failure-only run, `coverage=none`, writes none). From the **attempt marker**: `unfinished` is `{ "week", "started", "mode" }` when `_weekly/attempt.json` exists and its `started` is more than 2 hours before now, else `null`.
+
