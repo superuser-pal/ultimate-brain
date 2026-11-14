@@ -165,6 +165,25 @@ function spell(a: readonly string[], b: readonly string[]): [Set<string>, Set<st
 const sortedSet = (set: Set<string>) => [...set].sort(compareCodePoints);
 const sameSet = (a: Set<string>, b: Set<string>) => a.size === b.size && [...a].every((token) => b.has(token));
 
+/** A task's state from its Status (assistant.md §3.1): done, dropped (Won't Do), waiting (Waiting On), someday, or open. */
+export function taskStateOf(snapshot: Pick<Snapshot, "task_statuses">, config: Record<string, unknown>): (status: string | null) => "done" | "dropped" | "waiting" | "someday" | "open" {
+  const notion = isRecord(config.notion) ? config.notion : {};
+  const taskConfig = isRecord(notion.tasks) ? notion.tasks : {};
+  const wontDo = str(taskConfig.wont_do_status) ?? "Won't Do";
+  const waitingOn = str(taskConfig.waiting_on_status) ?? "Waiting On";
+  const statusGroups = new Map((snapshot.task_statuses ?? []).map((option) => [norm(option.name), option.group]));
+  return (status) => {
+    if (status === null || status.trim() === "") return "open";
+    const key = norm(status);
+    if (key === norm(wontDo)) return "dropped";
+    const group = statusGroups.get(key) ?? null;
+    if (group === "complete" || (group === null && key === "done")) return "done";
+    if (key === norm(waitingOn)) return "waiting";
+    if (key === "someday") return "someday";
+    return "open";
+  };
+}
+
 export function computeFindings(input: FindingsInput): FindingsResult {
   const { snapshot, notes, config } = input;
   const live = snapshot.notion === "live";
@@ -214,19 +233,9 @@ export function computeFindings(input: FindingsInput): FindingsResult {
   const titleOf = (id: string | null): string => (id === null ? "" : projects.get(id)?.title ?? areas.get(id)?.title ?? domains.get(id)?.title ?? notes.find((note) => note.id === id)?.attributes.title as string ?? id);
 
   // ---- tasks (live, Tasks on)
-  const statusGroups = new Map((snapshot.task_statuses ?? []).map((option) => [norm(option.name), option.group]));
   const optionNames = (snapshot.task_statuses ?? []).map((option) => option.name);
   const option = (name: string): string | null => optionNames.find((candidate) => norm(candidate) === norm(name)) ?? null;
-  const stateOf = (status: string | null): Task["state"] => {
-    if (status === null || status.trim() === "") return "open";
-    const key = norm(status);
-    if (key === norm(wontDo)) return "dropped";
-    const group = statusGroups.get(key) ?? null;
-    if (group === "complete" || (group === null && key === "done")) return "done";
-    if (key === norm(waitingOn)) return "waiting";
-    if (key === "someday") return "someday";
-    return "open";
-  };
+  const stateOf = taskStateOf(snapshot, config);
   const tasks: Task[] = live && tasksOn ? (snapshot.tasks ?? []).map((row) => ({
     row, state: stateOf(row.status),
     projects: row.projects.map((pageId) => projectByPage.get(pageId)).filter((project): project is Project => project !== undefined),
