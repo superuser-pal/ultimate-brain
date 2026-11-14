@@ -824,7 +824,7 @@ Moved to 0.14.0 by the user, 2026-11-11: the CLI skip and its brain-ingest wordi
 **Output:** find why the gate's catch-up had no record of the wording setup had just published on its report (spec/cli.md §5.14.6 and §5.14.7), fix the contract first if it causes it, then the code: the wording the brain publishes is recorded, so an unedited page is the brain's own, and Accept is asked only when the page differs from it.
 **Acceptance:** tests on a synthetic brain: a report published by setup and not edited is refreshed by the next catch-up with no Accept; one edited in Notion still waits for Accept and shows the difference; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 
-### CC-263 · No dead link in a new Inbox row's first line (gate problem 7) · `in progress`
+### CC-263 · No dead link in a new Inbox row's first line (gate problem 7) · `review`
 **Release:** 0.14.0
 **Changelog:** a new Inbox row's first line names its file without a link that leads nowhere.
 **Output:** the Inbox row body the ingest writes (spec/cli.md §5.14.4) names the file so Notion doesn't turn it into a link; contract first, then the render.
