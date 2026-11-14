@@ -1551,8 +1551,44 @@
             "brief",
             "decision_log",
             "area_brief",
-            "report"
+            "report",
+            "weekly_review"
           ]
+        },
+        "week": {
+          "description": "weekly_review: the ISO week (spec/weekly-review.md §2).",
+          "type": "string",
+          "pattern": "^\\d{4}-W(0[1-9]|[1-4]\\d|5[0-3])$"
+        },
+        "window": {
+          "description": "weekly_review: the change window (spec/weekly-review.md §4.1).",
+          "type": "object",
+          "required": ["from", "to"],
+          "additionalProperties": false,
+          "properties": { "from": { "$ref": "#/$defs/timestamp" }, "to": { "$ref": "#/$defs/timestamp" } }
+        },
+        "coverage": {
+          "description": "weekly_review: complete, or partial when judgments were omitted (spec/weekly-review.md §10).",
+          "enum": ["complete", "partial"]
+        },
+        "omitted": {
+          "description": "weekly_review: the clusters and correction targets a partial run left (spec/weekly-review.md §10).",
+          "type": "object",
+          "required": ["clusters", "correction_targets"],
+          "additionalProperties": false,
+          "properties": { "clusters": { "type": "integer", "minimum": 0 }, "correction_targets": { "type": "integer", "minimum": 0 } }
+        },
+        "counts": {
+          "description": "weekly_review: this week's decisions, new Review items, targets and queued findings (spec/weekly-review.md §5).",
+          "type": "object",
+          "required": ["decisions", "new_items", "targets", "queued"],
+          "additionalProperties": false,
+          "properties": {
+            "decisions": { "type": "integer", "minimum": 0, "maximum": 5 },
+            "new_items": { "type": "integer", "minimum": 0, "maximum": 5 },
+            "targets": { "type": "integer", "minimum": 0, "maximum": 5 },
+            "queued": { "type": "integer", "minimum": 0 }
+          }
         },
         "project": {
           "$ref": "#/$defs/projectId"
@@ -1782,6 +1818,17 @@
                 }
               }
             ]
+          }
+        },
+        {
+          "description": "A weekly review (spec/weekly-review.md §2) has its week, window, coverage, omitted and counts, and none of a report's question, scope or fixes.",
+          "if": { "properties": { "view_kind": { "const": "weekly_review" } } },
+          "then": {
+            "required": ["week", "window", "coverage", "omitted", "counts"],
+            "not": { "anyOf": [ { "required": ["project"] }, { "required": ["area"] }, { "required": ["projects"] }, { "required": ["question"] }, { "required": ["asked_in"] }, { "required": ["fixes"] } ] }
+          },
+          "else": {
+            "not": { "anyOf": [ { "required": ["week"] }, { "required": ["window"] }, { "required": ["coverage"] }, { "required": ["omitted"] }, { "required": ["counts"] } ] }
           }
         },
         {
