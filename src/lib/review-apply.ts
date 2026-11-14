@@ -280,7 +280,7 @@ function deferItems(workspace: Workspace, id: string, itemIds: string[], today: 
       ...notes.map((note) => carried(pick("note").find((item) => item.ref === note)!, "note", note)),
       ...linkRefs.map((ref, index) => carried(pick("link").find((item) => Number(item.ref) === ref)!, "link", index)),
     ],
-    deferred_from: id, why: p.why, source,
+    deferred_from: id, why: p.why, source, ...(typeof p.correction === "string" ? { correction: p.correction } : {}),
   };
   const created = writeProposal(workspace, fields, today).id;
   const document = workspace.edit(workspace.get(id)!);

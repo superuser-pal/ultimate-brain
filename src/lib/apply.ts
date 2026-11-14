@@ -87,7 +87,7 @@ export interface ApplyResult {
 }
 
 const ACTIONS = ["approve", "reject", "fix", "edit"];
-export const EDITABLE = new Set(["update_fact", "contradiction", "add_to_note", "update_body", "answer"]);
+export const EDITABLE = new Set(["update_fact", "contradiction", "add_to_note", "update_body", "replace_line", "answer"]);
 const FIX_KEYS = ["value", "change", "note", "field", "link"];
 /** Reference fields a merge leaves alone: the meeting side of a persisted pair (spec/schema.md §11.2). */
 const PAIR_FIELDS = new Set(["decisions", "questions", "decided_in", "raised_in"]);
@@ -488,6 +488,11 @@ function corrected(workspace: Workspace, p: Record<string, unknown>, fixes: Arra
     if (typeof value !== "string" || value.trim() === "") shape(`a fix on a ${kind} is a non-empty text`);
     return { q, value, noteFixes };
   }
+  if (kind === "replace_line") {
+    const { value } = single();
+    if (!isOneLine(value)) shape("a fix on a replace_line is one non-empty line");
+    return { q, value, noteFixes };
+  }
   if (kind === "supersede" || kind === "merge") {
     const { value } = single();
     const key = kind === "supersede" ? "supersedes" : "merge_into";
@@ -532,6 +537,9 @@ function corrected(workspace: Workspace, p: Record<string, unknown>, fixes: Arra
         if (change.kind === "update_fact") {
           if (typeof entry.value !== "string" && typeof entry.value !== "number") shape("a fact value is a string or a number");
           change.after = entry.value;
+        } else if (change.kind === "replace_line") {
+          if (!isOneLine(entry.value)) shape("a fix on a replace_line is one non-empty line");
+          change.line_after = entry.value;
         } else {
           if (typeof entry.value !== "string" || entry.value.trim() === "") shape(`a fix on an ${String(change.kind)} is a non-empty text`);
           change.content = entry.value;
@@ -607,6 +615,8 @@ function defer(workspace: Workspace, id: string, p: Record<string, unknown>, exc
     deferred_from: id,
     why: p.why,
     source,
+    // A correction group's deferred changes stay its claim's (weekly-review.md §8.4).
+    ...(typeof p.correction === "string" ? { correction: p.correction } : {}),
   };
   return writeProposal(workspace, fields, today).id;
 }
@@ -633,6 +643,12 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
     }
   }
   if (kind === "update_body" && bodyHash(target.body) !== p.before_hash) return `${target.id}'s body changed after the proposal was written`;
+  if (kind === "replace_line") {
+    if (bodyHash(target.body) !== p.before_hash) return `${target.id}'s body changed after the proposal was written`;
+    const count = target.body.split("\n").filter((line) => line === p.line_before).length;
+    if (count !== 1) return `${target.id}'s body holds the line to replace ${count} times, not once`;
+    if (V !== undefined && !isOneLine(V)) throw new ItemFailure("INVALID_RESULT", "a replace_line value is one non-empty line");
+  }
   if (kind === "set_field" && a[field] !== p.before) return `${field} is ${a[field] === undefined ? "absent" : JSON.stringify(a[field])}, proposal expected ${p.before === undefined ? "absent" : JSON.stringify(p.before)}`;
   if (kind === "set_field" && field === "area") { const problem = projectsProblem(workspace, target); if (problem !== undefined) return problem; }
 
@@ -655,6 +671,13 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
       const theirs = userWording(V, p.content, correctedBy);
       document.body = `${head === "" ? "" : `${head}\n\n`}${content}\nSource: ${theirs ? `user-correction:${correctedBy!}` : String(p.source)}\n`;
       if (!theirs) a.sources = union(list(a.sources), [p.source]);
+      break;
+    }
+    case "replace_line": {
+      // The one line equal to line_before becomes the value; nothing else of the note changes (spec/schema.md §11.2).
+      const lines = document.body.split("\n");
+      lines[lines.indexOf(String(p.line_before))] = String(V ?? p.line_after);
+      document.body = lines.join("\n");
       break;
     }
     case "update_body":
@@ -786,6 +809,11 @@ function isChangeExclude(entry: Record<string, unknown>): boolean {
 function proposalLinks(proposal: Record<string, unknown>): Array<{ field: unknown; value: unknown }> {
   if (Array.isArray(proposal.links)) return proposal.links.filter(isRecord).map((link) => ({ field: link.field, value: link.value }));
   return proposal.field === undefined ? [] : [{ field: proposal.field, value: proposal.after }];
+}
+
+/** One non-empty line: a replace_line's value (spec/schema.md §11.3). */
+function isOneLine(value: unknown): boolean {
+  return typeof value === "string" && value.trim() !== "" && !/[\r\n]/.test(value);
 }
 
 /** update_fact (and a facts.<key> correction): retire accepted entries, append the new value. */
