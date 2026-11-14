@@ -308,6 +308,7 @@ test("schedule install writes a launchd agent that runs claude -p in the brain a
   assert.equal(data.path, join(agents, `${data.label}.plist`));
   assert.deepEqual([data.times, data.days, data.prompt, data.written, data.replaced, data.loaded, data.cron], [["07:00", "13:00"], ["mon", "fri"], "catch up unattended", true, false, false, null]);
   assert.deepEqual(data.command, [join(bin, "claude"), "-p", "catch up unattended", "--model", "claude-sonnet-5-5"]);
+  assert.deepEqual(installed.json.warnings, [{ code: "FOLDER_TRUST", message: `Open Claude Code in ${await realpath(dir)} once and accept the trust dialog, or the scheduled run can't use the brain's allow rules.` }], "catch-up needs the trusted folder too (cli.md §5.21)");
 
   const plist = await readFile(data.path, "utf8");
   assert.match(plist, new RegExp(`<key>Label</key>\\s*<string>${data.label.replaceAll(".", "\\.")}</string>`));
@@ -354,6 +355,7 @@ test("schedule install makes a relative PATH entry absolute", async (context) =>
   assert.equal(installed.code, 0, JSON.stringify(installed.json));
   assert.equal(installed.json.data.command[0], join(bin, "claude"));
   assert.equal(installed.json.data.written, false, "a dry run writes nothing");
+  assert.deepEqual(installed.json.warnings.map((warning: any) => warning.code), ["FOLDER_TRUST"], "a dry run warns too");
 });
 
 test("schedule install elsewhere prints the cron line and writes nothing", async (context) => {
@@ -364,6 +366,7 @@ test("schedule install elsewhere prints the cron line and writes nothing", async
   assert.equal(installed.code, 0, JSON.stringify(installed.json));
   assert.deepEqual([installed.json.data.path, installed.json.data.written], [null, false]);
   assert.equal(installed.json.data.cron.length, 1);
+  assert.deepEqual(installed.json.warnings.map((warning: any) => warning.code), ["FOLDER_TRUST"], "the cron line needs the trusted folder too");
   assert.match(installed.json.data.cron[0], /^0 7 \* \* 6,0 mkdir -p "\$HOME\/\.ultimate-brain\/logs" && cd '.+' && PATH='.+' '.+\/claude' '-p' 'catch up unattended' '--model' 'claude-sonnet-5-5' >> "\$HOME\/\.ultimate-brain\/logs\/eu\.ultimate-brain\..+\.catch-up\.log" 2>&1$/);
   await assert.rejects(readFile(agents), "no LaunchAgents folder was made");
   const listed = await schedule(dir, ["list"], env, home);

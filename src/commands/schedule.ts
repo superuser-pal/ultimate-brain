@@ -69,8 +69,8 @@ export const scheduleInstallCommand: Command = {
     const label = labelFor(root, job);
     const dryRun = args.options["dry-run"] === true;
     const base = { job, label, times, days, model, prompt: entry.prompt, command };
-    // claude -p ignores an untrusted folder's allow rules (cli.md §5.21 Folder trust; weekly-review.md §11).
-    const trust: Warning[] = weekly ? [{ code: "FOLDER_TRUST", message: `Open Claude Code in ${root} once and accept the trust dialog, or the scheduled run can't use the brain's allow rules.` }] : [];
+    // claude -p ignores an untrusted folder's allow rules, for every job (cli.md §5.21 Folder trust; weekly-review.md §11).
+    const trust: Warning[] = [{ code: "FOLDER_TRUST", message: `Open Claude Code in ${root} once and accept the trust dialog, or the scheduled run can't use the brain's allow rules.` }];
 
     if (platformOf(env) !== "darwin") {
       const log = `$HOME/.ultimate-brain/logs/${label}.log`;
