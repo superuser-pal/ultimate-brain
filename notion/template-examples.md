@@ -136,33 +136,62 @@ Launch: by the end of March, if the brand guidelines arrive in time.
 
 ### Row 13: the Review page
 
-The page in the section format the brain writes (spec/capture-and-review.md §7.2 to §7.4, spec/cli.md §5.14.4): the first-use note as a quote, the heading `Review summary` with its summary, then one section per item. Each section has its heading, a link to the source, a toggle titled exactly `Proposed final wording` holding the proposed text, *Why it matters*, *What Accept does*, and the line `Decision: Pending`. The item ids are invented (`it-` and 8 characters of the id alphabet). A Creates item has no link to its target: a decision or question gets its row only once accepted. `[source]` links to row 6. `▸` is the toggle, and the lines under it are its children.
+The page in format 2, exactly as `brain sync render` writes it for the Example's proposal: one decision and one question from the kickoff (spec/capture-and-review.md §7.12, decisions 0088 §2 and 0090; `tests/template-example-review.test.ts` renders it and compares it with this block). In order: what the source brings and what to do, the heading `Review summary` with its status, the group `New notes` with one section per item (a `###` heading, the note in a toggle **Read or edit the note**, the gray `ref` line, `Decision: Pending`), and the toggle heading **For Brain Assistant (brain context)**, whose children are the tab-indented lines under it. `[¶2]` and `[¶4]` are the short markers of the extract's passages. The item ids are invented (`it-` and 8 characters of the id alphabet). The meeting, project and area are named as plain text: the brain links a page only once it knows the page.
 
-```text
-> **How this page works.** Each change below is a section. Edit the text inside "Proposed final wording" if you want it different, then type your choice on the line `Decision:` (Accept, Reject, Defer or Request revision).
-> Nothing is read until you click **Submit decisions** at the top of the row. **Submit and accept all** accepts every section still on Pending. You can decide some sections now and leave the rest.
+```markdown
+**From Kickoff with Northwind:** 2 new notes.
+**What to do:** 1. Read the sections below, or click **Review with me** to go through them with Brain Assistant. 2. Correct a wording where it stands, or type Accept, Reject, Defer or Request revision on an item's Decision line. 3. Set **Your call**: Approve, Request revision (say what in What to fix) or Reject.
 
 ## Review summary
-**Review summary** (the brain keeps this up to date; do not edit): 0 of 2 decided: 0 applied, 0 closed, 2 waiting for you.
+**Status:** waiting for you: 2 new notes.
 
-- a · Keep the blog as it is — Waiting for your decision.
-- b · Can the site go live by the end of March? — Waiting for your decision.
+## New notes
+### New decision: Keep the blog as it is
+<details>
+<summary>Read or edit the note</summary>
 
-## [a · it-4k7m2p9a] Creates: Keep the blog as it is
-[source]
-▸ Proposed final wording
-    Keep Northwind's blog as it is. The refresh covers the home, services and contact pages.
-**Why it matters:** It sets what the refresh leaves out.
-**What Accept does:** Accept makes this draft Reviewed. Reject archives it.
+## Decision
+Keep Northwind's blog as it is. The refresh covers the home, services and contact pages. [¶2]
+
+</details>
+<span color="gray">ref it-4k7m2p9a</span>
 Decision: Pending
 
-## [b · it-8n3q6t1w] Creates: Can the site go live by the end of March?
-[source]
-▸ Proposed final wording
-    Can the new site go live by the end of March? It depends on when Northwind's brand guidelines arrive.
-**Why it matters:** The launch date waits on the answer.
-**What Accept does:** Accept makes this draft Reviewed. Reject archives it.
+### New question: Can the site go live by the end of March?
+<details>
+<summary>Read or edit the note</summary>
+
+Can the new site go live by the end of March? It depends on when Northwind's brand guidelines arrive. [¶4]
+
+</details>
+<span color="gray">ref it-8n3q6t1w</span>
 Decision: Pending
+
+## For Brain Assistant (brain context) {toggle="true"}
+	**Source passages**
+	- [¶2] Decided: keep the blog as it is.
+	- [¶4] Open: can the site go live by the end of March?
+
+	**What each item changes**
+	- New decision: Keep the blog as it is (it-4k7m2p9a): a draft decision; Accept makes it Reviewed, Reject archives it.
+	- New question: Can the site go live by the end of March? (it-8n3q6t1w): a draft question; Accept makes it Reviewed, Reject archives it.
+
+	**Where the brain is unsure**
+	- Nothing flagged.
+
+	**Repeats**
+	- None marked.
+
+	**Related pages**
+	- Meeting: Kickoff with Northwind
+	- Project: Website refresh
+	- Area: Clients
+
+	**Rules for writing into this page**
+	- Write only inside an item section: its wording, its Decision line (Accept, Reject or Defer) and its Revision request line, after the user's yes to a preview.
+	- Move a [¶n] marker only when the wording changed, and only to a passage listed under Source passages that holds the new text. Never invent one.
+	- Under a section you changed, add one line "Agreed in review: …" with what the user decided and why, in a few words.
+	- Never change a heading, a ref line, a toggle's structure, this toggle, any property or Your call.
 ```
 
 ### Row 14: the Goal
@@ -254,19 +283,19 @@ Documents "Example · Website refresh brief":
 
 ### Prompt 6: the Review page
 
-Paste the page of "Row 13: the Review page" above where the prompt says so.
+Paste the page of "Row 13: the Review page" above where the prompt says so. A copy whose row 13 still has the older page (headings like `## [a · it-…] Creates: …`, from before 0.15.0) gets the new one with migration 0025: delete the page body first, by hand, then run this prompt. **Or, with the agent:** after your yes, it writes the same block once to the empty page with Notion's markdown endpoint, as the brain writes every Review page (spec/cli.md §5.14.4), and reads it back.
 
 ```text
-Use only the databases on this page. Open the Review row "Example · From Kickoff with Northwind: 1 decision, 1 question". If its page already has a heading "Review summary", change nothing and say so. Otherwise write the page below as its body, after any buttons the page already has:
+Use only the databases on this page. Open the Review row "Example · From Kickoff with Northwind: 1 decision, 1 question". If its page already has a heading "Review summary", change nothing and say so. Otherwise write the page below as its body:
 
-- the two lines starting with ">" as one quote block, with the bold words bold;
-- each line starting with "## " as a heading 2, written exactly, the square brackets and the "·" included;
-- "**Review summary** …" as a paragraph, and the "- " lines as bulleted items;
-- each "[source]" as the word "source", linked to the Meetings row "Example · Kickoff with Northwind";
-- each "▸ Proposed final wording" as a toggle (not a toggle heading) titled exactly "Proposed final wording", collapsed, whose child is the indented line under it, as a paragraph;
-- every other line as a plain paragraph, with the bold words bold, and "Decision: Pending" exactly as written.
+- each line starting with "## " as a heading 2 and each line starting with "### " as a heading 3, with the text after the hashes exactly;
+- the line '## For Brain Assistant (brain context) {toggle="true"}' as a toggle heading 2 titled exactly "For Brain Assistant (brain context)", collapsed, whose children are the tab-indented lines after it, without the tab: bold words bold, "- " lines as bulleted items, and an empty line between the parts;
+- each block from "<details>" to "</details>" as a toggle (not a toggle heading) titled exactly "Read or edit the note", collapsed, whose children are the lines between "<summary>…</summary>" and "</details>": "## Decision" as a heading 2 inside the toggle, the other line as a paragraph;
+- each line '<span color="gray">ref it-…</span>' as a paragraph whose text is "ref it-…", in gray;
+- "Decision: Pending" exactly as written, as a paragraph;
+- every other line as a plain paragraph, with the words between ** bold, and "[¶2]" and "[¶4]" written exactly, square brackets included. Skip empty lines.
 
-Copy every character as written. Don't change any property, and don't tick Decided or Accept all.
+Copy every character as written. Don't change any property, and don't set Your call.
 
 <the Review page>
 ```
@@ -310,6 +339,6 @@ Then check prompt 2's other relations against "The story" (Domain on the Area, O
 
 - Brain Data starts with the callout, word for word.
 - Each of the fifteen rows exists once, with its title exactly as in "The story" (the prefix `Example · ` with the middle dot), its state and every relation of step 7 and "The story"; every Brain ID is empty. Sam's Role is Marketing lead, Northwind's Relationship is Client, and the Meeting has its Date and Area.
-- The Meeting is **Not Reviewed**, and its page still has the template's blocks (the "Before marking Reviewed" callout, the notice, the Meeting notes block and the toggles), with the minutes below them. The Review row is **Pending**, with Your call empty, Decided unticked and Status **Needs you · decide in the page**; its page opens with the note, then "Review summary", then two sections, each with a collapsed **Proposed final wording** toggle and `Decision: Pending`. The Inbox row is **Done**. Nothing on the Document is ticked.
+- The Meeting is **Not Reviewed**, and its page still has the template's blocks (the "Before marking Reviewed" callout, the notice, the Meeting notes block and the toggles), with the minutes below them. The Review row is **Pending**, with Your call empty, Decided unticked and Status **Needs you · decide in the page**; its page opens with "From Kickoff with Northwind: 2 new notes." and What to do, then "Review summary", then "New notes" with two sections, each with a collapsed **Read or edit the note** toggle, a gray `ref` line and `Decision: Pending`, and it ends with the collapsed toggle heading **For Brain Assistant (brain context)**. The Inbox row is **Done**. Nothing on the Document is ticked.
 - The pages link to each other: the Project page lists the Meeting, both Tasks, the Inbox row, the Decision, the Question and the Document; the Area page shows the Review row waiting; Plan shows the Goal at 33%.
 - The coordinator's read-only scan (TEMPLATE.md, step 10) lists these fifteen rows as Example rows, and nothing else.
