@@ -2,6 +2,24 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.15.0 — 2026-11-14
+
+- CC-111 (#362): development only: the weekly review's contract and its resource-budget trials; the feature itself ships through CC-253 to CC-256.
+- CC-253 (#378): a weekly review of your notes and your work: one report a week, with what changed, task analysis and at most five decisions, and nothing written in a quiet week.
+- CC-254 (#382): after you approve a correction, the next weekly review finds the notes that still say the old thing and proposes fixing them together, one change at a time.
+- CC-255 (#383): say "weekly review", or turn on the Monday 08:00 schedule; turning it on offers Reports once, so each week's review appears in Notion.
+- CC-256 (#380): Asking Brain Assistant to "Run Weekly review" opens this week's report and walks you through its decisions, a few questions at a time.
+- CC-240 (#361): a Review page from a meeting or a document reads plainly: what it brings and what to do at the top, its summary first, then the changes, the new notes and the links under their own headings, each change's wording shown without opening a toggle, and the people linked to one note decided as one item.
+- CC-241 (#370): the guide, Brain Assistant's Review queue and the Notion template show the new Review page, and "apply my reviews" reads it.
+- CC-251 (#374): you can move a decision, question, Document or source to another Area: ask your agent, check the list of moves and approve them in one go.
+- CC-248 (#358): development only: the review by grill is recorded as decision 0090, and CC-240 and CC-241 take it on in 0.15.0.
+- CC-252 (#360): development only: 0.15.0's scope grill is recorded as decision 0093, and CC-111 takes on its answers.
+- CC-271 (#379): when you move a source to another Area, its Inbox row in Notion moves too.
+- CC-273 (#377): development only: the memory evaluation's scorer reads "the brain doesn't have an answer" and "I couldn't verify …" as the honest answers they are, so 0.14.0's smoke run no longer fails two correct answers.
+- CC-274 (#381): `brain schedule install catch-up` now warns `FOLDER_TRUST` as `weekly-review` does, and brain-catch-up's schedule section tells you to open Claude Code in the brain once and accept the trust dialog.
+
+Skills: ultimate-brain-skills 1.9.0 (sha256-02f825a6f20e09a3f03729953de84941d417e9b1ec445810cedba0f2b2077edf)
+
 ## 0.14.0 — 2026-11-14
 
 - CC-187 (#286): development only: the onboarding grill is recorded as decision 0078 with 0.14.0's task plan; onboarding and early access for friends and family move to 0.14.0, and the weekly review to 0.15.0, still the feature cutoff.
