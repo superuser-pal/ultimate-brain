@@ -303,6 +303,11 @@ test("record checks the shape: a bullet without its label, a dead link, too many
   const long = await record(root, { ...base, what_changed: [ok, ...Array.from({ length: 7 }, () => `- **Open:** ${"word ".repeat(70).trim()} ([q](../knowledge/questions/que-7h3m9q2c.md), 5 Nov).`)] }, NOW);
   assert.equal(long.json.error.code, "WEEKLY_TOO_LONG", long.stdout);
   assert.equal(long.code, 4);
+  // Embedded, the plan and its selection must belong together: a selection made from another plan is refused.
+  const { input_hash: _hash, ...embeddedBase } = base;
+  const otherPlan = await record(root, { ...embeddedBase, plan: prepared.plan.json.data, selection: { ...prepared.select!.json.data, input_hash: `sha256:${"0".repeat(64)}` }, what_changed: [ok] }, NOW);
+  assert.equal(otherPlan.json.error.code, "INPUT_INVALID", otherPlan.stdout);
+  assert.ok(otherPlan.json.error.details.some((detail: any) => detail.pointer === "/selection/input_hash"), JSON.stringify(otherPlan.json.error.details));
   await configure(root, (config) => { config.modules = { ...config.modules, reports: false }; });
   const reportsOff = await record(root, { ...base, what_changed: [ok], publish: true }, NOW);
   assert.equal(reportsOff.json.error.code, "INPUT_INVALID", reportsOff.stdout);
