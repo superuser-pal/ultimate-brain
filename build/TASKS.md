@@ -830,11 +830,12 @@ Moved to 0.14.0 by the user, 2026-11-11: the CLI skip and its brain-ingest wordi
 **Output:** the Inbox row body the ingest writes (spec/cli.md §5.14.4) names the file so Notion doesn't turn it into a link; contract first, then the render.
 **Acceptance:** a render test with file names Notion links (one with a domain-like ending, as in the gate) shows no link; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 
-### CC-264 · Where a first catch-up spends, and its quick wins (gate problem 9) · `todo`
+### CC-264 · Where a first catch-up spends, and its quick wins (gate problem 9) · `done` (#373)
 **Release:** 0.14.0
 **Changelog:** the first catch-up after setup does less work, so a tester's first meeting costs less.
-**Output:** a measured breakdown, numbers only, of the gate's first-meeting catch-up and of a synthetic catch-up of the same shape (setup's leftover rows, one meeting, the report, the publish): agent turns, tokens and cost per phase; the quick wins it shows, each a small change to a skill (fork PR) or the CLI; anything larger written as a 1.0.0 task. Bounded: it doesn't redesign catch-up.
-**Acceptance:** the same synthetic catch-up measured before and after, with the cost lower and the result the same; the breakdown is in the PR with no personal content; the fork PR, if any, passes its checks and is reviewed with this PR; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
+**Output:** a measured breakdown, numbers only, of the gate's first-meeting catch-up (eval/cc-264/RESULTS.md): model calls, tokens and cost per phase, and what fills the context; the quick wins it shows, each a small change to a skill (fork PR) or the CLI; anything larger written as a 1.0.0 task (CC-267 to CC-270). Bounded: it doesn't redesign catch-up. The quick wins, in brain-catch-up only: the Unattended and Run on a schedule sections move to references read only by those runs; each skill and reference is read at its step, and only when the step has work; an input's text is never printed when the command that takes it returns it.
+**Acceptance:** the breakdown is in eval/cc-264/RESULTS.md and the PR with no personal content, and corrects the gate's total (the second run's cost includes the first); each quick win names the gate's numbers it reduces; the sections moved keep their headings in SKILL.md, so every reference to brain-catch-up's "Unattended" or "Run on a schedule" still resolves; the fork PR passes its checks and is reviewed with this PR; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
+**Amended by the author's choice of 2026-11-14:** no synthetic before/after runs, and no re-run of the gate on rc.3 (CC-266 dropped the same day): the cost after the quick wins is unmeasured and will show in the author's normal use. The publish in a sub-agent is CC-267 in 1.0.0, not a quick win.
 
 ### CC-265 · Vendor the skills for 0.14.0-rc.3 · `todo`
 **Release:** 0.14.0
@@ -923,6 +924,30 @@ After the feature cutoff, scope packaging/install/upgrade guidance, consistent N
 **Output:** in CC-200's harness, a case-set option and an adapter for `eval/retrieval-0.13`: its brain and caller folders, each case a fresh session in its caller folder, the answer scored by CC-203's answer level (`clarify` included), the first search's tool call and output tokens recorded from the trace, the no-file-read check kept. No case or scoring rule changes.
 **Acceptance:** with no agent, its parsing and scoring tests on synthetic traces (a clarifying answer, a dump of every subject's value, an honest unknown, a cited fact); a smoke run of one case per group per agent on a package packed from its branch completes, its figures in the PR body, not committed as acceptance; `npm test`, `npm run test:scripts`, the leak and PR format checks pass.
 **Moved by [0082](../decisions/0082-native-smoke-run-per-release-full-native-acceptance-before-1-0.md) (2026-11-11):** from 0.13.0 to 1.0.0 with CC-186 (its `**Release:**` was 0.13.0; the rest of the row is as recorded): 0.13.0's retrieval is judged by CC-203's scorer at the candidate level, and the eighty cases are asked as final answers only in CC-186's run. It is built before that run, after CC-203 is merged.
+
+### CC-267 · The catch-up's publish runs in a sub-agent with a fresh context (gate problem 9) · `todo`
+**Release:** 1.0.0
+**Changelog:** a catch-up writes its Notion pages and Tasks in a fresh context, so a long run no longer runs out of context while it publishes.
+**Output:** from CC-264's breakdown: the gate's first-meeting publish made 34 Notion calls with 250k to 350k tokens of context, about 70% of the second run's cost, and the session compacted itself mid-publish, against decision 0043's bar that a catch-up never runs out of context. Contract first (brain-catch-up step 4.1, with the rule that a sub-agent never writes amended for this one): the Pages and Tasks writes (4.1.1, 4.1.2) run in one sub-agent given the brain path, `plan.json`, the render and the run's temp folder; it reads brain-ingest references/notion.md "Publish" and brain-sync's Push itself, writes, records with `sync record`, and returns the counts and failures; the main run keeps the other publish steps. A fork PR.
+**Acceptance:** a synthetic catch-up with simulated Notion (eval/unattended-0.7.0's pattern) over one meeting, setup's leftover rows and a report, before and after: the same pages written and recorded, the same report, a lower cost and a peak context under 200k tokens with no compaction; the fork PR's checks pass; the leak check passes.
+
+### CC-268 · Incremental pull: read only the Notion rows edited since the last pull · `todo`
+**Release:** 1.0.0
+**Changelog:** a sync or catch-up reads only the Notion rows changed since the last pull, so a brain with many rows syncs faster and cheaper.
+**Output:** from CC-264's breakdown: the gate's pull read every row of 11 databases (about 103k characters of query replies) and copied them by hand into the snapshot, though only a few changed since setup. Contract first (spec/cli.md §5.14, a decision if it amends U-18's "every row of every database"): the CLI gives the cut-off (`brain status` or `sync plan`), the skill queries each database filtered on `last_edited_time` at or after it, and `sync plan` treats a row it wasn't sent as unchanged, never as removed; the first pull, a lost cut-off and Accepted wording's own selection still read everything they read now.
+**Acceptance:** tests: a row not sent is unchanged in the plan; a row edited after the cut-off is planned as now; a missing cut-off asks for a full read; a fork PR for brain-sync and brain-catch-up; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
+
+### CC-269 · The CLI turns Notion's query replies into the snapshot · `todo`
+**Release:** 1.0.0
+**Changelog:** a sync no longer copies every Notion row by hand into its snapshot: the CLI converts the rows itself.
+**Output:** from CC-264's breakdown: in the gate the agent wrote the snapshot of every row as a script by hand (about 8.8k output tokens, one call of 13% of the first run's cost, over a minute). Contract first (spec/cli.md §5.14, brain-sync references/formats.md): `brain sync snapshot --input <files>` takes the Notion query replies as saved files and writes `snapshot.json` with formats.md's normalized values, leaving out the `Example · ` rows; the skill saves each reply to the run's temp folder instead of retyping it. A fork PR for brain-sync.
+**Acceptance:** tests on synthetic query replies of each database (every property type of formats.md's table, a relation, an empty value, an example row, a paged reply) give the snapshot the skill writes today; `sync plan` takes it unchanged; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
+
+### CC-270 · Page bodies are read as Markdown, not as blocks · `todo`
+**Release:** 1.0.0
+**Changelog:** a sync reads a Document's or report's Notion text as Markdown, a fraction of the size of its blocks.
+**Output:** from CC-264's breakdown: the gate read one report body as blocks (about 46k characters of block JSON) and three project and area pages before writing their sections (about 41k). Contract first (brain-sync "Accepted wording" steps 2, 3 and 6, decision 0054's fingerprint): read a body with the Markdown read, with a conversion that gives the same fingerprint as today's block conversion, or a migration of the recorded baselines; the project sections' writes keep decision 0037's needs. A fork PR for brain-sync and brain-ingest's references/notion.md.
+**Acceptance:** for synthetic pages of each block type that "Accepted wording" step 3 names, the Markdown read gives the same text and fingerprint as the block read, or the baselines migrate with no page held by mistake; an unconvertible block is still refused; the fork PR's checks pass; the leak check passes.
 
 ## Your tasks
 
