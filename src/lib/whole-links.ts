@@ -38,7 +38,8 @@ export function wholeDocumentMarkdown(document: Note, notes: readonly Note[], ge
   const markdownLink = (all: string, text: string, target: string): string => {
     if (/^[a-z][a-z0-9+.-]*:/i.test(target)) return all;
     const path = decodePath(target.split(/[?#]/)[0]!);
-    if (own === null || path === "") return text;
+    // A relative image is a file of the repo that Notion can't reach: its alt text, never a link.
+    if (own === null || path === "" || all.startsWith("!")) return text;
     const resolved = posix.normalize(posix.join(posix.dirname(own.path), path));
     return linked(text, files.filter((file) => file.path === resolved));
   };
