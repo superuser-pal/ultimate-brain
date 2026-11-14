@@ -1,0 +1,252 @@
+{
+  "plan": {
+    "week": "2026-W46",
+    "as_of": "2026-11-09T07:04:12Z",
+    "local_date": "2026-11-09",
+    "notion": "live",
+    "window": {
+      "from": "2026-11-02T07:03:55Z",
+      "to": "2026-11-09T07:04:12Z",
+      "first": false,
+      "days": 7
+    },
+    "report": null,
+    "changes": [
+      {
+        "key": "decided:dec-2p9f6h1r",
+        "kind": "decided",
+        "ref": "dec-2p9f6h1r",
+        "title": "Launch Harbor app in March",
+        "path": "knowledge/decisions/2026-11-04-launch-harbor-app-in-march.md",
+        "url": null,
+        "date": "2026-11-04",
+        "weight": 4,
+        "bullet": true
+      },
+      {
+        "key": "changed:prj-9x4t1b7e:budget:2026-11-05",
+        "kind": "changed",
+        "ref": "prj-9x4t1b7e",
+        "title": "Quarry website",
+        "path": "projects/quarry-website/project.md",
+        "url": null,
+        "date": "2026-11-05",
+        "weight": 3,
+        "bullet": true,
+        "field": "budget",
+        "before": "12k",
+        "after": "18k",
+        "draft": true
+      },
+      {
+        "key": "next:notion:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e",
+        "kind": "next",
+        "ref": "notion:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e",
+        "title": "Send the Quarry estimate",
+        "path": null,
+        "url": "https://www.notion.so/2b8c4d6e1f3a4b5c8d7e9f0a1b2c3d4e",
+        "date": "2026-11-13",
+        "weight": 1,
+        "bullet": true
+      }
+    ],
+    "inputs": {
+      "meetings": 6,
+      "sources": 3
+    },
+    "findings": [
+      {
+        "rank": 1,
+        "key": "task_overdue:notion:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e",
+        "signal": "task_overdue",
+        "category": "overdue",
+        "subject": {
+          "kind": "task",
+          "id": null,
+          "page_id": "2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e",
+          "title": "Send the logo proposals",
+          "current": {
+            "status": "To Do",
+            "due": "2026-11-01",
+            "projects": [],
+            "areas": []
+          }
+        },
+        "project": "prj-9x4t1b7e",
+        "area": "area-2m7c4h8n",
+        "evidence": {
+          "due": "2026-11-01",
+          "days_late": 8,
+          "status": "To Do"
+        },
+        "recommendations": [
+          {
+            "letter": "a",
+            "action": "set_task_due",
+            "value": null,
+            "label": "give it a new due date"
+          },
+          {
+            "letter": "b",
+            "action": "set_task_status",
+            "value": "Done",
+            "label": "mark it Done"
+          },
+          {
+            "letter": "c",
+            "action": "set_task_status",
+            "value": "Won't Do",
+            "label": "mark it Won't Do"
+          }
+        ],
+        "status_offers": [],
+        "repetition": {
+          "show": true,
+          "because": "new",
+          "shown": null,
+          "pending": null,
+          "evidence_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      {
+        "rank": 2,
+        "key": "project_stalled:prj-4k8m2q7t",
+        "signal": "project_stalled",
+        "category": "stalled",
+        "subject": {
+          "kind": "project",
+          "id": "prj-4k8m2q7t",
+          "page_id": null,
+          "title": "Pinecrest signage",
+          "current": {
+            "status": "In Progress",
+            "archived": false,
+            "area": "area-2m7c4h8n"
+          }
+        },
+        "project": "prj-4k8m2q7t",
+        "area": "area-2m7c4h8n",
+        "evidence": {
+          "days_idle": 40
+        },
+        "recommendations": [
+          {
+            "letter": "a",
+            "action": "set_project_status",
+            "value": "On Hold",
+            "label": "set it On Hold"
+          }
+        ],
+        "status_offers": [],
+        "repetition": {
+          "show": false,
+          "because": null,
+          "shown": "2026-W45",
+          "pending": "prp-7d2k9m4q",
+          "evidence_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      }
+    ],
+    "skipped_signals": [],
+    "task_analysis": {
+      "overdue": [
+        {
+          "key": "task_overdue:notion:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e",
+          "title": "Send the logo proposals",
+          "url": "https://www.notion.so/2b8c4d6e1f3a4b5c8d7e9f0a1b2c3d4e",
+          "evidence": "8 days late"
+        }
+      ],
+      "stalled": [
+        {
+          "key": "project_stalled:prj-4k8m2q7t",
+          "title": "Pinecrest signage",
+          "url": null,
+          "evidence": "nothing done or mentioned for 40 days"
+        }
+      ],
+      "blocked": [],
+      "no_next_step": [],
+      "order": [
+        {
+          "key": "task_overdue:notion:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e",
+          "title": "Send the logo proposals",
+          "url": "https://www.notion.so/2b8c4d6e1f3a4b5c8d7e9f0a1b2c3d4e",
+          "evidence": "8 days late"
+        }
+      ]
+    },
+    "clusters": [
+      {
+        "rank": 1,
+        "key": "overtaken:per-3h8w2n6c",
+        "signal": "overtaken",
+        "notes": [
+          {
+            "id": "per-3h8w2n6c"
+          }
+        ],
+        "evidence": [],
+        "held": [],
+        "carried": false
+      },
+      {
+        "rank": 2,
+        "key": "recurring_term:pricing-tiers",
+        "signal": "recurring_term",
+        "notes": [],
+        "term": "pricing tiers",
+        "fingerprint": "theme:pricing-tiers",
+        "evidence": [],
+        "carried": false
+      }
+    ],
+    "clusters_left": [],
+    "corrections": [],
+    "pending": [
+      {
+        "key": "project_stalled:prj-4k8m2q7t",
+        "proposal": "prp-7d2k9m4q"
+      }
+    ],
+    "week_state": {
+      "counts": {
+        "decisions": 0,
+        "new_items": 0,
+        "targets": 0,
+        "queued": 0
+      },
+      "items": []
+    },
+    "earlier_open": 1,
+    "budget": {
+      "minutes": 10,
+      "max_judged": 30
+    },
+    "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "quiet": false
+  },
+  "judged": {
+    "clusters": [
+      "overtaken:per-3h8w2n6c",
+      "recurring_term:pricing-tiers"
+    ],
+    "findings": [
+      {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    ],
+    "corrections": []
+  }
+}
