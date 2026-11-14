@@ -33,7 +33,7 @@ Setup checks all of these at once, at the start. It asks you about your Notion p
 | 2 | Settings | Read one screen, then say "keep these" or change a line. | Setup creates your backup, and later steps use your drop folder. |
 | 3 | Notion template and connection | Duplicate the template, connect your agent to Notion, restart the agent. | The brain needs a space to write to. |
 | 4 | Connect the brain to Notion | Say yes to moving the template's example rows to Notion's trash. | The brain stores each database's id and the template's version. The example rows go before anything reads your space, so none of them ever enters your brain. |
-| 4a | The minutes prompt | Paste the prompt into your Notion AI settings, then run it on a short invented meeting. Delete the test page afterwards. | Your meeting minutes come out in the shape the brain reads. |
+| 4a | The minutes prompt | Paste a short invented meeting into a new Meetings page. Open the Notion AI chat on that page, paste the prompt followed by the line "Write the minutes on this page, below the transcript, and nothing else.", and send. Delete the test page afterwards. | Your meeting minutes come out in the shape the brain reads, and the transcript stays on the page. |
 | 4b | Brain Assistant | Set it up, then run `/Today` once. | `/Today` must list only your brain's tasks. |
 | 5 | Identities | Say which names you appear under in meetings and in Notion. | The brain knows which tasks and commitments are yours. |
 | 6 | Seeding | Describe your work in a few sentences, answer one preview, then drop 3 to 5 key documents in your drop folder. | Your brain starts with your Areas, Projects, people and documents, so the first meeting doesn't create duplicates. Nothing is written before your yes. |
@@ -189,7 +189,13 @@ The template's example rows must go before anything reads your space. Their titl
 
 ### The minutes check fails (`shape-wrong`)
 
-The prompt was pasted only in part, or in the wrong place. Setup names what is missing ("no `Selection:` line under subject 2"). Paste the whole prompt again where setup says, then say "check the minutes prompt again". Delete the test page afterwards.
+The prompt was pasted only in part, or run outside the page's Notion AI chat. Setup names what is missing ("no `Selection:` line under subject 2"). Run the whole prompt again in the chat on the page, with the line "Write the minutes on this page, below the transcript, and nothing else.", then say "check the minutes prompt again". Delete the test page afterwards.
+
+### The transcript is gone from the page (`transcript-missing`)
+
+Notion AI wrote the minutes but replaced the transcript. The brain needs both, because the minutes quote the transcript. Put the transcript back on the page above the minutes: restore an earlier version from Notion's version history (••• at the top right), or paste it again. Keep the minutes. Then say "check the minutes prompt again". Next time, run the prompt in the Notion AI chat on the page, with the line "Write the minutes on this page, below the transcript, and nothing else."
+
+The same thing can happen to a real meeting. Catch-up then leaves it Reviewed and says so under Needs you, with this fix. Once the transcript is back, run catch-up again.
 
 ### `/Today` shows things from outside your brain (`assistant-reads-outside`)
 
