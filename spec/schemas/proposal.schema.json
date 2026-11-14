@@ -433,8 +433,10 @@
           "item_id": { "type": "string", "pattern": "^it-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
           "kind": { "enum": ["note", "link", "change", "remove", "restore", "independence"] },
           "n": { "description": "restore only: the paragraph number to restore.", "type": "integer", "minimum": 1 },
-          "ref": { "description": "A note id (kind note) or an index into links or changes.", "anyOf": [{ "type": "integer", "minimum": 0 }, { "$ref": "note.schema.json#/$defs/id" }] },
-          "passages": { "description": "note, link and change items from 0.13.0 on: the item's passages (spec/schema.md §11.5). An item without them is legacy.", "$ref": "#/$defs/passages" }
+          "ref": { "description": "A note id (kind note), an index into links or changes, or (a grouped link item, from 0.15.0) a list of indexes into links that share one target and field.", "anyOf": [{ "type": "integer", "minimum": 0 }, { "$ref": "note.schema.json#/$defs/id" }, { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 0 } }] },
+          "passages": { "description": "note, link and change items from 0.13.0 on: the item's passages (spec/schema.md §11.5). An item without them is legacy.", "$ref": "#/$defs/passages" },
+          "unsure": { "description": "0.15.0 (capture-and-review §7.12.8): one-line flags the ingest judged.", "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1, "pattern": "^[^\\n]+$" } },
+          "repeat": { "description": "0.15.0: a short key shared by the items that record the same thing.", "type": "string", "minLength": 1, "pattern": "^[^\\n]+$" }
         }
       }
     },
@@ -484,7 +486,9 @@
           "state": { "enum": ["applied", "closed", "deferred"] },
           "deferred_to": { "type": "string", "pattern": "^prp-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
           "reason": { "enum": ["source_excluded"] },
-          "edited": { "type": "boolean" }
+          "edited": { "type": "boolean" },
+          "agreed": { "description": "format 2 (capture-and-review §7.12.6): the Agreed in review lines of the item's section, never hashed.", "type": "string", "minLength": 1 },
+          "values": { "description": "an accepted grouped link item from which values were deleted: the indexes into links that were added.", "type": "array", "items": { "type": "integer", "minimum": 0 } }
         }
       }
     },
