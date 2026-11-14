@@ -18,7 +18,7 @@ export const LIMIT = 5;
 const DAY_MS = 86_400_000;
 
 export interface Counts { decisions: number; new_items: number; targets: number; queued: number }
-export interface WeekEntry { report: string; path: string; window_from: string; window_skip: string[]; input_hash: string; counts: Counts; items: string[] }
+export interface WeekEntry { report: string; path: string; window_from: string; window_skip: string[]; input_hash: string; counts: Counts; items: string[]; corrections_from?: WeeklyState["corrections"] }
 export interface ShownEntry { key: string; week: string; category: string; evidence_hash: string; days_late?: number; days_idle?: number }
 export interface WeeklyState {
   version: 1;
@@ -27,7 +27,7 @@ export interface WeeklyState {
   shown: ShownEntry[];
   queued: Array<{ key: string; week: string }>;
   carry: { clusters: string[] };
-  corrections: { checked_on: string | null; done_on_date: string[]; open: Array<{ claim: string; targets: string[] }> };
+  corrections: { checked_on: string | null; done_on_date: string[]; open: Array<{ claim: string; targets: string[]; old: Array<string | number>; new: string | number; date: string; source: string }> };
 }
 
 export const ZERO: Counts = { decisions: 0, new_items: 0, targets: 0, queued: 0 };
