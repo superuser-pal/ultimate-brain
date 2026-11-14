@@ -223,8 +223,11 @@ One line, then the push line of AGENTS.md: `Done: <n> changed, <n> Review rows, 
 | `archive_area` | Areas · Archived | Notion | `notion_change` (`areas`, `archived`) |
 | `move_project` | the project's `area` | brain | `set_field` (`area`) |
 | `set_area_domain` | the Area's `domain` | brain | `set_field` (`domain`) |
+| `move_note` | the `area` of a decision, question, Document or source (0092) | brain | `set_field` (`area`), one per note |
 | `merge_projects` | the duplicate merged into the survivor | brain | `merge` (schema §11.2): `target` = the duplicate, `merge_into` = the survivor, plus `finding` and `source` (no `area`: a `merge` row finds its Area as today) |
 | `add_task` | a new Task | Notion | none: chat only (§7) |
+
+**Moving notes to another Area (0092).** `move_note` is never a recommendation of a finding: the user asks for it, in a session or a ramble ("move the pricing notes to Go-to-market"). The skill resolves the notes and the Area by title and alias, as for any value (§5), and writes one `set_field` per note in one `proposal new`. A decision or question with `projects` is refused by the CLI (cli.md §5.6), and the skill names the project and offers `move_project` instead. A source and its whole Document move together, so naming either is one move; a `part` or `learned` Document moves only when it is named. Many moves are **one decision**: the skill shows one preview listing every move (`<title> (<type>): <old Area> → <new Area>`, a source's whole Document on the source's line), then applies them all on the user's yes in chat as §6.2 says, with one publish. A move not decided in chat is a Suggestion row (§6.3).
 
 **Who writes a Notion-owned field (schema §7).** The CLI never sends one: `sync render` doesn't, and no command calls Notion. The **skill** writes it through the Notion MCP, in exactly two cases: the user said yes to that change in a live chat (§6.2), or the user approved a `notion_change` Review row (§6.3). Either way a `notion_change` proposal records it first, and `brain apply` hands the skill the exact write (`notion_writes`, cli.md §5.7).
 
