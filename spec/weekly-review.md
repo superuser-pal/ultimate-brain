@@ -28,7 +28,7 @@ Both modes run the same steps and write the same things. The one difference is t
 
 **Steps** (normative order):
 1. **Preconditions.** `brain status --json`. Off the working branch, the run stops as unattended catch-up does (cli.md §6.1, 0086 §2): it writes nothing, and its last line is `Not run: off-working-branch. …`.
-2. **Read Notion live** into the assistant snapshot (assistant.md §2.1). Notion unreachable means brain only (assistant.md §2.3), and that is a **failure** for this run (§9.4). It is not a reason to stop.
+2. **Read Notion live** into the assistant snapshot (assistant.md §2.1), saving the MCP results to files and reading them with `jq` rather than into the context (§12), and write the snapshot with the file-writing tool to the `weekly_snapshot` path of `brain status` (cli.md §5.34: outside the brain, one per brain, overwritten each run). Notion unreachable means brain only (assistant.md §2.3), and that is a **failure** for this run (§9.4). It is not a reason to stop.
 3. **Candidates** (deterministic, no model judgment): `brain weekly plan --snapshot <file>` (cli.md §5.34). It returns the week, the window, the What changed candidates (§4), the assistant findings (`brain assistant findings`' rules, every finding, not a page of 10), the reflection clusters (`brain reflect --candidates`' rules), the correction queue (§8), the repetition state of each candidate (§7), the pending proposals it already has, and `quiet`.
 4. **Quiet?** When `quiet` is true and step 2 didn't fail, the run stops: **no report, no commit, no Notion call after the reads, no log line, no state write** (0075 §5, 0051). §9.1 defines quiet.
 5. **Attempt marker.** The run writes `_weekly/attempt.json` (§9.5), which is gitignored. It marks the first write that isn't a no-op, so a run killed after this point can be seen.
@@ -307,7 +307,7 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
 - **The skill's "Run on a schedule" section** ("review my week every Monday") asks what is missing once: the time if not 08:00, and the model. It offers **Sonnet by default** (0093 §4; `claude-sonnet-<current>` as a full id), and the user may pick another. It then offers, once each:
   - **Reports**, when off: `Turn on Reports so each week's review appears in Notion?` On a yes, the module is turned on with notion/modules/reports.md. On a no, it says the review stays a file in the brain, with a summary at the next session (0093 §3).
   - **`settings.publish: auto`**, when `ask`, as catch-up's offer does.
-  - **The tools it may use**, as catch-up's offer does.
+  - **The tools it may use**, as catch-up's offer does: `Bash(brain:*)`, `Bash(git:*)`, `Read`, `Edit`, `Write` and the Notion read tools, plus `Read(~/.ultimate-brain/weekly/**)` and `Edit(~/.ultimate-brain/weekly/**)` for the snapshot file (cli.md §5.34). No other Notion write than the publish of §9.3.
 
   It then installs with `--max-budget-usd` from §12, and writes `settings.weekly.schedule: on`.
 - This contract installs no schedule in any brain (0075 §6).
@@ -328,7 +328,7 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
 - **The judging varied.** Sonnet judged 30 clusters in one run and 6 in the other, and read 3 to 4 notes. Opus read 19 and gave the most specific reasons in Task analysis. The deterministic half removes most of that variation.
 - **Clusters must be limited to the window.** 360 clusters against a cap of 30 would make nearly every week partial. `plan` therefore passes only the clusters whose members were `updated`, or whose inputs are dated, within the window (§4.1), and omission (§10) counts among those alone.
 - **Every run drafted more than 450 words** (468 to 526). The word cap stays (§3.4): `record` refuses, and the skill shortens.
-- **Known limit:** the prototype passed the snapshot to `brain assistant findings` through a stdin heredoc, which the read-only allowlist refused. Each run worked out its task findings from the same rows by hand. The cost of that CLI call (no model tokens) is therefore not in the table.
+- **The snapshot hand-off:** the prototype passed the snapshot to `brain assistant findings` through a stdin heredoc, which the read-only allowlist refused, so each run worked out its task findings from the same rows by hand, and the cost of that CLI call (no model tokens) is not in the table. The skill therefore writes the snapshot to a file outside the brain and `plan` reads it by path (§1 step 2, cli.md §5.34), under the allow rules of §11.
 
 **The defaults** (schema §12 `settings.weekly`):
 
