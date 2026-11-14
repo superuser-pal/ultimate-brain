@@ -135,31 +135,40 @@
         "carried": { "type": "boolean" }
       }
     },
+    "factValue": { "description": "An old or new value of a claim: a fact value, a title or a rule's text.", "anyOf": [{ "type": "string" }, { "type": "number" }] },
     "correctionTarget": {
-      "description": "A candidate target of a claim (weekly-review.md §8.2): a fact equal to the old value, or one body line holding it. CC-254.",
+      "description": "A candidate target of a claim (weekly-review.md §8.2): one per note, its fact equal to an old value (field set, line null) or the one body line holding it. line_after is the line with the old value replaced by the new one, null when no such one-for-one replacement exists (then the target can't be judged restatement). before_hash is the note's body hash for a line, null for a fact. pending is the waiting correction group that already holds a change to this note.",
       "type": "object",
-      "required": ["note", "field", "line"],
+      "required": ["note", "title", "field", "line", "line_after", "before_hash", "pending"],
       "additionalProperties": false,
       "properties": {
         "note": { "$ref": "#/$defs/noteId" },
+        "title": { "type": "string" },
         "field": { "anyOf": [{ "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }, { "type": "null" }] },
-        "line": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        "line": { "anyOf": [{ "type": "string", "pattern": "^[^\\n]+$" }, { "type": "null" }] },
+        "line_after": { "anyOf": [{ "type": "string", "pattern": "^[^\\n]+$" }, { "type": "null" }] },
+        "before_hash": { "anyOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }] },
+        "pending": { "anyOf": [{ "$ref": "#/$defs/proposalId" }, { "type": "null" }] }
       }
     },
     "claim": {
-      "description": "A queued correction check (weekly-review.md §8.1) and its candidate targets (§8.2). CC-254 fills it; until then plan returns no claim.",
+      "description": "A queued correction check (weekly-review.md §8.1) and its candidate targets (§8.2): note is the claim's note (the fact's or the title's, the superseded decision, the rule's target), title its title, old its old values (none for a rule), new its new value, date its newest meaning change, source, why and passages the meaning change's own. open is true when it comes from corrections.open (queued targets, §7 rule 4). Only claims with at least one target are listed.",
       "type": "object",
-      "required": ["claim", "kind", "note", "old", "new", "date", "targets"],
+      "required": ["claim", "kind", "note", "title", "old", "new", "date", "source", "why", "passages", "open", "targets"],
       "additionalProperties": false,
       "properties": {
         "claim": { "$ref": "#/$defs/claimKey" },
         "kind": { "enum": ["fact", "supersede", "title", "rule"] },
         "note": { "$ref": "#/$defs/noteId" },
-        "old": {},
-        "new": {},
+        "title": { "type": "string" },
+        "old": { "type": "array", "items": { "$ref": "#/$defs/factValue" } },
+        "new": { "$ref": "#/$defs/factValue" },
         "date": { "$ref": "#/$defs/date" },
-        "targets": { "type": "array", "items": { "$ref": "#/$defs/correctionTarget" } },
-        "repetition": { "$ref": "#/$defs/repetition" }
+        "source": { "type": "string", "minLength": 1 },
+        "why": { "type": "string", "minLength": 1 },
+        "passages": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "open": { "type": "boolean" },
+        "targets": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/correctionTarget" } }
       }
     },
     "plan": {
@@ -344,6 +353,7 @@
         "days_late": { "type": "integer" },
         "days_idle": { "type": "integer" },
         "shown_of": { "description": "A correction group admitted in part: <k> of <size> shown (§5.2, §8.4).", "type": "object", "required": ["k", "size"], "additionalProperties": false, "properties": { "k": { "type": "integer", "minimum": 1 }, "size": { "type": "integer", "minimum": 1 } } },
+        "proposal_input": { "description": "A correction item with write true (weekly-review.md §8.4): the exact proposals list of the brain proposal new input for its group, the review_notes first, then one update_fact or replace_line per admitted target.", "type": "array", "minItems": 2, "items": { "type": "object" } },
         "recommendation": { "anyOf": [{ "type": "object", "required": ["action", "value", "label"], "additionalProperties": false, "properties": { "action": { "type": "string" }, "value": {}, "label": { "type": "string" } } }, { "type": "null" }] },
         "finding": { "anyOf": [{ "$ref": "#/$defs/judgedFinding" }, { "type": "null" }] }
       },
@@ -377,7 +387,12 @@
             "correction_targets": { "$ref": "#/$defs/count" }
           }
         },
-        "coverage": { "enum": ["complete", "partial"] }
+        "coverage": { "enum": ["complete", "partial"] },
+        "corrections": {
+          "description": "What the run did with each claim of the plan (weekly-review.md §8.4): open lists the targets still queued (not admitted, or not judged), [] when the claim is finished; clarify counts its uncertain matches.",
+          "type": "array",
+          "items": { "type": "object", "required": ["claim", "open", "clarify"], "additionalProperties": false, "properties": { "claim": { "$ref": "#/$defs/claimKey" }, "open": { "type": "array", "items": { "$ref": "#/$defs/noteId" }, "uniqueItems": true }, "clarify": { "$ref": "#/$defs/count" } } }
+        }
       }
     },
     "recordInput": {
@@ -448,7 +463,8 @@
               "window_skip": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
               "input_hash": { "$ref": "#/$defs/hash" },
               "counts": { "$ref": "#/$defs/counts" },
-              "items": { "type": "array", "items": { "$ref": "#/$defs/itemKey" }, "uniqueItems": true }
+              "items": { "type": "array", "items": { "$ref": "#/$defs/itemKey" }, "uniqueItems": true },
+              "corrections_from": { "description": "corrections as they were before this week's first report (weekly-review.md §8.1, §9.5): a rerun reads the cursor from here.", "$ref": "#/$defs/corrections" }
             }
           }
         },
@@ -478,20 +494,48 @@
           "additionalProperties": false,
           "properties": { "clusters": { "type": "array", "items": { "$ref": "#/$defs/clusterKey" }, "uniqueItems": true } }
         },
-        "corrections": {
-          "type": "object",
-          "required": ["checked_on", "done_on_date", "open"],
-          "additionalProperties": false,
-          "properties": {
-            "checked_on": { "anyOf": [{ "$ref": "#/$defs/date" }, { "type": "null" }] },
-            "done_on_date": { "type": "array", "items": { "$ref": "#/$defs/claimKey" }, "uniqueItems": true },
-            "open": {
-              "type": "array",
-              "items": { "type": "object", "required": ["claim", "targets"], "additionalProperties": false, "properties": { "claim": { "$ref": "#/$defs/claimKey" }, "targets": { "type": "array", "items": { "$ref": "#/$defs/noteId" }, "uniqueItems": true } } }
+        "corrections": { "$ref": "#/$defs/corrections" }
+      }
+    },
+    "corrections": {
+      "description": "The correction cursor (weekly-review.md §8.1, §9.5): checked_on and the claims finished on that date, and the claims with targets still queued, each with what plan needs to list it again.",
+      "type": "object",
+      "required": ["checked_on", "done_on_date", "open"],
+      "additionalProperties": false,
+      "properties": {
+        "checked_on": { "anyOf": [{ "$ref": "#/$defs/date" }, { "type": "null" }] },
+        "done_on_date": { "type": "array", "items": { "$ref": "#/$defs/claimKey" }, "uniqueItems": true },
+        "open": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["claim", "targets", "old", "new", "date", "source"],
+            "additionalProperties": false,
+            "properties": {
+              "claim": { "$ref": "#/$defs/claimKey" },
+              "targets": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/noteId" }, "uniqueItems": true },
+              "old": { "type": "array", "items": { "$ref": "#/$defs/factValue" } },
+              "new": { "$ref": "#/$defs/factValue" },
+              "date": { "$ref": "#/$defs/date" },
+              "source": { "type": "string", "minLength": 1 }
             }
           }
         }
       }
+    },
+    "correctionsList": {
+      "description": "The data of brain weekly corrections list (cli.md §5.34).",
+      "type": "object",
+      "required": ["claims", "total", "offset", "next_offset"],
+      "additionalProperties": false,
+      "properties": { "claims": { "type": "array", "items": { "$ref": "#/$defs/claim" } }, "total": { "$ref": "#/$defs/count" }, "offset": { "$ref": "#/$defs/count" }, "next_offset": { "anyOf": [{ "$ref": "#/$defs/count" }, { "type": "null" }] } }
+    },
+    "correctionsDone": {
+      "description": "The input of brain weekly corrections done (cli.md §5.34): each claim the on-demand path went through, with the targets it left queued.",
+      "type": "object",
+      "required": ["claims"],
+      "additionalProperties": false,
+      "properties": { "claims": { "type": "array", "items": { "type": "object", "required": ["claim", "open"], "additionalProperties": false, "properties": { "claim": { "$ref": "#/$defs/claimKey" }, "open": { "type": "array", "items": { "$ref": "#/$defs/noteId" }, "uniqueItems": true } } } } }
     },
     "attempt": {
       "description": "_weekly/attempt.json, gitignored (weekly-review.md §9.5): written by the skill at step 5, removed after step 10.",

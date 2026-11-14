@@ -316,10 +316,11 @@ When the user's words leave the scope ambiguous (two rows or items match), the r
 | `update_fact` | the new value | yes (validated as an `edit`, `INVALID_RESULT` if not) | value applied; `before` is the base |
 | `update_body` | the new body | yes | body replaced; `before_hash` is the base |
 | `add_to_note` | the Markdown appended | yes | appended after the note, with `Source:` |
+| `replace_line` (0.15.0) | the new line | yes: one line (`INVALID_RESULT` if not) | that one line replaced; `before_hash` is the base |
 | `add_link` | the values added to the list field | yes (values) | links added |
 | `supersede`, `merge`, `contradiction`, `answer` | a description of the effect | no: Accept, Reject, Defer or Request revision only | the §11.2 effect (there is no editable text; an `answer` keeps its Answer-row workflow, 0041) |
 
-**Base per kind.** Creation: the draft note's body hash at render (an edit of *Proposed* is checked against it). `update_fact`: `before`. `update_body`: `before_hash`. `add_to_note`: `before_hash` of the target body at render (a changed body makes the item `base_changed`, so an appendix is re-shown against the new text). `add_link`: the list field's current values at render (a changed list makes it `base_changed`). A missing target makes either `base_changed`. Conflict rows and Answer rows keep their own pages and workflow (0041) and are never items of this page.
+**Base per kind.** Creation: the draft note's body hash at render (an edit of *Proposed* is checked against it). `update_fact`: `before`. `update_body` and `replace_line`: `before_hash`. `add_to_note`: `before_hash` of the target body at render (a changed body makes the item `base_changed`, so an appendix is re-shown against the new text). `add_link`: the list field's current values at render (a changed list makes it `base_changed`). A missing target makes either `base_changed`. Conflict rows and Answer rows keep their own pages and workflow (0041) and are never items of this page.
 
 **7.6 Per-item outcomes and the row's state.**
 
@@ -362,6 +363,7 @@ When the user's words leave the scope ambiguous (two rows or items match), the r
 4. **`## Changes to what you know`**: the `changes` items, in stored order.
 5. **`## New notes`**: the other note items, in stored order.
 6. **`## Links`**: the link items, in stored order.
+6a. **`## Needs clarification`** (0.15.0), on a correction group with `needs_clarification` only (weekly-review.md §8.4): one line per match, `- <note title>: <line>` (`- <note title>: its <field> fact` for a fact), never an item and never read. On a correction group the top's first line is `**Correction:** <counts>.` instead of `**From <source title>:** <counts>.`
 7. **`## For Brain Assistant (brain context)`**, a toggle heading at the end (§7.12.5).
 
 A group with no items has no heading. Group headings and the top are never read.
@@ -370,12 +372,12 @@ A group with no items has no heading. Group headings and the top are never read.
 - **The heading** says what Accept does, with the note type, and is derived from the item's state at each render (0090 §4: never read):
   - the summary note: its title;
   - `update_fact` with a current value: `⚠ <Field> on <target>: <before> → <after>`; without one: `<Field> on <target>: <after> (new)`;
-  - `update_body`: `New text for <target>`; `add_to_note`: `Adds to <target>`;
+  - `update_body`: `New text for <target>`; `add_to_note`: `Adds to <target>`; `replace_line`: `⚠ Line in <target>` (0.15.0);
   - a new note: `New <type>: <title>` (`New person: Ana Ortiz`, `New decision: Use Supabase for auth`, `New Document: …`); the type is the note type's plain name;
   - a link item: `<Field> on <target>` (`People on Website refresh`); an `aliases` item: `New alias for <target>`;
   - a held item: `Held: <title>` (§7.2's stub rules; nothing else in the section but the `ref` and `Decision:` lines);
   - `⚑ ` before the heading when the item has an unsure flag (§7.12.8).
-- ***Now*** for a fact or body change only: `> Now: <value>` for `update_fact`, and `> Now:` followed by the current body as a quote for `update_body`. An `add_to_note` shows no Now and no "end of the note" quote: the heading says it adds.
+- ***Now*** for a fact or body change only: `> Now: <value>` for `update_fact`, and `> Now:` followed by the current body as a quote for `update_body`, and `> Now: <line_before>` for `replace_line`. An `add_to_note` shows no Now and no "end of the note" quote: the heading says it adds.
 - **The wording**, visible (0088 Q6) for a change and a link item: the proposed text as lines of the section. A fact's wording is its value followed by its markers (`2027-03 [¶4]`). A link item's wording is one line per value, `+ <name>` (`+ Ana Ortiz`, sent as `\+ Ana Ortiz` so Notion keeps it a line, not a list), a note named by its title. A new note's wording is the note's body inside a toggle **Read or edit the note**, since a body can run to dozens of lines.
 - **Why**, only when it says something specific: `*Why: <text>*` when the change's own `why` exists and differs from the proposal's `why`. A note or link item has none.
 - `<span color="gray">ref it-9f2c1e44</span>`: the item id, gray, on its own line, out of the heading.

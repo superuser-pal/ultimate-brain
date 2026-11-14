@@ -1130,6 +1130,7 @@ function reviewNotesAfter(attributes: Record<string, unknown>, workspace: Worksp
     const target = String(noteTitle(change.target, workspace));
     if (change.kind === "update_fact") return `⚠ ${fieldLabel(String(change.field))} on ${target}: ${change.before === undefined ? "(new)" : String(noteTitle(change.before, workspace))} → ${String(noteTitle(change.after, workspace))}`;
     if (change.kind === "update_body") return `⚠ ${target}: ${bodyChange(change, workspace)?.length ?? 0} lines changed`;
+    if (change.kind === "replace_line") return `⚠ ${target}: 1 line changed`;
     return `Add to ${target}: ${String(change.content ?? "").split("\n")[0]!.slice(0, 80)}`;
   });
   const notes = (Array.isArray(attributes.notes) ? attributes.notes : []).map((id) => {
@@ -1149,10 +1150,11 @@ function bodyChange(change: Record<string, unknown>, workspace: Workspace): stri
   return lineDiff(target.body, bodyOf(String(change.content ?? "")));
 }
 
-/** Whether a proposal holds an update_body whose target's body is no longer the one it was proposed against. */
+/** Whether a proposal holds an update_body or a replace_line whose target's body is no longer the one it was proposed against. */
 function staleBody(attributes: Record<string, unknown>, workspace: Workspace): boolean {
-  const bodies = attributes.kind === "update_body" ? [attributes] : (Array.isArray(attributes.changes) ? attributes.changes.filter(isRecord) : []).filter((change) => change.kind === "update_body");
-  return bodies.some((change) => bodyChange(change, workspace) === undefined);
+  const kinds = ["update_body", "replace_line"];
+  const bodies = kinds.includes(String(attributes.kind)) ? [attributes] : (Array.isArray(attributes.changes) ? attributes.changes.filter(isRecord) : []).filter((change) => kinds.includes(String(change.kind)));
+  return bodies.some((change) => change.kind === "replace_line" ? bodyHash(workspace.get(String(change.target))?.body ?? "") !== change.before_hash : bodyChange(change, workspace) === undefined);
 }
 
 /** a, b, … z, then aa, ab, … */
@@ -1200,10 +1202,12 @@ function proposalBefore(attributes: Record<string, unknown>, workspace: Workspac
   if (attributes.kind === "add_link" || attributes.kind === "review_notes" || attributes.kind === "answer" || attributes.kind === "update_body") return null;
   if (attributes.kind === "supersede") return truncate(noteTitle(attributes.supersedes, workspace));
   if (attributes.kind === "merge") return truncate(noteTitle(attributes.target, workspace));
+  if (attributes.kind === "replace_line") return truncate(attributes.line_before ?? null);
   return truncate(attributes.before ?? null);
 }
 function proposalAfter(attributes: Record<string, unknown>, workspace: Workspace): unknown {
   if (attributes.kind === "add_to_note") return attributes.content ?? null;
+  if (attributes.kind === "replace_line") return attributes.line_after ?? null;
   if (attributes.kind === "new_item" && isRecord(attributes.note)) return `${attributes.note.title ?? ""} (${attributes.note.type ?? ""})`;
   if (attributes.kind === "supersede") return noteTitle(attributes.target, workspace);
   if (attributes.kind === "merge") return noteTitle(attributes.merge_into, workspace);

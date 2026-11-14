@@ -18,7 +18,7 @@ export interface Withheld { whole: boolean; changes: Set<number>; notes: Set<str
 
 /** The wording a proposal would put into the brain: an appendix, a new body, an answer or a new note's body. */
 export function proposedText(p: Record<string, unknown>): string | null {
-  for (const value of [p.content, p.answer, isRecord(p.note) ? p.note.body : undefined]) if (typeof value === "string") return value;
+  for (const value of [p.content, p.answer, p.line_after, isRecord(p.note) ? p.note.body : undefined]) if (typeof value === "string") return value;
   return null;
 }
 
@@ -48,7 +48,7 @@ export function proposalWithheld(proposal: Note, workspace: Workspace, context: 
   }
   if ((Array.isArray(a.items) ? a.items : []).filter(isRecord).some((item) => CLEANUP_KINDS.has(String(item.kind)))) return out;
   (Array.isArray(a.changes) ? a.changes : []).filter(isRecord).forEach((change, index) => {
-    const text = change.kind === "update_body" || change.kind === "add_to_note" ? String(change.content ?? "") : null;
+    const text = change.kind === "update_body" || change.kind === "add_to_note" ? String(change.content ?? "") : change.kind === "replace_line" ? String(change.line_after ?? "") : null;
     if (withheldSupport({ source: a.source, passages: itemPassages(a, "change", index), text }, context)) out.changes.add(index);
   });
   for (const id of (Array.isArray(a.notes) ? a.notes : []).map(String)) {

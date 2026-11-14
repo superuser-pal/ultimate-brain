@@ -64,7 +64,13 @@
         "claim": "prj-9x4t1b7e:budget",
         "targets": [
           "per-3h8w2n6c"
-        ]
+        ],
+        "old": [
+          "12k"
+        ],
+        "new": "18k",
+        "date": "2026-11-05",
+        "source": "mtg-8c4n2p7w"
       }
     ]
   }
