@@ -1447,7 +1447,7 @@
       "then": {
         "properties": {
           "kind": {
-            "const": "update_body"
+            "enum": ["update_body", "replace_line"]
           }
         }
       }
