@@ -810,7 +810,7 @@ Moved to 0.14.0 by the user, 2026-11-11: the CLI skip and its brain-ingest wordi
 **Release:** 0.14.0
 **Changelog:** setup and the guide say how to run Brain Assistant's skills in a Custom Agent and how to give it this space's databases only.
 **Output:** notion/brain-assistant.md, docs/setup.md, spec/setup.md's Brain Assistant step and, in a fork PR, brain-setup and the guide in brain-howto: a skill is run in a Custom Agent by asking for it by name or mentioning its page, not as a `/` command; giving the agent access names the databases by their space (the top page's name), so another space's Skills database is never picked; the step's check confirms that Today reads this space's tasks.
-**Acceptance:** every text says the same way to run a skill and to pick the databases; no text tells a Custom Agent user to type `/Today`; setup's check step names this space's Tasks database and says what to do when Today reads another space (amended 2026-11-14, the author's choice: CC-266's re-run no longer shows Today); the fork PR's checks pass and it is reviewed with this PR; the leak check passes.
+**Acceptance:** every text says the same way to run a skill and to pick the databases; no text tells a Custom Agent user to type `/Today`; setup's check step names this space's Tasks database and says what to do when Today reads another space (amended 2026-11-14, the author's choice: checked from setup's text); the fork PR's checks pass and it is reviewed with this PR; the leak check passes.
 
 ### CC-261 · The Decision log marks a decision still waiting in Review (gate problem 6) · `done` (#367)
 **Release:** 0.14.0
