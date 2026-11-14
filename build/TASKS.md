@@ -806,7 +806,7 @@ Moved to 0.14.0 by the user, 2026-11-11: the CLI skip and its brain-ingest wordi
 **Output:** contract first (spec/setup.md's settings step and wherever the default drop folder is defined), then the CLI or brain-setup (fork PR if the skill proposes it): when the default drop folder already exists and another brain on the machine uses it, the settings screen proposes a folder named after the new brain, says why, and never proposes a folder another brain reads.
 **Acceptance:** a test with two synthetic brains: the second brain's settings propose a folder of its own; a first brain still gets the default; the fork PR, if any, passes its checks and is reviewed with this PR; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 
-### CC-260 · Brain Assistant's skills in a Custom Agent: how to run them and which Skills database to give it (gate problem 4) · `review`
+### CC-260 · Brain Assistant's skills in a Custom Agent: how to run them and which Skills database to give it (gate problem 4) · `done` (#372)
 **Release:** 0.14.0
 **Changelog:** setup and the guide say how to run Brain Assistant's skills in a Custom Agent and how to give it this space's databases only.
 **Output:** notion/brain-assistant.md, docs/setup.md, spec/setup.md's Brain Assistant step and, in a fork PR, brain-setup and the guide in brain-howto: a skill is run in a Custom Agent by asking for it by name or mentioning its page, not as a `/` command; giving the agent access names the databases by their space (the top page's name), so another space's Skills database is never picked; the step's check confirms that Today reads this space's tasks.
