@@ -1,0 +1,24 @@
+{
+  "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "proposals": [
+    {
+      "key": "theme:pricing-tiers",
+      "proposal": "prp-3c8v5n2x"
+    }
+  ],
+  "what_changed": [
+    "- **Decided:** launch the Harbor app in March, not January ([Launch Harbor app in March](../knowledge/decisions/2026-11-04-launch-harbor-app-in-march.md), 4 Nov).",
+    "- **Changed:** Quarry website's budget is 18k, was 12k ([Quarry website](../projects/quarry-website/project.md), 5 Nov) *(not reviewed)*."
+  ],
+  "task_analysis": [
+    "- **Overdue:** \"Send the logo proposals\", 8 days late.",
+    "",
+    "Order of attention:",
+    "1. Send the logo proposals: the client meeting on Thursday depends on them."
+  ],
+  "mode": "unattended",
+  "publish": true,
+  "failures": [],
+  "notes_read": 4,
+  "seconds": 140
+}

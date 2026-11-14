@@ -362,7 +362,7 @@ export function viewDependencies(notes: readonly Note[], exists: (path: string) 
  */
 export function withheldView(view: Note, dependencies: ViewDependencies, context: Context): WithheldView | null {
   if (context.suppressions.length === 0) return null;
-  const rebuild = view.attributes.view_kind === "report" ? "refresh" : "views";
+  const rebuild = view.attributes.view_kind === "report" || view.attributes.view_kind === "weekly_review" ? "refresh" : "views";
   const verdict = judgeView(view, dependencies, context, new Set());
   return verdict === null ? null : { cause: verdict, rebuild };
 }
@@ -375,6 +375,8 @@ function judgeView(view: Note, dependencies: ViewDependencies, context: Context,
   if (links.gone) return "dependency";
   for (const id of new Set([...(provenance ?? []), ...links.linked])) {
     const note = dependencies.byId.get(id);
+    // A weekly review links its Review items' proposals (weekly-review.md §3.4): a way to decide, not something it rests on.
+    if (view.attributes.view_kind === "weekly_review" && note?.type === "proposal") continue;
     if (note === undefined || !dependencyEligible(note, dependencies, context, judging)) return "dependency";
   }
   if (view.attributes.view_kind !== "report") return provenance === null ? "unreadable" : null;

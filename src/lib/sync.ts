@@ -152,6 +152,8 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
     let note = typeof brainId === "string" && brainId !== "" ? workspace.get(brainId) : noteByNotion(workspace, row.page_id);
     // A report's row is in Documents since 0.9.1 (0071): read only for its requests and wording, as on the Inbox before.
     if (row.database === "documents" && note !== undefined && isReport(note)) { planReport(workspace, row, note, result); continue; }
+    // A weekly review's row (0.15.0, weekly-review.md §2) is read for nothing: a rerun is its refresh, and its requests are ignored.
+    if (row.database === "documents" && note !== undefined && isWeekly(note)) { planWeekly(workspace, row, note, result); continue; }
     if (typeof brainId === "string" && brainId !== "" && note === undefined) { result.conflicts.push(conflict(row, "UNKNOWN_BRAIN_ID", `No note has Brain ID ${brainId}`)); continue; }
     if (note !== undefined && note.attributes.notion !== undefined && note.attributes.notion !== row.page_id) { result.conflicts.push(conflict(row, "NOTION_ID_MISMATCH", `Note ${note.id} belongs to another Notion page`)); continue; }
     if (note === undefined) {
@@ -377,6 +379,15 @@ function planReport(workspace: Workspace, row: SnapshotRow, note: Note, out: Syn
   const text = property(row.properties, "What to fix");
   const last = (Array.isArray(note.attributes.fixes) ? note.attributes.fixes : []).filter(isRecord).at(-1);
   if (typeof text === "string" && text.trim() !== "" && text !== last?.text) out.report_fixes.push({ page_id: row.page_id, report: note.id, text });
+}
+
+/** A weekly review's Documents row (weekly-review.md §2): Refresh asked and What to fix are ignored (NOT_A_REPORT), and nothing is planned. */
+function planWeekly(workspace: Workspace, row: SnapshotRow, note: Note, out: SyncPlan): void {
+  if (!modulesOf(workspace.config).reports) { out.ignored.push(ignoredRow(row, "MODULE_OFF")); return; }
+  if (note.attributes.notion !== undefined && note.attributes.notion !== row.page_id) { out.conflicts.push(conflict(row, "NOTION_ID_MISMATCH", `Weekly review ${note.id} belongs to another Notion page`)); return; }
+  if (property(row.properties, "Refresh asked") === true || property(row.properties, "Refresh") === true) out.ignored.push(ignoredRow(row, "NOT_A_REPORT", "Refresh asked"));
+  const text = property(row.properties, "What to fix");
+  if (typeof text === "string" && text.trim() !== "") out.ignored.push(ignoredRow(row, "NOT_A_REPORT", "What to fix"));
 }
 
 /**
@@ -779,15 +790,15 @@ export interface ReviewRenderOptions { rebuild?: ReadonlySet<string>; holds?: Re
 
 export function render(workspace: Workspace, now: Date, ids?: readonly string[], held?: ReadonlyMap<string, Set<string>>, reviewOptions: ReviewRenderOptions = {}): { items: RenderItem[]; errors: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id?: string }>; skipped: Array<{ id: string; reason: string }> } {
   const selected = ids === undefined
-    ? workspace.notes.filter((note) => (PUBLISHED_TYPES.has(note.type) && !(note.type === "source" && note.attributes.kind === undefined)) || isReport(note))
+    ? workspace.notes.filter((note) => (PUBLISHED_TYPES.has(note.type) && !(note.type === "source" && note.attributes.kind === undefined)) || isReport(note) || isWeekly(note))
     : ids.map((id) => workspace.get(id)!).filter(Boolean);
   const items: RenderItem[] = []; const errors: Array<Record<string, unknown>> = []; const warnings: Array<{ code: string; message: string; id?: string }> = []; const skipped: Array<{ id: string; reason: string }> = [];
   const waiting: RenderItem[] = [];
   const modules = modulesOf(workspace.config);
   for (const note of selected) {
-    const database = isReport(note) ? "documents" : DATABASE_FOR_TYPE[note.type]; if (database === undefined || (note.type === "source" && note.attributes.kind === undefined)) continue;
+    const database = isReport(note) || isWeekly(note) ? "documents" : DATABASE_FOR_TYPE[note.type]; if (database === undefined || (note.type === "source" && note.attributes.kind === undefined)) continue;
     // A note of a module that is off isn't published; naming one is an error (0048).
-    if ((isReport(note) && !modules.reports) || !typeIsOn(workspace.config, note.type)) { if (ids !== undefined) errors.push({ id: note.id, reason: "MODULE_OFF" }); continue; }
+    if (((isReport(note) || isWeekly(note)) && !modules.reports) || !typeIsOn(workspace.config, note.type)) { if (ids !== undefined) errors.push({ id: note.id, reason: "MODULE_OFF" }); continue; }
     // An attached source has no Inbox row: its notes go on the parent's (0042).
     if (note.type === "source" && note.attributes.attached_to !== undefined) continue;
     // A decided Review row leaves Notion 30 days after its decision, once (0045).
@@ -864,6 +875,8 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
       if (fixes > stored) { properties["What to fix"] = { type: "rich_text", value: null }; reportDue = true; }
       rendered["@fixes"] = Math.max(fixes, stored);
     }
+    // A weekly review's body goes out when it changed: a rerun, or its Review rows got pages since (weekly-review.md §3.4).
+    if (isWeekly(note) && !isCreate && !contentChanged) content.body = null;
     // Full text (0043) is retired (0049): nothing is sent, and `@full_text` in S stays as it is.
     if (!isCreate && !rebuild && Object.keys(properties).length === 0 && !contentChanged && !reportDue && itemUpdates.length === 0) {
       // A page whose only news is a relation to a note this render creates: nothing to write, but the skill renders again after publishing it (0071).
@@ -936,6 +949,8 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     if (reviewSections(workspace, note)) Object.assign(values, { About: null, Now: null, Proposed: null, Why: null });
     return values;
   }
+  // A weekly review is a Documents row with Origin Report (weekly-review.md §2): its name, Origin and Brain ID, nothing else.
+  if (isWeekly(note)) { Object.assign(values, { Name: a.title, Origin: ORIGIN_LABEL.report, "Brain ID": note.id }); return values; }
   // A report is a Documents row since 0.9.1 (0071); its Ask rows stay on the Inbox and link back through Asked in.
   if (isReport(note)) { Object.assign(values, { Name: a.title, Origin: ORIGIN_LABEL.report, Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Asked in": typeof a.asked_in === "string" ? [a.asked_in] : Array.isArray(a.asked_in) ? a.asked_in : [], "Brain ID": note.id }); return values; }
   if (note.type === "meeting") { Object.assign(values, { Decisions: relationPages(a.decisions, workspace), Questions: relationPages(a.questions, workspace), Attendees: relationPages(a.attendees, workspace), Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Brain Status": "Ingested", "Ingested At": dateOutput(a.created), "Brain ID": note.id }); return values; }
@@ -1060,6 +1075,7 @@ function renderedContent(note: Note, workspace: Workspace): { body: string | nul
   // A source's digest is written once (0043).
   if (note.type === "source") { if (!hasInboxBody(note)) return { body: null, sections: null }; const body = digestBody(note); return { body, sections: null, hash: hash(body) }; }
   if (isReport(note)) { const body = notionMarkdown(note.body.replace(/^\n+/, ""), note, workspace); return { body, sections: null, hash: hash(body) }; }
+  if (isWeekly(note)) { const body = weeklyMarkdown(note, workspace); return { body, sections: null, hash: hash(body) }; }
   // A whole Document's links are read against its file's repo (0091).
   if (note.type === "reference" && note.attributes.origin === "whole") { const body = wholeDocumentMarkdown(note, workspace.notes, (id) => workspace.get(id)); return { body, sections: null, hash: hash(body) }; }
   if (note.type === "decision" || note.type === "question" || note.type === "reference") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: section(brief, note), "Decision log": section(log, note) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
@@ -1124,6 +1140,20 @@ export function letters(index: number): string {
 }
 
 function isReport(note: Note): boolean { return note.type === "view" && note.attributes.view_kind === "report"; }
+function isWeekly(note: Note): boolean { return note.type === "view" && note.attributes.view_kind === "weekly_review"; }
+/**
+ * A weekly review in Notion (weekly-review.md §3.4): a link to a proposal becomes its Review row's link, or the plain text `Review row (after the next
+ * publish)` while it has no page; a task's page URL stays; a link to a note with a page becomes that page; anything else keeps its text.
+ */
+function weeklyMarkdown(note: Note, workspace: Workspace): string {
+  return note.body.replace(/^\n+/, "").replace(/\[([^\]]+)\]\(([^)]+)\)/g, (all, title: string, link: string) => {
+    if (/^https:\/\//.test(link)) return all;
+    const target = workspace.notes.find((candidate) => candidate.path === normalizeRelative("reports", link));
+    const page = typeof target?.attributes.notion === "string" ? target.attributes.notion : undefined;
+    if (target?.type === "proposal") return page === undefined ? "Review row (after the next publish)" : `[${title}](https://www.notion.so/${page.replaceAll("-", "")})`;
+    return page === undefined ? title : `[${title}](https://www.notion.so/${page.replaceAll("-", "")})`;
+  });
+}
 
 /** A CommonMark code span, so Notion never links a name like notes.md (cli §5.14.4, CC-263). */
 export function codeSpan(text: string): string {
@@ -1315,7 +1345,7 @@ export function record(workspace: Workspace, input: unknown): { records: Array<R
       if (doc.attributes.notion === entry.notion && isDeepStrictEqual(doc.attributes.notion_published, entry.published)) { records.push({ id: entry.id, result: "recorded", changed: [] }); continue; }
       if (doc.attributes.notion !== entry.replaces) throw new Error("NOTION_ID_MISMATCH");
       doc.attributes.notion = entry.notion; doc.attributes.notion_published = entry.published;
-    } else if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; if (entry.task_items !== undefined) bindTaskItems(note, doc.attributes, entry.task_items, entry.tasks); workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); if (bodyWithoutReadBack(entry.published)) warnings.push({ code: "NOTION_BODY_MISSING", message: `${note.id}: a body was published without the read-back of its page, so the next plan holds it (cli §5.14.6, §5.14.7)`, id: note.id }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && (error.message === "NOTION_ID_MISMATCH" || error.message === "TASK_ITEM_EXISTS") ? error.message : "INVALID_RESULT", changed: [] }); } }
+    } else if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note) || isWeekly(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; if (entry.task_items !== undefined) bindTaskItems(note, doc.attributes, entry.task_items, entry.tasks); workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); if (bodyWithoutReadBack(entry.published)) warnings.push({ code: "NOTION_BODY_MISSING", message: `${note.id}: a body was published without the read-back of its page, so the next plan holds it (cli §5.14.6, §5.14.7)`, id: note.id }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && (error.message === "NOTION_ID_MISMATCH" || error.message === "TASK_ITEM_EXISTS") ? error.message : "INVALID_RESULT", changed: [] }); } }
   return { records, warnings };
 }
 

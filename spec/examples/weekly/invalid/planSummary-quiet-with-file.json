@@ -1,0 +1,26 @@
+{
+  "week": "2026-W46",
+  "as_of": "2026-11-09T07:04:12Z",
+  "local_date": "2026-11-09",
+  "notion": "live",
+  "window": {
+    "from": "2026-11-02T07:03:55Z",
+    "to": "2026-11-09T07:04:12Z",
+    "first": false,
+    "days": 7
+  },
+  "report": null,
+  "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "quiet": true,
+  "file": "/Users/sam/.ultimate-brain/weekly/brain-1a2b3c4d.plan.json",
+  "counts": {
+    "changes": 3,
+    "findings": 2,
+    "findings_shown": 2,
+    "clusters": 2,
+    "clusters_left": 0,
+    "corrections": 0,
+    "pending": 1,
+    "earlier_open": 1
+  }
+}

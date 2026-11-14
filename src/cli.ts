@@ -28,6 +28,7 @@ import { recallCommand } from "./commands/recall.ts";
 import { questionDropCommand } from "./commands/question.ts";
 import { syncApplyCommand, syncPlanCommand, syncRecordCommand, syncRenderCommand, syncTasksCommand } from "./commands/sync.ts";
 import { viewsCommand } from "./commands/views.ts";
+import { WEEKLY_COMMANDS } from "./commands/weekly.ts";
 import { WORKFLOW_COMMANDS } from "./commands/workflow.ts";
 import { runCommand, type CliIo, type Command, type RunEnvironment } from "./lib/command.ts";
 import { exitCodeFor } from "./lib/errors.ts";
@@ -42,7 +43,7 @@ export const COMMANDS: readonly Command[] = [
   initCommand, statusCommand, configGetCommand, configSetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, proposalBacklogCommand, proposalReviseCommand, proposalSettleCommand, sourceFullTextCommand, sourceDiffCommand, sourceExtractPlanCommand, sourceCleanupPlanCommand, sourceCleanupProposeCommand, sourceExtractCommand, recoverCommand, reportNewCommand, reportFixCommand, repoAddCommand, repoChangesCommand, repoRecordCommand, repoKitCheckCommand, repoKitWriteCommand, repoRefreshCommand, repoShowCommand, repoHealthCommand, repoTasksCommand, repoUnlinkCommand, repoNewCommand, questionDropCommand, applyCommand,
   assistantFindingsCommand, assistantDismissCommand,
   syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand, viewsCommand, linkCommand, queryCommand, reflectCommand, recallCommand, upgradeCommand, modulesListCommand, modulesOnCommand, modulesOffCommand,
-  scheduleInstallCommand, scheduleListCommand, scheduleRemoveCommand, ...WORKFLOW_COMMANDS,
+  scheduleInstallCommand, scheduleListCommand, scheduleRemoveCommand, ...WEEKLY_COMMANDS, ...WORKFLOW_COMMANDS,
 ];
 
 export const HELP_TEXT = `Usage: brain <command> [options]

@@ -1,0 +1,508 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ultimate-brain.dev/schemas/v1/weekly.schema.json",
+  "title": "The weekly review's command shapes and records (v1)",
+  "description": "The output of brain weekly plan, the judged input of brain weekly select and its output, the input of brain weekly record, the run state _weekly/state.json and the attempt marker _weekly/attempt.json. Behaviour is normative in spec/weekly-review.md; the commands are spec/cli.md §5.34 (decisions 0075, 0093). Every timestamp is UTC with seconds and Z (cli.md §3.1); every date is YYYY-MM-DD.",
+  "$defs": {
+    "timestamp": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$" },
+    "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "week": { "description": "An ISO 8601 week (weekly-review.md §2).", "type": "string", "pattern": "^\\d{4}-W(0[1-9]|[1-4]\\d|5[0-3])$" },
+    "noteId": { "type": "string", "pattern": "^[a-z]{2,4}-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
+    "viewId": { "type": "string", "pattern": "^vw-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
+    "proposalId": { "type": "string", "pattern": "^prp-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
+    "pageId": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
+    "taskUrl": { "description": "A Notion task's page URL: https://www.notion.so/ and the page id without dashes.", "type": "string", "pattern": "^https://www\\.notion\\.so/[0-9a-f]{32}$" },
+    "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "count": { "type": "integer", "minimum": 0 },
+    "counts": {
+      "description": "The three shared limits and the queued remainder of one week (weekly-review.md §5): D, I, T and queued.",
+      "type": "object",
+      "required": ["decisions", "new_items", "targets", "queued"],
+      "additionalProperties": false,
+      "properties": {
+        "decisions": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "new_items": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "targets": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "queued": { "$ref": "#/$defs/count" }
+      }
+    },
+    "claimKey": {
+      "description": "A corrected claim (weekly-review.md §8.1): <target>:<field> for a fact, <decision id> for a supersede, <target>:rule:<proposal id> for a rule.",
+      "type": "string",
+      "pattern": "^[a-z]{2,4}-[0-9abcdefghjkmnpqrstvwxyz]{8}(:[a-z][a-z0-9_]*|:rule:prp-[0-9abcdefghjkmnpqrstvwxyz]{8})?$"
+    },
+    "fingerprint": {
+      "description": "A reflection finding (schema §11.4); the same pattern as proposal.schema.json $defs/fingerprint.",
+      "type": "string",
+      "pattern": "^(contradiction|stale):(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:[a-z][a-z0-9_]*$|^merge:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}\\+(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^promotion:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:(mtg|src)-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^theme:[a-z0-9]+(-[a-z0-9]+){1,2}$"
+    },
+    "findingKey": {
+      "description": "An Ultimate Assistant finding (assistant.md §3.3); the same pattern as assistant.schema.json $defs/findingKey.",
+      "type": "string",
+      "pattern": "^(task_overdue|task_stalled|task_no_project):notion:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^(project_stalled|project_no_next_step|project_done_but_open|project_misplaced):prj-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^project_duplicate:prj-[0-9abcdefghjkmnpqrstvwxyz]{8}\\+prj-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^(area_no_domain|area_empty):area-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+    },
+    "correctionKey": { "description": "correction:<claim key> (weekly-review.md §7).", "type": "string", "pattern": "^correction:[a-z]{2,4}-[0-9abcdefghjkmnpqrstvwxyz]{8}(:[a-z][a-z0-9_]*|:rule:prp-[0-9abcdefghjkmnpqrstvwxyz]{8})?$" },
+    "itemKey": {
+      "description": "A weekly finding key (weekly-review.md §7): an assistant key, a reflection fingerprint, or correction:<claim key>.",
+      "anyOf": [{ "$ref": "#/$defs/findingKey" }, { "$ref": "#/$defs/fingerprint" }, { "$ref": "#/$defs/correctionKey" }]
+    },
+    "clusterKey": {
+      "description": "A reflection cluster (cli.md §5.32): <signal>:<member ids sorted, joined by +>, or recurring_term:<slug>.",
+      "type": "string",
+      "pattern": "^(shared_ground|overtaken|near_duplicate):[a-z]{2,4}-[0-9abcdefghjkmnpqrstvwxyz]{8}(\\+[a-z]{2,4}-[0-9abcdefghjkmnpqrstvwxyz]{8})?$|^recurring_term:[a-z0-9]+(-[a-z0-9]+){1,2}$"
+    },
+    "category": {
+      "description": "What kind of attention a finding asks for: the assistant's categories (assistant.md §3.3) and the knowledge ones. overdue is the category §7 rule 2 compares.",
+      "enum": ["overdue", "stalled", "no next step", "structure", "correction", "contradiction", "stale", "promotion", "duplicate", "theme"]
+    },
+    "repetition": {
+      "description": "Whether a finding may be a decision item this week (weekly-review.md §7). show is false for a finding shown before whose evidence, overdue state and urgency are unchanged and that is no critical problem. because: new (never shown, or shown 26 weeks ago and dropped), this_week (already an item of this week: a rerun keeps it), evidence, overdue, urgency, critical (§7 rules 1 to 4), or null when show is false. pending is the finding's pending proposal, when it has one.",
+      "type": "object",
+      "required": ["show", "because", "shown", "pending", "evidence_hash"],
+      "additionalProperties": false,
+      "properties": {
+        "show": { "type": "boolean" },
+        "because": { "enum": ["new", "this_week", "evidence", "overdue", "urgency", "critical", null] },
+        "shown": { "description": "The last week it was a decision item, or null.", "anyOf": [{ "$ref": "#/$defs/week" }, { "type": "null" }] },
+        "pending": { "anyOf": [{ "$ref": "#/$defs/proposalId" }, { "type": "null" }] },
+        "evidence_hash": { "$ref": "#/$defs/hash" }
+      },
+      "allOf": [
+        { "if": { "properties": { "show": { "const": true } } }, "then": { "properties": { "because": { "type": "string" } } }, "else": { "properties": { "because": { "const": null } } } }
+      ]
+    },
+    "change": {
+      "description": "A What changed candidate (weekly-review.md §4.2). key is <kind>:<ref> (changed:<note>:<field>:<learned> for a fact). ref is a note id, or notion:<page id> for a task. path is the note's file (null for a task), url the task's page (null for a note). bullet marks the 8 a report shows (§4.3: by weight, then newest, then key); the rest are covered by count.",
+      "type": "object",
+      "required": ["key", "kind", "ref", "title", "path", "url", "date", "weight", "bullet"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["decided", "changed", "open", "answered", "next"] },
+        "ref": { "type": "string", "pattern": "^[a-z]{2,4}-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^notion:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
+        "title": { "type": "string" },
+        "path": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+        "url": { "anyOf": [{ "$ref": "#/$defs/taskUrl" }, { "type": "null" }] },
+        "date": { "$ref": "#/$defs/date" },
+        "weight": { "enum": [1, 2, 3, 4] },
+        "bullet": { "type": "boolean" },
+        "field": { "description": "changed only: the fact's field; before and after are its earlier and new accepted values.", "type": "string" },
+        "before": {},
+        "after": {},
+        "draft": { "description": "true when the note is a draft: the bullet ends *(not reviewed)* (weekly-review.md §3).", "type": "boolean" }
+      }
+    },
+    "subject": {
+      "description": "A subject of Task analysis (weekly-review.md §3.3): the finding's key, its title, its task page URL (null for a project or an Area, or brain only) and the evidence text the assistant would write (assistant.md §4.1).",
+      "type": "object",
+      "required": ["key", "title", "url", "evidence"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "type": "string", "minLength": 1 },
+        "title": { "type": "string" },
+        "url": { "anyOf": [{ "$ref": "#/$defs/taskUrl" }, { "type": "null" }] },
+        "evidence": { "type": "string" }
+      }
+    },
+    "finding": {
+      "description": "An assistant finding as brain assistant findings gives it (cli.md §5.31, every finding, no page cap), with its repetition.",
+      "type": "object",
+      "required": ["rank", "key", "signal", "category", "subject", "project", "area", "evidence", "recommendations", "status_offers", "repetition"],
+      "additionalProperties": false,
+      "properties": {
+        "rank": { "type": "integer", "minimum": 1 },
+        "key": { "$ref": "#/$defs/findingKey" },
+        "signal": { "type": "string" },
+        "category": { "enum": ["overdue", "stalled", "no next step", "structure"] },
+        "subject": { "type": "object" },
+        "project": { "anyOf": [{ "$ref": "#/$defs/noteId" }, { "type": "null" }] },
+        "area": { "anyOf": [{ "$ref": "#/$defs/noteId" }, { "type": "null" }] },
+        "evidence": { "type": "object" },
+        "recommendations": { "type": "array", "items": { "type": "object", "required": ["letter", "action", "value", "label"] } },
+        "status_offers": { "type": "array" },
+        "repetition": { "$ref": "#/$defs/repetition" }
+      }
+    },
+    "cluster": {
+      "description": "A reflection cluster as brain reflect --candidates gives it (cli.md §5.32), in the window (weekly-review.md §4.1), with carried true when an earlier partial run left it (§10). Its other keys (shared, evidence, held, names, term, fingerprint) pass through reflection's shape on purpose: §5.32 owns them, and plan adds only carried.",
+      "type": "object",
+      "required": ["rank", "key", "signal", "notes", "carried"],
+      "properties": {
+        "rank": { "type": "integer", "minimum": 1 },
+        "key": { "$ref": "#/$defs/clusterKey" },
+        "signal": { "enum": ["shared_ground", "overtaken", "near_duplicate", "recurring_term"] },
+        "notes": { "type": "array", "items": { "type": "object", "required": ["id"] } },
+        "carried": { "type": "boolean" }
+      }
+    },
+    "correctionTarget": {
+      "description": "A candidate target of a claim (weekly-review.md §8.2): a fact equal to the old value, or one body line holding it. CC-254.",
+      "type": "object",
+      "required": ["note", "field", "line"],
+      "additionalProperties": false,
+      "properties": {
+        "note": { "$ref": "#/$defs/noteId" },
+        "field": { "anyOf": [{ "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }, { "type": "null" }] },
+        "line": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      }
+    },
+    "claim": {
+      "description": "A queued correction check (weekly-review.md §8.1) and its candidate targets (§8.2). CC-254 fills it; until then plan returns no claim.",
+      "type": "object",
+      "required": ["claim", "kind", "note", "old", "new", "date", "targets"],
+      "additionalProperties": false,
+      "properties": {
+        "claim": { "$ref": "#/$defs/claimKey" },
+        "kind": { "enum": ["fact", "supersede", "title", "rule"] },
+        "note": { "$ref": "#/$defs/noteId" },
+        "old": {},
+        "new": {},
+        "date": { "$ref": "#/$defs/date" },
+        "targets": { "type": "array", "items": { "$ref": "#/$defs/correctionTarget" } },
+        "repetition": { "$ref": "#/$defs/repetition" }
+      }
+    },
+    "plan": {
+      "description": "The full plan of brain weekly plan (cli.md §5.34): the hand-off file <label>.plan.json it saves next to the snapshot, which the skill reads in parts; its data is planSummary. clusters holds at most settings.weekly.max_judged clusters, carried ones first (weekly-review.md §10), then the window's in reflection's rank; clusters_left names the window's clusters beyond that limit, which a run omits (§10) and carries. findings excludes the dismissed (assistant.md §3.5) and keeps every other one, with its repetition. pending lists the pending proposals whose finding, fingerprint or correction is a candidate's key. week_state is this week's from _weekly/state.json (zeros and no items for a new week). earlier_open counts the earlier findings not shown again whose proposal is pending (§7). quiet is weekly-review.md §9.1, a same-week rerun with an unchanged input_hash included; it is false whenever notion is unreachable (a failure).",
+      "type": "object",
+      "required": ["week", "as_of", "local_date", "notion", "window", "report", "changes", "inputs", "findings", "skipped_signals", "task_analysis", "clusters", "clusters_left", "corrections", "pending", "week_state", "earlier_open", "budget", "input_hash", "quiet"],
+      "additionalProperties": false,
+      "properties": {
+        "week": { "$ref": "#/$defs/week" },
+        "as_of": { "$ref": "#/$defs/timestamp" },
+        "local_date": { "description": "The run's local date (the machine's time zone): the week's day.", "$ref": "#/$defs/date" },
+        "notion": { "enum": ["live", "unreachable"] },
+        "window": {
+          "description": "weekly-review.md §4.1. first: no earlier week's success, so from is as_of minus 7 days. days: whole days from from to to.",
+          "type": "object",
+          "required": ["from", "to", "first", "days"],
+          "additionalProperties": false,
+          "properties": {
+            "from": { "$ref": "#/$defs/timestamp" },
+            "to": { "$ref": "#/$defs/timestamp" },
+            "first": { "type": "boolean" },
+            "days": { "$ref": "#/$defs/count" }
+          }
+        },
+        "report": {
+          "description": "This week's report when one exists (a rerun updates it, weekly-review.md §2), else null.",
+          "anyOf": [
+            { "type": "object", "required": ["id", "path"], "additionalProperties": false, "properties": { "id": { "$ref": "#/$defs/viewId" }, "path": { "type": "string" } } },
+            { "type": "null" }
+          ]
+        },
+        "changes": { "description": "Every change in the window, by weight, then date (newest first), then key.", "type": "array", "items": { "$ref": "#/$defs/change" } },
+        "inputs": {
+          "description": "The meetings and sources (not minutes) dated in the window: header line 2's counts (weekly-review.md §3.1, §4.2).",
+          "type": "object",
+          "required": ["meetings", "sources"],
+          "additionalProperties": false,
+          "properties": { "meetings": { "$ref": "#/$defs/count" }, "sources": { "$ref": "#/$defs/count" } }
+        },
+        "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+        "skipped_signals": { "description": "As brain assistant findings gives it.", "type": "array" },
+        "task_analysis": {
+          "description": "The CLI's candidates for Task analysis (weekly-review.md §3.3): up to 3 subjects per category, and up to 3 for the order of attention, in the assistant's rank. Every open problem is listed here, shown before or not.",
+          "type": "object",
+          "required": ["overdue", "stalled", "blocked", "no_next_step", "order"],
+          "additionalProperties": false,
+          "properties": {
+            "overdue": { "type": "array", "maxItems": 3, "items": { "$ref": "#/$defs/subject" } },
+            "stalled": { "type": "array", "maxItems": 3, "items": { "$ref": "#/$defs/subject" } },
+            "blocked": { "type": "array", "maxItems": 3, "items": { "$ref": "#/$defs/subject" } },
+            "no_next_step": { "type": "array", "maxItems": 3, "items": { "$ref": "#/$defs/subject" } },
+            "order": { "type": "array", "maxItems": 3, "items": { "$ref": "#/$defs/subject" } }
+          }
+        },
+        "clusters": { "type": "array", "items": { "$ref": "#/$defs/cluster" } },
+        "clusters_left": { "type": "array", "items": { "$ref": "#/$defs/clusterKey" }, "uniqueItems": true },
+        "corrections": { "type": "array", "items": { "$ref": "#/$defs/claim" } },
+        "pending": {
+          "type": "array",
+          "items": { "type": "object", "required": ["key", "proposal"], "additionalProperties": false, "properties": { "key": { "$ref": "#/$defs/itemKey" }, "proposal": { "$ref": "#/$defs/proposalId" } } }
+        },
+        "week_state": {
+          "type": "object",
+          "required": ["counts", "items"],
+          "additionalProperties": false,
+          "properties": { "counts": { "$ref": "#/$defs/counts" }, "items": { "type": "array", "items": { "$ref": "#/$defs/itemKey" }, "uniqueItems": true } }
+        },
+        "earlier_open": { "$ref": "#/$defs/count" },
+        "budget": {
+          "description": "settings.weekly's soft budget (weekly-review.md §10, §12).",
+          "type": "object",
+          "required": ["minutes", "max_judged"],
+          "additionalProperties": false,
+          "properties": { "minutes": { "type": "integer", "minimum": 1 }, "max_judged": { "type": "integer", "minimum": 1 } }
+        },
+        "input_hash": { "$ref": "#/$defs/hash" },
+        "quiet": { "type": "boolean" }
+      }
+    },
+    "judgedFinding": {
+      "description": "A finding the skill drew from a cluster it judged (cli.md §6.2 step 2): its kind, fingerprint (schema §11.4), targets (one note, or the duplicate and the survivor of a merge), the cluster's evidence ids, and the words of its decision item. critical is not the skill's to say: select computes it (a contradiction on a reviewed note, §7 rule 4).",
+      "type": "object",
+      "required": ["cluster", "kind", "fingerprint", "targets", "evidence", "subject", "decide"],
+      "additionalProperties": false,
+      "properties": {
+        "cluster": { "$ref": "#/$defs/clusterKey" },
+        "kind": { "enum": ["contradiction", "stale", "promotion", "duplicate", "theme"] },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "targets": { "type": "array", "minItems": 1, "maxItems": 2, "items": { "$ref": "#/$defs/noteId" }, "uniqueItems": true },
+        "evidence": { "type": "array", "items": { "type": "string", "pattern": "^(mtg|src)-[0-9abcdefghjkmnpqrstvwxyz]{8}$" }, "uniqueItems": true },
+        "subject": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "decide": { "type": "string", "minLength": 1, "maxLength": 120 }
+      },
+      "allOf": [
+        { "if": { "properties": { "kind": { "const": "duplicate" } } }, "then": { "properties": { "targets": { "minItems": 2 }, "fingerprint": { "pattern": "^merge:" } } }, "else": { "properties": { "targets": { "maxItems": 1 } } } },
+        { "if": { "properties": { "kind": { "const": "contradiction" } } }, "then": { "properties": { "fingerprint": { "pattern": "^contradiction:" } } } },
+        { "if": { "properties": { "kind": { "const": "stale" } } }, "then": { "properties": { "fingerprint": { "pattern": "^stale:" } } } },
+        { "if": { "properties": { "kind": { "const": "promotion" } } }, "then": { "properties": { "fingerprint": { "pattern": "^promotion:" } } } },
+        { "if": { "properties": { "kind": { "const": "theme" } } }, "then": { "properties": { "fingerprint": { "pattern": "^theme:" } } } }
+      ]
+    },
+    "correctionJudgment": {
+      "description": "The skill's verdict on one candidate target of a claim (weekly-review.md §8.2). CC-254.",
+      "type": "object",
+      "required": ["claim", "note", "verdict"],
+      "additionalProperties": false,
+      "properties": {
+        "claim": { "$ref": "#/$defs/claimKey" },
+        "note": { "$ref": "#/$defs/noteId" },
+        "verdict": { "enum": ["restatement", "independent", "historical", "uncertain"] }
+      }
+    },
+    "planSummary": {
+      "description": "The data of brain weekly plan (cli.md §5.34): what the skill needs to go on without reading the plan file (a large brain's plan is far above Claude Code's 30k Bash output limit, which a scheduled run's allow list can't read back). file is the absolute path of the saved plan, null when quiet (a quiet plan writes nothing). counts are the lengths of the plan's lists; findings_shown counts the findings whose repetition.show is true.",
+      "type": "object",
+      "required": ["week", "as_of", "local_date", "notion", "window", "report", "input_hash", "quiet", "file", "counts"],
+      "additionalProperties": false,
+      "properties": {
+        "week": { "$ref": "#/$defs/week" },
+        "as_of": { "$ref": "#/$defs/timestamp" },
+        "local_date": { "$ref": "#/$defs/date" },
+        "notion": { "enum": ["live", "unreachable"] },
+        "window": { "$ref": "#/$defs/plan/properties/window" },
+        "report": { "$ref": "#/$defs/plan/properties/report" },
+        "input_hash": { "$ref": "#/$defs/hash" },
+        "quiet": { "type": "boolean" },
+        "file": { "anyOf": [{ "type": "string", "pattern": "^/.+\\.plan\\.json$" }, { "type": "null" }] },
+        "counts": {
+          "type": "object",
+          "required": ["changes", "findings", "findings_shown", "clusters", "clusters_left", "corrections", "pending", "earlier_open"],
+          "additionalProperties": false,
+          "properties": {
+            "changes": { "$ref": "#/$defs/count" }, "findings": { "$ref": "#/$defs/count" }, "findings_shown": { "$ref": "#/$defs/count" }, "clusters": { "$ref": "#/$defs/count" },
+            "clusters_left": { "$ref": "#/$defs/count" }, "corrections": { "$ref": "#/$defs/count" }, "pending": { "$ref": "#/$defs/count" }, "earlier_open": { "$ref": "#/$defs/count" }
+          }
+        }
+      },
+      "allOf": [{ "if": { "properties": { "quiet": { "const": true } } }, "then": { "properties": { "file": { "type": "null" } } }, "else": { "properties": { "file": { "type": "string" } } } }]
+    },
+    "selectInput": {
+      "description": "The input of brain weekly select (cli.md §5.34): the plan, by its input_hash (select reads the saved plan file, the scheduled run's way) or embedded as it came (tests, attended use), and what the skill judged. judged.clusters lists every cluster the skill judged, a finding drawn or not; a cluster of plan.clusters not listed there, and every key of plan.clusters_left, is omitted (weekly-review.md §10). Each finding's cluster must be a judged cluster of the plan (INPUT_INVALID).",
+      "type": "object",
+      "required": ["judged"],
+      "oneOf": [{ "required": ["plan"], "not": { "required": ["input_hash"] } }, { "required": ["input_hash"], "not": { "required": ["plan"] } }],
+      "additionalProperties": false,
+      "properties": {
+        "plan": { "$ref": "#/$defs/plan" },
+        "input_hash": { "description": "planSummary.input_hash: the saved plan file must have it (INPUT_INVALID otherwise: plan again).", "$ref": "#/$defs/hash" },
+        "judged": {
+          "type": "object",
+          "required": ["clusters", "findings", "corrections"],
+          "additionalProperties": false,
+          "properties": {
+            "clusters": { "type": "array", "items": { "$ref": "#/$defs/clusterKey" }, "uniqueItems": true },
+            "findings": { "type": "array", "items": { "$ref": "#/$defs/judgedFinding" } },
+            "corrections": { "type": "array", "items": { "$ref": "#/$defs/correctionJudgment" } }
+          }
+        }
+      }
+    },
+    "item": {
+      "description": "A decision item (weekly-review.md §6.1), numbered n in the report. lives says where it is decided: a Review row (review) or a task (task). write is true when step 8 must write its proposal (proposal null); false when it links an existing pending proposal (proposal set) or is a task (proposal null, url its page or null brain only). targets are the note ids it changes, or notion:<page id> for a task or a task's notion_change; new_items is what it adds to I (§5.1). recommendation (work stream, write true) is the assistant recommendation to propose; finding (knowledge stream, write true) is the judged finding. kind is the report's label (§3.4).",
+      "type": "object",
+      "required": ["n", "key", "stream", "kind", "category", "subject", "decide", "lives", "write", "proposal", "url", "targets", "new_items", "because", "evidence_hash", "recommendation", "finding"],
+      "additionalProperties": false,
+      "properties": {
+        "n": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "key": { "$ref": "#/$defs/itemKey" },
+        "stream": { "enum": ["work", "knowledge", "correction"] },
+        "kind": { "enum": ["Correction", "Contradiction", "Stale fact", "Overdue", "Stalled", "No next step", "Done but open", "Misplaced", "Duplicate project", "No project", "No Domain", "Empty Area", "Duplicate", "Promotion", "Theme"] },
+        "category": { "$ref": "#/$defs/category" },
+        "subject": { "type": "string", "minLength": 1 },
+        "decide": { "type": "string", "minLength": 1 },
+        "lives": { "enum": ["review", "task"] },
+        "write": { "type": "boolean" },
+        "proposal": { "anyOf": [{ "$ref": "#/$defs/proposalId" }, { "type": "null" }] },
+        "url": { "anyOf": [{ "$ref": "#/$defs/taskUrl" }, { "type": "null" }] },
+        "targets": { "type": "array", "minItems": 1, "items": { "type": "string" }, "uniqueItems": true },
+        "new_items": { "$ref": "#/$defs/count" },
+        "because": { "enum": ["new", "this_week", "evidence", "overdue", "urgency", "critical"] },
+        "evidence_hash": { "$ref": "#/$defs/hash" },
+        "days_late": { "type": "integer" },
+        "days_idle": { "type": "integer" },
+        "shown_of": { "description": "A correction group admitted in part: <k> of <size> shown (§5.2, §8.4).", "type": "object", "required": ["k", "size"], "additionalProperties": false, "properties": { "k": { "type": "integer", "minimum": 1 }, "size": { "type": "integer", "minimum": 1 } } },
+        "recommendation": { "anyOf": [{ "type": "object", "required": ["action", "value", "label"], "additionalProperties": false, "properties": { "action": { "type": "string" }, "value": {}, "label": { "type": "string" } } }, { "type": "null" }] },
+        "finding": { "anyOf": [{ "$ref": "#/$defs/judgedFinding" }, { "type": "null" }] }
+      },
+      "allOf": [
+        { "if": { "properties": { "lives": { "const": "task" } } }, "then": { "properties": { "write": { "const": false }, "proposal": { "type": "null" }, "new_items": { "const": 0 } } } },
+        { "if": { "properties": { "write": { "const": true } } }, "then": { "properties": { "proposal": { "type": "null" }, "lives": { "const": "review" } } } },
+        { "if": { "properties": { "lives": { "const": "review" }, "write": { "const": false } } }, "then": { "properties": { "proposal": { "$ref": "#/$defs/proposalId" }, "new_items": { "const": 0 } } } }
+      ]
+    },
+    "selection": {
+      "description": "The data of brain weekly select (cli.md §5.34), also saved as the hand-off file <label>.selection.json next to the plan file: the plan's input_hash, the decision items in report order, the queued remainder, this week's counts after the items (the week's earlier counts included, §5.1), the earlier findings still open in Review (§7), what the run omitted (§10) and its coverage.",
+      "type": "object",
+      "required": ["week", "input_hash", "items", "queued", "counts", "earlier_open", "omitted", "coverage"],
+      "additionalProperties": false,
+      "properties": {
+        "week": { "$ref": "#/$defs/week" },
+        "input_hash": { "description": "The input_hash of the plan it selected from.", "$ref": "#/$defs/hash" },
+        "items": { "type": "array", "maxItems": 5, "items": { "$ref": "#/$defs/item" } },
+        "queued": {
+          "type": "array",
+          "items": { "type": "object", "required": ["key", "category"], "additionalProperties": false, "properties": { "key": { "$ref": "#/$defs/itemKey" }, "category": { "$ref": "#/$defs/category" } } }
+        },
+        "counts": { "$ref": "#/$defs/counts" },
+        "earlier_open": { "$ref": "#/$defs/count" },
+        "omitted": {
+          "type": "object",
+          "required": ["clusters", "correction_targets"],
+          "additionalProperties": false,
+          "properties": {
+            "clusters": { "type": "array", "items": { "$ref": "#/$defs/clusterKey" }, "uniqueItems": true },
+            "correction_targets": { "$ref": "#/$defs/count" }
+          }
+        },
+        "coverage": { "enum": ["complete", "partial"] }
+      }
+    },
+    "recordInput": {
+      "description": "The input of brain weekly record (cli.md §5.34): plan's and select's data, by the plan's input_hash (record reads the two saved hand-off files, the scheduled run's way) or both embedded as they came, the proposal written for each item whose write is true (step 8; a DUPLICATE_PENDING names the existing one), the skill's What changed bullets (at most 8, each one line starting - **<Label>:**) and Task analysis lines (weekly-review.md §3.2, §3.3), the run's mode, whether the report will be published (weekly-review.md §9.3: refused with Reports off), the failures of earlier steps, and the run's notes read and seconds for the log line. record renders the header (§3.1) and What needs your decision (§3.4) itself.",
+      "type": "object",
+      "required": ["proposals", "what_changed", "task_analysis", "mode", "publish", "failures", "notes_read", "seconds"],
+      "oneOf": [{ "required": ["plan", "selection"], "not": { "required": ["input_hash"] } }, { "required": ["input_hash"], "not": { "anyOf": [{ "required": ["plan"] }, { "required": ["selection"] }] } }],
+      "additionalProperties": false,
+      "properties": {
+        "plan": { "$ref": "#/$defs/plan" },
+        "selection": { "$ref": "#/$defs/selection" },
+        "input_hash": { "description": "planSummary.input_hash: the saved plan and selection files must both have it (INPUT_INVALID otherwise).", "$ref": "#/$defs/hash" },
+        "proposals": {
+          "type": "array",
+          "items": { "type": "object", "required": ["key", "proposal"], "additionalProperties": false, "properties": { "key": { "$ref": "#/$defs/itemKey" }, "proposal": { "$ref": "#/$defs/proposalId" } } }
+        },
+        "what_changed": {
+          "description": "At most 8 bullets, each one line starting - **<Label>:** with the labels in §3.2's order, or the one line - Nothing new this week.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "type": "string", "pattern": "^- \\*\\*(Decided|Changed|Open|Answered|Next):\\*\\* [^\\n]+$|^- Nothing new this week\\.$" }
+        },
+        "task_analysis": { "description": "The section's lines without its heading (§3.3): the category bullets, then a blank line, Order of attention: and 1 to 3 numbered lines; or the one line - No overdue, stalled or blocked work. record checks the shape.", "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[^\\n]*$" } },
+        "mode": { "enum": ["attended", "unattended"] },
+        "publish": { "type": "boolean" },
+        "failures": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "notes_read": { "$ref": "#/$defs/count" },
+        "seconds": { "$ref": "#/$defs/count" }
+      }
+    },
+    "state": {
+      "description": "_weekly/state.json (weekly-review.md §9.5), written only by brain weekly record. last_success: the latest report written; covered_to is its window.to, covered_on_to the change keys dated on covered_to's UTC date that it covered, so a change made later that day is still next week's (§4.1). weeks: the last 8 weeks, each with its report, window (window_from and window_skip, the keys a rerun keeps out on from's date), input_hash, counts and item keys. shown: entries of the last 26 weeks, one per key. queued: this week's queued remainder. carry: omitted cluster keys (§10). corrections: the correction cursor (§8.1).",
+      "type": "object",
+      "required": ["version", "last_success", "weeks", "shown", "queued", "carry", "corrections"],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "const": 1 },
+        "last_success": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": ["week", "report", "covered_to", "covered_on_to", "coverage"],
+              "additionalProperties": false,
+              "properties": {
+                "week": { "$ref": "#/$defs/week" },
+                "report": { "$ref": "#/$defs/viewId" },
+                "covered_to": { "$ref": "#/$defs/timestamp" },
+                "covered_on_to": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+                "coverage": { "enum": ["complete", "partial"] }
+              }
+            },
+            { "type": "null" }
+          ]
+        },
+        "weeks": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/week" },
+          "maxProperties": 8,
+          "additionalProperties": {
+            "type": "object",
+            "required": ["report", "path", "window_from", "window_skip", "input_hash", "counts", "items"],
+            "additionalProperties": false,
+            "properties": {
+              "report": { "$ref": "#/$defs/viewId" },
+              "path": { "type": "string", "pattern": "^reports/\\d{4}-\\d{2}-\\d{2}-weekly-review\\.md$" },
+              "window_from": { "$ref": "#/$defs/timestamp" },
+              "window_skip": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+              "input_hash": { "$ref": "#/$defs/hash" },
+              "counts": { "$ref": "#/$defs/counts" },
+              "items": { "type": "array", "items": { "$ref": "#/$defs/itemKey" }, "uniqueItems": true }
+            }
+          }
+        },
+        "shown": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["key", "week", "category", "evidence_hash"],
+            "additionalProperties": false,
+            "properties": {
+              "key": { "$ref": "#/$defs/itemKey" },
+              "week": { "$ref": "#/$defs/week" },
+              "category": { "$ref": "#/$defs/category" },
+              "evidence_hash": { "$ref": "#/$defs/hash" },
+              "days_late": { "type": "integer" },
+              "days_idle": { "type": "integer" }
+            }
+          }
+        },
+        "queued": {
+          "type": "array",
+          "items": { "type": "object", "required": ["key", "week"], "additionalProperties": false, "properties": { "key": { "$ref": "#/$defs/itemKey" }, "week": { "$ref": "#/$defs/week" } } }
+        },
+        "carry": {
+          "type": "object",
+          "required": ["clusters"],
+          "additionalProperties": false,
+          "properties": { "clusters": { "type": "array", "items": { "$ref": "#/$defs/clusterKey" }, "uniqueItems": true } }
+        },
+        "corrections": {
+          "type": "object",
+          "required": ["checked_on", "done_on_date", "open"],
+          "additionalProperties": false,
+          "properties": {
+            "checked_on": { "anyOf": [{ "$ref": "#/$defs/date" }, { "type": "null" }] },
+            "done_on_date": { "type": "array", "items": { "$ref": "#/$defs/claimKey" }, "uniqueItems": true },
+            "open": {
+              "type": "array",
+              "items": { "type": "object", "required": ["claim", "targets"], "additionalProperties": false, "properties": { "claim": { "$ref": "#/$defs/claimKey" }, "targets": { "type": "array", "items": { "$ref": "#/$defs/noteId" }, "uniqueItems": true } } }
+            }
+          }
+        }
+      }
+    },
+    "attempt": {
+      "description": "_weekly/attempt.json, gitignored (weekly-review.md §9.5): written by the skill at step 5, removed after step 10.",
+      "type": "object",
+      "required": ["week", "started", "mode"],
+      "additionalProperties": false,
+      "properties": {
+        "week": { "$ref": "#/$defs/week" },
+        "started": { "$ref": "#/$defs/timestamp" },
+        "mode": { "enum": ["attended", "unattended"] }
+      }
+    }
+  }
+}

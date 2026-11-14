@@ -17,6 +17,7 @@ import { extractPassages, PASSAGE_REF, passageHash } from "./selection.ts";
 import { lineageOf } from "./eligibility.ts";
 import { reportLinks } from "./report-body.ts";
 import { DISMISSALS_PATH, readDismissals } from "./assistant-dismissals.ts";
+import { STATE_PATH as WEEKLY_STATE_PATH, stateFileProblems } from "./weekly-state.ts";
 import { contextFor, eligibleNotes, indexNotes, loadSuppressions, restrictionOf } from "./suppressions.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
@@ -66,6 +67,7 @@ const REFERENCE_KEYS = new Set([
 const VIEW_FOLDERS: Readonly<Record<string, RegExp>> = {
   area_brief: /^areas\/briefs\/[^/]+\.md$/,
   report: /^reports\/\d{4}-\d{2}-\d{2}-[^/]+\.md$/,
+  weekly_review: /^reports\/\d{4}-\d{2}-\d{2}-weekly-review\.md$/,
 };
 
 /** Where each type must live (spec/schema.md §2). */
@@ -102,6 +104,7 @@ export function lintBrain(input: LintInput): Issue[] {
 
   for (const message of loadSuppressions(input.root).problems) add("error", "suppression-record", "_suppressions", 1, null, message);
   for (const message of readDismissals(input.root).problems) add("error", "assistant-dismissals", DISMISSALS_PATH, 1, null, message);
+  for (const message of stateFileProblems(input.root)) add("error", "weekly-state", WEEKLY_STATE_PATH, 1, null, message);
   for (const problem of workflowRecordProblems(input.root)) add("error", "workflow-record", problem.path, 1, null, `${problem.path} ${problem.message}`);
   for (const problem of input.problems) {
     if (problem.code === "NOT_A_NOTE") add("error", "not-a-note", problem.path, 1, null, problem.message);
