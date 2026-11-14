@@ -26,7 +26,7 @@ Notion docs: [Custom Agents](https://www.notion.com/help/custom-agents), [Instru
 
 ## Running a skill
 
-In Brain Assistant's chat, **ask for the skill by its name**: "Run Today", "Prep for this meeting", or just "today". A Custom Agent doesn't run a skill typed as a `/` command: `/Today` isn't recognised there. With personal Instructions, ask by name the same way.
+In Brain Assistant's chat, **ask for the skill by its name**: "Run Today", "Run Prep". A Custom Agent doesn't run a skill typed as a `/` command: `/Today` isn't recognised there. With personal Instructions, ask by name the same way.
 
 To point at the skill's page instead, **mention it by its link**: open it from your space's Skills database, ••• → Copy link, and paste the link in the chat. Don't pick it from the `@` picker: the picker can offer another space's page with the same name (each space has its own Today, which reads that space's Brain Data), and a freshly duplicated space's skills may not appear there yet.
 
