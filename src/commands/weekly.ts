@@ -1,3 +1,7 @@
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { dirname } from "node:path";
+
 import { readDismissals, schemaProblems } from "../lib/assistant-dismissals.ts";
 import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
@@ -12,8 +16,8 @@ import { requireSuppressions } from "../lib/suppressions.ts";
 import { formatDate, formatTimestamp } from "../lib/time.ts";
 import { computePlan, type PlanData } from "../lib/weekly-plan.ts";
 import { MAX_WORDS, nextState, recordProblems, renderBody, weeklyTitle, type RecordInput } from "../lib/weekly-record.ts";
-import { computeSelection, selectProblems, type SelectInput } from "../lib/weekly-select.ts";
-import { emptyState, mondayOf, readState, serializeState, STATE_PATH } from "../lib/weekly-state.ts";
+import { computeSelection, selectProblems, type SelectInput, type Selection } from "../lib/weekly-select.ts";
+import { emptyState, handoffPaths, mondayOf, readState, serializeState, STATE_PATH } from "../lib/weekly-state.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { readSnapshot } from "./assistant.ts";
 
@@ -25,6 +29,28 @@ function validated<T>(def: string, value: unknown): T {
   return value as T;
 }
 
+// The hand-off files beside the snapshot (cli.md §5.34): written whole through a temporary file, so a reader never sees half of one.
+async function saveHandoff(path: string, value: unknown): Promise<void> {
+  await mkdir(dirname(path), { recursive: true });
+  const temporary = `${path}.${process.pid}.tmp`;
+  await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`);
+  await rename(temporary, path);
+}
+
+/** A saved hand-off file named by the plan's input_hash, checked against its schema and that hash (INPUT_INVALID otherwise). */
+async function readHandoff<T extends { input_hash: string }>(path: string, def: string, hash: string, what: string, again: string): Promise<T> {
+  let value: unknown;
+  try {
+    value = JSON.parse(await readFile(path, "utf8"));
+  } catch {
+    assertNoProblems([{ pointer: "/input_hash", message: `no saved ${what} at ${path}: ${again}` }]);
+  }
+  const validate = loadSchemas().weekly(def);
+  if (!validate(value)) assertNoProblems([{ pointer: "/input_hash", message: `the saved ${what} at ${path} is damaged: ${again}` }]);
+  if ((value as T).input_hash !== hash) assertNoProblems([{ pointer: "/input_hash", message: `the saved ${what} is from another plan (${(value as T).input_hash}): ${again}` }]);
+  return value as T;
+}
+
 /** `brain weekly plan --snapshot <file|-> [--now <ts>]` (cli.md §5.34). */
 export const weeklyPlanCommand: Command = {
   name: "weekly plan",
@@ -33,7 +59,7 @@ export const weeklyPlanCommand: Command = {
   options: { snapshot: "string" },
   maxPositionals: 0,
   needsBrain: true,
-  async run({ args, brain, now }) {
+  async run({ args, brain, environment, now }) {
     if (args.options.snapshot === undefined) throw new BrainError("USAGE", "--snapshot names the Notion snapshot file (brain status's weekly_snapshot)");
     const config = brain!.config;
     const snapshot = readSnapshot(await readJsonInput(args.options.snapshot as string, "weekly plan"), modulesOf(config).tasks);
@@ -43,8 +69,22 @@ export const weeklyPlanCommand: Command = {
     const scanned = await scanNotes(brain!.root);
     const data = computePlan({ snapshot, notes: scanned.notes, loaded: requireSuppressions(brain!.root), config, dismissals: store.entries, state, now });
     const shown = data.findings.filter((finding) => finding.repetition.show).length;
+    const files = handoffPaths(brain!.root, environment.homeDirectory ?? homedir());
+    if (!data.quiet) {
+      // A non-quiet plan replaces the plan file and drops the selection of an earlier plan; a quiet one writes nothing (§5.34).
+      await saveHandoff(files.plan, data);
+      await rm(files.selection, { force: true });
+    }
+    const summary = {
+      week: data.week, as_of: data.as_of, local_date: data.local_date, notion: data.notion, window: data.window, report: data.report,
+      input_hash: data.input_hash, quiet: data.quiet, file: data.quiet ? null : files.plan,
+      counts: {
+        changes: data.changes.length, findings: data.findings.length, findings_shown: shown, clusters: data.clusters.length,
+        clusters_left: data.clusters_left.length, corrections: data.corrections.length, pending: data.pending.length, earlier_open: data.earlier_open,
+      },
+    };
     return {
-      data,
+      data: summary,
       warnings: scanned.problems.map((problem) => ({ code: problem.code, message: `${problem.path}: ${problem.message}`, path: problem.path })),
       human: data.quiet
         ? `${data.week}: quiet, nothing to write.\n`
@@ -61,12 +101,16 @@ export const weeklySelectCommand: Command = {
   options: { input: "string" },
   maxPositionals: 0,
   needsBrain: true,
-  async run({ args, brain }) {
-    const input = validated<SelectInput>("selectInput", await readJsonInput(args.options.input as string | undefined, "weekly select"));
+  async run({ args, brain, environment }) {
+    const raw = validated<Partial<SelectInput> & { input_hash?: string; judged: SelectInput["judged"] }>("selectInput", await readJsonInput(args.options.input as string | undefined, "weekly select"));
+    const files = handoffPaths(brain!.root, environment.homeDirectory ?? homedir());
+    const plan = raw.plan ?? await readHandoff<PlanData>(files.plan, "plan", raw.input_hash!, "plan", "run brain weekly plan again");
+    const input: SelectInput = { plan, judged: raw.judged };
     const { notes } = await scanNotes(brain!.root);
     const byId = new Map(notes.map((note) => [note.id, note]));
     assertNoProblems(selectProblems(input, byId));
     const data = computeSelection(input, byId, readState(brain!.root));
+    await saveHandoff(files.selection, data);
     return { data, human: `${data.items.length} decision items, ${data.queued.length} queued, coverage ${data.coverage}.\n` };
   },
 };
@@ -79,8 +123,17 @@ export const weeklyRecordCommand: Command = {
   options: { input: "string" },
   maxPositionals: 0,
   needsBrain: true,
-  async run({ args, brain, now }) {
-    const input = validated<RecordInput>("recordInput", await readJsonInput(args.options.input as string | undefined, "weekly record"));
+  async run({ args, brain, environment, now }) {
+    const raw = validated<Omit<RecordInput, "plan" | "selection"> & { plan?: PlanData; selection?: Selection; input_hash?: string }>("recordInput", await readJsonInput(args.options.input as string | undefined, "weekly record"));
+    const files = handoffPaths(brain!.root, environment.homeDirectory ?? homedir());
+    const { input_hash: hash, ...rest } = raw;
+    const input: RecordInput = hash === undefined
+      ? rest as RecordInput
+      : {
+          ...rest,
+          plan: await readHandoff<PlanData>(files.plan, "plan", hash, "plan", "run brain weekly plan and select again"),
+          selection: await readHandoff<Selection>(files.selection, "selection", hash, "selection", "run brain weekly select again"),
+        };
     const current = readState(brain!.root);
     const workspace = await Workspace.open(brain!);
     const byId = new Map(workspace.notes.map((note) => [note.id, note]));
@@ -136,6 +189,9 @@ export const weeklyRecordCommand: Command = {
       ["published", input.publish ? "yes" : "no"], ["notes_read", input.notes_read], ["seconds", input.seconds],
     ] as const;
     const result = await workspace.commit([{ op: "weekly", id: "-", title: "", pairs }], now);
+    // The hand-off is done: the report and the state are written (§5.34).
+    await rm(files.plan, { force: true });
+    await rm(files.selection, { force: true });
     return {
       data: { id, path, week: plan.week, coverage, counts, changed: [...result.created, ...result.changed].sort(compareCodePoints) },
       human: `${existing === undefined ? "wrote" : "rewrote"} ${path}: ${counts.decisions} decisions, coverage ${coverage}.\n`,

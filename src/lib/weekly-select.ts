@@ -14,7 +14,7 @@ export interface Item {
   recommendation: { action: string; value: unknown; label: string } | null; finding: JudgedFinding | null;
 }
 export interface Selection {
-  week: string; items: Item[]; queued: Array<{ key: string; category: string }>; counts: Counts; earlier_open: number;
+  week: string; input_hash: string; items: Item[]; queued: Array<{ key: string; category: string }>; counts: Counts; earlier_open: number;
   omitted: { clusters: string[]; correction_targets: number }; coverage: "complete" | "partial";
 }
 
@@ -130,7 +130,7 @@ export function computeSelection(input: SelectInput, notes: ReadonlyMap<string, 
   const judgedSet = new Set(judged.clusters);
   const omittedClusters = [...plan.clusters.filter((cluster) => !judgedSet.has(cluster.key)).map((cluster) => cluster.key), ...plan.clusters_left];
   return {
-    week: plan.week, items, queued, counts, earlier_open: plan.earlier_open,
+    week: plan.week, input_hash: plan.input_hash, items, queued, counts, earlier_open: plan.earlier_open,
     omitted: { clusters: omittedClusters, correction_targets: 0 },
     coverage: omittedClusters.length > 0 ? "partial" : "complete",
   };

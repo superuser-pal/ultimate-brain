@@ -48,6 +48,7 @@ export function recordProblems(input: RecordInput, now: Date, current: WeeklySta
   const problems: InputProblem[] = [];
   const { plan, selection } = input;
   if (selection.week !== plan.week) problems.push({ pointer: "/selection/week", message: `is ${selection.week}, but the plan's week is ${plan.week}` });
+  if (selection.input_hash !== plan.input_hash) problems.push({ pointer: "/selection/input_hash", message: "the selection was made from another plan: select again" });
   if (plan.quiet) problems.push({ pointer: "/plan/quiet", message: "is true: a quiet run writes nothing (weekly-review.md §9.1)" });
   if (isoWeek(localDate(now)) !== plan.week) problems.push({ pointer: "/plan/week", message: `is not this week (${isoWeek(localDate(now))}): plan again` });
   selection.items.forEach((item, index) => { if (item.n !== index + 1) problems.push({ pointer: `/selection/items/${index}/n`, message: `must be ${index + 1}` }); });
