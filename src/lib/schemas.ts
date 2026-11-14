@@ -20,6 +20,8 @@ export interface SchemaSet {
   workflow(def: string): ValidateFunction;
   /** A `$defs` entry of spec/schemas/assistant.schema.json: `snapshot`, `dismissals`, `dismissInput` (spec/assistant.md). */
   assistant(def: string): ValidateFunction;
+  /** A `$defs` entry of spec/schemas/weekly.schema.json: `plan`, `selectInput`, `selection`, `recordInput`, `state`, `attempt` (spec/weekly-review.md). */
+  weekly(def: string): ValidateFunction;
   /** Frontmatter keys each type declares (core + knowledge + type fields). */
   knownKeys(type: string): ReadonlySet<string> | undefined;
 }
@@ -41,6 +43,7 @@ export function loadSchemas(): SchemaSet {
   const linkKit = read("link-kit.schema.json");
   const workflow = read("workflow.schema.json");
   const assistant = read("assistant.schema.json");
+  const weekly = read("weekly.schema.json");
 
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   ajv.addSchema(note);
@@ -51,6 +54,7 @@ export function loadSchemas(): SchemaSet {
   ajv.addSchema(linkKit);
   ajv.addSchema(workflow);
   ajv.addSchema(assistant);
+  ajv.addSchema(weekly);
 
   // A type may declare its own keys inside `allOf` (a Document's origin and promoted_from do), so those count as declared too.
   const keys = (schema: JsonObject | undefined): string[] => [
@@ -74,6 +78,7 @@ export function loadSchemas(): SchemaSet {
     linkKit: ajv.getSchema(linkKit.$id)!,
     workflow: (def) => ajv.getSchema(`${workflow.$id}#/$defs/${def}`)!,
     assistant: (def) => ajv.getSchema(`${assistant.$id}#/$defs/${def}`)!,
+    weekly: (def) => ajv.getSchema(`${weekly.$id}#/$defs/${def}`)!,
     knownKeys: (type) => known.get(type),
   };
   return cached;

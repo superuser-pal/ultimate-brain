@@ -1,0 +1,41 @@
+{
+  "week": "2026-W46",
+  "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "items": [
+    {
+      "n": 1,
+      "key": "task_overdue:notion:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e",
+      "stream": "work",
+      "kind": "Overdue",
+      "category": "overdue",
+      "subject": "\"Send the logo proposals\"",
+      "decide": "new date, Done or Won't Do",
+      "lives": "task",
+      "write": false,
+      "proposal": "prp-7d2k9m4q",
+      "url": "https://www.notion.so/2b8c4d6e1f3a4b5c8d7e9f0a1b2c3d4e",
+      "targets": [
+        "notion:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e"
+      ],
+      "new_items": 0,
+      "because": "new",
+      "evidence_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "days_late": 8,
+      "recommendation": null,
+      "finding": null
+    }
+  ],
+  "queued": [],
+  "counts": {
+    "decisions": 2,
+    "new_items": 1,
+    "targets": 2,
+    "queued": 0
+  },
+  "earlier_open": 1,
+  "omitted": {
+    "clusters": [],
+    "correction_targets": 0
+  },
+  "coverage": "complete"
+}

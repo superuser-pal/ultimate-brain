@@ -77,3 +77,29 @@ export async function logLinesOf(root: string, op: string): Promise<ParsedLogLin
   }
   return lines;
 }
+
+export interface UnattendedWeekly {
+  last: string | null; week: string | null; coverage: string | null; decisions: number; failed: number; failures: string[]; report: string | null;
+  unfinished: { week: string; started: string; mode: string } | null;
+}
+
+/**
+ * The weekly review's last run and an unfinished one (spec/cli.md §5.34, weekly-review.md §9.3, §9.5): from the last `weekly` log line and the
+ * gitignored attempt marker. null when there is neither.
+ */
+export async function weeklyRun(root: string, now: Date, reportOf: (week: string) => string | null, attempt: { week: string; started: string; mode: string } | null): Promise<UnattendedWeekly | null> {
+  const latest = (await logLinesOf(root, "weekly")).at(-1);
+  const unfinished = attempt !== null && now.getTime() - Date.parse(attempt.started) > 2 * 3_600_000 ? attempt : null;
+  if (latest === undefined && attempt === null) return null;
+  const week = latest?.pairs.week ?? null;
+  return {
+    last: latest?.timestamp ?? null,
+    week,
+    coverage: latest?.pairs.coverage ?? null,
+    decisions: latest === undefined ? 0 : count(latest, "decisions"),
+    failed: latest === undefined ? 0 : count(latest, "failed"),
+    failures: (latest?.pairs.failures ?? "").split("; ").map((part) => part.trim()).filter(Boolean),
+    report: week === null || latest?.pairs.coverage === "none" ? null : reportOf(week),
+    unfinished,
+  };
+}

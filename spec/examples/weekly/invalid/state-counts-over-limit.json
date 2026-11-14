@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "last_success": {
+    "week": "2026-W46",
+    "report": "vw-7d2k9m4q",
+    "covered_to": "2026-11-09T07:04:12Z",
+    "covered_on_to": [],
+    "coverage": "complete"
+  },
+  "weeks": {
+    "2026-W46": {
+      "report": "vw-7d2k9m4q",
+      "path": "reports/2026-11-09-weekly-review.md",
+      "window_from": "2026-11-02T07:03:55Z",
+      "window_skip": [
+        "decided:dec-6t3w8k2p"
+      ],
+      "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "counts": {
+        "decisions": 6,
+        "new_items": 1,
+        "targets": 2,
+        "queued": 0
+      },
+      "items": [
+        "task_overdue:notion:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e",
+        "theme:pricing-tiers"
+      ]
+    }
+  },
+  "shown": [
+    {
+      "key": "task_overdue:notion:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e",
+      "week": "2026-W46",
+      "category": "overdue",
+      "evidence_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "days_late": 8
+    },
+    {
+      "key": "theme:pricing-tiers",
+      "week": "2026-W46",
+      "category": "theme",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  ],
+  "queued": [
+    {
+      "key": "area_empty:area-6h3k9p2w",
+      "week": "2026-W46"
+    }
+  ],
+  "carry": {
+    "clusters": [
+      "overtaken:per-4t7x2c9m"
+    ]
+  },
+  "corrections": {
+    "checked_on": "2026-11-09",
+    "done_on_date": [
+      "prj-9x4t1b7e:launch_date"
+    ],
+    "open": [
+      {
+        "claim": "prj-9x4t1b7e:budget",
+        "targets": [
+          "per-3h8w2n6c"
+        ]
+      }
+    ]
+  }
+}

@@ -1,5 +1,4 @@
 import { execFile } from "node:child_process";
-import { createHash } from "node:crypto";
 import { access, constants, lstat, mkdir, readdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -7,12 +6,14 @@ import { promisify } from "node:util";
 
 import type { Command, CommandContext, Warning } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
-import { slugify } from "../lib/paths.ts";
 import { scheduleEntryOf } from "../lib/schedule-entry.ts";
+import { brainLabel, weeklySettings } from "../lib/weekly-state.ts";
 
 /** The jobs a schedule can run, each with its fixed prompt and the skill it needs (spec/cli.md §5.21, decision 0051). Reflection has none in 0.11.0 (0076 §5). */
 const JOBS = {
   "catch-up": { prompt: "catch up unattended", skill: "brain-catch-up" },
+  // The weekly review (0.15.0, weekly-review.md §11): Monday 08:00 by default, capped by --max-budget-usd.
+  "weekly-review": { prompt: "weekly review unattended", skill: "brain-weekly-review" },
 } as const;
 type Job = keyof typeof JOBS;
 
@@ -28,20 +29,28 @@ interface Entry {
   days: Day[] | null;
   model: string;
   prompt: string;
+  /** weekly-review only: the hard ceiling (weekly-review.md §10). */
+  max_budget_usd?: number;
 }
 
 export const scheduleInstallCommand: Command = {
   name: "schedule install",
-  usage: "brain schedule install <job> --at <HH:MM>[,<HH:MM>…] --model <id> [--days <day>[,<day>…]] [--dry-run] [--json]",
+  usage: "brain schedule install <job> --at <HH:MM>[,<HH:MM>…] --model <id> [--days <day>[,<day>…]] [--max-budget-usd <n>] [--dry-run] [--json]",
   summary: "Schedule a skill to run unattended through claude -p: a launchd agent on macOS, a printed cron line elsewhere.",
-  options: { at: "string", model: "string", days: "string", "dry-run": "boolean" },
+  options: { at: "string", model: "string", days: "string", "max-budget-usd": "string", "dry-run": "boolean" },
   maxPositionals: 1,
   needsBrain: true,
   async run(context) {
     const { args, brain } = context;
     const job = readJob(args.positionals[0]);
-    const times = readTimes(args.options.at as string | undefined);
-    const days = readDays(args.options.days as string | undefined);
+    const weekly = job === "weekly-review";
+    // The weekly review's default is Monday at 08:00 local (weekly-review.md §11); catch-up has none.
+    const times = readTimes((args.options.at as string | undefined) ?? (weekly ? "08:00" : undefined));
+    const days = readDays((args.options.days as string | undefined) ?? (weekly ? "mon" : undefined));
+    const budgetOption = args.options["max-budget-usd"] as string | undefined;
+    if (budgetOption !== undefined && !weekly) throw new BrainError("USAGE", "--max-budget-usd is for the weekly-review job only");
+    if (budgetOption !== undefined && !(/^\d+(\.\d+)?$/.test(budgetOption) && Number(budgetOption) > 0)) throw new BrainError("USAGE", "--max-budget-usd needs a positive number, e.g. 3");
+    const budget = weekly ? (budgetOption === undefined ? weeklySettings(brain!.config).max_usd : Number(budgetOption)) : undefined;
     const model = args.options.model as string | undefined;
     if (model === undefined || !/^claude-[a-z0-9][a-z0-9.-]*$/.test(model)) {
       throw new BrainError("USAGE", "--model needs a full Claude model id, e.g. claude-sonnet-5-5: a schedule pins its model (decision 0051)");
@@ -55,11 +64,13 @@ export const scheduleInstallCommand: Command = {
     if (claude === null) throw new BrainError("CLAUDE_NOT_FOUND", "No claude on PATH: install Claude Code, then schedule again");
     const brainBin = await which("brain", env.PATH);
     const path = unique([dirname(claude), dirname(process.execPath), ...(brainBin === null ? [] : [dirname(brainBin)]), ...SYSTEM_PATH.split(":")]).join(":");
-    const entry: Entry = { brain: root, job, times, days, model, prompt: JOBS[job].prompt };
-    const command = [claude, "-p", entry.prompt, "--model", model];
+    const entry: Entry = { brain: root, job, times, days, model, prompt: JOBS[job].prompt, ...(budget === undefined ? {} : { max_budget_usd: budget }) };
+    const command = [claude, "-p", entry.prompt, "--model", model, ...(budget === undefined ? [] : ["--max-budget-usd", String(budget)])];
     const label = labelFor(root, job);
     const dryRun = args.options["dry-run"] === true;
     const base = { job, label, times, days, model, prompt: entry.prompt, command };
+    // claude -p ignores an untrusted folder's allow rules (cli.md §5.21 Folder trust; weekly-review.md §11).
+    const trust: Warning[] = weekly ? [{ code: "FOLDER_TRUST", message: `Open Claude Code in ${root} once and accept the trust dialog, or the scheduled run can't use the brain's allow rules.` }] : [];
 
     if (platformOf(env) !== "darwin") {
       const log = `$HOME/.ultimate-brain/logs/${label}.log`;
@@ -68,7 +79,7 @@ export const scheduleInstallCommand: Command = {
         const dow = days === null ? "*" : days.map((day) => DAYS.indexOf(day)).join(",");
         return `${minute} ${hour} * * ${dow} mkdir -p "$HOME/.ultimate-brain/logs" && cd ${shellQuote(root)} && PATH=${shellQuote(path)} ${command.map(shellQuote).join(" ")} >> "${log}" 2>&1`;
       });
-      return { data: { ...base, platform: platformOf(env), path: null, written: false, replaced: false, loaded: false, cron, dry_run: dryRun }, human: `${cron.join("\n")}\n` };
+      return { data: { ...base, platform: platformOf(env), path: null, written: false, replaced: false, loaded: false, cron, dry_run: dryRun }, warnings: trust, human: `${cron.join("\n")}\n` };
     }
 
     const agents = agentsDir(context);
@@ -78,7 +89,7 @@ export const scheduleInstallCommand: Command = {
     await refuseInside(root, logs);
     await refuseLink(file);
     const replaced = await exists(file);
-    const warnings: Warning[] = [];
+    const warnings: Warning[] = [...trust];
     let loaded = false;
     if (!dryRun) {
       await mkdir(agents, { recursive: true });
@@ -177,8 +188,7 @@ function readDays(value: string | undefined): Day[] | null {
 
 /** `eu.ultimate-brain.<folder>-<hash>.<job>`: one entry per brain and job (spec/cli.md §5.21). */
 function labelFor(root: string, job: string): string {
-  const hash = createHash("sha256").update(root).digest("hex").slice(0, 8);
-  return `eu.ultimate-brain.${slugify(basename(root)) || "brain"}-${hash}.${job}`;
+  return `eu.ultimate-brain.${brainLabel(root)}.${job}`;
 }
 
 function plist(label: string, entry: Entry, command: readonly string[], path: string, log: string): string {

@@ -4,3 +4,5 @@
 node_modules/
 # temp files from interrupted atomic writes
 .*.tmp
+# the weekly review's attempt marker (weekly-review.md §9.5)
+_weekly/attempt.json

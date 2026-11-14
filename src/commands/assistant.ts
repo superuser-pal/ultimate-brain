@@ -32,7 +32,7 @@ function unreadable(problems: readonly string[]): never {
 }
 
 /** Validate the snapshot (schema, then the Tasks module, cli.md §5.31) and truncate its timestamps to seconds (§3.1). */
-function readSnapshot(value: unknown, tasksOn: boolean): Snapshot {
+export function readSnapshot(value: unknown, tasksOn: boolean): Snapshot {
   const validate = loadSchemas().assistant("snapshot");
   if (!validate(value)) assertNoProblems(schemaProblems(validate.errors));
   const snapshot = value as Snapshot;

@@ -28,14 +28,14 @@ Both modes run the same steps and write the same things. The one difference is t
 
 **Steps** (normative order):
 1. **Preconditions.** `brain status --json`. Off the working branch, the run stops as unattended catch-up does (cli.md §6.1, 0086 §2): it writes nothing, and its last line is `Not run: off-working-branch. …`.
-2. **Read Notion live** into the assistant snapshot (assistant.md §2.1). Notion unreachable means brain only (assistant.md §2.3), and that is a **failure** for this run (§9.4). It is not a reason to stop.
-3. **Candidates** (deterministic, no model judgment): `brain weekly plan --snapshot <file>` (cli.md §5.34). It returns the week, the window, the What changed candidates (§4), the assistant findings (`brain assistant findings`' rules, every finding, not a page of 10), the reflection clusters (`brain reflect --candidates`' rules), the correction queue (§8), the repetition state of each candidate (§7), the pending proposals it already has, and `quiet`.
+2. **Read Notion live** into the assistant snapshot (assistant.md §2.1), saving the MCP results to files and reading them with `jq` rather than into the context (§12), and write the snapshot with the file-writing tool to the `weekly_snapshot` path of `brain status` (cli.md §5.34: outside the brain, one per brain, overwritten each run). Notion unreachable means brain only (assistant.md §2.3), and that is a **failure** for this run (§9.4). It is not a reason to stop.
+3. **Candidates** (deterministic, no model judgment): `brain weekly plan --snapshot <file>` (cli.md §5.34). It saves the plan as a hand-off file next to the snapshot and prints a short summary (`week`, `quiet`, `input_hash`, the file's path and counts); the skill reads the file in parts with its file-reading tool, never as command output (a large brain's plan is far above the 30k Bash output limit, and a scheduled run's allow list can't read Claude Code's saved outputs back). The plan holds the week, the window, the What changed candidates (§4), the assistant findings (`brain assistant findings`' rules, every finding, not a page of 10), the reflection clusters (`brain reflect --candidates`' rules), the correction queue (§8), the repetition state of each candidate (§7), the pending proposals it already has, and `quiet`.
 4. **Quiet?** When `quiet` is true and step 2 didn't fail, the run stops: **no report, no commit, no Notion call after the reads, no log line, no state write** (0075 §5, 0051). §9.1 defines quiet.
 5. **Attempt marker.** The run writes `_weekly/attempt.json` (§9.5), which is gitignored. It marks the first write that isn't a no-op, so a run killed after this point can be seen.
 6. **Judge** (the model's work, within the budget of §12): the reflection clusters in rank order, as cli.md §6.2 step 2 judges them, and the correction targets of the queue (§8.2). The deadline is checked before each cluster or target. When the budget runs out, the run stops judging and goes on to step 7 with what it has; the run is then **partial** (§10).
-7. **Select** (deterministic): `brain weekly select --input <judged>` applies the limits (§5), repetition and dismissals (§7), and the priority order. It returns the decision items, the queued remainder and the counts.
+7. **Select** (deterministic): `brain weekly select --input <judged>`, the input naming the plan by its `input_hash` (no copy of the plan), applies the limits (§5), repetition and dismissals (§7), and the priority order. It returns the decision items, the queued remainder and the counts, and saves them as a second hand-off file.
 8. **Write the proposals** for new decision items (§6.2): `brain proposal new`, all `pending`, nothing applied.
-9. **Write the report**: the skill writes the What changed and Task analysis prose from step 3's candidates (§3). `brain weekly record --input` renders What needs your decision from step 7, checks the shape (§3.4), writes the report (§2), updates `_weekly/state.json`, and logs. Then `brain index`, `brain views`, `brain lint`, and a commit of exactly the paths written.
+9. **Write the report**: the skill writes the What changed and Task analysis prose from step 3's candidates (§3). `brain weekly record --input`, naming the plan by its `input_hash` and carrying only the proposals and the prose, reads the two hand-off files, renders What needs your decision from step 7, checks the shape (§3.4), writes the report (§2), updates `_weekly/state.json`, logs, and removes the hand-off files. Then `brain index`, `brain views`, `brain lint`, and a commit of exactly the paths written.
 10. **Publish** (§9.3), then `brain sync record`, commit, push per `settings.push`, and remove the attempt marker.
 
 **It never:** applies a proposal, including one the user already approved (that is catch-up's job, 0075 §6); runs catch-up or ingests an input; writes a Notion-owned field; asks a question unattended; or starts a research agent or a sub-agent (0075 §7).
@@ -85,6 +85,7 @@ Order of attention:
 The example's counts (§5.1): D = 4 items; I = 2 (the group's two admitted targets) + 1 + 1 = 4 new Review items; T = 2 + 1 (the task) + 1 + 1 = 5 targets. T is full, so §5.2 admits the group in part (2 of its 3 targets; the third stays queued under its claim) and queues the next candidate, a structure finding that needs a target, with the rest.
 
 ### 3.1 The header (two lines)
+Rendered by `brain weekly record` from `plan`'s and `select`'s data, never by the skill.
 - Line 1: `Week of <D Mon YYYY of the Monday> · changes since <D a Mon HH:MM local of window.from>` (on a first run, `· first review, last 7 days`), then `· Notion read live` or `· Notion unreachable: brain only`.
 - Line 2: the coverage statement (§4.3), then, when any apply, `<n> more decisions wait in Review from earlier weeks.` (§7) and `Partial: <what was left> (§10).`
 
@@ -111,8 +112,9 @@ With no item, the section is `- Nothing needs your decision this week.`.
 ## 4. The change window and coverage
 
 ### 4.1 The window
-- **Clusters in the window.** `plan` passes the reflection clusters whose members were `updated`, or whose inputs are dated, between `window.from` and `window.to` (§12, the trials). Other clusters are not this week's: they are not omitted, and the attended brain-reflect still sees them.
+- **Clusters in the window.** `plan` passes the reflection clusters whose members were `updated`, or whose inputs are dated, between `window.from` and `window.to` (§12, the trials), compared as UTC dates, both ends included. Other clusters are not this week's: they are not omitted, and the attended brain-reflect still sees them. `plan` passes at most `settings.weekly.max_judged` of them, carried ones first (§10); the window's clusters beyond that are listed in `clusters_left`, and a run omits and carries them (§10) as it does the ones it had no budget to judge.
 - `window.from` is `covered_to` of the **last successful report of an earlier week** in `_weekly/state.json` (§9.5). With none (a first run), it is `as_of` minus 7 days (0075 §1). A rerun in the same week keeps this week's `from`.
+- **The boundary day.** Changes are dated (§4.2), and `from` is a timestamp. A change is in the window when its date is after the UTC date of `from`, or on it and not covered by the report that ended there: that report's state lists the keys it covered dated on that day (`covered_on_to`, kept for a rerun as `window_skip`, §9.5). On a first run, a change dated on `from`'s date is in. So a change made on Monday after the run is next week's, and one the run covered is not repeated.
 - `window.to` is `as_of`.
 - What changed is never cut by the budget: it is deterministic, and every change in the window is covered, as a bullet or by count (§4.3). `covered_to` is therefore always `window.to` of a report that was written. A partial run omits **judgments** only (clusters and correction targets, §10), and those are carried forward explicitly, so nothing omitted is silently marked as handled (0075 §1).
 
@@ -189,13 +191,13 @@ An `add_task` recommendation can't be an item: it needs the user's words (assist
 
 ## 7. Repetition, dismissals and postponements
 
-0075 §3. `_weekly/state.json` `shown` remembers, per **finding key** (the assistant key, the reflection fingerprint, or `correction:<claim key>`), the last week it was a decision item, its category, and an `evidence_hash`: the sha256 of the finding's evidence object, or of the cluster's `evidence` ids.
+0075 §3. `_weekly/state.json` `shown` remembers, per **finding key** (the assistant key, the reflection fingerprint, or `correction:<claim key>`), the last week it was a decision item, its category, and an `evidence_hash`: the sha256 of the finding's evidence object without the counters `days_late` and `days_idle` (they grow every day; rule 3 below weighs them), or of the judged finding's `evidence` ids, sorted. A finding a report listed only in Task analysis (it has no recommendation a Review row or a task can carry) is recorded the same way, so it doesn't keep a later week from being quiet (§9.1).
 
 A finding shown before is a decision item again **only when one of these holds**:
 1. **Its evidence changed:** the `evidence_hash` differs (a new input, a new date).
 2. **It became newly overdue:** its category is now `overdue` and wasn't then.
 3. **Its urgency rose materially:** a `task_overdue` whose `days_late` has crossed a step since it was shown (7, 14, 28, then every 28), or a stalled finding whose `days_idle` has doubled.
-4. **It is an unresolved critical knowledge problem:** a contradiction on a `reviewed` note, or a correction group with targets still queued. These stay visible every week while unresolved (0075 §3).
+4. **It is an unresolved critical knowledge problem:** a contradiction on a `reviewed` note, or a correction group with targets still queued. These stay visible every week while unresolved (0075 §3). A pending `contradiction` proposal on a `reviewed` note is such an item even in a week whose window holds no cluster that finds it again: `select` takes it from `plan.pending`, linking its row (kind Contradiction, subject the proposal's title), and `plan` doesn't call that week quiet.
 
 Otherwise it is not an item. It is counted in `<n> earlier findings are still open in Review.` when its proposal is pending, and is otherwise just not shown.
 
@@ -256,7 +258,7 @@ A run that is **not** quiet because of a failure alone (Notion unreachable with 
 
 ### 9.2 Files
 - the report (§2), `_weekly/state.json`, the new proposals, and a draft learned Document for a theme (an addition, as 0051 allows);
-- the log line: `weekly - mode=<attended|unattended> week=<YYYY-Www> coverage=<complete|partial|none> decisions=<n> new_items=<n> targets=<n> queued=<n> changes=<n> failed=<n>[ failures="<reason>; …"] published=<yes|no> notes_read=<n> seconds=<s>` (cli.md §3.9).
+- the log line (`published` is whether the run publishes the report, as `record`'s input says; it is refused with Reports off, §9.3): `weekly - mode=<attended|unattended> week=<YYYY-Www> coverage=<complete|partial|none> decisions=<n> new_items=<n> targets=<n> queued=<n> changes=<n> failed=<n>[ failures="<reason>; …"] published=<yes|no> notes_read=<n> seconds=<s>` (cli.md §3.9).
 
 ### 9.3 Delivery and publishing (0075 §5, 0093 §3)
 | Reports | `settings.publish` | The report | Review rows |
@@ -277,8 +279,8 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
 ```json
 {
   "version": 1,
-  "last_success": { "week": "2026-W46", "report": "vw-7d2k9m4q", "covered_to": "2026-11-09T07:04:12Z", "coverage": "complete" },
-  "weeks": { "2026-W46": { "report": "vw-7d2k9m4q", "window_from": "2026-11-02T07:03:55Z", "input_hash": "sha256:…", "counts": { "decisions": 4, "new_items": 4, "targets": 5, "queued": 5 }, "items": ["correction:knw-…:budget", "task_overdue:notion:…"] } },
+  "last_success": { "week": "2026-W46", "report": "vw-7d2k9m4q", "covered_to": "2026-11-09T07:04:12Z", "covered_on_to": [], "coverage": "complete" },
+  "weeks": { "2026-W46": { "report": "vw-7d2k9m4q", "path": "reports/2026-11-09-weekly-review.md", "window_from": "2026-11-02T07:03:55Z", "window_skip": [], "input_hash": "sha256:…", "counts": { "decisions": 4, "new_items": 4, "targets": 5, "queued": 5 }, "items": ["correction:knw-…:budget", "task_overdue:notion:…"] } },
   "shown": [ { "key": "task_overdue:notion:2b8c…", "week": "2026-W46", "category": "overdue", "evidence_hash": "sha256:…", "days_late": 8 } ],
   "queued": [ { "key": "area_empty:area-…", "week": "2026-W46" } ],
   "carry": { "clusters": ["overtaken:per-…"] },
@@ -286,7 +288,7 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
 }
 ```
 
-- `weeks` keeps the last 8 weeks, and `shown` keeps entries from the last 26 weeks; older ones are dropped at each write. Lint checks the file (`weekly-state`: schema, unique keys).
+- `weeks` keeps the last 8 weeks, and `shown` keeps entries from the last 26 weeks; older ones are dropped at each write. Lint checks the file (`weekly-state`: schema, unique keys). The shape is `$defs/state` of `spec/schemas/weekly.schema.json`; `covered_on_to` and `window_skip` are the boundary day's keys (§4.1).
 - A missing file means a first run. A damaged file fails `plan` with `WEEKLY_STATE_UNREADABLE`, rather than repeat every finding.
 - **`_weekly/attempt.json`**, gitignored (the brain template's `.gitignore` and `brain upgrade`), is `{ "week", "started", "mode" }`. The skill writes it at step 5 and removes it after step 10. `brain status` reports a marker older than 2 hours as `unattended.weekly.unfinished`. A killed run (a budget ceiling, a closed laptop) is therefore seen.
 
@@ -305,9 +307,10 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
 - **The skill's "Run on a schedule" section** ("review my week every Monday") asks what is missing once: the time if not 08:00, and the model. It offers **Sonnet by default** (0093 §4; `claude-sonnet-<current>` as a full id), and the user may pick another. It then offers, once each:
   - **Reports**, when off: `Turn on Reports so each week's review appears in Notion?` On a yes, the module is turned on with notion/modules/reports.md. On a no, it says the review stays a file in the brain, with a summary at the next session (0093 §3).
   - **`settings.publish: auto`**, when `ask`, as catch-up's offer does.
-  - **The tools it may use**, as catch-up's offer does.
+  - **The tools it may use**, as catch-up's offer does: `Bash(brain:*)`, `Bash(git:*)`, `Read`, `Edit`, `Write` and the Notion read tools, plus `Read(~/.ultimate-brain/weekly/**)` and `Edit(~/.ultimate-brain/weekly/**)` for the snapshot file (cli.md §5.34). No other Notion write than the publish of §9.3.
 
   It then installs with `--max-budget-usd` from §12, and writes `settings.weekly.schedule: on`.
+- **The brain folder must be trusted in Claude Code**: `claude -p` ignores the allow rules of a folder's `.claude/settings.json` until Claude Code has been opened there interactively once and its trust dialog accepted (found by CC-253's `claude -p` test). `brain schedule install weekly-review` says so every time (warning `FOLDER_TRUST`, cli.md §5.21), and the skill's schedule section passes it on: open Claude Code in the brain folder once and accept the trust dialog before the first scheduled run.
 - This contract installs no schedule in any brain (0075 §6).
 
 ## 12. Resource budgets and the model default (from the trials)
@@ -326,7 +329,7 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
 - **The judging varied.** Sonnet judged 30 clusters in one run and 6 in the other, and read 3 to 4 notes. Opus read 19 and gave the most specific reasons in Task analysis. The deterministic half removes most of that variation.
 - **Clusters must be limited to the window.** 360 clusters against a cap of 30 would make nearly every week partial. `plan` therefore passes only the clusters whose members were `updated`, or whose inputs are dated, within the window (§4.1), and omission (§10) counts among those alone.
 - **Every run drafted more than 450 words** (468 to 526). The word cap stays (§3.4): `record` refuses, and the skill shortens.
-- **Known limit:** the prototype passed the snapshot to `brain assistant findings` through a stdin heredoc, which the read-only allowlist refused. Each run worked out its task findings from the same rows by hand. The cost of that CLI call (no model tokens) is therefore not in the table.
+- **The snapshot hand-off:** the prototype passed the snapshot to `brain assistant findings` through a stdin heredoc, which the read-only allowlist refused, so each run worked out its task findings from the same rows by hand, and the cost of that CLI call (no model tokens) is not in the table. The skill therefore writes the snapshot to a file outside the brain and `plan` reads it by path (§1 step 2, cli.md §5.34), under the allow rules of §11. CC-253's `claude -p` test found the same limit downstream: a large brain's plan is far above the 30k Bash output limit, whose saved output the allow list can't read, and embedding the plan in `select`'s and `record`'s inputs would have the model write it back twice. So the CLI keeps its own hand-off files beside the snapshot, and the model reads the plan from one and names it by `input_hash` (§1 steps 3, 7, 9).
 
 **The defaults** (schema §12 `settings.weekly`):
 
