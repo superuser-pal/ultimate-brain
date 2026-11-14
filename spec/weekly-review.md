@@ -191,13 +191,13 @@ An `add_task` recommendation can't be an item: it needs the user's words (assist
 
 ## 7. Repetition, dismissals and postponements
 
-0075 §3. `_weekly/state.json` `shown` remembers, per **finding key** (the assistant key, the reflection fingerprint, or `correction:<claim key>`), the last week it was a decision item, its category, and an `evidence_hash`: the sha256 of the finding's evidence object, or of the cluster's `evidence` ids.
+0075 §3. `_weekly/state.json` `shown` remembers, per **finding key** (the assistant key, the reflection fingerprint, or `correction:<claim key>`), the last week it was a decision item, its category, and an `evidence_hash`: the sha256 of the finding's evidence object without the counters `days_late` and `days_idle` (they grow every day; rule 3 below weighs them), or of the judged finding's `evidence` ids, sorted. A finding a report listed only in Task analysis (it has no recommendation a Review row or a task can carry) is recorded the same way, so it doesn't keep a later week from being quiet (§9.1).
 
 A finding shown before is a decision item again **only when one of these holds**:
 1. **Its evidence changed:** the `evidence_hash` differs (a new input, a new date).
 2. **It became newly overdue:** its category is now `overdue` and wasn't then.
 3. **Its urgency rose materially:** a `task_overdue` whose `days_late` has crossed a step since it was shown (7, 14, 28, then every 28), or a stalled finding whose `days_idle` has doubled.
-4. **It is an unresolved critical knowledge problem:** a contradiction on a `reviewed` note, or a correction group with targets still queued. These stay visible every week while unresolved (0075 §3).
+4. **It is an unresolved critical knowledge problem:** a contradiction on a `reviewed` note, or a correction group with targets still queued. These stay visible every week while unresolved (0075 §3). A pending `contradiction` proposal on a `reviewed` note is such an item even in a week whose window holds no cluster that finds it again: `select` takes it from `plan.pending`, linking its row (kind Contradiction, subject the proposal's title), and `plan` doesn't call that week quiet.
 
 Otherwise it is not an item. It is counted in `<n> earlier findings are still open in Review.` when its proposal is pending, and is otherwise just not shown.
 
@@ -310,6 +310,7 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
   - **The tools it may use**, as catch-up's offer does: `Bash(brain:*)`, `Bash(git:*)`, `Read`, `Edit`, `Write` and the Notion read tools, plus `Read(~/.ultimate-brain/weekly/**)` and `Edit(~/.ultimate-brain/weekly/**)` for the snapshot file (cli.md §5.34). No other Notion write than the publish of §9.3.
 
   It then installs with `--max-budget-usd` from §12, and writes `settings.weekly.schedule: on`.
+- **The brain folder must be trusted in Claude Code**, as for catch-up's schedule: `claude -p` ignores the allow rules of a folder's `.claude/settings.json` until Claude Code has been opened there interactively once and its trust dialog accepted (found by CC-253's `claude -p` test). The skill's schedule offer says so when it can't tell.
 - This contract installs no schedule in any brain (0075 §6).
 
 ## 12. Resource budgets and the model default (from the trials)
