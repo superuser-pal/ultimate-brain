@@ -186,14 +186,16 @@ export function lintBrain(input: LintInput): Issue[] {
       }
     }
     const bodyStart = bodyLineOffset(note);
+    // A source and a whole Document are someone else's text, kept as it is: 0002's checks judge only what the brain writes (0091).
+    const keptText = note.type === "source" || (note.type === "reference" && a.origin === "whole");
     for (const [index, raw] of proseLines(note.body)) {
       const line = bodyStart + index;
-      if (raw.includes("[[")) err("wikilink", line, "use a relative Markdown link, not [[wikilinks]] (0002)");
-      for (const match of raw.matchAll(/\^\[([^\]]*)\]/g)) {
+      if (!keptText && raw.includes("[[")) err("wikilink", line, "use a relative Markdown link, not [[wikilinks]] (0002)");
+      if (!keptText) for (const match of raw.matchAll(/\^\[([^\]]*)\]/g)) {
         // `^[src-…#¶n:hash]` is the passage reference of a claim written from an extract (0055, capture-and-review §5.1).
         if (match[1] !== "inferred" && match[1] !== "ambiguous" && !/^src-[0-9a-z]{8}#¶\d+:[0-9a-f]{8}$/.test(match[1] ?? "")) err("unknown-marker", line, `^[${match[1]}] is not a provenance marker (0004)`);
       }
-      for (const target of linkTargets(raw)) {
+      if (!keptText) for (const target of linkTargets(raw)) {
         if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) continue;
         const resolved = posix.normalize(posix.join(posix.dirname(note.path), decodePath(target.split(/[?#]/)[0]!)));
         if (resolved.startsWith("../") || !exists(resolved)) err("broken-link", line, `link target ${target} does not exist`);
@@ -315,6 +317,15 @@ export function lintBrain(input: LintInput): Issue[] {
       for (const entry of list(a.items) as Array<{ item_id?: string; kind?: string; ref?: unknown }>) {
         if (typeof entry.item_id !== "string" || seenIds.has(entry.item_id)) err("proposal-items", lineOfKey(note, "items"), `item id ${String(entry.item_id)} is missing or used twice`);
         else seenIds.add(entry.item_id);
+        // A grouped link item (0.15.0, schema §11) covers each of its indexes; they share one target and field.
+        if (entry.kind === "link" && Array.isArray(entry.ref)) {
+          const refs = entry.ref as unknown[];
+          const members = refs.map((ref) => (Number.isInteger(ref) ? links[ref as number] : undefined));
+          const first = members[0] as Record<string, unknown> | undefined;
+          if (refs.length === 0 || members.some((member) => member === undefined || !isRecord2(member) || (member as Record<string, unknown>).target !== first?.target || (member as Record<string, unknown>).field !== first?.field)) err("proposal-items", lineOfKey(note, "items"), `item ${String(entry.item_id)} groups links that are missing or don't share one target and field`);
+          for (const ref of refs) { const key = `link:${String(ref)}`; if (covered.has(key)) err("proposal-items", lineOfKey(note, "items"), `${key} has two items`); covered.add(key); }
+          continue;
+        }
         const key = `${entry.kind}:${String(entry.ref)}${entry.kind === "restore" ? `:${String((entry as { n?: unknown }).n)}` : ""}`;
         const resolves = ["remove", "restore", "independence"].includes(String(entry.kind)) ? isRecord2(a.cleanup) && byId.get(String(entry.ref)) !== undefined : entry.kind === "note" ? notes.includes(String(entry.ref)) : entry.kind === "link" ? Number.isInteger(entry.ref) && (entry.ref as number) < links.length : entry.kind === "change" && Number.isInteger(entry.ref) && (entry.ref as number) < changes.length;
         if (!resolves) err("proposal-items", lineOfKey(note, "items"), `item ${String(entry.item_id)} refers to ${key}, which this proposal does not hold`);

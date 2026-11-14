@@ -278,6 +278,10 @@
           "type": "boolean",
           "description": "Review has the Decided property (migration 0013 or a fresh setup, decision 0055): a Review row from a source is rendered as a page with one section per change. Absent or false: the row keeps the old layout (Proposed property with the detail, Your call, What to fix). A row published before keeps its layout either way."
         },
+        "review_format": {
+          "enum": [1, 2],
+          "description": "The format of a new Review page with sections (capture-and-review §7.12.1). Absent or 2: the page of 0.15.0. 1: the page of 0.8.0 to 0.14.0, and no rebuild. A row published before keeps its format either way."
+        },
         "tasks": {
           "type": "object",
           "required": [
