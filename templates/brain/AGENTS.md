@@ -25,6 +25,7 @@ Each operation has a skill; follow it end to end:
 | take an existing project's plans and tasks (a Markdown plan, issues, Notion tasks) into a connected workflow | `brain-workflow-adopt` |
 | review the structure of your work: what's overdue, stalled, missing a next step or misplaced, and turn your thoughts into tasks, projects and captures | `ultimate-assistant` (delegated to the sub-agent: say `report only`) |
 | tidy the brain: contradictions, duplicates, stale facts and recurring themes in your notes | `brain-reflect` |
+| review the week: what changed, the task analysis and at most five decisions ("weekly review"); the rest that waited, the notes that still say a corrected value, or the Monday schedule | `brain-weekly-review` |
 | learn how the system works ("how do I…", "why didn't…") | `brain-howto` |
 | change the Notion structure (databases, properties, views) | `brain-notion-change`; structure is changed in the product repo first, never edited directly in Notion (0022) |
 | change how the brain talks to them ("talk to me more simply", "shorter answers", "go back to normal") | `brain-setup` ("Changing the response style") |
