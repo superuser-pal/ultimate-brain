@@ -1,11 +1,14 @@
 import { execFile } from "node:child_process";
-import { readFile, realpath, stat } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { readdir, readFile, realpath, stat } from "node:fs/promises";
+import { homedir } from "node:os";
+import { basename, dirname, join, resolve } from "node:path";
 import { promisify } from "node:util";
 
 import { isRecord } from "./input.ts";
 import { databaseId, MODULES, missingFor, modulesOf } from "./modules.ts";
 import type { Note } from "./notes.ts";
+import { slugify } from "./paths.ts";
+import { scheduleEntryOf } from "./schedule-entry.ts";
 import { expandPath, workTreeTop } from "./repos.ts";
 import { logLinesOf } from "./runs.ts";
 
@@ -59,13 +62,30 @@ export interface SetupStatus {
   required: { done: number; total: number };
   next: string | null;
   finished: boolean;
+  drop_folder: DropFolderProposal;
 }
+
+/** Another brain the machine knows, and the drop folder it reads (cli.md §5.2). */
+export interface OtherBrain {
+  brain: string;
+  folder: string;
+}
+
+/** The drop folder the settings screen proposes, so no two brains on a machine read one folder (cli.md §5.2, setup.md §7 item 4). */
+export interface DropFolderProposal {
+  proposed: string;
+  exists: boolean;
+  default_read_by: string | null;
+  others: OtherBrain[];
+}
+
+const DEFAULT_DROP_FOLDER = "brain-dropbox";
 
 /**
  * `brain status`'s `setup` block (spec/cli.md §5.2, spec/setup.md §5), computed offline: Git is read only through
  * `git config` and `git remote get-url origin` in the brain folder.
  */
-export async function setupStatus(root: string, config: Record<string, unknown>, notes: readonly Note[], home?: string): Promise<SetupStatus> {
+export async function setupStatus(root: string, config: Record<string, unknown>, notes: readonly Note[], home?: string, env: NodeJS.ProcessEnv = {}): Promise<SetupStatus> {
   const rules = await myRules(root);
   const checks: SetupChecks = {
     git_identity: (await gitValue(root, ["config", "--get", "user.name"])) !== "" && (await gitValue(root, ["config", "--get", "user.email"])) !== "",
@@ -105,6 +125,7 @@ export async function setupStatus(root: string, config: Record<string, unknown>,
     next: items.find((item) => !doneOf(item)) ?? null,
     // A brain connected to Notion before 0.14.0 has no setup line, and may lack the Language and Drop folder lines (setup.md §5).
     finished: lines.some((line) => line.pairs.step === "finished") || (lines.length === 0 && checks.databases && checks.owner_person),
+    drop_folder: await dropFolderProposal(root, home ?? homedir(), env),
   };
 }
 
@@ -178,15 +199,102 @@ async function myRules(root: string): Promise<string[]> {
   return rest.split("\n").map((line) => line.trimStart());
 }
 
-/** The first `Drop folder:` line's path (`~` expanded, backticks removed) is an existing folder. */
-async function dropFolderExists(rules: readonly string[], root: string, home?: string): Promise<boolean> {
+/** The first `Drop folder:` line's path (`~` expanded, backticks removed, relative to the brain folder); null without one. */
+function dropFolderOf(rules: readonly string[], root: string, home?: string): string | null {
   const line = rules.find((candidate) => candidate.startsWith("Drop folder:"));
-  if (line === undefined) return false;
+  if (line === undefined) return null;
   const path = line.slice("Drop folder:".length).replaceAll("`", "").trim();
-  if (path === "") return false;
+  return path === "" ? null : resolve(root, expandPath(path, home));
+}
+
+/** The first `Drop folder:` line's path is an existing folder. */
+async function dropFolderExists(rules: readonly string[], root: string, home?: string): Promise<boolean> {
+  const path = dropFolderOf(rules, root, home);
+  return path !== null && await isDirectory(path);
+}
+
+async function isDirectory(path: string): Promise<boolean> {
   try {
-    return (await stat(resolve(root, expandPath(path, home)))).isDirectory();
+    return (await stat(path)).isDirectory();
   } catch {
     return false;
   }
+}
+
+/** A path symlink-resolved when it exists, else as given (absolute). */
+async function canonical(path: string): Promise<string> {
+  try {
+    return await realpath(path);
+  } catch {
+    return resolve(path);
+  }
+}
+
+/**
+ * The drop folder to propose (cli.md §5.2, setup.md §7 item 4): `~/Documents/brain-dropbox/`, else one named after this
+ * brain, skipping every folder another brain the machine knows reads.
+ */
+async function dropFolderProposal(root: string, home: string, env: NodeJS.ProcessEnv): Promise<DropFolderProposal> {
+  const others = await otherBrains(root, home, env);
+  const read = new Set(others.map((other) => other.folder));
+  const slug = slugify(basename(root)) || "brain";
+  const seen = new Set<string>();
+  let defaultReadBy: string | null = null;
+  for (let n = 0; ; n += 1) {
+    const name = n === 0 ? DEFAULT_DROP_FOLDER : `${slug}${n === 1 ? "" : `-${n}`}-dropbox`;
+    if (seen.has(name)) continue;
+    seen.add(name);
+    const folder = await canonical(join(home, "Documents", name));
+    if (n === 0) defaultReadBy = others.find((other) => other.folder === folder)?.brain ?? null;
+    if (read.has(folder)) continue;
+    return { proposed: `~/Documents/${name}/`, exists: await isDirectory(folder), default_read_by: defaultReadBy, others };
+  }
+}
+
+/** The other brains the machine knows, with a drop folder: the default brain and each scheduled brain (cli.md §5.2). */
+async function otherBrains(root: string, home: string, env: NodeJS.ProcessEnv): Promise<OtherBrain[]> {
+  const self = await canonical(root);
+  const candidates = [await defaultBrain(home), ...await scheduledBrains(home, env)].filter((brain): brain is string => brain !== null);
+  const found = new Map<string, OtherBrain>();
+  for (const candidate of candidates) {
+    const brain = await canonical(candidate);
+    if (brain === self || found.has(brain) || !await isDirectory(brain)) continue;
+    const path = dropFolderOf(await myRules(brain), brain, home);
+    if (path === null) continue;
+    found.set(brain, { brain, folder: await canonical(path) });
+  }
+  return [...found.values()].sort((a, b) => a.brain.localeCompare(b.brain));
+}
+
+/** `brain` in `~/.config/ultimate-brain/config.json`, resolved as cli.md §4 does; null when absent or unreadable. */
+async function defaultBrain(home: string): Promise<string | null> {
+  const path = join(home, ".config", "ultimate-brain", "config.json");
+  try {
+    const parsed: unknown = JSON.parse(await readFile(path, "utf8"));
+    if (!isRecord(parsed) || typeof parsed.brain !== "string" || parsed.brain.trim() === "") return null;
+    return resolve(dirname(path), expandPath(parsed.brain, home));
+  } catch {
+    return null;
+  }
+}
+
+/** The `brain` of each scheduled job's plist (cli.md §5.21); none when the folder or a file can't be read. */
+async function scheduledBrains(home: string, env: NodeJS.ProcessEnv): Promise<string[]> {
+  const agents = env.UB_LAUNCH_AGENTS_DIR ?? join(home, "Library", "LaunchAgents");
+  let names: string[];
+  try {
+    names = (await readdir(agents)).filter((name) => name.startsWith("eu.ultimate-brain.") && name.endsWith(".plist")).sort();
+  } catch {
+    return [];
+  }
+  const brains: string[] = [];
+  for (const name of names) {
+    try {
+      const entry = scheduleEntryOf(await readFile(join(agents, name), "utf8"));
+      if (isRecord(entry) && typeof entry.brain === "string" && entry.brain !== "") brains.push(entry.brain);
+    } catch {
+      // An unreadable or invalid plist adds nothing.
+    }
+  }
+  return brains;
 }
