@@ -18,7 +18,8 @@ const GATES = { trust: 1.0, answerable: 0.9 };
 // Abstention (README "Abstention", CC-201): an answer abstains when the adapter says so, or when its text says the brain
 // does not hold what was asked. The text is cut into clauses: lines, then sentences at . ! ? ; followed by a space.
 // - SAYS_UNKNOWN: the speaker or the brain lacks the answer ("I couldn't find", "not in the brain", "no record of",
-//   "is not recorded", "I don't know", "the brain holds no rule"). One anywhere in the answer is an abstention.
+//   "is not recorded", "I don't know", "the brain holds no rule", "I couldn't verify", "the brain doesn't have an
+//   answer"). One anywhere in the answer is an abstention.
 // - SAYS_ABSENT: a thing is absent ("no recorded decision", "no deploy freeze is recorded"). An answer can state that as
 //   a fact beside its answer, so it is an abstention only when the answer says nothing else: every clause holds one of
 //   the two, or is NEUTRAL; or when the answer opens with it (LEADS_ABSENT, CC-225).
@@ -31,7 +32,9 @@ const GATES = { trust: 1.0, answerable: 0.9 };
 // - NEUTRAL: the `Evidence:` line, and narration of the search ("I searched the brain for …").
 const SAYS_UNKNOWN = [
   /\b(?:couldn't|could not|can't|cannot|can not|didn't|did not|wasn't able to|was not able to|unable to) (?:find|locate)\b/,
-  /\b(?:couldn't|could not) (?:establish|confirm|determine)\b/,
+  /\b(?:couldn't|could not) (?:establish|confirm|determine|verify)\b/,
+  // CC-273: "the brain doesn't have an answer", "I don't have any answer".
+  /\b(?:doesn't|does not|don't|do not) have (?:an|any) answer\b/,
   /(?:\bnot|n't|\bnothing) (?:\w+ )?in the brain\b/,
   /\bno (?:records?|information|mention|evidence)\b/,
   /\bno (?:approved |eligible )?memor(?:y|ies)\b/,
