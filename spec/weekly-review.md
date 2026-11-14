@@ -157,6 +157,7 @@ These are separate counts, and all three hold. They are not catch-up's `max_inpu
 | a task item (§6.1) | 1 | 0 | 1 |
 | an earlier finding shown again (§7), linking its pending row | 1 | 0 | its targets |
 
+- **A theme's target** in `select`'s input is the newest input of its evidence (the one its `review_notes` takes as `source`), since the draft Document doesn't exist until step 8 writes it. It still counts 1 for T.
 - **The week counts, not the run.** A rerun in the same week starts from the counts `_weekly/state.json` holds for this week (§9.5). The items it already made are kept as items (same key, `DUPLICATE_PENDING`) and are not counted twice, so a rerun can't add 5 more (0075 §2).
 - An item the user has decided since (applied or closed) stays counted for its week.
 
