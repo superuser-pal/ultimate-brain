@@ -1,10 +1,10 @@
 # The weekly review (contract, decisions 0075 and 0093)
 
-**Status:** contract for release 0.15.0 (CC-111). Written by Claude Code. It is built by CC-253 (the CLI), CC-254 (correction checks), CC-255 (the skill and the schedule offer) and CC-256 (`/Weekly review`), and tried in the author's brain by U-29. The numbers in §12 come from the resource-budget trials, run read-only in the author's brain (0075 §7, 0093 §4, §6).
+**Status:** contract for release 0.15.0 (CC-111). Written by Claude Code. It is built by CC-253 (the CLI), CC-254 (correction checks), CC-255 (the skill and the schedule offer) and CC-256 (Weekly review in Notion), and tried in the author's brain by U-29. The numbers in §12 come from the resource-budget trials, run read-only in the author's brain (0075 §7, 0093 §4, §6).
 
-How this file fits: it holds the whole weekly review. That covers what a run reads, the report and its identity, the three sections, the change window and coverage, the two shared limits, repetition and dismissals, the correction queue and its claim groups, budgets and partial runs, delivery, the schedule, Brain Assistant's `/Weekly review` and the acceptance scenarios. It reuses what exists. Ultimate Assistant's findings ([assistant.md](assistant.md) §3, cli.md §5.31) are the work stream. `brain reflect --candidates` (cli.md §5.32, §6.2) is the knowledge stream, the only scheduled reflection (0076 §5). Proposals and Review rows (schema §11, cli.md §5.6, §5.14.4), the report destination (schema §4 view, §16) and `brain schedule` (cli.md §5.21) are used as they are. The command surface (`brain weekly`) is cli.md §5.34; the fields are in schema §2, §4 view, §11 and §12.
+How this file fits: it holds the whole weekly review. That covers what a run reads, the report and its identity, the three sections, the change window and coverage, the two shared limits, repetition and dismissals, the correction queue and its claim groups, budgets and partial runs, delivery, the schedule, Brain Assistant's Weekly review skill and the acceptance scenarios. It reuses what exists. Ultimate Assistant's findings ([assistant.md](assistant.md) §3, cli.md §5.31) are the work stream. `brain reflect --candidates` (cli.md §5.32, §6.2) is the knowledge stream, the only scheduled reflection (0076 §5). Proposals and Review rows (schema §11, cli.md §5.6, §5.14.4), the report destination (schema §4 view, §16) and `brain schedule` (cli.md §5.21) are used as they are. The command surface (`brain weekly`) is cli.md §5.34; the fields are in schema §2, §4 view, §11 and §12.
 
-**Decisions:** [0075](../decisions/0075-weekly-review-and-targeted-corrections.md) (binding, all of it), [0093](../decisions/0093-the-0-15-0-scope-grill.md) (the `/Weekly review` entry point, the Reports offer, Sonnet by default, the trials in the author's brain), [0051](../decisions/0051-unattended-catch-up-and-schedules.md) (unattended runs, the no-op rule, a schedule pins a model), [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md) and [0072](../decisions/0072-ultimate-assistant.md) (the assistant's findings, dismissals, Review rows only when no one is there), [0076](../decisions/0076-reflection-chat-first.md) (reflection's skips and holds), [0074](../decisions/0074-scoped-memory-handovers-and-bounded-recall.md) (its 800-token budget is separate), [0048](../decisions/0048-modules-and-simpler-rows.md) (modules), [0090](../decisions/0090-review-by-grill-notion-ai-reviews-with-you-and-your-call-decides.md) (the grill style and where Notion AI may write).
+**Decisions:** [0075](../decisions/0075-weekly-review-and-targeted-corrections.md) (binding, all of it), [0093](../decisions/0093-the-0-15-0-scope-grill.md) (the Weekly review entry point, the Reports offer, Sonnet by default, the trials in the author's brain), [0051](../decisions/0051-unattended-catch-up-and-schedules.md) (unattended runs, the no-op rule, a schedule pins a model), [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md) and [0072](../decisions/0072-ultimate-assistant.md) (the assistant's findings, dismissals, Review rows only when no one is there), [0076](../decisions/0076-reflection-chat-first.md) (reflection's skips and holds), [0074](../decisions/0074-scoped-memory-handovers-and-bounded-recall.md) (its 800-token budget is separate), [0048](../decisions/0048-modules-and-simpler-rows.md) (modules), [0090](../decisions/0090-review-by-grill-notion-ai-reviews-with-you-and-your-call-decides.md) (the grill style and where Notion AI may write).
 
 **Calls taken in this contract that the user may veto** (each the simplest reading of 0075 and 0093; none contradicts them):
 1. **One new skill, `brain-weekly-review`** (written in the fork, delivered in the pinned snapshot). It runs the assistant's and reflection's deterministic halves itself, so neither skill gains an unattended mode (§1).
@@ -20,7 +20,7 @@ How this file fits: it holds the whole weekly review. That covers what a run rea
 ## 1. A run
 
 Two prompts start the skill `brain-weekly-review`:
-- **`weekly review`**: attended. The user asks for it, or a schedule isn't set. The report comes first in the chat. The run then writes it as §9 says and ends. Deciding happens in Review or through `/Weekly review` (§13), never in this chat: a weekly run decides nothing, attended or not (0075 §6). An attended run that the user follows with "yes 2" is told where item 2 lives.
+- **`weekly review`**: attended. The user asks for it, or a schedule isn't set. The report comes first in the chat. The run then writes it as §9 says and ends. Deciding happens in Review or through Weekly review in Notion (§13), never in this chat: a weekly run decides nothing, attended or not (0075 §6). An attended run that the user follows with "yes 2" is told where item 2 lives.
 - **`weekly review unattended`**: the schedule's prompt (§11). It asks no questions.
 
 Both modes run the same steps and write the same things. The one difference is that an attended run shows the report in the chat and may ask "publish now?" under `settings.publish: ask`, as attended catch-up does.
@@ -174,7 +174,7 @@ Everything eligible and not admitted is **queued**. It is counted in `counts.que
 
 ### 6.1 What an item is
 Every decision item is **decided where it lives** (0093 §2):
-- **A Review row**, new or existing, whose Your call the user sets (or decides with `/Weekly review`'s grill, §13).
+- **A Review row**, new or existing, whose Your call the user sets (or decides with Weekly review's grill, §13).
 - **A task** in Notion, for a task finding whose recommendations all need the user's value (`task_overdue`, `task_stalled`: a new due date, or Done or Won't Do). No proposal is written. The user changes the task in Notion, and the next run sees the new values. A task item is still an item: it counts for D and T (§5.1).
 
 An `add_task` recommendation can't be an item: it needs the user's words (assistant.md §6.3). Its finding appears in Task analysis only.
@@ -335,9 +335,11 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
 | `max_usd` | 3 | the dearest Sonnet run, 0.75, × 4. On Opus, the skill's schedule offer sets 8 (opus-1, 2.14, × 4) |
 | the default model | **Sonnet, confirmed** | it covered every section within the limits at about a third of Opus's cost (0.58 to 0.75 against 2.14 a week). Opus read more and reasoned more specifically, which the attended trial (§14) checks; the user can pin Opus when turning on the schedule (0093 §4) |
 
-## 13. `/Weekly review` in Notion (0093 §2)
+## 13. Weekly review in Notion (0093 §2)
 
-Brain Assistant's `/Weekly review` skill (notion/brain-assistant.md) becomes the way into this week's report. It no longer builds its own six-section digest. The new text, which a Notion migration ships (0022):
+The user asks Brain Assistant for it by name, "Run Weekly review". Since CC-260, a Custom Agent doesn't run a skill typed as a `/` command, so 0093 §2's `/Weekly review` means this skill asked for by name.
+
+Brain Assistant's Weekly review skill (notion/brain-assistant.md) becomes the way into this week's report. It no longer builds its own six-section digest. The new text, which a Notion migration ships (0022):
 - **Find this week's report:** the Documents row with Origin Report whose Name begins `Weekly review ·` and whose week holds today; else the newest one, saying its week.
 - **None this week:** it says so and how to get one: say `weekly review` to Claude Code or Codex in the brain, or wait for the Monday schedule when it is on. With Reports off, it says the review is a file in the brain, and that turning on Reports brings it to Notion.
 - **With one:** it summarises What changed and Task analysis in a few lines, then walks What needs your decision in the 0090 grill style. That means rounds of 3 to 5 questions, each with lettered options and the recommended one marked with a one-line reason. Each item is decided where it lives:
@@ -364,9 +366,9 @@ Plus the following cases:
 - **Notion unreachable:** brain only, a failure surfaced in the log and the opening line, and no claim of a Notion write.
 - **Separation from catch-up:** no input ingested and no approved proposal applied by a weekly run; catch-up's behaviour unchanged.
 - **Budget exhaustion** at each step boundary.
-- **`/Weekly review`** on a test space with a report and with none.
+- **"Run Weekly review"** on a test space with a report and with none.
 - **The Reports offer**, asked once, with the yes and no paths.
 
 The reading and deciding targets (two minutes to read, five to decide) are checked by the word cap and by the attended trial.
 
-**One attended trial in the user's private brain** (U-29, 0075 §8). It runs one scheduled week and one rerun, then `/Weekly review`, and is judged on usefulness: meaningful selection, task recommendations, and the reading and deciding times. Personal evidence stays outside the product repo, and only non-personal summaries of outcomes and timing come back. U-21's weekly step joins it (0076 §9): reflection findings respect excluded material.
+**One attended trial in the user's private brain** (U-29, 0075 §8). It runs one scheduled week and one rerun, then "Run Weekly review", and is judged on usefulness: meaningful selection, task recommendations, and the reading and deciding times. Personal evidence stays outside the product repo, and only non-personal summaries of outcomes and timing come back. U-21's weekly step joins it (0076 §9): reflection findings respect excluded material.
