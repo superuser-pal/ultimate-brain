@@ -11,7 +11,7 @@ import type { Workspace } from "./workspace.ts";
 /**
  * The Ultimate Assistant proposal kinds (spec/assistant.md §6, spec/schema.md §11, spec/cli.md §5.6, §5.7, §5.14.4):
  * `notion_change`, a change to a Notion-owned property that the skill writes through the MCP, and `set_field`,
- * a change to a brain-owned placement field (a project's `area`, an Area's `domain`).
+ * a change to a brain-owned placement field (the `area` of a project, decision, question, Document or source; an Area's `domain`).
  */
 
 /** The properties each database takes on a notion_change (spec/cli.md §5.6). */
@@ -22,8 +22,33 @@ const PAGE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 /** The `source` prefix of every proposal Ultimate Assistant writes (spec/cli.md §5.6). */
 export const ASSISTANT_SOURCE = "agent:ultimate-assistant/";
-/** set_field: the field each target type takes, and the type of note it names. */
-const SET_FIELDS: Readonly<Record<string, { target: string; type: string }>> = { area: { target: "project", type: "area" }, domain: { target: "area", type: "domain" } };
+/** set_field: the target types each field takes, and the type of note it names (0072, 0092). */
+const SET_FIELDS: Readonly<Record<string, { targets: readonly string[]; type: string }>> = { area: { targets: ["project", "decision", "question", "reference", "source"], type: "area" }, domain: { targets: ["area"], type: "domain" } };
+const TARGET_NAMES: Readonly<Record<string, string>> = { project: "project", decision: "decision", question: "question", reference: "Document", source: "source", area: "Area" };
+
+/**
+ * A source and its whole Documents move together (0092 §3, spec/cli.md §5.6): the group of a source or of a
+ * Document with `origin: whole` is the source and every whole Document whose `sources` is exactly it. Any other
+ * note is a group of one. The target comes first.
+ */
+export function areaGroup(workspace: Workspace, target: Note): Note[] {
+  const whole = (note: Note) => note.type === "reference" && note.attributes.origin === "whole" && Array.isArray(note.attributes.sources) && note.attributes.sources.length === 1;
+  let source: Note | undefined;
+  if (target.type === "source") source = target;
+  else if (whole(target)) { const named = workspace.get(String((target.attributes.sources as unknown[])[0])); if (named?.type === "source") source = named; }
+  if (source === undefined) return [target];
+  const members = [source, ...workspace.notes.filter((note) => whole(note) && (note.attributes.sources as unknown[])[0] === source!.id)];
+  return [target, ...members.filter((note) => note.id !== target.id)];
+}
+
+/** Why a decision or question can't take a set_field on `area`: its Area comes from its projects (0034, 0092 §2). */
+export function projectsProblem(workspace: Workspace, target: Note): string | undefined {
+  if (target.type !== "decision" && target.type !== "question") return undefined;
+  const projects = Array.isArray(target.attributes.projects) ? target.attributes.projects.map(String) : [];
+  if (projects.length === 0) return undefined;
+  const named = projects.map((id) => { const title = workspace.get(id)?.attributes.title; return typeof title === "string" ? `${title} (${id})` : id; }).join(", ");
+  return `${target.id} takes its Area from its project${projects.length === 1 ? "" : "s"} ${named}: move the project instead`;
+}
 
 export interface NotionWrite {
   proposal: string;
@@ -98,9 +123,10 @@ export function checkNotionChange(workspace: Workspace, item: Record<string, unk
 /** Check a set_field input item and fill `before` and `area` (spec/cli.md §5.6). Returns whether it changes nothing. */
 export function resolveSetField(workspace: Workspace, item: Record<string, unknown>, fields: Record<string, unknown>, pointer: string): { noChange: boolean } {
   const spec = typeof item.field === "string" ? SET_FIELDS[item.field] : undefined;
-  if (spec === undefined) invalid(`${pointer}/field`, "must be area (a project) or domain (an Area)");
+  if (spec === undefined) invalid(`${pointer}/field`, "must be area (a project, decision, question, Document or source) or domain (an Area)");
   const target = workspace.get(String(item.target)) ?? unknownId(`${pointer}/target`, item.target);
-  if (target.type !== spec!.target) invalid(`${pointer}/field`, `${String(item.field)} is set on a ${spec!.target}, and ${target.id} is a ${target.type}`);
+  if (!spec!.targets.includes(target.type)) invalid(`${pointer}/field`, `${String(item.field)} is set on a ${spec!.targets.map((type) => TARGET_NAMES[type]).join(", ")}, and ${target.id} is a ${TARGET_NAMES[target.type] ?? target.type}`);
+  if (item.field === "area") { const problem = projectsProblem(workspace, target); if (problem !== undefined) invalid(`${pointer}/target`, problem); }
   const after = typeof item.after === "string" ? workspace.get(item.after) : undefined;
   if (after === undefined) unknownId(`${pointer}/after`, item.after);
   if (after!.type !== spec!.type) invalid(`${pointer}/after`, `is a ${after!.type}; ${String(item.field)} names a ${spec!.type}`);
@@ -112,10 +138,11 @@ export function resolveSetField(workspace: Workspace, item: Record<string, unkno
   else fields.before = current;
   checkArea(workspace, item, pointer);
   if (fields.area === undefined) {
-    const home = target.type === "project" ? target.attributes.area : target.id;
+    const home = target.type === "area" ? target.id : target.attributes.area;
     if (typeof home === "string") fields.area = home;
   }
-  return { noChange: isDeepStrictEqual(current, item.after) };
+  // On a group, NO_CHANGE only when every note of it already has `after` (spec/cli.md §5.6).
+  return { noChange: areaGroup(workspace, target).every((note) => isDeepStrictEqual(note.attributes[item.field as string], item.after)) };
 }
 
 function checkArea(workspace: Workspace, item: Record<string, unknown>, pointer: string): void {
