@@ -104,7 +104,7 @@ export const statusCommand: Command = {
       // Where the Notion build files are: <path>/notion/…, <path>/docs/notion-space-design.md (§5.2).
       product: { path: installedProduct().root },
       // How far the guided setup has got, offline (§5.2, spec/setup.md §5).
-      setup: await setupStatus(brain!.root, brain!.config, notes, environment.homeDirectory),
+      setup: await setupStatus(brain!.root, brain!.config, notes, environment.homeDirectory, environment.env ?? process.env),
       branch,
     };
     const setup = setupLine(data.setup);
