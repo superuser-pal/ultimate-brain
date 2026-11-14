@@ -180,6 +180,7 @@ test("status on a fresh brain: no check passes, nothing recorded, template versi
     required: { done: 0, total: 9 },
     next: "git_identity",
     finished: false,
+    drop_folder: { proposed: "~/Documents/brain-dropbox/", exists: false, default_read_by: null, others: [] },
   });
   assert.equal(human.split("\n")[0], `Setup: 0 of 9 done · next: set your Git identity · ${SET_UP}`);
   assert.equal(human.split("\n")[1], "Owner: Test Owner");
@@ -382,6 +383,85 @@ test("the drop folder and language are read only after the rules block's end and
 function pick(checks: Record<string, boolean>): [boolean, boolean] {
   return [checks.drop_folder!, checks.language!];
 }
+
+// --- one drop folder per brain (CC-259, setup.md §7 item 4, cli.md §5.2) ---
+
+/** A second synthetic brain made by `brain init` next to the first, in the same home. */
+async function secondBrain(home: string, name: string): Promise<string> {
+  const target = join(home, name);
+  const init = await brain(["init", target, "--owner", "Second Owner", "--no-git", "--now", NOW, "--json"], home);
+  assert.equal(init.code, 0, init.stderr);
+  return target;
+}
+
+async function setDefaultBrain(home: string, value: string): Promise<void> {
+  await mkdir(join(home, ".config", "ultimate-brain"), { recursive: true });
+  await writeFile(join(home, ".config", "ultimate-brain", "config.json"), `${JSON.stringify({ brain: value })}\n`);
+}
+
+/** A plist as `brain schedule install` writes it, reduced to the key `list` reads back (cli.md §5.21). */
+async function scheduleBrain(home: string, label: string, brainFolder: string): Promise<void> {
+  const agents = join(home, "Library", "LaunchAgents");
+  await mkdir(agents, { recursive: true });
+  const entry = JSON.stringify({ brain: brainFolder, job: "catch-up", times: ["07:00"], days: null, model: "sonnet", prompt: "catch up" }).replaceAll("&", "&amp;").replaceAll('"', "&quot;");
+  await writeFile(join(agents, `eu.ultimate-brain.${label}.catch-up.plist`), `<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0">\n<dict>\n  <key>ultimate-brain</key>\n  <string>${entry}</string>\n</dict>\n</plist>\n`);
+}
+
+test("a first brain is proposed the default drop folder, existing or not, when no other brain reads it (CC-259)", async (context) => {
+  const { home, target } = await freshBrain(context);
+  // The default brain is this brain itself: it is never an "other" brain.
+  await setDefaultBrain(home, target);
+  await appendRules(target, "Drop folder: ~/Documents/brain-dropbox/");
+  assert.deepEqual((await status(target, home)).data.setup.drop_folder, { proposed: "~/Documents/brain-dropbox/", exists: false, default_read_by: null, others: [] });
+  // A folder that exists but no brain the machine knows reads: still the default, shown as existing.
+  await mkdir(join(home, "Documents", "brain-dropbox"), { recursive: true });
+  assert.deepEqual((await status(target, home)).data.setup.drop_folder, { proposed: "~/Documents/brain-dropbox/", exists: true, default_read_by: null, others: [] });
+});
+
+test("a second brain on the machine is proposed a drop folder named after it, never one the default brain reads (CC-259)", async (context) => {
+  const { home, target: first } = await freshBrain(context);
+  await mkdir(join(home, "Documents", "brain-dropbox"), { recursive: true });
+  await appendRules(first, "Drop folder: `~/Documents/brain-dropbox/`");
+  await setDefaultBrain(home, "~/brain");
+  const second = await secondBrain(home, "Client Brain");
+  const others = [{ brain: first, folder: join(home, "Documents", "brain-dropbox") }];
+  assert.deepEqual((await status(second, home)).data.setup.drop_folder, { proposed: "~/Documents/client-brain-dropbox/", exists: false, default_read_by: first, others });
+  // The first brain still gets the default: the second has no Drop folder line yet, so it reads nothing.
+  assert.deepEqual((await status(first, home)).data.setup.drop_folder, { proposed: "~/Documents/brain-dropbox/", exists: true, default_read_by: null, others: [] });
+});
+
+test("a scheduled brain counts too, and a folder named after the new brain that another brain reads is skipped with -2 (CC-259)", async (context) => {
+  const { home, target: first } = await freshBrain(context);
+  await appendRules(first, "Drop folder: ~/Documents/brain-dropbox/");
+  await scheduleBrain(home, "brain-1a2b3c4d", first);
+  // A third brain, also scheduled, reads the folder that would be named after the new one.
+  const third = await secondBrain(home, "other");
+  await appendRules(third, `Drop folder: ${join(home, "Documents", "client-brain-dropbox")}`);
+  await scheduleBrain(home, "other-5e6f7a8b", third);
+  // A brain named "brain": its own name is the default's, so the next free one is -2.
+  const parent = join(home, "work");
+  await mkdir(parent);
+  const named = await secondBrain(parent, "brain");
+  const result = (await status(named, home)).data.setup.drop_folder;
+  assert.equal(result.proposed, "~/Documents/brain-2-dropbox/");
+  assert.equal(result.default_read_by, first);
+  assert.deepEqual(result.others.map((other: { brain: string }) => other.brain), [first, third].sort());
+  const client = await secondBrain(home, "client-brain");
+  assert.equal((await status(client, home)).data.setup.drop_folder.proposed, "~/Documents/client-brain-2-dropbox/");
+});
+
+test("an unreadable default brain, an invalid config or plist, and a brain without a Drop folder line add no other brain (CC-259)", async (context) => {
+  const { home, target } = await freshBrain(context);
+  await mkdir(join(home, ".config", "ultimate-brain"), { recursive: true });
+  await writeFile(join(home, ".config", "ultimate-brain", "config.json"), "{ not json");
+  await mkdir(join(home, "Library", "LaunchAgents"), { recursive: true });
+  await writeFile(join(home, "Library", "LaunchAgents", "eu.ultimate-brain.x-00000000.catch-up.plist"), "<plist><key>ultimate-brain</key><string>{broken</string></plist>");
+  await scheduleBrain(home, "gone-11111111", join(home, "gone"));
+  const quiet = await secondBrain(home, "quiet");
+  await scheduleBrain(home, "quiet-22222222", quiet);
+  const result = await status(target, home);
+  assert.deepEqual(result.data.setup.drop_folder, { proposed: "~/Documents/brain-dropbox/", exists: false, default_read_by: null, others: [] });
+});
 
 test("remote passes only for the brain's own repository with an origin URL, not a parent folder's (setup.md §5)", async (context) => {
   const { home, target } = await freshBrain(context);
