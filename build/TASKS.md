@@ -888,7 +888,7 @@ Work packages: contracts and representative resource-budget trials; shared diges
 **Output:** stacked on CC-254: a fork PR with the skill `brain-weekly-review` (weekly-review.md §1 steps, judging within the budget, the prose of What changed and Task analysis, "weekly review more" and "corrections"), its "Run on a schedule" section (Sonnet by default, the Reports offer once, `settings.publish: auto`, the allow list, `brain schedule install weekly-review`), the opening line in attended sessions (§9.3), brain-howto and the guide, and the brain's `AGENTS.md` row; vendored in this PR.
 **Acceptance:** the fork PR's checks pass and it is reviewed with this PR; a blind run on a synthetic brain with a Notion stand-in, both attended and unattended (`claude -p`, the weekly job's allowlist), writes one report within §5's limits, applies nothing and changes no Notion-owned field, and a quiet run writes nothing; the Reports offer asked once, with the yes and no paths on a synthetic brain; no schedule installed on the machine; the five checks pass.
 
-### CC-256 · Weekly review in Notion opens the weekly report (0093 §2) · `in progress`
+### CC-256 · Weekly review in Notion opens the weekly report (0093 §2) · `review`
 **Release:** 0.15.0
 **Changelog:** Asking Brain Assistant to "Run Weekly review" opens this week's report and walks you through its decisions, a few questions at a time.
 **Output:** the Weekly review skill in `notion/brain-assistant.md` per weekly-review.md §13 (find this week's report; none, and how to get one; the decisions in the 0090 grill style, each decided on its Review row or its task; no digest of its own); a Notion migration (0022) and `notion/TEMPLATE.md`'s version; the guide's mention in the fork PR of CC-255.
