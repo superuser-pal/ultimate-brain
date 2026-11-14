@@ -20,7 +20,7 @@ import { applyReviewDecisions } from "./review-apply.ts";
 import { recordRevisionRequests } from "./review-revision.ts";
 import { renderReview, reviewFormat } from "./review-body.ts";
 import { CONTEXT_HEADING } from "./review-format2.ts";
-import { decidedInChat, suggestionText } from "./notion-change.ts";
+import { areaGroup, decidedInChat, suggestionText } from "./notion-change.ts";
 import { parseReviewPageInput, planReviewRow, planReviewRow2, type ItemDecision, type ReviewDecision, type ReviewHeld, type ReviewPage, type ReviewRevision } from "./review-plan.ts";
 import { hasReportShape, reportLinks } from "./report-body.ts";
 import { gitBodyOf, parseWording, planWording, textHash, type AcceptedWording, type Wording, type WordingPlan } from "./wording.ts";
@@ -1005,7 +1005,7 @@ function sourceValues(note: Note, workspace: Workspace): Record<string, unknown>
   const produced = producedBy(note, workspace);
   const ids = (type: string) => produced.filter((candidate) => candidate.type === type).map((candidate) => candidate.id).sort(compareCodePoints);
   const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))].sort(compareCodePoints);
-  const areas = [...new Set([...produced.map((candidate) => candidate.attributes.area).filter((id): id is string => typeof id === "string"), ...projects.flatMap((id) => { const area = workspace.get(id)?.attributes.area; return typeof area === "string" ? [area] : []; })])].sort(compareCodePoints);
+  const areas = inboxAreas(note, workspace, produced).sort(compareCodePoints);
   return { Name: note.attributes.title, Kind: note.attributes.kind === "document" ? "File" : select(note.attributes.kind), Summary: note.attributes.summary ?? null, Decisions: relationPages(ids("decision"), workspace), Questions: relationPages(ids("question"), workspace), ...(databaseIdFor(workspace, "documents") === "" ? {} : { Documents: relationPages(ids("reference"), workspace) }), People: relationPages(ids("person"), workspace), Project: relationPages(projects, workspace), Area: relationPages(areas, workspace), "Brain Status": "Done", "Brain ID": note.id };
 }
 
@@ -1019,7 +1019,9 @@ function notionProperty(name: string, value: unknown, note: Note, workspace: Wor
     // A note waiting for review isn't pending: no render publishes it, and the relation fills once it is approved (0071).
     const missing = (Array.isArray(raw) ? raw : raw === undefined ? [] : [raw]).map(String).filter((id) => typeof workspace.get(id)?.attributes.notion !== "string" && !awaitsReview(workspace.get(id)));
     if (missing.length > 0) pending.push({ property: name, ids: missing });
-    const mode = (note.type === "meeting" || note.type === "source") ? (["Project", "Area"].includes(name) ? "if_empty" : note.type === "meeting" ? "add" : undefined) : undefined;
+    // A moved source's Area replaces the row's, once: S then holds it (cli §5.14.4, 0092, CC-271).
+    const replaced = note.type === "source" && name === "Area" && sourceMoved(note, workspace);
+    const mode = (note.type === "meeting" || note.type === "source") ? (["Project", "Area"].includes(name) ? (replaced ? undefined : "if_empty") : note.type === "meeting" ? "add" : undefined) : undefined;
     return { type: "relation", value: Array.isArray(value) ? value : [], ...(mode === undefined ? {} : { mode }) };
   }
   if (name === "Source Meeting") {
@@ -1045,8 +1047,27 @@ function sourceRelationIds(note: Note, name: string, workspace: Workspace): stri
   if (name === "People") return produced.filter((candidate) => candidate.type === "person").map((candidate) => candidate.id);
   const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))];
   if (name === "Project") return projects;
-  if (name === "Area") return [...new Set([...produced.map((candidate) => candidate.attributes.area).filter((id): id is string => typeof id === "string"), ...projects.flatMap((id) => { const area = workspace.get(id)?.attributes.area; return typeof area === "string" ? [area] : []; })])];
+  if (name === "Area") return inboxAreas(note, workspace, produced);
   return [];
+}
+/**
+ * An Inbox row's Area (cli §5.14.4): the source's own `area` once an applied set_field has moved it (0092, CC-271),
+ * else the Areas of the notes it produced and of their projects.
+ */
+function inboxAreas(note: Note, workspace: Workspace, produced: Note[]): string[] {
+  if (sourceMoved(note, workspace) && typeof note.attributes.area === "string") return [note.attributes.area];
+  const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))];
+  return [...new Set([...produced.map((candidate) => candidate.attributes.area).filter((id): id is string => typeof id === "string"), ...projects.flatMap((id) => { const area = workspace.get(id)?.attributes.area; return typeof area === "string" ? [area] : []; })])];
+}
+/** A source an applied set_field on `area` has moved: its target is the source or a whole Document of its group (cli §5.6, 0092 §3). */
+function sourceMoved(note: Note, workspace: Workspace): boolean {
+  if (note.type !== "source") return false;
+  return workspace.notes.some((proposal) => {
+    const a = proposal.attributes;
+    if (proposal.type !== "proposal" || a.kind !== "set_field" || a.field !== "area" || a.status !== "applied" || typeof a.target !== "string") return false;
+    const target = workspace.get(a.target);
+    return target !== undefined && (target.id === note.id || areaGroup(workspace, target).some((member) => member.id === note.id));
+  });
 }
 function proposalLinks(attributes: Record<string, unknown>): Array<{ field: unknown; value: unknown }> {
   if (Array.isArray(attributes.links)) return attributes.links.filter(isRecord).map((link) => ({ field: link.field, value: link.value }));
