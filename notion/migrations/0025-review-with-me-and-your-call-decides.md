@@ -22,9 +22,9 @@ Who does each step:
 
 ## 1 · Review · Your call's description (agent)
 
-Set this description on **Your call**, then read it back:
+Set this description on **Your call**, then read it back. Notion refuses a description longer than 280 characters, so use it as it is:
 
-`Owner: you. Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. On a row from a meeting, email or document, set it after you read the page: Approve takes the page as it reads (a ⚠ or ⚑ item needs Accept on its line), Request revision redrafts what What to fix says, Reject leaves the notes as they are. On a Conflict, Answer or Suggestion row: Approve, Reject, or Fix with what's wrong in What to fix.`
+`Owner: you. Approving makes these notes trusted. From a meeting, email or document: Approve takes the page as it reads (a ⚠ or ⚑ item needs Accept), Request revision redrafts what What to fix says, Reject leaves the notes as they are. Other rows: Approve, Reject or Fix.`
 
 ## 2 · Review · the Review with me button (by hand)
 

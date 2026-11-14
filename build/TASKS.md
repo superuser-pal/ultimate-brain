@@ -1002,6 +1002,15 @@ After the feature cutoff, scope packaging/install/upgrade guidance, consistent N
 **Output:** found in CC-251's review (#374): Area on Decisions and Questions is derived from the record's projects (0034, spec/cli.md §5.14.4, schema §14), so one with no project has no Area in Notion even when its `area` is set, and moving it (0092) shows only in the Area's brief and the index. A decision first, amending 0034: with no projects (or projects with no Area), the derived Area falls back to the note's own `area`. Then spec/cli.md §5.14.4 and schema §14, and `src/lib/sync.ts`'s derived Area; the first render after the upgrade sends it to every decision and question it changes, once, as 0034's did; Notion views need no change (Area pages already filter on Area).
 **Acceptance:** the decision records the author's answer and names what it amends and keeps; tests on a synthetic brain: a decision with no projects and an `area` renders that Area; one with projects renders its projects' Areas as now; one with neither renders none; a moved one (CC-251) renders the new Area at the next publish; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 
+### CC-276 · Notion property descriptions fit Notion's 280-character limit · `in progress`
+**Release:** 1.0.0
+**Changelog:** Review's Your call description fits Notion's 280-character limit, and a new space gets the same description as migration 0025.
+**Output:** migration 0025 step 1 sets a 270-character Your call description (its 476-character text was refused by Notion when applied to a real space); `notion/prompts/02-databases.md`, `05-ownership.md` and `docs/notion-space-design.md` give a new space that same text instead of the older ones; `tests/notion-property-descriptions.test.ts`.
+**Acceptance:**
+- [ ] Every "Owner: …" description in `notion/prompts/`, `notion/modules/` and `notion/migrations/` is 280 characters or less (test).
+- [ ] Migration 0025, prompts 02 and 05 and the design doc give Your call the same description, which names Request revision (test).
+- [ ] The full suite passes.
+
 ## Your tasks
 
 | Id | Task | When |
