@@ -163,7 +163,7 @@
       }
     },
     "plan": {
-      "description": "The data of brain weekly plan (cli.md §5.34). It writes nothing. clusters holds at most settings.weekly.max_judged clusters, carried ones first (weekly-review.md §10), then the window's in reflection's rank; clusters_left names the window's clusters beyond that limit, which a run omits (§10) and carries. findings excludes the dismissed (assistant.md §3.5) and keeps every other one, with its repetition. pending lists the pending proposals whose finding, fingerprint or correction is a candidate's key. week_state is this week's from _weekly/state.json (zeros and no items for a new week). earlier_open counts the earlier findings not shown again whose proposal is pending (§7). quiet is weekly-review.md §9.1, a same-week rerun with an unchanged input_hash included; it is false whenever notion is unreachable (a failure).",
+      "description": "The full plan of brain weekly plan (cli.md §5.34): the hand-off file <label>.plan.json it saves next to the snapshot, which the skill reads in parts; its data is planSummary. clusters holds at most settings.weekly.max_judged clusters, carried ones first (weekly-review.md §10), then the window's in reflection's rank; clusters_left names the window's clusters beyond that limit, which a run omits (§10) and carries. findings excludes the dismissed (assistant.md §3.5) and keeps every other one, with its repetition. pending lists the pending proposals whose finding, fingerprint or correction is a candidate's key. week_state is this week's from _weekly/state.json (zeros and no items for a new week). earlier_open counts the earlier findings not shown again whose proposal is pending (§7). quiet is weekly-review.md §9.1, a same-week rerun with an unchanged input_hash included; it is false whenever notion is unreachable (a failure).",
       "type": "object",
       "required": ["week", "as_of", "local_date", "notion", "window", "report", "changes", "inputs", "findings", "skipped_signals", "task_analysis", "clusters", "clusters_left", "corrections", "pending", "week_state", "earlier_open", "budget", "input_hash", "quiet"],
       "additionalProperties": false,
@@ -272,13 +272,42 @@
         "verdict": { "enum": ["restatement", "independent", "historical", "uncertain"] }
       }
     },
-    "selectInput": {
-      "description": "The input of brain weekly select (cli.md §5.34): plan's data as it came, and what the skill judged. judged.clusters lists every cluster the skill judged, a finding drawn or not; a cluster of plan.clusters not listed there, and every key of plan.clusters_left, is omitted (weekly-review.md §10). Each finding's cluster must be a judged cluster of the plan (INPUT_INVALID).",
+    "planSummary": {
+      "description": "The data of brain weekly plan (cli.md §5.34): what the skill needs to go on without reading the plan file (a large brain's plan is far above Claude Code's 30k Bash output limit, which a scheduled run's allow list can't read back). file is the absolute path of the saved plan, null when quiet (a quiet plan writes nothing). counts are the lengths of the plan's lists; findings_shown counts the findings whose repetition.show is true.",
       "type": "object",
-      "required": ["plan", "judged"],
+      "required": ["week", "as_of", "local_date", "notion", "window", "report", "input_hash", "quiet", "file", "counts"],
+      "additionalProperties": false,
+      "properties": {
+        "week": { "$ref": "#/$defs/week" },
+        "as_of": { "$ref": "#/$defs/timestamp" },
+        "local_date": { "$ref": "#/$defs/date" },
+        "notion": { "enum": ["live", "unreachable"] },
+        "window": { "$ref": "#/$defs/plan/properties/window" },
+        "report": { "$ref": "#/$defs/plan/properties/report" },
+        "input_hash": { "$ref": "#/$defs/hash" },
+        "quiet": { "type": "boolean" },
+        "file": { "anyOf": [{ "type": "string", "pattern": "^/.+\\.plan\\.json$" }, { "type": "null" }] },
+        "counts": {
+          "type": "object",
+          "required": ["changes", "findings", "findings_shown", "clusters", "clusters_left", "corrections", "pending", "earlier_open"],
+          "additionalProperties": false,
+          "properties": {
+            "changes": { "$ref": "#/$defs/count" }, "findings": { "$ref": "#/$defs/count" }, "findings_shown": { "$ref": "#/$defs/count" }, "clusters": { "$ref": "#/$defs/count" },
+            "clusters_left": { "$ref": "#/$defs/count" }, "corrections": { "$ref": "#/$defs/count" }, "pending": { "$ref": "#/$defs/count" }, "earlier_open": { "$ref": "#/$defs/count" }
+          }
+        }
+      },
+      "allOf": [{ "if": { "properties": { "quiet": { "const": true } } }, "then": { "properties": { "file": { "type": "null" } } }, "else": { "properties": { "file": { "type": "string" } } } }]
+    },
+    "selectInput": {
+      "description": "The input of brain weekly select (cli.md §5.34): the plan, by its input_hash (select reads the saved plan file, the scheduled run's way) or embedded as it came (tests, attended use), and what the skill judged. judged.clusters lists every cluster the skill judged, a finding drawn or not; a cluster of plan.clusters not listed there, and every key of plan.clusters_left, is omitted (weekly-review.md §10). Each finding's cluster must be a judged cluster of the plan (INPUT_INVALID).",
+      "type": "object",
+      "required": ["judged"],
+      "oneOf": [{ "required": ["plan"], "not": { "required": ["input_hash"] } }, { "required": ["input_hash"], "not": { "required": ["plan"] } }],
       "additionalProperties": false,
       "properties": {
         "plan": { "$ref": "#/$defs/plan" },
+        "input_hash": { "description": "planSummary.input_hash: the saved plan file must have it (INPUT_INVALID otherwise: plan again).", "$ref": "#/$defs/hash" },
         "judged": {
           "type": "object",
           "required": ["clusters", "findings", "corrections"],
@@ -325,12 +354,13 @@
       ]
     },
     "selection": {
-      "description": "The data of brain weekly select (cli.md §5.34): the decision items in report order, the queued remainder, this week's counts after the items (the week's earlier counts included, §5.1), the earlier findings still open in Review (§7), what the run omitted (§10) and its coverage.",
+      "description": "The data of brain weekly select (cli.md §5.34), also saved as the hand-off file <label>.selection.json next to the plan file: the plan's input_hash, the decision items in report order, the queued remainder, this week's counts after the items (the week's earlier counts included, §5.1), the earlier findings still open in Review (§7), what the run omitted (§10) and its coverage.",
       "type": "object",
-      "required": ["week", "items", "queued", "counts", "earlier_open", "omitted", "coverage"],
+      "required": ["week", "input_hash", "items", "queued", "counts", "earlier_open", "omitted", "coverage"],
       "additionalProperties": false,
       "properties": {
         "week": { "$ref": "#/$defs/week" },
+        "input_hash": { "description": "The input_hash of the plan it selected from.", "$ref": "#/$defs/hash" },
         "items": { "type": "array", "maxItems": 5, "items": { "$ref": "#/$defs/item" } },
         "queued": {
           "type": "array",
@@ -351,13 +381,15 @@
       }
     },
     "recordInput": {
-      "description": "The input of brain weekly record (cli.md §5.34): plan's and select's data as they came, the proposal written for each item whose write is true (step 8; a DUPLICATE_PENDING names the existing one), the skill's What changed bullets (at most 8, each one line starting - **<Label>:**) and Task analysis lines (weekly-review.md §3.2, §3.3), the run's mode, whether the report will be published (weekly-review.md §9.3: refused with Reports off), the failures of earlier steps, and the run's notes read and seconds for the log line. record renders the header (§3.1) and What needs your decision (§3.4) itself.",
+      "description": "The input of brain weekly record (cli.md §5.34): plan's and select's data, by the plan's input_hash (record reads the two saved hand-off files, the scheduled run's way) or both embedded as they came, the proposal written for each item whose write is true (step 8; a DUPLICATE_PENDING names the existing one), the skill's What changed bullets (at most 8, each one line starting - **<Label>:**) and Task analysis lines (weekly-review.md §3.2, §3.3), the run's mode, whether the report will be published (weekly-review.md §9.3: refused with Reports off), the failures of earlier steps, and the run's notes read and seconds for the log line. record renders the header (§3.1) and What needs your decision (§3.4) itself.",
       "type": "object",
-      "required": ["plan", "selection", "proposals", "what_changed", "task_analysis", "mode", "publish", "failures", "notes_read", "seconds"],
+      "required": ["proposals", "what_changed", "task_analysis", "mode", "publish", "failures", "notes_read", "seconds"],
+      "oneOf": [{ "required": ["plan", "selection"], "not": { "required": ["input_hash"] } }, { "required": ["input_hash"], "not": { "anyOf": [{ "required": ["plan"] }, { "required": ["selection"] }] } }],
       "additionalProperties": false,
       "properties": {
         "plan": { "$ref": "#/$defs/plan" },
         "selection": { "$ref": "#/$defs/selection" },
+        "input_hash": { "description": "planSummary.input_hash: the saved plan and selection files must both have it (INPUT_INVALID otherwise).", "$ref": "#/$defs/hash" },
         "proposals": {
           "type": "array",
           "items": { "type": "object", "required": ["key", "proposal"], "additionalProperties": false, "properties": { "key": { "$ref": "#/$defs/itemKey" }, "proposal": { "$ref": "#/$defs/proposalId" } } }

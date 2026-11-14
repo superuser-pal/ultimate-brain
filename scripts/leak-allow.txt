@@ -88,3 +88,7 @@ spec/examples/weekly/valid/selectInput.json:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e
 spec/examples/weekly/valid/selection.json:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e|2b8c4d6e1f3a4b5c8d7e9f0a1b2c3d4e
 spec/examples/weekly/valid/state.json:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e|2b8c4d6e1f3a4b5c8d7e9f0a1b2c3d4e
 spec/examples/weekly/invalid/recordInput-bullet-without-label.json:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e|2b8c4d6e1f3a4b5c8d7e9f0a1b2c3d4e
+spec/examples/weekly/invalid/recordInput-plan-without-selection.json:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e|2b8c4d6e1f3a4b5c8d7e9f0a1b2c3d4e
+spec/examples/weekly/invalid/selectInput-plan-and-hash.json:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e|2b8c4d6e1f3a4b5c8d7e9f0a1b2c3d4e
+spec/examples/weekly/valid/recordInput-by-hash.json:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e|2b8c4d6e1f3a4b5c8d7e9f0a1b2c3d4e
+spec/examples/weekly/valid/selectInput-by-hash.json:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e|2b8c4d6e1f3a4b5c8d7e9f0a1b2c3d4e

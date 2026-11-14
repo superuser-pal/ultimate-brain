@@ -1,0 +1,26 @@
+{
+  "week": "2026-W46",
+  "as_of": "2026-11-09T07:04:12Z",
+  "local_date": "2026-11-09",
+  "notion": "live",
+  "window": {
+    "from": "2026-11-02T07:03:55Z",
+    "to": "2026-11-09T07:04:12Z",
+    "first": false,
+    "days": 7
+  },
+  "report": null,
+  "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "quiet": true,
+  "file": null,
+  "counts": {
+    "changes": 0,
+    "findings": 0,
+    "findings_shown": 0,
+    "clusters": 0,
+    "clusters_left": 0,
+    "corrections": 0,
+    "pending": 0,
+    "earlier_open": 0
+  }
+}

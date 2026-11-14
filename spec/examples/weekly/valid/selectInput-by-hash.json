@@ -1,0 +1,26 @@
+{
+  "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "judged": {
+    "clusters": [
+      "overtaken:per-3h8w2n6c",
+      "recurring_term:pricing-tiers"
+    ],
+    "findings": [
+      {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    ],
+    "corrections": []
+  }
+}
