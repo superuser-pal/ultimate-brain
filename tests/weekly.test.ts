@@ -402,10 +402,8 @@ test("schedule install weekly-review: Monday 08:00 by default, the budget cap fr
   const root = await busy(context);
   const skill = join(root, ".claude/skills/brain-weekly-review");
   const { env, home, bin } = await scheduleEnv(context, "darwin");
-  const missing = await schedule(root, ["install", "weekly-review", "--model", "claude-sonnet-5-5"], env, home);
-  assert.equal(missing.json.error.code, "SKILL_MISSING");
-  await mkdir(skill, { recursive: true });
-  await writeFile(join(skill, "SKILL.md"), "---\nname: brain-weekly-review\ndescription: synthetic\n---\n");
+  // The brain ships brain-weekly-review since CC-255 (SKILL_MISSING is tested on the catch-up job, tests/unattended.test.ts).
+  assert.ok((await readFile(join(skill, "SKILL.md"), "utf8")).includes("name: brain-weekly-review"));
 
   const installed = await schedule(root, ["install", "weekly-review", "--model", "claude-sonnet-5-5"], env, home);
   assert.equal(installed.code, 0, JSON.stringify(installed.json));
