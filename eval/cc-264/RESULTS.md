@@ -57,7 +57,7 @@ Of brain-catch-up's 47,104 characters, "Unattended" and "Run on a schedule" are 
 
 | Quick win | The gate's numbers it reduces |
 |---|---|
-| "Unattended" and "Run on a schedule" move to `references/unattended.md` and `references/schedule.md`, read only by an unattended run or a schedule request. Their headings stay in SKILL.md as pointers | 13,801 characters (about 3.5k tokens) less in every call of every attended catch-up: 37 calls here |
+| "Unattended" and "Run on a schedule" move to `references/unattended.md` and `references/schedule.md`, read only by an unattended run or a schedule request. Their headings stay in SKILL.md as pointers | SKILL.md goes from 47,104 to 36,686 characters (the reading table below added): about 2.6k tokens less in every call of every attended catch-up, 37 calls here |
 | Each skill and reference is read at its step, and only when the step has work (a table in the skill) | brain-ingest references/notion.md (16,077) and brain-sync's Push half are read at the publish, not in the read-only pass, so 13+ fewer calls carry them; brain-apply, brain-query and brain-repos are not read when their steps have nothing |
 | An input's text is never printed when the command that takes it returns it | the 13,034-character transcript print before `brain source extract` |
 
