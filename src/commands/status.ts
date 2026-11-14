@@ -1,4 +1,5 @@
 import { readdir, readFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join } from "node:path";
 
 import type { Command } from "../lib/command.ts";
@@ -11,7 +12,8 @@ import { describeErrors, loadSchemas } from "../lib/schemas.ts";
 import { isRecord, readJsonInput } from "../lib/input.ts";
 import { databaseId, modulesOf } from "../lib/modules.ts";
 import { expandPath, linkedRepos, workTreeTop } from "../lib/repos.ts";
-import { unattendedRuns } from "../lib/runs.ts";
+import { unattendedRuns, weeklyRun } from "../lib/runs.ts";
+import { ATTEMPT_PATH, readState, weeklySettings, weeklySnapshotPath } from "../lib/weekly-state.ts";
 import { setupLine, setupStatus } from "../lib/setup.ts";
 import { effectiveStyle, type Style } from "../lib/style.ts";
 import { contextFor, indexNotes, loadSuppressions, restrictionOf } from "../lib/suppressions.ts";
@@ -94,7 +96,7 @@ export const statusCommand: Command = {
       tasks_status_note: taskNote,
       modules: modulesOf(brain!.config),
       settings,
-      unattended: await unattendedRuns(brain!.root),
+      unattended: { ...(await unattendedRuns(brain!.root)), weekly: await weeklyOf(brain!.root, now) },
       repos,
       index_stale: currentIndex !== index || issues.some((issue) => issue.rule === "index-stale" && issue.path === "AGENTS.md"),
       views_stale: viewStale,
@@ -103,6 +105,8 @@ export const statusCommand: Command = {
       skills: statusSkills(brain!.root, installedProduct(), homeOf(environment.env)),
       // Where the Notion build files are: <path>/notion/…, <path>/docs/notion-space-design.md (§5.2).
       product: { path: installedProduct().root },
+      // Where the weekly review's skill writes its Notion snapshot, outside the brain (§5.2, §5.34).
+      weekly_snapshot: weeklySnapshotPath(brain!.root, environment.homeDirectory ?? homedir()),
       // How far the guided setup has got, offline (§5.2, spec/setup.md §5).
       setup: await setupStatus(brain!.root, brain!.config, notes, environment.homeDirectory, environment.env ?? process.env),
       branch,
@@ -124,7 +128,19 @@ function readNotion(config: Record<string, unknown>): { configured: string[]; mi
   return { configured, missing, tasks_database: typeof tasks.database === "string" && tasks.database !== "" };
 }
 
-function readSettings(config: Record<string, unknown>): { publish: string; push: string; unattended: { max_inputs: number }; style: Style } {
+/** `unattended.weekly` (§5.34): diagnostic, so a damaged state or marker reads as none rather than failing status. */
+async function weeklyOf(root: string, now: Date) {
+  let state: ReturnType<typeof readState> = null;
+  try { state = readState(root); } catch { state = null; }
+  let attempt: { week: string; started: string; mode: string } | null = null;
+  try {
+    const value = JSON.parse(await readFile(join(root, ATTEMPT_PATH), "utf8"));
+    if (loadSchemas().weekly("attempt")(value)) attempt = value as { week: string; started: string; mode: string };
+  } catch { attempt = null; }
+  return weeklyRun(root, now, (week) => state?.weeks[week]?.path ?? null, attempt);
+}
+
+function readSettings(config: Record<string, unknown>): { publish: string; push: string; unattended: { max_inputs: number }; style: Style; weekly: ReturnType<typeof weeklySettings> } {
   const settings = isRecord(config.settings) ? config.settings : {};
   const unattended = isRecord(settings.unattended) ? settings.unattended : {};
   return {
@@ -133,6 +149,8 @@ function readSettings(config: Record<string, unknown>): { publish: string; push:
     unattended: { max_inputs: typeof unattended.max_inputs === "number" ? unattended.max_inputs : 10 },
     // The stored preset and each dial's effective value (0081, §5.2, §5.3.1).
     style: effectiveStyle(config),
+    // The weekly review's budgets and schedule choice, defaults filled in (0.15.0, weekly-review.md §12).
+    weekly: weeklySettings(config),
   };
 }
 

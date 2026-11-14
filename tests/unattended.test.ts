@@ -38,7 +38,7 @@ async function setConfig(dir: string, change: (config: Record<string, any>) => v
 test("max_inputs: status shows 10 by default and the value set; 0 and a fraction are refused", async (context) => {
   const dir = await fixtureCopy(context);
   assert.deepEqual((await run(dir, ["status"])).json.data.settings, { publish: "ask", push: "auto", unattended: { max_inputs: 10 },
-    style: { preset: "standard", explain: "some", length: "normal", directness: "context-first" } });
+    style: { preset: "standard", explain: "some", length: "normal", directness: "context-first" }, weekly: { minutes: 10, max_judged: 30, max_usd: 3, schedule: "off" } });
   assert.equal((await run(dir, ["config", "set", "settings.unattended.max_inputs", "4"])).code, 0);
   assert.equal((await run(dir, ["status"])).json.data.settings.unattended.max_inputs, 4);
   for (const value of ["0", "2.5", '"10"']) {
@@ -51,7 +51,7 @@ test("max_inputs: status shows 10 by default and the value set; 0 and a fraction
 
 test("status sums the unattended catch-ups since the last attended one, and flags a growing backlog", async (context) => {
   const dir = await fixtureCopy(context);
-  assert.deepEqual((await run(dir, ["status"])).json.data.unattended, { catch_up: null, backlog: false });
+  assert.deepEqual((await run(dir, ["status"])).json.data.unattended, { catch_up: null, backlog: false, weekly: null });
   const log = async (at: string, pairs: string[]) => assert.equal((await brain(["log", "catch-up", "-", ...pairs, "--brain", dir, "--now", at, "--json"])).code, 0);
   await log("2026-11-28T07:00:00Z", ["mode=unattended", "inputs=10", "left=5", "skipped=0", "waiting=0", "failed=0", "report=no"]);
   await log("2026-11-30T18:00:00Z", ["notes_read=12", "seconds=200"]);
@@ -62,12 +62,13 @@ test("status sums the unattended catch-ups since the last attended one, and flag
   assert.deepEqual(status, {
     catch_up: { since: "2026-11-30T18:00:00Z", runs: 3, inputs: 6, failed: 2, failures: ["Notion login", "lint error"], left: 2, skipped: 1, waiting: 2, last: "2026-12-03T07:00:00Z" },
     backlog: false,
+    weekly: null,
   });
   await log("2026-12-04T07:00:00Z", ["mode=unattended", "inputs=10", "left=4", "skipped=0", "waiting=0", "failed=0", "report=no"]);
   await log("2026-12-05T07:00:00Z", ["mode=unattended", "inputs=10", "left=1", "skipped=0", "waiting=0", "failed=0", "report=no"]);
   assert.equal((await run(dir, ["status"])).json.data.unattended.backlog, true, "left over in the last three runs");
   await log("2026-12-05T18:00:00Z", ["notes_read=3", "seconds=90"]);
-  assert.deepEqual((await run(dir, ["status"])).json.data.unattended, { catch_up: null, backlog: true }, "an attended run starts the count again");
+  assert.deepEqual((await run(dir, ["status"])).json.data.unattended, { catch_up: null, backlog: true, weekly: null }, "an attended run starts the count again");
 });
 
 // --- sync: --skip-conflicted and NOT_A_REPORT ------------------------------------------------------
