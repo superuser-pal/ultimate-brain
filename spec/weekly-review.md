@@ -85,6 +85,7 @@ Order of attention:
 The example's counts (§5.1): D = 4 items; I = 2 (the group's two admitted targets) + 1 + 1 = 4 new Review items; T = 2 + 1 (the task) + 1 + 1 = 5 targets. T is full, so §5.2 admits the group in part (2 of its 3 targets; the third stays queued under its claim) and queues the next candidate, a structure finding that needs a target, with the rest.
 
 ### 3.1 The header (two lines)
+Rendered by `brain weekly record` from `plan`'s and `select`'s data, never by the skill.
 - Line 1: `Week of <D Mon YYYY of the Monday> · changes since <D a Mon HH:MM local of window.from>` (on a first run, `· first review, last 7 days`), then `· Notion read live` or `· Notion unreachable: brain only`.
 - Line 2: the coverage statement (§4.3), then, when any apply, `<n> more decisions wait in Review from earlier weeks.` (§7) and `Partial: <what was left> (§10).`
 
@@ -111,8 +112,9 @@ With no item, the section is `- Nothing needs your decision this week.`.
 ## 4. The change window and coverage
 
 ### 4.1 The window
-- **Clusters in the window.** `plan` passes the reflection clusters whose members were `updated`, or whose inputs are dated, between `window.from` and `window.to` (§12, the trials). Other clusters are not this week's: they are not omitted, and the attended brain-reflect still sees them.
+- **Clusters in the window.** `plan` passes the reflection clusters whose members were `updated`, or whose inputs are dated, between `window.from` and `window.to` (§12, the trials), compared as UTC dates, both ends included. Other clusters are not this week's: they are not omitted, and the attended brain-reflect still sees them. `plan` passes at most `settings.weekly.max_judged` of them, carried ones first (§10); the window's clusters beyond that are listed in `clusters_left`, and a run omits and carries them (§10) as it does the ones it had no budget to judge.
 - `window.from` is `covered_to` of the **last successful report of an earlier week** in `_weekly/state.json` (§9.5). With none (a first run), it is `as_of` minus 7 days (0075 §1). A rerun in the same week keeps this week's `from`.
+- **The boundary day.** Changes are dated (§4.2), and `from` is a timestamp. A change is in the window when its date is after the UTC date of `from`, or on it and not covered by the report that ended there: that report's state lists the keys it covered dated on that day (`covered_on_to`, kept for a rerun as `window_skip`, §9.5). On a first run, a change dated on `from`'s date is in. So a change made on Monday after the run is next week's, and one the run covered is not repeated.
 - `window.to` is `as_of`.
 - What changed is never cut by the budget: it is deterministic, and every change in the window is covered, as a bullet or by count (§4.3). `covered_to` is therefore always `window.to` of a report that was written. A partial run omits **judgments** only (clusters and correction targets, §10), and those are carried forward explicitly, so nothing omitted is silently marked as handled (0075 §1).
 
@@ -256,7 +258,7 @@ A run that is **not** quiet because of a failure alone (Notion unreachable with 
 
 ### 9.2 Files
 - the report (§2), `_weekly/state.json`, the new proposals, and a draft learned Document for a theme (an addition, as 0051 allows);
-- the log line: `weekly - mode=<attended|unattended> week=<YYYY-Www> coverage=<complete|partial|none> decisions=<n> new_items=<n> targets=<n> queued=<n> changes=<n> failed=<n>[ failures="<reason>; …"] published=<yes|no> notes_read=<n> seconds=<s>` (cli.md §3.9).
+- the log line (`published` is whether the run publishes the report, as `record`'s input says; it is refused with Reports off, §9.3): `weekly - mode=<attended|unattended> week=<YYYY-Www> coverage=<complete|partial|none> decisions=<n> new_items=<n> targets=<n> queued=<n> changes=<n> failed=<n>[ failures="<reason>; …"] published=<yes|no> notes_read=<n> seconds=<s>` (cli.md §3.9).
 
 ### 9.3 Delivery and publishing (0075 §5, 0093 §3)
 | Reports | `settings.publish` | The report | Review rows |
@@ -277,8 +279,8 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
 ```json
 {
   "version": 1,
-  "last_success": { "week": "2026-W46", "report": "vw-7d2k9m4q", "covered_to": "2026-11-09T07:04:12Z", "coverage": "complete" },
-  "weeks": { "2026-W46": { "report": "vw-7d2k9m4q", "window_from": "2026-11-02T07:03:55Z", "input_hash": "sha256:…", "counts": { "decisions": 4, "new_items": 4, "targets": 5, "queued": 5 }, "items": ["correction:knw-…:budget", "task_overdue:notion:…"] } },
+  "last_success": { "week": "2026-W46", "report": "vw-7d2k9m4q", "covered_to": "2026-11-09T07:04:12Z", "covered_on_to": [], "coverage": "complete" },
+  "weeks": { "2026-W46": { "report": "vw-7d2k9m4q", "path": "reports/2026-11-09-weekly-review.md", "window_from": "2026-11-02T07:03:55Z", "window_skip": [], "input_hash": "sha256:…", "counts": { "decisions": 4, "new_items": 4, "targets": 5, "queued": 5 }, "items": ["correction:knw-…:budget", "task_overdue:notion:…"] } },
   "shown": [ { "key": "task_overdue:notion:2b8c…", "week": "2026-W46", "category": "overdue", "evidence_hash": "sha256:…", "days_late": 8 } ],
   "queued": [ { "key": "area_empty:area-…", "week": "2026-W46" } ],
   "carry": { "clusters": ["overtaken:per-…"] },
@@ -286,7 +288,7 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
 }
 ```
 
-- `weeks` keeps the last 8 weeks, and `shown` keeps entries from the last 26 weeks; older ones are dropped at each write. Lint checks the file (`weekly-state`: schema, unique keys).
+- `weeks` keeps the last 8 weeks, and `shown` keeps entries from the last 26 weeks; older ones are dropped at each write. Lint checks the file (`weekly-state`: schema, unique keys). The shape is `$defs/state` of `spec/schemas/weekly.schema.json`; `covered_on_to` and `window_skip` are the boundary day's keys (§4.1).
 - A missing file means a first run. A damaged file fails `plan` with `WEEKLY_STATE_UNREADABLE`, rather than repeat every finding.
 - **`_weekly/attempt.json`**, gitignored (the brain template's `.gitignore` and `brain upgrade`), is `{ "week", "started", "mode" }`. The skill writes it at step 5 and removes it after step 10. `brain status` reports a marker older than 2 hours as `unattended.weekly.unfinished`. A killed run (a budget ceiling, a closed laptop) is therefore seen.
 

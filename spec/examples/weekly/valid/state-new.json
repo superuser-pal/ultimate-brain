@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "last_success": null,
+  "weeks": {},
+  "shown": [],
+  "queued": [],
+  "carry": {
+    "clusters": []
+  },
+  "corrections": {
+    "checked_on": null,
+    "done_on_date": [],
+    "open": []
+  }
+}

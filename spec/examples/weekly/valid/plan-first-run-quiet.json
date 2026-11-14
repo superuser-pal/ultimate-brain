@@ -1,0 +1,47 @@
+{
+  "week": "2026-W46",
+  "as_of": "2026-11-09T07:04:12Z",
+  "local_date": "2026-11-09",
+  "notion": "live",
+  "window": {
+    "from": "2026-11-02T07:04:12Z",
+    "to": "2026-11-09T07:04:12Z",
+    "first": true,
+    "days": 7
+  },
+  "report": null,
+  "changes": [],
+  "inputs": {
+    "meetings": 6,
+    "sources": 3
+  },
+  "findings": [],
+  "skipped_signals": [],
+  "task_analysis": {
+    "overdue": [],
+    "stalled": [],
+    "blocked": [],
+    "no_next_step": [],
+    "order": []
+  },
+  "clusters": [],
+  "clusters_left": [],
+  "corrections": [],
+  "pending": [],
+  "week_state": {
+    "counts": {
+      "decisions": 0,
+      "new_items": 0,
+      "targets": 0,
+      "queued": 0
+    },
+    "items": []
+  },
+  "earlier_open": 0,
+  "budget": {
+    "minutes": 10,
+    "max_judged": 30
+  },
+  "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "quiet": true
+}
