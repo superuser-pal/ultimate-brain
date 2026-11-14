@@ -14,6 +14,8 @@ export interface DerivedView {
 }
 
 const CURRENT_ASSESSMENTS = new Set(["accepted", "provisional", "contested"]);
+/** A Decision log line of a draft, in the words of the Brief's waiting line (schema §16.1, §16.2). */
+const WAITING = "waiting in Review";
 
 /** Render one project view, or an area's brief, from canonical notes only (spec/schema.md §16). */
 export function deriveView(project: Note, kind: ViewKind, notes: readonly Note[], options: { documents?: boolean } = {}): DerivedView {
@@ -175,15 +177,18 @@ function decisionLogSections(
   const current = decisions.filter((note) => CURRENT_ASSESSMENTS.has(String(note.attributes.assessment))).sort(sortDescendingBy("date"));
   const superseded = decisions.filter((note) => note.attributes.assessment === "superseded").sort(sortDescendingBy("valid_until"));
 
+  // A draft keeps its place but says it waits in Review, and states no assessment you haven't given (schema §16.2, CC-261).
+  const draft = (decision: Note) => decision.attributes.lifecycle === "draft";
   const currentSection = ["## Current", ...(current.length === 0 ? ["- None"] : current.map((decision) => {
     const older = relationTarget(decision, "supersedes", byId);
-    return `- ${text(decision.attributes.date)} — ${add(decision)} — ${text(decision.attributes.assessment)}${older === undefined ? "" : ` — supersedes ${link(older)}`}`;
+    const state = draft(decision) ? WAITING : text(decision.attributes.assessment);
+    return `- ${text(decision.attributes.date)} — ${add(decision)} — ${state}${older === undefined ? "" : ` — supersedes ${link(older)}`}`;
   }))];
   const supersededSection = ["## Superseded", ...(superseded.length === 0 ? ["- None"] : superseded.map((decision) => {
     const replacement = relationTarget(decision, "superseded_by", byId);
     const from = scalar(decision.attributes.valid_from) ?? text(decision.attributes.date);
     const until = text(decision.attributes.valid_until);
-    return `- ${from} → ${until} — ${add(decision)} — superseded by ${replacement === undefined ? "(unknown)" : link(replacement)}`;
+    return `- ${from} → ${until} — ${add(decision)}${draft(decision) ? ` — ${WAITING}` : ""} — superseded by ${replacement === undefined ? "(unknown)" : link(replacement)}`;
   }))];
   return [currentSection, supersededSection];
 }

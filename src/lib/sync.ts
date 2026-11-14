@@ -29,6 +29,7 @@ import { proposalWithheld, type Withheld } from "./passages.ts";
 import { citeLabel, contextFor, publishableNote, requireSuppressions, titleWithheld, viewDependencies, withheldView } from "./suppressions.ts";
 import { importedItems } from "./selection.ts";
 import { chainOf, FOLLOW_UP } from "./extract.ts";
+import { wholeDocumentMarkdown } from "./whole-links.ts";
 
 export const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "documents", "review", "inbox"] as const;
 const CREATABLE = new Set(["domains", "areas", "goals", "projects", "people", "orgs"]);
@@ -1053,14 +1054,19 @@ function proposalLinks(attributes: Record<string, unknown>): Array<{ field: unkn
 }
 function renderedContent(note: Note, workspace: Workspace): { body: string | null; sections: Record<string, string> | null; hash?: string } {
   // A Brief or Decision log the derived-content rule withholds is a notice in its section (cli §5.14.4, "Restricted notes").
-  const section = (view: Note | undefined, base: Note): string => view !== undefined && publishState(workspace).withheld.has(view.id) ? WITHHELD_VIEW : notionMarkdown(generatedBlock(view?.body ?? ""), base, workspace);
+  // In a section, a draft links nowhere even with a page from before 0.9.1: Notion shows reviewed knowledge only (cli §5.14.4 `sections`, 0071, CC-261).
+  const section = (view: Note | undefined, base: Note): string => view !== undefined && publishState(workspace).withheld.has(view.id) ? WITHHELD_VIEW : notionMarkdown(generatedBlock(view?.body ?? ""), base, workspace, { draftsUnlinked: true });
   if (note.type === "area") { const brief = workspace.notes.find((x) => x.type === "view" && x.attributes.view_kind === "area_brief" && x.attributes.area === note.id); if (brief === undefined) return { body: null, sections: null }; const sections = { Brief: section(brief, brief) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; }
   // A source's digest is written once (0043).
   if (note.type === "source") { if (!hasInboxBody(note)) return { body: null, sections: null }; const body = digestBody(note); return { body, sections: null, hash: hash(body) }; }
   if (isReport(note)) { const body = notionMarkdown(note.body.replace(/^\n+/, ""), note, workspace); return { body, sections: null, hash: hash(body) }; }
+  // A whole Document's links are read against its file's repo (0091).
+  if (note.type === "reference" && note.attributes.origin === "whole") { const body = wholeDocumentMarkdown(note, workspace.notes, (id) => workspace.get(id)); return { body, sections: null, hash: hash(body) }; }
   if (note.type === "decision" || note.type === "question" || note.type === "reference") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: section(brief, note), "Decision log": section(log, note) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
 function generatedBlock(body: string): string { const start = body.indexOf("<!-- @generated:start -->"); const end = body.indexOf("<!-- @generated:end -->"); return start >= 0 && end > start ? body.slice(start + "<!-- @generated:start -->".length, end).trim() : body.trim(); }
-function notionMarkdown(body: string, source: Note, workspace: Workspace): string { const fromFolder = source.path.includes("/") ? source.path.slice(0, source.path.lastIndexOf("/")) : ""; return body.replace(/\^\[(inferred|ambiguous)\]/g, (_, kind) => kind === "inferred" ? " (AI inference)" : " (ambiguous)").replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_all, title, link) => { const targetPath = normalizeRelative(fromFolder, link); const target = workspace.notes.find((note) => note.path === targetPath); return typeof target?.attributes.notion === "string" ? `[${title}](https://www.notion.so/${target.attributes.notion.replaceAll("-", "")})` : title; }); }
+/** Types that get a Notion page only once reviewed (0071); a draft person keeps its page. */
+const REVIEWED_ONLY_TYPES = new Set(["decision", "question", "reference"]);
+function notionMarkdown(body: string, source: Note, workspace: Workspace, options: { draftsUnlinked?: boolean } = {}): string { const fromFolder = source.path.includes("/") ? source.path.slice(0, source.path.lastIndexOf("/")) : ""; return body.replace(/\^\[(inferred|ambiguous)\]/g, (_, kind) => kind === "inferred" ? " (AI inference)" : " (ambiguous)").replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_all, title, link) => { const targetPath = normalizeRelative(fromFolder, link); const target = workspace.notes.find((note) => note.path === targetPath); return typeof target?.attributes.notion === "string" && !(options.draftsUnlinked === true && target.attributes.lifecycle === "draft" && REVIEWED_ONLY_TYPES.has(target.type)) ? `[${title}](https://www.notion.so/${target.attributes.notion.replaceAll("-", "")})` : title; }); }
 function reviewMarkdown(body: string, target: Note | undefined): string {
   const fromFolder = target?.path.includes("/") ? target.path.slice(0, target.path.lastIndexOf("/")) : "";
   return body.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_all, title, link) => {
@@ -1119,10 +1125,18 @@ export function letters(index: number): string {
 
 function isReport(note: Note): boolean { return note.type === "view" && note.attributes.view_kind === "report"; }
 
+/** A CommonMark code span, so Notion never links a name like notes.md (cli §5.14.4, CC-263). */
+export function codeSpan(text: string): string {
+  const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((run) => run.length));
+  const fence = "`".repeat(longest + 1);
+  const pad = text.startsWith("`") || text.endsWith("`") ? " " : "";
+  return `${fence}${pad}${text}${pad}${fence}`;
+}
+
 /** A brain-created Inbox row's body: a line about the source, its summary and its digest (cli §5.14.4). */
 function digestBody(note: Note): string {
   const a = note.attributes;
-  const origin = typeof a.file_name === "string" ? a.file_name : typeof a.source_key === "string" && a.source_key.startsWith("url:") ? a.source_key.slice(4) : "pasted text";
+  const origin = typeof a.file_name === "string" ? codeSpan(a.file_name) : typeof a.source_key === "string" && a.source_key.startsWith("url:") ? a.source_key.slice(4) : "pasted text";
   const date = typeof a.captured === "string" ? a.captured.slice(0, 10) : "";
   const fileDate = /^sources\/[^/]+\/(\d{4}-\d{2}-\d{2})-/.exec(note.path)?.[1] ?? date;
   const parts = splitParts(note.body);
@@ -1290,8 +1304,8 @@ function bindTaskItems(note: Note, attributes: Record<string, unknown>, value: u
   attributes.task_items = current;
 }
 
-export function record(workspace: Workspace, input: unknown): Record<string, unknown> {
-  if (!isRecord(input) || !Array.isArray(input.records)) throw new BrainError("INPUT_INVALID", "record input needs a records list"); const records: Array<Record<string, unknown>> = [];
+export function record(workspace: Workspace, input: unknown): { records: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id: string }> } {
+  if (!isRecord(input) || !Array.isArray(input.records)) throw new BrainError("INPUT_INVALID", "record input needs a records list"); const records: Array<Record<string, unknown>> = []; const warnings: Array<{ code: string; message: string; id: string }> = [];
   for (const entry of input.records) { if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note);
     // A Draft page moved to the trash (--unpublish-drafts, 0071): the note has no page again, until it is approved.
     if (REVIEWED_PAGE_TYPES.has(note.type) && isRecord(entry.published) && entry.published["@trashed"] !== undefined) { if (typeof doc.attributes.notion !== "string" || doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); for (const key of ["notion", "notion_published", "last_synced"]) delete doc.attributes[key]; workspace.save(note.path, doc); if (workspace.newErrors().length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); continue; }
@@ -1301,8 +1315,13 @@ export function record(workspace: Workspace, input: unknown): Record<string, unk
       if (doc.attributes.notion === entry.notion && isDeepStrictEqual(doc.attributes.notion_published, entry.published)) { records.push({ id: entry.id, result: "recorded", changed: [] }); continue; }
       if (doc.attributes.notion !== entry.replaces) throw new Error("NOTION_ID_MISMATCH");
       doc.attributes.notion = entry.notion; doc.attributes.notion_published = entry.published;
-    } else if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; if (entry.task_items !== undefined) bindTaskItems(note, doc.attributes, entry.task_items, entry.tasks); workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && (error.message === "NOTION_ID_MISMATCH" || error.message === "TASK_ITEM_EXISTS") ? error.message : "INVALID_RESULT", changed: [] }); } }
-  return { records };
+    } else if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; if (entry.task_items !== undefined) bindTaskItems(note, doc.attributes, entry.task_items, entry.tasks); workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); if (bodyWithoutReadBack(entry.published)) warnings.push({ code: "NOTION_BODY_MISSING", message: `${note.id}: a body was published without the read-back of its page, so the next plan holds it (cli §5.14.6, §5.14.7)`, id: note.id }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && (error.message === "NOTION_ID_MISMATCH" || error.message === "TASK_ITEM_EXISTS") ? error.message : "INVALID_RESULT", changed: [] }); } }
+  return { records, warnings };
+}
+
+/** A body render sent (its `@git_body`) recorded with no `@notion_body` key at all: the read-back was skipped (cli §5.14.6, CC-262). A null is a failed read-back the skill reported. */
+function bodyWithoutReadBack(published: unknown): boolean {
+  return isRecord(published) && Object.hasOwn(published, "@git_body") && !Object.hasOwn(published, "@notion_body");
 }
 
 /** A Document whose accepted wording returns from Notion (cli §5.14.7): a promoted one (0049) or a workflow's (connected-workflows.md §6.3). */
