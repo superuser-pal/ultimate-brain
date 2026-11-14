@@ -91,6 +91,7 @@ const EFFECT: Record<string, string> = {
   update_fact: "Accept replaces the value in the note. The source's value stays in its history.",
   update_body: "Accept replaces the text in the note.",
   add_to_note: "Accept appends the text to the note, with its source.",
+  replace_line: "Accept replaces that one line of the note with the text.",
   add_link: "Accept adds the link to the note.",
   held: "This item rests on text you excluded from the brain, so it is not shown and cannot be accepted. Reject or Defer it.",
 };
@@ -197,6 +198,11 @@ export function reviewItems(proposal: Note, workspace: Workspace, format: 1 | 2 
         const field = label(String(change.field));
         item = { kind: "changes", heading: `Changes: ${field} on ${targetTitle}`, current, proposed: canon(value), editable: true, why, effect: EFFECT.update_fact!, target: view.note, held: view.held, base: base(view.note !== undefined, change.before === undefined ? null : String(change.before)), now: base(view.note !== undefined, live === undefined ? null : String(live)),
           v2: { group: "changes", head: change.before === undefined ? `${field} on ${targetTitle}: ${value} (new)` : `⚠ ${field} on ${targetTitle}: ${String(change.before)} → ${value}`, now: change.before === undefined && live === undefined ? null : `> Now: ${current}`, wording: canon(`${value}${markers}`), why: specific, warn: change.before !== undefined, what: `now ${current}; Accept sets it to the wording's value. The source's value stays in its history.`, fact_key: `${String(change.target)}\u0000${String(change.field)}`, fact_label: `${field} on ${targetTitle}` } };
+      } else if (change.kind === "replace_line") {
+        // A correction's one line (weekly-review.md §8.3): Now is the line it replaces, the wording the new line.
+        const before = String(change.line_before ?? "");
+        item = { kind: "changes", heading: `Changes: ${targetTitle}`, current: `The line now in the note:\n${canon(before)}`, proposed: canon(String(change.line_after ?? "")), editable: true, why, effect: EFFECT.replace_line!, target: view.note, held: view.held, base: base(view.note !== undefined, String(change.before_hash ?? "")), now: base(view.note !== undefined, bodyHash(workspace.get(String(change.target))?.body ?? "")),
+          v2: { group: "changes", head: `⚠ Line in ${targetTitle}`, now: `> Now: ${canon(before)}`, wording: canon(String(change.line_after ?? "")), why: specific, warn: true, what: `now "${oneLine(before)}"; Accept replaces that one line with the wording.` } };
       } else if (change.kind === "update_body") {
         const existing = canon(view.body);
         const lines = view.note === undefined ? 0 : lineDiff(view.note.body, String(change.content ?? "")).length;
@@ -408,6 +414,7 @@ export function renderReview(proposal: Note, workspace: Workspace, rowName: RowN
     ...top(proposal, workspace, items), "",
     "## Review summary", summary, "",
     ...groups.flatMap((group) => [`## ${GROUP_HEADINGS[group]}`, ...items.filter((item) => item.group === group).flatMap((item) => [item.section, ""])]),
+    ...needsClarification(proposal, workspace),
     `## ${CONTEXT_HEADING} {toggle="true"}`, ...context.split("\n").map((line) => (line === "" ? "" : `\t${line}`)),
   ].join("\n").replace(/\n+$/, "\n");
   return { items, body, summary, context, summary_hash: `sha256:${sha(`${summary}\n\n${context}`)}` };
@@ -422,10 +429,30 @@ function top(proposal: Note, workspace: Workspace, items: readonly ReviewItem[])
   const marked = marks.length === 0 ? "" : ` ${marks.join(" and ")}: Approve leaves ${marks.length === 2 ? "both" : "it"} until ${marks.length === 2 ? "their" : "its"} line says Decision: Accept.`;
   const link = url(source?.attributes.notion);
   return [
-    `**From ${escapeInline(title)}:** ${groupCounts(items)}.${marked}`,
+    // A correction group's top names the correction, not a source (capture-and-review §7.12.2 6a).
+    typeof a.correction === "string" ? `**Correction:** ${groupCounts(items)}.${marked}` : `**From ${escapeInline(title)}:** ${groupCounts(items)}.${marked}`,
     "**What to do:** 1. Read the sections below, or click **Review with me** to go through them with Brain Assistant. 2. Correct a wording where it stands, or type Accept, Reject, Defer or Request revision on an item's Decision line. 3. Set **Your call**: Approve, Request revision (say what in What to fix) or Reject.",
     ...(link === null ? [] : [`Source: [${title.replace(/[[\]]/g, "")}](${link})`]),
   ];
+}
+
+/** A correction group's uncertain matches (capture-and-review §7.12.2 6a): named, never items, never read. */
+function needsClarification(proposal: Note, workspace: Workspace): string[] {
+  const entries = (Array.isArray(proposal.attributes.needs_clarification) ? proposal.attributes.needs_clarification : []).filter(record);
+  if (typeof proposal.attributes.correction !== "string" || entries.length === 0) return [];
+  const field = String(proposal.attributes.correction).split(":")[1] ?? "";
+  // Restricted text never reaches the page: a note is named in its published form, and a line it no longer shows is left out.
+  const context = contextFor(workspace.notes, requireSuppressions(workspace.root));
+  const lines = entries.map((entry) => {
+    const note = typeof entry.note === "string" ? workspace.get(entry.note) : undefined;
+    if (note === undefined) return `- ${escapeInline(String(entry.note))}`;
+    const form = publishableNote(note, context);
+    const name = titleWithheld(form) ? citeLabel(form) : String(note.attributes.title ?? note.id);
+    const visible = eligibleNote(note, context);
+    const shown = typeof entry.line === "string" && visible !== null && visible.body.split("\n").includes(entry.line);
+    return `- ${escapeInline(name)}: ${shown ? escapeContext(canon(String(entry.line))) : entry.line === null ? `its ${label(field)} fact` : "a line (withheld)"}`;
+  });
+  return ["## Needs clarification", ...lines, ""];
 }
 
 const escapeInline = (text: string): string => oneLine(text).replace(/\*/g, "\\*");
