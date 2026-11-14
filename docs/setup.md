@@ -34,7 +34,7 @@ Setup checks all of these at once, at the start. It asks you about your Notion p
 | 3 | Notion template and connection | Duplicate the template, connect your agent to Notion, restart the agent. | The brain needs a space to write to. |
 | 4 | Connect the brain to Notion | Say yes to moving the template's example rows to Notion's trash. | The brain stores each database's id and the template's version. The example rows go before anything reads your space, so none of them ever enters your brain. |
 | 4a | The minutes prompt | Paste a short invented meeting into a new Meetings page. Open the Notion AI chat on that page, paste the prompt followed by the line "Write the minutes on this page, below the transcript, and nothing else.", and send. Delete the test page afterwards. | Your meeting minutes come out in the shape the brain reads, and the transcript stays on the page. |
-| 4b | Brain Assistant | Set it up, then run `/Today` once. | `/Today` must list only your brain's tasks. |
+| 4b | Brain Assistant | Set it up, giving it the Brain Data, How it works and Skills under your space's top page. Then ask it **Run Today** once (by name: a Custom Agent doesn't run `/` commands). | Today must list only the tasks of your space's Tasks database. |
 | 5 | Identities | Say which names you appear under in meetings and in Notion. | The brain knows which tasks and commitments are yours. |
 | 6 | Seeding | Describe your work in a few sentences, answer one preview, then drop 3 to 5 key documents in your drop folder. | Your brain starts with your Areas, Projects, people and documents, so the first meeting doesn't create duplicates. Nothing is written before your yes. |
 | 7 | First value | Judge four checks (below). | It proves the brain works on your own material. |
@@ -197,11 +197,11 @@ Notion AI wrote the minutes but replaced the transcript. The brain needs both, b
 
 The same thing can happen to a real meeting. Catch-up then leaves it Reviewed and says so under Needs you, with this fix. Once the transcript is back, run catch-up again.
 
-### `/Today` shows things from outside your brain (`assistant-reads-outside`)
+### Today shows things from outside your brain (`assistant-reads-outside`)
 
-Brain Assistant can see more than your brain.
-- **A Custom Agent:** limit its Tools and access to Brain Data, How it works and Brain Assistant Skills.
-- **Personal Instructions:** the instruction to stay inside Ultimate Brain is missing or was pasted in part. Paste the whole text again.
+Setup's check says which Tasks database Today should read: the one under your space's top page › Brain Data. If Today lists a task, Review row or meeting from another space, one of two things happened:
+- **The run used another space's Today.** Picking "Today" from the `@` picker can pick another space's skill page, which reads that space. Ask Brain Assistant **Run Today** by name, or mention your Today page by its link (open it from your space's Skills database, ••• → Copy link).
+- **Brain Assistant can see more than your brain.** A Custom Agent: in Tools and access, keep only the Brain Data, How it works and Skills (in an older space, Brain Assistant Skills) under your top page, and remove any other. Personal Instructions: the instruction to stay inside Ultimate Brain is missing or was pasted in part. Paste the whole text again.
 
 Then say "check Brain Assistant again".
 
@@ -254,7 +254,7 @@ It ends with one line: `Backup fixed: <n> changes backed up.` or `Backup checked
 
 Without Notion AI:
 - The minutes prompt and Brain Assistant are left out, so setup has 7 required items instead of 9.
-- You lose structured minutes and the choice of what enters the brain from a meeting. You also lose `/Today` and the other Notion buttons that message Brain Assistant.
+- You lose structured minutes and the choice of what enters the brain from a meeting. You also lose Brain Assistant's skills, such as Today, and the Notion buttons that message it.
 - **Meetings:** paste any transcript or summary onto the meeting page. The brain takes it in whole.
 - **How-to questions** go to your agent instead.
 - Rewriting a pasted transcript into the minutes format is not offered.
