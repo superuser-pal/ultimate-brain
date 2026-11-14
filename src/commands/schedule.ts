@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 import type { Command, CommandContext, Warning } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { slugify } from "../lib/paths.ts";
+import { scheduleEntryOf } from "../lib/schedule-entry.ts";
 
 /** The jobs a schedule can run, each with its fixed prompt and the skill it needs (spec/cli.md §5.21, decision 0051). Reflection has none in 0.11.0 (0076 §5). */
 const JOBS = {
@@ -203,17 +204,10 @@ function plist(label: string, entry: Entry, command: readonly string[], path: st
 }
 
 function readEntry(text: string): Entry | null {
-  const match = /<key>ultimate-brain<\/key>\s*<string>([^<]*)<\/string>/.exec(text);
-  if (match === null) return null;
-  try {
-    return JSON.parse(unxml(match[1]!)) as Entry;
-  } catch {
-    return null;
-  }
+  return (scheduleEntryOf(text) as Entry | null) ?? null;
 }
 
 const xml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
-const unxml = (value: string) => value.replaceAll("&quot;", '"').replaceAll("&gt;", ">").replaceAll("&lt;", "<").replaceAll("&amp;", "&");
 const shellQuote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
 const unique = <T>(values: readonly T[]) => [...new Set(values)];
 const notManaged = (): Warning => ({ code: "SCHEDULE_NOT_MANAGED", message: "cron lines are yours: crontab -l" });
