@@ -35,6 +35,8 @@ const SAYS_UNKNOWN = [
   /\b(?:couldn't|could not) (?:establish|confirm|determine|verify)\b/,
   // CC-273: "the brain doesn't have an answer", "I don't have any answer".
   /\b(?:doesn't|does not|don't|do not) have (?:an|any) answer\b/,
+  // CC-275: "Nothing the brain returns / returned records that …" (the brain as the subject of a denial).
+  /\bnothing (?:the brain|it) (?:returns|returned|holds|has) (?:records?|says|holds|mentions)\b/,
   /(?:\bnot|n't|\bnothing) (?:\w+ )?in the brain\b/,
   /\bno (?:records?|information|mention|evidence)\b/,
   /\bno (?:approved |eligible )?memor(?:y|ies)\b/,
@@ -50,6 +52,9 @@ const SAYS_UNKNOWN = [
 // No comma or colon between "no" and its verb (CC-225): "No, Postmark was chosen and is recorded" answers.
 const SAYS_ABSENT = [/\bno [^.;,:]{0,60}?\b(?:recorded|documented)\b/, /\bno [^.;,:]{0,60}?\bin the brain\b/];
 const LEADS_ABSENT = [
+  // CC-275: "I found no recorded <thing>" or "I found no <thing> recorded / documented" said first, with no "with", "in",
+  // "than" or "other" in <thing> ("I found no conflict with the recorded freeze" answers).
+  /^i (?:found|could find|can find) no (?:(?!\b(?:with|in|than|other)\b)[^.;,:]){0,60}?\b(?:recorded|documented)\b/,
   /^(?:no, )?no [^.;,:]{0,60}?\b(?:is|are|was|were|has been|have been) (?:\w+ )?(?:recorded|documented|noted|held)\b/,
   /^(?:no, )?there(?: is|'s| are| was| were) no (?:(?!\b(?:is|are|was|were|be|been|that|but)\b)[^.;,:]){0,60}?\b(?:recorded|documented|noted|held)\b/,
 ];

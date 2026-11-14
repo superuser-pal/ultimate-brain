@@ -423,3 +423,49 @@ const PHRASINGS_CC273 = [
 test("the abstain rule reads CC-273's phrasings as the README says", () => {
   for (const [text, expected] of PHRASINGS_CC273) assert.equal(abstains(text), expected, text);
 });
+
+// CC-275: 0.15.0's smoke run (at b4de4c1) failed two correct answers: Claude Code's trust-34 (gated) and Codex's unk-05
+// (reported). Both were read in the reviewed reading of decision 0083.
+const SMOKE_B4DE4C1 = [
+  ["trust-34", "No. Nothing the brain returns records that Velmor's dispatchers preferred SMS alerts, either as a current memory or as a replaced one.\n\nI searched both notes and memories (including superseded memories) for \"Velmor dispatchers SMS alerts\", \"dispatcher SMS\", \"text message notifications preference\", \"dispatch alerts notification channel\" and \"SMS\". None of the returned notes or memories mentions SMS or a dispatcher alert preference.\n\nThe nearest things it does hold are about other subjects:\n- **Reviewers, not dispatchers:** Velmor's reviewers answer faster when a UI change comes with screenshots (inferred and approved, `memories/2026/10/2026-10-05-harbor-show-velmor-s-reviewers-screenshots.md`).\n- **Dispatch app, not alerts:** Harbor's production database is shared with Velmor's legacy dispatch app, so ask before any migration (`memories/2026/09/2026-09-18-harbor-ask-before-migrations-the-production-database-is-shared.md`).\n\nEvidence: none", "\"Nothing the brain returns records that …\" was not an abstention"],
+  ["unk-05", "I found no recorded deploy freeze for Orbit after searching for “deploy freeze” and “deployment release hold” and checking current memories. That doesn’t confirm deployments are cleared; tasks are in Notion and weren’t read.\n\nEvidence: none", "\"I found no recorded deploy freeze\" followed by a caveat was not an abstention"],
+];
+
+test("0.15.0's smoke run: the two correct answers pass their cases, and the counterexamples fail (CC-275)", () => {
+  const { cases } = JSON.parse(readFileSync(join(EVAL, "cases.json"), "utf8"));
+  const byId = Object.fromEntries(cases.map((c) => [c.id, c]));
+  for (const [id, text, why] of SMOKE_B4DE4C1) {
+    assert.ok(byId[id].kind === "unknown" || byId[id].abstain, id);
+    assert.ok(abstains(text), `${id} abstains (${why})`);
+    assert.deepEqual(scoreAnswer(byId[id], { answer: { text, citations: [] } }), [], `${id} (${why})`);
+  }
+  const fail = (id, text) => scoreAnswer(byId[id], { answer: { text, citations: [] } });
+  // The denial, then the preference stated anyway, still fails.
+  assert.deepEqual(fail("trust-34", "Nothing the brain returns records that. But Velmor's dispatchers preferred SMS alerts."), ["says what it must not: states the unapproved SMS preference"]);
+  // No recorded freeze, then Harbor's freeze borrowed, still fails.
+  assert.deepEqual(fail("unk-05", "I found no recorded deploy freeze for Orbit. Harbor's freeze runs Thursday to Monday, so I'd follow that."), ["says what it must not: borrows Harbor's freeze"]);
+});
+
+// CC-275's abstention phrasings.
+const PHRASINGS_CC275 = [
+  ["Nothing the brain returns records that the vendor was chosen.", true],
+  ["Nothing the brain returned says that Orbit has a budget.", true],
+  ["Nothing it holds mentions a go-live date.", true],
+  ["I found no recorded deploy freeze for Orbit.", true],
+  ["I found no rule about migrations documented for Orbit. Ask first by default.", true],
+  ["I found no documented exception for Quill.", true],
+  // Not an abstention: "nothing" about something else, or "found no" without recorded / documented.
+  ["Nothing blocks the deploy: Harbor ships on Tuesdays.", false],
+  ["I found no issues with the migration; it runs on Tuesday.", false],
+  ["Nothing in the runbook changes the freeze, which starts Thursday.", false],
+  ["I found no reason to wait, so deploy on Tuesday.", false],
+  // The review of #384: the phrase after an answer, or "other" in <thing>. ("I found no conflict with the recorded freeze, so
+  // deploy on Tuesday." is one clause that SAYS_ABSENT already reads as an absence since CC-225; CC-275 doesn't change that.)
+  ["I found no other package manager recorded for Harbor. Use pnpm.", false],
+  ["I found no blocker in the documented runbook; deploy on Tuesday.", false],
+  ["Use pnpm. I found no recorded alternative for Harbor.", false],
+];
+
+test("the abstain rule reads CC-275's phrasings as the README says", () => {
+  for (const [text, expected] of PHRASINGS_CC275) assert.equal(abstains(text), expected, text);
+});
