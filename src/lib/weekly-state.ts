@@ -149,6 +149,12 @@ export function weeklySnapshotPath(root: string, home: string): string {
   return join(home, ".ultimate-brain", "weekly", `${brainLabel(root)}.json`);
 }
 
+/** The hand-off files beside the snapshot (cli.md §5.34): the full plan and the selection, outside the brain. */
+export function handoffPaths(root: string, home: string): { plan: string; selection: string } {
+  const snapshot = weeklySnapshotPath(root, home);
+  return { plan: snapshot.replace(/\.json$/, ".plan.json"), selection: snapshot.replace(/\.json$/, ".selection.json") };
+}
+
 /** settings.weekly with its defaults (schema §12, weekly-review.md §12). */
 export function weeklySettings(config: Record<string, unknown>): { minutes: number; max_judged: number; max_usd: number; schedule: "on" | "off" } {
   const settings = isRecord(config.settings) ? config.settings : {};
