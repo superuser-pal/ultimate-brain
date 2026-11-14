@@ -425,7 +425,7 @@ A flagged item gets `⚑` in its heading and Approve leaves it (§7.12.7). Repea
 - **Writes `Agreed in review:` only under a section whose wording it changed** (settles the second deviation): one line, what the user decided and why, in a few words. A section where only the `Decision:` line changed gets none. The parser stores any such line it finds (§7.12.6), so a stray one is harmless, but the skill doesn't write it.
 - **Never** writes a heading, a `ref` line, a toggle's structure, the brain-context toggle, a property or Your call, and never recommends Approve or Reject for the row. Something found only in Notion is said to come from Notion, and enters the wording only with the user's yes, with the `Agreed in review:` line saying so.
 
-The measured cost of a run is in §9.6 and in the guide.
+The cost of a run in Notion AI credits is not measured yet (§9.6).
 
 ## 8. Module-off and unattended
 
@@ -498,7 +498,7 @@ What an unattended run does in each of these cases is in [cli.md](cli.md) §6.1,
 
 **9.6 A Grill review on a twenty-item page (CC-241, 0090's credit row).** A synthetic format-2 page of twenty items (changes, new notes and links, with unsure flags and repeats) is written through the API into a fresh duplicate of the published template (never the template itself, a gate's space or a real brain; after the user's yes for each write), the user runs **Review with me** and answers the grill, and the agent reads the page back and parses it with `sync plan`. Pass: §9.5's survival criteria hold; questions and options are spaced as §7.12.10 says; every `Decision:` line the AI wrote was chosen in an answer and shown in the preview; `Agreed in review:` lines sit only under sections whose wording changed; Your call is unset by the AI; the plan reads every item as the page shows it. The user's credit count is recorded here and in the guide.
 
-*Result:* pending (recorded by CC-241 before its review).
+*Result:* **not run (waived by the author, 2026-11-14:** "I am done with testing here; improvements go into later versions"**).** Nothing was written to Notion for it. The only live evidence for the Grill review is CC-240's round trip (§9.5), on a six-item page with a draft of the skill; the spacing, Decision-line and Agreed-line rules of §7.12.10 are untested live, and the credit count of a run is not measured.
 
 ## 10. Migration 0013 (specified here, written by CC-81)
 
