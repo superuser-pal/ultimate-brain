@@ -1088,10 +1088,18 @@ export function letters(index: number): string {
 
 function isReport(note: Note): boolean { return note.type === "view" && note.attributes.view_kind === "report"; }
 
+/** A CommonMark code span, so Notion never links a name like notes.md (cli §5.14.4, CC-263). */
+export function codeSpan(text: string): string {
+  const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((run) => run.length));
+  const fence = "`".repeat(longest + 1);
+  const pad = text.startsWith("`") || text.endsWith("`") ? " " : "";
+  return `${fence}${pad}${text}${pad}${fence}`;
+}
+
 /** A brain-created Inbox row's body: a line about the source, its summary and its digest (cli §5.14.4). */
 function digestBody(note: Note): string {
   const a = note.attributes;
-  const origin = typeof a.file_name === "string" ? a.file_name : typeof a.source_key === "string" && a.source_key.startsWith("url:") ? a.source_key.slice(4) : "pasted text";
+  const origin = typeof a.file_name === "string" ? codeSpan(a.file_name) : typeof a.source_key === "string" && a.source_key.startsWith("url:") ? a.source_key.slice(4) : "pasted text";
   const date = typeof a.captured === "string" ? a.captured.slice(0, 10) : "";
   const fileDate = /^sources\/[^/]+\/(\d{4}-\d{2}-\d{2})-/.exec(note.path)?.[1] ?? date;
   const parts = splitParts(note.body);
