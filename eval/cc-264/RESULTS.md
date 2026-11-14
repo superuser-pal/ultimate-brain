@@ -39,7 +39,7 @@ Characters of tool results (JSON for the Notion replies), by kind:
 
 | Turn | Kind | Characters |
 |---|---|---|
-| 1 | brain-catch-up's SKILL.md, loaded with the skill | 47,104 |
+| 1 | brain-catch-up's SKILL.md, loaded with the skill (bytes) | 47,104 |
 | 1 | Other skill text read: brain-sync SKILL.md and formats.md, brain-ingest SKILL.md and review-items.md, selection.md, notion.md | 114,469 |
 | 1 | Notion: 11 database retrievals | 11,383 |
 | 1 | Notion: 11 full queries of every row | 103,440 |
@@ -51,17 +51,17 @@ Characters of tool results (JSON for the Notion replies), by kind:
 | 2 | Notion: replies to 6 block appends (each returns the page's blocks) | 69,591 |
 | 2 | Notion: replies to the other writes and small reads | 40,433 |
 
-Of brain-catch-up's 47,104 characters, "Unattended" and "Run on a schedule" are 13,801 (29%). An attended run never uses them.
+Of brain-catch-up's 47,104 bytes, "Unattended" and "Run on a schedule" are 13,801 (29%). An attended run never uses them.
 
 ## Quick wins (rc.3, brain-catch-up only)
 
 | Quick win | The gate's numbers it reduces |
 |---|---|
-| "Unattended" and "Run on a schedule" move to `references/unattended.md` and `references/schedule.md`, read only by an unattended run or a schedule request. Their headings stay in SKILL.md as pointers | SKILL.md goes from 47,104 to 36,686 characters (the reading table below added): about 2.6k tokens less in every call of every attended catch-up, 37 calls here |
-| Each skill and reference is read at its step, and only when the step has work (a table in the skill) | brain-ingest references/notion.md (16,077) and brain-sync's Push half are read at the publish, not in the read-only pass, so 13+ fewer calls carry them; brain-apply, brain-query and brain-repos are not read when their steps have nothing |
+| "Unattended" and "Run on a schedule" move to `references/unattended.md` and `references/schedule.md`, read only by an unattended run or a schedule request. Their headings stay in SKILL.md as pointers | SKILL.md goes from 47,104 to 36,689 bytes (the reading table below added): about 2.6k tokens less in every call of every attended catch-up, 37 calls here |
+| Each skill and reference is read at its step, and only when the step has work (a table in the skill) | brain-ingest references/notion.md (16,077 bytes) and brain-sync's Push half are read at the publish, not in the read-only pass, so 13+ fewer calls carry them; brain-apply, brain-query and brain-repos are not read when their steps have nothing |
 | An input's text is never printed when the command that takes it returns it | the 13,034-character transcript print before `brain source extract` |
 
-The author chose on 2026-11-14 not to re-measure with synthetic runs. CC-266's re-run of the gate on rc.3 measures the first meeting's real cost.
+The author chose on 2026-11-14 not to re-measure with synthetic runs, and dropped CC-266's re-run of the gate on rc.3 the same day. The cost after the quick wins is unmeasured; it will show in the author's normal use.
 
 ## Larger, for 1.0.0
 
