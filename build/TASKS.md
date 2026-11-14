@@ -837,13 +837,14 @@ Moved to 0.14.0 by the user, 2026-11-11: the CLI skip and its brain-ingest wordi
 **Acceptance:** the breakdown is in eval/cc-264/RESULTS.md and the PR with no personal content, and corrects the gate's total (the second run's cost includes the first); each quick win names the gate's numbers it reduces; the sections moved keep their headings in SKILL.md, so every reference to brain-catch-up's "Unattended" or "Run on a schedule" still resolves; the fork PR passes its checks and is reviewed with this PR; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 **Amended by the author's choice of 2026-11-14:** no synthetic before/after runs, and no re-run of the gate on rc.3 (CC-266 dropped the same day): the cost after the quick wins is unmeasured and will show in the author's normal use. The publish in a sub-agent is CC-267 in 1.0.0, not a quick win.
 
-### CC-265 · Vendor the skills for 0.14.0-rc.3 · `todo`
+### CC-265 · Vendor the skills for 0.14.0-rc.3 · `done` (#376)
 **Release:** 0.14.0
 **Changelog:** the skills of 0.14.0-rc.3: the transcript check, the drop folder, Brain Assistant in a Custom Agent, wikilinked sources and the catch-up's quick wins.
 **Output:** after the fork PRs of CC-250 and CC-258 to CC-264 are merged in the fork, the fork release is tagged on the author's yes and vendored with `scripts/vendor-skills.mjs` in one commit, classified in the skills-integration issue.
 **Acceptance:** `vendor-skills.mjs --check` passes on the snapshot; the snapshot holds every merged fork PR; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 
-### CC-266 · The gate's changed steps on 0.14.0-rc.3 (CC-193's problems 1, 4, 8, 9, 10) · `todo`
+### CC-266 · The gate's changed steps on 0.14.0-rc.3 (CC-193's problems 1, 4, 8, 9, 10) · `dropped` (the author's choice, 2026-11-14)
+**Dropped by the author on 2026-11-14:** no re-run of the gate on rc.3. The author checks these flows in normal use instead; a problem found there comes in as a dogfood issue. CC-260 checks Today from setup's text, and CC-264's cost after its quick wins stays unmeasured.
 **Release:** 0.14.0
 **Changelog:** development only: the steps of the release gate the fixes changed pass on 0.14.0-rc.3.
 **Output:** after the author cuts rc.3 (CC-250 and CC-258 to CC-265 merged), in a fresh duplicate of the published template with the same persona (eval/setup-0.14/): the minutes and the transcript check, the first meeting and its catch-up with its cost, Brain Assistant's Today in a Custom Agent, and the report refreshed without an Accept; recorded as run 2 in eval/setup-0.14/RESULTS.md. The four first-value checks are not re-run (the author's choice of 2026-11-14). Only the results files and this row change; a needed fix is its own task.
