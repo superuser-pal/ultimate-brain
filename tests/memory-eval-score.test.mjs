@@ -410,12 +410,14 @@ const PHRASINGS_CC273 = [
   ["I don't have an answer for that in the brain.", true],
   ["I don't have any answer recorded on the vendor.", true],
   ["I couldn’t verify a migration approval rule for Orbit.", true],
+  ["The brain doesn’t have an answer to this.", true],
   ["I could not verify the go-live date. The scope call covered features.", true],
   // Not an abstention: verifying something else, or "have an answer" without a negation.
   ["I verified the rule: Harbor deploys on Tuesdays.", false],
   ["The brain has an answer: Postmark was chosen at the kickoff.", false],
   ["The kickoff notes have answers on scope. Orbit ships in March.", false],
   ["You don't have to answer now; the freeze starts Thursday.", false],
+  ["You don’t have to answer now; the freeze starts Thursday.", false],
 ];
 
 test("the abstain rule reads CC-273's phrasings as the README says", () => {
