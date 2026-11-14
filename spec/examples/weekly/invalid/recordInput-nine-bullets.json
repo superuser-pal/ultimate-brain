@@ -228,6 +228,7 @@
   },
   "selection": {
     "week": "2026-W46",
+    "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
     "items": [
       {
         "n": 1,

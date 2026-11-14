@@ -9,7 +9,7 @@ import { Ajv2020 } from "ajv/dist/2020.js";
 // An example's name starts with the `$defs` entry it is an instance of: `plan-`, `selectInput-`, `selection-`, `recordInput-`, `state-` or `attempt-`.
 const SPEC = join(import.meta.dirname, "..", "spec");
 const EXAMPLES = join(SPEC, "examples", "weekly");
-const DEFS = ["plan", "selectInput", "selection", "recordInput", "state", "attempt"] as const;
+const DEFS = ["plan", "planSummary", "selectInput", "selection", "recordInput", "state", "attempt"] as const;
 
 const readJson = async (path: string) => JSON.parse(await readFile(path, "utf8"));
 const defOf = (file: string) => {
