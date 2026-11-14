@@ -459,6 +459,11 @@ const PHRASINGS_CC275 = [
   ["I found no issues with the migration; it runs on Tuesday.", false],
   ["Nothing in the runbook changes the freeze, which starts Thursday.", false],
   ["I found no reason to wait, so deploy on Tuesday.", false],
+  // The review of #384: the phrase after an answer, or "other" in <thing>. ("I found no conflict with the recorded freeze, so
+  // deploy on Tuesday." is one clause that SAYS_ABSENT already reads as an absence since CC-225; CC-275 doesn't change that.)
+  ["I found no other package manager recorded for Harbor. Use pnpm.", false],
+  ["I found no blocker in the documented runbook; deploy on Tuesday.", false],
+  ["Use pnpm. I found no recorded alternative for Harbor.", false],
 ];
 
 test("the abstain rule reads CC-275's phrasings as the README says", () => {
