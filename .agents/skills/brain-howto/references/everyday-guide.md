@@ -67,23 +67,25 @@ The Notion AI buttons need Brain Assistant configured. Document and report butto
 
 Find the assistant under **Agents → Brain Assistant**. The reusable prompt texts live as pages in the **Skills** database (Brain Assistant's skills; in a space built before 0.14.0 it may be called **Brain Assistant Skills**). If your setup uses personal Notion AI skills instead, run the same named skills there.
 
+**Run a skill by asking for it by name** in Brain Assistant's chat: "Run Today", "Run Prep". Brain Assistant doesn't run a skill typed as a `/` command, so `/Today` does nothing there. To point at a skill's page instead, paste its link (open it from your space's Skills database, ••• → Copy link); don't pick it from the `@` picker, which can offer another space's page of the same name. If Today shows another space's tasks, ask by name again, and check that the agent's Tools and access hold only the Brain Data, How it works and Skills under your space's top page.
+
 For a prompt about one page, open or reference that page so the assistant knows which one you mean.
 
 | Prompt | Where to use it | How to run it and what it does |
 |---|---|---|
-| **Today** | Brain Assistant chat | **`/Today`** shows due tasks, today's meetings and pending decisions. |
-| **Review queue** | Brain Assistant chat | **`/Review queue`** explains pending proposals and their sources. You make the decisions. |
-| **Prep** | With a meeting page referenced | **`/Prep`** gathers relevant meetings, questions, tasks and decisions before the meeting. |
-| **Check minutes** | A meeting page before it is Reviewed | **`/Check minutes`** flags missing information and details to confirm. It fixes the text after your confirmation. |
-| **Weekly review** | Brain Assistant chat | **`/Weekly review`** summarises the past week, project and goal health, and the coming week. |
-| **Plan check** | Brain Assistant chat | **`/Plan check`** finds gaps across Areas, goals and projects. It suggests fixes for you to consider. |
-| **Tidy capture** | A **New** Inbox capture | **`/Tidy capture`** proposes clearer wording and waits for confirmation. The **Tidy capture** button authorises the rewrite immediately. |
+| **Today** | Brain Assistant chat | **"Run Today"** shows due tasks, today's meetings and pending decisions. |
+| **Review queue** | Brain Assistant chat | **"Run Review queue"** explains pending proposals and their sources. You make the decisions. |
+| **Prep** | With a meeting page referenced | **"Run Prep"** gathers relevant meetings, questions, tasks and decisions before the meeting. |
+| **Check minutes** | A meeting page before it is Reviewed | **"Run Check minutes"** flags missing information and details to confirm. It fixes the text after your confirmation. |
+| **Weekly review** | Brain Assistant chat | **"Run Weekly review"** summarises the past week, project and goal health, and the coming week. |
+| **Plan check** | Brain Assistant chat | **"Run Plan check"** finds gaps across Areas, goals and projects. It suggests fixes for you to consider. |
+| **Tidy capture** | A **New** Inbox capture | **"Run Tidy capture"** proposes clearer wording and waits for confirmation. The **Tidy capture** button authorises the rewrite immediately. |
 | **Voice summary** | A **New** Inbox capture with a **Transcript** toggle | Say **“Summarize this voice note.”** Confirm the summary, check what should enter the brain, then set **Ready**. |
-| **Clean email** | An Inbox capture containing a pasted email thread, best while still **New** | **`/Clean email`** cleans the page directly, preserving message wording and removing clutter. It asks when something is unclear. Check it, then set **Ready**. |
+| **Clean email** | An Inbox capture containing a pasted email thread, best while still **New** | **"Run Clean email"** cleans the page directly, preserving message wording and removing clutter. It asks when something is unclear. Check it, then set **Ready**. |
 | **Write up** | A promoted Document | Click the **Write up** button. Review and edit the result before clicking **Accept**. |
 | **Refresh report** | A report in Documents | Click **Refresh report**. Review its proposed text before replacing the current report and clicking **Accept**. |
 
-**Meeting-summary prompt:** this is separate from the eleven skills. Use the structured-minutes prompt saved in your Notion AI meeting-summary settings during setup when summarising a transcript. Then run **Check minutes**, correct the result and mark the meeting **Reviewed**. If the prompt was never installed or you cannot find it, ask your agent **“Help me install the meeting-summary prompt.”** It is supplied with Ultimate Brain as `notion/minutes-format.md`; do not assume it is inside the meeting template.
+**Meeting-summary prompt:** this is separate from the eleven skills. Keep the transcript on the meeting page: a recorded meeting's is in the meeting-notes block's Transcript, and one you paste goes in the page body. Open the Notion AI chat on that page, paste the minutes prompt followed by the line **“Write the minutes on this page, below the transcript, and nothing else.”**, and send. Don't run it from Notion AI's settings: there it can replace the transcript. If the transcript is gone, put it back above the minutes (Notion's version history, or paste it again): without it the brain can't read the meeting. Then run **Check minutes**, correct the result and mark the meeting **Reviewed**. If you cannot find the prompt, ask your agent **“Give me the minutes prompt.”** It is supplied with Ultimate Brain as `notion/minutes-format.md`; do not assume it is inside the meeting template.
 
 The Notion AI **Weekly review** is an on-demand summary of Notion pages. Scheduling catch-up is a separate operation. Clicking **Refresh report** uses Notion pages; asking your agent to refresh a report uses the brain's canonical notes.
 
