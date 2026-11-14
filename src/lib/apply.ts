@@ -4,7 +4,7 @@ import { posix } from "node:path";
 import { assertNoProblems, isRecord, unknownKeys, type InputProblem } from "./input.ts";
 import type { NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
-import { fixValueProblem, notionWrite, type NotionWrite } from "./notion-change.ts";
+import { areaGroup, fixValueProblem, notionWrite, projectsProblem, type NotionWrite } from "./notion-change.ts";
 import { bodyHash, bodyOf, reviewTitle, sourceTitle, stageNewItem, writeProposal } from "./proposals.ts";
 import { reviewItems } from "./review-body.ts";
 import { loadSchemas } from "./schemas.ts";
@@ -634,6 +634,7 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
   }
   if (kind === "update_body" && bodyHash(target.body) !== p.before_hash) return `${target.id}'s body changed after the proposal was written`;
   if (kind === "set_field" && a[field] !== p.before) return `${field} is ${a[field] === undefined ? "absent" : JSON.stringify(a[field])}, proposal expected ${p.before === undefined ? "absent" : JSON.stringify(p.before)}`;
+  if (kind === "set_field" && field === "area") { const problem = projectsProblem(workspace, target); if (problem !== undefined) return problem; }
 
   switch (kind) {
     case "update_fact":
@@ -677,6 +678,16 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
     case "set_field":
       // Applied like a correction of that field (spec/cli.md §5.7); a fix has already put its value in `after`.
       a[field] = p.after;
+      // A source and its whole Documents move together; nothing else of a source changes (0092 §3, §4).
+      if (field === "area") {
+        for (const member of areaGroup(workspace, target).slice(1)) {
+          if (isDeepStrictEqual(member.attributes.area, p.after)) continue;
+          const other = workspace.edit(member);
+          other.attributes.area = p.after;
+          other.attributes.updated = today;
+          workspace.save(member.path, other);
+        }
+      }
       break;
     case "answer":
       // edit: your Note is the answer, as text; otherwise the note that holds it, else the sentence.
