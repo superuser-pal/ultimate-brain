@@ -1,6 +1,6 @@
 import { isRecord } from "./input.ts";
 import type { Note } from "./notes.ts";
-import { passageProblems } from "./passages.ts";
+import { linkRefs, passageProblems } from "./passages.ts";
 import { bodyOf } from "./proposals.ts";
 import type { ReviewRevision } from "./review-plan.ts";
 import { linkValue, Skip, typed } from "./review-apply.ts";
@@ -23,7 +23,8 @@ export function recordRevisionRequests(workspace: Workspace, requests: readonly 
     if (proposal === undefined || proposal.type !== "proposal" || !list(proposal.attributes.items).some((item) => record(item).item_id === request.item_id)) { skip("UNKNOWN_ITEM"); continue; }
     if (request.instruction === null || request.instruction.trim() === "") { skip("NO_INSTRUCTION"); continue; }
     if (proposal.attributes.status !== "pending" || list(proposal.attributes.item_decisions).some((done) => record(done).item_id === request.item_id)) { skip("ALREADY_DECIDED"); continue; }
-    if (["remove", "restore", "independence"].includes(String(record(list(proposal.attributes.items).find((item) => record(item).item_id === request.item_id)).kind))) { skip("REVISION_NOT_SUPPORTED"); continue; }
+    const item = record(list(proposal.attributes.items).find((entry) => record(entry).item_id === request.item_id));
+    if (["remove", "restore", "independence"].includes(String(item.kind)) || severalLinks(item)) { skip("REVISION_NOT_SUPPORTED"); continue; }
     const existing = revisionsOf(proposal).find((entry) => entry.item_id === request.item_id);
     if (existing?.status === "requested" && existing.instruction === request.instruction) { skip("ALREADY_REQUESTED"); continue; }
     // A plan read before the draft was written cannot be asking about it: replaying it is a no-op (cli §5.27, CC-218).
@@ -53,6 +54,7 @@ export function reviseItem(workspace: Workspace, input: { proposal: string; item
   if (list(a.item_decisions).some((done) => record(done).item_id === input.item_id)) throw new Skip("ALREADY_DECIDED");
   if (input.proposed.trim() === "") throw new Skip("UNREADABLE_PROPOSED", "a revision cannot be empty");
   if (["remove", "restore", "independence"].includes(String(entry.kind))) throw new Skip("REVISION_NOT_SUPPORTED", "a cleanup item has no wording to revise");
+  if (severalLinks(entry)) throw new Skip("REVISION_NOT_SUPPORTED", "a link item of several values is changed by deleting names on its page");
   // The revised item names its passages: the new list when given, else the ones it had; a legacy item without them stays legacy (cli §5.27).
   const passages = input.passages ?? entry.passages;
   if (passages !== undefined) {
@@ -70,7 +72,7 @@ export function reviseItem(workspace: Workspace, input: { proposal: string; item
     workspace.save(note.path, draft);
   } else if (entry.kind === "link") {
     const links = list(document.attributes.links).map(record);
-    const link = links[Number(entry.ref)];
+    const link = links[linkRefs(entry.ref)[0]!];
     if (link === undefined) throw new Skip("UNKNOWN_ITEM");
     link.value = linkValue(workspace, input.proposed, link.value);
     document.attributes.links = links;
@@ -87,4 +89,9 @@ export function reviseItem(workspace: Workspace, input: { proposal: string; item
   document.attributes.updated = today;
   workspace.save(proposal.path, document);
   return { proposal: proposal.id, item_id: input.item_id, kind: String(entry.kind) };
+}
+
+/** A grouped link item of more than one value (0088 Q5): the user deletes names on the page; there is no single value to redraft. */
+function severalLinks(item: Record<string, unknown>): boolean {
+  return item.kind === "link" && Array.isArray(item.ref) && item.ref.length > 1;
 }
