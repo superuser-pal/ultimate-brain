@@ -830,7 +830,7 @@ Moved to 0.14.0 by the user, 2026-11-11: the CLI skip and its brain-ingest wordi
 **Output:** the Inbox row body the ingest writes (spec/cli.md §5.14.4) names the file so Notion doesn't turn it into a link; contract first, then the render.
 **Acceptance:** a render test with file names Notion links (one with a domain-like ending, as in the gate) shows no link; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 
-### CC-264 · Where a first catch-up spends, and its quick wins (gate problem 9) · `review`
+### CC-264 · Where a first catch-up spends, and its quick wins (gate problem 9) · `done` (#373)
 **Release:** 0.14.0
 **Changelog:** the first catch-up after setup does less work, so a tester's first meeting costs less.
 **Output:** a measured breakdown, numbers only, of the gate's first-meeting catch-up (eval/cc-264/RESULTS.md): model calls, tokens and cost per phase, and what fills the context; the quick wins it shows, each a small change to a skill (fork PR) or the CLI; anything larger written as a 1.0.0 task (CC-267 to CC-270). Bounded: it doesn't redesign catch-up. The quick wins, in brain-catch-up only: the Unattended and Run on a schedule sections move to references read only by those runs; each skill and reference is read at its step, and only when the step has work; an input's text is never printed when the command that takes it returns it.
