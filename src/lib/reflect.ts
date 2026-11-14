@@ -105,7 +105,7 @@ interface Input {
 }
 
 /** A line's prose for terms (§5.32): inline code, link targets, URLs, emails, domains and file names removed (a link keeps its text); an apostrophe inside a word dropped. */
-function prose(text: string): string {
+export function prose(text: string): string {
   return text
     .replace(/`[^`]*`/g, " ")
     .replace(/\]\([^)]*\)/g, "] ")
@@ -185,7 +185,7 @@ function termsOf(input: Input, boilerplate: ReadonlySet<string> = new Set()): Ma
 }
 
 /** §5.32 "references of a note": note ids in its frontmatter but `id`, `sources` and `area`, and the notes its body links. */
-function referencesOf(note: Note, byPath: ReadonlyMap<string, Note>, known: ReadonlySet<string>): Set<string> {
+export function referencesOf(note: Note, byPath: ReadonlyMap<string, Note>, known: ReadonlySet<string>): Set<string> {
   const refs = new Set<string>();
   for (const [key, value] of Object.entries(note.attributes)) {
     if (key === "id" || key === "sources" || key === "area") continue;

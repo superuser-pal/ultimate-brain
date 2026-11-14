@@ -1,5 +1,6 @@
 import type { InputProblem } from "./input.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
+import { claimParts, type Claim, type Target } from "./weekly-corrections.ts";
 import { criticalPending, itemShape, repetitionOf, type PlanData, type Repetition } from "./weekly-plan.ts";
 import { hashOf, isoWeek, LIMIT, type Counts, type WeeklyState } from "./weekly-state.ts";
 
@@ -12,10 +13,12 @@ export interface Item {
   lives: "review" | "task"; write: boolean; proposal: string | null; url: string | null; targets: string[]; new_items: number;
   because: string; evidence_hash: string; days_late?: number; days_idle?: number; shown_of?: { k: number; size: number };
   recommendation: { action: string; value: unknown; label: string } | null; finding: JudgedFinding | null;
+  proposal_input?: Array<Record<string, unknown>>;
 }
 export interface Selection {
   week: string; input_hash: string; items: Item[]; queued: Array<{ key: string; category: string }>; counts: Counts; earlier_open: number;
   omitted: { clusters: string[]; correction_targets: number }; coverage: "complete" | "partial";
+  corrections?: Array<{ claim: string; open: string[]; clarify: number }>;
 }
 
 const WORK_LABEL: Record<string, string> = {
@@ -30,6 +33,10 @@ const KNOWLEDGE_ORDER: Record<JudgedFinding["kind"], [number, number]> = { contr
 interface Candidate {
   key: string; group: number; sub: number; rank: number; category: string; repetition: Repetition;
   item: Omit<Item, "n" | "because" | "evidence_hash" | "write" | "proposal" | "new_items">; newItems: number;
+  /** A correction group (weekly-review.md §8.4): its restatements by note id, admitted in part when only some fit (§5.2). */
+  group_?: { claim: Claim; drafted: Target[]; uncertain: Target[] };
+  /** Links the waiting group of this week's item for the claim (a rerun, §8.4). */
+  link?: string;
 }
 
 /** The cross-field checks of cli.md §5.34 that the schema can't make. */
@@ -49,9 +56,17 @@ export function selectProblems(input: SelectInput, notes: ReadonlyMap<string, No
     finding.targets.forEach((id, at) => { if (!notes.has(id)) problems.push({ pointer: `/judged/findings/${index}/targets/${at}`, message: `no note with id ${id}` }); });
   });
   const claims = new Map(plan.corrections.map((claim) => [(claim as { claim: string }).claim, claim as { targets: Array<{ note: string }> }]));
+  const judgedTargets = new Set<string>();
   judged.corrections.forEach((judgment, index) => {
-    const claim = claims.get(judgment.claim);
-    if (claim === undefined || !claim.targets.some((target) => target.note === judgment.note)) problems.push({ pointer: `/judged/corrections/${index}`, message: `${judgment.claim} has no candidate target ${judgment.note} in the plan` });
+    const claim = claims.get(judgment.claim) as Claim | undefined;
+    const target = claim?.targets.find((candidate) => candidate.note === judgment.note);
+    const at = `/judged/corrections/${index}`;
+    if (target === undefined) { problems.push({ pointer: at, message: `${judgment.claim} has no candidate target ${judgment.note} in the plan` }); return; }
+    const key = `${judgment.claim}\u0000${judgment.note}`;
+    if (judgedTargets.has(key)) problems.push({ pointer: at, message: `${judgment.note} is judged twice for ${judgment.claim}` });
+    judgedTargets.add(key);
+    if (target.pending !== null) problems.push({ pointer: at, message: `${judgment.note} is already in Review (${target.pending}) for ${judgment.claim}: it is not judged again` });
+    if (judgment.verdict === "restatement" && target.field === null && target.line_after === null) problems.push({ pointer: `${at}/verdict`, message: `${judgment.note} has no one-for-one fix (line_after is null): judge it uncertain (weekly-review.md §8.2)` });
   });
   return problems;
 }
@@ -107,6 +122,47 @@ export function computeSelection(input: SelectInput, notes: ReadonlyMap<string, 
     });
   }
 
+  // The correction stream (§8.4): one group per claim of its restatements not yet in Review, oldest claim first; or, on a rerun, the link to
+  // the group this week's item wrote.
+  const outcomes = new Map<string, { open: string[]; clarify: number }>();
+  let omittedTargets = 0;
+  plan.corrections.forEach((claim, index) => {
+    const verdicts = new Map(judged.corrections.filter((judgment) => judgment.claim === claim.claim).map((judgment) => [judgment.note, judgment.verdict]));
+    const fresh = claim.targets.filter((target) => target.pending === null);
+    const unjudged = fresh.filter((target) => !verdicts.has(target.note));
+    omittedTargets += unjudged.length;
+    const drafted = fresh.filter((target) => verdicts.get(target.note) === "restatement");
+    const uncertain = fresh.filter((target) => verdicts.get(target.note) === "uncertain");
+    outcomes.set(claim.claim, { open: unjudged.map((target) => target.note), clarify: uncertain.length });
+    const key = `correction:${claim.claim}`;
+    const parts = claimParts(claim.claim);
+    const field = parts.kind === "fact" ? parts.field!.replaceAll("_", " ") : parts.kind === "supersede" ? "decision" : parts.kind;
+    const old = claim.old.length === 0 ? "" : String(claim.old[0]);
+    const size = drafted.length + uncertain.length;
+    const subject = `${claim.title} ${field}${old === "" ? "" : ` ${old}`} → ${String(claim.new)}`.slice(0, 120);
+    const base = { stream: "correction" as const, kind: "Correction", category: "correction", subject, lives: "review" as const, url: null, recommendation: null, finding: null };
+    if (drafted.length > 0) {
+      const evidenceHash = hashOf(drafted.map(({ note, line }) => ({ note, line })).sort((a, b) => compareCodePoints(a.note, b.note)));
+      const repetition = repetitionOf({ key, category: "correction", evidenceHash, critical: claim.open, state, week: plan.week, pending: null });
+      if (!repetition.show) return;
+      outcomes.get(claim.claim)!.open.push(...drafted.map((target) => target.note));
+      candidates.push({
+        key, group: 1, sub: 0, rank: index, category: "correction", repetition, newItems: drafted.length,
+        group_: { claim, drafted, uncertain },
+        item: { ...base, key, decide: `${size} note${size === 1 ? " restates" : "s restate"} ${old === "" ? "it" : old}`.slice(0, 120), targets: drafted.map((target) => target.note) },
+      });
+      return;
+    }
+    const inReview = claim.targets.filter((target) => target.pending !== null);
+    if (inReview.length > 0 && thisWeek.has(key)) {
+      const repetition = repetitionOf({ key, category: "correction", evidenceHash: hashOf([]), state, week: plan.week, pending: inReview[0]!.pending });
+      candidates.push({
+        key, group: 1, sub: 0, rank: index, category: "correction", repetition, newItems: 0, link: inReview[0]!.pending!,
+        item: { ...base, key, decide: `${inReview.length} note${inReview.length === 1 ? " restates" : "s restate"} ${old === "" ? "it" : old}`.slice(0, 120), targets: [...new Set(inReview.map((target) => target.note))] },
+      });
+    }
+  });
+
   candidates.sort((a, b) => a.group - b.group || a.sub - b.sub || a.rank - b.rank || compareCodePoints(a.key, b.key));
 
   // The walk (§5.2): admit while D, I and T stay within 5; this week's items cost nothing again (§5.1); stop when D is 5.
@@ -114,6 +170,27 @@ export function computeSelection(input: SelectInput, notes: ReadonlyMap<string, 
   const items: Item[] = [];
   const queued: Array<{ key: string; category: string }> = [];
   for (const candidate of candidates) {
+    if (candidate.group_ !== undefined) {
+      // A correction group admits its first restatements by note id that fit the I and T left (§5.2, §8.4); the rest stay queued under its claim.
+      const room = Math.min(candidate.group_.drafted.length, LIMIT - counts.new_items, LIMIT - counts.targets);
+      if (items.length >= LIMIT || counts.decisions >= LIMIT || room < 1) { queued.push({ key: candidate.key, category: candidate.category }); continue; }
+      const { claim, drafted, uncertain } = candidate.group_;
+      const admitted = drafted.slice(0, room);
+      const outcome = outcomes.get(claim.claim)!;
+      outcome.open = outcome.open.filter((note) => !admitted.some((target) => target.note === note));
+      counts.decisions += 1; counts.new_items += admitted.length; counts.targets += admitted.length;
+      const size = drafted.length + uncertain.length;
+      items.push({
+        ...candidate.item, targets: admitted.map((target) => target.note), n: items.length + 1, because: candidate.repetition.because!, evidence_hash: candidate.repetition.evidence_hash,
+        write: true, proposal: null, new_items: admitted.length, ...(admitted.length < size ? { shown_of: { k: admitted.length, size } } : {}),
+        proposal_input: groupInput(claim, admitted, uncertain, size),
+      });
+      continue;
+    }
+    if (candidate.link !== undefined) {
+      items.push({ ...candidate.item, n: items.length + 1, because: "this_week", evidence_hash: candidate.repetition.evidence_hash, write: false, proposal: candidate.link, new_items: 0 });
+      continue;
+    }
     const again = thisWeek.has(candidate.key);
     const proposal = candidate.item.lives === "review" ? candidate.repetition.pending : null;
     // An item of this week whose Review row was decided since stays counted and isn't shown again (§5.1).
@@ -131,9 +208,29 @@ export function computeSelection(input: SelectInput, notes: ReadonlyMap<string, 
   const omittedClusters = [...plan.clusters.filter((cluster) => !judgedSet.has(cluster.key)).map((cluster) => cluster.key), ...plan.clusters_left];
   return {
     week: plan.week, input_hash: plan.input_hash, items, queued, counts, earlier_open: plan.earlier_open,
-    omitted: { clusters: omittedClusters, correction_targets: 0 },
-    coverage: omittedClusters.length > 0 ? "partial" : "complete",
+    omitted: { clusters: omittedClusters, correction_targets: omittedTargets },
+    coverage: omittedClusters.length > 0 || omittedTargets > 0 ? "partial" : "complete",
+    corrections: [...outcomes].map(([claim, outcome]) => ({ claim, open: [...new Set(outcome.open)].sort(compareCodePoints), clarify: outcome.clarify })),
   };
+}
+
+/** The exact `proposal new` input of a correction group (weekly-review.md §8.4): its review_notes, then one change per admitted target. */
+export function groupInput(claim: Claim, admitted: readonly Target[], uncertain: readonly Target[], size: number): Array<Record<string, unknown>> {
+  const parts = claimParts(claim.claim);
+  const field = parts.kind === "fact" ? parts.field! : parts.kind === "supersede" ? "decision" : parts.kind;
+  const old = claim.old.length === 0 ? "" : String(claim.old[0]);
+  const cut = (text: string) => (text.length > 120 ? `${text.slice(0, 119)}…` : text);
+  const shared = { why: claim.why, source: claim.source, passages: claim.passages, correction: claim.claim };
+  return [
+    {
+      kind: "review_notes", title: cut(`Correction: ${claim.title} ${field}: ${old === "" ? "" : `${old} → `}${String(claim.new)} (${size} note${size === 1 ? "" : "s"})`.replace(": → ", ": ")), notes: [],
+      why: claim.why, source: claim.source, correction: claim.claim,
+      ...(uncertain.length > 0 ? { needs_clarification: uncertain.map((target) => ({ note: target.note, line: target.line })) } : {}),
+    },
+    ...admitted.map((target) => target.field !== null
+      ? { kind: "update_fact", title: cut(`${target.title}: ${old} → ${String(claim.new)}`), target: target.note, field: target.field, after: claim.new, ...shared }
+      : { kind: "replace_line", title: cut(`${target.title}: ${old} → ${String(claim.new)}`), target: target.note, line_before: target.line, line_after: target.line_after, ...shared }),
+  ];
 }
 
 function dayCounters(evidence: Record<string, unknown>): { days_late?: number; days_idle?: number } {
