@@ -2,7 +2,7 @@
 
 Before: [Prompt 7](07-spaces-views.md) (or the optional [Prompt 8](08-navigation.md)). Afterwards: "After building" in [../CHECKLIST.md](../CHECKLIST.md).
 
-This puts on System what Brain Assistant reads: the database **Skills** (Brain Assistant's skills) with its eleven skills, and the user guide on **How it works** (docs/notion-space-design.md §5, §10). The published template carries both. Brain Assistant itself (the Custom Agent, or personal Instructions) belongs to a workspace, not to a space: set it up afterwards, as "Setup" in [../brain-assistant.md](../brain-assistant.md) says.
+This puts on System what Brain Assistant reads: the database **Skills** (Brain Assistant's skills) with its twelve skills, and the user guide on **How it works** (docs/notion-space-design.md §5, §10). The published template carries both. Brain Assistant itself (the Custom Agent, or personal Instructions) belongs to a workspace, not to a space: set it up afterwards, as "Setup" in [../brain-assistant.md](../brain-assistant.md) says.
 
 ## 1 · The database (Notion AI)
 
@@ -14,7 +14,7 @@ On the page "System", create one full-page database named "Skills" with exactly 
 
 ## 2 · The skills (your agent, or by hand)
 
-Ask your agent: "publish Brain Assistant's skills to Notion". With your yes, it creates one page in the Skills database per skill under "Skills" in [../brain-assistant.md](../brain-assistant.md), through the Notion MCP: the skill's name is the title, its **Description** line goes in Description, and its text block is the page body. Or create the eleven pages by hand from the same file.
+Ask your agent: "publish Brain Assistant's skills to Notion". With your yes, it creates one page in the Skills database per skill under "Skills" in [../brain-assistant.md](../brain-assistant.md), through the Notion MCP: the skill's name is the title, its **Description** line goes in Description, and its text block is the page body. Or create the twelve pages by hand from the same file.
 
 ## 3 · How it works (your agent, or by hand)
 
@@ -22,5 +22,5 @@ Ask your agent: "publish the user guide to the How it works page". With your yes
 
 ## Verify
 - [ ] "Skills" is on "System", not on "Brain Data", and has only Name and Description.
-- [ ] It holds eleven pages, one per skill: Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report; each has its Description filled and its text as the body.
+- [ ] It holds twelve pages, one per skill: Today, Review queue, Grill review, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report; each has its Description filled and its text as the body.
 - [ ] "How it works" shows the guide, starting with "Your second brain has three parts".

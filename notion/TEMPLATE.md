@@ -7,7 +7,7 @@ Two templates exist; this one is the **Notion template**. The **brain folder** (
 | | |
 |---|---|
 | **Link** | https://sentina.notion.site/TEMPLATE-Ultimate-Brain-416495661e99806ea2dcca48eb4e55ff |
-| **Template version** | `0024` |
+| **Template version** | `0025` |
 
 **Template version** is the four-digit number of the last migration in [migrations/](migrations/) the template includes. The template shows the same number as a line of its own in the System callout on its top page (as inline code or plain text, spec/setup.md §9), `Template version: NNNN`, and the connect step stores it in `brain.json` as `notion.template_version`; `brain upgrade` then names the migrations newer than it (spec/setup.md §9, spec/cli.md §5.15).
 
@@ -79,7 +79,7 @@ The template is a **copy of the author's own Ultimate Brain space, emptied**, ma
 1. **Bring your own space up to date first.** Every migration in [migrations/](migrations/) is applied (`brain upgrade` in your brain names none), and CC-197 is merged and applied, so Check minutes and Voice summary in Skills are the 0079 versions.
 2. **Copy.** Duplicate your top page **Ultimate Brain** inside your workspace, and name the copy **Ultimate Brain**. From here on, work only in the copy: check each page you edit is under it.
 3. **Point everything at the copy.** Every linked view (Home, Tasks, Meetings, Projects, Plan, Review, Knowledge), every relation, every button that adds or edits a page, and every synced block must use the copy's own databases and blocks, never your space's. Re-point or rebuild any that doesn't.
-4. **Empty every database.** Delete every row of the fourteen databases on Brain Data, and every page under Archive. In Skills, keep the eleven skills and check each against [brain-assistant.md](brain-assistant.md): a skill you changed for yourself goes back to the product's text. How it works holds the user guide only.
+4. **Empty every database.** Delete every row of the fourteen databases on Brain Data, and every page under Archive. In Skills, keep the twelve skills and check each against [brain-assistant.md](brain-assistant.md): a skill you changed for yourself goes back to the product's text. How it works holds the user guide only.
 5. **Scrub where personal data hides,** ticking each:
    - **Database templates:** each database's templates, their default property values (a person, a project, an area, an org) and their body text.
    - **Select and multi-select options:** only the options of [docs/notion-space-design.md](../docs/notion-space-design.md) §3 stay; delete any other (a client, a tag, a person's name).
@@ -100,4 +100,4 @@ The template is a **copy of the author's own Ultimate Brain space, emptied**, ma
 
 The copy is the template only: never use it as your own brain's space, and never connect a brain to it.
 
-**When a release adds a migration:** apply it to the template copy as well (its last step updates the Template version line in the System callout), add nothing personal, leave the Example rows as they are, run the scan again, and change the version above in the same release. A duplicate made earlier is brought up to date with the migrations `brain upgrade` names.
+**When a release adds a migration:** apply it to the template copy as well (its last step updates the Template version line in the System callout), add nothing personal, leave the Example rows as they are unless [template-examples.md](template-examples.md) changed one in that release (0.15.0 changed row 13's page: its Prompt 6 says how), run the scan again, and change the version above in the same release. A duplicate made earlier is brought up to date with the migrations `brain upgrade` names.

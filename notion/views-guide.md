@@ -138,7 +138,7 @@ All views use the Tasks database. Using your own Tasks database (0018)? Map the 
 
 **Job:** decide every change the brain proposes to your existing knowledge (decision 0003), and accept the notes each ingest made (0041).
 
-Above the tabs, a gray line: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. Status says what each row needs. Needs you · decide in the page: open the row, type your decision on each change's Decision line and click Submit decisions. Needs you · set Your call: pick Approve or Reject, or Fix and say what's wrong in What to fix." (0043, 0045, 0088). A decided row leaves Review 30 days after the decision: the catch-up moves it to Notion's trash, and the brain keeps it in Git.
+Above the tabs, a gray line: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. Status says what each row needs. Needs you · decide in the page: open the row, read it or click Review with me, correct what you want, then set Your call. Needs you · set Your call: pick Approve or Reject, or Fix and say what's wrong in What to fix." (0043, 0045, 0088, 0090). A decided row leaves Review 30 days after the decision: the catch-up moves it to Notion's trash, and the brain keeps it in Git.
 
 **Status** (a formula, decision 0088) is the first thing on every row and in every view: **Needs you · decide in the page** (a row from a meeting, email or document: a page with one section per change, decision 0055), **Needs you · set Your call** (a Conflict, Answer or Suggestion row, or a row from before 0.8.0), **Submitted: waiting for the brain** (you clicked Submit or set Your call; "apply my reviews" or the next catch-up takes it), **Done** or **Closed**.
 
@@ -153,12 +153,12 @@ Above the tabs, a gray line: "Approving makes these notes trusted: they appear i
 
 | Type | Where you decide | What accepting does | To correct it |
 |---|---|---|---|
-| From source | In the page: one section per change. Type `Accept`, `Reject`, `Defer` or `Request revision` on its Decision line, then click **Submit decisions** (or **Submit and accept all**) | A new note becomes Reviewed and gets its page; a change to a note is made with the wording shown; a link is added | Edit the wording in the section before you accept it, or type `Request revision` and say what you want on the `Revision request:` line |
+| From source | In the page, then Your call (0090): read the sections, or click **Review with me** to go through them with Brain Assistant; correct a wording where it stands, or type `Accept`, `Reject` or `Defer` on an item's Decision line; then set **Your call**. Approve accepts what's still Pending, except ⚠ changes and ⚑ flagged items, which need `Accept` on their line; Reject leaves the notes as they are now | A new note becomes Reviewed and gets its page; a change to a note is made with the wording shown; a link is added | Edit the wording in the section before you approve, or set Your call to Request revision and say what to redraft in What to fix: the redraft comes back on the page after your next catch-up |
 | Conflict | Your call | Two sources disagree: both claims are kept as contested. A newer decision replaces an older one: the older is archived. A possible duplicate: it is folded into the other record | Fix, and say in What to fix the true value or the right note |
 | Answer | Your call | The question gets this answer and shows as Answered | Fix, and write the answer in What to fix |
 | Suggestion | Your call | The change Ultimate Assistant suggested (a task's Status or Due, a project's Area) is made in Notion at the brain's next run | Fix, and write the right value in What to fix |
 
-A row from a source written before 0.8.0 has no sections: Status says "set Your call", and Approve, Reject or Fix (with "a: March", or "all except b, d" to leave items out) work as before (0045).
+A row from a source written before 0.8.0 has no sections: Status says "set Your call", and Approve, Reject or Fix (with "a: March", or "all except b, d" to leave items out) work as before (0045). A row whose page was written from 0.8.0 to 0.14.0 (headings like `[a · it-…] Creates: …`) and that you already started keeps its rules until it is done: type on each Decision line, then click **Submit decisions** under *Show all properties*. If you hadn't touched it, the first publish after 0.15.0 rebuilt it as a new page.
 
 ---
 
@@ -227,8 +227,9 @@ Notion lets you shape how each database page opens. Set it once per database: op
 | Write | Write up | Documents | Send message to Brain Assistant | Documents |
 | Accept | Accept | Documents | Accepted → checked; Accepted at → now: a write-up or a refreshed report (0071; Accept write-up on Documents and Accept refresh on the Inbox before 0.9.1) | Documents |
 | Promote | Promote to document | Decisions | Promote asked → checked | Documents (and Knowledge) |
-| Submit | Submit decisions | Review | Decided → checked; Decided at → now (decision 0055) | core |
-| Submit all | Submit and accept all | Review | Decided → checked; Accept all → checked; Decided at → now | core |
+| Submit | Submit decisions | Review | Decided → checked; Decided at → now (decision 0055). Hidden since 0.15.0 (0090, migration 0025): reachable under *Show all properties* for a row of the older page | core |
+| Submit all | Submit and accept all | Review | Decided → checked; Accept all → checked; Decided at → now. Hidden since 0.15.0, as Submit | core |
+| Grill | Review with me | Review | Send message to Brain Assistant (0090) | core |
 
 The name and the label differ, so the layout doesn't show the same text twice (#144). The brain reads the boxes the checkbox buttons tick (and Accepted and Accepted at), never a button.
 
@@ -239,8 +240,9 @@ The name and the label differ, so the layout doesn't show the same text twice (#
 | Tidy capture | `Run your Tidy capture skill on this Inbox page: @This page. I confirm: replace the text below the title with the rewrite, as the skill says. Do not change the title, Brain Status or any property.` |
 | Write up | `Run your Write up skill on this Documents page: @This page. I confirm: do it as the skill says. Do not change any property, the Decision page, or any other page.` |
 | Refresh report | `Run your Refresh report skill on this report: @This page. I confirm: add or replace the Proposed refresh toggle as the skill says. Do not change the report's text outside it, or any property.` |
+| Review with me | `Run your Grill review skill on this Review page: @This page. Go through it with me in rounds of questions, show me what you will write and wait for my yes before writing. Never set Your call or change any property.` |
 
-A message without the page reference makes Brain Assistant stop and say so. The Accept button uses **Edit property** on **This page**: Accepted → checked and Accepted at → Now.
+A message without the page reference makes Brain Assistant stop and say so. Review with me carries no confirmation to write: Grill review asks for your yes to its preview in the chat (capture-and-review §7.12.10). The Accept button uses **Edit property** on **This page**: Accepted → checked and Accepted at → Now.
 
 | Database | Heading (in order) | Property group: where · order | Hidden | Backlinks | Why |
 |---|---|---|---|---|---|
@@ -253,7 +255,7 @@ A message without the page reference makes Brain Assistant stop and say so. The 
 | Orgs | Relationship, Website | Panel · Meetings via projects, People, Projects, Summary, Archived | Brain ID, Last Synced | On hover | — |
 | Decisions | Promote, Lifecycle | Panel · Promote asked, Assessment, Date, Project, Area, Decided In, Supersedes, Superseded By, Sources, Documents, Summary | Brain ID, Last Synced | Show always | The body is brain-written; backlinks show supersede chains and mentions |
 | Questions | Status, Kind, Project | Panel · Area, Raised In, Sources, Summary, Lifecycle | Brain ID, Last Synced, Created time | Off | You set Status |
-| Review | Status, Submit, Submit all, About Page | Main, in four groups · **Your decision:** Your call, What to fix · **What's proposed:** About, Now, Proposed, Why, each set to **Hide when empty** · **Where it comes from:** Type, Area, Source Meeting · **Submitted:** Decided, Decided at, Accept all (collapsed where Notion allows). Without groups in the layout editor, the same order without headings | Kind, State, Brain ID, Created time, Last edited time | Off | Status says where to decide (decision 0088). A row from a source is a page with a section per change (decision 0055): decide there and click Submit; its About, Now, Proposed and Why are empty, so they don't show. A Conflict, Answer or Suggestion row is decided in Your call, at the top of the property group |
+| Review | Status, Grill, About Page | Main, in four groups · **Your decision:** Your call, What to fix · **What's proposed:** About, Now, Proposed, Why, each set to **Hide when empty** · **Where it comes from:** Type, Area, Source Meeting · **Submitted:** Decided, Decided at, Accept all (collapsed where Notion allows). Without groups in the layout editor, the same order without headings | Submit, Submit all, Kind, State, Brain ID, Created time, Last edited time | Off | Status says where to decide (decision 0088). A row from a source is a page with a section per change (decision 0055): read it or click Review with me, then set Your call (0090); its About, Now, Proposed and Why are empty, so they don't show. A Conflict, Answer or Suggestion row is decided in Your call, at the top of the property group |
 | Inbox | Keep, Tidy, Brain Status, Project, Area | Main · Document asked, Only keep, Kind, Summary, Decisions, Questions, Documents, People, Tasks, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
 | Documents | Write, Update, Accept, Lifecycle, Project, Area, Sources | Panel · Accepted, Accepted at, Refresh asked, What to fix, Asked in, Origin, From decision, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |
 | Tasks | Status, Due | Panel · Project, Area, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
