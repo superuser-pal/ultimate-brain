@@ -134,6 +134,22 @@ async function assertLintClean(dir: string): Promise<void> {
   assert.equal(lint.json.data.errors, 0, JSON.stringify(lint.json.data.issues));
 }
 
+test("render: a file name Notion would link is a code span, never a bare link (CC-263)", async (context) => {
+  const dir = await inboxBrain(context);
+  const names = ["meeting-notes.md", "plan.io", "odd`name.ai", "`edge.md"];
+  const spans = ["`meeting-notes.md`", "`plan.io`", "``odd`name.ai``", "`` `edge.md ``"];
+  for (const [index, name] of names.entries()) {
+    const created = await newSource(dir, source(`Dropped ${index}`, "document", `Dropped file ${index}.\n`, { file_name: name }));
+    const item = await renderAndRecord(dir, created.id);
+    const first = item!.body.split("\n")[0];
+    assert.equal(first, `*Document · ${spans[index]} · 2026-12-01 · 3 words*`);
+    const bare = first.replace(spans[index], "");
+    assert.ok(!bare.includes(name) && !/\b[\w-]+\.(md|io|ai)\b/.test(bare), `no bare domain-like name left: ${first}`);
+  }
+  const url = await newSource(dir, source("Launch page", "document", "The launch page.\n", { source_key: "url:https://example.com/launch", file_name: undefined, converter: "fetch" }));
+  assert.ok((await renderAndRecord(dir, url.id))!.body.startsWith("*Document · https://example.com/launch · "), "a URL stays a real link");
+});
+
 test("render: a document and an email get their digest only, once; a capture no body; no Full text (0049)", async (context) => {
   const dir = await inboxBrain(context);
   const doc = await newSource(dir, source("Requirements", "document", DOCUMENT));
@@ -141,7 +157,7 @@ test("render: a document and an email get their digest only, once; a capture no 
 
   const docItem = await renderAndRecord(dir, doc.id);
   assert.equal(docItem!.action, "create");
-  assert.equal(docItem!.body, "*Document · requirements.pdf · 2026-12-01 · 25 words*\n\nRequirements in one line.\n\n- Key point of Requirements.");
+  assert.equal(docItem!.body, "*Document · `requirements.pdf` · 2026-12-01 · 25 words*\n\nRequirements in one line.\n\n- Key point of Requirements.");
   assert.equal(docItem!.sections, null);
   assert.equal(docItem!.properties["Full text"], undefined);
 

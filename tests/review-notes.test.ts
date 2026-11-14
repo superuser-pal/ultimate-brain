@@ -260,7 +260,7 @@ test("a new review_notes gives every note, link and change one immutable item id
   const path = created.json.data.created[0].path as string;
   const row = await attributes(dir, path);
   const items = row.items as Array<{ item_id: string; kind: string; ref: unknown }>;
-  assert.deepEqual(items.map((item) => [item.kind, item.ref]), [["note", DECISION], ["note", QUESTION], ["link", 0], ["link", 1]]);
+  assert.deepEqual(items.map((item) => [item.kind, item.ref]), [["note", DECISION], ["note", QUESTION], ["link", [0]], ["link", [1]]], "a link item lists its links: one per target and field (0088 Q5)");
   assert.equal(new Set(items.map((item) => item.item_id)).size, items.length, "ids are unique");
   assert.ok(items.every((item) => /^it-[0-9abcdefghjkmnpqrstvwxyz]{8}$/.test(item.item_id)));
   assert.deepEqual(await lintErrors(dir), []);
@@ -269,8 +269,9 @@ test("a new review_notes gives every note, link and change one immutable item id
   const [first, second] = items;
   await writeFile(join(dir, path), text.replace(second!.item_id, first!.item_id));
   assert.ok(((await lintErrors(dir)) as Array<{ rule: string }>).some((issue) => issue.rule === "proposal-items"));
-  await writeFile(join(dir, path), text.replace(/ref: 1\b/, "ref: 7"));
-  assert.ok(((await lintErrors(dir)) as Array<{ rule: string; message: string }>).some((issue) => issue.rule === "proposal-items" && /does not hold/.test(issue.message)));
+  assert.match(text, /ref: \[1\]\n/);
+  await writeFile(join(dir, path), text.replace("ref: [1]\n", "ref: [7]\n"));
+  assert.ok(((await lintErrors(dir)) as Array<{ rule: string; message: string }>).some((issue) => issue.rule === "proposal-items" && /links that are missing/.test(issue.message)));
   await writeFile(join(dir, path), text.replace(/\n---\n/, "\nitem_decisions:\n  - item_id: it-00000000\n    decision: accept\n    decided_at: 2026-12-10T09:00:00Z\n    decided_by: chat\n---\n"));
   assert.ok(((await lintErrors(dir)) as Array<{ rule: string; message: string }>).some((issue) => issue.rule === "proposal-items" && /not an item/.test(issue.message)));
 });
