@@ -901,7 +901,7 @@ Work packages: contracts and representative resource-budget trials; shared diges
 **Output:** decision 0093 from the author's answers of 2026-11-13 (the recommended option in each of five questions): CC-111 beside the CC-240 → CC-241 stack with its contracts and trials first; `/Weekly review` in Notion becomes the way into the weekly report; turning on the weekly schedule offers Reports once; Sonnet by default for the scheduled run, measured against Opus in the trials; the trials run in the author's real brain with one report page in Notion (§6, a second round); CC-251 keeps 0092's scope. CC-111's row gains 0093's additions; the 0.15.0 intro and the planning log record the grill. Planning only: no CLI, spec, schema, skill, template, Notion or CHANGELOG change, and no brain operation.
 **Acceptance:** 0093 records each answer, what it refines and what it keeps; CC-111 names each 0093 rule in its Output and tests it in its Acceptance; 0075's scope and limits are unchanged; 0.15.0 stays the feature cutoff; only Markdown planning files change; the leak and PR format checks pass.
 
-### CC-273 · The smoke-run scorer reads "doesn't have an answer" and "couldn't verify" as honest answers · `in progress`
+### CC-273 · The smoke-run scorer reads "doesn't have an answer" and "couldn't verify" as honest answers · `done` (#377)
 **Release:** 0.15.0
 **Changelog:** development only: the memory evaluation's scorer reads "the brain doesn't have an answer" and "I couldn't verify …" as the honest answers they are, so 0.14.0's smoke run no longer fails two correct answers.
 **Reviewed reading:** 0.14.0's smoke run at 2806478, trust-10 (Claude Code), trust-04 (Codex); the user's yes, 2026-11-14
