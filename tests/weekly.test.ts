@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { test, type TestContext } from "node:test";
 
 import { runCli } from "../src/cli.ts";
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
 import { area, areaRow, meeting, note, project, projectRow, snapshot, task, world, type NoteSpec } from "./assistant-world.ts";
 import { brain } from "./helpers.ts";
-import { bodies, configure, decide, plan, prepare, proposalFiles, readText, record, runWeek, tree, weeklyLines, withDatabases, type Judge } from "./weekly-world.ts";
+import { bodies, configure, decide, homeOf, plan, prepare, proposalFiles, readText, record, runWeek, select, tree, weeklyLines, withDatabases, type Judge } from "./weekly-world.ts";
 
 // CC-253: `brain weekly plan`, `select` and `record` on synthetic weeks (spec/weekly-review.md §14, cli.md §5.34). Every name is invented.
 
@@ -145,7 +145,7 @@ test("quiet: a first run with nothing to say, and a week where every finding was
   const snapshotBefore = await tree(root);
   const week2 = await plan(root, busySnapshot(NEXT, { tasks }), NEXT);
   assert.equal(week2.code, 0, week2.stdout);
-  assert.equal(week2.json.data.quiet, true, JSON.stringify({ changes: week2.json.data.changes, clusters: week2.json.data.clusters, findings: week2.json.data.findings.filter((finding: any) => finding.repetition.show) }));
+  assert.equal(week2.json.data.quiet, true, JSON.stringify({ changes: week2.json.data.changes, clusters: week2.json.data.clusters, findings: week2.json.data.findings?.filter((finding: any) => finding.repetition.show) }));
   assert.deepEqual(await tree(root), snapshotBefore, "no file, state or log line");
   assert.equal((await weeklyLines(root)).length, 1);
 });
@@ -292,7 +292,7 @@ test("record checks the shape: a bullet without its label, a dead link, too many
   const root = await busy(context);
   const prepared = await prepare(root, busySnapshot(), NOW, { judge });
   const before = await tree(root);
-  const base = { plan: prepared.plan.json.data, selection: prepared.select!.json.data, proposals: prepared.proposals, task_analysis: ["- No overdue, stalled or blocked work."], mode: "attended", publish: false, failures: [], notes_read: 1, seconds: 5 };
+  const base = { input_hash: prepared.plan.json.data.input_hash, proposals: prepared.proposals, task_analysis: ["- No overdue, stalled or blocked work."], mode: "attended", publish: false, failures: [], notes_read: 1, seconds: 5 };
   const ok = "- **Decided:** Launch Harbor app in March ([decision](../knowledge/decisions/dec-2p9f6h1r.md), 4 Nov).";
 
   const noLabel = await record(root, { ...base, what_changed: ["- Launch Harbor app in March ([decision](../knowledge/decisions/dec-2p9f6h1r.md), 4 Nov)."] }, NOW);
@@ -408,6 +408,8 @@ test("schedule install weekly-review: Monday 08:00 by default, the budget cap fr
   assert.match(data.label, /^eu\.ultimate-brain\.brain-[0-9a-f]{8}\.weekly-review$/);
   assert.deepEqual([data.times, data.days, data.prompt], [["08:00"], ["mon"], "weekly review unattended"]);
   assert.deepEqual(data.command, [join(bin, "claude"), "-p", "weekly review unattended", "--model", "claude-sonnet-5-5", "--max-budget-usd", "3"]);
+  assert.deepEqual(installed.json.warnings.map((warning: any) => warning.code), ["FOLDER_TRUST"]);
+  assert.match(installed.json.warnings[0].message, /Open Claude Code in .+ once and accept the trust dialog/);
   const plist = await readFile(data.path, "utf8");
   assert.match(plist, /<string>weekly review unattended<\/string>\s*<string>--model<\/string>\s*<string>claude-sonnet-5-5<\/string>\s*<string>--max-budget-usd<\/string>\s*<string>3<\/string>/);
   assert.match(plist, /<key>Hour<\/key>\s*<integer>8<\/integer>\s*<key>Minute<\/key>\s*<integer>0<\/integer>\s*<key>Weekday<\/key>\s*<integer>1<\/integer>/);
@@ -424,6 +426,7 @@ test("schedule install weekly-review: Monday 08:00 by default, the budget cap fr
   await configure(root, (config) => { config.settings = { ...config.settings, weekly: { max_usd: 2 } }; });
   const cron = await schedule(root, ["install", "weekly-review", "--model", "claude-sonnet-5-5"], linux.env, linux.home);
   assert.equal(cron.code, 0, JSON.stringify(cron.json));
+  assert.deepEqual(cron.json.warnings.map((warning: any) => warning.code), ["FOLDER_TRUST"], "the cron line needs the trusted folder too");
   assert.match(cron.json.data.cron[0], /^0 8 \* \* 1 mkdir -p .+ '-p' 'weekly review unattended' '--model' 'claude-sonnet-5-5' '--max-budget-usd' '2' >> "\$HOME\/\.ultimate-brain\/logs\/eu\.ultimate-brain\..+\.weekly-review\.log" 2>&1$/);
 });
 
@@ -438,4 +441,47 @@ test("upgrade adds the attempt marker to an older brain's .gitignore, once", asy
   assert.match(await readFile(ignore, "utf8"), /^_weekly\/attempt\.json$/m);
   const again = await brain(["upgrade", "--brain", root, "--json"]);
   assert.equal(again.json.data.files.some((entry: any) => entry.path === ".gitignore"), false);
+});
+
+test("the hand-off files: plan prints a summary and saves the plan beside the snapshot; select and record go by input_hash; record removes them", async (context) => {
+  const root = await busy(context);
+  const folder = join(homeOf(root), ".ultimate-brain", "weekly");
+  const planned = await plan(root, busySnapshot(), NOW);
+  const summary = planned.summary;
+  assert.deepEqual(Object.keys(summary).sort(), ["as_of", "counts", "file", "input_hash", "local_date", "notion", "quiet", "report", "week", "window"]);
+  assert.equal(planned.stdout.includes('"clusters":['), false, "the plan itself is not printed");
+  assert.equal(dirname(summary.file), folder, "beside the snapshot, outside the brain");
+  assert.equal(summary.file.startsWith(`${root}/`), false);
+  assert.deepEqual(summary.counts, { changes: 4, findings: planned.json.data.findings.length, findings_shown: planned.json.data.findings.filter((finding: any) => finding.repetition.show).length, clusters: 1, clusters_left: 0, corrections: 0, pending: 0, earlier_open: 0 });
+  const status = (await brain(["status", "--brain", root, "--json"], homeOf(root))).json.data;
+  assert.equal(summary.file, status.weekly_snapshot.replace(/\.json$/, ".plan.json"));
+
+  const judged = { clusters: [`overtaken:${LENA}`], findings: [], corrections: [] };
+  const stale = await select(root, { input_hash: `sha256:${"0".repeat(64)}`, judged }, NOW);
+  assert.equal(stale.json.error.code, "INPUT_INVALID");
+  assert.match(stale.json.error.message, /another plan/);
+  const embedded = await select(root, { plan: planned.json.data, judged }, NOW);
+  assert.equal(embedded.code, 0, "embedding the plan still works");
+  const selected = await select(root, { input_hash: summary.input_hash, judged }, NOW);
+  assert.equal(selected.code, 0, selected.stdout);
+  const selectionFile = join(folder, basename(summary.file).replace(".plan.json", ".selection.json"));
+  assert.deepEqual(JSON.parse(await readFile(selectionFile, "utf8")), selected.json.data);
+  assert.equal(selected.json.data.input_hash, summary.input_hash);
+
+  // A new plan drops the selection of the earlier one.
+  await plan(root, busySnapshot(), NOW);
+  await assert.rejects(readFile(selectionFile));
+  const noSelection = await record(root, { input_hash: summary.input_hash, proposals: [], what_changed: ["- Nothing new this week."], task_analysis: ["- No overdue, stalled or blocked work."], mode: "attended", publish: false, failures: [], notes_read: 0, seconds: 1 }, NOW);
+  assert.equal(noSelection.json.error.code, "INPUT_INVALID");
+  assert.match(noSelection.json.error.message, /no saved selection/);
+
+  const week = await runWeek(root, busySnapshot(), NOW, { judge });
+  assert.equal(week.record!.code, 0, week.record!.stdout);
+  await assert.rejects(readFile(summary.file), "record removes the plan file");
+  await assert.rejects(readFile(selectionFile), "and the selection file");
+  assert.equal((await tree(root)).some((line) => line.includes(".plan.json") || line.includes(".selection.json")), false, "never in the brain");
+
+  const quiet = await plan(root, busySnapshot("2026-11-09T09:00:00Z"), "2026-11-09T09:00:00Z");
+  assert.deepEqual([quiet.json.data.quiet, quiet.json.data.file], [true, null]);
+  await assert.rejects(readFile(summary.file), "a quiet plan writes no file");
 });

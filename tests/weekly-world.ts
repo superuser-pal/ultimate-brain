@@ -15,14 +15,26 @@ async function file(root: string, value: unknown): Promise<string> {
   return path;
 }
 
-export async function plan(root: string, snap: unknown, now: string): Promise<CliRun> {
-  return brain(["weekly", "plan", "--brain", root, "--snapshot", await file(root, snap), "--now", now, "--json"]);
+/** The test brain's home: the hand-off files go to <home>/.ultimate-brain/weekly/, beside the brain, never in it. */
+export const homeOf = (root: string) => dirname(root);
+
+/**
+ * Run `brain weekly plan`. Its data is the short summary (planSummary); `summary` keeps it, and `json.data` becomes the full plan read from the
+ * saved hand-off file, so tests can look at the candidates. A quiet plan saves no file: `json.data` stays the summary.
+ */
+export async function plan(root: string, snap: unknown, now: string): Promise<CliRun & { summary?: any }> {
+  const run: CliRun & { summary?: any } = await brain(["weekly", "plan", "--brain", root, "--snapshot", await file(root, snap), "--now", now, "--json"], homeOf(root));
+  if (run.code === 0 && typeof run.json.data.file === "string") {
+    run.summary = run.json.data;
+    run.json.data = JSON.parse(await readFile(run.summary.file, "utf8"));
+  }
+  return run;
 }
 export async function select(root: string, input: unknown, now: string): Promise<CliRun> {
-  return brain(["weekly", "select", "--brain", root, "--input", await file(root, input), "--now", now, "--json"]);
+  return brain(["weekly", "select", "--brain", root, "--input", await file(root, input), "--now", now, "--json"], homeOf(root));
 }
 export async function record(root: string, input: unknown, now: string): Promise<CliRun> {
-  return brain(["weekly", "record", "--brain", root, "--input", await file(root, input), "--now", now, "--json"]);
+  return brain(["weekly", "record", "--brain", root, "--input", await file(root, input), "--now", now, "--json"], homeOf(root));
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -70,7 +82,8 @@ export async function prepare(root: string, snap: any, now: string, options: { j
   const judged = planData.clusters.slice(0, options.judgeOnly ?? planData.clusters.length);
   const findings = judged.map((cluster: any) => options.judge?.(cluster) ?? null).filter((finding: any) => finding !== null);
   const strip = ({ field: _f, before: _b, after: _a, why: _w, proposal: _p, ...rest }: any) => rest;
-  const selectInput = { plan: planData, judged: { clusters: judged.map((cluster: any) => cluster.key), findings: findings.map(strip), corrections: [] } };
+  // The scheduled run's way: the plan by its input_hash, never copied into the input (cli.md §5.34).
+  const selectInput = { input_hash: planData.input_hash, judged: { clusters: judged.map((cluster: any) => cluster.key), findings: findings.map(strip), corrections: [] } };
   const selected = await select(root, selectInput, now);
   if (selected.code !== 0) throw new Error(`select failed: ${selected.stdout}${selected.stderr}`);
   const proposals: Array<{ key: string; proposal: string }> = [];
@@ -91,7 +104,7 @@ export async function runWeek(root: string, snap: any, now: string, options: { j
   const prepared = await prepare(root, snap, now, options);
   if (prepared.select === undefined) return { plan: prepared.plan, proposals: [] };
   const planData = prepared.plan.json.data;
-  const recordInput = { plan: planData, selection: prepared.select.json.data, proposals: prepared.proposals, ...(options.prose ?? prose)(planData), mode: options.mode ?? "unattended", publish: options.publish ?? false, failures: [], notes_read: 3, seconds: 60 };
+  const recordInput = { input_hash: planData.input_hash, proposals: prepared.proposals, ...(options.prose ?? prose)(planData), mode: options.mode ?? "unattended", publish: options.publish ?? false, failures: [], notes_read: 3, seconds: 60 };
   const recorded = await record(root, recordInput, now);
   return { plan: prepared.plan, select: prepared.select, record: recorded, proposals: prepared.proposals.map((entry) => entry.proposal), input: recordInput };
 }
