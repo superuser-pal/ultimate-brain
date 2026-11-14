@@ -186,14 +186,16 @@ export function lintBrain(input: LintInput): Issue[] {
       }
     }
     const bodyStart = bodyLineOffset(note);
+    // A source and a whole Document are someone else's text, kept as it is: 0002's checks judge only what the brain writes (0091).
+    const keptText = note.type === "source" || (note.type === "reference" && a.origin === "whole");
     for (const [index, raw] of proseLines(note.body)) {
       const line = bodyStart + index;
-      if (raw.includes("[[")) err("wikilink", line, "use a relative Markdown link, not [[wikilinks]] (0002)");
-      for (const match of raw.matchAll(/\^\[([^\]]*)\]/g)) {
+      if (!keptText && raw.includes("[[")) err("wikilink", line, "use a relative Markdown link, not [[wikilinks]] (0002)");
+      if (!keptText) for (const match of raw.matchAll(/\^\[([^\]]*)\]/g)) {
         // `^[src-…#¶n:hash]` is the passage reference of a claim written from an extract (0055, capture-and-review §5.1).
         if (match[1] !== "inferred" && match[1] !== "ambiguous" && !/^src-[0-9a-z]{8}#¶\d+:[0-9a-f]{8}$/.test(match[1] ?? "")) err("unknown-marker", line, `^[${match[1]}] is not a provenance marker (0004)`);
       }
-      for (const target of linkTargets(raw)) {
+      if (!keptText) for (const target of linkTargets(raw)) {
         if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) continue;
         const resolved = posix.normalize(posix.join(posix.dirname(note.path), decodePath(target.split(/[?#]/)[0]!)));
         if (resolved.startsWith("../") || !exists(resolved)) err("broken-link", line, `link target ${target} does not exist`);
