@@ -812,7 +812,7 @@ Moved to 0.14.0 by the user, 2026-11-11: the CLI skip and its brain-ingest wordi
 **Output:** notion/brain-assistant.md, docs/setup.md, spec/setup.md's Brain Assistant step and, in a fork PR, brain-setup and the guide in brain-howto: a skill is run in a Custom Agent by asking for it by name or mentioning its page, not as a `/` command; giving the agent access names the databases by their space (the top page's name), so another space's Skills database is never picked; the step's check confirms that Today reads this space's tasks.
 **Acceptance:** every text says the same way to run a skill and to pick the databases; no text tells a Custom Agent user to type `/Today`; CC-266's re-run shows Today in a fresh duplicate reading only that space; the fork PR's checks pass and it is reviewed with this PR; the leak check passes.
 
-### CC-261 · The Decision log marks a decision still waiting in Review (gate problem 6) · `todo`
+### CC-261 · The Decision log marks a decision still waiting in Review (gate problem 6) · `done` (#367)
 **Release:** 0.14.0
 **Changelog:** a project's Decision log marks a decision you haven't reviewed yet instead of listing it like a reviewed one.
 **Output:** contract first: spec/schema.md §16.2 (and its Notion publish, cli.md §5.14.4): a `draft` decision keeps its place in the history but shows as waiting for review, in the words of the Brief's waiting line (§16.1), with no link in Notion, where a draft has no page (0071); a reviewed decision is unchanged. Then `brain views` and the render.
