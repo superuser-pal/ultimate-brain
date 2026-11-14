@@ -35,6 +35,10 @@ const SAYS_UNKNOWN = [
   /\b(?:couldn't|could not) (?:establish|confirm|determine|verify)\b/,
   // CC-273: "the brain doesn't have an answer", "I don't have any answer".
   /\b(?:doesn't|does not|don't|do not) have (?:an|any) answer\b/,
+  // CC-275: "Nothing the brain returns / returned records that …" (the brain as the subject of a denial), and "I found no
+  // recorded / documented <thing>" (within 60 characters, no comma or colon between).
+  /\bnothing (?:the brain|it) (?:returns|returned|holds|has) (?:records?|says|holds|mentions)\b/,
+  /\bfound no [^.;,:]{0,60}?\b(?:recorded|documented)\b|\bfound no (?:recorded|documented)\b/,
   /(?:\bnot|n't|\bnothing) (?:\w+ )?in the brain\b/,
   /\bno (?:records?|information|mention|evidence)\b/,
   /\bno (?:approved |eligible )?memor(?:y|ies)\b/,
