@@ -2,6 +2,64 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.14.0 — 2026-11-14
+
+- CC-187 (#286): development only: the onboarding grill is recorded as decision 0078 with 0.14.0's task plan; onboarding and early access for friends and family move to 0.14.0, and the weekly review to 0.15.0, still the feature cutoff.
+- CC-188 (#291): development only: the contracts for the guided setup, the `status` setup block, the template version and the new-brain defaults are written.
+- CC-189 (#294): the Notion space design adds a Start here callout and a Template version line, and the product names one Notion template for a new user to duplicate.
+- CC-191 (#302): say "set up my brain" and your agent walks you through everything once: the settings, the Notion connection, your work's Domains, Areas, Projects, people and key documents, and a first check that tasks, a report and your notes came out right.
+- CC-192 (#340): the README's Get started takes a new user from nothing to "set up my brain" in six steps, with the link to duplicate the Notion template, and docs/setup.md explains every setting and how to recover from common failures.
+- CC-193 (#363): development only: 0.14.0's setup is measured end to end on a synthetic fresh user in a clean duplicate of the published template.
+- CC-194 (#289): development only: the minutes grill is recorded as decision 0079 with its 0.14.0 tasks: lean minutes for the reader, a For the brain toggle, and quick follow-ups left unticked becoming Tasks.
+- CC-195 (#330): development only: the contracts for the lean minutes shape, the id → quote join and quick follow-ups becoming Tasks are written.
+- CC-196 (#333): the brain reads the new minutes, with one line per item and the quotes in a For the brain toggle, and a quick follow-up you haven't ticked when you mark the meeting Reviewed can become a Task.
+- CC-197 (#337): the minutes Notion AI writes are shorter and easier to skim: your quick follow-ups first, then the Tasks the brain will create, then a few lines per subject, with the ids and quotes tucked into a For the brain toggle.
+- CC-198 (#335): catch-up turns the quick follow-ups you left unticked into Tasks when it ingests a reviewed meeting, and its report says how many.
+- CC-208 (#308): development only: the response style grill is recorded as decision 0081 with its 0.14.0 tasks: a response style each user chooses, working principles and reply rules in the brain's rules, and plain writing for text people read.
+- CC-209 (#309): development only: the contracts for the response style setting, the paragraph the CLI writes from it and its item on the setup's settings screen are written.
+- CC-210 (#328): set how the brain talks to you (Standard, Simple, or your own mix of how much it explains, how long and how direct it is) and the brain's instructions follow it in every session, in the brain and in linked folders.
+- CC-211 (#332): the brain asks before guessing, creates nothing you didn't ask for, changes only what you named and says what it checked; replies skip the pleasantries, state errors as cause and fix, and end with one next action; setup asks how the brain should talk to you, and you can change it any time by saying so.
+- CC-212 (#329): the brain writes notes, Notion pages and reports in plainer language, without the patterns that make text read as AI-written; the skills repo also offers humanizer for your own writing.
+- CC-216 (#311): a sync or catch-up finds the Documents and reports whose text you accepted from the Documents rows it has already read, instead of querying the Documents database a second time; what it imports, holds and protects is unchanged.
+- CC-215 (#315): applying your reviews or catching up no longer asks you to say yes again to wording you already accepted and submitted on a Review page: the brain shows what it applies, checks that nothing changed since you submitted, and applies it.
+- CC-219 (#316): an Everyday Guide puts the daily routine, useful requests, Notion buttons and all eleven Notion AI prompts in one short reference.
+- CC-213 (#314): development only: the setup contract records each first-value check's outcome, passes first value only when every applicable check passes (now with a cited answer from the user's own document that they confirm), and retries what is unresolved before the scheduled catch-up is offered.
+- CC-207 (#307): `brain note new` no longer writes a second person or org note when the matching one is withheld while it awaits cleanup: it skips the item as `WITHHELD_MATCH` with the existing id, so the ingest links to it instead.
+- CC-225 (#326): development only: the memory evaluation's scorer reads "the brain holds no rule", an opening "No deploy freeze is recorded" and a quoted search query narrated at some length as the honest answers they are, so 0.13.0's second smoke run no longer fails three correct Claude Code answers.
+- CC-226 (#327): development only: decision 0083 lets a release go out on the user's yes after a reviewed reading of the smoke run's failing answers, when every failure is the scorer's and no answer leaks anything, with the scorer fixed before the next release's smoke run.
+- CC-227 (#331): the Notion template now shows what a filled space looks like with a few `Example · ` rows (a Domain, an Area, a Project, a Person, an Org, a Meeting and a Task); "set up my brain" removes them when it connects the brain to Notion, and the brain never takes anything from them.
+- CC-228 (#334): development only: tests that check an excluded secret is absent no longer fail when a random note id happens to contain its text.
+- CC-229 (#336): minutes read through Notion's markdown export keep their item ids: a Markdown escape such as `\[s1.i1\]` is read as the bracket it stands for.
+- CC-230 (#338): development only: the release scripts' tests turn off git's background maintenance, so a temp repo is no longer removed while a detached `git maintenance` still writes into it (ENOTEMPTY).
+- CC-231 (#339): development only: the memory evaluation's scorer reads an opening "There is no recorded rule about …" as an honest absence, and a "Nothing / None of … records that …" denial or a search query narrated as searched "under" a quoted phrase as not stating the fact, so 0.14.0-rc.1's smoke run no longer fails two correct Claude Code answers.
+- CC-232 (#341): the user guides (How it works and the Everyday guide) describe the lean minutes: where `Meeting only` goes in the For the brain toggle, and that a quick follow-up still unticked when you mark a meeting Reviewed becomes a Task; setup finds the template version in the System callout on the template's top page, and Brain Assistant's skills database is named Skills.
+- CC-233 (#342): development only: decision 0086 records that operating a brain never needs a pull request and that early access requires `gh`, with 0.14.0's tasks for it.
+- CC-234 (#343): the Notion template now has an example row in every database, all from one story and linked to each other (a Review page waiting for a decision, a decision, an open question, a kept document, an Inbox capture, a goal with its key result and a task waiting on someone), with a note on Brain Data saying they are samples; "set up my brain" still removes them all after one yes, and the brain never acts on one.
+- CC-235 (#349): development only: the setup and status contracts say a brain is worked on one branch, `gh` is required for early access, and testers read "backup".
+- CC-236 (#352): `brain status` warns when your brain is off its working branch, and the brain's rules tell every agent to commit there and never open a branch or a pull request.
+- CC-237 (#351): setup now needs the GitHub CLI and creates your private backup for you; reports say "backed up" or "not backed up", and "fix my backup" repairs it.
+- CC-238 (#356): the README's Get started and the setup guide list the GitHub CLI among the prerequisites and explain the private backup.
+- CC-239 (#346): a Review row now says whether it needs you, in a Status (Needs you · decide in the page, Needs you · set Your call, Submitted: waiting for the brain, Done, Closed); Review shows a row's Type, never its internal Kind; and a row with sections no longer repeats its page in About, Now, Proposed and Why.
+- CC-242 (#347): development only: vendor ultimate-brain-skills 1.8.3 (CC-239's guides).
+- CC-243 (#348): The template docs match the template as built: the Review row's property panel in four groups, fifteen example rows in the setup guide, Example minutes added below the Meetings template's blocks, and the Example rows' relations set in a step of their own.
+- CC-247 (#357): The brain's structure in AGENTS.md, the linked folder's Domain line and the briefs' Documents ship in 0.14.0 rather than a later patch.
+- CC-244 (#350): Decision 0089 records how every session in a brain knows its Domains, Areas and active Projects, which documents belong to each, and where to read their tasks.
+- CC-245 (#353): Every session in your brain now knows your Domains, Areas and active Projects: `brain index` keeps them in a block of the brain's AGENTS.md, a linked folder shows its own Domain, Area and Project, and each project and Area brief lists its documents.
+- CC-246 (#354): The brain answers "what belongs to this project" from the project's brief and its live tasks, and can explain the structure list in your AGENTS.md.
+- CC-257 (#364): development only: the release gate's ten problems are triaged, eight fixes and CC-250 join 0.14.0, and rc.3 is planned with a re-run of the changed steps.
+- CC-249 (#359): development only: dogfood issues #344 and #345 are triaged into decisions 0091 and 0092 and tasks CC-250 (0.14.1) and CC-251 (0.15.0).
+- CC-250 (#368): a linked repo or file that uses `[[wikilinks]]` is ingested as it is, and on a Document's Notion page its links lead to the other Documents kept from the same repo.
+- CC-258 (#365): setup and the minutes guide say where the transcript goes and how to run the minutes prompt, and setup checks that the transcript is still on the page.
+- CC-259 (#371): setting up a second brain on a machine proposes a drop folder of its own instead of the first brain's.
+- CC-260 (#372): setup and the guide say how to run Brain Assistant's skills in a Custom Agent and how to give it this space's databases only.
+- CC-261 (#367): a project's Decision log marks a decision you haven't reviewed yet instead of listing it like a reviewed one.
+- CC-262 (#369): a report the brain published and you haven't edited is refreshed by the next catch-up without asking you to click Accept.
+- CC-263 (#366): a new Inbox row's first line names its file without a link that leads nowhere.
+- CC-264 (#373): the first catch-up after setup does less work, so a tester's first meeting costs less.
+- CC-265 (#376): the skills of 0.14.0-rc.3: the transcript check, the drop folder, Brain Assistant in a Custom Agent, wikilinked sources and the catch-up's quick wins.
+
+Skills: ultimate-brain-skills 1.8.5 (sha256-16940a85922271dd631add1d3317ac7b4472d62deb6801aa9ce4d963da35805d)
+
 ## 0.14.0-rc.3 — 2026-11-14
 
 
