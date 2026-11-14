@@ -5,6 +5,7 @@ import type { Command } from "../lib/command.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { commitJournaled } from "../lib/journal.ts";
 import { modulesOf } from "../lib/modules.ts";
+import { reviewFormat } from "../lib/review-body.ts";
 import { BrainError } from "../lib/errors.ts";
 import { lintWarnings } from "../lib/warnings.ts";
 
@@ -38,7 +39,10 @@ export const syncRenderCommand: Command = {
     if (skipConflicted && planPath === undefined) throw new BrainError("USAGE", "--skip-conflicted needs --plan");
     const plan = planPath === undefined ? undefined : parsePlan(await readJsonInput(planPath, "sync render"));
     if (plan !== undefined) for (const item of plan.conflicts) if (item.code === "BOTH_CHANGED" && typeof item.brain_id === "string" && typeof item.property === "string") { const set = held.get(item.brain_id) ?? new Set<string>(); set.add(item.property); held.set(item.brain_id, set); }
-    const data = render(workspace, now, ids, held);
+    // A plan names the untouched format-1 Review rows to rebuild once and the items it held (cli §5.14.4, capture-and-review §7.12).
+    const holds = new Map<string, Map<string, string>>();
+    if (plan !== undefined) for (const entry of plan.review_held) if (entry.item_id !== null) { const map = holds.get(entry.proposal) ?? new Map<string, string>(); map.set(entry.item_id, heldWords(entry.reason, entry.detail)); holds.set(entry.proposal, map); }
+    const data = render(workspace, now, ids, held, { rebuild: new Set((plan?.review_untouched ?? []).map((entry) => entry.proposal)), holds });
     // --skip-conflicted (cli §5.14.4, 0051): a conflicted row, and a report with a What to fix nobody has read, are held back whole.
     const withheld = new Map<string, string>(); const conflictedPages = new Set<string>();
     if (skipConflicted && plan !== undefined) {
@@ -57,11 +61,19 @@ export const syncRenderCommand: Command = {
     if (plan !== undefined) for (const item of plan.review_pending) if (!withheld.has(item.proposal)) withheld.set(item.proposal, "REVIEW_PENDING");
     const skipped: Array<{ id: string; reason: string }> = [...data.skipped]; const items = data.items.filter((item) => {
       const reason = withheld.get(item.id) ?? (item.page_id !== null && conflictedPages.has(item.page_id) ? "ROW_CONFLICTED" : undefined);
-      if (reason === undefined) return true; skipped.push({ id: item.id, reason });
+      if (reason === undefined) return true;
+      // A format-2 row with decisions in its page still gets its two brain-owned sections, never its properties, body or item sections (cli §5.14.4).
+      const proposal = workspace.get(item.id);
+      if (reason === "REVIEW_PENDING" && item.action === "update" && proposal !== undefined && reviewFormat(proposal) === 2 && item.sections !== null) {
+        item.properties = {}; item.body = null; delete item.item_updates; delete item.review_published_after;
+        item.published = { "@content": item.published["@content"] };
+        return true;
+      }
+      skipped.push({ id: item.id, reason });
       if (!bodyOnly.has(item.id) || item.action !== "update") return false;
       holdBody(item); return Object.keys(item.properties).some((name) => name !== "Last Synced");
     });
-    return { data: { items, errors: data.errors, skipped }, warnings: data.warnings, exitCode: data.errors.length > 0 ? 1 : 0, human: `${items.length} payloads\n` };
+    return { data: { items, errors: data.errors, skipped, rebuilt: items.filter((item) => item.action === "rebuild").length }, warnings: data.warnings, exitCode: data.errors.length > 0 ? 1 : 0, human: `${items.length} payloads\n` };
   },
 };
 
@@ -86,3 +98,21 @@ export const syncRecordCommand: Command = {
   name: "sync record", usage: "brain sync record --input <file|-> [--dry-run] [--json]", summary: "Record successful Notion publication results.", options: { input: "string", "dry-run": "boolean" }, maxPositionals: 0, needsBrain: true,
   async run({ args, brain, now }) { const input = args.options.input as string | undefined; if (input === undefined) throw new BrainError("USAGE", "sync record needs --input"); const workspace = await Workspace.open(brain!); const data = record(workspace, await readJsonInput(input, "sync record")); const records = data.records as Array<Record<string, unknown>>; const dryRun = args.options["dry-run"] === true; if (!dryRun) await workspace.commit([], now); const failed = records.filter((item) => item.result === "failed").length; return { data: { dry_run: dryRun, records }, warnings: data.warnings, exitCode: failed > 0 ? 1 : 0, human: `${records.length} records\n` }; },
 };
+
+/** A held item's reason in words, for its summary line on a format-2 page (cli §5.14.4). */
+function heldWords(reason: string, detail?: string): string {
+  const words: Record<string, string> = {
+    VALUE_NOT_IN_PASSAGE: "its value is in none of the passages it cites",
+    NEEDS_EXPLICIT_ACCEPT: "Approve leaves ⚠ and flagged items; type Accept on its Decision line",
+    UNKNOWN_MARKER: "a [¶n] marker names no passage of this page",
+    LINK_VALUE_UNKNOWN: "a name in it is not one this item adds",
+    UNREADABLE_PROPOSED: "its wording can't be read",
+    UNREADABLE_DECISION: "its Decision line can't be read",
+    MISSING_SECTION: "its section or its ref line is missing",
+    DUPLICATE_SECTION: "its ref line appears twice",
+    BASE_CHANGED: "the note changed since it was proposed",
+    REVISION_PENDING: "it has a revision request",
+    HELD_SOURCE_EXCLUDED: "it rests on text you excluded",
+  };
+  return `${words[reason] ?? reason}${detail === undefined ? "" : ` (${detail})`}.`;
+}

@@ -6,7 +6,9 @@ import { isRecord } from "./input.ts";
 import type { LogEntry } from "./log.ts";
 import type { Note } from "./notes.ts";
 import { bodyOf, reviewTitle, writeProposal } from "./proposals.ts";
+import { linkRefs } from "./passages.ts";
 import { reviewItems, textSha } from "./review-body.ts";
+import { withoutMarkers, wordingSha } from "./review-format2.ts";
 import type { ReviewDecision } from "./review-plan.ts";
 import { formatDate } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
@@ -136,7 +138,7 @@ function applyItem(workspace: Workspace, decision: ReviewDecision, planned: Revi
     if (stored.base_hash !== view.current_base_hash || planned.base_hash !== view.current_base_hash) throw new Skip("BASE_CHANGED");
     if (planned.proposed === null || planned.proposed.trim() === "") throw new Skip("UNREADABLE_PROPOSED");
     // The wording is bound to its hashes: what is applied is exactly the text that was hashed, planned and verified, never a text that merely travels with them.
-    if (textSha(planned.proposed) !== planned.proposed_hash) throw new Skip("WORDING_NOT_BOUND");
+    if ((decision.format === 2 ? wordingSha(planned.proposed) : textSha(planned.proposed)) !== planned.proposed_hash) throw new Skip("WORDING_NOT_BOUND");
     const rendered = record(record(record(a.notion_published)["@review"]).items)[planned.item_id] as { proposed_hash?: string } | undefined;
     // Whether the user edited it is read from the hashes, not taken from the plan.
     acceptItem(workspace, proposal, entry, { ...planned, edited: rendered?.proposed_hash !== undefined && rendered.proposed_hash !== planned.proposed_hash }, today_);
@@ -148,6 +150,9 @@ function applyItem(workspace: Workspace, decision: ReviewDecision, planned: Revi
   record_(workspace, proposal.id, {
     item_id: planned.item_id, decision: planned.decision, decided_at: decision.decided_at, decided_by: "notion",
     proposed_hash: planned.proposed_hash, base_hash: planned.base_hash, snapshot_hash: planned.snapshot_hash, state, ...(planned.decision === "accept" && planned.edited ? { edited: true } : {}),
+    // Format 2: what was agreed in review stays in Git with the decision; a link item records the values it added when some were left out (§7.12.6).
+    ...(typeof planned.agreed === "string" && planned.agreed.trim() !== "" ? { agreed: planned.agreed } : {}),
+    ...(planned.decision === "accept" && planned.values !== undefined && planned.values.length < linkRefs(entry.ref).length ? { values: planned.values } : {}),
   }, decision, today_);
   return state;
 }
@@ -181,8 +186,27 @@ function acceptItem(workspace: Workspace, proposal: Note, entry: Record<string, 
     workspace.save(note.path, document);
     return;
   }
+  if (entry.kind === "link" && (planned.values !== undefined || (Array.isArray(entry.ref) && entry.ref.length > 1))) {
+    // Format 2: the item adds the values still in its wording, each one of its own (capture-and-review §7.12.6). A grouped item on a format-1
+    // page adds all of them, and its edited wording can't name one value.
+    const refs = linkRefs(entry.ref);
+    if (planned.values === undefined && planned.edited) throw new Skip("LINK_VALUE_UNKNOWN", "a link item of several values is edited on a format-2 page only");
+    const chosen = planned.values ?? refs;
+    if (chosen.length === 0 || chosen.some((value) => !refs.includes(value))) throw new Skip("LINK_VALUE_UNKNOWN", "a value is not one of this item's");
+    for (const index of chosen) {
+      const link = record(list(a.links)[index]);
+      const target = workspace.get(String(link.target));
+      if (target === undefined) throw new Skip("UNKNOWN_ID", `No note ${String(link.target)}`);
+      const document = workspace.edit(target);
+      const values = list(document.attributes[String(link.field)]);
+      if (!values.some((existing) => isDeepStrictEqual(existing, link.value))) document.attributes[String(link.field)] = [...values, link.value];
+      document.attributes.updated = today;
+      workspace.save(target.path, document);
+    }
+    return;
+  }
   if (entry.kind === "link") {
-    const link = record(list(a.links)[Number(entry.ref)]);
+    const link = record(list(a.links)[linkRefs(entry.ref)[0]!]);
     const target = workspace.get(String(link.target));
     if (target === undefined) throw new Skip("UNKNOWN_ID", `No note ${String(link.target)}`);
     const value = planned.edited ? linkValue(workspace, proposed, link.value) : link.value;
@@ -194,8 +218,10 @@ function acceptItem(workspace: Workspace, proposal: Note, entry: Record<string, 
     return;
   }
   const change = record(list(a.changes)[Number(entry.ref)]);
-  const edited = planned.edited;
-  const value = !edited ? undefined : change.kind === "update_fact" ? typed(proposed, change.after) : proposed;
+  // A fact's wording carries its markers on a format-2 page: the value is the wording without them, and a value equal to the source's is not a correction.
+  const factValue = change.kind === "update_fact" ? withoutMarkers(proposed) : proposed;
+  const edited = planned.edited && !(change.kind === "update_fact" && factValue === String(change.after));
+  const value = !edited ? undefined : change.kind === "update_fact" ? typed(factValue, change.after) : proposed;
   const stale = applyKind(workspace, { ...change, source: a.source }, "", value, today, today, [], proposal.id);
   if (stale !== null) throw new Skip("STALE_PROPOSAL", stale);
 }

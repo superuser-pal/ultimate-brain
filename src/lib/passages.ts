@@ -22,9 +22,14 @@ export function proposedText(p: Record<string, unknown>): string | null {
   return null;
 }
 
+/** The indexes into `links` of a link item: one, or from 0.15.0 the list of a grouped item (one target and field, schema §11). */
+export function linkRefs(ref: unknown): number[] {
+  return Array.isArray(ref) ? ref.map(Number) : [Number(ref)];
+}
+
 /** The `passages` of a review_notes item, from its `items` entry; `undefined` when the item is legacy (no entry, or no `passages` on it). */
 export function itemPassages(p: Record<string, unknown>, kind: "change" | "note" | "link", ref: unknown): unknown {
-  const entry = (Array.isArray(p.items) ? p.items : []).filter(isRecord).find((item) => item.kind === kind && item.ref === ref);
+  const entry = (Array.isArray(p.items) ? p.items : []).filter(isRecord).find((item) => item.kind === kind && (kind === "link" ? linkRefs(item.ref).includes(Number(ref)) : item.ref === ref));
   return entry?.passages;
 }
 
