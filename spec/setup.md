@@ -159,11 +159,18 @@ Walked through: the skill gives the prompt's text (from `<product.path>/notion/`
 
 ### 6.4 Brain Assistant (step 4b; 0078 §2)
 
-Walked through: the skill gives the steps of `<product.path>/notion/brain-assistant.md`: a **Custom Agent** on a plan that has them, else the same text as **personal Instructions** (the `custom_agents` answer of §6.1). Checked:
+**Running a skill** (CC-260; the same words in `notion/brain-assistant.md`, `docs/setup.md` and the guide). In Brain Assistant's chat the user asks for a skill by its name ("Run Today"), or mentions the skill's page from **this space's** Skills database. A Custom Agent doesn't recognise a skill typed as a `/` command, and no text tells a Custom Agent user to type `/Today`. The `@` picker may offer another space's page of the same name, or none while a fresh duplicate isn't indexed yet, so a mention is made with the page's link (open the page from the space's Skills database, ••• → Copy link, paste it in the chat), never by picking a result whose space can't be seen. With personal Instructions (no Custom Agent) the user asks for it by name in the same way.
 
-1. With the user's yes, the skill creates one Task in the brain's Tasks database through the MCP: `Setup check: delete me`, Due today. With Tasks off, no task is created: step 2 then passes when `/Today` lists nothing from outside the brain's databases.
-2. The user runs `/Today` in Notion and pastes or describes the answer. It passes when it lists that task and nothing that isn't in the brain's Tasks database (no page from elsewhere in the workspace).
-3. The skill then sets the test task's Status to the mapped closed-without-doing status (`notion.tasks.wont_do_status`), with the same yes, and records `brain-assistant` done; a fail names what came back that shouldn't have, and the likely cause (the agent's access isn't limited to Brain Data).
+**The space's name.** The space is named by its **top page** (Brain Data's topmost parent page, §9; "Ultimate Brain" in a fresh duplicate). Before the walk-through the skill reads that page's title through the MCP and searches the workspace (MCP search, read only) for other pages with the same title and for other databases titled `Skills` or `Brain Assistant Skills`.
+- **Another top page has the same title:** the skill asks the user to rename this space's top page first, so the picker can tell the spaces apart ("Your workspace has two pages called Ultimate Brain. Rename this one, for example to Ultimate Brain · Test, then say done."). It reads the title again after the user's "done". Nothing in the brain depends on the title.
+- **Other Skills databases exist:** the walk-through says how many, and that the right one is the one under the top page.
+
+Walked through: the skill gives the steps of `<product.path>/notion/brain-assistant.md`: a **Custom Agent** on a plan that has them, else the same text as **personal Instructions** (the `custom_agents` answer of §6.1). For a Custom Agent, every database or page given to Tools and access is named by its space: "**Brain Data**, **How it works** and **Skills** under *<top page>*: in the picker each result shows the page it sits under; pick only those under *<top page>*, and if a result doesn't show it, paste the page's link instead." Checked:
+
+1. With the user's yes, the skill creates one Task in the brain's Tasks database through the MCP: `Setup check: delete me`, Due today. With Tasks off, no task is created: step 2 then passes when Today lists nothing from outside the brain's databases.
+2. The skill asks the user to run Today as above, naming this space's Tasks database: "In Brain Assistant's chat, ask **Run Today** (not `/Today`). It should list **Setup check: delete me** from the Tasks database under *<top page>* › Brain Data, and nothing else from outside *<top page>*. Paste or describe what it lists." It passes when the answer lists that task and nothing that isn't in the brain's databases (no task, Review row, meeting or page from another space or elsewhere in the workspace).
+3. **Today read another space** (a task, Review row or meeting the brain's databases don't hold, or the test task missing while other tasks show): the check fails with `assistant-reads-outside`. The skill names what came back that shouldn't have and gives the two fixes, in this order: (a) **the run used another space's Today**: ask by name again in Brain Assistant's chat, or mention the Today page by the link copied from the Skills database under *<top page>*, never from the `@` picker; (b) **the agent's access reaches another space** (a Custom Agent: in Tools and access, remove every Brain Data, How it works or Skills not under *<top page>*; personal Instructions: the instruction to stay inside Ultimate Brain is missing or was pasted in part, so paste the whole text again). It offers to check again.
+4. On a pass the skill sets the test task's Status to the mapped closed-without-doing status (`notion.tasks.wont_do_status`), with the same yes, and records `brain-assistant` done.
 
 ### 6.5 The Example rows (step 4; 0084 §3, §4)
 
@@ -356,7 +363,7 @@ Time: 52 min (first setup line to the last)
 
 **Early access (0.14.0) requires Notion AI**, and the prerequisites check says so when the user answers no. The path below is built in the skill (CC-191) and documented in `docs/setup.md` as 1.0's, when Notion AI becomes optional. Before 1.0 it is taken only when the user chooses it after being told it is not yet supported for early access:
 
-- The minutes prompt (4a) and Brain Assistant (4b) are dropped from the required items; the count becomes 7, and the settings screen says what is lost: no structured minutes and no selection of what enters, no `/Today` or other Notion buttons that message Brain Assistant.
+- The minutes prompt (4a) and Brain Assistant (4b) are dropped from the required items; the count becomes 7, and the settings screen says what is lost: no structured minutes and no selection of what enters, no Today or other skills in Brain Assistant, and no Notion buttons that message it.
 - **Meetings** come from any transcript or summary pasted onto a meeting page, and are ingested whole (no selection, capture-and-review §4's legacy summary).
 - **How-to questions** go to the agent (brain-howto).
 - Rewriting a pasted transcript into the minutes format is not offered (after 1.0).

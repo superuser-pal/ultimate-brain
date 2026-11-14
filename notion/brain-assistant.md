@@ -8,21 +8,31 @@ It has three parts, all set up by hand in Notion ([migration 0004](migrations/00
 |---|---|---|
 | **The agent** | Its own chat, scoped to Ultimate Brain | Agents → Brain Assistant |
 | **Instructions** | Standing rules: scope, never edit, how to answer, how-to questions | The agent's Instructions |
-| **Eleven skills** | Reusable workflows you run with `/Name`: Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report | A skills database "Skills" ("Brain Assistant Skills" in a space built before 0.14.0) |
+| **Eleven skills** | Reusable workflows you run by asking for them by name (see [Running a skill](#running-a-skill)): Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report | A skills database "Skills" ("Brain Assistant Skills" in a space built before 0.14.0) |
 
 ## Why a Custom Agent, not personal Instructions
 
-A workspace often holds other databases with the same names ("Tasks", "Projects", "Goals", "Areas" from other templates). Your personal Notion Agent works across the whole workspace, so rules can only *ask* it to stay inside Ultimate Brain. A Custom Agent sees only the pages and databases added under **Tools and access**, so it can't read the wrong "Tasks". Custom Agents need the Business or Enterprise plan and spend Notion credits per run. On other plans, use the same Instructions as your personal Instructions and the skills as personal skills, and check with `/Today` that only Ultimate Brain tasks come back.
+A workspace often holds other databases with the same names ("Tasks", "Projects", "Goals", "Areas" from other templates). Your personal Notion Agent works across the whole workspace, so rules can only *ask* it to stay inside Ultimate Brain. A Custom Agent sees only the pages and databases added under **Tools and access**, so it can't read the wrong "Tasks". Custom Agents need the Business or Enterprise plan and spend Notion credits per run. On other plans, use the same Instructions as your personal Instructions and the skills as personal skills, and check with Today (ask "Run Today") that only Ultimate Brain tasks come back.
 
 Notion docs: [Custom Agents](https://www.notion.com/help/custom-agents), [Instructions](https://www.notion.com/help/instructions-for-notion-agent), [Skills](https://www.notion.com/help/create-and-manage-skills).
 
 ## Setup
 
 1. **Create the agent:** Agents → New Custom Agent, named **Brain Assistant**, no triggers.
-2. **Tools and access:** add only the page **Brain Data**, the page **How it works**, and the database **Skills** (Brain Assistant's skills; in a space built before 0.14.0 it may be called **Brain Assistant Skills**). Leave "Pages shared with everyone" off. Edit access is needed only on Meetings, Inbox and Documents, for the skills that may change page text; view access everywhere else.
+2. **Tools and access:** add only the page **Brain Data**, the page **How it works**, and the database **Skills** (Brain Assistant's skills; in a space built before 0.14.0 it may be called **Brain Assistant Skills**), all three from **this space**: the ones under your space's top page ("Ultimate Brain" in a fresh duplicate). In the picker each result shows the page it sits under; pick only those under your top page. A workspace can hold several databases called Skills (another space, an older test copy): if a result doesn't show where it sits, paste that page's link instead (open it from your space, ••• → Copy link). If two top pages have the same name, rename yours first (for example "Ultimate Brain · Test"). Leave "Pages shared with everyone" off. Edit access is needed only on Meetings, Inbox and Documents, for the skills that may change page text; view access everywhere else.
 3. **Instructions:** paste the block below. Replace each *[@…]* with a real @mention of that page.
 4. **Skills:** create the database **Skills** (title, plus a **Description** text property); a space that already has it, under that name or as **Brain Assistant Skills**, keeps it. One page per skill below: the name is the title, the description goes in Description, the body is the page content. Keep **Use automatically** on.
-5. **Test:** in the agent's chat, `/Today` lists only Ultimate Brain tasks; "how do I approve a change?" answers from How it works.
+5. **Test:** in the agent's chat, ask **Run Today**: it lists only tasks from the Tasks database under your top page › Brain Data. If it shows a task, Review row or meeting from another space, see [Running a skill](#running-a-skill). Then "how do I approve a change?" answers from How it works.
+
+## Running a skill
+
+In Brain Assistant's chat, **ask for the skill by its name**: "Run Today", "Run Prep". A Custom Agent doesn't run a skill typed as a `/` command: `/Today` isn't recognised there. With personal Instructions, ask by name the same way.
+
+To point at the skill's page instead, **mention it by its link**: open it from your space's Skills database, ••• → Copy link, and paste the link in the chat. Don't pick it from the `@` picker: the picker can offer another space's page with the same name (each space has its own Today, which reads that space's Brain Data), and a freshly duplicated space's skills may not appear there yet.
+
+**Today shows another space's tasks or Review rows?** Two causes, in this order:
+1. **The run used another space's Today** (picked from the `@` picker). Ask by name again, or mention your Today by its link.
+2. **The agent's access reaches another space.** In Tools and access, remove every Brain Data, How it works or Skills that isn't under your top page.
 
 ## Instructions
 
