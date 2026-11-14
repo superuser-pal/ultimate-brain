@@ -766,6 +766,8 @@ Two sections, each sorted by `date` descending (`valid_until` descending for sup
 2. `## Superseded` — decisions for the project with `assessment: superseded`:
    `- <valid_from or date> → <valid_until> — [<title>](<path>) — superseded by [<new title>](<new path>)`
 
+**A draft waits in Review (CC-261).** A decision whose `lifecycle` is `draft` keeps its place in the history, but its line says it is not reviewed yet, in the words of §16.1's waiting line, and states no assessment you haven't given: under Current, `waiting in Review` takes the place of `<assessment>` (`- 2026-12-05 — [Use Postgres row-level security](<path>) — waiting in Review`); under Superseded, ` — waiting in Review` follows the link. Its line still links its note here and the note is in `generated_from`, so approving it changes the line to the reviewed form at the next `brain views`. In Notion, where a draft has no page (0071), the line has no link (cli.md §5.14.4, `sections`). A reviewed decision's line is unchanged.
+
 ### 16.3 `areas/briefs/<area slug>.md` (`view_kind: area_brief`, 0041)
 One per area, rebuilt with the project views; `<area slug>` is the slug of the area note's file name. A note **belongs to the area** when its `area` is the area, or any note in its `projects` has that `area`. Sections in this order; a section with no items renders `- None`, and sections 2 and 3 use the waiting line of §16.1:
 
