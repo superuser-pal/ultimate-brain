@@ -7,7 +7,7 @@ Two templates exist; this one is the **Notion template**. The **brain folder** (
 | | |
 |---|---|
 | **Link** | https://sentina.notion.site/TEMPLATE-Ultimate-Brain-416495661e99806ea2dcca48eb4e55ff |
-| **Template version** | `0025` |
+| **Template version** | `0026` |
 
 **Template version** is the four-digit number of the last migration in [migrations/](migrations/) the template includes. The template shows the same number as a line of its own in the System callout on its top page (as inline code or plain text, spec/setup.md §9), `Template version: NNNN`, and the connect step stores it in `brain.json` as `notion.template_version`; `brain upgrade` then names the migrations newer than it (spec/setup.md §9, spec/cli.md §5.15).
 
@@ -32,7 +32,7 @@ Everything a space built from every prompt has (the build prompts include every 
 | Documents | Brain Data | Documents, and Reports (a report is a Documents row) |
 | Tasks | Brain Data | Tasks |
 | Goals, Key Results | Brain Data | Planning |
-| Skills (Brain Assistant's skills; one page per skill: Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report) | linked from the System callout | Brain Assistant; the brain never reads it |
+| Skills (Brain Assistant's skills; one page per skill: Today, Review queue, Grill review, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report) | linked from the System callout | Brain Assistant; the brain never reads it |
 
 **Example rows** (decisions 0084 §3, 0087 §1). Fifteen invented rows show what a filled space looks like, at least one in every database on Brain Data, all from one story (a kickoff with Northwind Studio about refreshing its website) and related to each other, so each page links to the next. Each is titled with the prefix `Example · ` (the word, a space, the middle dot `·`, a space), and each is in a state no skill acts on. Their exact content, the Notion AI prompts that create them and the step that sets their relations are in [template-examples.md](template-examples.md).
 
