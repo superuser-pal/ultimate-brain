@@ -69,6 +69,8 @@ export const scheduleInstallCommand: Command = {
     const label = labelFor(root, job);
     const dryRun = args.options["dry-run"] === true;
     const base = { job, label, times, days, model, prompt: entry.prompt, command };
+    // claude -p ignores an untrusted folder's allow rules (cli.md §5.21 Folder trust; weekly-review.md §11).
+    const trust: Warning[] = weekly ? [{ code: "FOLDER_TRUST", message: `Open Claude Code in ${root} once and accept the trust dialog, or the scheduled run can't use the brain's allow rules.` }] : [];
 
     if (platformOf(env) !== "darwin") {
       const log = `$HOME/.ultimate-brain/logs/${label}.log`;
@@ -77,7 +79,7 @@ export const scheduleInstallCommand: Command = {
         const dow = days === null ? "*" : days.map((day) => DAYS.indexOf(day)).join(",");
         return `${minute} ${hour} * * ${dow} mkdir -p "$HOME/.ultimate-brain/logs" && cd ${shellQuote(root)} && PATH=${shellQuote(path)} ${command.map(shellQuote).join(" ")} >> "${log}" 2>&1`;
       });
-      return { data: { ...base, platform: platformOf(env), path: null, written: false, replaced: false, loaded: false, cron, dry_run: dryRun }, human: `${cron.join("\n")}\n` };
+      return { data: { ...base, platform: platformOf(env), path: null, written: false, replaced: false, loaded: false, cron, dry_run: dryRun }, warnings: trust, human: `${cron.join("\n")}\n` };
     }
 
     const agents = agentsDir(context);
@@ -87,7 +89,7 @@ export const scheduleInstallCommand: Command = {
     await refuseInside(root, logs);
     await refuseLink(file);
     const replaced = await exists(file);
-    const warnings: Warning[] = [];
+    const warnings: Warning[] = [...trust];
     let loaded = false;
     if (!dryRun) {
       await mkdir(agents, { recursive: true });
