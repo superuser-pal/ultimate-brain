@@ -6,7 +6,7 @@ How this file fits: it holds the whole weekly review. That covers what a run rea
 
 **Decisions:** [0075](../decisions/0075-weekly-review-and-targeted-corrections.md) (binding, all of it), [0093](../decisions/0093-the-0-15-0-scope-grill.md) (the Weekly review entry point, the Reports offer, Sonnet by default, the trials in the author's brain), [0051](../decisions/0051-unattended-catch-up-and-schedules.md) (unattended runs, the no-op rule, a schedule pins a model), [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md) and [0072](../decisions/0072-ultimate-assistant.md) (the assistant's findings, dismissals, Review rows only when no one is there), [0076](../decisions/0076-reflection-chat-first.md) (reflection's skips and holds), [0074](../decisions/0074-scoped-memory-handovers-and-bounded-recall.md) (its 800-token budget is separate), [0048](../decisions/0048-modules-and-simpler-rows.md) (modules), [0090](../decisions/0090-review-by-grill-notion-ai-reviews-with-you-and-your-call-decides.md) (the grill style and where Notion AI may write).
 
-**Calls taken in this contract that the user may veto** (each the simplest reading of 0075 and 0093; none contradicts them):
+**Calls taken in this contract that the user may veto** (each the simplest reading of 0075 and 0093; none contradicts their rules, and item 8 departs only from 0093 §2's wording):
 1. **One new skill, `brain-weekly-review`** (written in the fork, delivered in the pinned snapshot). It runs the assistant's and reflection's deterministic halves itself, so neither skill gains an unattended mode (§1).
 2. **A week is the ISO week of the run's local date.** The Monday 08:00 run opens the new week's report, and its What changed covers the week before (§2).
 3. **The report is a new view kind, `weekly_review`,** in `reports/`, published as a Documents row with Origin Report, the existing report destination (§2). It is not a `report`, because it doesn't have the six sections of schema §16.4.
@@ -14,6 +14,7 @@ How this file fits: it holds the whole weekly review. That covers what a run rea
 5. **A body-line correction is a new change kind, `replace_line`.** It replaces one exact line of a brain-owned body and is stale when that line changed. No existing kind can change a restatement in a project's or a person's prose (§8.3).
 6. **A decision item is a Review row or a task** (0093 §2: "decided where it lives"). An overdue or stalled task that has no recommendation with a value is a task item: the user sets it in Notion, and no Review row is written (§6.1).
 7. **The normal brief is at most 450 words**, links and the header excluded. That is the two-minute reading target at about 200 words a minute (0075 §1), and it is checked in the acceptance (§14).
+8. **"Run Weekly review", not `/Weekly review`** (a deviation from 0093 §2's words, not its rule): since CC-260 a Notion Custom Agent doesn't run a skill typed as a `/` command, so the way in is asking Brain Assistant for the Weekly review skill by name (§13). The behaviour 0093 §2 decides is unchanged.
 
 ---
 
@@ -73,14 +74,15 @@ Order of attention:
 3. Add a next step to Conference talk proposal: the call for papers closes on 30 Nov.
 
 ## What needs your decision
-1. Correction · Quarry budget 12k → 18k · 3 notes restate 12k → [Review](<Notion link>) (3 of 3 shown)
-2. Overdue · "Send the logo proposals" · new date, Done or Won't Do → [the task](<Notion link>)
-3. Contradiction · Harbor app launch date: 2027-01 here, March in the 4 Nov decision → [Review](<Notion link>)
-4. Stalled · Pinecrest signage · set On Hold? → [Review](<Notion link>)
-5. Structure · Studio newsletter is under Clients, but its notes are in Marketing · move it? → [Review](<Notion link>)
+1. Correction · Quarry budget 12k → 18k · 3 notes restate 12k → [Review](../_proposals/2026-11-09-correction-quarry-website-budget.md) (2 of 3 shown)
+2. Overdue · "Send the logo proposals" · new date, Done or Won't Do → [the task](<task page URL>)
+3. Contradiction · Harbor app launch date: 2027-01 here, March in the 4 Nov decision → [Review](../_proposals/2026-11-09-harbor-app-launch-date.md)
+4. Stalled · Pinecrest signage · set On Hold? → [Review](../_proposals/2026-11-09-pinecrest-signage-on-hold.md)
 
-4 more findings wait for next week. Say "weekly review more" in a session for the rest.
+5 more findings wait for next week. Say "weekly review more" in a session for the rest.
 ```
+
+The example's counts (§5.1): D = 4 items; I = 2 (the group's two admitted targets) + 1 + 1 = 4 new Review items; T = 2 + 1 (the task) + 1 + 1 = 5 targets. T is full, so §5.2 admits the group in part (2 of its 3 targets; the third stays queued under its claim) and queues the next candidate, a structure finding that needs a target, with the rest.
 
 ### 3.1 The header (two lines)
 - Line 1: `Week of <D Mon YYYY of the Monday> · changes since <D a Mon HH:MM local of window.from>` (on a first run, `· first review, last 7 days`), then `· Notion read live` or `· Notion unreachable: brain only`.
@@ -250,11 +252,11 @@ A run is **quiet** when, after repetition (§7) and dismissals, there is: no cha
 
 **A rerun in the same week** is quiet when nothing differs from this week's report: `plan` computes `input_hash`, the sha256 of its deterministic candidates (the changes, the findings with their evidence, the clusters, the correction targets) and the snapshot's task values they read, and `weeks.<week>.input_hash` (§9.5) holds the one the report was written from. Equal, and no failure: the rerun is quiet and writes nothing. A rerun that only re-covers changes this week's report already covered is quiet too: the window's `from` stays the same, but the inputs are unchanged.
 
-A run that is **not** quiet because of a failure alone (Notion unreachable with nothing else to say) writes no report. It writes the log line (§9.4), so the failure is surfaced.
+A run that is **not** quiet because of a failure alone (Notion unreachable with nothing else to say) writes no report and no state: `brain weekly record` is not called. The skill writes the `weekly` line itself with `brain log` (cli.md §5.11), with `coverage=none`, every count `0`, `published=no` and its `failed` and `failures`, and commits only the month's log file, so the failure is surfaced (§9.4) and `brain status` reads it (cli.md §5.34).
 
 ### 9.2 Files
 - the report (§2), `_weekly/state.json`, the new proposals, and a draft learned Document for a theme (an addition, as 0051 allows);
-- the log line: `weekly - mode=<attended|unattended> week=<YYYY-Www> coverage=<complete|partial> decisions=<n> new_items=<n> targets=<n> queued=<n> changes=<n> failed=<n>[ failures="<reason>; …"] published=<yes|no> notes_read=<n> seconds=<s>` (cli.md §3.9).
+- the log line: `weekly - mode=<attended|unattended> week=<YYYY-Www> coverage=<complete|partial|none> decisions=<n> new_items=<n> targets=<n> queued=<n> changes=<n> failed=<n>[ failures="<reason>; …"] published=<yes|no> notes_read=<n> seconds=<s>` (cli.md §3.9).
 
 ### 9.3 Delivery and publishing (0075 §5, 0093 §3)
 | Reports | `settings.publish` | The report | Review rows |
@@ -276,7 +278,7 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
 {
   "version": 1,
   "last_success": { "week": "2026-W46", "report": "vw-7d2k9m4q", "covered_to": "2026-11-09T07:04:12Z", "coverage": "complete" },
-  "weeks": { "2026-W46": { "report": "vw-7d2k9m4q", "window_from": "2026-11-02T07:03:55Z", "input_hash": "sha256:…", "counts": { "decisions": 5, "new_items": 4, "targets": 5, "queued": 4 }, "items": ["correction:knw-…:budget", "task_overdue:notion:…"] } },
+  "weeks": { "2026-W46": { "report": "vw-7d2k9m4q", "window_from": "2026-11-02T07:03:55Z", "input_hash": "sha256:…", "counts": { "decisions": 4, "new_items": 4, "targets": 5, "queued": 5 }, "items": ["correction:knw-…:budget", "task_overdue:notion:…"] } },
   "shown": [ { "key": "task_overdue:notion:2b8c…", "week": "2026-W46", "category": "overdue", "evidence_hash": "sha256:…", "days_late": 8 } ],
   "queued": [ { "key": "area_empty:area-…", "week": "2026-W46" } ],
   "carry": { "clusters": ["overtaken:per-…"] },
@@ -310,7 +312,7 @@ The state is written only by `brain weekly record` (atomic; 2-space JSON, keys i
 
 ## 12. Resource budgets and the model default (from the trials)
 
-**The trials** (0075 §7, 0093 §4, §6) ran on 2026-11-13. Each was the weekly flow as a prototype prompt, read-only, in the author's brain, through `claude -p --output-format stream-json`. The tool allowlist permitted no writes and no Notion writes, the brain's `git status` and HEAD were unchanged after every run, and each run was capped at 10 USD. The brain held about 180 knowledge notes, 91 sources, 84 tasks, 13 projects and 10 Areas, and `reflect --candidates` gave 360 clusters in its 30-day window. Each run judged at most 30 clusters or 20 minutes. Only numbers are recorded here; the reports stay outside the repo (0093 §6).
+**The trials** (0075 §7, 0093 §4, §6) ran on 2026-11-13. Each was the weekly flow as a prototype prompt, read-only, in the author's brain, through `claude -p --output-format stream-json`. The tool allowlist permitted no writes and no Notion writes, the brain's `git status` and HEAD were unchanged after every run, and each run was capped at 10 USD. The brain held about 180 knowledge notes, 91 sources, 84 tasks, 13 projects and 10 Areas, and `reflect --candidates` gave 360 clusters in its 30-day window. Each run judged at most 30 clusters or 20 minutes. Only numbers are recorded here. The runs, their prompt and their reports stay outside the repo (0093 §6), so these numbers are the author's runs and can't be reproduced from the repo; that the brain was unchanged is the author's check (`git status --porcelain` and HEAD compared before and after each run), not something a reviewer can re-run. CC-253's synthetic tests and U-29 measure again on the built feature.
 
 | Run | Model | Cost (USD) | Wall time (s) | Turns | Input / cache read / cache write / output tokens | Notion calls | Notes read | Clusters judged | Findings (knowledge / work / structure / corrections) | Decision items · targets | Words (first three sections) |
 |---|---|---|---|---|---|---|---|---|---|---|---|
