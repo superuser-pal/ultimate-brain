@@ -218,3 +218,65 @@ test("BEFORE_MISMATCH, NO_CHANGE, DUPLICATE_PENDING, STALE_PROPOSAL and fix hold
   }
   await lintClean(dir);
 });
+
+// CC-271: a moved source's Inbox row gets its new Area once, replacing the one it has (spec/cli.md §5.14.4, §5.7).
+test("a source moved by set_field sends its Inbox row's new Area once, without if_empty; a source never moved keeps if_empty (CC-271)", async (context) => {
+  const brainDir = await ingested(context);
+  const { dir } = brainDir;
+  const ROW = "7e6d5c4b-3a29-4180-9f7e-6d5c4b3a2918";
+  const PRODUCT_PAGE = "1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d";
+  const config = JSON.parse(await readFile(join(dir, "brain.json"), "utf8"));
+  config.notion.databases.inbox = "a1000000-0000-4000-8000-00000000000e";
+  await writeFile(join(dir, "brain.json"), `${JSON.stringify(config, null, 2)}\n`);
+  const render = async () => {
+    const rendered = await run(dir, ["sync", "render", "--ids", brainDir.source.id]);
+    assert.equal(rendered.code, 0, rendered.stdout);
+    return rendered.json.data.items[0];
+  };
+  const record = async (item: { published: unknown }) => {
+    const recorded = await run(dir, ["sync", "record"], { records: [{ id: brainDir.source.id, notion: ROW, synced_at: NOW, published: item.published }] });
+    assert.equal(recorded.code, 0, recorded.stdout);
+  };
+
+  // Never moved: Area comes from the produced notes, if_empty, so an Area you set on the row stands.
+  const first = await render();
+  assert.equal(first.action, "create");
+  assert.deepEqual(first.properties.Area, { type: "relation", value: [PRODUCT_PAGE], mode: "if_empty" });
+  await record(first);
+  assert.equal((await render())?.properties.Area, undefined, "nothing changed, nothing sent");
+
+  // A learned Document moved on its own doesn't move the source: its row's Area stays if_empty.
+  const learned = await run(dir, ["proposal", "new"], { proposals: [move(brainDir.learned.id)] });
+  assert.equal((await run(dir, ["apply"], approve(learned.json.data.created[0].id))).json.data.decisions[0].result, "applied");
+  const unmoved = await render();
+  assert.deepEqual(unmoved.properties.Area, { type: "relation", value: [PRODUCT_PAGE, GTM_PAGE].sort(), mode: "if_empty" });
+  await record(unmoved);
+
+  // The source moved (here through its whole Document, the group, 0092 §3): Area = the source's new area, replacing the row's.
+  const moved = await run(dir, ["proposal", "new"], { proposals: [move(brainDir.whole.id)] });
+  assert.equal((await run(dir, ["apply"], approve(moved.json.data.created[0].id))).json.data.decisions[0].result, "applied");
+  const after = await render();
+  assert.equal(after.action, "update");
+  assert.deepEqual(after.properties.Area, { type: "relation", value: [GTM_PAGE] });
+  assert.equal(after.properties.Project, undefined, "Project is unchanged, so not sent");
+  assert.deepEqual(after.published.Area, [GTM_PAGE]);
+  await record(after);
+  // Once: the render after sync record sends nothing.
+  assert.equal((await render())?.properties.Area, undefined);
+  const changed = await run(dir, ["sync", "render", "--changed"]);
+  assert.equal(changed.code, 0, changed.stdout);
+  assert.equal(changed.json.data.items.some((item: { id: string }) => item.id === brainDir.source.id), false, "the source isn't selected again");
+
+  // A later move back sends its new Area once.
+  const back = await run(dir, ["proposal", "new"], { proposals: [move(brainDir.source.id, PRODUCT)] });
+  assert.equal((await run(dir, ["apply"], approve(back.json.data.created[0].id))).json.data.decisions[0].result, "applied");
+  assert.deepEqual((await render()).properties.Area, { type: "relation", value: [PRODUCT_PAGE] });
+
+  // The whole Document and the source's review_notes row show the source's Area as before.
+  const row = await run(dir, ["sync", "render", "--ids", brainDir.review.id]);
+  assert.deepEqual(row.json.data.items[0].properties.Area, { type: "relation", value: [PRODUCT_PAGE] });
+  await setDocuments(dir);
+  const document = await run(dir, ["sync", "render", "--ids", brainDir.whole.id]);
+  assert.deepEqual(document.json.data.items[0].properties.Area, { type: "relation", value: [PRODUCT_PAGE] });
+  await lintClean(dir);
+});

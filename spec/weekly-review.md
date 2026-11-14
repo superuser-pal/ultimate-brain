@@ -358,7 +358,13 @@ Brain Assistant's Weekly review skill (notion/brain-assistant.md) becomes the wa
 - **With one:** it summarises What changed and Task analysis in a few lines, then walks What needs your decision in the 0090 grill style. That means rounds of 3 to 5 questions, each with lettered options and the recommended one marked with a one-line reason. Each item is decided where it lives:
   - a **Review row**: the grill of 0090, writing only in the zones 0090 allows, never Your call (the user sets it);
   - a **task**: it says what to set and links the task. Brain Assistant never edits a property (its Instructions), so the user sets it.
-- It writes nothing anywhere else, as before.
+- **How each item is asked** (CC-256):
+  - **A row that needs deciding in the page** (Status `Needs you · decide in the page`, a page with `ref it-…` lines): its questions are Grill review's (0090 §3), in the same rounds; after the rounds, the preview and the write follow Grill review's steps, page by page, each after its own yes. A row of the older page format is only explained, as Grill review stops on it.
+  - **A row that needs only Your call** (`Needs you · set Your call`: a Conflict, Answer or Suggestion row): the question asks about the fact the row turns on ("Is Pinecrest signage still going ahead?"), with options and the recommended one from the evidence. After the answer, it says which Your call matches it and what that does. It never recommends Approve or Reject itself (0090 §3, the Instructions) and writes nothing in that row.
+  - **A task:** the options are a new due date, Done, Won't Do, or leave it this week, the recommended one with its evidence (the days late, a meeting that depends on it). After the answer, it names the property and value to set and links the task.
+  - **An item whose row is already decided** (Your call set, or Status Submitted, Done or Closed) is skipped with one line. An item whose Notion text is `Review row (after the next publish)` has no row yet: it says the row appears after the next publish, and asks nothing about it.
+- It ends with what is left for the user: the rows whose Your call to set, the tasks to change, in one short list.
+- It writes nothing anywhere else, as before. The Instructions name Weekly review next to Grill review in the edit rule and the Review rule, with the same limits.
 
 ## 14. Acceptance (0075 §8)
 
