@@ -6,6 +6,7 @@ import { compareCodePoints, type Note } from "./notes.ts";
 import { reflectCandidates, reflectionNotes } from "./reflect.ts";
 import type { Loaded } from "./suppressions.ts";
 import { formatTimestamp } from "./time.ts";
+import { computeClaims, type Claim, type Cursor, type TitleChange } from "./weekly-corrections.ts";
 import { addDays, hashOf, isoWeek, localDate, weeklySettings, ZERO, type Counts, type WeeklyState } from "./weekly-state.ts";
 
 // `brain weekly plan` (spec/cli.md §5.34; spec/weekly-review.md §1 step 3, §4, §7, §9.1, §10). Writes nothing.
@@ -35,7 +36,7 @@ export interface PlanData {
   task_analysis: { overdue: Subject[]; stalled: Subject[]; blocked: Subject[]; no_next_step: Subject[]; order: Subject[] };
   clusters: Array<Record<string, unknown> & { key: string; carried: boolean }>;
   clusters_left: string[];
-  corrections: unknown[];
+  corrections: Claim[];
   pending: Array<{ key: string; proposal: string }>;
   week_state: { counts: Counts; items: string[] };
   earlier_open: number;
@@ -120,6 +121,19 @@ export interface PlanInput {
   dismissals: readonly Dismissal[];
   state: WeeklyState | null;
   now: Date;
+  /** The titles changed since the cursor, read from Git by the caller (weekly-review.md §8.1); none when absent. */
+  titles?: readonly TitleChange[];
+}
+
+/** The correction cursor a plan reads (weekly-review.md §8.1): as this week's first report found it on a rerun, else the state's. */
+export function correctionCursor(state: WeeklyState | null, week: string): Cursor {
+  return state?.weeks[week]?.corrections_from ?? state?.corrections ?? { checked_on: null, done_on_date: [], open: [] };
+}
+
+/** The date from which titles are read from Git (§8.1): the cursor's date, else the window's. */
+export function titlesSince(state: WeeklyState | null, now: Date): string {
+  const week = isoWeek(localDate(now));
+  return correctionCursor(state, week).checked_on ?? windowOf(state, week, now).from.slice(0, 10);
 }
 
 export function computePlan(input: PlanInput): PlanData {
@@ -252,6 +266,9 @@ export function computePlan(input: PlanInput): PlanData {
   const clusters = ordered.slice(0, settings.max_judged);
   const clusters_left = ordered.slice(settings.max_judged).map((cluster) => cluster.key);
 
+  // ---- The correction queue (§8): claims new to the cursor, or still open, with their candidate targets
+  const corrections = computeClaims({ eligible, all: notes, cursor: correctionCursor(state, week), windowFrom: fromDate, titles: input.titles ?? [] });
+
   // ---- This week, pending proposals and the earlier ones still open (§5.1, §7)
   const thisWeek = state?.weeks[week];
   const week_state = { counts: thisWeek?.counts ?? { ...ZERO }, items: thisWeek?.items ?? [] };
@@ -266,11 +283,13 @@ export function computePlan(input: PlanInput): PlanData {
     findings: findings.map((finding) => ({ key: finding.key, evidence: finding.evidence, current: isRecord(finding.subject) ? finding.subject.current ?? null : null })),
     clusters: ordered.map((cluster) => ({ key: cluster.key, notes: list(cluster.notes).filter(isRecord).map((member) => [member.id, member.updated]), evidence: list((cluster as Record<string, unknown>).evidence).filter(isRecord).map((item) => [item.id, item.date]) })),
     blocked: blocked.map((subject) => subject.key),
-    corrections: [],
+    corrections: corrections.map((claim) => ({ claim: claim.claim, old: claim.old, new: claim.new, targets: claim.targets.map(({ note, field, line, before_hash }) => ({ note, field, line, before_hash })) })),
   });
   // §7 rule 4: an unresolved contradiction on a reviewed note stays visible every week, so it holds off a quiet week too.
   const critical = criticalPending(pending, new Map([...proposals, ...eligible].map((note) => [note.id, note])));
-  const nothing = changes.length === 0 && !findings.some((finding) => finding.repetition.show) && ordered.length === 0 && critical.length === 0;
+  // A correction target already in Review is no queued check: it doesn't hold off a quiet week (§9.1).
+  const queuedTargets = corrections.some((claim) => claim.targets.some((target) => target.pending === null));
+  const nothing = changes.length === 0 && !findings.some((finding) => finding.repetition.show) && ordered.length === 0 && critical.length === 0 && !queuedTargets;
   // A finding that can only be in Task analysis is "shown" once a report listed it (record keeps it in `shown`), so it doesn't hold off a quiet week.
   const unchanged = thisWeek !== undefined && thisWeek.input_hash === input_hash;
   const quiet = live && (nothing || unchanged);
@@ -279,7 +298,7 @@ export function computePlan(input: PlanInput): PlanData {
     week, as_of: formatTimestamp(now), local_date: local, notion: snapshot.notion,
     window: { from: window.from, to: window.to, first: window.first, days: window.days },
     report: thisWeek === undefined ? null : { id: thisWeek.report, path: thisWeek.path },
-    changes, inputs, findings, skipped_signals: result.skipped_signals, task_analysis, clusters, clusters_left, corrections: [],
+    changes, inputs, findings, skipped_signals: result.skipped_signals, task_analysis, clusters, clusters_left, corrections,
     pending, week_state, earlier_open, budget: { minutes: settings.minutes, max_judged: settings.max_judged }, input_hash, quiet,
   };
 }

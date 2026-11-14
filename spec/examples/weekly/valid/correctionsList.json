@@ -1,0 +1,53 @@
+{
+  "claims": [
+    {
+      "claim": "prj-9x4t1b7e:budget",
+      "kind": "fact",
+      "note": "prj-9x4t1b7e",
+      "title": "Quarry website",
+      "old": [
+        "12k"
+      ],
+      "new": "18k",
+      "date": "2026-11-05",
+      "source": "mtg-8c4n2p7w",
+      "why": "The client raised the budget to 18k.",
+      "passages": [
+        "mtg-8c4n2p7w"
+      ],
+      "open": false,
+      "targets": [
+        {
+          "note": "con-2m6p9r4t",
+          "title": "Quarry pricing",
+          "field": null,
+          "line": "The website budget is 12k for the first phase.",
+          "line_after": "The website budget is 18k for the first phase.",
+          "before_hash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "pending": null
+        },
+        {
+          "note": "per-3h8w2n6c",
+          "title": "Sam Rivera",
+          "field": null,
+          "line": "Sam manages the 12k budget and the 12k reserve.",
+          "line_after": null,
+          "before_hash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "pending": null
+        },
+        {
+          "note": "prj-4k8m2q6w",
+          "title": "Quarry app",
+          "field": "budget",
+          "line": null,
+          "line_after": null,
+          "before_hash": null,
+          "pending": null
+        }
+      ]
+    }
+  ],
+  "total": 1,
+  "offset": 0,
+  "next_offset": null
+}

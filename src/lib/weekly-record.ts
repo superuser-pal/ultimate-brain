@@ -2,7 +2,8 @@ import { posix } from "node:path";
 
 import type { InputProblem } from "./input.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
-import { itemShape, type PlanData } from "./weekly-plan.ts";
+import { nextCursor } from "./weekly-corrections.ts";
+import { correctionCursor, itemShape, type PlanData } from "./weekly-plan.ts";
 import type { Item, Selection } from "./weekly-select.ts";
 import { addDays, isoWeek, KEEP_SHOWN_WEEKS, KEEP_WEEKS, localDate, mondayOf, weeksBetween, type WeeklyState } from "./weekly-state.ts";
 
@@ -159,12 +160,14 @@ export function renderBody(input: RecordInput, proposalOf: (key: string) => stri
     }
   }
 
-  // What needs your decision (§3.4), rendered here.
+  // What needs your decision (§3.4), rendered here; the uncertain correction matches are named after the items (§8.4).
+  const clarify = (selection.corrections ?? []).reduce((sum, entry) => sum + entry.clarify, 0);
   const proposalPath = (id: string) => notes.get(id)?.path;
   const decision = selection.items.length === 0 ? ["- Nothing needs your decision this week."] : selection.items.map((item) => itemLine({ ...item, proposal: item.proposal ?? proposalOf(item.key) }, proposalPath));
   const after = [
     selection.queued.length > 0 ? `${selection.queued.length} more finding${selection.queued.length === 1 ? "" : "s"} wait${selection.queued.length === 1 ? "s" : ""} for next week. Say "weekly review more" in a session for the rest.` : "",
     selection.earlier_open > 0 ? `${selection.earlier_open} earlier finding${selection.earlier_open === 1 ? " is" : "s are"} still open in Review.` : "",
+    clarify > 0 ? `${clarify} correction match${clarify === 1 ? " needs" : "es need"} clarification: say "weekly review corrections".` : "",
     partial > 0 ? `Partial: ${partial} check${partial === 1 ? "" : "s"} not done (budget); they come first next week.` : "",
   ].filter((line) => line !== "");
 
@@ -189,7 +192,9 @@ export function nextState(current: WeeklyState, input: RecordInput, report: { id
   const previous = current.weeks[week];
   const windowSkip = previous?.window_skip ?? (current.last_success !== null && compareCodePoints(current.last_success.week, week) < 0 ? current.last_success.covered_on_to : []);
   const items = [...new Set([...(previous?.items ?? []), ...selection.items.map((item) => item.key)])];
-  const weeks = { ...current.weeks, [week]: { report: report.id, path: report.path, window_from: plan.window.from, window_skip: windowSkip, input_hash: plan.input_hash, counts: selection.counts, items } };
+  // The correction cursor as the week found it: a rerun lists the same claims, and this run's outcome is applied to it, never to its own write (§8.1).
+  const before = correctionCursor(current, week);
+  const weeks = { ...current.weeks, [week]: { report: report.id, path: report.path, window_from: plan.window.from, window_skip: windowSkip, input_hash: plan.input_hash, counts: selection.counts, items, corrections_from: before } };
   const kept = Object.keys(weeks).sort(compareCodePoints).slice(-KEEP_WEEKS);
   const toDate = plan.window.to.slice(0, 10);
 
@@ -210,6 +215,6 @@ export function nextState(current: WeeklyState, input: RecordInput, report: { id
     shown: recent,
     queued: selection.queued.map((entry) => ({ key: entry.key, week })),
     carry: { clusters: [...selection.omitted.clusters] },
-    corrections: current.corrections,
+    corrections: nextCursor(before, plan.corrections, new Map((selection.corrections ?? []).map((entry) => [entry.claim, entry.open])), plan.local_date),
   };
 }

@@ -54,6 +54,8 @@ export function prose(planData: any): { what_changed: string[]; task_analysis: s
 }
 
 export type Judge = (cluster: any) => any | null;
+/** The skill's verdict on one correction target (weekly-review.md §8.2); null leaves it unjudged (omitted, §10). */
+export type Correct = (claim: any, target: any) => "restatement" | "independent" | "historical" | "uncertain" | null;
 
 /** The proposal step 8 writes for a new item (weekly-review.md §6.2), all pending. */
 function proposalFor(item: any, planData: any, source: string): Record<string, unknown> {
@@ -74,7 +76,7 @@ function proposalFor(item: any, planData: any, source: string): Record<string, u
 export interface Week { plan: CliRun; select?: CliRun; record?: CliRun; proposals: string[]; input?: any }
 
 /** Steps 3 to 8 of a run (weekly-review.md §1): plan, the skill's judgments played by `judge`, select, and the new proposals. */
-export async function prepare(root: string, snap: any, now: string, options: { judge?: Judge; judgeOnly?: number } = {}): Promise<{ plan: CliRun; select?: CliRun; proposals: Array<{ key: string; proposal: string }> }> {
+export async function prepare(root: string, snap: any, now: string, options: { judge?: Judge; judgeOnly?: number; correct?: Correct } = {}): Promise<{ plan: CliRun; select?: CliRun; proposals: Array<{ key: string; proposal: string }> }> {
   const planned = await plan(root, snap, now);
   if (planned.code !== 0) throw new Error(`plan failed: ${planned.stdout}${planned.stderr}`);
   const planData = planned.json.data;
@@ -83,12 +85,23 @@ export async function prepare(root: string, snap: any, now: string, options: { j
   const findings = judged.map((cluster: any) => options.judge?.(cluster) ?? null).filter((finding: any) => finding !== null);
   const strip = ({ field: _f, before: _b, after: _a, why: _w, proposal: _p, ...rest }: any) => rest;
   // The scheduled run's way: the plan by its input_hash, never copied into the input (cli.md §5.34).
-  const selectInput = { input_hash: planData.input_hash, judged: { clusters: judged.map((cluster: any) => cluster.key), findings: findings.map(strip), corrections: [] } };
+  // A target already in Review (pending) is not judged again (§8.2).
+  const corrections = planData.corrections.flatMap((claim: any) => claim.targets.filter((target: any) => target.pending === null)
+    .map((target: any) => ({ claim: claim.claim, note: target.note, verdict: options.correct?.(claim, target) ?? null })).filter((judgment: any) => judgment.verdict !== null));
+  const selectInput = { input_hash: planData.input_hash, judged: { clusters: judged.map((cluster: any) => cluster.key), findings: findings.map(strip), corrections } };
   const selected = await select(root, selectInput, now);
   if (selected.code !== 0) throw new Error(`select failed: ${selected.stdout}${selected.stderr}`);
   const proposals: Array<{ key: string; proposal: string }> = [];
   const source = `agent:brain-weekly-review/${now.replace(/[-:]/g, "")}`;
   for (const item of selected.json.data.items.filter((candidate: any) => candidate.write)) {
+    if (item.stream === "correction") {
+      // A correction group is written as select hands it over (weekly-review.md §8.4).
+      const created = await brain(["proposal", "new", "--brain", root, "--input", await file(root, { proposals: item.proposal_input }), "--now", now, "--json"]);
+      if (created.code !== 0) throw new Error(`proposal new failed: ${created.stdout}${created.stderr}`);
+      const group = created.json.data.created.find((entry: any) => entry.kind === "review_notes")?.id ?? created.json.data.skipped[0]?.existing;
+      proposals.push({ key: item.key, proposal: group });
+      continue;
+    }
     const full = item.stream === "knowledge" ? { ...item, finding: findings.find((finding: any) => finding.fingerprint === item.key) } : item;
     const created = await brain(["proposal", "new", "--brain", root, "--input", await file(root, withPassages({ proposals: [proposalFor(full, planData, source)] })), "--now", now, "--json"]);
     if (created.code !== 0) throw new Error(`proposal new failed: ${created.stdout}${created.stderr}`);
@@ -100,7 +113,7 @@ export async function prepare(root: string, snap: any, now: string, options: { j
 }
 
 /** One run of the weekly flow (weekly-review.md §1 steps 3 to 9). */
-export async function runWeek(root: string, snap: any, now: string, options: { judge?: Judge; judgeOnly?: number; mode?: "attended" | "unattended"; publish?: boolean; prose?: (planData: any) => { what_changed: string[]; task_analysis: string[] } } = {}): Promise<Week> {
+export async function runWeek(root: string, snap: any, now: string, options: { judge?: Judge; judgeOnly?: number; correct?: Correct; mode?: "attended" | "unattended"; publish?: boolean; prose?: (planData: any) => { what_changed: string[]; task_analysis: string[] } } = {}): Promise<Week> {
   const prepared = await prepare(root, snap, now, options);
   if (prepared.select === undefined) return { plan: prepared.plan, proposals: [] };
   const planData = prepared.plan.json.data;

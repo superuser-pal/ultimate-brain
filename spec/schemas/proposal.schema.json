@@ -47,7 +47,8 @@
         "review_notes",
         "answer",
         "notion_change",
-        "set_field"
+        "set_field",
+        "replace_line"
       ]
     },
     "target": {
@@ -415,7 +416,7 @@
       }
     },
     "changes": {
-      "description": "review_notes only: the update_fact, update_body and add_to_note items of the same ingest, in render order (spec/schema.md §11.3).",
+      "description": "review_notes only: the update_fact, update_body and add_to_note items of the same ingest (and a correction group's update_fact and replace_line items), in render order (spec/schema.md §11.3).",
       "type": "array",
       "items": {
         "$ref": "#/$defs/change"
@@ -551,10 +552,17 @@
     "area": { "description": "notion_change and set_field: the Area whose home shows the Review row.", "type": "string", "pattern": "^area-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
     "finding": { "description": "The Ultimate Assistant finding key (spec/assistant.md §3.3); the same pattern as assistant.schema.json $defs/findingKey.", "$ref": "#/$defs/findingKey" },
     "fingerprint": { "description": "The reflection finding the proposal records (spec/schema.md §11.4, decisions 0052 and 0076): <finding kind>:<ids or term>[:<field or source>].", "$ref": "#/$defs/fingerprint" },
+    "line_before": { "description": "replace_line (spec/weekly-review.md §8.3): the exact body line replaced.", "type": "string", "pattern": "^[^\\n]+$" },
+    "line_after": { "description": "replace_line: the line that replaces it.", "type": "string", "pattern": "^[^\\n]+$" },
+    "correction": { "description": "A correction group's review_notes (spec/weekly-review.md §8.4): the claim key it corrects, <target>:<field>, <decision id> or <target>:rule:<proposal id>.", "type": "string", "pattern": "^[a-z]{2,4}-[0-9abcdefghjkmnpqrstvwxyz]{8}(:[a-z][a-z0-9_]*|:rule:prp-[0-9abcdefghjkmnpqrstvwxyz]{8})?$" },
+    "needs_clarification": { "description": "A correction group's uncertain matches, named and not drafted (spec/weekly-review.md §8.4).", "type": "array", "items": { "type": "object", "required": ["note", "line"], "additionalProperties": false, "properties": { "note": { "$ref": "note.schema.json#/$defs/id" }, "line": { "anyOf": [{ "type": "string", "pattern": "^[^\\n]+$" }, { "type": "null" }] } } } },
     "evidence": { "description": "Reflection: the meetings and sources the finding rested on when the user answered it, sorted and unique (spec/schema.md §11.4); may be empty (a duplicate rests on names).", "type": "array", "items": { "type": "string", "pattern": "^(mtg|src)-[0-9abcdefghjkmnpqrstvwxyz]{8}$" }, "uniqueItems": true }
   },
   "additionalProperties": false,
   "allOf": [
+    {"description": "replace_line (0.15.0): one exact line of the target's body, with its body hash.", "if": {"properties": {"kind": {"const": "replace_line"}}, "required": ["kind"]}, "then": {"required": ["target", "line_before", "line_after", "before_hash"], "not": {"anyOf": [{"required": ["field"]}, {"required": ["before"]}, {"required": ["after"]}, {"required": ["content"]}, {"required": ["note"]}, {"required": ["links"]}, {"required": ["notes"]}, {"required": ["changes"]}, {"required": ["supersedes"]}, {"required": ["merge_into"]}, {"required": ["answer"]}, {"required": ["from"]}]}}},
+    {"description": "line_before and line_after belong to replace_line.", "if": {"anyOf": [{"required": ["line_before"]}, {"required": ["line_after"]}]}, "then": {"properties": {"kind": {"const": "replace_line"}}}},
+    {"description": "correction and needs_clarification belong to a correction group's review_notes.", "if": {"anyOf": [{"required": ["correction"]}, {"required": ["needs_clarification"]}]}, "then": {"required": ["correction"], "properties": {"kind": {"const": "review_notes"}}}},
     {"description": "A reflection proposal (0052, 0076) carries its fingerprint and its evidence together, and is never an Ultimate Assistant one.", "if": {"anyOf": [{"required": ["fingerprint"]}, {"required": ["evidence"]}]}, "then": {"required": ["fingerprint", "evidence"], "not": {"required": ["finding"]}}},
     {"description": "contradiction:<target>:<field> is a contradiction on that target and field.", "if": {"properties": {"fingerprint": {"pattern": "^contradiction:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "contradiction"}}}},
     {"description": "stale:<target>:<field> is an update_fact on that target and field.", "if": {"properties": {"fingerprint": {"pattern": "^stale:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "update_fact"}}}},
@@ -1039,6 +1047,7 @@
               "contradiction",
               "add_to_note",
               "update_body",
+              "replace_line",
               "answer"
             ]
           }
@@ -1438,7 +1447,7 @@
       "then": {
         "properties": {
           "kind": {
-            "const": "update_body"
+            "enum": ["update_body", "replace_line"]
           }
         }
       }
@@ -1516,7 +1525,8 @@
           "enum": [
             "update_fact",
             "update_body",
-            "add_to_note"
+            "add_to_note",
+            "replace_line"
           ]
         },
         "target": {
@@ -1546,9 +1556,16 @@
         "before_hash": {
           "type": "string",
           "pattern": "^sha256:[0-9a-f]{64}$"
-        }
+        },
+        "line_before": { "type": "string", "pattern": "^[^\\n]+$" },
+        "line_after": { "type": "string", "pattern": "^[^\\n]+$" }
       },
       "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "replace_line" } } },
+          "then": { "required": ["line_before", "line_after", "before_hash"], "not": { "anyOf": [{ "required": ["field"] }, { "required": ["before"] }, { "required": ["after"] }, { "required": ["from"] }, { "required": ["content"] }] } },
+          "else": { "not": { "anyOf": [{ "required": ["line_before"] }, { "required": ["line_after"] }] } }
+        },
         {
           "if": {
             "properties": {

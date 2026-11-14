@@ -17,18 +17,22 @@ import { contextFor, requireSuppressions, withheldSupport } from "./suppressions
 import { formatDate } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 
-export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "update_body", "add_link", "supersede", "contradiction", "merge", "new_item", "review_notes", "answer", "notion_change", "set_field"] as const;
+export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "update_body", "add_link", "supersede", "contradiction", "merge", "new_item", "review_notes", "answer", "notion_change", "set_field", "replace_line"] as const;
 export const PROPOSAL_STATUSES = ["pending", "approved", "rejected", "edited", "applied", "closed"] as const;
 
 /** Input keys of `proposal new`: the schema §11 fields the CLI does not set (spec/cli.md §5.6). */
-const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding", "fingerprint", "evidence", "passages", "note_passages", "note_flags", "unsure", "repeat"];
+const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding", "fingerprint", "evidence", "passages", "note_passages", "note_flags", "unsure", "repeat", "line_before", "line_after", "correction", "needs_clarification"];
 const ID = /^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{8}$/;
 const KNOWLEDGE_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 const ADD_LINK_FIELDS = new Set(["aliases", "tags", "projects", "people", "attendees", "deciders"]);
 /** Kinds a review_notes takes in as `changes`, in the order they are stored (spec/schema.md §11.3, 0045). */
-export const CHANGE_KINDS = ["update_fact", "update_body", "add_to_note"];
+export const CHANGE_KINDS = ["update_fact", "update_body", "add_to_note", "replace_line"];
 /** Fields that make two pending proposals the same change (dedupe, spec/cli.md §5.6). */
-const DEDUPE_KEYS = ["kind", "target", "field", "after", "content", "note", "supersedes", "merge_into", "answer", "answer_note"];
+const DEDUPE_KEYS = ["kind", "target", "field", "after", "content", "note", "supersedes", "merge_into", "answer", "answer_note", "line_before", "line_after"];
+/** A claim key of a correction group (spec/weekly-review.md §8.1). */
+const CLAIM_KEY = /^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{8}(:[a-z][a-z0-9_]*|:rule:prp-[0-9a-hjkmnp-tv-z]{8})?$/;
+/** Types a replace_line may never target (spec/weekly-review.md §8.2): records, whole texts and memories. */
+const NEVER_LINE_TARGETS = new Set(["meeting", "decision", "memory"]);
 
 export interface CreatedProposal {
   id: string;
@@ -75,16 +79,22 @@ export function stageProposals(
   // Every change names the passages it rests on; one without them is refused (eligibility.md §9.1, §9.2; cli §5.6).
   (list as Array<Record<string, unknown>>).forEach((item, index) => checkPassages(workspace, item, `/proposals/${index}`));
   // One review_notes per source; it takes in that source's add_link items and changes (spec/cli.md §5.6, 0043, 0045).
-  const reviews = new Map<string, { index: number; item: Record<string, unknown>; links: Array<{ index: number; fields: Record<string, unknown>; flags: Flags }>; changes: Array<{ index: number; change: Record<string, unknown>; passages: unknown; flags: Flags }> }>();
+  const reviews = new Map<string, { index: number; item: Record<string, unknown>; links: Array<{ index: number; fields: Record<string, unknown>; flags: Flags }>; changes: Array<{ index: number; change: Record<string, unknown>; passages: unknown; flags: Flags }>; duplicates: string[] }>();
   (list as Array<Record<string, unknown>>).forEach((item, index) => {
     if (item.kind !== "review_notes") return;
     const source = String(item.source);
     // A theme's review_notes is a row of its own: nothing folds into it, and it doesn't take another review_notes' place (§5.6).
-    const key = typeof item.fingerprint === "string" ? `\u0000${item.fingerprint}` : source;
-    if (reviews.has(key)) assertNoProblems([{ pointer: `/proposals/${index}/source`, message: typeof item.fingerprint === "string" ? `a second review_notes for ${item.fingerprint} in one input` : `a second review_notes for ${source} in one input` }]);
-    checkReviewNotes(workspace, item, `/proposals/${index}`);
+    // A correction group takes in the changes of its own claim, never by source (weekly-review.md §8.4).
+    const key = typeof item.correction === "string" ? `\u0001${item.correction}` : typeof item.fingerprint === "string" ? `\u0000${item.fingerprint}` : source;
+    if (reviews.has(key)) assertNoProblems([{ pointer: `/proposals/${index}/${typeof item.correction === "string" ? "correction" : "source"}`, message: typeof item.correction === "string" ? `a second review_notes for the correction ${item.correction} in one input` : typeof item.fingerprint === "string" ? `a second review_notes for ${item.fingerprint} in one input` : `a second review_notes for ${source} in one input` }]);
+    if (typeof item.correction === "string") checkCorrectionGroup(workspace, item, `/proposals/${index}`);
+    else checkReviewNotes(workspace, item, `/proposals/${index}`);
     if (typeof item.fingerprint === "string") checkFingerprint(workspace, item, `/proposals/${index}`);
-    reviews.set(key, { index, item, links: [], changes: [] });
+    reviews.set(key, { index, item, links: [], changes: [], duplicates: [] });
+  });
+  // A change with `correction` needs its group in the input (cli §5.6).
+  (list as Array<Record<string, unknown>>).forEach((item, index) => {
+    if (item.kind !== "review_notes" && typeof item.correction === "string" && !reviews.has(`\u0001${item.correction}`)) assertNoProblems([{ pointer: `/proposals/${index}/correction`, message: `no review_notes for the correction ${item.correction} in this input` }]);
   });
   const excluded = contextFor(workspace.notes, requireSuppressions(workspace.root));
   const start = workspace.checkpoint();
@@ -93,7 +103,7 @@ export function stageProposals(
       const pointer = `/proposals/${index}`;
       if (item.kind === "review_notes") return;
       // A change any of whose passages is not live, even beside a live one, is not written (eligibility.md §4.2, §9.2): it could never be applied.
-      const text = [item.content, item.answer, isRecord(item.note) ? item.note.body : undefined].find((value): value is string => typeof value === "string") ?? null;
+      const text = [item.content, item.answer, item.line_after, isRecord(item.note) ? item.note.body : undefined].find((value): value is string => typeof value === "string") ?? null;
       if (item.kind !== "notion_change" && withheldSupport({ source: item.source, passages: item.passages, text }, excluded)) { skipped.push({ input_index: index, reason: "SOURCE_EXCLUDED" }); return; }
       const fields = resolveFields(workspace, item, pointer, today);
       // A reflection answer: checked against its item, deduped on its fingerprint, never folded into a review_notes (§5.6).
@@ -123,7 +133,8 @@ export function stageProposals(
         return;
       }
       const folds = item.kind === "add_link" || CHANGE_KINDS.includes(String(item.kind));
-      const review = folds ? reviews.get(String(fields.source)) : undefined;
+      const review = typeof item.correction === "string" ? reviews.get(`\u0001${item.correction}`) : folds ? reviews.get(String(fields.source)) : undefined;
+      delete fields.correction;
       // Flags and repeats live on a Review page's items: only an item a review_notes folds takes them (cli §5.6, capture-and-review §7.12.8).
       if (review === undefined && (item.unsure !== undefined || item.repeat !== undefined)) assertNoProblems([{ pointer: `${pointer}/${item.unsure !== undefined ? "unsure" : "repeat"}`, message: "is only allowed on an item a review_notes of the same input folds" }]);
       const flags = flagsOf(item);
@@ -142,6 +153,7 @@ export function stageProposals(
             || (CHANGE_KINDS.includes(String(item.kind)) && note.attributes.kind === "review_notes" && listOf(note.attributes.changes).some((change) => sameChange(change, fields)))));
       if (duplicate !== undefined) {
         skipped.push({ input_index: index, reason: "DUPLICATE_PENDING", existing: duplicate.id });
+        if (review !== undefined) review.duplicates.push(duplicate.id);
         return;
       }
       if (review !== undefined && CHANGE_KINDS.includes(String(item.kind))) {
@@ -185,6 +197,8 @@ export function stageProposals(
         if (held !== undefined) { skipped.push({ input_index: review.index, reason: "DUPLICATE_PENDING", existing: held.id }); continue; }
       }
       if (notes.length === 0 && review.links.length === 0 && review.changes.length === 0) {
+        // A correction group whose every change already waits in Review is that group (weekly-review.md §8.4): a rerun links it.
+        if (typeof review.item.correction === "string" && review.duplicates.length > 0) { skipped.push({ input_index: review.index, reason: "DUPLICATE_PENDING", existing: review.duplicates[0] }); continue; }
         skipped.push({ input_index: review.index, reason: "NOTHING_TO_REVIEW" });
         continue;
       }
@@ -222,6 +236,7 @@ export function stageProposals(
         why: review.item.why ?? `What came in from ${sourceTitle(workspace, source)}`,
         source,
         ...(typeof review.item.fingerprint === "string" ? { fingerprint: review.item.fingerprint, evidence: review.item.evidence } : {}),
+        ...(typeof review.item.correction === "string" ? { correction: review.item.correction, ...(Array.isArray(review.item.needs_clarification) && review.item.needs_clarification.length > 0 ? { needs_clarification: review.item.needs_clarification } : {}) } : {}),
       };
       const held = [review.index, ...review.links.map(({ index }) => index), ...changes.map(({ index }) => index)].sort((a, b) => a - b);
       const proposal = createProposal(workspace, fields, held, today, `/proposals/${review.index}`, pointers, created);
@@ -285,12 +300,12 @@ export function reviewTitle(workspace: Workspace, source: string, changes: numbe
 
 /** A change entry of a review_notes: the item's kind, target, why and that kind's fields (spec/schema.md §11). */
 function changeEntry(fields: Record<string, unknown>): Record<string, unknown> {
-  const keys = ["kind", "target", "why", "field", "before", "after", "from", "content", "before_hash"];
+  const keys = ["kind", "target", "why", "field", "before", "after", "from", "content", "before_hash", "line_before", "line_after"];
   return Object.fromEntries(keys.filter((key) => fields[key] !== undefined).map((key) => [key, fields[key]]));
 }
 
 function sameChange(change: unknown, fields: Record<string, unknown>): boolean {
-  return isRecord(change) && ["kind", "target", "field", "after", "content"].every((key) => isDeepStrictEqual(change[key], fields[key]));
+  return isRecord(change) && ["kind", "target", "field", "after", "content", "line_before", "line_after"].every((key) => isDeepStrictEqual(change[key], fields[key]));
 }
 
 /** A reference's body as stored, for `content`: one blank line after the frontmatter, LF endings, a final newline. */
@@ -306,6 +321,25 @@ export function bodyHash(body: string): string {
 
 function listOf(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
+}
+
+/** A correction group's review_notes (cli §5.6, weekly-review.md §8.4): no notes, a source that exists when it is an id, its uncertain matches. */
+function checkCorrectionGroup(workspace: Workspace, item: Record<string, unknown>, pointer: string): void {
+  const problems: InputProblem[] = [];
+  if (typeof item.title !== "string") problems.push({ pointer: `${pointer}/title`, message: "is required on a correction group" });
+  if (Array.isArray(item.notes) && item.notes.length > 0) problems.push({ pointer: `${pointer}/notes`, message: "a correction group lists no notes" });
+  if (typeof item.source === "string" && ID.test(item.source) && workspace.get(item.source) === undefined) throw new BrainError("UNKNOWN_ID", `${pointer}/source: no note with id ${item.source}`, [{ pointer: `${pointer}/source`, message: "does not exist" }]);
+  if (item.needs_clarification !== undefined) {
+    if (!Array.isArray(item.needs_clarification)) problems.push({ pointer: `${pointer}/needs_clarification`, message: "must be a list of {note, line}" });
+    else item.needs_clarification.forEach((entry, index) => {
+      const at = `${pointer}/needs_clarification/${index}`;
+      if (!isRecord(entry)) { problems.push({ pointer: at, message: "must be {note, line}" }); return; }
+      problems.push(...unknownKeys(entry, ["note", "line"], at));
+      if (typeof entry.note !== "string" || workspace.get(entry.note) === undefined) problems.push({ pointer: `${at}/note`, message: `no note with id ${String(entry.note)}` });
+      if (entry.line !== null && !oneLine(entry.line)) problems.push({ pointer: `${at}/line`, message: "must be one line or null" });
+    });
+  }
+  assertNoProblems(problems);
 }
 
 /** A review_notes item's notes: existing knowledge notes, listed once here and by no other review_notes. */
@@ -393,7 +427,7 @@ function checkPassages(workspace: Workspace, item: Record<string, unknown>, poin
       for (const note of notes) check(map[note], `${pointer}/note_passages/${note}`, null);
     }
   } else {
-    const text = [item.content, item.answer, isRecord(item.note) ? item.note.body : undefined].find((value): value is string => typeof value === "string") ?? null;
+    const text = [item.content, item.answer, item.line_after, isRecord(item.note) ? item.note.body : undefined].find((value): value is string => typeof value === "string") ?? null;
     check(item.passages, `${pointer}/passages`, text);
   }
   assertNoProblems(problems);
@@ -449,6 +483,18 @@ function checkShape(item: unknown, pointer: string): InputProblem[] {
   }
   if (item.kind === "answer" && (typeof item.answer !== "string" || item.answer.trim() === "")) at("answer", "must be a non-empty string");
   if (item.kind === "update_body" && (typeof item.content !== "string" || item.content.trim() === "")) at("content", "must be the whole new body");
+  if (item.kind === "replace_line") {
+    for (const key of ["line_before", "line_after"]) if (!oneLine(item[key])) at(key, "must be one non-empty line");
+    if (oneLine(item.line_before) && item.line_before === item.line_after) at("line_after", "must differ from line_before");
+  } else {
+    for (const key of ["line_before", "line_after"]) if (item[key] !== undefined) at(key, "is only allowed on replace_line");
+  }
+  if (item.correction !== undefined) {
+    if (typeof item.correction !== "string" || !CLAIM_KEY.test(item.correction)) at("correction", "must be a claim key: <target>:<field>, <decision id> or <target>:rule:<proposal id>");
+    else if (!["review_notes", "update_fact", "replace_line"].includes(String(item.kind))) at("correction", "goes on a correction group's review_notes and its update_fact and replace_line items");
+    else if (item.kind === "review_notes" && (item.fingerprint !== undefined || item.note_passages !== undefined || item.note_flags !== undefined)) at("correction", "a correction group has no fingerprint and no notes");
+  }
+  if (item.needs_clarification !== undefined && (item.kind !== "review_notes" || item.correction === undefined)) at("needs_clarification", "is only allowed on a correction group");
   if (item.kind !== "answer") {
     for (const key of ["answer", "answer_note"]) if (item[key] !== undefined) at(key, "is only allowed on answer");
   }
@@ -530,6 +576,15 @@ function resolveFields(workspace: Workspace, item: Record<string, unknown>, poin
   if (kind === "update_body") {
     if (target.type !== "reference") invalid("target", `is a ${target.type}; update_body replaces the body of a reference`);
     if (target.attributes.origin === "promoted") invalid("target", `is a promoted Document; its body is yours, edited in Notion (0049)`);
+    fields.before_hash = bodyHash(target.body);
+  }
+  if (kind === "replace_line") {
+    // Only a current note of weekly-review.md §8.2: never a record, a whole text, a memory or an archived note.
+    const archived = target.attributes.lifecycle === "archived" || target.path.startsWith("archive/");
+    const whole = target.type === "reference" && (target.attributes.origin === undefined || ["promoted", "whole", "part", "workflow"].includes(String(target.attributes.origin)));
+    if (NEVER_LINE_TARGETS.has(target.type) || whole || archived) invalid("target", `is ${archived ? "archived" : whole ? "a whole or promoted Document" : `a ${target.type}`}; a replace_line changes a current note's restatement, never a record (weekly-review.md §8.2)`);
+    const count = target.body.split("\n").filter((line) => line === item.line_before).length;
+    if (count !== 1) invalid("line_before", count === 0 ? `is not a line of ${target.id}'s body` : `is ${count} lines of ${target.id}'s body; it must be exactly one`);
     fields.before_hash = bodyHash(target.body);
   }
   if (kind === "add_link") {

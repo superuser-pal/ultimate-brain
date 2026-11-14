@@ -14,10 +14,14 @@ import { reportLinks } from "../lib/report-body.ts";
 import { loadSchemas } from "../lib/schemas.ts";
 import { requireSuppressions } from "../lib/suppressions.ts";
 import { formatDate, formatTimestamp } from "../lib/time.ts";
-import { computePlan, type PlanData } from "../lib/weekly-plan.ts";
+import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
+import { appendLog } from "../lib/log.ts";
+import { reflectionNotes } from "../lib/reflect.ts";
+import { computeClaims, nextCursor, titleChanges, type Claim } from "../lib/weekly-corrections.ts";
+import { computePlan, correctionCursor, titlesSince, windowOf, type PlanData } from "../lib/weekly-plan.ts";
 import { MAX_WORDS, nextState, recordProblems, renderBody, weeklyTitle, type RecordInput } from "../lib/weekly-record.ts";
 import { computeSelection, selectProblems, type SelectInput, type Selection } from "../lib/weekly-select.ts";
-import { emptyState, handoffPaths, mondayOf, readState, serializeState, STATE_PATH } from "../lib/weekly-state.ts";
+import { emptyState, handoffPaths, isoWeek, localDate, mondayOf, readState, serializeState, STATE_PATH } from "../lib/weekly-state.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { readSnapshot } from "./assistant.ts";
 
@@ -67,7 +71,9 @@ export const weeklyPlanCommand: Command = {
     const store = readDismissals(brain!.root);
     if (store.problems.length > 0) throw new BrainError("DISMISSALS_UNREADABLE", `${store.problems[0]}; run brain lint to see it`);
     const scanned = await scanNotes(brain!.root);
-    const data = computePlan({ snapshot, notes: scanned.notes, loaded: requireSuppressions(brain!.root), config, dismissals: store.entries, state, now });
+    // Titles keep no history in their notes: the renames since the correction cursor are read from Git (weekly-review.md §8.1).
+    const titles = await titleChanges(brain!.root, titlesSince(state, now), scanned.notes);
+    const data = computePlan({ snapshot, notes: scanned.notes, loaded: requireSuppressions(brain!.root), config, dismissals: store.entries, state, now, titles });
     const shown = data.findings.filter((finding) => finding.repetition.show).length;
     const files = handoffPaths(brain!.root, environment.homeDirectory ?? homedir());
     if (!data.quiet) {
@@ -199,4 +205,84 @@ export const weeklyRecordCommand: Command = {
   },
 };
 
-export const WEEKLY_COMMANDS = [weeklyPlanCommand, weeklySelectCommand, weeklyRecordCommand];
+/** The queued claims as `plan` would list them now (weekly-review.md §8.1, §8.2), without a snapshot or any weekly limit. */
+async function queuedClaims(root: string, now: Date): Promise<{ claims: Claim[]; state: ReturnType<typeof readState> }> {
+  const state = readState(root);
+  const scanned = await scanNotes(root);
+  const week = isoWeek(localDate(now));
+  const titles = await titleChanges(root, titlesSince(state, now), scanned.notes);
+  const eligible = reflectionNotes(scanned.notes, requireSuppressions(root));
+  // The on-demand path reads the cursor as it is now, not as the week's first report found it (that is a rerun's rule, §8.1).
+  const cursor = state?.corrections ?? correctionCursor(null, week);
+  const claims = computeClaims({ eligible, all: scanned.notes, cursor, windowFrom: windowOf(state, week, now).from.slice(0, 10), titles });
+  return { claims, state };
+}
+
+function count(value: unknown, name: string, fallback: number, minimum: number): number {
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < minimum) throw new BrainError("USAGE", `--${name} must be an integer of at least ${minimum}`);
+  return parsed;
+}
+
+/** `brain weekly corrections list [--offset <n>] [--limit <n>]` (cli.md §5.34): the on-demand path's queue. Writes nothing. */
+export const weeklyCorrectionsListCommand: Command = {
+  name: "weekly corrections list",
+  usage: "brain weekly corrections list [--offset <n>] [--limit <n>] [--json]",
+  summary: "The queued correction checks and their candidate targets, for \"weekly review corrections\". Writes nothing.",
+  options: { offset: "string", limit: "string" },
+  maxPositionals: 0,
+  needsBrain: true,
+  async run({ args, brain, now }) {
+    const offset = count(args.options.offset, "offset", 0, 0);
+    const limit = count(args.options.limit, "limit", 10, 1);
+    const { claims } = await queuedClaims(brain!.root, now);
+    const page = claims.slice(offset, offset + limit);
+    const next = offset + limit < claims.length ? offset + limit : null;
+    return {
+      data: { claims: page, total: claims.length, offset, next_offset: next },
+      human: claims.length === 0 ? "No correction checks are queued.\n" : `${claims.length} correction check${claims.length === 1 ? "" : "s"} queued; showing ${page.length} from ${offset}.\n`,
+    };
+  },
+};
+
+/** `brain weekly corrections done --input <file|->` (cli.md §5.34): writes only the correction cursor of `_weekly/state.json`. */
+export const weeklyCorrectionsDoneCommand: Command = {
+  name: "weekly corrections done",
+  usage: "brain weekly corrections done --input <file|-> [--json]",
+  summary: "Record the correction checks \"weekly review corrections\" finished, and keep the rest queued.",
+  options: { input: "string" },
+  maxPositionals: 0,
+  needsBrain: true,
+  async run({ args, brain, now }) {
+    const input = validated<{ claims: Array<{ claim: string; open: string[] }> }>("correctionsDone", await readJsonInput(args.options.input as string | undefined, "weekly corrections done"));
+    const { claims, state } = await queuedClaims(brain!.root, now);
+    const byClaim = new Map(claims.map((claim) => [claim.claim, claim]));
+    const problems: Array<{ pointer: string; message: string }> = [];
+    const named = new Set<string>();
+    input.claims.forEach((entry, index) => {
+      const claim = byClaim.get(entry.claim);
+      if (claim === undefined) { problems.push({ pointer: `/claims/${index}/claim`, message: `${entry.claim} is no queued correction check now` }); return; }
+      if (named.has(entry.claim)) problems.push({ pointer: `/claims/${index}/claim`, message: `${entry.claim} is named twice` });
+      named.add(entry.claim);
+      entry.open.forEach((note, at) => { if (!claim.targets.some((target) => target.note === note)) problems.push({ pointer: `/claims/${index}/open/${at}`, message: `${note} is no candidate target of ${entry.claim}` }); });
+    });
+    assertNoProblems(problems);
+    // A claim the chat didn't reach stays queued with every target not yet in Review, so moving the cursor skips nothing (§8.4).
+    const given = new Map(input.claims.map((entry) => [entry.claim, entry.open]));
+    const outcomes = new Map(claims.map((claim) => [claim.claim, given.get(claim.claim) ?? claim.targets.filter((target) => target.pending === null).map((target) => target.note)]));
+    const current = state ?? emptyState();
+    const corrections = nextCursor(current.corrections, claims, outcomes, localDate(now));
+    await ensureDirectory(brain!.root, "_weekly");
+    await atomicWriteFile(brain!.root, STATE_PATH, serializeState({ ...current, corrections }));
+    const finished = claims.filter((claim) => (outcomes.get(claim.claim) ?? []).length === 0).map((claim) => claim.claim);
+    const open = corrections.open.map((entry) => entry.claim);
+    await appendLog(brain!.root, now, [{ op: "weekly-corrections", id: "-", title: "", pairs: [["finished", finished.length], ["open", open.length]] as const }]);
+    return {
+      data: { finished, open, checked_on: corrections.checked_on },
+      human: `${finished.length} correction check${finished.length === 1 ? "" : "s"} finished, ${open.length} still queued.\n`,
+    };
+  },
+};
+
+export const WEEKLY_COMMANDS = [weeklyPlanCommand, weeklySelectCommand, weeklyRecordCommand, weeklyCorrectionsListCommand, weeklyCorrectionsDoneCommand];
