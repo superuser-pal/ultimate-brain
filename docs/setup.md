@@ -33,8 +33,8 @@ Setup checks all of these at once, at the start. It asks you about your Notion p
 | 2 | Settings | Read one screen, then say "keep these" or change a line. | Setup creates your backup, and later steps use your drop folder. |
 | 3 | Notion template and connection | Duplicate the template, connect your agent to Notion, restart the agent. | The brain needs a space to write to. |
 | 4 | Connect the brain to Notion | Say yes to moving the template's example rows to Notion's trash. | The brain stores each database's id and the template's version. The example rows go before anything reads your space, so none of them ever enters your brain. |
-| 4a | The minutes prompt | Paste the prompt into your Notion AI settings, then run it on a short invented meeting. Delete the test page afterwards. | Your meeting minutes come out in the shape the brain reads. |
-| 4b | Brain Assistant | Set it up, then run `/Today` once. | `/Today` must list only your brain's tasks. |
+| 4a | The minutes prompt | Paste a short invented meeting into a new Meetings page. Open the Notion AI chat on that page, paste the prompt followed by the line "Write the minutes on this page, below the transcript, and nothing else.", and send. Delete the test page afterwards. | Your meeting minutes come out in the shape the brain reads, and the transcript stays on the page. |
+| 4b | Brain Assistant | Set it up, giving it the Brain Data, How it works and Skills under your space's top page. Then ask it **Run Today** once (by name: a Custom Agent doesn't run `/` commands). | Today must list only the tasks of your space's Tasks database. |
 | 5 | Identities | Say which names you appear under in meetings and in Notion. | The brain knows which tasks and commitments are yours. |
 | 6 | Seeding | Describe your work in a few sentences, answer one preview, then drop 3 to 5 key documents in your drop folder. | Your brain starts with your Areas, Projects, people and documents, so the first meeting doesn't create duplicates. Nothing is written before your yes. |
 | 7 | First value | Judge four checks (below). | It proves the brain works on your own material. |
@@ -62,7 +62,7 @@ Step 2 shows one screen with every setting filled in. Change any of them later b
 1. **Brain folder.** The folder `brain init` made. Everything the brain knows is here. `--set-default` records it, so `brain` finds it from anywhere.
 2. **Git identity.** Your name and email, for all your repositories or for this one only. Every change the brain makes is a commit with this name, so you can see and undo it.
 3. **Backup.** A private copy of your brain on GitHub, so nothing is lost and another machine can use it. The screen shows `Backup: a private GitHub repository, created for you`: setup creates it with `gh`, named after your brain folder, unless your brain already has one, which it keeps. It must be private, since your notes are about real people and real work: setup checks that it is, and stops if it isn't (see [Your backup is public](#your-backup-is-public-remote-public)).
-4. **Drop folder.** Default `~/Documents/brain-dropbox/`, created for you. The next catch-up reads the files you drop here: documents, exports, notes.
+4. **Drop folder.** Default `~/Documents/brain-dropbox/`, created for you. The next catch-up reads the files you drop here: documents, exports, notes. Each brain has its own: when another brain on this computer already reads `~/Documents/brain-dropbox/`, setup proposes a folder named after the new brain, such as `~/Documents/client-brain-dropbox/`, and says why.
 5. **The language your notes are written in.** Default: the language you write to your agent in. The brain writes every note in this language, whatever the language of the source, so search and answers stay consistent.
 6. **Modules.** Default: Knowledge, Orgs, Documents, Reports and Tasks on, Planning off, and Domains decided when you describe your work (on when you name two or more contexts, such as work and personal). These are the parts of your Notion space the brain uses. The template holds every part, so turning a module on later needs no work in Notion.
 7. **Publish.** Default `ask`: the brain asks before it publishes to Notion. With `auto`, it publishes after each run.
@@ -189,13 +189,19 @@ The template's example rows must go before anything reads your space. Their titl
 
 ### The minutes check fails (`shape-wrong`)
 
-The prompt was pasted only in part, or in the wrong place. Setup names what is missing ("no `Selection:` line under subject 2"). Paste the whole prompt again where setup says, then say "check the minutes prompt again". Delete the test page afterwards.
+The prompt was pasted only in part, or run outside the page's Notion AI chat. Setup names what is missing ("no `Selection:` line under subject 2"). Run the whole prompt again in the chat on the page, with the line "Write the minutes on this page, below the transcript, and nothing else.", then say "check the minutes prompt again". Delete the test page afterwards.
 
-### `/Today` shows things from outside your brain (`assistant-reads-outside`)
+### The transcript is gone from the page (`transcript-missing`)
 
-Brain Assistant can see more than your brain.
-- **A Custom Agent:** limit its Tools and access to Brain Data, How it works and Brain Assistant Skills.
-- **Personal Instructions:** the instruction to stay inside Ultimate Brain is missing or was pasted in part. Paste the whole text again.
+Notion AI wrote the minutes but replaced the transcript. The brain needs both, because the minutes quote the transcript. Put the transcript back on the page above the minutes: restore an earlier version from Notion's version history (••• at the top right), or paste it again. Keep the minutes. Then say "check the minutes prompt again". Next time, run the prompt in the Notion AI chat on the page, with the line "Write the minutes on this page, below the transcript, and nothing else."
+
+The same thing can happen to a real meeting. Catch-up then leaves it Reviewed and says so under Needs you, with this fix. Once the transcript is back, run catch-up again.
+
+### Today shows things from outside your brain (`assistant-reads-outside`)
+
+Setup's check says which Tasks database Today should read: the one under your space's top page › Brain Data. If Today lists a task, Review row or meeting from another space, one of two things happened:
+- **The run used another space's Today.** Picking "Today" from the `@` picker can pick another space's skill page, which reads that space. Ask Brain Assistant **Run Today** by name, or mention your Today page by its link (open it from your space's Skills database, ••• → Copy link).
+- **Brain Assistant can see more than your brain.** A Custom Agent: in Tools and access, keep only the Brain Data, How it works and Skills (in an older space, Brain Assistant Skills) under your top page, and remove any other. Personal Instructions: the instruction to stay inside Ultimate Brain is missing or was pasted in part. Paste the whole text again.
 
 Then say "check Brain Assistant again".
 
@@ -248,7 +254,7 @@ It ends with one line: `Backup fixed: <n> changes backed up.` or `Backup checked
 
 Without Notion AI:
 - The minutes prompt and Brain Assistant are left out, so setup has 7 required items instead of 9.
-- You lose structured minutes and the choice of what enters the brain from a meeting. You also lose `/Today` and the other Notion buttons that message Brain Assistant.
+- You lose structured minutes and the choice of what enters the brain from a meeting. You also lose Brain Assistant's skills, such as Today, and the Notion buttons that message it.
 - **Meetings:** paste any transcript or summary onto the meeting page. The brain takes it in whole.
 - **How-to questions** go to your agent instead.
 - Rewriting a pasted transcript into the minutes format is not offered.
