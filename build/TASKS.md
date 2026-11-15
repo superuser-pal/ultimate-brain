@@ -1009,6 +1009,15 @@ After the feature cutoff, scope packaging/install/upgrade guidance, consistent N
 **Output:** `eval/memory-0.12/score.mjs` ("nothing the brain / it returns / returned / holds / has records / says / holds / mentions" under "the speaker or the brain lacks the answer", and an opening "I found no recorded <thing>" or "I found no <thing> recorded / documented", with no "with", "in", "than" or "other" in <thing>, beside CC-231's leading absences), `tests/memory-eval-score.test.mjs` and the Abstention paragraph of `eval/memory-0.12/README.md`; nothing else. Per decision 0083 §1 item 5, it merges before the next release's smoke run. The same run's unk-05 in Codex (reported, not gated) is the same kind of miss and is covered too. Its trust-39 (both agents) and trust-29 (Codex) are the observations CC-224 put in the backlog; the user accepted them by name for 0.15.0 on the same yes (0083 §2), and this task doesn't change them.
 **Acceptance:** 0.15.0's two failing replies (trust-34 in Claude Code, unk-05 in Codex), quoted in the tests, abstain and pass their cases; the denial followed by the stated preference still fails trust-34, and "no recorded freeze" followed by Harbor's borrowed freeze still fails unk-05; "Nothing blocks the deploy", "I found no issues …", "I found no reason to wait", "I found no other package manager recorded …" and the phrase after an answer are not abstentions; every reference answer still abstains exactly where its case asks; the README names both phrases; `npm run test:scripts`, the leak check and the PR format check pass.
 
+### CC-276 · Notion property descriptions fit Notion's 280-character limit · `done` (#386)
+**Release:** 1.0.0
+**Changelog:** Review's Your call description fits Notion's 280-character limit, and a new space gets the same description as migration 0025.
+**Output:** migration 0025 step 1 sets a 270-character Your call description (its 476-character text was refused by Notion when applied to a real space); `notion/prompts/02-databases.md`, `05-ownership.md` and `docs/notion-space-design.md` give a new space that same text instead of the older ones; `tests/notion-property-descriptions.test.ts`.
+**Acceptance:**
+- [ ] Every "Owner: …" description in `notion/prompts/`, `notion/modules/` and `notion/migrations/` is 280 characters or less (test).
+- [ ] Migration 0025, prompts 02 and 05 and the design doc give Your call the same description, which names Request revision (test).
+- [ ] The full suite passes.
+
 ## Your tasks
 
 | Id | Task | When |
