@@ -50,7 +50,7 @@ Every grey box on this page is a line to paste into a terminal, then press Retur
 
 Open the Notion template and choose **Duplicate**, into the workspace you'll use for your brain:
 
-**[The Ultimate Brain Notion template](https://sentina.notion.site/TEMPLATE-Ultimate-Brain-416495661e99806ea2dcca48eb4e55ff)**
+**[The Ultimate Brain Notion template](https://sentina.notion.site/TEMPLATE-Ultimate-Brain-419495661e9980859df9ca0c3d836d27)**
 
 Leave the copy as it is. Its example rows go away when setup connects it.
 
