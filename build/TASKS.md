@@ -972,8 +972,14 @@ Text and configuration for the friends-and-family beta, from the beta readiness 
 ### CC-282 · The template link points at the published template · `in progress`
 **Release:** 0.15.1
 **Changelog:** The Notion template link in Get started opens the published template again.
-**Output:** `README.md`, `notion/TEMPLATE.md` and the two lines of `scripts/leak-allow.txt` carry the published template's address. The old address was the page of an earlier copy, since renamed and used as a test space, which is not published. Read through the API on 2026-11-15, the published template has the fourteen Brain Data databases with fifteen example rows and thirteen pages in Skills: the twelve of `notion/brain-assistant.md` and "Write minutes". Whether Write minutes is a thirteenth skill or leaves the template is the user's call, not this task's.
-**Acceptance:** the link in `README.md` and `notion/TEMPLATE.md` opens the published template with a Duplicate button in a signed-out browser (the user checks); no file names the old page id; the leak check passes with the new allow lines; the full suite and the PR format check pass.
+**Output:** `README.md`, `notion/TEMPLATE.md` and the two lines of `scripts/leak-allow.txt` carry the published template's address. The old address was the page of an earlier copy, since renamed and used as a test space, which is not published. Read through the API on 2026-11-15, the published template has the fourteen Brain Data databases with fifteen example rows and thirteen pages in Skills: the twelve of `notion/brain-assistant.md` and "Write minutes". The user's answer of 2026-11-15: Write minutes stays, so the skills are thirteen (CC-283).
+**Acceptance:** the link in `README.md` and `notion/TEMPLATE.md` opens the published template with a Duplicate button in a signed-out browser (the user confirmed it on 2026-11-15); no file names the old page id; the leak check passes with the new allow lines; the full suite and the PR format check pass.
+
+### CC-283 · Brain Assistant has thirteen skills: Write minutes is one of them · `todo`
+**Release:** 0.15.1
+**Changelog:** The guides count Write minutes among Brain Assistant's skills, as the template does.
+**Output:** the user's answer of 2026-11-15: the published template's Skills database holds thirteen pages, the twelve of `notion/brain-assistant.md` and "Write minutes" (the minutes prompt as a skill page), and that is intended. `notion/brain-assistant.md` (the skills row and a Write minutes entry whose text is the minutes prompt's, from one source), `docs/notion-space-design.md` (two places), `notion/TEMPLATE.md` step 4, `notion/prompts/09-assistant-and-guide.md` (three places), whatever publishes the skills pages, and through a fork PR brain-howto's everyday guide, which says the minutes prompt "is separate from the twelve skills". Migrations stay as written.
+**Acceptance:** no shipped text outside migrations, decisions and history says twelve skills; "publish Brain Assistant's skills to Notion" creates thirteen pages in a fresh space and Write minutes' text equals the minutes prompt (test); the fork's guide agrees in the vendored release; the full suite, the leak check and the PR format check pass.
 
 ## 1.0.0 — Productisation, translation, funnel and launch (decision 0061)
 
