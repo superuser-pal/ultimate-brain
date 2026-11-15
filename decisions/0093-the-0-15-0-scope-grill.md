@@ -5,6 +5,7 @@
 **Release:** 0.15.0
 **Refines:** [0075](0075-weekly-review-and-targeted-corrections.md) (the weekly review's surfaces and default model, and where §7's trials run (§6 here); §8's synthetic scenarios (busy, quiet, missed week, partial, repeated finding, correction) are no longer run as trials before the build: they move to the implementation tasks' automated tests, and the attended trial in the author's brain stays; its scope and limits are unchanged); [0051](0051-unattended-catch-up-and-schedules.md) (a schedule pins a model)
 **Keeps:** 0075 in full; [0088](0088-a-review-row-says-it-needs-you-and-a-review-page-reads-plainly.md) §2 and [0090](0090-review-by-grill-notion-ai-reviews-with-you-and-your-call-decides.md) (the Review page and the review by grill, CC-240 and CC-241); [0092](0092-move-a-note-to-another-area.md) (CC-251); 0.15.0 as the feature cutoff ([0061](0061-roadmap-and-launch-boundary.md))
+**Amended by:** [0096](0096-one-place-to-decide.md) (2026-11-15; 0.16.0): §2: Weekly review in Notion reads the week's Inbox row and decides nothing; §3's Reports offer is retired
 
 ## Context
 
