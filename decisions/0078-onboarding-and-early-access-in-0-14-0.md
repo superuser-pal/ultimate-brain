@@ -5,6 +5,7 @@
 **Release:** 0.14.0
 **Scope amended by:** [0079](0079-lean-minutes-and-follow-ups-as-tasks.md) (2026-11-10): 0.14.0 also ships the lean minutes format and quick follow-ups as Tasks, so testers start on it
 **Scope amended by:** [0081](0081-response-style-working-principles-and-plain-writing.md) (2026-11-11): 0.14.0 also ships the response style setting (a settings-screen item), the working principles and the plain writing reference
+**§2 amended by:** [0097](0097-easy-setup-on-windows-and-mac-and-markitdown-required.md) (2026-11-16): MarkItDown, with Python, is required for early access
 **§1 amended by:** [0084](0084-the-notion-template-is-the-authors-emptied-space-with-example-rows.md) (2026-11-12): the template is a copy of the author's own space, emptied and scrubbed, in their one workspace, not a dedicated workspace; it carries seven `Example · ` rows (a sample meeting among them), which setup removes when it connects the brain
 **§1 amended by:** [0085](0085-the-template-keeps-a-system-callout-and-a-skills-database.md) (2026-11-12): in the template, System is a callout on the top page and the Template version line is in it; the skills database is named Skills
 **§2 amended by:** [0086](0086-the-brain-works-on-main-and-early-access-requires-gh.md) (2026-11-12): `gh` is required for early access, so setup always creates the private remote with it (the steps for another Git host return at 1.0); a brain is worked on one branch, with no pull requests
