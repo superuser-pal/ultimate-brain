@@ -13,7 +13,7 @@ Ultimate Brain works end to end, and you are among the first people to use it ou
 - **What may change.** Setup steps, wording and the Notion template change between versions. An update may ask you to run one more step.
 - **Your notes are safe from the product.** They are Markdown files in a Git repository on your computer: every change is a commit you can undo, and nothing your brain knows changes without your approval. Keep the backup on.
 - **Your data.** Read [PRIVACY.md](PRIVACY.md) before you add client material.
-- **Expect issues and bugs,** with Claude Code, with Codex and with Gemini, which has only been tried in passing. It has been tested on a Mac. Windows hasn't been tested yet: the scheduled runs are installed on a Mac only, so on Windows you start each catch-up yourself, and other steps may fail. If you try it, tell us what happened.
+- **Expect issues and bugs** during the beta, with Claude Code, with Codex and with Gemini, which has only been tried in passing. When you find one, tell us.
 - **Updating, going back and uninstalling:** [Update](#update), below.
 - **Telling us what happened.** Open an issue on this repository with the **Beta feedback** template. Issues are public and appear under your GitHub name, so paste no notes, client names, Notion links or tokens. At the end of setup your agent offers to send a short report of counts and codes the same way, only if you say yes.
 
