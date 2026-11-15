@@ -2,6 +2,16 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.15.1 — 2026-11-15
+
+- CC-279 (#389): The repository says where your data goes (`PRIVACY.md`) and how to report a security problem (`SECURITY.md`).
+- CC-280 (#390): The setup guide says how to go back to an earlier version and how to remove everything setup put on your computer.
+- CC-281 (#391): The README says what the beta means and how to send feedback, and testers get an issue template.
+- CC-282 (#392): The Notion template link in Get started opens the published template again.
+- CC-284 (#393): Before your agent sends a setup report, it says the report becomes a public issue under your GitHub name.
+
+Skills: ultimate-brain-skills 1.9.1 (sha256-ce06f31e1df69dc137a2959f146814611ddab43bc344d61429fb565c072590c3)
+
 ## 0.15.0 — 2026-11-14
 
 - CC-111 (#362): development only: the weekly review's contract and its resource-budget trials; the feature itself ships through CC-253 to CC-256.
