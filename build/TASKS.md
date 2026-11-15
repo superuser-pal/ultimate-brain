@@ -21,6 +21,7 @@ Decisions [0059](../decisions/0059-shared-skills-and-connected-workflows.md), [0
 | 0.13.0 | Trust repair: one operational eligibility rule for answers, reads, derived content and proposals' evidence; one coordinated upgrade of the brain and its linked projects (0077); English retrieval quality: the first search finds facts and paraphrases, an unresolved subject is asked about (0080) |
 | 0.14.0 | Repeatable onboarding: a published Notion template, one guided setup, seeding, diagnostics and minimal per-area tracking preferences; early access for friends and family starts here (0078); lean minutes, and quick follow-ups left unticked become Tasks (0079); a response style each user chooses, working principles and plain writing (0081); the release gate's fixes and wikilinked sources, in rc.3 (CC-257) |
 | 0.15.0 | Weekly digest/review and targeted correction propagation; the assistant's scheduled weekly review (0075, moved by 0077 and 0078) |
+| 0.15.1 | Text and configuration for the friends-and-family beta, from the beta readiness review of v0.15.0: the data and security statements, rollback and uninstall, the beta section and feedback route, the published template's link, thirteen Brain Assistant skills (CC-279 to CC-283; the user's approval of 2026-11-15). No feature and no CLI change |
 | 1.0.0 | Productisation, translation, funnel and launch readiness; the complete native acceptance in Claude Code and Codex once beta testers are live (0082) |
 
 **0.15.0 is the feature cutoff** (moved from 0.14.0 by 0077; since 0078 it is the weekly review's release). Prefer 1.0 release candidates for preparation; an extra preparation version needs an explicit bounded scope. Dogfood/issues still produce triaged fixes in the relevant release or a patch; new features stay post-1.0 unless the user explicitly changes the plan. No connector release is committed. Hermes (0060) is post-1.0 (0064).
@@ -949,7 +950,7 @@ Work packages: contracts and representative resource-budget trials; shared diges
 
 ## 0.15.1
 
-Text and configuration for the friends-and-family beta, from the beta readiness review of v0.15.0 (2026-11-15). No feature and no CLI change; the scope is bounded to the tasks in this section.
+Text and configuration for the friends-and-family beta, from the beta readiness review of v0.15.0 (2026-11-15). No feature and no CLI change; the scope is bounded to the tasks in this section. The user approved 0.15.1 as a release on 2026-11-15.
 
 ### CC-279 · A privacy and data statement, and a security policy · `in progress`
 **Release:** 0.15.1
