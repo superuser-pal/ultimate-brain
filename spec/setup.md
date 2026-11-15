@@ -1,6 +1,6 @@
 # Guided setup (contract, decision 0078)
 
-**Status:** contract for release 0.14.0 (CC-188). Built by CC-190 (the CLI side), CC-191 (the `brain-setup` skill and the skill changes it needs, in one fork release: brain-setup, brain-connect-notion, Ultimate Assistant's seeding, brain-ingest's use of `track`, brain-catch-up's first-meeting line, brain-notion-change's template version), CC-192 (the `repository` field of `package.json`) and CC-189 (the Notion template); measured by CC-193. The response style (0081: §4's row, §7 item 13, §7.1) is CC-209's contract, built by CC-210 (the CLI) and CC-211 (the setup item and the chat change). First value (§2, §3, §4.1, §5, §10, §12) was corrected by CC-213: an attempt is not a pass. The template's Example rows (0084: §2 step 4, §3, §4.1, §6.5, §12, §14) are CC-227's, built in the skills fork (brain-setup, brain-ingest, brain-catch-up, brain-sync); 0087's rows in every database and the wider guard (§6.5) are CC-234's (brain-apply, brain-catch-up, ultimate-assistant). The backup and `gh` required for early access (0086: §2, §3, §4, §6.1, §7, §12.2, §15) are CC-235's contract, built by CC-236 (the CLI's working branch, cli.md §5.2, and the brain's rules block), CC-237 (the skills) and CC-238 (the guides). Written by Claude Code.
+**Status:** contract for release 0.14.0 (CC-188). Built by CC-190 (the CLI side), CC-191 (the `brain-setup` skill and the skill changes it needs, in one fork release: brain-setup, brain-connect-notion, Ultimate Assistant's seeding, brain-ingest's use of `track`, brain-catch-up's first-meeting line, brain-notion-change's template version), CC-192 (the `repository` field of `package.json`) and CC-189 (the Notion template); measured by CC-193. The response style (0081: §4's row, §7 item 13, §7.1) is CC-209's contract, built by CC-210 (the CLI) and CC-211 (the setup item and the chat change). First value (§2, §3, §4.1, §5, §10, §12) was corrected by CC-213: an attempt is not a pass. The template's Example rows (0084: §2 step 4, §3, §4.1, §6.5, §12, §14) are CC-227's, built in the skills fork (brain-setup, brain-ingest, brain-catch-up, brain-sync); 0087's rows in every database and the wider guard (§6.5) are CC-234's (brain-apply, brain-catch-up, ultimate-assistant). The backup and `gh` required for early access (0086: §2, §3, §4, §6.1, §7, §12.2, §15) are CC-235's contract, built by CC-236 (the CLI's working branch, cli.md §5.2, and the brain's rules block), CC-237 (the skills) and CC-238 (the guides). Written by Claude Code. Amended for 0.15.2 by CC-290 (decision [0097](../decisions/0097-easy-setup-on-windows-and-mac-and-markitdown-required.md)): MarkItDown required, install commands for macOS and Windows (§6.1), the schedule on Windows (§7, step 8).
 
 How this file fits: it holds the whole first-time setup of a new user: what the `brain-setup` skill does and in what order, what it checks and how, what it stores and where, what seeding writes, how first value is checked, and the setup report. Command behaviour is in [cli.md](cli.md) (§5.1 `init`'s next step, §5.2 `status`'s `setup` block, §5.3 `notion.template_version` and `settings.style`, §5.3.1 the style block, §5.15 `upgrade`'s Notion migrations), and file formats are in [schema.md](schema.md) (§4 area `track`, §12 the new-brain modules and the new `brain.json` keys). What a read, an answer or a proposal may rest on is [eligibility.md](eligibility.md), and nothing here changes it.
 
@@ -8,7 +8,7 @@ How this file fits: it holds the whole first-time setup of a new user: what the 
 
 **The user's choices of 2026-11-10, filling gaps 0078 leaves** (asked through the coordinator during CC-188; each was the recommended option):
 1. **Per-area tracking preferences** are an optional `track` list in the area note's frontmatter, in Git only, with no Notion property in 0.14.0; seeding proposes it, the ingest uses it, and Ultimate Assistant's thresholds stay fixed (§11).
-2. **What setup records:** each step that only an online or by-hand check can prove is recorded as a `setup` log line (`brain log`), which `brain status` reads offline; the optional items are `brain.json` settings, `settings.markitdown`, `settings.gh` and `settings.schedule`, each `on` or `off`, absent meaning `off` (§4, §5). Since 0086, `gh` is required for early access and setup always writes `settings.gh` `on` (§6.1, §7); the choice stays as recorded for MarkItDown and the schedule.
+2. **What setup records:** each step that only an online or by-hand check can prove is recorded as a `setup` log line (`brain log`), which `brain status` reads offline; the optional items are `brain.json` settings, `settings.markitdown`, `settings.gh` and `settings.schedule`, each `on` or `off`, absent meaning `off` (§4, §5). Since 0086, `gh` is required for early access and setup always writes `settings.gh` `on` (§6.1, §7); since 0097, MarkItDown is required too and setup always writes `settings.markitdown` `on`; the choice stays as recorded for the schedule.
 3. **The drop folder and the notes' language** stay lines of the user's part of the brain's `AGENTS.md`: `Drop folder: <path>` and `Language: <name>`; `brain status` reads the first (§4).
 4. **The template version** is the number of the last Notion migration the template includes (`0024`); `brain upgrade` names the migrations with a higher number (§9).
 
@@ -67,7 +67,8 @@ A brain made before 0.14.0 that has no `setup` line and whose `databases` and `o
 | The language notes are written in | the line `Language: <name>` under "My rules" in the brain's `AGENTS.md` | the skill, after the settings screen's yes |
 | Publish, push, recall | `brain.json` `settings.publish`, `settings.push`, `settings.recall` (schema §12) | `brain config set` |
 | The response style (0081) | `brain.json` `settings.style` (schema §12), and the style block it writes in the brain's `AGENTS.md` (cli.md §5.3.1) | `brain config set` |
-| MarkItDown, the schedule (optional, choice 2) | `brain.json` `settings.markitdown`, `settings.schedule`: `on` or `off`; absent means `off` (schema §12) | `brain config set` |
+| The schedule (optional, choice 2) | `brain.json` `settings.schedule`: `on` or `off`; absent means `off` (schema §12) | `brain config set` |
+| MarkItDown (required for early access, 0097 §5) | `brain.json` `settings.markitdown`, always written `on` by setup (schema §12) | `brain config set`, when the screen is applied |
 | `gh` (required for early access, 0086 §3) | `brain.json` `settings.gh`, always written `on` by setup (schema §12) | `brain config set`, when the screen is applied |
 | Modules | `brain.json` `modules` (schema §12) | `brain modules on|off` |
 | The template version | `brain.json` `notion.template_version` (schema §12) | brain-connect-notion, with `brain config set` |
@@ -87,7 +88,7 @@ The `AGENTS.md` lines are written under the `## My rules` heading, which follows
 - This is the line `brain log setup - step=<step> result=… [<key>=<value>…]` writes: with `-` for the id, the CLI writes an empty quoted title (cli.md §5.11). This is the form `brain status` reads (the example before CC-191 showed it without the `""`, which the CLI never wrote and `status` doesn't read; no behaviour change). Setup lines are written only through `brain log`.
 
 - `<step>` is one of §2's: `started`, `prerequisites`, `settings`, `notion-mcp`, `connect`, `minutes-prompt`, `brain-assistant`, `identities`, `seeding`, `first-value`, `schedule`, `finished`, and `first-meeting`, written once by brain-catch-up after setup (§10.1), which `brain status` doesn't read. `started` is written once, when the skill first runs in a brain with no `setup` line.
-- `result=failed` adds `reason=<code>` from §12.2; `declined` is used only by `schedule` (the user chose off). `first-value` is `done` only when first value passes, else `failed` with `reason=first-value-unresolved` (§10). A step can be logged several times; the latest line of a step is its state.
+- `result=failed` adds `reason=<code>` from §12.2; `declined` is used only by `schedule` (the user chose off; on `win32` it adds `reason=schedule-unsupported`, §7). `first-value` is `done` only when first value passes, else `failed` with `reason=first-value-unresolved` (§10). A step can be logged several times; the latest line of a step is its state.
 - Extra keys: `prerequisites` adds `notion_ai=yes|no custom_agents=yes|no` (the plan, as the user answered); `connect` adds `examples=<n>`, the Example rows this run moved to the trash (`0` when none was left, or in a space built from the prompts; §6.5); `first-value` adds `tasks=`, `report=`, `organised=` and `answer=`, each `pass`, `fail` or `unsuitable` (`tasks` also `skip`, with Tasks off), and leaves out a check not run yet (§10); `seeding` adds `notes=<n> documents=<n>`.
 - Values carry no names, paths, ids or text (§12.1).
 
@@ -122,23 +123,54 @@ The other three of the nine required items (0078 §2) are the recorded steps `no
 | Claude Code or Codex | the agent running the skill; its name goes in the setup report | yes |
 | The Notion MCP connection | a Notion tool is available in the session (reached in step 3) | yes (connected in step 3) |
 | `gh`, signed in | `gh --version`, then `gh auth status --hostname github.com` | yes for early access (0086 §3) |
-| MarkItDown | `markitdown --version` | no: the settings screen's `markitdown` item (§7) |
+| Python and MarkItDown | `markitdown --version`; when it fails, `python3 --version` (`py --version` on `win32`) only to choose the message's steps | yes for early access (0097 §5) |
 | The Notion plan | **asked**, since the API can't read it: "Does your Notion plan include Notion AI? And Custom Agents?" | Notion AI: yes for early access (§13) |
 
-All are shown in one list (`✓ Node 22.11`, `✗ Git identity: set on the next screen`, `? Notion AI: asked below`). A missing required prerequisite that the next steps don't set (Node, Git, the agent, Notion AI, `gh`) stops setup with its fix: a link or one command, never a path under `npm root -g`.
+All are shown in one list (`✓ Node 22.11`, `✗ Git identity: set on the next screen`, `? Notion AI: asked below`). A missing required prerequisite that the next steps don't set (Node, Git, the agent, Notion AI, `gh`, MarkItDown) stops setup with its fix: the commands of §6.1.1 for the platform, never a path under `npm root -g`. All missing prerequisites are fixed in one message, in the table's order, so the user installs once and restarts once.
 
-**`gh` missing or signed out** (`gh --version` fails: `gh-missing`; or `gh auth status --hostname github.com` exits non-zero: `gh-signed-out`; only github.com is checked, so a broken sign-in to another host doesn't stop setup) stops setup at step 1 with this message, the first step's command chosen by the platform (`darwin` gets `brew install gh`, any other the link):
+#### 6.1.1 The install commands, by platform (0097 §1)
+
+The platform is Node's `process.platform` as the agent sees it (`darwin`, `win32`; any other gets the links). Each command is given exactly as written here; the guides (README Get started, docs/setup.md) use the same commands.
+
+| Prerequisite | macOS (`darwin`) | Windows (`win32`, PowerShell) | Other |
+|---|---|---|---|
+| Homebrew (only when `brew --version` fails and a `brew` command below is needed) | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`, then the lines it prints under "Next steps" | — | — |
+| Node | `brew install node` | `winget install --id OpenJS.NodeJS.LTS -e` | https://nodejs.org |
+| Git | `xcode-select --install` (Apple's developer tools: a window opens, and the download takes several minutes) | `winget install --id Git.Git -e` | https://git-scm.com/downloads |
+| `gh` | `brew install gh` | `winget install --id GitHub.cli -e` | https://cli.github.com |
+| Python | `brew install python pipx` | `winget install --id Python.Python.3.12 -e` | https://www.python.org/downloads |
+| MarkItDown | `pipx install 'markitdown[all]'`, then `pipx ensurepath` | `py -m pip install --user pipx`, then `py -m pipx install "markitdown[all]"`, then `py -m pipx ensurepath` | https://github.com/microsoft/markitdown |
+
+- **Node through Homebrew on macOS,** so `npm install -g ultimate-brain` needs no administrator rights (Node from the nodejs.org installer usually refuses a global install without them).
+- **On Windows, `winget` missing** (`winget --version` fails, an old Windows 10): the Other column's links instead, and the message says to update "App Installer" from the Microsoft Store to get `winget`.
+- **After any install, a restart.** A terminal or an agent app keeps the PATH it started with, so a tool installed after it opened isn't found. The message ends: on `win32`, "Close every terminal, quit <agent> and open it again (closing its terminal is not enough), then say "set up my brain" again."; on `darwin`, "Open a new terminal window, then say "set up my brain" again." The skill never edits PATH or the user's shell profile itself.
+- A tool that is installed but not found after the restart is named with docs/setup.md's "A command isn't found" entry (CC-293), and the reason code stays the prerequisite's.
+
+**`gh` missing or signed out** (`gh --version` fails: `gh-missing`; or `gh auth status --hostname github.com` exits non-zero: `gh-signed-out`; only github.com is checked, so a broken sign-in to another host doesn't stop setup) stops setup at step 1 with this message, the first step's command chosen by the platform from §6.1.1 (`darwin` gets `brew install gh`, `win32` gets `winget install --id GitHub.cli -e`, any other the link):
 
 ```text
 Setup needs the GitHub CLI (gh), signed in, to create your backup. Two steps:
 1. Install it: brew install gh
-   (not on a Mac: follow https://cli.github.com)
 2. In your terminal, run: gh auth login
    When it asks, choose to let it set up Git's credentials.
 Then say "set up my brain" again.
 ```
 
-With `gh` installed but signed out, step 1 of the message is left out and step 2 is numbered 1. It is logged `prerequisites result=failed reason=gh-missing` or `reason=gh-signed-out` (§12.2). Asked again, setup re-runs step 1's checks and goes on once `gh auth status --hostname github.com` passes. No other path is offered in early access: the manual steps of §7 are 1.0's.
+With `gh` installed but signed out, step 1 of the message is left out and step 2 is numbered 1. It is logged `prerequisites result=failed reason=gh-missing` or `reason=gh-signed-out` (§12.2). Asked again, setup re-runs step 1's checks and goes on once `gh auth status --hostname github.com` passes. No other path is offered in early access: the manual steps of §7 are 1.0's. With step 1 shown, the message ends with §6.1.1's restart line instead of "Then say ..." alone.
+
+**MarkItDown missing** (`markitdown --version` fails: `markitdown-missing`, 0097 §5) stops setup at step 1 with this message, the commands from §6.1.1 for the platform (shown for `win32`); the Python step is left out when Python was found, and the rest renumbered:
+
+```text
+Setup needs MarkItDown, which turns PDFs, Word files and slides into exact text, so the brain quotes them exactly.
+1. Install Python: winget install --id Python.Python.3.12 -e
+2. Install MarkItDown:
+   py -m pip install --user pipx
+   py -m pipx install "markitdown[all]"
+   py -m pipx ensurepath
+Close every terminal, quit Claude Code and open it again (closing its terminal is not enough), then say "set up my brain" again.
+```
+
+It is logged `prerequisites result=failed reason=markitdown-missing` (§12.2), and setup goes on once `markitdown --version` passes. When `gh` is missing too, one message holds both, in §6.1.1's order, with one restart line at the end.
 
 ### 6.2 The template and the Notion connection (step 3)
 
@@ -215,18 +247,19 @@ One screen, every item with its default filled in and a one-line explanation. Th
 | 7 | Publish | `ask` | "Ask before the brain publishes to Notion, or publish after each run." | shown | `settings.publish` |
 | 8 | Back up after each run | `auto`, shown as `on`; `remind` is shown as `remind me` | "Back up your brain after each run, or remind you to." | shown | `settings.push` |
 | 9 | Opening recall in linked repos | `off` | "Agents in your linked repos load what the brain remembers about them when a session opens." | shown | `settings.recall` |
-| 10 | MarkItDown | `on` when `markitdown` is found, else `off` | "Turns PDFs, Word files and slides into exact text, so quotes are exact; off, the agent reads files itself." | optional | `settings.markitdown` |
+| 10 | MarkItDown | `on`: step 1 already checked it is installed (§6.1) | "Turns PDFs, Word files and slides into exact text, so quotes are exact." | required for early access (0097 §5): shown, not changed | `settings.markitdown` |
 | 11 | GitHub CLI (`gh`) | `on`: step 1 already checked it is signed in (§6.1) | "Creates your backup, checks it stays private, and files your setup report for you." | required for early access (0086 §3): shown, not changed | `settings.gh` |
-| 12 | Scheduled catch-up | `off`; asked in step 8, after first value | "Catch-up runs on its own at set times; it only takes in what you've marked ready." | optional | `settings.schedule` |
+| 12 | Scheduled catch-up | `off`; asked in step 8, after first value. On `win32`: `off`, shown as "not available on Windows: ask for a catch-up or the weekly review when you want one" (0097 §4) | "Catch-up runs on its own at set times; it only takes in what you've marked ready." | optional | `settings.schedule` |
 | 13 | How the brain talks to you (0081) | Standard | "Standard, Simple (plain words, short answers, the answer first) or Custom (you choose how much it explains, how long and how direct it is); change it any time by asking." | optional | `settings.style` |
 
 - **Item 4: one drop folder per brain** (CC-259). Two brains reading one drop folder take each other's files, so the screen never proposes a folder another brain on the machine reads. A brain with a `Drop folder:` line shows that line's folder. Otherwise it proposes `brain status`'s `setup.drop_folder.proposed` (cli.md §5.2): `~/Documents/brain-dropbox/`, unless another brain this machine knows reads it; then a folder named after this brain, `~/Documents/<brain folder slug>-dropbox/`, and the item's line says why: `Drop folder: ~/Documents/client-brain-dropbox/ (created; ~/Documents/brain-dropbox/ is read by your brain at ~/GitHub/brain)`. The brains the machine knows are the default brain (`~/.config/ultimate-brain/config.json`, cli.md §4) and each brain with a scheduled job (`brain schedule`, cli.md §5.21); a brain known neither way can't be seen, so a proposed folder that already exists (`exists`) is shown as `(already there: its files are read by the first catch-up)`, as before. A change the user makes to a folder another brain reads (`setup.drop_folder.others`) is not applied: the screen says which brain reads it and asks again.
 - Items 1 to 9 and 13 are on the screen in step 2; item 12 is shown there as "asked after your first check" and answered in step 8, where `on` runs brain-catch-up's "Run on a schedule" (its times, days, model and allow list, cli.md §5.21) and then writes `settings.schedule`.
 - The rest of the required items of 0078 §2 are steps, not values: the Notion MCP connection (step 3), the connection to the brain's databases (step 4), identities (step 5), the minutes prompt and Brain Assistant (steps 4a, 4b). The screen lists them under "Still to do after this screen", one line each, so the user sees the whole setup once.
 - **Optional means a value, not a skip** (0078 §2): `off` is recorded and never asked again; the user changes it by asking ("turn on markitdown").
-- **Item 11 is not a choice in early access** (0086 §3): the screen shows it `on`, and a user asking to turn it off is told in one line that early access needs it, and nothing is written. Item 8 is changed with the words shown ("back up: remind me"); the setting keeps its values `auto` and `remind` (schema §12).
+- **Items 10 and 11 are not choices in early access** (0086 §3, 0097 §5): the screen shows them `on`, and a user asking to turn one off is told in one line that early access needs it, and nothing is written.
+- **Item 12 on Windows** (0097 §4): `brain schedule` manages launchd on macOS only (cli.md §5.21), so on `win32` step 8 is not offered as a question: the skill says in one line that catch-ups and the weekly review run when the user asks for them, writes `settings.schedule` `off` and logs `schedule result=declined reason=schedule-unsupported`. Item 8 is changed with the words shown ("back up: remind me"); the setting keeps its values `auto` and `remind` (schema §12).
 - **Item 13, the response style** (0081): Standard writes `{ "preset": "standard" }`; Simple writes `{ "preset": "simple" }`; Custom asks the three dials in one message, each with its levels and what they do (schema §12, cli.md §5.3.1), and writes the three chosen values with no preset. With Custom chosen, the screen shows the three choices on the item's line. The new style applies from the next message of the setup, as it does after a change in chat.
-- Applying the screen: set the Git identity (with the user's yes on the scope, global or this repository); create the backup; create the drop folder; write the two `AGENTS.md` lines (§4); `brain config set` each setting, `settings.gh` `on` among them; `brain modules on|off` each module change; commit; push. Then `brain log setup - step=settings result=done`.
+- Applying the screen: set the Git identity (with the user's yes on the scope, global or this repository); create the backup; create the drop folder; write the two `AGENTS.md` lines (§4); `brain config set` each setting, `settings.markitdown` and `settings.gh` `on` among them; `brain modules on|off` each module change; commit; push. Then `brain log setup - step=settings result=done`.
 - **Creating the backup** (0086 §3), always with `gh`, on the working branch (cli.md §5.2; a new brain has one branch):
   1. With no `origin`: `gh repo create <brain folder name> --private --source <brain folder> --push`. A failure (the name is taken, no network) is `remote-failed`: setup says which, offers another name, and stops at step 2 until it succeeds.
   2. With an `origin` already set, it is kept, and nothing is created.
@@ -340,7 +373,7 @@ CLI 0.14.0 · skills ultimate-brain-skills 1.4.0 · agent Claude Code · platfor
 Notion AI: yes · Custom Agents: yes · modules: knowledge, orgs, documents, reports, tasks
 Time: 52 min (first setup line to the last)
 1 prerequisites: done
-2 settings: done (markitdown off, gh on)
+2 settings: done (markitdown on, gh on)
 3 notion-mcp: failed once (notion-unreachable), then done
 4 connect: done (template 0024, 15 examples removed)
 4a minutes-prompt: failed once (shape-wrong), then done
@@ -357,7 +390,7 @@ Time: 52 min (first setup line to the last)
 
 ### 12.2 Reason codes
 
-`missing-prerequisite`, `gh-missing` (`gh` not installed, §6.1), `gh-signed-out` (`gh auth status --hostname github.com` fails, §6.1), `notion-ai-missing`, `notion-unreachable`, `brain-data-not-found`, `database-missing`, `shape-wrong` (minutes), `transcript-missing` (the test page has minutes but no transcript, §6.3), `assistant-reads-outside` (Brain Assistant), `remote-failed`, `remote-public` (the backup is a public repository, §7), `push-failed`, `user-stopped`, `examples-left` (the template's Example rows not removed, §6.5), `first-value-unresolved` (first value, §10), and a CLI error code (cli.md §3.5) when a command failed.
+`missing-prerequisite`, `gh-missing` (`gh` not installed, §6.1), `gh-signed-out` (`gh auth status --hostname github.com` fails, §6.1), `markitdown-missing` (`markitdown --version` fails, §6.1; 0097), `schedule-unsupported` (step 8 on `win32`, with `result=declined`, §7; 0097), `notion-ai-missing`, `notion-unreachable`, `brain-data-not-found`, `database-missing`, `shape-wrong` (minutes), `transcript-missing` (the test page has minutes but no transcript, §6.3), `assistant-reads-outside` (Brain Assistant), `remote-failed`, `remote-public` (the backup is a public repository, §7), `push-failed`, `user-stopped`, `examples-left` (the template's Example rows not removed, §6.5), `first-value-unresolved` (first value, §10), and a CLI error code (cli.md §3.5) when a command failed.
 
 ## 13. Without Notion AI (0078 §6)
 

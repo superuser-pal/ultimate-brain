@@ -993,7 +993,7 @@ Easy setup on Windows and Mac, from the first beta tester's Windows session (dec
 **Output:** decisions/0097, a header pointer on 0078 and 0086, the 0.15.2 row of the release table, this section's intro and the rows CC-290 to CC-294. No CLI, spec, skill or guide change.
 **Acceptance:** 0097 states the six findings, the four answers of the scope grill and what is out of scope; each of CC-290 to CC-294 has its Release, Changelog, Output and Acceptance; no other task row changes; the leak and PR format checks pass.
 
-### CC-290 · Setup contracts for Windows and Mac, `init` on Windows, and MarkItDown required (0097) · `todo`
+### CC-290 · Setup contracts for Windows and Mac, `init` on Windows, and MarkItDown required (0097) · `in progress`
 **Release:** 0.15.2
 **Changelog:** The setup contracts give each prerequisite an install command on Windows and on Mac, and MarkItDown is required.
 **Output:** spec/setup.md §6.1: Python and MarkItDown in the prerequisites, required; each prerequisite's command for `darwin` and `win32` (Linux keeps links); reason code `markitdown-missing` in §12; §7 item 10 shown `on` and locked, `settings.markitdown` written `on`; the schedule item not available on Windows. spec/cli.md for `init`: home folder from `homedir()`, a leading `~` expanded, a missing Git identity stops before any write with its error code and the two `git config` lines (`--no-git` unchanged).
