@@ -4,7 +4,18 @@ An AI-assisted second brain for solo knowledge workers. Knowledge lives in Markd
 
 This repository is the **product**: CLI, agent skills, schema, templates and the Notion space design. Each user's brain lives in its own private repository.
 
-**Status:** early access for friends and family. Anyone can follow Get started below. Expect changes, and tell us what was hard.
+**Status:** a beta for friends and family. Anyone can follow Get started below. Read [This is a beta](#this-is-a-beta) first.
+
+## This is a beta
+
+Ultimate Brain works end to end, and you are among the first people to use it outside its author's own setup.
+
+- **What may change.** Setup steps, wording and the Notion template change between versions. An update may ask you to run one more step.
+- **Your notes are safe from the product.** They are Markdown files in a Git repository on your computer: every change is a commit you can undo, and nothing your brain knows changes without your approval. Keep the backup on.
+- **Your data.** Read [PRIVACY.md](PRIVACY.md) before you add client material.
+- **Expect issues and bugs** during the beta, with Claude Code, with Codex and with Gemini, which has only been tried in passing. When you find one, tell us.
+- **Updating, going back and uninstalling:** [Update](#update), below.
+- **Telling us what happened.** Open an issue on this repository with the **Beta feedback** template. Issues are public and appear under your GitHub name, so paste no notes, client names, Notion links or tokens. At the end of setup your agent offers to send a short report of counts and codes the same way, only if you say yes.
 
 ## Get started
 
@@ -13,6 +24,8 @@ Six steps take you from nothing to a working brain. Steps 1 to 4 take about ten 
 Ultimate Brain uses two templates, and you meet both here: the **Notion template**, which you duplicate in step 2, and the **brain folder**, which `brain init` creates in step 4.
 
 ### 1. Check what you need
+
+Every grey box on this page is a line to paste into a terminal, then press Return. On a Mac, open the Terminal app (press ⌘ Space and type "Terminal"). You also need a Notion account and a free GitHub account. Ultimate Brain itself is free: you pay for your agent's plan and for a Notion plan with Notion AI.
 
 - **Node 22.6 or later.** Check with `node --version`. Install it from [nodejs.org](https://nodejs.org).
 - **Git.** Check with `git --version`. Install it from [git-scm.com](https://git-scm.com/downloads).
@@ -30,7 +43,7 @@ Ultimate Brain uses two templates, and you meet both here: the **Notion template
 
 Open the Notion template and choose **Duplicate**, into the workspace you'll use for your brain:
 
-**[The Ultimate Brain Notion template](https://sentina.notion.site/TEMPLATE-Ultimate-Brain-416495661e99806ea2dcca48eb4e55ff)**
+**[The Ultimate Brain Notion template](https://sentina.notion.site/TEMPLATE-Ultimate-Brain-419495661e9980859df9ca0c3d836d27)**
 
 Leave the copy as it is. Its example rows go away when setup connects it.
 
@@ -96,8 +109,6 @@ brain upgrade
 ```
 
 `brain upgrade` refreshes the brain's product-owned rules and skills, then commits and pushes. It never touches your notes, and it refuses to run on a brain with uncommitted changes.
-
-To try a release candidate: `npm install -g ultimate-brain@next`. To go back: `npm install -g ultimate-brain@latest`.
 
 To undo an upgrade, or to remove Ultimate Brain from your computer: [Going back to an earlier version](docs/setup.md#going-back-to-an-earlier-version) and [Uninstalling](docs/setup.md#uninstalling).
 
