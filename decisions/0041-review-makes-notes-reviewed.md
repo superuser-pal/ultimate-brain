@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-10-20
 **Amends:** 0005, 0026
+**Amended by:** [0096](0096-one-place-to-decide.md) (2026-11-15; 0.16.0): an attended ingest's yes on the preview makes its new notes `reviewed`; a scheduled run's notes are accepted in a later session, one question per source; answers are asked in chat
 
 ## Context
 A look at the first brain's use from 2026-10-13 to 2026-10-20 (in a grill with the user, 2026-10-20):

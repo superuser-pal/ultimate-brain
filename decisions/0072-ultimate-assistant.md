@@ -5,6 +5,7 @@
 **Release:** 0.10.0 (CC-108 to CC-110)
 **Amends:** [0064](0064-brain-assistant-before-reflection-hermes-after-1-0.md) (the assistant's name, and Review rows as its default)
 **Keeps:** 0064's scope (Areas, Domains, Projects and Tasks; on demand; reads Notion live and the brain; one skill plus a thin Claude Code sub-agent; the scheduled run in 0.13.0; onboarding in 0.14.0; knowledge tidying in 0.11.0), 0003, 0061's feature cutoff
+**Amended by:** [0096](0096-one-place-to-decide.md) (2026-11-15; 0.16.0): with no one there, the assistant writes a proposal in `_proposals/`, not a Review row
 
 ## Context
 Decision 0064 placed a project-management assistant in 0.10.0 and left its opening grill to refine it. The grill ran on 2026-11-05, while 0.9.2 was being built. It settled six questions that the contracts (CC-108) need answered.
