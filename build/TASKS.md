@@ -947,6 +947,16 @@ Work packages: contracts and representative resource-budget trials; shared diges
 **Output:** cli.md §5.21's Folder trust paragraph covers every job, so `install catch-up` (and its `--dry-run`, on launchd or cron) warns `FOLDER_TRUST` with the same text; `src/commands/schedule.ts` and `tests/unattended.test.ts`; a fork PR in which brain-catch-up's `references/schedule.md` passes the step on. Nothing else: the CLI still doesn't read Claude Code's settings to tell whether the folder is trusted.
 **Acceptance:** `install catch-up` warns `FOLDER_TRUST` with the message naming the brain, on launchd, with `--dry-run` and in the cron output, and `install weekly-review` still does; cli.md no longer says catch-up doesn't warn; the fork PR's schedule section asks for the trust step before the first scheduled run; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package`, the leak check and the PR format check pass.
 
+## 0.15.1
+
+Text and configuration for the friends-and-family beta, from the beta readiness review of v0.15.0 (2026-11-15). No feature and no CLI change; the scope is bounded to the tasks in this section.
+
+### CC-279 · A privacy and data statement, and a security policy · `done` (#389)
+**Release:** 0.15.1
+**Changelog:** The repository says where your data goes (`PRIVACY.md`) and how to report a security problem (`SECURITY.md`).
+**Output:** `PRIVACY.md` at the root: the four services a brain's content reaches (the agent's provider, Notion, Notion AI, GitHub) and when; that the backup is private and checked; that a setup report is a public issue sent only on a yes; that approvals and exclusions bind the `brain` command, the brain folder and linked repositories, not an agent started in an unlinked folder; how captured text with instructions is handled, stated as an instruction and not a guarantee. `SECURITY.md` at the root: private reporting through GitHub's Report a vulnerability, the scope, and that only the latest release is supported. The README links both. Only Markdown changes.
+**Acceptance:** `PRIVACY.md` names every service of the review's data-flow table and the limit for unlinked folders; `SECURITY.md` names a private reporting route and no public one; the README links both files; no statement promises more than the product enforces (the reviewer checks each claim against `spec/` or the source); the full suite, the leak check and the PR format check pass. Private vulnerability reporting was turned on in the repository's settings on 2026-11-15.
+
 ## 1.0.0 — Productisation, translation, funnel and launch (decision 0061)
 
 After the feature cutoff, scope packaging/install/upgrade guidance, consistent Notion templates/terminology, user-facing translations, positioning/demo/landing-page and acquisition/onboarding funnel, release candidates and launch acceptance. Confirm languages, offer and publication choices during the opening grill. Allow launch-blocking fixes, not unapproved features. The release gate includes a fresh user's end-to-end path and common-failure recovery; publishing/releasing follows existing user approval and release-script rules.
