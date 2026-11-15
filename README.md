@@ -82,6 +82,8 @@ Your agent walks you through the rest, one step at a time: your settings, connec
 
 Why each step is there, every setting, and what to do when something fails: [docs/setup.md](docs/setup.md).
 
+Where your data goes, and what the review rules do and don't protect: [PRIVACY.md](PRIVACY.md). To report a security problem: [SECURITY.md](SECURITY.md).
+
 **Something went wrong, or felt hard?** Tell your agent "show my setup report". It shows a short report with no names or content, and sends it to us only if you say yes.
 
 ## Update
