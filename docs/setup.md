@@ -269,7 +269,7 @@ See the README's [Update](../README.md#update). `brain upgrade` also names any N
 
 ## Going back to an earlier version
 
-An upgrade changes only the rules and skills in your brain, in one commit named `upgrade: ultimate brain <version>, …`. Your notes stay as they are. To go back, undo that commit and install the version you had, in either order:
+An upgrade refreshes the rules and skills in your brain, in one commit named `upgrade: ultimate brain <version>, …`. It doesn't change what your notes say; when a release changes how notes are stored, the same commit moves them. To go back, undo that commit and install the version you had, in either order:
 
 ```sh
 cd ~/brain
@@ -278,7 +278,9 @@ git revert <its id>
 npm install -g ultimate-brain@<the version you had>
 ```
 
-`brain upgrade` names the version you had as `previous_cli` when it finishes. Installing the older version alone isn't enough: it refuses to work on a brain whose skills are newer, and tells you which version they need.
+`brain upgrade --json` names the version you had as `previous_cli`. Installing the older version alone isn't enough: on a brain whose skills are newer, `brain lint` reports `skills-incompatible` and `brain upgrade` refuses, and both name the version the skills need.
+
+An upgrade also refreshes the rules and skills in each repository linked to your brain, without committing there. The revert doesn't reach them: in each linked repository, discard those changes with Git, or run `brain link` again once the older version is installed.
 
 ## Uninstalling
 
@@ -295,7 +297,7 @@ Setup put things in these places outside your brain folder. Remove the ones you 
 | The drop folder | The folder you chose in setup, by default `~/Documents/brain-dropbox/` | Move out any file you still want, then delete it. |
 | The backup | A private repository on GitHub | Delete it on github.com (the repository's Settings, Danger Zone), or keep it as an archive. |
 | The Notion space | Your workspace | Delete the duplicated space. In Notion's Settings, under Connections, remove your agent's connection. Delete Brain Assistant, or its text in your personal Instructions. |
-| Linked repositories | Each repository you linked with `brain link` | Ask your agent in the brain folder to "unlink <repository>" before you uninstall. |
+| Linked repositories | Each repository you linked with `brain link` | Unlinking only removes the brain's record of the repository. In the repository itself, delete `.brain`, `brain-kit.json`, the Ultimate Brain block in `AGENTS.md` and `CLAUDE.md`, and the brain's skills under `.agents/skills/` and `.claude/skills/`. |
 
 Setup may also have set your Git name and email for every repository on this computer, when they were missing. Leave them unless you want them gone: `git config --global --unset user.name` and `git config --global --unset user.email`.
 
