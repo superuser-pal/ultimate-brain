@@ -951,7 +951,7 @@ Work packages: contracts and representative resource-budget trials; shared diges
 
 Text and configuration for the friends-and-family beta, from the beta readiness review of v0.15.0 (2026-11-15). No feature and no CLI change; the scope is bounded to the tasks in this section.
 
-### CC-279 · A privacy and data statement, and a security policy · `in progress`
+### CC-279 · A privacy and data statement, and a security policy · `done` (#389)
 **Release:** 0.15.1
 **Changelog:** The repository says where your data goes (`PRIVACY.md`) and how to report a security problem (`SECURITY.md`).
 **Output:** `PRIVACY.md` at the root: the four services a brain's content reaches (the agent's provider, Notion, Notion AI, GitHub) and when; that the backup is private and checked; that a setup report is a public issue sent only on a yes; that approvals and exclusions bind the `brain` command, the brain folder and linked repositories, not an agent started in an unlinked folder; how captured text with instructions is handled, stated as an instruction and not a guarantee. `SECURITY.md` at the root: private reporting through GitHub's Report a vulnerability, the scope, and that only the latest release is supported. The README links both. Only Markdown changes.
