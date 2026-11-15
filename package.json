@@ -3,6 +3,11 @@
   "version": "0.15.0",
   "description": "CLI for an AI-assisted Markdown and Git second brain",
   "license": "MIT",
+  "author": "Sentina",
+  "homepage": "https://github.com/superuser-pal/ultimate-brain#readme",
+  "bugs": {
+    "url": "https://github.com/superuser-pal/ultimate-brain/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/superuser-pal/ultimate-brain.git"
