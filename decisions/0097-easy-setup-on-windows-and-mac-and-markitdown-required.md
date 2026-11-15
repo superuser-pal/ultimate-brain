@@ -65,7 +65,7 @@ An install script (`install.ps1`, `install.sh`) or installer package; Windows Ta
 ## Consequences
 
 - [build/TASKS.md](../build/TASKS.md) gains, in 0.15.2: CC-290 (contracts: spec/setup.md §6.1 per-platform commands, `markitdown-missing`, the locked MarkItDown item; spec/cli.md for `init`), CC-291 (the `init` fixes of §3), CC-292 (the Windows CI job and its fixes), CC-293 (the guides of §1 and §2 in this repository), CC-294 (brain-setup's step 1 and settings item through a skills fork release, then vendored).
-- 0.15.2 is a patch with a CLI change and a skills release; it is released before 0.16.0 (0096).
+- 0.15.2 is a patch with a CLI change and a skills release; it is released before 0.16.0.
 - Issue #388 is closed into CC-290 and CC-294.
 - 0078 and 0086 get a header pointer to this decision; their bodies stay as recorded.
 - This is a planning record: no CLI, spec, skill, template or guide change starts with it.
