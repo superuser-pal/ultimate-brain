@@ -1077,6 +1077,18 @@ After the feature cutoff, scope packaging/install/upgrade guidance, consistent N
 **Output:** decision 0095 from the user's answer of 2026-11-15, amending 0078 §6; spec/skills-delivery.md §10.1 names `README.md` and `CONTRIBUTING.md` as the fork's own at upstream's paths; and a fork PR that replaces those two files and lists them in `NOTICE.md`. No skill, upstream folder, manifest or licence text changes, and nothing is vendored: the two files are outside the snapshot.
 **Acceptance:** 0095 records the answer, what it amends and what it keeps; §10.1 states the exception; the fork PR changes only `README.md`, `CONTRIBUTING.md` and `NOTICE.md`, declares `Brain impact: none`, and its README names every skill folder in `brain/` and states nothing the specs contradict; only Markdown changes in this repo; the leak and PR format checks pass.
 
+### CC-286 · Record what stays open after the 0.15.1 beta preparation · `done` (#396)
+**Release:** 1.0.0
+**Changelog:** development only: the four items left open after the beta readiness review of 2026-11-15 are in the build plan.
+**Output:** rows U-30, U-31 and U-32 under Your tasks (GitHub Support's cleanup after the history rewrite, the attended run of setup steps 4a and 4b, the readiness recheck from `v0.15.1`) and CC-287's row (the 1.9.1 skills change in issue #394). Only `build/TASKS.md` changes.
+**Acceptance:** the three U rows and CC-287's row exist and each says what closes it; no other row changes; the leak and PR format checks pass.
+
+### CC-287 · Classify the 1.9.1 skills change in the skills-integration issue · `todo`
+**Release:** 1.0.0
+**Changelog:** development only: the skills-integration issue records 1.9.1 as assessed.
+**Output:** in a planning session, the open change of issue #394 (ultimate-brain-skills 1.9.1: one sentence in brain-setup's report question, vendored by CC-284 and shipped in 0.15.1) is classified in the issue's block and `assessed` moves to 1.9.1 (spec/skills-delivery.md §11.2). No file changes unless the classification names brain work.
+**Acceptance:** `node scripts/release.mjs <next version> --dry-run` no longer warns about an unclassified change in #394; the issue's block names 1.9.1 as assessed.
+
 ## Your tasks
 
 | Id | Task | When |
@@ -1111,3 +1123,6 @@ After the feature cutoff, scope packaging/install/upgrade guidance, consistent N
 | U-27 | Make the template from your own space (decision 0084), following `notion/TEMPLATE.md` "Building and updating the template": bring your space up to date, duplicate it inside your workspace, point every view, relation, button and synced block at the copy, empty every database, scrub where personal data hides (database templates, select options, buttons, view filters, mentions, synced blocks, icons), add any missing module, add the seven `Example · ` rows, check the Start here callout and the Template version line, ask the coordinator for its read-only scan until it finds nothing, then publish with duplication allowed and give the agent the link for `notion/TEMPLATE.md` | After CC-189 and CC-227 are merged |
 | U-28 | Invite friends and family: send them the README's Get started; their setup reports arrive as `beta-setup` issues | After 0.14.0 is released and CC-193 passes |
 | U-29 | 0.15.0 in your brain: turn on the weekly review's schedule (Monday 08:00, Sonnet), let one scheduled week run, rerun it once the same week, then ask Brain Assistant to "Run Weekly review" in Notion and decide its items; judge whether the selection and the task order were useful, and time the reading (two minutes) and the deciding (five). U-21's weekly step joins it: the reflection findings respect excluded material. Personal evidence stays out of the repo (0075 §8) | After CC-253 to CC-256 are merged and 0.15.0 is released |
+| U-30 | After the history rewrite of 2026-11-15: confirm GitHub Support's cleanup. When Support answers the request sent that day, open in a signed-out browser a commit link from before the rewrite (the old ids are in your assessment run's commit map): it must say not found. If it still opens, answer Support with that link | When GitHub Support replies |
+| U-31 | The attended run of setup that only a person with Notion AI can do: in a fresh duplicate of the published template, run setup step 4a (the minutes prompt on a meeting with a transcript) and step 4b (Brain Assistant), and on a Review row use each control once (each Your call choice, and the Grill me button); note what each did | Before inviting testers (U-28) |
+| U-32 | The beta readiness recheck from `v0.15.1`: share a fresh, disposable duplicate of the published template with the assessment's Notion connection and have the assessment rerun its recheck from the tag (the pack in your Documents, stage 11); its verdict decides the invitation | After U-31, before inviting testers (U-28) |
