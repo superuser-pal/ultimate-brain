@@ -987,7 +987,7 @@ Text and configuration for the friends-and-family beta, from the beta readiness 
 
 Easy setup on Windows and Mac, from the first beta tester's Windows session (decision [0097](../decisions/0097-easy-setup-on-windows-and-mac-and-markitdown-required.md); the scope grill of 2026-11-15, confirmed by the user on 2026-11-16). A patch released before 0.16.0. CC-289 records it; CC-290's contracts come first, then CC-291 to CC-294.
 
-### CC-289 · Record decision 0097: easy setup on Windows and Mac, MarkItDown required · `in progress`
+### CC-289 · Record decision 0097: easy setup on Windows and Mac, MarkItDown required · `review`
 **Release:** 0.15.2
 **Changelog:** development only: decision 0097 and the 0.15.2 tasks for an easy setup on Windows and Mac are in the build plan.
 **Output:** decisions/0097, a header pointer on 0078 and 0086, the 0.15.2 row of the release table, this section's intro and the rows CC-290 to CC-294. No CLI, spec, skill or guide change.
