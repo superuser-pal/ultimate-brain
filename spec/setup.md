@@ -8,7 +8,7 @@ How this file fits: it holds the whole first-time setup of a new user: what the 
 
 **The user's choices of 2026-11-10, filling gaps 0078 leaves** (asked through the coordinator during CC-188; each was the recommended option):
 1. **Per-area tracking preferences** are an optional `track` list in the area note's frontmatter, in Git only, with no Notion property in 0.14.0; seeding proposes it, the ingest uses it, and Ultimate Assistant's thresholds stay fixed (§11).
-2. **What setup records:** each step that only an online or by-hand check can prove is recorded as a `setup` log line (`brain log`), which `brain status` reads offline; the optional items are `brain.json` settings, `settings.markitdown`, `settings.gh` and `settings.schedule`, each `on` or `off`, absent meaning `off` (§4, §5). Since 0086, `gh` is required for early access and setup always writes `settings.gh` `on` (§6.1, §7); since 0097, MarkItDown is required too and setup always writes `settings.markitdown` `on`; the choice stays as recorded for the schedule.
+2. **What setup records:** each step that only an online or by-hand check can prove is recorded as a `setup` log line (`brain log`), which `brain status` reads offline; the setup items stored as `brain.json` settings are `settings.markitdown`, `settings.gh` and `settings.schedule`, each `on` or `off`, absent meaning `off` (§4, §5); all three were optional in 0.14.0. Since 0086, `gh` is required for early access and setup always writes `settings.gh` `on` (§6.1, §7); since 0097, MarkItDown is required too and setup always writes `settings.markitdown` `on`; the choice stays as recorded for the schedule.
 3. **The drop folder and the notes' language** stay lines of the user's part of the brain's `AGENTS.md`: `Drop folder: <path>` and `Language: <name>`; `brain status` reads the first (§4).
 4. **The template version** is the number of the last Notion migration the template includes (`0024`); `brain upgrade` names the migrations with a higher number (§9).
 
@@ -123,7 +123,7 @@ The other three of the nine required items (0078 §2) are the recorded steps `no
 | Claude Code or Codex | the agent running the skill; its name goes in the setup report | yes |
 | The Notion MCP connection | a Notion tool is available in the session (reached in step 3) | yes (connected in step 3) |
 | `gh`, signed in | `gh --version`, then `gh auth status --hostname github.com` | yes for early access (0086 §3) |
-| Python and MarkItDown | `markitdown --version`; when it fails, `python3 --version` (`py --version` on `win32`) only to choose the message's steps | yes for early access (0097 §5) |
+| Python and MarkItDown | `markitdown --version`; when it fails, `python3 --version` (`py --version` on `win32`) and `pipx --version` (`py -m pipx --version` on `win32`) only to choose the message's steps | yes for early access (0097 §5) |
 | The Notion plan | **asked**, since the API can't read it: "Does your Notion plan include Notion AI? And Custom Agents?" | Notion AI: yes for early access (§13) |
 
 All are shown in one list (`✓ Node 22.11`, `✗ Git identity: set on the next screen`, `? Notion AI: asked below`). A missing required prerequisite that the next steps don't set (Node, Git, the agent, Notion AI, `gh`, MarkItDown) stops setup with its fix: the commands of §6.1.1 for the platform, never a path under `npm root -g`. All missing prerequisites are fixed in one message, in the table's order, so the user installs once and restarts once.
@@ -138,8 +138,9 @@ The platform is Node's `process.platform` as the agent sees it (`darwin`, `win32
 | Node | `brew install node` | `winget install --id OpenJS.NodeJS.LTS -e` | https://nodejs.org |
 | Git | `xcode-select --install` (Apple's developer tools: a window opens, and the download takes several minutes) | `winget install --id Git.Git -e` | https://git-scm.com/downloads |
 | `gh` | `brew install gh` | `winget install --id GitHub.cli -e` | https://cli.github.com |
-| Python | `brew install python pipx` | `winget install --id Python.Python.3.12 -e` | https://www.python.org/downloads |
-| MarkItDown | `pipx install 'markitdown[all]'`, then `pipx ensurepath` | `py -m pip install --user pipx`, then `py -m pipx install "markitdown[all]"`, then `py -m pipx ensurepath` | https://github.com/microsoft/markitdown |
+| Python | `brew install python` | `winget install --id Python.Python.3.12 -e` | https://www.python.org/downloads |
+| `pipx` (only when `pipx --version` fails) | `brew install pipx` | `py -m pip install --user pipx` | https://pipx.pypa.io |
+| MarkItDown | `pipx install 'markitdown[all]'`, then `pipx ensurepath` | `py -m pipx install "markitdown[all]"`, then `py -m pipx ensurepath` | https://github.com/microsoft/markitdown |
 
 - **Node through Homebrew on macOS,** so `npm install -g ultimate-brain` needs no administrator rights (Node from the nodejs.org installer usually refuses a global install without them).
 - **On Windows, `winget` missing** (`winget --version` fails, an old Windows 10): the Other column's links instead, and the message says to update "App Installer" from the Microsoft Store to get `winget`.
@@ -158,13 +159,13 @@ Then say "set up my brain" again.
 
 With `gh` installed but signed out, step 1 of the message is left out and step 2 is numbered 1. It is logged `prerequisites result=failed reason=gh-missing` or `reason=gh-signed-out` (§12.2). Asked again, setup re-runs step 1's checks and goes on once `gh auth status --hostname github.com` passes. No other path is offered in early access: the manual steps of §7 are 1.0's. With step 1 shown, the message ends with §6.1.1's restart line instead of "Then say ..." alone.
 
-**MarkItDown missing** (`markitdown --version` fails: `markitdown-missing`, 0097 §5) stops setup at step 1 with this message, the commands from §6.1.1 for the platform (shown for `win32`); the Python step is left out when Python was found, and the rest renumbered:
+**MarkItDown missing** (`markitdown --version` fails: `markitdown-missing`, 0097 §5) stops setup at step 1 with this message, the commands from §6.1.1 for the platform (shown for `win32`); the Python step is left out when Python was found, the `pipx` step when `pipx` was found, and the rest renumbered:
 
 ```text
 Setup needs MarkItDown, which turns PDFs, Word files and slides into exact text, so the brain quotes them exactly.
 1. Install Python: winget install --id Python.Python.3.12 -e
-2. Install MarkItDown:
-   py -m pip install --user pipx
+2. Install pipx: py -m pip install --user pipx
+3. Install MarkItDown:
    py -m pipx install "markitdown[all]"
    py -m pipx ensurepath
 Close every terminal, quit Claude Code and open it again (closing its terminal is not enough), then say "set up my brain" again.
@@ -257,7 +258,8 @@ One screen, every item with its default filled in and a one-line explanation. Th
 - The rest of the required items of 0078 §2 are steps, not values: the Notion MCP connection (step 3), the connection to the brain's databases (step 4), identities (step 5), the minutes prompt and Brain Assistant (steps 4a, 4b). The screen lists them under "Still to do after this screen", one line each, so the user sees the whole setup once.
 - **Optional means a value, not a skip** (0078 §2): `off` is recorded and never asked again; the user changes it by asking ("turn on markitdown").
 - **Items 10 and 11 are not choices in early access** (0086 §3, 0097 §5): the screen shows them `on`, and a user asking to turn one off is told in one line that early access needs it, and nothing is written.
-- **Item 12 on Windows** (0097 §4): `brain schedule` manages launchd on macOS only (cli.md §5.21), so on `win32` step 8 is not offered as a question: the skill says in one line that catch-ups and the weekly review run when the user asks for them, writes `settings.schedule` `off` and logs `schedule result=declined reason=schedule-unsupported`. Item 8 is changed with the words shown ("back up: remind me"); the setting keeps its values `auto` and `remind` (schema §12).
+- **Item 12 on Windows** (0097 §4): `brain schedule` manages launchd on macOS only (cli.md §5.21), so on `win32` step 8 is not offered as a question: the skill says in one line that catch-ups and the weekly review run when the user asks for them, writes `settings.schedule` `off` and logs `schedule result=declined reason=schedule-unsupported`.
+- Item 8 is changed with the words shown ("back up: remind me"); the setting keeps its values `auto` and `remind` (schema §12).
 - **Item 13, the response style** (0081): Standard writes `{ "preset": "standard" }`; Simple writes `{ "preset": "simple" }`; Custom asks the three dials in one message, each with its levels and what they do (schema §12, cli.md §5.3.1), and writes the three chosen values with no preset. With Custom chosen, the screen shows the three choices on the item's line. The new style applies from the next message of the setup, as it does after a change in chat.
 - Applying the screen: set the Git identity (with the user's yes on the scope, global or this repository); create the backup; create the drop folder; write the two `AGENTS.md` lines (§4); `brain config set` each setting, `settings.markitdown` and `settings.gh` `on` among them; `brain modules on|off` each module change; commit; push. Then `brain log setup - step=settings result=done`.
 - **Creating the backup** (0086 §3), always with `gh`, on the working branch (cli.md §5.2; a new brain has one branch):
