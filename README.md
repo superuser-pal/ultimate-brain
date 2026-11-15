@@ -32,11 +32,11 @@ Ultimate Brain uses two templates, and you meet both here: the **Notion template
 
 ### 1. Check what you need
 
-Every grey box on this page is a line to paste into a terminal, then press Return. On a Mac, open the Terminal app (press ⌘ Space and type "Terminal"). You also need a Notion account and a free GitHub account. Ultimate Brain itself is free: you pay for your agent's plan and, if you use it, Notion AI.
+Every grey box on this page is a line to paste into a terminal, then press Return. On a Mac, open the Terminal app (press ⌘ Space and type "Terminal"). You also need a Notion account and a free GitHub account. Ultimate Brain itself is free: you pay for your agent's plan and for a Notion plan with Notion AI.
 
 - **Node 22.6 or later.** Check with `node --version`. Install it from [nodejs.org](https://nodejs.org).
 - **Git.** Check with `git --version`. Install it from [git-scm.com](https://git-scm.com/downloads).
-- **Claude Code or Codex**, the agent that runs your brain.
+- **Claude Code**, the agent that runs your brain. Codex isn't supported in the beta.
 - **A Notion plan with Notion AI.** Notion AI writes your meeting minutes and runs Brain Assistant. Custom Agents (Business and Enterprise plans) are a plus, not a must.
 - **The GitHub CLI (`gh`), signed in.** Setup uses it to create your backup: a private copy of your brain on GitHub. Install it with `brew install gh` (not on a Mac: follow [cli.github.com](https://cli.github.com)), then sign in:
 
@@ -84,7 +84,7 @@ cd ~/brain
 claude
 ```
 
-(or `codex`). Then type:
+Then type:
 
 ```text
 set up my brain
