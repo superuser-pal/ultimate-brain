@@ -1077,7 +1077,7 @@ After the feature cutoff, scope packaging/install/upgrade guidance, consistent N
 **Output:** decision 0095 from the user's answer of 2026-11-15, amending 0078 §6; spec/skills-delivery.md §10.1 names `README.md` and `CONTRIBUTING.md` as the fork's own at upstream's paths; and a fork PR that replaces those two files and lists them in `NOTICE.md`. No skill, upstream folder, manifest or licence text changes, and nothing is vendored: the two files are outside the snapshot.
 **Acceptance:** 0095 records the answer, what it amends and what it keeps; §10.1 states the exception; the fork PR changes only `README.md`, `CONTRIBUTING.md` and `NOTICE.md`, declares `Brain impact: none`, and its README names every skill folder in `brain/` and states nothing the specs contradict; only Markdown changes in this repo; the leak and PR format checks pass.
 
-### CC-286 · Record what stays open after the 0.15.1 beta preparation · `in progress`
+### CC-286 · Record what stays open after the 0.15.1 beta preparation · `done` (#396)
 **Release:** 1.0.0
 **Changelog:** development only: the four items left open after the beta readiness review of 2026-11-15 are in the build plan.
 **Output:** rows U-30, U-31 and U-32 under Your tasks (GitHub Support's cleanup after the history rewrite, the attended run of setup steps 4a and 4b, the readiness recheck from `v0.15.1`) and CC-287's row (the 1.9.1 skills change in issue #394). Only `build/TASKS.md` changes.
