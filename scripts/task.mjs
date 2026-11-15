@@ -9,19 +9,27 @@ import { command, fail, ROOT, slug, taskEntries, tryCommand } from "./common.mjs
 // `start <id> --new "<title>" --release <x.y.z>` starts a task that has no row yet and writes its row into the worktree.
 // `start <id> --resume` continues a task whose row is already `in progress` on a new branch, when no unmerged branch of it is open
 // (its first part merged and its row carries the rest, as CC-176 and CC-177 under decision 0077); the row is left as it is.
+// `next-id` prints the next free task id, user task id and decision number, counting main and every open task branch (CC-300).
 // `clean` removes every task worktree, and its branch, that is merged into origin/main; it keeps a worktree with uncommitted changes.
-const usage = "Usage: node scripts/task.mjs start <CC-N|CX-N> [--from <branch>] [--new <title> --release <x.y.z> | --resume] | done <CC-N|CX-N> | clean";
+const usage = "Usage: node scripts/task.mjs start <CC-N|CX-N> [--from <branch>] [--new <title> --release <x.y.z> | --resume] | done <CC-N|CX-N> | clean | next-id";
 const [action, ...args] = process.argv.slice(2);
-const id = action === "clean" ? undefined : args.shift();
+const id = action === "clean" || action === "next-id" ? undefined : args.shift();
 const flags = parseFlags(args);
 const semver = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
-if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
-  || (action !== "clean" && !/^(CC|CX)-\d+$/.test(id ?? ""))
+if (flags === undefined || !/^(start|done|clean|next-id)$/.test(action ?? "")
+  || (id === undefined ? args.length > 0 : !/^(CC|CX)-\d+$/.test(id))
   || (action !== "start" && Object.keys(flags).length > 0)
   || ((flags["--new"] === undefined) !== (flags["--release"] === undefined))
   || (flags["--resume"] !== undefined && flags["--new"] !== undefined)
   || (flags["--new"] !== undefined && (flags["--new"].trim() === "" || /[·`\n\r]/.test(flags["--new"]) || !semver.test(flags["--release"])))) {
   fail(usage);
+} else if (action === "next-id") {
+  const refs = ["origin/main", ...openTaskBranches()];
+  const texts = refs.map((ref) => ["build/TASKS.md", "build/HISTORY.md"].map((file) => tryCommand("git", ["show", `${ref}:${file}`])).map((shown) => (shown.ok ? shown.stdout : "")).join("\n"));
+  const decisions = refs.map((ref) => tryCommand("git", ["ls-tree", "--name-only", ref, "decisions/"])).map((listed) => (listed.ok ? listed.stdout : "")).join("\n");
+  const next = (text, pattern) => Math.max(0, ...[...text.matchAll(pattern)].map((match) => Number(match[1]))) + 1;
+  const all = texts.join("\n");
+  process.stdout.write(`CC-${next(all, /\bCC-(\d+)\b/g)}\nU-${next(all, /\bU-(\d+)\b/g)}\ndecision ${String(next(decisions, /^decisions\/(\d{4})-/gm)).padStart(4, "0")}\n`);
 } else if (action === "clean") {
   tryCommand("git", ["fetch", "-q", "origin"]);
   const removed = [];
@@ -49,6 +57,7 @@ if (flags === undefined || !/^(start|done|clean)$/.test(action ?? "")
   if (!rows.ok) fail(`Cannot read build/TASKS.md on ${base}: ${rows.message}`);
   else if (title !== undefined && existing !== undefined) fail(`${id} already exists on ${base}`);
   else if (title !== undefined && openBranches(id).length > 0) fail(`${id} is already used by ${openBranches(id).join(", ")}`);
+  else if (title !== undefined && plannedOn(id) !== undefined) fail(`${id} is already planned on ${plannedOn(id)}: take a free id (node scripts/task.mjs next-id)`);
   else if (title !== undefined && new RegExp(`^## ${flags["--release"].replace(/[.]/g, "\\.")}(?: |$)`, "m").test(history.stdout)) fail(`${flags["--release"]} is a done release in build/HISTORY.md`);
   else if (task === undefined) fail(`Unknown task ${id}`);
   else if (resume && task.status !== "in progress") fail(`${id} is ${task.status}, not in progress: --resume continues an in-progress task`);
@@ -180,4 +189,19 @@ function openBranches(taskId) {
   tryCommand("git", ["fetch", "-q", "origin"]);
   const listed = tryCommand("git", ["branch", "-r", "--list", `origin/claude/${taskId}-*`, `origin/codex/${taskId}-*`, "--format=%(refname:short)"]);
   return listed.ok ? listed.stdout.split("\n").filter(Boolean) : [];
+}
+
+/** Remote task branches that are not merged into origin/main: the open PRs and the work about to become one. */
+function openTaskBranches() {
+  tryCommand("git", ["fetch", "-q", "origin"]);
+  const listed = tryCommand("git", ["branch", "-r", "--list", "origin/claude/*", "origin/codex/*", "--format=%(refname:short)"]);
+  return (listed.ok ? listed.stdout.split("\n").filter(Boolean) : []).filter((branch) => !tryCommand("git", ["merge-base", "--is-ancestor", branch, "origin/main"]).ok);
+}
+
+/** The open task branch whose build/TASKS.md has a row for `taskId`, which a planning task may add for a later task (CC-300). */
+function plannedOn(taskId) {
+  return openTaskBranches().find((branch) => {
+    const shown = tryCommand("git", ["show", `${branch}:build/TASKS.md`]);
+    return shown.ok && taskEntries(shown.stdout).some((entry) => entry.id === taskId);
+  });
 }
