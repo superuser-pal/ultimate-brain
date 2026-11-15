@@ -528,6 +528,7 @@ The changes it carries, from `git log --format='%h %s' 458a94e..<P> -- skills/` 
   - Operational skills live in `brain/<name>/`.
   - General local additions live in folders upstream doesn't use.
   - So the path tells local content from upstream content.
+  - Two files are the exception (decision 0095): `README.md` and `CONTRIBUTING.md` sit at upstream's paths and are the fork's own. `NOTICE.md` lists them, and a conflict on either in an upstream-sync is resolved by keeping the fork's.
 - **`snapshot.config.json`:** `{ "cli": "<range>", "linked_repo": ["brain-query"] }`, no other keys. `cli` is the declared range of the next snapshot release (§2.1 grammar). `linked_repo` lists the operational skills `brain link` installs; each must be a folder in `brain/`. PRs change it.
 - **`schemas/skills-snapshot.schema.json`:** a copy of this repo's schema. When the product changes the schema, a coordinated PR updates the copy.
 - **`.gitattributes`:** `* -text`, so the bytes in a checkout are the bytes in Git.
