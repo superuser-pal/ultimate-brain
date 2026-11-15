@@ -12,6 +12,6 @@ Please don't open a public issue for a security problem. Use **Report a vulnerab
 
 ## What to know
 
-- The command has no network code and stores no credentials. Your Notion and GitHub sign-ins belong to your agent and to `gh`.
+- The command stores no credentials and contacts no service of ours. It pushes your brain to your backup with your own Git and `gh` sign-in; your Notion sign-in belongs to your agent.
 - Skills are checked against the package's manifest: `brain lint` reports a skill file that was changed.
 - During the beta, only the latest release is supported.
