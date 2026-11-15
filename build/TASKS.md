@@ -1018,7 +1018,7 @@ After the feature cutoff, scope packaging/install/upgrade guidance, consistent N
 - [ ] Migration 0025, prompts 02 and 05 and the design doc give Your call the same description, which names Request revision (test).
 - [ ] The full suite passes.
 
-### CC-277 · Record decision 0094: the Review button reads Grill me · `in progress`
+### CC-277 · Record decision 0094: the Review button reads Grill me · `done` (#387)
 **Release:** 1.0.0
 **Changelog:** development only: the Review button's new name, Grill me, is recorded as decision 0094, and CC-278 carries it out.
 **Output:** decision 0094 from the author's answer of 2026-11-15 (the property Review context, labelled Grill me, amending 0090 §1), and CC-278's row.
