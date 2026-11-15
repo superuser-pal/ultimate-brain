@@ -13,16 +13,9 @@ Ultimate Brain works end to end, and you are among the first people to use it ou
 - **What may change.** Setup steps, wording and the Notion template change between versions. An update may ask you to run one more step.
 - **Your notes are safe from the product.** They are Markdown files in a Git repository on your computer: every change is a commit you can undo, and nothing your brain knows changes without your approval. Keep the backup on.
 - **Your data.** Read [PRIVACY.md](PRIVACY.md) before you add client material.
-- **What is supported.** Claude Code, on a Mac. Codex can run a brain, but it isn't supported in the beta: in its default sandbox it can't reach Notion or commit. Windows hasn't been tested yet: the scheduled runs are installed on a Mac only, so on Windows you start each catch-up yourself, and other steps may fail. If you try it, tell us what happened.
+- **Expect issues and bugs,** with Claude Code, with Codex and with Gemini, which has only been tried in passing. It has been tested on a Mac. Windows hasn't been tested yet: the scheduled runs are installed on a Mac only, so on Windows you start each catch-up yourself, and other steps may fail. If you try it, tell us what happened.
 - **Updating, going back and uninstalling:** [Update](#update), below.
 - **Telling us what happened.** Open an issue on this repository with the **Beta feedback** template. Issues are public and appear under your GitHub name, so paste no notes, client names, Notion links or tokens. At the end of setup your agent offers to send a short report of counts and codes the same way, only if you say yes.
-
-### Known issues in 0.15.0
-
-- Setup finishes only when one of your first documents holds a to-do of your own. Drop a note with one ("I'll send the offer by Friday"), or turn Tasks off in the settings.
-- In a linked repository, Claude Code may not use a lesson you saved. Ask "what do my saved lessons say about …" to make it look.
-- An agent started in a folder that isn't linked to your brain isn't bound by your exclusions ([PRIVACY.md](PRIVACY.md)).
-- When your agent reaches Notion through an integration token, it can't apply Notion's page templates: the pages it creates have plain sections.
 
 ## Get started
 
@@ -36,7 +29,7 @@ Every grey box on this page is a line to paste into a terminal, then press Retur
 
 - **Node 22.6 or later.** Check with `node --version`. Install it from [nodejs.org](https://nodejs.org).
 - **Git.** Check with `git --version`. Install it from [git-scm.com](https://git-scm.com/downloads).
-- **Claude Code**, the agent that runs your brain. Codex isn't supported in the beta.
+- **Claude Code or Codex**, the agent that runs your brain.
 - **A Notion plan with Notion AI.** Notion AI writes your meeting minutes and runs Brain Assistant. Custom Agents (Business and Enterprise plans) are a plus, not a must.
 - **The GitHub CLI (`gh`), signed in.** Setup uses it to create your backup: a private copy of your brain on GitHub. Install it with `brew install gh` (not on a Mac: follow [cli.github.com](https://cli.github.com)), then sign in:
 
@@ -84,7 +77,7 @@ cd ~/brain
 claude
 ```
 
-Then type:
+(or `codex`). Then type:
 
 ```text
 set up my brain
