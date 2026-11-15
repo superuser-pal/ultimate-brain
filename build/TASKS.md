@@ -22,6 +22,7 @@ Decisions [0059](../decisions/0059-shared-skills-and-connected-workflows.md), [0
 | 0.14.0 | Repeatable onboarding: a published Notion template, one guided setup, seeding, diagnostics and minimal per-area tracking preferences; early access for friends and family starts here (0078); lean minutes, and quick follow-ups left unticked become Tasks (0079); a response style each user chooses, working principles and plain writing (0081); the release gate's fixes and wikilinked sources, in rc.3 (CC-257) |
 | 0.15.0 | Weekly digest/review and targeted correction propagation; the assistant's scheduled weekly review (0075, moved by 0077 and 0078) |
 | 0.15.1 | Text and configuration for the friends-and-family beta, from the beta readiness review of v0.15.0: the data and security statements, rollback and uninstall, the beta section and feedback route, the published template's link, the skills release 1.9.1 (CC-279 to CC-282, CC-284; the user's approval of 2026-11-15). No feature and no CLI change |
+| 0.15.2 | Easy setup on Windows and Mac from the first tester's session: per-platform steps and a setup prompt for the agent, `brain init` fixed on Windows and stopping without a Git identity, a Windows CI job, MarkItDown required (0097; the user's approval of 2026-11-16) |
 | 0.16.0 | One place to decide: conflicts found at ingest are settled in the Claude Code or Codex session, work done without the user only queues questions for the next session, the Review database is removed and the weekly review becomes an Inbox row ([0096](../decisions/0096-one-place-to-decide.md)). It removes and simplifies; no new feature |
 | 1.0.0 | Productisation, translation, funnel and launch readiness; the complete native acceptance in Claude Code and Codex once beta testers are live (0082) |
 
@@ -983,6 +984,46 @@ Text and configuration for the friends-and-family beta, from the beta readiness 
 **Changelog:** Before your agent sends a setup report, it says the report becomes a public issue under your GitHub name.
 **Output:** `.agents/skills/` is the fork release `brain-v1.9.1` (fork PR #43, reviewed with #391), written by `scripts/vendor-skills.mjs 1.9.1` in one commit: brain-setup's `references/report.md` changes by one sentence, which spec/setup.md §12 already quotes, and `snapshot.json` names 1.9.1. CC-283 moves to 1.0.0 (the user's decision of 2026-11-15), so 0.15.1 holds CC-279 to CC-282 and this task.
 **Acceptance:** `vendor-skills.mjs --check --online` passes on 1.9.1; the vendoring commit changes only `.agents/skills/`; the vendored question equals spec/setup.md §12's; CC-283's row is under 1.0.0 with `**Release:** 1.0.0` and is otherwise unchanged; the full suite, `typecheck`, `test:package`, the leak check and the PR format check pass.
+
+## 0.15.2
+
+Easy setup on Windows and Mac, from the first beta tester's Windows session (decision [0097](../decisions/0097-easy-setup-on-windows-and-mac-and-markitdown-required.md); the scope grill of 2026-11-15, confirmed by the user on 2026-11-16). A patch released before 0.16.0. CC-289 records it; CC-290's contracts come first, then CC-291 to CC-294.
+
+### CC-289 · Record decision 0097: easy setup on Windows and Mac, MarkItDown required · `done` (#398)
+**Release:** 0.15.2
+**Changelog:** development only: decision 0097 and the 0.15.2 tasks for an easy setup on Windows and Mac are in the build plan.
+**Output:** decisions/0097, a header pointer on 0078 and 0086, the 0.15.2 row of the release table, this section's intro and the rows CC-290 to CC-294. No CLI, spec, skill or guide change.
+**Acceptance:** 0097 states the six findings, the four answers of the scope grill and what is out of scope; each of CC-290 to CC-294 has its Release, Changelog, Output and Acceptance; no other task row changes; the leak and PR format checks pass.
+
+### CC-290 · Setup contracts for Windows and Mac, `init` on Windows, and MarkItDown required (0097) · `todo`
+**Release:** 0.15.2
+**Changelog:** The setup contracts give each prerequisite an install command on Windows and on Mac, and MarkItDown is required.
+**Output:** spec/setup.md §6.1: Python and MarkItDown in the prerequisites, required; each prerequisite's command for `darwin` and `win32` (Linux keeps links); reason code `markitdown-missing` in §12; §7 item 10 shown `on` and locked, `settings.markitdown` written `on`; the schedule item not available on Windows. spec/cli.md for `init`: home folder from `homedir()`, a leading `~` expanded, a missing Git identity stops before any write with its error code and the two `git config` lines (`--no-git` unchanged).
+**Acceptance:** each rule of 0097 §1, §3, §4 and §5 has a contract line; spec/setup.md's examples and reason-code list agree; no code change.
+
+### CC-291 · `brain init` works on Windows and stops without a Git identity (0097 §3) · `todo`
+**Release:** 0.15.2
+**Changelog:** `brain init --set-default` works on Windows, `~` in the brain path is expanded, and `init` stops with the two commands to run when Git has no name or email, instead of leaving the brain without its first commit.
+**Output:** `src/commands/init.ts` per CC-290's contract; tests with no `HOME` in the environment, a literal `~/` path, and a Git with no identity.
+**Acceptance:** the three tests named in Output pass; the full suite, `typecheck`, `test:package`, the leak check and the PR format check pass.
+
+### CC-292 · A Windows CI job, and the tests made to pass on Windows (0097 §4) · `todo`
+**Release:** 0.15.2
+**Changelog:** development only: CI runs the test suite on Windows.
+**Output:** a `windows-latest` job in `.github/workflows/ci.yml` running the suite; fixes for what fails there (paths, line endings); launchd-only tests skipped on `win32` with the reason in the test.
+**Acceptance:** the Windows job passes on the PR; every skip names its reason; the Ubuntu jobs still pass.
+
+### CC-293 · Get started for Windows and Mac, the setup prompt, and "you don't need to clone this" (0097 §1, §2) · `todo`
+**Release:** 0.15.2
+**Changelog:** Get started has its own steps for Windows and for Mac, and a prompt you paste into your agent to set up without cloning anything.
+**Output:** README Get started step 1 split by platform (the winget line and the reopen step; Homebrew, Node, `gh`, Python and MarkItDown, the developer-tools note; Git's name and email; `gh auth login`); the setup prompt; the line at the top of README and AGENTS.md; docs/setup.md's requirements table and a Windows section under "When something goes wrong" (PATH, execution policy, npm's global folder), and the weekly review run by hand on Windows.
+**Acceptance:** each command in the guides matches CC-290's contract word for word; the skills repository's README line is in CC-294's fork PR; the leak and PR format checks pass.
+
+### CC-294 · brain-setup checks MarkItDown and gives Windows commands, through a skills release (0097 §1, §5) · `todo`
+**Release:** 0.15.2
+**Changelog:** Setup checks for MarkItDown and Python at its first step and gives the install commands for your platform, Windows included.
+**Output:** a fork PR: brain-setup's step 1 prerequisites and messages per CC-290, the locked MarkItDown settings item, and the "you don't need to clone this" line at the top of the skills repository's README; the fork release, vendored here with `scripts/vendor-skills.mjs`.
+**Acceptance:** the skill's messages equal spec/setup.md's; `vendor-skills.mjs --check --online` passes; the vendoring commit changes only `.agents/skills/`; the full suite and the leak check pass.
 
 ## 0.16.0 — One place to decide (decision 0096)
 
