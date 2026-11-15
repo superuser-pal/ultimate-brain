@@ -10,3 +10,8 @@ dist/
 .claude/settings.local.json
 .agents/skills.new/
 .agents/skills.old/
+# Local Excalidraw drawings (Orca makes them in the root)
+*.excalidraw
+*.excalidraw.png
+*.excalidraw.svg
+/diagrams/
