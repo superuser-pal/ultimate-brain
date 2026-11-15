@@ -29,7 +29,7 @@ Meeting notes, web pages and documents you capture are stored word for word, so 
 
 ## Deleting your data
 
-Everything is yours to delete: your brain folder, its backup on GitHub and your Notion space.
+Everything is yours to delete: your brain folder, its backup on GitHub and your Notion space. What setup put on your computer, and how to remove it: [Uninstalling](docs/setup.md#uninstalling).
 
 ## Questions
 

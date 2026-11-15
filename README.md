@@ -99,6 +99,8 @@ brain upgrade
 
 To try a release candidate: `npm install -g ultimate-brain@next`. To go back: `npm install -g ultimate-brain@latest`.
 
+To undo an upgrade, or to remove Ultimate Brain from your computer: [Going back to an earlier version](docs/setup.md#going-back-to-an-earlier-version) and [Uninstalling](docs/setup.md#uninstalling).
+
 ## How it's built
 
 | Document | What it is |
