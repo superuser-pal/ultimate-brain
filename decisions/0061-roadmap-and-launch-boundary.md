@@ -5,6 +5,7 @@
 **Amends:** 0052, 0055, 0056 (reflection release placement); 0008 (memory loop delivery); 0030 (minimal onboarding preferences delivery)
 **Release order and cutoff amended by:** [0077](0077-trust-repair-in-0-13-0.md) (2026-11-10): trust repair in 0.13.0, weekly payback in 0.14.0, onboarding and the feature cutoff in 0.15.0; then [0078](0078-onboarding-and-early-access-in-0-14-0.md) (2026-11-10): onboarding in 0.14.0 with early access for friends and family, the weekly review in 0.15.0, still the cutoff
 **Keeps:** 0038, 0039, 0040, 0044, 0046 and the permanent architecture rules
+**Amended by:** [0096](0096-one-place-to-decide.md) (2026-11-15; 0.16.0): 0.16.0, one place to decide, before 1.0.0: it removes and simplifies, and 0.15.0 stays the feature cutoff
 
 ## Context
 

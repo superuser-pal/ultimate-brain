@@ -1,6 +1,6 @@
 # 0090 — Review by grill: Notion AI reviews a page with you, and Your call decides
 
-**Status:** Accepted
+**Status:** Superseded by [0096](0096-one-place-to-decide.md) (2026-11-15; 0.16.0): the Review database, its page and Grill me are removed; decisions are made in the session
 **Date:** 2026-11-13
 **Release:** 0.15.0 (CC-240 and CC-241, rescoped; recorded by CC-248)
 **Amends:** [0054](0054-brain-assistant-buttons.md) (Brain Assistant may write into a Review page, in its sections only, after the user's yes); [0088](0088-a-review-row-says-it-needs-you-and-a-review-page-reads-plainly.md) §2 (the page gains a brain-context toggle and a "Review with me" button; headings are derived and never read; Your call, not the Submit buttons, submits a page); [0055](0055-domains-capture-and-review.md) (on a row with item sections, a row-level Approve submits the page as it reads, and Request revision with What to fix asks for redrafts)

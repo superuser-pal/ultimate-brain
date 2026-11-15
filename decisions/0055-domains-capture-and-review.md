@@ -8,6 +8,7 @@
 **Release amendment:** [0056](0056-buttons-move-into-0-8-0.md), 2026-10-31, builds 0054's buttons in 0.8.0 too; 0.7.1 becomes a small patch.
 **Refined by:** [0077](0077-trust-repair-in-0-13-0.md) (one operational eligibility rule; an item without established eligible support is withheld whole); [0079](0079-lean-minutes-and-follow-ups-as-tasks.md) (the selection tokens and quotes move into the minutes' For the brain toggle; the selection is unchanged)
 **Refines:** 0003, 0007, 0018, 0021, 0032, 0050, 0051, 0054
+**Amended by:** [0096](0096-one-place-to-decide.md) (2026-11-15; 0.16.0): editable Review (the Review page, its tokens and Submit) is retired; the selection is unchanged
 
 ## Context
 

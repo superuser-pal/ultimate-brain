@@ -1,6 +1,6 @@
 # 0094 — The Review button reads Grill me
 
-**Status:** Accepted
+**Status:** Superseded by [0096](0096-one-place-to-decide.md) (2026-11-15; 0.16.0): the Review database, its page and Grill me are removed; decisions are made in the session
 **Date:** 2026-11-15
 **Release:** 1.0.0
 **Amends:** [0090](0090-review-by-grill-notion-ai-reviews-with-you-and-your-call-decides.md) §1 (the button's name and label)

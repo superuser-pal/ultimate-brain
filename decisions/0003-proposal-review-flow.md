@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-10-11
 **Refined by:** [0077](0077-trust-repair-in-0-13-0.md) (every proposed change names its supporting passages, checked at creation and before apply)
+**Amended by:** [0096](0096-one-place-to-decide.md) (2026-11-15; 0.16.0): proposals are decided in the session, in chat; a change that removes or replaces what the brain holds needs a yes, and text added to a note or a link goes in directly in an attended run; the Review database is removed
 
 ## Context
 Agents propose changes (new decisions, fact updates, contradictions, memories). Options: Notion review queue, Git pull requests, chat only.
