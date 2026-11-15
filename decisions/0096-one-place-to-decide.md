@@ -68,7 +68,7 @@ The rule: anything that **removes or replaces** something the brain believes nee
 
 ## Consequences
 
-- **The spec loses its largest part.** Capture-and-review §7 (the Review page, the tokens, Submit, Your call and their binding rules) is replaced by a short contract for deciding in the session. cli.md, schema.md, eligibility.md, weekly-review.md, assistant.md and docs/notion-space-design.md follow. Contracts come first (CC-289).
+- **The spec loses its largest part.** Capture-and-review §7 (the Review page, the tokens, Submit, Your call and their binding rules) is replaced by a short contract for deciding in the session. cli.md, schema.md, eligibility.md, weekly-review.md, assistant.md and docs/notion-space-design.md follow. Contracts come first (CC-295).
 - **Proposal kinds change.** Additions and links stop being proposals in an attended run and remain queued ones in an unattended run. `review_notes` is asked in chat. The CLI creates a note as `reviewed` when the attended yes covers it.
 - **Skills change in the fork:** ingest, catch-up, apply, weekly review, reflect, the assistant and the guides. They reach this repository as a vendored release.
 - **One Notion migration** applies the decided rows, archives the Review database and its Home view, and adds the Kind Weekly. The published template is updated by the author.
