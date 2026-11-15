@@ -1,17 +1,17 @@
 {
   "format": 1,
   "name": "ultimate-brain-skills",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "cli": ">=0.15.0-0 <0.16.0",
   "source": {
     "repository": "https://github.com/superuser-pal/ultimate-brain-skills",
-    "commit": "2c83f8f12e9113660dba9b674ab74dfc7e9e8814"
+    "commit": "b7f85c067faf6dd8cff4921b09387cb7adb2e373"
   },
   "upstream": {
     "repository": "https://github.com/mattpocock/skills",
     "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa"
   },
-  "integrity": "sha256-02f825a6f20e09a3f03729953de84941d417e9b1ec445810cedba0f2b2077edf",
+  "integrity": "sha256-ce06f31e1df69dc137a2959f146814611ddab43bc344d61429fb565c072590c3",
   "skills": [
     {
       "name": "brain-apply",
@@ -249,8 +249,8 @@
         },
         {
           "path": "references/report.md",
-          "sha256": "5f92612a4c7f8f2e57083176e4789d2a1e4cc1dadcde301bfa14ea9cfff27077",
-          "bytes": 5798
+          "sha256": "96cf2b43732f370bfad73b0067d4e0773d0529c8d3c7f1566065226ba87d0156",
+          "bytes": 5854
         },
         {
           "path": "references/seeding.md",
