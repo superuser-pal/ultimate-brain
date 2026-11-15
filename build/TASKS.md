@@ -1023,6 +1023,12 @@ Easy setup on Windows and Mac, from the first beta tester's Windows session (dec
 **Output:** a fork PR: brain-setup's step 1 prerequisites and messages per CC-290, the locked MarkItDown settings item, and the "you don't need to clone this" line at the top of the skills repository's README; the fork release, vendored here with `scripts/vendor-skills.mjs`.
 **Acceptance:** the skill's messages equal spec/setup.md's; `vendor-skills.mjs --check --online` passes; the vendoring commit changes only `.agents/skills/`; the full suite and the leak check pass.
 
+### CC-300 · Task ids planned in an open PR are taken: start --new and pr-format refuse them, next-id prints the free ones · `review`
+**Release:** 0.15.2
+**Changelog:** Internal: a task id that an open PR already plans can't be taken by a second PR.
+**Output:** `scripts/task.mjs start --new` refuses an id that has a row in `build/TASKS.md` on any open task branch, where before it looked only at branch names; `scripts/task.mjs next-id` prints the next free task id, user task id and decision number across `main` and the open task branches; `scripts/pr-format.mjs` fails a PR that adds a task id another open PR uses under another title; AGENTS.md names `next-id`. From PRs #397 and #398, which both planned CC-289 to CC-293 on 2026-11-15 and both passed review.
+**Acceptance:** `start --new` refuses an id planned on an open branch and creates no worktree; `next-id` counts `main` and the open branches for all three numbers; `pr-format` rejects a clashing id, accepts a stacked PR that carries the same row, and fails when it can't list the open PRs; the script tests cover each; the full suite and the leak check pass.
+
 ## 1.0.0 — Productisation, translation, funnel and launch (decision 0061)
 
 After the feature cutoff, scope packaging/install/upgrade guidance, consistent Notion templates/terminology, user-facing translations, positioning/demo/landing-page and acquisition/onboarding funnel, release candidates and launch acceptance. Confirm languages, offer and publication choices during the opening grill. Allow launch-blocking fixes, not unapproved features. The release gate includes a fresh user's end-to-end path and common-failure recovery; publishing/releasing follows existing user approval and release-script rules.
