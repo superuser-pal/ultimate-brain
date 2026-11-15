@@ -976,7 +976,7 @@ Text and configuration for the friends-and-family beta, from the beta readiness 
 **Output:** `README.md`, `notion/TEMPLATE.md` and the two lines of `scripts/leak-allow.txt` carry the published template's address. The old address was the page of an earlier copy, since renamed and used as a test space, which is not published. Read through the API on 2026-11-15, the published template has the fourteen Brain Data databases with fifteen example rows and thirteen pages in Skills: the twelve of `notion/brain-assistant.md` and "Write minutes". The user's answer of 2026-11-15: Write minutes stays, so the skills are thirteen (CC-283).
 **Acceptance:** the link in `README.md` and `notion/TEMPLATE.md` opens the published template with a Duplicate button in a signed-out browser (the user confirmed it on 2026-11-15); no file names the old page id; the leak check passes with the new allow lines; the full suite and the PR format check pass.
 
-### CC-284 · Vendor ultimate-brain-skills 1.9.1 · `in progress`
+### CC-284 · Vendor ultimate-brain-skills 1.9.1 · `done` (#393)
 **Release:** 0.15.1
 **Changelog:** Before your agent sends a setup report, it says the report becomes a public issue under your GitHub name.
 **Output:** `.agents/skills/` is the fork release `brain-v1.9.1` (fork PR #43, reviewed with #391), written by `scripts/vendor-skills.mjs 1.9.1` in one commit: brain-setup's `references/report.md` changes by one sentence, which spec/setup.md §12 already quotes, and `snapshot.json` names 1.9.1. CC-283 moves to 1.0.0 (the user's decision of 2026-11-15), so 0.15.1 holds CC-279 to CC-282 and this task.
