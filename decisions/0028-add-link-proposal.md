@@ -2,6 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-10-12
+**Amended by:** [0096](0096-one-place-to-decide.md) (2026-11-15; 0.16.0): a link between notes goes in directly in an attended run, listed in the report; an unattended run queues it
 
 ## Context
 The first ingest acceptance run (CC-06, PR #29) found a new person, Lucía, joining the Acme website project. The ingest could write Lucía's note with `projects: [Acme website]`. It could not add her to the project's own `people` list, and no proposal kind could either: `update_fact` changes `facts`, and `add_to_note` appends body text.
