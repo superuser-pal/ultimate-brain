@@ -1018,6 +1018,18 @@ After the feature cutoff, scope packaging/install/upgrade guidance, consistent N
 - [ ] Migration 0025, prompts 02 and 05 and the design doc give Your call the same description, which names Request revision (test).
 - [ ] The full suite passes.
 
+### CC-277 · Record decision 0094: the Review button reads Grill me · `in progress`
+**Release:** 1.0.0
+**Changelog:** development only: the Review button's new name, Grill me, is recorded as decision 0094, and CC-278 carries it out.
+**Output:** decision 0094 from the author's answer of 2026-11-15 (the property Review context, labelled Grill me, amending 0090 §1), and CC-278's row.
+**Acceptance:** 0094 records the answer, what it amends and what it keeps; CC-278 names each 0094 rule in its Output and tests it in its Acceptance; only Markdown planning files change; the leak and PR format checks pass.
+
+### CC-278 · The Review button reads Grill me (0094) · `todo`
+**Release:** 1.0.0
+**Changelog:** The button on a Review row is called Grill me, and every text that names it says so.
+**Output:** `src/lib/review-body.ts` (the "What to do" line says Grill me), `docs/notion-space-design.md`, `spec/capture-and-review.md`, `notion/prompts/06-templates.md` and `07e-review.md`, `notion/views-guide.md`, `notion/template-examples.md`, `notion/brain-assistant.md` (Review queue and Grill review name Grill me and read a page that still says Review with me as the same button, 0094 §4), a new migration that renames the property and label and replaces the gray line, the row template's callout, the two skills and How it works (0094 §3), and through a fork PR plus a vendored release the brain-howto guide and Everyday guide; migrations 0025 and 0026 unchanged; tests.
+**Acceptance:** a newly rendered Review page says "click **Grill me**" (test); no shipped text outside migrations 0025/0026, decisions and history names "Review with me" except the §4 note (test); the new migration lists every text it replaces and its checks; the fork's guides say Grill me in the vendored release; the full suite, leak check and PR format check pass.
+
 ## Your tasks
 
 | Id | Task | When |
