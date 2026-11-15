@@ -990,7 +990,7 @@ Text and configuration for the friends-and-family beta, from the beta readiness 
 
 | Task | What | Files | When | Status |
 |---|---|---|---|---|
-| CC-288 | This plan and decision 0096 | `decisions/0096`, pointers, roadmap lines, this section | now | `review` |
+| CC-288 | This plan and decision 0096 | `decisions/0096`, pointers, roadmap lines, this section | now | `done` (#397) |
 | CC-289 | The contracts | `spec/capture-and-review.md`, `spec/cli.md`, `spec/schema.md`, `spec/eligibility.md`, `spec/assistant.md`, `spec/weekly-review.md`, `docs/notion-space-design.md` | after CC-288 is merged | `todo` |
 | CC-290 | The CLI decides in the session | proposals, `apply`, `note new`, `sync` (Review rows removed), `src/lib/review-body.ts` (removed), lint, status, tests | after CC-289 is merged | `todo` |
 | CC-291 | The weekly review as an Inbox row | `brain weekly record`, `sync render`, tests | after CC-289 is merged, beside CC-290 | `todo` |
@@ -1001,7 +1001,7 @@ Text and configuration for the friends-and-family beta, from the beta readiness 
 
 The release gate is the usual one: the automated checks and the native smoke run (0082).
 
-### CC-288 · Record decision 0096: one place to decide, and plan 0.16.0 · `review`
+### CC-288 · Record decision 0096: one place to decide, and plan 0.16.0 · `done` (#397)
 **Release:** 0.16.0
 **Changelog:** development only: decision 0096 records that conflicts are decided in the session and the Review database goes, with 0.16.0's plan.
 **Output:** decision 0096 from the author's grill of 2026-11-15 (Q1 to Q13, the recommended option in each, with Q1's refinement that fewer questions must not cost confidence in the brain's context); header pointers on 0003, 0028, 0041, 0045, 0051, 0055, 0061, 0072, 0075 and 0093, and 0088, 0090 and 0094 marked superseded; this section's intro, plan and rows CC-289 to CC-293, U-33 and U-34; CC-278 set to `dropped` with its reason; U-28 waits for 0.16.0, U-31 loses its Review-row step and U-32 rechecks from `v0.16.0`; the roadmap table, the cutoff paragraph and the planning log; the vision's roadmap and review lines and AGENTS.md's cutoff line. One rule is the record's reading, not a question asked: an unattended run queues additions and links instead of applying them (0096 §4), because no one has seen them. Planning only: no CLI, spec, schema, skill, template, Notion or CHANGELOG change, and no brain operation.
