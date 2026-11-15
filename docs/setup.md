@@ -266,3 +266,37 @@ The template is the quick way. If you prefer to build the space yourself from No
 ## Updating later
 
 See the README's [Update](../README.md#update). `brain upgrade` also names any Notion changes a new release adds to your space, and your agent applies them when you ask.
+
+## Going back to an earlier version
+
+An upgrade changes only the rules and skills in your brain, in one commit named `upgrade: ultimate brain <version>, …`. Your notes stay as they are. To go back, undo that commit and install the version you had, in either order:
+
+```sh
+cd ~/brain
+git log --oneline --grep "^upgrade: ultimate brain"   # the newest line is the upgrade to undo
+git revert <its id>
+npm install -g ultimate-brain@<the version you had>
+```
+
+`brain upgrade` names the version you had as `previous_cli` when it finishes. Installing the older version alone isn't enough: it refuses to work on a brain whose skills are newer, and tells you which version they need.
+
+## Uninstalling
+
+Your notes are plain Markdown in a Git repository. Keep the brain folder and you keep everything; you need nothing else to read them.
+
+Setup put things in these places outside your brain folder. Remove the ones you used, the schedule first, so that no run starts while you remove the rest:
+
+| What | Where | How to remove it |
+|---|---|---|
+| The scheduled runs | On a Mac, `~/Library/LaunchAgents/eu.ultimate-brain.*.plist`. Elsewhere, lines you added to your crontab. | On a Mac, in your brain folder: `brain schedule remove catch-up` and `brain schedule remove weekly-review`. Elsewhere, delete the lines with `crontab -e`. |
+| The `brain` command | npm's global folder | `npm uninstall -g ultimate-brain` |
+| The default brain setting | `~/.config/ultimate-brain/` | Delete the folder. |
+| Run state and logs | `~/.ultimate-brain/` and, on a Mac, `~/Library/Logs/ultimate-brain/` | Delete the folders. |
+| The drop folder | The folder you chose in setup, by default `~/Documents/brain-dropbox/` | Move out any file you still want, then delete it. |
+| The backup | A private repository on GitHub | Delete it on github.com (the repository's Settings, Danger Zone), or keep it as an archive. |
+| The Notion space | Your workspace | Delete the duplicated space. In Notion's Settings, under Connections, remove your agent's connection. Delete Brain Assistant, or its text in your personal Instructions. |
+| Linked repositories | Each repository you linked with `brain link` | Ask your agent in the brain folder to "unlink <repository>" before you uninstall. |
+
+Setup may also have set your Git name and email for every repository on this computer, when they were missing. Leave them unless you want them gone: `git config --global --unset user.name` and `git config --global --unset user.email`.
+
+Then delete the brain folder itself, or keep it.
