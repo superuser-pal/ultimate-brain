@@ -48,7 +48,8 @@ export function decidePublication(records: Records, artifact: Json, config: Reco
     if (decision === "exclude") reason = artifact.category === "temporary" ? "temporary" : "excluded by level";
   }
   const modules = modulesOf(config);
-  if (decision === "include" && ((artifact.category !== "decision" && !modules.documents) || (artifact.category === "decision" && !modules.knowledge))) { decision = "exclude"; reason = "module off"; }
+  // A decision needs no module since 0.16.0: Knowledge is retired (connected-workflows.md §6.3, 0099).
+  if (decision === "include" && artifact.category !== "decision" && !modules.documents) { decision = "exclude"; reason = "module off"; }
   artifact.publish = { decision, by, level, decided_at: ts(now) };
   artifact.local_reason = reason;
   if (decision === "exclude") artifact.publication = { state: "local", at: ts(now), error: null };

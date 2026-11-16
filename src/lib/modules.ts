@@ -1,13 +1,15 @@
 import { isRecord } from "./input.ts";
 
-/** The optional modules of spec/schema.md §12 (decision 0048), in contract order. */
-export const MODULES = ["domains", "knowledge", "orgs", "documents", "reports", "tasks", "planning"] as const;
+/** The optional modules of spec/schema.md §12 (decision 0048), in contract order. Knowledge is retired in 0.16.0 (0099): a stored key is never read. */
+export const MODULES = ["domains", "orgs", "documents", "reports", "tasks", "planning"] as const;
+
+/** The module retired in 0.16.0 (0099 §1): decisions and questions are always extracted and never published as rows. */
+export const RETIRED_MODULE = "knowledge";
 
 export type ModuleName = (typeof MODULES)[number];
 
 export const MODULE_DEFAULTS: Readonly<Record<ModuleName, boolean>> = {
   domains: false,
-  knowledge: true,
   orgs: true,
   documents: false,
   reports: false,
@@ -21,7 +23,6 @@ export const MODULE_DEFAULTS: Readonly<Record<ModuleName, boolean>> = {
  */
 export const MODULE_DATABASES: Readonly<Record<ModuleName, readonly string[]>> = {
   domains: ["domains"],
-  knowledge: ["decisions", "questions"],
   orgs: ["orgs"],
   documents: ["documents"],
   reports: ["documents"],
@@ -31,8 +32,6 @@ export const MODULE_DATABASES: Readonly<Record<ModuleName, readonly string[]>> =
 
 const MODULE_FOR_TYPE: Readonly<Record<string, ModuleName>> = {
   domain: "domains",
-  decision: "knowledge",
-  question: "knowledge",
   org: "orgs",
   reference: "documents",
   goal: "planning",

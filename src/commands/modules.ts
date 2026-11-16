@@ -2,7 +2,7 @@ import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { atomicWriteFile } from "../lib/fs-safe.ts";
 import { appendLog } from "../lib/log.ts";
-import { isModuleName, missingFor, MODULE_DATABASES, MODULE_DEFAULTS, MODULES, modulesOf, storedModules, withModules, type ModuleName } from "../lib/modules.ts";
+import { isModuleName, missingFor, MODULE_DATABASES, MODULE_DEFAULTS, MODULES, modulesOf, RETIRED_MODULE, storedModules, withModules, type ModuleName } from "../lib/modules.ts";
 import { describeErrors, loadSchemas } from "../lib/schemas.ts";
 
 /** `brain modules` (spec/cli.md §5.20). */
@@ -36,6 +36,7 @@ function switchCommand(value: boolean): Command {
     async run({ args, brain, now }) {
       const [name] = args.positionals;
       if (name === undefined) throw new BrainError("USAGE", `brain modules ${word} needs a module: ${MODULES.join(", ")}`);
+      if (name === RETIRED_MODULE) throw new BrainError("USAGE", `The Knowledge module is retired in 0.16.0: decisions and questions now show on project and area pages, in their Brief and Decision log. Optional modules: ${MODULES.join(", ")}`);
       if (!isModuleName(name)) throw new BrainError("USAGE", `Unknown module: ${name}. Optional modules: ${MODULES.join(", ")} (core has no switch)`);
       const module: ModuleName = name;
       const config = brain!.config;
