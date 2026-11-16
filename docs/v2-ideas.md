@@ -67,6 +67,9 @@ Document ingestion from local files, pasted emails and chat, and the Capture Inb
 - ~~**Agent setup steps for Notion**~~ (dogfood finding 3): in 0.3.0 (CC-26).
 - **Leak check for binary files:** `.pdf`, `.docx` and other binaries are skipped by the leak check (CX-28), so their metadata (author names) and compressed text are never checked. A check would unpack them first. Found in the CX-28 review, 2026-10-19.
 
+### Bookmarks and session artifacts
+Keep a URL as a bookmark, and an artifact made in a Claude Code or Codex session (a plan, a page, a diagram) as something the brain knows about, without a database of their own: a URL that comes in is an Inbox capture, and what you keep is a Document, perhaps with an origin for session artifacts next to `workflow`. **Source:** [0099](../decisions/0099-notion-without-decisions-and-questions.md) §10 (the author's grill of 2026-11-16, Q4: no new database; a new feature after the 0.15.0 cutoff). **Revisit:** after 1.0, or when beta testers ask to keep links or artifacts.
+
 ### Email, Slack and Teams ingestion (connected)
 Pulling threads directly instead of pasting them (pasting is in 0.2.0). **Source:** vision.
 
