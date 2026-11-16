@@ -30,6 +30,7 @@ const END = /^<!-- ultimate-brain:rules:end -->$/gm;
 
 type Action = "created" | "updated" | "removed" | "skipped";
 const WEEKLY_IGNORE = "_weekly/attempt.json";
+const LF_ATTRIBUTE = "* text=auto eol=lf";
 interface Change { path: string; action: Action; content?: string | Buffer }
 
 /** `brain upgrade` (spec/cli.md §5.15): bring the product-owned files of a brain up to the installed package. */
@@ -92,6 +93,13 @@ export const upgradeCommand: Command = {
     if (ignoreText === null) changes.push({ path: ".gitignore", action: "created", content: `${WEEKLY_IGNORE}\n` });
     else if (ignoreText.split(/\r?\n/).some((line) => line.trim() === WEEKLY_IGNORE)) unchanged += 1;
     else changes.push({ path: ".gitignore", action: "updated", content: `${ignoreText}${ignoreText === "" || ignoreText.endsWith("\n") ? "" : "\n"}${WEEKLY_IGNORE}\n` });
+
+    // 0.15.2: text files stay LF on every system, so Git on Windows doesn't check notes out with CRLF (spec/cli.md §5.15 step 1d, decision 0097).
+    await assertPlainPath(root, ".gitattributes");
+    const attributesText = (await readOptionalBuffer(join(root, ".gitattributes")))?.toString("utf8") ?? null;
+    if (attributesText === null) changes.push({ path: ".gitattributes", action: "created", content: await readFile(join(product.root, "templates/brain/gitattributes"), "utf8") });
+    else if (attributesText.split(/\r?\n/).some((line) => line.trim() === LF_ATTRIBUTE)) unchanged += 1;
+    else changes.push({ path: ".gitattributes", action: "updated", content: `${attributesText}${attributesText === "" || attributesText.endsWith("\n") ? "" : "\n"}${LF_ATTRIBUTE}\n` });
 
     // 0.3.0: Inbox is the former Capture Inbox; 0.6.0: Documents are the former References (0049).
     // Keep each database id, but retire the old key. 0.6.0 also writes the modules block (0048).

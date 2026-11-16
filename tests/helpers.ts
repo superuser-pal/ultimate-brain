@@ -37,6 +37,7 @@ export async function testPackageRoot(): Promise<string> {
   cpSync(join(REPO, "package.json"), join(root, "package.json"));
   mkdirSync(join(root, "templates", "brain"), { recursive: true });
   cpSync(join(REPO, "templates", "brain", "AGENTS.md"), join(root, "templates", "brain", "AGENTS.md"));
+  cpSync(join(REPO, "templates", "brain", "gitattributes"), join(root, "templates", "brain", "gitattributes"));
   cpSync(join(REPO, "templates", "brain", ".claude"), join(root, "templates", "brain", ".claude"), { recursive: true });
   cpSync(join(REPO, ".agents", "skills"), join(root, ".agents", "skills"), { recursive: true });
   packageRoot = root;
