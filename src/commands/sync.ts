@@ -7,6 +7,17 @@ import { commitJournaled } from "../lib/journal.ts";
 import { modulesOf } from "../lib/modules.ts";
 import { BrainError } from "../lib/errors.ts";
 import { lintWarnings } from "../lib/warnings.ts";
+import { trackedQuestions } from "../lib/tracked-tasks.ts";
+
+/** `brain sync tracked` (cli §5.14.1, 0101 §6): the tasks that track open questions, for the skill to read by page id. Read-only. */
+export const syncTrackedCommand: Command = {
+  name: "sync tracked", usage: "brain sync tracked [--json]", summary: "List the tracked questions and their tasks' page ids, for the sync snapshot.", options: {}, maxPositionals: 0, needsBrain: true,
+  async run({ brain }) {
+    if (!modulesOf(brain!.config).tasks) throw new BrainError("MODULE_OFF", "The Tasks module is off: brain modules on tasks");
+    const tracked = trackedQuestions(await Workspace.open(brain!));
+    return { data: { tracked }, human: tracked.length === 0 ? "No tracked questions.\n" : tracked.map((item) => `${item.question} ${item.page_id} ${item.title}\n`).join("") };
+  },
+};
 
 export const syncPlanCommand: Command = {
   name: "sync plan", usage: "brain sync plan --input <snapshot|-> [--review-transition] [--json]", summary: "Compare a Notion snapshot with the brain without writing.", options: { input: "string", "review-transition": "boolean" }, maxPositionals: 0, needsBrain: true,
@@ -17,7 +28,7 @@ export const syncPlanCommand: Command = {
     const notion = brain!.config.notion as { databases?: Record<string, unknown> } | undefined;
     if (reviewTransition && (notion?.databases === undefined || !Object.hasOwn(notion.databases, "review"))) throw new BrainError("REVIEW_RETIRED", "The Review database was archived by the 0.16.0 migration: its rows are not read again. Decide proposals in the session.");
     const workspace = await Workspace.open(brain!); const plan = buildPlan(workspace, parseSnapshot(await readJsonInput(input, "sync plan")), { reviewTransition });
-    return { data: plan, human: `${plan.create.length} creates, ${plan.updates.length} updates, ${plan.corrections.length} corrections\n` };
+    return { data: plan, human: `${plan.create.length} creates, ${plan.updates.length} updates, ${plan.corrections.length} corrections, ${plan.tracked_tasks.length} finished tracked tasks\n` };
   },
 };
 
