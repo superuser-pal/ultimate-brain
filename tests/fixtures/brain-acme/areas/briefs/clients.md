@@ -17,7 +17,7 @@ updated: 2026-12-05
 ## Recent decisions
 - Nothing reviewed yet: 1 note waiting for your decision
 
-## Open questions
+## Open questions and risks
 - Nothing reviewed yet: 1 note waiting for your decision
 
 ## Documents

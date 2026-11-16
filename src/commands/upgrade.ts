@@ -129,6 +129,12 @@ export const upgradeCommand: Command = {
           config = withModules(config, modulesOf(config));
           changed = true;
         }
+        // 0.16.0: the Knowledge module is retired (0099 §1); its key goes, whatever its value. The decisions and questions database ids stay:
+        // the 0.16.0 Notion migration reads Questions once, then removes both (spec/cli.md §5.15 step 5, §5.14.9).
+        if (isRecord(config.modules) && "knowledge" in config.modules) {
+          config = { ...config, modules: Object.fromEntries(Object.entries(config.modules).filter(([name]) => name !== "knowledge")) };
+          changed = true;
+        }
         // 0.9.1: a report is a Documents row, so Reports needs Documents on (0071).
         const stored = storedModules(config);
         if (stored.reports && !stored.documents) {

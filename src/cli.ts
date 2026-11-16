@@ -8,7 +8,7 @@ import { assistantDismissCommand, assistantFindingsCommand } from "./commands/as
 import { indexCommand } from "./commands/index.ts";
 import { initCommand } from "./commands/init.ts";
 import { statusCommand } from "./commands/status.ts";
-import { configGetCommand, configSetCommand } from "./commands/config.ts";
+import { configGetCommand, configSetCommand, configUnsetCommand } from "./commands/config.ts";
 import { idNewCommand } from "./commands/id.ts";
 import { lintCommand } from "./commands/lint.ts";
 import { logCommand } from "./commands/log.ts";
@@ -40,7 +40,7 @@ export type CommandHandler = (args: readonly string[], io: CliIo) => number | Pr
 
 /** Registered commands, in help order. */
 export const COMMANDS: readonly Command[] = [
-  initCommand, statusCommand, configGetCommand, configSetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, proposalBacklogCommand, proposalReviseCommand, proposalSettleCommand, sourceFullTextCommand, sourceDiffCommand, sourceExtractPlanCommand, sourceCleanupPlanCommand, sourceCleanupProposeCommand, sourceExtractCommand, recoverCommand, reportNewCommand, reportFixCommand, repoAddCommand, repoChangesCommand, repoRecordCommand, repoKitCheckCommand, repoKitWriteCommand, repoRefreshCommand, repoShowCommand, repoHealthCommand, repoTasksCommand, repoUnlinkCommand, repoNewCommand, questionDropCommand, applyCommand,
+  initCommand, statusCommand, configGetCommand, configSetCommand, configUnsetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, proposalBacklogCommand, proposalReviseCommand, proposalSettleCommand, sourceFullTextCommand, sourceDiffCommand, sourceExtractPlanCommand, sourceCleanupPlanCommand, sourceCleanupProposeCommand, sourceExtractCommand, recoverCommand, reportNewCommand, reportFixCommand, repoAddCommand, repoChangesCommand, repoRecordCommand, repoKitCheckCommand, repoKitWriteCommand, repoRefreshCommand, repoShowCommand, repoHealthCommand, repoTasksCommand, repoUnlinkCommand, repoNewCommand, questionDropCommand, applyCommand,
   assistantFindingsCommand, assistantDismissCommand,
   syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand, viewsCommand, linkCommand, queryCommand, reflectCommand, recallCommand, upgradeCommand, modulesListCommand, modulesOnCommand, modulesOffCommand,
   scheduleInstallCommand, scheduleListCommand, scheduleRemoveCommand, ...WEEKLY_COMMANDS, ...WORKFLOW_COMMANDS,

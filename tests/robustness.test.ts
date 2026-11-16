@@ -159,7 +159,7 @@ test("index values never break lines; titles escape backslashes; odd types are l
     note("per-00000001", "person", { title: "P", summary: "s", org: ["org-1", "org-2"], facts: { role: { nested: true } } }),
   ]);
   const lines = markdown.trimEnd().split("\n");
-  assert.ok(lines.includes("- [Path C:\\\\dir\\\\ next](knowledge/x/que-00000001.md) — que-00000001 · line one line two · aliases: a b"));
+  assert.ok(lines.includes("- [Path C:\\\\dir\\\\ next](knowledge/x/que-00000001.md) — que-00000001 · status: open · line one line two · aliases: a b"));
   assert.ok(lines.includes("- [P](knowledge/x/per-00000001.md) — per-00000001 · s"));
 });
 

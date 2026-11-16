@@ -87,6 +87,46 @@ async function writeStyleBlock(root: string, config: Record<string, unknown>, wa
   return written.action;
 }
 
+/** `brain config unset <dot.path>` (spec/cli.md §5.3): plumbing for the 0.16.0 migration's brain.json step, idempotent. */
+export const configUnsetCommand: Command = {
+  name: "config unset",
+  usage: "brain config unset <dot.path> [--json]",
+  summary: "Remove one brain.json key; a key already absent is success with nothing written.",
+  options: {},
+  maxPositionals: 1,
+  needsBrain: true,
+  async run({ args, brain }) {
+    const [path] = args.positionals;
+    if (path === undefined) throw new BrainError("USAGE", "brain config unset needs <dot.path>");
+    const segments = parsePath(path);
+    if (segments.length === 1 && segments[0] === "schema_version") {
+      throw new BrainError("INPUT_INVALID", "schema_version cannot be unset");
+    }
+    const next = structuredClone(brain!.config);
+    let parent: unknown = next;
+    for (const segment of segments.slice(0, -1)) parent = isRecord(parent) ? parent[segment] : undefined;
+    const final = segments[segments.length - 1]!;
+    // Already absent: a rerun of a migration step that stopped partway (cli §5.3).
+    if (!isRecord(parent) || !Object.hasOwn(parent, final)) return { data: { path, previous: null }, human: `${path}: already absent\n` };
+    const previous = parent[final];
+    delete parent[final];
+    const schemas = loadSchemas();
+    if (!schemas.brain(next)) {
+      throw new BrainError("INPUT_INVALID", `brain.json would be invalid: ${describeErrors(schemas.brain.errors).join("; ")}`);
+    }
+    const style = segments[0] === "settings" && (segments.length === 1 || segments[1] === "style");
+    if (style) await assertPlainPath(brain!.root, "AGENTS.md");
+    await atomicWriteFile(brain!.root, "brain.json", `${JSON.stringify(next, null, 2)}\n`);
+    const warnings: Warning[] = [];
+    const files = style ? [{ path: "AGENTS.md", action: await writeStyleBlock(brain!.root, next, warnings) }] : undefined;
+    return {
+      data: { path, previous: previous ?? null, ...(files === undefined ? {} : { files }) },
+      warnings,
+      human: `${path}: ${JSON.stringify(previous)} → removed\n${files === undefined ? "" : `AGENTS.md: ${files[0]!.action}\n`}`,
+    };
+  },
+};
+
 function readPath(config: Record<string, unknown>, path: string): unknown {
   const segments = parsePath(path);
   let current: unknown = config;

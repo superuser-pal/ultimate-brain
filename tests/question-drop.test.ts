@@ -27,10 +27,12 @@ async function run(dir: string, args: string[], input?: unknown, now = NOW) {
 const drop = (dir: string, items: unknown[]) => run(dir, ["question", "drop"], { items });
 const question = (dir: string) => readFile(join(dir, QUESTION_FILE), "utf8");
 
-async function rendered(dir: string): Promise<Record<string, any>> {
+/** A question has no Notion page since 0.16.0 (0099): rendering it is skipped, so a drop publishes nothing. */
+async function notRendered(dir: string): Promise<void> {
   const result = await run(dir, ["sync", "render", "--ids", QUESTION]);
   assert.equal(result.code, 0, result.stdout);
-  return result.json.data.items[0];
+  assert.deepEqual(result.json.data.items, []);
+  assert.deepEqual(result.json.data.skipped, [{ id: QUESTION, reason: "NO_DATABASE" }]);
 }
 
 async function lintErrors(dir: string): Promise<unknown[]> {
@@ -43,7 +45,7 @@ async function editQuestion(dir: string, edit: (text: string) => string): Promis
   await writeFile(path, edit(await readFile(path, "utf8")));
 }
 
-test("question drop: converts a question to its recorded Task, archives it and publishes Dropped once", async (context) => {
+test("question drop: converts a question to its recorded Task and archives it; nothing is published (0099)", async (context) => {
   const dir = await fixtureCopy(context);
   const result = await drop(dir, [{ id: QUESTION, task: MEETING_TASK }]);
   assert.equal(result.code, 0, result.stdout);
@@ -53,18 +55,11 @@ test("question drop: converts a question to its recorded Task, archives it and p
   assert.match(text, /^dropped: 2026-12-12$/m);
   assert.match(text, new RegExp(`^task: ${MEETING_TASK}$`, "m"));
   assert.match(text, /^updated: 2026-12-12$/m);
-  assert.match(text, /^  status: Open$/m, "Status stays yours in the note");
+  assert.match(text, /^  status: Open$/m, "the retired Status stays in the note as history");
   assert.match(await readFile(join(dir, "log", "2026-12.md"), "utf8"), /question-drop que-8n3v5x1d "Who owns the Acme mobile app\?"/);
   assert.deepEqual(await lintErrors(dir), []);
 
-  const first = await rendered(dir);
-  assert.equal(first.action, "update");
-  assert.deepEqual(first.properties.Status, { type: "select", value: "Dropped" });
-  assert.deepEqual(first.properties.Lifecycle, { type: "select", value: "Archived" });
-  const recorded = await run(dir, ["sync", "record"], { records: [{ id: QUESTION, notion: first.page_id, synced_at: NOW, published: first.published }] });
-  assert.equal(recorded.code, 0, recorded.stdout);
-  const second = await run(dir, ["sync", "render", "--ids", QUESTION]);
-  assert.equal(second.json.data.items[0]?.properties.Status, undefined, "Dropped goes out once");
+  await notRendered(dir);
 });
 
 test("question drop: without a task, someone else's commitment is dropped with no Task", async (context) => {
@@ -75,7 +70,7 @@ test("question drop: without a task, someone else's commitment is dropped with n
   const text = await question(dir);
   assert.match(text, /^dropped: 2026-12-12$/m);
   assert.doesNotMatch(text, /^task:/m);
-  assert.deepEqual((await rendered(dir)).properties.Status, { type: "select", value: "Dropped" });
+  await notRendered(dir);
   assert.deepEqual(await lintErrors(dir), []);
 });
 
@@ -123,31 +118,16 @@ test("question drop: a risk, an answered question, a non-question, a repeated id
   assert.equal((await drop(dir, [{ id: QUESTION }])).json.error.code, "INPUT_INVALID", "an answered question is not a to-do");
 });
 
-test("question drop: an archived question, or one you marked Answered in Notion, is refused", async (context) => {
+test("question drop: an archived question, or one you track, is refused; a Status set in Notion is history and not read (0099)", async (context) => {
   const dir = await fixtureCopy(context);
   await editQuestion(dir, (text) => text.replace(/^lifecycle: draft$/m, "lifecycle: archived"));
   const before = await question(dir);
   assert.equal((await drop(dir, [{ id: QUESTION }])).json.error.code, "INPUT_INVALID", "an archived question is history");
   assert.equal(await question(dir), before);
-  await editQuestion(dir, (text) => text.replace(/^lifecycle: archived$/m, "lifecycle: reviewed").replace(/^  status: Open$/m, "  status: Answered"));
-  assert.equal((await drop(dir, [{ id: QUESTION }])).json.error.code, "INPUT_INVALID", "Answered in Notion is never overwritten by Dropped");
-});
-
-test("render: Dropped is not sent again after you reopen the question in Notion", async (context) => {
-  const dir = await fixtureCopy(context);
-  assert.equal((await drop(dir, [{ id: QUESTION }])).code, 0);
-  const first = await rendered(dir);
-  assert.equal((await run(dir, ["sync", "record"], { records: [{ id: QUESTION, notion: first.page_id, synced_at: NOW, published: first.published }] })).code, 0);
-  await editQuestion(dir, (text) => text.replace(/^  status: Open$/m, "  status: Open").replace(/^  as_of: .*$/m, "  as_of: 2026-12-13T08:00:00Z"));
-  const later = await run(dir, ["sync", "render", "--ids", QUESTION], undefined, "2026-12-14T09:00:00Z");
-  assert.equal(later.json.data.items[0]?.properties.Status, undefined);
-});
-
-test("render: a question you already set to Dropped in Notion gets no Status from the drop", async (context) => {
-  const dir = await fixtureCopy(context);
-  await editQuestion(dir, (text) => text.replace(/^  status: Open$/m, "  status: Dropped"));
-  assert.equal((await drop(dir, [{ id: QUESTION }])).code, 0);
-  assert.equal((await rendered(dir)).properties.Status, undefined);
+  await editQuestion(dir, (text) => text.replace(/^lifecycle: archived$/m, "lifecycle: reviewed").replace(/^raised_in:/m, "task: 3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f\nraised_in:"));
+  assert.equal((await drop(dir, [{ id: QUESTION }])).json.error.code, "INPUT_INVALID", "a tracked question is followed up, not a to-do");
+  await editQuestion(dir, (text) => text.replace(/^task: .*\n/m, "").replace(/^  status: Open$/m, "  status: Answered"));
+  assert.equal((await drop(dir, [{ id: QUESTION }])).code, 0, "notion_fields.status is retired: only the read-back turned it into an answer");
 });
 
 // The tidy's Convert for a question from a selected capture (an extract): the item is the one the question's paragraph names (capture-and-review §6.2).

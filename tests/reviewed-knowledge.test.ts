@@ -6,14 +6,15 @@ import { test } from "node:test";
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
 import { brain, fixtureCopy, withPassages } from "./helpers.ts";
 
-// Decision 0071 (0.9.1, CC-125): Notion shows reviewed knowledge. A decision, question, concept or Document gets its page
-// once it is reviewed; until then it lives only in its Review row (spec/cli.md §5.14.4).
+// Decision 0071 (0.9.1, CC-125): Notion shows reviewed knowledge. A concept or Document gets its page once it is reviewed; until then
+// it lives only in its Review row (spec/cli.md §5.14.4). Since 0.16.0 a decision or question gets no page at all (0099).
 const NOW = "2026-12-10T09:00:00Z";
 const SYNC = "mtg-8c4n2p7w";
 const DECISION = "dec-7k2m9q4x";
 const DECISION_FILE = "knowledge/decisions/2026-12-03-use-supabase-for-auth.md";
-const QUESTION = "que-8n3v5x1d";
-const QUESTION_FILE = "knowledge/questions/who-owns-the-acme-mobile-app.md";
+const DOC = "con-1s6t8e2b"; // "Row-level security": a draft reference, a Document once the Documents database is set
+const DOC_FILE = "knowledge/references/row-level-security.md";
+const DOCUMENTS = "a1000000-0000-4000-8000-00000000000c";
 const DRAFT_PERSON = "per-9t2c6m4a";
 const DRAFT_PERSON_FILE = "knowledge/people/carlos-ruiz.md";
 const PAGE = "e1000000-0000-4000-8000-000000000001";
@@ -77,62 +78,61 @@ async function decide(dir: string, proposal: string, action: "approve" | "reject
   assert.equal(applied.code, 0, applied.stdout);
 }
 
+/** The fixture copy with the Documents database set, so a reference has a database to go to. */
+async function documentsBrain(context: Parameters<typeof fixtureCopy>[0]): Promise<string> {
+  const dir = await fixtureCopy(context);
+  const set = await brain(["config", "set", "notion.databases.documents", JSON.stringify(DOCUMENTS), "--brain", dir, "--json"]);
+  assert.equal(set.code, 0, set.stdout);
+  return dir;
+}
+
 const byId = (items: Array<Record<string, any>>, id: string) => items.find((item) => item.id === id);
 
-test("render: a draft decision gets no page, and its meeting's Decisions waits without pending it (0071)", async (context) => {
-  const dir = await fixtureCopy(context);
+test("render: a draft Document gets no page and is skipped NOT_REVIEWED; a decision gets none whatever its lifecycle (0071, 0099)", async (context) => {
+  const dir = await documentsBrain(context);
   const data = await renderChanged(dir);
-  assert.equal(byId(data.items, DECISION), undefined, "a draft decision is not created");
+  assert.equal(byId(data.items, DOC), undefined, "a draft Document is not created");
   for (const item of data.items) {
-    for (const pending of item.pending_relations) assert.ok(!pending.ids.includes(DECISION), `${item.id} lists the draft in pending_relations`);
+    for (const pending of item.pending_relations) assert.ok(!pending.ids.includes(DOC), `${item.id} lists the draft in pending_relations`);
   }
-  const meeting = byId(data.items, SYNC);
-  if (meeting !== undefined) assert.ok(!(meeting.properties.Decisions?.value ?? []).length, "no page to link yet");
-
-  const ids = await run(dir, ["sync", "render", "--ids", DECISION]);
+  const ids = await run(dir, ["sync", "render", "--ids", DOC]);
   assert.equal(ids.code, 0, ids.stdout);
   assert.deepEqual(ids.json.data.items, []);
-  assert.deepEqual(ids.json.data.skipped, [{ id: DECISION, reason: "NOT_REVIEWED" }]);
+  assert.deepEqual(ids.json.data.skipped, [{ id: DOC, reason: "NOT_REVIEWED" }]);
+
+  await setField(dir, DECISION_FILE, "lifecycle", "reviewed");
+  assert.equal(byId((await renderChanged(dir)).items, DECISION), undefined, "a reviewed decision has no database to go to");
+  assert.deepEqual((await run(dir, ["sync", "render", "--ids", DECISION])).json.data.skipped, [{ id: DECISION, reason: "NO_DATABASE" }]);
 });
 
-test("render: approving the draft publishes it and fills its meeting's Decisions in the same run (0071)", async (context) => {
-  const dir = await fixtureCopy(context);
+test("render: approving the draft publishes it in the next run (0071)", async (context) => {
+  const dir = await documentsBrain(context);
   // Publish what is publishable, as an earlier run did, so only the approval is news.
   let next = 0;
   for (let round = 0; round < 3; round += 1) {
     for (const item of (await renderChanged(dir)).items) if (item.action !== "trash") await record(dir, item, item.page_id ?? `e1000000-0000-4000-8000-${String((next += 1)).padStart(12, "0")}`);
   }
   assert.deepEqual((await renderChanged(dir)).items, [], "everything publishable is published");
-  const row = await reviewRow(dir, [DECISION]);
+  const row = await reviewRow(dir, [DOC]);
   await decide(dir, row, "approve");
-  assert.equal((await attributes(dir, DECISION_FILE)).lifecycle, "reviewed");
+  assert.equal((await attributes(dir, DOC_FILE)).lifecycle, "reviewed");
 
-  const first = await renderChanged(dir);
-  const created = byId(first.items, DECISION);
+  const created = byId((await renderChanged(dir)).items, DOC);
   assert.equal(created?.action, "create");
   assert.deepEqual(created!.properties.Lifecycle, { type: "select", value: "Reviewed" });
-  const waiting = byId(first.items, SYNC);
-  assert.ok(waiting !== undefined, "the meeting is returned for the relation it is waiting for");
-  assert.deepEqual(waiting!.pending_relations, [{ property: "Decisions", ids: [DECISION] }]);
-  assert.deepEqual(waiting!.properties, {}, "nothing to write yet, not even Last Synced");
-
-  const decisionPage = "e2000000-0000-4000-8000-000000000002";
-  await record(dir, created!, decisionPage);
-  const second = await renderChanged(dir);
-  const meeting = byId(second.items, SYNC);
-  assert.deepEqual(meeting?.properties.Decisions?.value, [decisionPage]);
-  assert.deepEqual(meeting!.pending_relations, []);
+  await record(dir, created!, "e2000000-0000-4000-8000-000000000002");
+  assert.equal(byId((await renderChanged(dir)).items, DOC), undefined, "published once");
   assert.deepEqual(await lintErrors(dir), []);
 });
 
 test("render: a rejected draft never gets a page (0071)", async (context) => {
-  const dir = await fixtureCopy(context);
-  const row = await reviewRow(dir, [DECISION]);
+  const dir = await documentsBrain(context);
+  const row = await reviewRow(dir, [DOC]);
   await decide(dir, row, "reject");
-  assert.equal((await attributes(dir, DECISION_FILE)).lifecycle, "archived");
-  assert.equal(byId((await renderChanged(dir)).items, DECISION), undefined);
-  const ids = await run(dir, ["sync", "render", "--ids", DECISION]);
-  assert.deepEqual(ids.json.data.skipped, [{ id: DECISION, reason: "NOT_REVIEWED" }]);
+  assert.equal((await attributes(dir, DOC_FILE)).lifecycle, "archived");
+  assert.equal(byId((await renderChanged(dir)).items, DOC), undefined);
+  const ids = await run(dir, ["sync", "render", "--ids", DOC]);
+  assert.deepEqual(ids.json.data.skipped, [{ id: DOC, reason: "NOT_REVIEWED" }]);
 });
 
 test("render: a draft person still gets its page (0071)", async (context) => {
@@ -144,30 +144,35 @@ test("render: a draft person still gets its page (0071)", async (context) => {
   assert.deepEqual(person!.properties.Lifecycle, { type: "select", value: "Draft" });
 });
 
-test("render: a disputed decision is created and keeps its page; an archived page stays as history (0071)", async (context) => {
-  const dir = await fixtureCopy(context);
-  await setField(dir, DECISION_FILE, "lifecycle", "disputed");
-  const created = byId((await renderChanged(dir)).items, DECISION);
+test("render: a disputed Document is created and keeps its page; an archived page stays as history (0071)", async (context) => {
+  const dir = await documentsBrain(context);
+  await setField(dir, DOC_FILE, "lifecycle", "disputed");
+  const created = byId((await renderChanged(dir)).items, DOC);
   assert.equal(created?.action, "create");
   await record(dir, created!);
-  await setField(dir, DECISION_FILE, "lifecycle", "archived");
-  const updated = byId((await renderChanged(dir)).items, DECISION);
+  await setField(dir, DOC_FILE, "lifecycle", "archived");
+  const updated = byId((await renderChanged(dir)).items, DOC);
   assert.equal(updated?.action, "update", "a note with a page is rendered whatever its lifecycle");
   assert.deepEqual(updated!.properties.Lifecycle, { type: "select", value: "Archived" });
 });
 
 test("render: a draft that already has a page keeps being updated until the cleanup (0071)", async (context) => {
-  const dir = await fixtureCopy(context);
-  await setField(dir, QUESTION_FILE, "summary", "Who owns the relaunched Acme mobile app?");
-  const item = byId((await renderChanged(dir)).items, QUESTION);
+  const dir = await documentsBrain(context);
+  await setField(dir, DOC_FILE, "notion", PAGE);
+  await setField(dir, DOC_FILE, "summary", "Row access rules, evaluated per row.");
+  const item = byId((await renderChanged(dir)).items, DOC);
   assert.equal(item?.action, "update");
 });
 
 test("render --unpublish-drafts trashes the Draft pages a Review row still holds, and approval creates a new page (0071)", async (context) => {
-  const dir = await fixtureCopy(context);
-  // The question is a draft with a page, from before 0.9.1; the decision is a draft with a page too, held by no Review row.
-  await setField(dir, DECISION_FILE, "notion", "e3000000-0000-4000-8000-000000000003");
-  const row = await reviewRow(dir, [QUESTION]);
+  const dir = await documentsBrain(context);
+  // Two draft Documents with a page from before 0.9.1: one a pending Review row lists, one held by no row.
+  const other = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Auth providers compared", frontmatter: { summary: "Three providers side by side.", origin: "part", sources: [SYNC] }, body: "Supabase, Firebase and Auth0.\n" }] });
+  assert.equal(other.code, 0, other.stdout);
+  await setField(dir, other.json.data.created[0].path, "notion", "e3000000-0000-4000-8000-000000000003");
+  const held = "4e5f6a7b-8c9d-4e0f-9a1b-2c3d4e5f6a7b";
+  await setField(dir, DOC_FILE, "notion", held);
+  const row = await reviewRow(dir, [DOC]);
 
   const usage = await run(dir, ["sync", "render", "--unpublish-drafts", "--changed"]);
   assert.equal(usage.json.error.code, "USAGE");
@@ -175,31 +180,31 @@ test("render --unpublish-drafts trashes the Draft pages a Review row still holds
   const result = await run(dir, ["sync", "render", "--unpublish-drafts"]);
   assert.equal(result.code, 0, result.stdout);
   assert.deepEqual(result.json.data.items, [{
-    id: QUESTION, type: "question", database: "questions", database_id: "a1000000-0000-4000-8000-000000000009",
-    page_id: "4e5f6a7b-8c9d-4e0f-9a1b-2c3d4e5f6a7b", action: "trash", properties: {}, body: null, sections: null,
+    id: DOC, type: "reference", database: "documents", database_id: DOCUMENTS,
+    page_id: held, action: "trash", properties: {}, body: null, sections: null,
     pending_relations: [], published: { "@trashed": NOW },
   }], "only the draft a pending Review row lists; the other draft keeps its page");
 
-  const mismatch = await run(dir, ["sync", "record"], { records: [{ id: QUESTION, notion: PAGE, synced_at: NOW, published: { "@trashed": NOW } }] });
+  const mismatch = await run(dir, ["sync", "record"], { records: [{ id: DOC, notion: PAGE, synced_at: NOW, published: { "@trashed": NOW } }] });
   assert.equal(mismatch.json.data.records[0].reason, "NOTION_ID_MISMATCH");
-  assert.equal((await attributes(dir, QUESTION_FILE)).notion, "4e5f6a7b-8c9d-4e0f-9a1b-2c3d4e5f6a7b", "a mismatch changes nothing");
+  assert.equal((await attributes(dir, DOC_FILE)).notion, held, "a mismatch changes nothing");
 
   await record(dir, result.json.data.items[0]);
-  const forgotten = await attributes(dir, QUESTION_FILE);
+  const forgotten = await attributes(dir, DOC_FILE);
   assert.equal(forgotten.notion, undefined);
   assert.equal(forgotten.notion_published, undefined);
   assert.equal(forgotten.last_synced, undefined);
   assert.deepEqual(await lintErrors(dir), []);
-  assert.equal(byId((await renderChanged(dir)).items, QUESTION), undefined, "still a draft: no page");
+  assert.equal(byId((await renderChanged(dir)).items, DOC), undefined, "still a draft: no page");
   assert.deepEqual((await run(dir, ["sync", "render", "--unpublish-drafts"])).json.data.items, [], "nothing left to clean up");
 
   await decide(dir, row, "approve");
-  const recreated = byId((await renderChanged(dir)).items, QUESTION);
+  const recreated = byId((await renderChanged(dir)).items, DOC);
   assert.equal(recreated?.action, "create");
   assert.deepEqual(recreated!.properties.Lifecycle, { type: "select", value: "Reviewed" });
 });
 
-test("note new: a decision a connected workflow publishes is written reviewed (0071)", async (context) => {
+test("note new: a decision a connected workflow publishes is written reviewed, and gets no page (0071, 0099)", async (context) => {
   const dir = await fixtureCopy(context);
   const created = await run(dir, ["note", "new"], { notes: [{
     type: "decision", title: "Use Postgres for the event store",
@@ -209,30 +214,17 @@ test("note new: a decision a connected workflow publishes is written reviewed (0
   assert.equal(created.code, 0, created.stdout);
   const note = await attributes(dir, created.json.data.created[0].path);
   assert.equal(note.lifecycle, "reviewed");
-  assert.equal(byId((await renderChanged(dir)).items, created.json.data.created[0].id)?.action, "create");
+  assert.equal(byId((await renderChanged(dir)).items, created.json.data.created[0].id), undefined);
 });
 
-test("promote waits for review: a draft's Promote asked is ignored NOT_REVIEWED, and note new refuses to promote it (0071)", async (context) => {
-  const dir = await fixtureCopy(context);
-  const set = await brain(["config", "set", "notion.databases.documents", JSON.stringify("a1000000-0000-4000-8000-00000000000c"), "--brain", dir, "--json"]);
-  assert.equal(set.code, 0, set.stdout);
-  // A Draft page kept from before 0.9.1.
-  const page = "e4000000-0000-4000-8000-000000000004";
-  await setField(dir, DECISION_FILE, "notion", page);
-  const row = { database: "decisions", page_id: page, last_edited: NOW, properties: { "Brain ID": DECISION, "Promote asked": true } };
-  const plan = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [row] });
-  assert.equal(plan.code, 0, plan.stdout);
-  assert.deepEqual(plan.json.data.promote_requests, []);
-  assert.deepEqual(plan.json.data.ignored, [{ database: "decisions", page_id: page, brain_id: DECISION, property: "Promote asked", reason: "NOT_REVIEWED" }]);
+test("promote waits for review: note new refuses to promote a draft, and promotes it once reviewed (0071)", async (context) => {
+  const dir = await documentsBrain(context);
   const promoted = { notes: [{ type: "reference", title: "Supabase auth (page)", frontmatter: { summary: "A page for the decision.", origin: "promoted", promoted_from: DECISION }, body: "Because.\n" }] };
   const refused = await run(dir, ["note", "new"], promoted);
   assert.equal(refused.json.error?.code, "INPUT_INVALID");
   assert.match(refused.stdout, /only a reviewed or disputed note is promoted/);
 
-  // Approved: the same ticked box is a request, and the Document can be written.
   await setField(dir, DECISION_FILE, "lifecycle", "reviewed");
-  const after = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [row] });
-  assert.deepEqual(after.json.data.promote_requests, [{ page_id: page, note: DECISION }]);
   const written = await run(dir, ["note", "new"], promoted);
   assert.equal(written.code, 0, written.stdout);
 });

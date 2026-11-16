@@ -1,5 +1,5 @@
-import { readJsonInput } from "../lib/input.ts";
-import { applyPlan, buildPlan, parsePlan, parseSnapshot, record, render, renderTasks, unpublishDrafts } from "../lib/sync.ts";
+import { assertNoProblems, readJsonInput } from "../lib/input.ts";
+import { applyPlan, buildPlan, parsePlan, parseSnapshot, record, render, renderQuestionTask, renderTasks, unpublishDrafts } from "../lib/sync.ts";
 import type { RenderItem } from "../lib/sync.ts";
 import type { Command } from "../lib/command.ts";
 import { Workspace } from "../lib/workspace.ts";
@@ -7,26 +7,48 @@ import { commitJournaled } from "../lib/journal.ts";
 import { modulesOf } from "../lib/modules.ts";
 import { BrainError } from "../lib/errors.ts";
 import { lintWarnings } from "../lib/warnings.ts";
+import { applyQuestionStatus, buildQuestionsPlan, questionsSnapshotProblems, splitQuestionStatus } from "../lib/questions-transition.ts";
 
 export const syncPlanCommand: Command = {
-  name: "sync plan", usage: "brain sync plan --input <snapshot|-> [--review-transition] [--json]", summary: "Compare a Notion snapshot with the brain without writing.", options: { input: "string", "review-transition": "boolean" }, maxPositionals: 0, needsBrain: true,
+  name: "sync plan", usage: "brain sync plan --input <snapshot|-> [--review-transition | --questions-transition] [--json]", summary: "Compare a Notion snapshot with the brain without writing.", options: { input: "string", "review-transition": "boolean", "questions-transition": "boolean" }, maxPositionals: 0, needsBrain: true,
   async run({ args, brain }) {
     const input = args.options.input as string | undefined; if (input === undefined) throw new BrainError("USAGE", "sync plan needs --input");
-    // The 0.16.0 migration reads the Review rows once (cli §5.14.8); once it removed the database's key, they are never read again.
     const reviewTransition = args.options["review-transition"] === true;
     const notion = brain!.config.notion as { databases?: Record<string, unknown> } | undefined;
+    // The 0.16.0 migration reads Questions · Status once (cli §5.14.9); once it removed the database's key, the rows are not read again.
+    if (args.options["questions-transition"] === true) {
+      if (reviewTransition) throw new BrainError("USAGE", "--review-transition and --questions-transition are separate steps of the 0.16.0 migration: run them one at a time");
+      if (notion?.databases === undefined || !Object.hasOwn(notion.databases, "questions")) throw new BrainError("QUESTIONS_RETIRED", "The Questions database was archived by the 0.16.0 migration, or this space never had one: its rows are not read again. Open questions are in your project and area Briefs.");
+      const snapshot = parseSnapshot(await readJsonInput(input, "sync plan")); assertNoProblems(questionsSnapshotProblems(snapshot.rows));
+      const plan = buildQuestionsPlan(await Workspace.open(brain!), snapshot);
+      return { data: plan, human: `${plan.question_status.length} question statuses to record\n` };
+    }
+    // The 0.16.0 migration reads the Review rows once (cli §5.14.8); once it removed the database's key, they are never read again.
     if (reviewTransition && (notion?.databases === undefined || !Object.hasOwn(notion.databases, "review"))) throw new BrainError("REVIEW_RETIRED", "The Review database was archived by the 0.16.0 migration: its rows are not read again. Decide proposals in the session.");
     const workspace = await Workspace.open(brain!); const plan = buildPlan(workspace, parseSnapshot(await readJsonInput(input, "sync plan")), { reviewTransition });
     return { data: plan, human: `${plan.create.length} creates, ${plan.updates.length} updates, ${plan.corrections.length} corrections\n` };
   },
 };
 
+/** The results of the Question Status items join the apply's output, summary and log (cli §5.14.9). */
+function addQuestionStatus(data: Record<string, unknown>, applied: ReturnType<typeof applyQuestionStatus>): void {
+  data.question_status = applied.results;
+  const summary = data.summary as Record<string, number>;
+  for (const item of applied.results) if (typeof item.result === "string" && Object.hasOwn(summary, item.result)) summary[item.result] += 1;
+  (data.log as unknown[]).push(...applied.log);
+}
+
 /** Whether a Review decision changed anything: those writes (the target and the proposal file) are one journaled operation (capture-and-review §7.11). */
 const writesReview = (data: Record<string, unknown>): boolean => (data.review_results as Array<{ result: string }>).some((entry) => ["applied", "closed", "deferred"].includes(entry.result)) || (data.revision_results as Array<{ result: string }>).some((entry) => entry.result === "recorded");
 
 export const syncApplyCommand: Command = {
   name: "sync apply", usage: "brain sync apply --input <plan|-> [--record-only] [--skip-conflicted] [--dry-run] [--json]", summary: "Apply a sync plan using atomic per-item writes.", options: { input: "string", "record-only": "boolean", "skip-conflicted": "boolean", "dry-run": "boolean" }, maxPositionals: 0, needsBrain: true,
-  async run({ args, brain, now }) { const input = args.options.input as string | undefined; if (input === undefined) throw new BrainError("USAGE", "sync apply needs --input"); const workspace = await Workspace.open(brain!); const data = applyPlan(workspace, parsePlan(await readJsonInput(input, "sync apply")), now, args.options["record-only"] === true, args.options["skip-conflicted"] === true); const warnings = lintWarnings(workspace.warnings()); const dryRun = args.options["dry-run"] === true; let op: string | undefined; if (!dryRun) { if (writesReview(data) && workspace.changedPaths.length > 0) op = await commitJournaled(brain!.root, workspace, data.log as [], now, "sync apply: review decisions"); else await workspace.commit(data.log as [], now); } const { log: _log, ...output } = data; const failed = Number((data.summary as Record<string, unknown>).failed ?? 0); return { data: { dry_run: dryRun, ...(op === undefined ? {} : { op }), ...output }, warnings, exitCode: failed > 0 ? 1 : 0, human: `${failed} failed items\n` }; },
+  async run({ args, brain, now }) { const input = args.options.input as string | undefined; if (input === undefined) throw new BrainError("USAGE", "sync apply needs --input"); const workspace = await Workspace.open(brain!);
+    // The 0.16.0 migration's Question Status items are applied after every other item (cli §5.14.9).
+    const split = splitQuestionStatus(await readJsonInput(input, "sync apply")); assertNoProblems(split.problems);
+    const data = applyPlan(workspace, parsePlan(split.plan), now, args.options["record-only"] === true, args.options["skip-conflicted"] === true);
+    if (split.questionStatus !== undefined) addQuestionStatus(data, applyQuestionStatus(workspace, split.questionStatus, now));
+    const warnings = lintWarnings(workspace.warnings()); const dryRun = args.options["dry-run"] === true; let op: string | undefined; if (!dryRun) { if (writesReview(data) && workspace.changedPaths.length > 0) op = await commitJournaled(brain!.root, workspace, data.log as [], now, "sync apply: review decisions"); else await workspace.commit(data.log as [], now); } const { log: _log, ...output } = data; const failed = Number((data.summary as Record<string, unknown>).failed ?? 0); return { data: { dry_run: dryRun, ...(op === undefined ? {} : { op }), ...output }, warnings, exitCode: failed > 0 ? 1 : 0, human: `${failed} failed items\n` }; },
 };
 
 export const syncRenderCommand: Command = {
@@ -80,11 +102,13 @@ function holdBody(item: RenderItem): void {
 }
 
 export const syncTasksCommand: Command = {
-  name: "sync tasks", usage: "brain sync tasks (--meeting <mtg-id> | --source <src-id> | --direct) --input <file|-> [--json]", summary: "Render task payloads for a meeting's or source's action items, or for tasks said yes to in a chat (--direct).", options: { meeting: "string", source: "string", direct: "boolean", input: "string" }, maxPositionals: 0, needsBrain: true,
+  name: "sync tasks", usage: "brain sync tasks (--meeting <mtg-id> | --source <src-id> | --direct | --question <que-id>) --input <file|-> [--json]", summary: "Render task payloads for a meeting's or source's action items, for tasks said yes to in a chat (--direct), or for the task that tracks a question or risk (--question).", options: { meeting: "string", source: "string", direct: "boolean", question: "string", input: "string" }, maxPositionals: 0, needsBrain: true,
   async run({ args, brain }) {
-    const meeting = args.options.meeting as string | undefined; const source = args.options.source as string | undefined; const direct = args.options.direct === true; const input = args.options.input as string | undefined;
-    if ([meeting !== undefined, source !== undefined, direct].filter(Boolean).length !== 1 || input === undefined) throw new BrainError("USAGE", "sync tasks needs exactly one of --meeting, --source or --direct, and --input");
+    const meeting = args.options.meeting as string | undefined; const source = args.options.source as string | undefined; const direct = args.options.direct === true; const question = args.options.question as string | undefined; const input = args.options.input as string | undefined;
+    if ([meeting !== undefined, source !== undefined, direct, question !== undefined].filter(Boolean).length !== 1 || input === undefined) throw new BrainError("USAGE", "sync tasks needs exactly one of --meeting, --source, --direct or --question, and --input");
+    // With Tasks off nothing is tracked, a question neither (capture-and-review §6.4).
     if (!modulesOf(brain!.config).tasks) throw new BrainError("MODULE_OFF", "The Tasks module is off: brain modules on tasks");
+    if (question !== undefined) return { data: renderQuestionTask(await Workspace.open(brain!), question, await readJsonInput(input, "sync tasks")), human: "Task payload rendered.\n" };
     return { data: renderTasks(await Workspace.open(brain!), direct ? undefined : meeting ?? source!, await readJsonInput(input, "sync tasks")), human: "Task payloads rendered.\n" };
   },
 };

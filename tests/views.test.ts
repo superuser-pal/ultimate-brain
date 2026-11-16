@@ -127,7 +127,7 @@ Use row-level security.
   assert.deepEqual(run.json.data.written, [AREA_BRIEF, BRIEF, DECISION_LOG]);
   for (const path of [BRIEF, AREA_BRIEF]) {
     const view = await readFile(join(dir, path), "utf8");
-    assert.match(view, /## Recent decisions\n- 2026-12-03 — \[Use Supabase for auth\]\([^)]+\) \(accepted\)\n\n## Open questions\n- None\n/, path);
+    assert.match(view, /## Recent decisions\n- 2026-12-03 — \[Use Supabase for auth\]\([^)]+\) \(accepted\)\n\n## Open questions and risks\n- None\n/, path);
     assert.doesNotMatch(view, /Use Postgres row-level security|Nothing reviewed yet/, path);
   }
   const area = await readFile(join(dir, AREA_BRIEF), "utf8");
@@ -171,7 +171,7 @@ Use row-level security.
   assert.doesNotMatch(log, /Use Postgres row-level security|dec-4h6j8k2m/, "the archived decision is in neither section nor generated_from");
 });
 
-test("the decision log marks a draft as waiting for your decision and links a reviewed one, here and in Notion; approved, it reads as reviewed (CC-261)", async (context) => {
+test("the decision log marks a draft as waiting for your decision and links a reviewed one here, but in Notion links neither (0099); approved, it reads as reviewed (CC-261)", async (context) => {
   const dir = await fixtureCopy(context);
   const draftPath = "knowledge/decisions/2026-12-05-use-postgres-row-level-security.md";
   // A synthetic draft that once had a Draft row (a page from before 0.9.1): its line still links nowhere in Notion (0071).
@@ -231,8 +231,9 @@ Use Auth0.
   assert.equal(render.code, 0, render.stdout);
   const section: string = render.json.data.items[0].sections["Decision log"];
   assert.match(section, /^- 2026-12-05 — Use Postgres row-level security — waiting for your decision$/m, "the draft is marked, with no link");
-  assert.match(section, /^- 2026-12-03 — \[Use Supabase for auth\]\(https:\/\/www\.notion\.so\/5d6e7f8a9b0c4d1e8f2a3b4c5d6e7f8a\) — accepted — supersedes /m, "the reviewed one links its page");
-  assert.doesNotMatch(section, /4c5d6e7f8a9b4c0d8e1f2a3b4c5d6e7f/);
+  // Since 0.16.0 a decision has no page (0099): the reviewed one is its title alone too, and no old page id is sent.
+  assert.match(section, /^- 2026-12-03 — Use Supabase for auth — accepted — supersedes /m, "the reviewed one is its title, with no link");
+  assert.doesNotMatch(section, /4c5d6e7f8a9b4c0d8e1f2a3b4c5d6e7f|5d6e7f8a9b0c4d1e8f2a3b4c5d6e7f8a/);
 
   await approveNote(dir, draftPath);
   const again = await brain(["views", "--brain", dir, "--now", NOW, "--json"]);

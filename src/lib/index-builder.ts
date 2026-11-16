@@ -156,7 +156,7 @@ function typeFields(note: Note, byId: ReadonlyMap<string, Note>): Array<[string,
     case "decision":
       return [["date", scalar(a.date)], ["assessment", scalar(a.assessment)], ["project", refs(a.projects)]];
     case "question":
-      return [["kind", scalar(a.kind)], ["status", notionField("status")]];
+      return [["kind", scalar(a.kind)], ["status", questionStatus(note)]];
     case "meeting":
       return [["date", scalar(a.date)], ["project", refs(a.projects)]];
     case "reference":
@@ -164,6 +164,17 @@ function typeFields(note: Note, byId: ReadonlyMap<string, Note>): Array<[string,
     default:
       return [];
   }
+}
+
+/**
+ * A question's status, derived from Git (spec/schema.md §4, §13; decision 0099): `answered` with an answer, else `dropped` when dropped,
+ * else `tracked` with a task, else `open`. Questions · Status (`notion_fields.status`) is retired in 0.16.0.
+ */
+export function questionStatus(note: Note): "answered" | "dropped" | "tracked" | "open" {
+  const a = note.attributes;
+  if (a.answer !== undefined) return "answered";
+  if (a.dropped !== undefined) return "dropped";
+  return typeof a.task === "string" && a.task !== "" ? "tracked" : "open";
 }
 
 function toEntry(note: Note): IndexEntry {
@@ -198,7 +209,7 @@ function entryFields(note: Note): Record<string, unknown> {
     person: [["org", a.org], ["role", facts.role]],
     org: [["relationship", notionFields.relationship]],
     decision: [["date", a.date], ["assessment", a.assessment]],
-    question: [["kind", a.kind], ["status", notionFields.status]],
+    question: [["kind", a.kind], ["status", questionStatus(note)]],
     meeting: [["date", a.date]],
     source: [["source_key", a.source_key]],
     view: [["view_kind", a.view_kind], ["project", a.project]],
