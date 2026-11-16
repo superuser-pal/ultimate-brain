@@ -15,8 +15,8 @@ import { logLinesOf } from "./runs.ts";
 const exec = promisify(execFile);
 
 const RULES_END = "<!-- ultimate-brain:rules:end -->";
-/** Core's databases (schema §12): always on, so always needed. */
-const CORE_DATABASES = ["areas", "projects", "meetings", "people", "review", "inbox"];
+/** Core's databases (schema §12): always on, so always needed. Review was core until 0.16.0 (0096). */
+const CORE_DATABASES = ["areas", "projects", "meetings", "people", "inbox"];
 /** The steps only an online or by-hand check proves, read from `setup` log lines (spec/setup.md §4.1, cli.md §5.2). */
 const RECORDED = ["notion-mcp", "minutes-prompt", "brain-assistant", "seeding", "first-value", "schedule"] as const;
 /** The items in setup's order (spec/setup.md §2), each with its human "next" wording (cli.md §5.2). */
