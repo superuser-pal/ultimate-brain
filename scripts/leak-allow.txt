@@ -101,3 +101,7 @@ spec/cli.md:you@example\.com
 README.md:you@example\.com
 docs/setup.md:you@example\.com
 src/commands/init.ts:you@example\.com
+spec/examples/valid/source-checked.md:7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d
+spec/examples/valid/source-task.md:8b9c0d1e-2f3a-4b4c-9d5e-6f7a8b9c0d1e
+spec/examples/invalid/source-changes-without-checked-from.md:7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d
+spec/examples/invalid/source-task-with-notion.md:8b9c0d1e-2f3a-4b4c-9d5e-6f7a8b9c0d1e

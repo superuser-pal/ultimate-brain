@@ -32,7 +32,8 @@
         "meeting_url": "",
         "source": "Source",
         "brain_id": "Brain ID",
-        "kind": "Kind"
+        "kind": "Kind",
+        "document_asked": "Document asked"
       },
       "new_task_status": "To Do",
       "status_type": "status"
