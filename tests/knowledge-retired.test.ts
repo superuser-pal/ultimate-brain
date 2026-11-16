@@ -286,3 +286,31 @@ test("0099: question drop refuses a tracked question, and the new brain template
   assert.equal("decisions" in template.notion.databases || "questions" in template.notion.databases, false);
   assert.equal(template.notion.tasks.properties.kind, "Kind");
 });
+
+test("0099: an Inbox row takes Project and Area from a decision its source produced; a body link to a decision with an old page is text", async (context) => {
+  const dir = await fixtureCopy(context);
+  await editJson(dir, (config) => {
+    config.notion.databases.inbox = "a1000000-0000-4000-8000-00000000000e";
+    config.notion.databases.documents = "a1000000-0000-4000-8000-00000000000d";
+  });
+  const made = await run(dir, ["note", "new"], { notes: [{ type: "source", title: "Pricing memo", file_date: "2026-12-01", frontmatter: { source_key: "agent:claude-code/pricing-memo", kind: "note", summary: "A pricing memo.", digest: "- Price set." }, body: "Price set.\n" }] });
+  assert.equal(made.code, 0, made.stdout);
+  const source = made.json.data.created[0].id as string;
+  const decided = await run(dir, ["note", "new"], { notes: [{ type: "decision", title: "Set the price", frontmatter: { summary: "s", date: "2026-12-01", assessment: "accepted", projects: ["prj-9x4t1b7e"], sources: [source] }, body: "Set.\n" }] });
+  assert.equal(decided.code, 0, decided.stdout);
+  const rendered = await run(dir, ["sync", "render", "--ids", source]);
+  assert.equal(rendered.code, 0, rendered.stdout);
+  const row = rendered.json.data.items[0];
+  assert.equal(row.properties.Decisions, undefined, "no Produced relation to a decision");
+  assert.deepEqual([row.properties.Project.mode, row.properties.Project.value], ["if_empty", ["2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e"]], "the decision's project");
+  assert.ok(row.properties.Area.value.length > 0, "and that project's area");
+
+  // A reviewed Document whose body links the fixture decision, which still has a notion id from before 0.16.0.
+  await edit(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md", (text) => text.replace(/^lifecycle: draft$/m, "lifecycle: draft\nnotion: 5d6e7f8a-9b0c-4d1e-8f2a-3b4c5d6e7f8a"));
+  const doc = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Auth notes", frontmatter: { summary: "s", origin: "learned", sources: [source] }, body: "See [the auth call](../decisions/2026-12-03-use-supabase-for-auth.md).\n" }] });
+  assert.equal(doc.code, 0, doc.stdout);
+  await approveNote(dir, doc.json.data.created[0].path);
+  const page = (await run(dir, ["sync", "render", "--ids", doc.json.data.created[0].id])).json.data.items[0];
+  assert.ok(String(page.body).includes("See the auth call."), String(page.body));
+  assert.doesNotMatch(String(page.body), /5d6e7f8a9b0c4d1e8f2a3b4c5d6e7f8a/);
+});
