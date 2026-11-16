@@ -160,8 +160,7 @@ function taskProperty(workspace: Workspace, property: string): string {
   return typeof properties[property] === "string" ? properties[property] : "";
 }
 
-/** A value as a Review row and a default title show it (spec/cli.md §5.14.4). */
-/** `title` names a note as the surface shows it: on a Review row, by its published form (cli §5.14.4, "Restricted notes"). */
+/** A value as a default title shows it (spec/cli.md §5.6). `title` names a note as the surface shows it. */
 export function shownValue(value: unknown, workspace: Workspace, noteIds = false, title: NoteTitle = (note) => note.attributes.title): string {
   if (value === null || value === undefined) return "none";
   if (typeof value === "boolean") return value ? "yes" : "no";
@@ -222,26 +221,6 @@ export function fixValueProblem(workspace: Workspace, p: Record<string, unknown>
   const spec = SET_FIELDS[String(p.field)];
   const note = typeof value === "string" ? workspace.get(value) : undefined;
   return note !== undefined && note.type === spec?.type ? undefined : `${String(value)} must be an existing ${spec?.type ?? "note"}`;
-}
-
-/** Whether a proposal was decided in chat before it had a Review row: it never gets one (spec/cli.md §5.14.4). */
-export function decidedInChat(note: Note): boolean {
-  const a = note.attributes;
-  // A reflection answer (it carries a fingerprint) decided in chat is the same (cli.md §5.14.4, §6.2).
-  return note.type === "proposal" && ((typeof a.source === "string" && a.source.startsWith(ASSISTANT_SOURCE)) || typeof a.fingerprint === "string") && typeof a.notion !== "string" && isRecord(a.decision) && a.decision.decided_by === "chat";
-}
-
-/** About, About Page, Now and Proposed of a Suggestion row (spec/cli.md §5.14.4). */
-export function suggestionText(a: Record<string, unknown>, workspace: Workspace, title: NoteTitle = (note) => note.attributes.title): { name: string; about: string; aboutPage: string | null; now: string; proposed: string } {
-  const name = typeof a.title === "string" && !a.title.startsWith("Suggestion: ") ? `Suggestion: ${a.title}` : String(a.title);
-  const url = (page: unknown) => (typeof page === "string" ? `https://www.notion.so/${page.replaceAll("-", "")}` : null);
-  if (a.kind === "notion_change") {
-    const label = LABELS[String(a.property)];
-    return { name, about: a.database === "tasks" ? `${String(a.page_title)} (task)` : `${String(a.page_title)} (${String(a.target)})`, aboutPage: url(a.page), now: `${label}: ${shownValue(a.value_before, workspace, false, title)}`, proposed: `${label}: ${shownValue(a.value_after, workspace, false, title)}` };
-  }
-  const target = workspace.get(String(a.target));
-  const label = LABELS[String(a.field)];
-  return { name, about: `${String((target === undefined ? undefined : title(target)) ?? a.target)} (${String(a.target)})`, aboutPage: url(target?.attributes.notion), now: `${label}: ${shownValue(a.before, workspace, true, title)}`, proposed: `${label}: ${shownValue(a.after, workspace, true, title)}` };
 }
 
 export interface SettleResult {

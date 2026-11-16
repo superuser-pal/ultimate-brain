@@ -343,7 +343,7 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   const V = decision.action === "edit" ? decision.value : fixed.value;
   if (p.kind === "review_notes") {
     // A review_notes is judged item by item before apply on every route: an item without eligible support is withheld and the independent
-    // items apply (eligibility.md §4.1, §4.2, §9.3; cli §5.7). With items, by the Review page's rule; without (older layout), each folded
+    // items apply (eligibility.md §4.1, §4.2, §9.3; cli §5.7). With items, item by item; without (older layout), each folded
     // change, note and link alone, recorded in `dropped`.
     const layered = Array.isArray(p.items);
     // An item the user turned down is not judged, as a deferred one isn't: it is rejected whatever it rests on (schema §11.3).
@@ -518,7 +518,7 @@ function checkCleanupDecision(p: Record<string, unknown>, decision: Decision): v
 
 /**
  * Apply an approved or fixed cleanup review_notes (cli §5.7, §5.26) in one operation: each item not yet decided is turned down, withheld while
- * the row's source is excluded (the rule the Review page had), or accepted through the same code the Review page used; then, when nothing is
+ * the row's source is excluded (the rule Review pages had before 0.16.0), or accepted by `acceptCleanupItem`; then, when nothing is
  * left restricted by the input, its records are reconciled. A failed item fails the decision and the caller restores the workspace.
  */
 function applyCleanup(workspace: Workspace, proposal: Note, document: FrontmatterDocument, decision: Decision, today: string, action: string | undefined): Outcome {

@@ -59,7 +59,7 @@ export interface CleanupItemView { heading: string; current: string; proposed: s
 
 const base = (value: unknown): string => JSON.stringify({ v: value });
 
-/** What the Review page shows for one cleanup item. The restricted text is the user's own, so it is shown here (§5.2). */
+/** One cleanup item as the session shows it, and its default text. The restricted text is the user's own, so it is shown here (§5.2). */
 export function cleanupItemView(proposal: Note, entry: Record<string, unknown>, workspace: Workspace): CleanupItemView {
   const note = workspace.get(String(entry.ref));
   const cleanup = isRecord(proposal.attributes.cleanup) ? proposal.attributes.cleanup : {};
@@ -146,7 +146,7 @@ export function acceptCleanupItem(workspace: Workspace, proposal: Note, entry: R
     workspace.save(note.path, document);
     return;
   }
-  // Remove: the text applied is exactly what the Review page held. It may not keep any statement that rests on excluded content.
+  // Remove: the text applied is exactly the text the user accepted. It may not keep any statement that rests on excluded content.
   const before = restrictionOf(note, contextFor(workspace.notes, requireSuppressions(workspace.root)));
   const timeline = Array.isArray(document.attributes.timeline) ? (document.attributes.timeline as unknown[]).filter((_, index) => !before.timeline.has(index)) : undefined;
   if (timeline !== undefined) document.attributes.timeline = timeline;

@@ -1,7 +1,6 @@
 import { isRecord, unknownKeys, type InputProblem } from "./input.ts";
 import type { Note } from "./notes.ts";
-import { DECISIONS, parseReviewPage, reviewItems, sectionHash, textSha, UNCONVERTIBLE, type Token } from "./review-body.ts";
-import { expand, holdsValue, linkNames, parseReviewPage2, valueForms, withoutMarkers, wordingSha, type Labels } from "./review-format2.ts";
+import { DECISIONS, expand, holdsValue, linkNames, parseReviewPage, parseReviewPage2, sectionHash, textSha, transitionItems, UNCONVERTIBLE, valueForms, withoutMarkers, wordingSha, type Labels, type Token } from "./review-transition.ts";
 import { extractPassages } from "./selection.ts";
 import { PASSAGE } from "./suppressions.ts";
 import { normalizeTimestamp } from "./time.ts";
@@ -102,7 +101,7 @@ export function planReviewRow(
   if (minute(review.page_edited_at) > minute(review.decided_at)) { hold(null, "EDITED_AFTER_DECIDED"); return; }
 
   // Read lazily: a damaged suppression record must not stop the plan of rows that are not being read (it fails closed when one is).
-  const current = new Map(reviewItems(proposal, workspace).map((item) => [item.item_id, item]));
+  const current = new Map(transitionItems(proposal, workspace).map((item) => [item.item_id, item]));
   const done = new Set((Array.isArray(proposal.attributes.item_decisions) ? proposal.attributes.item_decisions : []).filter(isRecord).map((entry) => String(entry.item_id)));
   const decision: ReviewDecision = { proposal: id, page_id: row.page_id, decided_at: review.decided_at, decided_by: "notion", page_edited_at: review.page_edited_at, unattended_ok: Date.parse(asOf) - Date.parse(review.decided_at) >= 2 * 60000, accept_all: review.accept_all, items: [] };
   for (const entry of itemStates) {
@@ -160,7 +159,7 @@ export function planReviewRow2(
   const sections = review?.body_markdown == null ? undefined : parseReviewPage2(review.body_markdown, UNCONVERTIBLE);
   const hold = (item: string | null, reason: string, detail?: string) => out.review_held.push({ proposal: id, page_id: row.page_id, item_id: item, reason, ...(detail === undefined ? {} : { detail }) });
   const itemStates = (Array.isArray(proposal.attributes.items) ? proposal.attributes.items : []).filter(isRecord).map((entry) => ({ item_id: String(entry.item_id), kind: String(entry.kind) }));
-  const current = new Map(reviewItems(proposal, workspace, 2).map((item) => [item.item_id, item]));
+  const current = new Map(transitionItems(proposal, workspace).map((item) => [item.item_id, item]));
   const call = String(row.properties["Your call"] ?? "").trim().toLowerCase();
 
   // What waits in Notion and must not be overwritten (§7.10): an edited or unreadable wording, a typed token, a revision line, or a call.

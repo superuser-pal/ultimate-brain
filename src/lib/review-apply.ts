@@ -7,8 +7,7 @@ import type { LogEntry } from "./log.ts";
 import type { Note } from "./notes.ts";
 import { bodyOf, reviewTitle, writeProposal } from "./proposals.ts";
 import { linkRefs } from "./passages.ts";
-import { reviewItems, textSha } from "./review-body.ts";
-import { withoutMarkers, wordingSha } from "./review-format2.ts";
+import { textSha, transitionItems, withoutMarkers, wordingSha } from "./review-transition.ts";
 import type { ReviewDecision } from "./review-plan.ts";
 import { formatDate } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
@@ -54,7 +53,7 @@ export function applyReviewDecisions(workspace: Workspace, decisions: ReviewDeci
     // What each item's target held when the submission began: two accepted items on one note must not make the second see the first's write as a base change.
     const proposalNote = workspace.get(decision.proposal);
     const bases = new Map<string, { current_base_hash: string; held: boolean; source_excluded: boolean }>();
-    if (proposalNote?.type === "proposal" && Array.isArray(proposalNote.attributes.items)) for (const view of reviewItems(proposalNote, workspace)) bases.set(view.item_id, { current_base_hash: view.current_base_hash, held: view.held, source_excluded: view.source_excluded });
+    if (proposalNote?.type === "proposal" && Array.isArray(proposalNote.attributes.items)) for (const view of transitionItems(proposalNote, workspace)) bases.set(view.item_id, { current_base_hash: view.current_base_hash, held: view.held, source_excluded: view.source_excluded });
     for (const item of decision.items) {
       const checkpoint = workspace.checkpoint();
       const out: ReviewItemResult = { proposal: decision.proposal, item_id: item.item_id, decision: item.decision, result: "failed" };

@@ -144,7 +144,7 @@ export function stageProposals(
       // An addition of a source whose parts are in this input belongs to one of them: it never becomes a question of its own by mistake (§5.6).
       if (folds && typeof item.correction !== "string" && review === undefined && partSources.has(String(fields.source))) assertNoProblems([{ pointer: `${pointer}/subject`, message: `${String(fields.source)} has a review_notes in this input, but none with ${fields.subject === undefined ? "no subject" : `the subject ${String(fields.subject)}`}` }]);
       delete fields.correction;
-      // Flags and repeats live on a Review page's items: only an item a review_notes folds takes them (cli §5.6, capture-and-review §7.12.8).
+      // Flags and repeats live on a review_notes's items: only an item a review_notes folds takes them (cli §5.6, capture-and-review §7.12.8).
       if (review === undefined && (item.unsure !== undefined || item.repeat !== undefined)) assertNoProblems([{ pointer: `${pointer}/${item.unsure !== undefined ? "unsure" : "repeat"}`, message: "is only allowed on an item a review_notes of the same input folds" }]);
       const flags = flagsOf(item);
 
@@ -206,7 +206,7 @@ export function stageProposals(
         if (held !== undefined) { skipped.push({ input_index: review.index, reason: "DUPLICATE_PENDING", existing: held.id }); continue; }
       }
       if (notes.length === 0 && review.links.length === 0 && review.changes.length === 0) {
-        // A correction group whose every change already waits in Review is that group (weekly-review.md §8.4): a rerun links it.
+        // A correction group whose every change already waits for a decision is that group (weekly-review.md §8.4): a rerun links it.
         if (typeof review.item.correction === "string" && review.duplicates.length > 0) { skipped.push({ input_index: review.index, reason: "DUPLICATE_PENDING", existing: review.duplicates[0] }); continue; }
         skipped.push({ input_index: review.index, reason: "NOTHING_TO_REVIEW" });
         continue;
