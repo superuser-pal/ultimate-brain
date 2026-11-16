@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 
 import { runCli } from "../src/cli.ts";
+import { expandHomePath } from "../src/commands/init.ts";
 import { setInstalledProductRootForTests } from "../src/lib/skills.ts";
 import { brain, testPackageRoot } from "./helpers.ts";
 
@@ -197,11 +198,16 @@ test("init --set-default finds the home folder without the HOME variable, which 
   assert.deepEqual(JSON.parse(await readFile(join(home, ".config", "ultimate-brain", "config.json"), "utf8")), { brain: await realpath(target) });
 });
 
-test("init expands a leading ~/ or ~\\ in the brain path itself, and keeps any other ~ (cli.md §5.1)", async (context) => {
+test("init expands a leading ~/ (and ~\\ on Windows) in the brain path itself, and keeps any other ~ (cli.md §5.1)", async (context) => {
   const root = await scratch(context);
   const home = join(root, "home");
   await mkdir(home);
-  for (const [path, folder] of [["~/slash-brain", "slash-brain"], ["~\\back-brain", "back-brain"]] as const) {
+  // `~\` is a home path only on Windows; elsewhere a backslash is part of a file name (cli.md §5.1).
+  assert.equal(expandHomePath("~\\x", "/h", "darwin"), "~\\x");
+  assert.equal(expandHomePath("~\\x", "/h", "win32"), join("/h", "x"));
+  const paths: Array<[string, string]> = [["~/slash-brain", "slash-brain"]];
+  if (process.platform === "win32") paths.push(["~\\back-brain", "back-brain"]);
+  for (const [path, folder] of paths) {
     const init = await run(["init", path, "--no-git", "--json"], home);
     assert.equal(init.code, 0, init.stderr);
     assert.equal(init.json.data.path_abs, join(await realpath(home), folder));

@@ -209,10 +209,10 @@ const IDENTITY_MESSAGE = [
   "Then run the same brain init command again. Nothing was written.",
 ].join("\n");
 
-/** A leading `~`, `~/` or `~\` is the home folder, whatever the shell did with it (spec/cli.md §5.1); any other `~` is kept. */
-export function expandHomePath(path: string, home: string): string {
+/** A leading `~`, `~/` or (on Windows) `~\` is the home folder, whatever the shell did with it (spec/cli.md §5.1); any other `~` is kept. */
+export function expandHomePath(path: string, home: string, platform: NodeJS.Platform = process.platform): string {
   if (path === "~") return home;
-  if (path.startsWith("~/") || path.startsWith("~\\")) return join(home, path.slice(2));
+  if (path.startsWith("~/") || (platform === "win32" && path.startsWith("~\\"))) return join(home, path.slice(2));
   return path;
 }
 
