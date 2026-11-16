@@ -308,7 +308,7 @@ From 0.16.0 there is no Review database. A proposal (schema §11) is a file in `
 
 | Change | Kind | Attended ingest | Unattended run |
 |---|---|---|---|
-| A new note (a decision, question, concept, person, org, Document part) | an entry of its part's `review_notes` `notes` | taken in with its part's yes, as `reviewed` (§7.3) | stays `draft`; waits in its part's `review_notes` |
+| A new note (a decision, question, person, org, learned Document) | an entry of its part's `review_notes` `notes` | taken in with its part's yes, as `reviewed` (§7.3) | stays `draft`; waits in its part's `review_notes` |
 | Text added to a note, contradicting nothing | `add_to_note`, folded into its part's `review_notes` | taken in with its part's yes | waits, folded |
 | A link between notes | `add_link`, folded | taken in with its part's yes | waits, folded |
 | A fact the note doesn't have yet | `update_fact` with no `before`, folded | taken in with its part's yes | waits, folded |
