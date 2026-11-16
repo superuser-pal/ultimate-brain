@@ -77,7 +77,7 @@ They shape your own words; text a command returns that a skill shows exactly as 
 7. **Dated, not "current".** Write facts as timeless, dated ("as of 2026-12-03"), or as pointers ("status: see Notion"). Volatile status (task state, project status, priority) lives in Notion.
 8. **Cite canonical notes.** `index.md` and the views are navigation; cite the note or source they point to.
 9. **Answering is read-only.** Answering the user's questions from the brain writes nothing; save an answer to the brain only when the user asks. A report the user asks for is stored as a dated view in `reports/` and published, never as knowledge: it is never ingested or cited as a source (decision 0043).
-10. **Unattended runs add, and apply only what you decided word for word.** With no user present, an agent adds drafts and proposals and carries out decisions you already made (Approve, Reject, your edits in Notion); it never interprets a What to fix, a Fix or an "all except …", and never decides anything itself. Those wait for an attended run.
+10. **Unattended runs add and queue; they never decide.** With no user present, an agent adds `draft` notes and pending proposals, and applies only decisions you already gave in a session. Your Notion edits to the brain's own values (a Name, a Summary, a Role, a Key Fact) are not applied either: each waits as a question for your next session, because the brain can't tell your edit from one made by Notion AI or an automation. Everything that waits is asked when you are there.
 
 ## Reading notes
 

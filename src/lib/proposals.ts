@@ -566,7 +566,9 @@ function checkShape(item: unknown, pointer: string): InputProblem[] {
   if (!isRecord(item)) return [{ pointer, message: "must be an object" }];
   const problems = unknownKeys(item, INPUT_KEYS, pointer);
   const at = (key: string, message: string) => problems.push({ pointer: `${pointer}/${key}`, message });
-  if (!(PROPOSAL_KINDS as readonly unknown[]).includes(item.kind)) at("kind", `must be one of ${PROPOSAL_KINDS.join(", ")}`);
+  // Only sync apply writes these, from what it read in Notion (cli §5.6, §5.14.3; 0101 §4, §6).
+  if (item.kind === "notion_correction" || item.kind === "tracked_task") at("kind", `a ${item.kind} is written only by brain sync apply, from what it read in Notion`);
+  else if (!(PROPOSAL_KINDS as readonly unknown[]).includes(item.kind)) at("kind", `must be one of ${PROPOSAL_KINDS.join(", ")}`);
   const titled = item.kind !== "review_notes" && item.kind !== "notion_change" && item.kind !== "set_field";
   for (const key of titled ? ["title", "why", "source"] : item.kind === "review_notes" ? ["source"] : ["why", "source"]) {
     if (typeof item[key] !== "string" || item[key] === "") at(key, "must be a non-empty string");
@@ -812,8 +814,8 @@ export function listProposals(workspace: Workspace, statuses: readonly string[],
 export function waitingGroup(a: Record<string, unknown>): 1 | 2 | 3 | 4 {
   const kind = String(a.kind);
   if (kind === "review_notes") return typeof a.correction === "string" ? 1 : isRecord(a.cleanup) ? 2 : 3;
-  if ((kind === "update_fact" && a.before !== undefined) || ["contradiction", "supersede", "replace_line", "update_body", "set_field", "notion_change"].includes(kind)) return 1;
-  if (["merge", "answer", "new_item"].includes(kind)) return 2;
+  if ((kind === "update_fact" && a.before !== undefined) || ["contradiction", "supersede", "replace_line", "update_body", "set_field", "notion_change", "notion_correction"].includes(kind)) return 1;
+  if (["merge", "answer", "new_item", "tracked_task"].includes(kind)) return 2;
   return 4;
 }
 
@@ -825,7 +827,9 @@ export function waitingGroup(a: Record<string, unknown>): 1 | 2 | 3 | 4 {
 export function waitingProposals(workspace: Workspace, target: string | undefined): { waiting: Array<Record<string, unknown>>; held: Array<Record<string, unknown>>; counts: { waiting: number; held: number } } {
   const pending = selectProposals(workspace, ["pending"], target);
   const context = pending.length === 0 ? undefined : contextFor(workspace.notes, requireSuppressions(workspace.root));
-  const order = (a: Record<string, unknown>, b: Record<string, unknown>) => Number(a.group) - Number(b.group) || byCreated(a, b);
+  // Every correction from Notion comes first, together: the session asks them as one question (cli §5.6, 0101 §4).
+  const correction = (item: Record<string, unknown>) => item.kind === "notion_correction" ? 0 : 1;
+  const order = (a: Record<string, unknown>, b: Record<string, unknown>) => Number(a.group) - Number(b.group) || correction(a) - correction(b) || byCreated(a, b);
   const waiting: Array<Record<string, unknown>> = [];
   const held: Array<Record<string, unknown>> = [];
   for (const note of pending) {

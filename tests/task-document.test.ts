@@ -120,9 +120,14 @@ test("a task source and a Document's question are checked: no row of its own, a 
 test("a ticked Document asked on a scheduled run: one task_documents item; kept, the box cleared and one From the brain question queued (0100 §4)", async (context) => {
   const dir = await setUp(context);
   const row = (page: string, ticked: boolean) => ({ database: "tasks", page_id: page, last_edited: "2026-12-10T08:00:00Z", properties: { Name: "Check go-live with hosting", "Document asked": ticked, Project: [PROJECT_PAGE], Area: [] } });
-  const plan = await ok(dir, ["sync", "plan"], { as_of: NOW, rows: [row(TASK_PAGE, true), row(OTHER_TASK, false)] });
-  assert.deepEqual(plan.task_documents, [{ page_id: TASK_PAGE, title: "Check go-live with hosting", projects: [PROJECT], area: null, question: QUESTION, source: null, existing: null }]);
-  assert.deepEqual(plan.ignored, []);
+  const untracked = "b1000000-0000-4000-8000-000000000003";
+  const plan = await ok(dir, ["sync", "plan"], { as_of: NOW, rows: [row(TASK_PAGE, true), row(OTHER_TASK, false), row(untracked, true)] });
+  assert.deepEqual(plan.task_documents, [
+    { page_id: TASK_PAGE, title: "Check go-live with hosting", projects: [PROJECT], area: null, question: QUESTION, source: null, existing: null },
+    { page_id: untracked, title: "Check go-live with hosting", projects: [PROJECT], area: null, question: null, source: null, existing: null },
+  ]);
+  // A row passed for Document asked is read by that rule alone; an unticked row no question tracks is NOT_TRACKED (cli §5.14.2).
+  assert.deepEqual(plan.ignored, [{ database: "tasks", page_id: OTHER_TASK, brain_id: null, reason: "NOT_TRACKED" }]);
   const applied = await ok(dir, ["sync", "apply"], plan);
   assert.deepEqual(applied.task_documents, plan.task_documents, "sync apply echoes it without executing it");
 
@@ -147,6 +152,12 @@ test("a ticked Document asked on a scheduled run: one task_documents item; kept,
 
 test("with Documents off nothing is kept: a ticked box is ignored MODULE_OFF and stays ticked (0100 §5)", async (context) => {
   const dir = await setUp(context);
+  // The flag needs the Tasks module too: with it off, the row is MODULE_OFF and nothing is kept.
+  await ok(dir, ["modules", "off", "tasks"]);
+  const tasksOff = await ok(dir, ["sync", "plan"], { as_of: NOW, rows: [{ database: "tasks", page_id: TASK_PAGE, last_edited: "2026-12-10T08:00:00Z", properties: { Name: "Check go-live with hosting", "Document asked": true } }] });
+  assert.deepEqual(tasksOff.task_documents, []);
+  assert.deepEqual(tasksOff.ignored.map((item: { reason: string }) => item.reason), ["MODULE_OFF"]);
+  await ok(dir, ["modules", "on", "tasks"]);
   await ok(dir, ["modules", "off", "reports"]);
   await ok(dir, ["modules", "off", "documents"]);
   const plan = await ok(dir, ["sync", "plan"], { as_of: NOW, rows: [{ database: "tasks", page_id: TASK_PAGE, last_edited: "2026-12-10T08:00:00Z", properties: { Name: "Check go-live with hosting", "Document asked": true } }] });

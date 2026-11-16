@@ -48,21 +48,26 @@
         "answer",
         "notion_change",
         "set_field",
-        "replace_line"
+        "replace_line",
+        "notion_correction",
+        "tracked_task"
       ]
     },
     "target": {
       "$ref": "note.schema.json#/$defs/id"
     },
     "field": {
+      "description": "A fact key or a field; on notion_correction a correction field of spec/cli.md §5.7, facts.<key> among them.",
       "type": "string",
-      "pattern": "^[a-z][a-z0-9_]*$"
+      "pattern": "^(facts\\.)?[a-z][a-z0-9_]*$"
     },
     "before": {
-      "$ref": "note.schema.json#/$defs/factValue"
+      "description": "A fact value; on notion_correction also a note id or a list of per- ids (spec/schema.md §11).",
+      "anyOf": [{ "$ref": "note.schema.json#/$defs/factValue" }, { "$ref": "#/$defs/correctionList" }]
     },
     "after": {
-      "$ref": "note.schema.json#/$defs/factValue"
+      "description": "A fact value; on notion_correction also a note id, a list of per- ids, or null to remove an optional reference.",
+      "anyOf": [{ "$ref": "note.schema.json#/$defs/factValue" }, { "$ref": "#/$defs/correctionList" }, { "type": "null" }]
     },
     "content": {
       "type": "string",
@@ -140,12 +145,16 @@
           "minItems": 1,
           "items": {
             "type": "object",
-            "required": [
-              "value"
+            "anyOf": [
+              { "required": ["value"] },
+              { "description": "tracked_task (a): the answer, one sentence.", "required": ["answer"], "maxProperties": 1 },
+              { "description": "tracked_task (b): drop the question.", "required": ["drop"], "maxProperties": 1 }
             ],
             "additionalProperties": false,
             "properties": {
               "value": {},
+              "answer": { "type": "string", "minLength": 1 },
+              "drop": { "const": true },
               "item": {
                 "description": "a cleanup review_notes (cli.md §5.7): the it- id of a remove or independence item.",
                 "type": "string",
@@ -446,8 +455,10 @@
       }
     },
     "closed_reason": {
+      "description": "stale: the target changed before apply, or the proposal is withheld. withdrawn (0.16.0): a notion_correction or tracked_task sync no longer reads in Notion, closed with no decision (spec/cli.md §5.14.2).",
       "enum": [
-        "stale"
+        "stale",
+        "withdrawn"
       ]
     },
     "notion_published": {
@@ -615,15 +626,21 @@
       "$ref": "note.schema.json#/$defs/id"
     },
     "database": {
-      "description": "notion_change: the Notion database of page (spec/schema.md §11, spec/assistant.md §6).",
-      "enum": ["tasks", "projects", "areas"]
+      "description": "notion_change and notion_correction: the Notion database of page (spec/schema.md §11, spec/assistant.md §6, spec/cli.md §5.14.2).",
+      "enum": ["tasks", "projects", "areas", "domains", "goals", "people", "orgs", "documents"]
     },
-    "page": { "description": "notion_change: the Notion page id, dashed and lowercase.", "$ref": "#/$defs/pageId" },
-    "page_title": { "description": "notion_change: the row's Name when proposed.", "type": "string", "minLength": 1 },
+    "page": { "description": "notion_change, notion_correction, tracked_task: the Notion page id, dashed and lowercase.", "$ref": "#/$defs/pageId" },
+    "page_title": { "description": "notion_change: the row's Name when proposed; tracked_task: the task's title as read, else the question's.", "type": "string", "minLength": 1 },
     "property": {
-      "description": "notion_change: tasks take status, due, project, area; projects status, archived; areas archived.",
-      "enum": ["status", "due", "project", "area", "archived"]
+      "description": "notion_change: tasks take status, due, project, area; projects status, archived; areas archived. notion_correction: the Notion property as sync plan reports it (Role, Key Facts/<key>).",
+      "type": "string",
+      "minLength": 1
     },
+    "notion_value": { "description": "notion_correction (0.16.0, 0101 §4): N, the value Notion showed, in the normalized form of spec/cli.md §5.14.1; for Key Facts/<key>, that key's value.", "$ref": "#/$defs/normalizedValue" },
+    "observed_at": { "description": "notion_correction: the row's last_edited when sync read the edit.", "$ref": "note.schema.json#/$defs/timestamp" },
+    "task_state": { "description": "tracked_task (0.16.0, 0101 §6): what sync read of the task.", "enum": ["done", "dropped", "gone", "unreadable"] },
+    "task_status": { "description": "tracked_task: the status name read; null when gone or unreadable.", "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "task_edited": { "description": "tracked_task: the task row's last_edited when read; null when unreadable.", "anyOf": [{ "$ref": "note.schema.json#/$defs/timestamp" }, { "type": "null" }] },
     "value_before": { "description": "notion_change: the value read when proposed; its shape follows property.", "$ref": "#/$defs/notionValue" },
     "value_after": { "description": "notion_change: the value to write; its shape follows property.", "$ref": "#/$defs/notionValue" },
     "area": { "description": "notion_change and set_field: the Area the change belongs to, which the session names with the question.", "type": "string", "pattern": "^area-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
@@ -649,13 +666,27 @@
     {"description": "theme:<term> is the draft learned Document's review_notes (a yes or later), or a new_item (a skip).", "if": {"properties": {"fingerprint": {"pattern": "^theme:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"enum": ["review_notes", "new_item"]}}}},
     {"description": "notion_change (0072): its own fields, no fact or note fields.", "if": {"properties": {"kind": {"const": "notion_change"}}, "required": ["kind"]}, "then": {"required": ["database", "page", "page_title", "property", "value_before", "value_after"], "not": {"anyOf": [{"required": ["field"]}, {"required": ["before"]}, {"required": ["after"]}, {"required": ["content"]}, {"required": ["note"]}, {"required": ["links"]}, {"required": ["notes"]}, {"required": ["changes"]}, {"required": ["supersedes"]}, {"required": ["merge_into"]}, {"required": ["answer"]}, {"required": ["answer_note"]}, {"required": ["passages"]}]}}},
     {"description": "A review_notes names its passages per item (spec/schema.md §11.5), not as a whole.", "if": {"properties": {"kind": {"const": "review_notes"}}, "required": ["kind"]}, "then": {"not": {"required": ["passages"]}}},
-    {"description": "notion_change fields belong to notion_change only.", "if": {"anyOf": [{"required": ["database"]}, {"required": ["page"]}, {"required": ["page_title"]}, {"required": ["property"]}, {"required": ["value_before"]}, {"required": ["value_after"]}]}, "then": {"properties": {"kind": {"const": "notion_change"}}}},
+    {"description": "value_before and value_after belong to notion_change only.", "if": {"anyOf": [{"required": ["value_before"]}, {"required": ["value_after"]}]}, "then": {"properties": {"kind": {"const": "notion_change"}}}},
+    {"description": "database and property belong to notion_change and notion_correction.", "if": {"anyOf": [{"required": ["database"]}, {"required": ["property"]}]}, "then": {"properties": {"kind": {"enum": ["notion_change", "notion_correction"]}}}},
+    {"description": "page belongs to notion_change, notion_correction and tracked_task; page_title to notion_change and tracked_task.", "if": {"required": ["page"]}, "then": {"properties": {"kind": {"enum": ["notion_change", "notion_correction", "tracked_task"]}}}},
+    {"if": {"required": ["page_title"]}, "then": {"properties": {"kind": {"enum": ["notion_change", "tracked_task"]}}}},
+    {"description": "notion_change: its databases and properties (spec/assistant.md §6).", "if": {"properties": {"kind": {"const": "notion_change"}}, "required": ["kind"]}, "then": {"properties": {"database": {"enum": ["tasks", "projects", "areas"]}, "property": {"enum": ["status", "due", "project", "area", "archived"]}}}},
+    {"description": "notion_correction (0.16.0, 0101 §4): an edit to a brain-owned value found in Notion, written only by sync apply; no passages.", "if": {"properties": {"kind": {"const": "notion_correction"}}, "required": ["kind"]}, "then": {"required": ["target", "field", "after", "database", "page", "property", "notion_value", "observed_at"], "properties": {"database": {"enum": ["domains", "areas", "goals", "projects", "people", "orgs", "documents"]}, "field": {"pattern": "^(facts\\.[a-z][a-z0-9_]*|title|summary|why|area|goal|client|org|domain|people)$"}}, "not": {"anyOf": [{"required": ["content"]}, {"required": ["note"]}, {"required": ["links"]}, {"required": ["notes"]}, {"required": ["changes"]}, {"required": ["supersedes"]}, {"required": ["merge_into"]}, {"required": ["answer"]}, {"required": ["answer_note"]}, {"required": ["passages"]}, {"required": ["from"]}, {"required": ["items"]}]}}},
+    {"description": "notion_value and observed_at belong to notion_correction.", "if": {"anyOf": [{"required": ["notion_value"]}, {"required": ["observed_at"]}]}, "then": {"properties": {"kind": {"const": "notion_correction"}}}},
+    {"description": "A field of the facts.<key> form, a null after and a list value belong to notion_correction.", "if": {"anyOf": [{"properties": {"field": {"pattern": "^facts\\."}}, "required": ["field"]}, {"properties": {"after": {"not": {"$ref": "note.schema.json#/$defs/factValue"}}}, "required": ["after"]}, {"properties": {"before": {"not": {"$ref": "note.schema.json#/$defs/factValue"}}}, "required": ["before"]}]}, "then": {"properties": {"kind": {"const": "notion_correction"}}}},
+    {"description": "tracked_task (0.16.0, 0101 §6): a tracked question's task finished, in the trash or unreadable; written only by sync apply; no passages.", "if": {"properties": {"kind": {"const": "tracked_task"}}, "required": ["kind"]}, "then": {"required": ["target", "page", "page_title", "task_state", "task_status", "task_edited"], "properties": {"target": {"pattern": "^que-"}}, "not": {"anyOf": [{"required": ["field"]}, {"required": ["before"]}, {"required": ["after"]}, {"required": ["content"]}, {"required": ["note"]}, {"required": ["links"]}, {"required": ["notes"]}, {"required": ["changes"]}, {"required": ["supersedes"]}, {"required": ["merge_into"]}, {"required": ["answer"]}, {"required": ["answer_note"]}, {"required": ["passages"]}, {"required": ["from"]}, {"required": ["items"]}]}}},
+    {"description": "A tracked_task's state: a status on done or dropped; null on gone and unreadable; no last edit on unreadable.", "if": {"properties": {"task_state": {"enum": ["done", "dropped"]}}, "required": ["task_state"]}, "then": {"properties": {"task_status": {"type": "string"}, "task_edited": {"type": "string"}}}, "else": {"properties": {"task_status": {"type": "null"}}}},
+    {"if": {"properties": {"task_state": {"const": "unreadable"}}, "required": ["task_state"]}, "then": {"properties": {"task_edited": {"type": "null"}}}},
+    {"if": {"properties": {"task_state": {"const": "gone"}}, "required": ["task_state"]}, "then": {"properties": {"task_edited": {"type": "string"}}}},
+    {"description": "task_state, task_status and task_edited belong to tracked_task.", "if": {"anyOf": [{"required": ["task_state"]}, {"required": ["task_status"]}, {"required": ["task_edited"]}]}, "then": {"properties": {"kind": {"const": "tracked_task"}}}},
+    {"description": "A tracked_task is decided with fix ({answer} or {drop: true}) or reject, never approve or edit (spec/schema.md §11.1).", "if": {"properties": {"kind": {"const": "tracked_task"}}, "required": ["kind", "decision"]}, "then": {"properties": {"decision": {"properties": {"action": {"enum": ["fix", "reject"]}}}}}},
+    {"description": "withdrawn (0.16.0): a notion_correction or tracked_task closed by sync apply, with no decision.", "if": {"properties": {"closed_reason": {"const": "withdrawn"}}, "required": ["closed_reason"]}, "then": {"properties": {"kind": {"enum": ["notion_correction", "tracked_task"]}}, "not": {"required": ["decision"]}}},
     {"description": "area belongs to notion_change and set_field only.", "if": {"required": ["area"]}, "then": {"properties": {"kind": {"enum": ["notion_change", "set_field"]}}}},
-    {"description": "A task has no note: no target; tasks take status, due, project, area.", "if": {"properties": {"database": {"const": "tasks"}}, "required": ["database"]}, "then": {"not": {"required": ["target"]}, "properties": {"property": {"enum": ["status", "due", "project", "area"]}}}},
-    {"description": "projects: the project note is the target; Status or Archived.", "if": {"properties": {"database": {"const": "projects"}}, "required": ["database"]}, "then": {"required": ["target"], "properties": {"target": {"pattern": "^prj-"}, "property": {"enum": ["status", "archived"]}}}},
-    {"description": "areas: the Area note is the target; Archived only.", "if": {"properties": {"database": {"const": "areas"}}, "required": ["database"]}, "then": {"required": ["target"], "properties": {"target": {"pattern": "^area-"}, "property": {"const": "archived"}}}},
+    {"description": "A task has no note: no target; tasks take status, due, project, area.", "if": {"properties": {"kind": {"const": "notion_change"}, "database": {"const": "tasks"}}, "required": ["kind", "database"]}, "then": {"not": {"required": ["target"]}, "properties": {"property": {"enum": ["status", "due", "project", "area"]}}}},
+    {"description": "projects: the project note is the target; Status or Archived.", "if": {"properties": {"kind": {"const": "notion_change"}, "database": {"const": "projects"}}, "required": ["kind", "database"]}, "then": {"required": ["target"], "properties": {"target": {"pattern": "^prj-"}, "property": {"enum": ["status", "archived"]}}}},
+    {"description": "areas: the Area note is the target; Archived only.", "if": {"properties": {"kind": {"const": "notion_change"}, "database": {"const": "areas"}}, "required": ["kind", "database"]}, "then": {"required": ["target"], "properties": {"target": {"pattern": "^area-"}, "property": {"const": "archived"}}}},
     {"description": "status: a string, or null before; never null after.", "if": {"properties": {"property": {"const": "status"}}, "required": ["property"]}, "then": {"properties": {"value_before": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]}, "value_after": {"type": "string", "minLength": 1}}}},
-    {"description": "A project's Status is one of its four options.", "if": {"properties": {"database": {"const": "projects"}, "property": {"const": "status"}}, "required": ["database", "property"]}, "then": {"properties": {"value_before": {"enum": ["Planned", "Active", "On Hold", "Done", null]}, "value_after": {"enum": ["Planned", "Active", "On Hold", "Done"]}}}},
+    {"description": "A project's Status is one of its four options.", "if": {"properties": {"kind": {"const": "notion_change"}, "database": {"const": "projects"}, "property": {"const": "status"}}, "required": ["kind", "database", "property"]}, "then": {"properties": {"value_before": {"enum": ["Planned", "Active", "On Hold", "Done", null]}, "value_after": {"enum": ["Planned", "Active", "On Hold", "Done"]}}}},
     {"description": "due: a date or null.", "if": {"properties": {"property": {"const": "due"}}, "required": ["property"]}, "then": {"properties": {"value_before": {"anyOf": [{"$ref": "note.schema.json#/$defs/date"}, {"type": "null"}]}, "value_after": {"anyOf": [{"$ref": "note.schema.json#/$defs/date"}, {"type": "null"}]}}}},
     {"description": "project and area: a sorted, duplicate-free list of page ids.", "if": {"properties": {"property": {"enum": ["project", "area"]}}, "required": ["property"]}, "then": {"properties": {"value_before": {"$ref": "#/$defs/pageIds"}, "value_after": {"$ref": "#/$defs/pageIds"}}}},
     {"description": "archived: a boolean.", "if": {"properties": {"property": {"const": "archived"}}, "required": ["property"]}, "then": {"properties": {"value_before": {"type": "boolean"}, "value_after": {"type": "boolean"}}}},
@@ -1058,11 +1089,26 @@
         ]
       },
       "then": {
-        "required": [
-          "decision"
-        ],
         "anyOf": [
           {
+            "required": [
+              "closed_reason"
+            ],
+            "properties": {
+              "closed_reason": {
+                "const": "withdrawn"
+              }
+            },
+            "not": {
+              "required": [
+                "decision"
+              ]
+            }
+          },
+          {
+            "required": [
+              "decision"
+            ],
             "properties": {
               "decision": {
                 "properties": {
@@ -1080,9 +1126,13 @@
           },
           {
             "required": [
-              "closed_reason"
+              "closed_reason",
+              "decision"
             ],
             "properties": {
+              "closed_reason": {
+                "const": "stale"
+              },
               "decision": {
                 "properties": {
                   "action": {
@@ -1622,6 +1672,8 @@
     "passages": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/passage"}},
     "pageId": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
     "pageIds": {"type": "array", "items": {"$ref": "#/$defs/pageId"}, "uniqueItems": true},
+    "correctionList": {"description": "notion_correction: a note id (a reference field) or a list of per- ids (people).", "anyOf": [{"$ref": "note.schema.json#/$defs/id"}, {"type": "array", "items": {"type": "string", "pattern": "^per-[0-9abcdefghjkmnpqrstvwxyz]{8}$"}, "uniqueItems": true}]},
+    "normalizedValue": {"description": "A Notion value in spec/cli.md §5.14.1's normalized form: text, number, checkbox, a {start, end} date, a sorted list of page ids, or null.", "anyOf": [{"type": "string"}, {"type": "number"}, {"type": "boolean"}, {"type": "null"}, {"$ref": "#/$defs/pageIds"}, {"type": "object", "required": ["start"], "properties": {"start": {"type": "string"}, "end": {"type": ["string", "null"]}}, "additionalProperties": false}]},
     "notionValue": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}, {"type": "boolean"}, {"$ref": "#/$defs/pageIds"}]},
     "fingerprint": {"type": "string", "pattern": "^(contradiction|stale):(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:[a-z][a-z0-9_]*$|^merge:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}\\+(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^promotion:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:(mtg|src)-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^theme:[a-z0-9]+(-[a-z0-9]+){1,2}$"},
     "findingKey": {"type": "string", "pattern": "^(task_overdue|task_stalled|task_no_project):notion:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^(project_stalled|project_no_next_step|project_done_but_open|project_misplaced):prj-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^project_duplicate:prj-[0-9abcdefghjkmnpqrstvwxyz]{8}\\+prj-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^(area_no_domain|area_empty):area-[0-9abcdefghjkmnpqrstvwxyz]{8}$"},

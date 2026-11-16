@@ -7,6 +7,7 @@ import type { NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 import { areaGroup, fixValueProblem, notionWrite, projectsProblem, type NotionWrite } from "./notion-change.ts";
 import { bodyHash, bodyOf, reviewTitle, sourceTitle, stageNewItem, subjectLabel, writeProposal } from "./proposals.ts";
+import { brainFieldValue, settlePublished } from "./notion-corrections.ts";
 import { acceptCleanupItem, cleanupItemView, CLEANUP_KINDS, CleanupSkip, reconcile } from "./cleanup-row.ts";
 import { loadSchemas } from "./schemas.ts";
 import { lineageOf, restrictedSources } from "./eligibility.ts";
@@ -16,14 +17,6 @@ import { formatDate, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 import type { LogEntry } from "./log.ts";
 import type { FrontmatterDocument } from "./frontmatter.ts";
-
-/** spec/cli.md §5.7. */
-export interface Correction {
-  target: string;
-  field: string;
-  value: unknown;
-  observed_at: string;
-}
 
 export interface Decision {
   action: "approve" | "reject" | "fix" | "edit";
@@ -44,7 +37,6 @@ export interface DecisionInput extends Decision {
 }
 
 export interface ApplyInput {
-  corrections: Correction[];
   /** Null: apply every proposal that holds a recorded decision but is not terminal. */
   decisions: DecisionInput[] | null;
 }
@@ -84,9 +76,8 @@ export interface NoteResult {
 }
 
 export interface ApplyResult {
-  corrections: Array<{ target: string; field: string } & ItemResult>;
   decisions: Array<{ proposal: string; kind?: string; action: string } & ItemResult>;
-  summary: Record<"applied" | "closed" | "recorded" | "awaiting_notion" | "corrected" | "skipped" | "failed", number>;
+  summary: Record<"applied" | "closed" | "recorded" | "awaiting_notion" | "skipped" | "failed", number>;
   /** The Notion writes of the notion_change proposals decided here, for the skill to carry out (spec/cli.md §5.7). */
   notion_writes: NotionWrite[];
   log: LogEntry[];
@@ -95,6 +86,8 @@ export interface ApplyResult {
 const ACTIONS = ["approve", "reject", "fix", "edit"];
 export const EDITABLE = new Set(["update_fact", "contradiction", "add_to_note", "update_body", "replace_line", "answer"]);
 const FIX_KEYS = ["value", "change", "note", "field", "link", "item"];
+/** A tracked_task's fix (spec/schema.md §11.3): `{answer}` records the answer (a), `{drop: true}` drops the question (b). */
+const isTrackedFix = (entry: unknown): boolean => isRecord(entry) && ((typeof entry.answer === "string" && Object.keys(entry).length === 1) || (entry.drop === true && Object.keys(entry).length === 1));
 /** Reference fields a merge leaves alone: the meeting side of a persisted pair (spec/schema.md §11.2). */
 const PAIR_FIELDS = new Set(["decisions", "questions", "decided_in", "raised_in"]);
 /** Corrections change knowledge notes only: sources are immutable and proposals are records. */
@@ -108,25 +101,13 @@ const REFERENCE_FIELDS = [
 export function parseApplyInput(input: unknown): ApplyInput {
   if (!isRecord(input)) assertNoProblems([{ pointer: "", message: "must be an object" }]);
   const record = input as Record<string, unknown>;
-  const problems: InputProblem[] = unknownKeys(record, ["corrections", "decisions"], "");
-  const corrections = record.corrections ?? [];
-  const decisions = record.decisions ?? [];
-  if (!Array.isArray(corrections)) problems.push({ pointer: "/corrections", message: "must be a list" });
-  if (!Array.isArray(decisions)) problems.push({ pointer: "/decisions", message: "must be a list" });
+  // Your Notion edits are proposals decided like any other since 0.16.0 (0101 §4): the corrections input is retired.
+  if (Object.hasOwn(record, "corrections")) assertNoProblems([{ pointer: "/corrections", message: "is retired in 0.16.0: a correction from Notion is a pending notion_correction proposal, decided in the session (spec/cli.md §5.7)" }]);
+  const problems: InputProblem[] = unknownKeys(record, ["decisions"], "");
+  const decisions = record.decisions;
+  if (!Array.isArray(decisions) || decisions.length === 0) problems.push({ pointer: "/decisions", message: "must be a non-empty list" });
   assertNoProblems(problems);
-  if ((corrections as unknown[]).length === 0 && (decisions as unknown[]).length === 0) {
-    assertNoProblems([{ pointer: "", message: "needs at least one correction or decision" }]);
-  }
 
-  (corrections as unknown[]).forEach((item, index) => {
-    const pointer = `/corrections/${index}`;
-    if (!isRecord(item)) return problems.push({ pointer, message: "must be an object" });
-    problems.push(...unknownKeys(item, ["target", "field", "value", "observed_at"], pointer));
-    if (typeof item.target !== "string") problems.push({ pointer: `${pointer}/target`, message: "must be a note id" });
-    if (typeof item.field !== "string") problems.push({ pointer: `${pointer}/field`, message: "must be a string" });
-    if (!Object.hasOwn(item, "value")) problems.push({ pointer: `${pointer}/value`, message: "is required (null removes a reference)" });
-    if (!isTimestamp(item.observed_at)) problems.push({ pointer: `${pointer}/observed_at`, message: "must be an ISO 8601 UTC timestamp" });
-  });
   (decisions as unknown[]).forEach((item, index) => {
     const pointer = `/decisions/${index}`;
     if (!isRecord(item)) return problems.push({ pointer, message: "must be an object" });
@@ -134,7 +115,7 @@ export function parseApplyInput(input: unknown): ApplyInput {
     if (typeof item.proposal !== "string") problems.push({ pointer: `${pointer}/proposal`, message: "must be a proposal id" });
     if (!ACTIONS.includes(item.action as string)) problems.push({ pointer: `${pointer}/action`, message: "must be approve, reject, fix or edit" });
     if (item.action === "fix" && (typeof item.note !== "string" || item.note === "")) problems.push({ pointer: `${pointer}/note`, message: "is required for fix: the user's words" });
-    if (item.action === "fix" && (!Array.isArray(item.fixes) || item.fixes.length === 0 || item.fixes.some((entry) => !isRecord(entry) || !Object.hasOwn(entry, "value") || Object.keys(entry).some((key) => !FIX_KEYS.includes(key))))) problems.push({ pointer: `${pointer}/fixes`, message: "must be a non-empty list of entries with a value (spec/schema.md §11.3)" });
+    if (item.action === "fix" && (!Array.isArray(item.fixes) || item.fixes.length === 0 || item.fixes.some((entry) => !isTrackedFix(entry) && (!isRecord(entry) || !Object.hasOwn(entry, "value") || Object.keys(entry).some((key) => !FIX_KEYS.includes(key)))))) problems.push({ pointer: `${pointer}/fixes`, message: "must be a non-empty list of entries with a value, or a tracked_task's {answer} or {drop: true} (spec/schema.md §11.3)" });
     if (item.action !== "fix" && item.fixes !== undefined) problems.push({ pointer: `${pointer}/fixes`, message: "is only allowed for fix" });
     if (item.action === "edit" && (item.value === undefined || item.value === null)) problems.push({ pointer: `${pointer}/value`, message: "is required for edit" });
     if (item.action !== "edit" && item.value !== undefined) problems.push({ pointer: `${pointer}/value`, message: "is only allowed for edit" });
@@ -146,36 +127,22 @@ export function parseApplyInput(input: unknown): ApplyInput {
   });
   assertNoProblems(problems);
   return {
-    corrections: (corrections as Correction[]).map((item) => ({ ...item, observed_at: normalizeTimestamp(item.observed_at)! })),
     decisions: (decisions as DecisionInput[]).map((item) => ({ ...item, decided_at: normalizeTimestamp(item.decided_at)! })),
   };
 }
 
 /**
- * Apply corrections, then decisions, each in input order (spec/cli.md §5.7, spec/schema.md
- * §11.2). Each item is staged and validated on its own: a failed item leaves the workspace as it
+ * Apply decisions in input order (spec/cli.md §5.7, spec/schema.md §11.2). Each item is staged and validated on its own: a failed item leaves the workspace as it
  * was, and later items see the results of earlier ones. Nothing is written; the caller commits.
  */
 export function applyAll(workspace: Workspace, input: ApplyInput, options: { now: Date; recordOnly: boolean }): ApplyResult {
   const today = formatDate(options.now);
   const result: ApplyResult = {
-    corrections: [],
     decisions: [],
-    summary: { applied: 0, closed: 0, recorded: 0, awaiting_notion: 0, corrected: 0, skipped: 0, failed: 0 },
+    summary: { applied: 0, closed: 0, recorded: 0, awaiting_notion: 0, skipped: 0, failed: 0 },
     notion_writes: [],
     log: [],
   };
-
-  for (const correction of input.corrections) {
-    const item = runItem(workspace, () => applyCorrection(workspace, correction, today));
-    result.corrections.push({ target: correction.target, field: correction.field, ...item.outcome });
-    if (item.outcome.result === "applied") {
-      result.summary.corrected += 1;
-      result.log.push({ op: "correct", id: correction.target, title: titleOf(workspace, correction.target), pairs: [["field", correction.field]] });
-    } else {
-      result.summary[item.outcome.result as "skipped" | "failed"] += 1;
-    }
-  }
 
   const decisions = input.decisions ?? recordedDecisions(workspace);
   for (const decision of decisions) {
@@ -242,33 +209,6 @@ function runItem(workspace: Workspace, run: () => Outcome): { outcome: ItemResul
   return { outcome: { ...rest, changed }, action, write };
 }
 
-function applyCorrection(workspace: Workspace, correction: Correction, today: string): Outcome {
-  const note = existing(workspace, correction.target);
-  const document = workspace.edit(note);
-  const attributes = document.attributes;
-  const factKey = /^facts\.([a-z][a-z0-9_]*)$/.exec(correction.field)?.[1];
-  const known = loadSchemas().knownKeys(note.type);
-  const correctable = KNOWLEDGE_TYPES.has(note.type) && factKey !== undefined
-    ? known?.has("facts") === true
-    : KNOWLEDGE_TYPES.has(note.type) && ["title", "summary", "why", "domain", "area", "goal", "client", "org", "people"].includes(correction.field) && known?.has(correction.field) === true;
-  if (!correctable) throw new ItemFailure("FIELD_NOT_CORRECTABLE", `${correction.field} cannot be corrected on a ${note.type}`);
-
-  const current = factKey === undefined ? attributes[correction.field] : record(attributes.facts)[factKey];
-  if (isDeepStrictEqual(current ?? null, correction.value)) return { result: "skipped", reason: "NO_CHANGE" };
-
-  if (factKey !== undefined) {
-    const date = correction.observed_at.slice(0, 10);
-    setFact(attributes, factKey, correction.value, date, date, "notion-edit");
-  } else if (correction.value === null) {
-    delete attributes[correction.field];
-  } else {
-    attributes[correction.field] = correction.value;
-  }
-  attributes.updated = today;
-  workspace.save(note.path, document);
-  return { result: "applied" };
-}
-
 function applyDecision(workspace: Workspace, input: DecisionInput, today: string, recordOnly: boolean): Outcome {
   const proposal = workspace.get(input.proposal);
   if (proposal === undefined || proposal.type !== "proposal") throw new ItemFailure("UNKNOWN_ID", `No proposal with id ${input.proposal}`);
@@ -288,6 +228,8 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   if (decision.action === "edit" && !EDITABLE.has(String(p.kind))) {
     throw new ItemFailure("EDIT_NOT_ALLOWED", `edit is not allowed on a ${String(p.kind)} proposal (spec/schema.md §11.1); use fix`);
   }
+  // A tracked_task names its answer: (a) and (b) are fixes, (c) a reject (spec/schema.md §11.1, 0101 §6).
+  if (p.kind === "tracked_task" && decision.action === "approve") throw new ItemFailure("INPUT_INVALID", "a tracked_task takes fix ({answer} or {drop: true}) or reject (keep it open), not approve: approve names no answer (spec/cli.md §5.7)");
   const cleanup = p.kind === "review_notes" && isRecord(p.cleanup);
   if (cleanup) checkCleanupDecision(p, decision);
   const exclude = decision.exclude ?? [];
@@ -334,6 +276,7 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   if (decision.action === "reject") {
     p.status = "closed";
     workspace.save(proposal.path, document);
+    rejectFromNotion(workspace, p, today);
     // A rejected review_notes archives the notes still draft, with no successor (spec/schema.md §11.2).
     const notes = p.kind === "review_notes" ? reviewNotes(workspace, p, "reject", [], today, "", new Map()).notes : undefined;
     return { result: "closed", action, ...(notes === undefined ? {} : { notes }) };
@@ -342,6 +285,14 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   if (cleanup) return applyCleanup(workspace, proposal, document, decision, today, action);
   const D = decision.decided_at.slice(0, 10);
   const V = decision.action === "edit" ? decision.value : fixed.value;
+  // What you did in Notion is not an input: neither kind is judged by the excluded-evidence rule (spec/cli.md §5.7, 0101 §4, §6).
+  if (p.kind === "notion_correction" || p.kind === "tracked_task") {
+    const stale = p.kind === "notion_correction" ? applyNotionCorrection(workspace, p, V, today, decision.action === "fix" ? proposal.id : undefined) : applyTrackedAnswer(workspace, p, V as Record<string, unknown>, D, today);
+    p.status = stale === null ? "applied" : "closed";
+    if (stale !== null) p.closed_reason = "stale";
+    workspace.save(proposal.path, document);
+    return stale === null ? { result: "applied", action } : { result: "closed", reason: "STALE_PROPOSAL", message: stale, action };
+  }
   if (p.kind === "review_notes") {
     // A review_notes is judged item by item before apply on every route: an item without eligible support is withheld and the independent
     // items apply (eligibility.md §4.1, §4.2, §9.3; cli §5.7). With items, item by item; without (older layout), each folded
@@ -677,6 +628,18 @@ function corrected(workspace: Workspace, p: Record<string, unknown>, fixes: Arra
     q.links = links;
     return { q, noteFixes };
   }
+  if (kind === "notion_correction") {
+    const { value } = single();
+    const problem = correctionValueProblem(workspace, String(p.field), value);
+    if (problem !== undefined) shape(problem);
+    return { q, value, noteFixes };
+  }
+  if (kind === "tracked_task") {
+    const entry = fixes[0]!;
+    if (fixes.length !== 1 || !isTrackedFix(entry)) shape("a fix on a tracked_task is exactly one {answer: <one sentence>} or {drop: true} (spec/schema.md §11.3)");
+    if (typeof entry.answer === "string" && entry.answer.trim() === "") shape("an answer is a non-empty sentence");
+    return { q, value: entry, noteFixes };
+  }
   if (kind === "notion_change" || kind === "set_field") {
     const { value } = single();
     const problem = fixValueProblem(workspace, p, value);
@@ -734,6 +697,93 @@ function defer(workspace: Workspace, id: string, p: Record<string, unknown>, exc
     ...(typeof p.correction === "string" ? { correction: p.correction } : {}),
   };
   return writeProposal(workspace, fields, today).id;
+}
+
+/** The reference fields a correction sets (spec/cli.md §5.7's table), and the prefix of their ids. */
+const CORRECTION_REFERENCES: Record<string, string> = { area: "area", goal: "gol", client: "org", org: "org", domain: "dom" };
+
+/** Why a value can't be a correction of `field` (spec/cli.md §5.7's table): a fix's value has the shape of `after`. */
+function correctionValueProblem(workspace: Workspace, field: string, value: unknown): string | undefined {
+  if (field.startsWith("facts.")) return typeof value === "string" || typeof value === "number" ? undefined : "a fact value is a string or a number";
+  if (["title", "summary", "why"].includes(field)) return typeof value === "string" && value.trim() !== "" ? undefined : `${field} is a non-empty text`;
+  const prefix = CORRECTION_REFERENCES[field];
+  if (prefix !== undefined) return value === null || (typeof value === "string" && value.startsWith(`${prefix}-`) && workspace.get(value) !== undefined) ? undefined : `${field} is an existing ${prefix}- id, or null to remove it`;
+  if (field === "people") return Array.isArray(value) && value.every((id) => typeof id === "string" && id.startsWith("per-") && workspace.get(id) !== undefined) ? undefined : "people is a list of existing per- ids";
+  return undefined;
+}
+
+/**
+ * An accepted correction from Notion (spec/cli.md §5.7, decision 0027, 0101 §4): applied by the corrections table, a key fact with its
+ * timeline entry (`source: notion-edit`, or `user-correction:<proposal>` on a fix), then S of its property set to `notion_value`. A value
+ * equal to the current one changes only S. Returns a message when the target's field is no longer `before`.
+ */
+function applyNotionCorrection(workspace: Workspace, p: Record<string, unknown>, V: unknown, today: string, correctedBy: string | undefined): string | null {
+  const note = existing(workspace, String(p.target));
+  const field = String(p.field);
+  const factKey = /^facts\.([a-z][a-z0-9_]*)$/.exec(field)?.[1];
+  const known = loadSchemas().knownKeys(note.type);
+  const correctable = KNOWLEDGE_TYPES.has(note.type) && (factKey !== undefined ? known?.has("facts") === true : ["title", "summary", "why", "domain", "area", "goal", "client", "org", "people"].includes(field) && known?.has(field) === true);
+  if (!correctable) throw new ItemFailure("FIELD_NOT_CORRECTABLE", `${field} cannot be corrected on a ${note.type}`);
+  const current = brainFieldValue(note, field);
+  if (!isDeepStrictEqual(current, p.before)) {
+    const shown = (value: unknown) => (value === undefined ? "absent" : JSON.stringify(value));
+    return `${field} is ${shown(current)}, the correction expected ${shown(p.before)}`;
+  }
+  const value = V === undefined ? p.after : V;
+  const document = workspace.edit(note);
+  const a = document.attributes;
+  if (!isDeepStrictEqual(current ?? null, value ?? null)) {
+    if (factKey !== undefined) {
+      const date = String(p.observed_at).slice(0, 10);
+      setFact(a, factKey, value, date, date, correctedBy === undefined ? "notion-edit" : `user-correction:${correctedBy}`);
+    } else if (value === null) delete a[field];
+    else a[field] = value;
+    a.updated = today;
+  }
+  settlePublished(a, String(p.property), p.notion_value);
+  workspace.save(note.path, document);
+  return null;
+}
+
+/** An open question (schema §4): no answer, not dropped, not archived. */
+const openQuestion = (a: Record<string, unknown>): boolean => a.answer === undefined && a.dropped === undefined && a.lifecycle !== "archived";
+
+/**
+ * A tracked_task answered (a) or (b) (spec/schema.md §11.2, 0101 §6): the question's answer recorded, or the question dropped with its task
+ * kept. Nothing is written to Notion. Returns a message when the question is no longer open or no longer tracked by that page.
+ */
+function applyTrackedAnswer(workspace: Workspace, p: Record<string, unknown>, V: Record<string, unknown>, D: string, today: string): string | null {
+  const question = existing(workspace, String(p.target));
+  const document = workspace.edit(question);
+  const a = document.attributes;
+  if (!openQuestion(a)) return `${question.id} is no longer open`;
+  if (a.task !== p.page) return `${question.id} is no longer tracked by task ${String(p.page)}`;
+  if (typeof V.answer === "string") a.answer = V.answer;
+  else { a.lifecycle = "archived"; a.dropped = D; }
+  a.updated = today;
+  workspace.save(question.path, document);
+  return null;
+}
+
+/**
+ * What a reject writes besides the proposal (spec/schema.md §11.2): a rejected correction sets S of its property to `notion_value`, so the
+ * next publish puts the brain's value back; a tracked_task kept open (c) on a task in Notion's trash unlinks it from its open question.
+ */
+function rejectFromNotion(workspace: Workspace, p: Record<string, unknown>, today: string): void {
+  if (p.kind === "notion_correction") {
+    const note = existing(workspace, String(p.target));
+    const document = workspace.edit(note);
+    settlePublished(document.attributes, String(p.property), p.notion_value);
+    workspace.save(note.path, document);
+  }
+  if (p.kind === "tracked_task" && p.task_state === "gone") {
+    const question = workspace.get(String(p.target));
+    if (question === undefined || question.attributes.task !== p.page || !openQuestion(question.attributes)) return;
+    const document = workspace.edit(question);
+    delete document.attributes.task;
+    document.attributes.updated = today;
+    workspace.save(question.path, document);
+  }
 }
 
 /** Apply a proposal's kind to its targets. Returns a message when the proposal is stale. */

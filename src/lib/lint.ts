@@ -471,6 +471,11 @@ function proposalStatusProblem(a: Record<string, unknown>): string | null {
   const action = record(a.decision).action;
   const stale = a.closed_reason === "stale";
   if (a.closed_reason !== undefined && status !== "closed") return "closed_reason is only allowed on a closed proposal";
+  // A notion_correction or tracked_task that sync no longer reads in Notion is closed with no decision (spec/schema.md §11.1, 0101).
+  if (a.closed_reason === "withdrawn") {
+    if (a.kind !== "notion_correction" && a.kind !== "tracked_task") return "closed_reason withdrawn is only allowed on a notion_correction or a tracked_task";
+    return action === undefined ? null : `a withdrawn proposal has no decision, found ${String(action)}`;
+  }
   const expected: Record<string, unknown[]> = {
     pending: [undefined],
     approved: ["approve"],
