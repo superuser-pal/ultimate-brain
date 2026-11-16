@@ -26,7 +26,7 @@ updated: 2026-12-05
 ## Recent decisions
 - Nothing reviewed yet: 1 note waiting in Review
 
-## Open questions
+## Open questions and risks
 - Nothing reviewed yet: 1 note waiting in Review
 
 ## Recent meetings

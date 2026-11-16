@@ -23,7 +23,7 @@
 - [Use Supabase for auth](knowledge/decisions/2026-12-03-use-supabase-for-auth.md) — dec-7k2m9q4x · date: 2026-12-03 · assessment: accepted · project: Acme website · Acme switches auth from Firebase to Supabase, agreed at the 3 Dec sync.
 
 ## Questions
-- [Who owns the Acme mobile app?](knowledge/questions/who-owns-the-acme-mobile-app.md) — que-8n3v5x1d · kind: question · status: Open · Unclear whether Carlos still owns mobile now that Maria is PM.
+- [Who owns the Acme mobile app?](knowledge/questions/who-owns-the-acme-mobile-app.md) — que-8n3v5x1d · kind: question · status: open · Unclear whether Carlos still owns mobile now that Maria is PM.
 
 ## Meetings
 - [Acme kickoff](knowledge/meetings/2026-10-01-acme-kickoff.md) — mtg-5r2k8v3a · date: 2026-10-01 · project: Acme website · Kickoff of the Acme website rebuild; Firebase chosen for auth, launch planned for January 2027.
