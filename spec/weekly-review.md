@@ -1,18 +1,18 @@
-# The weekly review (contract, decisions 0075 and 0093)
+# The weekly review (contract, decisions 0075, 0093 and 0096)
 
-**Status:** contract for release 0.15.0 (CC-111). Written by Claude Code. It is built by CC-253 (the CLI), CC-254 (correction checks), CC-255 (the skill and the schedule offer) and CC-256 (Weekly review in Notion), and tried in the author's brain by U-29. The numbers in §12 come from the resource-budget trials, run read-only in the author's brain (0075 §7, 0093 §4, §6).
+**Status:** contract for release 0.15.0 (CC-111). Written by Claude Code. It is built by CC-253 (the CLI), CC-254 (correction checks), CC-255 (the skill and the schedule offer) and CC-256 (Weekly review in Notion), and tried in the author's brain by U-29. **Since 0.16.0 (decision [0096](../decisions/0096-one-place-to-decide.md), CC-295; built by CC-297):** the report is published as one Inbox row per week, Kind Weekly, not a Documents row; its decisions are made in the Claude Code or Codex session (capture-and-review §7.5), not in Review rows; the Reports offer is retired; and Weekly review in Notion reads the week's row and decides nothing (§13). `spec/schemas/weekly.schema.json` (`lives: "session"`, the record input's `publish`) follows in CC-297. Reports published as Documents rows in 0.15.x stay as they are, as history. The numbers in §12 come from the resource-budget trials, run read-only in the author's brain (0075 §7, 0093 §4, §6).
 
-How this file fits: it holds the whole weekly review. That covers what a run reads, the report and its identity, the three sections, the change window and coverage, the two shared limits, repetition and dismissals, the correction queue and its claim groups, budgets and partial runs, delivery, the schedule, Brain Assistant's Weekly review skill and the acceptance scenarios. It reuses what exists. Ultimate Assistant's findings ([assistant.md](assistant.md) §3, cli.md §5.31) are the work stream. `brain reflect --candidates` (cli.md §5.32, §6.2) is the knowledge stream, the only scheduled reflection (0076 §5). Proposals and Review rows (schema §11, cli.md §5.6, §5.14.4), the report destination (schema §4 view, §16) and `brain schedule` (cli.md §5.21) are used as they are. The command surface (`brain weekly`) is cli.md §5.34; the fields are in schema §2, §4 view, §11 and §12.
+How this file fits: it holds the whole weekly review. That covers what a run reads, the report and its identity, the three sections, the change window and coverage, the two shared limits, repetition and dismissals, the correction queue and its claim groups, budgets and partial runs, delivery, the schedule, Brain Assistant's Weekly review skill and the acceptance scenarios. It reuses what exists. Ultimate Assistant's findings ([assistant.md](assistant.md) §3, cli.md §5.31) are the work stream. `brain reflect --candidates` (cli.md §5.32, §6.2) is the knowledge stream, the only scheduled reflection (0076 §5). Proposals (schema §11, cli.md §5.6) and their questions in the session (capture-and-review §7.5), the Inbox (docs/notion-space-design.md §3.11) and `brain schedule` (cli.md §5.21) are used as they are. The command surface (`brain weekly`) is cli.md §5.34; the fields are in schema §2, §4 view, §11 and §12.
 
-**Decisions:** [0075](../decisions/0075-weekly-review-and-targeted-corrections.md) (binding, all of it), [0093](../decisions/0093-the-0-15-0-scope-grill.md) (the Weekly review entry point, the Reports offer, Sonnet by default, the trials in the author's brain), [0051](../decisions/0051-unattended-catch-up-and-schedules.md) (unattended runs, the no-op rule, a schedule pins a model), [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md) and [0072](../decisions/0072-ultimate-assistant.md) (the assistant's findings, dismissals, Review rows only when no one is there), [0076](../decisions/0076-reflection-chat-first.md) (reflection's skips and holds), [0074](../decisions/0074-scoped-memory-handovers-and-bounded-recall.md) (its 800-token budget is separate), [0048](../decisions/0048-modules-and-simpler-rows.md) (modules), [0090](../decisions/0090-review-by-grill-notion-ai-reviews-with-you-and-your-call-decides.md) (the grill style and where Notion AI may write).
+**Decisions:** [0075](../decisions/0075-weekly-review-and-targeted-corrections.md) (binding, all of it), [0093](../decisions/0093-the-0-15-0-scope-grill.md) (the Weekly review entry point, Sonnet by default, the trials in the author's brain; its Reports offer is retired by 0096), [0051](../decisions/0051-unattended-catch-up-and-schedules.md) (unattended runs, the no-op rule, a schedule pins a model), [0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md) and [0072](../decisions/0072-ultimate-assistant.md) (the assistant's findings, dismissals), [0076](../decisions/0076-reflection-chat-first.md) (reflection's skips and holds), [0074](../decisions/0074-scoped-memory-handovers-and-bounded-recall.md) (its 800-token budget is separate), [0048](../decisions/0048-modules-and-simpler-rows.md) (modules), [0090](../decisions/0090-review-by-grill-notion-ai-reviews-with-you-and-your-call-decides.md) (the grill style, kept for the session's rounds), [0096](../decisions/0096-one-place-to-decide.md) (decisions in the session; the Inbox row; the Reports offer retired).
 
 **Calls taken in this contract that the user may veto** (each the simplest reading of 0075 and 0093; none contradicts their rules, and item 8 departs only from 0093 §2's wording):
 1. **One new skill, `brain-weekly-review`** (written in the fork, delivered in the pinned snapshot). It runs the assistant's and reflection's deterministic halves itself, so neither skill gains an unattended mode (§1).
 2. **A week is the ISO week of the run's local date.** The Monday 08:00 run opens the new week's report, and its What changed covers the week before (§2).
-3. **The report is a new view kind, `weekly_review`,** in `reports/`, published as a Documents row with Origin Report, the existing report destination (§2). It is not a `report`, because it doesn't have the six sections of schema §16.4.
+3. **The report is a new view kind, `weekly_review`,** in `reports/`, published as one Inbox row per week, Kind Weekly (§2, §9.3; a Documents row with Origin Report before 0.16.0). It is not a `report`, because it doesn't have the six sections of schema §16.4.
 4. **Run state lives in `_weekly/state.json`.** It is JSON, not a note, like `_assistant/dismissals.json`. It holds coverage, what earlier reports showed, and the correction queue's cursor (§4, §7, §8). The queue itself is read from the Git record, so `brain apply` and `sync apply` gain no new step.
 5. **A body-line correction is a new change kind, `replace_line`.** It replaces one exact line of a brain-owned body and is stale when that line changed. No existing kind can change a restatement in a project's or a person's prose (§8.3).
-6. **A decision item is a Review row or a task** (0093 §2: "decided where it lives"). An overdue or stalled task that has no recommendation with a value is a task item: the user sets it in Notion, and no Review row is written (§6.1).
+6. **A decision item is a proposal or a task** (0093 §2: "decided where it lives"). A proposal is decided in the session (capture-and-review §7.5). An overdue or stalled task that has no recommendation with a value is a task item: the user sets it in Notion, and no proposal is written (§6.1).
 7. **The normal brief is at most 450 words**, links and the header excluded. That is the two-minute reading target at about 200 words a minute (0075 §1), and it is checked in the acceptance (§14).
 8. **"Run Weekly review", not `/Weekly review`** (a deviation from 0093 §2's words, not its rule): since CC-260 a Notion Custom Agent doesn't run a skill typed as a `/` command, so the way in is asking Brain Assistant for the Weekly review skill by name (§13). The behaviour 0093 §2 decides is unchanged.
 
@@ -21,7 +21,7 @@ How this file fits: it holds the whole weekly review. That covers what a run rea
 ## 1. A run
 
 Two prompts start the skill `brain-weekly-review`:
-- **`weekly review`**: attended. The user asks for it, or a schedule isn't set. The report comes first in the chat. The run then writes it as §9 says and ends. Deciding happens in Review or through Weekly review in Notion (§13), never in this chat: a weekly run decides nothing, attended or not (0075 §6). An attended run that the user follows with "yes 2" is told where item 2 lives.
+- **`weekly review`**: attended. The user asks for it, or a schedule isn't set. The report comes first in the chat. The run then writes it as §9 says and ends. A weekly run decides nothing, attended or not (0075 §6). Its proposals are decided in a session with "what needs my decision" (capture-and-review §7.5), which may follow at once in the same chat; a task item is set on the task in Notion. An attended run that the user follows with "yes 2" is told where item 2 lives.
 - **`weekly review unattended`**: the schedule's prompt (§11). It asks no questions.
 
 Both modes run the same steps and write the same things. The one difference is that an attended run shows the report in the chat and may ask "publish now?" under `settings.publish: ask`, as attended catch-up does.
@@ -36,7 +36,7 @@ Both modes run the same steps and write the same things. The one difference is t
 7. **Select** (deterministic): `brain weekly select --input <judged>`, the input naming the plan by its `input_hash` (no copy of the plan), applies the limits (§5), repetition and dismissals (§7), and the priority order. It returns the decision items, the queued remainder and the counts, and saves them as a second hand-off file.
 8. **Write the proposals** for new decision items (§6.2): `brain proposal new`, all `pending`, nothing applied.
 9. **Write the report**: the skill writes the What changed and Task analysis prose from step 3's candidates (§3). `brain weekly record --input`, naming the plan by its `input_hash` and carrying only the proposals and the prose, reads the two hand-off files, renders What needs your decision from step 7, checks the shape (§3.4), writes the report (§2), updates `_weekly/state.json`, logs, and removes the hand-off files. Then `brain index`, `brain views`, `brain lint`, and a commit of exactly the paths written.
-10. **Publish** (§9.3), then `brain sync record`, commit, push per `settings.push`, and remove the attempt marker. The new Review rows (and a theme's draft) are published and recorded before the report is rendered, so the report's links name their rows (§3.4).
+10. **Publish** (§9.3): the week's Inbox row, Kind Weekly. Then `brain sync record`, commit, push per `settings.push`, and remove the attempt marker. No proposal is published (capture-and-review §7.1).
 
 **It never:** applies a proposal, including one the user already approved (that is catch-up's job, 0075 §6); runs catch-up or ingests an input; writes a Notion-owned field; asks a question unattended; or starts a research agent or a sub-agent (0075 §7).
 
@@ -44,9 +44,10 @@ Both modes run the same steps and write the same things. The one difference is t
 
 - **The week** is the ISO 8601 week (`2026-W46`) of the run's **local date**: the date in the machine's time zone when step 2 starts (`as_of` stays UTC, as everywhere). The schedule runs on Monday at 08:00 local (§11), so a scheduled run always opens a new week.
 - **The file** is `reports/<Monday of the week, YYYY-MM-DD>-weekly-review.md`, for example `reports/2026-11-09-weekly-review.md`. A `view` with `view_kind: weekly_review` (schema §4 view): its `title` is `Weekly review · <D Mon>–<D Mon YYYY>` (the Monday and Sunday of the week; `Weekly review · 9–15 Nov 2026`, or `30 Nov–6 Dec 2026` across a month).
-- **A rerun in the same week updates that file in place**, as a report refresh does (schema §16.4, "Refreshing"). It gets new sections, `generated_at`, `generated_from`, `window.to` and coverage. The path, id, `week`, `window.from` and `notion` stay the same. Git keeps each version. A new week gets a new file, so past reviews stay browsable (0075 §5). There is one file per week, never one living file for every week.
+- **A rerun in the same week updates that file in place**, as a report refresh does (schema §16.4, "Refreshing"). It gets new sections, `generated_at`, `generated_from`, `window.to` and coverage. The path, id, `week`, `window.from` and `notion` (its Inbox row) stay the same. Git keeps each version. A new week gets a new file, so past reviews stay browsable (0075 §5). There is one file per week, never one living file for every week.
 - **Frontmatter** (schema §4 view, the `weekly_review` rows): `week`, `window` `{ from, to }` (timestamps, §4), `coverage` (`complete` or `partial`), `omitted` `{ clusters, correction_targets }` (§10), `counts` `{ decisions, new_items, targets, queued }`, `generated_from`, `generated_at`, `notion`, `last_synced`, `notion_published`.
-- **What a weekly review is not:** it is never evidence (lint rejects a note that cites it), never a proposal target, and never reviewed. It has no Lifecycle, as a report has none (schema §4 view). It has no Refresh asked and no What to fix: on its Documents row these are ignored (`NOT_A_REPORT`, cli.md §5.14.2), and a rerun is the refresh.
+- **What a weekly review is not:** it is never evidence (lint rejects a note that cites it), never a proposal target, and never reviewed. It has no Lifecycle, as a report has none (schema §4 view). It has no Refresh asked and no What to fix, and a rerun is the refresh.
+- **Its Inbox row** (0096 §7): one per ISO week, **Kind Weekly**, Name `Week of <D Mon YYYY>` (the Monday: `Week of 9 Nov 2026`), Brain ID = the view's id, the body = the report as `sync render` renders it (§3.4). A rerun in the same week updates that row, never adds one. It is **never taken in as an input**: catch-up takes only Ready rows of the kinds it ingests, never a Weekly or Catch-up row. Its **Brain Status** is `New` when first published and is set to **`Done`** by the publish that finds every proposal its decision items name terminal (`applied` or `closed`); task items don't hold it open, so a week whose items are all tasks is `Done` at its first publish. It needs neither the Documents nor the Reports module. A weekly review published as a Documents row in 0.15.x stays there, as history.
 
 ## 3. The body: three sections
 
@@ -54,7 +55,7 @@ The body is the two-line header of §3.1, then exactly these three `##` sections
 
 ```markdown
 Week of 9 Nov 2026 · changes since Mon 2 Nov 08:04 · Notion read live
-Covered: 14 changes from 6 meetings and 3 sources. 2 more decisions wait in Review from earlier weeks.
+Covered: 14 changes from 6 meetings and 3 sources. 2 more decisions wait from earlier weeks.
 
 ## What changed
 - **Decided:** launch the Harbor app in March, not January ([Launch Harbor app in March](../knowledge/decisions/2026-11-04-launch-harbor-app-in-march.md), 4 Nov).
@@ -74,20 +75,20 @@ Order of attention:
 3. Add a next step to Conference talk proposal: the call for papers closes on 30 Nov.
 
 ## What needs your decision
-1. Correction · Quarry budget 12k → 18k · 3 notes restate 12k → [Review](../_proposals/2026-11-09-correction-quarry-website-budget.md) (2 of 3 shown)
+1. Correction · Quarry budget 12k → 18k · 3 notes restate 12k → [decide in the session](../_proposals/2026-11-09-correction-quarry-website-budget.md) (2 of 3 shown)
 2. Overdue · "Send the logo proposals" · new date, Done or Won't Do → [the task](<task page URL>)
-3. Contradiction · Harbor app launch date: 2027-01 here, March in the 4 Nov decision → [Review](../_proposals/2026-11-09-harbor-app-launch-date.md)
-4. Stalled · Pinecrest signage · set On Hold? → [Review](../_proposals/2026-11-09-pinecrest-signage-on-hold.md)
+3. Contradiction · Harbor app launch date: 2027-01 here, March in the 4 Nov decision → [decide in the session](../_proposals/2026-11-09-harbor-app-launch-date.md)
+4. Stalled · Pinecrest signage · set On Hold? → [decide in the session](../_proposals/2026-11-09-pinecrest-signage-on-hold.md)
 
 5 more findings wait for next week. Say "weekly review more" in a session for the rest.
 ```
 
-The example's counts (§5.1): D = 4 items; I = 2 (the group's two admitted targets) + 1 + 1 = 4 new Review items; T = 2 + 1 (the task) + 1 + 1 = 5 targets. T is full, so §5.2 admits the group in part (2 of its 3 targets; the third stays queued under its claim) and queues the next candidate, a structure finding that needs a target, with the rest.
+The example's counts (§5.1): D = 4 items; I = 2 (the group's two admitted targets) + 1 + 1 = 4 new pending proposals; T = 2 + 1 (the task) + 1 + 1 = 5 targets. T is full, so §5.2 admits the group in part (2 of its 3 targets; the third stays queued under its claim) and queues the next candidate, a structure finding that needs a target, with the rest.
 
 ### 3.1 The header (two lines)
 Rendered by `brain weekly record` from `plan`'s and `select`'s data, never by the skill.
 - Line 1: `Week of <D Mon YYYY of the Monday> · changes since <D a Mon HH:MM local of window.from>` (on a first run, `· first review, last 7 days`), then `· Notion read live` or `· Notion unreachable: brain only`.
-- Line 2: the coverage statement (§4.3), then, when any apply, `<n> more decisions wait in Review from earlier weeks.` (§7) and `Partial: <what was left> (§10).`
+- Line 2: the coverage statement (§4.3), then, when any apply, `<n> more decisions wait from earlier weeks.` (§7) and `Partial: <what was left> (§10).`
 
 ### 3.2 `## What changed`
 The window's consequential changes (§4). There are at most **8 bullets**, each starting with one of the bold labels `Decided:`, `Changed:`, `Open:`, `Answered:` or `Next:`, in that order, and within a label newest first. Each bullet cites the note it rests on and its date: the freshness (0075 §1). A label with nothing is left out. With nothing at all, the section is `- Nothing new this week.` (possible when the run is not quiet because of task analysis or decisions). The skill writes the words. The CLI checks that every bullet has a link to a note in `generated_from` or to a Notion task, and that it carries a date.
@@ -100,9 +101,9 @@ The current outstanding work, older tasks included (0075 §1):
 - Nothing here changes a priority, date or status (0075 §1).
 
 ### 3.4 `## What needs your decision`
-Rendered by `brain weekly record`, never by the skill. There are at most **5 numbered items** (§5). Each is one line, `<n>. <Kind> · <subject> · <what to decide> → <link>`. **The link in Git** never needs Notion: for a Review row, it is a relative link to the proposal file (`../_proposals/…`), which exists when `record` runs (step 8 is before step 9); for a task, it is the task's page URL from the snapshot, or, brain only, the task's title with no link. **In Notion**, `sync render` turns a proposal link into a link to that proposal's Review row when the proposal has `notion`, and into the plain text `Review row (after the next publish)` when it has none. The Git report is never rewritten after a publish, and the render of the same report is updated at the next publish once its rows exist. A correction item adds `(<k> of <size> shown)` (§8.4). After the items come only the lines that apply:
+Rendered by `brain weekly record`, never by the skill. There are at most **5 numbered items** (§5). Each is one line, `<n>. <Kind> · <subject> · <what to decide> → <link>`. **The link in Git** never needs Notion: for a proposal, it is a relative link to the proposal file (`../_proposals/…`), which exists when `record` runs (step 8 is before step 9), with the text `decide in the session`; for a task, it is the task's page URL from the snapshot, or, brain only, the task's title with no link. **In Notion**, `sync render` writes a proposal item's link as the plain text `decide in Claude Code or Codex: *what needs my decision*` (0096 §7), and keeps a task item's link to the task. The Git report is never rewritten after a publish. A correction item adds `(<k> of <size> shown)` (§8.4). After the items come only the lines that apply:
 - `<n> more findings wait for next week.` (the queued remainder, §5.3);
-- `<n> earlier findings are still open in Review.` (§7);
+- `<n> earlier findings are still waiting for your decision.` (§7);
 - `<n> correction matches need clarification: say "weekly review corrections".` (§8.4);
 - a partial run's line (§10).
 
@@ -141,7 +142,7 @@ Meetings and sources are not changes of their own. They are where changes come f
 
 0075 §2, per **week**, across both streams:
 - **D:** at most **5 decision items** in What needs your decision;
-- **I:** at most **5 new Review items** created by this week's runs;
+- **I:** at most **5 new pending proposal items** created by this week's runs;
 - **T:** at most **5 affected targets** in this week's decision items.
 
 These are separate counts, and all three hold. They are not catch-up's `max_inputs`, reflection's page of 10, the assistant's page of 10, or 0074's limits.
@@ -149,13 +150,13 @@ These are separate counts, and all three hold. They are not catch-up's `max_inpu
 ### 5.1 Counting
 | Decision item | D | I (new items) | T (targets) |
 |---|---|---|---|
-| a new `notion_change` or `set_field` proposal (one Review row) | 1 | 1 | 1 (the row or note it changes) |
+| a new `notion_change` or `set_field` proposal | 1 | 1 | 1 (the row or note it changes) |
 | a new reflection proposal: `update_fact`, `contradiction`, `add_to_note` | 1 | 1 | 1 |
 | a new reflection `merge` | 1 | 1 | 2 (the duplicate and the survivor) |
 | a new theme (a draft learned Document and its `review_notes`) | 1 | 1 | 1 |
 | a new correction group of *k* targets (§8.4) | 1 | *k* (one item per target) | *k* |
 | a task item (§6.1) | 1 | 0 | 1 |
-| an earlier finding shown again (§7), linking its pending row | 1 | 0 | its targets |
+| an earlier finding shown again (§7), linking its pending proposal | 1 | 0 | its targets |
 
 - **A theme's target** in `select`'s input is the newest input of its evidence (the one its `review_notes` takes as `source`), since the draft Document doesn't exist until step 8 writes it. It still counts 1 for T.
 - **The week counts, not the run.** A rerun in the same week starts from the counts `_weekly/state.json` holds for this week (§9.5). The items it already made are kept as items (same key, `DUPLICATE_PENDING`) and are not counted twice, so a rerun can't add 5 more (0075 §2).
@@ -180,40 +181,40 @@ Everything eligible and not admitted is **queued**. It is counted in `counts.que
 
 ### 6.1 What an item is
 Every decision item is **decided where it lives** (0093 §2):
-- **A Review row**, new or existing, whose Your call the user sets (or decides with Weekly review's grill, §13).
+- **A proposal**, new or existing, decided in the session (capture-and-review §7.5).
 - **A task** in Notion, for a task finding whose recommendations all need the user's value (`task_overdue`, `task_stalled`: a new due date, or Done or Won't Do). No proposal is written. The user changes the task in Notion, and the next run sees the new values. A task item is still an item: it counts for D and T (§5.1).
 
 An `add_task` recommendation can't be an item: it needs the user's words (assistant.md §6.3). Its finding appears in Task analysis only.
 
 ### 6.2 The proposals (all `pending`, never applied by this run)
-- **Work stream:** the finding's first recommendation **with a value** that is a Review-row action, as assistant.md §6.3 writes it: `finding` = the key, `source` = `agent:brain-weekly-review/<as_of compact>`, `why` = the evidence text, and `area` per cli.md §5.31. A finding with no such recommendation is a task item (above) if it is a task; otherwise it appears in Task analysis only.
+- **Work stream:** the finding's first recommendation **with a value** that a proposal can carry, as assistant.md §6.3 writes it: `finding` = the key, `source` = `agent:brain-weekly-review/<as_of compact>`, `why` = the evidence text, and `area` per cli.md §5.31. A finding with no such recommendation is a task item (above) if it is a task; otherwise it appears in Task analysis only.
 - **Knowledge stream:** what a "later" writes in cli.md §6.2, with `fingerprint` and `evidence` (schema §11.4). A contradiction is proposed as the `contradiction` kind (keep both claims), never with a chosen value: an unattended run never picks one (0051).
 - **Corrections:** one `review_notes` group per corrected claim (§8.4).
-- `DUPLICATE_PENDING` from `proposal new` means that item already exists: the item links the existing row, which is how §5.1's rerun rule is kept.
+- `DUPLICATE_PENDING` from `proposal new` means that item already exists: the item links the existing proposal, which is how §5.1's rerun rule is kept.
 
 ## 7. Repetition, dismissals and postponements
 
-0075 §3. `_weekly/state.json` `shown` remembers, per **finding key** (the assistant key, the reflection fingerprint, or `correction:<claim key>`), the last week it was a decision item, its category, and an `evidence_hash`: the sha256 of the finding's evidence object without the counters `days_late` and `days_idle` (they grow every day; rule 3 below weighs them), or of the judged finding's `evidence` ids, sorted. A finding a report listed only in Task analysis (it has no recommendation a Review row or a task can carry) is recorded the same way, so it doesn't keep a later week from being quiet (§9.1).
+0075 §3. `_weekly/state.json` `shown` remembers, per **finding key** (the assistant key, the reflection fingerprint, or `correction:<claim key>`), the last week it was a decision item, its category, and an `evidence_hash`: the sha256 of the finding's evidence object without the counters `days_late` and `days_idle` (they grow every day; rule 3 below weighs them), or of the judged finding's `evidence` ids, sorted. A finding a report listed only in Task analysis (it has no recommendation a proposal or a task can carry) is recorded the same way, so it doesn't keep a later week from being quiet (§9.1).
 
 A finding shown before is a decision item again **only when one of these holds**:
 1. **Its evidence changed:** the `evidence_hash` differs (a new input, a new date).
 2. **It became newly overdue:** its category is now `overdue` and wasn't then.
 3. **Its urgency rose materially:** a `task_overdue` whose `days_late` has crossed a step since it was shown (7, 14, 28, then every 28), or a stalled finding whose `days_idle` has doubled.
-4. **It is an unresolved critical knowledge problem:** a contradiction on a `reviewed` note, or a correction group with targets still queued. These stay visible every week while unresolved (0075 §3). A pending `contradiction` proposal on a `reviewed` note is such an item even in a week whose window holds no cluster that finds it again: `select` takes it from `plan.pending`, linking its row (kind Contradiction, subject the proposal's title), and `plan` doesn't call that week quiet.
+4. **It is an unresolved critical knowledge problem:** a contradiction on a `reviewed` note, or a correction group with targets still queued. These stay visible every week while unresolved (0075 §3). A pending `contradiction` proposal on a `reviewed` note is such an item even in a week whose window holds no cluster that finds it again: `select` takes it from `plan.pending`, linking its proposal (kind Contradiction, subject the proposal's title), and `plan` doesn't call that week quiet.
 
-Otherwise it is not an item. It is counted in `<n> earlier findings are still open in Review.` when its proposal is pending, and is otherwise just not shown.
+Otherwise it is not an item. It is counted in `<n> earlier findings are still waiting for your decision.` when its proposal is pending, and is otherwise just not shown.
 
 **Dismissals and postponements stand across weeks** (0075 §3); a new week doesn't reset them:
 - the assistant's dismissal store and its 30-day rejected-Suggestion rule (assistant.md §3.5, §8);
 - reflection's holds: waiting and skipped fingerprints (schema §11.4);
-- a Review row the user deferred: a deferred item keeps its id in its new pending proposal (schema §11), so it is "pending", and not new;
-- a `notion_change` or `set_field` the user rejected in Review: its `finding` is held for 30 days, as an assistant Suggestion is (assistant.md §8 item 4).
+- a proposal the user left for later, or an item deferred by "all except …": a deferred item keeps its id in its new pending proposal (schema §11), so it is "pending", and not new;
+- a `notion_change` or `set_field` the user rejected in the session: its `finding` is held for 30 days, as an assistant Suggestion is (assistant.md §8 item 4).
 
 ## 8. The correction queue (0075 §4)
 
 ### 8.1 What queues a check
 A **meaning change** that is new to the cursor (§9.5), read from the Git record by `weekly plan`. Nothing is written when the correction is applied, so `apply` and `sync apply` are unchanged:
-- a timeline entry with `assessment: accepted`, new to the cursor, on a field whose previous accepted value differed. This covers an applied `update_fact`, a `contradiction` resolved to one value, an accepted or edited Review item that changed a fact, and a correction made in Notion that `sync apply` wrote to `facts` (dates and owners are facts too);
+- a timeline entry with `assessment: accepted`, new to the cursor, on a field whose previous accepted value differed. This covers an applied `update_fact`, a `contradiction` resolved to one value, an accepted or corrected proposal item that changed a fact, and a correction made in Notion that `sync apply` wrote to `facts` (dates and owners are facts too);
 - a decision superseded (a `supersede` proposal applied after the cursor);
 - a **title** that changed (a Name correction from Notion, or an applied rename): its old title, and each alias it drops, is the old value. The trials found a renamed Area still named the old way in a project's body. A title keeps no history in its note, so `plan` reads it from Git: for each knowledge note committed since the cursor's date (`git log --since`), the frontmatter before the first such commit against the current one; the claim's date is the newest such commit's date (`%cs`). A brain that is no Git repository has no title claims;
 - an `add_to_note` that the user approved from a reflection **promotion** (a lasting rule), when it replaces nothing. It queues only the check for other notes that contradict the rule; §8.2 judges whether any do.
@@ -241,19 +242,19 @@ The skill then reads each candidate line in its note and judges it as one of:
 - **historical:** the line reports the past ("in January we planned…"). **Left as it is.**
 - **uncertain:** a consequential match the skill can't settle. **Not drafted.** It is named in the group's row and in the report as `needs clarification` (0075 §4), and it counts in the group's size but takes no item.
 
-Only well-supported fixes are proposed: a restatement gets a fix only when the new value replaces the old one in that line with nothing else changed, which is `line_after` (or, for a fact, `update_fact` from the old value to the new). A target whose `line_after` is `null` and that holds no fact can't be judged `restatement` (`select`: `INPUT_INVALID`, judge it `uncertain`). Anything more is `uncertain`. A target with `pending` set is not judged again: it is already in Review.
+Only well-supported fixes are proposed: a restatement gets a fix only when the new value replaces the old one in that line with nothing else changed, which is `line_after` (or, for a fact, `update_fact` from the old value to the new). A target whose `line_after` is `null` and that holds no fact can't be judged `restatement` (`select`: `INPUT_INVALID`, judge it `uncertain`). Anything more is `uncertain`. A target with `pending` set is not judged again: it already waits for a decision in the session.
 
 ### 8.3 The change kinds a correction uses
 - `update_fact` (schema §11.2) for a `facts.<field>` that equals the old value.
 - **`replace_line`** (new, schema §11): `{ kind: replace_line, target, line_before, line_after, before_hash, passages }`. It replaces the one line of the target's body equal to `line_before`, and **is stale** when the body hash differs from `before_hash`, or when `line_before` isn't there exactly once. `passages` are the corrected claim's own (its accepted entry's source and passages). It is allowed on the targets of §8.2 only (a current knowledge note that is no meeting, decision, memory or whole-text or promoted `reference`), standalone or as a `review_notes` change. `line_before` and `line_after` are single non-empty lines, and differ.
 
 ### 8.4 The claim group
-- One **`review_notes`** proposal per claim, with `correction` = the claim key (schema §11) and `title` = `Correction: <note title> <field>: <old> → <new> (<size> notes)` (`<field>` is `title` for a title, `decision` for a supersede, `rule` for a rule; cut to 120 characters). `source` is the corrected claim's source, and `why` is the correction's own why. Its `changes` are the admitted restatements, one item per target (update_fact or replace_line), each with before/after visible. Its uncertain matches are listed in its `needs_clarification` (schema §11) and on its Review page under `Needs clarification`, with no items. The user selects each change, item by item (0075 §2), in the existing Review page (cli.md §5.14.4).
+- One **`review_notes`** proposal per claim, with `correction` = the claim key (schema §11) and `title` = `Correction: <note title> <field>: <old> → <new> (<size> notes)` (`<field>` is `title` for a title, `decision` for a supersede, `rule` for a rule; cut to 120 characters). `source` is the corrected claim's source, and `why` is the correction's own why. Its `changes` are the admitted restatements, one item per target (update_fact or replace_line), each with before/after visible. Its uncertain matches are listed in its `needs_clarification` (schema §11), with no items, and the session's question names them. The user selects each change, item by item (0075 §2), in the session's question for the group (capture-and-review §7.5): "all except …" excludes the others.
 - **The input `select` hands over.** A correction item with `write: true` carries `proposal_input`, the exact `proposal new` input for its group: the `review_notes` (`notes: []`, `correction`, `title`, `why`, `source`, `needs_clarification` when any) and one change per admitted target (`update_fact` or `replace_line`, each with the same `correction`, `source` and `passages`). The skill passes it as it is. A change with `correction` folds into the `review_notes` with the same `correction` in that input (cli.md §5.6), never into an ingest's row.
 - **Size** is the number of restatements plus uncertain matches. A group larger than the targets left this week shows its first targets by note id and says `(<k> of <size> shown)`. Its remaining targets stay **queued under the same claim key**: next week's run proposes them as a new group for the same claim (a deeper path, on request: `weekly review corrections`). Every uncertain match a run judged is counted in the report, after the items, as `<n> correction matches need clarification: say "weekly review corrections".`, and is finished; a claim with uncertain matches and no restatement writes no group.
-- **Retries and stale bases.** Before proposing, `plan` re-reads each target. A target whose line or fact no longer holds the old value is dropped (already fixed). A target already in a waiting group for the claim has `pending` (§8.2) and is not proposed again: a rerun's item links that group (`write: false`), so the group is reused, never duplicated, and `proposal new` answers `DUPLICATE_PENDING` for a group whose every change is already waiting in one. A target whose change the user rejected is never proposed again for that claim (`item_decisions` reject, or a rejected group). A deferred change keeps its `correction` in the deferred row. A target changed after the proposal was written is caught at apply by the stale rules (schema §11.3).
-- **Selection** (`select`, §5.2): one candidate per claim with restatements not yet in Review, in group 1, oldest claim date first, then claim key; its key is `correction:<claim>`, its subject `<note title> <field> <old> → <new>` and its decide `<size> notes restate <old>` (`1 note restates`), its evidence hash the sha256 of its drafted targets' `{note, line}`, sorted, and a claim still in `corrections.open` is §7 rule 4's critical problem. A claim whose targets are all in a waiting group of this week's items is linked again on a rerun at no cost (§5.1).
-- **The cursor** (§8.1) advances past a claim when every candidate target is proposed (or already in Review), rejected, judged independent or historical, or uncertain and named. A claim with queued targets (not admitted, or not judged within the budget, §10) stays in `corrections.open` with those targets and its `old`, `new`, `date` and `source`, and next week's `plan` lists it with only those targets, whatever the cursor. `record` sets `checked_on` to the plan's local date: `done_on_date` is the finished claims dated that day (with the earlier ones when `checked_on` was already that day), and `open` the claims left.
+- **Retries and stale bases.** Before proposing, `plan` re-reads each target. A target whose line or fact no longer holds the old value is dropped (already fixed). A target already in a waiting group for the claim has `pending` (§8.2) and is not proposed again: a rerun's item links that group (`write: false`), so the group is reused, never duplicated, and `proposal new` answers `DUPLICATE_PENDING` for a group whose every change is already waiting in one. A target whose change the user rejected is never proposed again for that claim (`item_decisions` reject, or a rejected group). A deferred change keeps its `correction` in the deferred proposal. A target changed after the proposal was written is caught at apply by the stale rules (schema §11.3).
+- **Selection** (`select`, §5.2): one candidate per claim with restatements not yet proposed, in group 1, oldest claim date first, then claim key; its key is `correction:<claim>`, its subject `<note title> <field> <old> → <new>` and its decide `<size> notes restate <old>` (`1 note restates`), its evidence hash the sha256 of its drafted targets' `{note, line}`, sorted, and a claim still in `corrections.open` is §7 rule 4's critical problem. A claim whose targets are all in a waiting group of this week's items is linked again on a rerun at no cost (§5.1).
+- **The cursor** (§8.1) advances past a claim when every candidate target is proposed (or already pending), rejected, judged independent or historical, or uncertain and named. A claim with queued targets (not admitted, or not judged within the budget, §10) stays in `corrections.open` with those targets and its `old`, `new`, `date` and `source`, and next week's `plan` lists it with only those targets, whatever the cursor. `record` sets `checked_on` to the plan's local date: `done_on_date` is the finished claims dated that day (with the earlier ones when `checked_on` was already that day), and `open` the claims left.
 
 ## 9. What a run writes
 
@@ -266,17 +267,18 @@ A run that is **not** quiet because of a failure alone (Notion unreachable with 
 
 ### 9.2 Files
 - the report (§2), `_weekly/state.json`, the new proposals, and a draft learned Document for a theme (an addition, as 0051 allows);
-- the log line (`published` is whether the run publishes the report, as `record`'s input says; it is refused with Reports off, §9.3): `weekly - mode=<attended|unattended> week=<YYYY-Www> coverage=<complete|partial|none> decisions=<n> new_items=<n> targets=<n> queued=<n> changes=<n> failed=<n>[ failures="<reason>; …"] published=<yes|no> notes_read=<n> seconds=<s>` (cli.md §3.9).
+- the log line (`published` is whether the run publishes the report, as `record`'s input says, §9.3): `weekly - mode=<attended|unattended> week=<YYYY-Www> coverage=<complete|partial|none> decisions=<n> new_items=<n> targets=<n> queued=<n> changes=<n> failed=<n>[ failures="<reason>; …"] published=<yes|no> notes_read=<n> seconds=<s>` (cli.md §3.9).
 
-### 9.3 Delivery and publishing (0075 §5, 0093 §3)
-| Reports | `settings.publish` | The report | Review rows |
-|---|---|---|---|
-| on | `auto` | published to Documents (Origin Report), and the same row is updated on rerun | published |
-| on | `ask` | unattended: published at the next attended publish; attended: asked once | as the report |
-| off | either | **a file in the brain, never published** (0093 §3); summary at the next attended session (below) | per `publish`, as for any proposal |
+### 9.3 Delivery and publishing (0075 §5, 0096 §7)
+| `settings.publish` | The report |
+|---|---|
+| `auto` | published as the week's Inbox row (Kind Weekly, §2), and the same row is updated on rerun |
+| `ask` | unattended: published at the next attended publish; attended: asked once |
+
+The Inbox is a core database, so the row needs neither the Documents nor the Reports module, and Reports' state changes nothing here. Its proposals are never published: they wait in `_proposals/` for the session (capture-and-review §7.4).
 
 - **The next attended session** (any skill that opens with `brain status`: catch-up, the assistant, this skill) shows `brain status`'s `unattended.weekly` (cli.md §5.2) in one line: `This week's review is ready: <n> decisions (reports/2026-11-09-weekly-review.md).`, plus `Last weekly run failed: <reason>.` or `Last weekly run did not finish (started <D Mon HH:MM>).` when they apply.
-- **A Notion outage** is surfaced where it can be: the log line, the scheduler's log (cli.md §5.21), and that opening line. A run never says it wrote to Notion when it didn't. The report's header says `Notion unreachable: brain only`, and its Review rows wait for a run that reaches Notion.
+- **A Notion outage** is surfaced where it can be: the log line, the scheduler's log (cli.md §5.21), and that opening line. A run never says it wrote to Notion when it didn't. The report's header says `Notion unreachable: brain only`, and its Inbox row waits for a run that reaches Notion.
 
 ### 9.4 Failures
 A failed step is logged in `failures`, and the run goes on with the next step, as unattended catch-up does (cli.md §6.1). A lint error in a file the run wrote stops it before the commit; it is a failure. A failure is never quiet.
@@ -310,13 +312,12 @@ The state is written only by `brain weekly record`, and its `corrections` also b
 - **No silent increase:** the run never raises a budget or a limit, and never calls partial coverage complete (0075 §7). Under a tight budget, D, I and T are unchanged.
 - These budgets are separate from 0074's 800-token opening budget, and from catch-up's `max_inputs`.
 
-## 11. The schedule (0075 §6, 0093 §3, §4)
+## 11. The schedule (0075 §6, 0093 §4)
 
 - **Job `weekly-review`** in `brain schedule install` (cli.md §5.21): its prompt is `weekly review unattended`, it needs `brain-weekly-review`, and its default is `--at 08:00 --days mon`, local time. It is a separate entry from `catch-up`, never chained to it, and neither runs the other.
 - **The skill's "Run on a schedule" section** ("review my week every Monday") asks what is missing once: the time if not 08:00, and the model. It offers **Sonnet by default** (0093 §4; `claude-sonnet-<current>` as a full id), and the user may pick another. It then offers, once each:
-  - **Reports**, when off: `Turn on Reports so each week's review appears in Notion?` On a yes, the module is turned on with notion/modules/reports.md. On a no, it says the review stays a file in the brain, with a summary at the next session (0093 §3).
   - **`settings.publish: auto`**, when `ask`, as catch-up's offer does.
-  - **The tools it may use**, as catch-up's offer does: `Bash(brain:*)`, `Bash(git:*)`, `Read`, `Edit`, `Write` and the Notion tools, plus `Read(~/.ultimate-brain/weekly/**)` and `Edit(~/.ultimate-brain/weekly/**)` for the snapshot file and the skill's input files, which it keeps in the same folder (cli.md §5.34), and `Bash(date:*)` and `Bash(jq:*)`: the run reads the clock for the snapshot's `as_of`, the attempt marker and the log line's `seconds`, and reads saved Notion results with `jq` (§1 step 2). No other Notion write than the publish of §9.3. (CC-255: the list first had neither `date` nor `jq`, so a scheduled run could do neither.)
+  - **The tools it may use**, as catch-up's offer does: `Bash(brain:*)`, `Bash(git:*)`, `Read`, `Edit`, `Write` and the Notion tools, plus `Read(~/.ultimate-brain/weekly/**)` and `Edit(~/.ultimate-brain/weekly/**)` for the snapshot file and the skill's input files, which it keeps in the same folder (cli.md §5.34), and `Bash(date:*)` and `Bash(jq:*)`: the run reads the clock for the snapshot's `as_of`, the attempt marker and the log line's `seconds`, and reads saved Notion results with `jq` (§1 step 2). No other Notion write than the publish of §9.3. (0093 §3's Reports offer is retired by 0096: the Inbox row needs no module.) (CC-255: the list first had neither `date` nor `jq`, so a scheduled run could do neither.)
 
   It then installs with `--max-budget-usd` from §12, and writes `settings.weekly.schedule: on`.
 - **The brain folder must be trusted in Claude Code**: `claude -p` ignores the allow rules of a folder's `.claude/settings.json` until Claude Code has been opened there interactively once and its trust dialog accepted (found by CC-253's `claude -p` test). `brain schedule install weekly-review` says so every time (warning `FOLDER_TRUST`, cli.md §5.21), and the skill's schedule section passes it on: open Claude Code in the brain folder once and accept the trust dialog before the first scheduled run.
@@ -349,23 +350,18 @@ The state is written only by `brain weekly record`, and its `corrections` also b
 | `max_usd` | 3 | the dearest Sonnet run, 0.75, × 4. On Opus, the skill's schedule offer sets 8 (opus-1, 2.14, × 4) |
 | the default model | **Sonnet, confirmed** | it covered every section within the limits at about a third of Opus's cost (0.58 to 0.75 against 2.14 a week). Opus read more and reasoned more specifically, which the attended trial (§14) checks; the user can pin Opus when turning on the schedule (0093 §4) |
 
-## 13. Weekly review in Notion (0093 §2)
+## 13. Weekly review in Notion (0093 §2, 0096 §7)
 
 The user asks Brain Assistant for it by name, "Run Weekly review". Since CC-260, a Custom Agent doesn't run a skill typed as a `/` command, so 0093 §2's `/Weekly review` means this skill asked for by name.
 
-Brain Assistant's Weekly review skill (notion/brain-assistant.md) becomes the way into this week's report. It no longer builds its own six-section digest. The new text, which a Notion migration ships (0022):
-- **Find this week's report:** the Documents row with Origin Report whose Name begins `Weekly review ·` and whose week holds today; else the newest one, saying its week.
-- **None this week:** it says so and how to get one: say `weekly review` to Claude Code or Codex in the brain, or wait for the Monday schedule when it is on. With Reports off, it says the review is a file in the brain, and that turning on Reports brings it to Notion.
-- **With one:** it summarises What changed and Task analysis in a few lines, then walks What needs your decision in the 0090 grill style. That means rounds of 3 to 5 questions, each with lettered options and the recommended one marked with a one-line reason. Each item is decided where it lives:
-  - a **Review row**: the grill of 0090, writing only in the zones 0090 allows, never Your call (the user sets it);
-  - a **task**: it says what to set and links the task. Brain Assistant never edits a property (its Instructions), so the user sets it.
-- **How each item is asked** (CC-256):
-  - **A row that needs deciding in the page** (Status `Needs you · decide in the page`, a page with `ref it-…` lines): its questions are Grill review's (0090 §3), in the same rounds; after the rounds, the preview and the write follow Grill review's steps, page by page, each after its own yes. A row of the older page format is only explained, as Grill review stops on it.
-  - **A row that needs only Your call** (`Needs you · set Your call`: a Conflict, Answer or Suggestion row): the question asks about the fact the row turns on ("Is Pinecrest signage still going ahead?"), with options and the recommended one from the evidence. After the answer, it says which Your call matches it and what that does. It never recommends Approve or Reject itself (0090 §3, the Instructions) and writes nothing in that row.
-  - **A task:** the options are a new due date, Done, Won't Do, or leave it this week, the recommended one with its evidence (the days late, a meeting that depends on it). After the answer, it names the property and value to set and links the task.
-  - **An item whose row is already decided** (Your call set, or Status Submitted, Done or Closed) is skipped with one line. An item whose Notion text is `Review row (after the next publish)` has no row yet: it says the row appears after the next publish, and asks nothing about it.
-- It ends with what is left for the user: the rows whose Your call to set, the tasks to change, in one short list.
-- It writes nothing anywhere else, as before. The Instructions name Weekly review next to Grill review in the edit rule and the Review rule, with the same limits.
+Brain Assistant's Weekly review skill (notion/brain-assistant.md) is the way to read this week's review in Notion. **It decides nothing** (0096 §7): decisions are made in the Claude Code or Codex session. The new text, which a Notion migration ships (0022, CC-299):
+- **Find this week's review:** the Inbox row of Kind Weekly whose Name is this week's `Week of <D Mon YYYY>`; else the newest Weekly row, saying its week.
+- **None this week:** it says so and how to get one: say `weekly review` to Claude Code or Codex in the brain, or wait for the Monday schedule when it is on.
+- **With one:** it summarises What changed and Task analysis in a few lines, then reads What needs your decision with the user, item by item, answering questions about each from the row and the related Notion pages. It asks the user nothing to decide:
+  - **a proposal item:** it says what the item would change and that it is decided in Claude Code or Codex, with "what needs my decision";
+  - **a task item:** it says what to set and links the task. Brain Assistant never edits a property (its Instructions), so the user sets it.
+- **A row already Done** says so in one line: nothing of it is waiting.
+- It writes nothing anywhere, as before.
 
 ## 14. Acceptance (0075 §8)
 
@@ -381,14 +377,13 @@ Brain Assistant's Weekly review skill (notion/brain-assistant.md) becomes the wa
 | correction | an applied fact change restated in 3 current notes, plus one independent line, one historical meeting and one uncertain match | one claim group, 3 selectable items with before/after; the independent, historical and immutable texts untouched; the uncertain match named and not drafted; a rerun reuses the group; a rejected item is not proposed again |
 
 Plus the following cases:
-- **Same-week rerun:** one file per week, updated in place; no duplicate Review item; the counts kept.
-- **Modules and publishing:** each row of §9.3's table.
+- **Same-week rerun:** one file and one Inbox row per week, both updated in place; no duplicate proposal; the counts kept.
+- **Modules and publishing:** each row of §9.3's table, with Documents and Reports off and on; the Inbox row turns Done once its proposals are terminal, and a week of task items only is Done at its first publish.
 - **Notion unreachable:** brain only, a failure surfaced in the log and the opening line, and no claim of a Notion write.
 - **Separation from catch-up:** no input ingested and no approved proposal applied by a weekly run; catch-up's behaviour unchanged.
 - **Budget exhaustion** at each step boundary.
-- **"Run Weekly review"** on a test space with a report and with none.
-- **The Reports offer**, asked once, with the yes and no paths.
+- **"Run Weekly review"** on a test space with a Weekly row and with none: it reads, decides nothing and writes nothing.
 
 The reading and deciding targets (two minutes to read, five to decide) are checked by the word cap and by the attended trial.
 
-**One attended trial in the user's private brain** (U-29, 0075 §8). It runs one scheduled week and one rerun, then "Run Weekly review", and is judged on usefulness: meaningful selection, task recommendations, and the reading and deciding times. Personal evidence stays outside the product repo, and only non-personal summaries of outcomes and timing come back. U-21's weekly step joins it (0076 §9): reflection findings respect excluded material.
+**One attended trial in the user's private brain** (U-29, 0075 §8). It runs one scheduled week and one rerun, then "what needs my decision" in a session and "Run Weekly review" in Notion, and is judged on usefulness: meaningful selection, task recommendations, and the reading and deciding times. Personal evidence stays outside the product repo, and only non-personal summaries of outcomes and timing come back. U-21's weekly step joins it (0076 §9): reflection findings respect excluded material.

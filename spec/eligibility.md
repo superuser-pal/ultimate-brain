@@ -13,7 +13,7 @@ How this file fits: it holds the one rule and where it applies. Command behaviou
 - **Caller:** the folder a command runs for (memory.md §2.1): `--repo <path>`, else the current directory, with the project, area and stacks of its `.brain`.
 - **Passage:** the finest unit of provenance a claim can name (capture-and-review §5.1): a passage reference `src-…#¶n:<hash>` of an extract; for an input with no paragraph identities (a URL, a file, a whole capture), the source itself (`src-…`, `mtg-…`, or a source key); an entry that names no input (a note or memory id, an `agent:<agent>/<session>` key, `notion-edit`, `user-correction:<prp id>`) is live under CC-174's rule. A passage is **live** by capture-and-review §5.1's algorithm.
 - **Item:** one indivisible change, or one report (0077 §1). See §4.
-- **Answer surface:** what an agent may answer, summarise, cite or propose from: `brain query --candidates`, `brain query --read`, `brain recall --pack`, `brain recall --search`, `brain reflect --candidates`. **Published surface:** what a person reads as knowledge outside the agent: `index.md`, the derived views, Notion pages and Review pages. **Administrative surface:** everything else the CLI prints (§7).
+- **Answer surface:** what an agent may answer, summarise, cite or propose from: `brain query --candidates`, `brain query --read`, `brain recall --pack`, `brain recall --search`, `brain reflect --candidates`. **Published surface:** what a person reads as knowledge outside the agent: `index.md`, the derived views and Notion pages (Review pages too, until the Review database was retired in 0.16.0, decision 0096). **Administrative surface:** everything else the CLI prints (§7).
 - **Withheld:** left out whole, with a reason, until rebuilt or re-proposed from eligible evidence. A withheld item is never deleted (§4.4).
 
 ## 2. The rule (normative; 0077 Decision, §1 to §3)
@@ -36,7 +36,7 @@ Evidence is **eligible** for a caller when all three hold, and an agent uses evi
 |---|---|---|
 | Supported search | `query --candidates` (knowledge notes, sources; memories with `--types memory`), `recall --search`, `recall --pack`, `reflect --candidates`. Terms, scores and snippets are computed from each note **as the rule leaves it**, so excluded text never raises a score or appears in a snippet | CC-176 (on `main`: memory rows, §13 rows 1 to 3) |
 | Full read | `query --read` | CC-176 |
-| Summaries | a note's `summary` (dropped once any part is restricted); a summary an agent writes (an answer, a report, a Review `why`) rests only on evidence an answer surface returned | CC-176 (the field), CC-178 and CC-180 (the skills) |
+| Summaries | a note's `summary` (dropped once any part is restricted); a summary an agent writes (an answer, a report, a proposal's `why`) rests only on evidence an answer surface returned | CC-176 (the field), CC-178 and CC-180 (the skills) |
 | Citations | a citation names a note an answer surface returned as eligible; its label and path follow §6 | CC-176, CC-178 |
 | A proposal's support | the passages it names, checked at creation and before apply (§9) | CC-177, CC-179 |
 
@@ -59,12 +59,12 @@ Where the CLI cannot establish that evidence is eligible (unknown lineage, an un
 | Another view (Brief, Decision log, area Brief) | the view, whole | CC-176 (on `main`), CC-183 |
 | A read | the note: returned with its restricted claims blanked, or withheld whole (capture-and-review §5.1, cli.md §5.13.1) | CC-176 |
 
-An item is never the whole brain, a whole Review page or a whole ingest: items supported independently stay available.
+An item is never the whole brain, a whole proposal or a whole ingest: items supported independently stay available.
 
 ### 4.2 When an item is withheld
 
 An item is withheld **whole** when eligible support for it cannot be established reliably:
-- **a mixed item:** it names a passage that is not live beside one that is. It is not applied whole and not applied in part: skipped by `proposal new`, held on the Review page with no wording published, closed on apply (`closed_reason: stale`, `SOURCE_EXCLUDED`). It can be re-proposed from the live passages alone (plan 4). This replaces cli.md §5.7's "only a text whose every cited line is excluded is skipped" (§13 row 6). CC-177.
+- **a mixed item:** it names a passage that is not live beside one that is. It is not applied whole and not applied in part: skipped by `proposal new`, listed as held without its wording (`proposal list`, `--waiting`'s `held`), closed on apply (`closed_reason: stale`, `SOURCE_EXCLUDED`). It can be re-proposed from the live passages alone (plan 4). This replaces cli.md §5.7's "only a text whose every cited line is excluded is skipped" (§13 row 6). CC-177.
 - **an item with no established support:** a new item with no passages (§9.2), a legacy item §9.3 can't support, or passages the CLI cannot resolve. A legacy item that §9.3 supports is not withheld. CC-179.
 - **a report or view** whose dependencies or freshness can't be shown safe (§8). CC-176, CC-183.
 
@@ -73,8 +73,7 @@ An item is withheld **whole** when eligible support for it cannot be established
 - On a read: `{ id, status: "withheld", reason }` and nothing else (cli.md §5.13.1). A withheld report also names the refresh that rebuilds it (CC-183).
 - On create: the skip and its reason in `data` and in the human output (cli.md §5.6).
 - On apply: `closed` with its reason; the decision is recorded.
-- On a Review page: the item is held: its wording, `why` and value are not published, and an Accept closes it.
-- In the chat flow of brain-apply: as on the Review page, the held item without its wording (CC-179 marks it in `proposal list`; CC-180 shows it).
+- In the session (capture-and-review §7.5): the item is held: it is not asked, `proposal list --waiting` lists it under `held` without its wording, `why` or value, the skill names how many there are, and a decision on it (an accept, or the reject the user agrees to) closes it. CC-179 marks it in `proposal list`; CC-180 shows it; the `--waiting` list is CC-296's. (Before 0.16.0 a Review page held it the same way: nothing of it published, an Accept closed it.)
 
 ### 4.4 What is kept
 
@@ -116,7 +115,7 @@ A report, a Brief, a Decision log, an area Brief, an index entry and a Notion pa
 4. **No navigation exception.** A view is never shown in part, and "navigation only" is never a reason to show prose that rule 1 to 3 would withhold (0077 plan 3).
 5. **Canonical material stays.** A withheld report or view withholds nothing else: a note it rests on that is eligible on its own stays readable and is what an answer cites (schema §4).
 6. **Withheld names its way back.** A withheld derived item names its reason and what rebuilds it: `brain views` for a Brief or Decision log once its notes are eligible, a report refresh, `brain index` for the index (CC-183).
-7. **An archived note is never shown as current.** A derived item never restates an `archived` note as current, accepted or open: a draft rejected in Review or closed on excluded evidence, or a note you archived, is history at most. A view that keeps history shows it only where the history belongs (a superseded decision under the decision log's Superseded, schema §16.2), and a decision archived with no successor is in no view (CC-218).
+7. **An archived note is never shown as current.** A derived item never restates an `archived` note as current, accepted or open: a draft rejected in the session (or in Review, before 0.16.0) or closed on excluded evidence, or a note you archived, is history at most. A view that keeps history shows it only where the history belongs (a superseded decision under the decision log's Superseded, schema §16.2), and a decision archived with no successor is in no view (CC-218).
 
 ## 9. Proposals name their passages, checked twice (0077 §3, plan 4)
 
@@ -127,12 +126,12 @@ Every proposed change carries the passages it rests on (CC-179 adds the field to
 ### 9.2 Checked when created and immediately before applied
 
 - **`proposal new`:** an item with no passages is refused; an item any of whose passages is not live is skipped `SOURCE_EXCLUDED` (§4.2). CC-179 (no passages), CC-177 (mixed).
-- **Before apply,** on every route (`apply` in chat, `sync apply` for a Review page, an older-layout row): the same check of the named passages, with the suppression state at that moment, so an exclusion made between the first read or the proposal's creation and its apply is caught (0077 plan 7). A proposal with no passage list is not refused here: it was written before the field, and §9.3 judges it. Refusing an item with no passages is `proposal new`'s alone. CC-177, CC-179.
+- **Before apply,** on every route (`apply` with a decision given in the session; `sync apply` for the Review rows the 0.16.0 migration reads once, capture-and-review §7.9, and, before 0.16.0, for any Review page or older-layout row): the same check of the named passages, with the suppression state at that moment, so an exclusion made between the first read or the proposal's creation and its apply is caught (0077 plan 7). A proposal with no passage list is not refused here: it was written before the field, and §9.3 judges it. Refusing an item with no passages is `proposal new`'s alone. CC-177, CC-179.
 - **What a passage check proves:** that the evidence is allowed; not that the change is true (0077 §3). The user still judges the change.
 
 ### 9.3 Legacy proposals
 
-A proposal written before the field exists (no passage list) is **legacy**. Its support is its `source` read as a whole-source entry, plus the passage references in its text. It has adequate passage support (0077 §3) when the input of its `source` has no suppression record (nothing of that input is excluded, so the whole input is live) **and** every passage reference in its text is live, whatever input it names (a reference that is not live makes it a mixed or unsupported item, §4.2). It then applies normally. This is the user's reading of 0077 §3's "without adequate passage support" (2026-11-10), not a narrowing of it. When the input of its `source` has a suppression record (active or reconciled), the legacy item's passages can't be established: it is withheld (held on the Review page, closed on apply with `SOURCE_EXCLUDED`), reported with the input it came from, and the next ingest of that input's current version may propose it again with passages. It is never applied on trust (0077 §3). CC-179 (the CLI), CC-180 (the ingest's re-proposal).
+A proposal written before the field exists (no passage list) is **legacy**. Its support is its `source` read as a whole-source entry, plus the passage references in its text. It has adequate passage support (0077 §3) when the input of its `source` has no suppression record (nothing of that input is excluded, so the whole input is live) **and** every passage reference in its text is live, whatever input it names (a reference that is not live makes it a mixed or unsupported item, §4.2). It then applies normally. This is the user's reading of 0077 §3's "without adequate passage support" (2026-11-10), not a narrowing of it. When the input of its `source` has a suppression record (active or reconciled), the legacy item's passages can't be established: it is withheld (held in the session, §4.3, closed on apply with `SOURCE_EXCLUDED`), reported with the input it came from, and the next ingest of that input's current version may propose it again with passages. It is never applied on trust (0077 §3). CC-179 (the CLI), CC-180 (the ingest's re-proposal).
 
 **Older-layout `review_notes` approved whole:** each folded change, note and link is an item (§4.1). One without established support is withheld, reported and queued for re-proposal; independent items apply. CC-179.
 
@@ -142,8 +141,8 @@ A proposal's `title`, `why`, values (`after`, `answer`, `links` values, `note.ti
 
 ### 9.5 Exact acceptance, and the user's own corrections
 
-- **Acceptance binds the exact wording** shown (0055, capture-and-review §7.6). When the wording that would be written differs from the wording accepted (because part of it would be withheld, or it was revised or re-proposed), the earlier acceptance does not carry over: the new wording is a pending item that needs its own Accept (0077 §1). CC-177.
-- **A value the user typed** (a chat `fix` or `edit` value that differs from what was proposed and cites no passage, or wording the user edited on the Review page) is the user's exact acceptance of that value; no second approval (0055). **It is applied as a separately attributed user correction even when it restates excluded content** (the user's choice of 2026-11-10; 0055's corrections, kept by 0077 §3): its provenance is `user-correction:<prp id>`, not the excluded passage, and it never claims the source said it (capture-and-review §7.7). A warning in the skill is optional (CC-180).
+- **Acceptance binds the exact wording** shown (0055; in the session since 0.16.0, capture-and-review §7.5, §7.6). When the wording that would be written differs from the wording accepted (because part of it would be withheld, or it was revised or re-proposed), the earlier acceptance does not carry over: the new wording is a pending item that needs its own Accept (0077 §1). CC-177.
+- **A value the user typed** (a chat `fix` or `edit` value that differs from what was proposed and cites no passage; before 0.16.0 also wording the user edited on the Review page) is the user's exact acceptance of that value; no second approval (0055). **It is applied as a separately attributed user correction even when it restates excluded content** (the user's choice of 2026-11-10; 0055's corrections, kept by 0077 §3): its provenance is `user-correction:<prp id>`, not the excluded passage, and it never claims the source said it (capture-and-review §7.7). A warning in the skill is optional (CC-180).
 - **A generic Approve or an incidental edit does not launder.** An Approve of a mixed or unsupported item, or a fix that keeps the proposed wording or still cites the excluded passage, is judged as the proposal (§9.2) and closed (cli.md §5.7, "Which decisions are checked"). CC-177.
 
 ### 9.6 The uncited restatement: a stated limit, narrowed
@@ -166,7 +165,7 @@ What remains: an agent that omits a passage from the list and restates text it r
 | brain-reflect | judging a cluster: its members and its inputs | CC-180 |
 | brain-catch-up | the flows it runs (ingest, apply, sync), refreshing reports and kept Documents, delegated and scheduled runs | CC-180 |
 | ultimate-assistant | any note text it reads to judge a finding, beyond `assistant findings`; the brain-reflect session it loads | CC-180 |
-| brain-apply | showing pending proposals in chat (a held item without its wording, §4.3) | CC-180 |
+| brain-apply | asking pending proposals in the session (a held item without its wording, §4.3; capture-and-review §7.5) | CC-180; CC-298 for the rounds |
 | brain-howto | a question about what the brain knows, handed to brain-query's reads; questions about how the brain works and its state use the guide and administrative commands | CC-180 |
 | brain-sync | publishing (a published surface, §6 rule 5, §8) | CC-183 (the CLI); no skill change expected |
 
@@ -213,7 +212,7 @@ This file wins in every row. "On `main`" is `main` at 07e74a5 (CC-176 #283, CC-1
 | 4 | cli.md §5.8 "Restricted evidence": a restricted note "stays listed" with its title; capture-and-review §5.1, row "Indexes" | listed without restricted metadata (§6 rule 5) | CC-183 |
 | 5 | capture-and-review §5.1, row "Reports": a line resting on it is flagged and left out of a refresh | the report is withheld whole until refreshed, also after the cleanup (§8) | CC-183 |
 | 6 | cli.md §5.6 (the `SOURCE_EXCLUDED` skip) and §5.7 "Excluded evidence", first bullet: only a text whose **every** cited line is excluded is skipped or closed; §5.7 "What the rule does not see": a mixed text is applied whole | a mixed item is withheld whole (§4.2) | CC-177 |
-| 7 | cli.md §5.14.3 "Excluded evidence": an item only partly restricted is held and skipped | held, and an Accept closes it as a whole one (§4.2, §4.3) | CC-177 |
+| 7 | cli.md §5.14.3 "Excluded evidence": an item only partly restricted is held and skipped | held, and an Accept closes it as a whole one (§4.2, §4.3). History since 0.16.0: the Review page is retired (0096); the session holds the item the same way (§4.3) | CC-177 |
 | 8 | cli.md §5.7 second bullet and "What the rule does not see": no-text kinds on the current version, and the folded changes of an older-layout row, are not checked | every change names passages, checked twice; legacy rule (§9) | CC-179 |
 | 9 | capture-and-review §5.1, row "Pending proposals": "resting only on restricted claims" | resting on a passage that is not live, or without established support (§4.2, §9) | CC-177, CC-179 |
 | 10 | schema §11: no passage field; `closed_reason: stale` "rests only on excluded evidence" | the passage list (§9.1); `stale` also covers a mixed or unsupported item | CC-179 (field), CC-177 (reason) |

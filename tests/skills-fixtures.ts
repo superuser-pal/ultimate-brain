@@ -106,8 +106,11 @@ export async function run(args: readonly string[], options: { product: string; h
 /** A git brain made by `brain init` from `product`, committed, so upgrade can run. */
 export async function initBrain(context: TestContext, product: string, home: string): Promise<string> {
   const target = join(await temp(context, "skills-brain-"), "brain");
-  const init = await run(["init", target, "--owner", "Test Owner", "--now", "2026-12-03T10:22:00Z", "--json"], { product, home });
+  // CI runners have no global Git identity, so init with Git would stop with GIT_IDENTITY_MISSING (spec/cli.md §5.1 step 0, CC-291):
+  // init writes the files, and the repository gets its own identity here.
+  const init = await run(["init", target, "--owner", "Test Owner", "--now", "2026-12-03T10:22:00Z", "--no-git", "--json"], { product, home });
   if (init.code !== 0) throw new Error(init.stdout + init.stderr);
+  await git(target, ["init", "-q"]);
   await git(target, ["config", "user.name", "Test"]);
   await git(target, ["config", "user.email", "test@example.test"]);
   await git(target, ["add", "--all"]);

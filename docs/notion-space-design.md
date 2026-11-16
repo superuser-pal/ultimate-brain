@@ -11,7 +11,7 @@
 Notion is the **human side** of the brain. You use it to:
 
 1. **Review meeting minutes** and mark them ready for the brain.
-2. **Decide** on what the agents propose (the Review queue).
+2. **See what needs your decision**: the weekly review's Inbox row lists it. You decide in the agent session, not in Notion: say "what needs my decision" in Claude Code or Codex ([0096](../decisions/0096-one-place-to-decide.md)).
 3. **Plan**: areas, goals, key results, projects.
 4. **Navigate** what the brain knows: projects, people, clients, decisions, open questions.
 5. **Capture** quick thoughts and create new projects, goals, people.
@@ -24,7 +24,7 @@ A space is a **core** plus the **modules** you chose at onboarding. You can turn
 
 | Module | Databases | What it adds to the Spaces and templates | Default |
 |---|---|---|---|
-| **Core** | Inbox, Meetings, Projects, Areas, People, Review | Home, Meetings, Projects, Review; the Inbox tab of Knowledge; area homes' Meetings, Review waiting and Inbox tabs | always on |
+| **Core** | Inbox, Meetings, Projects, Areas, People | Home, Meetings, Projects; the Inbox tab of Knowledge; area homes' Meetings and Inbox tabs | always on |
 | **Domains** | Domains (in every space, 0065) | group Areas by work or life context; Areas can have one Domain or none. The database and Areas · Domain exist with the module off; the module decides whether the brain uses them and whether pages show them | off |
 | **Knowledge** | Decisions, Questions (Concepts until 0.9.1: concepts are learned Documents, 0071) | the Decisions and Questions tabs of Knowledge; "What have we decided here?", "What's still open here?" and the Decisions tab of "What do we know?" on project and area pages | on |
 | **Orgs** | Orgs | the Orgs tab of Knowledge; Client on Projects, Org on People; "Clients via projects" on area pages | on |
@@ -74,9 +74,9 @@ Every database that mirrors a brain note has three kinds of properties. Each pro
 
 **Workflow settings (0059)** on Projects and Areas (§3.19) are yours like Status, with one exception: the brain sets them when you connect a piece of work to Notion and when you end that connection, each time after your yes (spec/connected-workflows.md §3.1, §3.4). It never changes them otherwise.
 
-**Creation:** new rows you create in Areas, Goals, Projects, People, Orgs are imported by the next `brain sync` (0021). Rows in Decisions, Questions, Documents and Review are created by the brain only. Inbox rows come from you (Quick capture) or from the brain (every document, email, chat or note it ingests, 0037).
+**Creation:** new rows you create in Areas, Goals, Projects, People, Orgs are imported by the next `brain sync` (0021). Rows in Decisions, Questions and Documents are created by the brain only. Inbox rows come from you (Quick capture) or from the brain (every document, email, chat or note it ingests, 0037).
 
-**Only reviewed knowledge (0071, 0.9.1).** Decisions, Questions and Documents show what you trusted: a row gets its page when its note is reviewed, approved in its Review row, or reviewed from the start, as a whole Document is. Until then the draft lives only in its Review row, whose page holds its full wording (0055); a draft you reject never gets a page. Relations to a draft (an Inbox row's Decisions, a meeting's Decisions and Questions) fill in when you approve it, in the same run. People still arrive as Draft, because a meeting's Attendees needs their pages. A row that has a page keeps it: a superseded decision or an answered question stays as history. Draft pages from before 0.9.1 are moved to Notion's trash after your yes (migration 0020); each comes back as a new page when you approve it. The brain in Git keeps every draft (spec/cli.md §5.14.4).
+**Only reviewed knowledge (0071, 0.9.1).** Decisions, Questions and Documents show what you trusted: a row gets its page when its note is reviewed: when you say yes to an ingest's preview, when you accept it in the agent session, or from the start, as a whole Document is ([0096](../decisions/0096-one-place-to-decide.md)). Until then the draft is only in the brain, in Git, and the session asks you about it; a draft you reject never gets a page. Relations to a draft (an Inbox row's Decisions, a meeting's Decisions and Questions) fill in when you accept it, in the same run. People still arrive as Draft, because a meeting's Attendees needs their pages. A row that has a page keeps it: a superseded decision or an answered question stays as history. Draft pages from before 0.9.1 are moved to Notion's trash after your yes (migration 0020); each comes back as a new page when you accept it. The brain in Git keeps every draft (spec/cli.md §5.14.4).
 
 **Page bodies (0026, 0041, 0043):** the brain writes only inside named toggle headings: "Brief" and "Decision log" on project pages, "Brief" on area pages. It owns the whole body of Decisions and Questions pages, of the Documents kept from an input or learned (0071), of the Inbox rows it creates (a digest of what came in; "Full text" toggles written before 0.6.0 stay), and of a report's Documents row (0071). A Document promoted from a decision is seeded once, then its body is yours (0049). It publishes no body for Goals, People and Orgs, and never edits Meetings (0007), a capture you wrote or an Ask row. Everything else on a page is yours, including the **"My notes"** toggle.
 
@@ -117,11 +117,9 @@ Ongoing responsibilities (clients, health, learning…).
 | Documents | Relation → Documents (two-way with Area) | Brain (0045, 0049) |
 | Inbox | Relation → Inbox (two-way with Area) | You (brain fills if empty) |
 | Tasks | Relation → Tasks (two-way with Area) | You |
-| Review | Relation → Review (two-way with Area) | Brain (0050) |
-| To review | Formula: the Review rows with State Pending, counted | You (derived, Notion-only; Home's per-area line, 0050) |
 | Due | Formula: the Tasks neither Done nor Won't Do with Due today or earlier, counted (Tasks module) | You (derived, Notion-only, 0050) |
 | Meetings to review | Formula: the Meetings with Brain Status Not Reviewed and Date today or earlier, counted | You (derived, Notion-only, 0050) |
-| At a glance | Formula: the three counts as one line, "4 to review · 1 meeting · 2 due", leaving out each count that is 0 and each module that is off, or "all clear" (#145) | You (derived, Notion-only; what Home shows next to the area's name) |
+| At a glance | Formula: the two counts as one line, "1 meeting · 2 due", leaving out each count that is 0 and each module that is off, or "all clear" (#145) | You (derived, Notion-only; what Home shows next to the area's name) |
 | Archived | Checkbox | You |
 | People via projects | Rollup: Projects → People, show original | You (derived, Notion-only) |
 | Clients via projects | Rollup: Projects → Client, show original | You (derived, Notion-only) |
@@ -208,7 +206,6 @@ The inbound source. Your Notion AI meeting notes live here (0012, 0007).
 | Decisions | Relation → Decisions | Brain |
 | Questions | Relation → Questions | Brain |
 | Tasks | Relation → Tasks (two-way with Meeting) | You |
-| Review Items | Relation → Review (two-way with Source Meeting) | Brain |
 | Brain ID | Text | System (the meeting record's id, `mtg-…`) |
 
 The brain **never edits the meeting page body** (0007). Instead of publishing a second summary, it fills the relations (Decisions, Questions, People, Project) and links the created tasks. Your reviewed minutes stay the human summary; the brain's meeting note is for agents.
@@ -259,14 +256,20 @@ Open questions and risks raised in meetings.
 | Property | Type | Owner |
 |---|---|---|
 | Kind | Select: Question, Risk | Brain |
-| Status | Select: Open, Answered, Dropped | You. The brain sets Open when it creates a question, Answered once after you approve an Answer row in Review (0041, 0045), and Dropped once after the to-do tidy drops a question that was a to-do (0071) |
+| Status | Select: Open, Answered, Dropped | You. The brain sets Open when it creates a question, Answered once after you accept an answer in the agent session (0041, [0096](../decisions/0096-one-place-to-decide.md)), and Dropped once after the to-do tidy drops a question that was a to-do (0071) |
 | Project | Relation → Projects | Brain |
 | Area | Relation → Areas (two-way with Questions) | Brain: the areas of its projects (0034) |
 | Raised In | Relation → Meetings | Brain |
 | Sources | Relation → Inbox (two-way with Questions) | Brain (filled from the Inbox side) |
 | Created time | Created time | System (Notion fills it; sorts open questions) |
 
-### 3.10 Review
+### 3.10 Review (retired in 0.16.0)
+
+There is no Review database from 0.16.0 ([0096](../decisions/0096-one-place-to-decide.md)): proposals are decided in the agent session ([spec/capture-and-review.md](../spec/capture-and-review.md) §7). The 0.16.0 migration first applies the decisions you already made on its rows, then archives the database and Home's "What's waiting for you?" view and removes `review` from `brain.json`'s `notion.databases`; nothing is deleted (§7.9 there). Its design up to 0.15.x follows as history, unchanged: the Notion prompts and migrations that build it still exist until CC-299 retires them, and they are checked against it.
+
+<details>
+<summary>The Review database up to 0.15.x (history)</summary>
+
 The approval queue (0003). Created by the brain; you decide.
 
 | Property | Type | Owner |
@@ -289,6 +292,8 @@ The approval queue (0003). Created by the brain; you decide.
 | Created time | Created time | System (Notion fills it; sorts the queue) |
 | Last edited time | Last edited time | System (Notion fills it; "approved recently" filter) |
 
+</details>
+
 ### 3.11 Inbox
 Everything that came into the brain except meetings, which have their own database (0037). Your quick captures land here as **Ready**; every document, email, chat or note the brain ingests gets a row, created as **Done**, so **History** shows what came in and what the brain learned from it.
 
@@ -296,7 +301,7 @@ Everything that came into the brain except meetings, which have their own databa
 |---|---|---|
 | Name | Title | You on a capture; Brain on a row it creates |
 | Keep | Button labelled **Keep as document**: ticks Document asked and sets Brain Status to Ready | You (Documents module, 0048, 0049) |
-| Kind | Select: Capture, File, Email, Chat, Note, Ask, Catch-up | System, written only when empty, so a Kind you choose stands (0048). File was Document before 0.6.0 (0049). **Ask** is yours: a question for the brain (Reports module, 0043). **Catch-up** is the summary an unattended catch-up leaves when something needs you (spec/cli.md §6.1; Kind Report before 0.9.1) |
+| Kind | Select: Capture, File, Email, Chat, Note, Ask, Catch-up, Weekly | System, written only when empty, so a Kind you choose stands (0048). File was Document before 0.6.0 (0049). **Ask** is yours: a question for the brain (Reports module, 0043). **Catch-up** is the summary an unattended catch-up leaves when something needs you (spec/cli.md §6.1; Kind Report before 0.9.1). **Weekly** is the week's review (0.16.0, [0096](../decisions/0096-one-place-to-decide.md); below) |
 | Summary | Text | Brain: one line on what it taught; on a row the brain skipped, why ("Skipped: same as …") |
 | Decisions | Relation → Decisions (two-way with Sources) | Brain |
 | Questions | Relation → Questions (two-way with Sources) | Brain |
@@ -312,6 +317,8 @@ Everything that came into the brain except meetings, which have their own databa
 | Brain ID | Text | System (the source's id, `src-…`) |
 | Last Synced | Date (with time) | System |
 | Created | Created time | System |
+
+**The weekly review (Kind Weekly, 0.16.0, [0096](../decisions/0096-one-place-to-decide.md); [spec/weekly-review.md](../spec/weekly-review.md)).** The brain writes one row per ISO week: Name `Week of <D Mon YYYY>` (the Monday), Brain ID the weekly report's id, the page body the report itself. A rerun in the same week updates that row. It arrives with Brain Status **New** and the brain sets it **Done** once every proposal its decisions name is decided and applied or closed; you decide them in Claude Code or Codex ("what needs my decision"), and a task item on the task itself. It is never taken in as an input, and it needs neither the Documents nor the Reports module.
 
 **Retired in 0.6.0 (0048, 0049):** Full text (Keep as document replaces it), Refresh report (an Ask row is always a new report), and the Brain Status options Processed (now Done) and Skipped (rows moved to Done). Migration 0010 leaves the two old properties unused for you to delete.
 
@@ -341,13 +348,13 @@ Concepts were ideas, methods and definitions the brain learned (0037). Since 0.9
 
 ### 3.14 Documents
 Pages you keep to read and link from anywhere (0049; the References database of 0045, renamed with its id, relations and views), what the brain learned and the brain's reports (0071). Created by the brain only, in these ways:
-- **Keep as document** on an Inbox row, with Only keep empty: the input's **whole text**, verbatim. It needs no Review and arrives Reviewed.
-- **Keep as document** with **Only keep** filled in: only that part, chosen by the brain. It comes as an item in that input's Review row and gets its page when you approve it (0071).
-- **Learned** (0071; a concept before 0.9.1): an idea, method or definition the brain learned from an input, in its own words. It comes as an item in that input's Review row and gets its page when you approve it.
+- **Keep as document** on an Inbox row, with Only keep empty: the input's **whole text**, verbatim. It needs no decision and arrives Reviewed.
+- **Keep as document** with **Only keep** filled in: only that part, chosen by the brain. It comes with that input's other new notes and gets its page when you accept them (0071, [0096](../decisions/0096-one-place-to-decide.md)).
+- **Learned** (0071; a concept before 0.9.1): an idea, method or definition the brain learned from an input, in its own words. It comes with that input's other new notes and gets its page when you accept them.
 - **Promote to document** on a decision: a page seeded from it, linked to it. From then on its body is **yours**; the brain never rewrites it.
 - **A report** (Reports module, 0071): the answer to an Ask row on the Inbox, one per subject, rewritten in place when you ask for a refresh. It is the brain's summary of what it knows, lines resting on notes you haven't reviewed marked *(not reviewed)*; it is never reviewed, has no Lifecycle and is never ingested back (0043, 0057).
 
-A new version of a kept file proposes the changed lines to its Documents (Kind Update Body in Review).
+A new version of a kept file proposes the changed lines to its Documents (an `update_body` proposal, asked in the agent session, [0096](../decisions/0096-one-place-to-decide.md)).
 
 | Property | Type | Owner |
 |---|---|---|
@@ -360,7 +367,7 @@ A new version of a kept file proposes the changed lines to its Documents (Kind U
 | Asked in | Relation → Inbox (two-way with Report) | Brain: on a report, the Ask rows it answers (0071) |
 | Update | Button labelled **Refresh report**: sends a message to Brain Assistant (§3.17) | You, on a report (Reports module) |
 | Refresh asked | Checkbox | You, on a report, ticked by hand: rewrite the report with what the brain knows now; the brain clears it (0045) |
-| What to fix | Text | You, on a report: what it gets wrong; the brain turns it into Review rows, clears it, and refreshes the report once you approve them (0045) |
+| What to fix | Text | You, on a report: what it gets wrong; the brain turns it into proposals, asked in the agent session ([0096](../decisions/0096-one-place-to-decide.md)), clears it, and refreshes the report once you accept them (0045) |
 | Created time | Created time | System (Notion fills it) |
 | Last edited time | Last edited time | System (Notion fills it; sorts "What did we keep?") |
 
@@ -375,7 +382,6 @@ Plus the common properties (a report leaves Summary and Lifecycle empty). Page b
 | Keep | Keep as document | Inbox | Document asked | sets Brain Status to Ready | Documents |
 | Update | Refresh report | Documents (reports; the Inbox's Report rows before 0.9.1, 0071) | none: Send message to Brain Assistant (0.8.0, §3.17) | — | Reports |
 | Promote | Promote to document | Decisions | Promote asked | — | Documents |
-| Grill | Review with me | Review | none: Send message to Brain Assistant (0.15.0, 0090; §3.16) | — | core |
 
 **A button's property name and its label differ** (#144): the page layout shows the name on the left and the label on the button, so the same text would show twice. The names are short and clash with no other property (not Report, Documents or Refresh asked). The brain never reads a button, only the checkbox it ticks, so a space that names its buttons otherwise works the same. Each checkbox has its own name, because Notion can't give a button and another property the same name.
 
@@ -386,7 +392,6 @@ Archived and Done (on a milestone) stay checkboxes: they describe a state, not a
 | Database | Pinned at the top | Collapsed |
 |---|---|---|
 | Inbox | Keep, Tidy, Brain Status, Project, Area | Brain ID, Last Synced, Created |
-| Review | Status, Grill (Review with me), About Page (0088, 0090; migration 0025). The property panel has four groups: **Your decision** (Your call, What to fix); **What's proposed** (About, Now, Proposed, Why, each set to Hide when empty, so the group disappears on a row from a source); **Where it comes from** (Type, Area, Source Meeting); **Submitted** (Decided, Decided at, Accept all), collapsed where Notion allows. Where the layout editor has no groups, the same order applies without headings. Before 0.15.0 the heading held Submit and Submit all instead of Grill | Submit, Submit all (since 0.15.0: still there under *Show all properties* for a row of the older page that you already started, capture-and-review §7.12.7), Kind, State, Brain ID, Created time, Last edited time |
 | Decisions | Promote, Lifecycle | Brain ID, Last Synced |
 | Documents | Write, Update, Accept, Refresh asked, What to fix, Lifecycle, Project, Area, Sources | Origin, Brain ID, Last Synced, Created time, Last edited time |
 | Areas | At a glance | Brain ID, Last Synced |
@@ -410,8 +415,6 @@ A button can use the action **send message to** an agent and pick Brain Assistan
 
 **The button contract (normative for CC-71):** every Brain Assistant button's message (1) names the skill to run, (2) references the row with `@` to the current page, (3) carries the confirmation, and (4) says what the agent must not touch. A button without the row reference is not a valid Brain Assistant button: the agent cannot tell which row was clicked.
 
-**Review with me (0.15.0, 0090; capture-and-review §7.12.10)** follows the contract except (3): its message asks Brain Assistant to run Grill review on the row, and carries no confirmation to write, because the skill shows a preview and writes into the page only after the user's yes in the chat.
-
 **Tested (T4, 2026-11-02):** the connection returns one page-level last-edited time, no per-block times; it moved after an edit and **not after a deletion**. The rule below no longer assumes deletions are detected (decision 0062).
 
 **Not verified yet (do not rely on these):**
@@ -425,8 +428,8 @@ Added in 0.8.0 (CC-71 builds them; migration 0012). Each button follows the cont
 
 | Button | On | Message asks Brain Assistant to | May edit | Never |
 |---|---|---|---|---|
-| **Tidy capture** | Inbox rows of Kind Capture, Brain Status **New** only (the row stays New while Brain Assistant works, so a catch-up cannot take it in half-rewritten; the user sets Ready afterwards, 0054) | rewrite the body as clear text, keeping every name, number, date, link and quote | the row's body | the Name, any property (Brain Status stays New; the user sets Ready), a Review row |
-| **Write up** | Documents, **promoted** Documents only (`origin: promoted`) | develop the body from the Document and the brain pages it links in Notion | the Document's body | the original Decision, any property, a Review row, external research unless the message asks for it |
+| **Tidy capture** | Inbox rows of Kind Capture, Brain Status **New** only (the row stays New while Brain Assistant works, so a catch-up cannot take it in half-rewritten; the user sets Ready afterwards, 0054) | rewrite the body as clear text, keeping every name, number, date, link and quote | the row's body | the Name, any property (Brain Status stays New; the user sets Ready) |
+| **Write up** | Documents, **promoted** Documents only (`origin: promoted`) | develop the body from the Document and the brain pages it links in Notion | the Document's body | the original Decision, any property, external research unless the message asks for it |
 | **Refresh report** | Reports: Documents rows with Origin Report (on the Inbox before 0.9.1, 0071) | search the relevant brain pages in Notion beyond the report's current links and **append** one section "Proposed refresh · based on Notion", dated and cited | the report's body, by appending that section | the existing report text, any property, *Refresh asked* |
 
 Keep as document and Promote to document stay checkbox buttons that the catch-up acts on (no Notion AI step). A Document only exists to Write up after the next catch-up has created it.
@@ -442,19 +445,19 @@ Keep as document and Promote to document stay checkbox buttons that the catch-up
 - **After the catch-up imports the wording it unticks Accepted and clears Accepted at** (like the other request boxes): the acceptance was consumed, and a later edit is an ordinary draft, which a publish never overwrites.
 - To withdraw an acceptance the user unticks Accepted.
 
-**What Brain Assistant may edit (amends 0035).** Besides Check minutes, Tidy capture and Clean email: Write up, on the body of a promoted Document, and Refresh report, appending its proposed section to a report's body (its Documents row, 0071). Still never a property, a Review row, a Decision's page, or a brain-written section of any other page (CC-71 writes this into the Instructions).
+**What Brain Assistant may edit (amends 0035).** Besides Check minutes, Tidy capture and Clean email: Write up, on the body of a promoted Document, and Refresh report, appending its proposed section to a report's body (its Documents row, 0071). Still never a property, a Decision's page, or a brain-written section of any other page (CC-71 writes this into the Instructions).
 
 **Where each case ends (the table in cli.md §5.14.7 is normative).** A Document or report body can be seeded, drafted by Write up, carry a pending proposal, be accepted, be edited after acceptance, or differ from Git; each has one outcome there. This section only defines the controls the user sees.
 
 ### 3.18 Domains, selected capture and editable Review (0.8.0, decision 0055)
 
-The contract is [spec/capture-and-review.md](../spec/capture-and-review.md). For the Notion space it adds: the optional Domains database and Areas · Domain relation (§1), the Won't Do status and progress display (§2), the voice/ramble Inbox template (§3), typed `Selection:` tokens on summaries (§4), Review rows with item sections, `Decision:` tokens, the Submit decisions and Submit and accept all buttons, and the Decided, Decided at and Accept all properties (§7). The user's tests T1 to T8 (§9) ran on 2026-11-02 on synthetic pages:
+The contract is [spec/capture-and-review.md](../spec/capture-and-review.md). For the Notion space it adds: the optional Domains database and Areas · Domain relation (§1), the Won't Do status and progress display (§2), the voice/ramble Inbox template (§3), typed `Selection:` tokens on summaries (§4), Review rows with item sections, `Decision:` tokens, the Submit decisions and Submit and accept all buttons, and the Decided, Decided at and Accept all properties (§7; these Review parts are retired in 0.16.0 with the Review database, [0096](../decisions/0096-one-place-to-decide.md)). The user's tests T1 to T8 (§9) ran on 2026-11-02 on synthetic pages:
 
 - **Verified:** voice recording and transcript reading (T1); typed tokens survive edits and regeneration, though a paragraph may turn into a bulleted item (T2); a button sets two checkboxes and a date-time in one click (T3; that the time equals the click minute was not recorded); the Areas · Domain relation can be limited to 1 page, by hand (T7).
 - **Anchors (T6):** 9 of 10 items passed; the repair of the failing item was not run. Notion writes straight quotes where curly were asked, adds unnumbered action items, and may merge topics into one transcript paragraph. The transcript is in the meeting block's Transcript section.
 - **Per-section select (T5):** readable by an agent, but two clicks. Typed tokens remain the supported control.
 - **Does not work (T4):** the page's last-edited time does not move when a block is **deleted**. The brain does not watch ingested pages for deletions (decision 0062). To change what it holds, edit the tokens and set the meeting back to Reviewed, or ask the assistant.
-- **Layouts and controls (CC-81).** Review gains **Decided**, **Decided at**, **Accept all** and the Your call option **Request revision** (Fix is kept), and two buttons set by hand: **Submit decisions** (Decided → checked, Decided at → now) and **Submit and accept all** (also Accept all → checked). A Review row from a source is a page: a first-use note and the brain-owned summary at the top, then a section per change (**Creates** or **Changes**, links to the target and the source, *Current*, the toggle **Proposed final wording**, *Why it matters*, *What Accept does*, `Decision:`). The explanation of each action is page text, never hover-only help; property descriptions are the only tooltip-like help used. The Proposed property is a short pointer. Meetings gain a gray notice ("All subjects included unless marked Meeting only. Mark Reviewed to confirm."); the Inbox gains a second template **Voice note** (starts at New; the user sets Ready); the minutes and voice prompts are [notion/minutes-format.md](../notion/minutes-format.md) and [notion/voice-format.md](../notion/voice-format.md); Brain Assistant gains **Voice summary**. Domains stay optional (module off by default). Migration: [0013](../notion/migrations/0013-domains-selected-capture-editable-review.md). Rendering the new Review layout is switched by the presence of the Decided property.
+- **History (retired in 0.16.0, [0096](../decisions/0096-one-place-to-decide.md)): layouts and controls (CC-81).** Review gained **Decided**, **Decided at**, **Accept all** and the Your call option **Request revision** (Fix is kept), and two buttons set by hand: **Submit decisions** (Decided → checked, Decided at → now) and **Submit and accept all** (also Accept all → checked). A Review row from a source is a page: a first-use note and the brain-owned summary at the top, then a section per change (**Creates** or **Changes**, links to the target and the source, *Current*, the toggle **Proposed final wording**, *Why it matters*, *What Accept does*, `Decision:`). The explanation of each action is page text, never hover-only help; property descriptions are the only tooltip-like help used. The Proposed property is a short pointer. Meetings gain a gray notice ("All subjects included unless marked Meeting only. Mark Reviewed to confirm."); the Inbox gains a second template **Voice note** (starts at New; the user sets Ready); the minutes and voice prompts are [notion/minutes-format.md](../notion/minutes-format.md) and [notion/voice-format.md](../notion/voice-format.md); Brain Assistant gains **Voice summary**. Domains stay optional (module off by default). Migration: [0013](../notion/migrations/0013-domains-selected-capture-editable-review.md). Rendering the new Review layout is switched by the presence of the Decided property.
 - **By hand, always (T8):** the API ignores putting an option in the Complete group (it lands in To-do and sets a default option) and ignores the relation limit, both with a 200. Add Won't Do and the limit in the UI, and read back after any schema write.
 
 ### 3.19 Workflow settings on Projects and Areas (0.9.0, decision 0059)
@@ -472,7 +475,7 @@ The contract is [spec/connected-workflows.md](../spec/connected-workflows.md) §
 - **Owner: you.** The brain sets them only at setup ("Connect this work to Notion?", after your yes) and sets Workflow back to Standard when you end the connection (§2). Changing one affects future work only; publishing older material is a separate request.
 - **Labels** are read case-insensitively. An option that isn't in the table (one you added) is read as empty and reported.
 - **No values are filled in** by the build or by migration [0015](../notion/migrations/0015-workflow-settings-on-projects-and-areas.md): every Project and Area starts as Standard.
-- **What a connected workflow writes on pages:** the **Workflow** toggle on the destination, the **Work record** toggle on each of its Task pages (§2). A connected workflow needs the Tasks module with the Brain ID property mapped, and the Documents module for any level above Tasks only; setup offers what is missing once and never turns a module on silently. It adds no Tasks property and no new database, view or Review row.
+- **What a connected workflow writes on pages:** the **Workflow** toggle on the destination, the **Work record** toggle on each of its Task pages (§2). A connected workflow needs the Tasks module with the Brain ID property mapped, and the Documents module for any level above Tasks only; setup offers what is missing once and never turns a module on silently. It adds no Tasks property and no new database or view.
 
 ## 4. Templates (contextual workspaces, Easlo pattern)
 
@@ -480,7 +483,7 @@ Each template is the default for its database. Every linked view sits under an H
 
 | Database | Template body |
 |---|---|
-| Areas | **The area's home (0050).** Domain is visible when the Domains module is on. "Brief" toggle heading (brain-written, 0041) · "What needs me here?" with tabs Today (Tasks due today or earlier, neither Done nor Won't Do) · Meetings (to review, held today or earlier) · Review waiting (Review where Area is this page and State is Pending, grouped by Type) · Inbox (where Area is this page and Brain Status is New or Ready) · "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What have we decided here?" (Decisions: Current, Superseded) · "What's still open here?" (Questions: Open questions, Open risks, Answered) · "What came in?" (Inbox where Area is this page, newest first) · "What do we know?" (tabs Decisions and Documents where Area is this page) · "Reports" (Documents where Area is this page and Origin is Report, 0045, 0071) · "My notes". People and Clients show as the "via projects" rollups in the page header (0034). Each part follows its module (§1, 0050): Today and "What's on my plate here?" with Tasks; "What am I working toward here?" with Planning; "What have we decided here?", "What's still open here?" and the Decisions tab with Knowledge; the Documents tab with Documents; "Reports" with Reports; Clients via projects with Orgs. A new area is one page from this template |
+| Areas | **The area's home (0050).** Domain is visible when the Domains module is on. "Brief" toggle heading (brain-written, 0041) · "What needs me here?" with tabs Today (Tasks due today or earlier, neither Done nor Won't Do) · Meetings (to review, held today or earlier) · Inbox (where Area is this page and Brain Status is New or Ready) · "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What have we decided here?" (Decisions: Current, Superseded) · "What's still open here?" (Questions: Open questions, Open risks, Answered) · "What came in?" (Inbox where Area is this page, newest first) · "What do we know?" (tabs Decisions and Documents where Area is this page) · "Reports" (Documents where Area is this page and Origin is Report, 0045, 0071) · "My notes". People and Clients show as the "via projects" rollups in the page header (0034). Each part follows its module (§1, 0050): Today and "What's on my plate here?" with Tasks; "What am I working toward here?" with Planning; "What have we decided here?", "What's still open here?" and the Decisions tab with Knowledge; the Documents tab with Documents; "Reports" with Reports; Clients via projects with Orgs. A new area is one page from this template |
 | Domains | Show Type, Areas and, when Orgs is on, Org; description and My notes. |
 | Goals | "How are the key results moving?" (Key Results: Open, Done) · "Which projects serve it?" (Projects) · "My notes" |
 | Projects | A muted line "The brain writes only inside its toggles: Brief and Decision log, and Workflow or Repo tasks when you connect work or link a repo. Add your own notes in My notes." (0.9.0; before it: "Brief and Decision log are written by the brain. Add your own notes in My notes.") · "Brief" toggle heading (brain-written) · "Decision log" toggle heading (brain-written) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What's still open here?" (Questions, Open) · "Who's involved?" (People) · "What came in?" (Inbox where Project is this page, newest first) · "What do we know?" (tabs Decisions and Documents where Project is this page) · "Reports" (Documents where Project is this page and Origin is Report, sorted by Created time descending, 0045, #137, 0071) · "My notes". Parts follow their modules as on Areas. A project the brain publishes is created from this default template through the API (0068), so it must stay the Projects default; a space without one falls back to **New project** |
@@ -507,7 +510,6 @@ Home                          ← hub: my day, quick capture, "needs you"
 ├── Meetings                  ← Space
 ├── Projects                  ← Space
 ├── Plan                      ← Space
-├── Review                    ← Space
 ├── Knowledge                 ← Space
 └── (backend, never navigated)
     ├── Brain Data            ← the databases of Core and your modules
@@ -521,18 +523,17 @@ Each Space: the synced Spaces navigation in a narrow left column, then one tabs 
 
 | Space | Job | Tabs (view) |
 |---|---|---|
-| **Home** | Start of day: your areas, then your work | With Domains on, group the Areas tab by Domain, including No domain. Left: navigation, then "Needs you": a muted line "Start here: approving makes the brain's notes trusted." and "What's waiting for you?" (Review rows whose **Status** starts with "Needs you", grouped by **Type** with counts, 0048, 0088) and "Which minutes need review?" (Meetings, Not Reviewed, held today or earlier), 5 rows each. Right: buttons Quick capture (→ Inbox, Kind Capture, Brain Status **Ready**, 0048), Ask the brain (→ Inbox, Kind Ask, Brain Status New; Reports module), New meeting, New project; then "What's on today?" with tabs **Areas** (one line per area, 0050: a linked view of Areas, not Archived, showing Name and At a glance, e.g. "Day job · 3 to review · 1 meeting · 2 due"; below it "What's due across areas?", Tasks due today or overdue, Tasks module; #143, decision 0053) · Tasks (due today or overdue; Tasks module) · Meetings (today) · Projects (Active) · **Inbox** ("What's in my inbox?": New or Ready, oldest first, showing Name, Kind, Brain Status; #146); then "What did the brain take in?" (the Brain feed, 0043) with tabs Came in (Inbox, Done, newest first, 10 rows) · Meetings (Brain Status Ingested, newest Ingested At first, 10 rows) |
+| **Home** | Start of day: your areas, then your work | With Domains on, group the Areas tab by Domain, including No domain. Left: navigation, then "Needs you": "Which minutes need review?" (Meetings, Not Reviewed, held today or earlier, 5 rows). Decisions on what the brain proposes are made in the agent session, and the week's review is an Inbox row (Kind Weekly) in the Inbox tab ([0096](../decisions/0096-one-place-to-decide.md)). Right: buttons Quick capture (→ Inbox, Kind Capture, Brain Status **Ready**, 0048), Ask the brain (→ Inbox, Kind Ask, Brain Status New; Reports module), New meeting, New project; then "What's on today?" with tabs **Areas** (one line per area, 0050: a linked view of Areas, not Archived, showing Name and At a glance, e.g. "Day job · 1 meeting · 2 due"; below it "What's due across areas?", Tasks due today or overdue, Tasks module; #143, decision 0053) · Tasks (due today or overdue; Tasks module) · Meetings (today) · Projects (Active) · **Inbox** ("What's in my inbox?": New or Ready, oldest first, showing Name, Kind, Brain Status; #146); then "What did the brain take in?" (the Brain feed, 0043) with tabs Came in (Inbox, Done, newest first, 10 rows) · Meetings (Brain Status Ingested, newest Ingested At first, 10 rows) |
 | **Tasks** (Tasks module) | Do the work | Today · Upcoming (by day) · No date · Waiting On · Someday · Done (by week) |
 | **Meetings** | Prepare, review minutes, track ingestion | Upcoming · To review · Ready for the brain · Ingested this week · Calendar |
 | **Projects** | Run projects | Active (board by Status) · By area · Deadlines (timeline) · Gone quiet |
 | **Plan** (Planning module) | Areas → goals → key results → projects | Goals · Key results (by goal) · Areas (the way into each Area page) · Projects by goal |
-| **Review** | Decide on proposals | A muted line above the views: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. Status says what each row needs. Needs you · decide in the page: open the row, read it or click Review with me, correct what you want, then set Your call. Needs you · set Your call: pick Approve or Reject, or Fix and say what's wrong in What to fix." (0043, 0045, 0088, 0090). A decided row leaves Review 30 days after the decision; the brain keeps it in Git (0045) · Needs my decision (Status first, then a Type column: From source, Conflict, Answer, Suggestion; Kind hidden in every view, 0048, 0088) · Sources disagree · Approved recently · Rejected. Review stays one queue for every area; each area home has its own "Review waiting" tab (0050) |
 | **Knowledge** | Navigate what the brain knows | Decisions (Recent, Current, Provisional, Superseded, Disputed) · Questions (Open questions, Open risks, Answered) · Documents (What did we keep?, 0045, 0049; What did we learn?, 0071) · People (by org, Disputed) · Orgs (Clients, Others) · Inbox (What came in?: Done, newest first; the rows still waiting are Home's Inbox tab). Each tab follows its module |
 | **Archive** (linked from System) | Find what's finished | One tab per database of your modules: Projects (Done or Archived) · Goals (Achieved, Dropped or Archived) · Areas · Decisions · Questions · Documents · People · Orgs (Archived) |
 
 Every view, with its filters, sort and properties, is in [notion/views-guide.md](../notion/views-guide.md) and Prompts 7a–7h.
 
-**Brain Assistant** is a Notion Custom Agent for daily use ([notion/brain-assistant.md](../notion/brain-assistant.md)): Instructions with the rules, and twelve skills (Today, Review queue, Grill review, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report). Its Tools and access hold only Brain Data, How it works and its skills database, **Skills** (on System, one page per skill; a space built before 0.14.0 keeps it wherever it was made, under its name then, "Brain Assistant Skills": nothing depends on the name, 0085), so same-named databases elsewhere in the workspace can't be confused. It reads and answers; only Check minutes, Tidy capture, Voice summary, Clean email, Write up and Refresh report may edit (the last two from their buttons, §3.17), and only the page text you own (0035, 0045). Grill review and Weekly review may also write into a Review page's item sections, after your yes, never Your call or a property (0090, 0093 §2). Weekly review, asked by name, opens this week's weekly report (Documents, Origin Report) and grills its decisions; it builds no digest of its own (spec/weekly-review.md §13). How-to questions are answered from the "How it works" page, a copy of the user guide (the brain-howto skill's [references/guide.md](../.agents/skills/brain-howto/references/guide.md)).
+**Brain Assistant** is a Notion Custom Agent for daily use ([notion/brain-assistant.md](../notion/brain-assistant.md)): Instructions with the rules, and ten skills (Today, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report). Its Tools and access hold only Brain Data, How it works and its skills database, **Skills** (on System, one page per skill; a space built before 0.14.0 keeps it wherever it was made, under its name then, "Brain Assistant Skills": nothing depends on the name, 0085), so same-named databases elsewhere in the workspace can't be confused. It reads and answers; only Check minutes, Tidy capture, Voice summary, Clean email, Write up and Refresh report may edit (the last two from their buttons, §3.17), and only the page text you own (0035, 0045). Weekly review, asked by name, opens this week's Inbox row (Kind Weekly), reads it with you and decides nothing: for its decisions it points to the agent session; it builds no digest of its own (spec/weekly-review.md §13). Review queue and Grill review are retired with the Review database (0.16.0, [0096](../decisions/0096-one-place-to-decide.md)). How-to questions are answered from the "How it works" page, a copy of the user guide (the brain-howto skill's [references/guide.md](../.agents/skills/brain-howto/references/guide.md)).
 
 ---
 
@@ -568,7 +569,7 @@ See "After building" in [notion/CHECKLIST.md](../notion/CHECKLIST.md): connect t
     "databases": {
       "domains": "<id>", "areas": "<id>", "goals": "<id>", "key_results": "<id>", "projects": "<id>",
       "meetings": "<id>", "people": "<id>", "orgs": "<id>", "decisions": "<id>",
-      "questions": "<id>", "review": "<id>", "inbox": "<id>", "documents": "<id>"
+      "questions": "<id>", "inbox": "<id>", "documents": "<id>"
     },
     "tasks": {
       "database": "<id>",
@@ -586,7 +587,7 @@ See "After building" in [notion/CHECKLIST.md](../notion/CHECKLIST.md): connect t
 
 ## 8. Resolved questions
 
-1. **Editing a brain-owned property in Notion:** applied as your correction on the next sync (0023). Key facts get a timeline entry; Name, Summary, Why and relations are replaced in place; Assessment, Supersedes and similar judgments go through a Review proposal instead (0027).
+1. **Editing a brain-owned property in Notion:** applied as your correction on the next sync (0023). Key facts get a timeline entry; Name, Summary, Why and relations are replaced in place; Assessment, Supersedes and similar judgments go through a proposal instead, asked in the agent session (0027, [0096](../decisions/0096-one-place-to-decide.md)).
 2. **Meeting notes location:** they were loose pages. The Meetings database is their home from now on; move only recent meetings you still care about (last 1–2 months) and mark them Reviewed (0024).
 3. **Plan tier:** nothing here needs Notion Business. Revisit only for external sharing.
 
@@ -598,7 +599,7 @@ The text lives in [notion/minutes-format.md](../notion/minutes-format.md). It gi
 
 ## 10. The published Notion template (0078 §1)
 
-A new user **duplicates a published template** instead of building from the prompts. It is a **copy of the author's own space, emptied and scrubbed**, in the author's one workspace (0084, amending 0078 §1), with **every module** (§1) and **`Example · ` rows in every database on Brain Data** that show a filled space (fifteen, from one story and related to each other: 0084's Domain, Area, Project, Person, Org, Meeting and Task, and 0087's Inbox capture, Decision, Question, Document, Review row, Goal, Key Result and second Task), with a callout at the top of Brain Data saying they are examples, and published with duplication allowed. Setup removes the Example rows when it connects the brain, and the skills that read Notion never take one in (spec/setup.md §6.5). Its link and version are kept once, in [notion/TEMPLATE.md](../notion/TEMPLATE.md), which also lists what a duplicate contains, the steps it still needs and how the copy is emptied and scrubbed; the README, docs/setup.md and the `brain-setup` skill take them from there (spec/setup.md §6.2). Two templates exist, and user-facing text names them apart: the **brain folder** (`templates/brain/`, the Git repository `brain init` creates) and the **Notion template**.
+A new user **duplicates a published template** instead of building from the prompts. It is a **copy of the author's own space, emptied and scrubbed**, in the author's one workspace (0084, amending 0078 §1), with **every module** (§1) and **`Example · ` rows in every database on Brain Data** that show a filled space (fourteen, from one story and related to each other: 0084's Domain, Area, Project, Person, Org, Meeting and Task, and 0087's Inbox capture, Decision, Question, Document, Goal, Key Result and second Task; the Review row went with the Review database in 0.16.0, 0096), with a callout at the top of Brain Data saying they are examples, and published with duplication allowed. Setup removes the Example rows when it connects the brain, and the skills that read Notion never take one in (spec/setup.md §6.5). Its link and version are kept once, in [notion/TEMPLATE.md](../notion/TEMPLATE.md), which also lists what a duplicate contains, the steps it still needs and how the copy is emptied and scrubbed; the README, docs/setup.md and the `brain-setup` skill take them from there (spec/setup.md §6.2). Two templates exist, and user-facing text names them apart: the **brain folder** (`templates/brain/`, the Git repository `brain init` creates) and the **Notion template**.
 
 What the template has beyond a space built from the prompts:
 
