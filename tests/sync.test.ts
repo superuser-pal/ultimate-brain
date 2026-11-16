@@ -39,7 +39,7 @@ test("sync plan refuses as_of on a row; it belongs at the snapshot's top (#122)"
   assert.match(run.stdout, /unknown key/);
 });
 
-test("sync plan reads a pre-0.5.0 Edit as Fix: with a Note it is for the skill, without one a conflict", async (context) => {
+test("the transition reads a pre-0.5.0 Edit as Fix: with a Note it is for the skill, without one a conflict", async (context) => {
   const dir = await fixtureCopy(context);
   const linkProposal = "prp-0a1b2c3d";
   const supersedeProposal = "prp-1a1b2c3d";
@@ -57,7 +57,7 @@ test("sync plan reads a pre-0.5.0 Edit as Fix: with a Note it is for the skill, 
     },
   })) };
 
-  const planned = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot-link-edit.json", snapshot), "--json"]);
+  const planned = await brain(["sync", "plan", "--review-transition", "--brain", dir, "--input", await input(dir, "snapshot-link-edit.json", snapshot), "--json"]);
   assert.equal(planned.code, 0, planned.stdout);
   assert.deepEqual(planned.json.data.decisions, []);
   assert.deepEqual(planned.json.data.conflicts.map((item: { code: string; brain_id: string; property: string }) => [item.code, item.brain_id, item.property]), [
@@ -71,13 +71,13 @@ test("sync plan reads a pre-0.5.0 Edit as Fix: with a Note it is for the skill, 
   assert.deepEqual(applied.json.data.conflicts.map((item: { code: string }) => item.code), ["FIX_TO_READ", "FIX_WITHOUT_TEXT"]);
 });
 
-test("sync plan leaves an approval Note for the skill to interpret", async (context) => {
+test("the transition leaves an approval Note for the skill to interpret", async (context) => {
   const dir = await fixtureCopy(context);
   const snapshot = { as_of: NOW, rows: [{
     database: "review", page_id: "2f3a4b5c-6d7e-4f8a-9b0c-1d2e3f4a5b6c", last_edited: "2026-12-10T08:00:00Z",
     properties: { "Brain ID": "prp-9d3f7h2k", Decision: "Approve", Note: "all except Carlos", State: "Pending" },
   }] };
-  const run = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "review-note.json", snapshot), "--json"]);
+  const run = await brain(["sync", "plan", "--review-transition", "--brain", dir, "--input", await input(dir, "review-note.json", snapshot), "--json"]);
   assert.equal(run.code, 0, run.stdout);
   assert.deepEqual(run.json.data.decisions, []);
   assert.deepEqual(run.json.data.conflicts.map((item: { code: string; property: string; notion_value: string }) => [item.code, item.property, item.notion_value]), [["NOTE_TO_READ", "What to fix", "all except Carlos"]]);
@@ -405,56 +405,6 @@ test("sync record never changes updated", async (context) => {
   const after = parseFrontmatter(await readFile(join(dir, "knowledge/people/maria-lopez.md"), "utf8")).attributes;
   assert.equal(after.updated, before);
   assert.equal((after.notion_published as Record<string, unknown>).Role, "Product Manager");
-});
-
-test("sync render presents an add_link review with its target title", async (context) => {
-  const dir = await fixtureCopy(context);
-  await writeFile(join(dir, "_proposals/2026-12-10-add-carlos.md"), serializeNewFile({
-    id: "prp-0a1b2c3d", type: "proposal", title: "Add Carlos to Acme website", created: "2026-12-10", updated: "2026-12-10",
-    kind: "add_link", target: "prj-9x4t1b7e", field: "people", after: "per-9t2c6m4a", why: "Carlos joins the project.", source: "mtg-8c4n2p7w", status: "pending",
-  }, ""));
-  const run = await brain(["sync", "render", "--brain", dir, "--ids", "prp-0a1b2c3d", "--json"]);
-  assert.equal(run.code, 0, run.stdout);
-  const properties = run.json.data.items[0].properties;
-  assert.equal(properties.Name.type, "title");
-  assert.equal(properties.Kind.value, "Add Link");
-  assert.equal(properties.Now.value, null);
-  assert.equal(properties.Proposed.value, "People: Carlos Ruiz");
-});
-
-test("sync render makes target-relative Review links plain text", async (context) => {
-  const dir = await fixtureCopy(context);
-  await mkdir(join(dir, "sources/files"), { recursive: true });
-  await writeFile(join(dir, "sources/files/x.md"), serializeNewFile({
-    id: "src-0a1b2c3d", type: "source", title: "X file", source_key: "file:x", content_hash: "sha256:x", captured: "2026-12-10T09:00:00Z", created: "2026-12-10", updated: "2026-12-10",
-  }, "Source text."));
-  const decisionPath = join(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
-  await writeFile(decisionPath, (await readFile(decisionPath, "utf8")).replace("updated: 2026-12-04\n", "updated: 2026-12-04\nnotion: 7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d\n"));
-  await writeFile(join(dir, "_proposals/2026-12-10-target-relative-review-links.md"), serializeNewFile({
-    id: "prp-0a1b2c3d", type: "proposal", title: "Update Acme website", created: "2026-12-10", updated: "2026-12-10",
-    kind: "add_to_note", target: "prj-9x4t1b7e", content: "Read [X file](../../sources/files/x.md) and [Use Supabase for auth](../../knowledge/decisions/2026-12-03-use-supabase-for-auth.md).", why: "See [X file](../../sources/files/x.md).", status: "pending",
-  }, ""));
-  const run = await brain(["sync", "render", "--brain", dir, "--ids", "prp-0a1b2c3d", "--json"]);
-  assert.equal(run.code, 0, run.stdout);
-  const properties = run.json.data.items[0].properties;
-  assert.equal(properties.Proposed.value, "Read X file and Use Supabase for auth.");
-  assert.equal(properties.Why.value, "See X file.");
-  assert.equal(properties.Now.value, null);
-  assert.doesNotMatch(properties.Proposed.value, /notion\.so|\[[^\]]+\]\([^)]+\)/);
-});
-
-test("sync render gives supersede and merge reviews titles and truncates text", async (context) => {
-  const dir = await fixtureCopy(context);
-  const common = { type: "proposal", created: "2026-12-10", updated: "2026-12-10", why: "w", source: "mtg-8c4n2p7w", status: "pending" };
-  await writeFile(join(dir, "_proposals/2026-12-10-supersede.md"), serializeNewFile({ ...common, id: "prp-0a1b2c3d", title: "Supersede auth", kind: "supersede", target: "dec-7k2m9q4x", supersedes: "dec-2p9f6h1r" }, ""));
-  await writeFile(join(dir, "_proposals/2026-12-10-merge.md"), serializeNewFile({ ...common, id: "prp-1a1b2c3d", title: "Merge people", kind: "merge", target: "per-9t2c6m4a", merge_into: "per-3h8w2n6c" }, ""));
-  await writeFile(join(dir, "_proposals/2026-12-10-long.md"), serializeNewFile({ ...common, id: "prp-2a1b2c3d", title: "Long note", kind: "add_to_note", target: "org-6d1f9z3k", content: "x".repeat(2001) }, ""));
-  const run = await brain(["sync", "render", "--brain", dir, "--ids", "prp-0a1b2c3d,prp-1a1b2c3d,prp-2a1b2c3d", "--json"]);
-  assert.equal(run.code, 0, run.stdout);
-  const byId = new Map<string, Record<string, { value: unknown }>>(run.json.data.items.map((item: { id: string; properties: Record<string, { value: unknown }> }) => [item.id, item.properties]));
-  assert.equal(byId.get("prp-0a1b2c3d")!.Now.value, "Use Firebase for auth");
-  assert.equal(byId.get("prp-1a1b2c3d")!.Now.value, "Carlos Ruiz");
-  assert.equal((byId.get("prp-2a1b2c3d")!.Proposed.value as string).length, 2000);
 });
 
 test("sync publishes the brain's values for a Notion-created row whose brain-owned properties are empty", async (context) => {

@@ -189,25 +189,6 @@ test("an approved update_body replaces the reference's body; one whose body chan
   assert.equal((await run(dir, ["lint"])).json.data.errors, 0);
 });
 
-test("render: an update_body row shows the changed lines as Proposed, and keeps them once applied", async (context) => {
-  const dir = await fixtureCopy(context);
-  const v1 = await newSource(dir, source("Acme requirements v1", "document", REQUIREMENTS));
-  const reference = await newReference(dir, v1.id);
-  const updated = REQUIREMENTS.replace("2027-02", "2027-03");
-  const proposed = await run(dir, ["proposal", "new"], { proposals: [{ kind: "update_body", title: "Requirements v2", target: reference.id, content: updated, why: "Version 2.", source: v1.id }] });
-  const [row] = proposed.json.data.created;
-  const render = async () => (await run(dir, ["sync", "render", "--ids", row.id])).json.data.items[0];
-  const item = await render();
-  assert.deepEqual(item.properties.Now, { type: "rich_text", value: null });
-  assert.equal(item.properties.Proposed.value, "- - Launch in 2027-02\n+ - Launch in 2027-03");
-  const recorded = await run(dir, ["sync", "record"], { records: [{ id: row.id, notion: "b3000000-0000-4000-8000-000000000001", synced_at: NOW, published: item.published }] });
-  assert.equal(recorded.code, 0, recorded.stdout);
-  await run(dir, ["apply"], { decisions: [{ proposal: row.id, action: "approve", decided_at: "2026-12-10T08:00:00Z", decided_by: "notion" }] });
-  const after = await render();
-  assert.deepEqual(after.properties.State, { type: "select", value: "Applied" });
-  assert.equal(after.properties.Proposed, undefined, "the diff shown stays as published");
-});
-
 test("note new: a whole Document is the source's text, reviewed, once per source (0049)", async (context) => {
   const dir = await fixtureCopy(context);
   const document = await newSource(dir, source("Acme requirements", "document", REQUIREMENTS));
@@ -418,16 +399,6 @@ test("render: an Inbox row's Kind is File, written if empty; Brain Status is Don
   assert.deepEqual((await run(dir, ["sync", "render", "--ids", document.id])).json.data.items, []);
 });
 
-test("render: a Review row names its kind and carries the source's area (0048, 0050)", async (context) => {
-  const dir = await fixtureCopy(context);
-  const items = (await run(dir, ["sync", "render", "--ids", "prp-1q5w8e3r,prp-4n8c2w7t"])).json.data.items;
-  const byId = Object.fromEntries(items.map((item: { id: string }) => [item.id, item]));
-  assert.deepEqual(byId["prp-1q5w8e3r"].properties.Name, { type: "title", value: "Conflict: Supabase supersedes Firebase for auth" });
-  assert.deepEqual(byId["prp-1q5w8e3r"].properties.Area, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] });
-  assert.equal(byId["prp-4n8c2w7t"].published.Name, "Acme launch: Jan → Feb", "an update_fact has no prefix");
-  assert.deepEqual(byId["prp-4n8c2w7t"].properties.Area, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] });
-});
-
 test("acceptance: Keep as document with Only keep empty gives a whole Document and no proposal; the next plan finds it there (0049)", async (context) => {
   const dir = await fixtureCopy(context);
   await configure(dir, "inbox", "a1000000-0000-4000-8000-00000000000b");
@@ -459,16 +430,6 @@ test("acceptance: with Only keep set, a part Document goes in the source's revie
   const applied = await run(dir, ["apply"], { decisions: [{ proposal: row.json.data.created[0].id, action: "approve", decided_at: NOW, decided_by: "notion" }] });
   assert.equal(applied.code, 0, applied.stdout);
   assert.equal(parseFrontmatter(await readFile(join(dir, page.path), "utf8")).attributes.lifecycle, "reviewed");
-});
-
-test("acceptance: a Review row from a project's meeting with no area of its own carries the project's area (0050)", async (context) => {
-  const dir = await fixtureCopy(context);
-  const meeting = join(dir, "knowledge/meetings/2026-12-03-acme-sync.md");
-  const text = await readFile(meeting, "utf8");
-  assert.match(text, /^projects:/m);
-  await writeFile(meeting, text.replace(/^area: area-2m7c4h8n\n/m, ""));
-  const [item] = (await run(dir, ["sync", "render", "--ids", "prp-4n8c2w7t"])).json.data.items;
-  assert.deepEqual(item.properties.Area, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] });
 });
 
 test("lint: a promoted Document's origin and promoted_from are declared keys, not unknown-key warnings", async (context) => {
