@@ -900,11 +900,15 @@
                 "promoted",
                 "workflow"
               ],
-              "description": "whole: a source's converted text, verbatim; part: what Only keep named; learned: an idea, method or definition the brain learned (a concept before 0.9.1, decision 0071); promoted: seeded from a decision (or, before 0.9.1, a concept); workflow: an artifact of a connected workflow. Absent: part (written before 0.6.0)."
+              "description": "whole: a source's converted text, verbatim; part: what Only keep named (not written since 0.16.0, decision 0098 §4: a part is a checked row); learned: an idea, method or definition the brain learned (a concept before 0.9.1, decision 0071); promoted: seeded from a decision (or, before 0.9.1, a concept); workflow: an artifact of a connected workflow. Absent: part (written before 0.6.0)."
             },
             "promoted_from": {
               "type": "string",
               "pattern": "^(dec|con)-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+            },
+            "question": {
+              "$ref": "#/$defs/questionId",
+              "description": "The question the task tracks, on a Document kept from a task (0.16.0, decision 0100 §2; spec/schema.md §4 reference)."
             },
             "workflow": {
               "description": "The workflow and artifact this Document publishes (connected-workflows.md §6.3).",
@@ -1001,6 +1005,24 @@
           }
         },
         {
+          "description": "question only on a whole Document, kept from a task (0.16.0, decision 0100 §2).",
+          "if": {
+            "required": [
+              "question"
+            ]
+          },
+          "then": {
+            "required": [
+              "origin"
+            ],
+            "properties": {
+              "origin": {
+                "const": "whole"
+              }
+            }
+          }
+        },
+        {
           "description": "A whole Document holds one source's text.",
           "if": {
             "required": [
@@ -1049,7 +1071,8 @@
             "email",
             "chat",
             "note",
-            "capture"
+            "capture",
+            "task"
           ]
         },
         "file_name": {
@@ -1079,6 +1102,19 @@
         },
         "replaces": {
           "$ref": "#/$defs/sourceId"
+        },
+        "checked_from": {
+          "$ref": "#/$defs/sourceId",
+          "description": "A checked row's source (0.16.0, decision 0098 §4, §5; spec/schema.md §4): the original it was changed from, a document, email, chat or note source. Its items cite this source; the original stays linked here."
+        },
+        "changes": {
+          "description": "With checked_from: what the change dropped or altered compared with the original, one line each (decision 0098 §5).",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^(Dropped|Altered): [^\\n]*\\S[^\\n]*$"
+          }
         },
         "area": {
           "$ref": "#/$defs/areaId",
@@ -1530,6 +1566,65 @@
                     "only_keep"
                   ]
                 }
+              ]
+            }
+          }
+        },
+        {
+          "description": "A checked row's source (0.16.0, decision 0098 §4): checked_from with changes, a notion: key and a document, email, chat or note kind; changes only with checked_from.",
+          "if": {
+            "anyOf": [
+              { "required": ["checked_from"] },
+              { "required": ["changes"] }
+            ]
+          },
+          "then": {
+            "required": [
+              "checked_from",
+              "changes",
+              "kind"
+            ],
+            "properties": {
+              "source_key": {
+                "pattern": "^notion:"
+              },
+              "kind": {
+                "enum": [
+                  "document",
+                  "email",
+                  "chat",
+                  "note"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "description": "A task page kept as a document (0.16.0, decision 0100 §2): a notion: key, no Inbox row and nothing a converted input carries.",
+          "if": {
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "const": "task"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "source_key": {
+                "pattern": "^notion:"
+              }
+            },
+            "not": {
+              "anyOf": [
+                { "required": ["notion"] },
+                { "required": ["digest"] },
+                { "required": ["only_keep"] },
+                { "required": ["attached_to"] },
+                { "required": ["extract"] },
+                { "required": ["checked_from"] }
               ]
             }
           }

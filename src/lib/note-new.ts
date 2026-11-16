@@ -174,6 +174,8 @@ export function stageNotes(
     if (repo !== undefined && !repoNames.has(repo)) parents.push({ pointer: `${pointerOf(index)}/frontmatter/repo`, message: `${String(repo)} is not a linked repo in brain.json repos` });
   });
   parents.push(...documentProblems(workspace, items, pointerOf));
+  parents.push(...checkedSourceProblems(workspace, items, pointerOf));
+  parents.push(...checkedOriginalProblems(workspace, items, pointerOf));
   // distinct_from names existing notes of the item's type (spec/cli.md §5.5).
   items.forEach((item, index) => {
     (item.distinct_from ?? []).forEach((id, position) => {
@@ -218,8 +220,9 @@ export function stageNotes(
       const hash = `sha256:${createHash("sha256").update(body, "utf8").digest("hex")}`;
       const sourceKey = attributes.source_key;
       // A new version (replaces) is compared by its text only, so a corrected input can be read again (0045).
+      // The same Inbox row, task page or checked row is one input whatever its text: a capture, a task (0100) or a checked row (0098) by its key.
       const duplicateByKey =
-        attributes.replaces === undefined && typeof sourceKey === "string" && (sourceKey.startsWith("file:") || attributes.kind === "capture");
+        attributes.replaces === undefined && typeof sourceKey === "string" && (sourceKey.startsWith("file:") || attributes.kind === "capture" || attributes.kind === "task" || attributes.checked_from !== undefined);
       const duplicate = workspace.notes.find((note) =>
         attributes.extract !== true && note.type === "source" && (note.attributes.content_hash === hash || (duplicateByKey && note.attributes.source_key === sourceKey)),
       );
@@ -299,7 +302,16 @@ function documentProblems(workspace: Workspace, items: readonly NoteInput[], poi
   items.forEach((item, index) => {
     if (item.type !== "reference") return;
     const at = (key: string, message: string) => problems.push({ pointer: `${pointerOf(index)}/${key}`, message });
-    const { origin, sources, promoted_from: from } = item.frontmatter;
+    const { origin, sources, promoted_from: from, question } = item.frontmatter;
+    // A part of an input is a checked row since 0.16.0, whose Document is a whole one (0098 §4, capture-and-review §12.2).
+    if (origin === "part") return at("frontmatter/origin", "a part is no longer written: the part goes to the Inbox as a checked row, whose Document is whole (decision 0098 §4)");
+    if (question !== undefined) {
+      // The question a task tracks, on the Document kept from that task (0100 §2, capture-and-review §13.4).
+      if (typeof question !== "string" || workspace.get(question)?.type !== "question") at("frontmatter/question", `${String(question)} is not an existing question`);
+      const id = Array.isArray(sources) && typeof sources[0] === "string" ? sources[0] : undefined;
+      const kind = id === undefined ? undefined : workspace.get(id)?.attributes.kind ?? items.slice(0, index).find((candidate) => candidate.id === id && candidate.type === "source")?.frontmatter.kind;
+      if (origin !== "whole" || kind !== "task") at("frontmatter/question", "goes only on a whole Document kept from a task (a task source)");
+    }
     if (origin === "whole") {
       if (!Array.isArray(sources) || sources.length !== 1 || typeof sources[0] !== "string" || !sources[0].startsWith("src-")) {
         return at("frontmatter/sources", "a whole Document names exactly one source (src-)");
@@ -320,6 +332,71 @@ function documentProblems(workspace: Workspace, items: readonly NoteInput[], poi
       const other = promoted.get(from);
       if (other !== undefined) return at("frontmatter/promoted_from", `${from} is already promoted to ${other}`);
       promoted.set(from, item.id ?? `${pointerOf(index)}`);
+    }
+  });
+  return problems;
+}
+
+/** Kinds a checked row's original may have (capture-and-review §12.1): a document, never minutes, a capture or a task. */
+export const CHECKABLE_KINDS = new Set(["document", "email", "chat", "note"]);
+/** One `What changed` line: `Dropped: …` or `Altered: …` with text after it (spec/cli.md §5.5, §5.35; 0098 §5). */
+export const CHANGE_LINE = /^(Dropped|Altered): [^\n]*\S[^\n]*$/;
+
+/** A checked row's source and a task source (spec/cli.md §5.5; 0098 §4, §5; 0100 §2), the rules the JSON Schema can't state. */
+function checkedSourceProblems(workspace: Workspace, items: readonly NoteInput[], pointerOf: (index: number) => string): InputProblem[] {
+  const problems: InputProblem[] = [];
+  items.forEach((item, index) => {
+    if (item.type !== "source") return;
+    const at = (key: string, message: string) => problems.push({ pointer: `${pointerOf(index)}/frontmatter/${key}`, message });
+    const f = item.frontmatter;
+    const key = typeof f.source_key === "string" ? f.source_key : "";
+    if (f.kind === "task") {
+      if (!key.startsWith("notion:")) at("source_key", "a task source is keyed by its task page: notion:<page id>");
+      for (const field of ["notion", "digest", "only_keep", "attached_to", "extract", "checked_from"]) {
+        if (f[field] !== undefined) at(field, "is not allowed on a task source: it has no Inbox row, and its body is the page's text word for word (decision 0100 §2)");
+      }
+      return;
+    }
+    if (f.checked_from === undefined) {
+      if (f.changes !== undefined) at("changes", "goes only with checked_from, on a checked row's source (decision 0098 §5)");
+      return;
+    }
+    const original = String(f.checked_from);
+    const existing = workspace.get(original);
+    const earlier = items.slice(0, index).find((candidate) => candidate.id === original);
+    const type = existing?.type ?? earlier?.type;
+    const kind = existing !== undefined ? existing.attributes.kind : earlier?.frontmatter.kind;
+    if (type !== "source") at("checked_from", type === undefined ? `${original} is not an existing source or one earlier in the batch` : `${original} is a ${type}, not a source`);
+    else if (typeof kind !== "string" || !CHECKABLE_KINDS.has(kind)) at("checked_from", `${original} is a ${String(kind ?? "minutes")} source: only a document, email, chat or note is checked as a row (capture-and-review §12.1)`);
+    else if (f.kind !== kind) at("kind", `must be ${kind}, the kind of its original ${original}`);
+    if (!key.startsWith("notion:")) at("source_key", "a checked row's source is keyed by its Inbox row: notion:<row page id>");
+    if (!Array.isArray(f.changes) || f.changes.length === 0) at("changes", "must list what the change dropped or altered, one line each");
+    else f.changes.forEach((line, position) => { if (typeof line !== "string" || !CHANGE_LINE.test(line)) at(`changes/${position}`, "must be one line starting Dropped: or Altered:, with text after it"); });
+    if (f.only_keep !== undefined) at("only_keep", "is not allowed on a checked row's source: its Document, when asked, is a whole one (decision 0098 §4)");
+  });
+  return problems;
+}
+
+/** The checked version of each original (capture-and-review §12.7): `checked_from` → the checked source, in the brain or in the batch. */
+export function checkedVersions(notes: readonly Note[], items: readonly NoteInput[] = []): Map<string, string> {
+  const versions = new Map<string, string>();
+  for (const note of notes) if (note.type === "source" && typeof note.attributes.checked_from === "string" && !versions.has(note.attributes.checked_from)) versions.set(note.attributes.checked_from, note.id);
+  items.forEach((item, index) => {
+    if (item.type === "source" && typeof item.frontmatter.checked_from === "string" && !versions.has(item.frontmatter.checked_from)) versions.set(item.frontmatter.checked_from, item.id ?? `/notes/${index}`);
+  });
+  return versions;
+}
+
+/** `CHECKED_ORIGINAL` (spec/cli.md §5.5): a knowledge note of the batch never cites an original whose checked version exists. */
+function checkedOriginalProblems(workspace: Workspace, items: readonly NoteInput[], pointerOf: (index: number) => string): InputProblem[] {
+  const problems: InputProblem[] = [];
+  items.forEach((item, index) => {
+    if (!KNOWLEDGE_TYPES.has(item.type) || !Array.isArray(item.frontmatter.sources)) return;
+    // A checked version earlier in the batch counts, as one in the brain does.
+    const versions = checkedVersions(workspace.notes, items.slice(0, index));
+    for (const id of item.frontmatter.sources) {
+      const version = typeof id === "string" ? versions.get(id) : undefined;
+      if (version !== undefined) { problems.push({ pointer: `${pointerOf(index)}/frontmatter/sources`, message: `CHECKED_ORIGINAL: ${String(id)} was taken in as its checked version ${version}; cite that` }); break; }
     }
   });
   return problems;

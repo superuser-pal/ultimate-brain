@@ -53,7 +53,7 @@ async function ingested(context: TestContext): Promise<Ingested> {
   const notes = await run(dir, ["note", "new"], { notes: [
     { type: "reference", title: "Pricing memo (whole)", frontmatter: { summary: "The memo, whole.", origin: "whole", area: PRODUCT, sources: [source.id] }, body: BODY },
     { type: "reference", title: "Tiered pricing", frontmatter: { summary: "What tiered pricing is.", origin: "learned", area: PRODUCT, sources: [source.id] }, body: "Tiers group features by price.\n" },
-    { type: "reference", title: "Pricing tiers table", frontmatter: { summary: "The tiers.", origin: "part", area: PRODUCT, sources: [source.id] }, body: "- Three tiers\n" },
+    { type: "reference", title: "Pricing tiers table", frontmatter: { summary: "The tiers.", origin: "learned", area: PRODUCT, sources: [source.id] }, body: "- Three tiers\n" },
     { type: "decision", title: "Offer three pricing tiers", frontmatter: { summary: "Three tiers.", date: "2026-12-01", assessment: "accepted", area: PRODUCT, sources: [source.id] }, body: "## Decision\nThree tiers.\n" },
     { type: "question", title: "Should the annual discount be 15%?", frontmatter: { summary: "The discount.", kind: "question", area: PRODUCT, sources: [source.id] }, body: "Open.\n" },
   ] });

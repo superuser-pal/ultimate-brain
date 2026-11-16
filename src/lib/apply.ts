@@ -1,6 +1,7 @@
 import { isDeepStrictEqual } from "node:util";
 import { posix } from "node:path";
 
+import { contentLines, sectionLine, withSectionLines } from "./from-the-brain.ts";
 import { assertNoProblems, isRecord, unknownKeys, type InputProblem } from "./input.ts";
 import type { NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
@@ -829,6 +830,13 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
       else resolveContradiction(a, field, V, String(p.from), D, String(p.source), p.after, String(p.id));
       break;
     case "add_to_note": {
+      if (p.section === "from_the_brain") {
+        // The lines go at the end of the From the brain section; no Source line, and sources don't change: each line cites its note (schema §11.2, 0100 §3).
+        const lines = contentLines(String(V ?? p.content));
+        if (lines.some((line) => sectionLine(line) === null)) throw new ItemFailure("INVALID_RESULT", "a From the brain line is \"- <text> ([<title>](<relative link>))\"");
+        document.body = withSectionLines(document.body, lines);
+        break;
+      }
       const content = String(V ?? p.content).replace(/\n+$/, "");
       const head = document.body.replace(/\n+$/, "");
       // The user's own wording is a separately attributed correction: it never claims the source said it (eligibility.md §9.5, cli §5.7).
@@ -846,7 +854,9 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
     }
     case "update_body":
       document.body = bodyOf(String(V ?? p.content));
-      if (!userWording(V, p.content, correctedBy)) a.sources = union(list(a.sources), [p.source]);
+      // A whole Document keeps one source, the later version the change came from (schema §11.2); the earlier stays reachable through replaces.
+      if (a.origin === "whole") a.sources = [p.source];
+      else if (!userWording(V, p.content, correctedBy)) a.sources = union(list(a.sources), [p.source]);
       break;
     case "add_link":
       for (const link of proposalLinks(p)) if (!exclude.some((item) => item.field === link.field && isDeepStrictEqual(item.value, link.value)) && !list(a[String(link.field)]).some((value) => isDeepStrictEqual(value, link.value))) a[String(link.field)] = [...list(a[String(link.field)]), link.value];

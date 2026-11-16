@@ -167,7 +167,7 @@ test("render: a draft that already has a page keeps being updated until the clea
 test("render --unpublish-drafts trashes the Draft pages a Review row still holds, and approval creates a new page (0071)", async (context) => {
   const dir = await documentsBrain(context);
   // Two draft Documents with a page from before 0.9.1: one a pending Review row lists, one held by no row.
-  const other = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Auth providers compared", frontmatter: { summary: "Three providers side by side.", origin: "part", sources: [SYNC] }, body: "Supabase, Firebase and Auth0.\n" }] });
+  const other = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Auth providers compared", frontmatter: { summary: "Three providers side by side.", origin: "learned", sources: [SYNC] }, body: "Supabase, Firebase and Auth0.\n" }] });
   assert.equal(other.code, 0, other.stdout);
   await setField(dir, other.json.data.created[0].path, "notion", "e3000000-0000-4000-8000-000000000003");
   const held = "4e5f6a7b-8c9d-4e0f-9a1b-2c3d4e5f6a7b";

@@ -118,13 +118,12 @@ test("a source and its whole Document keep wikilinks, foreign relative links and
   assert.ok((changed.json.data.issues as Array<{ rule: string; path: string }>).some((issue) => issue.rule === "source-hash" && issue.path === source!.path), changed.stdout);
 });
 
-test("a note the brain writes still follows 0002: a decision, a question, a part and a learned Document with [[x]] are refused", async (context) => {
+test("a note the brain writes still follows 0002: a decision, a question and a learned Document with [[x]] are refused", async (context) => {
   const { dir, commit } = await vaultBrain(context);
   await keep(dir, kept("notes/beta.md", commit, "src-2b2b2b2b"));
   const written = [
     { type: "decision", title: "Use the vault", frontmatter: { summary: "We use the vault.", date: "2026-12-09", assessment: "provisional", area: AREA, sources: ["src-2b2b2b2b"] }, body: "Agreed, see [[beta]].\n" },
     { type: "question", title: "Who owns the vault", frontmatter: { summary: "Open: who owns it.", kind: "question", sources: ["src-2b2b2b2b"] }, body: "Asked in [[beta]].\n" },
-    { type: "reference", title: "Beta plan", frontmatter: { summary: "The plan.", origin: "part", area: AREA, sources: ["src-2b2b2b2b"] }, body: "- From [[beta]]\n" },
     { type: "reference", title: "Vault method", frontmatter: { summary: "The method.", origin: "learned", sources: ["src-2b2b2b2b"] }, body: "Learned from [[beta]].\n" },
   ];
   for (const note of written) {
