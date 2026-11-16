@@ -51,7 +51,7 @@ test("a symlinked compiled entry resolves its package root", async (context) => 
 
   const packageRoot = join(fixture, "published-package");
   const productRoot = join(import.meta.dirname, "..");
-  await exec("npm", ["run", "build"], { cwd: productRoot });
+  await exec("npm", ["run", "build"], { cwd: productRoot, shell: process.platform === "win32" });
   await cp(join(productRoot, "dist"), join(packageRoot, "dist"), { recursive: true });
   await cp(join(productRoot, ".agents"), join(packageRoot, ".agents"), { recursive: true });
   await cp(join(productRoot, "spec"), join(packageRoot, "spec"), { recursive: true });

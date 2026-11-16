@@ -28,6 +28,12 @@ export function findRepo(config: Record<string, unknown>, name: string): LinkedR
   return repo;
 }
 
+/** A repo path as the contract allows it: absolute for this platform (`/…`, or `C:\…` on Windows) or starting with `~/` (schema §12). */
+export function isAbsoluteOrHome(path: string): boolean {
+  // The same pattern as brain.schema.json's repo path, so a path accepted here is one brain.json accepts (no UNC or \\dir on Windows).
+  return /^(\/|~\/|[A-Za-z]:[\\/])/.test(path);
+}
+
 /** A stored path with `~/` expanded. */
 export function expandPath(path: string, home = homedir()): string {
   return path === "~" ? home : path.startsWith("~/") ? join(home, path.slice(2)) : path;

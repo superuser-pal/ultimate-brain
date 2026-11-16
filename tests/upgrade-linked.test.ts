@@ -323,7 +323,7 @@ test("a brain with no linked projects reports none, and still ends with the fres
   assert.equal(run.code, 0);
 });
 
-test("a project whose write fails is unfinished, with every file it had written restored", async (context) => {
+test("a project whose write fails is unfinished, with every file it had written restored", { skip: process.platform === "win32" ? "the test makes a folder read-only with chmod, which Windows ignores, so the write it expects to fail succeeds" : false }, async (context) => {
   const { dir, home, repo } = await linkedBrain(context, ["locked"]);
   const agents = join(repo("locked"), "AGENTS.md");
   const old = (await text(agents)).replace("--historical", "--old-flag");

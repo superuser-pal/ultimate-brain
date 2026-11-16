@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { unlink } from "node:fs/promises";
-import { join, posix } from "node:path";
+import { isAbsolute, join, posix } from "node:path";
 import { promisify } from "node:util";
 
 import { BrainError } from "./errors.ts";
@@ -213,7 +213,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function waitForIndex(root: string): Promise<void> {
   let lock: string;
   try { lock = (await exec("git", ["rev-parse", "--git-path", "index.lock"], { cwd: root })).stdout.trim(); } catch { return; }
-  const path = lock.startsWith("/") ? lock : join(root, lock);
+  const path = isAbsolute(lock) ? lock : join(root, lock);
   for (let waited = 0; existsSync(path); waited += 200) {
     if (waited >= 10_000) throw new BrainError("BRAIN_BUSY", "Git's index is locked by another writer: try again in a moment");
     await sleep(200);
