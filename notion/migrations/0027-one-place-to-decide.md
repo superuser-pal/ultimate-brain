@@ -157,7 +157,7 @@ Use only the databases on Brain Data. On this page ("Tasks"), in the tabs block,
 Hide Brain ID and Last edited time. Change nothing else.
 ```
 
-Wait until Notion AI says it is done: it may build a view below the tabs block first and then move it into its tab. Then check each new tab: it is between Someday and Done, its view is named as above, the database title is hidden, and it lists only open tasks of its Kind. Notion AI often leaves a view named "View of Tasks" with its title showing: rename it and turn off **Show data source title** in its **⋯** menu. A linked view still below the tabs block after that is a stray: hover it, click **⋮⋮** → **Delete** (that deletes the view only, never the Tasks database).
+Wait until Notion AI says it is done: it may build a view below the tabs block first and then move it into its tab. Then check each new tab: it is between Someday and Done, its view is named as above, the database title is hidden, and it lists only open tasks of its Kind. In a test run, Notion AI left each view named "View of Tasks" with its title showing: rename it and turn off **Show data source title** in its **⋯** menu. A linked view still below the tabs block after that is a stray: hover it, click **⋮⋮** → **Delete** (that deletes the view only, never the Tasks database).
 
 **By hand** (views-guide §2, rows 6 and 7), for each of Questions and Risks:
 1. In the Tasks page's tabs block, click **+** after the last tab and name the tab `Questions` (then `Risks`). Drag it between **Someday** and **Done**.
