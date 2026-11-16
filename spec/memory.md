@@ -72,7 +72,7 @@ A one-off event is not a candidate; it belongs in the work record (§4).
 
 | Answer | Writes |
 |---|---|
-| yes | `proposal new` with a `new_item` memory note, then `apply` decided in chat. The memory is written `reviewed` (cli.md §5.7 `new_item`). Decided in chat, it never becomes a Review row (cli.md §5.14.4) |
+| yes | `proposal new` with a `new_item` memory note, then `apply` decided in chat. The memory is written `reviewed` (cli.md §5.7 `new_item`). Decided in chat, it never waits as a pending proposal (cli.md §5.14.4, capture-and-review §7.1) |
 | yes, with an edit | The same, with the user's text or reach |
 | no, or later | Nothing. A candidate isn't kept: when the session's evidence recurs, a later closing review may show it again |
 
