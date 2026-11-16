@@ -566,3 +566,132 @@ After 0012. Who does each step: **agent** (API), **Notion AI**, **by hand**.
 | CC-196 | the lean shape in `extract-plan` and `extract` (shapes, the join, the new problems, `items`, the follow-ups' `q` ids), `sync tasks` `follow_up`, `sync record` `q` keys, `legacy_tasks` and the cleanup plan skipping `q` keys | §4.1, §4.6, §6.3 |
 | CC-197 | the lean minutes prompt, Check minutes, the paste guide and the prompt gate | §3.3, §4.1 |
 | CC-198 | the ingest and catch-up skills: the lean shape, follow-up Tasks and their count in the report | §4.1, §6.3 |
+
+## 12. A changed document is checked before it goes in (0.16.0, decision [0098](../decisions/0098-agree-by-subject-and-check-a-changed-document.md) §4 to §7, moved into 0.16.0 by [0102](../decisions/0102-one-release-for-0-16-0-and-0-17-0.md))
+
+A document is the one input with no check before it goes in: minutes have Check minutes and Reviewed, captures have Tidy capture (§12.9). When the user wants a document changed before it goes in, the brain writes the changed text to a **checked row**, a new Inbox row linked to the original, and takes nothing in until the user has checked it. What the CLI does is in cli.md §5.5 and §5.35, what is stored in schema §4 (source `checked_from` and `changes`), the row's Notion properties in docs/notion-space-design.md §3.11.
+
+**12.1 What it applies to.** An input whose source kind is `document`, `email`, `chat` or `note` (schema §4): a converted file (an attached file and a drop-folder file included), a web page, a pasted thread or text, an Inbox row of those kinds. Never `minutes` or `capture` (§12.9), never a `task` source (§13), never a report.
+
+**12.2 What writes a checked row.**
+- **A change asked in the session** before the input goes in: "keep only the requirements, as a spec", "drop the appendix", "the depot count is 11, not 9". It may be asked on an input the session is about to take in (a dropped file, a Ready row, a pasted text) or on one the brain already has ("keep the budget section of the Acme brief as a document").
+- **Keep as document with Only keep filled** (0049): on a Ready row, on a row the brain already took in (a `document_requests` item, cli §5.14.2), and for a drop-folder file answered "only …". The part Only keep names, chosen by the brain, becomes the checked row, with Document asked ticked on it (§12.4). **Only the kept part goes in** (the author's answer of 2026-11-16, with a worked example): the original is recorded as a source only, and What changed lists what was left out, so the user sees it before the part goes in.
+- **Keep as document with Only keep empty** is unchanged: the whole input is kept verbatim as a `whole` Document, `reviewed` (schema §4 reference), and no checked row is written.
+
+A `part` Document (schema §4) is no longer written: every part is a checked row since 0.16.0, and a `part` Document written before stays as it is.
+
+**12.3 Writing the row.** In one turn, nothing taken in:
+1. **The original is recorded as a source** when the brain doesn't have it yet: `note new` with the source alone, no note, no proposal, no Task, and its Inbox row is published as for any source (cli §5.14.4): a new row for a file or a pasted text, and the row itself for a Ready row, which becomes Done with its Brain ID, so no run takes it in again as a Ready row. A file attached to a row has no row of its own (0042): its capture's row stands for it. An original the brain already has keeps its source.
+2. **The changed text.** The skill writes what the user asked for, or the part Only keep names: every figure and date as the original states it, nothing added that the original doesn't say except a value the user gave ("11, not 9"). It lists what the change dropped or altered compared with the original, one line each: `Dropped: Appendix B (pricing)`, `Altered: depot count 9 → 11`.
+3. **The row.** `brain source check` (cli §5.35) renders it from the original's id, the text and the list, and writes nothing; the skill creates the page through the MCP. Nothing is written in Git for the row: it has no source, note or proposal until it is taken in (§12.5).
+4. **What the user is told:** "I wrote the changed version to your Inbox: *Acme brief (changed)*. Check it there and edit it if you want, then say *go*, or set it Ready for the next catch-up." The preview before the write names what changes (the lines of step 2), and the session's yes covers the Notion writes of steps 1 and 3.
+
+An unattended catch-up writes a row only for Keep as document with Only keep filled, and only with `settings.publish: auto`; otherwise the input waits (cli §6.1). It never writes one from a change asked in words, since nobody asked.
+
+**12.4 The row.** Kind **Changed**; **Changed from**: the original's Inbox row (for an attached file, its capture's row); **What changed**: the lines of §12.3 step 2, after a first line `File: <file name>` when the original is an attached file; **Brain Status New**: not for the brain yet; **Document asked** ticked when the change came from Keep as document, or the user asked for the changed text to be kept as a Document; Project and Area: the original's; Brain ID empty; the page body: the changed text. The user reads the row in Notion and edits its body if they want. The row is theirs to check: its body is never rewritten by the brain, before or after it is taken in.
+
+**12.5 Taking it in.** Then either:
+- **"go" in the session.** The skill finds the checked rows waiting (Changed from set, no Brain ID, Brain Status New or Ready), asks which one when there are several, reads the row as it is now, edits included, and ingests it by subject, as §7.3 says: each part shows what the brain has, what is added and its questions, then its own yes. A one-subject row is one part with one yes.
+- **Ready.** The user sets the row Ready, and the next catch-up takes it in like any Ready row: attended, as "go"; unattended, as §12.6 says.
+
+**The source** is the row: `note new` writes it with the key `notion:<row page id>`, the original's `kind`, `checked_from` = the original's source id, `changes` = What changed as the row shows it (without the `File:` line), `notion` = the row's page id and the body read from the page (schema §4). With Document asked ticked, the same batch writes a `whole` Document of it, `reviewed`: it is the text the user checked, word for word. The box is cleared once it is written (cli §5.14.2).
+
+**What the items cite (0098 §5, 0077).** Every item of the ingest cites the checked source: its passages are that source (it has no paragraph identities, eligibility.md §1), never the original. The original stays in the brain, linked by `checked_from`, so every item traces back: item → checked source → original. For eligibility the checked source and its original are **one input** (§5.1, "Input lineage"): the checked text comes from the original, so a suppression on the original reaches it, and neither supports the other independently.
+
+After the ingest the row is published as a source: Brain ID, Brain Status Done and Summary; its Name and body are never sent (cli §5.14.4).
+
+**12.6 Ready approves the text only (0098 §6).** A catch-up without the user that takes in a checked row set Ready treats it as any input of a run without the user (§7.4, 0096 §4): its new notes stay `draft`, and its additions, links, new facts and asked changes wait for the next session, asked once per source (§7.5). Ready says "this text is right" and approves no note the user has not seen. A `whole` Document of the row is `reviewed`, since it is that text and nothing else. The run takes in a Ready checked row only when its page's `last_edited_time` is at least 2 minutes older than the run (`TOO_FRESH` otherwise, as §4.4's settle): the text it takes in is the one the user left.
+
+**12.7 Never taken in twice.**
+- **The original is never taken in once its checked row exists.** Its row is Done (§12.3 step 1), so no run takes it in as a Ready row, and the ingest takes in nothing of it. Once the checked source is written, `note new` and `proposal new` refuse a note or a proposal that cites the original as its source or in its passages (`INPUT_INVALID`, `CHECKED_ORIGINAL`, cli §5.5, §5.6). An original the brain took in before the change was asked (Keep as document clicked on a row already in) keeps what it gave: the checked row's items are matched against the brain as any ingest's are (§4.8, "Path and idempotence"), and only what is new is added.
+- **While the row waits,** a run that finds the original set back to Ready skips it and names it under Needs you ("its changed version is waiting for your check"). To take in the whole original instead, the user says so in the session: the skill moves the checked row to Notion's trash after their yes, then takes in the original (its source is in the brain, so the ingest reads it as §4.8's path does).
+- **One waiting row per original.** A further change asked while the row waits is made to that row: the skill shows the new text and What changed, and writes them after the user's yes. A change asked after the row went in is a change to the checked source: a new checked row whose original is the checked source.
+- **The row itself** is deduped by its key, as a capture is (cli §5.5): reading it again with the same text is `DUPLICATE_SOURCE`; setting it Ready again after an edit is a new version, with `replaces` (schema §4, "Versions").
+
+**12.8 A row never confirmed.** Nothing is taken in: the row stays New in the Inbox, and only the original's source is in the brain. An attended catch-up names the rows waiting under Needs you ("1 changed document waiting for your check: say *go*, or set it Ready"); an unattended run doesn't. To drop it, the user deletes the row; nothing else changes.
+
+**12.9 Meetings and captures keep their own checks (0098 §7).** Minutes keep Check minutes and Reviewed (§3.3, §4.4); captures keep Tidy capture (0054), and the user edits a capture before setting it Ready. Neither gets a checked row: a change asked on one is made where it is, on the page.
+
+**12.10 Example.** The user drops `ops-plan.pdf` in the session and says "take it in, but keep only the pilot section, and the depot count is 11, not 9".
+1. The session records the PDF as a source and publishes its Inbox row (Done), then writes the row *Ops plan (changed)*: Kind Changed, Changed from the PDF's row, What changed `Dropped: Hiring (section 3)`, `Dropped: Appendix A (budget)`, `Altered: depot count 9 → 11`, Brain Status New, the pilot section as its body. Nothing else is written.
+2. In Notion the user fixes a date in the row's body.
+3. Next day, in the session: "go". The skill reads the row, edit included, writes its source (`checked_from` = the PDF's source, `changes` the three lines) and shows one part, Pilot rollout: what the brain has, what is added (the kickoff date as the user fixed it), Q1 on the depot count (9 → 11, citing the row), then "Accept?". On "a" and "yes", the items go in citing the row's source; the PDF's source is cited by none of them and is reached through `checked_from`.
+
+Had the user set the row Ready instead, a catch-up without them would have written the same source, the new notes `draft`, the part's `review_notes` and the depot question pending, for the next session.
+
+**12.11 Cases.**
+
+| Case | Result |
+|---|---|
+| A change asked in the session | the original recorded as a source; one row, Brain Status New; nothing taken in |
+| Keep as document, Only keep filled | as above, with Document asked on the row; on "go" or Ready, the row's items and its `whole` Document go in |
+| Keep as document, Only keep empty | the whole input as a `whole` Document, `reviewed`; no row (0049) |
+| The user edits the row before "go" | the row as it is at "go" is the source |
+| "go" | ingested by subject (§7.3), items citing the row; the original linked by `checked_from` |
+| Set Ready, attended catch-up | as "go" |
+| Set Ready, unattended | taken in after 2 minutes; notes `draft`, the rest waits; a `whole` Document `reviewed` |
+| Never confirmed | nothing taken in; named under Needs you by an attended catch-up |
+| The original set back to Ready while its row waits | skipped, Needs you |
+| A note or proposal citing an original whose checked source exists | refused, `CHECKED_ORIGINAL` |
+| The same row read twice | `DUPLICATE_SOURCE`; after an edit, a new version |
+| Minutes, a capture | no row: their own checks (§12.9) |
+
+## 13. A task kept as a document (0.16.0, decision [0100](../decisions/0100-keep-a-task-as-a-document.md), moved into 0.16.0 by [0102](../decisions/0102-one-release-for-0-16-0-and-0-17-0.md))
+
+What a task gathers (the research done for it, the answer to the question it tracks) can be kept as durable knowledge: the task page becomes a source, then a whole Document, and the brain offers what it already holds on the subject in one section at the end. What the CLI does is in cli.md §5.5, §5.14.1, §5.14.2 and §5.14.4, what is stored in schema §4 (source kind `task`, reference `question`) and §11 (`add_to_note` `section`), the Notion properties in docs/notion-space-design.md §3.12 and §3.14, the connect step in setup.md §6.2.2.
+
+**13.1 Two ways (0100 §1).** Any task can be kept, tracked or not:
+- **In the session:** "keep the go-live task as a document". The skill finds the task by its title in the Tasks database (asking which one when several match), says what it will write, and writes it on the user's yes.
+- **With the flag:** the **Keep as document** button on a task ticks **Document asked**; the next catch-up keeps it and clears the box, as on the Inbox (0049). The snapshot carries the ticked rows (cli §5.14.1), and `sync plan` lists them as `task_documents` (cli §5.14.2).
+
+**13.2 Modules (0100 §5).** It needs the Documents module: with Documents off nothing is kept, the session says so ("Documents is off, so the task can't be kept"), and a ticked box is `ignored`, `MODULE_OFF`, and stays ticked. The flag needs the Tasks module and the Document asked mapping (`notion.tasks.properties.document_asked`, schema §12): on a tasks database you mapped yourself without it, the connect step offers to add it and the button (setup.md §6.2.2), and without them you ask in the session. In the session the skill reads the one task the user names, whatever the Tasks module; with Tasks off, the Document's Task relation is left out, as any relation to a module that is off (cli §5.14.4).
+
+**13.3 The task page becomes a source (0100 §2).** The skill reads the page through the MCP and records it with `note new`, as it records an Inbox capture:
+- **key** `notion:<task page id>`, **kind** `task`, **title** the task's Name, **body** the page body as Markdown, word for word (the properties are not part of it);
+- `area` and `projects`: the task's Area and Project, mapped to the brain's notes by their `notion` (a page the brain doesn't know is left out);
+- **no Inbox row:** `sync render` never selects a `task` source, and it has no `notion` (the page is the task's, in Tasks, named by the key).
+
+A page with an empty body has nothing to keep: the session says so, and a ticked box is cleared with the run's report naming it ("nothing to keep on *Check go-live with hosting*"). Because the page is a source, answers cite it like any input, and the exclusion rules of §5 and eligibility.md apply to it.
+
+**13.4 The Document.** In the same batch, a Document with `origin: whole`, `sources` = exactly the task source, its body the source's body byte for byte, `reviewed` at once (it is the user's own text, not the brain's claim), and:
+- `area` and `projects` the task source's: **its project or area**;
+- `question`: **the question the task tracks** (0099 §3), the open or answered question whose `task` is the page, when there is one;
+- **back to the task:** its source's key names the page, and in Notion the Documents row's **Task** relation points to it (cli §5.14.4).
+
+The question has no Notion page (0099), so its link stays in Git; the Document shows on the project's or area's page with the other Documents.
+
+**13.5 Keeping it again.** `note new` dedupes a `task` source by its key, as it does a capture (cli §5.5):
+- **The page has not changed:** nothing is written (`DUPLICATE_SOURCE`, and the Document `ALREADY_KEPT`). The session says it is already kept and asks the From the brain question again (§13.6), with only the candidates its section doesn't hold yet; a ticked box is cleared.
+- **The page changed:** a new version of the source, `replaces` = the earlier one (schema §4, "Versions"), and an `update_body` on the Document whose `content` is the new text followed by the Document's From the brain section as it is. It replaces what the brain holds, so it is **asked** (§7.2): in the session at once, showing the changed lines (`brain source diff`, cli §5.19); after a run without the user, as a waiting question. The Document never changes without the user's yes.
+
+**13.6 From the brain (0100 §3).** After keeping it, the session asks one question: whether to add what the brain already holds on the subject. Candidates, at most five, each one line that says what the note holds on the subject, with a link to it:
+1. the tracked question's answer, when it has one (citing the question, or its `answer_note`);
+2. the decisions, Documents and other notes that `brain query --candidates "<the task's title>" --limit 5` returns, read with `brain query --read`: **eligible only** (0077): a note in the awaiting-cleanup form is no candidate, since a line could not name it, and neither is the Document itself or its source.
+
+```
+Keep "Check go-live with hosting" as a document: done (Pilot rollout).
+From the brain, add to its end?
+  a) The site goes live on 4 March in three regions (decision: Go-live date)
+  b) Hosting contract renewed to March 2028 (Document: Hosting contract)
+  All, all except …, none, or later?
+```
+
+The lines the user says yes to are one `add_to_note` with `section: from_the_brain` (schema §11), approved in chat: it adds them in the **From the brain** section at the end of the body, one line per item, each ending with a relative link to the note it cites, its `passages` the cited note's id and the passage references of the lines it restates. Your text above is never changed:
+
+```markdown
+<the task page's text, word for word>
+
+<!-- from-the-brain -->
+## From the brain
+
+- The site goes live on 4 March in three regions ([Go-live date](../decisions/2026-11-02-go-live-date.md))
+```
+
+The section is created by the first lines added and always stays last; later lines are added at its end. "None" adds nothing; "later" writes the `add_to_note` pending, asked with the waiting questions (§7.5). No eligible candidate: no question.
+
+**13.7 Without the user (0100 §4).** A scheduled catch-up that finds a ticked Document asked keeps the task right away (§13.3, §13.4), since the user's own text needs no decision, clears the box, and writes the From the brain question as a pending `add_to_note` for the next session (no candidate: none). A changed page kept again writes its `update_body` pending (§13.5). With Documents off the box stays ticked (§13.2). Nothing else of the task is read or changed: its status, due date and relations stay the user's.
+
+**13.8 Example: a tracked question's task.** The brain holds the open question "Can the site go live by the end of March?", tracked by the task *Check go-live with hosting* in the project Website refresh (0099). The user writes their findings on the task page.
+- **From the session:** "keep the go-live task as a document". The skill reads the page, writes the `task` source (Website refresh, the page's text) and the `whole` Document (`reviewed`, Website refresh, `question` = the question, `sources` = the task source), then asks the From the brain question; on "a", it approves an `add_to_note` that adds one line citing the go-live decision. The publish creates the Documents row with Project Website refresh, Origin Kept and Task the task page.
+- **From the flag:** the user clicks Keep as document on the task. The next scheduled catch-up writes the same source and Document, unticks the box, and writes the From the brain `add_to_note` pending. The next session asks it with the waiting questions.
+- **Kept again** after the user adds a paragraph to the page: a new version of the source and an `update_body` (the new text, then the From the brain section as it is), asked before it changes the Document.
