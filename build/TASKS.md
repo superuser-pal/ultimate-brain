@@ -1059,7 +1059,7 @@ Easy setup on Windows and Mac, from the first beta tester's Windows session (dec
 
 ## 0.16.0 — One place to decide (decisions 0096, 0098)
 
-### CC-304 · A brain keeps its notes in LF on Windows: .gitattributes from init and upgrade · `review`
+### CC-304 · A brain keeps its notes in LF on Windows: .gitattributes from init and upgrade · `done` (#409)
 **Release:** 0.15.2
 **Changelog:** A brain keeps its notes in LF line endings on Windows: `brain init` writes a `.gitattributes`, and `brain upgrade` adds it to an existing brain.
 **Output:** the user's yes of 2026-11-16 to a `.gitattributes` in the brain template (raised by CC-292's Windows job, decision 0097 §4). `templates/brain/gitattributes` (`* text=auto eol=lf`), written by `init` as `.gitattributes` like `gitignore` (spec/cli.md §5.1 step 3); `brain upgrade` step 1d puts the line first in an existing `.gitattributes`, so the user's own lines still win, or creates it (§5.15), as step 1c does for `.gitignore`; the test package roots carry the template file.
