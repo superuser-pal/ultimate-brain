@@ -1,5 +1,11 @@
 #!/bin/sh
 
+# A commit on a detached HEAD is on no branch, so the next push sends nothing and the PR keeps its old head (CC-303). A rebase commits detached by design.
+if ! git symbolic-ref -q HEAD >/dev/null && [ ! -d "$(git rev-parse --git-path rebase-merge)" ] && [ ! -d "$(git rev-parse --git-path rebase-apply)" ]; then
+  echo "HEAD is detached: this commit would be on no branch. Go back to the task branch first (git checkout <branch>; git branch --list 'claude/*' names it)." >&2
+  exit 1
+fi
+
 node scripts/leak-check.mjs --staged || exit 1
 # .agents/skills/ is a vendored fork release, never edited here (spec/skills-delivery.md §9.3); the check reads the working tree.
 if git diff --cached --name-only | grep -q '^\.agents/skills/'; then
