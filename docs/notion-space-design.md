@@ -68,7 +68,7 @@ Every database that mirrors a brain note has three kinds of properties. Each pro
 
 | Owner | Meaning | Examples | Flows |
 |---|---|---|---|
-| **Brain** | Knowledge the brain maintains | Summary, Role, Client, Deadline, Assessment, Supersedes | Brain → Notion. Your edits in Notion are applied as your corrections on the next sync (0023, 0027; §8) |
+| **Brain** | Knowledge the brain maintains | Summary, Role, Client, Deadline, Assessment, Supersedes | Brain → Notion. An edit in Notion is asked in your agent session before the brain takes it: accepted, it is applied as your correction; rejected, the next publish puts the brain's value back (0023, 0027, [0101](../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §4; §8) |
 | **You** | Operational fields | Status, Priority, Progress, Lifecycle, Archived, Brain status | Notion → brain as pointers; the brain never writes them |
 | **System** | Bridge plumbing | Brain ID, Last synced, Created time, Last edited time | Brain → Notion only (the two timestamps are filled by Notion itself). Never edit |
 
@@ -108,7 +108,7 @@ Ongoing responsibilities (clients, health, learning…).
 
 | Property | Type | Owner |
 |---|---|---|
-| Domain | Relation → Domains, two-way with Areas, Limit: 1 page (in every space, 0065; the brain reads it with the Domains module on) | Brain; your edits are corrections |
+| Domain | Relation → Domains, two-way with Areas, Limit: 1 page (in every space, 0065; the brain reads it with the Domains module on) | Brain; your edits are asked as corrections |
 | Goals | Relation → Goals | You |
 | Projects | Relation → Projects | You |
 | Meetings | Relation → Meetings (two-way with Area) | Brain |
@@ -334,7 +334,7 @@ Minimal, so the brain can send action items (0018). If you already have a tasks 
 | Property | Type | Notes |
 |---|---|---|
 | Name | Title | |
-| Status | Status: To Do, Doing, Waiting On, Someday, Done, Won't Do | The brain sets `new_task_status` on create and never reads it back. Waiting On and Someday sit in any group except Complete and are Notion-only |
+| Status | Status: To Do, Doing, Waiting On, Someday, Done, Won't Do | The brain sets `new_task_status` on create. It reads a status back only on a task that tracks an open question, and asks you in the session when that task is finished or gone ([0101](../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §6); it stores none. Waiting On and Someday sit in any group except Complete and are Notion-only |
 | Due | Date | |
 | Project | Relation → Projects | |
 | Area | Relation → Areas | |
@@ -587,9 +587,9 @@ See "After building" in [notion/CHECKLIST.md](../notion/CHECKLIST.md): connect t
 
 ## 8. Resolved questions
 
-1. **Editing a brain-owned property in Notion:** applied as your correction on the next sync (0023). Key facts get a timeline entry; Name, Summary, Why and relations are replaced in place; Assessment, Supersedes and similar judgments go through a proposal instead, asked in the agent session (0027, [0096](../decisions/0096-one-place-to-decide.md)).
+1. **Editing a brain-owned property in Notion:** the next sync finds the edit and the next agent session asks it, with the other corrections from Notion, as one question; nothing is applied before your yes, since the brain can't tell your edit from one made by Notion AI or another tool, and a rejected edit is put back by the next publish (0023, [0101](../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §4). Once accepted: Key facts get a timeline entry; Name, Summary, Why and relations are replaced in place; Assessment, Supersedes and similar judgments go through a proposal instead, asked in the agent session (0027, [0096](../decisions/0096-one-place-to-decide.md)).
 2. **Meeting notes location:** they were loose pages. The Meetings database is their home from now on; move only recent meetings you still care about (last 1–2 months) and mark them Reviewed (0024).
-3. **Plan tier:** nothing here needs Notion Business. Revisit only for external sharing.
+3. **Plan tier:** the databases, pages and sync need no paid plan. Brain Assistant and its buttons need Business or Enterprise with Notion credits, because Custom Agents run on credits; Notion AI meeting notes need Business or Enterprise ([0101](../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §7, read from Notion's help pages on 2026-11-16; check them again before setup text states a plan or a price).
 
 ## 9. Minutes format prompt (for the Meetings template)
 
