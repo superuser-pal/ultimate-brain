@@ -126,6 +126,17 @@ Ongoing responsibilities (clients, health, learning…).
 | Logging level | Select: Tasks only, Tasks + final outputs, Full durable record, Custom. Empty = Tasks + final outputs (§3.19) | You (as Workflow) |
 | Log artifacts | Multi-select: Briefs, Plans, Specifications, Decisions, Final deliverables. Read only with Custom (§3.19) | You (as Workflow) |
 
+<details>
+<summary>Up to 0.15.x (history; removed by the 0.16.0 migration, 0099)</summary>
+
+| Property | Type | Owner |
+|---|---|---|
+| Decisions | Relation → Decisions (two-way with Area) | Brain (0034) |
+| Questions | Relation → Questions (two-way with Area) | Brain (0034) |
+
+</details>
+
+
 Page body: a toggle heading **Brief** (brain-written, 0041: the area's projects, reviewed decisions, and open questions and risks), then the template's linked views and "My notes". The publish appends the toggle at the end of a page that has none; drag it to the top once. Connected work adds **Workflow**, and a linked repo with tasks tracked in the repo adds **`Repo tasks · <repo>`** (§2).
 
 ### Domains database (0055; in every space, 0065)
@@ -185,6 +196,17 @@ Notion-owned entirely (0020). Not mirrored as brain notes; the brain snapshots t
 | Log artifacts | Multi-select: Briefs, Plans, Specifications, Decisions, Final deliverables. Read only with Custom (§3.19) | You (as Workflow) |
 | Last edited time | Last edited time | System (Notion fills it; "gone quiet" view) |
 
+<details>
+<summary>Up to 0.15.x (history; removed by the 0.16.0 migration, 0099)</summary>
+
+| Property | Type | Owner |
+|---|---|---|
+| Decisions | Relation → Decisions | Brain |
+| Questions | Relation → Questions | Brain |
+
+</details>
+
+
 Page body: toggle headings **Brief** and **Decision log** (brain-written, 0026), then the template's linked views and "My notes". Connected work adds **Workflow**, and a linked repo with tasks tracked in the repo adds **`Repo tasks · <repo>`** (§2).
 
 ### 3.5 Meetings
@@ -201,6 +223,17 @@ The inbound source. Your Notion AI meeting notes live here (0012, 0007).
 | Ingested At | Date | System |
 | Tasks | Relation → Tasks (two-way with Meeting) | You |
 | Brain ID | Text | System (the meeting record's id, `mtg-…`) |
+
+<details>
+<summary>Up to 0.15.x (history; removed by the 0.16.0 migration, 0099)</summary>
+
+| Property | Type | Owner |
+|---|---|---|
+| Decisions | Relation → Decisions | Brain |
+| Questions | Relation → Questions | Brain |
+
+</details>
+
 
 The brain **never edits the meeting page body** (0007). Instead of publishing a second summary, it fills the relations (Attendees, Project, Area) and links the created tasks; the meeting's decisions and questions show on its project's page (0099). Your reviewed minutes stay the human summary; the brain's meeting note is for agents.
 
@@ -226,14 +259,13 @@ Clients, partners, suppliers, your employer. One canonical entity database (your
 | Archived | Checkbox (0070: Orgs have no Lifecycle; this closes one) | You |
 | Meetings via projects | Rollup: Projects → Meetings, show original | You (derived, Notion-only) |
 
-### 3.8 Decisions and 3.9 Questions (retired in 0.16.0)
+### 3.8 Decisions (retired in 0.16.0)
 
-There are no Decisions or Questions databases from 0.16.0 ([0099](../decisions/0099-notion-without-decisions-and-questions.md)), and the Knowledge module that held them is retired. Decisions and questions stay notes in Git: a project's or area's reviewed decisions and its open questions and risks show in its **Brief** and **Decision log** (spec/schema.md §16), and in reports; a decision with no project or area is reached through an Ask or the agent session. A question or risk you say to follow up becomes a **Task** with Kind Question or Risk (§3.12; spec/capture-and-review.md §6.4). Promote to document is asked in the agent session (§3.14). The 0.16.0 migration reads each question's Status once (spec/cli.md §5.14.9), then archives both databases with their views and relations, adds Kind and the Questions and Risks tabs to Tasks, and removes `decisions` and `questions` from `brain.json`'s `notion.databases`; nothing is deleted. Their design up to 0.15.x follows as history, unchanged: the Notion prompts and migrations that build them still exist until CC-299 retires them.
+There are no Decisions or Questions databases from 0.16.0 ([0099](../decisions/0099-notion-without-decisions-and-questions.md)), and the Knowledge module that held them is retired. Decisions and questions stay notes in Git: a project's or area's reviewed decisions and its open questions and risks show in its **Brief** and **Decision log** (spec/schema.md §16), and in reports; a decision with no project or area is reached through an Ask or the agent session. A question or risk you say to follow up becomes a **Task** with Kind Question or Risk (§3.12; spec/capture-and-review.md §6.4). Promote to document is asked in the agent session (§3.14). The 0.16.0 migration reads each question's Status once (spec/cli.md §5.14.9), then archives both databases with their views and relations, adds Kind and the Questions and Risks tabs to Tasks, and removes `decisions` and `questions` from `brain.json`'s `notion.databases`; nothing is deleted. The design of each up to 0.15.x follows as history, here and in §3.9, unchanged: the Notion prompts and migrations that build them still exist until CC-299 retires them.
 
 <details>
-<summary>The Decisions and Questions databases up to 0.15.x (history)</summary>
+<summary>The Decisions database up to 0.15.x (history)</summary>
 
-#### Decisions
 Created by the brain only.
 
 | Property | Type | Owner |
@@ -251,7 +283,15 @@ Created by the brain only.
 
 Page body: context, decision, consequences, sources. `^[inferred]` statements shown with an "AI inference" label (0004).
 
-#### Questions
+</details>
+
+### 3.9 Questions (retired in 0.16.0)
+
+There is no Questions database from 0.16.0 (§3.8, [0099](../decisions/0099-notion-without-decisions-and-questions.md)): a question or risk you follow up is a Task with Kind Question or Risk (§3.12), and the Status you set on a row before is read once by the migration. Its design up to 0.15.x follows as history, unchanged.
+
+<details>
+<summary>The Questions database up to 0.15.x (history)</summary>
+
 Open questions and risks raised in meetings.
 
 | Property | Type | Owner |
@@ -319,6 +359,17 @@ Everything that came into the brain except meetings, which have their own databa
 | Last Synced | Date (with time) | System |
 | Created | Created time | System |
 
+<details>
+<summary>Up to 0.15.x (history; removed by the 0.16.0 migration, 0099)</summary>
+
+| Property | Type | Owner |
+|---|---|---|
+| Decisions | Relation → Decisions (two-way with Sources) | Brain |
+| Questions | Relation → Questions (two-way with Sources) | Brain |
+
+</details>
+
+
 **The weekly review (Kind Weekly, 0.16.0, [0096](../decisions/0096-one-place-to-decide.md); [spec/weekly-review.md](../spec/weekly-review.md)).** The brain writes one row per ISO week: Name `Week of <D Mon YYYY>` (the Monday), Brain ID the weekly report's id, the page body the report itself. A rerun in the same week updates that row. It arrives with Brain Status **New** and the brain sets it **Done** once every proposal its decisions name is decided and applied or closed; you decide them in Claude Code or Codex ("what needs my decision"), and a task item on the task itself. It is never taken in as an input, and it needs neither the Documents nor the Reports module.
 
 **Retired in 0.6.0 (0048, 0049):** Full text (Keep as document replaces it), Refresh report (an Ask row is always a new report), and the Brain Status options Processed (now Done) and Skipped (rows moved to Done). Migration 0010 leaves the two old properties unused for you to delete.
@@ -371,6 +422,16 @@ A new version of a kept file proposes the changed lines to its Documents (an `up
 | What to fix | Text | You, on a report: what it gets wrong; the brain turns it into proposals, asked in the agent session ([0096](../decisions/0096-one-place-to-decide.md)), clears it, and refreshes the report once you accept them (0045) |
 | Created time | Created time | System (Notion fills it) |
 | Last edited time | Last edited time | System (Notion fills it; sorts "What did we keep?") |
+
+<details>
+<summary>Up to 0.15.x (history; removed by the 0.16.0 migration, 0099)</summary>
+
+| Property | Type | Owner |
+|---|---|---|
+| From decision | Relation → Decisions (two-way with Documents) | Brain: on a promoted Document |
+
+</details>
+
 
 Plus the common properties (a report leaves Summary and Lifecycle empty). Page body: the kept text (brain-written), on a promoted Document yours after the first write, on a report the brain's six sections (Where it stands, Timeline, Decisions in force, Open questions and risks, People involved, Gaps). Accepted, Accepted at and the **Accept** button are in §3.17.
 
