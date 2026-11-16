@@ -5,6 +5,7 @@
 **Release:** 0.17.0
 **Amends:** [0049](0049-documents.md) (Keep as document also works on a task); [0099](0099-notion-without-decisions-and-questions.md) §4 (Tasks gains Document asked and the Keep as document button, beside Kind); [0061](0061-roadmap-and-launch-boundary.md) (0.17.0 holds a second feature after the cutoff)
 **Keeps:** [0096](0096-one-place-to-decide.md) §4 (work done without you only queues questions); [0098](0098-agree-by-subject-and-check-a-changed-document.md) §4 to §7 (a changed document is checked before it goes in); [0077](0077-trust-repair-in-0-13-0.md) (every claim names its passages, and excluded inputs give no evidence); a whole Document is the input's text, word for word (0049, spec/schema.md §4 reference)
+**Amended by:** [0102](0102-one-release-for-0-16-0-and-0-17-0.md) (2026-11-16): ships in 0.16.0, not 0.17.0 (§6)
 
 ## Context
 
