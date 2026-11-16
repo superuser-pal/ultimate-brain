@@ -345,6 +345,10 @@
                 "kind": {
                   "type": "string",
                   "description": "The Tasks database's Kind select (Task, Question, Risk; decision 0099 §4, schema.md §12). Empty or absent: the database has none, and a task that tracks a question or risk starts its title with 'Question: ' or 'Risk: '."
+                },
+                "document_asked": {
+                  "type": "string",
+                  "description": "The Tasks database's Document asked checkbox, ticked by the Keep as document button (decision 0100, schema.md §12). Empty or absent: the database has none, and a task is kept as a document only when you ask in the session."
                 }
               }
             },
