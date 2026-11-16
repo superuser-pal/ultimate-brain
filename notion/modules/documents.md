@@ -1,6 +1,6 @@
 # Documents
 
-Keep a document, or part of one, as a page you can read, linked to its source, project and area; read what the brain learned (ideas, methods, definitions: learned Documents, concepts before 0.9.1); promote a decision to a page you write in (decisions 0048, 0049, 0071; docs/notion-space-design.md §3.14). Off by default.
+Keep a document, or part of one, as a page you can read, linked to its source, project and area; keep a task's page the same way (decision 0100); read what the brain learned (ideas, methods, definitions: learned Documents, concepts before 0.9.1); promote a decision to a page you write in (decisions 0048, 0049, 0071; docs/notion-space-design.md §3.14). Off by default.
 
 ## Turning it on
 
@@ -16,7 +16,8 @@ Keep a document, or part of one, as a page you can read, linked to its source, p
 | Inbox: add **Document asked** (checkbox) and **Only keep** (text) | agent |
 | Documents: add **Accepted** (checkbox) and **Accepted at** (date, with time) (0054) | agent |
 | Two-way relations: Inbox "Documents" ↔ Documents "Sources"; Documents "Project" ↔ Projects "Documents"; Documents "Area" ↔ Areas "Documents" | agent |
-| Descriptions per [Prompt 5](../prompts/05-ownership.md): Document asked "Owner: you, through the Keep as document button. Waiting for the brain; it clears it."; Only keep "Owner: you. Only this part is kept as a Document ('the requirements table'); empty = the whole input."; Accepted and Accepted at "Owner: you, through the Accept button. The brain clears them once it has taken the accepted text in."; on Documents, Brain ID, Last Synced, Created time and Last edited time "Owner: system. Do not edit.", Lifecycle "Owner: you.", the rest "Owner: brain." | agent |
+| With the Tasks module on: a one-way relation Documents "Task" → Tasks (no property on Tasks), so a Document kept from a task links back to it (decision 0100). Tasks already has Document asked and the Keep as document button ([tasks.md](tasks.md)) | agent |
+| Descriptions per [Prompt 5](../prompts/05-ownership.md): Document asked "Owner: you, through the Keep as document button. Waiting for the brain; it clears it."; Only keep "Owner: you. Only this part goes in, as a changed version you check first ('the requirements table'); empty = the whole input."; Task "Owner: brain. On a Document kept from a task: that task. Written by the brain only."; Accepted and Accepted at "Owner: you, through the Accept button. The brain clears them once it has taken the accepted text in."; on Documents, Brain ID, Last Synced, Created time and Last edited time "Owner: system. Do not edit.", Lifecycle "Owner: you.", the rest "Owner: brain." | agent |
 | Record the database id: `brain config set notion.databases.documents '"<id>"'` | agent |
 
 ### 3 · Views
@@ -40,7 +41,8 @@ Keep a document, or part of one, as a page you can read, linked to its source, p
 - [ ] Brain Data holds a Documents database with its relations; `brain modules` shows `documents` on with nothing missing.
 - [ ] Clicking **Keep as document** on an Inbox row ticks Document asked and sets Brain Status to Ready.
 - [ ] Knowledge has a Documents tab; a new project has a Documents view under "What do we know?".
-- [ ] After the next catch-up, the row's Document asked is cleared and its Documents relation lists the new page.
+- [ ] After the next catch-up, the row's Document asked is cleared and its Documents relation lists the new page. With Only keep filled, the brain first writes the kept part to the Inbox as a changed version (Kind Changed) for you to check, and only that part goes in (decision 0098 §4).
+- [ ] (Tasks) Documents has Task, and Tasks has no new property for it.
 - [ ] (Brain Assistant) **Write up** on a promoted Document gives Purpose, Main content, Open questions and Sources and changes no property; a second click keeps your edit and adds a toggle "Proposed revision". **Accept** ticks Accepted and sets Accepted at; after the next catch-up shows the text and you confirm, the Git Document holds the text and the box is cleared.
 
 ## Turning it off

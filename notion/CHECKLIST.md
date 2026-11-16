@@ -16,9 +16,9 @@ The space is a core (Inbox, Meetings, Projects, Areas, People) plus the modules 
 
 - [ ] **Domains:** group Areas by the work or life context they belong to. The Domains database is built either way (decision 0065); this choice is whether the brain uses it
 - [x] **Orgs:** client and partner organizations
-- [ ] **Documents:** keep a document, or part of one, as a page
+- [ ] **Documents:** keep a document, or part of one, as a page, checked first when only part is kept; with Tasks, keep a task's page as one too
 - [ ] **Reports:** ask the brain in the Inbox, get a report you can refresh
-- [ ] **Tasks:** action items as Notion tasks, and the questions and risks you follow up (leave it off if you'll map your own tasks database: [modules/tasks.md](modules/tasks.md))
+- [ ] **Tasks:** action items as Notion tasks, the questions and risks you follow up, and the Keep as document button on a task (leave it off if you'll map your own tasks database: [modules/tasks.md](modules/tasks.md))
 - [ ] **Planning:** Goals and Key Results
 
 **How the prompts follow your choice.** A line that starts with a module in brackets, such as `[Planning]`, belongs to that module. Before pasting a prompt, **delete every line tagged with a module you didn't choose**. Leave the tags on the other lines: each prompt tells Notion AI to ignore them. A line with two tags needs both modules. Untagged lines are Core: keep them all.

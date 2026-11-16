@@ -15,9 +15,9 @@ On the page "Brain Data", create these full-page databases with exactly these pr
 5. "Meetings": Name (title), Date (date), Brain Status (select: Not Reviewed, Reviewed, Ingested, Skipped; default Not Reviewed), Ingested At (date), Brain ID (text).
 6. "People": Name (title), Summary (text), Role (text), Email (email), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Brain ID (text), Last Synced (date).
 [Orgs] 7. "Orgs": Name (title), Summary (text), Relationship (select: Client, Prospect, Partner, Supplier, Employer, Other), Website (url), Archived (checkbox), Brain ID (text), Last Synced (date).
-8. "Inbox": Name (title), Kind (select: Capture, File, Email, Chat, Note, Ask, Catch-up, Weekly; default Capture), Summary (text), Brain Status (select: New, Ready, Done; default New), Brain ID (text), Last Synced (date), Created (created time).
+8. "Inbox": Name (title), Kind (select: Capture, File, Email, Chat, Note, Ask, Catch-up, Weekly, Changed; default Capture), Summary (text), What changed (text), Brain Status (select: New, Ready, Done; default New), Brain ID (text), Last Synced (date), Created (created time).
 [Documents] Also in "Inbox": Document asked (checkbox), Only keep (text).
-[Tasks] 9. "Tasks": Name (title), Status (status: To Do, Doing, Waiting On, Someday, Done; put Waiting On and Someday in any group except Complete), Due (date), Kind (select: Task, Question, Risk), Brain ID (text), Last edited time (last edited time).
+[Tasks] 9. "Tasks": Name (title), Status (status: To Do, Doing, Waiting On, Someday, Done; put Waiting On and Someday in any group except Complete), Due (date), Kind (select: Task, Question, Risk), Document asked (checkbox), Brain ID (text), Last edited time (last edited time).
 [Documents] 10. "Documents": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Origin (select: Kept, Learned, Report, Promoted, Workflow), Brain ID (text), Last Synced (date), Created time (created time), Last edited time (last edited time).
 [Documents] Also in "Documents": Accepted (checkbox), Accepted at (date, with time).
 [Reports] Also in "Documents": Refresh asked (checkbox), What to fix (text).
@@ -27,7 +27,7 @@ On the page "Brain Data", create these full-page databases with exactly these pr
 ## Verify
 - [ ] (Tasks) Add Won't Do by hand in the Complete status group.
 - [ ] "Brain Data" holds one database per numbered line you kept, and nothing else: 11 with every module, 6 with Core alone (Areas, Projects, Meetings, People, Inbox, and Domains, which every space has: decision 0065). There is no Review, Decisions or Questions database since 0.16.0 (decisions 0096, 0099): you decide in your agent session, and a question or risk you follow up is a task with its Kind.
-- [ ] Every property name is spelled exactly as above, including capitals and spaces ("Brain ID", "Last Synced", "Document asked", "Only keep"). The brain finds properties by name.
+- [ ] Every property name is spelled exactly as above, including capitals and spaces ("Brain ID", "Last Synced", "Document asked", "Only keep", "What changed"). The brain finds properties by name.
 - [ ] Select options match exactly, in that order. Brain Status in Meetings defaults to Not Reviewed; Kind in Inbox defaults to Capture; Brain Status in Inbox defaults to New.
 - [ ] Areas and Projects both have Workflow, Work type, Logging level (selects) and Log artifacts (multi-select) with the options above, and no option selected anywhere (decision 0059: every page starts as Standard).
 - [ ] No extra properties were added (Notion AI sometimes adds "Tags" or "Created by"; delete them).
