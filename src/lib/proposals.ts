@@ -5,7 +5,8 @@ import { BrainError } from "./errors.ts";
 import { serializeNewFile } from "./frontmatter.ts";
 import { generateId, generateItemId } from "./ids.ts";
 import { assertNoProblems, isRecord, unknownKeys, type InputProblem } from "./input.ts";
-import { assertStagedValid, checkNoteInput, stageNotes, type CreatedNote, type NoteInput } from "./note-new.ts";
+import { assertStagedValid, checkedVersions, checkNoteInput, stageNotes, type CreatedNote, type NoteInput } from "./note-new.ts";
+import { contentLines, linkedPath, sectionLine, splitSection } from "./from-the-brain.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 import { checkNotionChange, defaultTitle, duplicateOf, resolveSetField } from "./notion-change.ts";
 import { newNotePath } from "./paths.ts";
@@ -21,7 +22,7 @@ export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "update_body", "add
 export const PROPOSAL_STATUSES = ["pending", "approved", "rejected", "edited", "applied", "closed"] as const;
 
 /** Input keys of `proposal new`: the schema §11 fields the CLI does not set (spec/cli.md §5.6). */
-const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding", "fingerprint", "evidence", "passages", "note_passages", "note_flags", "unsure", "repeat", "line_before", "line_after", "correction", "needs_clarification", "subject"];
+const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding", "fingerprint", "evidence", "passages", "note_passages", "note_flags", "unsure", "repeat", "line_before", "line_after", "correction", "needs_clarification", "subject", "section"];
 const ID = /^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{8}$/;
 const KNOWLEDGE_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 const ADD_LINK_FIELDS = new Set(["aliases", "tags", "projects", "people", "attendees", "deciders"]);
@@ -46,7 +47,7 @@ export interface CreatedProposal {
 
 export interface SkippedProposal {
   input_index: number;
-  reason: "DUPLICATE_PENDING" | "ALREADY_LINKED" | "NOTHING_TO_REVIEW" | "ALREADY_ANSWERED" | "NO_CHANGE" | "SOURCE_EXCLUDED";
+  reason: "DUPLICATE_PENDING" | "ALREADY_LINKED" | "NOTHING_TO_REVIEW" | "ALREADY_ANSWERED" | "NO_CHANGE" | "SOURCE_EXCLUDED" | "ALREADY_ADDED";
   existing?: string;
 }
 
@@ -80,6 +81,11 @@ export function stageProposals(
   (list as Array<Record<string, unknown>>).forEach((item, index) => checkPassages(workspace, item, `/proposals/${index}`));
   // The subject an ingest assigned the item to: an existing knowledge note, or a plain name (0098, cli §5.6, schema §11).
   (list as Array<Record<string, unknown>>).forEach((item, index) => checkSubject(workspace, item, `/proposals/${index}`));
+  // An original whose checked version exists is never cited (CHECKED_ORIGINAL, cli §5.6, capture-and-review §12.7).
+  const versions = checkedVersions(workspace.notes);
+  (list as Array<Record<string, unknown>>).forEach((item, index) => checkCheckedOriginal(versions, item, `/proposals/${index}`));
+  // The From the brain section of a Document kept from a task (0100 §3, cli §5.6).
+  (list as Array<Record<string, unknown>>).forEach((item, index) => checkSection(workspace, item, `/proposals/${index}`));
   // One review_notes per source and subject, a part of the ingest; it takes in that part's additions and links (cli §5.6, 0043, 0045, 0098).
   // The sources whose parts have a review_notes in this input: an addition of such a source must name one of its parts.
   const partSources = new Set<string>();
@@ -139,7 +145,15 @@ export function stageProposals(
       }
       // What goes in with a part's yes folds into the part's review_notes: links, additions and new facts. A change that replaces what the
       // brain holds (an update_fact with a current value, an update_body) is never folded since 0.16.0: it is asked (capture-and-review §7.2).
-      const folds = item.kind === "add_link" || item.kind === "add_to_note" || (item.kind === "update_fact" && fields.before === undefined);
+      // A From the brain addition is its own question, never folded (cli §5.6, 0100 §3); a line already in the section is not proposed again.
+      if (item.section !== undefined) {
+        const target = workspace.get(String(fields.target))!;
+        const present = new Set(splitSection(target.body).lines);
+        const lines = contentLines(String(fields.content)).filter((line) => !present.has(line));
+        if (lines.length === 0) { skipped.push({ input_index: index, reason: "ALREADY_ADDED" }); return; }
+        fields.content = lines.join("\n");
+      }
+      const folds = item.section === undefined && (item.kind === "add_link" || item.kind === "add_to_note" || (item.kind === "update_fact" && fields.before === undefined));
       const review = typeof item.correction === "string" ? reviews.get(`\u0001${item.correction}`) : folds ? reviews.get(partKey(String(fields.source), fields.subject)) : undefined;
       // An addition of a source whose parts are in this input belongs to one of them: it never becomes a question of its own by mistake (§5.6).
       if (folds && typeof item.correction !== "string" && review === undefined && partSources.has(String(fields.source))) assertNoProblems([{ pointer: `${pointer}/subject`, message: `${String(fields.source)} has a review_notes in this input, but none with ${fields.subject === undefined ? "no subject" : `the subject ${String(fields.subject)}`}` }]);
@@ -445,6 +459,52 @@ function checkSubject(workspace: Workspace, item: Record<string, unknown>, point
  * The passages of one input item (cli §5.6, eligibility.md §9.1): required on every kind but `review_notes` (its notes' in `note_passages`,
  * one list per listed note) and `notion_change` (none). Throws INPUT_INVALID or UNKNOWN_ID for the whole batch.
  */
+/**
+ * `CHECKED_ORIGINAL` (cli §5.6, capture-and-review §12.7): once a source with `checked_from` = X exists, no item's `source` is X and none of its
+ * `passages` (or a review_notes' `note_passages`) is X or a passage reference into X: its items cite the checked version.
+ */
+function checkCheckedOriginal(versions: ReadonlyMap<string, string>, item: Record<string, unknown>, pointer: string): void {
+  if (versions.size === 0) return;
+  const refused = (at: string, original: string): never => {
+    const message = `CHECKED_ORIGINAL: ${original} was taken in as its checked version ${versions.get(original)!}; cite that`;
+    throw new BrainError("INPUT_INVALID", `${at} ${message}`, [{ pointer: at, message }]);
+  };
+  const named = (entry: unknown): string | undefined => typeof entry === "string" ? entry.split("#")[0] : undefined;
+  if (typeof item.source === "string" && versions.has(item.source)) refused(`${pointer}/source`, item.source);
+  const lists: Array<[string, unknown]> = [[`${pointer}/passages`, item.passages]];
+  if (isRecord(item.note_passages)) for (const [note, value] of Object.entries(item.note_passages)) lists.push([`${pointer}/note_passages/${note}`, value]);
+  for (const [at, value] of lists) {
+    if (!Array.isArray(value)) continue;
+    value.forEach((entry, position) => { const id = named(entry); if (id !== undefined && versions.has(id)) refused(`${at}/${position}`, id); });
+  }
+}
+
+/**
+ * `section` (cli §5.6, schema §11; 0100 §3): only `from_the_brain`, only on an add_to_note whose target is a whole Document kept from a task;
+ * `content` is lines of the section's form, each linking an existing knowledge note other than the target, and each such note among `passages`.
+ */
+function checkSection(workspace: Workspace, item: Record<string, unknown>, pointer: string): void {
+  if (item.section === undefined) return;
+  const invalid = (key: string, message: string): never => { throw new BrainError("INPUT_INVALID", `${pointer}/${key} ${message}`, [{ pointer: `${pointer}/${key}`, message }]); };
+  if (item.section !== "from_the_brain") invalid("section", "must be from_the_brain");
+  if (item.kind !== "add_to_note") invalid("section", "is only allowed on an add_to_note");
+  const target = typeof item.target === "string" ? workspace.get(item.target) : undefined;
+  if (target === undefined) return; // resolveFields reports an unknown target
+  const sources = target.attributes.sources;
+  const source = Array.isArray(sources) && typeof sources[0] === "string" ? workspace.get(sources[0]) : undefined;
+  if (target.type !== "reference" || target.attributes.origin !== "whole" || source?.attributes.kind !== "task") invalid("target", "a From the brain section goes only on a whole Document kept from a task");
+  if (typeof item.content !== "string" || item.content.trim() === "") invalid("content", "must be one or more lines of the From the brain section");
+  const passages = new Set(Array.isArray(item.passages) ? item.passages.map(String) : []);
+  contentLines(String(item.content)).forEach((line, position) => {
+    const parsed = sectionLine(line);
+    if (parsed === null) invalid("content", `line ${position + 1} is not "- <text> ([<title>](<relative link>))"`);
+    const cited = workspace.notes.find((note) => note.path === linkedPath(target!.path, parsed!.link));
+    if (cited === undefined || !KNOWLEDGE_TYPES.has(cited.type)) invalid("content", `line ${position + 1} links ${parsed!.link}, which is not a knowledge note`);
+    if (cited!.id === target!.id) invalid("content", `line ${position + 1} links the Document itself`);
+    if (!passages.has(cited!.id)) invalid("passages", `must name ${cited!.id}, the note line ${position + 1} cites`);
+  });
+}
+
 function checkPassages(workspace: Workspace, item: Record<string, unknown>, pointer: string): void {
   // An unknown source is reported as such first, not as a passage that names it.
   if (typeof item.source === "string" && ID.test(item.source) && workspace.get(item.source) === undefined) {
