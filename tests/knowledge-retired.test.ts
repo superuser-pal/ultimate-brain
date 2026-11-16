@@ -314,3 +314,35 @@ test("0099: an Inbox row takes Project and Area from a decision its source produ
   assert.ok(String(page.body).includes("See the auth call."), String(page.body));
   assert.doesNotMatch(String(page.body), /5d6e7f8a9b0c4d1e8f2a3b4c5d6e7f8a/);
 });
+
+test("0099: brain config unset removes the two keys for the migration's step 4, and a rerun is success that writes nothing (cli §5.3, §5.14.9)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const config = join(dir, "brain.json");
+  const before = JSON.parse(await readFile(config, "utf8"));
+  for (const key of ["decisions", "questions"]) {
+    const removed = await run(dir, ["config", "unset", `notion.databases.${key}`]);
+    assert.equal(removed.code, 0, removed.stdout);
+    assert.deepEqual(removed.json.data, { path: `notion.databases.${key}`, previous: before.notion.databases[key] });
+  }
+  const after = await readFile(config, "utf8");
+  const parsed = JSON.parse(after);
+  assert.equal(Object.hasOwn(parsed.notion.databases, "decisions") || Object.hasOwn(parsed.notion.databases, "questions"), false);
+  assert.deepEqual(parsed.notion.databases.projects, before.notion.databases.projects, "nothing else changes");
+
+  // The step run again after a partial failure: success, previous null, the file untouched; a missing parent object too.
+  for (const path of ["notion.databases.questions", "notion.nothing_here.questions"]) {
+    const again = await run(dir, ["config", "unset", path]);
+    assert.equal(again.code, 0, again.stdout);
+    assert.deepEqual(again.json.data, { path, previous: null });
+  }
+  assert.equal(await readFile(config, "utf8"), after);
+  assert.equal((await run(dir, ["sync", "plan", "--questions-transition"], { as_of: NOW, rows: [] })).json.error.code, "QUESTIONS_RETIRED");
+
+  assert.equal((await run(dir, ["config", "unset", "schema_version"])).json.error.code, "INPUT_INVALID");
+  assert.equal((await run(dir, ["config", "unset", "notion..databases"])).json.error.code, "USAGE");
+  assert.equal((await run(dir, ["config", "unset"])).json.error.code, "USAGE");
+  // A key the schema requires stays: the result is validated before it is written.
+  const required = await run(dir, ["config", "unset", "owner"]);
+  assert.equal(required.json.error?.code, "INPUT_INVALID", required.stdout);
+  assert.equal(await readFile(config, "utf8"), after);
+});
