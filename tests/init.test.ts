@@ -260,7 +260,7 @@ test("init writes .gitattributes, so Git keeps every text file LF in the working
   assert.match(await readFile(join(target, ".gitattributes"), "utf8"), /^\* text=auto eol=lf$/m);
 });
 
-test("upgrade gives an older brain the LF line in .gitattributes once, keeping the user's lines", async (context) => {
+test("upgrade gives an older brain the LF line in .gitattributes once, first, so the user's own lines still win", async (context) => {
   const dir = await fixtureCopy(context);
   const attributes = join(dir, ".gitattributes");
   await rm(attributes, { force: true });
@@ -272,7 +272,7 @@ test("upgrade gives an older brain the LF line in .gitattributes once, keeping t
   await writeFile(attributes, "*.pdf binary");
   const updated = await brain(["upgrade", "--brain", dir, "--json"]);
   assert.ok(updated.json.data.files.some((entry: any) => entry.path === ".gitattributes" && entry.action === "updated"), JSON.stringify(updated.json.data.files));
-  assert.equal(await readFile(attributes, "utf8"), "*.pdf binary\n* text=auto eol=lf\n");
+  assert.equal(await readFile(attributes, "utf8"), "* text=auto eol=lf\n*.pdf binary\n");
 
   const again = await brain(["upgrade", "--brain", dir, "--json"]);
   assert.equal(again.json.data.files.some((entry: any) => entry.path === ".gitattributes"), false);

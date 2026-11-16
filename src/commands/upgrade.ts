@@ -99,7 +99,7 @@ export const upgradeCommand: Command = {
     const attributesText = (await readOptionalBuffer(join(root, ".gitattributes")))?.toString("utf8") ?? null;
     if (attributesText === null) changes.push({ path: ".gitattributes", action: "created", content: await readFile(join(product.root, "templates/brain/gitattributes"), "utf8") });
     else if (attributesText.split(/\r?\n/).some((line) => line.trim() === LF_ATTRIBUTE)) unchanged += 1;
-    else changes.push({ path: ".gitattributes", action: "updated", content: `${attributesText}${attributesText === "" || attributesText.endsWith("\n") ? "" : "\n"}${LF_ATTRIBUTE}\n` });
+    else changes.push({ path: ".gitattributes", action: "updated", content: `${LF_ATTRIBUTE}\n${attributesText}${attributesText === "" || attributesText.endsWith("\n") ? "" : "\n"}` });
 
     // 0.3.0: Inbox is the former Capture Inbox; 0.6.0: Documents are the former References (0049).
     // Keep each database id, but retire the old key. 0.6.0 also writes the modules block (0048).
