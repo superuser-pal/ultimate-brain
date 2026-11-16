@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { test } from "node:test";
 
 import { rankCandidates, queryWords, type QueryContext } from "../src/lib/query.ts";
@@ -107,7 +107,7 @@ test("query reads the .brain that brain link writes: plain (no context), --proje
   assert.ok("skills" in linkedPlain.json.data.marker.value, "link records the skills it installed in .brain (skills-delivery §6.2)");
   const plain = await brain(["query", "--candidates", "auth", "--repo", plainRepo, ...ARGS]);
   assert.equal(plain.code, 0, plain.stdout);
-  assert.deepEqual(plain.json.data.context, { repo: plainRepo.split("/").pop(), project: null, area: null });
+  assert.deepEqual(plain.json.data.context, { repo: basename(plainRepo), project: null, area: null });
   assert.ok(plain.json.data.candidates.length > 0);
 
   const linkedProject = await brain(["link", projectRepo, "--project", "prj-9x4t1b7e", ...ARGS]);

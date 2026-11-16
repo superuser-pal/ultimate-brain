@@ -4,6 +4,9 @@ import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+
+/** A log line's value as log.ts writes it: quoted, with backslashes and quotes escaped, when it holds a space, a quote or a backslash (Windows paths). */
+const logValue = (value: string): string => /[\s"\\]/.test(value) ? `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"` : value;
 import { test, type TestContext } from "node:test";
 import { promisify } from "node:util";
 
@@ -656,7 +659,7 @@ test("repo refresh --path: a moved kit-linked repo takes its new path, keeps com
   assert.deepEqual(result.json.data, expected);
   const entry = (await readConfig(link.dir)).repos[0];
   assert.deepEqual(entry, { name: "acme-api", path: moved, area: AREA, patterns: ["decisions/**"], never_read: [".env*", "secrets/**"], project: PROJECT, commit: link.head, kit: { sha256: link.hash } });
-  assert.ok((await logOf(link.dir)).includes(`repo-refresh - "acme-api" sha=${link.hash.slice(7, 19)} path=${moved}`));
+  assert.ok((await logOf(link.dir)).includes(`repo-refresh - "acme-api" sha=${link.hash.slice(7, 19)} path=${logValue(moved)}`));
   const changes = await run(link.dir, ["repo", "changes", "acme-api"]);
   assert.deepEqual([changes.json.data.from, changedPaths(changes)], [link.head, []]);
   assert.ok(!codes((await healthOf(link)).checks).includes("PATH_MISSING"));
@@ -673,7 +676,7 @@ test("repo refresh --path: a moved legacy repo with no kit takes its new path an
   });
   assert.deepEqual((await readConfig(dir)).repos, [{ name: "acme-api", path: moved, area: AREA, patterns: ["decisions/**"], commit: head }]);
   const log = await logOf(dir);
-  assert.ok(log.includes(`repo-refresh - "acme-api" path=${moved}`));
+  assert.ok(log.includes(`repo-refresh - "acme-api" path=${logValue(moved)}`));
   assert.ok(!log.includes(`repo-refresh - "acme-api" sha=`));
   assert.deepEqual(changedPaths(await run(dir, ["repo", "changes", "acme-api"])), []);
 });
