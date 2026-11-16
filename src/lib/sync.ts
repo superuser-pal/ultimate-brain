@@ -30,6 +30,7 @@ import { citeLabel, contextFor, publishableNote, requireSuppressions, titleWithh
 import { importedItems } from "./selection.ts";
 import { chainOf, FOLLOW_UP } from "./extract.ts";
 import { wholeDocumentMarkdown } from "./whole-links.ts";
+import { dayMonthYear } from "./weekly-record.ts";
 
 export const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "documents", "review", "inbox"] as const;
 const CREATABLE = new Set(["domains", "areas", "goals", "projects", "people", "orgs"]);
@@ -152,7 +153,7 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
     let note = typeof brainId === "string" && brainId !== "" ? workspace.get(brainId) : noteByNotion(workspace, row.page_id);
     // A report's row is in Documents since 0.9.1 (0071): read only for its requests and wording, as on the Inbox before.
     if (row.database === "documents" && note !== undefined && isReport(note)) { planReport(workspace, row, note, result); continue; }
-    // A weekly review's row (0.15.0, weekly-review.md §2) is read for nothing: a rerun is its refresh, and its requests are ignored.
+    // A weekly review's Documents row, kept from 0.15.x as history (weekly-review.md §2), is read for nothing: its requests are ignored.
     if (row.database === "documents" && note !== undefined && isWeekly(note)) { planWeekly(workspace, row, note, result); continue; }
     if (typeof brainId === "string" && brainId !== "" && note === undefined) { result.conflicts.push(conflict(row, "UNKNOWN_BRAIN_ID", `No note has Brain ID ${brainId}`)); continue; }
     if (note !== undefined && note.attributes.notion !== undefined && note.attributes.notion !== row.page_id) { result.conflicts.push(conflict(row, "NOTION_ID_MISMATCH", `Note ${note.id} belongs to another Notion page`)); continue; }
@@ -381,7 +382,7 @@ function planReport(workspace: Workspace, row: SnapshotRow, note: Note, out: Syn
   if (typeof text === "string" && text.trim() !== "" && text !== last?.text) out.report_fixes.push({ page_id: row.page_id, report: note.id, text });
 }
 
-/** A weekly review's Documents row (weekly-review.md §2): Refresh asked and What to fix are ignored (NOT_A_REPORT), and nothing is planned. */
+/** A weekly review's Documents row from 0.15.x, history since 0.16.0 (weekly-review.md §2): Refresh asked and What to fix are ignored (NOT_A_REPORT), and nothing is planned. */
 function planWeekly(workspace: Workspace, row: SnapshotRow, note: Note, out: SyncPlan): void {
   if (!modulesOf(workspace.config).reports) { out.ignored.push(ignoredRow(row, "MODULE_OFF")); return; }
   if (note.attributes.notion !== undefined && note.attributes.notion !== row.page_id) { out.conflicts.push(conflict(row, "NOTION_ID_MISMATCH", `Weekly review ${note.id} belongs to another Notion page`)); return; }
@@ -796,9 +797,12 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
   const waiting: RenderItem[] = [];
   const modules = modulesOf(workspace.config);
   for (const note of selected) {
-    const database = isReport(note) || isWeekly(note) ? "documents" : DATABASE_FOR_TYPE[note.type]; if (database === undefined || (note.type === "source" && note.attributes.kind === undefined)) continue;
+    // A weekly review is the week's Inbox row, Kind Weekly, whatever the modules (cli §5.34, 0096 §7); a report is a Documents row (0071).
+    const database = isWeekly(note) ? "inbox" : isReport(note) ? "documents" : DATABASE_FOR_TYPE[note.type]; if (database === undefined || (note.type === "source" && note.attributes.kind === undefined)) continue;
+    // A weekly review published as a Documents row in 0.15.x is history: never rendered again (cli §5.34).
+    if (weeklyHistory(note)) { if (ids !== undefined) skipped.push({ id: note.id, reason: "HISTORY" }); continue; }
     // A note of a module that is off isn't published; naming one is an error (0048).
-    if (((isReport(note) || isWeekly(note)) && !modules.reports) || !typeIsOn(workspace.config, note.type)) { if (ids !== undefined) errors.push({ id: note.id, reason: "MODULE_OFF" }); continue; }
+    if ((isReport(note) && !modules.reports) || !typeIsOn(workspace.config, note.type)) { if (ids !== undefined) errors.push({ id: note.id, reason: "MODULE_OFF" }); continue; }
     // An attached source has no Inbox row: its notes go on the parent's (0042).
     if (note.type === "source" && note.attributes.attached_to !== undefined) continue;
     // A decided Review row leaves Notion 30 days after its decision, once (0045).
@@ -875,7 +879,7 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
       if (fixes > stored) { properties["What to fix"] = { type: "rich_text", value: null }; reportDue = true; }
       rendered["@fixes"] = Math.max(fixes, stored);
     }
-    // A weekly review's body goes out when it changed: a rerun, or its Review rows got pages since (weekly-review.md §3.4).
+    // A weekly review's body goes out when it changed: a rerun, or a note it links got a page since (weekly-review.md §3.4).
     if (isWeekly(note) && !isCreate && !contentChanged) content.body = null;
     // Full text (0043) is retired (0049): nothing is sent, and `@full_text` in S stays as it is.
     if (!isCreate && !rebuild && Object.keys(properties).length === 0 && !contentChanged && !reportDue && itemUpdates.length === 0) {
@@ -949,8 +953,8 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     if (reviewSections(workspace, note)) Object.assign(values, { About: null, Now: null, Proposed: null, Why: null });
     return values;
   }
-  // A weekly review is a Documents row with Origin Report (weekly-review.md §2): its name, Origin and Brain ID, nothing else.
-  if (isWeekly(note)) { Object.assign(values, { Name: a.title, Origin: ORIGIN_LABEL.report, "Brain ID": note.id }); return values; }
+  // A weekly review is the week's Inbox row (weekly-review.md §2, cli §5.34): Name, Kind Weekly, Brain Status and Brain ID, nothing else.
+  if (isWeekly(note)) { Object.assign(values, { Name: weeklyRowName(note), Kind: "Weekly", "Brain Status": weeklyDecided(note, workspace) ? "Done" : "New", "Brain ID": note.id }); return values; }
   // A report is a Documents row since 0.9.1 (0071); its Ask rows stay on the Inbox and link back through Asked in.
   if (isReport(note)) { Object.assign(values, { Name: a.title, Origin: ORIGIN_LABEL.report, Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Asked in": typeof a.asked_in === "string" ? [a.asked_in] : Array.isArray(a.asked_in) ? a.asked_in : [], "Brain ID": note.id }); return values; }
   if (note.type === "meeting") { Object.assign(values, { Decisions: relationPages(a.decisions, workspace), Questions: relationPages(a.questions, workspace), Attendees: relationPages(a.attendees, workspace), Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Brain Status": "Ingested", "Ingested At": dateOutput(a.created), "Brain ID": note.id }); return values; }
@@ -1164,16 +1168,34 @@ export function letters(index: number): string {
 
 function isReport(note: Note): boolean { return note.type === "view" && note.attributes.view_kind === "report"; }
 function isWeekly(note: Note): boolean { return note.type === "view" && note.attributes.view_kind === "weekly_review"; }
+/** A weekly review kept as a 0.15.x Documents row (its S has Origin): history, never rendered again (cli §5.34). */
+function weeklyHistory(note: Note): boolean { return isWeekly(note) && isRecord(note.attributes.notion_published) && Object.hasOwn(note.attributes.notion_published, "Origin"); }
+/** The week's Inbox row name (weekly-review.md §2): `Week of 9 Nov 2026`, from the Monday in the report's path. */
+function weeklyRowName(note: Note): string {
+  const monday = /^reports\/(\d{4}-\d{2}-\d{2})-weekly-review\.md$/.exec(note.path)?.[1];
+  return monday === undefined ? String(note.attributes.title) : `Week of ${dayMonthYear(monday)}`;
+}
+/** The proposals the report's decision items name: its What needs your decision section's links to proposal files (weekly-review.md §3.4). */
+function weeklyProposals(note: Note, workspace: Workspace): Note[] {
+  const section = note.body.split(/^## What needs your decision$/m)[1] ?? "";
+  return [...section.matchAll(/\]\(([^)\s]+)\)/g)].map((match) => workspace.notes.find((candidate) => candidate.path === normalizeRelative("reports", match[1]!))).filter((target): target is Note => target?.type === "proposal");
+}
+/** Done once none of its decisions waits (weekly-review.md §2): every proposal it names is applied or closed; task items don't hold it open. */
+function weeklyDecided(note: Note, workspace: Workspace): boolean {
+  return weeklyProposals(note, workspace).every((proposal) => proposal.attributes.status === "applied" || proposal.attributes.status === "closed");
+}
+/** The decision line's words in Notion for a proposal, decided in the session (weekly-review.md §3.4, 0096 §7). */
+const WEEKLY_DECIDE_IN_SESSION = "decide in Claude Code or Codex: *what needs my decision*";
 /**
- * A weekly review in Notion (weekly-review.md §3.4): a link to a proposal becomes its Review row's link, or the plain text `Review row (after the next
- * publish)` while it has no page; a task's page URL stays; a link to a note with a page becomes that page; anything else keeps its text.
+ * A weekly review in Notion (weekly-review.md §3.4): a link to a proposal becomes the plain text that points to the session; a task's page URL
+ * stays; a link to a note with a page becomes that page; anything else keeps its text.
  */
 function weeklyMarkdown(note: Note, workspace: Workspace): string {
   return note.body.replace(/^\n+/, "").replace(/\[([^\]]+)\]\(([^)]+)\)/g, (all, title: string, link: string) => {
     if (/^https:\/\//.test(link)) return all;
     const target = workspace.notes.find((candidate) => candidate.path === normalizeRelative("reports", link));
+    if (target?.type === "proposal") return WEEKLY_DECIDE_IN_SESSION;
     const page = typeof target?.attributes.notion === "string" ? target.attributes.notion : undefined;
-    if (target?.type === "proposal") return page === undefined ? "Review row (after the next publish)" : `[${title}](https://www.notion.so/${page.replaceAll("-", "")})`;
     return page === undefined ? title : `[${title}](https://www.notion.so/${page.replaceAll("-", "")})`;
   });
 }

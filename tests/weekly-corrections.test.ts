@@ -110,7 +110,7 @@ test("correction: three restatements in one selectable group; the independent, h
   assert.equal(group.status, "pending");
 
   const report = await readText(root, "reports/2026-11-09-weekly-review.md");
-  assert.match(report, /\n1\. Correction · Quarry website budget 12k → 18k · 4 notes restate 12k \(3 of 4 shown\) → \[Review\]\(\.\.\/_proposals\/.+\.md\)\n/);
+  assert.match(report, /\n1\. Correction · Quarry website budget 12k → 18k · 4 notes restate 12k \(3 of 4 shown\) → \[decide in the session\]\(\.\.\/_proposals\/.+\.md\)\n/);
   assert.match(report, /\n1 correction match needs clarification: say "weekly review corrections"\.\n/);
   // Nothing applied: every restating note still says 12k.
   assert.match(await readText(root, `knowledge/people/${ROWAN}.md`), /budget at 12k\./);
@@ -126,10 +126,10 @@ test("a same-week rerun reuses the group; an item rejected since is not proposed
   assert.equal(first.record!.code, 0, first.record!.stdout);
   const [groupFile] = await proposalFiles(root);
   const group = await fm(root, `_proposals/${groupFile}`);
-  // Unchanged inputs: the rerun is quiet, whatever the new Review row added (§9.1).
+  // Unchanged inputs: the rerun is quiet, whatever the new proposal added (§9.1).
   assert.equal((await plan(root, empty(LATER), LATER)).json.data.quiet, true);
 
-  // The user rejects the Quarry app item in Review; a new question makes the rerun not quiet.
+  // The user rejects the Quarry app item in the session; a new question makes the rerun not quiet.
   const rejected = group.items.find((entry: any) => group.changes[entry.ref].target === APP);
   const path = join(root, "_proposals", groupFile!);
   const text = await readFile(path, "utf8");
@@ -217,7 +217,7 @@ test("omitted correction targets make the run partial and stay queued", async (c
   assert.match(await readText(root, "reports/2026-11-09-weekly-review.md"), /Partial: 4 checks not done \(budget\); they come first next week\./);
 });
 
-test("select refuses a restatement with no one-for-one fix, a target judged twice, and one already in Review", async (context) => {
+test("select refuses a restatement with no one-for-one fix, a target judged twice, and one already waiting for a decision", async (context) => {
   const root = await corrected(context);
   await bodies(root, { [`knowledge/questions/${PHASES}.md`]: "Second line: the 12k figure again." });
   const planned = await plan(root, empty(NOW), NOW);

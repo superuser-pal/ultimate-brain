@@ -375,7 +375,7 @@ function judgeView(view: Note, dependencies: ViewDependencies, context: Context,
   if (links.gone) return "dependency";
   for (const id of new Set([...(provenance ?? []), ...links.linked])) {
     const note = dependencies.byId.get(id);
-    // A weekly review links its Review items' proposals (weekly-review.md §3.4): a way to decide, not something it rests on.
+    // A weekly review links its decision items' proposals (weekly-review.md §3.4): a way to decide, not something it rests on.
     if (view.attributes.view_kind === "weekly_review" && note?.type === "proposal") continue;
     if (note === undefined || !dependencyEligible(note, dependencies, context, judging)) return "dependency";
   }

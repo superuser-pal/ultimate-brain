@@ -50,19 +50,19 @@ const dateOf = (value: unknown): string | null => (typeof value === "string" && 
 const str = (value: unknown): string | null => (typeof value === "string" && value !== "" ? value : null);
 const list = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
-/** How an assistant finding can be a decision item (weekly-review.md §6.1, §6.2): a task item for an overdue or stalled task; else a Review row for its first
- *  recommendation with a value that a Review row can carry (not add_task, which needs the user's words); else null: Task analysis only. */
-export function itemShape(finding: { signal: string; subject: unknown; recommendations: unknown }): { lives: "task" | "review"; targets: string[]; recommendation: { action: string; value: unknown; label: string } | null } | null {
+/** How an assistant finding can be a decision item (weekly-review.md §6.1, §6.2): a task item for an overdue or stalled task; else a proposal for its first
+ *  recommendation with a value that a proposal can carry (not add_task, which needs the user's words); else null: Task analysis only. */
+export function itemShape(finding: { signal: string; subject: unknown; recommendations: unknown }): { lives: "task" | "session"; targets: string[]; recommendation: { action: string; value: unknown; label: string } | null } | null {
   const subject = isRecord(finding.subject) ? finding.subject : {};
   const page = typeof subject.page_id === "string" ? subject.page_id : null;
   if ((finding.signal === "task_overdue" || finding.signal === "task_stalled") && page !== null) return { lives: "task", targets: [`notion:${page}`], recommendation: null };
   const chosen = list(finding.recommendations).filter(isRecord).find((rec) => rec.value !== null && rec.value !== undefined && rec.action !== "add_task");
   if (chosen === undefined) return null;
   const recommendation = { action: String(chosen.action), value: chosen.value, label: String(chosen.label) };
-  if (TASK_SIGNALS.has(finding.signal)) return page === null ? null : { lives: "review", targets: [`notion:${page}`], recommendation };
-  if (chosen.action === "merge_projects" && isRecord(chosen.value)) return { lives: "review", targets: [String(chosen.value.target), String(chosen.value.merge_into)], recommendation };
+  if (TASK_SIGNALS.has(finding.signal)) return page === null ? null : { lives: "session", targets: [`notion:${page}`], recommendation };
+  if (chosen.action === "merge_projects" && isRecord(chosen.value)) return { lives: "session", targets: [String(chosen.value.target), String(chosen.value.merge_into)], recommendation };
   const id = typeof subject.id === "string" ? subject.id : Array.isArray(subject.ids) ? String(subject.ids[0]) : null;
-  return id === null ? null : { lives: "review", targets: [id], recommendation };
+  return id === null ? null : { lives: "session", targets: [id], recommendation };
 }
 
 /** The evidence hash of an assistant finding (weekly-review.md §7): its evidence object without the day counters. */
@@ -287,7 +287,7 @@ export function computePlan(input: PlanInput): PlanData {
   });
   // §7 rule 4: an unresolved contradiction on a reviewed note stays visible every week, so it holds off a quiet week too.
   const critical = criticalPending(pending, new Map([...proposals, ...eligible].map((note) => [note.id, note])));
-  // A correction target already in Review is no queued check: it doesn't hold off a quiet week (§9.1).
+  // A correction target already waiting for a decision is no queued check: it doesn't hold off a quiet week (§9.1).
   const queuedTargets = corrections.some((claim) => claim.targets.some((target) => target.pending === null));
   const nothing = changes.length === 0 && !findings.some((finding) => finding.repetition.show) && ordered.length === 0 && critical.length === 0 && !queuedTargets;
   // A finding that can only be in Task analysis is "shown" once a report listed it (record keeps it in `shown`), so it doesn't hold off a quiet week.
