@@ -5,6 +5,7 @@
 **Release:** 0.16.0 (§1 to §3); 0.17.0 (§4 to §7)
 **Amends:** [0096](0096-one-place-to-decide.md) §2 and §5 (an attended ingest goes by subject, and in each part the questions come before its yes); [0049](0049-documents.md) and [0071](0071-a-simpler-notion.md) (Keep as document with Only keep filled shows the part chosen as a changed version to check, instead of an item to approve); [0061](0061-roadmap-and-launch-boundary.md) (a 0.17.0 before 1.0.0, with one feature after the cutoff)
 **Keeps:** 0096 §1, §3, §4, §6 to §8 (you decide in the session; what is asked; work done without you never decides; the Review database is removed; the weekly Inbox row; beta invites wait for 0.16.0); [0077](0077-trust-repair-in-0-13-0.md) (every item names its passages); [0012](0012-meeting-minutes-reviewed-before-ingest.md), [0055](0055-domains-capture-and-review.md) and [0079](0079-lean-minutes-and-follow-ups-as-tasks.md) (minutes are checked in Notion before ingest); [0054](0054-brain-assistant-buttons.md) (Tidy capture); Keep as document with Only keep empty (the whole input, verbatim)
+**Amended by:** [0102](0102-one-release-for-0-16-0-and-0-17-0.md) (2026-11-16): §4 to §7 ship in 0.16.0, not 0.17.0
 
 ## Context
 
