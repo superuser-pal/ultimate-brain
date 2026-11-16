@@ -18,9 +18,9 @@ const NATIVE = resolve(import.meta.dirname, "..", "eval", "memory-0.12", "native
 const { classifyCall, splitShell, unwrapShell } = await import(pathToFileURL(join(NATIVE, "lib", "classify.mjs")).href);
 const { parseClaude, parseCodex, codexRolloutModel } = await import(pathToFileURL(join(NATIVE, "lib", "trace.mjs")).href);
 const { applyReportsOf, extractCitations, readsOf, retrievalOf } = await import(pathToFileURL(join(NATIVE, "lib", "answer.mjs")).href);
-const { scrub, splitManaged } = await import(join(NATIVE, "lib", "world.mjs"));
-const { identityRows, agentFigures } = await import(join(NATIVE, "results.mjs"));
-const { promptOf, PROMPT_SUFFIX } = await import(join(NATIVE, "run.mjs"));
+const { scrub, splitManaged } = await import(pathToFileURL(join(NATIVE, "lib", "world.mjs")).href);
+const { identityRows, agentFigures } = await import(pathToFileURL(join(NATIVE, "results.mjs")).href);
+const { promptOf, PROMPT_SUFFIX } = await import(pathToFileURL(join(NATIVE, "run.mjs")).href);
 
 const BRAIN = "/s/home/memory-0.12-eval/brain";
 const REPO = "/s/home/memory-0.12-eval/repos/harbor-api";
