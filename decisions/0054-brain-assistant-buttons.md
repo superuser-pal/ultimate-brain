@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-10-29
 **Amends:** 0035 (what Brain Assistant may edit), 0049 (a promoted Document's body comes back to Git), 0043 and 0045 (how a report is refreshed) · **Refines:** 0048 and 0053 (buttons), 0051 (what an unattended run imports) · **Keeps:** 0003, 0015, 0052
+**Amended by:** [0101](0101-where-notion-ai-and-the-brain-each-write.md) (2026-11-16): the buttons need Business with Notion credits, said in the template from 0.16.0; without them the same skill runs in the agent from 1.0.0 (§7, §8)
 
 **Release amendment:** [0056](0056-buttons-move-into-0-8-0.md), 2026-10-31, moves this decision's tasks from 0.7.1 to 0.8.0; "0.7.1" below is historical.
 **Acceptance amendment:** [0057](0057-reports-are-not-proposal-targets.md) (reports are not proposal targets) and [0058](0058-acceptance-is-current-as-of-the-click-minute.md) (what "accepted exactly" means), 2026-10-31.

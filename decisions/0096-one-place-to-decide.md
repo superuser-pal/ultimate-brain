@@ -8,6 +8,7 @@
 **Keeps:** Markdown and Git as canonical, Notion as the human interface; `_proposals/` as the store of proposals; [0077](0077-trust-repair-in-0-13-0.md) (every change names its passages, checked at creation and before apply); [0012](0012-meeting-minutes-reviewed-before-ingest.md) and 0055's selection (minutes are reviewed and confirmed before ingest); [0023](0023-notion-edits-as-user-corrections.md) and [0070](0070-lifecycle-only-where-the-brain-creates-the-row.md) (your edits in Notion are your corrections); [0058](0058-acceptance-is-current-as-of-the-click-minute.md) (a Document's accepted wording); 0075's limits; 0.15.0 as the feature cutoff
 **Amended by:** [0098](0098-agree-by-subject-and-check-a-changed-document.md) (2026-11-16; 0.16.0): an attended ingest goes by subject; each part shows what the brain has on it, then what is added, then its questions, then its yes (§2 and §5)
 **Amended by:** [0099](0099-notion-without-decisions-and-questions.md) (2026-11-16; 0.16.0): 0.16.0 also removes the Decisions and Questions databases, in the same migration, skills release and template
+**Amended by:** [0101](0101-where-notion-ai-and-the-brain-each-write.md) (2026-11-16; 0.16.0): corrections from Notion and a tracked question's finished task are asked in the session too (§4, §6)
 
 ## Context
 
