@@ -1041,7 +1041,7 @@ Easy setup on Windows and Mac, from the first beta tester's Windows session (dec
 **Release:** 0.15.2
 **Changelog:** Internal: the agents' instructions say what to read for each kind of work.
 **Output:** AGENTS.md: "Before any work, read" becomes what to read for a task, for planning and for a design question (the sessions of 2026-11-15 read neither the synthesis nor the whole task file); the worktree rule names `task.mjs`'s commands and points at its usage where it restated it; the status rules name `task.mjs set` (CC-301) and the pre-push check; "Using Orca" keeps one pointer, and its rules move unchanged to `docs/orca.md`, with one added: wait through notifications, since a `sleep` then a poll is blocked.
-**Acceptance:** every rule AGENTS.md had is still in AGENTS.md or in `docs/orca.md`, and no rule's meaning changes; each command it names exists in `scripts/task.mjs`; the links resolve; the full suite and the leak check pass.
+**Acceptance:** every rule AGENTS.md had is still in AGENTS.md or in `docs/orca.md`, and one rule changes meaning, as the Output says: the vision and the synthesis are read for planning and for a design question, where before they were read before any work; each command it names exists in `scripts/task.mjs`; the links resolve; the full suite and the leak check pass.
 
 ## 0.16.0 — One place to decide (decision 0096)
 
