@@ -148,7 +148,7 @@ Without the Tasks module, skip B6 and B7: a question you follow up stays in its 
 
 ### B7 · The Questions and Risks tabs (Notion AI, or by hand)
 
-By hand is the surer way (below): in a test run, Notion AI added a linked view below the page's tabs block instead of two tabs in it. With Notion AI, paste on the **Tasks** page:
+Paste on the **Tasks** page (or add the tabs by hand, below):
 
 ```text
 Use only the databases on Brain Data. On this page ("Tasks"), in the tabs block, add two tabs after "Someday" and before "Done", each a linked view of "Tasks", List layout, with the database title hidden:
@@ -157,7 +157,7 @@ Use only the databases on Brain Data. On this page ("Tasks"), in the tabs block,
 Hide Brain ID and Last edited time. Change nothing else.
 ```
 
-Then check that the tabs block has the two new tabs between Someday and Done, and that nothing was added outside it. A linked view below the tabs block is a stray: hover it, click **⋮⋮** → **Delete** (that deletes the view only, never the Tasks database), and add the tabs by hand.
+Wait until Notion AI says it is done: it may build a view below the tabs block first and then move it into its tab. Then check each new tab: it is between Someday and Done, its view is named as above, the database title is hidden, and it lists only open tasks of its Kind. Notion AI often leaves a view named "View of Tasks" with its title showing: rename it and turn off **Show data source title** in its **⋯** menu. A linked view still below the tabs block after that is a stray: hover it, click **⋮⋮** → **Delete** (that deletes the view only, never the Tasks database).
 
 **By hand** (views-guide §2, rows 6 and 7), for each of Questions and Risks:
 1. In the Tasks page's tabs block, click **+** after the last tab and name the tab `Questions` (then `Risks`). Drag it between **Someday** and **Done**.
