@@ -17,8 +17,8 @@ updated: 2026-12-04
 ## Recent decisions
 - 2026-12-03 — [Use Supabase for auth](../../knowledge/decisions/2026-12-03-use-supabase-for-auth.md) (accepted)
 
-## Open questions
-- Nothing reviewed yet: 2 notes waiting in Review
+## Open questions and risks
+- Nothing reviewed yet: 2 notes waiting for your decision
 <!-- @generated:end -->
 
 <!-- @user:start -->

@@ -341,6 +341,10 @@
                 },
                 "brain_id": {
                   "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "The Tasks database's Kind select (Task, Question, Risk; decision 0099 §4, schema.md §12). Empty or absent: the database has none, and a task that tracks a question or risk starts its title with 'Question: ' or 'Risk: '."
                 }
               }
             },

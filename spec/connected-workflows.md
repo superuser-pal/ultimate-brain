@@ -212,7 +212,7 @@ These are new properties on **both** Projects and Areas. Their owner is **You** 
 3. **The level** in `settings`. Recorded as `by: level`.
 
 **Afterwards:**
-- With the Documents module off, an `include` of any category except `decision` becomes `exclude` with `local_reason: module off`. With the Knowledge module off, a `decision` artifact does the same; a `decision` doesn't need Documents.
+- With the Documents module off, an `include` of any category except `decision` becomes `exclude` with `local_reason: module off`. A `decision` doesn't need Documents, and needs no module since 0.16.0 (0099: the Knowledge module is retired; up to 0.15.x, Knowledge off made it `exclude` too).
 - A later change of the level never changes a frozen decision. A per-artifact override can always replace it (that is how `publish-history` publishes old artifacts).
 
 **Not published:** such an artifact keeps `location` and gets `local_reason`: `excluded by level`, `excluded by override`, `temporary`, `module off` or `dropped by user`.
@@ -273,12 +273,12 @@ Every item and artifact has `publication: { state, at, error }`. `state` is one 
 ### 6.3 How artifacts reach Notion
 A `publish_artifact` operation (§7.3) is carried out by the skill, in this order:
 1. **If `artifact.note` is null, the skill creates the note** with `note new`, commits it, then records it with `artifact put` (`note`); every `brain workflow` command refuses a brain with uncommitted changes (`DIRTY_TREE`), so each brain write the skill makes outside `brain workflow` is committed before the next one (CC-130):
-   - **`decision`:** a `decision` note with `workflow: { id, artifact }`, which `note new` writes `lifecycle: reviewed` (the user approved it; since 0.9.1 only reviewed decisions get a page, decision 0071). `date` = the approval date, and the default `assessment` of `note new`. `projects` (a Project destination) or `area` (an Area destination). No `sources`. The body has the sections `## Decision`, `## Context` and `## Consequences` from the artifact, and `## Sources` naming the artifact's location.
+   - **`decision`:** a `decision` note with `workflow: { id, artifact }`, which `note new` writes `lifecycle: reviewed` (the user approved it, 0071). `date` = the approval date, and the default `assessment` of `note new`. `projects` (a Project destination) or `area` (an Area destination). No `sources`. The body has the sections `## Decision`, `## Context` and `## Consequences` from the artifact, and `## Sources` naming the artifact's location.
    - **Every other category:** a Document (`reference` note) with `origin: workflow` and `workflow: { id, artifact }`, which `note new` writes `lifecycle: reviewed` (the user approved it; the input never carries `lifecycle`, which `note new` refuses as set by the CLI), the same placement, and **no `sources`**. Its summary is the artifact's first sentence, cut to 200 characters. Its body:
      - a text artifact: the file's text at `sha256`;
      - a binary artifact: the line `File: {name} ({size})`, then the link when there is a `location.url`. With a `location.path`, the skill also attaches the file to the Document page through the MCP's file upload. If the upload isn't available, the operation fails with the lasting code `upload_unsupported`, and the user can give a URL instead.
-2. **Publish it** with the existing `sync render`, the MCP create or update, and `sync record`, then commit. Before creating, the skill looks up Brain ID (§10.3).
-3. **Close the operation:** `op state … done --page <page id>`. The CLI sets `published_sha256` and `publication: published`.
+2. **Publish it** with the existing `sync render`, the MCP create or update, and `sync record`, then commit. Before creating, the skill looks up Brain ID (§10.3). **A decision has no page of its own** (0.16.0, 0099 §9; schema §4): `brain views` puts it in the destination's Decision log and Brief (a Project destination) or the Area's Brief (an Area destination), and the skill publishes that destination with `sync render --ids <the destination's id>`, the MCP update and `sync record`. Up to 0.15.x the decision got a Decisions row.
+3. **Close the operation:** `op state … done --page <page id>`: the Document's page, or, for a decision, the destination's page, where it now shows. The CLI sets `published_sha256` and `publication: published`.
 
 **A new version of an approved artifact** (a new `sha256` approved by `artifact put`) opens a new `publish_artifact`.
 - For a Document, step 1 writes an `update_body` proposal (0003) instead of a new note. The user's approval of the new version in the session is the approval, so the skill applies it in chat (0003, the in-session path). Step 2 then publishes the new body.
