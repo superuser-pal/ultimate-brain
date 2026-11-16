@@ -1021,7 +1021,7 @@ Easy setup on Windows and Mac, from the first beta tester's Windows session (dec
 **Output:** README Get started step 1 split by platform (the winget line and the reopen step; Homebrew, Node, `gh`, Python and MarkItDown, the developer-tools note; Git's name and email; `gh auth login`); the setup prompt; the line at the top of README and AGENTS.md; docs/setup.md's requirements table and a Windows section under "When something goes wrong" (PATH, execution policy, npm's global folder), and the weekly review run by hand on Windows.
 **Acceptance:** each command in the guides matches CC-290's contract word for word; the skills repository's README line is in CC-294's fork PR; the leak and PR format checks pass.
 
-### CC-294 · brain-setup checks MarkItDown and gives Windows commands, through a skills release (0097 §1, §5) · `in progress`
+### CC-294 · brain-setup checks MarkItDown and gives Windows commands, through a skills release (0097 §1, §5) · `review`
 **Release:** 0.15.2
 **Changelog:** Setup checks for MarkItDown and Python at its first step and gives the install commands for your platform, Windows included.
 **Output:** a fork PR: brain-setup's step 1 prerequisites and messages per CC-290, the locked MarkItDown settings item, and the "you don't need to clone this" line at the top of the skills repository's README; the fork release, vendored here with `scripts/vendor-skills.mjs`.
