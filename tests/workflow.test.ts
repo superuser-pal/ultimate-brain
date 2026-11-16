@@ -805,16 +805,16 @@ test("with Documents off an include becomes exclude 'module off', except a decis
   assert.deepEqual([planDone.publish.decision, planDone.local_reason], ["exclude", "module off"]);
   const decision = await mkArtifact(env, record.id, { title: "Decision", category: "decision" });
   const decisionDone = await approveArtifact(env, record.id, decision.id, { override: "include" });
-  assert.equal(decisionDone.publish.decision, "include", "a decision needs Knowledge, not Documents");
+  assert.equal(decisionDone.publish.decision, "include", "a decision needs no module since 0.16.0 (0099), not Documents");
   assert.equal(decisionDone.local_reason, null);
 });
 
-test("with Knowledge off a decision becomes exclude 'module off'", async (context) => {
+test("a knowledge key left from before 0.16.0 is no module: a decision is still included (0099)", async (context) => {
   const env = await setup(context, { modules: { knowledge: false } });
   const record = await wfPlain(env);
   const decision = await mkArtifact(env, record.id, { title: "Decision", category: "decision" });
   const done = await approveArtifact(env, record.id, decision.id, { override: "include" });
-  assert.deepEqual([done.publish.decision, done.local_reason, done.publication.state], ["exclude", "module off", "local"]);
+  assert.deepEqual([done.publish.decision, done.local_reason], ["include", null]);
   const final = await mkArtifact(env, record.id, { title: "Final", category: "final" });
   assert.equal((await approveArtifact(env, record.id, final.id)).publish.decision, "include", "Documents is still on");
 });

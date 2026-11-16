@@ -569,7 +569,8 @@ test("sync keeps unpublished links and reports invalid Notion values before comp
   assert.deepEqual(codes(await plan("unknown.json", [project({ Lifecycle: "Foo" })])).flat(), []);
   assert.deepEqual(codes(await plan("stale.json", [project({ Lifecycle: null })])).flat(), []);
   const decision = { database: "decisions", page_id: decisionPage, last_edited: "2026-12-10T08:00:00Z", properties: { "Brain ID": "dec-7k2m9q4x", Assessment: null } };
-  assert.deepEqual(codes(await plan("assessment.json", [decision])), [[], [["NOT_CORRECTABLE", "Assessment"]], []]);
+  // Decisions rows are not read since 0.16.0 (0099): no correction, whatever the row says.
+  assert.deepEqual(codes(await plan("assessment.json", [decision])), [[], [["RETIRED_DATABASE", undefined]], []]);
 });
 
 test("Domains, Areas, Goals, Projects and Orgs created in Notion are reviewed and publish no Lifecycle (0070)", async (context) => {

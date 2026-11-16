@@ -217,7 +217,7 @@ test("render: a Review notes row letters its notes, then its links, with titles 
   assert.equal(item!.properties.Proposed.value, "a) Decision: Use Supabase for auth\nb) Question: Who owns the Acme mobile app?\nc) Projects on Row-level security: Acme website\nd) Aliases on Use Supabase for auth: Supabase auth");
 });
 
-test("render: an answer row shows answer → note; once applied, the question's Status goes out as Answered once", async (context) => {
+test("render: an answer row shows answer → note; once applied, the question has its answer in Git and still no page (0099)", async (context) => {
   const dir = await fixtureCopy(context);
   const answer = { kind: "answer", title: "Who owns the app: Maria", target: QUESTION, answer: "Maria owns the mobile app.", answer_note: DECISION, why: "Maria said she owns it.", source: SYNC };
   const created = await run(dir, ["proposal", "new"], { proposals: [answer] });
@@ -225,14 +225,11 @@ test("render: an answer row shows answer → note; once applied, the question's 
   assert.deepEqual(row!.properties.Now, { type: "rich_text", value: null });
   assert.equal(row!.properties.Proposed.value, "Maria owns the mobile app. → Use Supabase for auth");
 
-  const [before] = await rendered(dir, [QUESTION]);
-  assert.equal(before?.properties.Status, undefined, "a question with no answer never has Status");
   await run(dir, ["apply"], { decisions: [decided(created.json.data.created[0].id, "approve")] });
-  const [question] = await rendered(dir, [QUESTION]);
-  assert.deepEqual(question!.properties.Status, { type: "select", value: "Answered" });
-  await record(dir, question!);
-  const [after] = await rendered(dir, [QUESTION]);
-  assert.equal(after?.properties.Status, undefined, "Status goes out once");
+  const question = parseFrontmatter(await readFile(join(dir, "knowledge/questions/who-owns-the-acme-mobile-app.md"), "utf8")).attributes;
+  assert.equal(question.answer, DECISION, "answered by the note");
+  // A question has no page since 0.16.0 (0099): no Status goes out.
+  assert.deepEqual(await rendered(dir, [QUESTION]), []);
   assert.deepEqual(await lintErrors(dir), []);
 });
 
