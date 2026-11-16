@@ -330,7 +330,7 @@
       }
     },
     "item": {
-      "description": "A decision item (weekly-review.md §6.1), numbered n in the report. lives says where it is decided: a Review row (review) or a task (task). write is true when step 8 must write its proposal (proposal null); false when it links an existing pending proposal (proposal set) or is a task (proposal null, url its page or null brain only). targets are the note ids it changes, or notion:<page id> for a task or a task's notion_change; new_items is what it adds to I (§5.1). recommendation (work stream, write true) is the assistant recommendation to propose; finding (knowledge stream, write true) is the judged finding. kind is the report's label (§3.4).",
+      "description": "A decision item (weekly-review.md §6.1), numbered n in the report. lives says where it is decided: in the Claude Code or Codex session (session, a proposal; capture-and-review §7.5) or on a task in Notion (task). write is true when step 8 must write its proposal (proposal null); false when it links an existing pending proposal (proposal set) or is a task (proposal null, url its page or null brain only). targets are the note ids it changes, or notion:<page id> for a task or a task's notion_change; new_items is what it adds to I (§5.1). recommendation (work stream, write true) is the assistant recommendation to propose; finding (knowledge stream, write true) is the judged finding. kind is the report's label (§3.4).",
       "type": "object",
       "required": ["n", "key", "stream", "kind", "category", "subject", "decide", "lives", "write", "proposal", "url", "targets", "new_items", "because", "evidence_hash", "recommendation", "finding"],
       "additionalProperties": false,
@@ -342,7 +342,7 @@
         "category": { "$ref": "#/$defs/category" },
         "subject": { "type": "string", "minLength": 1 },
         "decide": { "type": "string", "minLength": 1 },
-        "lives": { "enum": ["review", "task"] },
+        "lives": { "enum": ["session", "task"] },
         "write": { "type": "boolean" },
         "proposal": { "anyOf": [{ "$ref": "#/$defs/proposalId" }, { "type": "null" }] },
         "url": { "anyOf": [{ "$ref": "#/$defs/taskUrl" }, { "type": "null" }] },
@@ -359,12 +359,12 @@
       },
       "allOf": [
         { "if": { "properties": { "lives": { "const": "task" } } }, "then": { "properties": { "write": { "const": false }, "proposal": { "type": "null" }, "new_items": { "const": 0 } } } },
-        { "if": { "properties": { "write": { "const": true } } }, "then": { "properties": { "proposal": { "type": "null" }, "lives": { "const": "review" } } } },
-        { "if": { "properties": { "lives": { "const": "review" }, "write": { "const": false } } }, "then": { "properties": { "proposal": { "$ref": "#/$defs/proposalId" }, "new_items": { "const": 0 } } } }
+        { "if": { "properties": { "write": { "const": true } } }, "then": { "properties": { "proposal": { "type": "null" }, "lives": { "const": "session" } } } },
+        { "if": { "properties": { "lives": { "const": "session" }, "write": { "const": false } } }, "then": { "properties": { "proposal": { "$ref": "#/$defs/proposalId" }, "new_items": { "const": 0 } } } }
       ]
     },
     "selection": {
-      "description": "The data of brain weekly select (cli.md §5.34), also saved as the hand-off file <label>.selection.json next to the plan file: the plan's input_hash, the decision items in report order, the queued remainder, this week's counts after the items (the week's earlier counts included, §5.1), the earlier findings still open in Review (§7), what the run omitted (§10) and its coverage.",
+      "description": "The data of brain weekly select (cli.md §5.34), also saved as the hand-off file <label>.selection.json next to the plan file: the plan's input_hash, the decision items in report order, the queued remainder, this week's counts after the items (the week's earlier counts included, §5.1), the earlier findings whose proposals still wait for a decision (§7), what the run omitted (§10) and its coverage.",
       "type": "object",
       "required": ["week", "input_hash", "items", "queued", "counts", "earlier_open", "omitted", "coverage"],
       "additionalProperties": false,
@@ -396,7 +396,7 @@
       }
     },
     "recordInput": {
-      "description": "The input of brain weekly record (cli.md §5.34): plan's and select's data, by the plan's input_hash (record reads the two saved hand-off files, the scheduled run's way) or both embedded as they came, the proposal written for each item whose write is true (step 8; a DUPLICATE_PENDING names the existing one), the skill's What changed bullets (at most 8, each one line starting - **<Label>:**) and Task analysis lines (weekly-review.md §3.2, §3.3), the run's mode, whether the report will be published (weekly-review.md §9.3: refused with Reports off), the failures of earlier steps, and the run's notes read and seconds for the log line. record renders the header (§3.1) and What needs your decision (§3.4) itself.",
+      "description": "The input of brain weekly record (cli.md §5.34): plan's and select's data, by the plan's input_hash (record reads the two saved hand-off files, the scheduled run's way) or both embedded as they came, the proposal written for each item whose write is true (step 8; a DUPLICATE_PENDING names the existing one), the skill's What changed bullets (at most 8, each one line starting - **<Label>:**) and Task analysis lines (weekly-review.md §3.2, §3.3), the run's mode, whether the report will be published as the week's Inbox row (weekly-review.md §9.3: refused from an unattended run while settings.publish isn't auto), the failures of earlier steps, and the run's notes read and seconds for the log line. record renders the header (§3.1) and What needs your decision (§3.4) itself.",
       "type": "object",
       "required": ["proposals", "what_changed", "task_analysis", "mode", "publish", "failures", "notes_read", "seconds"],
       "oneOf": [{ "required": ["plan", "selection"], "not": { "required": ["input_hash"] } }, { "required": ["input_hash"], "not": { "anyOf": [{ "required": ["plan"] }, { "required": ["selection"] }] } }],
