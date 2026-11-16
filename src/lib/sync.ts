@@ -52,9 +52,9 @@ export interface SyncPlan {
   wording_waiting: WordingPlan["wording_waiting"];
   wording_held: WordingPlan["wording_held"];
   clear_accepted: WordingPlan["clear_accepted"];
-  /** Review rows whose Notion page holds edits or decisions that must not be overwritten (capture-and-review §7.10): render withholds them. */
+  /** In the 0.16.0 transition (cli §5.14.8): Review rows whose page holds edits or decisions not submitted; their proposals stay pending, asked in the session. */
   review_pending: Array<{ proposal: string; page_id: string }>;
-  /** Decisions read off Review rows of the new layout, per item with the exact final wording (capture-and-review §7.3); applied by `sync apply`. */
+  /** In the 0.16.0 transition (cli §5.14.8): decisions read off Review rows of the new layout, per item with the exact final wording; applied by `sync apply`. */
   review_decisions: ReviewDecision[];
   /** Items and rows that were not read or not applied, and why (BASE_CHANGED, UNREADABLE_DECISION, HELD_SOURCE_EXCLUDED, EDITED_AFTER_DECIDED, …). */
   review_held: ReviewHeld[];
@@ -749,7 +749,7 @@ function awaitsReview(note: Note | undefined): boolean {
   return note !== undefined && REVIEWED_PAGE_TYPES.has(note.type) && typeof note.attributes.notion !== "string" && note.attributes.lifecycle !== "reviewed" && note.attributes.lifecycle !== "disputed";
 }
 
-/** `sync render --unpublish-drafts` (cli §5.14.4, migration 0020): the Draft pages from before 0.9.1 that a pending Review row can bring back. */
+/** `sync render --unpublish-drafts` (cli §5.14.4, migration 0020): the Draft pages from before 0.9.1 that a pending review_notes can bring back. */
 export function unpublishDrafts(workspace: Workspace, now: Date): RenderItem[] {
   const held = new Set(workspace.notes.filter((note) => note.type === "proposal" && note.attributes.kind === "review_notes" && note.attributes.status === "pending").flatMap((note) => Array.isArray(note.attributes.notes) ? note.attributes.notes.map(String) : []));
   const items: RenderItem[] = [];

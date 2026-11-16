@@ -5,7 +5,7 @@ import { importedItems, PASSAGE_REF } from "./selection.ts";
 import { contextFor, restrictionOf, type Loaded } from "./suppressions.ts";
 
 // The data of the exclusion cleanup row (capture-and-review §5.2): what a suppression restricts and what stays. Read-only.
-// The Review row, its item decisions and their apply are CC-79.
+// The cleanup review_notes is decided in the session since 0.16.0; `brain apply` applies it (cli §5.7, cleanup-row.ts).
 
 export interface CleanupNote {
   note: string; path: string; whole: boolean; reason: "passages" | "unmapped text" | "unknown lineage";
