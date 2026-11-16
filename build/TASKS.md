@@ -1043,6 +1043,12 @@ Easy setup on Windows and Mac, from the first beta tester's Windows session (dec
 **Output:** AGENTS.md: "Before any work, read" becomes what to read for a task, for planning and for a design question (the sessions of 2026-11-15 read neither the synthesis nor the whole task file); the worktree rule names `task.mjs`'s commands and points at its usage where it restated it; the status rules name `task.mjs set` (CC-301) and the pre-push check; "Using Orca" keeps one pointer, and its rules move unchanged to `docs/orca.md`, with one added: wait through notifications, since a `sleep` then a poll is blocked.
 **Acceptance:** every rule AGENTS.md had is still in AGENTS.md or in `docs/orca.md`, and one rule changes meaning, as the Output says: the vision and the synthesis are read for planning and for a design question, where before they were read before any work; each command it names exists in `scripts/task.mjs`; the links resolve; the full suite and the leak check pass.
 
+### CC-303 · A review never leaves a worktree detached, and a commit there is refused · `done` (#408)
+**Release:** 0.15.2
+**Changelog:** Internal: a commit made on a detached HEAD is refused.
+**Output:** `.claude/agents/pr-reviewer.md`: the reviewer leaves the worktree on its branch and reads other commits with `git show` or `git diff`; `.githooks/pre-commit` refuses a commit on a detached HEAD outside a rebase and says how to get back. From 2026-11-16: reviewers left four task worktrees detached, and on PR #403 the done commit, made there, was pushed to no branch.
+**Acceptance:** the hook refuses a commit on a detached HEAD with the way back, and accepts one on a branch and one during a rebase; the reviewer's rules name the commands to use and the ones to avoid; the script tests cover the hook; the full suite and the leak check pass.
+
 ### CC-305 · Tests give Git an identity before brain init: CI is green again after CC-291 · `done` (#410)
 **Release:** 0.15.2
 **Changelog:** development only: the skills tests no longer depend on a global Git identity, so CI passes on runners that have none.

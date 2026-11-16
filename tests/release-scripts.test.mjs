@@ -1585,6 +1585,27 @@ test("the pre-commit hook refuses a staged edit of a vendored skill file and acc
   assert.match(refused.stderr, /^\.agents\/skills is not a released ultimate-brain-skills snapshot \(file-mismatch: brain-howto\/SKILL\.md\)\. Skills are written in the fork; restore with git checkout -- \.agents\/skills/m);
 });
 
+test("the pre-commit hook refuses a commit on a detached HEAD, but not during a rebase (CC-303)", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "ultimate-brain-hook-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  for (const folder of ["scripts", "src", "spec", ".githooks", "package.json"]) execFileSync("cp", ["-R", join(source, folder), join(root, folder)]);
+  execFileSync("ln", ["-s", join(source, "node_modules"), join(root, "node_modules")]);
+  command(root, ["init", "-q", "-b", "main"]);
+  command(root, ["add", "-A"]);
+  command(root, ["-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "--no-verify", "-m", "base"]);
+  const hook = () => spawnSync("sh", [".githooks/pre-commit"], { cwd: root, encoding: "utf8", env: { ...process.env, HOME: root } });
+  assert.equal(hook().status, 0);
+  command(root, ["checkout", "-q", "--detach", "HEAD"]);
+  const refused = hook();
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /^HEAD is detached: this commit would be on no branch\. Go back to the task branch first/);
+  mkdirSync(join(root, ".git", "rebase-merge"));
+  assert.equal(hook().status, 0);
+  rmSync(join(root, ".git", "rebase-merge"), { recursive: true });
+  command(root, ["checkout", "-q", "main"]);
+  assert.equal(hook().status, 0);
+});
+
 /** pr-format fakes for the PR of CX-1 whose head has the rows `headRows`; the base has only CC-2's row, as for a task whose row was added on its branch (CC-116). */
 function ownRowPath(root, headRows, files = "[]") {
   return fakeCommands(root, {
