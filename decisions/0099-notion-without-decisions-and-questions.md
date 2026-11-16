@@ -6,6 +6,7 @@
 **Amends:** [0071](0071-a-simpler-notion.md) §3 and §4 (decisions and questions no longer get a Notion page; a risk stays a question note, followed up as a task when you say so); [0048](0048-modules-and-simpler-rows.md) and [0078](0078-onboarding-and-early-access-in-0-14-0.md) §2 (the Knowledge module is retired); [0049](0049-documents.md) (Promote to document is asked in the session, without the button); [0055](0055-domains-capture-and-review.md) and [0018](0018-notion-tasks-mapping.md) (`Track: Waiting On —` also tracks a question or a risk, and Tasks gains a Kind); [0096](0096-one-place-to-decide.md) (0.16.0 also removes these two databases)
 **Keeps:** decisions and questions as notes in Git, extracted at every ingest and used by every answer and report (0005, 0034); supersession, assessment and lifecycle (0005); the project's Brief and Decision log and the area's Brief (0041); 0071 §4's rule that a to-do is never a question; Documents as the home of what you keep (0049, 0071); 0.15.0 as the feature cutoff
 **Amended by:** [0100](0100-keep-a-task-as-a-document.md) (2026-11-16; 0.17.0): Tasks also gains Document asked and the Keep as document button (§4)
+**Amended by:** [0101](0101-where-notion-ai-and-the-brain-each-write.md) (2026-11-16; 0.16.0): a tracked question whose task is Done, or gone, is asked about in the session (§6)
 
 ## Context
 

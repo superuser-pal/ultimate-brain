@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-10-11
 **Refines:** 0023
+**Amended by:** [0101](0101-where-notion-ai-and-the-brain-each-write.md) (2026-11-16; 0.16.0): a correction from Notion is applied as this record says only after your yes in the session (§4)
 
 ## Context
 Decision 0023 says an edit you make to a brain-owned value in Notion is applied as your correction and recorded in the note's `timeline`. But the timeline only exists for key facts (0010). Some brain-owned properties are not facts (Name, Summary, Why, relations), and some are judgments that have their own review path (Assessment, Supersedes). The PR #2 review flagged that the CLI contract treated these differently from 0023 without a decision.

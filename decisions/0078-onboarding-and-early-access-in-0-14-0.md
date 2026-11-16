@@ -13,6 +13,7 @@
 **Refines:** [0019](0019-notion-space-built-with-notion-ai-prompts.md) (a new user duplicates a published template instead of building from the prompts), [0048](0048-modules-and-simpler-rows.md) (the modules a new brain starts with), [0015](0015-notion-access-via-mcp.md) and [0037](0037-intake-experience.md) (what setup asks, and when)
 **Keeps:** 0077's trust repair as 0.13.0 and first; 0075's weekly scope (unchanged, one release later); the feature cutoff at 0.15.0; Markdown + Git canonical, Notion as the interface, 0022 (structure changes in the product first); the build prompts and migrations; the CLI stays non-interactive; the session-opening scope gate
 **§2 amended by:** [0099](0099-notion-without-decisions-and-questions.md) (2026-11-16; 0.16.0): a new brain no longer has a Knowledge module
+**§6 amended by:** [0101](0101-where-notion-ai-and-the-brain-each-write.md) (2026-11-16; 1.0.0): without Notion AI, a transcript gets its minutes from the agent and keeps selection, Brain Assistant's skills run in the agent, and setup asks two questions (§8)
 
 ## Context
 

@@ -74,7 +74,7 @@ Keep a URL as a bookmark, and an artifact made in a Claude Code or Codex session
 Pulling threads directly instead of pasting them (pasting is in 0.2.0). **Source:** vision.
 
 ### Minutes from a pasted transcript, without Notion AI
-**Post-1.0 (0078).** At 1.0 a user without Notion AI pastes any transcript or summary onto the meeting page and it is ingested whole, with no way to leave a subject or item out. The agent could rewrite a pasted transcript into the minutes format (notion/minutes-format.md) during ingest, so selection works without Notion AI. Wait until early users without Notion AI show they need it.
+**Moved into 1.0.0 by [0101](../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §8** (2026-11-16): the agent writes the minutes from a transcript, and meetings come from any tool. The text below is the idea as recorded. **Post-1.0 (0078).** At 1.0 a user without Notion AI pastes any transcript or summary onto the meeting page and it is ingested whole, with no way to leave a subject or item out. The agent could rewrite a pasted transcript into the minutes format (notion/minutes-format.md) during ingest, so selection works without Notion AI. Wait until early users without Notion AI show they need it.
 
 ### Ingest from the meeting transcript
 When the Notion AI summary is thin, read the transcript too (today it is excluded). **Source:** dogfood 2026-10-13.

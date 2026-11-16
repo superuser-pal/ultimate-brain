@@ -2,6 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-10-14
+**Amended by:** [0101](0101-where-notion-ai-and-the-brain-each-write.md) (2026-11-16; 1.0.0): Brain Assistant may set your operational fields after your yes in the Notion chat, never a brain-owned property (§3)
 
 ## Context
 CC-18 adds Brain Assistant, a Notion Custom Agent with seven skills (notion/brain-assistant.md): Today, Review queue, Check minutes, Prep, Weekly review, Plan check, Tidy capture, plus how-to answers. Notion AI can also edit pages and properties. An edit made by Notion AI looks to the brain like an edit by you: a changed brain-owned property is read as your correction on the next sync (0023), and a changed Decision on a Review row is applied by `brain apply`. A prompt that "helpfully" fixes a property would change the brain without your yes (0003).
