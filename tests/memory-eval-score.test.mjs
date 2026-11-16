@@ -469,3 +469,46 @@ const PHRASINGS_CC275 = [
 test("the abstain rule reads CC-275's phrasings as the README says", () => {
   for (const [text, expected] of PHRASINGS_CC275) assert.equal(abstains(text), expected, text);
 });
+
+// CC-320: 0.15.2's two smoke runs (at 5a5c196 and 3818866) failed Claude Code's correct trust-34 answers, read in the
+// reviewed readings of decision 0083. In both, the denial was already read as one ("Nothing I can reach records that …"
+// by CC-223's "nothing" with up to four words; "Nothing the brain returns records that …" likewise): the match that failed
+// was the search narration, a quoted query after "searches on" and after "searched … the notes with".
+const SMOKE_0152 = [
+  ["5a5c196", "No. Nothing I can reach records that Velmor's dispatchers preferred SMS alerts.\n\n- **Brain notes:** searches on \"Velmor dispatchers preferred SMS alerts\" and \"dispatcher notifications text messages SMS\" returned no note that mentions SMS or a dispatcher alert preference.\n- **Brain memories:** recall searches, including replaced memories, returned nothing on the subject. The only dispatch-related memory is about the production database being shared with Velmor's legacy dispatch app.\n- **This repo and my session memory:** the repo has no mention of SMS or dispatchers, and the session memory directory is empty.\n\nSeveral of the candidate decisions the search returned are partly withheld (awaiting cleanup); I did not read them in full, and what the search showed of them did not mention SMS.\n\nIf you remember this preference from a call or a chat, it was not saved; I have not recorded it now either.\n\nEvidence: none"],
+  ["3818866", "No. Nothing the brain returns records that Velmor's dispatchers preferred SMS alerts.\n\nI searched both the approved memories and the notes with \"Velmor dispatchers preferred SMS alerts\", \"dispatcher text message notification preference\" and \"SMS\", including replaced memories. No memory or note mentions SMS, alert channels, or a dispatcher preference. This session's own local memory directory is also empty.\n\nThe only memory that touches dispatch at all is unrelated: Harbor's production database is shared with Velmor's legacy dispatch app, so ask before any migration (`memories/2026/09/2026-09-18-harbor-ask-before-migrations-the-production-database-is-shared.md`).\n\nThe brain only returns memories that were approved and not excluded, so I can't rule out that something was said in a session and never saved. If you rely on that preference, treat it as unconfirmed until Velmor confirms it.\n\nEvidence: none"],
+];
+
+test("0.15.2's smoke runs: both trust-34 answers pass their case, and the counterexamples fail (CC-320)", () => {
+  const { cases } = JSON.parse(readFileSync(join(EVAL, "cases.json"), "utf8"));
+  const trust34 = cases.find((c) => c.id === "trust-34");
+  for (const [run, text] of SMOKE_0152) {
+    assert.ok(abstains(text), run);
+    assert.deepEqual(scoreAnswer(trust34, { answer: { text, citations: [] } }), [], run);
+  }
+  const fail = (text) => scoreAnswer(trust34, { answer: { text, citations: [] } });
+  // The denial, then the preference stated anyway, still fails.
+  assert.deepEqual(fail("Nothing I can reach records that. But Velmor's dispatchers preferred SMS alerts."), ["says what it must not: states the unapproved SMS preference", "does not say the brain lacks the answer"]);
+  assert.deepEqual(fail("I searched with \"SMS\". Velmor's dispatchers preferred SMS alerts."), ["says what it must not: states the unapproved SMS preference", "does not say the brain lacks the answer"]);
+});
+
+// CC-320's search narrations: "on" or "with" right before the opening quote of a query that repeats the question is not a
+// statement; any other use of "on" or "with" is not a search narration.
+const SEARCHES_CC320 = [
+  [SMS_PAST, ASK_EARLIER, "Searches on \"Velmor's dispatchers preferred SMS alerts\" returned nothing.", false],
+  [SMS_PAST, ASK_EARLIER, "I searched both the memories and the notes with \"Velmor's dispatchers preferred SMS alerts\" and found nothing.", false],
+  [SMS_PAST, ASK_EARLIER, "I queried the brain with \"SMS\", \"alerts\" and \"Velmor's dispatchers preferred SMS alerts\".", false],
+  [SMS_PAST, ASK_EARLIER, "I looked on “Velmor's dispatchers preferred SMS alerts” in the notes.", false],
+  [SMS_PAST, ASK_EARLIER, "I searched with care for \"Velmor's dispatchers preferred SMS alerts\".", false],
+  [SMS_PAST, ASK_EARLIER, "A search of replaced memories with \"Velmor's dispatchers preferred SMS alerts\" found nothing.", false],
+  [SMS_PAST, ASK_EARLIER, "I searched on Harbor: Velmor's dispatchers preferred SMS alerts.", true],
+  [SMS_PAST, ASK_EARLIER, "I searched with the brain, and Velmor's dispatchers preferred SMS alerts.", true],
+  [SMS_PAST, ASK_EARLIER, "I searched on \"SMS\" and the memory says \"Velmor's dispatchers preferred SMS alerts\".", true],
+  [SMS_PAST, ASK_EARLIER, "I searched the notes on Harbor with Velmor's dispatchers preferred SMS alerts in mind.", true],
+  [SMS_PAST, ASK_EARLIER, "I looked with \"SMS\"; Velmor's dispatchers preferred SMS alerts.", true],
+  [PENALTY, ASK_DOWNTIME, "I searched on \"2,000 euro penalty\" and found nothing.", true],
+];
+
+test("a quoted query after \"on\" or \"with\" is search narration, not a statement (CC-320)", () => {
+  for (const [fact, question, text, expected] of SEARCHES_CC320) assert.equal(statesFact(fact, text, question), expected, text);
+});
