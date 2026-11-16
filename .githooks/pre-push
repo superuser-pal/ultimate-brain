@@ -5,4 +5,11 @@ while read local_ref local_sha remote_ref remote_sha; do
     echo "Refusing direct push to main. Release with scripts/release.mjs." >&2
     exit 1
   fi
+  # A task branch: its task rows are checked here, so a format problem never reaches CI after the review (CC-301). A deleted branch has no commit.
+  case "$remote_ref" in
+    refs/heads/claude/*|refs/heads/codex/*)
+      if [ "$local_sha" != "0000000000000000000000000000000000000000" ]; then
+        node "$(dirname "$0")/../scripts/task.mjs" check "$local_sha" "${remote_ref#refs/heads/}" </dev/null >/dev/null || exit 1
+      fi ;;
+  esac
 done

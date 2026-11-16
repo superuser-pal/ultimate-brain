@@ -49,6 +49,30 @@ export function taskEntries(tasks = taskFiles()) {
   return entries;
 }
 
+/** Whether a release's CHANGELOG section is written from its task rows' `**Changelog:**` lines (0.4.0 on, decision 0039). */
+export function usesTaskRowChangelog(version) {
+  const [major, minor] = version?.split(".").map(Number) ?? [];
+  return major > 0 || minor >= 4;
+}
+
+/**
+ * The first thing wrong with a branch's task rows (`head`) against the rows it started from (`base`), or undefined: its own task has no
+ * row, a row or a `**Changelog:**` line of the base is gone, or its own `**Changelog:**` line is missing or empty. CI's pr-format and the
+ * pre-push hook (`task.mjs check`, CC-301) both ask this.
+ */
+export function taskRowProblem(id, base, head) {
+  const task = head.find((entry) => entry.id === id);
+  const missingHeadings = base.filter((entry) => !head.some((headTask) => headTask.id === entry.id)).map((entry) => entry.id);
+  const missingChangelog = base.filter((entry) => entry.changelog !== undefined && head.find((headTask) => headTask.id === entry.id)?.changelog === undefined).map((entry) => entry.id);
+  // A task with no row on the head would fall to the 0.3.x path and be asked for a CHANGELOG.md line (CC-116).
+  if (task === undefined) return `PR has no row for its task ${id}: keep its row in build/TASKS.md`;
+  if (missingHeadings.length > 0) return `PR loses task heading(s): ${missingHeadings.join(", ")}`;
+  if (missingChangelog.length > 0) return `PR loses **Changelog:** line(s): ${missingChangelog.join(", ")}: the line sits directly below **Release:**`;
+  if (!usesTaskRowChangelog(task.release)) return undefined;
+  if (task.changelog === undefined) return `PR task ${id} has no **Changelog:** line`;
+  return task.changelog.trim() === "" ? `PR task ${id} has an empty **Changelog:** line` : undefined;
+}
+
 export function slug(value) {
   return value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }

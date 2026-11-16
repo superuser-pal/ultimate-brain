@@ -1,4 +1,4 @@
-import { contentAt, fail, optionalContentAt, taskEntries, tryCommand } from "./common.mjs";
+import { contentAt, fail, optionalContentAt, taskEntries, taskRowProblem, tryCommand, usesTaskRowChangelog } from "./common.mjs";
 
 const pr = process.argv[2] ?? process.env.GITHUB_REF_NAME;
 if (!/^\d+$/.test(pr ?? "")) fail("PR number is required");
@@ -25,23 +25,15 @@ else {
         // A row moved from TASKS.md to HISTORY.md is not lost (CC-94).
         const baseTasks = taskEntries(`${base.stdout}\n${baseHistory.stdout}`);
         const headTasks = taskEntries(`${head.stdout}\n${headHistory.stdout}`);
-        const missingHeadings = baseTasks.filter((task) => !headTasks.some((headTask) => headTask.id === task.id)).map((task) => task.id);
-        const missingChangelog = baseTasks.filter((task) => task.changelog !== undefined && headTasks.find((headTask) => headTask.id === task.id)?.changelog === undefined).map((task) => task.id);
         const headLines = changelogIds(headLog.stdout);
         const missingLines = [...changelogIds(baseLog.stdout)].filter((id) => !headLines.has(id));
         const task = headTasks.find((entry) => entry.id === match[2]);
-        const clash = plannedElsewhere(repo.stdout, pr, headTasks.filter((entry) => !baseTasks.some((baseTask) => baseTask.id === entry.id)));
-        // A task with no row on the head would fall to the 0.3.x path below and be asked for a CHANGELOG.md line (CC-116).
-        if (task === undefined) fail(`PR has no row for its task ${match[2]}: keep its row in build/TASKS.md`);
-        else if (missingHeadings.length > 0) fail(`PR loses task heading(s): ${missingHeadings.join(", ")}`);
+        const rows = taskRowProblem(match[2], baseTasks, headTasks);
+        const clash = rows === undefined ? plannedElsewhere(repo.stdout, pr, headTasks.filter((entry) => !baseTasks.some((baseTask) => baseTask.id === entry.id))) : undefined;
+        if (rows !== undefined) fail(rows);
         else if (missingLines.length > 0) fail(`PR loses CHANGELOG.md line(s): ${missingLines.join(", ")}`);
-        else if (missingChangelog.length > 0) fail(`PR loses **Changelog:** line(s): ${missingChangelog.join(", ")}`);
         else if (clash !== undefined) fail(clash);
-        else if (usesTaskRowChangelog(task?.release)) {
-          if (task.changelog?.trim() === "") fail(`PR task ${match[2]} has an empty **Changelog:** line`);
-          else if (task.changelog === undefined) fail(`PR task ${match[2]} has no **Changelog:** line`);
-          else process.stdout.write(`PR #${pr} format is valid\n`);
-        } else if (!details.files.some((file) => file.path === "CHANGELOG.md")) fail("PR must add its task line to CHANGELOG.md");
+        else if (!usesTaskRowChangelog(task.release) && !details.files.some((file) => file.path === "CHANGELOG.md")) fail("PR must add its task line to CHANGELOG.md");
         else process.stdout.write(`PR #${pr} format is valid\n`);
       }
     }
@@ -70,9 +62,4 @@ function plannedElsewhere(repo, pr, added) {
 /** Task ids with a line in CHANGELOG.md (`- XX-N` or `- XX-N (#N)`). */
 function changelogIds(text) {
   return new Set([...text.matchAll(/^- ((?:CC|CX)-\d+)\b/gm)].map((match) => match[1]));
-}
-
-function usesTaskRowChangelog(version) {
-  const [major, minor] = version?.split(".").map(Number) ?? [];
-  return major > 0 || minor >= 4;
 }
