@@ -50,10 +50,14 @@ async function approveFixtureKnowledge(dir: string): Promise<void> {
   await approved(dir, "knowledge/references/row-level-security.md");
 }
 
+/** A part Document written before 0.16.0, which stays valid (0098 §4): `note new` no longer writes one, so the file is made by hand. */
 export async function newReference(dir: string, sourceId: string, title = "Acme requirements"): Promise<{ id: string; path: string }> {
-  const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title, frontmatter: { summary: "What Acme requires of the website.", origin: "part", area: AREA, projects: [PROJECT], sources: [sourceId] }, body: REQUIREMENTS }] });
+  const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title, frontmatter: { summary: "What Acme requires of the website.", origin: "learned", area: AREA, projects: [PROJECT], sources: [sourceId] }, body: REQUIREMENTS }] });
   assert.equal(created.code, 0, created.stdout);
-  return created.json.data.created[0];
+  const made = created.json.data.created[0];
+  const file = join(dir, made.path);
+  await writeFile(file, (await readFile(file, "utf8")).replace(/^origin: learned$/m, "origin: part"));
+  return made;
 }
 
 test("a reference validates, is listed under its project and renders to Documents with its body", async (context) => {
@@ -96,7 +100,7 @@ test("a reference validates, is listed under its project and renders to Document
 
 test("note new refuses a reference with no sources", async (context) => {
   const dir = await fixtureCopy(context);
-  const refused = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "No sources", frontmatter: { summary: "Kept from nowhere.", origin: "part" }, body: "x\n" }] });
+  const refused = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "No sources", frontmatter: { summary: "Kept from nowhere.", origin: "whole" }, body: "x\n" }] });
   assert.equal(refused.json.error?.code, "INPUT_INVALID");
   assert.match(refused.stdout, /sources/);
 });
@@ -414,12 +418,12 @@ test("acceptance: Keep as document with Only keep empty gives a whole Document a
   assert.equal(lint.json.data.errors, 0, JSON.stringify(lint.json.data.issues));
 });
 
-test("acceptance: with Only keep set, a part Document goes in the source's review_notes, and approving it makes it reviewed (0049)", async (context) => {
+test("a part Document written before 0.16.0 stays valid: its review_notes approves it; note new writes no new part (0049, 0098 §4)", async (context) => {
   const dir = await fixtureCopy(context);
   const document = await newSource(dir, source("Acme BRS v2", "document", `${REQUIREMENTS}\n## Budget\n\n- 80000\n`, { only_keep: "just the requirements" }));
   const part = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Acme BRS: requirements", frontmatter: { summary: "Just the requirements.", origin: "part", area: AREA, sources: [document.id] }, body: REQUIREMENTS }] });
-  assert.equal(part.code, 0, part.stdout);
-  const page = part.json.data.created[0];
+  assert.equal(part.json.error?.code, "INPUT_INVALID", "a part is a checked row since 0.16.0");
+  const page = await newReference(dir, document.id, "Acme BRS: requirements");
   const row = await run(dir, ["proposal", "new"], { proposals: [{ kind: "review_notes", source: document.id, notes: [page.id] }] });
   assert.equal(row.code, 0, row.stdout);
   const applied = await run(dir, ["apply"], { decisions: [{ proposal: row.json.data.created[0].id, action: "approve", decided_at: NOW, decided_by: "notion" }] });
