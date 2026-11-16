@@ -85,8 +85,8 @@ export function abstains(text) {
 //   figure or a wording the question doesn't hold counts wherever it stands, even inside a denial;
 // - its sentence asks, restates or denies the question: the sentence ends with "?", or one of CUES comes before the match
 //   in the same clause (the text since the last , : dash or "but"); or the match is inside a quoted search query
-//   ("searched for "…"", or "under "…"" since CC-231), with only other quoted terms between the search verb's "for" or
-//   "under" and it. Up to twelve words, with no colon, quote or sentence end, may stand between the verb and its "for"
+//   ("searched for "…"", or "under "…"" since CC-231, or "on "…"" / "with "…"" since CC-320), with only other quoted
+//   terms between the search verb's "for", "under", "on" or "with" and it. Up to twelve words, with no colon, quote or sentence end, may stand between the verb and its "for"
 //   or "under" ("searched the brain's memories (including replaced ones) and its notes for "…"", CC-225; "searched both
 //   the notes and the session memories, including replaced ones, under "…"", CC-231).
 // "Nothing" denies with up to four words of any kind before its verb (CC-223). Since CC-231 "Nothing" or "None of" also
@@ -104,7 +104,9 @@ const CUES = [
   /\bno (?:\w+ )?(?:notes?|records?|memor(?:y|ies)|evidence|sources?|sessions?|mentions?)\b/,
   /(?:\bnot|n't|\bnever) (?:\w+ ){0,2}(?:says?|said|records?|recorded|holds?|held|shows?|showed|states?|stated|mentions?|mentioned|confirms?|confirmed|verify|verified|establish|established|find|found)\b/,
 ];
-const SEARCHED = /\b(?:search(?:es|ed|ing)?|quer(?:y|ies|ied)|look(?:s|ed|ing)?) (?:[^\s.;:!?"“”]+ ){0,12}?(?:for|under)\b/g;
+// CC-320: "on" or "with" counts only right before an opening quote ("searches on "…"", "searched … the notes with "…""), so
+// "searched with care for "…"" still reaches its "for".
+const SEARCHED = /\b(?:search(?:es|ed|ing)?|quer(?:y|ies|ied)|look(?:s|ed|ing)?) (?:[^\s.;:!?"“”]+ ){0,12}?(?:for\b|under\b|(?:on|with)(?= ["“]))/g;
 const CLAUSE_BREAK = /[,:\u2013\u2014]| - | but /;
 const straight = (text) => text.replace(/[‘’]/g, "'").toLowerCase();
 
