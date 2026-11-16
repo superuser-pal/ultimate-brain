@@ -409,7 +409,7 @@ The decision is written into the proposal file in the commit that applies it, so
    - **A pending row** needs nothing: its proposal is in `_proposals/` and is asked as §7.5 says.
    - Items an earlier run already decided keep their `item_decisions`, and the rest of their row is treated as above.
 3. **Then** the migration archives the Review database and Home's "What's waiting for you?" view (nothing is deleted) and removes `notion.databases.review`, `notion.review_sections` and `notion.review_format` from `brain.json`.
-4. **After it,** `--review-transition` refuses with `REVIEW_RETIRED`. Until then, plain `sync plan` ignores Review rows (`ignored`, reason `REVIEW_ROW`), and `brain status` names the migration as pending (cli §5.15). An unattended run never uses the option. A brain that never had a Review database has nothing to migrate.
+4. **After it,** `--review-transition` refuses with `REVIEW_RETIRED`. Until then, plain `sync plan` ignores Review rows (`ignored`, reason `REVIEW_ROW`), and `brain upgrade` names the migration as pending (cli §5.15). An unattended run never uses the option. A brain that never had a Review database has nothing to migrate.
 
 Proposal files written before 0.16.0 keep their `notion`, `notion_published`, `item_decisions` and `revisions` as history.
 
