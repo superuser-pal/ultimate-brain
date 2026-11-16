@@ -1007,7 +1007,7 @@ Easy setup on Windows and Mac, from the first beta tester's Windows session (dec
 **Output:** `src/commands/init.ts` per CC-290's contract; tests with no `HOME` in the environment, a literal `~/` path, and a Git with no identity.
 **Acceptance:** the three tests named in Output pass; the full suite, `typecheck`, `test:package`, the leak check and the PR format check pass.
 
-### CC-292 · A Windows CI job, and the tests made to pass on Windows (0097 §4) · `in progress`
+### CC-292 · A Windows CI job, and the tests made to pass on Windows (0097 §4) · `review`
 **Release:** 0.15.2
 **Changelog:** `brain repo` accepts Windows paths (`C:\...`) for linked repos and refuses a new repo inside the brain on Windows too, and CI runs the test suite on Windows.
 **Output:** a `windows-latest` job in `.github/workflows/ci.yml` running the suite; fixes for what fails there: `brain repo add`, `refresh --path` and `new` accept a Windows absolute path, as do `brain.json`'s repo `path` and the weekly plan `file` in the schemas, and `repo new`'s containment check and the index-lock wait use the platform's path rules; tests that compare paths use either separator; launchd/cron tests, `chmod`-based write-failure tests and the maintainers' tooling tests (release scripts, native run, evaluation runner, `vendor-skills`) are skipped on `win32` with the reason in the test.
