@@ -101,3 +101,9 @@ spec/cli.md:you@example\.com
 README.md:you@example\.com
 docs/setup.md:you@example\.com
 src/commands/init.ts:you@example\.com
+spec/examples/valid/proposal-notion-correction.md:7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d
+spec/examples/valid/proposal-notion-correction-withdrawn.md:2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e
+spec/examples/valid/proposal-tracked-task.md:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e
+spec/examples/valid/proposal-tracked-task-unreadable-kept.md:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e
+spec/examples/invalid/proposal-tracked-task-approve.md:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e
+spec/examples/invalid/proposal-notion-correction-passages.md:7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d

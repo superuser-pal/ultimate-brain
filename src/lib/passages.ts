@@ -34,14 +34,15 @@ export function itemPassages(p: Record<string, unknown>, kind: "change" | "note"
 }
 
 /**
- * Which of a proposal's items are withheld with the suppression records of `context` (schema §11.5). A `notion_change` and a cleanup row are
- * never judged. A note of a `review_notes` is also withheld when its draft is restricted in any part (capture-and-review §5.1); a legacy note
+ * Which of a proposal's items are withheld with the suppression records of `context` (schema §11.5). A `notion_change`, a `notion_correction`,
+ * a `tracked_task` and a cleanup row are never judged. A note of a `review_notes` is also withheld when its draft is restricted in any part (capture-and-review §5.1); a legacy note
  * is judged by its draft alone, and a legacy change or link by the legacy rule (schema §11.5).
  */
 export function proposalWithheld(proposal: Note, workspace: Workspace, context: Context): Withheld {
   const a = proposal.attributes;
   const out: Withheld = { whole: false, changes: new Set(), notes: new Set(), links: new Set() };
-  if (context.suppressions.length === 0 || a.kind === "notion_change" || isRecord(a.cleanup)) return out;
+  // What you did in Notion is no input: a notion_change, notion_correction or tracked_task is never held (cli §5.6, §5.7).
+  if (context.suppressions.length === 0 || a.kind === "notion_change" || a.kind === "notion_correction" || a.kind === "tracked_task" || isRecord(a.cleanup)) return out;
   if (a.kind !== "review_notes") {
     out.whole = withheldSupport({ source: a.source, passages: a.passages, text: proposedText(a) }, context);
     return out;

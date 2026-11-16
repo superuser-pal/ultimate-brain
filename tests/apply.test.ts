@@ -180,7 +180,7 @@ test("re-applying the same decisions is a no-op", async (context) => {
   await proposal(dir, "prp-0a1b2c3d", kinds[0]!.fields);
   const input = { decisions: [decide("prp-0a1b2c3d"), decide("prp-9d3f7h2k", "reject")] };
   const first = await apply(dir, input);
-  assert.deepEqual(first.json.data.summary, { applied: 1, closed: 1, recorded: 0, awaiting_notion: 0, corrected: 0, skipped: 0, failed: 0 });
+  assert.deepEqual(first.json.data.summary, { applied: 1, closed: 1, recorded: 0, awaiting_notion: 0, skipped: 0, failed: 0 });
   const snapshot = await readFile(join(dir, PROJECT), "utf8");
   const log = await readFile(join(dir, "log/2026-12.md"), "utf8");
   assert.ok(log.endsWith(
@@ -261,55 +261,16 @@ test("apply reports item failures and keeps going", async (context) => {
   ]);
   assert.match(run.json.data.decisions[3].message, /missing-ref/);
   assert.equal(parseFrontmatter(await readFile(join(dir, "_proposals/2026-12-08-prp-2a1b2c3d.md"), "utf8")).attributes.status, "pending", "a failed item is left unchanged");
-  assert.deepEqual(run.json.data.summary, { applied: 1, closed: 0, recorded: 0, awaiting_notion: 0, corrected: 0, skipped: 0, failed: 4 });
-});
-
-test("corrections from Notion edits run first and later decisions see them", async (context) => {
-  const dir = await fixtureCopy(context);
-  await proposal(dir, "prp-0a1b2c3d", { kind: "update_fact", target: "per-3h8w2n6c", field: "role", before: "Product Manager", after: "Head of Product", from: "2026-12-08" });
-  const run = await apply(dir, {
-    corrections: [
-      { target: "per-3h8w2n6c", field: "facts.role", value: "Product lead", observed_at: "2026-12-07T09:00:00Z" },
-      { target: "per-3h8w2n6c", field: "title", value: "Maria López", observed_at: "2026-12-07T09:00:00Z" },
-      { target: "prj-9x4t1b7e", field: "summary", value: "Rebuild of Acme's site.", observed_at: "2026-12-07T09:00:00Z" },
-      { target: "per-3h8w2n6c", field: "why", value: "x", observed_at: "2026-12-07T09:00:00Z" },
-      { target: "prj-9x4t1b7e", field: "area", value: null, observed_at: "2026-12-07T09:00:00Z" },
-      { target: "prj-9x4t1b7e", field: "client", value: null, observed_at: "2026-12-07T09:00:00Z" },
-    ],
-    decisions: [decide("prp-0a1b2c3d")],
-  });
-  assert.equal(run.code, 1, run.stdout);
-  assert.deepEqual(run.json.data.corrections.map((item: { result: string; reason?: string }) => [item.result, item.reason ?? null]), [
-    ["applied", null],
-    ["skipped", "NO_CHANGE"],
-    ["applied", null],
-    ["failed", "FIELD_NOT_CORRECTABLE"],
-    ["failed", "INVALID_RESULT"],
-    ["applied", null],
-  ]);
-  assert.equal(run.json.data.decisions[0].result, "closed");
-  assert.equal(run.json.data.decisions[0].reason, "STALE_PROPOSAL");
-
-  const maria = parseFrontmatter(await readFile(join(dir, MARIA), "utf8")).attributes;
-  assert.deepEqual(maria.facts, { role: "Product lead" });
-  assert.deepEqual((maria.timeline as unknown[]).at(-1), { field: "role", value: "Product lead", from: "2026-12-07", learned: "2026-12-07", source: "notion-edit", assessment: "accepted" });
-  const project = parseFrontmatter(await readFile(join(dir, PROJECT), "utf8")).attributes;
-  assert.equal(project.client, undefined);
-  assert.equal(project.area, "area-2m7c4h8n");
-  const log = await readFile(join(dir, "log/2026-12.md"), "utf8");
-  assert.ok(log.includes(`- ${NOW} correct per-3h8w2n6c "Maria López" field=facts.role\n`));
+  assert.deepEqual(run.json.data.summary, { applied: 1, closed: 0, recorded: 0, awaiting_notion: 0, skipped: 0, failed: 4 });
 });
 
 test("apply validates its input as a whole", async (context) => {
   const dir = await fixtureCopy(context);
   const run = await apply(dir, {
     decisions: [{ proposal: "prp-0a1b2c3d", action: "edit", decided_at: "yesterday", decided_by: "email", extra: 1 }],
-    corrections: [{ target: "per-3h8w2n6c", field: "title" }],
   });
   assert.equal(run.code, 4);
   assert.deepEqual(run.json.error.details.map((detail: { pointer: string }) => detail.pointer), [
-    "/corrections/0/value",
-    "/corrections/0/observed_at",
     "/decisions/0/extra",
     "/decisions/0/value",
     "/decisions/0/decided_at",
@@ -338,15 +299,13 @@ test("a new_item that cannot be written fails only that item", async (context) =
   assert.deepEqual(run.json.data.decisions.map((item: { result: string; reason?: string }) => [item.result, item.reason ?? null]), [["applied", null], ["failed", "INVALID_RESULT"]]);
 });
 
-test("corrections refuse sources and proposals; a merge rewrites memory areas", async (context) => {
+test("a correction of a source or a proposal is refused; a merge rewrites memory areas", async (context) => {
   const dir = await fixtureCopy(context);
-  const run = await apply(dir, {
-    corrections: [
-      { target: "src-7w3c9k5m", field: "title", value: "Edited", observed_at: "2026-12-07T09:00:00Z" },
-      { target: "prp-9d3f7h2k", field: "title", value: "Edited", observed_at: "2026-12-07T09:00:00Z" },
-    ],
-  });
-  assert.deepEqual(run.json.data.corrections.map((item: { reason: string }) => item.reason), ["FIELD_NOT_CORRECTABLE", "FIELD_NOT_CORRECTABLE"]);
+  const correction = (target: string) => ({ kind: "notion_correction", target, field: "title", before: "x", after: "Edited", database: "documents", page: "00000000-0000-4000-8000-000000000001", property: "Name", notion_value: "Edited", observed_at: "2026-12-07T09:00:00Z" });
+  await proposal(dir, "prp-4a1b2c3d", correction("src-7w3c9k5m"));
+  await proposal(dir, "prp-5a1b2c3d", correction("prp-9d3f7h2k"));
+  const run = await apply(dir, { decisions: [decide("prp-4a1b2c3d"), decide("prp-5a1b2c3d")] });
+  assert.deepEqual(run.json.data.decisions.map((item: { reason: string }) => item.reason), ["FIELD_NOT_CORRECTABLE", "FIELD_NOT_CORRECTABLE"]);
 
   const second = (await readFile(join(dir, "areas/clients.md"), "utf8")).replace("id: area-2m7c4h8n", "id: area-3n8d5j9p").replace("title: Clients", "title: Clients old");
   await writeFile(join(dir, "areas/clients-old.md"), second);

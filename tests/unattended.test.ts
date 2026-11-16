@@ -82,7 +82,7 @@ test("sync apply --skip-conflicted skips a conflicted row whole and the creates 
     as_of: NOW,
     create: [org("org-5h2k8q1w", "Globex", orgPage), org("org-6j3m9r2x", "Initech", otherPage)],
     updates: [{ id: MARIA, lifecycle: "reviewed" }],
-    corrections: [{ target: MARIA, field: "summary", value: "Product lead at Acme.", observed_at: NOW, property: "Summary", notion_value: "Product lead at Acme." }],
+    corrections: [{ target: MARIA, field: "summary", value: "Product lead at Acme.", observed_at: NOW, database: "people", page_id: MARIA_PAGE, property: "Summary", notion_value: "Product lead at Acme." }],
     decisions: [],
     conflicts: [
       { database: "people", page_id: MARIA_PAGE, brain_id: MARIA, code: "BOTH_CHANGED", message: "Role changed on both sides", property: "Role" },
@@ -97,10 +97,13 @@ test("sync apply --skip-conflicted skips a conflicted row whole and the creates 
   assert.deepEqual(data.updates.map((item: any) => [item.id, item.result, item.reason]), [[MARIA, "skipped", "ROW_CONFLICTED"]]);
   assert.deepEqual(data.corrections.map((item: any) => [item.target, item.result, item.reason]), [[MARIA, "skipped", "ROW_CONFLICTED"]]);
   assert.equal(parseFrontmatter(await readFile(join(dir, "knowledge/people/maria-lopez.md"), "utf8")).attributes.summary === "Product lead at Acme.", false, "the Summary correction waits with its row");
+  const proposals = await Promise.all((await readdir(join(dir, "_proposals"))).map((name) => readFile(join(dir, "_proposals", name), "utf8")));
+  assert.equal(proposals.some((text) => text.includes("kind: notion_correction")), false, "and is not even written");
 
   const dir2 = await fixtureCopy(context);
   const applied = await run(dir2, ["sync", "apply"], plan);
-  assert.equal(applied.json.data.corrections[0].result, "applied", "without the flag a conflict blocks only its own property");
+  assert.equal(applied.json.data.corrections[0].result, "written", "without the flag a conflict blocks only its own property; the correction is written pending, never applied");
+  assert.equal(parseFrontmatter(await readFile(join(dir2, "knowledge/people/maria-lopez.md"), "utf8")).attributes.summary === "Product lead at Acme.", false);
 });
 
 test("sync apply --skip-conflicted skips dependent creates transitively, whatever their order in the plan", async (context) => {
