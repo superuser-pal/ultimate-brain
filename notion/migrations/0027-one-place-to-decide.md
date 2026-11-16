@@ -173,7 +173,7 @@ Since 0.16.0 an edit to a brain-owned value in Notion is asked in your agent ses
 - `Owner: brain.` → `Owner: brain. An edit here is asked in your agent session before it reaches the brain.`
 - `Owner: you when creating, then brain.` → `Owner: you when creating, then brain. A later edit is asked in your agent session before it reaches the brain.`
 
-A description that says anything else stays as it is.
+A description that says anything else stays as it is. Through the API, send each property with its type and the new description: an empty config for a text, title or date property (`{"rich_text": {}, "description": "…"}`), and for a relation its whole relation as you read it (`data_source_id`, `type: "dual_property"` and `dual_property` with the synced name and id), so the pair is kept. A description alone is refused.
 
 ### L2 · Brain Assistant (by hand)
 
@@ -191,7 +191,7 @@ Use the new prompt of [../minutes-format.md](../minutes-format.md) from now on: 
 
 ### L4 · The Start here callout (by hand, or the agent)
 
-If the top page starts with the **Start here** callout, add a third line to it, a plain paragraph inside the callout:
+If the top page starts with the **Start here** callout, add this line at its end, a plain paragraph inside the callout:
 
 `Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits.`
 
