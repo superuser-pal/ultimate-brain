@@ -5,6 +5,7 @@
 **Amends:** 0043, 0045
 **Amended by:** [0098](0098-agree-by-subject-and-check-a-changed-document.md) (2026-11-16; 0.17.0): Keep as document with Only keep filled writes the chosen part to an Inbox row you check before it goes in, instead of an item to approve after the ingest
 **Amended by:** [0099](0099-notion-without-decisions-and-questions.md) (2026-11-16; 0.16.0): Promote to document on a decision is asked in the session; the button and the Promote asked checkbox go with the Decisions database
+**Amended by:** [0100](0100-keep-a-task-as-a-document.md) (2026-11-16; 0.17.0): Keep as document also works on a task: the task page is kept as a whole Document, with a From the brain section you agree to
 
 ## Context
 In U-18 the user attached a requirements document to an Inbox row so that it would be saved and could be referred to later, from any database. The row's Keep was empty. The ingest took that as "all": a full extraction into a concept and a question, and no `reference` note, because 0045 writes one only when Keep names something narrower. A Notion attachment gets no digest and no Full text section either, so the document's readable text existed only in the brain's repo. The user couldn't find it anywhere in Notion. The skill never asked about the empty Keep, although the Keep description in Notion says "empty: the brain asks".
