@@ -28,7 +28,7 @@ A space is a **core** plus the **modules** you chose at onboarding. You can turn
 | **Domains** | Domains (in every space, 0065) | group Areas by work or life context; Areas can have one Domain or none. The database and Areas · Domain exist with the module off; the module decides whether the brain uses them and whether pages show them | off |
 | ~~Knowledge~~ | retired in 0.16.0 ([0099](../decisions/0099-notion-without-decisions-and-questions.md)): its Decisions and Questions databases are archived (Concepts went in 0.9.1, 0071). Decisions and questions are notes in Git, shown on project and area pages (the Brief and Decision log toggles) and in reports | — | — |
 | **Orgs** | Orgs | the Orgs tab of Knowledge; Client on Projects, Org on People; "Clients via projects" on area pages | on |
-| **Documents** | Documents (was References), learned ones included (0071) | the Documents tab of Knowledge and of "What do we know?"; Keep as document and Only keep on the Inbox | off |
+| **Documents** | Documents (was References), learned ones included (0071) | the Documents tab of Knowledge and of "What do we know?"; Keep as document and Only keep on the Inbox; Keep as document on Tasks (0100) | off |
 | **Reports** | Documents (shared; Reports needs the Documents module on, 0071): a report is a Documents row with Origin Report; Ask rows on the Inbox | the Ask the brain button on Home; the Refresh report button (a Brain Assistant message, §3.17), Refresh asked and What to fix on a report's Documents row; "Reports" on project and area pages | off |
 | **Tasks** | Tasks, or your own tasks database (0018) | the Tasks Space, with its Questions and Risks tabs (Kind, 0099); "What's on my plate here?" on project and area pages; Home's "What's on today?" Tasks tab, its "due" counts and "Due across areas" | off |
 | **Planning** | Goals, Key Results | the Plan Space; Goal on Projects; "What am I working toward here?" on area pages | off |
@@ -344,7 +344,7 @@ Everything that came into the brain except meetings, which have their own databa
 |---|---|---|
 | Name | Title | You on a capture; Brain on a row it creates |
 | Keep | Button labelled **Keep as document**: ticks Document asked and sets Brain Status to Ready | You (Documents module, 0048, 0049) |
-| Kind | Select: Capture, File, Email, Chat, Note, Ask, Catch-up, Weekly | System, written only when empty, so a Kind you choose stands (0048). File was Document before 0.6.0 (0049). **Ask** is yours: a question for the brain (Reports module, 0043). **Catch-up** is the summary an unattended catch-up leaves when something needs you (spec/cli.md §6.1; Kind Report before 0.9.1). **Weekly** is the week's review (0.16.0, [0096](../decisions/0096-one-place-to-decide.md); below) |
+| Kind | Select: Capture, File, Email, Chat, Note, Ask, Catch-up, Weekly, Changed | System, written only when empty, so a Kind you choose stands (0048). File was Document before 0.6.0 (0049). **Changed** is a checked row: a changed version of a document, written for you to check before it goes in (0.16.0, [0098](../decisions/0098-agree-by-subject-and-check-a-changed-document.md) §4; below). **Ask** is yours: a question for the brain (Reports module, 0043). **Catch-up** is the summary an unattended catch-up leaves when something needs you (spec/cli.md §6.1; Kind Report before 0.9.1). **Weekly** is the week's review (0.16.0, [0096](../decisions/0096-one-place-to-decide.md); below) |
 | Summary | Text | Brain: one line on what it taught; on a row the brain skipped, why ("Skipped: same as …") |
 | Documents | Relation → Documents (two-way with Sources) | Brain (was References, 0045, 0049) |
 | People | Relation → People (two-way with Sources) | Brain |
@@ -352,7 +352,9 @@ Everything that came into the brain except meetings, which have their own databa
 | Area | Relation → Areas (two-way with Inbox) | You (brain fills if empty) |
 | Brain Status | Select: New, Ready, Done | You set Ready ("take it in"); the brain sets Done when it has taken the row in, or skipped it. **A catch-up takes in only Ready rows** (0048) |
 | Document asked | Checkbox | You, through the Keep as document button: "waiting for the brain". The brain keeps the input as a Document and clears it (0049) |
-| Only keep | Text | You: when only part should be kept ("the requirements table and the deadlines"). Empty = the whole input (0049; was Keep) |
+| Only keep | Text | You: when only part should be kept ("the requirements table and the deadlines"). Empty = the whole input (0049; was Keep). Filled, the part is written as a checked row for you to check first, and only that part goes in (0098 §4) |
+| Changed from | Relation → Inbox (one-way) | Brain, on a checked row: the original input's row (for an attached file, its row). Written once, when the brain creates the row (0098 §4) |
+| What changed | Text | Brain, on a checked row: what the change dropped or altered, one line each (`Dropped: …`, `Altered: …`; a first `File: …` line for an attached file). Written once; the brain stores it with the row when it takes it in (0098 §5) |
 | Report | Relation → Documents (two-way with Asked in) | Brain: on an Ask row, the report that answers it (Notion fills it from the report's Asked in; a relation within the Inbox before 0.9.1, 0071) |
 | Tasks | Relation → Tasks (two-way with Source) | You |
 | Brain ID | Text | System (the source's id, `src-…`) |
@@ -371,6 +373,8 @@ Everything that came into the brain except meetings, which have their own databa
 
 
 **The weekly review (Kind Weekly, 0.16.0, [0096](../decisions/0096-one-place-to-decide.md); [spec/weekly-review.md](../spec/weekly-review.md)).** The brain writes one row per ISO week: Name `Week of <D Mon YYYY>` (the Monday), Brain ID the weekly report's id, the page body the report itself. A rerun in the same week updates that row. It arrives with Brain Status **New** and the brain sets it **Done** once every proposal its decisions name is decided and applied or closed; you decide them in Claude Code or Codex ("what needs my decision"), and a task item on the task itself. It is never taken in as an input, and it needs neither the Documents nor the Reports module.
+
+**A checked row (Kind Changed, 0.16.0, [0098](../decisions/0098-agree-by-subject-and-check-a-changed-document.md) §4 to §7; [spec/capture-and-review.md](../spec/capture-and-review.md) §12).** When you ask in the agent session for a document to be changed before it goes in ("keep only the requirements", "the depot count is 11, not 9"), or click Keep as document with Only keep filled, the brain records the original as a source (its row goes to Done, nothing taken in from it) and writes the changed text to a new row: Kind Changed, Changed from the original's row, What changed, Brain Status **New**, and Document asked ticked when it is to be kept as a Document. Read it, edit its body if you want, then say **go** in the session, or set it **Ready** for the next catch-up. On go, the session takes it in by subject and asks you as usual; on Ready, a catch-up without you takes it in with its notes `draft` and its questions waiting for your next session: Ready approves the text, not the notes. What it adds cites this row, and the original stays linked. Meetings and captures don't get one: they have Check minutes and Tidy capture.
 
 **Retired in 0.6.0 (0048, 0049):** Full text (Keep as document replaces it), Refresh report (an Ask row is always a new report), and the Brain Status options Processed (now Done) and Skipped (rows moved to Done). Migration 0010 leaves the two old properties unused for you to delete.
 
@@ -394,6 +398,8 @@ Minimal, so the brain can send action items (0018). If you already have a tasks 
 | Source | Relation → Inbox | The backlink for your action items from documents, emails, chats, notes and captures (0037) |
 | Kind | Select: Task, Question, Risk | 0099 §4. The brain sets Question or Risk on a task it creates to track a question or risk you said to follow up (spec/capture-and-review.md §6.4), and sends no Kind on any other task; you may set Task. The Questions and Risks tabs filter on it. A database you map yourself is offered it at connect (spec/setup.md §6.2.1); without it, such a task's title starts with `Question: ` or `Risk: ` |
 | Brain ID | Text | Set when the brain created it; on a task that tracks a question, the question's id |
+| Keep | Button labelled **Keep as document**: ticks Document asked | You (Documents module, 0.16.0, [0100](../decisions/0100-keep-a-task-as-a-document.md)) |
+| Document asked | Checkbox | You, through the Keep as document button: "waiting for the brain". The next catch-up keeps the task's page as a Document, linked to its project or area, the question it tracks and the task, and clears it (0100; [spec/capture-and-review.md](../spec/capture-and-review.md) §13). A database you map yourself is offered both at connect (spec/setup.md §6.2.2); without them, ask in the session |
 | Last edited time | Last edited time | System (Notion fills it; groups the Done tab by week) |
 
 ### 3.13 Concepts (retired in 0.9.1)
@@ -402,7 +408,8 @@ Concepts were ideas, methods and definitions the brain learned (0037). Since 0.9
 ### 3.14 Documents
 Pages you keep to read and link from anywhere (0049; the References database of 0045, renamed with its id, relations and views), what the brain learned and the brain's reports (0071). Created by the brain only, in these ways:
 - **Keep as document** on an Inbox row, with Only keep empty: the input's **whole text**, verbatim. It needs no decision and arrives Reviewed.
-- **Keep as document** with **Only keep** filled in: only that part, chosen by the brain. It comes with that input's other new notes and gets its page when you accept them (0071, [0096](../decisions/0096-one-place-to-decide.md)).
+- **Keep as document** with **Only keep** filled in: only that part, chosen by the brain, written first as a checked row on the Inbox (Kind Changed, §3.11) for you to check; once you say go or set it Ready, the checked text is kept whole and arrives Reviewed (0.16.0, [0098](../decisions/0098-agree-by-subject-and-check-a-changed-document.md) §4). Up to 0.15.x the part came with the input's other new notes and got its page when you accepted them.
+- **A task kept as a document** (0.16.0, [0100](../decisions/0100-keep-a-task-as-a-document.md)): the Keep as document button on a task, or "keep the go-live task as a document" in the session. The task's page, word for word, arrives Reviewed, with its project or area and a link to the task (Task); the brain then offers what it already holds on the subject, added in one **From the brain** section at the end, one cited line each, after your yes. Your text above it never changes.
 - **Learned** (0071; a concept before 0.9.1): an idea, method or definition the brain learned from an input, in its own words. It comes with that input's other new notes and gets its page when you accept them.
 - **Promote to document**, asked in the agent session ("promote the decision on … to a document", 0099 §9; a button on Decisions until 0.16.0): a page seeded from the decision. From then on its body is **yours**; the brain never rewrites it. The decision has no row, so the Document keeps the link in Git only (`promoted_from`).
 - **A report** (Reports module, 0071): the answer to an Ask row on the Inbox, one per subject, rewritten in place when you ask for a refresh. It is the brain's summary of what it knows, lines resting on notes you haven't reviewed marked *(not reviewed)*; it is never reviewed, has no Lifecycle and is never ingested back (0043, 0057).
@@ -416,6 +423,7 @@ A new version of a kept file proposes the changed lines to its Documents (an `up
 | Sources | Relation → Inbox (two-way with Documents) | Brain (filled from the Inbox side) |
 | Origin | Select: Kept, Learned, Report, Promoted, Workflow | Brain (0071): Kept for a `whole` or `part` Document, Learned for a `learned` one |
 | Origin | Select: Kept, Learned, Report, Promoted, Workflow | Brain (0071): Kept for a whole or part Document, Learned for what the brain learned, Report for a report, Promoted, Workflow. Groups the Documents views; never read back |
+| Task | Relation → Tasks (one-way) | Brain: on a Document kept from a task, the task (0.16.0, 0100). Never read back |
 | Asked in | Relation → Inbox (two-way with Report) | Brain: on a report, the Ask rows it answers (0071) |
 | Update | Button labelled **Refresh report**: sends a message to Brain Assistant (§3.17) | You, on a report (Reports module) |
 | Refresh asked | Checkbox | You, on a report, ticked by hand: rewrite the report with what the brain knows now; the brain clears it (0045) |
@@ -442,6 +450,7 @@ Plus the common properties (a report leaves Summary and Lifecycle empty). Page b
 | Button property | Label | Database | Ticks | Also | Module |
 |---|---|---|---|---|---|
 | Keep | Keep as document | Inbox | Document asked | sets Brain Status to Ready | Documents |
+| Keep | Keep as document | Tasks (0.16.0, 0100) | Document asked | — | Documents, Tasks |
 | Update | Refresh report | Documents (reports; the Inbox's Report rows before 0.9.1, 0071) | none: Send message to Brain Assistant (0.8.0, §3.17) | — | Reports |
 
 **A button's property name and its label differ** (#144): the page layout shows the name on the left and the label on the button, so the same text would show twice. The names are short and clash with no other property (not Report, Documents or Refresh asked). The brain never reads a button, only the checkbox it ticks, so a space that names its buttons otherwise works the same. Each checkbox has its own name, because Notion can't give a button and another property the same name.
