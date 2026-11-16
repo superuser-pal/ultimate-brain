@@ -1007,7 +1007,7 @@ Easy setup on Windows and Mac, from the first beta tester's Windows session (dec
 **Output:** `src/commands/init.ts` per CC-290's contract; tests with no `HOME` in the environment, a literal `~/` path, and a Git with no identity.
 **Acceptance:** the three tests named in Output pass; the full suite, `typecheck`, `test:package`, the leak check and the PR format check pass.
 
-### CC-292 · A Windows CI job, and the tests made to pass on Windows (0097 §4) · `todo`
+### CC-292 · A Windows CI job, and the tests made to pass on Windows (0097 §4) · `in progress`
 **Release:** 0.15.2
 **Changelog:** development only: CI runs the test suite on Windows.
 **Output:** a `windows-latest` job in `.github/workflows/ci.yml` running the suite; fixes for what fails there (paths, line endings); launchd-only tests skipped on `win32` with the reason in the test.

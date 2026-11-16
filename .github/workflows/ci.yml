@@ -23,6 +23,21 @@ jobs:
       - run: npm run test:package
       - run: node scripts/leak-check.mjs
 
+  # Windows (decision 0097 §4): the suite on a Windows runner. Git checks files out as they are stored (LF), as on the other jobs.
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run test:package
+
   pr-format:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
