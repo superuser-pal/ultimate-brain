@@ -126,16 +126,6 @@ Ongoing responsibilities (clients, health, learning…).
 | Logging level | Select: Tasks only, Tasks + final outputs, Full durable record, Custom. Empty = Tasks + final outputs (§3.19) | You (as Workflow) |
 | Log artifacts | Multi-select: Briefs, Plans, Specifications, Decisions, Final deliverables. Read only with Custom (§3.19) | You (as Workflow) |
 
-<details>
-<summary>Up to 0.15.x (history; removed by the 0.16.0 migration, 0099)</summary>
-
-| Property | Type | Owner |
-|---|---|---|
-| Decisions | Relation → Decisions (two-way with Area) | Brain (0034) |
-| Questions | Relation → Questions (two-way with Area) | Brain (0034) |
-
-</details>
-
 
 Page body: a toggle heading **Brief** (brain-written, 0041: the area's projects, reviewed decisions, and open questions and risks), then the template's linked views and "My notes". The publish appends the toggle at the end of a page that has none; drag it to the top once. Connected work adds **Workflow**, and a linked repo with tasks tracked in the repo adds **`Repo tasks · <repo>`** (§2).
 
@@ -196,16 +186,6 @@ Notion-owned entirely (0020). Not mirrored as brain notes; the brain snapshots t
 | Log artifacts | Multi-select: Briefs, Plans, Specifications, Decisions, Final deliverables. Read only with Custom (§3.19) | You (as Workflow) |
 | Last edited time | Last edited time | System (Notion fills it; "gone quiet" view) |
 
-<details>
-<summary>Up to 0.15.x (history; removed by the 0.16.0 migration, 0099)</summary>
-
-| Property | Type | Owner |
-|---|---|---|
-| Decisions | Relation → Decisions | Brain |
-| Questions | Relation → Questions | Brain |
-
-</details>
-
 
 Page body: toggle headings **Brief** and **Decision log** (brain-written, 0026), then the template's linked views and "My notes". Connected work adds **Workflow**, and a linked repo with tasks tracked in the repo adds **`Repo tasks · <repo>`** (§2).
 
@@ -223,16 +203,6 @@ The inbound source. Your Notion AI meeting notes live here (0012, 0007).
 | Ingested At | Date | System |
 | Tasks | Relation → Tasks (two-way with Meeting) | You |
 | Brain ID | Text | System (the meeting record's id, `mtg-…`) |
-
-<details>
-<summary>Up to 0.15.x (history; removed by the 0.16.0 migration, 0099)</summary>
-
-| Property | Type | Owner |
-|---|---|---|
-| Decisions | Relation → Decisions | Brain |
-| Questions | Relation → Questions | Brain |
-
-</details>
 
 
 The brain **never edits the meeting page body** (0007). Instead of publishing a second summary, it fills the relations (Attendees, Project, Area) and links the created tasks; the meeting's decisions and questions show on its project's page (0099). Your reviewed minutes stay the human summary; the brain's meeting note is for agents.
@@ -261,81 +231,15 @@ Clients, partners, suppliers, your employer. One canonical entity database (your
 
 ### 3.8 Decisions (retired in 0.16.0)
 
-There are no Decisions or Questions databases from 0.16.0 ([0099](../decisions/0099-notion-without-decisions-and-questions.md)), and the Knowledge module that held them is retired. Decisions and questions stay notes in Git: a project's or area's reviewed decisions and its open questions and risks show in its **Brief** and **Decision log** (spec/schema.md §16), and in reports; a decision with no project or area is reached through an Ask or the agent session. A question or risk you say to follow up becomes a **Task** with Kind Question or Risk (§3.12; spec/capture-and-review.md §6.4). Promote to document is asked in the agent session (§3.14). The 0.16.0 migration reads each question's Status once (spec/cli.md §5.14.9), then archives both databases with their views and relations, adds Kind and the Questions and Risks tabs to Tasks, and removes `decisions` and `questions` from `brain.json`'s `notion.databases`; nothing is deleted. The design of each up to 0.15.x follows as history, here and in §3.9, unchanged: the Notion prompts and migrations that build them still exist until CC-299 retires them.
-
-<details>
-<summary>The Decisions database up to 0.15.x (history)</summary>
-
-Created by the brain only.
-
-| Property | Type | Owner |
-|---|---|---|
-| Date | Date | Brain |
-| Assessment | Select: Accepted, Provisional, Contested, Superseded | Brain (0005) |
-| Project | Relation → Projects | Brain |
-| Area | Relation → Areas (two-way with Decisions) | Brain: the areas of its projects, never typed (0034) |
-| Decided In | Relation → Meetings | Brain |
-| Supersedes | Relation → Decisions (self, two-way "Superseded By") | Brain |
-| Sources | Relation → Inbox (two-way with Decisions) | Brain (filled from the Inbox side) |
-| Promote | Button labelled **Promote to document**: ticks Promote asked | You (Documents module, 0048, 0049) |
-| Promote asked | Checkbox | You, through the button: "waiting for the brain". The brain creates a Document seeded from this decision and clears it |
-| Documents | Relation → Documents (two-way with From decision) | Brain (filled from the Documents side) |
-
-Page body: context, decision, consequences, sources. `^[inferred]` statements shown with an "AI inference" label (0004).
-
-</details>
+There are no Decisions or Questions databases from 0.16.0 ([0099](../decisions/0099-notion-without-decisions-and-questions.md)), and the Knowledge module that held them is retired. Decisions and questions stay notes in Git: a project's or area's reviewed decisions and its open questions and risks show in its **Brief** and **Decision log** (spec/schema.md §16), and in reports; a decision with no project or area is reached through an Ask or the agent session. A question or risk you say to follow up becomes a **Task** with Kind Question or Risk (§3.12; spec/capture-and-review.md §6.4). Promote to document is asked in the agent session (§3.14). The 0.16.0 migration ([0027](../notion/migrations/0027-one-place-to-decide.md)) reads each question's Status once (spec/cli.md §5.14.9), then archives both databases with their views and relations, adds Kind and the Questions and Risks tabs to Tasks, and removes `decisions` and `questions` from `brain.json`'s `notion.databases`; nothing is deleted. Their design up to 0.15.x is in Git history (`git show v0.15.1:docs/notion-space-design.md`).
 
 ### 3.9 Questions (retired in 0.16.0)
 
-There is no Questions database from 0.16.0 (§3.8, [0099](../decisions/0099-notion-without-decisions-and-questions.md)): a question or risk you follow up is a Task with Kind Question or Risk (§3.12), and the Status you set on a row before is read once by the migration. Its design up to 0.15.x follows as history, unchanged.
-
-<details>
-<summary>The Questions database up to 0.15.x (history)</summary>
-
-Open questions and risks raised in meetings.
-
-| Property | Type | Owner |
-|---|---|---|
-| Kind | Select: Question, Risk | Brain |
-| Status | Select: Open, Answered, Dropped | You. The brain sets Open when it creates a question, Answered once after you accept an answer in the agent session (0041, [0096](../decisions/0096-one-place-to-decide.md)), and Dropped once after the to-do tidy drops a question that was a to-do (0071) |
-| Project | Relation → Projects | Brain |
-| Area | Relation → Areas (two-way with Questions) | Brain: the areas of its projects (0034) |
-| Raised In | Relation → Meetings | Brain |
-| Sources | Relation → Inbox (two-way with Questions) | Brain (filled from the Inbox side) |
-| Created time | Created time | System (Notion fills it; sorts open questions) |
-
-</details>
+There is no Questions database from 0.16.0 (§3.8, [0099](../decisions/0099-notion-without-decisions-and-questions.md)): a question or risk you follow up is a Task with Kind Question or Risk (§3.12), and the Status you set on a row before is read once by the migration.
 
 ### 3.10 Review (retired in 0.16.0)
 
-There is no Review database from 0.16.0 ([0096](../decisions/0096-one-place-to-decide.md)): proposals are decided in the agent session ([spec/capture-and-review.md](../spec/capture-and-review.md) §7). The 0.16.0 migration first applies the decisions you already made on its rows, then archives the database and Home's "What's waiting for you?" view and removes `review` from `brain.json`'s `notion.databases`; nothing is deleted (§7.9 there). Its design up to 0.15.x follows as history, unchanged: the Notion prompts and migrations that build it still exist until CC-299 retires them, and they are checked against it.
-
-<details>
-<summary>The Review database up to 0.15.x (history)</summary>
-
-The approval queue (0003). Created by the brain; you decide.
-
-| Property | Type | Owner |
-|---|---|---|
-| Name | Title | Brain: e.g. "Acme launch: Jan → Feb" |
-| Kind | Select: Update Fact, Add To Note, Update Body, Add Link, Supersede, Contradiction, Merge, New Item, Review Notes, Answer, Notion Change, Set Field | Brain; hidden from your views and collapsed on the page (0048): **Type** says what you need. **Review Notes** (0041, 0043, 0045): one row per meeting, email or document, holding everything it proposes, lettered a), b)…: fact changes first, marked ⚠, then text added to existing notes, then the new notes, then links. Approve accepts them; "all except b, d" in What to fix moves those to a row of their own that waits for you; Reject archives the new notes. Contradiction, Supersede, Merge and Answer keep rows of their own. **Update Body**: a change to a kept reference (0045). **Notion Change** and **Set Field** (0.10.0, 0072): a change Ultimate Assistant suggests when you asked for a row instead of a yes in chat: a task's Status, Due, Project or Area, a project's Status, an Area's Archived (carried out in Notion once you approve), or a project's Area, an Area's Domain (spec/assistant.md §6) |
-| Type | Formula on Kind: **From source** (Review Notes, Update Fact, Add To Note, Update Body, Add Link), **Conflict** (Contradiction, Supersede, Merge, New Item), **Answer** (Answer), **Suggestion** (Notion Change, Set Field; 0.10.0, 0072) | You (derived, Notion-only, 0048). The Name says the same: a Conflict row's starts with "Conflict: ", an Answer row's with "Answer: ", a From source row's with "From ", a Suggestion row's with "Suggestion: " |
-| Status | Formula (0088, migration 0024), checked in this order: **Done** (State Applied), **Closed** (State Closed), **Submitted: waiting for the brain** (Decided ticked, or Your call set), **Needs you · decide in the page** (Proposed empty, or holding the pre-0.14.0 pointer "… decide each one in the page"), else **Needs you · set Your call** | Notion-only: the brain never writes or reads it. Pinned first on the page and in the Review views; Home's "What's waiting for you?" lists the rows whose Status starts with "Needs you". It moves by itself when you click Submit |
-| Area | Relation → Areas (two-way with Review), limited to one page | Brain (0050): the area of the meeting or input it came from (its own Area, else its first project's), else empty. Feeds the area homes' "Review waiting" tab |
-| About | Text | Brain: note title + Brain ID (for Review Notes, the meeting or source). Was Target before 0.5.0 (0045). Empty on a row with item sections (0088), like Now, Proposed and Why: the page holds them, and the layout hides each one while it is empty |
-| About Page | URL | Brain: link to the Notion page affected; for Review Notes, the meeting or Inbox row it came from (was Target Page) |
-| Now | Text | Brain: the current value (was Before) |
-| Proposed | Text | Brain: the proposed value, or the lettered items on a row without sections (was After). Empty on a row with item sections (0088; before 0.14.0 a pointer, "3 changes: decide each one in the page") |
-| Why | Text | Brain: the sentence from the source that triggered it |
-| Source Meeting | Relation → Meetings | Brain |
-| Your call | Select: Approve, Reject, Fix, Request revision | **You** (was Decision, with Edit; 0045). Where every row is decided from 0.15.0 (0090 §5, migration 0025): on a row whose page has sections, Approve submits the page as it reads (an item still on Pending is accepted, except a ⚠ change or a flagged ⚑ item, which needs `Decision: Accept` on its line), Request revision with What to fix asks for redrafts, Reject rejects what is still Pending (capture-and-review §7.12.7). On a row of the older page (rendered before 0.15.0) Approve or Reject is a shortcut for the whole row, and its sections are submitted with Submit decisions (§7.9). Since 0.14.0 it sits at the top of the property group, not in the heading (0088). Its description carries the promise of Review and how each kind of row is decided, so every row shows it on hover, within Notion's 280-character limit for a description: "Owner: you. Approving makes these notes trusted. From a meeting, email or document: Approve takes the page as it reads (a ⚠ or ⚑ item needs Accept), Request revision redrafts what What to fix says, Reject leaves the notes as they are. Other rows: Approve, Reject or Fix." |
-| What to fix | Text | **You** (was Note): with Fix, what's wrong, in your words ("Lucía is on Acme website, not Acme app", "a: March"); with Approve, what to leave out ("all except b, d"). The brain applies its corrected version and says in its report what it changed; it never applies a change your words didn't clearly ask for (0037, 0045) |
-| State | Select: Pending, Applied, Closed | System |
-| Brain ID | Text | System (`prp-…`) |
-| Created time | Created time | System (Notion fills it; sorts the queue) |
-| Last edited time | Last edited time | System (Notion fills it; "approved recently" filter) |
-
-</details>
+There is no Review database from 0.16.0 ([0096](../decisions/0096-one-place-to-decide.md)): proposals are decided in the agent session ([spec/capture-and-review.md](../spec/capture-and-review.md) §7). The 0.16.0 migration ([0027](../notion/migrations/0027-one-place-to-decide.md)) first applies the decisions you already made on its rows, then archives the database and its page, removes Home's "What's waiting for you?" view and the Review relations on Areas and Meetings, and removes `review` from `brain.json`'s `notion.databases`; nothing is deleted (§7.9 there). Its design up to 0.15.x is in Git history (`git show v0.15.1:docs/notion-space-design.md`).
 
 ### 3.11 Inbox
 Everything that came into the brain except meetings, which have their own database (0037). Your quick captures land here as **Ready**; every document, email, chat or note the brain ingests gets a row, created as **Done**, so **History** shows what came in and what the brain learned from it.
@@ -360,16 +264,6 @@ Everything that came into the brain except meetings, which have their own databa
 | Brain ID | Text | System (the source's id, `src-…`) |
 | Last Synced | Date (with time) | System |
 | Created | Created time | System |
-
-<details>
-<summary>Up to 0.15.x (history; removed by the 0.16.0 migration, 0099)</summary>
-
-| Property | Type | Owner |
-|---|---|---|
-| Decisions | Relation → Decisions (two-way with Sources) | Brain |
-| Questions | Relation → Questions (two-way with Sources) | Brain |
-
-</details>
 
 
 **The weekly review (Kind Weekly, 0.16.0, [0096](../decisions/0096-one-place-to-decide.md); [spec/weekly-review.md](../spec/weekly-review.md)).** The brain writes one row per ISO week: Name `Week of <D Mon YYYY>` (the Monday), Brain ID the weekly report's id, the page body the report itself. A rerun in the same week updates that row. It arrives with Brain Status **New** and the brain sets it **Done** once every proposal its decisions name is decided and applied or closed; you decide them in Claude Code or Codex ("what needs my decision"), and a task item on the task itself. It is never taken in as an input, and it needs neither the Documents nor the Reports module.
@@ -430,15 +324,6 @@ A new version of a kept file proposes the changed lines to its Documents (an `up
 | What to fix | Text | You, on a report: what it gets wrong; the brain turns it into proposals, asked in the agent session ([0096](../decisions/0096-one-place-to-decide.md)), clears it, and refreshes the report once you accept them (0045) |
 | Created time | Created time | System (Notion fills it) |
 | Last edited time | Last edited time | System (Notion fills it; sorts "What did we keep?") |
-
-<details>
-<summary>Up to 0.15.x (history; removed by the 0.16.0 migration, 0099)</summary>
-
-| Property | Type | Owner |
-|---|---|---|
-| From decision | Relation → Decisions (two-way with Documents) | Brain: on a promoted Document |
-
-</details>
 
 
 Plus the common properties (a report leaves Summary and Lifecycle empty). Page body: the kept text (brain-written), on a promoted Document yours after the first write, on a report the brain's six sections (Where it stands, Timeline, Decisions in force, Open questions and risks, People involved, Gaps). Accepted, Accepted at and the **Accept** button are in §3.17.
@@ -611,7 +496,7 @@ A new user duplicates the published template instead (§10, 0078 §1); the promp
 
 | # | Prompt | Builds |
 |---|---|---|
-| 1 | [Pages](../notion/prompts/01-pages.md) | the eight pages of §5 |
+| 1 | [Pages](../notion/prompts/01-pages.md) | the pages of §5 |
 | 2 | [Databases](../notion/prompts/02-databases.md) | the databases of §3 for the chosen modules (§1), without relations |
 | 3 | [Relations](../notion/prompts/03-relations.md) | the two-way relations of §3 |
 | 4 | [Formula and rollup](../notion/prompts/04-formula-rollup.md) | Key Results and Goals Progress |
@@ -672,10 +557,10 @@ What the template has beyond a space built from the prompts:
 
 | Part | Where | Exact form | In the prompts? |
 |---|---|---|---|
-| **Start here** callout | the top page "Ultimate Brain", first block, above the pages | A callout (Notion's default icon), two lines. Line 1, bold: **Start here.** Line 2: "This is the Notion half of Ultimate Brain. Next: install Ultimate Brain, and in your brain folder tell your agent "set up my brain". Get started shows every step." "Get started" links to the **Get started** section of the product README on GitHub (`#get-started`; the repository's address is `package.json` `repository`, CC-192) | yes: [Prompt 1](../notion/prompts/01-pages.md) writes it with "Get started" as plain text; the link is added by hand |
+| **Start here** callout | the top page "Ultimate Brain", first block, above the pages | A callout (Notion's default icon), three lines. Line 1, bold: **Start here.** Line 2: "This is the Notion half of Ultimate Brain. Next: install Ultimate Brain, and in your brain folder tell your agent "set up my brain". Get started shows every step." "Get started" links to the **Get started** section of the product README on GitHub (`#get-started`; the repository's address is `package.json` `repository`, CC-192). Line 3 (0.16.0, [0101](../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §7): "Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits." "Notion credits" links to Notion's help page on them (https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents, checked 2026-11-16: Custom Agents use credits each time they run, and credits are only available on Business and Enterprise) | yes: [Prompt 1](../notion/prompts/01-pages.md) writes it with "Get started" and "Notion credits" as plain text; the links are added by hand. A space built before 0.16.0 gets line 3 with migration 0027 |
 | **Template version** line | the **System callout** on the top page "Ultimate Brain" (0085: in the template, System is a callout holding the links to Brain Data, Archive, How it works and Skills) | One line of its own inside that callout (a block, or a line after a line break in the callout's text block; inline-code formatting or none, spec/setup.md §9), exactly `Template version: NNNN`: the four-digit number of the last migration in [notion/migrations/](../notion/migrations/) the template includes (spec/setup.md §9). Nothing else on that line | **no**: a space built from the prompts has no line, so its version is unknown, never guessed (spec/setup.md §2 step 4, §9) |
 | **How it works** filled | How it works, linked from the System callout | The user guide, the brain-howto skill's [references/guide.md](../.agents/skills/brain-howto/references/guide.md), as of the release the template is built from | yes: [Prompt 9](../notion/prompts/09-assistant-and-guide.md) |
-| **Skills** (Brain Assistant's skills) with its twelve skills | Skills, linked from the System callout | Name (title) and Description (text); one page per skill of [notion/brain-assistant.md](../notion/brain-assistant.md) "Skills": the name is the title, its Description line goes in Description, its text block is the page body | yes: [Prompt 9](../notion/prompts/09-assistant-and-guide.md) |
+| **Skills** (Brain Assistant's skills) with its ten skills | Skills, linked from the System callout | Name (title) and Description (text); one page per skill of [notion/brain-assistant.md](../notion/brain-assistant.md) "Skills": the name is the title, its Description line goes in Description, its text block is the page body | yes: [Prompt 9](../notion/prompts/09-assistant-and-guide.md) |
 
 **What a duplicate can't carry:** the agent's Notion connection (MCP), the brain's connection to the databases, the minutes prompt (§9) and Brain Assistant itself (a Custom Agent, or personal Instructions on a plan without them, given access to the duplicate's Brain Data, How it works and Skills). Setup walks through and checks each one (spec/setup.md §2 steps 3–4b). The test duplicate (0078 §5, CC-193) records what survives duplication: the Custom Agent and its access, the buttons that message it, relations and the Home buttons; notion/TEMPLATE.md gets the result.
 

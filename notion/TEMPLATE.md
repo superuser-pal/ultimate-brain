@@ -7,7 +7,7 @@ Two templates exist; this one is the **Notion template**. The **brain folder** (
 | | |
 |---|---|
 | **Link** | https://sentina.notion.site/TEMPLATE-Ultimate-Brain-419495661e9980859df9ca0c3d836d27 |
-| **Template version** | `0026` |
+| **Template version** | `0027` |
 
 **Template version** is the four-digit number of the last migration in [migrations/](migrations/) the template includes. The template shows the same number as a line of its own in the System callout on its top page (as inline code or plain text, spec/setup.md §9), `Template version: NNNN`, and the connect step stores it in `brain.json` as `notion.template_version`; `brain upgrade` then names the migrations newer than it (spec/setup.md §9, spec/cli.md §5.15).
 
@@ -16,25 +16,24 @@ Two templates exist; this one is the **Notion template**. The **brain folder** (
 Everything a space built from every prompt has (the build prompts include every migration up to the version above), with **every module**, plus what only the template carries, and **an Example row in every database on Brain Data**. Nothing from anyone's own space: the template is a copy of the author's space, emptied and scrubbed (decision 0084; "Building and updating the template" below).
 
 **Pages**
-- **Ultimate Brain**, the top page, starting with the **Start here** callout: line 1, bold, "Start here."; line 2, "This is the Notion half of Ultimate Brain. Next: install Ultimate Brain, and in your brain folder tell your agent "set up my brain". Get started shows every step.", with "Get started" linked to the Get started section of the product README on GitHub.
+- **Ultimate Brain**, the top page, starting with the **Start here** callout: line 1, bold, "Start here."; line 2, "This is the Notion half of Ultimate Brain. Next: install Ultimate Brain, and in your brain folder tell your agent "set up my brain". Get started shows every step.", with "Get started" linked to the Get started section of the product README on GitHub; line 3, "Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits.", with "Notion credits" linked to Notion's help page, https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents (decision 0101 §7: Custom Agents use credits each time they run, and only Business and Enterprise can buy them).
 - **System**, a callout on the top page, not a page (decision 0085): the links to **Brain Data**, **Archive**, **How it works** (filled with the user guide) and the **Skills** database (Brain Assistant's skills), and the line `Template version: NNNN` (the version above) on its own, formatted as inline code.
-- Home, Tasks, Meetings, Projects, Plan, Review, Knowledge, with their views, buttons and synced navigation.
+- Home, Tasks, Meetings, Projects, Plan, Knowledge, with their views, buttons and synced navigation.
 - **Brain Data**, holding the databases below.
 
 **Databases**
 
 | Database | Where | Module |
 |---|---|---|
-| Inbox, Meetings, Projects, Areas, People, Review | Brain Data | Core |
+| Inbox, Meetings, Projects, Areas, People | Brain Data | Core |
 | Domains | Brain Data | Domains (in every space, 0065) |
-| Decisions, Questions | Brain Data | Knowledge |
 | Orgs | Brain Data | Orgs |
 | Documents | Brain Data | Documents, and Reports (a report is a Documents row) |
 | Tasks | Brain Data | Tasks |
 | Goals, Key Results | Brain Data | Planning |
-| Skills (Brain Assistant's skills; one page per skill: Today, Review queue, Grill review, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report) | linked from the System callout | Brain Assistant; the brain never reads it |
+| Skills (Brain Assistant's skills; one page per skill: Today, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report) | linked from the System callout | Brain Assistant; the brain never reads it |
 
-**Example rows** (decisions 0084 §3, 0087 §1). Fifteen invented rows show what a filled space looks like, at least one in every database on Brain Data, all from one story (a kickoff with Northwind Studio about refreshing its website) and related to each other, so each page links to the next. Each is titled with the prefix `Example · ` (the word, a space, the middle dot `·`, a space), and each is in a state no skill acts on. Their exact content, the Notion AI prompts that create them and the step that sets their relations are in [template-examples.md](template-examples.md).
+**Example rows** (decisions 0084 §3, 0087 §1, 0099). Thirteen invented rows show what a filled space looks like, at least one in every database on Brain Data, all from one story (a kickoff with Northwind Studio about refreshing its website) and related to each other, so each page links to the next. Each is titled with the prefix `Example · ` (the word, a space, the middle dot `·`, a space), and each is in a state no skill acts on. Their exact content, the Notion AI prompts that create them and the step that sets their relations are in [template-examples.md](template-examples.md).
 
 | Database | Example row | State | Related to |
 |---|---|---|---|
@@ -46,11 +45,9 @@ Everything a space built from every prompt has (the build prompts include every 
 | Meetings | `Example · Kickoff with Northwind` | Not Reviewed, with short lean minutes (decision 0079) | the Project, the Person |
 | Tasks | `Example · Send the project plan` | not started (To Do) | the Project, the Meeting |
 | Tasks | `Example · Brand guidelines from Sam` | Waiting On | the Project, the Meeting |
+| Tasks | `Example · Can the site go live by the end of March?` | Waiting On, Kind Question (a question tracked as a task, 0099) | the Project, the Meeting |
 | Inbox | `Example · Notes from a call with Sam` | Brain Status Done, Kind Capture, a Summary | the Project, the Person |
-| Decisions | `Example · Keep the blog as it is` | Lifecycle Draft, Assessment Accepted | Decided In the Meeting, the Project |
-| Questions | `Example · Can the site go live by the end of March?` | Status Open, Lifecycle Draft, Kind Question | Raised In the Meeting, the Project |
 | Documents | `Example · Website refresh brief` | Origin Kept, Lifecycle Reviewed, Accepted unticked, nothing asked | the Project; Sources the Inbox row |
-| Review | `Example · From Kickoff with Northwind: 1 decision, 1 question` | State Pending, Your call empty, Decided unticked, About, Now, Proposed and Why empty, so Status reads Needs you · decide in the page; the page in the section format (one section per item, `Decision: Pending`) | Source Meeting the Meeting, Area the Area |
 | Goals | `Example · Launch three client websites this year` | Status Active | Area the Area, Projects the Project |
 | Key Results | `Example · Sites launched` | Kind Number, Start 0, Target 3, Current 1 | Goal the Goal |
 
@@ -58,9 +55,9 @@ Everything a space built from every prompt has (the build prompts include every 
 
 Only the Skills database has no Example row: it holds Brain Assistant's skills, which are product text. "Set up my brain" moves the Example rows to Notion's trash when it connects the brain (step 4, with the user's yes), and the skills that read Notion never take anything in from one that is left (spec/setup.md §6.5).
 
-Fourteen databases on Brain Data, and Skills linked from the System callout. Each database's templates, page layout and buttons are as in [prompts/](prompts/), [modules/](modules/) and [views-guide.md](views-guide.md) §9.
+Eleven databases on Brain Data, and Skills linked from the System callout. There is no Review, Decisions or Questions database since 0.16.0 (decisions 0096, 0099). Each database's templates, page layout and buttons are as in [prompts/](prompts/), [modules/](modules/) and [views-guide.md](views-guide.md) §9.
 
-**Modules.** The brain uses the modules `brain.json` turns on: a new brain starts with Knowledge, Orgs, Documents, Reports and Tasks, and Domains after seeding (spec/schema.md §12). The databases and page parts of a module that is off stay in the duplicate, unused, so turning it on later needs no Notion step beyond connecting it. A user with their own tasks database maps it at the connect step (decision 0018) and leaves Tasks unused.
+**Modules.** The brain uses the modules `brain.json` turns on: a new brain starts with Orgs, Documents, Reports and Tasks, and Domains after seeding (spec/schema.md §12). The databases and page parts of a module that is off stay in the duplicate, unused, so turning it on later needs no Notion step beyond connecting it. A user with their own tasks database maps it at the connect step (decision 0018) and leaves Tasks unused.
 
 ## The steps a duplicate still needs
 
@@ -68,7 +65,7 @@ A duplicate can't carry these; "set up my brain" walks through each and checks i
 1. **Connect your agent to Notion** (the Notion MCP), step 3.
 2. **Connect the brain to Notion** (brain-connect-notion), step 4: the modules, the database ids, the Tasks database and this template version; then setup removes the Example rows (spec/setup.md §6.5).
 3. **The minutes prompt**, step 4a: run in the Notion AI chat on a meeting page, below the transcript, with the line "Write the minutes on this page, below the transcript, and nothing else.", as [pasting-the-minutes-prompt.md](pasting-the-minutes-prompt.md) says; its text is [minutes-format.md](minutes-format.md), the lean format of decision 0079. The Meetings template doesn't hold it.
-4. **Brain Assistant pointed at the copy**, step 4b: a Custom Agent (or the same text as personal Instructions, on a plan without Custom Agents) whose Tools and access hold only the duplicate's Brain Data, How it works and Skills, picked by the duplicate's top page (spec/setup.md §6.4), with its Instructions' @mentions pointing at those pages ("Setup" in [brain-assistant.md](brain-assistant.md); its skills are already in the duplicate).
+4. **Brain Assistant pointed at the copy**, step 4b: a Custom Agent, which with its buttons needs Business or Enterprise with Notion credits (decision 0101 §7; without them, the same text as personal Instructions) whose Tools and access hold only the duplicate's Brain Data, How it works and Skills, picked by the duplicate's top page (spec/setup.md §6.4), with its Instructions' @mentions pointing at those pages ("Setup" in [brain-assistant.md](brain-assistant.md); its skills are already in the duplicate).
 
 What survives duplication (the Custom Agent and its access, the buttons that message it, relations, the Home buttons) is checked once on a test duplicate (0078 §5, CC-193), which records the result here and may shorten this list.
 
@@ -78,8 +75,8 @@ The template is a **copy of the author's own Ultimate Brain space, emptied**, ma
 
 1. **Bring your own space up to date first.** Every migration in [migrations/](migrations/) is applied (`brain upgrade` in your brain names none), and CC-197 is merged and applied, so Check minutes and Voice summary in Skills are the 0079 versions.
 2. **Copy.** Duplicate your top page **Ultimate Brain** inside your workspace, and name the copy **Ultimate Brain**. From here on, work only in the copy: check each page you edit is under it.
-3. **Point everything at the copy.** Every linked view (Home, Tasks, Meetings, Projects, Plan, Review, Knowledge), every relation, every button that adds or edits a page, and every synced block must use the copy's own databases and blocks, never your space's. Re-point or rebuild any that doesn't.
-4. **Empty every database.** Delete every row of the fourteen databases on Brain Data, and every page under Archive. In Skills, keep the twelve skills and check each against [brain-assistant.md](brain-assistant.md): a skill you changed for yourself goes back to the product's text. How it works holds the user guide only.
+3. **Point everything at the copy.** Every linked view (Home, Tasks, Meetings, Projects, Plan, Knowledge), every relation, every button that adds or edits a page, and every synced block must use the copy's own databases and blocks, never your space's. Re-point or rebuild any that doesn't.
+4. **Empty every database.** Delete every row of the eleven databases on Brain Data, and every page under Archive. In Skills, keep the ten skills and check each against [brain-assistant.md](brain-assistant.md): a skill you changed for yourself goes back to the product's text. How it works holds the user guide only.
 5. **Scrub where personal data hides,** ticking each:
    - **Database templates:** each database's templates, their default property values (a person, a project, an area, an org) and their body text.
    - **Select and multi-select options:** only the options of [docs/notion-space-design.md](../docs/notion-space-design.md) §3 stay; delete any other (a client, a tag, a person's name).
@@ -92,7 +89,7 @@ The template is a **copy of the author's own Ultimate Brain space, emptied**, ma
    - **Comments** on any page or row.
    - **The public page:** the workspace's name, icon and `notion.site` domain shown on a published page name nothing personal.
 6. **Every module.** Compare the copy with the table above. A module or part your space never had is added from [modules/](modules/) (or its migration), so the template holds every module (0078 §1).
-7. **Add the Example rows and the Brain Data callout** of "What a duplicate contains", related as its table says, with the content and the Notion AI prompts of [template-examples.md](template-examples.md), run on the copy's Brain Data page, then its step 7 for the relations (the agent through the API with your yes, or by hand). Leave each row in its state there: the Meeting Not Reviewed, the Review row Pending and not submitted, nothing ticked.
+7. **Add the Example rows and the Brain Data callout** of "What a duplicate contains", related as its table says, with the content and the Notion AI prompts of [template-examples.md](template-examples.md), run on the copy's Brain Data page, then its step 7 for the relations (the agent through the API with your yes, or by hand). Leave each row in its state there: the Meeting Not Reviewed, nothing ticked.
 8. **Start here.** Check the callout on the top page, and link its "Get started" to the README's Get started section.
 9. **Template version.** The System callout on the top page holds the line `Template version: NNNN` on its own, the number of the last migration in [migrations/](migrations/) applied to the copy. Record the same number in the table above.
 10. **The coordinator's read-only scan.** Give the coordinator session in this repository the copy's top page, shared with its Notion connection. Reading only, through the Notion MCP, it lists every row, database template, select option, mention and page title it can reach, and flags anything that is not an Example row or the product's own text. Fix each finding by hand, then ask for the scan again until it finds nothing. What the API can't read (button contents, view filters) is checked by your ticks in step 5 alone.
@@ -100,4 +97,4 @@ The template is a **copy of the author's own Ultimate Brain space, emptied**, ma
 
 The copy is the template only: never use it as your own brain's space, and never connect a brain to it.
 
-**When a release adds a migration:** apply it to the template copy as well (its last step updates the Template version line in the System callout), add nothing personal, leave the Example rows as they are unless [template-examples.md](template-examples.md) changed one in that release (0.15.0 changed row 13's page: its Prompt 6 says how), run the scan again, and change the version above in the same release. A duplicate made earlier is brought up to date with the migrations `brain upgrade` names.
+**When a release adds a migration:** apply it to the template copy as well (its last step updates the Template version line in the System callout), add nothing personal, leave the Example rows as they are unless [template-examples.md](template-examples.md) changed one in that release (0.16.0 removed the Decision, Question and Review rows with their databases, which the migration archives, added the example question as a Task (row 10) and changed one line of the Meeting's minutes: [template-examples.md](template-examples.md), "Updating a copy to 0.16.0", says how), run the scan again, and change the version above in the same release. A duplicate made earlier is brought up to date with the migrations `brain upgrade` names.

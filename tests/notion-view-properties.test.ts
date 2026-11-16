@@ -21,24 +21,18 @@ const viewPropertyReferences: readonly PropertyReference[] = [
   { database: "Projects", source: "Prompt 6 Areas template", properties: ["Area", "Status", "Name", "Countdown", "Task Progress"] },
   { database: "Tasks", source: "Prompt 6 Areas template", properties: ["Area", "Status", "Name", "Project", "Due"] },
   { database: "Meetings", source: "Prompt 6 Areas template", properties: ["Area", "Date", "Name", "Project"] },
-  { database: "Decisions", source: "Prompt 6 Areas template", properties: ["Area", "Assessment", "Date", "Name", "Project"] },
-  { database: "Questions", source: "Prompt 6 Areas template", properties: ["Area", "Status", "Kind", "Name", "Project"] },
   { database: "Areas", source: "Prompt 6 Areas page layout", properties: ["People via projects", "Clients via projects"] },
   { database: "Key Results", source: "Prompt 6 Goals template", properties: ["Goal", "Progress", "Name", "Current", "Target", "Unit", "Done"] },
   { database: "Projects", source: "Prompt 6 Goals template", properties: ["Goal", "Name", "Status", "Countdown", "Task Progress"] },
   { database: "Tasks", source: "Prompt 6 Projects template", properties: ["Project", "Status", "Name", "Due"] },
   { database: "Meetings", source: "Prompt 6 Projects template", properties: ["Project", "Date", "Name", "Brain Status"] },
-  { database: "Questions", source: "Prompt 6 Projects template", properties: ["Project", "Status", "Name", "Kind"] },
   { database: "People", source: "Prompt 6 Projects template", properties: ["Projects", "Name", "Role", "Org"] },
-  { database: "Decisions", source: "Prompt 6 Meetings template", properties: ["Decided In"] },
-  { database: "Questions", source: "Prompt 6 Meetings template", properties: ["Raised In"] },
   { database: "Tasks", source: "Prompt 6 Meetings template", properties: ["Meeting"] },
   { database: "Meetings", source: "Prompt 6 People template", properties: ["Attendees", "Date", "Name", "Project"] },
   { database: "Projects", source: "Prompt 6 People template", properties: ["People", "Name", "Status"] },
   { database: "People", source: "Prompt 6 Orgs template", properties: ["Org", "Name", "Role"] },
   { database: "Projects", source: "Prompt 6 Orgs template", properties: ["Client", "Name", "Status", "Countdown"] },
   { database: "Orgs", source: "Prompt 6 Orgs page layout", properties: ["Meetings via projects"] },
-  { database: "Review", source: "Prompt 7a Home", properties: ["State", "Created time", "Name"] },
   { database: "Meetings", source: "Prompt 7a Home", properties: ["Brain Status", "Date", "Name", "Project"] },
   { database: "Inbox", source: "Prompt 7a Home", properties: ["Kind", "Brain Status"] },
   { database: "Projects", source: "Prompt 7a Home", properties: ["Status", "Archived", "Priority", "Name", "Client", "Countdown", "Task Progress"] },
@@ -48,21 +42,16 @@ const viewPropertyReferences: readonly PropertyReference[] = [
   { database: "Areas", source: "Prompt 7b Plan", properties: ["Archived", "Name"] },
   { database: "Projects", source: "Prompt 7b Plan", properties: ["Goal", "Archived", "Status", "Priority", "Name"] },
   { database: "Projects", source: "Prompt 7c Projects", properties: ["Archived", "Status", "Priority", "Name", "Client", "Countdown", "Task Progress", "Area", "Dates", "Last edited time", "Last Synced"] },
-  { database: "Meetings", source: "Prompt 7d Meetings", properties: ["Brain Status", "Date", "Name", "Project", "Attendees", "Ingested At", "Decisions", "Questions"] },
-  { database: "Review", source: "Prompt 7e Review", properties: ["State", "Created time", "Name", "Kind", "Now", "Proposed", "Your call", "What to fix", "Last edited time"] },
-  { database: "Decisions", source: "Prompt 7f Knowledge", properties: ["Date", "Name", "Project", "Assessment", "Lifecycle", "Summary", "Superseded By"] },
-  { database: "Questions", source: "Prompt 7f Knowledge", properties: ["Status", "Kind", "Created time", "Name", "Project", "Raised In", "Summary"] },
+  { database: "Meetings", source: "Prompt 7d Meetings", properties: ["Brain Status", "Date", "Name", "Project", "Attendees", "Ingested At"] },
   { database: "People", source: "Prompt 7f Knowledge", properties: ["Lifecycle", "Org", "Name", "Role", "Summary"] },
   { database: "Orgs", source: "Prompt 7f Knowledge", properties: ["Relationship", "Lifecycle", "Name", "People"] },
   { database: "Documents", source: "Prompt 7f Knowledge", properties: ["Lifecycle", "Origin", "Last edited time", "Created time", "Name", "Project", "Area", "Summary", "Refresh asked", "What to fix"] },
   { database: "Documents", source: "Prompt 6 Reports (0071)", properties: ["Project", "Area", "Origin", "Created time", "Name", "Refresh asked", "What to fix", "Asked in"] },
-  { database: "Inbox", source: "Prompt 7f Knowledge", properties: ["Brain Status", "Created", "Name", "Kind", "Only keep", "Project", "Summary", "Decisions"] },
-  { database: "Tasks", source: "Prompt 7g Tasks", properties: ["Status", "Due", "Name", "Project", "Meeting", "Last edited time"] },
+  { database: "Inbox", source: "Prompt 7f Knowledge", properties: ["Brain Status", "Created", "Name", "Kind", "Only keep", "Project", "Summary"] },
+  { database: "Tasks", source: "Prompt 7g Tasks", properties: ["Status", "Due", "Name", "Project", "Meeting", "Kind", "Last edited time"] },
   { database: "Projects", source: "Prompt 7h Archive", properties: ["Status", "Archived", "Dates", "Name", "Client"] },
   { database: "Goals", source: "Prompt 7h Archive", properties: ["Status", "Archived", "Deadline", "Name"] },
   { database: "Areas", source: "Prompt 7h Archive", properties: ["Archived", "Name"] },
-  { database: "Decisions", source: "Prompt 7h Archive", properties: ["Lifecycle", "Date", "Name", "Project"] },
-  { database: "Questions", source: "Prompt 7h Archive", properties: ["Lifecycle", "Created time", "Name", "Project", "Status"] },
   { database: "People", source: "Prompt 7h Archive", properties: ["Lifecycle", "Name", "Org"] },
   { database: "Orgs", source: "Prompt 7h Archive", properties: ["Lifecycle", "Name", "Relationship"] },
 ];
@@ -89,11 +78,9 @@ function sectionThreeProperties(design: string): Map<string, Set<string>> {
     else common.add(row[1]);
   }
 
-  for (const database of ["Areas", "Goals", "Projects", "People", "Orgs", "Decisions", "Questions", "Documents"]) {
+  for (const database of ["Areas", "Goals", "Projects", "People", "Orgs", "Documents"]) {
     for (const property of common) properties.get(database)?.add(property);
   }
-  // §3.8 defines the inverse relation in prose rather than as a separate row.
-  properties.get("Decisions")?.add("Superseded By");
   // Prompt 7b can filter Key Results through its related Goal's Status.
   properties.get("Key Results")?.add("Status");
   return properties;

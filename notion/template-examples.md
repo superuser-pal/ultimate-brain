@@ -17,16 +17,14 @@ Every row is invented. They tell one story with synthetic names only: a kickoff 
 | 7 | Tasks | `Example · Send the project plan` | Status To Do | Project → 5, Meeting → 6 |
 | 8 | Tasks | `Example · Brand guidelines from Sam` | Status Waiting On | Project → 5, Meeting → 6 |
 | 9 | Inbox | `Example · Notes from a call with Sam` | Kind Capture, Brain Status Done, Summary below; Document asked unticked, Only keep empty, Brain ID empty | Project → 5, People → 4 |
-| 10 | Decisions | `Example · Keep the blog as it is` | Lifecycle Draft, Assessment Accepted, Summary below; Promote asked unticked, Brain ID empty | Decided In → 6, Project → 5 |
-| 11 | Questions | `Example · Can the site go live by the end of March?` | Status Open, Lifecycle Draft, Kind Question, Summary below; Brain ID empty | Raised In → 6, Project → 5 |
-| 12 | Documents | `Example · Website refresh brief` | Origin Kept, Lifecycle Reviewed, Summary below; Accepted unticked, Accepted at empty, Refresh asked unticked, What to fix empty, Brain ID empty | Project → 5, Sources → 9 |
-| 13 | Review | `Example · From Kickoff with Northwind: 1 decision, 1 question` | Kind Review Notes, State Pending, Your call empty, What to fix empty, Decided and Accept all unticked, Decided at empty, About, Now, Proposed and Why empty (decision 0088), Brain ID empty, so Status reads **Needs you · decide in the page**; the page below | Source Meeting → 6, Area → 2 |
-| 14 | Goals | `Example · Launch three client websites this year` | Status Active, Why below | Area → 2, Projects → 5 |
-| 15 | Key Results | `Example · Sites launched` | Kind Number, Start 0, Current 1, Target 3 | Goal → 14 |
+| 10 | Tasks | `Example · Can the site go live by the end of March?` | Status Waiting On, Kind Question; Brain ID empty | Project → 5, Meeting → 6 |
+| 11 | Documents | `Example · Website refresh brief` | Origin Kept, Lifecycle Reviewed, Summary below; Accepted unticked, Accepted at empty, Refresh asked unticked, What to fix empty, Brain ID empty | Project → 5, Sources → 9 |
+| 12 | Goals | `Example · Launch three client websites this year` | Status Active, Why below | Area → 2, Projects → 5 |
+| 13 | Key Results | `Example · Sites launched` | Kind Number, Start 0, Current 1, Target 3 | Goal → 12 |
 
-Rows 1 to 7 are 0084's; rows 8 to 15 are 0087's. The Skills database (Brain Assistant's skills) has no Example row. Every Brain ID stays empty: no Example row is ever a brain note.
+Rows 1 to 7 are 0084's; rows 8, 9 and 11 to 13 are 0087's; row 10 is the kickoff's open question tracked as a task (decision 0099 §3 to §5, since 0.16.0). The Skills database (Brain Assistant's skills) has no Example row. Every Brain ID stays empty: no Example row is ever a brain note.
 
-In a real space, a decision or a question gets its row only once its Review item is accepted. The examples show both at once, so each page has something in it: row 13 proposes rows 10 and 11.
+There are no Decisions or Questions rows: those databases were retired in 0.16.0 (decision 0099), and the kickoff's decision and question live in the brain, shown in the project's Brief and Decision log. Row 10 is what the minutes' `Track: Waiting On —` on the question's line makes once the meeting is ingested (spec/capture-and-review.md §6.4); the examples show it at once, so the Tasks page's Questions tab has something in it.
 
 ## The Brain Data callout
 
@@ -62,7 +60,7 @@ Decided: keep the blog as it is. [s1.i2]
 
 ## Timeline [s2]
 The launch date depends on when Northwind's brand guidelines arrive. [s2.i1]
-Open: can the site go live by the end of March? [s2.i2]
+Track: Waiting On — Waiting on Sam: can the site go live by the end of March? [s2.i2]
 Track: Waiting On — Waiting on Sam: send the brand guidelines. [s2.i3]
 
 ▸ For the brain
@@ -95,31 +93,7 @@ Refresh the home, services and contact pages. Keep the blog as it is.
 Launch by the end of March if the brand guidelines arrive in time.
 ```
 
-### Row 10: the Decision
-
-**Summary** (property): `Northwind keeps its blog as it is; the refresh covers the other pages.`
-
-Body:
-
-```text
-Decision: keep Northwind's blog as it is. The refresh covers the home, services and contact pages.
-Context: at the kickoff, Sam said the blog works and the rest of the site is the problem.
-Consequences: the blog's posts and addresses stay unchanged, and the new pages link to it.
-Source: Example · Kickoff with Northwind.
-```
-
-### Row 11: the Question
-
-**Summary** (property): `Can the new site go live by the end of March? It depends on the brand guidelines.`
-
-Body:
-
-```text
-Sam asked whether the new site can go live by the end of March. It depends on when the brand guidelines arrive.
-Raised in: Example · Kickoff with Northwind.
-```
-
-### Row 12: the Document
+### Row 11: the Document
 
 **Summary** (property): `What the Northwind website refresh covers, what it leaves out, and when it launches.`
 
@@ -134,67 +108,7 @@ Out of scope: the blog, which stays as it is.
 Launch: by the end of March, if the brand guidelines arrive in time.
 ```
 
-### Row 13: the Review page
-
-The page in format 2, exactly as `brain sync render` writes it for the Example's proposal: one decision and one question from the kickoff (spec/capture-and-review.md §7.12, decisions 0088 §2 and 0090; `tests/template-example-review.test.ts` renders it and compares it with this block). In order: what the source brings and what to do, the heading `Review summary` with its status, the group `New notes` with one section per item (a `###` heading, the note in a toggle **Read or edit the note**, the gray `ref` line, `Decision: Pending`), and the toggle heading **For Brain Assistant (brain context)**, whose children are the tab-indented lines under it. `[¶2]` and `[¶4]` are the short markers of the extract's passages. The item ids are invented (`it-` and 8 characters of the id alphabet). The meeting, project and area are named as plain text: the brain links a page only once it knows the page.
-
-```markdown
-**From Kickoff with Northwind:** 2 new notes.
-**What to do:** 1. Read the sections below, or click **Review with me** to go through them with Brain Assistant. 2. Correct a wording where it stands, or type Accept, Reject, Defer or Request revision on an item's Decision line. 3. Set **Your call**: Approve, Request revision (say what in What to fix) or Reject.
-
-## Review summary
-**Status:** waiting for you: 2 new notes.
-
-## New notes
-### New decision: Keep the blog as it is
-<details>
-<summary>Read or edit the note</summary>
-
-## Decision
-Keep Northwind's blog as it is. The refresh covers the home, services and contact pages. [¶2]
-
-</details>
-<span color="gray">ref it-4k7m2p9a</span>
-Decision: Pending
-
-### New question: Can the site go live by the end of March?
-<details>
-<summary>Read or edit the note</summary>
-
-Can the new site go live by the end of March? It depends on when Northwind's brand guidelines arrive. [¶4]
-
-</details>
-<span color="gray">ref it-8n3q6t1w</span>
-Decision: Pending
-
-## For Brain Assistant (brain context) {toggle="true"}
-	**Source passages**
-	- [¶2] Decided: keep the blog as it is.
-	- [¶4] Open: can the site go live by the end of March?
-
-	**What each item changes**
-	- New decision: Keep the blog as it is (it-4k7m2p9a): a draft decision; Accept makes it Reviewed, Reject archives it.
-	- New question: Can the site go live by the end of March? (it-8n3q6t1w): a draft question; Accept makes it Reviewed, Reject archives it.
-
-	**Where the brain is unsure**
-	- Nothing flagged.
-
-	**Repeats**
-	- None marked.
-
-	**Related pages**
-	- Meeting: Kickoff with Northwind
-	- Project: Website refresh
-	- Area: Clients
-
-	**Rules for writing into this page**
-	- Write only inside an item section: its wording, its Decision line (Accept, Reject or Defer) and its Revision request line, after the user's yes to a preview.
-	- Move a [¶n] marker only when the wording changed, and only to a passage listed under Source passages that holds the new text. Never invent one.
-	- Under a section you changed, add one line "Agreed in review: …" with what the user decided and why, in a few words.
-	- Never change a heading, a ref line, a toggle's structure, this toggle, any property or Your call.
-```
-
-### Row 14: the Goal
+### Row 12: the Goal
 
 **Why** (property): `Each site launched is a reference for the next client.`
 
@@ -202,7 +116,7 @@ Decision: Pending
 
 Run each prompt in Notion AI **on the copy's Brain Data page** (open Brain Data in the template copy, then ask Notion AI there), in this order, then step 7, which sets the relations. Each prompt starts by limiting itself to that page's databases, so a same-named database elsewhere in your workspace is never touched. Check the result after each prompt; run one again if something is missing: each prompt leaves alone what is already there.
 
-Rows 1 to 7 may already exist from U-27; prompt 2 adds only the ones missing, and prompt 3 writes the minutes only when the Meeting lacks the lines rows 8 to 13 come from.
+Rows 1 to 7 may already exist from U-27; prompt 2 adds only the ones missing, and prompt 3 writes the minutes only when the Meeting lacks the lines rows 8 to 11 come from.
 
 ### Prompt 1: the callout
 
@@ -235,14 +149,14 @@ Then list each of the seven titles with "created" or "already there".
 Paste the minutes of "Row 6: the Meeting's minutes" above where the prompt says so.
 
 ```text
-Use only the databases on this page. Open the Meetings row "Example · Kickoff with Northwind". If its page already has minutes with a line starting "Decided: keep the blog as it is", a line starting "Open: can the site go live by the end of March?" and a line containing "Waiting on Sam: send the brand guidelines", change nothing and say so.
+Use only the databases on this page. Open the Meetings row "Example · Kickoff with Northwind". If its page already has minutes with a line starting "Decided: keep the blog as it is", a line containing "Waiting on Sam: can the site go live by the end of March?" and a line containing "Waiting on Sam: send the brand guidelines", change nothing and say so.
 
 Otherwise, add the minutes below at the end of the page, below every block the page already has. Keep every existing block exactly as it is, where it is: the "Before marking Reviewed" callout, the gray notice, the Meeting notes block and the toggles. Don't delete, move, replace or edit any of them, and don't write inside them. Write "In one line:" as a paragraph, each "## " line as a heading 2, "- [ ]" lines as unticked to-do checkboxes, each "▸" line as a toggle (not a toggle heading) whose children are the indented lines under it, collapsed, and every other line as a plain paragraph. Copy every character as written, the tags in square brackets and the quotes included. Don't change any property.
 
 <the minutes>
 ```
 
-### Prompt 4: 0087's eight rows
+### Prompt 4: the other six rows
 
 This prompt sets no relation: Notion AI created these rows but left every relation empty. Step 7 sets them.
 
@@ -250,55 +164,30 @@ This prompt sets no relation: Notion AI created these rows but left every relati
 Use only the databases on this page. Don't change any row that already exists, and don't create anything except the rows below. A row "exists" when its database has a row with exactly that title. Create each missing row with these properties, and leave every other property empty, every relation empty and every checkbox unticked:
 
 1. Tasks: "Example · Brand guidelines from Sam". Status: Waiting On.
-2. Inbox: "Example · Notes from a call with Sam". Kind: Capture. Brain Status: Done. Summary: "Sam's brief for the website refresh, kept as a document; the brand guidelines are still to come."
-3. Decisions: "Example · Keep the blog as it is". Lifecycle: Draft. Assessment: Accepted. Summary: "Northwind keeps its blog as it is; the refresh covers the other pages."
-4. Questions: "Example · Can the site go live by the end of March?". Status: Open. Lifecycle: Draft. Kind: Question. Summary: "Can the new site go live by the end of March? It depends on the brand guidelines."
-5. Documents: "Example · Website refresh brief". Origin: Kept. Lifecycle: Reviewed. Summary: "What the Northwind website refresh covers, what it leaves out, and when it launches."
-6. Review: "Example · From Kickoff with Northwind: 1 decision, 1 question". Kind: Review Notes. State: Pending. Leave Your call, What to fix, About, Now, Proposed, Why and Decided at empty, and Decided and Accept all unticked.
-7. Goals: "Example · Launch three client websites this year". Status: Active. Why: "Each site launched is a reference for the next client."
-8. Key Results: "Example · Sites launched". Kind: Number. Start: 0. Current: 1. Target: 3.
+2. Tasks: "Example · Can the site go live by the end of March?". Status: Waiting On. Kind: Question.
+3. Inbox: "Example · Notes from a call with Sam". Kind: Capture. Brain Status: Done. Summary: "Sam's brief for the website refresh, kept as a document; the brand guidelines are still to come."
+4. Documents: "Example · Website refresh brief". Origin: Kept. Lifecycle: Reviewed. Summary: "What the Northwind website refresh covers, what it leaves out, and when it launches."
+5. Goals: "Example · Launch three client websites this year". Status: Active. Why: "Each site launched is a reference for the next client."
+6. Key Results: "Example · Sites launched". Kind: Number. Start: 0. Current: 1. Target: 3.
 
-Then list each of the eight titles with "created" or "already there", and any property you could not set.
+Then list each of the six titles with "created" or "already there", and any property you could not set.
 ```
 
-### Prompt 5: the bodies of the Inbox row, the Decision, the Question and the Document
+### Prompt 5: the bodies of the Inbox row and the Document
 
-Paste the four bodies of "Page bodies" above (rows 9 to 12) where the prompt says so.
+Paste the two bodies of "Page bodies" above (rows 9 and 11) where the prompt says so.
 
 ```text
-Use only the databases on this page. For each of these four rows, write the text below as its page body, only when the page has no text of its own yet (leave a page that already has text as it is). Write each line as a plain paragraph and each "- " line as a bulleted item, copying every character as written. Don't change any property.
+Use only the databases on this page. For each of these two rows, write the text below as its page body, only when the page has no text of its own yet (leave a page that already has text as it is). Write each line as a plain paragraph and each "- " line as a bulleted item, copying every character as written. Don't change any property.
 
 Inbox "Example · Notes from a call with Sam":
 <row 9's body>
 
-Decisions "Example · Keep the blog as it is":
-<row 10's body>
-
-Questions "Example · Can the site go live by the end of March?":
-<row 11's body>
-
 Documents "Example · Website refresh brief":
-<row 12's body>
+<row 11's body>
 ```
 
-### Prompt 6: the Review page
-
-Paste the page of "Row 13: the Review page" above where the prompt says so. A copy whose row 13 still has the older page (headings like `## [a · it-…] Creates: …`, from before 0.15.0) gets the new one with migration 0025: delete the page body first, by hand, then run this prompt. **Or, with the agent:** after your yes, it writes the same block once to the empty page with Notion's markdown endpoint, as the brain writes every Review page (spec/cli.md §5.14.4), and reads it back.
-
-```text
-Use only the databases on this page. Open the Review row "Example · From Kickoff with Northwind: 1 decision, 1 question". If its page already has a heading "Review summary", change nothing and say so. Otherwise write the page below as its body:
-
-- each line starting with "## " as a heading 2 and each line starting with "### " as a heading 3, with the text after the hashes exactly;
-- the line '## For Brain Assistant (brain context) {toggle="true"}' as a toggle heading 2 titled exactly "For Brain Assistant (brain context)", collapsed, whose children are the tab-indented lines after it, without the tab: bold words bold, "- " lines as bulleted items, and an empty line between the parts;
-- each block from "<details>" to "</details>" as a toggle (not a toggle heading) titled exactly "Read or edit the note", collapsed, whose children are the lines between "<summary>…</summary>" and "</details>": "## Decision" as a heading 2 inside the toggle, the other line as a paragraph;
-- each line '<span color="gray">ref it-…</span>' as a paragraph whose text is "ref it-…", in gray;
-- "Decision: Pending" exactly as written, as a paragraph;
-- every other line as a plain paragraph, with the words between ** bold, and "[¶2]" and "[¶4]" written exactly, square brackets included. Skip empty lines.
-
-Copy every character as written. Don't change any property, and don't set Your call.
-
-<the Review page>
-```
+There is no prompt 6 since 0.16.0: it wrote the Review row's page, which went with the Review database.
 
 ### Step 7: the relations, and the properties Notion AI missed (agent, through the API, with your yes; or by hand)
 
@@ -312,14 +201,10 @@ The relations of prompt 4's rows. Each relation points to the row with exactly t
 | | Meeting | `Example · Kickoff with Northwind` |
 | Inbox `Example · Notes from a call with Sam` | Project | `Example · Website refresh` |
 | | People | `Example · Sam Rivera` |
-| Decisions `Example · Keep the blog as it is` | Decided In | `Example · Kickoff with Northwind` |
-| | Project | `Example · Website refresh` |
-| Questions `Example · Can the site go live by the end of March?` | Raised In | `Example · Kickoff with Northwind` |
-| | Project | `Example · Website refresh` |
+| Tasks `Example · Can the site go live by the end of March?` | Project | `Example · Website refresh` |
+| | Meeting | `Example · Kickoff with Northwind` |
 | Documents `Example · Website refresh brief` | Project | `Example · Website refresh` |
 | | Sources | `Example · Notes from a call with Sam` |
-| Review `Example · From Kickoff with Northwind: 1 decision, 1 question` | Source Meeting | `Example · Kickoff with Northwind` |
-| | Area | `Example · Clients` |
 | Goals `Example · Launch three client websites this year` | Area | `Example · Clients` |
 | | Projects | `Example · Website refresh` |
 | Key Results `Example · Sites launched` | Goal | `Example · Launch three client websites this year` |
@@ -338,7 +223,14 @@ Then check prompt 2's other relations against "The story" (Domain on the Area, O
 ## Check by hand
 
 - Brain Data starts with the callout, word for word.
-- Each of the fifteen rows exists once, with its title exactly as in "The story" (the prefix `Example · ` with the middle dot), its state and every relation of step 7 and "The story"; every Brain ID is empty. Sam's Role is Marketing lead, Northwind's Relationship is Client, and the Meeting has its Date and Area.
-- The Meeting is **Not Reviewed**, and its page still has the template's blocks (the "Before marking Reviewed" callout, the notice, the Meeting notes block and the toggles), with the minutes below them. The Review row is **Pending**, with Your call empty, Decided unticked and Status **Needs you · decide in the page**; its page opens with "From Kickoff with Northwind: 2 new notes." and What to do, then "Review summary", then "New notes" with two sections, each with a collapsed **Read or edit the note** toggle, a gray `ref` line and `Decision: Pending`, and it ends with the collapsed toggle heading **For Brain Assistant (brain context)**. The Inbox row is **Done**. Nothing on the Document is ticked.
-- The pages link to each other: the Project page lists the Meeting, both Tasks, the Inbox row, the Decision, the Question and the Document; the Area page shows the Review row waiting; Plan shows the Goal at 33%.
-- The coordinator's read-only scan (TEMPLATE.md, step 10) lists these fifteen rows as Example rows, and nothing else.
+- Each of the thirteen rows exists once, with its title exactly as in "The story" (the prefix `Example · ` with the middle dot), its state and every relation of step 7 and "The story"; every Brain ID is empty. Sam's Role is Marketing lead, Northwind's Relationship is Client, and the Meeting has its Date and Area.
+- The Meeting is **Not Reviewed**, and its page still has the template's blocks (the "Before marking Reviewed" callout, the notice, the Meeting notes block and the toggles), with the minutes below them. The question's Task is **Waiting On** with Kind **Question**. The Inbox row is **Done**. Nothing on the Document is ticked.
+- The pages link to each other: the Project page lists the Meeting, the three Tasks, the Inbox row and the Document; the Tasks page lists the question's Task under Questions; Plan shows the Goal at 33%.
+- The coordinator's read-only scan (TEMPLATE.md, step 10) lists these thirteen rows as Example rows, and nothing else.
+
+## Updating a copy to 0.16.0
+
+A template copy built before 0.16.0 has the fifteen rows of 0.15.x. After migration 0027 has archived Review, Decisions and Questions (with their three Example rows inside), on the copy's Brain Data:
+1. **The Meeting's minutes:** on `Example · Kickoff with Northwind`, change the line `Open: can the site go live by the end of March? [s2.i2]` to `Track: Waiting On — Waiting on Sam: can the site go live by the end of March? [s2.i2]`, by hand. Nothing else on the page changes.
+2. **Row 10:** run prompt 4 (it creates only the missing rows), then set row 10's relations as step 7 says.
+3. **Check by hand** as below: thirteen rows on Brain Data.
