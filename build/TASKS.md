@@ -1234,6 +1234,12 @@ The release gate is the usual one: the automated checks and the native smoke run
 **Output:** only what CC-308's contract needs in Notion: a Notion migration (the next number) for the row's Kind or property and, for 0100, Document asked and the Keep as document button on Tasks (in the Tasks module and the template), `notion/prompts/`, `notion/views-guide.md`, `notion/template-examples.md`, `notion/CHECKLIST.md`, and `brain upgrade` naming the migration. No longer conditional: 0100 needs the Tasks change whatever the checked row needs.
 **Acceptance:** the migration's steps run on a fresh duplicate of the 0.15.1 template after CC-299's migration, with synthetic rows (recorded in the PR, no personal data), and the button on a synthetic task ticks Document asked; nothing is deleted; the full suite, the leak and PR format checks pass.
 
+### CC-331 · Join 0.16.0's two skills releases and two Notion migrations into one each · `in progress`
+**Release:** 0.16.0
+**Changelog:**
+**Output:**
+**Acceptance:**
+
 ## 1.0.0 — Productisation, translation, funnel and launch (decision 0061)
 
 After the feature cutoff, scope packaging/install/upgrade guidance, consistent Notion templates/terminology, user-facing translations, positioning/demo/landing-page and acquisition/onboarding funnel, release candidates and launch acceptance. Confirm languages, offer and publication choices during the opening grill. Allow launch-blocking fixes, not unapproved features. The release gate includes a fresh user's end-to-end path and common-failure recovery; publishing/releasing follows existing user approval and release-script rules.
