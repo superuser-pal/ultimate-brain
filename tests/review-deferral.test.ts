@@ -62,14 +62,16 @@ test("a plan with a malformed review_pending entry is refused", async (context) 
 
 test("sync plan reads a published restricted note in its eligible form: no conflict, no correction", async (context) => {
   const dir = await fixtureCopy(context);
-  const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
+  // A Document: a decision has no page since 0.16.0 (0099).
+  assert.equal((await run(dir, ["config", "set", "notion.databases.documents", JSON.stringify("a1000000-0000-4000-8000-00000000000d")])).code, 0);
+  const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true, "reference");
   await approveNote(dir, note.path);
   const [item] = (await run(dir, ["sync", "render", "--ids", note.id])).json.data.items;
   await run(dir, ["sync", "record"], { records: [{ id: note.id, notion: "6a7b0000-0000-4000-8000-0000000000dd", synced_at: NOW, published: item.published }] });
   await exclude();
   const [after] = (await run(dir, ["sync", "render", "--ids", note.id])).json.data.items;
   await run(dir, ["sync", "record"], { records: [{ id: note.id, notion: "6a7b0000-0000-4000-8000-0000000000dd", synced_at: NOW, published: after.published }] });
-  const row = { database: "decisions", page_id: "6a7b0000-0000-4000-8000-0000000000dd", last_edited: NOW, properties: { Name: "Pricing call", "Brain ID": note.id, Lifecycle: "Draft", ...Object.fromEntries(Object.entries(after.properties as Record<string, { value: unknown }>).map(([name, prop]) => [name, prop.value])) } };
+  const row = { database: "documents", page_id: "6a7b0000-0000-4000-8000-0000000000dd", last_edited: NOW, properties: { Name: "Pricing call", "Brain ID": note.id, Lifecycle: "Draft", ...Object.fromEntries(Object.entries(after.properties as Record<string, { value: unknown }>).map(([name, prop]) => [name, prop.value])) } };
   const plan = (await run(dir, ["sync", "plan"], { as_of: NOW, rows: [row] })).json.data;
   assert.deepEqual([plan.conflicts, plan.corrections], [[], []]);
 });

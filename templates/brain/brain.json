@@ -3,7 +3,7 @@
   "owner": { "name": "Owner" },
   "budgets": { "ingest_max_notes": 8 },
   "settings": { "publish": "ask", "push": "auto" },
-  "modules": { "domains": false, "knowledge": true, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": false },
+  "modules": { "domains": false, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": false },
   "notion": {
     "review_sections": true,
     "databases": {
@@ -15,8 +15,6 @@
       "meetings": "",
       "people": "",
       "orgs": "",
-      "decisions": "",
-      "questions": "",
       "review": "",
       "inbox": "",
       "documents": ""
@@ -33,7 +31,8 @@
         "meeting": "Meeting",
         "meeting_url": "",
         "source": "Source",
-        "brain_id": "Brain ID"
+        "brain_id": "Brain ID",
+        "kind": "Kind"
       },
       "new_task_status": "To Do",
       "status_type": "status"

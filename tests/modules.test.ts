@@ -22,17 +22,18 @@ test("a new brain starts with the onboarding defaults, and modules lists what ea
   const list = await brain(["modules", "--brain", target, "--json"], root);
   assert.equal(list.code, 0, list.stdout);
   assert.deepEqual(list.json.data.modules.map((module: { name: string; on: boolean }) => [module.name, module.on]), [
-    ["domains", false], ["knowledge", true], ["orgs", true], ["documents", true], ["reports", true], ["tasks", true], ["planning", false],
+    ["domains", false], ["orgs", true], ["documents", true], ["reports", true], ["tasks", true], ["planning", false],
   ]);
   const byName = Object.fromEntries(list.json.data.modules.map((module: { name: string }) => [module.name, module]));
-  assert.deepEqual(byName.knowledge.missing, ["decisions", "questions"]);
+  // Knowledge is retired in 0.16.0 (0099): decisions and questions have no database.
+  assert.equal(byName.knowledge, undefined);
   // The new-brain block turns Tasks on (0078 §4); its default, for a key absent from a block, stays off.
   assert.deepEqual(byName.tasks, { name: "tasks", on: true, default: false, databases: [], missing: ["tasks"] });
   // A report is a Documents row (0071): Reports uses the Documents database.
   assert.deepEqual([byName.reports.databases, byName.reports.missing], [["documents"], ["documents"]]);
 
   const status = await brain(["status", "--brain", target, "--json"], root);
-  assert.deepEqual(status.json.data.modules, { domains: false, knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: false });
+  assert.deepEqual(status.json.data.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: false });
   assert.ok(status.json.data.notion.missing.includes("documents"));
 });
 
@@ -54,10 +55,10 @@ test("modules on and off switch one key, log the change, and write nothing when 
   assert.equal(again.json.data.changed, false);
   assert.equal(await readFile(configPath, "utf8"), text);
 
-  const off = await brain(["modules", "off", "knowledge", "--brain", target, "--now", NOW, "--json"], root);
+  const off = await brain(["modules", "off", "orgs", "--brain", target, "--now", NOW, "--json"], root);
   assert.equal(off.json.data.on, false);
-  assert.equal(JSON.parse(await readFile(configPath, "utf8")).modules.knowledge, false);
-  assert.match(await readFile(join(target, "log/2026-12.md"), "utf8"), /modules - "knowledge" state=off\n$/);
+  assert.equal(JSON.parse(await readFile(configPath, "utf8")).modules.orgs, false);
+  assert.match(await readFile(join(target, "log/2026-12.md"), "utf8"), /modules - "orgs" state=off\n$/);
 });
 
 test("a brain without a modules block has every module on; switching one writes the whole block first (0048)", async (context) => {
@@ -68,13 +69,13 @@ test("a brain without a modules block has every module on; switching one writes 
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
 
   const status = await brain(["status", "--brain", target, "--json"], root);
-  assert.deepEqual(status.json.data.modules, { domains: false, knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: true });
+  assert.deepEqual(status.json.data.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: true });
 
   const off = await brain(["modules", "off", "planning", "--brain", target, "--now", NOW, "--json"], root);
   assert.equal(off.code, 0, off.stdout);
   const after = JSON.parse(await readFile(configPath, "utf8"));
   assert.deepEqual(Object.keys(after), ["schema_version", "owner", "budgets", "settings", "modules", "notion"]);
-  assert.deepEqual(after.modules, { domains: false, knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: false });
+  assert.deepEqual(after.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: false });
 });
 
 test("a present block with a key left out takes that module's default (schema §12)", async (context) => {
@@ -84,7 +85,7 @@ test("a present block with a key left out takes that module's default (schema §
   config.modules = { documents: true };
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
   const status = await brain(["status", "--brain", target, "--json"], root);
-  assert.deepEqual(status.json.data.modules, { domains: false, knowledge: true, orgs: true, documents: true, reports: false, tasks: false, planning: false });
+  assert.deepEqual(status.json.data.modules, { domains: false, orgs: true, documents: true, reports: false, tasks: false, planning: false });
 });
 
 test("modules refuses core, an unknown module and a switch without one", async (context) => {
@@ -100,18 +101,18 @@ test("render leaves out the notes and relations of a module that is off; --ids n
   const dir = await fixtureCopy(context);
   const configPath = join(dir, "brain.json");
   const config = JSON.parse(await readFile(configPath, "utf8"));
-  config.modules = { knowledge: false, orgs: false, documents: false, reports: false, tasks: false, planning: false };
+  config.modules = { orgs: false, documents: false, reports: false, tasks: false, planning: false };
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
 
   const changed = await brain(["sync", "render", "--changed", "--brain", dir, "--now", NOW, "--json"]);
   assert.equal(changed.code, 0, changed.stdout);
   const types = new Set(changed.json.data.items.map((item: { type: string }) => item.type));
-  for (const type of ["decision", "question", "org", "goal"]) assert.equal(types.has(type), false, type);
+  for (const type of ["org", "goal"]) assert.equal(types.has(type), false, type);
 
-  const named = await brain(["sync", "render", "--ids", "dec-7k2m9q4x,per-3h8w2n6c,mtg-8c4n2p7w", "--brain", dir, "--now", NOW, "--json"]);
-  assert.deepEqual(named.json.data.errors, [{ id: "dec-7k2m9q4x", reason: "MODULE_OFF" }]);
+  const named = await brain(["sync", "render", "--ids", "org-6d1f9z3k,per-3h8w2n6c,mtg-8c4n2p7w", "--brain", dir, "--now", NOW, "--json"]);
+  assert.deepEqual(named.json.data.errors, [{ id: "org-6d1f9z3k", reason: "MODULE_OFF" }]);
   for (const item of named.json.data.items) {
-    for (const property of ["Org", "Decisions", "Questions"]) {
+    for (const property of ["Org"]) {
       assert.equal(item.properties[property], undefined, `${item.id} ${property}`);
       assert.equal(item.published[property], undefined, `${item.id} ${property}`);
       assert.equal(item.pending_relations.some((relation: { property: string }) => relation.property === property), false);

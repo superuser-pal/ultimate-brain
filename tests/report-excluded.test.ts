@@ -35,7 +35,9 @@ test("a report line that links a note resting on excluded content is flagged (so
 
 test("sync render publishes a restricted note in its eligible form, so a copy published before the exclusion is re-rendered without the excluded text", async (context) => {
   const dir = await fixtureCopy(context);
-  const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true);
+  assert.equal((await run(dir, ["config", "set", "notion.databases.documents", JSON.stringify("a1000000-0000-4000-8000-00000000000d")])).code, 0);
+  // A Document: a decision has no page since 0.16.0 (0099).
+  const { note, exclude } = await excludableDecision(dir, SYNC, PROJECT, true, "reference");
   await approveNote(dir, note.path);
   const before = (await run(dir, ["sync", "render", "--ids", note.id])).json.data.items[0];
   assert.ok(String(before.body).includes("95,000"), "while the paragraph is live it is published");

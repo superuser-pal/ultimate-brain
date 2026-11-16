@@ -206,19 +206,16 @@ async function record(dir: string, item: Record<string, any>, notion = item.page
   assert.equal(recorded.code, 0, recorded.stdout);
 }
 
-test("render: once an answer is applied, the question's Status goes out as Answered once", async (context) => {
+test("render: once an answer is applied, the question has its answer in Git and still no page (0099)", async (context) => {
   const dir = await fixtureCopy(context);
   const answer = { kind: "answer", title: "Who owns the app: Maria", target: QUESTION, answer: "Maria owns the mobile app.", answer_note: DECISION, why: "Maria said she owns it.", source: SYNC };
   const created = await run(dir, ["proposal", "new"], { proposals: [answer] });
 
-  const [before] = await rendered(dir, [QUESTION]);
-  assert.equal(before?.properties.Status, undefined, "a question with no answer never has Status");
   await run(dir, ["apply"], { decisions: [decided(created.json.data.created[0].id, "approve")] });
-  const [question] = await rendered(dir, [QUESTION]);
-  assert.deepEqual(question!.properties.Status, { type: "select", value: "Answered" });
-  await record(dir, question!);
-  const [after] = await rendered(dir, [QUESTION]);
-  assert.equal(after?.properties.Status, undefined, "Status goes out once");
+  const question = parseFrontmatter(await readFile(join(dir, "knowledge/questions/who-owns-the-acme-mobile-app.md"), "utf8")).attributes;
+  assert.equal(question.answer, DECISION, "answered by the note");
+  // A question has no page since 0.16.0 (0099): no Status goes out.
+  assert.deepEqual(await rendered(dir, [QUESTION]), []);
   assert.deepEqual(await lintErrors(dir), []);
 });
 

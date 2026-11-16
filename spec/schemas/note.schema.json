@@ -841,11 +841,6 @@
       "required": [
         "kind"
       ],
-      "dependentRequired": {
-        "task": [
-          "dropped"
-        ]
-      },
       "properties": {
         "kind": {
           "enum": [
@@ -863,12 +858,14 @@
           "$ref": "#/$defs/date"
         },
         "task": {
+          "description": "With dropped: the Task a to-do became (capture-and-review §6.2). Without dropped: the Task that tracks the open question or risk (decision 0099, capture-and-review §6.4).",
           "type": "string",
           "minLength": 1
         },
         "notion_fields": {
           "properties": {
             "status": {
+              "description": "Retired in 0.16.0 (decision 0099): Questions · Status up to 0.15.x, kept in a note as history and never read.",
               "enum": [
                 "Open",
                 "Answered",

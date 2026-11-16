@@ -10,6 +10,8 @@ export interface NotionMigrations {
   template_version: string | null;
   /** The package's migration file names with a higher number, sorted; null when the version is unknown. */
   newer: string[] | null;
+  /** Whether `brain.json` still names the Decisions or Questions database: the 0.16.0 migration has not run (spec/cli.md §5.15, 0099 §8). */
+  knowledge_databases: boolean;
 }
 
 /**
@@ -19,7 +21,9 @@ export interface NotionMigrations {
 export async function notionMigrations(productRoot: string, config: Record<string, unknown>): Promise<NotionMigrations> {
   const notion = isRecord(config.notion) ? config.notion : {};
   const version = typeof notion.template_version === "string" ? notion.template_version : null;
-  if (version === null) return { template_version: null, newer: null };
+  const databases = isRecord(notion.databases) ? notion.databases : {};
+  const knowledge = Object.hasOwn(databases, "decisions") || Object.hasOwn(databases, "questions");
+  if (version === null) return { template_version: null, newer: null, knowledge_databases: knowledge };
   let files: string[];
   try {
     files = await readdir(join(productRoot, "notion", "migrations"));
@@ -30,11 +34,18 @@ export async function notionMigrations(productRoot: string, config: Record<strin
     const number = MIGRATION.exec(file)?.[1];
     return number !== undefined && Number(number) > Number(version);
   });
-  return { template_version: version, newer: newer.sort() };
+  return { template_version: version, newer: newer.sort(), knowledge_databases: knowledge };
 }
 
-/** Upgrade's human line about them (spec/cli.md §5.15), with full paths under the installed package. */
+/** Upgrade's human lines about them (spec/cli.md §5.15), with full paths under the installed package. */
 export function notionMigrationsLine(productRoot: string, migrations: NotionMigrations): string {
+  const line = newerLine(productRoot, migrations);
+  return migrations.knowledge_databases
+    ? `${line}\nNotion: your space still has the Decisions and Questions databases. Ask your agent to apply the 0.16.0 Notion migration: it reads back the Status you set on questions, then archives both databases.`
+    : line;
+}
+
+function newerLine(productRoot: string, migrations: NotionMigrations): string {
   const folder = join(productRoot, "notion", "migrations");
   if (migrations.newer === null) {
     return `Notion: template version unknown, so upgrade can't tell which migrations your space needs; ask your agent which ones apply (${folder}/).`;

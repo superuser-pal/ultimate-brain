@@ -199,7 +199,7 @@ test("index.md, the JSON index and the views keep no title, alias or summary of 
   assert.ok(!/^generated_from:.*$/m.exec(log)![0].includes(part.id) && !log.includes(`  - ${part.id}`), "the label rests nothing on the note");
 });
 
-test("sync render publishes a note with a restricted part in the awaiting-cleanup form, rewrites its published page, and publishes a withheld report as a notice (cli §5.14.4)", async (context) => {
+test("sync render publishes a withheld report as a notice, and a decision with a restricted part only through its project's Decision log, by type and id: the decision itself has no page (cli §5.14.4, 0099)", async (context) => {
   const dir = await fixtureCopy(context);
   const config = JSON.parse(await readFile(join(dir, "brain.json"), "utf8"));
   config.notion.databases.documents = "a1000000-0000-4000-8000-00000000000d";
@@ -212,21 +212,16 @@ test("sync render publishes a note with a restricted part in the awaiting-cleanu
   assert.equal(report.code, 0, report.stdout);
   const reportId = report.json.data.id as string;
   const render = async (id: string) => (await run(dir, ["sync", "render", "--ids", id])).json.data.items[0];
+  // A decision has no page since 0.16.0 (0099): it is published through its project's sections only.
+  const skipped = async (id: string) => { const data = (await run(dir, ["sync", "render", "--ids", id])).json.data; return { items: data.items, skipped: data.skipped }; };
 
-  const before = await render(note.id);
-  assert.equal(before.properties.Name.value, "Price set at 95,000");
+  assert.deepEqual(await skipped(note.id), { items: [], skipped: [{ id: note.id, reason: "NO_DATABASE" }] });
   const beforeReport = await render(reportId);
   assert.ok(String(beforeReport.body).includes("95,000"));
 
   await exclude();
   await captureAt(dir, "2026-12-10T10:00:00Z");
-  const after = await render(note.id);
-  assert.equal(after.action, before.action, "the same page: rewritten in place, never deleted");
-  assert.equal(after.properties.Name.value, `decision ${note.id}, title withheld: awaiting cleanup`);
-  assert.ok(String(after.body).includes("Kept statement."), "the live line is still published");
-  assert.ok(!JSON.stringify(after).includes("95,000") && !JSON.stringify(after).includes("Price set"), "no title or excluded line in the payload");
-  assert.notEqual(after.published["@content"], before.published["@content"], "the content moves, so a published page is re-rendered");
-  assert.notEqual(after.published.Name, before.published.Name, "and so does its Name");
+  assert.deepEqual(await skipped(note.id), { items: [], skipped: [{ id: note.id, reason: "NO_DATABASE" }] }, "still no page once restricted");
 
   const withheld = await render(reportId);
   assert.equal(withheld.properties.Name.value, `report ${reportId}, withheld: refresh to rebuild`);
@@ -274,9 +269,9 @@ test("a live line's link to a note in the awaiting-cleanup form, or restricted w
     assert.ok(!out.stdout.includes(path), "and no path");
   }
 
-  // Published: the live decision's Notion body.
+  // Published: since 0.16.0 a decision has no Notion page, so its body reaches no Notion surface (0099).
   await approveNote(dir, LIVE_PATH);
-  const page = (await run(dir, ["sync", "render", "--ids", LIVE_NOTE])).json.data.items[0];
-  assert.ok(String(page.body).includes("Related: the price call and Use Firebase for auth."), String(page.body));
+  const page = (await run(dir, ["sync", "render", "--ids", LIVE_NOTE])).json.data;
+  assert.deepEqual(page.skipped, [{ id: LIVE_NOTE, reason: "NO_DATABASE" }]);
   for (const path of [part.path, whole.path]) assert.ok(!JSON.stringify(page).includes(slug(path)));
 });

@@ -140,16 +140,23 @@ function recentDecisions(notes: readonly Note[], belongs: (note: Note) => boolea
     `- ${text(decision.attributes.date)} — ${add(decision)} (${text(decision.attributes.assessment)})`);
 }
 
-/** `## Open questions`: reviewed, unanswered questions still Open, newest first (spec/schema.md §16.1 item 5). */
+/**
+ * `## Open questions and risks` (0099 §7): reviewed questions of either kind with no answer and not dropped, newest first; a risk is labelled
+ * and a tracked one links its task (spec/schema.md §16.1 item 5).
+ */
 function openQuestions(notes: readonly Note[], belongs: (note: Note) => boolean, add: (note: Note) => string, limit: number): string[] {
   const candidates = notes
-    .filter((note) => note.type === "question" && belongs(note) && note.attributes.answer === undefined)
-    .filter((note) => {
-      const status = record(note.attributes.notion_fields).status;
-      return status === undefined || status === "Open";
-    })
+    .filter((note) => note.type === "question" && belongs(note) && note.attributes.answer === undefined && note.attributes.dropped === undefined)
     .sort(sortDescendingBy("created"));
-  return reviewedSection("## Open questions", candidates, limit, (question) => `- ${add(question)} (${text(question.attributes.kind)})`);
+  return reviewedSection("## Open questions and risks", candidates, limit, (question) => {
+    const task = typeof question.attributes.task === "string" && question.attributes.task !== "" ? ` · [task](${taskUrl(question.attributes.task)})` : "";
+    return `- ${add(question)}${question.attributes.kind === "risk" ? " (risk)" : ""}${task}`;
+  });
+}
+
+/** A Notion page's URL from its id: `https://www.notion.so/<id without dashes>` (spec/schema.md §16.1 item 5). */
+export function taskUrl(pageId: string): string {
+  return `https://www.notion.so/${pageId.replaceAll("-", "")}`;
 }
 
 /**

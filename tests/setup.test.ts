@@ -95,12 +95,12 @@ test("init's human output ends with one next step: say \"set up my brain\" in th
 test("a new brain starts with Documents, Reports and Tasks on, Planning and Domains off (schema §12, 0078 §4)", async (context) => {
   const { home, target } = await freshBrain(context);
   const config = JSON.parse(await readFile(join(target, "brain.json"), "utf8"));
-  assert.deepEqual(config.modules, { domains: false, knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: false });
+  assert.deepEqual(config.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: false }, "no Knowledge module since 0.16.0 (0099)");
   const { data } = await status(target, home);
-  assert.deepEqual(data.modules, { domains: false, knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: false });
+  assert.deepEqual(data.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: false });
 });
 
-test("a brain made before 0.14.0 keeps its modules: absent keys keep their old defaults, an absent block keeps every module but Domains (schema §12)", async (context) => {
+test("a brain made before 0.14.0 keeps its modules: absent keys keep their old defaults, an absent block keeps every module but Domains; a knowledge key is not a module (schema §12, 0099)", async (context) => {
   const { home, target } = await freshBrain(context);
   // The block a 0.6.0–0.13.x init wrote, and the same block with the off modules' keys left out.
   for (const block of [
@@ -108,10 +108,10 @@ test("a brain made before 0.14.0 keeps its modules: absent keys keep their old d
     { domains: false, knowledge: true, orgs: true },
   ]) {
     await editConfig(target, (config) => { config.modules = block; });
-    assert.deepEqual((await status(target, home)).data.modules, { domains: false, knowledge: true, orgs: true, documents: false, reports: false, tasks: false, planning: false });
+    assert.deepEqual((await status(target, home)).data.modules, { domains: false, orgs: true, documents: false, reports: false, tasks: false, planning: false });
   }
   await editConfig(target, (config) => { delete config.modules; });
-  assert.deepEqual((await status(target, home)).data.modules, { domains: false, knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: true });
+  assert.deepEqual((await status(target, home)).data.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: true });
 });
 
 // --- config (cli.md §5.3, schema §12) ---
@@ -546,7 +546,7 @@ test("upgrade names the package's Notion migrations newer than the template vers
   for (const dry of [true, false]) {
     const json = await brain(["upgrade", "--brain", target, ...(dry ? ["--dry-run"] : []), "--now", NOW, "--json"], home, product);
     assert.equal(json.code, 0, json.stdout);
-    assert.deepEqual(json.json.data.notion_migrations, { template_version: "0023", newer: ["0024-second.md", "0025-third.md"] });
+    assert.deepEqual(json.json.data.notion_migrations, { template_version: "0023", newer: ["0024-second.md", "0025-third.md"], knowledge_databases: false });
   }
   const human = await brain(["upgrade", "--brain", target, "--now", NOW], home, product);
   assert.equal(human.code, 0, human.stderr);
@@ -561,7 +561,7 @@ test("upgrade names the package's Notion migrations newer than the template vers
 
   await editConfig(target, (config) => { config.notion.template_version = "0025"; });
   const current = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], home, product);
-  assert.deepEqual(current.json.data.notion_migrations, { template_version: "0025", newer: [] });
+  assert.deepEqual(current.json.data.notion_migrations, { template_version: "0025", newer: [], knowledge_databases: false });
   const currentHuman = await brain(["upgrade", "--brain", target, "--now", NOW], home, product);
   assert.equal(currentHuman.stdout.split("\n")[1], "Notion: your space has every migration (template 0025).");
 });
@@ -571,7 +571,7 @@ test("upgrade with no template version reports it unknown and names no migration
   const { home, target } = await freshBrain(context);
   const json = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], home, product);
   assert.equal(json.code, 0, json.stdout);
-  assert.deepEqual(json.json.data.notion_migrations, { template_version: null, newer: null });
+  assert.deepEqual(json.json.data.notion_migrations, { template_version: null, newer: null, knowledge_databases: false });
   const human = await brain(["upgrade", "--brain", target, "--now", NOW], home, product);
   assert.equal(human.stdout.split("\n")[1],
     `Notion: template version unknown, so upgrade can't tell which migrations your space needs; ask your agent which ones apply (${join(product, "notion", "migrations")}/).`);
