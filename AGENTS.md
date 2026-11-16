@@ -1,5 +1,7 @@
 # Ultimate Brain
 
+> **Setting up a brain for a user?** Don't clone or build this repository, and don't run its tests: follow [README Get started](README.md#get-started), which installs the published package with `npm install -g ultimate-brain`. The rest of this file is for developing the product.
+
 Product repo for an AI-assisted second brain: Markdown + Git canonical knowledge operated by coding agents (Claude Code, Codex), with Notion as the human interface. This repo holds the **product** (CLI, skills, schema spec, templates, Notion space design); each user's brain lives in a separate private repo (decision 0014). Never write personal knowledge into this repo: no names, client text, Notion ids or emails from a real brain, even in a finding or a commit message. A leak check runs in CI and in a local pre-commit hook (decision 0038).
 
 Before any work, read:
