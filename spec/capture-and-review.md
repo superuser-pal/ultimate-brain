@@ -351,7 +351,7 @@ The decision is written into the proposal file in the commit that applies it, so
 **7.8 Asking for a redraft.** When an answer asks for different wording ("say the pilot, not the trial", "shorter"), the skill drafts the new wording in the same turn, shows it, and asks for a yes. The accepted wording is applied as a `fix`, with `note` = the user's words. Nothing is stored between drafts. A redraft that draws on a passage the proposal doesn't list is a new proposal with its own passages (0077), not a fix. `brain proposal revise` and the `revision_requested` state are retired (§7.10).
 
 **7.9 Leaving the Review database (the 0.16.0 migration, CC-299).** The migration runs in an attended session, once, before it archives the database:
-1. **One last read.** `brain sync plan --review-transition` reads the Review rows of the snapshot by the rules of 0.15.x (cli §5.14.2, "Review rows, read once"). Only this option reads them.
+1. **One last read.** `brain sync plan --review-transition` reads the Review rows of the snapshot by the rules of 0.15.x (cli §5.14.8, "Review rows, read once"). Only this option reads them.
 2. **What it does with each row:**
    - **A decided row** is applied by 0.15.x's rules, with `sync apply`. That covers Your call Approve or Reject on a format-2 page, a format-1 page submitted with Decided ticked, and Approve or Reject with an empty What to fix on an older-layout row.
    - **A call with text to read** (`NOTE_TO_READ`, `FIX_TO_READ`) is read by the skill as in 0.15.x, shown to the user as what they decided, and applied after their yes.
