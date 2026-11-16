@@ -322,13 +322,7 @@ Example: a meeting yields 12 items, and one says the pilot has 11 depots while t
 
 **7.5 The session's questions (0096 §5).**
 - **When.** An attended catch-up asks its own run's questions first (§7.3, step 5). Then it asks the first round of waiting ones. "What needs my decision" asks them at any time, in Claude Code or Codex.
-- **What waits, and in what order.** `brain proposal list --waiting` (cli §5.6) returns the pending proposals that can be decided, in this order:
-  1. changes to what the brain holds: an `update_fact` with `before`, `contradiction`, `supersede`, a correction group, `replace_line`, `update_body`, `set_field`, `notion_change`;
-  2. `merge`, `answer`, `new_item`, and a cleanup `review_notes`;
-  3. a source's `review_notes` from a run without the user: **one question per source**, covering its new notes, additions, links and new facts together ("From the Acme kickoff: 7 new notes and 2 additions: accept all, all except …, or reject?");
-  4. any other pending proposal (an `add_link` or `add_to_note` of its own, or an `update_fact` with no `before`, written before 0.16.0).
-
-  Within a group the order is `created`, then id. A proposal withheld by the excluded-evidence rule (cli §5.7) is not a question. It is listed under `held`, and the skill names how many there are. On the user's yes, the skill rejects them together, since none of them can ever be applied.
+- **What waits, and in what order.** `brain proposal list --waiting` returns the pending proposals that can be decided, in four groups whose order is defined there (cli §5.6): changes to what the brain holds come first. A source's notes, additions, links and new facts from a run without the user are **one question per source** ("From the Acme kickoff: 7 new notes and 2 additions: accept all, all except …, or reject?"). A proposal withheld by the excluded-evidence rule (cli §5.7) is not a question: it is listed under `held`, the skill names how many there are, and on the user's yes it rejects them together, since none of them can ever be applied.
 - **A round** is at most **five** questions, taken in that order. Each question says what changes, quotes its passages, gives lettered options with the recommended one marked and one line on why, and accepts letters or the user's own words. "More" asks the next round. "Enough" stops, and the rest keeps waiting.
 - **Answers.**
   - **Accept** applies the proposal.
@@ -360,7 +354,7 @@ The decision is written into the proposal file in the commit that applies it, so
    - **A pending row** needs nothing: its proposal is in `_proposals/` and is asked as §7.5 says.
    - Items an earlier run already decided keep their `item_decisions`, and the rest of their row is treated as above.
 3. **Then** the migration archives the Review database and Home's "What's waiting for you?" view (nothing is deleted) and removes `notion.databases.review`, `notion.review_sections` and `notion.review_format` from `brain.json`.
-4. **After it,** `--review-transition` refuses with `REVIEW_RETIRED`. Until then, plain `sync plan` ignores Review rows (`ignored`, `REVIEW_RETIRED`), and `brain status` names the migration as pending (cli §5.15). An unattended run never uses the option. A brain that never had a Review database has nothing to migrate.
+4. **After it,** `--review-transition` refuses with `REVIEW_RETIRED`. Until then, plain `sync plan` ignores Review rows (`ignored`, reason `REVIEW_ROW`), and `brain status` names the migration as pending (cli §5.15). An unattended run never uses the option. A brain that never had a Review database has nothing to migrate.
 
 Proposal files written before 0.16.0 keep their `notion`, `notion_published`, `item_decisions` and `revisions` as history.
 
