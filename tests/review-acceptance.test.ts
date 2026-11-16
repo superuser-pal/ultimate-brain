@@ -5,8 +5,9 @@ import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { parseFrontmatter } from "../src/lib/frontmatter.ts";
+import { parseFrontmatter, serializeFrontmatter } from "../src/lib/frontmatter.ts";
 import { brain, fixtureCopy, withPassages } from "./helpers.ts";
+import { foldAsBefore, publishReviewRow } from "./review-row-fixture.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const AFTER = "2026-12-10T09:10:00Z";
@@ -45,7 +46,7 @@ async function pathOf(dir: string, id: string): Promise<string> {
 }
 async function errors(dir: string) { return (await run(dir, ["lint"])).json.data.issues.filter((issue: { severity: string }) => issue.severity === "error"); }
 
-/** A published Review row of the new layout: a fact change, a text addition, a new draft decision and a link. Items: 0 fact, 1 text, 2 note, 3 link. */
+/** A Review row of the new layout as 0.15.x published it, read by the 0.16.0 transition (cli §5.14.8): a fact change, a text addition, a new draft decision and a link. Items: 0 fact, 1 text, 2 note, 3 link. */
 async function published(dir: string) {
   const note = await run(dir, ["note", "new"], { notes: [{ type: "decision", title: "Launch in March", frontmatter: { summary: "s", date: "2026-12-03", assessment: "accepted", projects: [PROJECT], sources: [SYNC] }, body: "Launch moves to March.\n" }] });
   assert.equal(note.code, 0, note.stdout);
@@ -57,18 +58,17 @@ async function published(dir: string) {
     { kind: "update_fact", title: "Launch", target: PROJECT, field: "launch_date", after: "2027-03", why: "Maria moved it.", source: SYNC },
   ] });
   assert.equal(created.code, 0, created.stdout);
-  const id = created.json.data.created[0].id as string;
-  const [item] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
-  const recorded = await run(dir, ["sync", "record"], { records: [{ id, notion: PAGE, synced_at: NOW, published: item.published }] });
-  assert.equal(recorded.json.data.records[0].result, "recorded", recorded.stdout);
-  const ids = [...(item.body as string).matchAll(/^## \[[a-z]+ · (it-[0-9a-z]{8})\]/gm)].map((m) => m[1]!);
-  return { id, body: item.body as string, ids, draft };
+  const made = created.json.data.created as Array<{ id: string; kind: string }>;
+  const id = made.find((entry) => entry.kind === "review_notes")!.id;
+  await foldAsBefore(dir, id, made.find((entry) => entry.kind === "update_fact")!.id);
+  const { body, ids } = await publishReviewRow(dir, id, PAGE);
+  return { id, body, ids, draft };
 }
 const decide = (body: string, itemId: string, token: string) => body.replace(new RegExp(`(## \\[[a-z]+ · ${itemId}\\][\\s\\S]*?\\nDecision: )Pending`), `$1${token}`);
 const row = (id: string, body: string, extra: Record<string, unknown> = {}) => ({ database: "review", page_id: PAGE, last_edited: AFTER, properties: { "Brain ID": id, State: "Pending" }, review: { decided: true, decided_at: NOW, accept_all: false, page_edited_at: NOW, body_markdown: body, ...extra } });
 /** Plan the submitted page, have the "skill" verify every item, apply, and return both. */
 async function submit(dir: string, id: string, body: string, mutate?: (plan: any) => void) {
-  const plan = (await run(dir, ["sync", "plan"], { as_of: AFTER, rows: [row(id, body)] }, AFTER)).json.data;
+  const plan = (await run(dir, ["sync", "plan", "--review-transition"], { as_of: AFTER, rows: [row(id, body)] }, AFTER)).json.data;
   for (const decision of plan.review_decisions) for (const item of decision.items) item.verified = { snapshot_hash: item.snapshot_hash, proposed_hash: item.proposed_hash };
   mutate?.(plan);
   const applied = await run(dir, ["sync", "apply"], plan, AFTER);
@@ -80,19 +80,20 @@ test("a new-layout row and a legacy row decided together: exact partial decision
   const dir = await fixtureCopy(context);
   const { id, body, ids, draft } = await published(dir);
 
-  // A legacy row: a proposal written the 0045 way, published without item sections, decided with Approve.
+  // A legacy row: a proposal written the 0045 way, published by 0.15.x without item sections, decided with Approve.
   const legacyCreated = await run(dir, ["proposal", "new"], { proposals: [{ kind: "update_fact", title: "Budget", target: PROJECT, field: "budget", after: "95000 EUR", why: "Raised.", source: SYNC }] });
   const legacy = legacyCreated.json.data.created[0].id as string;
-  const [legacyItem] = (await run(dir, ["sync", "render", "--ids", legacy])).json.data.items;
-  assert.equal(legacyItem.body, null, "a standalone proposal has no sections");
-  await run(dir, ["sync", "record"], { records: [{ id: legacy, notion: "6a7b0000-0000-4000-8000-0000000000ee", synced_at: NOW, published: legacyItem.published }] });
+  const legacyPath = join(dir, await pathOf(dir, legacy));
+  const legacyDocument = parseFrontmatter(await readFile(legacyPath, "utf8"));
+  Object.assign(legacyDocument.attributes, { notion: "6a7b0000-0000-4000-8000-0000000000ee", notion_published: { "Brain ID": legacy, Name: "Budget" } });
+  await writeFile(legacyPath, serializeFrontmatter(legacyDocument));
 
   // Item 0: accepted with the user's value; item 1: rejected; item 2: revision requested; item 3 left pending.
   let page = decide(body, ids[0]!, "Accept").replace("2027-03", "2027-04");
   page = decide(page, ids[1]!, "Reject");
   page = decide(page, ids[2]!, "Request revision").replace(new RegExp(`(## \\[[a-z]+ · ${ids[2]}\\][\\s\\S]*?Decision: Request revision)`), "$1\nRevision request: shorter please");
   const legacyRow = { database: "review", page_id: "6a7b0000-0000-4000-8000-0000000000ee", last_edited: AFTER, properties: { "Brain ID": legacy, State: "Pending", "Your call": "Approve" } };
-  const plan = (await run(dir, ["sync", "plan"], { as_of: AFTER, rows: [row(id, page), legacyRow] }, AFTER)).json.data;
+  const plan = (await run(dir, ["sync", "plan", "--review-transition"], { as_of: AFTER, rows: [row(id, page), legacyRow] }, AFTER)).json.data;
   for (const decision of plan.review_decisions) for (const item of decision.items) item.verified = { snapshot_hash: item.snapshot_hash, proposed_hash: item.proposed_hash };
   assert.equal(plan.decisions.length, 1, "the legacy row is read by the 0045 rules in the same plan");
   const applied = await run(dir, ["sync", "apply"], plan, AFTER);
@@ -109,12 +110,10 @@ test("a new-layout row and a legacy row decided together: exact partial decision
   assert.deepEqual(await errors(dir), []);
   assert.equal((await attributes(dir, draft.path)).lifecycle, "draft", "the draft whose revision was requested is untouched until it is accepted");
 
-  // The page still holds the user's pending work, so a publish withholds it whole (capture-and-review §7.10).
+  // The page still holds the user's pending work; since 0.16.0 no publish writes a Review row at all.
   assert.ok(plan.review_pending.some((entry: { proposal: string }) => entry.proposal === id));
-  const planFile = join(dir, "..", "plan-pending.json");
-  await writeFile(planFile, JSON.stringify(plan));
-  const publish = await run(dir, ["sync", "render", "--ids", id, "--plan", planFile]);
-  assert.ok(publish.json.data.skipped.some((entry: { id: string; reason: string }) => entry.id === id && entry.reason === "REVIEW_PENDING"), publish.stdout);
+  const publish = await run(dir, ["sync", "render", "--ids", id]);
+  assert.deepEqual(publish.json.data.items, [], publish.stdout);
 
   // Reruns change nothing, and no revision applies before it is accepted.
   const head = git(dir, "rev-parse", "HEAD");
@@ -126,6 +125,6 @@ test("a new-layout row and a legacy row decided together: exact partial decision
   // A stale base: the target of item 3 moved after the page was rendered, so accepting it holds.
   const concept = await pathOf(dir, CONCEPT);
   await writeFile(join(dir, concept), (await readFile(join(dir, concept), "utf8")).replace(/^tags: .*$/m, "$&\nprojects: [prj-9x4t1b7e]"));
-  const stale = await run(dir, ["sync", "plan"], { as_of: AFTER, rows: [row(id, decide(page, ids[3]!, "Accept"))] }, AFTER);
+  const stale = await run(dir, ["sync", "plan", "--review-transition"], { as_of: AFTER, rows: [row(id, decide(page, ids[3]!, "Accept"))] }, AFTER);
   assert.ok(stale.json.data.review_held.some((held: { item_id: string; reason: string }) => held.item_id === ids[3] && held.reason === "BASE_CHANGED"), stale.stdout);
 });

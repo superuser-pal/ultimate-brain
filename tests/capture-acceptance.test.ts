@@ -13,7 +13,6 @@ import { brain, fixtureCopy } from "./helpers.ts";
 const NOW = "2026-12-10T09:00:00Z";
 const AFTER = "2026-12-10T09:10:00Z";
 const PAGE = "7a7b0000-0000-4000-8000-0000000000aa";
-const REVIEW_PAGE = "7a7b0000-0000-4000-8000-0000000000bb";
 const PROJECT = "prj-9x4t1b7e";
 const SECRET = "holiday plans in Lisbon";
 
@@ -131,24 +130,22 @@ test("mixed-subject meeting → extract → Tasks → exclusion after ingestion 
   const rowFile = join(dir, proposed.json.data.path);
   const row = parseFrontmatter(await readFile(rowFile, "utf8")).attributes as Record<string, any>;
   assert.deepEqual(row.cleanup.tasks.map((task: { item: string; reason: string }) => [task.item, task.reason]), [["s1.i2", "item no longer selected"]]);
-  const [item] = (await run(dir, ["sync", "render", "--ids", rowId], undefined, AFTER)).json.data.items;
-  assert.ok(String(item.body).includes("Maria sends the revised plan") && String(item.body).includes("The launch moves to March"), "the page shows what goes and what stays");
-  const itemId = [...String(item.body).matchAll(/^## \[[a-z]+ · (it-[0-9a-z]{8})\]/gm)][0]![1]!;
-  await run(dir, ["sync", "record"], { records: [{ id: rowId, notion: REVIEW_PAGE, synced_at: AFTER, published: item.published }] }, AFTER);
+  const listed = await run(dir, ["proposal", "list", "--waiting"], undefined, AFTER);
+  assert.ok(JSON.stringify(listed.json.data).includes(rowId), "the cleanup waits for a decision in the session");
 
-  // 7. Accept the Remove: the restricted line goes, the independent claim stays, the record is reconciled; a rerun does nothing.
-  const accepted = String(item.body).replace(new RegExp(`(## \\[[a-z]+ · ${itemId}\\][\\s\\S]*?\\nDecision: )Pending`), "$1Accept");
-  const planned = (await run(dir, ["sync", "plan"], { as_of: AFTER, rows: [{ database: "review", page_id: REVIEW_PAGE, last_edited: AFTER, properties: { "Brain ID": rowId, State: "Pending" }, review: { decided: true, decided_at: AFTER, accept_all: false, page_edited_at: AFTER, body_markdown: accepted } }] }, AFTER)).json.data;
-  for (const entry of planned.review_decisions) for (const decided of entry.items) decided.verified = { snapshot_hash: decided.snapshot_hash, proposed_hash: decided.proposed_hash };
-  const applied = await run(dir, ["sync", "apply"], planned, AFTER);
-  assert.deepEqual(applied.json.data.review_results.map((entry: { result: string }) => entry.result), ["applied"], applied.stdout);
+  // 7. A yes in the session to the Remove: the restricted line goes, the independent claim stays, the record is reconciled; a rerun does nothing.
+  const decision7 = { decisions: [{ proposal: rowId, action: "approve", decided_at: AFTER, decided_by: "chat", note: "yes, remove it" }] };
+  settle(dir);
+  const applied = await run(dir, ["apply"], decision7, AFTER);
+  assert.deepEqual(applied.json.data.decisions.map((entry: { result: string }) => entry.result), ["applied"], applied.stdout);
   const body = await readFile(join(dir, decision.path), "utf8");
   assert.ok(body.includes("The launch moves to March.") && !body.includes("revised plan"));
   assert.equal(JSON.parse(await readFile(join(dir, "_suppressions", `${PAGE}.json`), "utf8")).records[0].status, "reconciled");
-  const rerun = await run(dir, ["sync", "apply"], planned, AFTER);
-  assert.deepEqual(rerun.json.data.review_results.map((entry: { result: string }) => entry.result), ["skipped"], "applying the same plan again is refused or a no-op");
+  settle(dir);
+  const rerun = await run(dir, ["apply"], decision7, AFTER);
+  assert.deepEqual([rerun.json.data.decisions[0].result, rerun.json.data.decisions[0].reason], ["skipped", "ALREADY_TERMINAL"], rerun.stdout);
+  assert.equal(git(dir, "status", "--porcelain").trim(), "", "applying the same decision again changes nothing");
   assert.equal((await run(dir, ["source", "cleanup-propose", "--page", PAGE], undefined, AFTER)).json.data.result, "NOTHING_TO_CLEAN");
-  assert.equal(git(dir, "status", "--porcelain").trim(), "");
   const lint = await run(dir, ["lint"]);
   assert.deepEqual(lint.json.data.issues.filter((issue: { severity: string }) => issue.severity === "error"), []);
 });
