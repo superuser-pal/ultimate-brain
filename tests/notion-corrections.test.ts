@@ -242,3 +242,20 @@ test("apply refuses the retired corrections input, and proposal new refuses both
     assert.match(run.stdout, /written only by brain sync apply/);
   }
 });
+
+test("a pending correction on one key holds Key Facts whole: a brain change to another key is not sent until you decide (cli §5.14.4)", async (context) => {
+  const dir = await fixtureCopy(context);
+  await published(dir);
+  await syncApply(dir, await plan(dir, [projectRow({ "Key Facts": "Budget: 80000 EUR · Launch date: 2027-03" })]));
+  const correction = (await waiting(dir)).find((entry) => entry.kind === "notion_correction")!;
+  assert.equal(correction.property, "Key Facts/launch_date");
+  // The brain learns a new budget while your launch date edit waits.
+  await edit(dir, PROJECT_PATH, (a) => { a.facts = { ...(a.facts as Record<string, unknown>), budget: "95000 EUR" }; });
+  const held = await renderProject(dir);
+  assert.ok(held === undefined || (!("Key Facts" in held.properties) && !("Key Facts" in held.published)), JSON.stringify(held));
+
+  // Decided: the next publish sends Key Facts with the brain's budget and the accepted launch date.
+  assert.equal((await decide(dir, [{ proposal: correction.id, action: "approve", note: "a", decided_at: NOW, decided_by: "chat" }])).json.data.decisions[0].result, "applied");
+  const sent = await renderProject(dir);
+  assert.equal(sent!.properties["Key Facts"]!.value, "Budget: 95000 EUR · Launch date: 2027-03");
+});

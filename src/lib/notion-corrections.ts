@@ -180,16 +180,14 @@ export function atomically(workspace: Workspace, run: () => Record<string, unkno
 
 /**
  * The properties `sync render` holds back for a pending correction (cli §5.14.4): each pending notion_correction's `property` on its note,
- * and Key Facts whole while any of its keys has one.
+ * as written (`Key Facts/<key>` for a key). Render holds Key Facts whole for any of its keys, a correction's or a conflict's alike.
  */
 export function heldByCorrections(workspace: Workspace): Map<string, Set<string>> {
   const held = new Map<string, Set<string>>();
   for (const note of workspace.notes) {
     if (note.type !== "proposal" || note.attributes.kind !== "notion_correction" || note.attributes.status !== "pending") continue;
-    const target = String(note.attributes.target); const property = String(note.attributes.property);
-    const set = held.get(target) ?? new Set<string>();
-    set.add(property.startsWith(`${KEY_FACTS}/`) ? KEY_FACTS : property);
-    held.set(target, set);
+    const target = String(note.attributes.target);
+    held.set(target, (held.get(target) ?? new Set<string>()).add(String(note.attributes.property)));
   }
   return held;
 }
