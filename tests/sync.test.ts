@@ -27,7 +27,7 @@ test("sync plan detects a Notion fact correction from its published baseline", a
   const snapshot = { as_of: NOW, rows: [{ database: "people", page_id: MARIA_PAGE, last_edited: "2026-12-10T08:00:00Z", properties: { "Brain ID": MARIA, Role: "Product lead" } }] };
   const run = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot.json", snapshot), "--json"]);
   assert.equal(run.code, 0, run.stdout);
-  assert.deepEqual(run.json.data.corrections, [{ target: MARIA, field: "facts.role", value: "Product lead", observed_at: "2026-12-10T08:00:00Z", property: "Role", notion_value: "Product lead" }]);
+  assert.deepEqual(run.json.data.corrections, [{ target: MARIA, field: "facts.role", value: "Product lead", before: "Product Manager", observed_at: "2026-12-10T08:00:00Z", database: "people", page_id: MARIA_PAGE, property: "Role", notion_value: "Product lead" }]);
 });
 
 test("sync plan refuses as_of on a row; it belongs at the snapshot's top (#122)", async (context) => {
@@ -251,26 +251,26 @@ test("sync plan reports learned Document relation edits as not correctable", asy
   assert.deepEqual(run.json.data.ignored.map((item: { property: string; reason: string }) => [item.property, item.reason]), [["Area", "NOT_CORRECTABLE"], ["Project", "NOT_CORRECTABLE"]]);
 });
 
-test("sync apply creates a Notion-created note with its lifecycle and applies corrections", async (context) => {
+test("sync apply creates a Notion-created note with its lifecycle and writes a correction as a pending proposal, never applying it (0101 §4)", async (context) => {
   const dir = await fixtureCopy(context);
   const mariaPath = join(dir, "knowledge/people/maria-lopez.md");
-  await writeFile(mariaPath, `${await readFile(mariaPath, "utf8")}\nCurrently coordinating launch work.\n`);
+  const before = await readFile(mariaPath, "utf8");
   const plan = {
     as_of: NOW,
     create: [{ type: "org", id: "org-1a2b3c4d", title: "Globex", lifecycle: "reviewed", frontmatter: { summary: "Globex", sources: ["notion:10000000-0000-4000-8000-000000000001"], notion: "10000000-0000-4000-8000-000000000001" }, body: "" }],
     updates: [],
-    corrections: [{ target: MARIA, field: "facts.role", value: "Product lead", observed_at: "2026-12-10T08:00:00Z" }],
+    corrections: [{ target: MARIA, field: "facts.role", value: "Product lead", before: "Product Manager", observed_at: "2026-12-10T08:00:00Z", database: "people", page_id: MARIA_PAGE, property: "Role", notion_value: "Product lead" }],
     decisions: [], conflicts: [], ignored: [],
   };
   const run = await brain(["sync", "apply", "--brain", dir, "--now", NOW, "--input", await input(dir, "plan.json", plan), "--json"]);
   assert.equal(run.code, 0, run.stdout);
   const globex = parseFrontmatter(await readFile(join(dir, "knowledge/orgs/globex.md"), "utf8")).attributes;
   assert.equal(globex.lifecycle, "reviewed");
-  const maria = parseFrontmatter(await readFile(join(dir, "knowledge/people/maria-lopez.md"), "utf8")).attributes;
-  assert.equal((maria.facts as Record<string, unknown>).role, "Product lead");
-  assert.ok(run.json.warnings.some((warning: { code: string; path: string }) => warning.code === "FRESHNESS" && warning.path === "knowledge/people/maria-lopez.md"));
+  assert.equal(await readFile(mariaPath, "utf8"), before, "a correction waits for your yes");
+  assert.deepEqual(run.json.data.corrections.map((item: { result: string }) => item.result), ["written"]);
   const log = await readFile(join(dir, "log/2026-12.md"), "utf8");
   assert.match(log, /sync-create org-1a2b3c4d "Globex"/);
+  assert.match(log, /proposal-new prp-[0-9a-z]{8} "Maria López: Role → Product lead" kind=notion_correction target=per-3h8w2n6c/);
 });
 
 // --- sync apply runs creates in relation order (cli §5.14.3, CC-113) ---------------------------
