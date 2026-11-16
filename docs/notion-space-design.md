@@ -265,7 +265,34 @@ Open questions and risks raised in meetings.
 
 ### 3.10 Review (retired in 0.16.0)
 
-There is no Review database from 0.16.0 ([0096](../decisions/0096-one-place-to-decide.md)): proposals are decided in the agent session ([spec/capture-and-review.md](../spec/capture-and-review.md) §7). The 0.16.0 migration first applies the decisions you already made on its rows, then archives the database and Home's "What's waiting for you?" view and removes `review` from `brain.json`'s `notion.databases`; nothing is deleted (§7.9 there). Its design up to 0.15.x is in Git history.
+There is no Review database from 0.16.0 ([0096](../decisions/0096-one-place-to-decide.md)): proposals are decided in the agent session ([spec/capture-and-review.md](../spec/capture-and-review.md) §7). The 0.16.0 migration first applies the decisions you already made on its rows, then archives the database and Home's "What's waiting for you?" view and removes `review` from `brain.json`'s `notion.databases`; nothing is deleted (§7.9 there). Its design up to 0.15.x follows as history, unchanged: the Notion prompts and migrations that build it still exist until CC-299 retires them, and they are checked against it.
+
+<details>
+<summary>The Review database up to 0.15.x (history)</summary>
+
+The approval queue (0003). Created by the brain; you decide.
+
+| Property | Type | Owner |
+|---|---|---|
+| Name | Title | Brain: e.g. "Acme launch: Jan → Feb" |
+| Kind | Select: Update Fact, Add To Note, Update Body, Add Link, Supersede, Contradiction, Merge, New Item, Review Notes, Answer, Notion Change, Set Field | Brain; hidden from your views and collapsed on the page (0048): **Type** says what you need. **Review Notes** (0041, 0043, 0045): one row per meeting, email or document, holding everything it proposes, lettered a), b)…: fact changes first, marked ⚠, then text added to existing notes, then the new notes, then links. Approve accepts them; "all except b, d" in What to fix moves those to a row of their own that waits for you; Reject archives the new notes. Contradiction, Supersede, Merge and Answer keep rows of their own. **Update Body**: a change to a kept reference (0045). **Notion Change** and **Set Field** (0.10.0, 0072): a change Ultimate Assistant suggests when you asked for a row instead of a yes in chat: a task's Status, Due, Project or Area, a project's Status, an Area's Archived (carried out in Notion once you approve), or a project's Area, an Area's Domain (spec/assistant.md §6) |
+| Type | Formula on Kind: **From source** (Review Notes, Update Fact, Add To Note, Update Body, Add Link), **Conflict** (Contradiction, Supersede, Merge, New Item), **Answer** (Answer), **Suggestion** (Notion Change, Set Field; 0.10.0, 0072) | You (derived, Notion-only, 0048). The Name says the same: a Conflict row's starts with "Conflict: ", an Answer row's with "Answer: ", a From source row's with "From ", a Suggestion row's with "Suggestion: " |
+| Status | Formula (0088, migration 0024), checked in this order: **Done** (State Applied), **Closed** (State Closed), **Submitted: waiting for the brain** (Decided ticked, or Your call set), **Needs you · decide in the page** (Proposed empty, or holding the pre-0.14.0 pointer "… decide each one in the page"), else **Needs you · set Your call** | Notion-only: the brain never writes or reads it. Pinned first on the page and in the Review views; Home's "What's waiting for you?" lists the rows whose Status starts with "Needs you". It moves by itself when you click Submit |
+| Area | Relation → Areas (two-way with Review), limited to one page | Brain (0050): the area of the meeting or input it came from (its own Area, else its first project's), else empty. Feeds the area homes' "Review waiting" tab |
+| About | Text | Brain: note title + Brain ID (for Review Notes, the meeting or source). Was Target before 0.5.0 (0045). Empty on a row with item sections (0088), like Now, Proposed and Why: the page holds them, and the layout hides each one while it is empty |
+| About Page | URL | Brain: link to the Notion page affected; for Review Notes, the meeting or Inbox row it came from (was Target Page) |
+| Now | Text | Brain: the current value (was Before) |
+| Proposed | Text | Brain: the proposed value, or the lettered items on a row without sections (was After). Empty on a row with item sections (0088; before 0.14.0 a pointer, "3 changes: decide each one in the page") |
+| Why | Text | Brain: the sentence from the source that triggered it |
+| Source Meeting | Relation → Meetings | Brain |
+| Your call | Select: Approve, Reject, Fix, Request revision | **You** (was Decision, with Edit; 0045). Where every row is decided from 0.15.0 (0090 §5, migration 0025): on a row whose page has sections, Approve submits the page as it reads (an item still on Pending is accepted, except a ⚠ change or a flagged ⚑ item, which needs `Decision: Accept` on its line), Request revision with What to fix asks for redrafts, Reject rejects what is still Pending (capture-and-review §7.12.7). On a row of the older page (rendered before 0.15.0) Approve or Reject is a shortcut for the whole row, and its sections are submitted with Submit decisions (§7.9). Since 0.14.0 it sits at the top of the property group, not in the heading (0088). Its description carries the promise of Review and how each kind of row is decided, so every row shows it on hover, within Notion's 280-character limit for a description: "Owner: you. Approving makes these notes trusted. From a meeting, email or document: Approve takes the page as it reads (a ⚠ or ⚑ item needs Accept), Request revision redrafts what What to fix says, Reject leaves the notes as they are. Other rows: Approve, Reject or Fix." |
+| What to fix | Text | **You** (was Note): with Fix, what's wrong, in your words ("Lucía is on Acme website, not Acme app", "a: March"); with Approve, what to leave out ("all except b, d"). The brain applies its corrected version and says in its report what it changed; it never applies a change your words didn't clearly ask for (0037, 0045) |
+| State | Select: Pending, Applied, Closed | System |
+| Brain ID | Text | System (`prp-…`) |
+| Created time | Created time | System (Notion fills it; sorts the queue) |
+| Last edited time | Last edited time | System (Notion fills it; "approved recently" filter) |
+
+</details>
 
 ### 3.11 Inbox
 Everything that came into the brain except meetings, which have their own database (0037). Your quick captures land here as **Ready**; every document, email, chat or note the brain ingests gets a row, created as **Done**, so **History** shows what came in and what the brain learned from it.
