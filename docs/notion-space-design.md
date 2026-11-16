@@ -386,7 +386,7 @@ Minimal, so the brain can send action items (0018). If you already have a tasks 
 | Property | Type | Notes |
 |---|---|---|
 | Name | Title | |
-| Status | Status: To Do, Doing, Waiting On, Someday, Done, Won't Do | The brain sets `new_task_status` on create. It reads a status back only on a task that tracks an open question, and asks you in the session when that task is finished or gone ([0101](../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §6); it stores none. Waiting On and Someday sit in any group except Complete and are Notion-only |
+| Status | Status: To Do, Doing, Waiting On, Someday, Done, Won't Do | The brain sets `new_task_status` on create. It reads a status back only on a task that tracks an open question, and asks you in the session when that task is finished, in the trash or unreadable ([0101](../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §6); it stores none. Waiting On and Someday sit in any group except Complete and are Notion-only |
 | Due | Date | |
 | Project | Relation → Projects | |
 | Area | Relation → Areas | |
