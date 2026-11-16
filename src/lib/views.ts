@@ -15,7 +15,7 @@ export interface DerivedView {
 
 const CURRENT_ASSESSMENTS = new Set(["accepted", "provisional", "contested"]);
 /** A Decision log line of a draft, in the words of the Brief's waiting line (schema §16.1, §16.2). */
-const WAITING = "waiting in Review";
+const WAITING = "waiting for your decision";
 
 /** Render one project view, or an area's brief, from canonical notes only (spec/schema.md §16). */
 export function deriveView(project: Note, kind: ViewKind, notes: readonly Note[], options: { documents?: boolean } = {}): DerivedView {
@@ -167,7 +167,7 @@ function reviewedSection(heading: string, candidates: readonly Note[], limit: nu
   const reviewed = candidates.filter((note) => note.attributes.lifecycle === "reviewed").slice(0, limit);
   if (reviewed.length > 0) return [heading, ...reviewed.map(line)];
   const waiting = candidates.filter((note) => note.attributes.lifecycle === "draft").length;
-  return [heading, waiting === 0 ? "- None" : `- Nothing reviewed yet: ${waiting} note${waiting === 1 ? "" : "s"} waiting in Review`];
+  return [heading, waiting === 0 ? "- None" : `- Nothing reviewed yet: ${waiting} note${waiting === 1 ? "" : "s"} waiting for your decision`];
 }
 
 function decisionLogSections(
@@ -184,7 +184,7 @@ function decisionLogSections(
   const current = decisions.filter((note) => CURRENT_ASSESSMENTS.has(String(note.attributes.assessment))).sort(sortDescendingBy("date"));
   const superseded = decisions.filter((note) => note.attributes.assessment === "superseded").sort(sortDescendingBy("valid_until"));
 
-  // A draft keeps its place but says it waits in Review, and states no assessment you haven't given (schema §16.2, CC-261).
+  // A draft keeps its place but says it waits for your decision, and states no assessment you haven't given (schema §16.2, CC-261).
   const draft = (decision: Note) => decision.attributes.lifecycle === "draft";
   const currentSection = ["## Current", ...(current.length === 0 ? ["- None"] : current.map((decision) => {
     const older = relationTarget(decision, "supersedes", byId);

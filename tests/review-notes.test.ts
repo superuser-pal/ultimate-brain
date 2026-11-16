@@ -206,24 +206,10 @@ async function record(dir: string, item: Record<string, any>, notion = item.page
   assert.equal(recorded.code, 0, recorded.stdout);
 }
 
-test("render: a Review notes row letters its notes, then its links, with titles for ids", async (context) => {
-  const dir = await fixtureCopy(context);
-  await withoutReviewSections(dir);
-  const created = await run(dir, ["proposal", "new"], { proposals: reviewInput });
-  const [item] = await rendered(dir, [created.json.data.created[0].id]);
-  assert.equal(item!.properties.Kind.value, "Review Notes");
-  assert.equal(item!.properties.About.value, `Acme sync (${SYNC})`);
-  assert.deepEqual(item!.properties.Now, { type: "rich_text", value: null });
-  assert.equal(item!.properties.Proposed.value, "a) Decision: Use Supabase for auth\nb) Question: Who owns the Acme mobile app?\nc) Projects on Row-level security: Acme website\nd) Aliases on Use Supabase for auth: Supabase auth");
-});
-
-test("render: an answer row shows answer → note; once applied, the question has its answer in Git and still no page (0099)", async (context) => {
+test("render: once an answer is applied, the question has its answer in Git and still no page (0099)", async (context) => {
   const dir = await fixtureCopy(context);
   const answer = { kind: "answer", title: "Who owns the app: Maria", target: QUESTION, answer: "Maria owns the mobile app.", answer_note: DECISION, why: "Maria said she owns it.", source: SYNC };
   const created = await run(dir, ["proposal", "new"], { proposals: [answer] });
-  const [row] = await rendered(dir, [created.json.data.created[0].id]);
-  assert.deepEqual(row!.properties.Now, { type: "rich_text", value: null });
-  assert.equal(row!.properties.Proposed.value, "Maria owns the mobile app. → Use Supabase for auth");
 
   await run(dir, ["apply"], { decisions: [decided(created.json.data.created[0].id, "approve")] });
   const question = parseFrontmatter(await readFile(join(dir, "knowledge/questions/who-owns-the-acme-mobile-app.md"), "utf8")).attributes;
@@ -231,24 +217,6 @@ test("render: an answer row shows answer → note; once applied, the question ha
   // A question has no page since 0.16.0 (0099): no Status goes out.
   assert.deepEqual(await rendered(dir, [QUESTION]), []);
   assert.deepEqual(await lintErrors(dir), []);
-});
-
-test("render: a Review row links its page and its source meeting", async (context) => {
-  const dir = await fixtureCopy(context);
-  const created = await run(dir, ["proposal", "new"], { proposals: reviewInput });
-  const [item] = await rendered(dir, [created.json.data.created[0].id]);
-  assert.deepEqual(item!.properties["About Page"], { type: "url", value: "https://www.notion.so/3c4d5e6f7a8b4c0d9e2f3a4b5c6d7e8f" });
-  assert.deepEqual(item!.properties["Source Meeting"], { type: "relation", value: ["3c4d5e6f-7a8b-4c0d-9e2f-3a4b5c6d7e8f"] });
-});
-
-test("render: a Review row whose meeting has no Notion page lists it as pending", async (context) => {
-  const dir = await fixtureCopy(context);
-  const meetingPath = join(dir, "knowledge/meetings/2026-12-03-acme-sync.md");
-  await writeFile(meetingPath, (await readFile(meetingPath, "utf8")).replace(/^notion: .*\n/m, ""));
-  const created = await run(dir, ["proposal", "new"], { proposals: reviewInput });
-  const [item] = await rendered(dir, [created.json.data.created[0].id]);
-  assert.deepEqual(item!.pending_relations.find((relation: { property: string }) => relation.property === "Source Meeting"), { property: "Source Meeting", ids: [SYNC] });
-  assert.deepEqual(item!.published["Source Meeting"], [], "as for other relations, only published pages are recorded as sent");
 });
 
 test("a new review_notes gives every note, link and change one immutable item id, and lint checks them", async (context) => {

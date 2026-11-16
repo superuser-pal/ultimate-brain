@@ -2,10 +2,7 @@ import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { assertNoProblems, isRecord, readJsonInput, unknownKeys } from "../lib/input.ts";
 import { parseSettleInput, settle } from "../lib/notion-change.ts";
-import { listProposals, PROPOSAL_STATUSES, stageBacklog, stageProposals } from "../lib/proposals.ts";
-import { Skip } from "../lib/review-apply.ts";
-import { reviseItem } from "../lib/review-revision.ts";
-import { formatDate } from "../lib/time.ts";
+import { listProposals, PROPOSAL_STATUSES, stageBacklog, stageProposals, waitingProposals } from "../lib/proposals.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { lintWarnings } from "../lib/warnings.ts";
 
@@ -51,15 +48,26 @@ export const proposalNewCommand: Command = {
   },
 };
 
-/** `brain proposal list [--status <s>[,<s>…]] [--target <id>]` (spec/cli.md §5.6). */
+const HELD_TITLE = "held: rests on content you excluded from the brain";
+
+/** `brain proposal list [--status <s>[,<s>…]] [--target <id>]` and `--waiting [--target <id>]` (spec/cli.md §5.6). */
 export const proposalListCommand: Command = {
   name: "proposal list",
-  usage: "brain proposal list [--status <s>[,<s>…]] [--target <id>] [--json]",
-  summary: "List proposals, filtered by status and target, sorted by created then id.",
-  options: { status: "string", target: "string" },
+  usage: "brain proposal list [--status <s>[,<s>…] | --waiting] [--target <id>] [--json]",
+  summary: "List proposals, filtered by status and target, sorted by created then id; --waiting lists what the session asks, in the order of its questions.",
+  options: { status: "string", target: "string", waiting: "boolean" },
   maxPositionals: 0,
   needsBrain: true,
   async run({ args, brain }) {
+    if (args.options.waiting === true) {
+      // What the session asks, in the order of its questions, and the withheld ones apart (cli §5.6, capture-and-review §7.5).
+      if (args.options.status !== undefined) throw new BrainError("USAGE", "--waiting lists pending proposals: it takes no --status");
+      const workspace = await Workspace.open(brain!);
+      const data = waitingProposals(workspace, args.options.target as string | undefined);
+      const human = (data.waiting.length === 0 ? "Nothing waiting for your decision.\n" : data.waiting.map((proposal) => `${String(proposal.group)} ${String(proposal.id)} ${String(proposal.kind)} ${proposal.title === undefined ? HELD_TITLE : String(proposal.title)}\n`).join(""))
+        + (data.held.length === 0 ? "" : `${data.held.length} held: ${data.held.length === 1 ? "it rests" : "they rest"} on content you excluded from the brain\n`);
+      return { data, human };
+    }
     const statuses = typeof args.options.status === "string" ? args.options.status.split(",").map((status) => status.trim()).filter((status) => status !== "") : [];
     const unknown = statuses.filter((status) => !(PROPOSAL_STATUSES as readonly string[]).includes(status));
     if (unknown.length > 0) throw new BrainError("USAGE", `Unknown status ${unknown.join(", ")}; use ${PROPOSAL_STATUSES.join(", ")}`);
@@ -67,7 +75,7 @@ export const proposalListCommand: Command = {
     const proposals = listProposals(workspace, statuses, args.options.target as string | undefined);
     const human = proposals.length === 0
       ? "No proposals.\n"
-      : proposals.map((proposal) => `${String(proposal.id)} ${String(proposal.status)} ${String(proposal.kind)} ${proposal.title === undefined ? "held: rests on content you excluded from the brain" : String(proposal.title)}\n`).join("");
+      : proposals.map((proposal) => `${String(proposal.id)} ${String(proposal.status)} ${String(proposal.kind)} ${proposal.title === undefined ? HELD_TITLE : String(proposal.title)}\n`).join("");
     return { data: { proposals }, human };
   },
 };
@@ -93,31 +101,16 @@ export const proposalBacklogCommand: Command = {
   },
 };
 
-/** `brain proposal revise --input <file|->` (spec/cli.md §5.27, capture-and-review §7.8): the new draft of a revision-requested item. */
+/** `brain proposal revise` (spec/cli.md §5.27): retired in 0.16.0 by decision 0096. Writes nothing. */
 export const proposalReviseCommand: Command = {
   name: "proposal revise",
   usage: "brain proposal revise --input <file|-> [--dry-run] [--json]",
-  summary: "Replace the stored proposal of a revision-requested Review item with a new draft, keeping the user's previous wording. Accepts nothing.",
+  summary: "Retired in 0.16.0: a redraft is shown and accepted in the session, then applied as a fix.",
   options: { input: "string", "dry-run": "boolean" },
   maxPositionals: 0,
   needsBrain: true,
-  async run({ args, brain, now }) {
-    const input = await readJsonInput(args.options.input as string | undefined, "proposal revise");
-    const problems = isRecord(input) ? unknownKeys(input, ["proposal", "item_id", "proposed", "previous", "passages"], "") : [{ pointer: "", message: "must be an object" }];
-    if (isRecord(input)) for (const key of ["proposal", "item_id", "proposed", "previous"]) if (typeof input[key] !== "string") problems.push({ pointer: `/${key}`, message: "must be a string" });
-    assertNoProblems(problems);
-    const workspace = await Workspace.open(brain!);
-    const request = input as { proposal: string; item_id: string; proposed: string; previous: string; passages?: unknown };
-    try {
-      const data = reviseItem(workspace, request, now, formatDate(now));
-      const errors = workspace.newErrors();
-      if (errors.length > 0) throw new BrainError("INPUT_INVALID", `The revision fails lint: ${errors.map((issue) => `${issue.rule}: ${issue.message}`).join("; ")}`);
-      if (args.options["dry-run"] !== true) await workspace.commit([{ op: "proposal-revise", id: request.proposal, title: request.item_id }], now);
-      return { data: { ...data, result: args.options["dry-run"] === true ? "DRY_RUN" : "REVISED" }, human: `revised ${request.item_id}\n` };
-    } catch (error) {
-      if (error instanceof Skip) throw new BrainError("INPUT_INVALID", `${error.code}: ${error.message}`);
-      throw error;
-    }
+  async run() {
+    throw new BrainError("RETIRED", "brain proposal revise was retired in 0.16.0: show the new wording in the session and apply the accepted one as a fix (brain apply)");
   },
 };
 

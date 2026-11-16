@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ultimate-brain.dev/schemas/v1/proposal.schema.json",
   "title": "Proposal frontmatter (v1)",
-  "description": "A pending change to existing knowledge, mirrored as a Notion Review row. See spec/schema.md §11 and decision 0003.",
+  "description": "A pending change to existing knowledge, decided in the Claude Code or Codex session (0096). See spec/schema.md §11 and decision 0003.",
   "type": "object",
   "required": [
     "id",
@@ -85,6 +85,13 @@
     "source": {
       "$ref": "note.schema.json#/$defs/sourceKey"
     },
+    "subject": {
+      "description": "0.16.0 on (0098, spec/schema.md §11, capture-and-review §7.3): the subject the ingest assigned the change to: an existing knowledge note's id, or a plain name of one line (at most 80 characters).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[^\\n]*\\S[^\\n]*$"
+    },
     "passages": {
       "description": "0.13.0 on (0077 §3, spec/schema.md §11.5, eligibility.md §9.1): the passages the change rests on. Absent on a legacy proposal, written before the field, and on a review_notes (its items carry them) and a notion_change.",
       "$ref": "#/$defs/passages"
@@ -124,7 +131,7 @@
           "minLength": 1
         },
         "fixes": {
-          "description": "On fix: the corrected values the skill read from the What to fix text (spec/schema.md §11.3).",
+          "description": "On fix: the corrected values the skill read from the user's words (spec/schema.md §11.3).",
           "type": "array",
           "minItems": 1,
           "items": {
@@ -135,6 +142,11 @@
             "additionalProperties": false,
             "properties": {
               "value": {},
+              "item": {
+                "description": "a cleanup review_notes (cli.md §5.7): the it- id of a remove or independence item.",
+                "type": "string",
+                "pattern": "^it-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+              },
               "change": {
                 "type": "integer",
                 "minimum": 0
@@ -273,6 +285,67 @@
                     }
                   ]
                 }
+              }
+            ]
+          }
+        },
+        "reject": {
+          "description": "0.16.0 on (0098, spec/schema.md §11.3): on an approved or fixed review_notes with items, the items the user turned down: {note}, {target, field, value} or {change}; on a cleanup review_notes, {item} (cli.md §5.7).",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "note": {
+                "$ref": "note.schema.json#/$defs/id"
+              },
+              "target": {
+                "$ref": "note.schema.json#/$defs/id"
+              },
+              "field": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string",
+                "minLength": 1
+              },
+              "change": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "item": {
+                "type": "string",
+                "pattern": "^it-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+              }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "item"
+                ],
+                "maxProperties": 1
+              },
+              {
+                "required": [
+                  "note"
+                ],
+                "maxProperties": 1
+              },
+              {
+                "required": [
+                  "target",
+                  "field",
+                  "value"
+                ],
+                "maxProperties": 3
+              },
+              {
+                "required": [
+                  "change"
+                ],
+                "maxProperties": 1
               }
             ]
           }
@@ -423,7 +496,7 @@
       }
     },
     "items": {
-      "description": "review_notes only (0055, capture-and-review §7.2): the independently decidable items, in the order the Review row lists them (changes, notes, links; spec/schema.md §11.3). `item_id` is immutable. Absent on a proposal written before 0.8.0, which keeps the 0045 behavior (§7.9).",
+      "description": "review_notes only (0055, capture-and-review §7.2): the independently decidable items, in the order the session lists them (changes, notes, links; spec/schema.md §11.3). `item_id` is immutable. Absent on a proposal written before 0.8.0, which keeps the 0045 behavior (§7.9).",
       "type": "array",
       "minItems": 1,
       "items": {
@@ -442,7 +515,7 @@
       }
     },
     "revisions": {
-      "description": "review_notes only (capture-and-review §7.8): a Request revision per item. `requested` holds the user's instruction; `drafted` means the stored proposal was replaced by a new draft, and `previous` keeps the wording the user had in the Proposed toggle.",
+      "description": "review_notes only, history (written before 0.16.0; capture-and-review §7.10): a Request revision per item. `requested` holds the user's instruction; `drafted` means the stored proposal was replaced by a new draft, and `previous` keeps the wording the user had in the Proposed toggle.",
       "type": "array",
       "items": {
         "type": "object",
@@ -549,7 +622,7 @@
     },
     "value_before": { "description": "notion_change: the value read when proposed; its shape follows property.", "$ref": "#/$defs/notionValue" },
     "value_after": { "description": "notion_change: the value to write; its shape follows property.", "$ref": "#/$defs/notionValue" },
-    "area": { "description": "notion_change and set_field: the Area whose home shows the Review row.", "type": "string", "pattern": "^area-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
+    "area": { "description": "notion_change and set_field: the Area the change belongs to, which the session names with the question.", "type": "string", "pattern": "^area-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
     "finding": { "description": "The Ultimate Assistant finding key (spec/assistant.md §3.3); the same pattern as assistant.schema.json $defs/findingKey.", "$ref": "#/$defs/findingKey" },
     "fingerprint": { "description": "The reflection finding the proposal records (spec/schema.md §11.4, decisions 0052 and 0076): <finding kind>:<ids or term>[:<field or source>].", "$ref": "#/$defs/fingerprint" },
     "line_before": { "description": "replace_line (spec/weekly-review.md §8.3): the exact body line replaced.", "type": "string", "pattern": "^[^\\n]+$" },
@@ -1050,6 +1123,40 @@
               "replace_line",
               "answer"
             ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "decision"
+        ],
+        "properties": {
+          "decision": {
+            "required": [
+              "reject"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "kind": {
+            "const": "review_notes"
+          },
+          "decision": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "approve",
+                  "fix"
+                ]
+              }
+            }
           }
         }
       }

@@ -1,12 +1,10 @@
 import { isRecord } from "./input.ts";
 import type { Note } from "./notes.ts";
-import { linkRefs, passageProblems } from "./passages.ts";
-import { bodyOf } from "./proposals.ts";
 import type { ReviewRevision } from "./review-plan.ts";
-import { linkValue, Skip, typed } from "./review-apply.ts";
 import type { Workspace } from "./workspace.ts";
 
-// Request revision (capture-and-review §7.8): the request is recorded, the new draft replaces the stored proposal, and the user's earlier wording is kept.
+// Request revision, read once by the 0.16.0 transition (cli §5.14.8): the request is recorded and the item stays pending; the migration's
+// session asks the item's question with the instruction shown and never redrafts it (capture-and-review §7.9).
 
 const list = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 const record = (value: unknown): Record<string, unknown> => (isRecord(value) ? value : {});
@@ -37,58 +35,6 @@ export function recordRevisionRequests(workspace: Workspace, requests: readonly 
     out.push({ proposal: request.proposal, item_id: request.item_id, result: "recorded" });
   }
   return out;
-}
-
-export interface Revised { proposal: string; item_id: string; kind: string }
-
-/** Replace the stored proposal of a revision-requested item with the new draft, keeping the previous wording (`brain proposal revise`). Nothing is accepted. */
-export function reviseItem(workspace: Workspace, input: { proposal: string; item_id: string; proposed: string; previous: string; passages?: unknown }, now: Date, today: string): Revised {
-  const proposal = workspace.get(input.proposal);
-  if (proposal === undefined || proposal.type !== "proposal") throw new Skip("UNKNOWN_ID", `No proposal ${input.proposal}`);
-  const a = proposal.attributes;
-  if (a.status !== "pending") throw new Skip("ALREADY_TERMINAL");
-  const entry = list(a.items).map(record).find((item) => item.item_id === input.item_id);
-  if (entry === undefined) throw new Skip("UNKNOWN_ITEM");
-  const request = revisionsOf(proposal).find((candidate) => candidate.item_id === input.item_id);
-  if (request === undefined || request.status !== "requested") throw new Skip("NO_REVISION_REQUESTED", "the user has not asked for a revision of this item");
-  if (list(a.item_decisions).some((done) => record(done).item_id === input.item_id)) throw new Skip("ALREADY_DECIDED");
-  if (input.proposed.trim() === "") throw new Skip("UNREADABLE_PROPOSED", "a revision cannot be empty");
-  if (["remove", "restore", "independence"].includes(String(entry.kind))) throw new Skip("REVISION_NOT_SUPPORTED", "a cleanup item has no wording to revise");
-  if (severalLinks(entry)) throw new Skip("REVISION_NOT_SUPPORTED", "a link item of several values is changed by deleting names on its page");
-  // The revised item names its passages: the new list when given, else the ones it had; a legacy item without them stays legacy (cli §5.27).
-  const passages = input.passages ?? entry.passages;
-  if (passages !== undefined) {
-    const found = passageProblems(workspace, passages, "/passages", entry.kind === "link" ? null : input.proposed);
-    const problem = found.problems[0] ?? (found.unknown[0] === undefined ? undefined : { pointer: "/passages", message: `${found.unknown[0]} does not exist` });
-    if (problem !== undefined) throw new Skip("INPUT_INVALID", `${problem.pointer} ${problem.message}`);
-  }
-  const document = workspace.edit(proposal);
-  if (input.passages !== undefined) document.attributes.items = list(document.attributes.items).map(record).map((item) => (item.item_id === input.item_id ? { ...item, passages: input.passages } : item));
-  if (entry.kind === "note") {
-    const note = workspace.get(String(entry.ref));
-    if (note === undefined || note.attributes.lifecycle !== "draft") throw new Skip("NOT_A_DRAFT", `${String(entry.ref)} is not a draft`);
-    const draft = workspace.edit(note);
-    draft.body = bodyOf(input.proposed);
-    workspace.save(note.path, draft);
-  } else if (entry.kind === "link") {
-    const links = list(document.attributes.links).map(record);
-    const link = links[linkRefs(entry.ref)[0]!];
-    if (link === undefined) throw new Skip("UNKNOWN_ITEM");
-    link.value = linkValue(workspace, input.proposed, link.value);
-    document.attributes.links = links;
-  } else {
-    const changes = list(document.attributes.changes).map(record);
-    const change = changes[Number(entry.ref)];
-    if (change === undefined) throw new Skip("UNKNOWN_ITEM");
-    if (change.kind === "update_fact") change.after = typed(input.proposed, change.after);
-    else if (change.kind === "update_body" || change.kind === "add_to_note") change.content = input.proposed;
-    else throw new Skip("REVISION_NOT_SUPPORTED", `${String(change.kind)} has no editable wording`);
-    document.attributes.changes = changes;
-  }
-  document.attributes.revisions = revisionsOf(proposal).map((candidate) => (candidate.item_id === input.item_id ? { ...candidate, status: "drafted", previous: input.previous, drafted_at: now.toISOString().replace(/\.\d{3}Z$/, "Z") } : candidate));
-  document.attributes.updated = today;
-  workspace.save(proposal.path, document);
-  return { proposal: proposal.id, item_id: input.item_id, kind: String(entry.kind) };
 }
 
 /** A grouped link item of more than one value (0088 Q5): the user deletes names on the page; there is no single value to redraft. */

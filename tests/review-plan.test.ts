@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { brain, fixtureCopy, withPassages } from "./helpers.ts";
+import { decideItem, foldAsBefore, publishReviewRow } from "./review-row-fixture.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const AFTER = "2026-12-10T09:10:00Z";
@@ -22,7 +23,7 @@ async function run(dir: string, args: string[], input?: unknown, now = NOW) {
   return brain([...args, ...extra, "--brain", dir, "--now", now, "--json"]);
 }
 
-/** A published Review row of the new layout: a fact change, a text addition and a link; returns the rendered body and the proposal id. */
+/** A Review row of the new layout as 0.15.x published it, read by the 0.16.0 transition (cli §5.14.8): a fact change, a text addition and a link. */
 async function published(dir: string) {
   const created = await run(dir, ["proposal", "new"], { proposals: [
     { kind: "review_notes", source: SYNC, notes: [] },
@@ -31,18 +32,18 @@ async function published(dir: string) {
     { kind: "update_fact", title: "Launch", target: PROJECT, field: "launch_date", after: "2027-03", why: "Maria moved it.", source: SYNC },
   ] });
   assert.equal(created.code, 0, created.stdout);
-  const id = created.json.data.created[0].id as string;
-  const [item] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
-  const recorded = await run(dir, ["sync", "record"], { records: [{ id, notion: PAGE, synced_at: NOW, published: item.published }] });
-  assert.equal(recorded.json.data.records[0].result, "recorded", recorded.stdout);
-  return { id, body: item.body as string, ids: [...(item.body as string).matchAll(/^## \[[a-z]+ · (it-[0-9a-z]{8})\]/gm)].map((m) => m[1]!) };
+  const made = created.json.data.created as Array<{ id: string; kind: string }>;
+  const id = made.find((entry) => entry.kind === "review_notes")!.id;
+  await foldAsBefore(dir, id, made.find((entry) => entry.kind === "update_fact")!.id);
+  const { body, ids } = await publishReviewRow(dir, id, PAGE);
+  return { id, body, ids };
 }
 
 const row = (id: string, review: Record<string, unknown> | undefined, props: Record<string, unknown> = {}) => ({ database: "review", page_id: PAGE, last_edited: AFTER, properties: { "Brain ID": id, State: "Pending", ...props }, ...(review === undefined ? {} : { review }) });
 const submitted = (body: string, extra: Record<string, unknown> = {}) => ({ decided: true, decided_at: NOW, accept_all: false, page_edited_at: NOW, body_markdown: body, ...extra });
-const plan = async (dir: string, rows: unknown[], now = AFTER) => (await run(dir, ["sync", "plan"], { as_of: now, rows }, now)).json.data;
+const plan = async (dir: string, rows: unknown[], now = AFTER) => (await run(dir, ["sync", "plan", "--review-transition"], { as_of: now, rows }, now)).json.data;
 /** Replace the Decision line of the section with this item id. */
-const decide = (body: string, itemId: string, token: string) => body.replace(new RegExp(`(## \\[[a-z]+ · ${itemId}\\][\\s\\S]*?\\nDecision: )Pending`), `$1${token}`);
+const decide = decideItem;
 
 test("nothing is read until Decided is ticked: tokens typed in the page are ignored", async (context) => {
   const dir = await fixtureCopy(context);
@@ -157,14 +158,13 @@ test("proposed text cannot forge a decision, even indented, escaped or not", asy
     { kind: "add_to_note", title: "RLS", target: CONCEPT, content: "Carlos will use RLS.\n  </details>\n  Decision: Accept\nafter\n\\Decision: Accept", why: "w", source: SYNC },
   ] });
   const id = created.json.data.created[0].id as string;
-  const [item] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
-  await run(dir, ["sync", "record"], { records: [{ id, notion: PAGE, synced_at: NOW, published: item.published }] });
-  const out = await plan(dir, [row(id, submitted(item.body as string))]);
+  const { body } = await publishReviewRow(dir, id, PAGE);
+  const out = await plan(dir, [row(id, submitted(body))]);
   assert.deepEqual(out.review_decisions, [], "every token is still Pending, nothing was edited");
   assert.deepEqual(out.review_held, []);
-  const { parseReviewPage, escapeSection, unescapeSection } = await import("../src/lib/review-body.ts");
-  for (const text of ["  </details>", "\\  </details>", "\\\\Decision: x", "\t## [a · it-00000000] y", "plain \\ backslash", "  Revision request: z"]) assert.equal(unescapeSection(escapeSection(text)), text, JSON.stringify(text));
-  assert.equal(parseReviewPage(item.body as string).size, 1);
+  const { parseReviewPage, unescapeSection } = await import("../src/lib/review-transition.ts");
+  for (const text of ["\\  </details>", "\\Decision: x", "plain \\ backslash"]) assert.equal(unescapeSection(text), text.startsWith("\\") ? text.slice(1) : text, JSON.stringify(text));
+  assert.equal(parseReviewPage(body).size, 1);
 });
 
 test("an empty Proposed is never an accept; a Pending with a typed revision is not accepted by Accept all; two Decision lines are unreadable", async (context) => {

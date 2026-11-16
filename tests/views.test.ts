@@ -96,9 +96,9 @@ test("a Brief lists reviewed notes only, with the waiting line when none is revi
   const dir = await fixtureCopy(context);
   const decisionPath = join(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
   const questionPath = join(dir, "knowledge/questions/who-owns-the-acme-mobile-app.md");
-  const waiting = "- Nothing reviewed yet: 1 note waiting in Review";
+  const waiting = "- Nothing reviewed yet: 1 note waiting for your decision";
   const fixtureBrief = await readFile(join(dir, BRIEF), "utf8");
-  assert.equal(fixtureBrief.split(waiting).length - 1, 2, "the fixture's draft decision and question wait in Review");
+  assert.equal(fixtureBrief.split(waiting).length - 1, 2, "the fixture's draft decision and question wait for your decision");
 
   // A reviewed decision is listed; a second, draft one is left out with no waiting line.
   await writeFile(decisionPath, (await readFile(decisionPath, "utf8")).replace("lifecycle: draft", "lifecycle: reviewed"));
@@ -167,11 +167,11 @@ Use row-level security.
   assert.equal(run.code, 0, run.stdout);
   const log = await readFile(join(dir, DECISION_LOG), "utf8");
   assert.equal(run.json.data.written.includes(DECISION_LOG), false, "the archived decision changes nothing in the log");
-  assert.match(log, /## Current\n- 2026-12-03 — \[Use Supabase for auth\]\([^)]+\) — waiting in Review — supersedes [^\n]+\n\n## Superseded\n- 2026-10-01 → 2026-12-03 — \[Use Firebase for auth\]/, "the draft and the superseded decision stay");
+  assert.match(log, /## Current\n- 2026-12-03 — \[Use Supabase for auth\]\([^)]+\) — waiting for your decision — supersedes [^\n]+\n\n## Superseded\n- 2026-10-01 → 2026-12-03 — \[Use Firebase for auth\]/, "the draft and the superseded decision stay");
   assert.doesNotMatch(log, /Use Postgres row-level security|dec-4h6j8k2m/, "the archived decision is in neither section nor generated_from");
 });
 
-test("the decision log marks a draft as waiting in Review and links a reviewed one here, but in Notion links neither (0099); approved, it reads as reviewed (CC-261)", async (context) => {
+test("the decision log marks a draft as waiting for your decision and links a reviewed one here, but in Notion links neither (0099); approved, it reads as reviewed (CC-261)", async (context) => {
   const dir = await fixtureCopy(context);
   const draftPath = "knowledge/decisions/2026-12-05-use-postgres-row-level-security.md";
   // A synthetic draft that once had a Draft row (a page from before 0.9.1): its line still links nowhere in Notion (0071).
@@ -223,14 +223,14 @@ Use Auth0.
   const run = await brain(["views", "--brain", dir, "--now", NOW, "--json"]);
   assert.equal(run.code, 0, run.stdout);
   const log = await readFile(join(dir, DECISION_LOG), "utf8");
-  assert.match(log, /^## Current\n- 2026-12-05 — \[Use Postgres row-level security\]\(\.\.\/\.\.\/knowledge\/decisions\/2026-12-05-use-postgres-row-level-security\.md\) — waiting in Review\n- 2026-12-03 — \[Use Supabase for auth\]\([^)]+\) — accepted — supersedes /m);
-  assert.match(log, /^- 2026-11-20 → 2026-12-03 — \[Use Auth0 for auth\]\([^)]+\) — waiting in Review — superseded by \[Use Supabase for auth\]/m);
+  assert.match(log, /^## Current\n- 2026-12-05 — \[Use Postgres row-level security\]\(\.\.\/\.\.\/knowledge\/decisions\/2026-12-05-use-postgres-row-level-security\.md\) — waiting for your decision\n- 2026-12-03 — \[Use Supabase for auth\]\([^)]+\) — accepted — supersedes /m);
+  assert.match(log, /^- 2026-11-20 → 2026-12-03 — \[Use Auth0 for auth\]\([^)]+\) — waiting for your decision — superseded by \[Use Supabase for auth\]/m);
   assert.match(log, /^generated_from: \[dec-2p9f6h1r, dec-3g5h7j9k, dec-4h6j8k2m, dec-7k2m9q4x, prj-9x4t1b7e\]$/m, "the drafts keep their place in the history");
 
   const render = await brain(["sync", "render", "--brain", dir, "--ids", "prj-9x4t1b7e", "--now", NOW, "--json"]);
   assert.equal(render.code, 0, render.stdout);
   const section: string = render.json.data.items[0].sections["Decision log"];
-  assert.match(section, /^- 2026-12-05 — Use Postgres row-level security — waiting in Review$/m, "the draft is marked, with no link");
+  assert.match(section, /^- 2026-12-05 — Use Postgres row-level security — waiting for your decision$/m, "the draft is marked, with no link");
   // Since 0.16.0 a decision has no page (0099): the reviewed one is its title alone too, and no old page id is sent.
   assert.match(section, /^- 2026-12-03 — Use Supabase for auth — accepted — supersedes /m, "the reviewed one is its title, with no link");
   assert.doesNotMatch(section, /4c5d6e7f8a9b4c0d8e1f2a3b4c5d6e7f|5d6e7f8a9b0c4d1e8f2a3b4c5d6e7f8a/);
@@ -241,5 +241,5 @@ Use Auth0.
   assert.ok(again.json.data.written.includes(DECISION_LOG), "the log is rewritten");
   const approved = await readFile(join(dir, DECISION_LOG), "utf8");
   assert.match(approved, /^- 2026-12-05 — \[Use Postgres row-level security\]\([^)]+\) — accepted$/m);
-  assert.doesNotMatch(approved, /Use Postgres row-level security\]\([^)]+\) — waiting in Review/);
+  assert.doesNotMatch(approved, /Use Postgres row-level security\]\([^)]+\) — waiting for your decision/);
 });

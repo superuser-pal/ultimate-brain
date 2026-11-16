@@ -484,8 +484,11 @@ test("databases follows the modules on, and owner_person needs an existing perso
   assert.equal((await status(target, home)).data.setup.checks.databases, true);
   await editConfig(target, (config) => { config.modules.planning = true; });
   assert.equal((await status(target, home)).data.setup.checks.databases, false);
-  await editConfig(target, (config) => { config.modules.planning = false; config.notion.databases.review = ""; });
+  await editConfig(target, (config) => { config.modules.planning = false; config.notion.databases.inbox = ""; });
   assert.equal((await status(target, home)).data.setup.checks.databases, false);
+  // Review is no longer core (0.16.0, 0096): a brain whose migration archived it, or that never had it, passes.
+  await editConfig(target, (config) => { config.notion.databases.inbox = DB(1); delete config.notion.databases.review; });
+  assert.equal((await status(target, home)).data.setup.checks.databases, true);
 
   await editConfig(target, (config) => { config.owner.person = "per-4k7m2q9x"; });
   assert.equal((await status(target, home)).data.setup.checks.owner_person, false);

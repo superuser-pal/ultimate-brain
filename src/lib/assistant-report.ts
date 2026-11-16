@@ -4,7 +4,7 @@ import type { Note } from "./notes.ts";
 // The report text of spec/assistant.md §4.1: `brain assistant findings` words it, so the skill doesn't.
 
 const CATEGORY_LABELS: Record<string, string> = { overdue: "Overdue", stalled: "Stalled", "no next step": "No next step", structure: "Structure" };
-const ANSWER = "Answer with \"yes 1, 2b\", a change (\"1: due Friday\"), \"skip 4 because …\", or \"propose 5\" for a Review row; \"done\" to finish.";
+const ANSWER = "Answer with \"yes 1, 2b\", a change (\"1: due Friday\"), \"skip 4 because …\", or \"propose 5\" to decide it later; \"done\" to finish.";
 
 export function reportText(result: FindingsResult, asOf: string, scope: Note | null): string {
   const scopeText = scope === null ? "whole brain" : `${String(scope.attributes.title ?? scope.id)} (${scope.type})`;

@@ -12,20 +12,16 @@ import { referencedIds } from "./lint.ts";
 import { loadSchemas } from "./schemas.ts";
 import { formatDate, formatTimestamp, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
-import { lineDiff } from "./diff.ts";
 import type { LogEntry } from "./log.ts";
 import { databaseId, moduleForDatabase, modulesOf, typeIsOn } from "./modules.ts";
-import { bodyHash, bodyOf } from "./proposals.ts";
 import { applyReviewDecisions } from "./review-apply.ts";
 import { recordRevisionRequests } from "./review-revision.ts";
-import { renderReview, reviewFormat } from "./review-body.ts";
-import { CONTEXT_HEADING } from "./review-format2.ts";
-import { areaGroup, decidedInChat, suggestionText } from "./notion-change.ts";
+import { reviewFormat } from "./review-transition.ts";
+import { areaGroup } from "./notion-change.ts";
 import { parseReviewPageInput, planReviewRow, planReviewRow2, type ItemDecision, type ReviewDecision, type ReviewHeld, type ReviewPage, type ReviewRevision } from "./review-plan.ts";
 import { hasReportShape, reportLinks } from "./report-body.ts";
 import { gitBodyOf, parseWording, planWording, textHash, type AcceptedWording, type Wording, type WordingPlan } from "./wording.ts";
 import type { Context } from "./eligibility.ts";
-import { proposalWithheld, type Withheld } from "./passages.ts";
 import { citeLabel, contextFor, publishableNote, requireSuppressions, titleWithheld, viewDependencies, withheldView } from "./suppressions.ts";
 import { importedItems } from "./selection.ts";
 import { chainOf, FOLLOW_UP } from "./extract.ts";
@@ -34,9 +30,9 @@ import { dayMonthYear } from "./weekly-record.ts";
 
 export const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "documents", "review", "inbox"] as const;
 const CREATABLE = new Set(["domains", "areas", "goals", "projects", "people", "orgs"]);
-const TYPE_FOR_DATABASE: Record<string, string> = { domains: "domain", areas: "area", goals: "goal", projects: "project", people: "person", orgs: "org", documents: "reference", review: "proposal" };
-const DATABASE_FOR_TYPE: Record<string, string> = { domain: "domains", area: "areas", goal: "goals", project: "projects", person: "people", org: "orgs", reference: "documents", source: "inbox", meeting: "meetings", proposal: "review" };
-const PUBLISHED_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "reference", "source", "meeting", "proposal"]);
+const TYPE_FOR_DATABASE: Record<string, string> = { domains: "domain", areas: "area", goals: "goal", projects: "project", people: "person", orgs: "org", documents: "reference" };
+const DATABASE_FOR_TYPE: Record<string, string> = { domain: "domains", area: "areas", goal: "goals", project: "projects", person: "people", org: "orgs", reference: "documents", source: "inbox", meeting: "meetings" };
+const PUBLISHED_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "reference", "source", "meeting"]);
 /** Decisions and questions have no Notion database since 0.16.0 (0099, schema §4): a row of either is retired, and no render publishes one. */
 const RETIRED_DATABASES = new Set(["decisions", "questions"]);
 const NO_DATABASE_TYPES = new Set(["decision", "question"]);
@@ -57,9 +53,9 @@ export interface SyncPlan {
   wording_waiting: WordingPlan["wording_waiting"];
   wording_held: WordingPlan["wording_held"];
   clear_accepted: WordingPlan["clear_accepted"];
-  /** Review rows whose Notion page holds edits or decisions that must not be overwritten (capture-and-review §7.10): render withholds them. */
+  /** In the 0.16.0 transition (cli §5.14.8): Review rows whose page holds edits or decisions not submitted; their proposals stay pending, asked in the session. */
   review_pending: Array<{ proposal: string; page_id: string }>;
-  /** Decisions read off Review rows of the new layout, per item with the exact final wording (capture-and-review §7.3); applied by `sync apply`. */
+  /** In the 0.16.0 transition (cli §5.14.8): decisions read off Review rows of the new layout, per item with the exact final wording; applied by `sync apply`. */
   review_decisions: ReviewDecision[];
   /** Items and rows that were not read or not applied, and why (BASE_CHANGED, UNREADABLE_DECISION, HELD_SOURCE_EXCLUDED, EDITED_AFTER_DECIDED, …). */
   review_held: ReviewHeld[];
@@ -131,7 +127,7 @@ export function parseSnapshot(input: unknown): Snapshot {
 }
 
 /** Compute the deterministic, no-network Notion pull plan (cli §5.14.2). */
-export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
+export function buildPlan(workspace: Workspace, snapshot: Snapshot, options: { reviewTransition?: boolean } = {}): SyncPlan {
   const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], decisions: [], document_requests: [], refresh_requests: [], report_fixes: [], accepted_wording: [], wording_waiting: [], wording_held: [], clear_accepted: [], review_pending: [], review_decisions: [], review_held: [], review_revisions: [], review_row_revisions: [], review_untouched: [], conflicts: [], ignored: [] };
   const createsByPage = new Map<string, { id: string; type: string }>();
   for (const row of snapshot.rows) if (CREATABLE.has(row.database) && blank(property(row.properties, "Brain ID"))) {
@@ -143,6 +139,8 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
   for (const row of snapshot.rows) {
     // Decisions and Questions rows are not read since 0.16.0, except by the migration's one read (cli §5.14.2, §5.14.9; 0099).
     if (RETIRED_DATABASES.has(row.database)) { result.ignored.push(ignoredRow(row, "RETIRED_DATABASE")); continue; }
+    // Since 0.16.0 nothing of a Review row is read, except by the 0.16.0 migration's one read (cli §5.14.2, §5.14.8; 0096).
+    if (row.database === "review" && options.reviewTransition !== true) { result.ignored.push(ignoredRow(row, "REVIEW_ROW")); continue; }
     // A database whose module is off is not read at all (cli §5.14.2, 0048).
     const module = moduleForDatabase(row.database);
     if (module !== null && !modules[module]) { result.ignored.push(ignoredRow(row, "MODULE_OFF")); continue; }
@@ -166,6 +164,8 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot): SyncPlan {
       if (item !== undefined) result.create.push(item);
       continue;
     }
+    // The transition reads a Review row by 0.15.x's rules alone: its properties are not compared, since no render publishes a proposal (§5.14.8).
+    if (row.database === "review") { planReview(workspace, snapshot.as_of, row, note, result); continue; }
     // A create whose publish failed has no Brain ID in Notion yet; treat the row as if it had it (cli §5.14.2).
     const known = typeof brainId === "string" && brainId !== "" ? row : { ...row, properties: { ...row.properties, "Brain ID": note.id } };
     planExisting(workspace, snapshot.as_of, known, note, result);
@@ -247,32 +247,6 @@ function publishState(workspace: Workspace): { forms: Map<string, Note>; context
 function publishable(workspace: Workspace, note: Note): Note { return publishState(workspace).forms.get(note.id) ?? note; }
 /** How Notion names a note as text: its title, or, in the awaiting-cleanup form, `<type> <id>, title withheld: awaiting cleanup` (cli §5.14.4). */
 function shownTitle(workspace: Workspace, note: Note): unknown { const form = publishable(workspace, note); return titleWithheld(form) ? citeLabel(form) : form.attributes.title; }
-/**
- * What of a proposal Notion may not show (capture-and-review §5.1, eligibility.md §9.4, cli §5.7 "Excluded evidence"): `whole` when the proposal,
- * or every item of a review_notes, is withheld (a passage is not live; or it is legacy and its input has a suppression record or its source is
- * an older version or full copy of a changed input); `items`, the withheld items of a review_notes.
- */
-function proposalHeld(workspace: Workspace, note: Note): { whole: boolean; items: Withheld } {
-  const none: Withheld = { whole: false, changes: new Set(), notes: new Set(), links: new Set() };
-  if (note.type !== "proposal") return { whole: false, items: none };
-  const items = proposalWithheld(note, workspace, publishState(workspace).context);
-  const a = note.attributes;
-  const count = (Array.isArray(a.changes) ? a.changes.length : 0) + (Array.isArray(a.notes) ? a.notes.length : 0) + (Array.isArray(a.links) ? a.links.length : 0);
-  const held = items.changes.size + items.notes.size + items.links.size;
-  return { whole: items.whole || (a.kind === "review_notes" && count > 0 && held === count), items };
-}
-
-/** Whether a Review row is rendered as a page with item sections (capture-and-review §10): it was published that way (`@review`), or it is not published yet and the space has the Decided property (`notion.review_sections`, set by migration 0013 or a fresh setup). A row published the old way keeps the old layout. */
-const HELD_TEXT = "Held: this rests on content you excluded from the brain, so it is not shown.";
-function reviewSections(workspace: Workspace, note: Note): boolean {
-  const notion = isRecord(workspace.config.notion) ? workspace.config.notion : {};
-  if (note.type !== "proposal" || !Array.isArray(note.attributes.items)) return false;
-  const published = isRecord(note.attributes.notion_published) ? note.attributes.notion_published : {};
-  // A row already published as a page stays one, whatever the flag says now; a row not yet published follows the flag.
-  if (isRecord(published["@review"])) return true;
-  return typeof note.attributes.notion !== "string" && notion.review_sections === true;
-}
-
 function planExisting(workspace: Workspace, asOf: string, row: SnapshotRow, note: Note, out: SyncPlan): void {
   const updates: Record<string, unknown> = { id: note.id };
   if (note.attributes.notion === undefined) updates.notion = row.page_id;
@@ -308,12 +282,16 @@ function planExisting(workspace: Workspace, asOf: string, row: SnapshotRow, note
     out.corrections.push({ target: note.id, field: brainField, value: value ?? null, observed_at: row.last_edited, property: name, notion_value: value ?? null } as Correction & Record<string, unknown>);
   }
   if (Object.keys(updates).length > 1) out.updates.push(updates);
-  if (row.database === "review") {
-    // A proposal with item ids (0055) is read by the Review planner; one written before 0.8.0 keeps the 0045 rules (capture-and-review §7.9).
-    // The layout is the one the Notion page was rendered in: a row published before the item sections existed has no `@review` record.
-    if (note.type === "proposal" && Array.isArray(note.attributes.items) && isRecord(note.attributes.notion_published) && isRecord(note.attributes.notion_published["@review"])) planReviewState(workspace, asOf, row, note, out);
-    else planDecision(row, note, out);
-  }
+}
+
+/**
+ * A Review row in the 0.16.0 migration's one read (cli §5.14.8): a proposal with item ids (0055) is read by the Review planner; one written before
+ * 0.8.0 keeps the 0045 rules (capture-and-review (v0.15.1) §7.9). The layout is the one the Notion page was rendered in: a row published before
+ * the item sections existed has no `@review` record.
+ */
+function planReview(workspace: Workspace, asOf: string, row: SnapshotRow, note: Note, out: SyncPlan): void {
+  if (note.type === "proposal" && Array.isArray(note.attributes.items) && isRecord(note.attributes.notion_published) && isRecord(note.attributes.notion_published["@review"])) planReviewState(workspace, asOf, row, note, out);
+  else planDecision(row, note, out);
 }
 
 /** Key Facts are one Notion text property but independently-owned facts (cli §5.14.2). */
@@ -754,7 +732,7 @@ function relationOrder(creates: readonly SyncPlan["create"][number][]): { order:
 }
 function summarize(items: readonly Record<string, unknown>[]): Record<string, number> { const result: Record<string, number> = { applied: 0, closed: 0, recorded: 0, awaiting_notion: 0, corrected: 0, skipped: 0, failed: 0 }; for (const item of items) if (typeof item.result === "string" && Object.hasOwn(result, item.result)) result[item.result] += 1; return result; }
 
-export interface RenderItem { template?: { type: "default" }; item_updates?: Array<{ item_id: string; reason: string; section: string }>; review_published_after?: Record<string, unknown>; id: string; type: string; database: string; database_id: string; page_id: string | null; action: "create" | "update" | "trash" | "rebuild"; replaces?: string; properties: Record<string, unknown>; body: string | null; sections: Record<string, string> | null; pending_relations: Array<Record<string, unknown>>; published: Record<string, unknown> }
+export interface RenderItem { template?: { type: "default" }; id: string; type: string; database: string; database_id: string; page_id: string | null; action: "create" | "update" | "trash"; properties: Record<string, unknown>; body: string | null; sections: Record<string, string> | null; pending_relations: Array<Record<string, unknown>>; published: Record<string, unknown> }
 
 /** The types whose page waits for review (cli §5.14.4, 0071); decisions and questions too, until they lost their databases (0099). */
 const REVIEWED_PAGE_TYPES = new Set(["concept", "reference"]);
@@ -763,7 +741,7 @@ function awaitsReview(note: Note | undefined): boolean {
   return note !== undefined && REVIEWED_PAGE_TYPES.has(note.type) && typeof note.attributes.notion !== "string" && note.attributes.lifecycle !== "reviewed" && note.attributes.lifecycle !== "disputed";
 }
 
-/** `sync render --unpublish-drafts` (cli §5.14.4, migration 0020): the Draft pages from before 0.9.1 that a pending Review row can bring back. */
+/** `sync render --unpublish-drafts` (cli §5.14.4, migration 0020): the Draft pages from before 0.9.1 that a pending review_notes can bring back. */
 export function unpublishDrafts(workspace: Workspace, now: Date): RenderItem[] {
   const held = new Set(workspace.notes.filter((note) => note.type === "proposal" && note.attributes.kind === "review_notes" && note.attributes.status === "pending").flatMap((note) => Array.isArray(note.attributes.notes) ? note.attributes.notes.map(String) : []));
   const items: RenderItem[] = [];
@@ -778,10 +756,7 @@ export function unpublishDrafts(workspace: Workspace, now: Date): RenderItem[] {
   return items.sort((a, b) => DATABASES.indexOf(a.database as never) - DATABASES.indexOf(b.database as never) || compareCodePoints(a.id, b.id));
 }
 
-/** What a plan tells the render about Review rows (cli §5.14.4, format 2): the untouched format-1 rows to rebuild once, and each pending item a plan held, with its reason in words. */
-export interface ReviewRenderOptions { rebuild?: ReadonlySet<string>; holds?: ReadonlyMap<string, ReadonlyMap<string, string>> }
-
-export function render(workspace: Workspace, now: Date, ids?: readonly string[], held?: ReadonlyMap<string, Set<string>>, reviewOptions: ReviewRenderOptions = {}): { items: RenderItem[]; errors: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id?: string }>; skipped: Array<{ id: string; reason: string }> } {
+export function render(workspace: Workspace, now: Date, ids?: readonly string[], held?: ReadonlyMap<string, Set<string>>): { items: RenderItem[]; errors: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id?: string }>; skipped: Array<{ id: string; reason: string }> } {
   const selected = ids === undefined
     ? workspace.notes.filter((note) => (PUBLISHED_TYPES.has(note.type) && !(note.type === "source" && note.attributes.kind === undefined)) || isReport(note) || isWeekly(note))
     : ids.map((id) => workspace.get(id)!).filter(Boolean);
@@ -799,14 +774,9 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     if ((isReport(note) && !modules.reports) || !typeIsOn(workspace.config, note.type)) { if (ids !== undefined) errors.push({ id: note.id, reason: "MODULE_OFF" }); continue; }
     // An attached source has no Inbox row: its notes go on the parent's (0042).
     if (note.type === "source" && note.attributes.attached_to !== undefined) continue;
-    // A decided Review row leaves Notion 30 days after its decision, once (0045).
-    if (note.type === "proposal" && isRecord(note.attributes.notion_published) && note.attributes.notion_published["@trashed"] !== undefined) continue;
-    // Notion shows reviewed knowledge (0071): a draft lives only in its Review row, and a rejected one never gets a page.
+    // Notion shows reviewed knowledge (0071): a draft lives only in Git until you say yes in the session, and a rejected one never gets a page.
     if (awaitsReview(note)) { if (ids !== undefined) skipped.push({ id: note.id, reason: "NOT_REVIEWED" }); continue; }
-    // A change Ultimate Assistant made after a yes in chat never becomes a Review row (assistant.md §6.2).
-    if (decidedInChat(note)) { if (ids !== undefined) skipped.push({ id: note.id, reason: "DECIDED_IN_CHAT" }); continue; }
     const databaseId = databaseIdFor(workspace, database); if (databaseId === "") { warnings.push({ code: "DATABASE_NOT_CONFIGURED", message: `${database} database is not configured`, id: note.id }); continue; }
-    if (note.type === "proposal" && trashDue(note, now)) { items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: String(note.attributes.notion), action: "trash", properties: {}, body: null, sections: null, pending_relations: [], published: { "@trashed": formatTimestamp(now) } }); continue; }
     if (note.type === "meeting" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "MEETING_NOT_PUBLISHED" }); continue; }
     const capturePage = note.type === "source" && note.attributes.kind === "capture" && typeof note.attributes.source_key === "string" && note.attributes.source_key.startsWith("notion:") ? note.attributes.source_key.slice("notion:".length) : undefined;
     if (note.type === "source" && note.attributes.kind === "capture" && (capturePage === undefined || (typeof note.attributes.notion === "string" && note.attributes.notion !== capturePage))) { errors.push({ id: note.id, reason: "NOTION_ID_MISMATCH" }); continue; }
@@ -815,46 +785,10 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     for (const name of offRelations(workspace.config, database)) delete rendered[name];
     const properties: Record<string, unknown> = {}; const pending: Array<Record<string, unknown>> = []; const heldProperties = held?.get(note.id) ?? new Set<string>();
     const isCreate = note.attributes.notion === undefined && capturePage === undefined;
-    // The one rebuild of an untouched format-1 Review row as a new format-2 page (capture-and-review §7.12.1): every property and the body, as a create.
-    const rebuild = !isCreate && note.type === "proposal" && reviewOptions.rebuild?.has(note.id) === true && note.attributes.status === "pending" && reviewSections(workspace, note) && reviewFormat(note) === 1 && !isRecord(note.attributes.cleanup) && !(isRecord(workspace.config.notion) && workspace.config.notion.review_format === 1);
     // A report last published on the Inbox (no Origin in S) was moved to Documents by migration 0019: every property goes out once (cli §5.14.4, 0071).
     const moved = isReport(note) && !isCreate && !Object.hasOwn(published, "Origin");
-    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || rebuild || moved || !Object.hasOwn(published, name) || !sameValue(value, RENAMED_VALUES[name]?.[String(published[name])] ?? published[name]))) properties[name] = encoded; }
+    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || moved || !Object.hasOwn(published, name) || !sameValue(value, RENAMED_VALUES[name]?.[String(published[name])] ?? published[name]))) properties[name] = encoded; }
     const content = renderedContent(form, workspace); if (content.hash !== undefined) rendered["@content"] = content.hash;
-    // A Review row with item ids (0055): its body is written once, at create. Afterwards only the brain-owned summary at the top is sent;
-    // the item sections belong to the user (capture-and-review §7.4, §7.10), and the hashes of what was rendered are kept in S.
-    let itemUpdates: Array<{ item_id: string; reason: string; section: string }> = [];
-    let publishedAfter: Record<string, unknown> | undefined;
-    if (reviewSections(workspace, note)) {
-      const format = rebuild ? 2 : reviewFormat(note, workspace.config);
-      const review = renderReview(note, workspace, (row) => String(reviewRowName(workspace, row)), format, reviewOptions.holds?.get(note.id));
-      const writesBody = isCreate || rebuild;
-      const tag = format === 2 ? { format: 2 } : {};
-      content.body = writesBody ? review.body : null; content.sections = format === 2 ? { "Review summary": review.summary, [CONTEXT_HEADING]: review.context ?? "" } : { "Review summary": review.summary }; content.hash = review.summary_hash; rendered["@content"] = review.summary_hash;
-      const kept = !rebuild && isRecord(published["@review"]) && isRecord(published["@review"].items) ? published["@review"].items : undefined;
-      // Only a render that writes the body records what was rendered; a published row with no record has none, and is never given one here.
-      if (writesBody) rendered["@review"] = { ...tag, items: Object.fromEntries(review.items.map((item) => [item.item_id, { rendered_hash: item.rendered_hash, proposed_hash: item.proposed_hash, base_hash: item.base_hash, ...(item.held ? { held: true } : {}) }])) };
-      else if (kept !== undefined) {
-        rendered["@review"] = { ...tag, items: kept };
-        // Item sections the user must see something in (capture-and-review §7.4 b): a drafted revision or a changed base. An applied or closed status is never written into one.
-        const decided = new Set((Array.isArray(note.attributes.item_decisions) ? note.attributes.item_decisions : []).filter(isRecord).map((entry) => String(entry.item_id)));
-        // A row decided the 0045 way (applied or closed with no item decisions, e.g. approved from chat) has no pending item (#196).
-        if (note.attributes.status === "applied" || note.attributes.status === "closed") for (const item of review.items) decided.add(item.item_id);
-        const after: Record<string, unknown> = { ...kept };
-        for (const item of review.items) {
-          const stored = isRecord(kept[item.item_id]) ? kept[item.item_id] as Record<string, unknown> : undefined;
-          if (stored === undefined || decided.has(item.item_id) || stored.rendered_hash === item.rendered_hash) continue;
-          const drafted = (Array.isArray(note.attributes.revisions) ? note.attributes.revisions : []).filter(isRecord).some((entry) => entry.item_id === item.item_id && entry.status === "drafted");
-          // A section that now names a note by type and id is rewritten too, held or not (cli §5.14.4, "Restricted notes"); the label stays after the cleanup.
-          const reason = item.held ? (item.title_withheld ? "title_withheld" : undefined)
-            : drafted ? "revision_drafted" : stored.base_hash !== item.current_base_hash ? "base_changed" : item.title_withheld ? "title_withheld" : undefined;
-          if (reason === undefined) continue;
-          itemUpdates.push({ item_id: item.item_id, reason, section: item.section });
-          after[item.item_id] = { rendered_hash: item.rendered_hash, proposed_hash: item.proposed_hash, ...(reason === "title_withheld" ? { base_hash: stored.base_hash, ...(item.held || stored.held === true ? { held: true } : {}) } : { base_hash: item.current_base_hash }) };
-        }
-        if (itemUpdates.length > 0) publishedAfter = { "@review": { ...tag, items: after } };
-      }
-    }
     // A promoted Document's body is yours once its page exists (0049): sent on create only.
     if (note.type === "reference" && note.attributes.origin === "promoted" && !isCreate) { content.body = null; delete rendered["@content"]; if (Object.hasOwn(published, "@content")) rendered["@content"] = published["@content"]; content.hash = undefined; }
     const contentChanged = content.hash !== undefined && !isDeepStrictEqual(content.hash, published["@content"]);
@@ -876,15 +810,14 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     // A weekly review's body goes out when it changed: a rerun, or a note it links got a page since (weekly-review.md §3.4).
     if (isWeekly(note) && !isCreate && !contentChanged) content.body = null;
     // Full text (0043) is retired (0049): nothing is sent, and `@full_text` in S stays as it is.
-    if (!isCreate && !rebuild && Object.keys(properties).length === 0 && !contentChanged && !reportDue && itemUpdates.length === 0) {
+    if (!isCreate && Object.keys(properties).length === 0 && !contentChanged && !reportDue) {
       // A page whose only news is a relation to a note this render creates: nothing to write, but the skill renders again after publishing it (0071).
       if (pending.length > 0) waiting.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: typeof note.attributes.notion === "string" ? note.attributes.notion : capturePage ?? null, action: "update", properties: {}, body: null, sections: null, pending_relations: pending, published: rendered });
       continue;
     }
-    if (rebuild) { items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: null, action: "rebuild", replaces: String(note.attributes.notion), properties, body: content.body, sections: content.sections, pending_relations: pending, published: rendered }); continue; }
-    if (!isCreate && note.type !== "meeting" && note.type !== "proposal") properties["Last Synced"] = { type: "date", value: { start: formatTimestamp(now), end: null } };
+    if (!isCreate && note.type !== "meeting") properties["Last Synced"] = { type: "date", value: { start: formatTimestamp(now), end: null } };
     // A new project's page comes from the space's default Projects template, its toggles, views and My notes (0068).
-    items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: typeof note.attributes.notion === "string" ? note.attributes.notion : capturePage ?? null, action: isCreate ? "create" : "update", ...(isCreate && note.type === "project" ? { template: { type: "default" as const } } : {}), ...(itemUpdates.length === 0 ? {} : { item_updates: itemUpdates, review_published_after: publishedAfter }), properties, body: content.body, sections: content.sections, pending_relations: pending, published: rendered });
+    items.push({ id: note.id, type: note.type, database, database_id: databaseId, page_id: typeof note.attributes.notion === "string" ? note.attributes.notion : capturePage ?? null, action: isCreate ? "create" : "update", ...(isCreate && note.type === "project" ? { template: { type: "default" as const } } : {}), properties, body: content.body, sections: content.sections, pending_relations: pending, published: rendered });
   }
   // Kept only when this render creates one of the notes it waits for; otherwise the relation fills at a later render.
   const creates = new Set(items.filter((item) => item.action === "create").map((item) => item.id));
@@ -893,15 +826,6 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
   return { items, errors, warnings, skipped };
 }
 
-const TRASH_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
-/** A published Review row whose proposal was applied or closed more than 30 days before `now` (0045). */
-function trashDue(note: Note, now: Date): boolean {
-  const a = note.attributes;
-  if (typeof a.notion !== "string" || (a.status !== "applied" && a.status !== "closed")) return false;
-  const decided = isRecord(a.decision) && typeof a.decision.decided_at === "string" ? a.decision.decided_at : a.updated;
-  const time = typeof decided === "string" ? Date.parse(decided) : Number.NaN;
-  return Number.isFinite(time) && now.getTime() - time > TRASH_AFTER_MS;
-}
 function databaseIdFor(workspace: Workspace, database: string): string { return databaseId(workspace.config, database); }
 /** Documents · Origin (schema §14, decision 0071): a reference's `origin` (absent = `part`) and a report view (`report`). */
 const ORIGIN_LABEL: Readonly<Record<string, string>> = { whole: "Kept", part: "Kept", learned: "Learned", promoted: "Promoted", workflow: "Workflow", report: "Report" };
@@ -915,38 +839,6 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     if (a.lifecycle === "archived" && !(isRecord(a.notion_fields) && a.notion_fields.archived === true)) values.Archived = true;
     return values;
   };
-  if (note.type === "proposal") {
-    const target = typeof a.target === "string" ? workspace.get(a.target) : undefined;
-    const addLink = a.kind === "add_link";
-    const held = proposalHeld(workspace, note);
-    const after = addLink
-      ? proposalLinks(a).map((link) => `${fieldLabel(String(link.field))}: ${noteTitle(link.value, workspace)}`).join("\n")
-      : a.kind === "review_notes" ? reviewNotesAfter(a, workspace, held.items) : a.kind === "update_body" ? bodyChange(a, workspace)?.join("\n") ?? null : undefined;
-    // A body diff can only be shown while the target's body is the one proposed against; then S keeps it (0045).
-    const proposed = staleBody(a, workspace) && isRecord(a.notion_published) && Object.hasOwn(a.notion_published, "Proposed") ? a.notion_published.Proposed : undefined;
-    const reviewText = (value: unknown) => truncate(typeof value === "string" ? reviewMarkdown(value, target) : value);
-    // A Suggestion row (0072, cli §5.14.4): Ultimate Assistant's notion_change or set_field, shown in the proposal's own Area, with no Source Meeting.
-    if (a.kind === "notion_change" || a.kind === "set_field") {
-      const text = suggestionText(a, workspace, (shown) => shownTitle(workspace, shown));
-      Object.assign(values, { Name: held.whole ? `Held: ${note.id}` : text.name, Kind: select(a.kind), About: text.about, "About Page": text.aboutPage, Now: held.whole ? HELD_TEXT : truncate(text.now), Proposed: held.whole ? HELD_TEXT : truncate(text.proposed), Why: held.whole ? HELD_TEXT : reviewText(a.why), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), State: select(proposalState(a.status)), "Brain ID": note.id });
-      return values;
-    }
-    // A Review notes row names its source: the meeting for minutes, else the source (0041).
-    const source = a.kind === "review_notes" && typeof a.source === "string" ? workspace.get(a.source) : undefined;
-    const targetText = source !== undefined ? `${String(shownTitle(workspace, source))} (${source.id})` : target === undefined ? null : `${String(shownTitle(workspace, target))} (${target.id})`;
-    const page = (source ?? target)?.attributes.notion;
-    const meeting = typeof a.source === "string" ? workspace.get(a.source) : undefined;
-    Object.assign(values, {
-      Name: reviewRowName(workspace, note, held.whole), Kind: select(a.kind), About: targetText,
-      "About Page": typeof page === "string" ? `https://www.notion.so/${page.replaceAll("-", "")}` : null,
-      "Source Meeting": meeting?.type === "meeting" && typeof meeting.attributes.notion === "string" ? [meeting.attributes.notion] : [],
-      Now: held.whole ? HELD_TEXT : reviewText(proposalBefore(a, workspace)), Proposed: held.whole ? HELD_TEXT : proposed !== undefined ? proposed : reviewText(after ?? proposalAfter(a, workspace)),
-      Why: held.whole ? HELD_TEXT : reviewText(a.why), Area: relationPages(reviewArea(a, workspace), workspace), State: select(proposalState(a.status)), "Brain ID": note.id,
-    });
-    // A row with item sections leaves About, Now, Proposed and Why empty, held or not: its page holds them and Notion hides them (0088, cli §5.14.4).
-    if (reviewSections(workspace, note)) Object.assign(values, { About: null, Now: null, Proposed: null, Why: null });
-    return values;
-  }
   // A weekly review is the week's Inbox row (weekly-review.md §2, cli §5.34): Name, Kind Weekly, Brain Status and Brain ID, nothing else.
   if (isWeekly(note)) { Object.assign(values, { Name: weeklyRowName(note), Kind: "Weekly", "Brain Status": weeklyDecided(note, workspace) ? "Done" : "New", "Brain ID": note.id }); return values; }
   // A report is a Documents row since 0.9.1 (0071); its Ask rows stay on the Inbox and link back through Asked in.
@@ -962,26 +854,6 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
   // A promoted Document has no relation to its decision, which has no page (0099; From decision until 0.16.0, From concept until 0.9.1): `promoted_from` stays in Git.
   if (note.type === "reference") Object.assign(values, { Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), Origin: ORIGIN_LABEL[String(a.origin ?? "part")] ?? null });
   return values;
-}
-
-/** A Review row's Name: `Held: <id>` when the row is held whole, else its title (with a Conflict or Answer lead); a Review summary names a deferred item's row by it (cli §5.14.4). */
-function reviewRowName(workspace: Workspace, note: Note, whole = proposalHeld(workspace, note).whole): unknown {
-  return whole ? `Held: ${note.id}` : reviewName(note.attributes);
-}
-/** A Review row's Name says which kind of row it is (cli §5.14.4, 0048). */
-function reviewName(a: Record<string, unknown>): unknown {
-  const prefix = ["contradiction", "supersede", "merge", "new_item"].includes(String(a.kind)) ? "Conflict: " : a.kind === "answer" ? "Answer: " : "";
-  return typeof a.title === "string" && prefix !== "" && !a.title.startsWith(prefix) ? `${prefix}${a.title}` : a.title;
-}
-
-/** A Review row's one area: its source note's own area, else the area of its first project (cli §5.14.4, 0050). */
-function reviewArea(a: Record<string, unknown>, workspace: Workspace): string[] {
-  const source = typeof a.source === "string" ? workspace.get(a.source) : undefined;
-  if (source === undefined) return [];
-  if (typeof source.attributes.area === "string") return [source.attributes.area];
-  const first = Array.isArray(source.attributes.projects) ? source.attributes.projects[0] : undefined;
-  const area = typeof first === "string" ? workspace.get(first)?.attributes.area : undefined;
-  return typeof area === "string" ? [area] : [];
 }
 
 /** The notes a source produced, with those of the sources attached to it (cli §5.14.4, 0042). */
@@ -1003,8 +875,7 @@ function notionProperty(name: string, value: unknown, note: Note, workspace: Wor
   const relation = ["Domain", "Area", "Goal", "Client", "People", "Org", "Project", "Documents", "Attendees"].includes(name);
   if (relation) {
     const sourceField: Record<string, string> = { Domain: "domain", Area: "area", Goal: "goal", Client: "client", People: "people", Org: "org", Project: "projects", Attendees: "attendees" };
-    const raw = name === "Area" && note.type === "proposal" ? reviewArea(note.attributes, workspace)
-      : note.type === "source" ? sourceRelationIds(note, name, workspace) : note.attributes[sourceField[name] ?? ""];
+    const raw = note.type === "source" ? sourceRelationIds(note, name, workspace) : note.attributes[sourceField[name] ?? ""];
     // A note waiting for review isn't pending: no render publishes it, and the relation fills once it is approved (0071).
     const missing = (Array.isArray(raw) ? raw : raw === undefined ? [] : [raw]).map(String).filter((id) => typeof workspace.get(id)?.attributes.notion !== "string" && !awaitsReview(workspace.get(id)));
     if (missing.length > 0) pending.push({ property: name, ids: missing });
@@ -1056,10 +927,6 @@ function sourceMoved(note: Note, workspace: Workspace): boolean {
     return target !== undefined && (target.id === note.id || areaGroup(workspace, target).some((member) => member.id === note.id));
   });
 }
-function proposalLinks(attributes: Record<string, unknown>): Array<{ field: unknown; value: unknown }> {
-  if (Array.isArray(attributes.links)) return attributes.links.filter(isRecord).map((link) => ({ field: link.field, value: link.value }));
-  return attributes.field === undefined ? [] : [{ field: attributes.field, value: attributes.after }];
-}
 function renderedContent(note: Note, workspace: Workspace): { body: string | null; sections: Record<string, string> | null; hash?: string } {
   // A Brief or Decision log the derived-content rule withholds is a notice in its section (cli §5.14.4, "Restricted notes").
   // In a section, a draft links nowhere even with a page from before 0.9.1: Notion shows reviewed knowledge only (cli §5.14.4 `sections`, 0071, CC-261).
@@ -1083,63 +950,13 @@ const NOTION_PAGE_URL = /^https:\/\/www\.notion\.so\/[0-9a-f]{32}$/i;
  * Notion page URL, the task link of a tracked question's line, is kept as written (cli §5.14.4 `sections`).
  */
 function notionMarkdown(body: string, source: Note, workspace: Workspace, options: { draftsUnlinked?: boolean } = {}): string { const fromFolder = source.path.includes("/") ? source.path.slice(0, source.path.lastIndexOf("/")) : ""; return body.replace(/\^\[(inferred|ambiguous)\]/g, (_, kind) => kind === "inferred" ? " (AI inference)" : " (ambiguous)").replace(/\[([^\]]+)\]\(([^)]+)\)/g, (all, title, link) => { if (options.draftsUnlinked === true && NOTION_PAGE_URL.test(link)) return all; const targetPath = normalizeRelative(fromFolder, link); const target = workspace.notes.find((note) => note.path === targetPath); return typeof target?.attributes.notion === "string" && !NO_DATABASE_TYPES.has(target.type) && !(options.draftsUnlinked === true && target.attributes.lifecycle === "draft" && REVIEWED_ONLY_TYPES.has(target.type)) ? `[${title}](https://www.notion.so/${target.attributes.notion.replaceAll("-", "")})` : title; }); }
-function reviewMarkdown(body: string, target: Note | undefined): string {
-  const fromFolder = target?.path.includes("/") ? target.path.slice(0, target.path.lastIndexOf("/")) : "";
-  return body.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_all, title, link) => {
-    normalizeRelative(fromFolder, link);
-    return title;
-  });
-}
 function normalizeRelative(folder: string, link: string): string { const parts = `${folder}/${link}`.split("/"); const out: string[] = []; for (const part of parts) { if (part === "" || part === ".") continue; if (part === "..") out.pop(); else out.push(part); } return out.join("/"); }
 function hash(value: string): string { return `sha256:${createHash("sha256").update(value).digest("hex")}`; }
 function relationPages(value: unknown, workspace: Workspace): string[] { return publishedPages(value, workspace); }
 function select(value: unknown): unknown { return typeof value === "string" ? value.split("_").map((word) => word[0]?.toUpperCase() + word.slice(1)).join(" ") : value ?? null; }
-function proposalState(value: unknown): unknown { return ["pending", "approved", "edited", "rejected"].includes(String(value)) ? "Pending" : String(value) === "applied" ? "Applied" : String(value) === "closed" ? "Closed" : value; }
 function dateOutput(value: unknown): unknown { return typeof value === "string" && /^\d{4}-\d{2}$/.test(value) ? { start: `${value}-01`, end: null } : typeof value === "string" ? { start: value, end: null } : null; }
 function keyFactsText(value: unknown, workspace: Workspace): string { if (!isRecord(value)) return ""; return Object.keys(value).sort(compareCodePoints).map((key) => `${key[0]!.toUpperCase()}${key.slice(1).replaceAll("_", " ")}: ${personTitle(value[key], workspace)}`).join(" · "); }
 function personTitle(value: unknown, workspace: Workspace): unknown { return typeof value === "string" && workspace.get(value)?.type === "person" ? shownTitle(workspace, workspace.get(value)!) : value; }
-function noteTitle(value: unknown, workspace: Workspace): unknown { const note = typeof value === "string" ? workspace.get(value) : undefined; return note !== undefined ? shownTitle(workspace, note) ?? value : value ?? null; }
-function fieldLabel(field: string): string { return field[0]?.toUpperCase() + field.slice(1).replaceAll("_", " "); }
-function truncate(value: unknown): unknown { return typeof value === "string" ? value.slice(0, 2000) : value; }
-/** The lettered lines of a Review notes row: its changes, then its notes, then its links (cli §5.14.4, 0045). */
-function reviewNotesAfter(attributes: Record<string, unknown>, workspace: Workspace, held?: Withheld): string {
-  const HELD_LINE = "Held: this rests on content you excluded from the brain";
-  const changes = (Array.isArray(attributes.changes) ? attributes.changes.filter(isRecord) : []).map((change, index) => {
-    if (held?.changes.has(index) === true) return HELD_LINE;
-    const target = String(noteTitle(change.target, workspace));
-    if (change.kind === "update_fact") return `⚠ ${fieldLabel(String(change.field))} on ${target}: ${change.before === undefined ? "(new)" : String(noteTitle(change.before, workspace))} → ${String(noteTitle(change.after, workspace))}`;
-    if (change.kind === "update_body") return `⚠ ${target}: ${bodyChange(change, workspace)?.length ?? 0} lines changed`;
-    if (change.kind === "replace_line") return `⚠ ${target}: 1 line changed`;
-    return `Add to ${target}: ${String(change.content ?? "").split("\n")[0]!.slice(0, 80)}`;
-  });
-  const notes = (Array.isArray(attributes.notes) ? attributes.notes : []).map((id) => {
-    if (held?.notes.has(String(id)) === true) return HELD_LINE;
-    const note = workspace.get(String(id));
-    return `${note === undefined ? "Note" : fieldLabel(note.type)}: ${String(noteTitle(id, workspace))}`;
-  });
-  const links = (Array.isArray(attributes.links) ? attributes.links.filter(isRecord) : []).map((link, index) =>
-    held?.links.has(index) === true ? HELD_LINE : `${fieldLabel(String(link.field))} on ${String(noteTitle(link.target, workspace))}: ${String(noteTitle(link.value, workspace))}`);
-  return [...changes, ...notes, ...links].map((line, index) => `${letters(index)}) ${line}`).join("\n");
-}
-
-/** The changed lines an update_body proposes against its target's body (cli §5.19), or undefined once that body changed. */
-function bodyChange(change: Record<string, unknown>, workspace: Workspace): string[] | undefined {
-  const target = typeof change.target === "string" ? workspace.get(change.target) : undefined;
-  if (target === undefined || bodyHash(target.body) !== change.before_hash) return undefined;
-  return lineDiff(target.body, bodyOf(String(change.content ?? "")));
-}
-
-/** Whether a proposal holds an update_body or a replace_line whose target's body is no longer the one it was proposed against. */
-function staleBody(attributes: Record<string, unknown>, workspace: Workspace): boolean {
-  const kinds = ["update_body", "replace_line"];
-  const bodies = kinds.includes(String(attributes.kind)) ? [attributes] : (Array.isArray(attributes.changes) ? attributes.changes.filter(isRecord) : []).filter((change) => kinds.includes(String(change.kind)));
-  return bodies.some((change) => change.kind === "replace_line" ? bodyHash(workspace.get(String(change.target))?.body ?? "") !== change.before_hash : bodyChange(change, workspace) === undefined);
-}
-
-/** a, b, … z, then aa, ab, … */
-export function letters(index: number): string {
-  return index < 26 ? String.fromCharCode(97 + index) : `${letters(Math.floor(index / 26) - 1)}${letters(index % 26)}`;
-}
 
 function isReport(note: Note): boolean { return note.type === "view" && note.attributes.view_kind === "report"; }
 function isWeekly(note: Note): boolean { return note.type === "view" && note.attributes.view_kind === "weekly_review"; }
@@ -1193,23 +1010,6 @@ function digestBody(note: Note): string {
   const words = note.body.split(/\s+/).filter((word) => word !== "").length;
   const line = `*${String(select(a.kind))} · ${origin} · ${fileDate} · ${words} words${parts.kind === "slides" ? ` · ${parts.parts.length} slides` : ""}*`;
   return [line, typeof a.summary === "string" ? a.summary : undefined, typeof a.digest === "string" ? a.digest.replace(/\n+$/, "") : undefined].filter((part) => part !== undefined).join("\n\n");
-}
-
-function proposalBefore(attributes: Record<string, unknown>, workspace: Workspace): unknown {
-  if (attributes.kind === "add_link" || attributes.kind === "review_notes" || attributes.kind === "answer" || attributes.kind === "update_body") return null;
-  if (attributes.kind === "supersede") return truncate(noteTitle(attributes.supersedes, workspace));
-  if (attributes.kind === "merge") return truncate(noteTitle(attributes.target, workspace));
-  if (attributes.kind === "replace_line") return truncate(attributes.line_before ?? null);
-  return truncate(attributes.before ?? null);
-}
-function proposalAfter(attributes: Record<string, unknown>, workspace: Workspace): unknown {
-  if (attributes.kind === "add_to_note") return attributes.content ?? null;
-  if (attributes.kind === "replace_line") return attributes.line_after ?? null;
-  if (attributes.kind === "new_item" && isRecord(attributes.note)) return `${attributes.note.title ?? ""} (${attributes.note.type ?? ""})`;
-  if (attributes.kind === "supersede") return noteTitle(attributes.target, workspace);
-  if (attributes.kind === "merge") return noteTitle(attributes.merge_into, workspace);
-  if (attributes.kind === "answer") return `${String(attributes.answer)}${attributes.answer_note === undefined ? "" : ` → ${String(noteTitle(attributes.answer_note, workspace))}`}`;
-  return attributes.after ?? null;
 }
 
 /** Task payloads for a meeting's or source's action items, or (targetId undefined, `--direct`) for tasks the user said yes to in a chat (cli §5.14.5). */
@@ -1429,13 +1229,7 @@ export function record(workspace: Workspace, input: unknown): { records: Array<R
     if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note);
     // A Draft page moved to the trash (--unpublish-drafts, 0071): the note has no page again, until it is approved.
     if (REVIEWED_PAGE_TYPES.has(note.type) && isRecord(entry.published) && entry.published["@trashed"] !== undefined) { if (typeof doc.attributes.notion !== "string" || doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); for (const key of ["notion", "notion_published", "last_synced"]) delete doc.attributes[key]; workspace.save(note.path, doc); if (workspace.newErrors().length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); continue; }
-    // A rebuild record (cli §5.14.6, capture-and-review §7.12.1): the row's new page replaces the old one, and its baseline replaces the old baseline whole.
-    if (entry.replaces !== undefined) {
-      if (note.type !== "proposal" || typeof entry.replaces !== "string" || typeof entry.notion !== "string" || !isRecord(entry.published)) throw new Error("INVALID_RESULT");
-      if (doc.attributes.notion === entry.notion && isDeepStrictEqual(doc.attributes.notion_published, entry.published)) { records.push({ id: entry.id, result: "recorded", changed: [] }); continue; }
-      if (doc.attributes.notion !== entry.replaces) throw new Error("NOTION_ID_MISMATCH");
-      doc.attributes.notion = entry.notion; doc.attributes.notion_published = entry.published;
-    } else if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note) || isWeekly(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; if (entry.task_items !== undefined) bindTaskItems(note, doc.attributes, entry.task_items, entry.tasks); workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); if (bodyWithoutReadBack(entry.published)) warnings.push({ code: "NOTION_BODY_MISSING", message: `${note.id}: a body was published without the read-back of its page, so the next plan holds it (cli §5.14.6, §5.14.7)`, id: note.id }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && (error.message === "NOTION_ID_MISMATCH" || error.message === "TASK_ITEM_EXISTS") ? error.message : "INVALID_RESULT", changed: [] }); } }
+    if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note) || isWeekly(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; if (entry.task_items !== undefined) bindTaskItems(note, doc.attributes, entry.task_items, entry.tasks); workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); if (bodyWithoutReadBack(entry.published)) warnings.push({ code: "NOTION_BODY_MISSING", message: `${note.id}: a body was published without the read-back of its page, so the next plan holds it (cli §5.14.6, §5.14.7)`, id: note.id }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && (error.message === "NOTION_ID_MISMATCH" || error.message === "TASK_ITEM_EXISTS") ? error.message : "INVALID_RESULT", changed: [] }); } }
   return { records, warnings };
 }
 

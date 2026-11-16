@@ -1,5 +1,5 @@
 // The passages a proposal names, and which of its items are withheld for want of eligible support (0077 §3, eligibility.md §9,
-// schema §11.5, cli §5.7 "Excluded evidence"). One rule for `proposal new`, `apply`, the Review page, `sync render` and `proposal list`.
+// schema §11.5, cli §5.7 "Excluded evidence"). One rule for `proposal new`, `apply`, `proposal list` and the 0.16.0 transition.
 
 import type { Context } from "./eligibility.ts";
 import { isRecord, type InputProblem } from "./input.ts";

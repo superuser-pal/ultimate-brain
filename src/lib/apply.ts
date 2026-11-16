@@ -5,15 +5,16 @@ import { assertNoProblems, isRecord, unknownKeys, type InputProblem } from "./in
 import type { NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 import { areaGroup, fixValueProblem, notionWrite, projectsProblem, type NotionWrite } from "./notion-change.ts";
-import { bodyHash, bodyOf, reviewTitle, sourceTitle, stageNewItem, writeProposal } from "./proposals.ts";
-import { reviewItems } from "./review-body.ts";
+import { bodyHash, bodyOf, reviewTitle, sourceTitle, stageNewItem, subjectLabel, writeProposal } from "./proposals.ts";
+import { acceptCleanupItem, cleanupItemView, CLEANUP_KINDS, CleanupSkip, reconcile } from "./cleanup-row.ts";
 import { loadSchemas } from "./schemas.ts";
-import { lineageOf } from "./eligibility.ts";
+import { lineageOf, restrictedSources } from "./eligibility.ts";
 import { citedPassages, linkRefs, proposalWithheld, proposedText } from "./passages.ts";
 import { citesPassage, contextFor, requireSuppressions, withheldSupport } from "./suppressions.ts";
 import { formatDate, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 import type { LogEntry } from "./log.ts";
+import type { FrontmatterDocument } from "./frontmatter.ts";
 
 /** spec/cli.md §5.7. */
 export interface Correction {
@@ -31,6 +32,8 @@ export interface Decision {
   fixes?: Array<Record<string, unknown>>;
   /** add_link: `{field, value}`; review_notes: `{note}`, `{target, field, value}` or `{change}` (spec/schema.md §11). */
   exclude?: Array<Record<string, unknown>>;
+  /** review_notes with items: the items the user turned down, rejected at once (0.16.0, 0098; spec/schema.md §11.3). */
+  reject?: Array<Record<string, unknown>>;
   decided_at: string;
   decided_by: "notion" | "chat";
 }
@@ -61,13 +64,15 @@ export interface ItemResult {
   input?: string;
   /** A proposal closed SOURCE_EXCLUDED that was written before the passages field (schema §11.5). */
   legacy?: boolean;
+  /** A cleanup review_notes whose accepted items left no note restricted by its input: the input's records are reconciled (spec/cli.md §5.7). */
+  reconciled?: boolean;
 }
 
 export interface ChangeResult {
   index: number;
   kind: string;
   target: string;
-  result: "applied" | "dropped" | "deferred";
+  result: "applied" | "dropped" | "deferred" | "rejected";
   reason?: "STALE_PROPOSAL" | "SOURCE_EXCLUDED";
 }
 
@@ -88,7 +93,7 @@ export interface ApplyResult {
 
 const ACTIONS = ["approve", "reject", "fix", "edit"];
 export const EDITABLE = new Set(["update_fact", "contradiction", "add_to_note", "update_body", "replace_line", "answer"]);
-const FIX_KEYS = ["value", "change", "note", "field", "link"];
+const FIX_KEYS = ["value", "change", "note", "field", "link", "item"];
 /** Reference fields a merge leaves alone: the meeting side of a persisted pair (spec/schema.md §11.2). */
 const PAIR_FIELDS = new Set(["decisions", "questions", "decided_in", "raised_in"]);
 /** Corrections change knowledge notes only: sources are immutable and proposals are records. */
@@ -124,7 +129,7 @@ export function parseApplyInput(input: unknown): ApplyInput {
   (decisions as unknown[]).forEach((item, index) => {
     const pointer = `/decisions/${index}`;
     if (!isRecord(item)) return problems.push({ pointer, message: "must be an object" });
-    problems.push(...unknownKeys(item, ["proposal", "action", "value", "note", "fixes", "exclude", "decided_at", "decided_by"], pointer));
+    problems.push(...unknownKeys(item, ["proposal", "action", "value", "note", "fixes", "exclude", "reject", "decided_at", "decided_by"], pointer));
     if (typeof item.proposal !== "string") problems.push({ pointer: `${pointer}/proposal`, message: "must be a proposal id" });
     if (!ACTIONS.includes(item.action as string)) problems.push({ pointer: `${pointer}/action`, message: "must be approve, reject, fix or edit" });
     if (item.action === "fix" && (typeof item.note !== "string" || item.note === "")) problems.push({ pointer: `${pointer}/note`, message: "is required for fix: the user's words" });
@@ -134,6 +139,7 @@ export function parseApplyInput(input: unknown): ApplyInput {
     if (item.action !== "edit" && item.value !== undefined) problems.push({ pointer: `${pointer}/value`, message: "is only allowed for edit" });
     if (item.note !== undefined && typeof item.note !== "string") problems.push({ pointer: `${pointer}/note`, message: "must be a string" });
     if (item.exclude !== undefined && (!Array.isArray(item.exclude) || item.exclude.some((entry) => !isRecord(entry) || !(isNoteExclude(entry) || isChangeExclude(entry) || (typeof entry.field === "string" && Object.hasOwn(entry, "value") && Object.keys(entry).every((key) => ["target", "field", "value"].includes(key))))))) problems.push({ pointer: `${pointer}/exclude`, message: "must be a list of {field, value}, {target, field, value}, {note} or {change} entries" });
+    if (item.reject !== undefined && (!Array.isArray(item.reject) || item.reject.length === 0 || item.reject.some((entry) => !isRecord(entry) || !(isNoteExclude(entry) || isChangeExclude(entry) || isItemEntry(entry) || (typeof entry.target === "string" && typeof entry.field === "string" && Object.hasOwn(entry, "value") && Object.keys(entry).length === 3))))) problems.push({ pointer: `${pointer}/reject`, message: "must be a non-empty list of {note}, {target, field, value}, {change} or {item} entries" });
     if (!isTimestamp(item.decided_at)) problems.push({ pointer: `${pointer}/decided_at`, message: "must be an ISO 8601 UTC timestamp" });
     if (item.decided_by !== "notion" && item.decided_by !== "chat") problems.push({ pointer: `${pointer}/decided_by`, message: "must be notion or chat" });
   });
@@ -195,6 +201,7 @@ interface Outcome {
   withheld?: Array<string | Record<string, unknown>>;
   input?: string;
   legacy?: boolean;
+  reconciled?: boolean;
   /** Action actually applied, when it differs from the input's (an earlier, later-dated decision). */
   action?: string;
   /** awaiting_notion: the write the skill carries out (spec/cli.md §5.7). */
@@ -268,11 +275,11 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   const p = document.attributes;
   if (p.status === "applied" || p.status === "closed") return { result: "skipped", reason: "ALREADY_TERMINAL" };
 
-  const incoming: Decision = { action: input.action, ...(input.value === undefined ? {} : { value: input.value }), ...(input.note === undefined ? {} : { note: input.note }), ...(input.fixes === undefined ? {} : { fixes: input.fixes }), ...(input.exclude === undefined ? {} : { exclude: input.exclude }), decided_at: input.decided_at, decided_by: input.decided_by };
+  const incoming: Decision = { action: input.action, ...(input.value === undefined ? {} : { value: input.value }), ...(input.note === undefined ? {} : { note: input.note }), ...(input.fixes === undefined ? {} : { fixes: input.fixes }), ...(input.exclude === undefined ? {} : { exclude: input.exclude }), ...(input.reject === undefined ? {} : { reject: input.reject }), decided_at: input.decided_at, decided_by: input.decided_by };
   const recorded = isRecord(p.decision) ? (p.decision as unknown as Decision) : undefined;
   let decision = incoming;
-  if (recorded !== undefined && (recorded.action !== incoming.action || !isDeepStrictEqual(recorded.value, incoming.value) || !isDeepStrictEqual(recorded.fixes, incoming.fixes) || !isDeepStrictEqual(recorded.exclude, incoming.exclude))) {
-    // You changed your mind in Notion before it was applied: the later decision wins.
+  if (recorded !== undefined && (recorded.action !== incoming.action || !isDeepStrictEqual(recorded.value, incoming.value) || !isDeepStrictEqual(recorded.fixes, incoming.fixes) || !isDeepStrictEqual(recorded.exclude, incoming.exclude) || !isDeepStrictEqual(recorded.reject, incoming.reject))) {
+    // The user changed their mind before it was applied: the later decision wins.
     if (Date.parse(recorded.decided_at) >= Date.parse(incoming.decided_at)) decision = recorded;
   } else if (recorded !== undefined) {
     decision = recorded;
@@ -280,6 +287,8 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   if (decision.action === "edit" && !EDITABLE.has(String(p.kind))) {
     throw new ItemFailure("EDIT_NOT_ALLOWED", `edit is not allowed on a ${String(p.kind)} proposal (spec/schema.md §11.1); use fix`);
   }
+  const cleanup = p.kind === "review_notes" && isRecord(p.cleanup);
+  if (cleanup) checkCleanupDecision(p, decision);
   const exclude = decision.exclude ?? [];
   if (decision.exclude !== undefined) {
     if ((decision.action !== "approve" && decision.action !== "fix") || (p.kind !== "add_link" && p.kind !== "review_notes")) throw new ItemFailure("INPUT_INVALID", "exclude is only allowed on an approved or fixed add_link or review_notes proposal");
@@ -292,8 +301,10 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
       if (exclude.some((excluded) => !inReview(p, excluded))) throw new ItemFailure("EXCLUDE_UNKNOWN", "exclude contains an entry that is not in the proposal");
     }
   }
+  const rejected = decision.reject ?? [];
+  if (decision.reject !== undefined && !cleanup) checkReject(p, decision, exclude);
   // A fix corrects the proposal before it is applied; the file keeps what was proposed (spec/schema.md §11.3).
-  const fixed = decision.action === "fix" ? corrected(workspace, p, decision.fixes ?? [], exclude) : { q: p, noteFixes: new Map<string, Array<Record<string, unknown>>>() };
+  const fixed = decision.action === "fix" && !cleanup ? corrected(workspace, p, decision.fixes ?? [], [...exclude, ...rejected]) : { q: p, noteFixes: new Map<string, Array<Record<string, unknown>>>() };
   const action = decision.action === incoming.action ? undefined : decision.action;
 
   // A notion_change is written by the skill, not here: apply records the decision and hands back the write (spec/cli.md §5.7).
@@ -327,15 +338,20 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
     return { result: "closed", action, ...(notes === undefined ? {} : { notes }) };
   }
 
+  if (cleanup) return applyCleanup(workspace, proposal, document, decision, today, action);
   const D = decision.decided_at.slice(0, 10);
   const V = decision.action === "edit" ? decision.value : fixed.value;
   if (p.kind === "review_notes") {
     // A review_notes is judged item by item before apply on every route: an item without eligible support is withheld and the independent
-    // items apply (eligibility.md §4.1, §4.2, §9.3; cli §5.7). With items, by the Review page's rule; without (older layout), each folded
+    // items apply (eligibility.md §4.1, §4.2, §9.3; cli §5.7). With items, item by item; without (older layout), each folded
     // change, note and link alone, recorded in `dropped`.
     const layered = Array.isArray(p.items);
-    const withheld = layered ? withheldItems(workspace, proposal, exclude) : olderLayoutWithheld(workspace, proposal, exclude);
-    const applied = reviewNotes(workspace, fixed.q, "approve", exclude, today, D, fixed.noteFixes, withheld);
+    // An item the user turned down is not judged, as a deferred one isn't: it is rejected whatever it rests on (schema §11.3).
+    const withheld = layered ? withheldItems(workspace, proposal, [...exclude, ...rejected]) : olderLayoutWithheld(workspace, proposal, exclude);
+    const applied = reviewNotes(workspace, fixed.q, "approve", exclude, today, D, fixed.noteFixes, withheld, rejected);
+    if (rejected.length > 0) {
+      p.item_decisions = [...list(p.item_decisions), ...rejectedItemIds(p, rejected).map((item_id) => ({ item_id, decision: "reject", decided_at: decision.decided_at, decided_by: decision.decided_by }))];
+    }
     const dropped: Array<Record<string, unknown>> = [...applied.dropped];
     if (!layered) {
       dropped.push(...[...withheld.changes].map((change) => ({ change, reason: "source_excluded" })), ...[...withheld.notes].map((note) => ({ note, reason: "source_excluded" })), ...[...withheld.links].map((link) => ({ link, reason: "source_excluded" })));
@@ -426,8 +442,8 @@ function userWording(V: unknown, proposed: unknown, correctedBy: string | undefi
 }
 
 /**
- * The items of a review_notes with `items` that rest on excluded evidence, by the Review page's rule (`source_excluded`, cli §5.14.3), so
- * every route withholds the same items. Items already decided or deferred by the decision are not judged. `all`: every item left is withheld.
+ * The items of a review_notes with `items` that rest on excluded evidence (`source_excluded`, cli §5.7): each judged by its own passages, a
+ * legacy one by its input, a note by its draft too (schema §11.5), and a cleanup item while the proposal's source is restricted. Items already decided or deferred by the decision are not judged. `all`: every item left is withheld.
  */
 function withheldItems(workspace: Workspace, proposal: Note, exclude: Array<Record<string, unknown>>): { ids: Set<string>; changes: Set<number>; notes: Set<string>; links: Set<number>; all: boolean } {
   const out = { ids: new Set<string>(), changes: new Set<number>(), notes: new Set<string>(), links: new Set<number>(), all: false };
@@ -440,16 +456,112 @@ function withheldItems(workspace: Workspace, proposal: Note, exclude: Array<Reco
     : entry.kind === "link" ? linkRefs(entry.ref).some((ref) => exclude.some((item) => links[ref] !== undefined && sameLink(links[ref]!, item)))
     : exclude.some((item) => item.change === Number(entry.ref));
   const open = [...entries.values()].filter((entry) => !decided.has(String(entry.item_id)) && !deferred(entry));
-  for (const view of reviewItems(proposal, workspace)) {
-    const entry = entries.get(view.item_id);
-    if (entry === undefined || !view.source_excluded || !open.includes(entry)) continue;
-    out.ids.add(view.item_id);
+  const context = contextFor(workspace.notes, requireSuppressions(workspace.root));
+  const found = proposalWithheld(proposal, workspace, context);
+  const sourceRestricted = typeof a.source === "string" && restrictedSources(context).has(a.source);
+  const excluded = (entry: Record<string, unknown>): boolean => (CLEANUP_KINDS as readonly unknown[]).includes(entry.kind) ? sourceRestricted
+    : entry.kind === "note" ? found.notes.has(String(entry.ref)) : entry.kind === "link" ? linkRefs(entry.ref).some((ref) => found.links.has(ref)) : entry.kind === "change" ? found.changes.has(Number(entry.ref)) : false;
+  for (const entry of entries.values()) {
+    if (!excluded(entry) || !open.includes(entry)) continue;
+    out.ids.add(String(entry.item_id));
     if (entry.kind === "note") out.notes.add(String(entry.ref));
     else if (entry.kind === "link") for (const ref of linkRefs(entry.ref)) out.links.add(ref);
     else out.changes.add(Number(entry.ref));
   }
   out.all = open.length > 0 && open.every((entry) => out.ids.has(String(entry.item_id)));
   return out;
+}
+
+/**
+ * A `reject` (0.16.0, 0098; cli §5.7, schema §11.3): only on an approved or fixed review_notes with items; each entry an item of it, none also
+ * excluded or fixed, and a grouped link item turned down whole. Throws INPUT_INVALID or EXCLUDE_UNKNOWN.
+ */
+function checkReject(p: Record<string, unknown>, decision: Decision, exclude: Array<Record<string, unknown>>): void {
+  const rejected = decision.reject ?? [];
+  if ((decision.action !== "approve" && decision.action !== "fix") || p.kind !== "review_notes") throw new ItemFailure("INPUT_INVALID", "reject is only allowed on an approved or fixed review_notes proposal");
+  if (!Array.isArray(p.items)) throw new ItemFailure("INPUT_INVALID", "reject needs a review_notes with items (written from 0.8.0 on): exclude the items and reject the deferred proposal");
+  if (rejected.some((entry) => !inReview(p, entry))) throw new ItemFailure("EXCLUDE_UNKNOWN", "reject contains an entry that is not in the proposal");
+  if (rejected.some((entry) => exclude.some((other) => isDeepStrictEqual(other, entry)))) throw new ItemFailure("INPUT_INVALID", "an item can't be both turned down and excluded");
+  const links = reviewLinks(p);
+  for (const item of list(p.items).map(record).filter((entry) => entry.kind === "link")) {
+    const refs = linkRefs(item.ref);
+    const named = refs.filter((ref) => links[ref] !== undefined && rejected.some((entry) => sameLink(links[ref]!, entry)));
+    if (named.length > 0 && named.length < refs.length) throw new ItemFailure("INPUT_INVALID", "a grouped link item is turned down whole: name each of its links in reject, or none (spec/schema.md §11.3)");
+  }
+}
+
+const isItemEntry = (entry: Record<string, unknown>): boolean => typeof entry.item === "string" && Object.keys(entry).length === 1;
+
+/**
+ * A decision on a cleanup review_notes (cli §5.7, §5.26): no `exclude` (a cleanup item has no defer); `reject` and `fixes` name items by their
+ * `it-` id; a fix gives a `remove` its text and an `independence` Keep or Remove, and a `restore` takes none. Throws before anything is written.
+ */
+function checkCleanupDecision(p: Record<string, unknown>, decision: Decision): void {
+  if (decision.exclude !== undefined) throw new ItemFailure("INPUT_INVALID", "a cleanup item has no defer: leave the proposal pending to decide it later (spec/cli.md §5.7)");
+  const items = new Map(list(p.items).map(record).map((entry) => [String(entry.item_id), entry]));
+  const rejected = decision.reject ?? [];
+  if (decision.reject !== undefined) {
+    if (decision.action !== "approve" && decision.action !== "fix") throw new ItemFailure("INPUT_INVALID", "reject is only allowed on an approved or fixed review_notes proposal");
+    if (rejected.some((entry) => !isItemEntry(entry))) throw new ItemFailure("INPUT_INVALID", "reject on a cleanup review_notes takes {item} entries (spec/cli.md §5.7)");
+    if (rejected.some((entry) => !items.has(String(entry.item)))) throw new ItemFailure("EXCLUDE_UNKNOWN", "reject contains an item that is not in the proposal");
+  }
+  for (const entry of decision.fixes ?? []) {
+    const item = typeof entry.item === "string" && Object.keys(entry).every((key) => key === "item" || key === "value") ? items.get(entry.item) : undefined;
+    if (item === undefined) throw new ItemFailure("FIX_UNKNOWN", `fixes entry ${JSON.stringify(entry)} names no item of this cleanup proposal: an entry is {item, value}`);
+    if (rejected.some((other) => other.item === entry.item)) throw new ItemFailure("INPUT_INVALID", "an item can't be both turned down and fixed");
+    if (item.kind === "restore") throw new ItemFailure("INVALID_RESULT", "a restore item takes no fix: approve it or turn it down");
+    if (item.kind === "remove" && (typeof entry.value !== "string" || entry.value.trim() === "")) throw new ItemFailure("INVALID_RESULT", "a remove item's fix is the note's text, a non-empty string");
+    if (item.kind === "independence" && !(typeof entry.value === "string" && ["keep", "remove"].includes(entry.value.trim().toLowerCase()))) throw new ItemFailure("INVALID_RESULT", "an independence item's fix is Keep or Remove");
+  }
+  if ((decision.fixes ?? []).some((entry, index, all) => all.findIndex((other) => other.item === entry.item) !== index)) throw new ItemFailure("INPUT_INVALID", "an item is fixed once");
+}
+
+/**
+ * Apply an approved or fixed cleanup review_notes (cli §5.7, §5.26) in one operation: each item not yet decided is turned down, withheld while
+ * the row's source is excluded (the rule Review pages had before 0.16.0), or accepted by `acceptCleanupItem`; then, when nothing is
+ * left restricted by the input, its records are reconciled. A failed item fails the decision and the caller restores the workspace.
+ */
+function applyCleanup(workspace: Workspace, proposal: Note, document: FrontmatterDocument, decision: Decision, today: string, action: string | undefined): Outcome {
+  const p = document.attributes;
+  const input = String(record(p.cleanup).input);
+  const decided = new Set(list(p.item_decisions).map(record).map((entry) => String(entry.item_id)));
+  const rejected = new Set((decision.reject ?? []).map((entry) => String(entry.item)));
+  const fixes = new Map((decision.fixes ?? []).map((entry) => [String(entry.item), String(entry.value)]));
+  const withheld = withheldItems(workspace, proposal, []);
+  const entries: Array<Record<string, unknown>> = [];
+  const held: string[] = [];
+  let accepted = 0;
+  for (const entry of list(p.items).map(record)) {
+    const id = String(entry.item_id);
+    if (decided.has(id)) continue;
+    const stamp = { item_id: id, decided_at: decision.decided_at, decided_by: decision.decided_by };
+    if (rejected.has(id)) { entries.push({ ...stamp, decision: "reject" }); continue; }
+    if (withheld.ids.has(id)) { held.push(id); entries.push({ ...stamp, decision: "reject", state: "closed", reason: "source_excluded" }); continue; }
+    const proposed = fixes.get(id) ?? (entry.kind === "remove" ? cleanupItemView(proposal, entry, workspace).proposed : entry.kind === "restore" ? "Restore" : "Remove");
+    try { acceptCleanupItem(workspace, proposal, entry, proposed, today); } catch (error) { if (error instanceof CleanupSkip) throw new ItemFailure(error.code, `${id}: ${error.message}`); throw error; }
+    accepted += 1;
+    entries.push({ ...stamp, decision: "accept", ...(fixes.has(id) ? { edited: true } : {}) });
+  }
+  p.item_decisions = [...list(p.item_decisions), ...entries];
+  const extra = held.length === 0 ? {} : { withheld: held };
+  if (accepted === 0 && held.length > 0 && rejected.size === 0) {
+    p.status = "closed";
+    p.closed_reason = "stale";
+    workspace.save(proposal.path, document);
+    return { result: "closed", reason: "SOURCE_EXCLUDED", message: "no item has eligible support: the input this cleanup is for is excluded", action, ...extra };
+  }
+  const reconciled = accepted > 0 && reconcile(workspace, input, decision.decided_at);
+  p.status = "applied";
+  workspace.save(proposal.path, document);
+  return { result: "applied", action, ...extra, ...(reconciled ? { reconciled } : {}) };
+}
+
+/** The `it-` ids of the items a `reject` names (schema §11.3): a note by its id, a change by its index, a link item by its links. */
+function rejectedItemIds(p: Record<string, unknown>, rejected: Array<Record<string, unknown>>): string[] {
+  const links = reviewLinks(p);
+  return list(p.items).map(record).filter((item) => item.kind === "note" ? rejected.some((entry) => isNoteExclude(entry) && entry.note === item.ref)
+    : item.kind === "change" ? rejected.some((entry) => entry.change === Number(item.ref))
+    : item.kind === "link" && linkRefs(item.ref).some((ref) => links[ref] !== undefined && rejected.some((entry) => sameLink(links[ref]!, entry)))).map((item) => String(item.item_id));
 }
 
 /** Whether an exclude or fix entry names an item of a review_notes (spec/schema.md §11.3). */
@@ -608,13 +720,15 @@ function defer(workspace: Workspace, id: string, p: Record<string, unknown>, exc
   ];
   const fields = {
     kind: "review_notes",
-    title: reviewTitle(workspace, source, changes.length, notes.length, links.length, "Deferred from"),
+    title: reviewTitle(workspace, source, changes.length, notes.length, links.length, "Deferred from", typeof p.subject === "string" ? subjectLabel(workspace, p.subject, contextFor(workspace.notes, requireSuppressions(workspace.root))) : undefined),
     notes, links,
     ...(changes.length === 0 ? {} : { changes }),
     ...(items === undefined ? {} : { items }),
     deferred_from: id,
     why: p.why,
     source,
+    // A part's deferred items stay its subject's (schema §11.3, 0098).
+    ...(typeof p.subject === "string" ? { subject: p.subject } : {}),
     // A correction group's deferred changes stay its claim's (weekly-review.md §8.4).
     ...(typeof p.correction === "string" ? { correction: p.correction } : {}),
   };
@@ -730,13 +844,14 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
  * their fixes, and applies the links; reject archives the draft notes. Excluded entries stay as they
  * are; a note no longer `draft` is left alone and reported `unchanged`.
  */
-function reviewNotes(workspace: Workspace, p: Record<string, unknown>, action: "approve" | "reject", exclude: Array<Record<string, unknown>>, today: string, D: string, noteFixes: ReadonlyMap<string, Array<Record<string, unknown>>>, withheld?: { changes: ReadonlySet<number>; notes: ReadonlySet<string>; links: ReadonlySet<number> }): { notes: NoteResult[]; changes: ChangeResult[]; dropped: Array<{ change: number; reason: "stale" }> } {
+function reviewNotes(workspace: Workspace, p: Record<string, unknown>, action: "approve" | "reject", exclude: Array<Record<string, unknown>>, today: string, D: string, noteFixes: ReadonlyMap<string, Array<Record<string, unknown>>>, withheld?: { changes: ReadonlySet<number>; notes: ReadonlySet<string>; links: ReadonlySet<number> }, rejected: Array<Record<string, unknown>> = []): { notes: NoteResult[]; changes: ChangeResult[]; dropped: Array<{ change: number; reason: "stale" }> } {
   const changes: ChangeResult[] = [];
   const dropped: Array<{ change: number; reason: "stale" }> = [];
   if (action === "approve") {
     list(p.changes).map(record).forEach((change, index) => {
       const entry = { index, kind: String(change.kind), target: String(change.target) };
       if (exclude.some((excluded) => excluded.change === index)) { changes.push({ ...entry, result: "deferred" }); return; }
+      if (rejected.some((turned) => turned.change === index)) { changes.push({ ...entry, result: "rejected" }); return; }
       if (withheld?.changes.has(index) === true) { changes.push({ ...entry, result: "dropped", reason: "SOURCE_EXCLUDED" }); return; }
       const stale = applyKind(workspace, { ...change, source: p.source }, "", undefined, D, today);
       if (stale === null) changes.push({ ...entry, result: "applied" });
@@ -751,7 +866,8 @@ function reviewNotes(workspace: Workspace, p: Record<string, unknown>, action: "
     const note = existing(workspace, id);
     const excluded = exclude.some((entry) => isNoteExclude(entry) && entry.note === id);
     // A withheld draft is archived, as an Accept on its held Review item does (cli §5.14.3); its fixes are not applied.
-    const held = action === "approve" && withheld?.notes.has(id) === true;
+    // A withheld draft, or one the user turned down, is archived (cli §5.7, schema §11.3): its fixes are not applied.
+    const held = action === "approve" && (withheld?.notes.has(id) === true || rejected.some((entry) => isNoteExclude(entry) && entry.note === id));
     const fixes = action === "approve" && !held ? noteFixes.get(id) ?? [] : [];
     if (fixes.length > 0) {
       const document = workspace.edit(note);
@@ -777,7 +893,7 @@ function reviewNotes(workspace: Workspace, p: Record<string, unknown>, action: "
   }
   if (action === "approve") {
     for (const [index, link] of reviewLinks(p).entries()) {
-      if (exclude.some((entry) => sameLink(link, entry)) || withheld?.links.has(index) === true) continue;
+      if (exclude.some((entry) => sameLink(link, entry)) || rejected.some((entry) => sameLink(link, entry)) || withheld?.links.has(index) === true) continue;
       const target = existing(workspace, String(link.target));
       const document = workspace.edit(target);
       const values = list(document.attributes[String(link.field)]);
