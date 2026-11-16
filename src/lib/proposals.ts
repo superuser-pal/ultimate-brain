@@ -297,6 +297,16 @@ function reviewLinks(attributes: Record<string, unknown>): Array<{ target: unkno
   return Array.isArray(attributes.links) ? attributes.links.filter(isRecord).map((link) => ({ target: link.target, field: link.field, value: link.value })) : [];
 }
 
+/** Whether `source` is a later version of `earlier`: following `replaces` back from it reaches `earlier` (schema §4, "Versions"). */
+function laterVersion(workspace: Workspace, source: string, earlier: string): boolean {
+  const seen = new Set<string>();
+  for (let current = workspace.get(source)?.attributes.replaces; typeof current === "string" && !seen.has(current); current = workspace.get(current)?.attributes.replaces) {
+    if (current === earlier) return true;
+    seen.add(current);
+  }
+  return false;
+}
+
 /** Ids listed by every review_notes proposal, any status (spec/cli.md §5.6). */
 function reviewedIds(workspace: Workspace): Map<string, string> {
   const listed = new Map<string, string>();
@@ -680,6 +690,11 @@ function resolveFields(workspace: Workspace, item: Record<string, unknown>, poin
   if (kind === "update_body") {
     if (target.type !== "reference") invalid("target", `is a ${target.type}; update_body replaces the body of a reference`);
     if (target.attributes.origin === "promoted") invalid("target", `is a promoted Document; its body is yours, edited in Notion (0049)`);
+    // A whole Document keeps one source: the change comes from a later version of it, which its apply puts in its place (schema §11.2, cli §5.6).
+    if (target.attributes.origin === "whole") {
+      const kept = Array.isArray(target.attributes.sources) ? String(target.attributes.sources[0]) : "";
+      if (!laterVersion(workspace, String(item.source), kept)) invalid("source", `must be a later version of ${kept}, the whole Document's source (its replaces chain leads back to it)`);
+    }
     fields.before_hash = bodyHash(target.body);
   }
   if (kind === "replace_line") {

@@ -804,7 +804,9 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
     }
     case "update_body":
       document.body = bodyOf(String(V ?? p.content));
-      if (!userWording(V, p.content, correctedBy)) a.sources = union(list(a.sources), [p.source]);
+      // A whole Document keeps one source, the later version the change came from (schema §11.2); the earlier stays reachable through replaces.
+      if (a.origin === "whole") a.sources = [p.source];
+      else if (!userWording(V, p.content, correctedBy)) a.sources = union(list(a.sources), [p.source]);
       break;
     case "add_link":
       for (const link of proposalLinks(p)) if (!exclude.some((item) => item.field === link.field && isDeepStrictEqual(item.value, link.value)) && !list(a[String(link.field)]).some((value) => isDeepStrictEqual(value, link.value))) a[String(link.field)] = [...list(a[String(link.field)]), link.value];
