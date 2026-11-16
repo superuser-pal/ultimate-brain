@@ -9,6 +9,8 @@ export type Entry = { source: string; passage?: { n: number; hash: string } };
 
 export interface SourceInfo {
   id: string; extract_of?: string; source_key?: string; replaces?: string;
+  /** A checked row's source (0098 §4): the original it was changed from, whose input is its input (capture-and-review §5.1). */
+  checked_from?: string;
   /** For an extract version: the passages it holds, as `${n}:${hash}`. */
   passages?: string[]; transcript_hash?: string; extract_version?: number;
   /** A meeting standing for its source (lineage only): never a version of anything. */
@@ -39,6 +41,13 @@ export function lineageOf(id: string, sources: Map<string, SourceInfo>): string 
   const seen = new Set<string>();
   for (let current = sources.get(id); current !== undefined && !seen.has(current.id); current = current.replaces === undefined ? undefined : sources.get(current.replaces)) {
     seen.add(current.id);
+    // A checked row's source has its original's lineage, not its own key's (capture-and-review §5.1, §12.5); an unknown original is undetermined.
+    while (current.checked_from !== undefined) {
+      const original: SourceInfo | undefined = sources.get(current.checked_from);
+      if (original === undefined || seen.has(original.id)) return null;
+      seen.add(original.id);
+      current = original;
+    }
     if (current.extract_of !== undefined) return current.extract_of;
     const key = NOTION_KEY.exec(current.source_key ?? "");
     if (key !== null) return key[1] ?? null;

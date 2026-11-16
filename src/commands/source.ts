@@ -7,6 +7,8 @@ import { cleanupPlan } from "../lib/cleanup.ts";
 import { buildExtractPlan } from "../lib/extract.ts";
 import { contextFor, requireSuppressions, restrictionOf } from "../lib/suppressions.ts";
 import { Workspace } from "../lib/workspace.ts";
+import { readJsonInput } from "../lib/input.ts";
+import { renderCheckedRow } from "../lib/source-check.ts";
 import { readFile } from "node:fs/promises";
 
 /** `brain source full-text` (spec/cli.md §5.17): retired in 0.6.0 by decision 0049. Writes nothing. */
@@ -113,5 +115,22 @@ export const sourceCleanupProposeCommand: Command = {
     const data = proposeCleanup(workspace, page, formatDate(now));
     if (data.result === "WRITTEN") await workspace.commit([{ op: "cleanup-propose", id: data.proposal!, title: page }], now);
     return { data, human: `${data.result}${data.proposal === undefined ? "" : ` ${data.proposal}`}\n` };
+  },
+};
+
+/** `brain source check` (spec/cli.md §5.35, 0098 §4): the Notion page of a checked row, for the skill to create. Writes nothing. */
+export const sourceCheckCommand: Command = {
+  name: "source check",
+  usage: "brain source check --input <file|-> [--json]",
+  summary: "Render the Inbox row of a changed document, for you to check before it goes in. Writes nothing.",
+  options: { input: "string" },
+  maxPositionals: 0,
+  needsBrain: true,
+  async run({ args, brain }) {
+    const input = args.options.input as string | undefined;
+    if (input === undefined) throw new BrainError("USAGE", "source check needs --input");
+    const workspace = await Workspace.open(brain!);
+    const data = renderCheckedRow(workspace, await readJsonInput(input, "source check"));
+    return { data, human: `checked row: ${String(data.properties.Name)} (changed from ${String((data.properties["Changed from"] as string[])[0])})\n` };
   },
 };

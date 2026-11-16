@@ -123,8 +123,16 @@ const keptOpen = (note: Note): boolean => note.attributes.status === "closed" &&
 /**
  * Reads the snapshot's `tasks` rows (cli §5.14.1, §5.14.2): a tracked question's task that is finished, in the trash or unreadable leaves one
  * waiting question; a waiting one whose task reads open again, or whose question is no longer tracked, is withdrawn. A row no tracked
- * question names is `ignored`, `NOT_TRACKED`. This is the one place a `tasks` row is read.
+ * question names is `ignored`, `NOT_TRACKED`, unless it was passed for Document asked: then only that rule reads it (task-documents.ts).
  */
+/** A row the skill passed for Document asked (cli §5.14.1): its mapped Document asked box is ticked (0100 §1). */
+function passedForDocumentAsked(config: Record<string, unknown>, row: TaskRow): boolean {
+  const notion = isRecord(config.notion) ? config.notion : {};
+  const tasks = isRecord(notion.tasks) ? notion.tasks : {};
+  const name = isRecord(tasks.properties) && typeof tasks.properties.document_asked === "string" ? tasks.properties.document_asked : "";
+  return name !== "" && row.properties[name] === true;
+}
+
 export function planTaskRows(workspace: Workspace, rows: readonly TaskRow[], out: TaskPlanOut): void {
   if (!modulesOf(workspace.config).tasks) {
     for (const row of rows) out.ignored.push({ database: "tasks", page_id: row.page_id, brain_id: null, reason: "MODULE_OFF" });
@@ -135,6 +143,7 @@ export function planTaskRows(workspace: Workspace, rows: readonly TaskRow[], out
   const titleName = tasksConfig(workspace.config).title;
   for (const row of rows) {
     const question = tracked.get(row.page_id);
+    if (question === undefined && passedForDocumentAsked(workspace.config, row)) continue;
     if (question === undefined) { out.ignored.push({ database: "tasks", page_id: row.page_id, brain_id: null, reason: "NOT_TRACKED" }); continue; }
     const proposals = trackedProposals(workspace, question.id, row.page_id);
     const waiting = proposals.find((note) => note.attributes.status === "pending");

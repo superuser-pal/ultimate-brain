@@ -28,6 +28,8 @@ import { citeLabel, contextFor, publishableNote, requireSuppressions, titleWithh
 import { importedItems } from "./selection.ts";
 import { chainOf, FOLLOW_UP } from "./extract.ts";
 import { wholeDocumentMarkdown } from "./whole-links.ts";
+import { FROM_THE_BRAIN_MARKER } from "./from-the-brain.ts";
+import { planTaskDocument, type TaskDocumentRequest } from "./task-documents.ts";
 import { dayMonthYear } from "./weekly-record.ts";
 
 export const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "documents", "review", "inbox", "tasks"] as const;
@@ -52,6 +54,8 @@ export interface SyncPlan {
   decisions: DecisionInput[];
   /** Inbox rows whose Document asked box is ticked by the Keep as document button (0049); the skill writes a Document for each. */
   document_requests: Array<{ page_id: string; source: string; files: string[]; only_keep: string | null; existing?: string[] }>;
+  /** Tasks rows whose Document asked box is ticked by the Keep as document button (0100 §1); the skill keeps each as a whole Document. */
+  task_documents: TaskDocumentRequest[];
   /** Report rows whose Refresh box is ticked, and their new What to fix texts (0045); the skill runs `report new` / `report fix`. */
   refresh_requests: Array<{ page_id: string; report: string; wording_blocked?: true }>;
   report_fixes: Array<{ page_id: string; report: string; text: string }>;
@@ -143,7 +147,7 @@ export function parseSnapshot(input: unknown): Snapshot {
 
 /** Compute the deterministic, no-network Notion pull plan (cli §5.14.2). */
 export function buildPlan(workspace: Workspace, snapshot: Snapshot, options: { reviewTransition?: boolean } = {}): SyncPlan {
-  const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], withdrawn: [], tracked_tasks: [], decisions: [], document_requests: [], refresh_requests: [], report_fixes: [], accepted_wording: [], wording_waiting: [], wording_held: [], clear_accepted: [], review_pending: [], review_decisions: [], review_held: [], review_revisions: [], review_row_revisions: [], review_untouched: [], conflicts: [], ignored: [] };
+  const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], withdrawn: [], tracked_tasks: [], decisions: [], document_requests: [], task_documents: [], refresh_requests: [], report_fixes: [], accepted_wording: [], wording_waiting: [], wording_held: [], clear_accepted: [], review_pending: [], review_decisions: [], review_held: [], review_revisions: [], review_row_revisions: [], review_untouched: [], conflicts: [], ignored: [] };
   const createsByPage = new Map<string, { id: string; type: string }>();
   for (const row of snapshot.rows) if (CREATABLE.has(row.database) && blank(property(row.properties, "Brain ID"))) {
     const existing = noteByNotion(workspace, row.page_id);
@@ -191,6 +195,9 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot, options: { r
   const wordingNotes = new Set([...result.accepted_wording, ...result.wording_waiting, ...result.wording_held].map((item) => item.note));
   for (const request of result.refresh_requests) if (wordingNotes.has(request.report)) request.wording_blocked = true;
   planTaskRows(workspace, snapshot.tasks, result);
+  // A Tasks row is also read for Document asked (cli §5.14.2, 0100 §1); a page Notion can't find or in the trash asks for nothing.
+  // With Tasks off, planTaskRows reports each row MODULE_OFF: the flag needs the Tasks module (capture-and-review §13.2).
+  if (modulesOf(workspace.config).tasks) for (const row of snapshot.tasks) if (row.gone !== true && row.unreadable !== true) planTaskDocument(workspace, row, result);
   sortPlan(result);
   return result;
 }
@@ -410,7 +417,7 @@ function planInbox(workspace: Workspace, row: SnapshotRow, out: SyncPlan): void 
     if (note === undefined) { out.conflicts.push(conflict(row, "UNKNOWN_BRAIN_ID", `No note has Brain ID ${brainId}`)); return; }
     // Only a source that gets an Inbox row of its own (§5.14.4: every kind but minutes, not an attached file; a capture's
     // page is the one in its key, schema §4) can be linked here.
-    if (note.type === "source" && note.attributes.kind !== undefined && note.attributes.kind !== "minutes" && note.attributes.kind !== "capture" && note.attributes.attached_to === undefined) {
+    if (hasInboxBody(note)) {
       if (note.attributes.notion === undefined) out.updates.push({ id: note.id, notion: row.page_id });
       else if (note.attributes.notion !== row.page_id) { out.conflicts.push(conflict(row, "NOTION_ID_MISMATCH", `Source ${note.id} belongs to another Inbox page`)); return; }
     }
@@ -455,10 +462,10 @@ function wholeDocumentOf(workspace: Workspace, source: string): string | undefin
   return workspace.notes.find((note) => note.type === "reference" && note.attributes.origin === "whole" && Array.isArray(note.attributes.sources) && note.attributes.sources[0] === source)?.id;
 }
 
-/** A source whose Inbox row the brain writes: not minutes, a capture or an attached file (0042, 0043). */
+/** A source whose Inbox row the brain writes: not minutes, a capture, a checked row (0098 §4), a task (0100) or an attached file (0042, 0043). */
 export function hasInboxBody(note: Note): boolean {
   const kind = note.attributes.kind;
-  return note.type === "source" && kind !== undefined && kind !== "minutes" && kind !== "capture" && note.attributes.attached_to === undefined;
+  return note.type === "source" && kind !== undefined && kind !== "minutes" && kind !== "capture" && kind !== "task" && note.attributes.checked_from === undefined && note.attributes.attached_to === undefined;
 }
 
 function planKeyResult(workspace: Workspace, asOf: string, row: SnapshotRow, out: SyncPlan): void {
@@ -477,7 +484,7 @@ function planKeyResult(workspace: Workspace, asOf: string, row: SnapshotRow, out
 
 function sortPlan(plan: SyncPlan): void {
   const order = (item: Record<string, unknown>) => [String(DATABASES.indexOf(String(item.database) as typeof DATABASES[number])).padStart(2, "0"), String(item.page_id ?? item.id), String(item.field ?? item.property ?? "")].join("\u0000");
-  for (const values of [plan.create, plan.updates, plan.corrections, plan.decisions, plan.document_requests, plan.refresh_requests, plan.report_fixes, plan.accepted_wording, plan.wording_waiting, plan.wording_held, plan.clear_accepted, plan.conflicts, plan.ignored]) values.sort((a, b) => order(a as Record<string, unknown>).localeCompare(order(b as Record<string, unknown>)));
+  for (const values of [plan.create, plan.updates, plan.corrections, plan.decisions, plan.document_requests, plan.task_documents, plan.refresh_requests, plan.report_fixes, plan.accepted_wording, plan.wording_waiting, plan.wording_held, plan.clear_accepted, plan.conflicts, plan.ignored]) values.sort((a, b) => order(a as Record<string, unknown>).localeCompare(order(b as Record<string, unknown>)));
   plan.withdrawn.sort((a, b) => compareCodePoints(a.proposal, b.proposal));
   plan.tracked_tasks.sort((a, b) => compareCodePoints(a.question, b.question) || compareCodePoints(a.page_id, b.page_id));
 }
@@ -518,6 +525,13 @@ function linksUnpublished(workspace: Workspace, note: Note, brainField: string):
 
 /** Equal in Notion's normalized form; relations compare as sets, and an empty text equals null. */
 /** Relation properties left out while their module is off (cli §5.14.4, 0048), per database. */
+/** The Tasks module is on and its database is set (cli §5.14.4). */
+function tasksDatabaseOn(config: Record<string, unknown>): boolean {
+  const notion = isRecord(config.notion) ? config.notion : {};
+  const tasks = isRecord(notion.tasks) ? notion.tasks : {};
+  return modulesOf(config).tasks && typeof tasks.database === "string" && tasks.database !== "";
+}
+
 function offRelations(config: Record<string, unknown>, database: string): Set<string> {
   const on = modulesOf(config);
   const off = new Set<string>();
@@ -527,6 +541,8 @@ function offRelations(config: Record<string, unknown>, database: string): Set<st
   if (!on.orgs && database === "people") off.add("Org");
   if (!on.planning && database === "projects") off.add("Goal");
   if (!on.documents && database === "inbox") off.add("Documents");
+  // A kept Document's Task relation needs the Tasks module and its database (0100 §2, cli §5.14.4).
+  if (database === "documents" && !tasksDatabaseOn(config)) off.add("Task");
   return off;
 }
 
@@ -588,8 +604,8 @@ function waitingQuestionProblems(p: Record<string, unknown>): InputProblem[] {
 /** Input validation and execution for `sync apply`. */
 export function parsePlan(input: unknown): SyncPlan {
   if (!isRecord(input)) assertNoProblems([{ pointer: "", message: "must be an object" }]);
-  const p = input as Record<string, unknown>; const problems = unknownKeys(p, ["as_of", "create", "updates", "corrections", "withdrawn", "tracked_tasks", "decisions", "document_requests", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "review_decisions", "review_held", "review_revisions", "review_row_revisions", "review_untouched", "conflicts", "ignored"], "");
-  for (const key of ["document_requests", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "review_decisions", "review_held", "review_revisions", "review_row_revisions", "review_untouched"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
+  const p = input as Record<string, unknown>; const problems = unknownKeys(p, ["as_of", "create", "updates", "corrections", "withdrawn", "tracked_tasks", "decisions", "document_requests", "task_documents", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "review_decisions", "review_held", "review_revisions", "review_row_revisions", "review_untouched", "conflicts", "ignored"], "");
+  for (const key of ["document_requests", "task_documents", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "review_decisions", "review_held", "review_revisions", "review_row_revisions", "review_untouched"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   if (!isTimestamp(p.as_of)) problems.push({ pointer: "/as_of", message: "must be an ISO 8601 UTC timestamp" });
   for (const key of ["create", "updates", "corrections", "decisions", "conflicts", "ignored"]) if (!Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   for (const key of ["withdrawn", "tracked_tasks"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
@@ -635,7 +651,7 @@ export function parsePlan(input: unknown): SyncPlan {
   });
   assertNoProblems(problems);
   const stamp = <T extends Record<string, unknown>>(item: T): T => (typeof item.observed_at === "string" ? { ...item, observed_at: normalizeTimestamp(item.observed_at)! } : item);
-  return { ...p, corrections: (p.corrections as Array<Record<string, unknown>>).map(stamp), withdrawn: p.withdrawn ?? [], tracked_tasks: ((p.tracked_tasks ?? []) as Array<Record<string, unknown>>).map(stamp), document_requests: p.document_requests ?? [], refresh_requests: p.refresh_requests ?? [], report_fixes: p.report_fixes ?? [], accepted_wording: p.accepted_wording ?? [], wording_waiting: p.wording_waiting ?? [], wording_held: p.wording_held ?? [], clear_accepted: p.clear_accepted ?? [], review_pending: p.review_pending ?? [], review_decisions: p.review_decisions ?? [], review_held: p.review_held ?? [], review_revisions: p.review_revisions ?? [], review_row_revisions: p.review_row_revisions ?? [], review_untouched: p.review_untouched ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
+  return { ...p, corrections: (p.corrections as Array<Record<string, unknown>>).map(stamp), withdrawn: p.withdrawn ?? [], tracked_tasks: ((p.tracked_tasks ?? []) as Array<Record<string, unknown>>).map(stamp), document_requests: p.document_requests ?? [], task_documents: p.task_documents ?? [], refresh_requests: p.refresh_requests ?? [], report_fixes: p.report_fixes ?? [], accepted_wording: p.accepted_wording ?? [], wording_waiting: p.wording_waiting ?? [], wording_held: p.wording_held ?? [], clear_accepted: p.clear_accepted ?? [], review_pending: p.review_pending ?? [], review_decisions: p.review_decisions ?? [], review_held: p.review_held ?? [], review_revisions: p.review_revisions ?? [], review_row_revisions: p.review_row_revisions ?? [], review_untouched: p.review_untouched ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
 }
 
 export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, recordOnly: boolean, skipConflicted = false): Record<string, unknown> {
@@ -712,7 +728,7 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
       if (mine.length > 0 && mine.every((entry) => entry.result === "recorded" || entry.reason === "ALREADY_REQUESTED")) reviewClear.push({ proposal: row.proposal, page_id: row.page_id, properties: ["Your call", "What to fix"] });
     }
   }
-  return { create, updates, corrections: correctionsOut, withdrawn: waiting.withdrawn, tracked_tasks: trackedTasks, decisions: decisionsOut, notion_writes: decisionApply.notion_writes, review_results: [...review.results, ...reviewSkipped], revision_results: revisions, review_clear: reviewClear, document_requests: plan.document_requests, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, accepted_wording: wording.results, wording_waiting: plan.wording_waiting, wording_held: plan.wording_held, clear_accepted: plan.clear_accepted.filter((item) => !conflictedIds.has(item.note) && !conflictedPages.has(item.page_id) && !updates.some((update) => update.id === item.note && update.result === "failed") && workspace.get(item.note) !== undefined), conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...wording.results, ...updates, ...correctionsOut, ...waiting.withdrawn, ...trackedTasks, ...decisionsOut, ...review.results, ...reviewSkipped].map((item) => ({ ...item }))), log };
+  return { create, updates, corrections: correctionsOut, withdrawn: waiting.withdrawn, tracked_tasks: trackedTasks, decisions: decisionsOut, notion_writes: decisionApply.notion_writes, review_results: [...review.results, ...reviewSkipped], revision_results: revisions, review_clear: reviewClear, document_requests: plan.document_requests, task_documents: plan.task_documents, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, accepted_wording: wording.results, wording_waiting: plan.wording_waiting, wording_held: plan.wording_held, clear_accepted: plan.clear_accepted.filter((item) => !conflictedIds.has(item.note) && !conflictedPages.has(item.page_id) && !updates.some((update) => update.id === item.note && update.result === "failed") && workspace.get(item.note) !== undefined), conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...wording.results, ...updates, ...correctionsOut, ...waiting.withdrawn, ...trackedTasks, ...decisionsOut, ...review.results, ...reviewSkipped].map((item) => ({ ...item }))), log };
 }
 
 /**
@@ -830,11 +846,15 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     if ((isReport(note) && !modules.reports) || !typeIsOn(workspace.config, note.type)) { if (ids !== undefined) errors.push({ id: note.id, reason: "MODULE_OFF" }); continue; }
     // An attached source has no Inbox row: its notes go on the parent's (0042).
     if (note.type === "source" && note.attributes.attached_to !== undefined) continue;
+    // A task source's page is its task, in Tasks: it has no Inbox row (0100 §2, cli §5.14.4).
+    if (note.type === "source" && note.attributes.kind === "task") { if (ids !== undefined) skipped.push({ id: note.id, reason: "NO_INBOX_ROW" }); continue; }
     // Notion shows reviewed knowledge (0071): a draft lives only in Git until you say yes in the session, and a rejected one never gets a page.
     if (awaitsReview(note)) { if (ids !== undefined) skipped.push({ id: note.id, reason: "NOT_REVIEWED" }); continue; }
     const databaseId = databaseIdFor(workspace, database); if (databaseId === "") { warnings.push({ code: "DATABASE_NOT_CONFIGURED", message: `${database} database is not configured`, id: note.id }); continue; }
     if (note.type === "meeting" && typeof note.attributes.notion !== "string") { errors.push({ id: note.id, reason: "MEETING_NOT_PUBLISHED" }); continue; }
-    const capturePage = note.type === "source" && note.attributes.kind === "capture" && typeof note.attributes.source_key === "string" && note.attributes.source_key.startsWith("notion:") ? note.attributes.source_key.slice("notion:".length) : undefined;
+    // The row you created (a capture) or the one the brain wrote and you checked (0098 §4): its page is the one in its key, and its Name is yours.
+    const ownRow = note.type === "source" && (note.attributes.kind === "capture" || note.attributes.checked_from !== undefined);
+    const capturePage = ownRow && typeof note.attributes.source_key === "string" && note.attributes.source_key.startsWith("notion:") ? note.attributes.source_key.slice("notion:".length) : undefined;
     if (note.type === "source" && note.attributes.kind === "capture" && (capturePage === undefined || (typeof note.attributes.notion === "string" && note.attributes.notion !== capturePage))) { errors.push({ id: note.id, reason: "NOTION_ID_MISMATCH" }); continue; }
     const form = publishable(workspace, note);
     const rendered = renderedBrainValues(form, workspace); const published = isRecord(note.attributes.notion_published) ? note.attributes.notion_published : {};
@@ -916,7 +936,18 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
   if (note.type === "person") Object.assign(values, { Role: isRecord(a.facts) ? a.facts.role ?? null : null, Org: relationPages(a.org === undefined ? [] : [a.org], workspace) });
   // A promoted Document has no relation to its decision, which has no page (0099; From decision until 0.16.0, From concept until 0.9.1): `promoted_from` stays in Git.
   if (note.type === "reference") Object.assign(values, { Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), Origin: ORIGIN_LABEL[String(a.origin ?? "part")] ?? null });
+  // A Document kept from a task links its task (0100 §2, cli §5.14.4): the page in its task source's key. Left out with Tasks off (offRelations).
+  const taskPage = note.type === "reference" ? keptTaskPage(note, workspace) : undefined;
+  if (taskPage !== undefined) values.Task = [taskPage];
   return values;
+}
+
+/** The task page a whole Document was kept from (0100 §2): the page in its `task` source's key; undefined for any other Document. */
+function keptTaskPage(note: Note, workspace: Workspace): string | undefined {
+  if (note.attributes.origin !== "whole" || !Array.isArray(note.attributes.sources)) return undefined;
+  const source = workspace.get(String(note.attributes.sources[0]));
+  if (source?.attributes.kind !== "task") return undefined;
+  return /^notion:(.+)$/.exec(String(source.attributes.source_key ?? ""))?.[1];
 }
 
 /** The notes a source produced, with those of the sources attached to it (cli §5.14.4, 0042). */
@@ -931,7 +962,9 @@ function sourceValues(note: Note, workspace: Workspace): Record<string, unknown>
   const ids = (type: string) => produced.filter((candidate) => candidate.type === type).map((candidate) => candidate.id).sort(compareCodePoints);
   const projects = [...new Set(produced.flatMap((candidate) => Array.isArray(candidate.attributes.projects) ? candidate.attributes.projects.filter((id): id is string => typeof id === "string") : []))].sort(compareCodePoints);
   const areas = inboxAreas(note, workspace, produced).sort(compareCodePoints);
-  return { Name: note.attributes.title, Kind: note.attributes.kind === "document" ? "File" : select(note.attributes.kind), Summary: note.attributes.summary ?? null, ...(databaseIdFor(workspace, "documents") === "" ? {} : { Documents: relationPages(ids("reference"), workspace) }), People: relationPages(ids("person"), workspace), Project: relationPages(projects, workspace), Area: relationPages(areas, workspace), "Brain Status": "Done", "Brain ID": note.id };
+  // A checked row's Kind (Changed), written when the brain created the row, is never sent again (cli §5.14.4, §5.35).
+  const kind = note.attributes.checked_from !== undefined ? {} : { Kind: note.attributes.kind === "document" ? "File" : select(note.attributes.kind) };
+  return { Name: note.attributes.title, ...kind, Summary: note.attributes.summary ?? null, ...(databaseIdFor(workspace, "documents") === "" ? {} : { Documents: relationPages(ids("reference"), workspace) }), People: relationPages(ids("person"), workspace), Project: relationPages(projects, workspace), Area: relationPages(areas, workspace), "Brain Status": "Done", "Brain ID": note.id };
 }
 
 function notionProperty(name: string, value: unknown, note: Note, workspace: Workspace, pending: Array<Record<string, unknown>>): unknown {
@@ -952,8 +985,8 @@ function notionProperty(name: string, value: unknown, note: Note, workspace: Wor
     if (meeting?.type === "meeting" && typeof meeting.attributes.notion !== "string") pending.push({ property: name, ids: [meeting.id] });
     return { type: "relation", value: Array.isArray(value) ? value : [] };
   }
-  // A report's Ask rows: Notion page ids, not notes (0071; Ask on the Inbox before 0.9.1).
-  if (name === "Asked in" || name === "Ask") return { type: "relation", value: Array.isArray(value) ? value : [] };
+  // A report's Ask rows: Notion page ids, not notes (0071; Ask on the Inbox before 0.9.1). So is a kept Document's task (0100 §2).
+  if (name === "Asked in" || name === "Ask" || name === "Task") return { type: "relation", value: Array.isArray(value) ? value : [] };
   if (name === "About Page") return { type: "url", value };
   // An Inbox row's Kind is written only when empty in Notion, so a Kind you chose stands (0048).
   if (name === "Kind" && note.type === "source") return { type: "select", value, mode: "if_empty" };
@@ -1000,7 +1033,13 @@ function renderedContent(note: Note, workspace: Workspace): { body: string | nul
   if (isReport(note)) { const body = notionMarkdown(note.body.replace(/^\n+/, ""), note, workspace); return { body, sections: null, hash: hash(body) }; }
   if (isWeekly(note)) { const body = weeklyMarkdown(note, workspace); return { body, sections: null, hash: hash(body) }; }
   // A whole Document's links are read against its file's repo (0091).
-  if (note.type === "reference" && note.attributes.origin === "whole") { const body = wholeDocumentMarkdown(note, workspace.notes, (id) => workspace.get(id)); return { body, sections: null, hash: hash(body) }; }
+  // Its From the brain section is the brain's text: rendered as any brain note's, without its marker line (0100 §3, cli §5.14.4).
+  if (note.type === "reference" && note.attributes.origin === "whole") {
+    const rows = note.body.split("\n"); const at = rows.indexOf(FROM_THE_BRAIN_MARKER);
+    const above = at < 0 ? note : { ...note, body: rows.slice(0, at).join("\n") };
+    const body = wholeDocumentMarkdown(above, workspace.notes, (id) => workspace.get(id)) + (at < 0 ? "" : `\n${notionMarkdown(rows.slice(at + 1).join("\n"), note, workspace)}`);
+    return { body, sections: null, hash: hash(body) };
+  }
   if (note.type === "reference") { const body = notionMarkdown(note.body, note, workspace); return { body, sections: null, hash: hash(body) }; } if (note.type === "project") { const brief = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/brief.md`); const log = workspace.notes.find((x) => x.path === `${note.path.slice(0, note.path.lastIndexOf("/"))}/decision-log.md`); const sections = { Brief: section(brief, note), "Decision log": section(log, note) }; return { body: null, sections, hash: hash(JSON.stringify(sections)) }; } return { body: null, sections: null }; }
 function generatedBlock(body: string): string { const start = body.indexOf("<!-- @generated:start -->"); const end = body.indexOf("<!-- @generated:end -->"); return start >= 0 && end > start ? body.slice(start + "<!-- @generated:start -->".length, end).trim() : body.trim(); }
 /** Types that get a Notion page only once reviewed (0071); a draft person keeps its page. */
@@ -1247,7 +1286,7 @@ export function renderQuestionTask(workspace: Workspace, questionId: string, inp
 
 /** A source that has an Inbox row (cli §5.14.4): any kind but minutes, not a file attached to another source. */
 function inboxRowOf(note: Note): boolean {
-  return note.type === "source" && note.attributes.kind !== undefined && note.attributes.kind !== "minutes" && note.attributes.attached_to === undefined;
+  return note.type === "source" && note.attributes.kind !== undefined && note.attributes.kind !== "minutes" && note.attributes.kind !== "task" && note.attributes.attached_to === undefined;
 }
 
 function taskProjects(workspace: Workspace, meeting: Note | undefined, value: unknown, itemIndex: number): string[] {
