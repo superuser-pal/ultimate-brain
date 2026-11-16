@@ -126,6 +126,9 @@ Each type must live in its folder (lint error otherwise). A `view` lives inside 
 
 Each row lists fields **in addition to** §3. "Notion" names the database the type is mirrored to ([notion-space-design.md](../docs/notion-space-design.md) §3).
 
+**Decisions and questions have no Notion database (0.16.0, decision [0099](../decisions/0099-notion-without-decisions-and-questions.md) §1, §2).** They are notes in Git only. Every ingest extracts them as before, and every answer, report and view uses them as before, but no publish creates, updates or reads a row for one. Notion shows them on the pages that need them: a project's Brief and Decision log (§16.1, §16.2), an area's Brief (§16.3) and reports (§16.4). A decision with no project and no area shows on none of these pages: you reach it on request, with an Ask and its report or in the agent session. Up to 0.15.x they had the Decisions and Questions databases of the Knowledge module. The 0.16.0 Notion migration reads back the Status you set on questions, then archives both databases (cli.md §5.14.9); nothing is deleted.
+- The `notion`, `notion_published` and `last_synced` a decision or question got before 0.16.0 stay as history and name its archived page. `brain upgrade` leaves them as they are, and nothing reads them after the migration's read-back. No new ones are written.
+
 ### area · `areas/` · Notion: Areas
 An ongoing responsibility (e.g. "Clients", "Health").
 - `domain`: optional scalar `dom-` ID, naming at most one Domain (0055).
@@ -178,7 +181,7 @@ A work or life context that groups Areas; distinct from an Org.
 | `tasks` | list of Notion page ids | | system |
 - `notion` is the Notion **meeting** page id. Body: the brain's meeting summary (for agents), sections fixed by the ingest skill.
 
-### decision · `knowledge/decisions/YYYY-MM-DD-<slug>.md` · Notion: Decisions
+### decision · `knowledge/decisions/YYYY-MM-DD-<slug>.md` · Notion: none (a project's Brief and Decision log; Decisions until 0.16.0)
 | Field | Type | Req | Owner |
 |---|---|---|---|
 | `date` | date | ✔ | brain |
@@ -188,20 +191,21 @@ A work or life context that groups Areas; distinct from an Org.
 | `deciders` | list of IDs (`per-`) | | brain |
 | `valid_from` | date | | brain; defaults to `date` when absent (0005) |
 | `valid_until` | date | required when `assessment: superseded` | brain; the superseding decision's `valid_from` (or `date`) |
-| `workflow` | `{id: wf-…, artifact: art-…}` | | brain; the connected workflow and artifact this decision publishes (connected-workflows.md §6.3). `note new` writes such a decision `reviewed`: the user approved the artifact, so it gets its page at once (0071) |
+| `workflow` | `{id: wf-…, artifact: art-…}` | | brain; the connected workflow and artifact this decision records (connected-workflows.md §6.3). `note new` writes such a decision `reviewed`: the user approved the artifact, so it shows at once in its destination's Decision log or Brief (0071, 0099) |
 - Supersession uses `relations`: the newer decision has `supersedes: <old>`, the older has `superseded_by: <new>` (both persisted, §6). A superseded decision has `assessment: superseded`, `valid_until` set, and lifecycle `archived`.
 - `decided_in` and the meeting's `decisions` list must agree (lint error otherwise); same for question `raised_in` and the meeting's `questions`.
 - Body sections: `## Decision`, `## Context`, `## Consequences`, `## Sources`.
 
-### question · `knowledge/questions/` · Notion: Questions
+### question · `knowledge/questions/` · Notion: none (the Brief's "Open questions and risks"; Questions until 0.16.0)
 | Field | Type | Req | Owner |
 |---|---|---|---|
 | `kind` | `question`·`risk` | ✔ | brain |
 | `raised_in` | ID (`mtg-`) | | brain |
-| `answer` | string or ID | | brain (set by an applied `answer` proposal, 0041) |
-| `dropped` | date | | brain (set by `brain question drop`, cli.md §5.30, 0071): the day the to-do tidy dropped it, because it was a to-do, not a question |
-| `task` | string (Notion task page id) | only with `dropped` | brain: the Task it became, when the tidy converted it (capture-and-review §6.2) |
-- `notion_fields`: `status` (`Open`·`Answered`·`Dropped`). Status is yours, with three exceptions, each sent once: a question reaches Notion as Open while you have set no Status (0045), the publish after an applied `answer` proposal sets it to Answered (0041), and the publish after a drop sets it to Dropped (0071, cli.md §5.14.4).
+| `answer` | string or ID | | brain: set by an applied `answer` proposal (0041), or by the 0.16.0 read-back of a question you had set Answered in Notion (cli.md §5.14.9) |
+| `dropped` | date | | brain: the day it was dropped, by the to-do tidy because it was a to-do, not a question (`brain question drop`, cli.md §5.30, 0071), or by the 0.16.0 read-back of a question you had set Dropped in Notion (cli.md §5.14.9), or by answer (b) to a `tracked_task`, "drop the question", when its task was finished or gone (0101 §6, §11.2) |
+| `task` | string (Notion task page id) | | brain. **With `dropped`:** the Task a to-do became when the tidy converted it (capture-and-review §6.2), or the Task that tracked the question when a `tracked_task`'s (b) dropped it (§11.2), kept as history. **Without `dropped`:** the Task that tracks the open question or risk (0099 §3, capture-and-review §6.4), recorded by `sync record` (cli.md §5.14.6) |
+- **Open, tracked, closed (0099).** A question (either `kind`) is **open** while it has no `answer` and no `dropped` and its `lifecycle` isn't `archived`. An open question with a `task` is **tracked**. An `answer` closes it, and so does a drop (`dropped`, with `lifecycle: archived`). All of this is read from Git: a question has no Notion row and no Status.
+- **`notion_fields.status` is retired (0.16.0).** It held Questions · Status (`Open`·`Answered`·`Dropped`) up to 0.15.x. Nothing writes or reads it now: the migration's read-back turns a Status you set into `answer` or `dropped` (cli.md §5.14.9), and a value left in a note is history. `note.schema.json` follows with CC-314: it drops the rule that `task` needs `dropped`, and keeps accepting the old `status`.
 - A line someone has to act on is never a question (0071, capture-and-review §6.1): the owner's to-do is a Task, someone else's a commitment in the text.
 
 ### concept · retired in 0.9.1 (0071)
@@ -223,11 +227,11 @@ A **Document** (0049): something the user wants to keep as a readable page and r
 | `whole` | Keep as document with Only keep empty (0049) | the source's body, byte for byte (its converted text); `sources` = exactly that source | `reviewed`: it is the source's text, not the brain's claim, so it needs no decision | brain |
 | `part` | Keep as document with Only keep set, or a request in chat ("also keep the budget from …") | only what Only keep named, chosen by the brain: a list or a table, every figure and date as stated | `draft`, listed in the source's `review_notes` (0045) | brain |
 | `learned` | the ingest: an idea, method or definition the brain learned from an input (0071; a concept before 0.9.1) | the brain's explanation | `draft`, listed in the source's `review_notes` | brain |
-| `promoted` | Promote on a decision (0049; on a concept too before 0.9.1, 0071) | seeded from the note: its summary, a blank line, then its body; `projects`, `area` and `sources` copied from it | the note's `lifecycle` when promoted | **you** |
+| `promoted` | Promote to document, asked in the agent session ("promote the decision on … to a document", 0099 §9); the Promote to document button on a Decisions row before 0.16.0 (0049; on a concept too before 0.9.1, 0071) | seeded from the note: its summary, a blank line, then its body; `projects`, `area` and `sources` copied from it | the note's `lifecycle` when promoted | **you** |
 | `workflow` | An approved artifact of a connected workflow (connected-workflows.md §6.3) | the artifact's text, or its file line and link; no `sources` | `reviewed`: the user approved it | brain; accepted wording returns from Notion as for `promoted` (cli.md §5.14.7) |
 
 - **A brain-owned body** (`whole`, `part`, `learned`) changes only through proposals: an `update_body` (§11), asked in the session (capture-and-review §7.2) when the source that brought a new version is ingested (§4 source, "Versions"). It is never rebuilt from the source.
-- **A promoted body is yours.** The brain writes it once, when the page is created in Notion, and never again: an `update_body` on it is refused, and later edits live in Notion, like "My notes". The file keeps the seed **until the user accepts wording in Notion** (0054): then `sync apply` replaces the body with that text exactly (cli.md §5.14.7), the only way a promoted body changes in Git, and approved `add_to_note` appendices follow it. The decision stays as it is; the two are linked both ways in Notion (§14). A Document promoted from a concept before 0.9.1 keeps its `promoted_from`, and has no From relation in Notion once Concepts is retired (0071).
+- **A promoted body is yours.** The brain writes it once, when the page is created in Notion, and never again: an `update_body` on it is refused, and later edits live in Notion, like "My notes". The file keeps the seed **until the user accepts wording in Notion** (0054): then `sync apply` replaces the body with that text exactly (cli.md §5.14.7), the only way a promoted body changes in Git, and approved `add_to_note` appendices follow it. The decision stays as it is, and the Document keeps its `promoted_from` in Git; it has no relation to the decision in Notion, since the decision has no row (0099; From decision until 0.16.0). A Document promoted from a concept before 0.9.1 keeps its `promoted_from` too (0071).
 - One source may give several Documents: the whole text once, and any number of parts.
 
 ### source · `sources/<notion|files|text>/YYYY-MM-DD-<slug>.md` · Notion: Inbox (every kind except `minutes`, 0037)
@@ -389,13 +393,13 @@ notion_fields:
 ```
 Only sync writes `notion_fields`. The CLI never pushes these values to Notion: `sync render` never sends them, and no command calls Notion.
 
-**Ultimate Assistant (0064, 0072, [assistant.md](assistant.md) §6).** A task's Status, Due, Project and Area, a project's Status and Archived, and an Area's Archived are still yours, and the assistant reads them live without storing them. It changes one only through the Notion MCP, by the skill, in two cases: after your yes to that change in a live chat, or after you approve its pending `notion_change` proposal in a later session (§11, capture-and-review §7.5). Either way a `notion_change` proposal records the change first, and `brain apply` hands the skill the exact write. The next `sync` pulls the new value into `notion_fields` as usual.
+**Ultimate Assistant (0064, 0072, [assistant.md](assistant.md) §6).** A task's Status, Due, Project and Area, a project's Status and Archived, and an Area's Archived are still yours, and the assistant reads them live without storing them. It changes one only through the Notion MCP, by the skill, in two cases: after your yes to that change in a live chat, or after you approve its pending `notion_change` proposal in a later session (§11, capture-and-review §7.5). Either way a `notion_change` proposal records the change first, and `brain apply` hands the skill the exact write. The next `sync` pulls the new value into `notion_fields` as usual. One other skill sets a task's Status, by the same route: when you say yes to the answer of a tracked question, its task is set Done once (0099 §6, capture-and-review §6.4).
 
 ---
 
 ## 8. Lifecycle and assessment (0005)
 
-- **lifecycle** (every **knowledge** note; not `source`, `view` or `proposal`, which have their own states: immutable, regenerated, `status`; decision 0025): `draft` → `reviewed` | `disputed` → `archived`. Agents set `draft` (creation) and `archived` (supersession). They also set `reviewed`, or `archived` with no successor, when, and only when, they apply a `review_notes` you decided in the session (a part's yes in an attended ingest, or your answer to the source's question; 0041, 0096, 0098, capture-and-review §7.3, §7.5) or an approved `new_item` (§11.2). You set the rest in Notion. A decision, question, concept or reference gets its Notion page only once it is `reviewed` or `disputed`; a draft lives in Git, with its `review_notes` in `_proposals/`, until you decide it (0071, cli §5.14.4).
+- **lifecycle** (every **knowledge** note; not `source`, `view` or `proposal`, which have their own states: immutable, regenerated, `status`; decision 0025): `draft` → `reviewed` | `disputed` → `archived`. Agents set `draft` (creation) and `archived` (supersession). They also set `reviewed`, or `archived` with no successor, when, and only when, they apply a `review_notes` you decided in the session (a part's yes in an attended ingest, or your answer to the source's question; 0041, 0096, 0098, capture-and-review §7.3, §7.5) or an approved `new_item` (§11.2). You set the rest in Notion, on the types that have a Lifecycle property (§14). A reference (a Document) gets its Notion page only once it is `reviewed` or `disputed` (so did a decision, question or concept, until each lost its database); a draft lives in Git, with its `review_notes` in `_proposals/`, until you decide it (0071, cli §5.14.4). Decisions and questions have no page since 0.16.0 (§4).
 - **Types you create (0070):** a `domain`, `area`, `goal`, `project` or `org` note is `reviewed` from creation (a Notion row, or `note new` after your yes), and its Notion database has no Lifecycle property: you close one with Archived. When the brain retires one (merge, supersession) it becomes `archived`, and the next publish ticks its Archived once (cli.md §5.14.4). People keep Lifecycle: ingest writes them from meetings for you to confirm.
 - **assessment** (decisions, timeline entries): `accepted`, `provisional` (mentioned once, unconfirmed), `contested` (conflicting sources; keep both entries), `superseded` (replaced; kept as history).
 
@@ -516,7 +520,7 @@ Let **D** = `decision.decided_at` (date part), **V** = `decision.value` for `edi
 | `notion_change` | — (a Notion row; `target` names its note when it has one) | Nothing in Git: apply records the decision and returns the write (`notion_writes`, cli.md §5.7); the proposal stays `approved` or `edited` until the skill reports the write with `proposal settle`: `applied` when Notion now holds `value_after` (or the fix's value), `closed` with `closed_reason: stale` when Notion held neither `value_before` nor that value. The next `sync` pulls the value into `notion_fields` | closed; nothing is written |
 | `set_field` | the project, decision, question, Document or source (`area`), or the Area (`domain`) | `target.<field>` = V(`after`); on a source or a whole Document, every other note of its group (the source and each `origin: whole` Document whose `sources` is exactly it, cli.md §5.6) gets `area` = V too (0092). **Stale** when `target.<field>` isn't `before` (both absent counts as equal), or when a decision or question target has `projects`: closed with `closed_reason: stale` | nothing changes |
 | `replace_line` | a current note of [weekly-review.md](weekly-review.md) §8.2 (0.15.0) | The one body line equal to `line_before` becomes V(`line_after`). **Stale** when the body hash differs from `before_hash` or `line_before` isn't there exactly once: closed with `closed_reason: stale` (as a `review_notes` change: dropped as stale, §11.3). `sources` is unchanged; the line carries the corrected claim's passages | nothing changes |
-| `answer` | the question | The question's `answer` = `answer_note` when set, else V(`answer`). **edit:** `answer` = V (your Note, as text); `answer_note` is not used. The next publish sets the question's Notion Status to Answered (cli.md §5.14.4) | nothing changes; the question stays open |
+| `answer` | the question | The question's `answer` = `answer_note` when set, else V(`answer`). **edit:** `answer` = V (your Note, as text); `answer_note` is not used. A tracked question's task is asked to be set Done (capture-and-review §6.4) | nothing changes; the question stays open |
 | `notion_correction` (0.16.0, 0101 §4) | the note whose value you edited in Notion | Applied as decision 0027 says, by the corrections table of cli.md §5.7 with `value` = V(`after`): a key fact gets its `timeline` entry with `source: notion-edit`, the old accepted entries `superseded`; text and references are replaced. **fix:** V = the value you gave in the session instead; a key fact's entry then has `source: user-correction:<this proposal's id>` (capture-and-review §7.7). Then the published value S of `property` (`notion_published`; for `Key Facts/<key>`, that key only) = `notion_value`, so the next render publishes the brain's value only where it differs from Notion's. **Stale** when the target's current `field` isn't `before` (both absent counts as equal): closed with `closed_reason: stale`, nothing else written | nothing changes in the brain's value; S of `property` = `notion_value`, so the next publish puts the brain's value back in Notion (cli.md §5.14.4) |
 | `tracked_task` (0.16.0, 0101 §6) | the question the task tracks | **fix `{answer}`** (a): the question's `answer` = the sentence you gave, as an `answer` edit; your yes is the one an answer needs (capture-and-review §7.5). **fix `{drop: true}`** (b): the question is dropped: `lifecycle: archived`, `dropped` = D, its `task` kept (cli.md §5.30's effect). Nothing is written to Notion: the task is already finished or gone. **Stale** when the question is no longer open or its `task` isn't `page`: closed with `closed_reason: stale` | (c), keep it open: on `done` or `dropped` nothing changes, and sync doesn't ask again while the task's `last_edited` is `task_edited` (cli.md §5.14.2); on `gone`, the question's `task` is removed when it is still `page`, so it is open and untracked, and "track it" can give it a new task |
 
@@ -599,7 +603,7 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
   "budgets": { "ingest_max_notes": 8 },
   "settings": { "publish": "ask", "push": "auto", "unattended": { "max_inputs": 10 }, "markitdown": "on", "gh": "on", "schedule": "off",
                 "style": { "preset": "simple", "length": "normal" } },
-  "modules": { "domains": false, "knowledge": true, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true },
+  "modules": { "domains": false, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true },
   "repos": [
     { "name": "acme-api", "path": "~/code/acme-api", "area": "area-2m7c4h8n",
       "patterns": ["decisions/**", "docs/vision.md", "CHANGELOG.md"], "commit": "" },
@@ -609,13 +613,12 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
   "notion": {
     "template_version": "0024",
     "databases": { "domains": "", "areas": "", "goals": "", "key_results": "", "projects": "", "meetings": "",
-                   "people": "", "orgs": "", "decisions": "", "questions": "", "inbox": "",
-                   "documents": "" },
+                   "people": "", "orgs": "", "inbox": "", "documents": "" },
     "tasks": {
       "database": "",
       "properties": { "title": "Name", "status": "Status", "due": "Due", "project": "Project",
                       "area": "Area", "owner": "", "meeting": "Meeting", "meeting_url": "", "source": "Source",
-                      "brain_id": "Brain ID" },
+                      "brain_id": "Brain ID", "kind": "Kind" },
       "new_task_status": "To Do",
       "status_type": "status"
     }
@@ -641,19 +644,18 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 
   A dial that is set overrides the preset's value for that dial; a dial that isn't takes the preset's value. **`standard`** is `some`, `normal`, `context-first`: the agent's ordinary behaviour, so these three levels add no instruction. **`simple`** is `plain`, `short`, `answer-first`. `style` absent, or `{}`, is Standard. The CLI writes the style into the brain's `AGENTS.md` and into linked folders' blocks (cli.md §5.3.1); skills read it only through those. Setup offers it, and the user changes it in chat ([setup.md](setup.md) §7). The JSON schema gains it with CC-210.
 
-**Modules** (0048): the optional parts of the space. Core (Inbox, Meetings, Projects, Areas, People) is always on and has no key. Review was core until 0.16.0, when the migration archived it (decision 0096, capture-and-review §7.9).
+**Modules** (0048): the optional parts of the space. Core (Inbox, Meetings, Projects, Areas, People) is always on and has no key. Review was core until 0.16.0, when the migration archived it (decision 0096, capture-and-review §7.9). **Knowledge** (`knowledge`: the Decisions and Questions databases, and Concepts until 0.9.1) is retired in 0.16.0 (0099 §1): decisions and questions are always extracted and never published as rows (§4). A `modules.knowledge` key, whatever its value, is accepted and never read, and `brain upgrade` removes it (cli.md §5.15 step 5); `brain modules` no longer lists it.
 
 | Key | Default | New brain (0.14.0) | Databases (`notion.databases` keys) and what else it covers |
 |---|---|---|---|
 | `domains` | `false` | `false`; seeding turns it on (below) | `domains` |
-| `knowledge` | `true` | `true` | `decisions`, `questions` (`concepts` until 0.9.1, 0071) |
 | `orgs` | `true` | `true` | `orgs` |
 | `documents` | `false` | `true` | `documents` (0049) |
 | `reports` | `false` | `true` | `documents`, shared with the Documents module: a report is a Documents row (0071); Ask rows on the Inbox (0043, 0045). **Needs `documents` on:** Reports counts as off while Documents is off; `brain modules` turns Documents on with Reports and Reports off with Documents (cli.md §5.20), and `brain upgrade` turns Documents on in a brain that has Reports on (cli.md §5.15) |
 | `tasks` | `false` | `true` | `notion.tasks` |
 | `planning` | `false` | `false` | `goals`, `key_results` |
 
-- **`modules` absent:** every module except Domains is on; Domains is off. That is every brain made before 0.6.0; `brain upgrade` writes the block with every key `true` except Domains (cli.md §5.15). **A key absent from a present block** takes its default. **A new brain** (0078 §4, from 0.14.0) gets the block from `templates/brain/brain.json` with the "New brain" column: Knowledge, Orgs, Documents, Reports and Tasks on, Planning and Domains off; setup's seeding turns Domains on when the user's work has two or more contexts ([setup.md](setup.md) §8). The Default column is unchanged, so a brain made before 0.14.0 keeps its modules.
+- **`modules` absent:** every module except Domains is on; Domains is off. That is every brain made before 0.6.0; `brain upgrade` writes the block with every key `true` except Domains (cli.md §5.15). **A key absent from a present block** takes its default. **A new brain** (0078 §4, from 0.14.0) gets the block from `templates/brain/brain.json` with the "New brain" column: Orgs, Documents, Reports and Tasks on, Planning and Domains off (Knowledge too, until 0.16.0); setup's seeding turns Domains on when the user's work has two or more contexts ([setup.md](setup.md) §8). The Default column is unchanged, so a brain made before 0.14.0 keeps its modules.
 - **A module off** means the CLI neither reads nor writes Notion for it: `sync plan` ignores its databases' rows, `sync render` publishes none of its notes and leaves out the relations to them, `sync tasks` refuses with `MODULE_OFF`, and reports are not published (cli.md §5.14, §5.20). It is off even when its database ids are set. **Nothing is deleted:** the notes stay in Git and are still indexed, linted and listed; Notion keeps its databases and rows. Turning it on again publishes what changed meanwhile.
 - **The Domains database is in every Notion space** (0065), with the module on or off; `notion.databases.domains` is set whenever it exists. Like any module, Domains off means the brain neither reads nor writes it.
 - **A module on with an empty database id** behaves as today: its notes are skipped with `DATABASE_NOT_CONFIGURED`.
@@ -663,7 +665,7 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 
 **Template version** (0078, from 0.14.0): `notion.template_version` is the four-digit number of the last Notion migration the user's space includes, as a string (`"0024"`), from the Template version line in the Notion template's System callout, on its top page (decision 0085); absent means unknown, never guessed. `brain upgrade` names the migrations with a higher number (cli.md §5.15, [setup.md](setup.md) §9). The JSON schema gains it, and the three settings above, with CC-190.
 
-**Databases:** `inbox` is the database formerly called Capture Inbox; a `brain.json` that still has `capture_inbox` is read as `inbox` when `inbox` is absent, and `brain upgrade` renames the key (cli.md §5.15). `documents` holds reference notes, shown as Documents (0045, 0049), learned ones included (0071), and a brain without the key publishes none (warning `DATABASE_NOT_CONFIGURED`, cli.md §5.14.4). A `brain.json` that still has `references` is read as `documents` when `documents` is absent, and `brain upgrade` renames the key (cli.md §5.15). `concepts` is retired in 0.9.1 (0071): a `brain.json` that still has it is valid, the key is never read, and `brain upgrade` removes it (cli.md §5.15 step 5).
+**Databases:** `inbox` is the database formerly called Capture Inbox; a `brain.json` that still has `capture_inbox` is read as `inbox` when `inbox` is absent, and `brain upgrade` renames the key (cli.md §5.15). `documents` holds reference notes, shown as Documents (0045, 0049), learned ones included (0071), and a brain without the key publishes none (warning `DATABASE_NOT_CONFIGURED`, cli.md §5.14.4). A `brain.json` that still has `references` is read as `documents` when `documents` is absent, and `brain upgrade` renames the key (cli.md §5.15). `concepts` is retired in 0.9.1 (0071): a `brain.json` that still has it is valid, the key is never read, and `brain upgrade` removes it (cli.md §5.15 step 5). `decisions` and `questions` are retired in 0.16.0 (0099): their databases are archived by the 0.16.0 Notion migration, which reads only `questions`, once (cli.md §5.14.9), and then removes both keys; until then they are kept, and nothing else reads them. Like `review`, a `brain.json` that still has them is valid; the JSON Schema keeps accepting them.
 
 **Tasks mapping (0018):** each value is the name of a property in your Tasks database; an empty string means "this database has no such property", and the field is skipped.
 - `title` is required.
@@ -674,7 +676,8 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 - `owner`: a person or text property for the action item's owner.
 - **Backlink to the meeting** (required by 0018): `meeting` = a relation property to the Meetings database (preferred), or `meeting_url` = a URL property when your Tasks database has no relation to Meetings. Once `tasks.database` is set, `title` and at least one of the two must be non-empty (the JSON Schema enforces it).
 - `source` (0037): a relation property to the Inbox, the backlink for an owner task taken from a document, email, chat, note or capture (cli.md §5.14.5). Empty → such tasks have no backlink.
-- `brain_id`: a text property holding the brain's id for the task's source meeting (or source), so a re-run never duplicates tasks.
+- `brain_id`: a text property holding the brain's id for the task's source meeting (or source), so a re-run never duplicates tasks; on a task that tracks a question, the question's id (cli.md §5.14.5).
+- `kind` (0099 §4, from 0.16.0): a select property with the options Task, Question and Risk, on which the Tasks page filters its Questions and Risks tabs. The default Tasks database has it (`Kind`), and the connect step offers to add it to a database you mapped yourself ([setup.md](setup.md) §6.2.1). A task the brain creates to track a question gets Kind Question, one that tracks a risk Kind Risk; the brain sends no Kind on any other task, which you may set to Task. Empty or absent means the database has none: a tracking task's title then starts with `Question: ` or `Risk: `, so a title filter still finds it (cli.md §5.14.5).
 
 ## 13. Generated files
 
@@ -696,7 +699,7 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
        | person | `org`, `role` (`facts.role`) |
        | org | `relationship` (`notion_fields.relationship`) |
        | decision | `date`, `assessment`, `project` (`projects`) |
-       | question | `kind`, `status` (`notion_fields.status`) |
+       | question | `kind`, `status`: `answered` when it has `answer`, else `dropped` when it has `dropped`, else `tracked` when it has `task`, else `open` (§4 question; `notion_fields.status` until 0.16.0) |
        | meeting | `date`, `project` (`projects`) |
        | reference | `origin`, `area`, `project` (`projects`) (0045, 0049) |
      - `aliases` segment only when the list is non-empty. `<lifecycle>` segment only when lifecycle is `disputed` or `archived`.
@@ -712,6 +715,7 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 | Notion database · property | Brain field |
 |---|---|
 | all · Name / Summary / Lifecycle / Brain ID / Last Synced | `title` / `summary` / `lifecycle` / `id` / `last_synced`; no Lifecycle on Domains, Areas, Goals, Projects, Orgs (0070) |
+| Decisions, Questions (the databases, their properties, Promote and Promote asked, and the Decisions and Questions relations on Projects, Areas, Meetings and the Inbox) | **retired in 0.16.0** (0099): no note type maps to them (§4). The 0.16.0 Notion migration reads Questions · Status once (cli.md §5.14.9), then archives both databases and removes their relations, views and toggles. Documents · From decision goes with them: a promoted Document keeps its `promoted_from` in Git |
 | Domains · Type, Archived | `notion_fields.type`, `.archived` (0.9.0) |
 | Orgs · Archived | `notion_fields.archived` (0070) |
 | Areas · Archived | `notion_fields.archived` |
@@ -722,15 +726,11 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 | Projects · Key Facts | rendered from `facts` ("Launch: 2027-02 · Budget: 80000 EUR") |
 | Projects · Status, Priority, Dates, Archived | `notion_fields.*` |
 | Projects · Area, Goal, Client, People | `area`, `goal`, `client`, `people` |
-| Projects · Meetings, Decisions, Questions | inverses of `projects` on those notes |
+| Projects · Meetings | inverse of `projects` on meetings |
 | Meetings · Date, Attendees, Project, Area | `date`, `attendees`, `projects`, `area` (the brain only adds to these; cli.md §5.14.4) |
-| Meetings · Decisions, Questions | `decisions`, `questions` |
 | Meetings · Brain Status, Ingested At | set by ingest (`Ingested`, timestamp); not stored in the note |
 | People · Role, Org, Email | `facts.role`, `org`, `notion_fields.email` |
 | Orgs · Relationship, Website | `notion_fields.relationship`, `.website` |
-| Decisions · Date, Assessment, Project, Decided In, Supersedes | `date`, `assessment`, `projects`, `decided_in`, `relations[supersedes]` |
-| Decisions, Questions · Area | derived: the `area` of each of the record's `projects` (0034); not stored in the note |
-| Questions · Kind, Status, Project, Raised In | `kind`, `notion_fields.status`, `projects`, `raised_in`. Status = Open is written once while Notion has none, Answered once after an applied `answer` (0041, 0045), and Dropped once after `question drop` (0071) |
 | Areas · Brief toggle | the area's `area_brief` view (§16.3, 0041) |
 | Documents · Area, Project, page body | `area`, `projects`, the body (0045, 0049). A `promoted` Document's body is sent on create only: after that it is yours. On a report: its `area`, `projects` and body (0071) |
 | Documents · Origin | select, brain-owned, written from the note (0071): `whole` and `part` (and a reference with no `origin`) → Kept, `learned` → Learned, `promoted` → Promoted, `workflow` → Workflow, a report view → Report. Never read back: a changed Origin is not a correction (it is not in the correctable table of cli.md §5.14.2) |
@@ -738,9 +738,7 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 | Documents · Refresh asked, on a report | yours (a checkbox, ticked by hand): ask for a full refresh from the notes in Git; the brain clears it when it rewrites the report (0045, 0048). On the Inbox before 0.9.1 (0071), and called Refresh before migration 0010; `sync plan` still reads `Refresh` |
 | Documents · What to fix, on a report | yours: what the report gets wrong; the brain records it in the report's `fixes`, turns it into proposals and clears it (0045; on the Inbox before 0.9.1) |
 | Documents · Accepted, Accepted at | yours (0054): the **Accept** button (0071; *Accept write-up* on a Document and *Accept refresh* on a Report row before 0.9.1), on a Document after a write-up or on a report after its proposed refresh sets Accepted and Accepted at. Never compared or corrected; read only by `sync plan`'s accepted-wording rules (cli.md §5.14.7); the skill unticks Accepted and clears Accepted at after the wording is imported. The page body of a `promoted` Document or of a report stays Notion's until accepted wording is imported exactly; after that `notion_published` holds `@notion_body` (the Markdown read back from the page at the last sync) and `@git_body` (the Git body then), the baselines of cli.md §5.14.7; `@content` stays render's own bookkeeping (what it would send) |
-| Documents · From decision | a `promoted` Document's `promoted_from` when it names a decision (two-way with Decisions · Documents, which Notion fills, 0049). From concept is retired with Concepts in 0.9.1 (0071) |
-| Decisions · Promote asked | yours (a checkbox, ticked by the Promote to document button): ask for a promoted Document. The brain clears it once it has acted (0048, 0049) |
-| Decisions, Questions, Documents, People · Sources | inverse of the Inbox relations below (Notion fills it) |
+| Documents, People · Sources | inverse of the Inbox relations below (Notion fills it) |
 | Inbox · Name | the source's `title` (on rows the brain creates; a capture's Name is yours) |
 | Inbox · Kind, Summary | source `kind` (`Capture`, `File` for `document` (Document before 0.6.0), `Email`, `Chat`, `Note`), written only when Kind is empty in Notion, so a Kind you chose stands (0048); source `summary`; `Ask` is yours (0043); `Catch-up` on the run summary an unattended catch-up writes (no note, cli.md §6.1); `Weekly` on a weekly review's row (a `weekly_review` view, §4 view; 0.16.0, decision 0096 §7). `Report` is retired in 0.9.1: reports are Documents (0071) |
 | Inbox · page body | a brain-created row's digest (0043). Never a capture's or an Ask row's (a report's body is on its Documents row since 0.9.1, 0071). ("Full text" toggles written before 0.6.0 stay as they are; no new one is written, 0049) |
@@ -748,7 +746,7 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 | Inbox · Document asked | yours (a checkbox, ticked by the Keep as document button, which also sets Brain Status to Ready): keep the input as a Document. The brain clears it once it has acted (0048, 0049) |
 | Inbox · Only keep | yours: when only part should be kept ("the requirements table and the deadlines"); the ingest stores it as the source's `only_keep`. Empty = the whole input (0049; was Keep, 0045) |
 | Inbox · Refresh asked, What to fix, on a Report row | retired in 0.9.1: reports are Documents rows, and these two are Documents properties (above, 0071). Migration 0019 moves the Report rows; the old properties stay unused for you to delete |
-| Inbox · Decisions, Questions, Documents, People | derived: the published notes of those types whose `sources` lists the source's id (Documents was References before 0.6.0; learned Documents are in Documents, and Inbox · Concepts is retired in 0.9.1, 0071) |
+| Inbox · Documents, People | derived: the published notes of those types whose `sources` lists the source's id (Documents was References before 0.6.0; learned Documents are in Documents, and Inbox · Concepts is retired in 0.9.1, 0071) |
 | Inbox · Project, Area | yours; the brain fills them only when empty, from the produced notes' `projects` and `area` |
 | Inbox · Brain Status | `New` → `Ready` → `Done` (0048). `New` and `Ready` are yours; the brain sets `Done` when it publishes the row, and on a row it skipped, whose Summary then says why ("Skipped: same as <title>"). On a Kind Weekly row the brain also sets `Done` once every proposal its items name is terminal (§4 view). A catch-up takes in only `Ready` rows, and never a Kind Weekly or Catch-up row. Read before 0.6.0: `Processed` = `Done`; `Skipped` is retired (migration 0010 moves those rows to `Done`) |
 
@@ -773,7 +771,7 @@ The generated block contains these sections in this order; a section with no ite
 2. `## Goal` — `- [<goal title>](<path>)` or `- None`.
 3. `## People` — project `people`, sorted by title then id: `- [<title>](<path>)[ — <facts.role>]`.
 4. `## Recent decisions` — decisions whose `projects` contains the project, `assessment` is `accepted`, `provisional` or `contested`, and `lifecycle` is `reviewed` (0041); sorted by `date` descending, then id; at most 5: `- <date> — [<title>](<path>) (<assessment>)`.
-5. `## Open questions` — questions whose `projects` contains the project, `notion_fields.status` is `Open` or absent, `answer` is absent, and `lifecycle` is `reviewed` (0041); sorted by `created` descending, then id: `- [<title>](<path>) (<kind>)`.
+5. `## Open questions and risks` (0099 §7; `## Open questions` until 0.16.0) — questions of either `kind` whose `projects` contains the project, with no `answer` and no `dropped`, and whose `lifecycle` is `reviewed` (0041); sorted by `created` descending, then id: `- [<title>](<path>)[ (risk)][ · [task](https://www.notion.so/<task page id without dashes>)]`. `(risk)` labels a `kind: risk`; a question has no label. A tracked question (one with `task`, §4) links its task, the Notion page the brain created for it (capture-and-review §6.4).
 
 **Waiting line (0041).** In sections 4 and 5, when no note qualifies but N ≥ 1 notes would qualify if their `lifecycle` were `reviewed` (they are `draft`), the section renders the single line `- Nothing reviewed yet: N notes waiting for your decision` (`1 note` for one; `waiting in Review` before 0.16.0) in place of `- None`. Those draft notes produce no item line and are not in `generated_from`.
 6. `## Recent meetings` — meetings whose `projects` contains the project; sorted by `date` descending, then id; at most 5: `- <date> — [<title>](<path>)`.
@@ -789,14 +787,14 @@ Two sections, each sorted by `date` descending (`valid_until` descending for sup
 2. `## Superseded` — decisions for the project with `assessment: superseded`:
    `- <valid_from or date> → <valid_until> — [<title>](<path>) — superseded by [<new title>](<new path>)`
 
-**A draft waits for your decision (CC-261; wording changed by 0096).** A decision whose `lifecycle` is `draft` keeps its place in the history, but its line says it is not reviewed yet, in the words of §16.1's waiting line, and states no assessment you haven't given: under Current, `waiting for your decision` takes the place of `<assessment>` (`- 2026-12-05 — [Use Postgres row-level security](<path>) — waiting for your decision`); under Superseded, ` — waiting for your decision` follows the link. Its line still links its note here and the note is in `generated_from`, so approving it changes the line to the reviewed form at the next `brain views`. In Notion, where a draft has no page (0071), the line has no link (cli.md §5.14.4, `sections`). A reviewed decision's line is unchanged.
+**A draft waits for your decision (CC-261; wording changed by 0096).** A decision whose `lifecycle` is `draft` keeps its place in the history, but its line says it is not reviewed yet, in the words of §16.1's waiting line, and states no assessment you haven't given: under Current, `waiting for your decision` takes the place of `<assessment>` (`- 2026-12-05 — [Use Postgres row-level security](<path>) — waiting for your decision`); under Superseded, ` — waiting for your decision` follows the link. Its line still links its note here and the note is in `generated_from`, so approving it changes the line to the reviewed form at the next `brain views`. A reviewed decision's line is unchanged. In Notion no line of the Decision log or the Brief links a decision or question, since they have no page (§4; before 0.16.0 a reviewed one linked its page, a draft none): each shows its title as text (cli.md §5.14.4, `sections`).
 
 ### 16.3 `areas/briefs/<area slug>.md` (`view_kind: area_brief`, 0041)
 One per area, rebuilt with the project views; `<area slug>` is the slug of the area note's file name. A note **belongs to the area** when its `area` is the area, or any note in its `projects` has that `area`. Sections in this order; a section with no items renders `- None`, and sections 2 and 3 use the waiting line of §16.1:
 
 1. `## Projects` — projects whose `area` is the area and whose `notion_fields.archived` is not `true`, sorted by title then id: `- [<title>](<path>)[ — <notion_fields.status>]`.
 2. `## Recent decisions` — decisions that belong to the area, with the filters and format of §16.1 item 4; at most 5.
-3. `## Open questions` — questions that belong to the area, with the filters and format of §16.1 item 5; at most 10.
+3. `## Open questions and risks` (`## Open questions` until 0.16.0) — questions and risks that belong to the area, with the filters and format of §16.1 item 5; at most 10.
 4. `## Documents` (0089, from 0.14.0; only when the Documents module is on) — Documents that belong to the area, with the filters, order, cap and format of §16.1 item 7.
 
 `generated_from` is the area's id plus every note that produced an item line, sorted. The publish writes the generated block into the "Brief" toggle heading of the area page (cli.md §5.14.4).
