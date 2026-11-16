@@ -1,17 +1,17 @@
 {
   "format": 1,
   "name": "ultimate-brain-skills",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "cli": ">=0.15.0-0 <0.16.0",
   "source": {
     "repository": "https://github.com/superuser-pal/ultimate-brain-skills",
-    "commit": "b7f85c067faf6dd8cff4921b09387cb7adb2e373"
+    "commit": "03028fdfcaf1ba35bfa99a8b781f0839184d06a3"
   },
   "upstream": {
     "repository": "https://github.com/mattpocock/skills",
     "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa"
   },
-  "integrity": "sha256-ce06f31e1df69dc137a2959f146814611ddab43bc344d61429fb565c072590c3",
+  "integrity": "sha256-fbe7f18384cea44e6414d5ae949533766d673a0aa62d17aaec5cc86360f87d71",
   "skills": [
     {
       "name": "brain-apply",
@@ -224,8 +224,8 @@
       "files": [
         {
           "path": "SKILL.md",
-          "sha256": "25517a445c00990cca7b93a26bb46e3d94ede48187a94065bd25f03529d92313",
-          "bytes": 14372
+          "sha256": "d4a0bd6292cf0bb2c62bd23b271373fa275a60b68f73e97302b27308eeef6e9c",
+          "bytes": 14436
         },
         {
           "path": "references/backup.md",
@@ -234,8 +234,8 @@
         },
         {
           "path": "references/first-value.md",
-          "sha256": "a635e292adfa45625e6fc36ceece1b62aa1cb8533f10d3f561d7090960c1bf4e",
-          "bytes": 7705
+          "sha256": "569f1e954b00c679a189b3e919283647d70b860784db2f05433f4463568692dc",
+          "bytes": 8048
         },
         {
           "path": "references/notion.md",
@@ -244,13 +244,13 @@
         },
         {
           "path": "references/prerequisites.md",
-          "sha256": "0b1a0d4024cd86615eef636a13ee4f2154685655cb712bbc76c95fe0c7cee67c",
-          "bytes": 4296
+          "sha256": "69948a01459340949413997680bfaf08e65a9bfb762d2bf84f612e2a4349cab4",
+          "bytes": 7586
         },
         {
           "path": "references/report.md",
-          "sha256": "96cf2b43732f370bfad73b0067d4e0773d0529c8d3c7f1566065226ba87d0156",
-          "bytes": 5854
+          "sha256": "83e3751817291c04db34c92757af89c99d00572d8043f0f0ef354e1c57e24200",
+          "bytes": 6025
         },
         {
           "path": "references/seeding.md",
@@ -259,8 +259,8 @@
         },
         {
           "path": "references/settings.md",
-          "sha256": "ed705503a9f71c3905b64d219b915b20a88a820972505f7805f861d3d41dcbc4",
-          "bytes": 16089
+          "sha256": "150ab94e836abe06e27433dda6cc64b925a42f7ecbeaac220be3f82a17a6dd8a",
+          "bytes": 16335
         }
       ]
     },
