@@ -4,7 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 
-import { brain } from "./helpers.ts";
+import { runCli } from "../src/cli.ts";
+import { expandHomePath } from "../src/commands/init.ts";
+import { setInstalledProductRootForTests } from "../src/lib/skills.ts";
+import { brain, testPackageRoot } from "./helpers.ts";
 
 async function scratch(context: TestContext): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "brain-init-"));
@@ -140,4 +143,107 @@ test("init installs every shipped skill and --force leaves existing skill files 
   assert.equal(forced.code, 0, forced.stderr);
   assert.ok(forced.json.data.skipped.includes(".agents/skills/brain-query/SKILL.md"));
   assert.equal(await readFile(join(other, ".agents", "skills", "brain-query", "SKILL.md"), "utf8"), "mine\n");
+});
+
+// --- Windows and a new machine (spec/cli.md §5.1; 0.15.2, decision 0097 §3) ---
+
+/** Set process environment variables for one test, and put the old values back after it. */
+function withEnv(context: TestContext, values: Record<string, string | undefined>): void {
+  const saved = Object.fromEntries(Object.keys(values).map((key) => [key, process.env[key]]));
+  for (const [key, value] of Object.entries(values)) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+  context.after(() => {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+}
+
+/** Git sees only `globalConfig` (no system file, no identity in the environment), and never guesses an identity. */
+async function isolatedGit(context: TestContext, root: string, globalConfig: string): Promise<void> {
+  const file = join(root, "gitconfig");
+  await writeFile(file, globalConfig);
+  const count = Number(process.env.GIT_CONFIG_COUNT ?? 0) || 0;
+  withEnv(context, {
+    GIT_CONFIG_GLOBAL: file, GIT_CONFIG_NOSYSTEM: "1",
+    GIT_AUTHOR_NAME: undefined, GIT_AUTHOR_EMAIL: undefined, GIT_COMMITTER_NAME: undefined, GIT_COMMITTER_EMAIL: undefined, EMAIL: undefined,
+    GIT_CONFIG_COUNT: String(count + 1), [`GIT_CONFIG_KEY_${count}`]: "user.useConfigOnly", [`GIT_CONFIG_VALUE_${count}`]: "true",
+  });
+}
+
+async function run(args: string[], homeDirectory?: string): Promise<{ code: number; stdout: string; stderr: string; json: any }> {
+  setInstalledProductRootForTests(await testPackageRoot(), false);
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const io = { stdout: { write: (value: string) => stdout.push(String(value)) }, stderr: { write: (value: string) => stderr.push(String(value)) } };
+  const code = await runCli(args, { io, env: {}, homeDirectory });
+  let json: any;
+  try { json = JSON.parse(stdout.join("")); } catch { json = undefined; }
+  return { code, stdout: stdout.join(""), stderr: stderr.join(""), json };
+}
+
+test("init --set-default finds the home folder without the HOME variable, which Windows doesn't set (cli.md §5.1)", async (context) => {
+  const root = await scratch(context);
+  const home = join(root, "home");
+  const target = join(root, "brain");
+  await mkdir(home);
+  // os.homedir() reads USERPROFILE on Windows and HOME elsewhere: on Windows HOME is removed, as on a tester's machine.
+  withEnv(context, process.platform === "win32" ? { HOME: undefined, USERPROFILE: home } : { HOME: home });
+  const init = await run(["init", target, "--no-git", "--set-default", "--json"]);
+  assert.equal(init.code, 0, init.stderr);
+  assert.equal(init.json.data.default_config.path_abs, join(await realpath(home), ".config", "ultimate-brain", "config.json"));
+  assert.deepEqual(JSON.parse(await readFile(join(home, ".config", "ultimate-brain", "config.json"), "utf8")), { brain: await realpath(target) });
+});
+
+test("init expands a leading ~/ (and ~\\ on Windows) in the brain path itself, and keeps any other ~ (cli.md §5.1)", async (context) => {
+  const root = await scratch(context);
+  const home = join(root, "home");
+  await mkdir(home);
+  // `~\` is a home path only on Windows; elsewhere a backslash is part of a file name (cli.md §5.1).
+  assert.equal(expandHomePath("~\\x", "/h", "darwin"), "~\\x");
+  assert.equal(expandHomePath("~\\x", "/h", "win32"), join("/h", "x"));
+  const paths: Array<[string, string]> = [["~/slash-brain", "slash-brain"]];
+  if (process.platform === "win32") paths.push(["~\\back-brain", "back-brain"]);
+  for (const [path, folder] of paths) {
+    const init = await run(["init", path, "--no-git", "--json"], home);
+    assert.equal(init.code, 0, init.stderr);
+    assert.equal(init.json.data.path_abs, join(await realpath(home), folder));
+    assert.ok((await readdir(join(home, folder))).includes("brain.json"));
+  }
+  const elsewhere = join(root, "a~b");
+  const kept = await run(["init", elsewhere, "--no-git", "--json"], home);
+  assert.equal(kept.code, 0, kept.stderr);
+  assert.equal(kept.json.data.path_abs, await realpath(elsewhere));
+});
+
+test("init stops before writing anything when Git has no name or email, and names the two commands (cli.md §5.1)", async (context) => {
+  const root = await scratch(context);
+  await isolatedGit(context, root, "");
+  const target = join(root, "brain");
+  const refused = await run(["init", target, "--json"], root);
+  assert.equal(refused.code, 3);
+  assert.equal(refused.json.error.code, "GIT_IDENTITY_MISSING");
+  assert.match(refused.json.error.message, /git config --global user\.name "Your Name"/);
+  assert.match(refused.json.error.message, /git config --global user\.email "you@example\.com"/);
+  assert.deepEqual((await readdir(root)).sort(), ["gitconfig"]);
+
+  const human = await run(["init", target], root);
+  assert.equal(human.code, 3);
+  assert.match(human.stderr, /Nothing was written\./);
+
+  const noGit = await run(["init", target, "--no-git", "--json"], root);
+  assert.equal(noGit.code, 0, noGit.stderr);
+});
+
+test("init commits the new brain when Git has a name and email (cli.md §5.1 step 6)", async (context) => {
+  const root = await scratch(context);
+  await isolatedGit(context, root, "[user]\n\tname = Test Owner\n\temail = owner@example.com\n");
+  const target = join(root, "brain");
+  const init = await run(["init", target, "--json"], root);
+  assert.equal(init.code, 0, init.stderr);
+  assert.deepEqual(init.json.data.git, { initialized: true, committed: true });
+  assert.deepEqual(init.json.warnings, []);
 });

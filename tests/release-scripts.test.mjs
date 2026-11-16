@@ -3,7 +3,12 @@ import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import test from "node:test";
+import { test as nodeTest } from "node:test";
+
+// Skipped on Windows (decision 0097 §4): the maintainers' release and PR scripts (docs/releasing.md); their tests stub git, gh and npm with shell scripts, and run on macOS and in Ubuntu CI.
+const test = process.platform === "win32"
+  ? (name, ...rest) => nodeTest(name, { skip: "maintainers' tooling, not run on Windows (decision 0097 §4)" }, () => {})
+  : nodeTest;
 
 import { withBlock } from "../scripts/skills-integration.mjs";
 import { forkState, PACKAGE_INTEGRITY, PRODUCT, prBody, releaseNotes, sha, startMock, TOKEN, writePackage } from "./fixtures/github-mock.mjs";
@@ -1003,12 +1008,68 @@ test("task start --resume continues an in-progress task whose branch merged, and
   for (const id of ["CC-2", "CC-3", "CC-4"]) assert.equal(existsSync(join(parent, `ub-${id}`)), false, id);
 });
 
-test("the pre-push hook rejects main and permits a task branch", () => {
+test("the pre-push hook rejects main and permits a tag", () => {
   const hook = join(source, ".githooks/pre-push");
   const main = spawnSync("sh", [hook], { input: "a b refs/heads/main c\n", encoding: "utf8" });
-  const branch = spawnSync("sh", [hook], { input: "a b refs/heads/codex/CX-1-one c\n", encoding: "utf8" });
+  const tag = spawnSync("sh", [hook], { input: "a b refs/tags/v1.2.0 c\n", encoding: "utf8" });
   assert.equal(main.status, 1);
-  assert.equal(branch.status, 0);
+  assert.equal(tag.status, 0);
+});
+
+test("task check and the pre-push hook stop a task branch whose rows are wrong (CC-301)", (t) => {
+  const row = (id, more = "**Changelog:** Text\n") => `### ${id} · Task ${id} · \`todo\`\n**Release:** 1.2.0\n${more}\n`;
+  const { parent, root, path } = taskRepository(`## 1.2.0\n\n${row("CC-1")}${row("CC-2")}`);
+  t.after(() => rmSync(parent, { recursive: true, force: true }));
+  const env = { PATH: path };
+  const commit = (tasks) => {
+    writeFileSync(join(root, "build/TASKS.md"), tasks);
+    command(root, ["commit", "-q", "-am", "rows"]);
+    return command(root, ["rev-parse", "HEAD"]).trim();
+  };
+  const hook = (sha, ref = "refs/heads/claude/CC-2-two") => spawnSync("sh", [join(source, ".githooks/pre-push")], { input: `refs/heads/x ${sha} ${ref} 0\n`, encoding: "utf8", cwd: root, env: { ...process.env, ...offline, UB_ROOT: root, ...env } });
+  command(root, ["checkout", "-q", "-b", "claude/CC-2-two"]);
+  const good = commit(`## 1.2.0\n\n${row("CC-1")}${row("CC-2")}${row("CC-3")}`);
+  assert.equal(run("task.mjs", ["check"], { root, env }).stdout, "CC-2: task rows are valid\n");
+  assert.equal(hook(good).status, 0);
+  // A line between Release and Changelog hides the Changelog line, as on PR #397.
+  const moved = commit(`## 1.2.0\n\n${row("CC-1", "**Dropped by 0001.**\n**Changelog:** Text\n")}${row("CC-2")}`);
+  const lost = run("task.mjs", ["check"], { root, env });
+  assert.equal(lost.status, 1);
+  assert.match(lost.stderr, /PR loses \*\*Changelog:\*\* line\(s\): CC-1: the line sits directly below \*\*Release:\*\*/);
+  const refused = hook(moved);
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /PR loses \*\*Changelog/);
+  assert.match(run("task.mjs", ["check", commit(`## 1.2.0\n\n${row("CC-2")}`), "claude/CC-2-two"], { root, env }).stderr, /PR loses task heading\(s\): CC-1/);
+  assert.match(run("task.mjs", ["check", commit(`## 1.2.0\n\n${row("CC-1")}`), "claude/CC-2-two"], { root, env }).stderr, /PR has no row for its task CC-2/);
+  assert.match(run("task.mjs", ["check", commit(`## 1.2.0\n\n${row("CC-1")}${row("CC-2", "**Changelog:**\n")}`), "claude/CC-2-two"], { root, env }).stderr, /CC-2 has an empty \*\*Changelog/);
+  assert.match(run("task.mjs", ["check", good, "feature/no-id"], { root, env }).stderr, /Branch must match/);
+  assert.match(run("task.mjs", ["check", good], { root, env }).stderr, /Usage/);
+  // A row main gained after the branch left it is not lost: the comparison is with the commit the branch left main at.
+  command(root, ["checkout", "-q", "main"]);
+  commit(`## 1.2.0\n\n${row("CC-1")}${row("CC-2")}${row("CC-9")}`);
+  command(root, ["push", "-q", "origin", "main"]);
+  assert.equal(run("task.mjs", ["check", good, "claude/CC-2-two"], { root, env }).status, 0);
+  // A deleted branch has no commit to check.
+  assert.equal(hook("0000000000000000000000000000000000000000").status, 0);
+});
+
+test("task set moves a row to review, then to done with its PR, in the heading and the plan table (CC-301)", (t) => {
+  const tasks = (heading, cell) => `## 1.2.0\n\n| Task | What | Status |\n|---|---|---|\n| CC-1 | One | ${cell} |\n| CC-2 | Two | \`in progress\` |\n\n### CC-1 · Run \`brain init\` · ${heading}\n**Release:** 1.2.0\n**Changelog:** One\n\n### CC-2 · Two · \`in progress\`\n**Release:** 1.2.0\n`;
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const file = join(root, "build/TASKS.md");
+  writeFileSync(file, tasks("`in progress`", "`in progress`"));
+  assert.match(run("task.mjs", ["set", "CC-1", "done", "--pr", "7"], { root }).stderr, /CC-1 is in progress, not review/);
+  assert.equal(run("task.mjs", ["set", "CC-1", "review"], { root }).stdout, "CC-1 is `review`\n");
+  assert.equal(readFileSync(file, "utf8"), tasks("`review`", "`review`"));
+  assert.match(run("task.mjs", ["set", "CC-1", "review"], { root }).stderr, /CC-1 is review, not in progress/);
+  assert.equal(run("task.mjs", ["set", "CC-1", "done", "--pr", "7"], { root }).stdout, "CC-1 is `done` (#7)\n");
+  assert.equal(readFileSync(file, "utf8"), tasks("`done` (#7)", "`done` (#7)"));
+  assert.match(run("task.mjs", ["set", "CC-9", "review"], { root }).stderr, /Unknown task CC-9/);
+  for (const args of [["CC-1", "done"], ["CC-1", "done", "--pr", "x"], ["CC-1", "review", "--pr", "7"], ["CC-1", "todo"], ["CC-1"], ["CC-1", "review", "--new", "x", "--release", "1.2.0"]]) {
+    assert.match(run("task.mjs", ["set", ...args], { root }).stderr, /Usage/);
+  }
+  assert.equal(readFileSync(file, "utf8"), tasks("`done` (#7)", "`done` (#7)"));
 });
 
 test("PR format accepts its task id and rejects an unscoped branch", (t) => {

@@ -156,7 +156,7 @@ test("upgrade reports competing copies with a warning and never refuses for them
   assert.ok(upgrade.json.warnings.some((warning: { code: string; message: string }) => warning.code === "SKILLS_COMPETING" && warning.message === "1 competing skill copies; see data.skills.competing and remove them."));
 });
 
-test("a failed upgrade restores every file it replaced or removed, lock included, so the last working pin stays", async (context) => {
+test("a failed upgrade restores every file it replaced or removed, lock included, so the last working pin stays", { skip: process.platform === "win32" ? "the test makes a folder read-only with chmod, which Windows ignores, so the write it expects to fail succeeds" : false }, async (context) => {
   const home = await temp(context);
   const brain = await initBrain(context, await productRoot(context, A, "0.9.0"), home);
   const before = await Promise.all([".agents/skills/brain-apply/SKILL.md", ".agents/skills/brain-old/SKILL.md", "skills.lock.json"].map((path) => readFile(join(brain, path), "utf8")));

@@ -100,3 +100,4 @@ spec/examples/weekly/valid/selectInput-by-hash.json:2b8c4d6e-1f3a-4b5c-8d7e-9f0a
 spec/cli.md:you@example\.com
 README.md:you@example\.com
 docs/setup.md:you@example\.com
+src/commands/init.ts:you@example\.com

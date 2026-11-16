@@ -23,6 +23,25 @@ jobs:
       - run: npm run test:package
       - run: node scripts/leak-check.mjs
 
+  # Windows (decision 0097 §4): the suite on a Windows runner. Git checks files out as they are stored (LF), as on the other jobs.
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      # The runner's default temp folder has a short 8.3 name (RUNNER~1) that realpath expands, so the tests use RUNNER_TEMP's long path.
+      - run: |
+          "TEMP=$env:RUNNER_TEMP" >> $env:GITHUB_ENV
+          "TMP=$env:RUNNER_TEMP" >> $env:GITHUB_ENV
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run test:package
+
   pr-format:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

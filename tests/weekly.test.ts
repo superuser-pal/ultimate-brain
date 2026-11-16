@@ -369,7 +369,7 @@ test("status: unattended.weekly from the log line and the attempt marker, weekly
   const none = (await brain(["status", "--brain", root, "--json"])).json.data;
   assert.equal(none.unattended.weekly, null);
   assert.deepEqual(none.settings.weekly, { minutes: 10, max_judged: 30, max_usd: 3, schedule: "off" });
-  assert.match(none.weekly_snapshot, /\/\.ultimate-brain\/weekly\/brain-[0-9a-f]{8}\.json$/);
+  assert.match(none.weekly_snapshot, /[\\/]\.ultimate-brain[\\/]weekly[\\/]brain-[0-9a-f]{8}\.json$/);
   assert.equal(none.weekly_snapshot.startsWith("~"), false, "the expanded home path");
 
   assert.equal((await runWeek(root, busySnapshot(), NOW, { judge })).record!.code, 0);
@@ -398,7 +398,7 @@ async function schedule(dir: string, args: string[], env: NodeJS.ProcessEnv, hom
   return { code, json: JSON.parse(out.join("")) };
 }
 
-test("schedule install weekly-review: Monday 08:00 by default, the budget cap from settings or --max-budget-usd, as a plist and as a cron line", async (context) => {
+test("schedule install weekly-review: Monday 08:00 by default, the budget cap from settings or --max-budget-usd, as a plist and as a cron line", { skip: process.platform === "win32" ? "brain schedule writes launchd and cron entries, macOS and Linux only (decision 0097 §4)" : false }, async (context) => {
   const root = await busy(context);
   const skill = join(root, ".claude/skills/brain-weekly-review");
   const { env, home, bin } = await scheduleEnv(context, "darwin");
@@ -418,7 +418,7 @@ test("schedule install weekly-review: Monday 08:00 by default, the budget cap fr
   assert.match(plist, /<key>Hour<\/key>\s*<integer>8<\/integer>\s*<key>Minute<\/key>\s*<integer>0<\/integer>\s*<key>Weekday<\/key>\s*<integer>1<\/integer>/);
   // The snapshot file and the schedule label name the brain the same way.
   const status = (await brain(["status", "--brain", root, "--json"])).json.data;
-  assert.equal(status.weekly_snapshot.split("/").at(-1), `${data.label.split(".")[2]}.json`);
+  assert.equal(basename(status.weekly_snapshot), `${data.label.split(".")[2]}.json`);
 
   const capped = await schedule(root, ["install", "weekly-review", "--model", "claude-sonnet-5-5", "--max-budget-usd", "1.5", "--at", "07:30", "--days", "sun"], env, home);
   assert.deepEqual(capped.json.data.command.slice(-2), ["--max-budget-usd", "1.5"]);

@@ -3,7 +3,12 @@ import { spawnSync } from "node:child_process";
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { test } from "node:test";
+import { test as nodeTest } from "node:test";
+
+// Skipped on Windows (decision 0097 §4): the evaluation runner is a bash script run on the maintainers' macOS machine.
+const test = process.platform === "win32"
+  ? (name, ...rest) => nodeTest(name, { skip: "maintainers' tooling, not run on Windows (decision 0097 §4)" }, () => {})
+  : nodeTest;
 import { fileURLToPath } from "node:url";
 
 // eval/unattended-0.7.0/run.sh must never present a run that was cut short, or a collection with nothing to collect, as a
