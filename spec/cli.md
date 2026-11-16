@@ -1795,6 +1795,23 @@ The plan has `question_status`, `conflicts` and `ignored` (sorted by `page_id`),
 
 `data.question_status` lists the results. `notion_fields.status` is left as it is in every note, as history (schema §4).
 
+**Retired with the two databases (0099).** What a brain kept for them, and what takes its place:
+
+| Retired | Replaced by |
+|---|---|
+| The Decisions and Questions databases, their rows and pages; the Knowledge module and `modules.knowledge` | the notes in Git, shown in the project's or area's Brief and Decision log (schema §16) and in reports; `brain upgrade` removes `modules.knowledge` (§5.15), and `brain modules` refuses it with `USAGE` (§5.20) |
+| `brain.json` `notion.databases.decisions` and `notion.databases.questions` | removed by step 4 above; a row of either is `ignored`, `RETIRED_DATABASE` (§5.14.2) |
+| The rendered rows of §5.14.4 for decisions and questions, the publish of a decision or question page, and `--unpublish-drafts` for them | nothing: no page; `--ids` naming one → `skipped`, `NO_DATABASE` (§5.14.4) |
+| Questions · Status, the question's `notion_fields.status`, and the publish of Answered and Dropped | `answer` and `dropped` in Git (schema §4), read once from Notion by this transition; a tracked question's task set Done (capture-and-review §6.4); `notion_fields.status` stays as history |
+| Questions · Kind | the note's `kind`, and on a tracked question's task, Tasks · Kind (schema §12 `kind`) |
+| The decision and question properties Date, Assessment, Project, Area, Decided In, Supersedes, Raised In, Lifecycle | nothing in Notion; the notes' own fields in Git |
+| Promote and Promote asked on Decisions; `promote_requests` and its `ignored` reasons (`MODULE_OFF`, `NOT_REVIEWED` with `property: "Promote asked"`) | Promote to document asked in the agent session (§5.5) |
+| Documents · From decision and Decisions · Documents | `promoted_from` in Git (schema §4 reference) |
+| The Decisions and Questions relations on Areas, Projects, Meetings and Inbox (Produced) | nothing: a meeting's decisions and questions show on its project's Brief and Decision log |
+| `NOT_CREATED_IN_NOTION` on a Decisions or Questions row | `RETIRED_DATABASE`; this transition keeps it for a Questions row with no Brain ID |
+| The Brief's `## Open questions` | `## Open questions and risks` (schema §16.1, §16.3) |
+| A connected workflow's decision page | its destination's Decision log or Brief (connected-workflows.md §6.3) |
+
 ### 5.15 `brain upgrade`
 
 ```text
@@ -2143,13 +2160,13 @@ The skill brain-catch-up, started by the prompt `catch up unattended` (a schedul
 
 **Off the working branch (0086 §2).** The run's first command is `brain status`. When its `branch` has `on_working` `false` (another branch checked out, a detached `HEAD`) or `working` `null` (§5.2), the run stops there: no read, no Notion call, no commit, no push and no log line, nothing written in the brain or in Notion. Its last line of output, which the scheduler's log keeps (§5.21), is `Not run: off-working-branch. The brain is not on its working branch; say "fix my backup" in a session in the brain.`, with `off-working-branch` the reason. The next attended session sees the warning `BRAIN_OFF_WORKING_BRANCH` in `status` and offers the fix (setup.md §15). A branch with commits the working branch lacks, while the brain is on its working branch (`unmerged` alone), doesn't stop the run: its writes land on the working branch, and the warning waits for the attended session.
 
-**Sequence.** read-only pass (as **Catch up**; a failed read, such as an expired Notion login, is a failure: the parts that need it are skipped, the rest goes on) → if nothing is waiting and nothing failed, stop: **no commit, no Notion call, no log line** → `proposal backlog` → `sync apply --input plan.json --skip-conflicted` (without `--record-only`) → the inputs within the budget, oldest first, each as **Ingest one meeting** or **Ingest a …** → `note new` per `document_requests` and `promote_requests` → with Reports on, `report new` with `refresh` per report to refresh (the table below: `refresh_requests` and the reports whose fixes are all decided; none for a report with a `report_fixes` item) and **Report** per Ask row → `views` → with `settings.publish: auto`, `sync render --changed --plan plan.json --skip-conflicted` + MCP → `sync record` → commit, and the boxes cleared → with Reports on and something for the user (below), the Report row → `log catch-up - mode=unattended …` (§3.9) → commit → push per `settings.push`.
+**Sequence.** read-only pass (as **Catch up**; a failed read, such as an expired Notion login, is a failure: the parts that need it are skipped, the rest goes on) → if nothing is waiting and nothing failed, stop: **no commit, no Notion call, no log line** → `proposal backlog` → `sync apply --input plan.json --skip-conflicted` (without `--record-only`) → the inputs within the budget, oldest first, each as **Ingest one meeting** or **Ingest a …** → `note new` per `document_requests` → with Reports on, `report new` with `refresh` per report to refresh (the table below: `refresh_requests` and the reports whose fixes are all decided; none for a report with a `report_fixes` item) and **Report** per Ask row → `views` → with `settings.publish: auto`, `sync render --changed --plan plan.json --skip-conflicted` + MCP → `sync record` → commit, and the boxes cleared → with Reports on and something for the user (below), the Report row → `log catch-up - mode=unattended …` (§3.9) → commit → push per `settings.push`.
 
 **Every question of the batch** (brain-catch-up, "One batch of questions"):
 
 | Question | Unattended |
 |---|---|
-| A sync conflict (`BOTH_CHANGED`, `MISSING_REQUIRED`, `UNRESOLVED_RELATION`, `UNKNOWN_BRAIN_ID`, `NOTION_ID_MISMATCH`, `REQUIRED_EMPTY`) | **skip** the whole row, in and out: `sync apply --skip-conflicted` leaves its other corrections, updates and decisions unapplied, and `sync render --plan … --skip-conflicted` publishes nothing to it (both `ROW_CONFLICTED`), and the skill drops any `document_requests`, `promote_requests`, `refresh_requests` or `report_fixes` item with that `page_id`; named under Needs you |
+| A sync conflict (`BOTH_CHANGED`, `MISSING_REQUIRED`, `UNRESOLVED_RELATION`, `UNKNOWN_BRAIN_ID`, `NOTION_ID_MISMATCH`, `REQUIRED_EMPTY`) | **skip** the whole row, in and out: `sync apply --skip-conflicted` leaves its other corrections, updates and decisions unapplied, and `sync render --plan … --skip-conflicted` publishes nothing to it (both `ROW_CONFLICTED`), and the skill drops any `document_requests`, `refresh_requests` or `report_fixes` item with that `page_id`; named under Needs you |
 | A meeting's pre-check blocker | **skip** the meeting: it stays Reviewed |
 | An Inbox row's pre-check blocker | **skip** the row: it stays Ready, with its attachments |
 | A capture that repeats a source the brain has | **default**: skipped, set to Done with "Skipped: same as <title>" when the run publishes; without a publish it stays Ready and is skipped again |
