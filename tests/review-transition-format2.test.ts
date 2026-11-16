@@ -1,4 +1,5 @@
-// CC-240: the Review page of format 2 (decisions 0088 §2 and 0090; capture-and-review §7.12, cli §5.6 and §5.14). Synthetic brain and input only.
+// CC-240: the Review page of format 2 (decisions 0088 §2 and 0090; capture-and-review (v0.15.1) §7.12), read once by the 0.16.0 transition
+// (cli §5.14.8, CC-296): rows as 0.15.x published them, written by the fixture. Synthetic brain and input only.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -7,10 +8,10 @@ import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
-import { holdsValue, parseReviewPage2, valueForms } from "../src/lib/review-format2.ts";
-import { UNCONVERTIBLE } from "../src/lib/review-body.ts";
+import { holdsValue, parseReviewPage2, UNCONVERTIBLE, valueForms } from "../src/lib/review-transition.ts";
 import { passageHash } from "../src/lib/selection.ts";
 import { brain, fixtureCopy } from "./helpers.ts";
+import { factAsRow, foldAsBefore, publishReviewRow } from "./review-row-fixture.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const AFTER = "2026-12-10T09:10:00Z";
@@ -76,16 +77,27 @@ async function attributes(dir: string, path: string): Promise<Record<string, any
 const DECISION_PATH = "knowledge/decisions/2026-12-03-use-supabase-for-auth.md";
 const CONCEPT_PATH = "knowledge/references/row-level-security.md";
 
-/** Create one review_notes row from these inputs, render it and record it as published on PAGE. */
-async function published(dir: string, inputs: unknown[]) {
-  const created = await run(dir, ["proposal", "new"], { proposals: [{ kind: "review_notes", source: SYNC, notes: [], note_passages: {} }, ...inputs] });
+/**
+ * One review_notes row from these inputs as 0.15.x published it on PAGE (format 2 unless the brain's `notion.review_format` is 1). A fact change
+ * with `before` is folded first among its changes, flags and repeat included, as 0.15.x folded it.
+ */
+async function published(dir: string, inputs: Array<Record<string, any>>) {
+  const known = (input: Record<string, any>) => input.kind === "update_fact" && input.target === PROJECT && input.field === "launch_date";
+  const folded = inputs.find(known);
+  const plain = inputs.map((input) => (known(input) ? Object.fromEntries(Object.entries(input).filter(([key]) => key !== "unsure" && key !== "repeat")) : input));
+  const created = await run(dir, ["proposal", "new"], { proposals: [{ kind: "review_notes", source: SYNC, notes: [], note_passages: {} }, ...plain] });
   assert.equal(created.code, 0, created.stdout);
-  const { id, path } = created.json.data.created[0] as { id: string; path: string };
-  const [item] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
-  const recorded = await run(dir, ["sync", "record"], { records: [{ id, notion: PAGE, synced_at: NOW, published: item.published }] });
-  assert.equal(recorded.json.data.records[0].result, "recorded", recorded.stdout);
+  const made = created.json.data.created as Array<{ id: string; kind: string; path: string }>;
+  const standalone = made.find((entry) => entry.kind === "update_fact");
+  const flags = { ...(folded?.unsure === undefined ? {} : { unsure: folded.unsure }), ...(folded?.repeat === undefined ? {} : { repeat: folded.repeat }) };
+  const review = made.find((entry) => entry.kind === "review_notes");
+  // A fact alone made no review_notes in 0.16.0: the row 0.15.x wrote holds it alone.
+  const { id, path } = review ?? await factAsRow(dir, standalone!.id, "it-0fac7000", flags);
+  if (review !== undefined && folded !== undefined && standalone !== undefined) await foldAsBefore(dir, id, standalone.id, "it-0fac7000", flags);
+  const format = JSON.parse(await readFile(join(dir, "brain.json"), "utf8")).notion.review_format === 1 ? 1 : 2;
+  const { body } = await publishReviewRow(dir, id, PAGE, format);
   const proposal = parseFrontmatter(await readFile(join(dir, path), "utf8")).attributes as Record<string, any>;
-  return { id, path, item, body: item.body as string, items: proposal.items as Array<{ item_id: string; kind: string; ref: unknown }> };
+  return { id, path, body, items: proposal.items as Array<{ item_id: string; kind: string; ref: unknown }> };
 }
 
 const row = (id: string, body: string, props: Record<string, unknown> = {}) => ({
@@ -94,7 +106,7 @@ const row = (id: string, body: string, props: Record<string, unknown> = {}) => (
 });
 /** The plan, with each decided item verified as the skill does after re-reading the page (capture-and-review §7.3). */
 const plan = async (dir: string, rows: unknown[]) => {
-  const out = (await run(dir, ["sync", "plan"], { as_of: AFTER, rows }, AFTER)).json.data;
+  const out = (await run(dir, ["sync", "plan", "--review-transition"], { as_of: AFTER, rows }, AFTER)).json.data;
   for (const decision of out.review_decisions) for (const item of decision.items) item.verified = { snapshot_hash: item.snapshot_hash, proposed_hash: item.proposed_hash };
   return out;
 };
@@ -104,35 +116,13 @@ const sectionOf = (body: string, itemId: string): string => body.split(/\n(?=#{2
 const inSection = (body: string, itemId: string, edit: (section: string) => string): string => body.replace(sectionOf(body, itemId), edit(sectionOf(body, itemId)));
 const decide = (body: string, itemId: string, token: string) => inSection(body, itemId, (section) => section.replace("Decision: Pending", `Decision: ${token}`));
 
-test("a new row is a format-2 page: top, summary, groups, ref lines, short markers and the brain-context toggle (§7.12.2)", async (context) => {
-  const dir = await format2Brain(context);
-  const { item, body, items } = await published(dir, [fact({ unsure: ["Carlos named May"] }), addition, projectLink, alias("Supabase auth")]);
-  assert.equal(item.published["@review"].format, 2);
-  assert.match(body, /^\*\*From Acme sync:\*\* 2 changes and 2 links\. ⚠ marks a change to something you already know and ⚑ something the brain is unsure about/);
-  assert.match(body, /\n## Review summary\n\*\*Status:\*\* waiting for you: 2 changes and 2 links\.\n/);
-  const headings = [...body.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
-  assert.deepEqual(headings, ["Review summary", "Changes to what you know", "Links", 'For Brain Assistant (brain context) {toggle="true"}']);
-  assert.match(sectionOf(body, items[0]!.item_id), /^### ⚑ ⚠ Launch date on Acme website: 2027-02 → 2027-04\n> Now: 2027-02\n\n2027-04 \[¶1\]\n\*Why: Maria moved it\.\*\n<span color="gray">ref it-[0-9a-z]{8}<\/span>\nDecision: Pending/);
-  assert.match(sectionOf(body, items[2]!.item_id), /\\\+ Acme website\n/, "a link value is one line, escaped from a list");
-  assert.ok(!body.includes("^["), "no full passage reference is shown");
-  assert.match(body, /\n\t- \[¶1\] Launch moves to April 2027, Maria said\.\n/, "the toggle's children are indented and list the passages");
-  assert.match(item.sections["For Brain Assistant (brain context)"], /\*\*Where the brain is unsure\*\*\n- Launch date on Acme website: 2027-02 → 2027-04 \(it-[0-9a-z]{8}\): Carlos named May/);
-  assert.equal(typeof item.sections["Review summary"], "string");
-
-  // With notion.review_format 1, a new row keeps the page of 0.8.0 to 0.14.0.
-  const old = await format2Brain(context, 1);
-  const kept = await published(old, [fact()]);
-  assert.equal(kept.item.published["@review"].format, undefined);
-  assert.match(kept.body, /^## \[[a-z]+ · it-[0-9a-z]{8}\]/m);
-});
-
 test("the ingest's unsure flags and repeats ride on folded items only, and links group by target and field (0088 Q5)", async (context) => {
   const dir = await format2Brain(context);
-  const refused = await run(dir, ["proposal", "new"], { proposals: [fact({ unsure: ["Carlos named May"] })] });
+  const refused = await run(dir, ["proposal", "new"], { proposals: [fact({ field: "go_live", unsure: ["Carlos named May"] })] });
   assert.equal(refused.json.error.code, "INPUT_INVALID", "an item that isn't folded into a review_notes can't carry flags");
   const created = await run(dir, ["proposal", "new"], { proposals: [
     { kind: "review_notes", source: SYNC, notes: [], note_passages: {} },
-    alias("Supabase auth"), alias("Auth on Supabase"), projectLink, fact({ repeat: "launch" }),
+    alias("Supabase auth"), alias("Auth on Supabase"), projectLink, fact({ field: "go_live", repeat: "launch" }),
   ] });
   assert.equal(created.code, 0, created.stdout);
   const proposal = parseFrontmatter(await readFile(join(dir, created.json.data.created[0].path), "utf8")).attributes as Record<string, any>;
@@ -147,22 +137,11 @@ test("an untouched page holds nothing in Notion; an edited wording or a typed to
   const dir = await format2Brain(context);
   const { id, body, items } = await published(dir, [fact(), addition]);
   assert.deepEqual((await plan(dir, [row(id, body)])).review_pending, []);
-  const heading = body.replace("### Adds to Row-level security", "### Something else entirely");
+  const heading = body.replace("### Item b", "### Something else entirely");
   const out = await plan(dir, [row(id, heading)]);
   assert.deepEqual(out.review_pending, [], "headings are derived and never read");
   assert.deepEqual((await plan(dir, [row(id, decide(body, items[1]!.item_id, "Accept"))])).review_pending, [{ proposal: id, page_id: PAGE }]);
   assert.deepEqual((await plan(dir, [row(id, body.replace("Supabase handles auth. [¶3]", "Supabase handles all auth. [¶3]"))])).review_pending, [{ proposal: id, page_id: PAGE }]);
-  // A pending row still gets its two brain-owned sections, never its body, properties or item sections (cli §5.14.4).
-  await writeFile(join(dir, CONCEPT_PATH), (await readFile(join(dir, CONCEPT_PATH), "utf8")).replace("title: Row-level security", "title: Row-level access"));
-  const pending = await plan(dir, [row(id, decide(body, items[1]!.item_id, "Accept"))]);
-  const rendered = await run(dir, ["sync", "render", "--ids", id], pending);
-  const [again] = rendered.json.data.items;
-  assert.equal(again.action, "update");
-  assert.equal(again.body, null);
-  assert.deepEqual(again.properties, {});
-  assert.equal(again.item_updates, undefined);
-  assert.match(again.sections["For Brain Assistant (brain context)"], /Adds to Row-level access/);
-  assert.deepEqual(Object.keys(again.published), ["@content"]);
 });
 
 test("Approve accepts what is Pending, except a ⚠ fact change or a flagged item; an edited wording is applied and bound by its hash", async (context) => {
@@ -205,7 +184,6 @@ test("a flagged item is never accepted by Approve alone (0090 §5)", async (cont
   const { id, body, items } = await published(dir, [{ ...addition, unsure: ["Carlos may have meant the app"] }]);
   const out = await plan(dir, [row(id, body, { "Your call": "Approve" })]);
   assert.deepEqual(out.review_held.map((held: { item_id: string; reason: string }) => [held.item_id, held.reason]), [[items[0]!.item_id, "NEEDS_EXPLICIT_ACCEPT"]]);
-  assert.match(body, /### ⚑ Adds to Row-level security/);
 });
 
 test("Reject reads Pending as Reject and leaves the field unchanged; the call is cleared", async (context) => {
@@ -245,9 +223,6 @@ test("a swapped marker is accepted from the page's passages, and the detail name
   assert.equal(swapped.review_decisions[0].items[0].proposed, `2027-05 ^[${P[1]}]`);
   const wrong = await plan(dir, [row(id, decide(body.replace("2027-04 [¶1] [¶2]", "2027-05 [¶1]"), factItem, "Accept"), { "Your call": "Approve" })]);
   assert.deepEqual(wrong.review_held, [{ proposal: id, page_id: PAGE, item_id: factItem, reason: "VALUE_NOT_IN_PASSAGE", detail: "¶2 says 2027-05" }]);
-  // The summary the render sends with this plan says why the item waits.
-  const rendered = await run(dir, ["sync", "render", "--ids", id], wrong);
-  assert.match(rendered.json.data.items[0].sections["Review summary"], /^\*\*Status:\*\* 0 of 1 decided: 0 applied, 0 closed, 1 waiting for you\.\n\n- .+ — Held: .*¶2 says 2027-05/);
 });
 
 test("the value forms by type: number words, dates, a name's aliases, a status, never digits inside a longer number", () => {
@@ -285,7 +260,7 @@ test("a grouped link item adds only the names still in its wording; a name it ne
   assert.doesNotMatch(decision, /Auth on Supabase/);
 });
 
-test("Request revision needs What to fix; an attended run that drafts it clears the call, an unattended one leaves the row", async (context) => {
+test("Request revision needs What to fix; an attended run records it and clears the call, an unattended one leaves the row", async (context) => {
   const dir = await format2Brain(context);
   const { id, body, items } = await published(dir, [addition]);
   const bare = await plan(dir, [row(id, body, { "Your call": "Request revision" })]);
@@ -302,49 +277,11 @@ test("Request revision needs What to fix; an attended run that drafts it clears 
   const applied = await run(dir, ["sync", "apply"], attended, AFTER);
   assert.equal(applied.code, 0, applied.stdout);
   assert.deepEqual(applied.json.data.review_clear, [{ proposal: id, page_id: PAGE, properties: ["Your call", "What to fix"] }]);
-  // The redraft comes back as a format-2 section the skill finds by its ref line.
-  const revised = await run(dir, ["proposal", "revise"], { proposal: id, item_id: items[0]!.item_id, proposed: `Supabase handles auth for the site only. ^[${P[2]}]`, previous: `Supabase handles auth. ^[${P[2]}]` });
-  assert.equal(revised.code, 0, revised.stdout);
-  const [update] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
-  assert.equal(update.body, null);
-  assert.deepEqual(update.item_updates.map((entry: { item_id: string; reason: string }) => [entry.item_id, entry.reason]), [[items[0]!.item_id, "revision_drafted"]]);
-  const section = update.item_updates[0].section as string;
-  assert.match(section, /^### Adds to Row-level security\nSupabase handles auth for the site only\. \[¶3\]\n/);
-  assert.match(section, new RegExp(`<span color="gray">ref ${items[0]!.item_id}</span>\nDecision: Pending`));
-  assert.match(section, /<summary>Previous proposal<\/summary>/);
-});
-
-test("an untouched format-1 row is rebuilt once as a format-2 page; a touched one keeps format 1", async (context) => {
-  const dir = await format2Brain(context, 1);
-  const { id, path, body } = await published(dir, [fact(), addition]);
-  await setFormat(dir, undefined);
-  const untouched = await plan(dir, [row(id, body)]);
-  assert.deepEqual(untouched.review_untouched, [{ proposal: id, page_id: PAGE }]);
-  const rendered = await run(dir, ["sync", "render", "--ids", id], untouched);
-  assert.equal(rendered.code, 0, rendered.stdout);
-  const [item] = rendered.json.data.items;
-  assert.equal(item.action, "rebuild");
-  assert.equal(item.replaces, PAGE);
-  assert.equal(item.page_id, null);
-  assert.equal(item.published["@review"].format, 2);
-  assert.equal(rendered.json.data.rebuilt, 1);
-  const recorded = await run(dir, ["sync", "record"], { records: [{ id, notion: NEW_PAGE, replaces: PAGE, synced_at: AFTER, published: item.published }] }, AFTER);
-  assert.equal(recorded.json.data.records[0].result, "recorded", recorded.stdout);
-  const after = await attributes(dir, path);
-  assert.equal(after.notion, NEW_PAGE);
-  assert.equal(after.notion_published["@review"].format, 2);
-  const twice = await run(dir, ["sync", "record"], { records: [{ id, notion: NEW_PAGE, replaces: PAGE, synced_at: AFTER, published: item.published }] }, AFTER);
-  assert.equal(twice.json.data.records[0].result, "recorded", "the same record again is a no-op");
-
-  // A touched row is never listed.
-  const other = await format2Brain(context, 1);
-  const touched = await published(other, [fact(), addition]);
-  await setFormat(other, undefined);
-  const typed = touched.body.replace(/(## \[[a-z]+ · it-[0-9a-z]{8}\][\s\S]*?\nDecision: )Pending/, "$1Accept");
-  assert.deepEqual((await plan(other, [row(touched.id, typed)])).review_untouched, []);
-  // With notion.review_format 1 nothing is rebuilt.
-  await setFormat(other, 1);
-  assert.deepEqual((await plan(other, [row(touched.id, touched.body)])).review_untouched, []);
+  // The item stays pending with the request recorded: the migration's session asks it with the instruction shown (capture-and-review §7.9).
+  const proposal = (await run(dir, ["proposal", "list"])).json.data.proposals.find((entry: { id: string }) => entry.id === id);
+  assert.equal(proposal.status, "pending");
+  const recorded = (await attributes(dir, proposal.path)).revisions as Array<{ item_id: string; instruction: string; status: string }>;
+  assert.deepEqual(recorded.map((entry) => [entry.item_id, entry.instruction, entry.status]), [[items[0]!.item_id, "Say it's for the site only", "requested"]]);
 });
 
 test("the parser finds items by their ref line, reads the note toggle and ignores the brain-context toggle", () => {

@@ -444,7 +444,7 @@ test("the report: layout, counts, the not-in-the-brain sentence, the skipped lin
     "   a) put it in Work",
     "",
     "1 skipped for now.",
-    "Answer with \"yes 1, 2b\", a change (\"1: due Friday\"), \"skip 4 because …\", or \"propose 5\" for a Review row; \"done\" to finish.",
+    "Answer with \"yes 1, 2b\", a change (\"1: due Friday\"), \"skip 4 because …\", or \"propose 5\" to decide it later; \"done\" to finish.",
     "",
   ].join("\n"));
   const first = await findings(root, snap, ["--limit", "1"]);

@@ -9,6 +9,7 @@ import { parseFrontmatter, serializeNewFile } from "../src/lib/frontmatter.ts";
 import { passageHash } from "../src/lib/selection.ts";
 import { excludableDecision, INPUT } from "./exclusion-fixture.ts";
 import { brain, fixtureCopy } from "./helpers.ts";
+import { foldAsBefore } from "./review-row-fixture.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const SYNC = "mtg-8c4n2p7w";
@@ -130,8 +131,10 @@ test("proposal new refuses an item with no passages, and checks the ones it name
   assert.equal(ok.code, 0, ok.stdout);
   const row = await attributes(dir, ok.json.data.created.find((entry: { kind: string }) => entry.kind === "review_notes").path);
   const items = row.items as Array<Record<string, unknown>>;
-  assert.deepEqual(items.map((item) => [item.kind, item.passages]), [["change", [SYNC]], ["note", [SYNC]]], "the folded change and the note keep their passages on their items");
+  assert.deepEqual(items.map((item) => [item.kind, item.passages]), [["note", [SYNC]]], "the note keeps its passages on its item");
   assert.equal(row.passages, undefined);
+  const fact = await attributes(dir, ok.json.data.created.find((entry: { kind: string }) => entry.kind === "update_fact").path);
+  assert.deepEqual(fact.passages, [SYNC], "a fact with a current value is its own proposal, with its passages");
   const lint = await brain(["lint", "--brain", dir, "--json"]);
   const proposalErrors = (lint.json.data.issues as Array<{ severity: string; path: string }>).filter((issue) => issue.severity === "error" && issue.path.startsWith("_proposals/"));
   assert.deepEqual(proposalErrors, [], "the stored passages pass the proposal schema");
@@ -235,8 +238,10 @@ test("an older-layout row on an excluded input: only the draft citing the exclud
     { kind: "add_link", title: "link", target: CONCEPT, field: "projects", after: PROJECT, why: "Said.", source: "src-ex1a3b4c", passages: [LIVE_P] },
   ] });
   assert.equal(staged.code, 0, staged.stdout);
-  assert.equal(staged.json.data.created.length, 1, "the change and the link fold into the row");
-  const row = staged.json.data.created[0] as { id: string; path: string };
+  const created = staged.json.data.created as Array<{ id: string; kind: string; path: string }>;
+  const row = created.find((entry) => entry.kind === "review_notes")!;
+  // The fact change folded first, as a row written before 0.16.0 holds it (0045).
+  await foldAsBefore(dir, row.id, created.find((entry) => entry.kind === "update_fact")!.id);
   await legacy(dir, row.path, true);
   await exclude();
   const out = await run(dir, ["apply"], approve(row.id));
@@ -308,7 +313,7 @@ test("proposal list marks a held item without its wording; a proposal that is no
     { kind: "add_to_note", title: "Price: 95,000", target: TARGET, content: `The price was 95,000. ^[${EXCLUDED_P}]`, why: "The price was 95,000.", source: "src-ex1a3b4c", passages: [EXCLUDED_P] },
     { kind: "add_to_note", title: "Kept remark", target: TARGET, content: `A kept remark. ^[${LIVE_P}]`, why: "Kept.", source: "src-ex1a3b4c", passages: [LIVE_P] },
     { kind: "review_notes", source: SYNC, notes: [] },
-    { kind: "update_fact", title: "Budget 95,000", target: PROJECT, field: "budget", after: "95,000", why: "95,000.", source: SYNC, passages: [EXCLUDED_P] },
+    { kind: "update_fact", title: "Budget 95,000", target: PROJECT, field: "hosting_budget", after: "95,000", why: "95,000.", source: SYNC, passages: [EXCLUDED_P] },
     { kind: "add_to_note", title: "sync", target: CONCEPT, content: "The sync agreed on row-level security.", why: "Said.", source: SYNC, passages: [SYNC] },
   ] });
   assert.equal(staged.code, 0, staged.stdout);
@@ -321,7 +326,7 @@ test("proposal list marks a held item without its wording; a proposal that is no
   assert.ok(proposals.some((entry) => entry.title === "Kept remark" && entry.held === undefined));
   const row = proposals.find((entry) => entry.kind === "review_notes")!;
   assert.deepEqual(row.held, [{ change: 0 }]);
-  assert.deepEqual(row.changes[0], { kind: "update_fact", target: PROJECT, field: "budget" });
+  assert.deepEqual(row.changes[0], { kind: "update_fact", target: PROJECT, field: "hosting_budget" });
   assert.equal(row.changes[1].content, "The sync agreed on row-level security.");
   assert.ok(typeof row.title === "string", "one item is not held, so the row keeps its title");
   // The held wording itself is looked for, and the slug its title would give.
@@ -331,16 +336,3 @@ test("proposal list marks a held item without its wording; a proposal that is no
   assert.ok(!human.stdout.includes("Price: 95,000") && !human.stdout.includes("Budget 95,000"));
 });
 
-test("sync render publishes a held standalone proposal with no title, wording or why (eligibility §9.4, cli §5.14.4)", async (context) => {
-  const dir = await fixtureCopy(context);
-  const { exclude } = await excludableDecision(dir, SYNC, PROJECT);
-  const staged = await run(dir, ["proposal", "new"], { proposals: [{ ...budget([EXCLUDED_P], SYNC, "95,000"), title: "Budget: 95,000", why: "Pricing was 95,000." }] });
-  const id = staged.json.data.created[0].id as string;
-  await exclude();
-  const render = await brain(["sync", "render", "--ids", id, "--brain", dir, "--now", NOW, "--json"]);
-  assert.equal(render.code, 0, render.stdout);
-  const item = (render.json.data.items as Array<Record<string, any>>).find((entry) => entry.id === id)!;
-  const values = Object.fromEntries(Object.entries(item.properties as Record<string, any>).map(([name, value]) => [name, JSON.stringify(value)]));
-  assert.match(values.Name!, new RegExp(`Held: ${id}`));
-  for (const wording of ["Budget: 95,000", "Pricing was 95,000", "\"95,000\""]) assert.ok(!JSON.stringify(item).includes(wording), JSON.stringify(item.properties));
-});

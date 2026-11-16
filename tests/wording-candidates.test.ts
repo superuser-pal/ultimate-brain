@@ -19,9 +19,6 @@ const SINCE = "2026-12-10T08:58:00Z";
 const OLD = "2026-12-10T08:30:00Z"; // before since
 const SEED = "## Why\n\nBecause the login must be simple.\n";
 const PAGE_SIZE = 2;
-const REVIEW_PAGE = "6a7b0000-0000-4000-8000-0000000000aa";
-const PROJECT = "prj-9x4t1b7e";
-const SYNC = "mtg-8c4n2p7w";
 const page = (n: number) => `9a8b7c6d-5e4f-4a3b-8c2d-${String(n).padStart(12, "0")}`;
 
 async function run(dir: string, args: string[], input?: unknown) {
@@ -56,21 +53,6 @@ async function documents(dir: string): Promise<Doc[]> {
     docs.push({ id, path, page: page(n + 1) });
   }
   return docs;
-}
-
-/** A published Review row whose page holds a decision typed but not submitted: its edits must not be published over (§7.10). */
-async function pendingReview(dir: string) {
-  const created = await run(dir, ["proposal", "new"], { proposals: [
-    { kind: "review_notes", source: SYNC, notes: [] },
-    { kind: "update_fact", title: "Launch", target: PROJECT, field: "launch_date", after: "2027-03", why: "Moved.", source: SYNC },
-  ] });
-  assert.equal(created.code, 0, created.stdout);
-  const id = created.json.data.created[0].id as string;
-  const [item] = (await run(dir, ["sync", "render", "--ids", id])).json.data.items;
-  await run(dir, ["sync", "record"], { records: [{ id, notion: REVIEW_PAGE, synced_at: SYNCED, published: item.published }] });
-  const body = (item.body as string).replace(/(\nDecision: )Pending/, "$1Accept");
-  return { database: "review", page_id: REVIEW_PAGE, last_edited: "2026-12-10T09:30:00Z", properties: { "Brain ID": id, State: "Pending" },
-    review: { decided: false, decided_at: null, accept_all: false, page_edited_at: "2026-12-10T09:30:00Z", body_markdown: body } };
 }
 
 /** A row of the simulated Documents database: the metadata a query returns, and the page a read returns. */
@@ -156,15 +138,15 @@ function selectReusing(db: Documents, read: Read, ids: Set<string>, since: strin
   return usable ? filterRead(read, ids, since) : selectByQuery(db, ids, since);
 }
 
-/** The snapshot both procedures send: the candidates' Documents rows, with `wording` on the selected ones, and the Review rows. */
-function snapshot(db: Documents, docs: Doc[], selected: string[], review: unknown[]) {
+/** The snapshot both procedures send: the candidates' Documents rows, with `wording` on the selected ones. */
+function snapshot(db: Documents, docs: Doc[], selected: string[]) {
   const rows = docs.flatMap((doc) => {
     const row = db.rows.find((entry) => entry.page_id === doc.page);
     if (row === undefined) return [];
     const base = { database: "documents", page_id: row.page_id, last_edited: row.last_edited, properties: { "Brain ID": doc.id } };
     return [selected.includes(row.page_id) ? { ...base, wording: db.read(row.page_id) } : base];
   });
-  return { as_of: NOW, rows: [...rows, ...review] };
+  return { as_of: NOW, rows };
 }
 
 async function plan(dir: string, input: unknown) {
@@ -202,7 +184,7 @@ const wordingOf = (data: Record<string, unknown>) => ({
 });
 
 /** Runs both procedures on two copies of one database and returns what each selected, their plans and their calls. */
-async function compare(context: TestContext, dir: string, docs: Doc[], rows: NotionRow[], options: { review?: unknown[]; failing?: number[]; retry?: boolean; leaveOut?: string } = {}) {
+async function compare(context: TestContext, dir: string, docs: Doc[], rows: NotionRow[], options: { failing?: number[]; retry?: boolean; leaveOut?: string } = {}) {
   const { ids, since } = await candidates(dir, docs);
   const before = new Documents(structuredClone(rows), new Set(options.failing));
   const beforeRead = enumerate(before, { retry: true });
@@ -211,9 +193,8 @@ async function compare(context: TestContext, dir: string, docs: Doc[], rows: Not
   const after = new Documents(structuredClone(rows), new Set(options.failing));
   const afterRead = enumerate(after, { retry: options.retry ?? true, leaveOut: options.leaveOut });
   const afterSelected = selectReusing(after, afterRead, ids, since);
-  const review = options.review ?? [];
-  const beforePlan = await plan(dir, snapshot(before, docs, beforeSelected, review));
-  const afterPlan = await plan(dir, snapshot(after, docs, afterSelected, review));
+  const beforePlan = await plan(dir, snapshot(before, docs, beforeSelected));
+  const afterPlan = await plan(dir, snapshot(after, docs, afterSelected));
   context.diagnostic(`calls before: ${JSON.stringify(before.calls)}; after: ${JSON.stringify(after.calls)}`);
   return { since, read: afterRead, ids, before: { selected: beforeSelected, plan: beforePlan, calls: before.calls }, after: { selected: afterSelected, plan: afterPlan, calls: after.calls } };
 }
@@ -232,22 +213,20 @@ test("a quiet pass selects nothing either way, and the same-pass read saves the 
   assert.deepEqual(result.after.calls, { enumerate: 4, query: 0, read: 0 });
 });
 
-test("a populated queue over several result pages plans the same; an unsubmitted Review page stays protected (CC-216)", async (context) => {
+test("a populated queue over several result pages plans the same (CC-216)", async (context) => {
   const dir = await fixtureCopy(context);
   const docs = await documents(dir);
-  const review = [await pendingReview(dir)];
-  const result = await compare(context, dir, docs, populated(docs), { review });
+  const result = await compare(context, dir, docs, populated(docs));
   const [login, billing, search, admin] = docs as [Doc, Doc, Doc, Doc];
   assert.deepEqual(result.after.selected, [login.page, billing.page, search.page, admin.page].sort());
   assert.deepEqual(result.after.selected, result.before.selected);
   assert.deepEqual(result.after.plan, result.before.plan);
-  const proposal = (review[0] as { properties: { "Brain ID": string } }).properties["Brain ID"];
   assert.deepEqual(wordingOf(result.after.plan), {
     accepted_wording: [login.id],
     wording_waiting: [`${search.id} EDITED_AFTER_ACCEPTANCE`],
     wording_held: [`${billing.id} UNACCEPTED_DRAFT`],
     clear_accepted: [admin.id],
-    review_pending: [{ proposal, page_id: REVIEW_PAGE }],
+    review_pending: [],
   });
   // The query's 6 matching rows (4 candidates, 2 unrelated) took 3 calls; the page reads are the same 4 either way.
   assert.deepEqual(result.before.calls, { enumerate: 4, query: 3, read: 4 });

@@ -310,57 +310,37 @@ test("set_field puts an Area in a Domain; stale, fix and the checks of proposal 
   await lintClean(dir);
 });
 
-test("sync render: Suggestion rows for notion_change and set_field; a yes in chat never becomes a row", async (context) => {
+test("sync render publishes no Suggestion row: a notion_change and a set_field are decided in the session (0096)", async (context) => {
   const dir = await setup(context);
   const created = await run(dir, ["proposal", "new"], { proposals: [
     taskChange("project", [], [PROJECT_PAGE], { finding: `task_no_project:notion:${TASK_PAGE}`, why: "no project" }),
-    change({ database: "projects", target: PROJECT, page: PROJECT_PAGE, page_title: "Acme website", property: "status", value_before: null, value_after: "On Hold", why: "nothing done for 23 days", area: CLIENTS }),
     { kind: "set_field", target: PROJECT, field: "area", after: PERSONAL, why: "misplaced", source: SOURCE },
-    taskChange("due", "2026-10-29", "2026-11-13"),
   ] });
-  const [task, project, move, chat] = created.json.data.created.map((item: any) => item.id);
-  await run(dir, ["apply"], approve(chat));
-
+  assert.equal(created.code, 0, created.stdout);
+  const ids = created.json.data.created.map((item: any) => item.id as string);
   const rendered = await run(dir, ["sync", "render", "--changed"]);
   assert.equal(rendered.code, 0, rendered.stdout);
-  const items = new Map(rendered.json.data.items.filter((item: any) => item.database === "review").map((item: any) => [item.id, item]));
-  assert.equal(items.has(chat), false, "decided in chat before it had a row");
-  const props = (id: string) => (items.get(id) as any).properties;
-  assert.deepEqual(props(task).Name, { type: "title", value: "Suggestion: Send the revised quote: Project → Acme website" });
-  assert.deepEqual(props(task).Kind, { type: "select", value: "Notion Change" });
-  assert.equal(props(task).About.value, "Send the revised quote (task)");
-  assert.equal(props(task)["About Page"].value, `https://www.notion.so/${TASK_PAGE.replaceAll("-", "")}`);
-  assert.equal(props(task).Now.value, "Project: none");
-  assert.equal(props(task).Proposed.value, "Project: Acme website");
-  assert.deepEqual(props(task).Area, { type: "relation", value: [CLIENTS_PAGE] });
-  assert.equal(props(task)["Source Meeting"], undefined);
-  assert.equal(props(project).About.value, `Acme website (${PROJECT})`);
-  assert.equal(props(project).Now.value, "Status: none");
-  assert.equal(props(project).Proposed.value, "Status: On Hold");
-  assert.deepEqual(props(move).Kind, { type: "select", value: "Set Field" });
-  assert.deepEqual(props(move).Name, { type: "title", value: "Suggestion: Acme website: Area → Personal" });
-  assert.equal(props(move)["About Page"].value, `https://www.notion.so/${PROJECT_PAGE.replaceAll("-", "")}`);
-  assert.equal(props(move).Now.value, "Area: Clients");
-  assert.equal(props(move).Proposed.value, "Area: Personal");
-  assert.deepEqual(props(move).Area, { type: "relation", value: [CLIENTS_PAGE] });
-
-  const byIds = await run(dir, ["sync", "render", "--ids", chat]);
-  assert.deepEqual(byIds.json.data.skipped, [{ id: chat, reason: "DECIDED_IN_CHAT" }]);
-  assert.deepEqual(byIds.json.data.items, []);
+  assert.deepEqual(rendered.json.data.items.filter((item: any) => item.database === "review" || ids.includes(item.id)), []);
+  const byIds = await run(dir, ["sync", "render", "--ids", ids.join(",")]);
+  assert.equal(byIds.code, 0, byIds.stdout);
+  assert.deepEqual([byIds.json.data.items, byIds.json.data.errors], [[], []]);
 });
 
-test("a decided Suggestion row is read by sync plan and applied by sync apply, which returns its write", async (context) => {
+test("a Suggestion row decided before 0.16.0 is read by the transition and applied by sync apply, which returns its write", async (context) => {
   const dir = await setup(context);
   const created = await run(dir, ["proposal", "new"], { proposals: [change({ database: "projects", target: PROJECT, page: PROJECT_PAGE, page_title: "Acme website", property: "status", value_before: "Active", value_after: "Done", finding: `project_done_but_open:${PROJECT}` })] });
   const { id, path } = created.json.data.created[0];
-  const rendered = await run(dir, ["sync", "render", "--ids", id]);
-  const item = rendered.json.data.items[0];
   const ROW = "6c5d4e3f-2a1b-4c0d-9e8f-7a6b5c4d3e2f";
-  const recorded = await run(dir, ["sync", "record"], { records: [{ id, notion: ROW, synced_at: NOW, published: item.published }] });
-  assert.equal(recorded.code, 0, recorded.stdout);
+  const NAME = "Suggestion: Acme website: Status → Done";
+  // The row as 0.15.x published it (since 0.16.0 nothing renders one).
+  const document = parseFrontmatter(await readFile(join(dir, path), "utf8"));
+  Object.assign(document.attributes, { notion: ROW, notion_published: { "Brain ID": id, Name: NAME } });
+  await writeFile(join(dir, path), serializeFrontmatter(document));
 
-  const snapshot = { as_of: NOW, rows: [{ database: "review", page_id: ROW, last_edited: DECIDED, properties: { "Brain ID": id, Name: item.published.Name, State: "Pending", "Your call": "Approve", "What to fix": "" } }] };
-  const plan = await run(dir, ["sync", "plan"], snapshot);
+  const snapshot = { as_of: NOW, rows: [{ database: "review", page_id: ROW, last_edited: DECIDED, properties: { "Brain ID": id, Name: NAME, State: "Pending", "Your call": "Approve", "What to fix": "" } }] };
+  const ignored = await run(dir, ["sync", "plan"], snapshot);
+  assert.deepEqual([ignored.json.data.decisions, ignored.json.data.ignored.map((item: any) => item.reason)], [[], ["REVIEW_ROW"]], "a plain plan reads no Review row");
+  const plan = await run(dir, ["sync", "plan", "--review-transition"], snapshot);
   assert.equal(plan.code, 0, plan.stdout);
   assert.deepEqual(plan.json.data.decisions, [{ proposal: id, action: "approve", decided_at: DECIDED, decided_by: "notion" }]);
   const applied = await run(dir, ["sync", "apply"], plan.json.data);

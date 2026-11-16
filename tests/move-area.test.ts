@@ -90,8 +90,8 @@ test("set_field area on a draft decision, a draft question and a learned Documen
   // Views: the Go-to-market brief lists them, the Clients brief no longer does.
   assert.equal((await run(dir, ["views"])).code, 0);
   const gtm = await readFile(join(dir, "areas/briefs/go-to-market.md"), "utf8");
-  // Drafts show as waiting in Review (schema §16.1): one each under decisions, questions and Documents.
-  assert.equal(gtm.match(/1 note waiting in Review/g)?.length, 3, gtm);
+  // Drafts show as waiting for your decision (schema §16.1): one each under decisions, questions and Documents.
+  assert.equal(gtm.match(/1 note waiting for your decision/g)?.length, 3, gtm);
   // Once reviewed, the decision is listed by title in Go-to-market and not in Clients.
   await writeFile(join(dir, brainDir.decision.path), (await readFile(join(dir, brainDir.decision.path), "utf8")).replace(/^lifecycle: draft$/m, "lifecycle: reviewed"));
   assert.equal((await run(dir, ["views"])).code, 0);
@@ -137,10 +137,6 @@ test("a source and its whole Document move together, whichever is named; the sou
   assert.equal(after.attributes.area, GTM);
   await lintClean(dir);
 
-  // The Review row of the source's review_notes follows the source's Area.
-  const row = await run(dir, ["sync", "render", "--ids", brainDir.review.id]);
-  assert.equal(row.code, 0, row.stdout);
-  assert.deepEqual(row.json.data.items[0].properties.Area, { type: "relation", value: [GTM_PAGE] });
   // The whole Document (reviewed at creation) goes out with Area Go-to-market at the next publish.
   await setDocuments(dir);
   const document = await run(dir, ["sync", "render", "--ids", brainDir.whole.id]);
@@ -272,9 +268,7 @@ test("a source moved by set_field sends its Inbox row's new Area once, without i
   assert.equal((await run(dir, ["apply"], approve(back.json.data.created[0].id))).json.data.decisions[0].result, "applied");
   assert.deepEqual((await render()).properties.Area, { type: "relation", value: [PRODUCT_PAGE] });
 
-  // The whole Document and the source's review_notes row show the source's Area as before.
-  const row = await run(dir, ["sync", "render", "--ids", brainDir.review.id]);
-  assert.deepEqual(row.json.data.items[0].properties.Area, { type: "relation", value: [PRODUCT_PAGE] });
+  // The whole Document shows the source's Area as before.
   await setDocuments(dir);
   const document = await run(dir, ["sync", "render", "--ids", brainDir.whole.id]);
   assert.deepEqual(document.json.data.items[0].properties.Area, { type: "relation", value: [PRODUCT_PAGE] });
