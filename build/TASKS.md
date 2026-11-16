@@ -1001,7 +1001,7 @@ Easy setup on Windows and Mac, from the first beta tester's Windows session (dec
 **Output:** spec/setup.md §6.1: Python and MarkItDown in the prerequisites, required; each prerequisite's command for `darwin` and `win32` (Linux keeps links); reason code `markitdown-missing` in §12; §7 item 10 shown `on` and locked, `settings.markitdown` written `on`; the schedule item not available on Windows. spec/cli.md for `init`: home folder from `homedir()`, a leading `~` expanded, a missing Git identity stops before any write with its error code and the two `git config` lines (`--no-git` unchanged).
 **Acceptance:** each rule of 0097 §1, §3, §4 and §5 has a contract line; spec/setup.md's examples and reason-code list agree; no code change.
 
-### CC-291 · `brain init` works on Windows and stops without a Git identity (0097 §3) · `review`
+### CC-291 · `brain init` works on Windows and stops without a Git identity (0097 §3) · `done` (#404)
 **Release:** 0.15.2
 **Changelog:** `brain init --set-default` works on Windows, `~` in the brain path is expanded, and `init` stops with the two commands to run when Git has no name or email, instead of leaving the brain without its first commit.
 **Output:** `src/commands/init.ts` per CC-290's contract; tests with no `HOME` in the environment, a literal `~/` path, and a Git with no identity.
