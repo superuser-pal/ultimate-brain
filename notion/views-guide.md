@@ -4,9 +4,9 @@ A by-hand alternative to [Prompt 7](prompts/07-spaces-views.md) and [Prompt 8](p
 
 It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md) §3–§5. If the two ever disagree, the design document wins (decision 0022).
 
-**Before you start:** Prompts 1–6 are done. The databases of Core and your modules live on **Brain Data**, the relations exist, the formulas and rollups of Prompt 4 exist (Progress, Countdown, Task Progress, Type, the Areas counts, the "via projects" rollups), and the templates are the database defaults.
+**Before you start:** Prompts 1–6 are done. The databases of Core and your modules live on **Brain Data**, the relations exist, the formulas and rollups of Prompt 4 exist (Progress, Countdown, Task Progress, the Areas counts, the "via projects" rollups), and the templates are the database defaults.
 
-**Modules** (decision 0048). A view, tab, column or button of a module you left off is skipped: the Tasks Space needs Tasks, Plan needs Planning, and each row below names its module when it has one (*(Knowledge)*, *(Documents)* …). A column of a module you left off is simply not shown.
+**Modules** (decision 0048). A view, tab, column or button of a module you left off is skipped: the Tasks Space needs Tasks, Plan needs Planning, and each row below names its module when it has one (*(Documents)*, *(Tasks)* …). A column of a module you left off is simply not shown.
 
 ---
 
@@ -21,7 +21,7 @@ It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md)
 
 **Date filters.** "Relative" date filters, such as *Last edited time is within Past week*, are set by choosing **Relative** in the date filter's dropdown.
 
-**Ownership reminder.** The brain writes only the properties marked "Owner: brain" or "Owner: system". Views can show those properties, but don't edit their values in Notion except to correct a mistake. The next sync reads your edits to brain-owned values as corrections (decisions 0023, 0027).
+**Ownership reminder.** The brain writes only the properties marked "Owner: brain" or "Owner: system". Views can show those properties, but don't edit their values in Notion except to correct a mistake. An edit to a brain-owned value is asked in your agent session before it reaches the brain: the next sync finds it, and your next Claude Code or Codex session asks all such corrections as one question, since the brain can't tell your edit from one by Notion AI or another tool (decisions 0023, 0027, 0101 §4).
 
 ---
 
@@ -39,19 +39,18 @@ It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md)
 **Job:** see in ten seconds what you have to do today, then what the brain needs from you.
 
 Nothing sits above the two columns (#143, decision 0053).
-**Left column:** navigation, then a small heading "Needs you" with two short lists (views 1–2).
+**Left column:** navigation, then a small heading "Needs you" with one short list (view 2). You decide what the brain proposes in your agent session, not here (decision 0096); the week's review is an Inbox row, Kind Weekly, in the Inbox tab.
 **Right column:** the buttons in a row, then "What's on today?" as a tabs block (views 0, 0b, 3–5, 5b), then "What did the brain take in?" as a second tabs block (views 6–7).
 
 | # | Tab | View name | Database | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|---|
-| 0 | Areas | How are my areas? | Areas | List | Archived is unchecked | Name | Name, At a glance | Your areas, each line readable on its own: "Day job · 3 to review · 1 meeting", or "all clear" (#145). Open one for its home (0050). The first tab |
+| 0 | Areas | How are my areas? | Areas | List | Archived is unchecked | Name | Name, At a glance | Your areas, each line readable on its own: "Day job · 1 meeting · 2 due", or "all clear" (#145). Open one for its home (0050). The first tab |
 | 0b | Areas | What's due across areas? *(Tasks)* | Tasks | List, 5 rows | Status is not Done · Status is not Won't Do · Due is on or before today | Due, ascending | Name, Area, Due | Due today or overdue, in every area |
-| 1 | — | What's waiting for you? | Review | List, grouped by Type (counts shown), 5 rows per group | Status starts with "Needs you" | Created time, descending | Status, Name | Where reviewing starts (0045, 0088): only the rows that need you, one per meeting or document, plus the other changes; a row you submitted leaves the list. Status says where to decide it: in the page, or in Your call. Click a row to open it |
 | 2 | — | Which minutes need review? | Meetings | List, 5 rows | Brain Status is Not Reviewed · Date is on or before today | Date, descending | Name | Minutes to check before the brain may ingest them. Upcoming meetings stay out |
 | 3 | Tasks *(Tasks)* | What's due today? | Tasks | List | Status is To Do or Doing · Due is on or before today | Due, ascending | Name, Project, Due | Today's work, overdue first |
 | 4 | Meetings | Which meetings are today? | Meetings | List | Date is today | Date, ascending | Name, Date, Project | Today's meetings, with time and project |
 | 5 | Projects | What's active? | Projects | Gallery (small cards) | Status is Active · Archived is unchecked | Priority (High→Low), then Name | Name, Countdown, *(Orgs)* Client, *(Tasks)* Task Progress | What you're working on, and how far along each is |
-| 5b | Inbox | What's in my inbox? | Inbox | List | Brain Status is New or Ready | Created, ascending | Name, Kind, Brain Status | Rows waiting for the brain, oldest first: set one Ready when it can be taken in. The last tab; the buttons and the boxes they tick are on each row's page (#146) |
+| 5b | Inbox | What's in my inbox? | Inbox | List | Brain Status is New or Ready | Created, ascending | Name, Kind, Brain Status | Rows waiting for the brain, oldest first: set one Ready when it can be taken in. The week's review (Kind Weekly) and a catch-up's summary (Kind Catch-up) show here until they are Done; they are never taken in. The last tab; the buttons and the boxes they tick are on each row's page (#146) |
 | 6 | Came in | What came in lately? | Inbox | List, 10 rows | Brain Status is Done | Created, descending | Name, Kind, Project | The Brain feed (0043): every document, email and capture the brain took in, newest first (reports are in Documents since 0.9.1) |
 | 7 | Meetings | Which meetings did it take in? | Meetings | List, 10 rows | Brain Status is Ingested | Ingested At, descending | Name, Date, Project | The meetings the brain ingested, newest first. Together with view 6, everything the brain did |
 
@@ -68,7 +67,7 @@ Nothing sits above the two columns (#143, decision 0053).
 
 ## 2. Tasks (do the work) *(Tasks)*
 
-**Job:** know what to do now, what's coming, what you're waiting on, and what you've done. Waiting On and Someday are Notion-only: the brain creates tasks as To Do and never reads Status back.
+**Job:** know what to do now, what's coming, what you're waiting on, and what you've done. Waiting On and Someday are Notion-only: the brain creates tasks as To Do and reads Status back only on a task that tracks a question (decision 0101 §6). **Questions** and **Risks** list the questions and risks you follow up (decision 0099 §4): a task the brain creates when you say "track it", or from `Track: Waiting On —` on a question or risk line in the minutes.
 
 | # | Tab | View name | Layout | Filter | Sort | Group | Show | Use case |
 |---|---|---|---|---|---|---|---|---|
@@ -77,9 +76,11 @@ Nothing sits above the two columns (#143, decision 0053).
 | 3 | No date | What has no date? | List | Status is To Do or Doing · Due is empty | — | Project | Name, Meeting | Meeting tasks often arrive without a date. Give each a Due, or move it to Someday |
 | 4 | Waiting On | What am I waiting on? | List | Status is Waiting On | Due, ascending | — | Name, Project, Due | Things that depend on someone else. Chase them, or set them back to To Do |
 | 5 | Someday | What could I do someday? | List | Status is Someday | — | Project | Name | Ideas you're not committing to yet |
-| 6 | Done | What did I finish? | List | Status is Done | Last edited time, descending | Last edited time (by week) | Name, Project | Easlo's logbook: what you got done, week by week |
+| 6 | Questions | Which questions am I following up? | List | Kind is Question · Status is not Done · Status is not Won't Do | Due, ascending | — | Name, Project, Status | The open questions you track, across every project. When one is answered, your agent session asks to record the answer and set the task Done |
+| 7 | Risks | Which risks am I following up? | List | Kind is Risk · Status is not Done · Status is not Won't Do | Due, ascending | — | Name, Project, Status | The risks you act on, across every project |
+| 8 | Done | What did I finish? | List | Status is Done | Last edited time, descending | Last edited time (by week) | Name, Project | Easlo's logbook: what you got done, week by week |
 
-All views use the Tasks database. Using your own Tasks database (0018)? Map the same filters to your own properties.
+All views use the Tasks database. Using your own Tasks database (0018)? Map the same filters to your own properties; without Kind, filter Questions and Risks on a Name that starts with "Question: " or "Risk: ".
 
 ---
 
@@ -92,14 +93,14 @@ All views use the Tasks database. Using your own Tasks database (0018)? Map the 
 | 1 | Upcoming | What's coming up? | List | Date is on or after today | Date, ascending | — | Name, Date, Project, Attendees | Meetings you created ahead of time. Open one to prepare |
 | 2 | To review | Which minutes need review? | Table | Brain Status is Not Reviewed · Date is on or before today | Date, descending | — | Name, Date, Project, Brain Status | Check the minutes with the checklist in the page, then set Reviewed (or Skipped) in this view |
 | 3 | Ready | What's waiting for the brain? | List | Brain Status is Reviewed | Date, ascending | — | Name, Date, Project | The next ingest takes these. If one sits here for days, run the ingest |
-| 4 | Ingested | What did the brain take in this week? | Table | Brain Status is Ingested · Ingested At is within *Past week* (relative) | Ingested At, descending | — | Name, Ingested At, *(Knowledge)* Decisions, Questions | What each ingest produced |
+| 4 | Ingested | What did the brain take in this week? | Table | Brain Status is Ingested · Ingested At is within *Past week* (relative) | Ingested At, descending | — | Name, Ingested At | What each ingest took in; what it produced shows on the project's page (Brief, Decision log, Tasks) |
 | 5 | Calendar | When did we meet? | Calendar (by Date) | — | — | — | Name, Brain Status | Find a meeting by when it happened |
 
 **The meeting flow, for reference:**
 1. You create the meeting ahead of time (New meeting on Home), or Notion AI creates it when it starts taking notes.
 2. Notion AI writes the minutes. Use [minutes-format.md](minutes-format.md) for the sections.
 3. You tick the "Before marking Reviewed" checklist and set **Reviewed**.
-4. The ingest sets **Ingested** and fills in Decisions, Questions and Attendees.
+4. The ingest sets **Ingested**, fills in Attendees and creates the meeting's Tasks, once. Never let Notion AI or a notetaker create Tasks from the meeting: the ingest would create them again (decision 0101 §5).
 5. **Skipped** means the brain never reads that meeting.
 
 ---
@@ -127,79 +128,47 @@ All views use the Tasks database. Using your own Tasks database (0018)? Map the 
 |---|---|---|---|---|---|---|---|---|
 | 1 | Goals | What am I working toward? | Gallery (medium cards) | Status is Active · Archived is unchecked | Deadline, ascending | — | Name, Progress (bar), Countdown, Area | Your active goals with progress and time left. Glance at it weekly |
 | 2 | Key results | How are my key results moving? | Table | Goal → Status is Active (if your Notion can't filter through a relation, use Done is unchecked) | Due, ascending | Goal | Name, Current, Target, Unit, Progress, Done | Update Current and tick milestones here |
-| 3 | Areas | Which areas do I own? | Gallery (small cards) | Archived is unchecked | Name | — | Name | Open an area to see its goals, projects, tasks, meetings, decisions and people |
+| 3 | Areas | Which areas do I own? | Gallery (small cards) | Archived is unchecked | Name | — | Name | Open an area to see its goals, projects, tasks, meetings and people, and its Brief |
 | 4 | Projects by goal | Which projects serve each goal? | Board | Archived is unchecked · Status is not Done | Priority (High→Low) | Goal (show "No goal") | Name, Status | Spot projects with no goal, and goals with no project |
 
 **Progress as a bar:** click Progress → *Show as* → **Bar**, color green, show the number.
 
 ---
 
-## 6. Review (decide on proposals)
+## 6. Review (retired in 0.16.0)
 
-**Job:** decide every change the brain proposes to your existing knowledge (decision 0003), and accept the notes each ingest made (0041).
-
-Above the tabs, a gray line: "Approving makes these notes trusted: they appear in your Briefs and answers. Until then, the brain treats them as unconfirmed. Status says what each row needs. Needs you · decide in the page: open the row, read it or click Review with me, correct what you want, then set Your call. Needs you · set Your call: pick Approve or Reject, or Fix and say what's wrong in What to fix." (0043, 0045, 0088, 0090). A decided row leaves Review 30 days after the decision: the catch-up moves it to Notion's trash, and the brain keeps it in Git.
-
-**Status** (a formula, decision 0088) is the first thing on every row and in every view: **Needs you · decide in the page** (a row from a meeting, email or document: a page with one section per change, decision 0055), **Needs you · set Your call** (a Conflict, Answer or Suggestion row, or a row from before 0.8.0), **Submitted: waiting for the brain** (you clicked Submit or set Your call; "apply my reviews" or the next catch-up takes it), **Done** or **Closed**.
-
-| # | Tab | View name | Layout | Filter | Sort | Show | Use case |
-|---|---|---|---|---|---|---|---|
-| 1 | Needs my decision | What needs my decision? | Table | State is Pending | Created time, descending | Status, Name, Type, Your call, Area | Your main queue. Open a row that needs you in the page; set Your call here on the others (Fix: say what's wrong in What to fix, on the row). Submitted rows stay here until the brain applies them |
-| 2 | Sources disagree | Where do sources disagree? | Table | Kind is Contradiction · State is Pending | Created time, ascending | Status, Name, Now, Proposed, Your call | Approve keeps both claims as contested. Fix, with the true value in What to fix, sets it |
-| 3 | Approved | What did I approve recently? | List | State is Applied · Last edited time is within *Past month* (relative) | Last edited time, descending | Name, Type, Proposed | Audit trail of what changed |
-| 4 | Rejected | What did I reject? | List | State is Closed | Last edited time, descending | Name, Type | Rejected or stale proposals. The brain may propose one again on the next ingest |
-
-**Four types of row** (0048, 0088): the **Type** column says which, and the Name starts the same way. Kind is the brain's own field: hide it in every view and on the page.
-
-| Type | Where you decide | What accepting does | To correct it |
-|---|---|---|---|
-| From source | In the page, then Your call (0090): read the sections, or click **Review with me** to go through them with Brain Assistant; correct a wording where it stands, or type `Accept`, `Reject` or `Defer` on an item's Decision line; then set **Your call**. Approve accepts what's still Pending, except ⚠ changes and ⚑ flagged items, which need `Accept` on their line; Reject leaves the notes as they are now | A new note becomes Reviewed and gets its page; a change to a note is made with the wording shown; a link is added | Edit the wording in the section before you approve, or set Your call to Request revision and say what to redraft in What to fix: the redraft comes back on the page after your next catch-up |
-| Conflict | Your call | Two sources disagree: both claims are kept as contested. A newer decision replaces an older one: the older is archived. A possible duplicate: it is folded into the other record | Fix, and say in What to fix the true value or the right note |
-| Answer | Your call | The question gets this answer and shows as Answered | Fix, and write the answer in What to fix |
-| Suggestion | Your call | The change Ultimate Assistant suggested (a task's Status or Due, a project's Area) is made in Notion at the brain's next run | Fix, and write the right value in What to fix |
-
-A row from a source written before 0.8.0 has no sections: Status says "set Your call", and Approve, Reject or Fix (with "a: March", or "all except b, d" to leave items out) work as before (0045). A row whose page was written from 0.8.0 to 0.14.0 (headings like `[a · it-…] Creates: …`) and that you already started keeps its rules until it is done: type on each Decision line, then click **Submit decisions** under *Show all properties*. If you hadn't touched it, the first publish after 0.15.0 rebuilt it as a new page.
+There is no Review page or Review database since 0.16.0 (decision 0096): you decide what the brain proposes in your Claude Code or Codex session ("what needs my decision"), and the week's review is an Inbox row, Kind Weekly. A space built before 0.16.0 archives both with [migration 0027](migrations/0027-one-place-to-decide.md). The section number stays, so the references to §9 hold.
 
 ---
 
 ## 7. Knowledge (what the brain knows)
 
-**Job:** find decisions, open questions, what the brain learned, people and organisations, and everything that came in, in Easlo's Notes Dashboard pattern: one tab per database, and inside each tab one linked view with several views (Recent, Current, History).
+**Job:** find what the brain learned and what you kept, people and organisations, and everything that came in, in Easlo's Notes Dashboard pattern: one tab per database, and inside each tab one linked view with several views (Recent, Current, History).
 
 | Tab | View name | Layout | Filter | Sort | Group | Show | Use case |
 |---|---|---|---|---|---|---|---|
-| Decisions *(Knowledge)* | What did we decide recently? | List | Date is within *Past week* (relative) | Date, descending | — | Name, Project, Date | This week's decisions |
-| Decisions *(Knowledge)* | What did we decide? | Table | Assessment is Accepted · Lifecycle is not Archived | Date, descending | — | Name, Project, Date, Summary | Current decisions. Answers "why did we choose X?" |
-| Decisions *(Knowledge)* | What's provisional? | List | Assessment is Provisional | Date, descending | — | Name, Project, Date | Mentioned once, not yet confirmed. Confirm them in the next meeting |
-| Decisions *(Knowledge)* | What changed our minds? | Table | Assessment is Superseded | Date, descending | — | Name, Superseded By, Date | Replaced decisions and what replaced them |
-| Decisions *(Knowledge)* | What's disputed? | List | Lifecycle is Disputed | Date, descending | — | Name, Summary | Records you marked as wrong. Fix them or ask the brain to |
-| Questions *(Knowledge)* | What's still open? | List | Status is Open · Kind is Question | Created time, descending | — | Name, Project, Raised In | Open questions. Set Answered or Dropped when resolved |
-| Questions *(Knowledge)* | Which risks are open? | List | Status is Open · Kind is Risk | Created time, descending | — | Name, Project, Raised In | Open risks |
-| Questions *(Knowledge)* | What did we answer? | List | Status is Answered | Created time, descending | — | Name, Project, Summary | Resolved questions and their answer |
-| Documents *(Documents)* | What did we keep? | List | Lifecycle is not Archived · Origin is not Report | Last edited time, descending | — | Name, Project, Summary | Documents (0049): whole inputs, the parts you asked for (requirements, price lists), and pages promoted from decisions, kept up to date as new versions arrive |
+| Documents *(Documents)* | What did we keep? | List | Lifecycle is not Archived · Origin is not Report | Last edited time, descending | — | Name, Project, Summary | Documents (0049): whole inputs, the parts you asked for (requirements, price lists), and pages promoted from decisions (asked in your agent session), kept up to date as new versions arrive |
 | Documents *(Documents)* | What did we learn? | List | Origin is Learned and Lifecycle is not Archived | Created time, descending | — | Name, Project, Summary | Ideas, methods and definitions the brain learned from your documents and meetings (0071; Concepts before 0.9.1) |
 | Documents *(Reports)* | Which reports do I have? | List | Origin is Report | Last edited time, descending | — | Name, Project, Area, Refresh asked, What to fix | Your living reports, one per subject (0045, 0071). Open one to refresh it or say what it gets wrong |
 | People | Who's who? | Gallery (small cards) | Lifecycle is not Archived | Name | *(Orgs)* Org | Name, Role, *(Orgs)* Org | Find a person by company and role |
 | People | Who's disputed? | List | Lifecycle is Disputed | Name | — | Name, Summary | People records you marked as wrong |
 | Orgs *(Orgs)* | Which clients do I have? | Table | Relationship is Client · Archived is unchecked | Name | — | Name, People, Projects | Your clients with their contacts and projects |
 | Orgs *(Orgs)* | Who else do we work with? | Table | Relationship is not Client · Archived is unchecked | Name | Relationship | Name, Relationship, People | Prospects, partners, suppliers and your employer |
-| Inbox | What came in? | Table | Brain Status is Done | Created, descending | — | Name, Kind, Summary, Project, *(Knowledge)* Decisions | History: every document, email and capture the brain took in, and what it made from each |
+| Inbox | What came in? | Table | Brain Status is Done | Created, descending | — | Name, Kind, Summary, Project | History: every document, email and capture the brain took in, and what it made from each |
 
-There is no Notes database on purpose: notes typed there would never reach the brain. Quick notes go to the Inbox, and notes about a record go in its "My notes" toggle.
+There is no Decisions or Questions tab since 0.16.0 (decision 0099): a project's decisions and its open questions and risks are in its Brief and Decision log, and the ones you follow up are in Tasks → Questions and Risks. There is no Notes database on purpose: notes typed there would never reach the brain. Quick notes go to the Inbox, and notes about a record go in its "My notes" toggle.
 
 ---
 
 ## 8. Archive (under System)
 
-**Job:** find what's finished without cluttering the Spaces. A page named "Archive" on System, linked from the navigation, with one tab per database.
+**Job:** find what's finished without cluttering the Spaces. A page named "Archive" on System, linked from the navigation, with one tab per database. In a space migrated to 0.16.0 it also holds the archived Review, Decisions and Questions databases, as full pages, with no tab.
 
 | Tab | View name | Database | Layout | Filter | Sort | Show |
 |---|---|---|---|---|---|---|
 | Projects | What's finished? | Projects | Table | Status is Done **or** Archived is checked (filter group joined with Or) | Dates (end), descending | Name, Dates, Status |
 | Goals *(Planning)* | Which goals are closed? | Goals | Table | Status is Achieved or Dropped, **or** Archived is checked | Deadline, descending | Name, Status, Deadline |
 | Areas | Which areas did I close? | Areas | List | Archived is checked | Name | Name |
-| Decisions *(Knowledge)* | Which decisions are archived? | Decisions | List | Lifecycle is Archived | Date, descending | Name, Project, Date |
-| Questions *(Knowledge)* | Which questions are archived? | Questions | List | Lifecycle is Archived | Created time, descending | Name, Project, Status |
 | Documents *(Documents)* | Which documents are archived? | Documents | List | Lifecycle is Archived | Name | Name, Project |
 | People | Who is archived? | People | List | Lifecycle is Archived | Name | Name, Role |
 | Orgs *(Orgs)* | Which orgs are archived? | Orgs | List | Archived is checked | Name | Name, Relationship |
@@ -215,7 +184,7 @@ Notion lets you shape how each database page opens. Set it once per database: op
 - **Hidden:** shown only on *Show all properties*.
 - **Backlinks:** *Show always*, *On hover* or *Off*.
 
-**The rule** (decision 0048; docs/notion-space-design.md §3.15): what you act on is **pinned in the heading**; what the brain wrote comes next, in the property group; system fields (Brain ID, Last Synced, State, the Review Kind, timestamps) are **hidden**. Review's Status, a formula over State, is the exception: it says what a row needs, so it is pinned first (0088). Relations the template already shows as linked views (meetings, tasks, questions) stay in the panel, out of the way. A property of a module you left off isn't there: skip it.
+**The rule** (decision 0048; docs/notion-space-design.md §3.15): what you act on is **pinned in the heading**; what the brain wrote comes next, in the property group; system fields (Brain ID, Last Synced, timestamps) are **hidden**. Relations the template already shows as linked views (meetings, tasks) stay in the panel, out of the way. A property of a module you left off isn't there: skip it.
 
 **Buttons** (decision 0048) are properties too, so they go in the heading; the box each one ticks goes at the top of the property group (#144). The API can't create them; add each by hand: database `•••` → Properties → **New property** → **Button**, action **Edit property** on **This page**:
 
@@ -226,10 +195,6 @@ Notion lets you shape how each database page opens. Set it once per database: op
 | Tidy | Tidy capture | Inbox | Send message to Brain Assistant | core |
 | Write | Write up | Documents | Send message to Brain Assistant | Documents |
 | Accept | Accept | Documents | Accepted → checked; Accepted at → now: a write-up or a refreshed report (0071; Accept write-up on Documents and Accept refresh on the Inbox before 0.9.1) | Documents |
-| Promote | Promote to document | Decisions | Promote asked → checked | Documents (and Knowledge) |
-| Submit | Submit decisions | Review | Decided → checked; Decided at → now (decision 0055). Hidden since 0.15.0 (0090, migration 0025): reachable under *Show all properties* for a row of the older page | core |
-| Submit all | Submit and accept all | Review | Decided → checked; Accept all → checked; Decided at → now. Hidden since 0.15.0, as Submit | core |
-| Grill | Review with me | Review | Send message to Brain Assistant (0090) | core |
 
 The name and the label differ, so the layout doesn't show the same text twice (#144). The brain reads the boxes the checkbox buttons tick (and Accepted and Accepted at), never a button.
 
@@ -238,27 +203,23 @@ The name and the label differ, so the layout doesn't show the same text twice (#
 | Button | Message |
 |---|---|
 | Tidy capture | `Run your Tidy capture skill on this Inbox page: @This page. I confirm: replace the text below the title with the rewrite, as the skill says. Do not change the title, Brain Status or any property.` |
-| Write up | `Run your Write up skill on this Documents page: @This page. I confirm: do it as the skill says. Do not change any property, the Decision page, or any other page.` |
+| Write up | `Run your Write up skill on this Documents page: @This page. I confirm: do it as the skill says. Do not change any property or any other page.` |
 | Refresh report | `Run your Refresh report skill on this report: @This page. I confirm: add or replace the Proposed refresh toggle as the skill says. Do not change the report's text outside it, or any property.` |
-| Review with me | `Run your Grill review skill on this Review page: @This page. Go through it with me in rounds of questions, show me what you will write and wait for my yes before writing. Never set Your call or change any property.` |
 
-A message without the page reference makes Brain Assistant stop and say so. Review with me carries no confirmation to write: Grill review asks for your yes to its preview in the chat (capture-and-review §7.12.10). The Accept button uses **Edit property** on **This page**: Accepted → checked and Accepted at → Now.
+The buttons that message Brain Assistant need Notion's Business or Enterprise plan with Notion credits, as Brain Assistant does (decision 0101 §7). A message without the page reference makes Brain Assistant stop and say so. The Accept button uses **Edit property** on **This page**: Accepted → checked and Accepted at → Now.
 
 | Database | Heading (in order) | Property group: where · order | Hidden | Backlinks | Why |
 |---|---|---|---|---|---|
-| Areas | At a glance | Panel · To review, Meetings to review, Due, Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Decisions, Questions, Documents, Inbox, Tasks, Review, Archived, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced | Off | The area's home (0050): its counts as one line in the heading, everything else in its views |
+| Areas | At a glance | Panel · Meetings to review, Due, Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Documents, Inbox, Tasks, Archived, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced | Off | The area's home (0050): its counts as one line in the heading, everything else in its views |
 | Goals | Status, Progress, Countdown | Panel · Deadline, Why, Area, Key Results, Projects, Summary, Archived | Brain ID, Last Synced | Off | Progress and status at a glance |
 | Key Results | Progress, Current, Target | Main · Goal, Kind, Start, Unit, Done, Due | — | Off | No body; you edit Current in the heading |
-| Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Goal, People, Summary, Archived, Meetings, Decisions, Questions, Documents, Inbox, Tasks, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel. The Workflow settings close the panel (decision 0059) |
-| Meetings | Brain Status, Date, Project | Panel · Attendees, Area, Decisions, Questions, Tasks, Review Items | Brain ID, Ingested At | Off | Brain Status is the one field you change per meeting |
+| Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Goal, People, Summary, Archived, Meetings, Documents, Inbox, Tasks, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel. The Workflow settings close the panel (decision 0059) |
+| Meetings | Brain Status, Date, Project | Panel · Attendees, Area, Tasks | Brain ID, Ingested At | Off | Brain Status is the one field you change per meeting |
 | People | Role, Org | Panel · Email, Projects, Meetings, Sources, Summary, Lifecycle | Brain ID, Last Synced | On hover | Who they are and where they work |
 | Orgs | Relationship, Website | Panel · Meetings via projects, People, Projects, Summary, Archived | Brain ID, Last Synced | On hover | — |
-| Decisions | Promote, Lifecycle | Panel · Promote asked, Assessment, Date, Project, Area, Decided In, Supersedes, Superseded By, Sources, Documents, Summary | Brain ID, Last Synced | Show always | The body is brain-written; backlinks show supersede chains and mentions |
-| Questions | Status, Kind, Project | Panel · Area, Raised In, Sources, Summary, Lifecycle | Brain ID, Last Synced, Created time | Off | You set Status |
-| Review | Status, Grill, About Page | Main, in four groups · **Your decision:** Your call, What to fix · **What's proposed:** About, Now, Proposed, Why, each set to **Hide when empty** · **Where it comes from:** Type, Area, Source Meeting · **Submitted:** Decided, Decided at, Accept all (collapsed where Notion allows). Without groups in the layout editor, the same order without headings | Submit, Submit all, Kind, State, Brain ID, Created time, Last edited time | Off | Status says where to decide (decision 0088). A row from a source is a page with a section per change (decision 0055): read it or click Review with me, then set Your call (0090); its About, Now, Proposed and Why are empty, so they don't show. A Conflict, Answer or Suggestion row is decided in Your call, at the top of the property group |
-| Inbox | Keep, Tidy, Brain Status, Project, Area | Main · Document asked, Only keep, Kind, Summary, Decisions, Questions, Documents, People, Tasks, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
-| Documents | Write, Update, Accept, Lifecycle, Project, Area, Sources | Panel · Accepted, Accepted at, Refresh asked, What to fix, Asked in, Origin, From decision, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |
-| Tasks | Status, Due | Panel · Project, Area, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
+| Inbox | Keep, Tidy, Brain Status, Project, Area | Main · Document asked, Only keep, Kind, Summary, Documents, People, Tasks, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
+| Documents | Write, Update, Accept, Lifecycle, Project, Area, Sources | Panel · Accepted, Accepted at, Refresh asked, What to fix, Asked in, Origin, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |
+| Tasks | Status, Due, Kind | Panel · Project, Area, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
 
 **Hide system properties everywhere.** Brain ID, Last Synced, Created time and Last edited time are plumbing (owner "system"). Hide them in every view and layout, except where a view lists one to show (for example Last edited time in "Which projects have gone quiet?"). Don't delete them, because the brain matches records by Brain ID.
 
@@ -266,7 +227,7 @@ A message without the page reference makes Brain Assistant stop and say so. Revi
 
 ## 10. Navigation (instead of Prompt 8)
 
-1. **On the "System" page,** create a synced block named "Tier 1 nav": one line of links, Home · Tasks · Meetings · Projects · Plan · Review · Knowledge · Archive · How it works, unthemed (Tasks with the Tasks module, Plan with Planning). For questions, use Brain Assistant ([brain-assistant.md](brain-assistant.md)).
+1. **On the "System" page,** create a synced block named "Tier 1 nav": one line of links, Home · Tasks · Meetings · Projects · Plan · Knowledge · Archive · How it works, unthemed (Tasks with the Tasks module, Plan with Planning). For questions, use Brain Assistant ([brain-assistant.md](brain-assistant.md)).
 2. **Still on "System",** create one synced block per Space, "Tier 2 nav – Plan" and so on. Each lists that Space's view names as links (right-click a view tab → *Copy link to view*), with its own icon and a light background color.
 3. **On each Space page,** add a narrow left column containing: Tier 1 nav, a divider, then that Space's Tier 2 nav. Home gets only Tier 1.
 4. **Above each page title,** add a small gray text label with the page name. It's a plain block, not synced.
@@ -282,7 +243,7 @@ A message without the page reference makes Brain Assistant stop and say so. Revi
 - [ ] Tasks has the statuses Waiting On and Someday, and the Done tab groups by week.
 - [ ] Archive is on System and linked from the navigation; "What's finished?" is no longer in Projects.
 - [ ] View names match this guide exactly, question marks included.
-- [ ] Home "What's waiting for you?" shows only rows whose Status starts with "Needs you", grouped by Type with counts; Knowledge "What changed our minds?" shows only Superseded decisions.
+- [ ] Home has no Review list, and no page or view shows a Review, Decisions or Questions database; Tasks has the tabs Questions and Risks (Tasks module).
 - [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status Ready; New meeting and New project open a page with the default template.
 - [ ] Brain ID and Last Synced are hidden in every view and page layout.
 - [ ] Editing Tier 1 nav on System updates every Space.

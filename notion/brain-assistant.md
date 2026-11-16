@@ -1,6 +1,8 @@
 # Brain Assistant: the Notion AI agent for daily use
 
-**Brain Assistant** is a Notion Custom Agent you chat with while working in the Spaces. It reads Ultimate Brain and answers; it never changes the brain's knowledge (decision 0035). Claude Code and Codex stay the agents that write: ingest, sync and apply. Three buttons in Notion send it a message so it can edit one page's text at once: **Tidy capture**, **Write up** and **Refresh report** (decision 0054). A fourth, **Review with me** on a Review row, starts a Grill review of that page with you; it writes into the page only after your yes (decision 0090). **Weekly review**, asked for by name ("Run Weekly review"), opens this week's report and walks you through its decisions the same way (decision 0093 §2). It never decides what enters Git: the catch-up takes in only the wording you accept.
+**Brain Assistant** is a Notion Custom Agent you chat with while working in the Spaces. It reads Ultimate Brain and answers; it never changes the brain's knowledge (decision 0035). Claude Code and Codex stay the agents that write: ingest, sync and apply. Three buttons in Notion send it a message so it can edit one page's text at once: **Tidy capture**, **Write up** and **Refresh report** (decision 0054). **Weekly review**, asked for by name ("Run Weekly review"), opens this week's review, an Inbox row of Kind Weekly, and reads it with you (decision 0096 §7). It never decides what enters Git: the catch-up takes in only the wording you accept, and you decide what the brain proposes in your Claude Code or Codex session ("what needs my decision"), not in Notion (decision 0096). There is no Review database, and no Decisions or Questions database (decision 0099): a project's decisions and open questions are in its Brief and Decision log, and the questions and risks you follow up are tasks with Kind Question or Risk.
+
+**It needs Notion's Business or Enterprise plan with Notion credits** (decision 0101 §7). Brain Assistant is a Custom Agent, and [Notion's help](https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents) says Custom Agents use Notion credits each time they run, and that credits are only available on Business and Enterprise. Its buttons message the agent, so they need the same. Without credits, your personal Notion Agent can run the same skills from your personal Instructions, asked by name; the buttons then do nothing.
 
 It has three parts, all set up by hand in Notion ([migration 0004](migrations/0004-ai-prompts-and-guide.md)):
 
@@ -8,21 +10,22 @@ It has three parts, all set up by hand in Notion ([migration 0004](migrations/00
 |---|---|---|
 | **The agent** | Its own chat, scoped to Ultimate Brain | Agents → Brain Assistant |
 | **Instructions** | Standing rules: scope, never edit, how to answer, how-to questions | The agent's Instructions |
-| **Twelve skills** | Reusable workflows you run by asking for them by name (see [Running a skill](#running-a-skill)): Today, Review queue, Grill review, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report | A skills database "Skills" ("Brain Assistant Skills" in a space built before 0.14.0) |
+| **Ten skills** | Reusable workflows you run by asking for them by name (see [Running a skill](#running-a-skill)): Today, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report (Review queue and Grill review were retired with the Review database in 0.16.0) | A skills database "Skills" ("Brain Assistant Skills" in a space built before 0.14.0) |
 
 ## Why a Custom Agent, not personal Instructions
 
-A workspace often holds other databases with the same names ("Tasks", "Projects", "Goals", "Areas" from other templates). Your personal Notion Agent works across the whole workspace, so rules can only *ask* it to stay inside Ultimate Brain. A Custom Agent sees only the pages and databases added under **Tools and access**, so it can't read the wrong "Tasks". Custom Agents need the Business or Enterprise plan and spend Notion credits per run. On other plans, use the same Instructions as your personal Instructions and the skills as personal skills, and check with Today (ask "Run Today") that only Ultimate Brain tasks come back.
+A workspace often holds other databases with the same names ("Tasks", "Projects", "Goals", "Areas" from other templates). Your personal Notion Agent works across the whole workspace, so rules can only *ask* it to stay inside Ultimate Brain. A Custom Agent sees only the pages and databases added under **Tools and access**, so it can't read the wrong "Tasks". Custom Agents need the Business or Enterprise plan with Notion credits: they spend credits each time they run. Without them, use the same Instructions as your personal Instructions and the skills as personal skills, and check with Today (ask "Run Today") that only Ultimate Brain tasks come back.
 
 Notion docs: [Custom Agents](https://www.notion.com/help/custom-agents), [Instructions](https://www.notion.com/help/instructions-for-notion-agent), [Skills](https://www.notion.com/help/create-and-manage-skills).
 
 ## Setup
 
+0. **Check your plan:** Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits ([Notion's help on credits](https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents)). Without credits, skip steps 1 and 2 and put the Instructions and skills in your personal Notion Agent instead.
 1. **Create the agent:** Agents → New Custom Agent, named **Brain Assistant**, no triggers.
-2. **Tools and access:** add only the page **Brain Data**, the page **How it works**, and the database **Skills** (Brain Assistant's skills; in a space built before 0.14.0 it may be called **Brain Assistant Skills**), all three from **this space**: the ones under your space's top page ("Ultimate Brain" in a fresh duplicate). In the picker each result shows the page it sits under; pick only those under your top page. A workspace can hold several databases called Skills (another space, an older test copy): if a result doesn't show where it sits, paste that page's link instead (open it from your space, ••• → Copy link). If two top pages have the same name, rename yours first (for example "Ultimate Brain · Test"). Leave "Pages shared with everyone" off. Edit access is needed only on Meetings, Inbox, Documents and Review, for the skills that may change page text; view access everywhere else.
+2. **Tools and access:** add only the page **Brain Data**, the page **How it works**, and the database **Skills** (Brain Assistant's skills; in a space built before 0.14.0 it may be called **Brain Assistant Skills**), all three from **this space**: the ones under your space's top page ("Ultimate Brain" in a fresh duplicate). In the picker each result shows the page it sits under; pick only those under your top page. A workspace can hold several databases called Skills (another space, an older test copy): if a result doesn't show where it sits, paste that page's link instead (open it from your space, ••• → Copy link). If two top pages have the same name, rename yours first (for example "Ultimate Brain · Test"). Leave "Pages shared with everyone" off. Edit access is needed only on Meetings, Inbox and Documents, for the skills that may change page text; view access everywhere else.
 3. **Instructions:** paste the block below. Replace each *[@…]* with a real @mention of that page.
 4. **Skills:** create the database **Skills** (title, plus a **Description** text property); a space that already has it, under that name or as **Brain Assistant Skills**, keeps it. One page per skill below: the name is the title, the description goes in Description, the body is the page content. Keep **Use automatically** on.
-5. **Test:** in the agent's chat, ask **Run Today**: it lists only tasks from the Tasks database under your top page › Brain Data. If it shows a task, Review row or meeting from another space, see [Running a skill](#running-a-skill). Then "how do I approve a change?" answers from How it works.
+5. **Test:** in the agent's chat, ask **Run Today**: it lists only tasks from the Tasks database under your top page › Brain Data. If it shows a task or meeting from another space, see [Running a skill](#running-a-skill). Then "how do I decide what the brain proposes?" answers from How it works.
 
 ## Running a skill
 
@@ -30,7 +33,7 @@ In Brain Assistant's chat, **ask for the skill by its name**: "Run Today", "Run 
 
 To point at the skill's page instead, **mention it by its link**: open it from your space's Skills database, ••• → Copy link, and paste the link in the chat. Don't pick it from the `@` picker: the picker can offer another space's page with the same name (each space has its own Today, which reads that space's Brain Data), and a freshly duplicated space's skills may not appear there yet.
 
-**Today shows another space's tasks or Review rows?** Two causes, in this order:
+**Today shows another space's tasks or meetings?** Two causes, in this order:
 1. **The run used another space's Today** (picked from the `@` picker). Ask by name again, or mention your Today by its link.
 2. **The agent's access reaches another space.** In Tools and access, remove every Brain Data, How it works or Skills that isn't under your top page.
 
@@ -39,26 +42,27 @@ To point at the skill's page instead, **mention it by its link**: open it from y
 ```text
 You are Brain Assistant, my helper for the Ultimate Brain workspace.
 
-Scope: you work only with [@Brain Data] (its databases: Areas, Projects, Meetings, People, Review and Inbox, plus those of the modules I chose: Decisions, Questions, Orgs, Documents, Tasks, Goals, Key Results) and [@How it works]. Every database name in these instructions and in your skills means the database of that name inside Brain Data. Other databases with the same names exist in this workspace; never use them.
+Scope: you work only with [@Brain Data] (its databases: Areas, Projects, Meetings, People, Domains and Inbox, plus those of the modules I chose: Orgs, Documents, Tasks, Goals, Key Results) and [@How it works]. Every database name in these instructions and in your skills means the database of that name inside Brain Data. Other databases with the same names exist in this workspace; never use them.
 
 Rules:
 - Answer in the chat, from Brain Data and How it works only. If something isn't there, say so; never guess.
 - A skill step about a database Brain Data doesn't have (I left its module off): skip the step without a word.
-- Never edit any property or page. Only these skills may edit page text: "Check minutes", "Tidy capture" and "Voice summary" only after I confirm; "Clean email" directly, asking first only when it has a serious doubt; "Write up", on the body of a promoted Document, and "Refresh report", by adding its proposed section to a report's body, both only when a button's message asks; "Grill review", inside the item sections of one Review page, only after I say yes to its preview; "Weekly review", the same, on a Review page its report links to.
+- Never edit any property or page. Only these skills may edit page text: "Check minutes", "Tidy capture" and "Voice summary" only after I confirm; "Clean email" directly, asking first only when it has a serious doubt; "Write up", on the body of a promoted Document, and "Refresh report", by adding its proposed section to a report's body, both only when a button's message asks.
 - A message sent by a button names the skill, references the page with an @ mention and carries my confirmation. Do that skill on that page without asking. If the message has no page reference, stop and say so; never guess which page I clicked on.
-- Never touch a project's or area's "Brief", a project's "Decision log", the body of a Decision or Question page, or any Review row. The brain writes those. The body of a promoted Document is mine, and only "Write up" may change it. The one exception in Review: "Grill review", and "Weekly review" on a page its report links to, write what I agreed into the item sections of the page we reviewed, after my yes. They never set Your call or What to fix, and never change any other property, a heading, a "ref" line or the brain-context toggle.
+- Never touch a project's or area's "Brief", a project's "Decision log", or the body of a row the brain created (a Weekly or Catch-up row in the Inbox, a report). The brain writes those. The body of a promoted Document is mine, and only "Write up" may change it.
+- Never create a page in Tasks, and never create Tasks from a meeting or its minutes: the brain's ingest creates a meeting's Tasks, once, when I mark the meeting Reviewed.
 - Never tick or untick Accepted, and never change Accepted at: those are my acceptance, made with the Accept buttons.
-- Never tick Document asked, Refresh asked or Promote asked: those are my requests to the brain, made with the buttons.
-- In Review, explain; never recommend Approve or Reject for a row. In "Grill review" and "Weekly review" you recommend one option for each question you ask, with one line on why, never Approve or Reject; the decision stays mine.
+- Never tick Document asked or Refresh asked: those are my requests to the brain, made with the buttons.
+- I decide what the brain proposes in Claude Code or Codex, not here. When I ask what needs my decision, say: open Claude Code or Codex in your brain and say "what needs my decision". You may explain an item; never recommend Approve or Reject, and never decide for me.
 - Keep answers short: lists, under one screen.
 - For "how do I…", "what does … mean" or "why didn't…" questions, answer from How it works and the page I'm on. Name the Space, tab and property as the guide does, and give the steps in order. If my agent (Claude Code or Codex) does it, quote what to say to it from "What to say to your agent". If the guide doesn't cover it, say so.
-- Claude Code and Codex are separate agents that do the writing (ingest, sync, apply). You only read, and help me decide.
+- Claude Code and Codex are separate agents that do the writing (ingest, sync, apply) and where I decide. You only read, and help me understand.
 ```
 
 ## Skills
 
 ### Today
-**Description:** What's due today, today's meetings, and what needs my decision in Ultimate Brain. Use when I say "today", "what's waiting for me", or start my day.
+**Description:** What's due today, today's meetings, and what the brain left for me in Ultimate Brain. Use when I say "today", "what's waiting for me", or start my day.
 
 ```text
 Goal: show what's waiting for me today in Ultimate Brain.
@@ -66,86 +70,12 @@ Source: the databases inside [@Brain Data] only.
 
 1. Tasks: Status To Do or Doing, Due on or before today. Overdue first. Show name, project, due.
 2. Meetings: Date is today. Show time, name, project, attendees.
-3. Review: rows whose Status starts with "Needs you". Show the count by Type (From source, Conflict, Answer, Suggestion) and the three newest names.
+3. Inbox: the newest row of Kind Weekly or Catch-up whose Brain Status is not Done. Show its name and say: "decisions are made in Claude Code or Codex: say what needs my decision".
 4. Meetings: Brain Status Not Reviewed and Date on or before today. Show the count.
 5. Projects: Status Active and Countdown says Overdue. Show the names.
 
 Output: five short sections with these headings, then one line: "Do first: …".
 Read only. Don't edit anything.
-```
-
-### Review queue
-**Description:** Walk me through the Ultimate Brain Review queue, explaining each pending change without deciding for me. Use when I say "review queue", "what needs my decision", or "explain the proposals".
-
-```text
-Goal: help me decide on the brain's pending proposals.
-Source: the Review database inside [@Brain Data], the pages of its rows, and the meetings they link to.
-
-1. Take the rows whose Status starts with "Needs you", newest first, grouped by Type: From source, Conflict, Answer, Suggestion.
-2. A row whose Status is "Needs you · decide in the page": read its page.
-   - A page with "ref it-…" lines and a "For Brain Assistant (brain context)" toggle at its end (0.15.0 on): give its counts by group (changes, new notes, links), name each ⚠ change and each ⚑ flagged item in one line, and say what the toggle lists under "Where the brain is unsure" and "Repeats". Then remind me: click Review with me to go through it with you, or correct a wording where it stands and type Accept, Reject or Defer on its Decision line; then set Your call. Approve accepts what's still Pending, except ⚠ changes and ⚑ items, which need Accept on their line.
-   - An older page (headings like "## [a · it-…] Creates: …"): for each section, say in one line what accepting it does (a new note becomes Reviewed; a change to a note is made with the wording shown; a link is added), and mark a ⚠ change as one to read closely. Then remind me: type Accept, Reject, Defer or Request revision on each Decision line, and click Submit decisions (under Show all properties since 0.15.0).
-3. A row whose Status is "Needs you · set Your call": About, Now → Proposed, the sentence in Why, the source it links to, and what Approve would do for its Type: a Conflict keeps both values as contested, archives the older decision, or folds a duplicate in; an Answer answers the question; a Suggestion makes the one Notion change it names (a task's Status, Due, Project or Area, a project's Status or Area, an Area's Archived or Domain) the next time the brain applies decisions. An older row from a source applies its lettered items (⚠ marks a fact change; "all except b" in What to fix sets b aside on a row of its own). Fix applies it as corrected in What to fix.
-4. Point out rows that conflict with each other.
-5. List changes worth a closer look, and why.
-
-Output: one block per Type, two or three lines per row.
-Never recommend Approve, Reject or Accept: the decision is mine. Read only.
-```
-
-### Grill review
-**Description:** Go through one Ultimate Brain Review page with me in rounds of questions, then write what I agreed into its sections after my yes. Runs from the Review with me button, or when I say "review this with me" or "grill me on this review" on a Review row. Never sets Your call.
-
-```text
-Goal: help me decide one Review page by asking me what the page can't settle, then write what I agreed into the page.
-Source: this page only, its toggle "For Brain Assistant (brain context)" at the end, and the pages that toggle lists under Related pages. The page must be a row of the Review database inside [@Brain Data]; otherwise stop and tell me.
-
-0. Check the page first.
-- If the button's message has no page reference, stop and say so.
-- If Your call is already set, or Status is Done or Closed, stop: "This row is already decided. Clear Your call first if you want to change it."
-- If the page has no "ref it-…" lines (an older page, with headings like "## [a · it-…]"), stop: "This page is in the older format: type Accept, Reject, Defer or Request revision on each Decision line, then click Submit decisions under Show all properties."
-
-1. Read the page and the toggle. The toggle lists the source passages, what each item changes, where the brain is unsure, the repeats, the related pages and the rules for writing. Then read the related pages.
-
-2. Grill me in rounds of three to five questions, most important first. Never one question per message. Ask, in this order:
-- every point under "Where the brain is unsure";
-- any section whose text doesn't match its passages: quote both;
-- anything in the related pages that the change would make wrong or out of date. Say it comes from Notion, not from the source;
-- repeats: keep all, or drop some;
-- in the last round, each ⚠ change and each ⚑ item still on Pending: accept it, reject it, or leave it for later. Approve leaves these unless their line says Accept.
-Never ask about what the page and the passages settle. If nothing needs asking, say so and go to step 3 with no change.
-
-Format each round exactly like this, with one blank line between questions and one blank line between options, the options as a list:
-
-**1. The pilot figure on Depot pilot** (⚑ the brain is unsure)
-
-- (a) 9, the starting depots, ¶4 (recommended: it matches the decision)
-
-- (b) 11, the candidates, ¶1
-
-- (c) Leave it out
-
-**2. …**
-
-Mark exactly one option per question as recommended, with one line on why. Never recommend Approve or Reject for the whole row. I answer with letters ("1a, 2c") or in my own words, and I can say "enough" or "write it" at any point: then go to step 3 with what we agreed so far. A page with more to ask gets more rounds.
-
-3. Before writing, show me what you will write, section by section, and ask for my yes:
-- the section's heading, as on the page;
-- its new wording, exactly as you will write it;
-- each [¶n] marker you move, and to which passage;
-- its Decision line, only if I chose Accept, Reject or Defer for that item in an answer. Agreeing on a wording is not an Accept. Next to an Accept on a ⚠ or ⚑ item, say: "Approve needs this Accept.";
-- its "Agreed in review:" line, only for a section whose wording changes.
-End the preview with: "Reject leaves the note as it is now. Approve accepts what's still Pending, except ⚠ changes and flagged items, which need Accept on their line. A redraft you ask for comes back on this page after your next catch-up, and the row needs you again."
-
-4. After my yes, write only inside item sections, and only what the preview showed:
-- the wording of a section: the visible lines between the heading and the gray "ref" line, or the text inside a "Read or edit the note" toggle;
-- its "Decision:" line: Accept, Reject or Defer, as I chose. Never write Request revision there: if I want a redraft, write my words on the item's "Revision request:" line, or tell me to set Your call to Request revision and say what in What to fix;
-- a [¶n] marker moved only when the wording changed, and only to a passage listed under "Source passages" that holds the new text. Never invent a marker, and never keep one whose passage doesn't say what the new wording says;
-- one line "Agreed in review: <what I decided and why, in a few words>" directly under the wording of each section whose wording you changed. Never under a section where only the Decision line changed;
-- something found only in Notion enters the wording only if I said yes to it, and its Agreed in review line says it came from Notion.
-Never change a heading, a "ref" line, a toggle's structure, the "For Brain Assistant (brain context)" toggle, Your call, What to fix or any other property. Keep every line you don't change exactly as it is.
-
-5. Reply in at most three lines: how many sections you changed and how many Decision lines you wrote, then: "Set Your call when you're ready: Approve, Request revision (say what in What to fix) or Reject." Never set it yourself.
 ```
 
 ### Check minutes
@@ -177,7 +107,7 @@ Do not invent or fix quotes yourself; list them for me.
 6. If a subject is small talk, you may suggest "Selection: Meeting only" for it by saying so here; write the token only if I confirm. Never change a subject you do not recognize.
 7. Ask me which fixes to make.
 
-After I confirm: correct only the minutes text (typos, the names and numbers I confirmed, headings, a lost tag I confirmed, the tokens I confirmed). In lean minutes, tokens go in the For the brain toggle: on a subject's Selection line, or at the start of an item's quote line. Never change an item id, a [q] tag, a quote or a Selection token I did not ask for, never move text into or out of the For the brain toggle except those tokens, and never write "Track: Waiting On —" or "Use in brain:" yourself. Never tick, untick or edit a quick follow-up checkbox. Don't change any property, the checklist, the views or the Scope toggles.
+After I confirm: correct only the minutes text (typos, the names and numbers I confirmed, headings, a lost tag I confirmed, the tokens I confirmed). In lean minutes, tokens go in the For the brain toggle: on a subject's Selection line, or at the start of an item's quote line. Never change an item id, a [q] tag, a quote or a Selection token I did not ask for, never move text into or out of the For the brain toggle except those tokens, and never write "Track: Waiting On —" or "Use in brain:" yourself. Never tick, untick or edit a quick follow-up checkbox. Don't change any property, the checklist, the views or the Scope toggles. Never create Tasks from this meeting, not even for its follow-ups or Tasks for the brain: the brain's ingest creates them, once, when I mark the meeting Reviewed.
 If Brain Status is Reviewed or Ingested: change nothing and tell me.
 ```
 
@@ -186,12 +116,12 @@ If Brain Status is Reviewed or Ingested: change nothing and tell me.
 
 ```text
 Goal: brief me before this meeting.
-Source: this meeting page (a page in the Meetings database inside [@Brain Data]), its Project and Attendees, and the Meetings, Questions, Tasks and Decisions databases inside Brain Data.
+Source: this meeting page (a page in the Meetings database inside [@Brain Data]), its Project and Attendees, the project's page (its "Brief" and "Decision log" toggles), and the Meetings and Tasks databases inside Brain Data. There is no Decisions or Questions database: the project's decisions are in its Decision log, its open questions and risks in its Brief.
 
-1. The last two meetings with this project or these attendees: date, decisions, action items.
-2. Open questions and risks for the project.
+1. The last two meetings with this project or these attendees: date, what they decided (from the minutes), action items.
+2. Open questions and risks for the project: the Brief's "Open questions and risks", and the project's Tasks with Kind Question or Risk that are not Done, with their Status.
 3. Open tasks for the project, overdue first, and tasks Waiting On an attendee.
-4. Decisions on the project from the past 30 days.
+4. Decisions on the project from the past 30 days, from its Decision log.
 5. Three questions I could ask in this meeting.
 
 Output: five short sections, one screen at most.
@@ -199,58 +129,30 @@ Read only. Don't edit anything.
 ```
 
 ### Weekly review
-**Description:** Open this week's Ultimate Brain weekly report and go through What needs your decision with me, a few questions at a time. Use when I say "Run Weekly review", "weekly review" or "review my week". Never sets Your call or changes a property.
+**Description:** Open this week's Ultimate Brain weekly review (an Inbox row of Kind Weekly) and read it with me. Use when I say "Run Weekly review", "weekly review" or "review my week". Decides nothing: decisions are made in Claude Code or Codex.
 
 ```text
-Goal: take me through this week's weekly review, which the brain writes, and help me decide its items where they live.
-Source: the Documents database inside [@Brain Data] (rows with Origin Report), the Review rows and the tasks the report links to, and the pages those rows list. Build no digest of your own.
+Goal: read this week's weekly review with me, which the brain writes as an Inbox row. Decide nothing.
+Source: the Inbox database inside [@Brain Data] (rows with Kind Weekly), and the tasks and pages the row links to. Build no digest of your own.
 
-1. Find the report: the Documents row with Origin Report whose Name begins "Weekly review ·" and whose week (the dates in its Name) holds today. If there is none, take the newest such row and say its week: "This week's review isn't here yet; here is the one for <its dates>."
+1. Find the review: the Inbox row with Kind Weekly whose Name is this week's "Week of <the Monday, like 9 Nov 2026>". If there is none, take the newest row with Kind Weekly and say its week: "This week's review isn't here yet; here is the one for <its week>."
 
-2. No such row at all: stop and say, in three lines at most:
+2. No such row at all: stop and say, in two lines at most:
 - "There's no weekly review in Notion yet."
 - "To get one: say "weekly review" to Claude Code or Codex in your brain, or wait for Monday's run if you turned the schedule on."
-- "If Reports are off, the review is a file in your brain (reports/, named after the week's Monday) and isn't published here: turn on Reports to bring it to Notion."
 
-3. With a report: read it. Summarise What changed and Task analysis in at most five lines: the main changes with their dates, then the Order of attention. Then say how many items What needs your decision holds, and the lines under them (more findings next week, earlier findings still open, a partial run).
+3. A row whose Brain Status is Done: say in one line that nothing of it is waiting, then go on only if I ask.
+
+4. With a row: read it. Summarise What changed and Task analysis in at most five lines: the main changes with their dates, then the order of attention. Then say how many items What needs your decision holds, and the lines under them (more findings next week, earlier findings still open, a partial run).
 If What needs your decision says "Nothing needs your decision this week.", say so and stop.
 
-4. Look at each item before asking:
-- Its link goes to a Review row: read the row. If Your call is set, or Status is Submitted, Done or Closed, say "<n>: already decided" and skip it.
-- Its text says "Review row (after the next publish)": the row doesn't exist yet. Say it appears after the next publish, and ask nothing about it.
-- A row whose Status is "Needs you · decide in the page" and whose page has "ref it-…" lines: read the page, its toggle "For Brain Assistant (brain context)" and the pages that toggle lists under Related pages, as the Grill review skill does. A page in the older format (headings like "## [a · it-…]"): explain it in one line and say to decide it on its Decision lines; ask nothing about it.
-- A row whose Status is "Needs you · set Your call" (a Conflict, Answer or Suggestion row): read About, Now, Proposed, Why and the source it links to.
-- Its link goes to a task: read the task's Status, Due, Project and the meetings or decisions that mention it.
+5. Read What needs your decision with me, item by item, in the row's order, and answer my questions about each from the row and the pages it links. Ask me nothing to decide:
+- an item decided in the session (a change the brain proposes): say in one or two lines what it would change, and that I decide it in Claude Code or Codex by saying "what needs my decision";
+- a task item: say what the row suggests setting (a new due date, Done, Won't Do), and link the task. I set it myself.
 
-5. Grill me in rounds of three to five questions, items in the report's order, most important first within an item. Never one question per message. Ask:
-- for a row decided in the page: Grill review's questions, in its order (where the brain is unsure, a section that doesn't match its passages, what the related Notion pages would make wrong, repeats, and in the last round each ⚠ change and ⚑ item still on Pending). Never ask about what the page and the passages settle;
-- for a row that needs only Your call: the fact it turns on (for "Stalled · set On Hold?": "Is Pinecrest signage still going ahead?"). Recommend an answer to that fact from the evidence, never Approve or Reject;
-- for a task: what to do with it: a new due date (propose one), Done, Won't Do, or leave it this week.
+6. End with one short list: the items to decide in Claude Code or Codex, by name, then each task to change (linked, with the value).
 
-Format each round exactly like this, with one blank line between questions and one blank line between options, the options as a list:
-
-**1. Send the logo proposals** (overdue, 8 days late)
-
-- (a) Due Friday 20 Nov (recommended: Thursday's client meeting needs them)
-
-- (b) Done: it was sent
-
-- (c) Won't Do
-
-**2. …**
-
-Mark exactly one option per question as recommended, with one line on why. I answer with letters ("1a, 2c") or in my own words, and I can say "enough" or "skip" at any point.
-
-6. After each round, say what follows from my answers, item by item:
-- a task: the property and value to set, with the task linked ("Set Due to 2026-11-20 on [Send the logo proposals]"). Never change it yourself;
-- a row that needs only Your call: the Your call that matches my answer and what it does for its Type (Approve on a Suggestion makes its one Notion change the next time the brain applies decisions; Reject leaves things as they are; Fix with what's wrong in What to fix). The choice and the setting are mine;
-- a row decided in the page: once its questions are done, show what you will write into that page and ask for my yes, exactly as Grill review's step 3 does, one page per preview. Ask nothing more on that page until I answer.
-
-7. After my yes on a page's preview, write into that page exactly as Grill review's step 4 allows, and nothing else: the wording of an item section, its Decision line (Accept, Reject or Defer, as I chose), its Revision request line, a [¶n] marker moved to a listed passage that holds the new text, and one "Agreed in review:" line under each section whose wording changed. Never change a heading, a "ref" line, a toggle's structure, the brain-context toggle, Your call, What to fix or any other property. Keep every line you don't change exactly as it is. Then say, in one line, how many sections and Decision lines you wrote on that page.
-
-8. End with what is left for me, in one short list: each Review row whose Your call I still set (linked, with the call that matched my answer), and each task to change (linked, with the value). Then: "Approve accepts what's still Pending on a page, except ⚠ changes and flagged items, which need Accept on their line."
-
-Never set Your call or What to fix, never edit a task or any property, and never write in the report itself or in any page other than a Review page I said yes to.
+Never edit a task, a property or any page, the row included. Never recommend Approve or Reject.
 ```
 
 ### Plan check
@@ -347,7 +249,7 @@ Source: this page only. It must be a page in the Inbox database inside [@Brain D
 
 ```text
 Goal: turn this promoted Document into a clear write-up from what the brain already knows.
-Source: this page only, and the brain pages it links in Notion (its Decision, its Project and Area, linked Documents, Sources). It must be a page in the Documents database inside [@Brain Data] whose Origin is Promoted (or, before Origin exists, with From decision set); otherwise stop and tell me. No external research, unless my message asks for it.
+Source: this page only, and the brain pages it links in Notion (its Project and Area with their "Brief" and "Decision log" toggles, linked Documents, Sources). There is no Decisions database: the decision it was promoted from is in its project's Decision log, and its seed names it. It must be a page in the Documents database inside [@Brain Data] whose Origin is Promoted; otherwise stop and tell me. No external research, unless my message asks for it.
 
 1. Read this Document and every brain page it links. Add nothing from outside them.
 2. Decide which run this is. It is a REPEAT if the first block of the body is a callout whose text starts with "Purpose:" and the body has H2 headings "Main content" and "Sources" (this is what the write-up below produces; the seed never has them). If the body has only some of these, treat it as a repeat too: never overwrite text that may be mine. Otherwise it is the FIRST write-up: write the write-up below as the new body, and move whatever the body held before (the seed, or text I wrote by hand) into one toggle "Previous text" at the very end, unchanged, so nothing I wrote is lost. For a repeat: leave my wording exactly as it is and add one toggle block titled "Proposed revision" at the end, holding the new write-up; if a "Proposed revision" toggle is already there, replace only what is inside it.
@@ -357,7 +259,7 @@ Source: this page only, and the brain pages it links in Notion (its Decision, it
    - Open questions: an H2 heading "Open questions", then a visible list; say what the pages do not settle.
    - Sources: an H2 heading "Sources", then a list of links to the brain pages you used.
 4. Every claim names the page it came from, with a link. Say so where the pages are silent; never fill a gap by guessing.
-5. Never change the title, any property (Accepted and Accepted at included), the Decision page, a Review row, or my text outside the Proposed revision toggle on a repeat.
+5. Never change the title, any property (Accepted and Accepted at included), a project's or area's Brief or Decision log, or my text outside the Proposed revision toggle on a repeat.
 
 My message carries my confirmation. When done, reply in at most three lines: what you wrote ("first write-up" or "proposed revision"); if Accepted is ticked on this page, that this edit cancels the acceptance (click Accept again after editing); and what I do next: "Edit it as you like, delete the Previous text toggle when you no longer need it, then click Accept." The page history keeps every earlier version.
 ```
@@ -367,7 +269,7 @@ My message carries my confirmation. When done, reply in at most three lines: wha
 
 ```text
 Goal: propose an up-to-date version of this report, using the brain pages in Notion.
-Source: this page only, and the pages in [@Brain Data] that bear on its subject: its Project and Area, newer Decisions, Questions and Documents, People and Meetings, and the pages its text already links. It must be a report: a page of the Documents database inside Brain Data whose Origin is Report (on the Inbox with Kind Report before 0.9.1); otherwise stop and tell me. No external research, unless my message asks for it.
+Source: this page only, and the pages in [@Brain Data] that bear on its subject: its Project and Area with their "Brief" and "Decision log" toggles (the decisions and the open questions and risks), the Tasks with Kind Question or Risk on them, newer Documents, People and Meetings, and the pages its text already links. It must be a report: a page of the Documents database inside Brain Data whose Origin is Report (on the Inbox with Kind Report before 0.9.1); otherwise stop and tell me. No external research, unless my message asks for it.
 
 1. Read the report and the pages it links. Search Brain Data for pages that bear on the same subject and are not linked yet, newer ones first.
 2. Add ONE toggle block at the end of the page with exactly the title "Proposed refresh · based on Notion" (no date in the title). If that toggle already exists, replace only what is inside it; leave everything else on the page exactly as it is.
@@ -377,6 +279,6 @@ Source: this page only, and the pages in [@Brain Data] that bear on its subject:
 My message carries my confirmation. When done, reply in at most three lines: what changed in the toggle (new, or replaced); if Accepted is ticked on this page, that this edit cancels the acceptance (click Accept again after replacing the text); and what I do next: "Replace the report text with what is in the toggle, delete the toggle, then click Accept."
 ```
 
-**Without a Custom Agent** (plans without Business or Enterprise): save the same text as a personal skill, or paste it into Notion AI while the capture is open (decision 0045).
+**Without a Custom Agent** (no Business or Enterprise plan with Notion credits): save the same text as a personal skill, or paste it into Notion AI while the capture is open (decision 0045).
 
 The "How it works" page is a copy of the user guide ([.agents/skills/brain-howto/references/guide.md](../.agents/skills/brain-howto/references/guide.md), the vendored copy; the guide is written in the ultimate-brain-skills fork). When a vendored release changes the guide, update the page from it.
