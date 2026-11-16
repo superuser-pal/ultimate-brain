@@ -408,6 +408,7 @@ An attended session that sees the warning says it in one line and, on a yes, run
 ```text
 brain config get [<dot.path>]
 brain config set <dot.path> <json-value>
+brain config unset <dot.path>
 ```
 
 Reads or edits `brain.json` (used by the connect-notion skill). `get` without a path returns the whole file. `set` parses `<json-value>` as JSON (`'"abc"'`, `8`, `{"a":1}`), sets it at the path (creating intermediate objects), validates the result against brain.schema.json, then writes. `schema_version` cannot be set (`INPUT_INVALID`).
@@ -431,7 +432,16 @@ brain config set settings.style '{ "preset": "simple" }' --json
             "files": [ { "path": "AGENTS.md", "action": "created" } ] } }
 ```
 
-Errors: `INPUT_INVALID` (value not JSON, result fails schema, `schema_version`), `USAGE` (`get` on a path that does not exist), `OUTSIDE_ROOT` (a symbolic `AGENTS.md` on a `settings.style` write).
+**`unset`** (0.16.0, 0096, 0099) removes the key at the path. It is plumbing for the 0.16.0 Notion migration, which removes `notion.databases.review` (§5.14.8), `notion.databases.decisions` and `notion.databases.questions` (§5.14.9); it is not a user setting. The result is validated against brain.schema.json, then written, and `data` = `{ "path", "previous" }`, where `previous` is the removed value. **Idempotent**: a path that does not exist (a key, or an object on the way to it, already absent) is success with `"previous": null` and writes nothing, so a migration step that stopped partway can be run again. `schema_version` cannot be unset (`INPUT_INVALID`). A `settings.style` path rewrites the style block as `set` does.
+
+```sh
+brain config unset notion.databases.questions --json
+```
+```json
+{ "data": { "path": "notion.databases.questions", "previous": "9b8a7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d" } }
+```
+
+Errors: `INPUT_INVALID` (value not JSON, result fails schema, `schema_version`), `USAGE` (`get` on a path that does not exist; a malformed path), `OUTSIDE_ROOT` (a symbolic `AGENTS.md` on a `settings.style` write).
 
 #### 5.3.1 The style block and the style lines (0081)
 
@@ -1781,7 +1791,7 @@ Only the rows about to be refreshed or rendered are read. The read and the Notio
 
 #### 5.14.8 Review rows, read once (`sync plan --review-transition`, the 0.16.0 migration only)
 
-*Transition (decision 0096, capture-and-review §7.9).* From 0.16.0 there is no Review database: proposals are decided in the session (capture-and-review §7), and plain `sync plan` ignores a Review row (`ignored`, `REVIEW_ROW`, §5.14.2). The 0.16.0 Notion migration reads the Review rows **once**, attended, before it archives the database, with `brain sync plan --review-transition`. Under that option alone the rules below hold, as they were in 0.15.x (every capture-and-review §7 reference below names `spec/capture-and-review.md` at tag `v0.15.1`, written `capture-and-review (v0.15.1) §7.x` and read with `git show v0.15.1:spec/capture-and-review.md`; render publishes no Review row since 0.16.0, so `review_pending` and `review_untouched` are reported and nothing acts on them): they produce `decisions` and the `review_*` fields, which `sync apply` applies by the last paragraph below. What capture-and-review §7.9 says the migration does with each kind of row (a requested revision is asked in the session, never redrafted) is the skill's on top of this plan. `--review-transition` on a brain whose `brain.json` has no `notion.databases.review` refuses with `REVIEW_RETIRED`: the migration removed the key, so the rows are never read again. An unattended run never uses the option. References below to capture-and-review §7.x name that file's 0.15.x text, which is kept in Git history; its retired fields and codes are listed in capture-and-review §7.10.
+*Transition (decision 0096, capture-and-review §7.9).* From 0.16.0 there is no Review database: proposals are decided in the session (capture-and-review §7), and plain `sync plan` ignores a Review row (`ignored`, `REVIEW_ROW`, §5.14.2). The 0.16.0 Notion migration reads the Review rows **once**, attended, before it archives the database, with `brain sync plan --review-transition`. Under that option alone the rules below hold, as they were in 0.15.x (every capture-and-review §7 reference below names `spec/capture-and-review.md` at tag `v0.15.1`, written `capture-and-review (v0.15.1) §7.x` and read with `git show v0.15.1:spec/capture-and-review.md`; render publishes no Review row since 0.16.0, so `review_pending` and `review_untouched` are reported and nothing acts on them): they produce `decisions` and the `review_*` fields, which `sync apply` applies by the last paragraph below. What capture-and-review §7.9 says the migration does with each kind of row (a requested revision is asked in the session, never redrafted) is the skill's on top of this plan. `--review-transition` on a brain whose `brain.json` has no `notion.databases.review` refuses with `REVIEW_RETIRED`: the migration removed the key (`brain config unset notion.databases.review`, §5.3), so the rows are never read again. An unattended run never uses the option. References below to capture-and-review §7.x name that file's 0.15.x text, which is kept in Git history; its retired fields and codes are listed in capture-and-review §7.10.
 
 **In `sync plan`:**
 
@@ -1818,7 +1828,7 @@ An item that `item_decisions` already records is never decided again, and its se
 1. **One read.** The skill snapshots every Questions row that has a Brain ID, with `Status` and `Brain ID` only, and runs `brain sync plan --questions-transition`.
 2. **`sync apply`** of that plan records each Status you set in Git (below), then `index`, `views`, `lint` and a commit.
 3. **Archive** the Decisions and Questions databases (nothing is deleted: their pages stay in Archive), remove their views, relations and toggles, and add Kind (Task, Question, Risk) and the Questions and Risks tabs to the default Tasks database (docs/notion-space-design.md §3.12, §5). On a Tasks database you mapped yourself, it offers Kind as the connect step does (setup.md §6.2.1).
-4. **`brain.json`:** remove `notion.databases.decisions` and `notion.databases.questions`, and set `notion.tasks.properties.kind` to the Kind property's name when the database has it now (`brain config set`). A `modules.knowledge` key is `brain upgrade`'s to remove (§5.15 step 5).
+4. **`brain.json`:** remove `notion.databases.decisions` and `notion.databases.questions` (`brain config unset`, §5.3: rerun after a partial failure, it succeeds and changes nothing), and set `notion.tasks.properties.kind` to the Kind property's name when the database has it now (`brain config set`). A `modules.knowledge` key is `brain upgrade`'s to remove (§5.15 step 5).
 5. **The tidy** (capture-and-review §6.2) is offered once, so each open question you follow up becomes a task.
 
 After step 4, `--questions-transition` refuses with `QUESTIONS_RETIRED`, as it does on a brain that never had a Questions database. An unattended run never uses the option, and a run that stops before step 4 is resumed by running the migration again: step 2 never records a question twice (below).
