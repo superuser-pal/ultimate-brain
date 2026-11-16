@@ -3,26 +3,64 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { command, fail, ROOT, slug, taskEntries, tryCommand } from "./common.mjs";
+import { command, fail, ROOT, slug, taskEntries, taskRowProblem, tryCommand } from "./common.mjs";
 
 // `start <id> --from <branch>` stacks the task on another task's branch (decision 0046); its row may exist only there.
 // `start <id> --new "<title>" --release <x.y.z>` starts a task that has no row yet and writes its row into the worktree.
 // `start <id> --resume` continues a task whose row is already `in progress` on a new branch, when no unmerged branch of it is open
 // (its first part merged and its row carries the rest, as CC-176 and CC-177 under decision 0077); the row is left as it is.
 // `next-id` prints the next free task id, user task id and decision number, counting main and every open task branch (CC-300).
+// `set <id> review` and `set <id> done --pr <N>` change the task's status in this worktree's build/TASKS.md, in its heading and in its
+// release's plan table when it has a row there (CC-301); the commit is the caller's.
+// `check [<commit> <branch>]` says what is wrong with the task rows of a commit (default: HEAD on the current branch) against the rows it
+// left origin/main with; the pre-push hook runs it, so a format problem stops the push instead of failing CI after the review (CC-301).
 // `clean` removes every task worktree, and its branch, that is merged into origin/main; it keeps a worktree with uncommitted changes.
-const usage = "Usage: node scripts/task.mjs start <CC-N|CX-N> [--from <branch>] [--new <title> --release <x.y.z> | --resume] | done <CC-N|CX-N> | clean | next-id";
+const usage = "Usage: node scripts/task.mjs start <CC-N|CX-N> [--from <branch>] [--new <title> --release <x.y.z> | --resume] | set <CC-N|CX-N> review | set <CC-N|CX-N> done --pr <N> | check [<commit> <branch>] | done <CC-N|CX-N> | clean | next-id";
 const [action, ...args] = process.argv.slice(2);
-const id = action === "clean" || action === "next-id" ? undefined : args.shift();
+const bare = ["clean", "next-id", "check"].includes(action);
+const id = bare ? undefined : args.shift();
+const status = action === "set" ? args.shift() : undefined;
+const positional = action === "check" ? args.splice(0) : [];
 const flags = parseFlags(args);
 const semver = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
-if (flags === undefined || !/^(start|done|clean|next-id)$/.test(action ?? "")
-  || (id === undefined ? args.length > 0 : !/^(CC|CX)-\d+$/.test(id))
-  || (action !== "start" && Object.keys(flags).length > 0)
+const allowed = { start: ["--from", "--new", "--release", "--resume"], set: ["--pr"] }[action] ?? [];
+if (flags === undefined || !/^(start|set|check|done|clean|next-id)$/.test(action ?? "")
+  || (!bare && !/^(CC|CX)-\d+$/.test(id ?? ""))
+  || Object.keys(flags).some((name) => !allowed.includes(name))
+  || (action === "check" && positional.length !== 0 && positional.length !== 2)
+  || (action === "set" && !(status === "review" ? flags["--pr"] === undefined : status === "done" && /^\d+$/.test(flags["--pr"] ?? "")))
   || ((flags["--new"] === undefined) !== (flags["--release"] === undefined))
   || (flags["--resume"] !== undefined && flags["--new"] !== undefined)
   || (flags["--new"] !== undefined && (flags["--new"].trim() === "" || /[·`\n\r]/.test(flags["--new"]) || !semver.test(flags["--release"])))) {
   fail(usage);
+} else if (action === "set") {
+  const path = resolve(ROOT, "build/TASKS.md");
+  const tasks = readFileSync(path, "utf8");
+  const entry = taskEntries(tasks).find((task) => task.id === id);
+  const from = status === "review" ? "in progress" : "review";
+  if (entry === undefined) fail(`Unknown task ${id}`);
+  else if (entry.status !== from) fail(`${id} is ${entry.status}, not ${from}`);
+  else {
+    const to = status === "review" ? "`review`" : `\`done\` (#${flags["--pr"]})`;
+    const end = tasks.indexOf("\n", entry.offset);
+    const heading = tasks.slice(entry.offset, end);
+    const withHeading = `${tasks.slice(0, entry.offset)}${heading.slice(0, heading.length - `\`${entry.status}\`${entry.suffix}`.length)}${to}${tasks.slice(end)}`;
+    // The release's plan table, when the task has a row there: `| CC-7 | … | \`review\` |`.
+    writeFileSync(path, withHeading.replace(new RegExp(`^(\\| ${id} \\|.*\\| )\`${from}\`( \\|)$`, "m"), (_, before, after) => `${before}${to}${after}`));
+    process.stdout.write(`${id} is ${to}\n`);
+  }
+} else if (action === "check") {
+  const [commit, branch] = positional.length === 2 ? positional : ["HEAD", tryCommand("git", ["branch", "--show-current"]).stdout ?? ""];
+  const match = /^(claude|codex)\/((?:CC|CX)-\d+)-/.exec(branch);
+  const base = tryCommand("git", ["merge-base", commit, "origin/main"]);
+  const rows = (ref) => taskEntries(["build/TASKS.md", "build/HISTORY.md"].map((file) => tryCommand("git", ["show", `${ref}:${file}`])).map((shown) => (shown.ok ? shown.stdout : "")).join("\n"));
+  if (match === null) fail("Branch must match (claude|codex)/(CC|CX)-N-…");
+  else if (!base.ok) fail(`Cannot find where ${commit} left origin/main: ${base.message}`);
+  else {
+    const problem = taskRowProblem(match[2], rows(base.stdout), rows(commit));
+    if (problem !== undefined) fail(problem);
+    else process.stdout.write(`${match[2]}: task rows are valid\n`);
+  }
 } else if (action === "next-id") {
   const refs = ["origin/main", ...openTaskBranches()];
   const texts = refs.map((ref) => ["build/TASKS.md", "build/HISTORY.md"].map((file) => tryCommand("git", ["show", `${ref}:${file}`])).map((shown) => (shown.ok ? shown.stdout : "")).join("\n"));
@@ -117,7 +155,7 @@ function parseFlags(list) {
     if (name in result) return undefined;
     if (name === "--resume") { result[name] = true; continue; }
     const value = list[index + 1];
-    if (!["--from", "--new", "--release"].includes(name) || value === undefined) return undefined;
+    if (!["--from", "--new", "--release", "--pr"].includes(name) || value === undefined) return undefined;
     result[name] = value;
     index += 1;
   }
