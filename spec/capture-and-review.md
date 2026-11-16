@@ -173,7 +173,7 @@ From the join on, everything is as for the grammar above: §4.2's placement and 
 | `Use in brain` | `Meeting only:` | meeting only |
 | item outside any subject (overview Highlights, Tasks, or My actions before 0067) | none | use (U-default); if its paragraph is not copied under the §4.2 rule (all citers `use`) it is dropped |
 
-**4.4 Confirmation.** Every unprocessed summary says: **All subjects included unless marked Meeting only. Mark Reviewed to confirm.** (Inbox: Ready.) Reviewed/Ready **confirms the visible selections as the first run that sees the status reads them** and nothing else. New/Not Reviewed is **unconfirmed**: never ingested. The assistant may *suggest* `Meeting only` for small talk only by writing the token for the user to see; an unfamiliar substantive subject stays `use`. Binding (decision 0058's analogy): Reviewed/Ready has no timestamp, so the confirmation is the page as **read by the first run that sees it Reviewed/Ready**; an **attended** run shows the user each subject and item with its effective selection and the **full text of every paragraph it will copy** (§4.2), and imports after a yes. Since 0.16.0 (0096 §2, §7.3), the same preview shows what the ingest will write from them, every new note, addition, link and new fact with its full text, and names the changes it will ask about; the yes takes those in, the new notes as `reviewed`, and the asked changes follow in the same turn. An **unattended** run imports a confirmed input only when the page's `last_edited_time` is at least 2 minutes older than the run (so the page has settled), reads the tokens as they are, and states in its report that an edit in the confirming minute cannot be detected. It never turns an unconfirmed input into Reviewed/Ready (0051).
+**4.4 Confirmation.** Every unprocessed summary says: **All subjects included unless marked Meeting only. Mark Reviewed to confirm.** (Inbox: Ready.) Reviewed/Ready **confirms the visible selections as the first run that sees the status reads them** and nothing else. New/Not Reviewed is **unconfirmed**: never ingested. The assistant may *suggest* `Meeting only` for small talk only by writing the token for the user to see; an unfamiliar substantive subject stays `use`. Binding (decision 0058's analogy): Reviewed/Ready has no timestamp, so the confirmation is the page as **read by the first run that sees it Reviewed/Ready**; an **attended** run shows the user each subject and item with its effective selection and the **full text of every paragraph it will copy** (§4.2), and imports only once the user has answered. Since 0.16.0 (0096 §2, 0098 §1 and §2), this preview is given **part by part, one part per subject**, each with its own yes, and nothing is written until the parts are answered: §7.3 is the contract. An **unattended** run imports a confirmed input only when the page's `last_edited_time` is at least 2 minutes older than the run (so the page has settled), reads the tokens as they are, and states in its report that an edit in the confirming minute cannot be detected. It never turns an unconfirmed input into Reviewed/Ready (0051).
 
 **4.5 The selected extract (source).** A selected input becomes a source with `extract: true` (CC-78 adds the fields to schema §4): body = the **selected paragraphs only, as written** (line breaks kept; only matching and hashing normalize whitespace), in transcript order, each preceded by `<!-- passage ¶a item s2.i3 -->`; frontmatter `extract_of` (the Notion page id of the full input; the full text stays in Notion untouched), `extract_version` (1, 2, …), `transcript_hash`, `selection` (`[{id, effective, explicit}]` for every subject and item), for each included paragraph its `¶n` and `passage_hash` (the first 8 hex of the sha256 of its normalized text, as a check). **Never** the full transcript. A passage is identified across versions by `(extract_of, transcript_hash, ¶n)` (§4.2).
 
@@ -280,7 +280,7 @@ Each item is applied only after the user's yes for it ("yes to all but 3" names 
 - **Attended and unattended.** An attended run names them in the §4.4 preview ("<n> quick follow-ups become Tasks", with their text) and creates them with the ingest's yes; a user who wants one kept out ticks or deletes it on the page, and the skill reads the page again before writing (the page as read is what counts, §4.4). An unattended run creates them the same way, with no question (cli §6.1).
 - **A run that stops** between creating a Task and recording it can create it again on a retry: the limit of cli §5.14.5, as for items.
 
-## 7. Deciding in the session (0.16.0, decision [0096](../decisions/0096-one-place-to-decide.md))
+## 7. Deciding in the session (0.16.0, decisions [0096](../decisions/0096-one-place-to-decide.md) and [0098](../decisions/0098-agree-by-subject-and-check-a-changed-document.md) §1 to §3)
 
 From 0.16.0 there is no Review database. A proposal (schema §11) is a file in `_proposals/`. The user decides it in an attended Claude Code or Codex session, and `brain apply` carries out the decision (cli §5.7). Notion is where the user reads the brain. Edits the user makes to brain-owned values in Notion are still the user's corrections (0023, cli §5.14.2), not proposals. Before 0.16.0 this section was the Review page's contract (0055, 0088, 0090). §7.9 says how a brain leaves the Review database, and §7.10 lists what was retired with it.
 
@@ -290,11 +290,11 @@ From 0.16.0 there is no Review database. A proposal (schema §11) is a file in `
 
 | Change | Kind | Attended ingest | Unattended run |
 |---|---|---|---|
-| A new note (a decision, question, concept, person, org, Document part) | an entry of the source's `review_notes` `notes` | taken in with the preview's yes, as `reviewed` (§7.3) | stays `draft`; waits in the source's `review_notes` |
-| Text added to a note, contradicting nothing | `add_to_note`, folded into the source's `review_notes` | taken in with the preview's yes | waits, folded |
-| A link between notes | `add_link`, folded | taken in with the preview's yes | waits, folded |
-| A fact the note doesn't have yet | `update_fact` with no `before`, folded | taken in with the preview's yes | waits, folded |
-| A new value for a fact the brain holds | `update_fact` with `before`, `contradiction` | **asked** in the same turn | waits |
+| A new note (a decision, question, concept, person, org, Document part) | an entry of its part's `review_notes` `notes` | taken in with its part's yes, as `reviewed` (§7.3) | stays `draft`; waits in its part's `review_notes` |
+| Text added to a note, contradicting nothing | `add_to_note`, folded into its part's `review_notes` | taken in with its part's yes | waits, folded |
+| A link between notes | `add_link`, folded | taken in with its part's yes | waits, folded |
+| A fact the note doesn't have yet | `update_fact` with no `before`, folded | taken in with its part's yes | waits, folded |
+| A new value for a fact the brain holds | `update_fact` with `before`, `contradiction` | **asked** in its part, before its yes | waits |
 | A new body for a Document | `update_body` | **asked** | waits |
 | A restated line replaced after a correction | `replace_line`, a correction group (weekly-review.md §8) | **asked** | waits |
 | A new decision replacing an older one | `supersede` | **asked** | waits |
@@ -304,31 +304,86 @@ From 0.16.0 there is no Review database. A proposal (schema §11) is a file in `
 | A project, decision, question, Document or source moved to another Area, or an Area to another Domain | `set_field` | **asked** | waits |
 | A Notion work item changed (a task's status or due date, a project's status) | `notion_change` | **asked** | waits |
 | The cleanup after an exclusion: Remove, Keep, Restore, "is this note independent?" | a `review_notes` with `cleanup` (§5.2) | **asked** | waits (written, never applied) |
-| Anything flagged unsure: an item's `unsure` flags, a note's `note_flags`, two values for one field (0090 §6's flags, kept) | — | **asked** before the preview's yes is applied | waits |
+| Anything flagged unsure: an item's `unsure` flags, a note's `note_flags`, two values for one field (0090 §6's flags, kept) | — | **asked** in its part, before its yes | waits |
 
-**What changes in `proposal new` (cli §5.6).** A source's `review_notes` folds only what goes in with the preview's yes: its new notes, its `add_to_note` items, its `add_link` items and its `update_fact` items with no `before`. An `update_fact` with `before` and an `update_body` are no longer folded. Each is a proposal of its own, as `contradiction`, `supersede`, `merge`, `new_item` and `answer` already are. A folded item keeps its `unsure` and `repeat`, and a note its `note_flags`, as in 0.15.0.
+**What changes in `proposal new` (cli §5.6).** Each part's `review_notes` (§7.3) folds only what goes in with the part's yes: its new notes, its `add_to_note` items, its `add_link` items and its `update_fact` items with no `before`, those of its own `subject`. An `update_fact` with `before` and an `update_body` are no longer folded. Each is a proposal of its own, as `contradiction`, `supersede`, `merge`, `new_item` and `answer` already are. A folded item keeps its `unsure` and `repeat`, and a note its `note_flags`, as in 0.15.0.
 
-**7.3 The attended ingest: one yes, then the questions in the same turn (0096 §2).**
-1. **The preview** (§4.4) shows every new note, addition, link and new fact with its full text, as today. Under it, it names what will be asked after the yes ("2 changes to ask: the depot count, and an answer to the pilot question").
-2. **On the yes,** the ingest writes the notes (`note new`, as `draft`) and the proposals (`proposal new`): the source's `review_notes` and each asked change.
-3. **Flags first.** Each flagged item or note of the `review_notes` is asked in the first round (§7.5), with its passages quoted.
-4. **The yes is applied.** `brain apply` approves the `review_notes` with `decided_by: chat` and `note` = the user's yes as they said it (§7.6). Every listed note becomes `reviewed`, every addition and link is applied, and each item is checked for excluded evidence first (cli §5.7). An item the user turned down in step 3 is `exclude`d. Apply moves it to a new pending `review_notes` (schema §11.3), and a second `apply` rejects that proposal at once. When the user said "later" for it, the second `apply` is skipped and the proposal waits.
-5. **The asked changes,** in rounds (§7.5), in the same turn. "Later" or "enough" leaves the rest pending, to be asked by a later session. The undisputed items are already in: nothing waits for a disputed one.
-6. `index`, `views`, `lint`, commit, and the publish as today. A note the yes made `reviewed` gets its Notion page (0071).
+**7.3 The attended ingest goes by subject (0096 §2, 0098 §1 and §2).** The ingest splits what it found into **parts, one per subject**. Each part shows what the brain has on its subject, then what is added, then its questions, then its own yes.
 
-Example: a meeting yields 12 items, and one says the pilot has 11 depots while the brain holds 9. After the yes, the other 11 are in the brain as `reviewed`. The depot count is asked in the same turn, with both passages quoted and a recommended answer.
+*Subjects (0098 §1).* Every item the ingest drafts (a new note, an addition, a link, a new fact, an asked change of §7.2) belongs to exactly **one subject**, the first of these that fits:
+1. **a project** the brain has, when the item is about that one project's work (the project itself, or a note, change or link that concerns only it);
+2. else **an Area** the brain has, when the item belongs to one Area and to no single project;
+3. else **a topic the brain has**: another existing knowledge note the item is about (a person, an org, a concept, a Document);
+4. else **a new subject, named plainly** in a few words ("Hiring"), when the brain has no note for it. A project the ingest creates is a new subject until it is written.
 
-**7.4 Work done without the user (0096 §4).** An unattended catch-up writes what an attended ingest writes, as `draft` notes and pending proposals, and applies none of it: the source's `review_notes` waits with its notes, additions, links and new facts (cli §6.1). The weekly review, reflection's "later" and the correction checks write pending proposals (weekly-review.md, cli §6.2, §5.32). The assistant writes a pending proposal when no one is there to say yes (assistant.md §6). None of them writes to Notion for a decision, and nothing of it is applied until a session decides it.
+Items with the same subject are one part. Parts come in the order their subjects first appear in the input. A part is headed by its subject's title, or by its `cite` when the subject note is in the awaiting-cleanup form (cli §5.13), or by the plain name. The subject is recorded on every proposal the ingest writes (`subject`, schema §11): the note's id, or the plain name.
 
-**7.5 The session's questions (0096 §5).**
-- **When.** An attended catch-up asks its own run's questions first (§7.3, step 5). Then it asks the first round of waiting ones. "What needs my decision" asks them at any time, in Claude Code or Codex.
-- **What waits, and in what order.** `brain proposal list --waiting` returns the pending proposals that can be decided, in four groups whose order is defined there (cli §5.6): changes to what the brain holds come first. A source's notes, additions, links and new facts from a run without the user are **one question per source** ("From the Acme kickoff: 7 new notes and 2 additions: accept all, all except …, or reject?"). A proposal withheld by the excluded-evidence rule (cli §5.7) is not a question: it is listed under `held`, the skill names how many there are, and on the user's yes it rejects them together, since none of them can ever be applied.
-- **A round** is at most **five** questions, taken in that order. Each question says what changes, quotes its passages, gives lettered options with the recommended one marked and one line on why, and accepts letters or the user's own words. "More" asks the next round. "Enough" stops, and the rest keeps waiting.
+*A one-subject source is one part with one yes (0098 §1).* It is shown without "Part 1 of 1": its view, what it adds, its questions if there are any, then "Accept?". A capture with nothing to ask is no slower than the one preview it had before.
+
+*Before the first part,* for a selected capture (§4.1), one line names what the selection leaves out (the subjects and items marked Meeting only), so the user sees every effective selection (§4.4).
+
+*Each part, in order (0098 §2):*
+1. **What the brain has on the subject.** A short, plain list: each related note by title with one line (its `summary`, else its first snippet). The notes are those `brain query --candidates "<the subject's title or name>" --limit 5` returns, and each existing note an item of the part changes or links to, read with `brain query --read` (only these when the subject note is in the awaiting-cleanup form, whose title can't be searched for). Both commands return eligible evidence only (0077, cli §5.13): a note in the awaiting-cleanup form is named by its `cite` and nothing else, and an archived note is left out. No passage is quoted here: where something conflicts, the question on it quotes the brain's passage and the input's (step 3). A subject with no related note reads "Nothing yet".
+2. **What is being added**, each line marked `+`: every new note (its type and title), addition (the note it goes to), link (both ends) and new fact (the note, the field and the value) of the part, each with its full text. For a selected capture, the full text of each paragraph the extract copies (§4.2) is shown in the first part whose items cite it; a later part names it ("¶4, shown in part 1").
+3. **The questions** on this part: its asked changes (§7.2) and its flagged items, in §7.5's order of kinds, **at most five per round**, each as §7.5 says (what changes, its passages quoted, lettered options with the recommended one marked and one line on why). A part with more than five asks the next round, unless the user says "enough": the part's unasked questions then wait. Each answer is one of §7.5's. A flagged item the user **turns down** is not covered by the part's yes, and one left for **"later"** waits.
+4. **"Accept the rest of this part?"** It comes after the questions and covers the part's **undisputed items**: its new notes, additions, links and new facts, less the flagged items turned down or left for later. A part with no such item has no step 4. The answers:
+   - **yes:** they go in, the new notes as `reviewed`;
+   - **"all except …":** the items named are turned down, and the rest go in;
+   - **no:** none of them goes in, and its new notes are archived (schema §11.2);
+   - **"later":** the part's undisputed items and its unanswered questions wait (0096 §2's "later"); a later session asks them (§7.5).
+5. **The next part.** "Enough" at any point leaves the rest of the current part and every later part waiting, as "later" on each. **"Stop"** ends the ingest with nothing written: the input stays as it is in Notion and is read again by the next run (the user stops, for example, to correct a selection in Notion).
+
+*What is written, and when.* Nothing is written while the parts are asked: the session holds the answers. After the last part, or "enough":
+1. **The notes.** The source (with `brain source extract` for a selected capture, §4.5, cli §5.23) and every new note of every part, with `note new`, as `draft`.
+2. **The proposals,** with one `proposal new` (cli §5.6): for each part, **one `review_notes`** with `source` = the ingest's provenance value and `subject` = the part's subject, holding the part's new notes, additions, links and new facts, and each asked change of the part as a proposal of its own with the same `subject`. A part with only asked changes has no `review_notes`.
+3. **The answers,** with one `brain apply` (cli §5.7), in part order. For each part: first a decision for each question answered, as §7.6 records it; then the part's yes: `approve` of its `review_notes` with `decided_by: chat`, `note` = the user's words, `reject` naming each item turned down (in step 3 or 4) and `exclude` naming each flagged item left for later, which apply moves to a pending `review_notes` of its own (schema §11.3); "no" turns down every undisputed item: `reject` of the `review_notes`, or, when a flagged item of the part was left for later, `approve` with every other item in `reject` and the later ones in `exclude`. A part or a question left for later gets no decision and stays `pending`. Every item is checked for excluded evidence first (cli §5.7), and every listed note an `approve` covers becomes `reviewed`.
+4. `index`, `views`, `lint`, commit, and the publish as today. A note a yes made `reviewed` gets its Notion page (0071).
+
+A session that ends before this point writes nothing, as "stop" does. One part's question never holds another part: a part's yes is its own decision, whatever is asked or left for later in the other parts.
+
+**Example (0098 §2).** A document covers the pilot and hiring. The brain has a project Pilot rollout and no note on hiring.
+
+```
+Part 1 of 2: Pilot rollout
+  Pilot scope: 3 regions, starts in March (decision, Oct)
+  9 depots in the pilot
+  Open: who signs off the pilot?
+
+  Adding
+  + Kickoff date moved to 4 March (new fact)
+  + Risk: driver shortage in the north (new note)
+  + Link: Pilot rollout → Ops lead (person)
+
+  Q1. Depot count: 9 today, the document says 11
+      a) 11 (recommended: the document is newer and signed)  b) keep 9  c) later
+  Q2. "Who signs off?" is answered with "Ops lead"
+      a) accept (recommended)  b) no, leave it open
+  → The rest of part 1 (the 3 additions): accept?
+Part 2 of 2: Hiring
+  Nothing yet.
+
+  Adding
+  + Hiring plan: 4 drivers by April (new note)
+  + Open: who approves the budget? (new note)
+  → Accept?
+```
+
+The user answers Q1 "a", Q2 "a", part 1 "yes", and part 2 "later". The ingest then writes the source and the three new notes as `draft`; one `review_notes` with `subject` = Pilot rollout's id (the risk note, the kickoff fact and the link), one with `subject: "Hiring"` (the two hiring notes), an `update_fact` with `before: 9` and an `answer`, both with Pilot rollout's `subject`; and one `apply` with three decisions: the depot fact `approve` (`note: "a"`), the answer `approve` (`note: "a"`), part 1's `review_notes` `approve` (`note: "yes"`). The risk note is `reviewed`, the kickoff fact and the link are in, the depot count is 11, the sign-off question has its answer, and the Hiring `review_notes` waits with its notes `draft`. A later session asks it as its source's question, with Hiring's view (§7.5).
+
+**A one-subject capture.** A capture records a decision on the project Website refresh and names a person who joins it; nothing contradicts the brain. The ingest shows Website refresh's view, then the two additions (the new decision, and the link from the project to the person) and "Accept?". On "yes" it writes the source, the decision as `draft`, one `review_notes` with Website refresh's `subject` (the decision and the link), and one `apply` that approves it with `note: "yes"`: one part, one yes, the decision `reviewed` and the link added.
+
+**7.4 Work done without the user (0096 §4).** An unattended catch-up writes what an attended ingest writes, by subject as §7.3 assigns them, as `draft` notes and pending proposals, and applies none of it: its parts' `review_notes` wait with their notes, additions, links and new facts, and a later session asks them as one question per source (§7.5, cli §6.1). The weekly review, reflection's "later" and the correction checks write pending proposals (weekly-review.md, cli §6.2, §5.32). The assistant writes a pending proposal when no one is there to say yes (assistant.md §6). None of them writes to Notion for a decision, and nothing of it is applied until a session decides it.
+
+**7.5 The session's questions (0096 §5, 0098 §3).**
+- **When.** An attended catch-up asks its own run's questions first, part by part (§7.3). Then it asks the first round of waiting ones. "What needs my decision" asks them at any time, in Claude Code or Codex.
+- **What waits, and in what order.** `brain proposal list --waiting` returns the pending proposals that can be decided, in four groups whose order is defined there (cli §5.6): changes to what the brain holds come first. A source's notes, additions, links and new facts that wait (from a run without the user, or a part left for later) are **one question per source**, whatever number of parts' `review_notes` hold them: the question lists each part with its subject's short view (§7.3, step 1) and its counts ("From the Acme kickoff: Pilot rollout (4 notes, 1 addition), Hiring (3 notes): accept all, all except …, or reject?"), and its items are lettered on across the parts (schema §11.3). A proposal withheld by the excluded-evidence rule (cli §5.7) is not a question: it is listed under `held`, the skill names how many there are, and on the user's yes it rejects them together, since none of them can ever be applied.
+- **Subjects (0098 §3).** A question's subject is the proposal's `subject`. One without it (written before 0.16.0, or by work that records none) gets one by §7.3's rule when it is asked; that is not written back. A round keeps the order of importance, and within it the questions on the same subject come together: they follow the first of them, in their own order. The subject's short view (§7.3, step 1) is shown once, before the first question on it in the round. A source's question shows each of its parts' views and stays in its place.
+- **A round** is at most **five** questions, taken in that order (a source's question counts as one). Each question says what changes, quotes its passages, gives lettered options with the recommended one marked and one line on why, and accepts letters or the user's own words. "More" asks the next round. "Enough" stops, and the rest keeps waiting.
 - **Answers.**
   - **Accept** applies the proposal.
   - **Reject** rejects it (schema §11.2: a rejected draft is archived, a rejected change changes nothing).
   - **A corrected value or wording** applies it as a `fix`, attributed as §7.7 says.
-  - **"All except …"** on a source's question applies the rest, as §7.3 step 4 does.
+  - **On a source's question,** each part's `review_notes` gets its own decision item with the same `note` (cli §5.7): **accept** approves each; **reject** rejects each; **"all except …"** approves each part with the items named in `reject`, and a part named whole ("all except Hiring") is rejected. "Later" on one part leaves only that part waiting.
   - **"Later"** records nothing.
 - **Needs you.** The catch-up report's Needs you line names how many questions still wait ("4 decisions waiting: say *what needs my decision*").
 
@@ -336,9 +391,9 @@ Example: a meeting yields 12 items, and one says the pilot has 11 depots while t
 - `decided_by: chat`;
 - `decided_at` = when the user answered;
 - `note` = the user's answer in their words (`"b, and drop the Ana link"`; `"yes"` for a plain yes on the preview);
-- `fixes` or `exclude` when the answer corrects or narrows the proposal.
+- `fixes` when the answer corrects the proposal, `reject` for the items it turns down and `exclude` for those it leaves for later.
 
-The decision is written into the proposal file in the commit that applies it, so Git keeps what the user said and when. The CLI never interprets `note`: the skill turns the words into `fixes` and `exclude`, as it did with a Review row's What to fix (0045). A held item's decision and the per-item results of a `review_notes` are recorded in `item_decisions` (schema §11), as before.
+The decision is written into the proposal file in the commit that applies it, so Git keeps what the user said and when. The CLI never interprets `note`: the skill turns the words into `fixes`, `reject` and `exclude`, as it did with a Review row's What to fix (0045). A held item's decision and the per-item results of a `review_notes` are recorded in `item_decisions` (schema §11), as before.
 
 **7.7 Corrections are authoritative and attributed.** Suppose the user answers "18 March, not 15" to a proposed fact. The fact's current `facts.<field>` becomes 18 March. Its timeline keeps the source's entry: 15 March, `source` = the extract, never rewritten and never attributed to the user, marked `superseded` because the user's value replaces it. It also gets a new entry: 18 March, `source` = `user-correction:<proposal id>`, `assessment: accepted`, `learned` = the decision date. The brain never claims the source said 18 March. The same holds for corrected wording (cli §5.7, "The user's own wording").
 
@@ -404,8 +459,8 @@ What an unattended run does in each of these cases is in [cli.md](cli.md) §6.1,
 | Confirmed, page settled ≥ 2 minutes | previewed, then ingested as the extract |
 | Selection changed after ingestion (tokens only) | preview, new version, cleanup proposal (§5.2), asked in the session (§7.5) |
 | Page set back to Reviewed/Ready and the transcript changed | new version, all old paragraphs suppressed (§4.8), preview first |
-| New notes, additions, links and new facts of the input | taken in with the preview's yes, notes `reviewed` (§7.3) |
-| A change that replaces what the brain holds, an answer, a merge, a flagged item | asked in the same turn (§7.2, §7.3) |
+| New notes, additions, links and new facts of the input | shown by subject, taken in with their part's yes, notes `reviewed` (§7.3) |
+| A change that replaces what the brain holds, an answer, a merge, a flagged item | asked in its part, before the part's yes (§7.2, §7.3) |
 | Proposals waiting from earlier runs | asked in rounds of at most five (§7.5) |
 | Exclusion cleanup | proposed, then asked (§7.5) |
 | Tasks from excluded content | listed |
