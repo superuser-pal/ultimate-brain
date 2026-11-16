@@ -90,6 +90,10 @@
     "source": {
       "$ref": "note.schema.json#/$defs/sourceKey"
     },
+    "section": {
+      "description": "0.16.0 on (decision 0100 §3, spec/schema.md §11): on an add_to_note whose target is a whole Document kept from a task, the section its content goes to. Never folded into a review_notes.",
+      "enum": ["from_the_brain"]
+    },
     "subject": {
       "description": "0.16.0 on (0098, spec/schema.md §11, capture-and-review §7.3): the subject the ingest assigned the change to: an existing knowledge note's id, or a plain name of one line (at most 80 characters).",
       "type": "string",
@@ -657,6 +661,7 @@
     {"description": "contradiction:<target>:<field> is a contradiction on that target and field.", "if": {"properties": {"fingerprint": {"pattern": "^contradiction:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "contradiction"}}}},
     {"description": "stale:<target>:<field> is an update_fact on that target and field.", "if": {"properties": {"fingerprint": {"pattern": "^stale:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "update_fact"}}}},
     {"description": "merge:<id>+<id> is a merge of those two notes.", "if": {"properties": {"fingerprint": {"pattern": "^merge:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "merge"}}}},
+    {"description": "section (0.16.0, decision 0100 §3) only on an add_to_note.", "if": {"required": ["section"]}, "then": {"required": ["kind"], "properties": {"kind": {"const": "add_to_note"}}}},
     {"description": "promotion:<target>:<source> is an add_to_note on that target from that source.", "if": {"properties": {"fingerprint": {"pattern": "^promotion:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "add_to_note"}}}},
     {"description": "theme:<term> is the draft learned Document's review_notes (a yes or later), or a new_item (a skip).", "if": {"properties": {"fingerprint": {"pattern": "^theme:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"enum": ["review_notes", "new_item"]}}}},
     {"description": "notion_change (0072): its own fields, no fact or note fields.", "if": {"properties": {"kind": {"const": "notion_change"}}, "required": ["kind"]}, "then": {"required": ["database", "page", "page_title", "property", "value_before", "value_after"], "not": {"anyOf": [{"required": ["field"]}, {"required": ["before"]}, {"required": ["after"]}, {"required": ["content"]}, {"required": ["note"]}, {"required": ["links"]}, {"required": ["notes"]}, {"required": ["changes"]}, {"required": ["supersedes"]}, {"required": ["merge_into"]}, {"required": ["answer"]}, {"required": ["answer_note"]}, {"required": ["passages"]}]}}},

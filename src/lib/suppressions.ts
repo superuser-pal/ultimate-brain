@@ -61,6 +61,7 @@ export function contextFor(notes: readonly Note[], loaded: Pick<Loaded, "suppres
       ...(typeof a.extract_of === "string" ? { extract_of: a.extract_of } : {}),
       ...(typeof a.source_key === "string" ? { source_key: a.source_key } : {}),
       ...(typeof a.replaces === "string" ? { replaces: a.replaces } : {}),
+      ...(typeof a.checked_from === "string" ? { checked_from: a.checked_from } : {}),
       ...(typeof a.transcript_hash === "string" ? { transcript_hash: a.transcript_hash } : {}),
       ...(typeof a.extract_version === "number" ? { extract_version: a.extract_version } : {}),
       ...(passages === undefined ? {} : { passages }),
