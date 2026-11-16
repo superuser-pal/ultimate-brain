@@ -11,7 +11,7 @@ const NAMES: Record<string, string> = {
   decisions: "Decisions", questions: "Questions", documents: "Documents", review: "Review", inbox: "Inbox", tasks: "Tasks",
 };
 // `tasks` rows (0.16.0) are task pages: a tracked question's task (CC-324) and a task with Document asked ticked (CC-309, 0100 §1). The
-// vendored brain-sync learns to read them in the skills' fork PRs (CC-298, CC-310), vendored by CC-331. Until then only the spec is held to list it.
+// vendored brain-sync learns to read them in the skills' fork PRs (CC-298, CC-310), vendored by CC-310 (CC-331). Until then only the spec is held to list it.
 const SKILL_PENDING = new Set<string>(["tasks"]);
 
 test("brain-sync step 2 reads every database sync plan accepts (CC-131)", async () => {
