@@ -34,7 +34,7 @@ A new user duplicates the published Notion template (0078 §1, CC-189), installs
 | 1 | **Prerequisites**, all checked at once (§6.1) | `prerequisites` | every required prerequisite passes |
 | 2 | **The settings screen** (§7), then its items applied: the Git identity, the backup (the private remote, §7), the drop folder created, the `AGENTS.md` lines | `settings` | the user confirmed the screen and each required item of it passes |
 | 3 | **The template duplicated, and the agent connected to Notion** (§6.2) | `notion-mcp` | the MCP reaches the duplicated space's Brain Data page |
-| 4 | **"Connect the brain to Notion"** (brain-connect-notion): modules on or off, database ids, the Tasks database, the template version | `connect` | every database of Core and of the modules on is stored, and the template version is stored when the space has a Template version line (a space built from the prompts has none: the version stays unknown, §9, and the step is still done); in a duplicate of the template, no `Example · ` row is left on Brain Data (§6.5) |
+| 4 | **"Connect the brain to Notion"** (brain-connect-notion): modules on or off, database ids, the Tasks database, the template version | `connect` | every database of Core and of the modules on is stored, with Tasks on the Tasks database's Kind checked (§6.2.1), and the template version is stored when the space has a Template version line (a space built from the prompts has none: the version stays unknown, §9, and the step is still done); in a duplicate of the template, no `Example · ` row is left on Brain Data (§6.5) |
 | 4a | **The minutes prompt**, walked through and checked (§6.3) | `minutes-prompt` | the check passes |
 | 4b | **Brain Assistant**, walked through and checked (§6.4) | `brain-assistant` | the check passes |
 | 5 | **Identities** (0037; brain-connect-notion step 6) | `identities` | `owner.person` is set |
@@ -178,6 +178,14 @@ It is logged `prerequisites result=failed reason=markitdown-missing` (§12.2), a
 - **The template:** the skill gives the link from `<product.path>/notion/TEMPLATE.md` (its only home, 0078 §1) and asks the user to duplicate it into their workspace. It never builds the space from the prompts in setup; a user who prefers to build is pointed to the checklist's text, given by the skill (0078 §1).
 - **The connection:** the skill gives the steps for the agent in use (brain-connect-notion's "Connect your agent to Notion") and waits. Checked by searching for the page **Brain Data** through the MCP, as brain-connect-notion step 1 does: found once → `notion-mcp` done; not found or found twice → the same messages as that step.
 
+#### 6.2.1 The Tasks database's Kind (step 4; 0099 §4, from 0.16.0)
+
+Kind (a select with the options Task, Question and Risk) is how the Tasks page shows the questions and risks you follow up (capture-and-review §6.4). brain-connect-notion checks it with the Tasks database, when the Tasks module is on:
+- **The default Tasks database** (the one on the template's Brain Data, schema §12) is expected to have Kind, with those three options. Found → `notion.tasks.properties.kind` = its name (`Kind`). Missing, or missing an option → the check fails: the skill names what is missing and the migration that adds it (the 0.16.0 Notion migration, cli.md §5.14.9), and step 4 is not done until it passes.
+- **A database you mapped yourself** (0018) is offered Kind, once, in the mapping's questions: "Add a Kind property (Task, Question, Risk) to your tasks database, so the questions and risks you track can be filtered? a) yes, add it (recommended) b) no: their titles will start with *Question:* or *Risk:*". On a), the skill adds the select property through the MCP with your yes and reads it back; on success it maps it (`kind` = its name). A database that already has a select of that name with those options is mapped without a question. On b), or when the write fails, `kind` stays `""`, and the step is done: a tracking task's title then carries the prefix (cli.md §5.14.5). Asked again only when you ask to change the mapping.
+
+The offline `databases` check (§5) doesn't see properties: Kind is checked here, online, and never by `brain status`.
+
 ### 6.3 The minutes prompt (step 4a; 0078 §2, 0079)
 
 Walked through: the skill gives the prompt's text (from `<product.path>/notion/`, the file CC-197 names) and how it runs, as `notion/pasting-the-minutes-prompt.md` says (CC-258, capture-and-review §3.4). The user opens the meeting page, with the transcript on it, and opens the Notion AI chat there. They paste the prompt, then the line **"Write the minutes on this page, below the transcript, and nothing else."**, and send it. The transcript stays on the page: in the meeting-notes block's Transcript when Notion recorded the meeting, or in the page body above the minutes when it was pasted. Checked:
@@ -220,7 +228,7 @@ The published template carries fourteen invented rows (fifteen before 0.16.0) th
 - Step 4 comes before identities (5), seeding and its publish (6, whose pull reads Notion), the minutes and Brain Assistant checks (4a, 4b) and any catch-up, so no step reads an Example row.
 
 **The guard,** for a brain connected before its Example rows were removed (brain-connect-notion run on its own, outside setup): every skill that reads Notion rows and could act on one leaves out every row whose title starts with `Example · ` (0084 §4, 0087 §4).
-- **brain-sync's pull** leaves it out of the snapshot it gives `brain sync plan`, so it is never imported (0021), corrected or matched. Catch-up's pull is brain-sync's, and brain-ingest's first-run sync too. This covers every database the pull reads, Decisions, Questions, Documents, Goals and Key Results included, and so the requests the plan derives from them: a Document's Accepted wording, a report's Refresh asked and What to fix, a decision's Promote asked.
+- **brain-sync's pull** leaves it out of the snapshot it gives `brain sync plan`, so it is never imported (0021), corrected or matched. Catch-up's pull is brain-sync's, and brain-ingest's first-run sync too. This covers every database the pull reads, Documents, Goals and Key Results included, and so the requests the plan derives from them: a Document's Accepted wording, a report's Refresh asked and What to fix.
 - **brain-ingest and brain-catch-up** skip such a meeting or Inbox row without taking it in: no source, note, proposal, Task, or line in a report the brain writes. The run's own report names how many it skipped, once ("2 example rows skipped: delete them in Notion, or say "set up my brain" to remove them").
 - **ultimate-assistant** leaves such a row out of its live snapshot of Tasks, Projects and Areas (`tasks`, `projects`, `areas`). It reads every row of the three, so an Example Task would otherwise become a finding with offers to change it (0084's Task, not started, is `task_stalled` 14 days after the duplicate, spec/assistant.md §3.3), and the Example Project and Area would be read as a project and an Area outside the brain (§3.1). Its report is the CLI's text, so it doesn't name them.
 
@@ -243,7 +251,7 @@ One screen, every item with its default filled in and a one-line explanation. Th
 | 3 | Backup | the current `origin` when there is one; else a new private GitHub repository named after the brain folder, created with `gh repo create --private` (0086 §3). Shown as `Backup: a private GitHub repository, created for you` | "A private copy of your brain on GitHub, so nothing is lost and another machine can use it." | required | `origin` |
 | 4 | Drop folder | `~/Documents/brain-dropbox/` (created); a folder named after this brain when another brain on the machine reads that one (below) | "Files you drop here are read by the next catch-up: documents, exports, notes." | required (created) | `Drop folder:` line |
 | 5 | Language notes are written in | the language the user writes to the skill in | "The brain writes its notes in this language, whatever the language of the source." | required | `Language:` line |
-| 6 | Modules | Knowledge, Orgs, Documents, Reports, Tasks on; Planning off; Domains decided by seeding (§8) | "Which parts of your Notion space the brain uses; you can change this any time." | shown | `modules` |
+| 6 | Modules | Orgs, Documents, Reports, Tasks on; Planning off; Domains decided by seeding (§8). Knowledge is retired in 0.16.0 (0099): decisions and questions show on project and area pages | "Which parts of your Notion space the brain uses; you can change this any time." | shown | `modules` |
 | 7 | Publish | `ask` | "Ask before the brain publishes to Notion, or publish after each run." | shown | `settings.publish` |
 | 8 | Back up after each run | `auto`, shown as `on`; `remind` is shown as `remind me` | "Back up your brain after each run, or remind you to." | shown | `settings.push` |
 | 9 | Opening recall in linked repos | `off` | "Agents in your linked repos load what the brain remembers about them when a session opens." | shown | `settings.recall` |
@@ -371,7 +379,7 @@ At the end (and when the user asks "show my setup report", at any point, also wh
 ```text
 Ultimate Brain setup report
 CLI 0.14.0 · skills ultimate-brain-skills 1.4.0 · agent Claude Code · platform darwin
-Notion AI: yes · Custom Agents: yes · modules: knowledge, orgs, documents, reports, tasks
+Notion AI: yes · Custom Agents: yes · modules: orgs, documents, reports, tasks
 Time: 52 min (first setup line to the last)
 1 prerequisites: done
 2 settings: done (markitdown on, gh on)
