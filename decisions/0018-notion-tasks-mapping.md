@@ -2,6 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-10-11
+**Amended by:** [0099](0099-notion-without-decisions-and-questions.md) (2026-11-16; 0.16.0): tasks gain a Kind (Task, Question, Risk); on a mapped database the connect step offers to add it
 
 ## Decision
 - Action items go to the user's **existing** Notion Tasks database. `brain.json` holds a mapping: database id, and which property holds the title, due date, status, project relation, area relation, owner, and the backlink to the brain meeting summary.
