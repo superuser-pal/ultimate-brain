@@ -9,6 +9,7 @@
 **Amended by:** [0098](0098-agree-by-subject-and-check-a-changed-document.md) (2026-11-16; 0.17.0): 0.17.0, a changed document checked before it goes in, before 1.0.0: one feature after the 0.15.0 cutoff, by explicit roadmap change
 **Amended by:** [0100](0100-keep-a-task-as-a-document.md) (2026-11-16; 0.17.0): 0.17.0 also keeps a task as a document, a second feature after the cutoff
 **Amended by:** [0101](0101-where-notion-ai-and-the-brain-each-write.md) (2026-11-16; 1.0.0): 1.0.0 holds the path without Notion AI, with minutes the agent writes, by explicit roadmap change
+**Amended by:** [0102](0102-one-release-for-0-16-0-and-0-17-0.md) (2026-11-16): no 0.17.0: its two features ship in 0.16.0, the one release after the cutoff
 
 ## Context
 
