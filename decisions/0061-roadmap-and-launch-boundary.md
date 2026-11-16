@@ -7,6 +7,7 @@
 **Keeps:** 0038, 0039, 0040, 0044, 0046 and the permanent architecture rules
 **Amended by:** [0096](0096-one-place-to-decide.md) (2026-11-15; 0.16.0): 0.16.0, one place to decide, before 1.0.0: it removes and simplifies, and 0.15.0 stays the feature cutoff
 **Amended by:** [0098](0098-agree-by-subject-and-check-a-changed-document.md) (2026-11-16; 0.17.0): 0.17.0, a changed document checked before it goes in, before 1.0.0: one feature after the 0.15.0 cutoff, by explicit roadmap change
+**Amended by:** [0100](0100-keep-a-task-as-a-document.md) (2026-11-16; 0.17.0): 0.17.0 also keeps a task as a document, a second feature after the cutoff
 
 ## Context
 
