@@ -8,30 +8,19 @@ First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md
 Ignore the module names in square brackets at the start of lines.
 On this page ("Knowledge") add one tab per numbered item you have. In each tab put one linked view of the named database, with the views listed as its view tabs, in order:
 
-[Knowledge] 1. Tab "Decisions" (database "Decisions"):
-[Knowledge]    - List "What did we decide recently?": Date is within the past week; sort Date descending; show Name, Project, Date.
-[Knowledge]    - Table "What did we decide?": Assessment is Accepted and Lifecycle is not Archived; sort Date descending; show Name, Project, Date, Summary.
-[Knowledge]    - List "What's provisional?": Assessment is Provisional; sort Date descending; show Name, Project, Date.
-[Knowledge]    - Table "What changed our minds?": Assessment is Superseded; sort Date descending; show Name, Superseded By, Date.
-[Knowledge]    - List "What's disputed?": Lifecycle is Disputed; sort Date descending; show Name, Summary.
-[Knowledge] 2. Tab "Questions" (database "Questions"):
-[Knowledge]    - List "What's still open?": Status is Open and Kind is Question; sort Created time descending; show Name, Project, Raised In.
-[Knowledge]    - List "Which risks are open?": Status is Open and Kind is Risk; sort Created time descending; show Name, Project, Raised In.
-[Knowledge]    - List "What did we answer?": Status is Answered; sort Created time descending; show Name, Project, Summary.
-[Documents] 3b. Tab "Documents" (database "Documents"):
+[Documents] 1. Tab "Documents" (database "Documents"):
 [Documents]    - List "What did we keep?": Lifecycle is not Archived and Origin is not Report; sort Last edited time descending; show Name, Project, Summary.
 [Documents]    - List "What did we learn?": Origin is Learned and Lifecycle is not Archived; sort Created time descending; show Name, Project, Summary.
 [Reports]    - List "Which reports do I have?": Origin is Report; sort Last edited time descending; show Name, Project, Area, Refresh asked, What to fix.
-4. Tab "People" (database "People"):
+2. Tab "People" (database "People"):
    - Gallery with small cards "Who's who?": Lifecycle is not Archived; sort Name; show Name, Role.
 [Orgs]    - In "Who's who?", also group by Org and show Org.
    - List "Who's disputed?": Lifecycle is Disputed; sort Name; show Name, Summary.
-[Orgs] 5. Tab "Orgs" (database "Orgs"):
+[Orgs] 3. Tab "Orgs" (database "Orgs"):
 [Orgs]    - Table "Which clients do I have?": Relationship is Client and Archived is unchecked; sort Name; show Name, People, Projects.
 [Orgs]    - Table "Who else do we work with?": Relationship is not Client and Archived is unchecked; sort Name; group by Relationship; show Name, Relationship, People.
-6. Tab "Inbox" (database "Inbox"):
+4. Tab "Inbox" (database "Inbox"):
    - Table "What came in?": Brain Status is Done; sort Created descending; show Name, Kind, Summary, Project.
-[Knowledge]    - In "What came in?", also show Decisions.
 
 If you can't create tabs, add one heading 3 per database instead, each followed by its linked view.
 
@@ -39,5 +28,5 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 ```
 
 ## Verify
-- [ ] One tab per database you have (six with every module: Decisions, Questions, Documents, People, Orgs, Inbox), each with its views as view tabs.
-- [ ] (Knowledge) "What changed our minds?" shows only Superseded decisions.
+- [ ] One tab per database you have (four with every module: Documents, People, Orgs, Inbox), each with its views as view tabs.
+- [ ] No tab shows Decisions or Questions: since 0.16.0 a project's decisions and open questions are in its Brief and Decision log (decision 0099).

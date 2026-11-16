@@ -15,24 +15,12 @@ In the databases on "Brain Data", add these two-way relations. Use exactly these
 [Orgs] - Projects "Client" ↔ Orgs "Projects"
 - Projects "People" ↔ People "Projects"
 - Projects "Meetings" ↔ Meetings "Project"
-[Knowledge] - Projects "Decisions" ↔ Decisions "Project"
-[Knowledge] - Projects "Questions" ↔ Questions "Project"
 - Meetings "Attendees" ↔ People "Meetings"
 - Meetings "Area" ↔ Areas "Meetings"
-[Knowledge] - Meetings "Decisions" ↔ Decisions "Decided In"
-[Knowledge] - Meetings "Questions" ↔ Questions "Raised In"
 [Orgs] - People "Org" ↔ Orgs "People"
-[Knowledge] - Decisions "Supersedes" ↔ Decisions "Superseded By"
-- Review "Source Meeting" ↔ Meetings "Review Items"
-- Review "Area" ↔ Areas "Review" (limit Review's side to one page)
-[Knowledge] - Decisions "Area" ↔ Areas "Decisions"
-[Knowledge] - Questions "Area" ↔ Areas "Questions"
-[Knowledge] - Inbox "Decisions" ↔ Decisions "Sources"
-[Knowledge] - Inbox "Questions" ↔ Questions "Sources"
 [Documents] - Inbox "Documents" ↔ Documents "Sources"
 [Documents] - Documents "Project" ↔ Projects "Documents"
 [Documents] - Documents "Area" ↔ Areas "Documents"
-[Knowledge] [Documents] - Documents "From decision" ↔ Decisions "Documents"
 - Inbox "People" ↔ People "Sources"
 - Inbox "Project" ↔ Projects "Inbox"
 - Inbox "Area" ↔ Areas "Inbox"
@@ -50,7 +38,5 @@ Do not create any other relations.
 ## Verify
 - [ ] Open each database: both sides of every relation exist, with the names above.
 - [ ] Each relation is two-way: linking a Project to an Area in Projects shows the Project in that Area's "Projects".
-- [ ] Review "Area" is limited to one page.
 - [ ] Areas "Domain" is limited to one page. Notion AI may skip the limit: set it by hand (the relation's settings → Limit: 1 page).
-- [ ] (Knowledge) Decisions has both "Supersedes" and "Superseded By", pointing at Decisions itself.
 - [ ] No other relations were created.
