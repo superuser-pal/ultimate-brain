@@ -34,7 +34,7 @@ A new user duplicates the published Notion template (0078 §1, CC-189), installs
 | 1 | **Prerequisites**, all checked at once (§6.1) | `prerequisites` | every required prerequisite passes |
 | 2 | **The settings screen** (§7), then its items applied: the Git identity, the backup (the private remote, §7), the drop folder created, the `AGENTS.md` lines | `settings` | the user confirmed the screen and each required item of it passes |
 | 3 | **The template duplicated, and the agent connected to Notion** (§6.2) | `notion-mcp` | the MCP reaches the duplicated space's Brain Data page |
-| 4 | **"Connect the brain to Notion"** (brain-connect-notion): modules on or off, database ids, the Tasks database, the template version | `connect` | every database of Core and of the modules on is stored, with Tasks on the Tasks database's Kind checked (§6.2.1), and the template version is stored when the space has a Template version line (a space built from the prompts has none: the version stays unknown, §9, and the step is still done); in a duplicate of the template, no `Example · ` row is left on Brain Data (§6.5) |
+| 4 | **"Connect the brain to Notion"** (brain-connect-notion): modules on or off, database ids, the Tasks database, the template version | `connect` | every database of Core and of the modules on is stored, with Tasks on the Tasks database's Kind and Document asked checked (§6.2.1, §6.2.2), and the template version is stored when the space has a Template version line (a space built from the prompts has none: the version stays unknown, §9, and the step is still done); in a duplicate of the template, no `Example · ` row is left on Brain Data (§6.5) |
 | 4a | **The minutes prompt**, walked through and checked (§6.3) | `minutes-prompt` | the check passes |
 | 4b | **Brain Assistant**, walked through and checked (§6.4) | `brain-assistant` | the check passes |
 | 5 | **Identities** (0037; brain-connect-notion step 6) | `identities` | `owner.person` is set |
@@ -185,6 +185,14 @@ Kind (a select with the options Task, Question and Risk) is how the Tasks page s
 - **A database you mapped yourself** (0018) is offered Kind, once, in the mapping's questions: "Add a Kind property (Task, Question, Risk) to your tasks database, so the questions and risks you track can be filtered? a) yes, add it (recommended) b) no: their titles will start with *Question:* or *Risk:*". On a), the skill adds the select property through the MCP with your yes and reads it back; on success it maps it (`kind` = its name). A database that already has a select of that name with those options is mapped without a question. On b), or when the write fails, `kind` stays `""`, and the step is done: a tracking task's title then carries the prefix (cli.md §5.14.5). Asked again only when you ask to change the mapping.
 
 The offline `databases` check (§5) doesn't see properties: Kind is checked here, online, and never by `brain status`.
+
+#### 6.2.2 Document asked on Tasks (step 4; 0100 §1, §5, from 0.16.0)
+
+Document asked (a checkbox) and the **Keep as document** button that ticks it are how you flag a task to be kept as a Document (capture-and-review §13). brain-connect-notion checks them with the Tasks database, when the Tasks module is on, in the same pass as Kind:
+- **The default Tasks database** is expected to have Document asked and the button. Found → `notion.tasks.properties.document_asked` = its name (`Document asked`). Missing → the check fails as for Kind: the skill names the 0.16.0 Notion migration that adds them, and step 4 is not done until it passes.
+- **A database you mapped yourself** is offered them, once, in the mapping's questions: "Add a Keep as document button to your tasks, so the brain keeps a task's page as a document at the next catch-up? a) yes, add it (recommended) b) no: ask me in the session instead". On a), the skill adds the checkbox through the MCP with your yes and reads it back, then maps it (`document_asked` = its name); the button is added by hand (an API can't create a button, design §3.15), with the steps the skill gives: a button labelled **Keep as document** whose action ticks Document asked on This page. A database that already has a checkbox of that name is mapped without a question, and the skill asks only about the button. On b), or when the write fails, `document_asked` stays `""`, and the step is done: you keep a task as a document by asking in the session. Asked again only when you ask to change the mapping.
+
+Neither needs the Documents module to be mapped, but a task is kept only with Documents on (capture-and-review §13.2).
 
 ### 6.3 The minutes prompt (step 4a; 0078 §2, 0079)
 
