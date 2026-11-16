@@ -297,7 +297,7 @@ async function schedule(dir: string, args: string[], env: NodeJS.ProcessEnv, hom
   return { code, json: JSON.parse(out.join("")) };
 }
 
-test("schedule install writes a launchd agent that runs claude -p in the brain at the given times with the pinned model; list and remove", async (context) => {
+test("schedule install writes a launchd agent that runs claude -p in the brain at the given times with the pinned model; list and remove", { skip: process.platform === "win32" ? "brain schedule writes launchd and cron entries, macOS and Linux only (decision 0097 §4)" : false }, async (context) => {
   const dir = await fixtureCopy(context);
   const { agents, bin, spied, env, home } = await scheduleEnv(context);
   const before = await tree(dir);
@@ -358,7 +358,7 @@ test("schedule install makes a relative PATH entry absolute", async (context) =>
   assert.deepEqual(installed.json.warnings.map((warning: any) => warning.code), ["FOLDER_TRUST"], "a dry run warns too");
 });
 
-test("schedule install elsewhere prints the cron line and writes nothing", async (context) => {
+test("schedule install elsewhere prints the cron line and writes nothing", { skip: process.platform === "win32" ? "brain schedule writes launchd and cron entries, macOS and Linux only (decision 0097 §4)" : false }, async (context) => {
   const dir = await fixtureCopy(context);
   const { agents, env, home, spied } = await scheduleEnv(context, "linux");
   const before = await tree(dir);

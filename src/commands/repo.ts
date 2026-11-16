@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { lstat, mkdir, readdir, readFile, realpath, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 
 import { isProductRepository } from "../lib/brain-path.ts";
@@ -524,7 +524,7 @@ async function assertOutsideBrain(brain: Brain, target: string): Promise<void> {
   while (!existsSync(existing) && dirname(existing) !== existing) existing = dirname(existing);
   const real = join(await realpath(existing), target.slice(existing.length));
   const root = await realpath(brain.root);
-  if (real === root || real.startsWith(`${root}/`)) throw new BrainError("OUTSIDE_ROOT", `${target} is inside the brain; start the repo elsewhere`);
+  if (real === root || real.startsWith(`${root}${sep}`)) throw new BrainError("OUTSIDE_ROOT", `${target} is inside the brain; start the repo elsewhere`);
 }
 
 /** `brain repo new --path <path> --starter generic --input <file|-> --confirm <sha256>` (spec/cli.md §5.29, linked-repos.md §7). */

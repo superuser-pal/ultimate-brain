@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { test as nodeTest } from "node:test";
 
 // Skipped on Windows (decision 0097 §4): the native-run harness drives Claude Code and Codex through shell scripts on the maintainers' macOS machine (decision 0082).
@@ -14,9 +15,9 @@ const test = process.platform === "win32"
 // eval/memory-0.12/native (CC-200): the parts of the native-run harness that need no agent — the no-file-read
 // classifier, both agents' trace parsing and token accounting, citations, retrieval costs, and the identity header.
 const NATIVE = resolve(import.meta.dirname, "..", "eval", "memory-0.12", "native");
-const { classifyCall, splitShell, unwrapShell } = await import(join(NATIVE, "lib", "classify.mjs"));
-const { parseClaude, parseCodex, codexRolloutModel } = await import(join(NATIVE, "lib", "trace.mjs"));
-const { applyReportsOf, extractCitations, readsOf, retrievalOf } = await import(join(NATIVE, "lib", "answer.mjs"));
+const { classifyCall, splitShell, unwrapShell } = await import(pathToFileURL(join(NATIVE, "lib", "classify.mjs")).href);
+const { parseClaude, parseCodex, codexRolloutModel } = await import(pathToFileURL(join(NATIVE, "lib", "trace.mjs")).href);
+const { applyReportsOf, extractCitations, readsOf, retrievalOf } = await import(pathToFileURL(join(NATIVE, "lib", "answer.mjs")).href);
 const { scrub, splitManaged } = await import(join(NATIVE, "lib", "world.mjs"));
 const { identityRows, agentFigures } = await import(join(NATIVE, "results.mjs"));
 const { promptOf, PROMPT_SUFFIX } = await import(join(NATIVE, "run.mjs"));
