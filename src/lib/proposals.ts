@@ -13,7 +13,7 @@ import { fingerprintProblem } from "./reflect.ts";
 import { loadSchemas } from "./schemas.ts";
 import type { Context } from "./eligibility.ts";
 import { linkRefs, passageProblems, proposalWithheld } from "./passages.ts";
-import { contextFor, requireSuppressions, withheldSupport } from "./suppressions.ts";
+import { contextFor, publishableNote, publishedTitle, requireSuppressions, withheldSupport } from "./suppressions.ts";
 import { formatDate } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 
@@ -21,7 +21,7 @@ export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "update_body", "add
 export const PROPOSAL_STATUSES = ["pending", "approved", "rejected", "edited", "applied", "closed"] as const;
 
 /** Input keys of `proposal new`: the schema §11 fields the CLI does not set (spec/cli.md §5.6). */
-const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding", "fingerprint", "evidence", "passages", "note_passages", "note_flags", "unsure", "repeat", "line_before", "line_after", "correction", "needs_clarification"];
+const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding", "fingerprint", "evidence", "passages", "note_passages", "note_flags", "unsure", "repeat", "line_before", "line_after", "correction", "needs_clarification", "subject"];
 const ID = /^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{8}$/;
 const KNOWLEDGE_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 const ADD_LINK_FIELDS = new Set(["aliases", "tags", "projects", "people", "attendees", "deciders"]);
@@ -78,15 +78,20 @@ export function stageProposals(
   });
   // Every change names the passages it rests on; one without them is refused (eligibility.md §9.1, §9.2; cli §5.6).
   (list as Array<Record<string, unknown>>).forEach((item, index) => checkPassages(workspace, item, `/proposals/${index}`));
-  // One review_notes per source; it takes in that source's add_link items and changes (spec/cli.md §5.6, 0043, 0045).
+  // The subject an ingest assigned the item to: an existing knowledge note, or a plain name (0098, cli §5.6, schema §11).
+  (list as Array<Record<string, unknown>>).forEach((item, index) => checkSubject(workspace, item, `/proposals/${index}`));
+  // One review_notes per source and subject, a part of the ingest; it takes in that part's additions and links (cli §5.6, 0043, 0045, 0098).
+  // The sources whose parts have a review_notes in this input: an addition of such a source must name one of its parts.
+  const partSources = new Set<string>();
   const reviews = new Map<string, { index: number; item: Record<string, unknown>; links: Array<{ index: number; fields: Record<string, unknown>; flags: Flags }>; changes: Array<{ index: number; change: Record<string, unknown>; passages: unknown; flags: Flags }>; duplicates: string[] }>();
   (list as Array<Record<string, unknown>>).forEach((item, index) => {
     if (item.kind !== "review_notes") return;
     const source = String(item.source);
     // A theme's review_notes is a row of its own: nothing folds into it, and it doesn't take another review_notes' place (§5.6).
     // A correction group takes in the changes of its own claim, never by source (weekly-review.md §8.4).
-    const key = typeof item.correction === "string" ? `\u0001${item.correction}` : typeof item.fingerprint === "string" ? `\u0000${item.fingerprint}` : source;
-    if (reviews.has(key)) assertNoProblems([{ pointer: `/proposals/${index}/${typeof item.correction === "string" ? "correction" : "source"}`, message: typeof item.correction === "string" ? `a second review_notes for the correction ${item.correction} in one input` : typeof item.fingerprint === "string" ? `a second review_notes for ${item.fingerprint} in one input` : `a second review_notes for ${source} in one input` }]);
+    const key = typeof item.correction === "string" ? `\u0001${item.correction}` : typeof item.fingerprint === "string" ? `\u0000${item.fingerprint}` : partKey(source, item.subject);
+    if (reviews.has(key)) assertNoProblems([{ pointer: `/proposals/${index}/${typeof item.correction === "string" ? "correction" : "source"}`, message: typeof item.correction === "string" ? `a second review_notes for the correction ${item.correction} in one input` : typeof item.fingerprint === "string" ? `a second review_notes for ${item.fingerprint} in one input` : `a second review_notes for ${source}${item.subject === undefined ? "" : ` and the subject ${String(item.subject)}`} in one input` }]);
+    if (typeof item.correction !== "string" && typeof item.fingerprint !== "string") partSources.add(source);
     if (typeof item.correction === "string") checkCorrectionGroup(workspace, item, `/proposals/${index}`);
     else checkReviewNotes(workspace, item, `/proposals/${index}`);
     if (typeof item.fingerprint === "string") checkFingerprint(workspace, item, `/proposals/${index}`);
@@ -132,8 +137,12 @@ export function stageProposals(
         skipped.push({ input_index: index, reason: "NO_CHANGE" });
         return;
       }
-      const folds = item.kind === "add_link" || CHANGE_KINDS.includes(String(item.kind));
-      const review = typeof item.correction === "string" ? reviews.get(`\u0001${item.correction}`) : folds ? reviews.get(String(fields.source)) : undefined;
+      // What goes in with a part's yes folds into the part's review_notes: links, additions and new facts. A change that replaces what the
+      // brain holds (an update_fact with a current value, an update_body) is never folded since 0.16.0: it is asked (capture-and-review §7.2).
+      const folds = item.kind === "add_link" || item.kind === "add_to_note" || (item.kind === "update_fact" && fields.before === undefined);
+      const review = typeof item.correction === "string" ? reviews.get(`\u0001${item.correction}`) : folds ? reviews.get(partKey(String(fields.source), fields.subject)) : undefined;
+      // An addition of a source whose parts are in this input belongs to one of them: it never becomes a question of its own by mistake (§5.6).
+      if (folds && typeof item.correction !== "string" && review === undefined && partSources.has(String(fields.source))) assertNoProblems([{ pointer: `${pointer}/subject`, message: `${String(fields.source)} has a review_notes in this input, but none with ${fields.subject === undefined ? "no subject" : `the subject ${String(fields.subject)}`}` }]);
       delete fields.correction;
       // Flags and repeats live on a Review page's items: only an item a review_notes folds takes them (cli §5.6, capture-and-review §7.12.8).
       if (review === undefined && (item.unsure !== undefined || item.repeat !== undefined)) assertNoProblems([{ pointer: `${pointer}/${item.unsure !== undefined ? "unsure" : "repeat"}`, message: "is only allowed on an item a review_notes of the same input folds" }]);
@@ -175,7 +184,7 @@ export function stageProposals(
     });
     const groups = new Map<string, typeof links>();
     for (const link of links) {
-      const key = `${link.fields.target}\u0000${link.fields.source}`;
+      const key = `${link.fields.target}\u0000${link.fields.source}\u0000${String(link.fields.subject ?? "")}`;
       groups.set(key, [...(groups.get(key) ?? []), link]);
     }
     const createdLinks = new Map<string, string>();
@@ -228,13 +237,14 @@ export function stageProposals(
       ];
       const fields: Record<string, unknown> = {
         kind: "review_notes",
-        title: review.item.title ?? reviewTitle(workspace, source, changes.length, notes.length, review.links.length),
+        title: review.item.title ?? reviewTitle(workspace, source, changes.length, notes.length, review.links.length, "From", typeof review.item.subject === "string" ? subjectLabel(workspace, review.item.subject, excluded) : undefined),
         notes,
         links,
         ...(changes.length === 0 ? {} : { changes: changes.map(({ change }) => change) }),
         items,
         why: review.item.why ?? `What came in from ${sourceTitle(workspace, source)}`,
         source,
+        ...(typeof review.item.subject === "string" ? { subject: review.item.subject } : {}),
         ...(typeof review.item.fingerprint === "string" ? { fingerprint: review.item.fingerprint, evidence: review.item.evidence } : {}),
         ...(typeof review.item.correction === "string" ? { correction: review.item.correction, ...(Array.isArray(review.item.needs_clarification) && review.item.needs_clarification.length > 0 ? { needs_clarification: review.item.needs_clarification } : {}) } : {}),
       };
@@ -288,13 +298,28 @@ export function sourceTitle(workspace: Workspace, source: string): string {
   return String(workspace.get(source)?.attributes.title ?? source);
 }
 
-/** `From <source title>: 1 change, 3 new notes and 2 links` (spec/cli.md §5.6, 0045); a deferred row starts `Deferred from`. */
-export function reviewTitle(workspace: Workspace, source: string, changes: number, notes: number, links: number, lead = "From"): string {
+/** The key of an ingest's part: its source and its subject; both absent counts as the same (cli §5.6, 0098). */
+function partKey(source: string, subject: unknown): string {
+  return `${source}\u0002${typeof subject === "string" ? subject : ""}`;
+}
+
+/** How a title names a subject (cli §5.6): a note's title, or its `cite` when the note is in the awaiting-cleanup form; else the plain name. */
+export function subjectLabel(workspace: Workspace, subject: string, context: Context): string {
+  const note = ID.test(subject) ? workspace.get(subject) : undefined;
+  if (note === undefined) return subject;
+  return publishedTitle(publishableNote(note, context)) ?? subject;
+}
+
+/**
+ * `From <source title>: 1 change, 3 new notes and 2 links`, or `From <source title>, <subject>: …` for a part (spec/cli.md §5.6, 0045, 0098);
+ * a deferred proposal starts `Deferred from`.
+ */
+export function reviewTitle(workspace: Workspace, source: string, changes: number, notes: number, links: number, lead = "From", subject?: string): string {
   const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
   const parts = [[changes, "change", "changes"], [notes, "new note", "new notes"], [links, "link", "links"]] as const;
   const counts = parts.filter(([n]) => n > 0).map(([n, one, many]) => count(n, one, many));
   const joined = counts.length <= 1 ? counts.join("") : `${counts.slice(0, -1).join(", ")} and ${counts.at(-1)}`;
-  const title = `${lead} ${sourceTitle(workspace, source)}: ${joined}`;
+  const title = `${lead} ${sourceTitle(workspace, source)}${subject === undefined ? "" : `, ${subject}`}: ${joined}`;
   return title.length > 120 ? `${title.slice(0, 119)}…` : title;
 }
 
@@ -395,6 +420,25 @@ function groupedTitle(workspace: Workspace, target: Note, group: Array<{ fields:
   });
   const title = `${String(target.attributes.title)}: add ${parts.join(", ")}`;
   return title.length > 120 ? `${title.slice(0, 119)}…` : title;
+}
+
+/**
+ * An item's optional `subject` (cli §5.6, schema §11, 0098): a string of the id form is an existing knowledge note (UNKNOWN_ID; a source, view
+ * or proposal is INPUT_INVALID); any other string is a plain name of one line, at most 80 characters, not empty after trimming.
+ */
+function checkSubject(workspace: Workspace, item: Record<string, unknown>, pointer: string): void {
+  const subject = item.subject;
+  if (subject === undefined) return;
+  const at = `${pointer}/subject`;
+  if (typeof subject !== "string") assertNoProblems([{ pointer: at, message: "must be a note id or a plain name" }]);
+  const value = subject as string;
+  if (ID.test(value)) {
+    const note = workspace.get(value);
+    if (note === undefined) throw new BrainError("UNKNOWN_ID", `${at}: no note with id ${value}`, [{ pointer: at, message: "does not exist" }]);
+    if (!KNOWLEDGE_TYPES.has(note.type)) assertNoProblems([{ pointer: at, message: `is a ${note.type}; a subject is a knowledge note or a plain name` }]);
+    return;
+  }
+  if (value.trim() === "" || value.includes("\n") || value.includes("\r") || value.length > 80) assertNoProblems([{ pointer: at, message: "must be a plain name of one line, at most 80 characters" }]);
 }
 
 /**
@@ -661,19 +705,88 @@ export function stageNewItem(
   return { note: created, meetingPath: meeting.path, pointers };
 }
 
-/** Proposals with these statuses and target, sorted by `created` then id (spec/cli.md §5.6). */
-export function listProposals(workspace: Workspace, statuses: readonly string[], target: string | undefined): Array<Record<string, unknown>> {
-  let loaded: Context | undefined;
-  const context = () => (loaded ??= contextFor(workspace.notes, requireSuppressions(workspace.root)));
+/** Proposals with these statuses and target (spec/cli.md §5.6): `--target` also matches a review_notes that lists the id. */
+function selectProposals(workspace: Workspace, statuses: readonly string[], target: string | undefined): Note[] {
   return workspace.notes
     .filter((note) => note.type === "proposal")
     .filter((note) => statuses.length === 0 || statuses.includes(String(note.attributes.status)))
     .filter((note) => target === undefined || note.attributes.target === target
-      || (note.attributes.kind === "review_notes" && ((Array.isArray(note.attributes.notes) && note.attributes.notes.includes(target)) || reviewLinks(note.attributes).some((link) => link.target === target) || listOf(note.attributes.changes).some((change) => isRecord(change) && change.target === target))))
-    // A held proposal's path is made from its title, so it goes with the title (cli §5.6).
-    .map((note): Record<string, unknown> => { const form = heldForm(note, workspace, context()); return form.held === true || (Array.isArray(form.held) && form.title === undefined) ? form : { ...form, path: note.path }; })
-    .sort((a, b) => compareCodePoints(String(a.created), String(b.created)) || compareCodePoints(String(a.id), String(b.id)));
+      || (note.attributes.kind === "review_notes" && ((Array.isArray(note.attributes.notes) && note.attributes.notes.includes(target)) || reviewLinks(note.attributes).some((link) => link.target === target) || listOf(note.attributes.changes).some((change) => isRecord(change) && change.target === target))));
 }
+
+/** A proposal as `proposal list` lists it: its held form, with `path` unless the path would name what is held (cli §5.6). */
+function listed(note: Note, workspace: Workspace, context: Context): Record<string, unknown> {
+  const form = heldForm(note, workspace, context);
+  // A held proposal's path is made from its title, so it goes with the title (cli §5.6).
+  return form.held === true || (Array.isArray(form.held) && form.title === undefined) ? form : { ...form, path: note.path };
+}
+
+const byCreated = (a: Record<string, unknown>, b: Record<string, unknown>): number => compareCodePoints(String(a.created), String(b.created)) || compareCodePoints(String(a.id), String(b.id));
+
+/** Proposals with these statuses and target, sorted by `created` then id (spec/cli.md §5.6). */
+export function listProposals(workspace: Workspace, statuses: readonly string[], target: string | undefined): Array<Record<string, unknown>> {
+  const selected = selectProposals(workspace, statuses, target);
+  const context = selected.length === 0 ? undefined : contextFor(workspace.notes, requireSuppressions(workspace.root));
+  return selected.map((note) => listed(note, workspace, context!)).sort(byCreated);
+}
+
+/**
+ * The group of a waiting proposal (cli §5.6 `--waiting`, capture-and-review §7.5, 0096 §5): 1 changes to what the brain holds, 2 merges,
+ * answers, unsure new items and cleanups, 3 a part's or a theme's review_notes, 4 any other pending proposal.
+ */
+export function waitingGroup(a: Record<string, unknown>): 1 | 2 | 3 | 4 {
+  const kind = String(a.kind);
+  if (kind === "review_notes") return typeof a.correction === "string" ? 1 : isRecord(a.cleanup) ? 2 : 3;
+  if ((kind === "update_fact" && a.before !== undefined) || ["contradiction", "supersede", "replace_line", "update_body", "set_field", "notion_change"].includes(kind)) return 1;
+  if (["merge", "answer", "new_item"].includes(kind)) return 2;
+  return 4;
+}
+
+/**
+ * `proposal list --waiting` (cli §5.6, capture-and-review §7.5): every pending proposal that is not withheld whole, in the order of the
+ * session's questions, and the withheld ones apart, with their reason. In group 3 a source's parts (its review_notes without a fingerprint)
+ * are listed together, in the place of the first of them: they are one question.
+ */
+export function waitingProposals(workspace: Workspace, target: string | undefined): { waiting: Array<Record<string, unknown>>; held: Array<Record<string, unknown>>; counts: { waiting: number; held: number } } {
+  const pending = selectProposals(workspace, ["pending"], target);
+  const context = pending.length === 0 ? undefined : contextFor(workspace.notes, requireSuppressions(workspace.root));
+  const order = (a: Record<string, unknown>, b: Record<string, unknown>) => Number(a.group) - Number(b.group) || byCreated(a, b);
+  const waiting: Array<Record<string, unknown>> = [];
+  const held: Array<Record<string, unknown>> = [];
+  for (const note of pending) {
+    const group = waitingGroup(note.attributes);
+    if (proposalWithheld(note, workspace, context!).whole) {
+      held.push({ ...heldForm(note, workspace, context!), group, reason: "SOURCE_EXCLUDED", ...(legacyProposal(note.attributes) ? { legacy: true } : {}) });
+    } else {
+      waiting.push({ ...listed(note, workspace, context!), group });
+    }
+  }
+  waiting.sort(order);
+  held.sort(order);
+  return { waiting: sourcesTogether(waiting), held, counts: { waiting: waiting.length, held: held.length } };
+}
+
+/** A proposal with no passages (schema §11.5): on a review_notes, one none of whose items carries them. */
+function legacyProposal(a: Record<string, unknown>): boolean {
+  if (a.kind !== "review_notes") return a.passages === undefined;
+  return !listOf(a.items).some((item) => isRecord(item) && item.passages !== undefined);
+}
+
+/** Group 3 in order, with each source's parts moved up to follow the first of them, in their own order (cli §5.6). */
+function sourcesTogether(sorted: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  const isPart = (item: Record<string, unknown>) => item.group === 3 && item.fingerprint === undefined && typeof item.source === "string";
+  const out: Array<Record<string, unknown>> = [];
+  const placed = new Set<Record<string, unknown>>();
+  for (const item of sorted) {
+    if (placed.has(item)) continue;
+    out.push(item); placed.add(item);
+    if (!isPart(item)) continue;
+    for (const other of sorted) if (!placed.has(other) && isPart(other) && other.source === item.source) { out.push(other); placed.add(other); }
+  }
+  return out;
+}
+
+const subjectIsId = (subject: unknown): boolean => typeof subject === "string" && ID.test(subject);
 
 /** What a held proposal is listed without: its wording, values and the metadata written from them (cli §5.6, eligibility.md §4.3, §9.4). */
 const HELD_WITHOUT = ["title", "why", "before", "after", "from", "content", "answer", "answer_note", "note", "links", "supersedes", "merge_into", "fingerprint", "notion_published", "revisions"];
@@ -685,7 +798,8 @@ function heldForm(note: Note, workspace: Workspace, context: Context): Record<st
   const found = proposalWithheld(note, workspace, context);
   if (a.kind !== "review_notes") {
     if (!found.whole) return { ...a };
-    return { ...Object.fromEntries(Object.entries(a).filter(([key]) => !HELD_WITHOUT.includes(key))), held: true };
+    // A subject that is a note id carries no text; a plain name is text, and goes with the wording (cli §5.6).
+    return { ...Object.fromEntries(Object.entries(a).filter(([key]) => !HELD_WITHOUT.includes(key) && !(key === "subject" && !subjectIsId(a.subject)))), held: true };
   }
   const changes = listOf(a.changes);
   const links = listOf(a.links);
@@ -706,7 +820,7 @@ function heldForm(note: Note, workspace: Workspace, context: Context): Record<st
   const itemIds = new Set(listOf(a.items).filter(isRecord).filter((item) => (item.kind === "change" && heldChange(Number(item.ref))) || (item.kind === "note" && heldNote(String(item.ref))) || (item.kind === "link" && linkRefs(item.ref).some(heldLink))).map((item) => String(item.item_id)));
   if (Array.isArray(a.revisions)) out.revisions = a.revisions.filter((revision) => !(isRecord(revision) && itemIds.has(String(revision.item_id))));
   delete out.notion_published;
-  if (held.length === changes.length + notes.length + links.length) { delete out.title; delete out.why; delete out.fingerprint; }
+  if (held.length === changes.length + notes.length + links.length) { delete out.title; delete out.why; delete out.fingerprint; if (!subjectIsId(a.subject)) delete out.subject; }
   return out;
 }
 
