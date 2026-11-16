@@ -1043,7 +1043,7 @@ Easy setup on Windows and Mac, from the first beta tester's Windows session (dec
 **Output:** AGENTS.md: "Before any work, read" becomes what to read for a task, for planning and for a design question (the sessions of 2026-11-15 read neither the synthesis nor the whole task file); the worktree rule names `task.mjs`'s commands and points at its usage where it restated it; the status rules name `task.mjs set` (CC-301) and the pre-push check; "Using Orca" keeps one pointer, and its rules move unchanged to `docs/orca.md`, with one added: wait through notifications, since a `sleep` then a poll is blocked.
 **Acceptance:** every rule AGENTS.md had is still in AGENTS.md or in `docs/orca.md`, and one rule changes meaning, as the Output says: the vision and the synthesis are read for planning and for a design question, where before they were read before any work; each command it names exists in `scripts/task.mjs`; the links resolve; the full suite and the leak check pass.
 
-### CC-305 · Tests give Git an identity before brain init: CI is green again after CC-291 · `review`
+### CC-305 · Tests give Git an identity before brain init: CI is green again after CC-291 · `done` (#410)
 **Release:** 0.15.2
 **Changelog:** development only: the skills tests no longer depend on a global Git identity, so CI passes on runners that have none.
 **Output:** `initBrain` in `tests/skills-fixtures.ts` runs `brain init --no-git`, then `git init` with the repository's own name and email, and commits. Since CC-291 (#404), `init` with Git stops with `GIT_IDENTITY_MISSING` when Git has no identity, and CI's runners have none: 59 tests failed on `main` at fab85a5 (found by the retro session). No product change.
