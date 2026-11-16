@@ -3,7 +3,12 @@ import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import test from "node:test";
+import { test as nodeTest } from "node:test";
+
+// Skipped on Windows (decision 0097 §4): the maintainers' release and PR scripts (docs/releasing.md); their tests stub git, gh and npm with shell scripts, and run on macOS and in Ubuntu CI.
+const test = process.platform === "win32"
+  ? (name, ...rest) => nodeTest(name, { skip: "maintainers' tooling, not run on Windows (decision 0097 §4)" }, () => {})
+  : nodeTest;
 
 import { withBlock } from "../scripts/skills-integration.mjs";
 import { forkState, PACKAGE_INTEGRITY, PRODUCT, prBody, releaseNotes, sha, startMock, TOKEN, writePackage } from "./fixtures/github-mock.mjs";

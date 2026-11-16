@@ -4,7 +4,12 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import test from "node:test";
+import { test as nodeTest } from "node:test";
+
+// Skipped on Windows (decision 0097 §4): the native-run harness drives Claude Code and Codex through shell scripts on the maintainers' macOS machine (decision 0082).
+const test = process.platform === "win32"
+  ? (name, ...rest) => nodeTest(name, { skip: "maintainers' tooling, not run on Windows (decision 0097 §4)" }, () => {})
+  : nodeTest;
 
 // eval/memory-0.12/native (CC-200): the parts of the native-run harness that need no agent — the no-file-read
 // classifier, both agents' trace parsing and token accounting, citations, retrieval costs, and the identity header.

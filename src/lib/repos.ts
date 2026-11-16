@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { realpath } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { promisify } from "node:util";
 
 import { BrainError } from "./errors.ts";
@@ -26,6 +26,11 @@ export function findRepo(config: Record<string, unknown>, name: string): LinkedR
   const repo = linkedRepos(config).find((entry) => entry.name === name);
   if (repo === undefined) throw new BrainError("REPO_NOT_FOUND", `No linked repo named ${name} in brain.json repos`);
   return repo;
+}
+
+/** A repo path as the contract allows it: absolute for this platform (`/…`, or `C:\…` on Windows) or starting with `~/` (schema §12). */
+export function isAbsoluteOrHome(path: string): boolean {
+  return isAbsolute(path) || path.startsWith("~/");
 }
 
 /** A stored path with `~/` expanded. */

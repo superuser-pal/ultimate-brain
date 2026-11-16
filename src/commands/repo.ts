@@ -16,7 +16,7 @@ import { appendLog } from "../lib/log.ts";
 import { scanNotes } from "../lib/notes.ts";
 import { repoHealth } from "../lib/repo-health.ts";
 import { checkIssueInput, countItems, parseIssues, parseMarkdownTasks, percentOf, rollupMarkdown, statusMap, unmappedOf, type TaskItem } from "../lib/repo-tasks.ts";
-import { assertAncestor, expandPath, fileAtHead, fileDirty, findRepo, headCommit, isDirty, linkedRepos, openRepo, repoChanges, resolveCommit, workTreeTop, type LinkedRepo } from "../lib/repos.ts";
+import { assertAncestor, expandPath, isAbsoluteOrHome, fileAtHead, fileDirty, findRepo, headCommit, isDirty, linkedRepos, openRepo, repoChanges, resolveCommit, workTreeTop, type LinkedRepo } from "../lib/repos.ts";
 import { describeErrors, loadSchemas } from "../lib/schemas.ts";
 import { guardPin, PIN_EXEMPT } from "../lib/skills-pin.ts";
 import { installedProduct } from "../lib/skills.ts";
@@ -66,7 +66,7 @@ function assertConfirmed(confirm: string | undefined, bytes: string): void {
 }
 
 const ensureAbsolute = (path: string, home?: string): string => {
-  if (!/^(\/|~\/)/.test(path)) throw new BrainError("INPUT_INVALID", `--path ${path} must be absolute or start with ~/`);
+  if (!isAbsoluteOrHome(path)) throw new BrainError("INPUT_INVALID", `--path ${path} must be absolute or start with ~/`);
   return expandPath(path, home);
 };
 
@@ -101,7 +101,7 @@ export const repoAddCommand: Command = {
     if (!NAME.test(name)) throw new BrainError("INPUT_INVALID", `${name}: a repo name is lowercase kebab-case`);
     const repos = linkedRepos(brain!.config);
     if (repos.some((repo) => repo.name === name)) throw new BrainError("INPUT_INVALID", `${name} is already a linked repo`);
-    if (!/^(\/|~\/)/.test(path)) throw new BrainError("INPUT_INVALID", `--path ${path} must be absolute or start with ~/`);
+    if (!isAbsoluteOrHome(path)) throw new BrainError("INPUT_INVALID", `--path ${path} must be absolute or start with ~/`);
 
     let repo: LinkedRepo;
     if (fromKit) {
@@ -293,7 +293,7 @@ async function entryKit(brain: Brain, repo: LinkedRepo, home?: string): Promise<
 
 /** The working tree at a new `--path` for `repo refresh` (cli.md §5.29): the checks of `repo add`. */
 async function movedRepo(brain: Brain, repo: LinkedRepo, path: string, home?: string): Promise<string> {
-  if (!/^(\/|~\/)/.test(path)) throw new BrainError("INPUT_INVALID", `--path ${path} must be absolute or start with ~/`);
+  if (!isAbsoluteOrHome(path)) throw new BrainError("INPUT_INVALID", `--path ${path} must be absolute or start with ~/`);
   const top = await openRepo({ ...repo, path }, home);
   // Compared after resolving symbolic links, so a link to the brain is refused too.
   if (top === (await realpath(brain.root))) throw new BrainError("REPO_IS_BRAIN", `${path} is the brain itself; link another repo`);
