@@ -2,6 +2,23 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.15.2 — 2026-11-16
+
+- CC-289 (#398): development only: decision 0097 and the 0.15.2 tasks for an easy setup on Windows and Mac are in the build plan.
+- CC-290 (#401): The setup contracts give each prerequisite an install command on Windows and on Mac, and MarkItDown is required.
+- CC-291 (#404): `brain init --set-default` works on Windows, `~` in the brain path is expanded, and `init` stops with the two commands to run when Git has no name or email, instead of leaving the brain without its first commit.
+- CC-292 (#406): `brain repo` accepts Windows paths (`C:\...`) for linked repos and refuses a new repo inside the brain on Windows too, and CI runs the test suite on Windows.
+- CC-293 (#407): Get started has its own steps for Windows and for Mac, and a prompt you paste into your agent to set up without cloning anything.
+- CC-294 (#412): Setup checks for MarkItDown and Python at its first step and gives the install commands for your platform, Windows included.
+- CC-300 (#400): Internal: a task id that an open PR already plans can't be taken by a second PR.
+- CC-301 (#402): Internal: a task-row format problem stops the push instead of failing after the review.
+- CC-302 (#403): Internal: the agents' instructions say what to read for each kind of work.
+- CC-303 (#408): Internal: a commit made on a detached HEAD is refused.
+- CC-305 (#410): development only: the skills tests no longer depend on a global Git identity, so CI passes on runners that have none.
+- CC-304 (#409): A brain keeps its notes in LF line endings on Windows: `brain init` writes a `.gitattributes`, and `brain upgrade` adds it to an existing brain.
+
+Skills: ultimate-brain-skills 1.9.2 (sha256-fbe7f18384cea44e6414d5ae949533766d673a0aa62d17aaec5cc86360f87d71)
+
 ## 0.15.1 — 2026-11-15
 
 - CC-279 (#389): The repository says where your data goes (`PRIVACY.md`) and how to report a security problem (`SECURITY.md`).
