@@ -1057,15 +1057,13 @@ Easy setup on Windows and Mac, from the first beta tester's Windows session (dec
 **Output:** `initBrain` in `tests/skills-fixtures.ts` runs `brain init --no-git`, then `git init` with the repository's own name and email, and commits. Since CC-291 (#404), `init` with Git stops with `GIT_IDENTITY_MISSING` when Git has no identity, and CI's runners have none: 59 tests failed on `main` at fab85a5 (found by the retro session). No product change.
 **Acceptance:** CI's `test` and `test-windows` jobs pass on the PR; the full suite passes locally with no global Git identity (`GIT_CONFIG_GLOBAL` set to an empty file); the leak and PR format checks pass.
 
-## 0.16.0 — One place to decide (decisions 0096, 0098)
-
 ### CC-304 · A brain keeps its notes in LF on Windows: .gitattributes from init and upgrade · `done` (#409)
 **Release:** 0.15.2
 **Changelog:** A brain keeps its notes in LF line endings on Windows: `brain init` writes a `.gitattributes`, and `brain upgrade` adds it to an existing brain.
 **Output:** the user's yes of 2026-11-16 to a `.gitattributes` in the brain template (raised by CC-292's Windows job, decision 0097 §4). `templates/brain/gitattributes` (`* text=auto eol=lf`), written by `init` as `.gitattributes` like `gitignore` (spec/cli.md §5.1 step 3); `brain upgrade` step 1d puts the line first in an existing `.gitattributes`, so the user's own lines still win, or creates it (§5.15), as step 1c does for `.gitignore`; the test package roots carry the template file.
 **Acceptance:** init's `created` lists `.gitattributes` with the line; upgrade creates it, puts the line first in a file without it, keeping the user's lines after it, and leaves it alone once present (tests in `tests/init.test.ts`); the full suite, `typecheck`, `test:package`, the leak check and the PR format check pass, and CI's Windows job passes.
 
-## 0.16.0 — One place to decide (decision 0096)
+## 0.16.0 — One place to decide (decisions 0096, 0098)
 
 **Recorded by [0096](../decisions/0096-one-place-to-decide.md) (the author's grill of 2026-11-15, Q1 to Q13).** You decide in the Claude Code or Codex session, and Notion is where you read the brain. An attended ingest's yes on the preview takes its items in as `reviewed` and asks, in the same turn, only what removes or replaces something the brain holds (changed values, replaced decisions, merges, answers, unsure flags); additions and links go in directly, cited and listed. Work done without you (a scheduled catch-up, the weekly review, reflection, correction checks, the assistant) only queues questions in `_proposals/`, and each session asks the most consequential, at most five per round. The Review database is removed: a migration applies the decisions already made on its rows, then archives it. The weekly review becomes one Inbox row per week, Kind Weekly. It removes and simplifies; 0.15.0 stays the feature cutoff. Inviting testers (U-28) waits for this release.
 
