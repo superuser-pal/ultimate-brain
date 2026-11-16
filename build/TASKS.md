@@ -1013,7 +1013,7 @@ Easy setup on Windows and Mac, from the first beta tester's Windows session (dec
 **Output:** a `windows-latest` job in `.github/workflows/ci.yml` running the suite; fixes for what fails there: `brain repo add`, `refresh --path` and `new` accept a Windows absolute path, as do `brain.json`'s repo `path` and the weekly plan `file` in the schemas, and `repo new`'s containment check and the index-lock wait use the platform's path rules; tests that compare paths use either separator; launchd/cron tests, `chmod`-based write-failure tests and the maintainers' tooling tests (release scripts, native run, evaluation runner, `vendor-skills`) are skipped on `win32` with the reason in the test.
 **Acceptance:** the Windows job passes on the PR; every skip names its reason; the Ubuntu jobs still pass.
 
-### CC-293 · Get started for Windows and Mac, the setup prompt, and "you don't need to clone this" (0097 §1, §2) · `todo`
+### CC-293 · Get started for Windows and Mac, the setup prompt, and "you don't need to clone this" (0097 §1, §2) · `done` (#407)
 **Release:** 0.15.2
 **Changelog:** Get started has its own steps for Windows and for Mac, and a prompt you paste into your agent to set up without cloning anything.
 **Output:** README Get started step 1 split by platform (the winget line and the reopen step; Homebrew, Node, `gh`, Python and MarkItDown, the developer-tools note; Git's name and email; `gh auth login`); the setup prompt; the line at the top of README and AGENTS.md; docs/setup.md's requirements table and a Windows section under "When something goes wrong" (PATH, execution policy, npm's global folder), and the weekly review run by hand on Windows.

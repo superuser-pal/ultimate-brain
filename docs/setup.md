@@ -14,14 +14,16 @@ The brain folder is where your knowledge is kept. Notion is where you read it, r
 | What | Why | Required |
 |---|---|---|
 | Node 22.6 or later | The `brain` CLI runs on it. | Yes |
-| Git, with your name and email | Every change the brain makes is a commit. Without a name and email, Git saves nothing. | Yes. Setup sets the name and email if they're missing. |
+| Git, with your name and email | Every change the brain makes is a commit. Without a name and email, Git saves nothing. | Yes. Set them before `brain init` (Get started, step 1); `init` stops and tells you how when they're missing. |
 | Claude Code or Codex | The agent does the work: it reads your material, writes notes and talks to Notion. | Yes |
 | Notion AI | It writes your meeting minutes and runs Brain Assistant. | Yes, for early access. See [Without Notion AI](#without-notion-ai). |
 | Custom Agents (Business and Enterprise plans) | Brain Assistant runs as a Custom Agent whose access you limit to your brain's pages. Without them, it runs from your personal Instructions. | No |
 | The GitHub CLI (`gh`), signed in | Setup creates your backup with it, checks that the backup stays private, and sends your setup report if you say yes. | Yes, for early access. |
-| MarkItDown | It turns PDFs, Word files, slides, spreadsheets and saved web pages into exact text, so quotes are exact. | No |
+| Python and MarkItDown | MarkItDown turns PDFs, Word files, slides, spreadsheets and saved web pages into exact text, so quotes are exact. It runs on Python. | Yes, for early access. |
 
-Setup checks all of these at once, at the start. It asks you about your Notion plan, since nothing can read it. Install `gh` and sign in to it before you say "set up my brain", as Get started's step 1 shows: without it, setup stops at step 1 (see [`gh` is missing or signed out](#gh-is-missing-or-signed-out-gh-missing-gh-signed-out)).
+Setup checks all of these at once, at the start. It asks you about your Notion plan, since nothing can read it. Install everything and sign in to `gh` before you say "set up my brain", with the commands for your computer in Get started's step 1 (Mac or Windows): without them, setup stops at step 1 and gives the same commands.
+
+On Windows, scheduled runs aren't available: you ask your agent for a catch-up or the weekly review when you want one (see the settings, item 12).
 
 ## The steps
 
@@ -68,11 +70,7 @@ Step 2 shows one screen with every setting filled in. Change any of them later b
 7. **Publish.** Default `ask`: the brain asks before it publishes to Notion. With `auto`, it publishes after each run.
 8. **Back up after each run.** Default `on`: the brain backs up after each run, so your backup stays current. With `remind me`, it reminds you instead, and the last line of each report says how many changes aren't backed up yet. Change it by saying "back up: remind me".
 9. **Opening recall in linked repos.** Default `off`. When you link a project's repository to the brain, agents working there can load what the brain remembers about that project when a session opens.
-10. **MarkItDown.** Default `on` when it is installed, else `off`. On, PDFs, Word files and slides become exact text. Off, the agent reads files itself: in Claude Code, PDFs and images need nothing extra; in Codex, images are read with its image tool, and PDFs need MarkItDown. To install it:
-
-    ```sh
-    pipx install 'markitdown[all]'
-    ```
+10. **MarkItDown.** Shown `on`, since step 1 already checked that it is installed. PDFs, Word files and slides become exact text, so the brain quotes them exactly. Early access needs it, so it can't be turned off. Check it with:
 
     ```sh
     markitdown --version
@@ -80,7 +78,7 @@ Step 2 shows one screen with every setting filled in. Change any of them later b
 
 11. **GitHub CLI (`gh`).** Shown `on`, since step 1 already checked that it is signed in. It creates your backup, checks that it stays private, and files your setup report for you. Early access needs it, so it can't be turned off.
 
-12. **Scheduled catch-up.** Default `off`, and asked in step 8. Catch-up then runs on its own at the times you choose. It only takes in what you've marked ready. It is offered only after first value passes, so it never runs on a brain that hasn't proved it works.
+12. **Scheduled catch-up.** Default `off`, and asked in step 8. Catch-up then runs on its own at the times you choose. It only takes in what you've marked ready. It is offered only after first value passes, so it never runs on a brain that hasn't proved it works. On Windows it isn't offered: scheduled runs need macOS (or a crontab on Linux), so you ask your agent for a catch-up or the weekly review when you want one.
 13. **How the brain talks to you.** Default Standard. Simple uses plain words, short answers and the answer first. Custom lets you choose how much it explains, how long its answers are and what comes first. Change it any time: "talk to me more simply", "shorter answers", "go back to normal".
 
 ## When something goes wrong
@@ -95,20 +93,53 @@ The CLI isn't installed, or your terminal can't find it. Install it, then open a
 npm install -g ultimate-brain
 ```
 
-Still not found? npm's global folder isn't on your PATH. `npm config get prefix` shows where npm installs; its `bin` folder must be on your PATH. If `npm install -g` fails with a permission error (`EACCES`), install Node with a version manager such as [nvm](https://github.com/nvm-sh/nvm), then install again.
+Still not found? npm's global folder isn't on your PATH. `npm config get prefix` shows where npm installs; on a Mac its `bin` folder must be on your PATH. If `npm install -g` fails with a permission error (`EACCES`) on a Mac, Node came from the nodejs.org installer: install it with `brew install node` instead, then install again.
+
+### A command isn't found on Windows (`brain`, `gh`, `node`, `markitdown`)
+
+PowerShell says `The term 'gh' is not recognized` (or `brain`, `node`, `markitdown`):
+
+1. **Close every terminal, and quit Claude Code or Codex** (closing its terminal panel is not enough), then open them again. A program keeps the list of tools it had when it started, so it can't find tools installed after that. This is the usual cause.
+2. **Check that it is installed:** `winget list --id GitHub.cli` (or `OpenJS.NodeJS.LTS`, `Git.Git`, `Python.Python.3.12`). For `brain`, run `npm config get prefix`: npm puts `brain` in that folder, which must be on your PATH. For `markitdown`, run `py -m pipx ensurepath`, then reopen as in 1.
+3. **`brain` is found but won't run** (`running scripts is disabled on this system`): PowerShell's script policy blocks npm's launcher. Allow scripts for your account, then open a new PowerShell:
+
+   ```powershell
+   Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+   ```
 
 ### `brain init` refuses the folder
 
 - **The folder isn't empty** (`TARGET_NOT_EMPTY`): choose a new folder, such as `~/brain`.
 - **It is already a brain** (`ALREADY_A_BRAIN`): you made it before. Open your agent there and say "set up my brain".
 
+### `brain init` stops: Git doesn't know your name and email (`GIT_IDENTITY_MISSING`)
+
+The brain saves every change with your name and email, so `brain init` stops before it writes anything. Run these with your own name and email, then run the same `brain init` command again:
+
+```sh
+git config --global user.name "Your Name"
+```
+
+```sh
+git config --global user.email "you@example.com"
+```
+
 ### `brain init` didn't commit (`GIT_COMMIT_SKIPPED`)
 
-Git had no name and email yet. Nothing is lost: the files are there, and step 2 sets your identity and commits them.
+Git isn't installed, or the commit failed for another reason. Nothing is lost: the files are there. Install Git (Get started, step 1), then say "set up my brain": step 2 commits them.
 
 ### Node, Git or the agent is missing (`missing-prerequisite`)
 
-Install what setup names: Node 22.6 or later from [nodejs.org](https://nodejs.org), Git from [git-scm.com](https://git-scm.com/downloads). Then say "set up my brain" again. Setup runs in Claude Code or Codex: open one of them in your brain folder.
+Install what setup names, with the commands for your computer from Get started's step 1: on a Mac, `brew install node` and `xcode-select --install` (Git); on Windows, `winget install --id OpenJS.NodeJS.LTS -e` and `winget install --id Git.Git -e`. Then reopen your terminal and your agent, and say "set up my brain" again. Setup runs in Claude Code or Codex: open one of them in your brain folder.
+
+### MarkItDown is missing (`markitdown-missing`)
+
+Setup needs MarkItDown to turn your documents into exact text. It stops at step 1 with the commands for your computer, leaving out what you already have:
+
+- **Mac:** `brew install python`, `brew install pipx`, then `pipx install 'markitdown[all]'` and `pipx ensurepath`. Open a new Terminal window.
+- **Windows:** `winget install --id Python.Python.3.12 -e`, then `py -m pip install --user pipx`, `py -m pipx install "markitdown[all]"` and `py -m pipx ensurepath`. Close every terminal, quit your agent and open it again.
+
+Then say "set up my brain" again. Check it with `markitdown --version`.
 
 ### `gh` is missing or signed out (`gh-missing`, `gh-signed-out`)
 
@@ -120,7 +151,13 @@ Setup needs the GitHub CLI, signed in, to create your backup. It stops at step 1
    brew install gh
    ```
 
-   Not on a Mac: follow [cli.github.com](https://cli.github.com).
+   On Windows:
+
+   ```powershell
+   winget install --id GitHub.cli -e
+   ```
+
+   Then close every terminal, quit your agent and open it again. On another system: follow [cli.github.com](https://cli.github.com).
 2. In your terminal, sign in:
 
    ```sh
@@ -290,7 +327,7 @@ Setup put things in these places outside your brain folder. Remove the ones you 
 
 | What | Where | How to remove it |
 |---|---|---|
-| The scheduled runs | On a Mac, `~/Library/LaunchAgents/eu.ultimate-brain.*.plist`. Elsewhere, lines you added to your crontab. | On a Mac, in your brain folder: `brain schedule remove catch-up` and `brain schedule remove weekly-review`. Elsewhere, delete the lines with `crontab -e`. |
+| The scheduled runs | On a Mac, `~/Library/LaunchAgents/eu.ultimate-brain.*.plist`. On Linux, lines you added to your crontab. On Windows, none. | On a Mac, in your brain folder: `brain schedule remove catch-up` and `brain schedule remove weekly-review`. Elsewhere, delete the lines with `crontab -e`. |
 | The `brain` command | npm's global folder | `npm uninstall -g ultimate-brain` |
 | The default brain setting | `~/.config/ultimate-brain/` | Delete the folder. |
 | Run state and logs | `~/.ultimate-brain/` and, on a Mac, `~/Library/Logs/ultimate-brain/` | Delete the folders. |
