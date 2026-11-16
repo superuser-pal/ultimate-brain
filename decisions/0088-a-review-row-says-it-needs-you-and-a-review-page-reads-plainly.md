@@ -1,6 +1,6 @@
 # 0088 — A Review row says it needs you, and a Review page reads plainly
 
-**Status:** Accepted
+**Status:** Superseded by [0096](0096-one-place-to-decide.md) (2026-11-15; 0.16.0): the Review database, its page and Grill me are removed; decisions are made in the session
 **Date:** 2026-11-13
 **Release:** 0.14.0 (§1, CC-239) and 0.15.0 (§2, CC-240 and CC-241)
 **Amended by:** [0090](0090-review-by-grill-notion-ai-reviews-with-you-and-your-call-decides.md) (2026-11-13; built in 0.15.0): §2's page gains a brain-context toggle and a Review with me button that runs the Grill review skill; headings are derived and never read; Your call, not the Submit buttons, submits a page with sections

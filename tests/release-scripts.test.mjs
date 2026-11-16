@@ -908,6 +908,32 @@ test("task start --new refuses an existing id and incomplete flags", (t) => {
   assert.equal(existsSync(join(parent, "ub-CC-2")), false);
 });
 
+test("task start --new refuses an id an open branch plans, and next-id counts open branches (CC-300)", (t) => {
+  const { parent, root, path } = taskRepository("## 1.2.0\n\n### CC-1 · Old · `todo`\n**Release:** 1.2.0\n\n## Your tasks\n\n| U-3 | Check | `todo` |\n");
+  t.after(() => rmSync(parent, { recursive: true, force: true }));
+  mkdirSync(join(root, "decisions"));
+  writeFileSync(join(root, "decisions/0007-first.md"), "# 0007\n");
+  command(root, ["add", "."]);
+  command(root, ["commit", "-q", "-m", "a decision"]);
+  command(root, ["push", "-q", "origin", "main"]);
+  assert.equal(run("task.mjs", ["next-id"], { root, env: { PATH: path } }).stdout, "CC-2\nU-4\ndecision 0008\n");
+  // A planning branch, CC-2, adds the rows of CC-3 and CC-4, a user task and a decision.
+  command(root, ["checkout", "-q", "-b", "claude/CC-2-plan"]);
+  writeFileSync(join(root, "build/TASKS.md"), "## 1.2.0\n\n### CC-1 · Old · `todo`\n**Release:** 1.2.0\n\n### CC-2 · Plan · `review`\n**Release:** 1.2.0\n\n### CC-3 · Planned · `todo`\n**Release:** 1.2.0\n\n### CC-4 · Also planned · `todo`\n**Release:** 1.2.0\n\n## Your tasks\n\n| U-3 | Check | `todo` |\n| U-4 | Publish | `todo` |\n");
+  writeFileSync(join(root, "decisions/0008-second.md"), "# 0008\n");
+  command(root, ["add", "."]);
+  command(root, ["commit", "-q", "-m", "plan"]);
+  command(root, ["push", "-q", "origin", "claude/CC-2-plan"]);
+  command(root, ["checkout", "-q", "main"]);
+  const planned = run("task.mjs", ["start", "CC-3", "--new", "Something else", "--release", "1.2.0"], { root, env: { PATH: path } });
+  assert.equal(planned.status, 1);
+  assert.match(planned.stderr, /CC-3 is already planned on origin\/claude\/CC-2-plan: take a free id/);
+  assert.equal(existsSync(join(parent, "ub-CC-3")), false);
+  assert.equal(run("task.mjs", ["next-id"], { root, env: { PATH: path } }).stdout, "CC-5\nU-5\ndecision 0009\n");
+  assert.equal(run("task.mjs", ["start", "CC-5", "--new", "Free", "--release", "1.2.0"], { root, env: { PATH: path } }).status, 0);
+  assert.match(run("task.mjs", ["next-id", "CC-1"], { root, env: { PATH: path } }).stderr, /Usage/);
+});
+
 test("task clean removes merged task worktrees and keeps open, fresh and dirty ones", (t) => {
   const { parent, root, path } = taskRepository("### CC-1 · Merged · `todo`\n**Release:** 1.2.0\n\n### CC-2 · Open · `todo`\n**Release:** 1.2.0\n\n### CC-3 · Fresh · `todo`\n**Release:** 1.2.0\n\n### CC-4 · Dirty · `todo`\n**Release:** 1.2.0\n");
   t.after(() => rmSync(parent, { recursive: true, force: true }));
@@ -1036,6 +1062,33 @@ test("PR format rejects a changelog field lost from another task", (t) => {
   const result = run("pr-format.mjs", ["1"], { root, env: { PATH: path } });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /loses \*\*Changelog/);
+});
+
+test("PR format rejects a task id another open PR plans under another title, and accepts a stacked PR's same row (CC-300)", (t) => {
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const base = "### CC-1 · Old · `done` (#1)\n**Release:** 0.4.0\n**Changelog:** Old\n";
+  const head = `${base}\n### CC-2 · Plan · \`review\`\n**Release:** 0.4.0\n**Changelog:** Plan\n\n### CC-3 · Planned here · \`todo\`\n**Release:** 0.4.0\n**Changelog:** Here\n`;
+  const gh = (otherRows, list = `printf '%s' '[{"number":7,"headRefOid":"head"},{"number":8,"headRefOid":"other"}]'`) => fakeCommands(root, {
+    gh: `case "$1 $2" in
+      "pr view") printf '%s' '{"headRefName":"claude/CC-2-plan","headRefOid":"head","baseRefOid":"base","title":"CC-2: Plan"}' ;;
+      "pr list") ${list} ;;
+      "repo view") printf owner/repo ;;
+      "api repos/owner/repo/contents/build/TASKS.md?ref=base") printf '%s' '${taskRows(base)}' ;;
+      "api repos/owner/repo/contents/build/TASKS.md?ref=head") printf '%s' '${taskRows(head)}' ;;
+      "api repos/owner/repo/contents/build/TASKS.md?ref=other") printf '%s' '${taskRows(otherRows)}' ;;
+    esac`,
+  });
+  const clash = run("pr-format.mjs", ["7"], { root, env: { PATH: gh(`${base}\n### CC-3 · Planned there · \`in progress\`\n**Release:** 0.4.0\n**Changelog:** There\n`) } });
+  assert.equal(clash.status, 1);
+  assert.match(clash.stderr, /PR adds task id\(s\) that open PR #8 uses for another task: CC-3\. Take free ids: node scripts\/task\.mjs next-id/);
+  // PR #8 is stacked on this one: it has the same row, already started.
+  const stacked = run("pr-format.mjs", ["7"], { root, env: { PATH: gh(`${head.replace("Planned here · \`todo\`", "Planned here · \`in progress\`")}`) } });
+  assert.equal(stacked.status, 0, stacked.stderr);
+  assert.equal(run("pr-format.mjs", ["7"], { root, env: { PATH: gh(base) } }).status, 0);
+  const unlisted = run("pr-format.mjs", ["7"], { root, env: { PATH: gh(base, "echo 'gh: rate limited' >&2; exit 1") } });
+  assert.equal(unlisted.status, 1);
+  assert.match(unlisted.stderr, /Cannot list the open PRs: gh: rate limited/);
 });
 
 test("CI passes with skipped jobs, but not with a failure, a running job or nothing that succeeded", async () => {

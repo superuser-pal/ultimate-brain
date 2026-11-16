@@ -30,11 +30,13 @@ else {
         const headLines = changelogIds(headLog.stdout);
         const missingLines = [...changelogIds(baseLog.stdout)].filter((id) => !headLines.has(id));
         const task = headTasks.find((entry) => entry.id === match[2]);
+        const clash = plannedElsewhere(repo.stdout, pr, headTasks.filter((entry) => !baseTasks.some((baseTask) => baseTask.id === entry.id)));
         // A task with no row on the head would fall to the 0.3.x path below and be asked for a CHANGELOG.md line (CC-116).
         if (task === undefined) fail(`PR has no row for its task ${match[2]}: keep its row in build/TASKS.md`);
         else if (missingHeadings.length > 0) fail(`PR loses task heading(s): ${missingHeadings.join(", ")}`);
         else if (missingLines.length > 0) fail(`PR loses CHANGELOG.md line(s): ${missingLines.join(", ")}`);
         else if (missingChangelog.length > 0) fail(`PR loses **Changelog:** line(s): ${missingChangelog.join(", ")}`);
+        else if (clash !== undefined) fail(clash);
         else if (usesTaskRowChangelog(task?.release)) {
           if (task.changelog?.trim() === "") fail(`PR task ${match[2]} has an empty **Changelog:** line`);
           else if (task.changelog === undefined) fail(`PR task ${match[2]} has no **Changelog:** line`);
@@ -44,6 +46,25 @@ else {
       }
     }
   }
+}
+
+/**
+ * The message for a task id this PR adds that another open PR also adds under another title (CC-300), or undefined. A PR stacked on this one,
+ * or below it, carries the same row with the same title, so it is no clash.
+ */
+function plannedElsewhere(repo, pr, added) {
+  if (added.length === 0) return undefined;
+  const listed = tryCommand("gh", ["pr", "list", "--state", "open", "--limit", "100", "--json", "number,headRefOid"]);
+  if (!listed.ok) return `Cannot list the open PRs: ${listed.message}`;
+  for (const other of listed.stdout === "" ? [] : JSON.parse(listed.stdout)) {
+    if (String(other.number) === String(pr)) continue;
+    const tasks = optionalContentAt(repo, "build/TASKS.md", other.headRefOid);
+    if (!tasks.ok) return `Cannot read build/TASKS.md of PR #${other.number}: ${tasks.message}`;
+    const theirs = taskEntries(tasks.stdout);
+    const taken = added.filter((entry) => theirs.some((their) => their.id === entry.id && their.title !== entry.title)).map((entry) => entry.id);
+    if (taken.length > 0) return `PR adds task id(s) that open PR #${other.number} uses for another task: ${taken.join(", ")}. Take free ids: node scripts/task.mjs next-id`;
+  }
+  return undefined;
 }
 
 /** Task ids with a line in CHANGELOG.md (`- XX-N` or `- XX-N (#N)`). */
