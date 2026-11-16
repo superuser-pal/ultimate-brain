@@ -19,7 +19,7 @@ When this file and the JSON Schema disagree, the JSON Schema wins and this file 
 
    They reach Notion through the existing render. Wording accepted in Notion returns through 0054/0058 (§6.3).
 5. Notion owns task status. When the agent and the user both changed a task's status, **the user's Notion value wins** without a question, and a task the user sets to Done counts as the user's acceptance (§8.2).
-6. Conflicts and scope changes are asked in the session and listed under "Needs you" in the summary. A workflow adds no Review rows and no new proposal kind (§8.3).
+6. Conflicts and scope changes are asked in the session and listed under "Needs you" in the summary. A workflow adds no new proposal kind (§8.3).
 7. Two sessions on one workflow are coordinated by record revisions and **item claims**, not by a lock on the whole workflow (§10).
 8. Adoption never edits a Markdown plan. GitHub and GitLab originals are kept by default; marking or closing them as transferred is an explicit choice (§11.5).
 9. The dated summary is written directly at the end of a run, not through a queued operation: the write is idempotent, and the next run rewrites it after a failure (§9).
@@ -436,7 +436,7 @@ Reconciliation runs at the start of every run, before publishing, and at complet
 **Routine changes** are written and listed in the report. Pending local edits are kept: a Needs you entry never drops L.
 
 ### 8.3 No new surfaces
-0059 asks for no new reconciliation database, no continuous sync and no routine approval checkpoint. A workflow writes no Review rows. Its questions go in the session, all in one batch after `reconcile`, and they stay in the summary's "Needs you" line until answered.
+0059 asks for no new reconciliation database, no continuous sync and no routine approval checkpoint. Its questions go in the session (capture-and-review §7.5), all in one batch after `reconcile`, and they stay in the summary's "Needs you" line until answered.
 
 ## 9. The dated summary on the Project or Area
 
