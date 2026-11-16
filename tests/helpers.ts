@@ -106,7 +106,7 @@ export async function withoutReviewSections(dir: string): Promise<void> {
   await writeFile(path, `${JSON.stringify(config, null, 2)}\n`);
 }
 
-/** Makes a draft note reviewed, as approving it in Review does: only reviewed knowledge gets a Notion page (0071). */
+/** Makes a draft note reviewed, as approving it does: only reviewed knowledge gets a Notion page (0071). */
 export async function approveNote(dir: string, path: string): Promise<void> {
   const file = join(dir, path);
   await writeFile(file, (await readFile(file, "utf8")).replace(/^lifecycle: draft$/m, "lifecycle: reviewed"));

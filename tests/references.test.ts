@@ -38,7 +38,7 @@ async function configure(dir: string, key: string, id: string): Promise<void> {
   assert.equal(set.code, 0, set.stdout);
 }
 
-/** Makes a draft reviewed, as approving it in Review does: only reviewed knowledge gets a Notion page (0071). */
+/** Makes a draft reviewed, as approving it does: only reviewed knowledge gets a Notion page (0071). */
 async function approved(dir: string, path: string): Promise<void> {
   const file = join(dir, path);
   await writeFile(file, (await readFile(file, "utf8")).replace(/^lifecycle: draft$/m, "lifecycle: reviewed"));

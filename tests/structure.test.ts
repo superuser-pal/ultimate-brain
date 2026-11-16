@@ -372,7 +372,7 @@ test("each brief lists its reviewed Documents, last updated first, at most 10 th
   const areaBrief = deriveView(area, "area_brief", [area, project, ...documents], { documents: true }).generatedBlock;
   assert.ok(section(areaBrief).startsWith("## Documents\n- [Doc 12](../../knowledge/documents/doc-12.md) — learned"), areaBrief);
   const onlyDraft = deriveView(area, "area_brief", [area, documents[13]!], { documents: true }).generatedBlock;
-  assert.equal(section(onlyDraft), "## Documents\n- Nothing reviewed yet: 1 note waiting in Review");
+  assert.equal(section(onlyDraft), "## Documents\n- Nothing reviewed yet: 1 note waiting for your decision");
   assert.equal(section(deriveView(area, "area_brief", [area], { documents: true }).generatedBlock), "## Documents\n- None");
 
   // Documents off: no section; the decision log never has one.

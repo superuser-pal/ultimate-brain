@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
-import { brain, fixtureCopy, withoutReviewSections, withPassages } from "./helpers.ts";
+import { brain, fixtureCopy, withPassages } from "./helpers.ts";
+import { foldAsBefore } from "./review-row-fixture.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
 const SYNC = "mtg-8c4n2p7w";
@@ -48,7 +49,7 @@ async function byId(dir: string, id: string): Promise<Record<string, any>> {
 const decided = (proposal: string, action: string, extra: Record<string, unknown> = {}) => ({ proposal, action, decided_at: "2026-12-10T08:00:00Z", decided_by: "notion", ...extra });
 
 /** One ingest of the sync: a new decision, a link, a fact change and a text addition. */
-async function ingest(dir: string): Promise<{ row: Record<string, any>; decision: string }> {
+async function ingestAll(dir: string) {
   const note = await run(dir, ["note", "new"], { notes: [{ type: "decision", title: "Launch in March", frontmatter: { summary: "The Acme launch moves to March.", date: "2026-12-03", assessment: "accepted", projects: [PROJECT], sources: [SYNC] }, body: "We launch in March.\n" }] });
   assert.equal(note.code, 0, note.stdout);
   const decision = note.json.data.created[0].id as string;
@@ -59,31 +60,39 @@ async function ingest(dir: string): Promise<{ row: Record<string, any>; decision
     { kind: "update_fact", title: "Launch date: March", target: PROJECT, field: "launch_date", after: "2027-03", why: "Maria moved the launch to March.", source: SYNC },
   ] });
   assert.equal(created.code, 0, created.stdout);
-  assert.equal(created.json.data.created.length, 1, "everything folds into one row");
-  const [row] = created.json.data.created;
+  return { created: created.json.data.created as Array<{ id: string; kind: string; path: string }>, decision };
+}
+
+/** The same ingest as a row written before 0.16.0 holds it: the fact change folded first among its changes (0045). */
+async function ingest(dir: string): Promise<{ row: Record<string, any>; decision: string }> {
+  const { created, decision } = await ingestAll(dir);
+  const row = created.find((entry) => entry.kind === "review_notes")!;
+  await foldAsBefore(dir, row.id, created.find((entry) => entry.kind === "update_fact")!.id);
   return { row: { ...row, ...(await attributes(dir, row.path)) }, decision };
 }
 
-test("one ingest with a decision, a link, a fact and a text change writes one review_notes, fact first", async (context) => {
+test("one ingest folds the addition, the link and the decision into one review_notes; a fact with a current value is its own proposal", async (context) => {
   const dir = await fixtureCopy(context);
-  const { row, decision } = await ingest(dir);
-  assert.equal(row.title, "From Acme sync: 2 changes, 1 new note and 1 link");
-  assert.deepEqual(row.input_indexes, [0, 1, 2, 3]);
+  const { created, decision } = await ingestAll(dir);
+  assert.deepEqual(created.map((entry) => entry.kind).sort(), ["review_notes", "update_fact"]);
+  const entry = created.find((item) => item.kind === "review_notes")!;
+  const row = await attributes(dir, entry.path);
+  assert.equal(row.title, "From Acme sync: 1 change, 1 new note and 1 link");
+  assert.deepEqual((entry as Record<string, unknown>).input_indexes, [0, 1, 2]);
   assert.deepEqual(row.notes, [decision]);
   assert.deepEqual(row.links, [{ target: CONCEPT, field: "projects", value: PROJECT }]);
-  assert.deepEqual(row.changes, [
-    { kind: "update_fact", target: PROJECT, why: "Maria moved the launch to March.", field: "launch_date", before: "2027-02", after: "2027-03", from: "2026-12-03" },
-    { kind: "add_to_note", target: CONCEPT, why: "Carlos said so.", content: "Carlos will use RLS for the auth migration." },
-  ]);
+  assert.deepEqual(row.changes, [{ kind: "add_to_note", target: CONCEPT, why: "Carlos said so.", content: "Carlos will use RLS for the auth migration." }]);
+  const fact = await attributes(dir, created.find((item) => item.kind === "update_fact")!.path);
+  assert.deepEqual([fact.target, fact.field, fact.before, fact.after, fact.source], [PROJECT, "launch_date", "2027-02", "2027-03", SYNC]);
   assert.deepEqual(await lintErrors(dir), []);
 
   const again = await run(dir, ["proposal", "new"], { proposals: [{ kind: "update_fact", title: "Launch date: March", target: PROJECT, field: "launch_date", after: "2027-03", why: "Again.", source: SYNC }] });
-  assert.deepEqual(again.json.data.skipped, [{ input_index: 0, reason: "DUPLICATE_PENDING", existing: row.id }], "a change already in a pending row is a duplicate");
-  const listed = await run(dir, ["proposal", "list", "--target", PROJECT]);
-  assert.ok(listed.json.data.proposals.some((p: { id: string }) => p.id === row.id), "--target matches a changes target");
+  assert.deepEqual(again.json.data.skipped, [{ input_index: 0, reason: "DUPLICATE_PENDING", existing: fact.id }], "a change already pending is a duplicate");
+  const listed = await run(dir, ["proposal", "list", "--target", CONCEPT]);
+  assert.ok(listed.json.data.proposals.some((p: { id: string }) => p.id === entry.id), "--target matches a changes target");
 });
 
-test("approve all except the fact applies the rest and defers the fact and the note to a new pending row", async (context) => {
+test("a row written before 0.16.0: approve all except the fact applies the rest and defers the fact and the note to a new pending row", async (context) => {
   const dir = await fixtureCopy(context);
   const { row, decision } = await ingest(dir);
   const applied = await run(dir, ["apply"], { decisions: [decided(row.id, "approve", { note: "all except a and c", exclude: [{ change: 0 }, { note: decision }] })] });
@@ -164,27 +173,11 @@ test("a fact changed before apply is dropped as stale; the rest of the row is ap
   assert.deepEqual(await lintErrors(dir), []);
 });
 
-test("render: a Review notes row letters its changes first, then notes, then links, under About/Now/Proposed", async (context) => {
-  const dir = await fixtureCopy(context);
-  await withoutReviewSections(dir);
-  const { row } = await ingest(dir);
-  const [item] = (await run(dir, ["sync", "render", "--ids", row.id])).json.data.items;
-  assert.deepEqual(item.properties.About, { type: "rich_text", value: `Acme sync (${SYNC})` });
-  assert.deepEqual(item.properties.Now, { type: "rich_text", value: null });
-  assert.equal(item.properties.Proposed.value, [
-    "a) ⚠ Launch date on Acme website: 2027-02 → 2027-03",
-    "b) Add to Row-level security: Carlos will use RLS for the auth migration.",
-    "c) Decision: Launch in March",
-    "d) Projects on Row-level security: Acme website",
-  ].join("\n"));
-  for (const old of ["Target", "Target Page", "Before", "After"]) assert.equal(item.properties[old], undefined, old);
-});
-
-test("sync plan reads Your call and What to fix: an Approve alone is a decision, any text is for the skill", async (context) => {
+test("the transition reads Your call and What to fix of a row written before 0.16.0: an Approve alone is a decision, any text is for the skill", async (context) => {
   const dir = await fixtureCopy(context);
   const { row } = await ingest(dir);
   const page = "b4000000-0000-4000-8000-000000000001";
-  const plan = async (properties: Record<string, unknown>) => (await run(dir, ["sync", "plan"], { as_of: NOW, rows: [{ database: "review", page_id: page, last_edited: "2026-12-10T08:00:00Z", properties: { "Brain ID": row.id, State: "Pending", ...properties } }] })).json.data;
+  const plan = async (properties: Record<string, unknown>) => (await run(dir, ["sync", "plan", "--review-transition"], { as_of: NOW, rows: [{ database: "review", page_id: page, last_edited: "2026-12-10T08:00:00Z", properties: { "Brain ID": row.id, State: "Pending", ...properties } }] })).json.data;
   const codes = (data: { conflicts: Array<{ code: string; property: string; notion_value?: string }> }) => data.conflicts.map((item) => [item.code, item.property, item.notion_value]);
   assert.deepEqual((await plan({ "Your call": "Approve", "What to fix": "" })).decisions, [{ proposal: row.id, action: "approve", decided_at: "2026-12-10T08:00:00Z", decided_by: "notion" }]);
   assert.deepEqual(codes(await plan({ "Your call": "Approve", "What to fix": "all except a" })), [["NOTE_TO_READ", "What to fix", "all except a"]]);

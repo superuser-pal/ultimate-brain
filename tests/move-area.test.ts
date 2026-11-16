@@ -90,8 +90,8 @@ test("set_field area on a draft decision, a draft question and a learned Documen
   // Views: the Go-to-market brief lists them, the Clients brief no longer does.
   assert.equal((await run(dir, ["views"])).code, 0);
   const gtm = await readFile(join(dir, "areas/briefs/go-to-market.md"), "utf8");
-  // Drafts show as waiting in Review (schema §16.1): one each under decisions, questions and Documents.
-  assert.equal(gtm.match(/1 note waiting in Review/g)?.length, 3, gtm);
+  // Drafts show as waiting for your decision (schema §16.1): one each under decisions, questions and Documents.
+  assert.equal(gtm.match(/1 note waiting for your decision/g)?.length, 3, gtm);
   // Once reviewed, the decision is listed by title in Go-to-market and not in Clients.
   await writeFile(join(dir, brainDir.decision.path), (await readFile(join(dir, brainDir.decision.path), "utf8")).replace(/^lifecycle: draft$/m, "lifecycle: reviewed"));
   assert.equal((await run(dir, ["views"])).code, 0);

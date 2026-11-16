@@ -15,10 +15,10 @@ updated: 2026-12-05
 - [Acme website](../../projects/acme-website/project.md) — Active
 
 ## Recent decisions
-- Nothing reviewed yet: 1 note waiting in Review
+- Nothing reviewed yet: 1 note waiting for your decision
 
 ## Open questions
-- Nothing reviewed yet: 1 note waiting in Review
+- Nothing reviewed yet: 1 note waiting for your decision
 
 ## Documents
 - None

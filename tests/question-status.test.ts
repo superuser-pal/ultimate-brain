@@ -79,36 +79,3 @@ test("render: a Status you set is never overwritten (0045)", async (context) => 
   const [item] = await rendered(dir, [QUESTION]);
   assert.equal(item?.properties.Status, undefined);
 });
-
-test("render: a Review row decided more than 30 days ago is trashed once (0045)", async (context) => {
-  const dir = await fixtureCopy(context);
-  const [published] = await rendered(dir, [APPLIED]);
-  await record(dir, published!);
-  assert.deepEqual(await rendered(dir, [APPLIED], "2027-01-02T08:15:00Z"), [], "29 days after the decision: nothing");
-  const items = await rendered(dir, [APPLIED, PENDING], "2027-01-04T08:16:00Z");
-  assert.notEqual(items.find((entry) => entry.id === PENDING)?.action, "trash", "a pending row stays");
-  const item = items.find((entry) => entry.id === APPLIED);
-  assert.equal(item!.action, "trash");
-  assert.equal(item!.page_id, "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e2f");
-  assert.deepEqual(item!.properties, {});
-  assert.deepEqual(item!.published, { "@trashed": "2027-01-04T08:16:00Z" });
-  await record(dir, item!, "2027-01-04T08:16:00Z");
-  assert.deepEqual(await rendered(dir, [APPLIED], "2027-02-01T00:00:00Z"), [], "a trashed row is never rendered again");
-  const changed = await run(dir, ["sync", "render", "--changed"], "2027-02-01T00:00:00Z");
-  assert.equal(changed.json.data.items.some((entry: { id: string }) => entry.id === APPLIED), false);
-  assert.deepEqual(await lintErrors(dir), []);
-});
-
-test("render: a due Review row with no Review database configured is skipped with DATABASE_NOT_CONFIGURED (0045)", async (context) => {
-  const dir = await fixtureCopy(context);
-  const [published] = await rendered(dir, [APPLIED]);
-  await record(dir, published!);
-  const config = join(dir, "brain.json");
-  const brainJson = JSON.parse(await readFile(config, "utf8"));
-  brainJson.notion.databases.review = "";
-  await writeFile(config, JSON.stringify(brainJson, null, 2));
-  const result = await run(dir, ["sync", "render", "--ids", APPLIED], "2027-01-04T08:16:00Z");
-  assert.equal(result.code, 0, result.stdout);
-  assert.deepEqual(result.json.data.items, []);
-  assert.ok(result.json.warnings.some((warning: { code: string; id: string }) => warning.code === "DATABASE_NOT_CONFIGURED" && warning.id === APPLIED), JSON.stringify(result.json.warnings));
-});
