@@ -1,0 +1,2 @@
+# Text files stay LF on every system, so Git on Windows never checks notes out with CRLF (decision 0097).
+* text=auto eol=lf

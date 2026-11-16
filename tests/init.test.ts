@@ -7,7 +7,7 @@ import { test, type TestContext } from "node:test";
 import { runCli } from "../src/cli.ts";
 import { expandHomePath } from "../src/commands/init.ts";
 import { setInstalledProductRootForTests } from "../src/lib/skills.ts";
-import { brain, testPackageRoot } from "./helpers.ts";
+import { brain, fixtureCopy, testPackageRoot } from "./helpers.ts";
 
 async function scratch(context: TestContext): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "brain-init-"));
@@ -246,4 +246,34 @@ test("init commits the new brain when Git has a name and email (cli.md §5.1 ste
   assert.equal(init.code, 0, init.stderr);
   assert.deepEqual(init.json.data.git, { initialized: true, committed: true });
   assert.deepEqual(init.json.warnings, []);
+});
+
+// --- Line endings (spec/cli.md §5.1 step 3, §5.15 step 1d; 0.15.2, decision 0097) ---
+
+test("init writes .gitattributes, so Git keeps every text file LF in the working tree, Windows included", async (context) => {
+  const root = await scratch(context);
+  const target = join(root, "brain");
+  const init = await brain(["init", target, "--no-git", "--json"], root);
+  assert.equal(init.code, 0, init.stderr);
+  assert.ok(init.json.data.created.includes(".gitattributes"));
+  assert.equal(init.json.data.created.includes("gitattributes"), false);
+  assert.match(await readFile(join(target, ".gitattributes"), "utf8"), /^\* text=auto eol=lf$/m);
+});
+
+test("upgrade gives an older brain the LF line in .gitattributes once, first, so the user's own lines still win", async (context) => {
+  const dir = await fixtureCopy(context);
+  const attributes = join(dir, ".gitattributes");
+  await rm(attributes, { force: true });
+  const created = await brain(["upgrade", "--brain", dir, "--json"]);
+  assert.equal(created.code, 0, created.stdout);
+  assert.ok(created.json.data.files.some((entry: any) => entry.path === ".gitattributes" && entry.action === "created"), JSON.stringify(created.json.data.files));
+  assert.match(await readFile(attributes, "utf8"), /^\* text=auto eol=lf$/m);
+
+  await writeFile(attributes, "*.pdf binary");
+  const updated = await brain(["upgrade", "--brain", dir, "--json"]);
+  assert.ok(updated.json.data.files.some((entry: any) => entry.path === ".gitattributes" && entry.action === "updated"), JSON.stringify(updated.json.data.files));
+  assert.equal(await readFile(attributes, "utf8"), "* text=auto eol=lf\n*.pdf binary\n");
+
+  const again = await brain(["upgrade", "--brain", dir, "--json"]);
+  assert.equal(again.json.data.files.some((entry: any) => entry.path === ".gitattributes"), false);
 });
