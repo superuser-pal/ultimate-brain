@@ -995,25 +995,25 @@ Easy setup on Windows and Mac, from the first beta tester's Windows session (dec
 **Output:** decisions/0097, a header pointer on 0078 and 0086, the 0.15.2 row of the release table, this section's intro and the rows CC-290 to CC-294. No CLI, spec, skill or guide change.
 **Acceptance:** 0097 states the six findings, the four answers of the scope grill and what is out of scope; each of CC-290 to CC-294 has its Release, Changelog, Output and Acceptance; no other task row changes; the leak and PR format checks pass.
 
-### CC-290 · Setup contracts for Windows and Mac, `init` on Windows, and MarkItDown required (0097) · `todo`
+### CC-290 · Setup contracts for Windows and Mac, `init` on Windows, and MarkItDown required (0097) · `done` (#401)
 **Release:** 0.15.2
 **Changelog:** The setup contracts give each prerequisite an install command on Windows and on Mac, and MarkItDown is required.
 **Output:** spec/setup.md §6.1: Python and MarkItDown in the prerequisites, required; each prerequisite's command for `darwin` and `win32` (Linux keeps links); reason code `markitdown-missing` in §12; §7 item 10 shown `on` and locked, `settings.markitdown` written `on`; the schedule item not available on Windows. spec/cli.md for `init`: home folder from `homedir()`, a leading `~` expanded, a missing Git identity stops before any write with its error code and the two `git config` lines (`--no-git` unchanged).
 **Acceptance:** each rule of 0097 §1, §3, §4 and §5 has a contract line; spec/setup.md's examples and reason-code list agree; no code change.
 
-### CC-291 · `brain init` works on Windows and stops without a Git identity (0097 §3) · `todo`
+### CC-291 · `brain init` works on Windows and stops without a Git identity (0097 §3) · `done` (#404)
 **Release:** 0.15.2
 **Changelog:** `brain init --set-default` works on Windows, `~` in the brain path is expanded, and `init` stops with the two commands to run when Git has no name or email, instead of leaving the brain without its first commit.
 **Output:** `src/commands/init.ts` per CC-290's contract; tests with no `HOME` in the environment, a literal `~/` path, and a Git with no identity.
 **Acceptance:** the three tests named in Output pass; the full suite, `typecheck`, `test:package`, the leak check and the PR format check pass.
 
-### CC-292 · A Windows CI job, and the tests made to pass on Windows (0097 §4) · `todo`
+### CC-292 · A Windows CI job, and the tests made to pass on Windows (0097 §4) · `done` (#406)
 **Release:** 0.15.2
-**Changelog:** development only: CI runs the test suite on Windows.
-**Output:** a `windows-latest` job in `.github/workflows/ci.yml` running the suite; fixes for what fails there (paths, line endings); launchd-only tests skipped on `win32` with the reason in the test.
+**Changelog:** `brain repo` accepts Windows paths (`C:\...`) for linked repos and refuses a new repo inside the brain on Windows too, and CI runs the test suite on Windows.
+**Output:** a `windows-latest` job in `.github/workflows/ci.yml` running the suite; fixes for what fails there: `brain repo add`, `refresh --path` and `new` accept a Windows absolute path, as do `brain.json`'s repo `path` and the weekly plan `file` in the schemas, and `repo new`'s containment check and the index-lock wait use the platform's path rules; tests that compare paths use either separator; launchd/cron tests, `chmod`-based write-failure tests and the maintainers' tooling tests (release scripts, native run, evaluation runner, `vendor-skills`) are skipped on `win32` with the reason in the test.
 **Acceptance:** the Windows job passes on the PR; every skip names its reason; the Ubuntu jobs still pass.
 
-### CC-293 · Get started for Windows and Mac, the setup prompt, and "you don't need to clone this" (0097 §1, §2) · `todo`
+### CC-293 · Get started for Windows and Mac, the setup prompt, and "you don't need to clone this" (0097 §1, §2) · `done` (#407)
 **Release:** 0.15.2
 **Changelog:** Get started has its own steps for Windows and for Mac, and a prompt you paste into your agent to set up without cloning anything.
 **Output:** README Get started step 1 split by platform (the winget line and the reopen step; Homebrew, Node, `gh`, Python and MarkItDown, the developer-tools note; Git's name and email; `gh auth login`); the setup prompt; the line at the top of README and AGENTS.md; docs/setup.md's requirements table and a Windows section under "When something goes wrong" (PATH, execution policy, npm's global folder), and the weekly review run by hand on Windows.
@@ -1036,6 +1036,18 @@ Easy setup on Windows and Mac, from the first beta tester's Windows session (dec
 **Changelog:** Internal: a task-row format problem stops the push instead of failing after the review.
 **Output:** `scripts/task.mjs check` (the task rows of a commit against the rows its branch left `origin/main` with: its own row, no row or `**Changelog:**` line lost, its own `**Changelog:**` line filled), run by `.githooks/pre-push` for every task branch; `scripts/common.mjs` `taskRowProblem`, which `scripts/pr-format.mjs` now asks too, so CI and the hook can't disagree; `scripts/task.mjs set <id> review` and `set <id> done --pr <N>`, which change the heading and the plan-table cell; `.gitignore` ignores local Excalidraw drawings and `/diagrams/`. From PR #397, where `pr-format` failed after the reviewer's pass, and from the status edits made by `sed` on #397 and #398.
 **Acceptance:** `check` reports each of the four row problems and passes a branch that is behind `main`; the hook refuses a push whose rows are wrong, and passes a tag and a deleted branch; `pr-format` gives the same messages through the shared function; `set` moves `in progress` to `review` to `done` (#N) in both places, keeps a title with backticks, and refuses any other move; the script tests cover each; the full suite and the leak check pass.
+
+### CC-302 · AGENTS.md says less: reading by kind of work, task.mjs by name, Orca in its own doc · `done` (#403)
+**Release:** 0.15.2
+**Changelog:** Internal: the agents' instructions say what to read for each kind of work.
+**Output:** AGENTS.md: "Before any work, read" becomes what to read for a task, for planning and for a design question (the sessions of 2026-11-15 read neither the synthesis nor the whole task file); the worktree rule names `task.mjs`'s commands and points at its usage where it restated it; the status rules name `task.mjs set` (CC-301) and the pre-push check; "Using Orca" keeps one pointer, and its rules move unchanged to `docs/orca.md`, with one added: wait through notifications, since a `sleep` then a poll is blocked.
+**Acceptance:** every rule AGENTS.md had is still in AGENTS.md or in `docs/orca.md`, and one rule changes meaning, as the Output says: the vision and the synthesis are read for planning and for a design question, where before they were read before any work; each command it names exists in `scripts/task.mjs`; the links resolve; the full suite and the leak check pass.
+
+### CC-303 · A review never leaves a worktree detached, and a commit there is refused · `done` (#408)
+**Release:** 0.15.2
+**Changelog:** Internal: a commit made on a detached HEAD is refused.
+**Output:** `.claude/agents/pr-reviewer.md`: the reviewer leaves the worktree on its branch and reads other commits with `git show` or `git diff`; `.githooks/pre-commit` refuses a commit on a detached HEAD outside a rebase and says how to get back. From 2026-11-16: reviewers left four task worktrees detached, and on PR #403 the done commit, made there, was pushed to no branch.
+**Acceptance:** the hook refuses a commit on a detached HEAD with the way back, and accepts one on a branch and one during a rebase; the reviewer's rules name the commands to use and the ones to avoid; the script tests cover the hook; the full suite and the leak check pass.
 
 ## 0.16.0 — One place to decide (decision 0096)
 

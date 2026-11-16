@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { lstat, mkdir, readdir, readFile, realpath } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readdir, readFile, realpath, rm } from "node:fs/promises";
+import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -35,7 +36,9 @@ export const initCommand: Command = {
   async run({ args, now, environment }) {
     const [requested] = args.positionals;
     if (requested === undefined) throw new BrainError("USAGE", "brain init needs a target path");
-    const target = resolve(requested);
+    const home = environment.homeDirectory ?? homedir();
+    if (args.options["no-git"] !== true) await assertGitIdentity();
+    const target = resolve(expandHomePath(requested, home));
     const present = await inspectTarget(target);
     if (present.kind === "file") throw new BrainError("TARGET_NOT_EMPTY", `Brain target is not a directory: ${target}`);
     // The package snapshot must be compatible before anything is written (spec/skills-delivery.md §6.1). A target that doesn't exist
@@ -120,7 +123,7 @@ export const initCommand: Command = {
     const git = await initializeGit(root, args.options["no-git"] === true, warnings);
     let defaultConfig: { written: boolean; path_abs: string | null; previous: unknown };
     if (args.options["set-default"] === true) {
-      defaultConfig = await writeDefaultConfig(root, environment.homeDirectory);
+      defaultConfig = await writeDefaultConfig(root, home);
     } else {
       defaultConfig = { written: false, path_abs: null, previous: null };
     }
@@ -199,6 +202,42 @@ async function defaultOwner(): Promise<string> {
   }
 }
 
+const IDENTITY_MESSAGE = [
+  "Git doesn't know your name and email yet, and the brain saves every change with them. Run these two lines, with your own name and email:",
+  '  git config --global user.name "Your Name"',
+  '  git config --global user.email "you@example.com"',
+  "Then run the same brain init command again. Nothing was written.",
+].join("\n");
+
+/** A leading `~`, `~/` or (on Windows) `~\` is the home folder, whatever the shell did with it (spec/cli.md §5.1); any other `~` is kept. */
+export function expandHomePath(path: string, home: string, platform: NodeJS.Platform = process.platform): string {
+  if (path === "~") return home;
+  if (path.startsWith("~/") || (platform === "win32" && path.startsWith("~\\"))) return join(home, path.slice(2));
+  return path;
+}
+
+/**
+ * Step 0 of spec/cli.md §5.1: Git must be able to commit in a new repository. `git var` runs in an empty temporary folder, so it
+ * reads what a new repository reads (the environment, the global and the system configuration), and fails as `git commit` would.
+ * Git not found is left to step 6's warning.
+ */
+async function assertGitIdentity(): Promise<void> {
+  try {
+    await exec("git", ["--version"]);
+  } catch {
+    return;
+  }
+  const folder = await mkdtemp(join(tmpdir(), "brain-identity-"));
+  try {
+    await exec("git", ["var", "GIT_AUTHOR_IDENT"], { cwd: folder });
+    await exec("git", ["var", "GIT_COMMITTER_IDENT"], { cwd: folder });
+  } catch {
+    throw new BrainError("GIT_IDENTITY_MISSING", IDENTITY_MESSAGE);
+  } finally {
+    await rm(folder, { recursive: true, force: true });
+  }
+}
+
 async function initializeGit(root: string, noGit: boolean, warnings: Warning[]): Promise<{ initialized: boolean; committed: boolean }> {
   if (noGit) return { initialized: false, committed: false };
   try {
@@ -219,11 +258,10 @@ async function initializeGit(root: string, noGit: boolean, warnings: Warning[]):
 
 async function writeDefaultConfig(
   brain: string,
-  homeDirectory: string | undefined,
+  home: string,
 ): Promise<{ written: boolean; path_abs: string; previous: unknown }> {
-  // `homeDirectory` is injectable for isolated CLI tests; production uses the current user's home.
-  const home = homeDirectory ?? process.env.HOME;
-  if (home === undefined || home === "") throw new BrainError("INTERNAL", "Cannot determine home directory for --set-default");
+  // `home` is os.homedir(), or the folder tests inject: never the HOME variable, which Windows doesn't set (spec/cli.md §5.1).
+  if (home === "") throw new BrainError("INTERNAL", "Cannot determine home directory for --set-default");
   const absoluteHome = resolve(home);
   const root = await realpath(absoluteHome);
   const folder = join(root, ".config", "ultimate-brain");

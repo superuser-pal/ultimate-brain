@@ -295,7 +295,7 @@
         "report": { "$ref": "#/$defs/plan/properties/report" },
         "input_hash": { "$ref": "#/$defs/hash" },
         "quiet": { "type": "boolean" },
-        "file": { "anyOf": [{ "type": "string", "pattern": "^/.+\\.plan\\.json$" }, { "type": "null" }] },
+        "file": { "anyOf": [{ "type": "string", "pattern": "^(/|[A-Za-z]:[\\\\/]).+\\.plan\\.json$" }, { "type": "null" }] },
         "counts": {
           "type": "object",
           "required": ["changes", "findings", "findings_shown", "clusters", "clusters_left", "corrections", "pending", "earlier_open"],

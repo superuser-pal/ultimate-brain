@@ -7,7 +7,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
-const exec = promisify(execFile);
+const run = promisify(execFile);
+// On Windows npm and npx are .cmd files, which start only through a shell (decision 0097 §4). No argument here holds a space or a quote.
+const exec = (command, args, options = {}) => run(command, args, process.platform === "win32" ? { ...options, shell: true } : options);
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const temp = await mkdtemp(join(tmpdir(), "ultimate-brain-package-"));
 let tarball;

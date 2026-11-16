@@ -4,6 +4,8 @@ An AI-assisted second brain for solo knowledge workers. Knowledge lives in Markd
 
 This repository is the **product**: CLI, agent skills, schema, templates and the Notion space design. Each user's brain lives in its own private repository.
 
+> **Setting up a brain? You don't need to clone this repository.** Follow [Get started](#get-started): npm installs everything, skills included.
+
 **Status:** a beta for friends and family. Anyone can follow Get started below. Read [This is a beta](#this-is-a-beta) first.
 
 ## This is a beta
@@ -23,21 +25,123 @@ Six steps take you from nothing to a working brain. Steps 1 to 4 take about ten 
 
 Ultimate Brain uses two templates, and you meet both here: the **Notion template**, which you duplicate in step 2, and the **brain folder**, which `brain init` creates in step 4.
 
-### 1. Check what you need
+### 1. Install what you need
 
-Every grey box on this page is a line to paste into a terminal, then press Return. On a Mac, open the Terminal app (press ⌘ Space and type "Terminal"). You also need a Notion account and a free GitHub account. Ultimate Brain itself is free: you pay for your agent's plan and for a Notion plan with Notion AI.
+Every grey box on this page is a line to paste into a terminal, then press Return (on Windows: Enter). You also need a Notion account and a free GitHub account. Ultimate Brain itself is free: you pay for your agent's plan and for a Notion plan with Notion AI.
 
-- **Node 22.6 or later.** Check with `node --version`. Install it from [nodejs.org](https://nodejs.org).
-- **Git.** Check with `git --version`. Install it from [git-scm.com](https://git-scm.com/downloads).
-- **Claude Code or Codex**, the agent that runs your brain.
-- **A Notion plan with Notion AI.** Notion AI writes your meeting minutes and runs Brain Assistant. Custom Agents (Business and Enterprise plans) are a plus, not a must.
-- **The GitHub CLI (`gh`), signed in.** Setup uses it to create your backup: a private copy of your brain on GitHub. Install it with `brew install gh` (not on a Mac: follow [cli.github.com](https://cli.github.com)), then sign in:
+You need: **Node 22.6 or later**, **Git**, **the GitHub CLI (`gh`)**, **Python with MarkItDown** (it turns PDFs, Word files and slides into exact text), **Claude Code or Codex**, and **a Notion plan with Notion AI** (Custom Agents, on Business and Enterprise plans, are a plus, not a must).
 
-  ```sh
-  gh auth login
-  ```
+#### On a Mac
 
-  When it asks, choose to let it set up Git's credentials. Check with `gh auth status`.
+Open the Terminal app (press ⌘ Space and type "Terminal").
+
+1. Install Apple's developer tools, which include Git. A window opens; the download takes several minutes:
+
+   ```sh
+   xcode-select --install
+   ```
+
+2. Install Homebrew, the Mac's installer for these tools, then run the lines it prints under "Next steps":
+
+   ```sh
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   ```
+
+3. Install Node, the GitHub CLI, Python and MarkItDown, one line at a time:
+
+   ```sh
+   brew install node
+   ```
+
+   ```sh
+   brew install gh
+   ```
+
+   ```sh
+   brew install python
+   ```
+
+   ```sh
+   brew install pipx
+   ```
+
+   ```sh
+   pipx install 'markitdown[all]'
+   ```
+
+   ```sh
+   pipx ensurepath
+   ```
+
+4. Open a new Terminal window, so it finds what you installed.
+
+Node from Homebrew lets step 3 below install the CLI without an administrator password.
+
+#### On Windows
+
+Open PowerShell (press the Windows key and type "PowerShell").
+
+1. Install Node, Git, the GitHub CLI and Python, one line at a time:
+
+   ```powershell
+   winget install --id OpenJS.NodeJS.LTS -e
+   ```
+
+   ```powershell
+   winget install --id Git.Git -e
+   ```
+
+   ```powershell
+   winget install --id GitHub.cli -e
+   ```
+
+   ```powershell
+   winget install --id Python.Python.3.12 -e
+   ```
+
+   No `winget`? Update "App Installer" from the Microsoft Store.
+2. **Close every terminal, and quit Claude Code or Codex if it's open** (closing its terminal panel is not enough). A program keeps the list of tools it had when it started, so it can't find tools installed after that. Then open PowerShell again.
+3. Install MarkItDown:
+
+   ```powershell
+   py -m pip install --user pipx
+   ```
+
+   ```powershell
+   py -m pipx install "markitdown[all]"
+   ```
+
+   ```powershell
+   py -m pipx ensurepath
+   ```
+
+4. Close PowerShell and open it again.
+
+#### Then, on either
+
+Tell Git your name and email, which the brain saves every change with (use your own):
+
+```sh
+git config --global user.name "Your Name"
+```
+
+```sh
+git config --global user.email "you@example.com"
+```
+
+Sign in to GitHub. Setup uses `gh` to create your backup: a private copy of your brain on GitHub.
+
+```sh
+gh auth login
+```
+
+When it asks, choose to let it set up Git's credentials. Check with `gh auth status`.
+
+**Or let your agent do it.** Open Claude Code or Codex in any folder and paste:
+
+```text
+Help me set up Ultimate Brain by following https://github.com/superuser-pal/ultimate-brain#get-started. Install the published package with npm install -g ultimate-brain. Don't clone the ultimate-brain or ultimate-brain-skills repositories, don't build anything from source, and don't run their tests. Run the install steps for my computer one at a time and tell me before each one. Stop and tell me when a step needs me, like gh auth login or duplicating the Notion template.
+```
 
 ### 2. Duplicate the Notion template
 

@@ -7,6 +7,7 @@ import { dirname, join } from "node:path";
 import { test, type TestContext } from "node:test";
 import { promisify } from "node:util";
 
+import { isAbsoluteOrHome } from "../src/lib/repos.ts";
 import { brain, fixtureCopy } from "./helpers.ts";
 
 const exec = promisify(execFile);
@@ -165,4 +166,13 @@ test("note new: a repo file names a linked repo", async (context) => {
   assert.equal(created.code, 0, created.stdout);
   const lint = await run(dir, ["lint"]);
   assert.equal(lint.json.data.errors, 0, JSON.stringify(lint.json.data.issues));
+});
+
+test("a repo path is accepted exactly when brain.json's schema accepts it: /, ~/ or a drive letter, never UNC (schema §12; decision 0097)", async () => {
+  const schema = JSON.parse(await readFile(join(import.meta.dirname, "..", "spec", "schemas", "brain.schema.json"), "utf8"));
+  const pattern = new RegExp(JSON.stringify(schema).match(/"pattern":"(\^\(\/\|~\/[^"]*)"/)![1].replaceAll("\\\\", "\\"));
+  for (const path of ["/a/b", "~/b", "C:\\Users\\b", "d:/b", "\\\\server\\share", "\\dir", "relative", "~b", "C:b"]) {
+    assert.equal(isAbsoluteOrHome(path), pattern.test(path), path);
+  }
+  assert.deepEqual(["/a", "~/a", "C:\\a", "\\\\s\\x", "\\x"].map(isAbsoluteOrHome), [true, true, true, false, false]);
 });

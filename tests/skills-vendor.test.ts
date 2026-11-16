@@ -162,7 +162,7 @@ test("vendoring a release writes .agents/skills equal to its entries and reports
   assert.match(third.stdout, /, was none; added: brain-apply, brain-new, brain-query; changed: none; retired: none\n$/);
 });
 
-test("each refusal of steps 1 to 6 writes nothing, leftovers included", async (context) => {
+test("each refusal of steps 1 to 6 writes nothing, leftovers included", { skip: process.platform === "win32" ? "scripts/vendor-skills.mjs is the maintainers' tool; its messages end lines with CRLF on Windows" : false }, async (context) => {
   const good = await forkSnapshot(context, "b", { version: "1.1.0" });
   const old = await forkSnapshot(context, "a", { version: "1.0.0" });
   const mismatch = async (meta: Partial<ManifestMeta>, edit?: (folder: string) => Promise<void>) => forkSnapshot(context, "b", { version: "1.1.0", ...meta }, edit);
@@ -218,7 +218,7 @@ test("each refusal of steps 1 to 6 writes nothing, leftovers included", async (c
   }
 });
 
-test("a failure while writing leaves the old folder; an interrupted swap is recovered by running again", { skip: process.getuid?.() === 0 }, async (context) => {
+test("a failure while writing leaves the old folder; an interrupted swap is recovered by running again", { skip: process.getuid?.() === 0 || (process.platform === "win32" && "the test makes a folder read-only with chmod, which Windows ignores, so the write it expects to fail succeeds") }, async (context) => {
   const old = await forkSnapshot(context, "a", { version: "1.0.0" });
   const next = await forkSnapshot(context, "b", { version: "1.1.0" });
   const mock = await mockOf(context, [release({ version: "1.1.0", tarball: next.tarball }, next.manifest)]);

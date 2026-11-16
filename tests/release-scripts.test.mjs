@@ -3,7 +3,12 @@ import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import test from "node:test";
+import { test as nodeTest } from "node:test";
+
+// Skipped on Windows (decision 0097 §4): the maintainers' release and PR scripts (docs/releasing.md); their tests stub git, gh and npm with shell scripts, and run on macOS and in Ubuntu CI.
+const test = process.platform === "win32"
+  ? (name, ...rest) => nodeTest(name, { skip: "maintainers' tooling, not run on Windows (decision 0097 §4)" }, () => {})
+  : nodeTest;
 
 import { withBlock } from "../scripts/skills-integration.mjs";
 import { forkState, PACKAGE_INTEGRITY, PRODUCT, prBody, releaseNotes, sha, startMock, TOKEN, writePackage } from "./fixtures/github-mock.mjs";
@@ -1578,6 +1583,27 @@ test("the pre-commit hook refuses a staged edit of a vendored skill file and acc
   const refused = hook();
   assert.equal(refused.status, 1, refused.stdout);
   assert.match(refused.stderr, /^\.agents\/skills is not a released ultimate-brain-skills snapshot \(file-mismatch: brain-howto\/SKILL\.md\)\. Skills are written in the fork; restore with git checkout -- \.agents\/skills/m);
+});
+
+test("the pre-commit hook refuses a commit on a detached HEAD, but not during a rebase (CC-303)", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "ultimate-brain-hook-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  for (const folder of ["scripts", "src", "spec", ".githooks", "package.json"]) execFileSync("cp", ["-R", join(source, folder), join(root, folder)]);
+  execFileSync("ln", ["-s", join(source, "node_modules"), join(root, "node_modules")]);
+  command(root, ["init", "-q", "-b", "main"]);
+  command(root, ["add", "-A"]);
+  command(root, ["-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "--no-verify", "-m", "base"]);
+  const hook = () => spawnSync("sh", [".githooks/pre-commit"], { cwd: root, encoding: "utf8", env: { ...process.env, HOME: root } });
+  assert.equal(hook().status, 0);
+  command(root, ["checkout", "-q", "--detach", "HEAD"]);
+  const refused = hook();
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /^HEAD is detached: this commit would be on no branch\. Go back to the task branch first/);
+  mkdirSync(join(root, ".git", "rebase-merge"));
+  assert.equal(hook().status, 0);
+  rmSync(join(root, ".git", "rebase-merge"), { recursive: true });
+  command(root, ["checkout", "-q", "main"]);
+  assert.equal(hook().status, 0);
 });
 
 /** pr-format fakes for the PR of CX-1 whose head has the rows `headRows`; the base has only CC-2's row, as for a task whose row was added on its branch (CC-116). */

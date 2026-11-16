@@ -127,6 +127,7 @@ Failure:
 | `USAGE` | 2 | bad command line |
 | `BRAIN_NOT_CONFIGURED` | 3 | no `--brain`, no `BRAIN_DIR`, no config file |
 | `BRAIN_NOT_FOUND` | 3 | resolved path missing, or has no `brain.json` |
+| `GIT_IDENTITY_MISSING` | 3 | `init`: Git has no name or email to commit with; nothing is written (§5.1; 0.15.2) |
 | `BRAIN_IS_PRODUCT_REPO` | 3 | the resolved path itself contains `spec/cli.md` and `src/cli.ts` |
 | `BRAIN_CONFIG_INVALID` | 3 | the global config, or `brain.json` where a command needs it (§4), fails its schema |
 | `SCHEMA_VERSION_UNSUPPORTED` | 3 | `brain.json` `schema_version` ≠ 1 |
@@ -266,6 +267,18 @@ brain init <path> [--owner <name>] [--force] [--no-git] [--set-default]
 
 Creates a brain from `templates/brain/` (CC-02, CX-03).
 
+**The path and the home folder (0.15.2, 0097 §3).** A `<path>` that is `~` or starts with `~/` (or `~\` on Windows) has its `~` replaced by the user's home folder, whatever the shell did with it: Windows PowerShell 5.1 passes `~/brain` through unchanged. Any other `~` (`~alex/brain`, `a/~/b`) is kept as written. The home folder, here and for `--set-default`, is Node's `os.homedir()` (`HOME` on macOS and Linux, the user's profile folder on Windows), never the `HOME` variable read directly, which Windows doesn't set; tests inject it.
+
+0. **Git identity (0.15.2, 0097 §3).** Unless `--no-git`, and when Git is found (`git --version`), check that Git can commit in a new repository: `git var GIT_AUTHOR_IDENT` and `git var GIT_COMMITTER_IDENT` both succeed, run outside any repository (in a new empty temporary folder), so they read what a new repository reads: the environment, the global and the system configuration. Either fails → `GIT_IDENTITY_MISSING` before anything is checked or written, the `<path>` folder not created. The human message:
+
+   ```text
+   Git doesn't know your name and email yet, and the brain saves every change with them. Run these two lines, with your own name and email:
+     git config --global user.name "Your Name"
+     git config --global user.email "you@example.com"
+   Then run the same brain init command again. Nothing was written.
+   ```
+
+   Git not found keeps step 6's warning (unchanged): a missing Git is setup's prerequisite (setup.md §6.1), not `init`'s.
 1. Refuse if `<path>` is the product repo (`BRAIN_IS_PRODUCT_REPO`) or already has `brain.json` (`ALREADY_A_BRAIN`, even with `--force`).
 2. If `<path>` exists and is non-empty: refuse with `TARGET_NOT_EMPTY` unless `--force`. With `--force`, template files whose path already exists are **left untouched** and listed in `skipped`; nothing is ever overwritten.
    Then the package snapshot (skills-delivery §2.3) must be compatible with the running CLI, else `SKILLS_SNAPSHOT_INVALID` (§5.28) and nothing is written. A `<path>` that doesn't exist yet is refused before it is created.
@@ -274,8 +287,8 @@ Creates a brain from `templates/brain/` (CC-02, CX-03).
    Copy every skill of the package snapshot, its listed files only, to `<path>/.agents/skills/` (Codex) and to `<path>/.claude/skills/` (Claude Code) (0029, 0038, 0059); `snapshot.json` and the snapshot's optional top-level files are not copied. Write `skills.lock.json` (skills-delivery §3) with `installed_by` = the running version. All are product-owned and listed in `created`; with `--force`, existing files, the lock included, are skipped like template files, and the result can be any pin state.
 4. Run `index` (an empty index).
 5. Log `- <timestamp> init - "<owner name>" schema=1` (no machine paths in the log).
-6. Unless `--no-git`: `git init`, add all, commit `init: ultimate brain (schema v1)`, so the new brain starts clean. If Git is missing or the commit fails (no identity), keep the files, skip the commit and add warning `GIT_COMMIT_SKIPPED`.
-7. With `--set-default`: write `~/.config/ultimate-brain/config.json` = `{"brain": "<abs path>"}`, replacing any existing one (its old value is reported).
+6. Unless `--no-git`: `git init`, add all, commit `init: ultimate brain (schema v1)`, so the new brain starts clean. If Git is missing or the commit fails for another reason (step 0 already refused a missing identity), keep the files, skip the commit and add warning `GIT_COMMIT_SKIPPED`.
+7. With `--set-default`: write `~/.config/ultimate-brain/config.json` = `{"brain": "<abs path>"}`, `~` being the home folder above (on Windows `C:\Users\<name>\.config\ultimate-brain\config.json`), replacing any existing one (its old value is reported).
 
 ```sh
 brain init ~/brain --owner "Alex" --set-default --json
@@ -303,7 +316,7 @@ Initialized Ultimate Brain at /Users/me/brain
 Next: open Claude Code or Codex in /Users/me/brain and say "set up my brain"
 ```
 
-Errors: `TARGET_NOT_EMPTY`, `ALREADY_A_BRAIN`, `BRAIN_IS_PRODUCT_REPO`, `SKILLS_SNAPSHOT_INVALID`, `OUTSIDE_ROOT` (template path escapes, defensive).
+Errors: `GIT_IDENTITY_MISSING`, `TARGET_NOT_EMPTY`, `ALREADY_A_BRAIN`, `BRAIN_IS_PRODUCT_REPO`, `SKILLS_SNAPSHOT_INVALID`, `OUTSIDE_ROOT` (template path escapes, defensive).
 
 ### 5.2 `brain status`
 
