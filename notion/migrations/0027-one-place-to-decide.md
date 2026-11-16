@@ -80,7 +80,7 @@ Add the option **Weekly** to Inbox · **Kind**, sending every existing option wi
 
 1. **Home:** delete the view "What's waiting for you?" in the left column, and the gray paragraph "Start here: approving makes the brain's notes trusted." above it. "Needs you" keeps "Which minutes need review?".
 2. **The area template** (Areas → New ▾ → the default template's **⋯** → **Edit**): in "What needs me here?", delete the tab "Review waiting". Pages made from it before keep the tab: delete it there when you open one, or leave it (it shows the archived rows, and nothing reads it).
-3. **The Review database:** open **Brain Data**, then the Review database's **⋯** → **Move to** → **Archive** (the page on System). Every row and page goes with it; nothing is deleted.
+3. **The Review database:** open **Brain Data**, then the Review database's **⋯** → **Move to**, type `Archive` and pick the Archive page under System on your top page (another page named Archive is not it). Every row and page goes with it; nothing is deleted. Then check that it worked: Brain Data no longer lists it, and the **Archive** page on System lists it (a page in your sidebar's **Trash** is not archived). Never choose **Delete**: it sends the database to Notion's trash. If it is in the trash, open **Trash**, **Restore** it, and move it again.
 4. **The Review page** (the Space with the Review tabs): **⋯** → **Move to** → **Archive**.
 5. **Navigation:** remove "Review" from the Tier 1 nav synced block on System (Prompt 8), if you use it.
 
@@ -127,7 +127,7 @@ The API can't edit views or templates ([../views-guide.md](../views-guide.md)).
 
 ### B4 · Archive the Decisions and Questions databases (by hand)
 
-On **Brain Data**, for each: **⋯** → **Move to** → **Archive**. Every row and page goes with it; nothing is deleted. Without a brain (the template's copy), their Example rows are archived with them.
+On **Brain Data**, for each: **⋯** → **Move to**, type `Archive` and pick the Archive page under System on your top page, as in A6. Every row and page goes with it; nothing is deleted. Then check that it worked: Brain Data no longer lists it, and the **Archive** page on System lists it (a page in your sidebar's **Trash** is not archived). Never choose **Delete**: it sends the database to Notion's trash. If it is in the trash, open **Trash**, **Restore** it, and move it again. Without a brain (the template's copy), their Example rows are archived with them.
 
 ### B5 · `brain.json` (agent; a space with a brain)
 
@@ -148,7 +148,7 @@ Without the Tasks module, skip B6 and B7: a question you follow up stays in its 
 
 ### B7 · The Questions and Risks tabs (Notion AI, or by hand)
 
-Paste on the **Tasks** page:
+By hand is the surer way (below): in a test run, Notion AI added a linked view below the page's tabs block instead of two tabs in it. With Notion AI, paste on the **Tasks** page:
 
 ```text
 Use only the databases on Brain Data. On this page ("Tasks"), in the tabs block, add two tabs after "Someday" and before "Done", each a linked view of "Tasks", List layout, with the database title hidden:
@@ -157,7 +157,16 @@ Use only the databases on Brain Data. On this page ("Tasks"), in the tabs block,
 Hide Brain ID and Last edited time. Change nothing else.
 ```
 
-**By hand, without Notion AI:** add the two tabs as [../views-guide.md](../views-guide.md) §2 spells them out. On a mapped database, use your own status names.
+Then check that the tabs block has the two new tabs between Someday and Done, and that nothing was added outside it. A linked view below the tabs block is a stray: hover it, click **⋮⋮** → **Delete** (that deletes the view only, never the Tasks database), and add the tabs by hand.
+
+**By hand** (views-guide §2, rows 6 and 7), for each of Questions and Risks:
+1. In the Tasks page's tabs block, click **+** after the last tab and name the tab `Questions` (then `Risks`). Drag it between **Someday** and **Done**.
+2. In the new tab, type `/linked`, choose **Linked view of data source** and pick **Tasks** (the one on Brain Data).
+3. In the view's **⋯** menu: **Layout** → **List**; turn off **Show data source title**; rename the view `Which questions am I following up?` (`Which risks am I following up?`).
+4. **Filter**: Kind is Question (Risk); add Status is not Done; add Status is not Won't Do. **Sort**: Due, ascending.
+5. **Properties**: show Name, Project and Status; hide the rest.
+
+On a mapped database, use your own status names.
 
 ### B8 · The to-do tidy, once (agent, in the session; Tasks module)
 
