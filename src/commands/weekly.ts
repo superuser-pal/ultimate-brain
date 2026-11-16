@@ -7,7 +7,7 @@ import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { serializeNewFile } from "../lib/frontmatter.ts";
 import { generateId } from "../lib/ids.ts";
-import { assertNoProblems, readJsonInput } from "../lib/input.ts";
+import { assertNoProblems, isRecord, readJsonInput } from "../lib/input.ts";
 import { modulesOf } from "../lib/modules.ts";
 import { compareCodePoints, scanNotes } from "../lib/notes.ts";
 import { reportLinks } from "../lib/report-body.ts";
@@ -103,7 +103,7 @@ export const weeklyPlanCommand: Command = {
 export const weeklySelectCommand: Command = {
   name: "weekly select",
   usage: "brain weekly select --input <file|-> [--json]",
-  summary: "Choose the week's decision items within the shared limits (five decisions, five new Review items, five targets) and queue the rest. Writes nothing.",
+  summary: "Choose the week's decision items within the shared limits (five decisions, five new proposal items, five targets) and queue the rest. Writes nothing.",
   options: { input: "string" },
   maxPositionals: 0,
   needsBrain: true,
@@ -144,7 +144,8 @@ export const weeklyRecordCommand: Command = {
     const workspace = await Workspace.open(brain!);
     const byId = new Map(workspace.notes.map((note) => [note.id, note]));
     const byPath = new Map(workspace.notes.map((note) => [note.path, note]));
-    assertNoProblems(recordProblems(input, now, current, byId, modulesOf(brain!.config).reports));
+    const settings = isRecord(brain!.config.settings) ? brain!.config.settings : {};
+    assertNoProblems(recordProblems(input, now, current, byId, settings.publish === "auto"));
 
     const proposals = new Map(input.proposals.map((entry) => [entry.key, entry.proposal]));
     const rendered = renderBody(input, (key) => proposals.get(key)!, byId, byPath);
@@ -268,7 +269,7 @@ export const weeklyCorrectionsDoneCommand: Command = {
       entry.open.forEach((note, at) => { if (!claim.targets.some((target) => target.note === note)) problems.push({ pointer: `/claims/${index}/open/${at}`, message: `${note} is no candidate target of ${entry.claim}` }); });
     });
     assertNoProblems(problems);
-    // A claim the chat didn't reach stays queued with every target not yet in Review, so moving the cursor skips nothing (§8.4).
+    // A claim the chat didn't reach stays queued with every target not yet proposed, so moving the cursor skips nothing (§8.4).
     const given = new Map(input.claims.map((entry) => [entry.claim, entry.open]));
     const outcomes = new Map(claims.map((claim) => [claim.claim, given.get(claim.claim) ?? claim.targets.filter((target) => target.pending === null).map((target) => target.note)]));
     const current = state ?? emptyState();

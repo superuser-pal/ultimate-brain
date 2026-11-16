@@ -10,7 +10,7 @@ export interface JudgedFinding { cluster: string; kind: "contradiction" | "stale
 export interface SelectInput { plan: PlanData; judged: { clusters: string[]; findings: JudgedFinding[]; corrections: Array<{ claim: string; note: string; verdict: string }> } }
 export interface Item {
   n: number; key: string; stream: "work" | "knowledge" | "correction"; kind: string; category: string; subject: string; decide: string;
-  lives: "review" | "task"; write: boolean; proposal: string | null; url: string | null; targets: string[]; new_items: number;
+  lives: "session" | "task"; write: boolean; proposal: string | null; url: string | null; targets: string[]; new_items: number;
   because: string; evidence_hash: string; days_late?: number; days_idle?: number; shown_of?: { k: number; size: number };
   recommendation: { action: string; value: unknown; label: string } | null; finding: JudgedFinding | null;
   proposal_input?: Array<Record<string, unknown>>;
@@ -65,7 +65,7 @@ export function selectProblems(input: SelectInput, notes: ReadonlyMap<string, No
     const key = `${judgment.claim}\u0000${judgment.note}`;
     if (judgedTargets.has(key)) problems.push({ pointer: at, message: `${judgment.note} is judged twice for ${judgment.claim}` });
     judgedTargets.add(key);
-    if (target.pending !== null) problems.push({ pointer: at, message: `${judgment.note} is already in Review (${target.pending}) for ${judgment.claim}: it is not judged again` });
+    if (target.pending !== null) problems.push({ pointer: at, message: `${judgment.note} already waits for a decision in the session (${target.pending}) for ${judgment.claim}: it is not judged again` });
     if (judgment.verdict === "restatement" && target.field === null && target.line_after === null) problems.push({ pointer: `${at}/verdict`, message: `${judgment.note} has no one-for-one fix (line_after is null): judge it uncertain (weekly-review.md §8.2)` });
   });
   return problems;
@@ -105,7 +105,7 @@ export function computeSelection(input: SelectInput, notes: ReadonlyMap<string, 
     const [group, sub] = KNOWLEDGE_ORDER[finding.kind];
     candidates.push({
       key: finding.fingerprint, group, sub, rank: rankOf.get(finding.cluster) ?? Number.MAX_SAFE_INTEGER, category: finding.kind, repetition, newItems: 1,
-      item: { key: finding.fingerprint, stream: "knowledge", kind: KNOWLEDGE_LABEL[finding.kind], category: finding.kind, subject: finding.subject, decide: finding.decide, lives: "review", url: null, targets: [...finding.targets], recommendation: null, finding },
+      item: { key: finding.fingerprint, stream: "knowledge", kind: KNOWLEDGE_LABEL[finding.kind], category: finding.kind, subject: finding.subject, decide: finding.decide, lives: "session", url: null, targets: [...finding.targets], recommendation: null, finding },
     });
   }
 
@@ -118,11 +118,11 @@ export function computeSelection(input: SelectInput, notes: ReadonlyMap<string, 
     const field = String(proposal.attributes.field ?? "");
     candidates.push({
       key, group: 1, sub: KNOWLEDGE_ORDER.contradiction[1], rank: Number.MAX_SAFE_INTEGER, category: "contradiction", repetition, newItems: 1,
-      item: { key, stream: "knowledge", kind: KNOWLEDGE_LABEL.contradiction, category: "contradiction", subject: String(proposal.attributes.title ?? key).slice(0, 120), decide: `${field.replace(/^facts\./, "")} now ${JSON.stringify(proposal.attributes.after ?? null)}?`.slice(0, 120), lives: "review", url: null, targets: [target], recommendation: null, finding: null },
+      item: { key, stream: "knowledge", kind: KNOWLEDGE_LABEL.contradiction, category: "contradiction", subject: String(proposal.attributes.title ?? key).slice(0, 120), decide: `${field.replace(/^facts\./, "")} now ${JSON.stringify(proposal.attributes.after ?? null)}?`.slice(0, 120), lives: "session", url: null, targets: [target], recommendation: null, finding: null },
     });
   }
 
-  // The correction stream (§8.4): one group per claim of its restatements not yet in Review, oldest claim first; or, on a rerun, the link to
+  // The correction stream (§8.4): one group per claim of its restatements not yet proposed, oldest claim first; or, on a rerun, the link to
   // the group this week's item wrote.
   const outcomes = new Map<string, { open: string[]; clarify: number }>();
   let omittedTargets = 0;
@@ -140,7 +140,7 @@ export function computeSelection(input: SelectInput, notes: ReadonlyMap<string, 
     const old = claim.old.length === 0 ? "" : String(claim.old[0]);
     const size = drafted.length + uncertain.length;
     const subject = `${claim.title} ${field}${old === "" ? "" : ` ${old}`} → ${String(claim.new)}`.slice(0, 120);
-    const base = { stream: "correction" as const, kind: "Correction", category: "correction", subject, lives: "review" as const, url: null, recommendation: null, finding: null };
+    const base = { stream: "correction" as const, kind: "Correction", category: "correction", subject, lives: "session" as const, url: null, recommendation: null, finding: null };
     if (drafted.length > 0) {
       const evidenceHash = hashOf(drafted.map(({ note, line }) => ({ note, line })).sort((a, b) => compareCodePoints(a.note, b.note)));
       const repetition = repetitionOf({ key, category: "correction", evidenceHash, critical: claim.open, state, week: plan.week, pending: null });
@@ -153,12 +153,12 @@ export function computeSelection(input: SelectInput, notes: ReadonlyMap<string, 
       });
       return;
     }
-    const inReview = claim.targets.filter((target) => target.pending !== null);
-    if (inReview.length > 0 && thisWeek.has(key)) {
-      const repetition = repetitionOf({ key, category: "correction", evidenceHash: hashOf([]), state, week: plan.week, pending: inReview[0]!.pending });
+    const waiting = claim.targets.filter((target) => target.pending !== null);
+    if (waiting.length > 0 && thisWeek.has(key)) {
+      const repetition = repetitionOf({ key, category: "correction", evidenceHash: hashOf([]), state, week: plan.week, pending: waiting[0]!.pending });
       candidates.push({
-        key, group: 1, sub: 0, rank: index, category: "correction", repetition, newItems: 0, link: inReview[0]!.pending!,
-        item: { ...base, key, decide: `${inReview.length} note${inReview.length === 1 ? " restates" : "s restate"} ${old === "" ? "it" : old}`.slice(0, 120), targets: [...new Set(inReview.map((target) => target.note))] },
+        key, group: 1, sub: 0, rank: index, category: "correction", repetition, newItems: 0, link: waiting[0]!.pending!,
+        item: { ...base, key, decide: `${waiting.length} note${waiting.length === 1 ? " restates" : "s restate"} ${old === "" ? "it" : old}`.slice(0, 120), targets: [...new Set(waiting.map((target) => target.note))] },
       });
     }
   });
@@ -192,10 +192,10 @@ export function computeSelection(input: SelectInput, notes: ReadonlyMap<string, 
       continue;
     }
     const again = thisWeek.has(candidate.key);
-    const proposal = candidate.item.lives === "review" ? candidate.repetition.pending : null;
-    // An item of this week whose Review row was decided since stays counted and isn't shown again (§5.1).
-    if (again && candidate.item.lives === "review" && proposal === null) continue;
-    const write = candidate.item.lives === "review" && proposal === null;
+    const proposal = candidate.item.lives === "session" ? candidate.repetition.pending : null;
+    // An item of this week whose proposal was decided since stays counted and isn't shown again (§5.1).
+    if (again && candidate.item.lives === "session" && proposal === null) continue;
+    const write = candidate.item.lives === "session" && proposal === null;
     const cost = again ? { d: 0, i: 0, t: 0 } : { d: 1, i: write ? candidate.newItems : 0, t: candidate.item.targets.length };
     const fits = items.length < LIMIT && counts.decisions + cost.d <= LIMIT && counts.new_items + cost.i <= LIMIT && counts.targets + cost.t <= LIMIT;
     if (!fits || (counts.decisions >= LIMIT && !again)) { queued.push({ key: candidate.key, category: candidate.category }); continue; }

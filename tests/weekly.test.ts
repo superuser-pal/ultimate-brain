@@ -103,7 +103,7 @@ test("busy: one report with three sections, the limits held in priority order, c
   const words = body.split("\n").slice(2).join(" ").replace(/\]\([^)]*\)/g, "]").split(/\s+/).filter(Boolean).length;
   assert.ok(words <= 450, `${words} words`);
 
-  // Every new Review item is a pending proposal: a weekly run applies nothing.
+  // Every new item is a pending proposal: a weekly run applies nothing.
   const files = await proposalFiles(root);
   assert.equal(files.length, new_items);
   for (const name of files) assert.equal((await frontmatter(root, `_proposals/${name}`)).status, "pending", name);
@@ -176,7 +176,7 @@ test("same-week rerun: unchanged is quiet; with a new change it rewrites the sam
   assert.equal(week1b.record!.code, 0, week1b.record!.stdout);
   assert.equal(week1b.record!.json.data.path, REPORT, "the same file");
   assert.equal(week1b.record!.json.data.id, first.id, "the same id");
-  assert.deepEqual(await proposalFiles(root), proposalsBefore, "no new Review item");
+  assert.deepEqual(await proposalFiles(root), proposalsBefore, "no new proposal");
   const again = week1b.select!.json.data;
   assert.deepEqual(again.items.map((item: any) => [item.key, item.because, item.write]), week1.select!.json.data.items.map((item: any) => [item.key, "this_week", false]));
   assert.deepEqual(again.counts, week1.select!.json.data.counts, "the week's counts are kept, not doubled");
@@ -193,7 +193,7 @@ test("repeated finding: shown ones are counted, not items; new evidence and a ne
   assert.equal(week1.record!.code, 0, week1.record!.stdout);
   assert.deepEqual(week1.select!.json.data.items.map((item: any) => item.key), [`contradiction:${LENA}:role`, `task_overdue:notion:${"c0000000-0000-4000-8000-000000000001"}`, `project_stalled:${SIGNAGE}`, `area_empty:${GARDEN}`]);
 
-  // The user rejects the stalled project's row and dismisses the empty Area.
+  // The user rejects the stalled project's proposal and dismisses the empty Area.
   const stalledRow = (await proposalFiles(root)).find((name) => name.includes("pinecrest"))!;
   const id = (await frontmatter(root, `_proposals/${stalledRow}`)).id;
   const rejected = await decide(root, id, "reject", "2026-11-10T09:00:00Z");
@@ -288,7 +288,7 @@ test("the boundary day: a change dated on the last review's day is reported once
   assert.equal(keys.includes("decided:dec-9q3t6w2y"), true, "not missed");
 });
 
-test("record checks the shape: a bullet without its label, a dead link, too many words, and publishing with Reports off write nothing", async (context) => {
+test("record checks the shape: a bullet without its label, a dead link, too many words, and an unattended publish without settings.publish auto write nothing", async (context) => {
   const root = await busy(context);
   const prepared = await prepare(root, busySnapshot(), NOW, { judge });
   const before = await tree(root);
@@ -308,11 +308,13 @@ test("record checks the shape: a bullet without its label, a dead link, too many
   const otherPlan = await record(root, { ...embeddedBase, plan: prepared.plan.json.data, selection: { ...prepared.select!.json.data, input_hash: `sha256:${"0".repeat(64)}` }, what_changed: [ok] }, NOW);
   assert.equal(otherPlan.json.error.code, "INPUT_INVALID", otherPlan.stdout);
   assert.ok(otherPlan.json.error.details.some((detail: any) => detail.pointer === "/selection/input_hash"), JSON.stringify(otherPlan.json.error.details));
-  await configure(root, (config) => { config.modules = { ...config.modules, reports: false }; });
-  const reportsOff = await record(root, { ...base, what_changed: [ok], publish: true }, NOW);
-  assert.equal(reportsOff.json.error.code, "INPUT_INVALID", reportsOff.stdout);
-  assert.match(reportsOff.json.error.message, /Reports/);
-  await configure(root, (config) => { config.modules = { ...config.modules, reports: true }; });
+  // An unattended run publishes only with settings.publish: auto (weekly-review.md §9.3, cli.md §5.34); ask is the default.
+  const asked = await record(root, { ...base, what_changed: [ok], mode: "unattended", publish: true }, NOW);
+  assert.equal(asked.json.error.code, "INPUT_INVALID", asked.stdout);
+  assert.ok(asked.json.error.details.some((detail: any) => detail.pointer === "/publish" && /settings\.publish/.test(detail.message)), JSON.stringify(asked.json.error.details));
+  await configure(root, (config) => { config.settings = { ...config.settings, publish: "ask" }; });
+  const askedExplicitly = await record(root, { ...base, what_changed: [ok], mode: "unattended", publish: true }, NOW);
+  assert.equal(askedExplicitly.json.error.code, "INPUT_INVALID", askedExplicitly.stdout);
   const brainJson = (lines: string[]) => lines.filter((line) => !line.startsWith("brain.json "));
   assert.deepEqual(brainJson(await tree(root)), brainJson(before), "nothing written");
 });
@@ -339,29 +341,117 @@ test("a damaged state file fails plan with WEEKLY_STATE_UNREADABLE, and lint nam
   assert.ok(lint.json.data.issues.some((issue: any) => issue.rule === "weekly-state" && issue.path === STATE && /repeats the key/.test(issue.message)), JSON.stringify(lint.json.data.issues));
 });
 
-test("publishing: sync render puts the report in Documents with Origin Report, a proposal link as its Review row once the row exists", async (context) => {
+const INBOX = "a1000000-0000-4000-8000-00000000000c";
+const PAGE = "6c5d4e3f-2a1b-4c0d-9e8f-7a6b5c4d3e2f";
+const IN_SESSION = "decide in Claude Code or Codex: *what needs my decision*";
+const renderIds = async (root: string, id: string, now = NOW) => (await brain(["sync", "render", "--ids", id, "--brain", root, "--json", "--now", now])).json.data;
+const renderChanged = async (root: string, now = NOW) => (await brain(["sync", "render", "--changed", "--brain", root, "--json", "--now", now])).json.data;
+const recordPage = async (root: string, id: string, published: unknown, now = NOW) => brain(["sync", "record", "--brain", root, "--json", "--now", now, "--input", await inputFile(root, { records: [{ id, notion: PAGE, synced_at: now, published }] })]);
+
+/** A brain whose Inbox is configured and whose Documents and Reports modules are off, publishing unattended (0096 §7). */
+async function inboxOnly(context: TestContext): Promise<string> {
   const root = await busy(context);
-  await configure(root, (config) => { config.notion.databases = { ...config.notion.databases, documents: "a1000000-0000-4000-8000-00000000000d", review: "a1000000-0000-4000-8000-00000000000e" }; });
-  const week = await runWeek(root, busySnapshot(), NOW, { judge, publish: true });
+  await configure(root, (config) => {
+    config.notion.databases = { ...config.notion.databases, inbox: INBOX };
+    config.modules = { ...config.modules, documents: false, reports: false };
+    config.settings = { ...config.settings, publish: "auto" };
+  });
+  return root;
+}
+
+test("publishing: a busy week is one Inbox row, Kind Weekly, with Documents and Reports off; its decision lines point to the session, never to a Review row", async (context) => {
+  const root = await inboxOnly(context);
+  const week = await runWeek(root, busySnapshot(), NOW, { judge, mode: "unattended", publish: true });
   assert.equal(week.record!.code, 0, week.record!.stdout);
   assert.match((await weeklyLines(root))[0]!, / published=yes /);
   const id = week.record!.json.data.id;
-  const render = async () => (await brain(["sync", "render", "--ids", id, "--brain", root, "--json", "--now", NOW])).json.data.items[0];
-  const first = await render();
-  assert.deepEqual([first.database, first.action, first.properties.Origin, first.properties.Name.value], ["documents", "create", { type: "select", value: "Report" }, "Weekly review · 9–15 Nov 2026"]);
-  assert.match(first.body, /^1\. Contradiction · Lena Hart: role · now leads design\? → Review row \(after the next publish\)$/m);
-  assert.match(first.body, /^2\. Overdue · "Send the logo proposals" · .+ → \[the task\]\(https:\/\/www\.notion\.so\/c0000000000040008000000000000001\)$/m);
-  assert.equal(first.body.includes("_proposals/"), false, "no brain path in Notion");
 
-  // The contradiction's row is published: the report's next render links it.
-  const proposal = week.proposals[0]!;
-  const row = (await brain(["sync", "render", "--ids", proposal, "--brain", root, "--json", "--now", NOW])).json.data.items[0];
-  const ROW = "6c5d4e3f-2a1b-4c0d-9e8f-7a6b5c4d3e2f";
-  const synced = await brain(["sync", "record", "--brain", root, "--json", "--now", NOW, "--input", await inputFile(root, { records: [{ id: proposal, notion: ROW, synced_at: NOW, published: row.published }] })]);
-  assert.equal(synced.code, 0, synced.stdout);
-  const second = await render();
-  assert.match(second.body, /^1\. Contradiction · Lena Hart: role · now leads design\? → \[Review\]\(https:\/\/www\.notion\.so\/6c5d4e3f2a1b4c0d9e8f7a6b5c4d3e2f\)$/m);
-  assert.match(await readText(root, REPORT), /→ \[Review\]\(\.\.\/_proposals\//, "the Git report is never rewritten for Notion");
+  const rendered = await renderIds(root, id);
+  assert.deepEqual([rendered.errors, rendered.skipped, rendered.items.length], [[], [], 1]);
+  const first = rendered.items[0];
+  assert.deepEqual([first.database, first.database_id, first.action, first.page_id], ["inbox", INBOX, "create", null]);
+  assert.deepEqual(first.properties, {
+    Name: { type: "title", value: "Week of 9 Nov 2026" },
+    Kind: { type: "select", value: "Weekly" },
+    "Brain Status": { type: "select", value: "New" },
+    "Brain ID": { type: "rich_text", value: id },
+  });
+  assert.match(first.body, new RegExp(`^1\\. Contradiction · Lena Hart: role · now leads design\\? → ${IN_SESSION.replace(/[*]/g, "\\*")}$`, "m"));
+  assert.match(first.body, /^2\. Overdue · "Send the logo proposals" · .+ → \[the task\]\(https:\/\/www\.notion\.so\/c0000000000040008000000000000001\)$/m);
+  assert.equal(/_proposals\/|Review/.test(first.body), false, "no brain path and no Review row in Notion");
+  assert.match(await readText(root, REPORT), /^1\. Contradiction · .+ → \[decide in the session\]\(\.\.\/_proposals\/[^)]+\)$/m, "in Git, the item links its proposal file");
+  assert.equal(/\bReview\b/.test((await readText(root, REPORT)).split("## What needs your decision")[1]!), false);
+
+  // --changed selects it too, whatever the modules; nothing else is a Documents row.
+  const changed = await renderChanged(root);
+  assert.deepEqual(changed.items.filter((item: any) => item.id === id).map((item: any) => [item.database, item.action]), [["inbox", "create"]]);
+  assert.equal(changed.items.some((item: any) => item.database === "documents"), false);
+
+  // Recorded, it is never taken in as an input: sync plan reads its Inbox row for nothing, and Document asked on it is no source.
+  assert.equal((await recordPage(root, id, first.published)).code, 0);
+  assert.equal((await renderChanged(root)).items.some((item: any) => item.id === id), false, "nothing changed since the publish");
+  const planned = await brain(["sync", "plan", "--brain", root, "--json", "--input", await inputFile(root, { as_of: NOW, rows: [{ database: "inbox", page_id: PAGE, last_edited: NOW, properties: { "Brain ID": id, "Document asked": true } }] })]);
+  assert.equal(planned.code, 0, planned.stdout);
+  const data = planned.json.data;
+  assert.deepEqual([data.create, data.updates, data.corrections, data.conflicts, data.document_requests], [[], [], [], [], []]);
+  assert.deepEqual(data.ignored.map((entry: any) => [entry.brain_id, entry.reason]), [[id, "MODULE_OFF"]], "Document asked follows the Documents module");
+});
+
+test("publishing: a same-week rerun updates the week's Inbox row in place, and the row turns Done after its last decision", async (context) => {
+  const root = await inboxOnly(context);
+  const week = await runWeek(root, busySnapshot(), NOW, { judge, mode: "unattended", publish: true });
+  assert.equal(week.record!.code, 0, week.record!.stdout);
+  const id = week.record!.json.data.id;
+  const first = (await renderIds(root, id)).items[0];
+  assert.equal((await recordPage(root, id, first.published)).code, 0);
+
+  const later = "2026-11-09T10:00:00Z";
+  await writeFile(join(root, "knowledge/decisions/dec-6r2w8k4m.md"), "---\nid: dec-6r2w8k4m\ntype: decision\ntitle: Move the Harbor demo to Friday\nsummary: Synthetic.\nlifecycle: reviewed\ndate: 2026-11-09\ncreated: 2026-11-09\nupdated: 2026-11-09\n---\n");
+  const rerun = await runWeek(root, busySnapshot(later), later, { judge, mode: "unattended", publish: true });
+  assert.equal(rerun.record!.code, 0, rerun.record!.stdout);
+  assert.equal(rerun.record!.json.data.id, id);
+  const updated = (await renderChanged(root, later)).items.filter((item: any) => item.id === id);
+  assert.equal(updated.length, 1, "one row for the week");
+  assert.deepEqual([updated[0].database, updated[0].action, updated[0].page_id], ["inbox", "update", PAGE]);
+  assert.match(updated[0].body, /Move the Harbor demo to Friday/, "the new report goes out");
+  assert.deepEqual(Object.keys(updated[0].properties).sort(), ["Last Synced"], "Name, Kind, Brain Status and Brain ID are unchanged");
+  assert.equal((await recordPage(root, id, updated[0].published, later)).code, 0);
+
+  // Each proposal its items name is decided in the session; the task item doesn't hold the row open.
+  const named = [...(await readText(root, REPORT)).matchAll(/\(\.\.\/(_proposals\/[^)]+)\)/g)].map((match) => match[1]!);
+  assert.ok(named.length >= 2, JSON.stringify(named));
+  assert.match(await readText(root, REPORT), /→ \[the task\]\(/, "a task item stays");
+  const ids = await Promise.all(named.map(async (path) => (await frontmatter(root, path)).id as string));
+  for (const [index, proposal] of ids.entries()) {
+    const decided = await decide(root, proposal, "reject", "2026-11-10T09:00:00Z");
+    assert.equal(decided.code, 0, decided.stdout);
+    const row = (await renderChanged(root, "2026-11-10T09:30:00Z")).items.filter((item: any) => item.id === id);
+    if (index < ids.length - 1) { assert.deepEqual(row, [], "still New while a decision waits"); continue; }
+    assert.equal(row.length, 1);
+    assert.deepEqual([row[0].action, row[0].properties["Brain Status"], row[0].body], ["update", { type: "select", value: "Done" }, null]);
+  }
+});
+
+test("publishing: a week whose decisions are already terminal at its first publish arrives Done", async (context) => {
+  const root = await inboxOnly(context);
+  const week = await runWeek(root, busySnapshot(), NOW, { judge, mode: "unattended", publish: true });
+  assert.equal(week.record!.code, 0, week.record!.stdout);
+  for (const proposal of week.proposals) assert.equal((await decide(root, proposal, "reject", "2026-11-09T09:00:00Z")).code, 0);
+  const first = (await renderIds(root, week.record!.json.data.id)).items[0];
+  assert.deepEqual([first.action, first.properties["Brain Status"]], ["create", { type: "select", value: "Done" }]);
+});
+
+test("publishing: a weekly review kept as a 0.15.x Documents row is history, never rendered again", async (context) => {
+  const root = await inboxOnly(context);
+  await configure(root, (config) => { config.modules = { ...config.modules, documents: true, reports: true }; config.notion.databases = { ...config.notion.databases, documents: "a1000000-0000-4000-8000-00000000000d" }; });
+  const week = await runWeek(root, busySnapshot(), NOW, { judge, mode: "unattended", publish: true });
+  assert.equal(week.record!.code, 0, week.record!.stdout);
+  const id = week.record!.json.data.id;
+  // What a 0.15.x publish left: the Documents page and its baseline, with Origin Report.
+  assert.equal((await recordPage(root, id, { Name: "Weekly review · 9–15 Nov 2026", Origin: "Report", "Brain ID": id, "@content": "sha256:old" })).code, 0);
+  assert.equal((await renderChanged(root)).items.some((item: any) => item.id === id), false, "--changed leaves it out silently");
+  const named = await renderIds(root, id);
+  assert.deepEqual([named.items, named.errors, named.skipped], [[], [], [{ id, reason: "HISTORY" }]]);
 });
 
 test("status: unattended.weekly from the log line and the attempt marker, weekly_snapshot and settings.weekly", async (context) => {
