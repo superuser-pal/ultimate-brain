@@ -90,9 +90,9 @@ test("index lines sort by NFC-lowercased code points, escape brackets and flag l
       "# Index",
       "",
       "## Questions",
-      "- [\\[draft\\] Zeta](knowledge/x/que-00000003.md) — que-00000003 · z · aliases: Z, zz",
-      "- [abeja](knowledge/x/que-00000001.md) — que-00000001 · b",
-      "- [Ábaco](knowledge/x/que-00000002.md) — que-00000002 · a second line · disputed",
+      "- [\\[draft\\] Zeta](knowledge/x/que-00000003.md) — que-00000003 · status: open · z · aliases: Z, zz",
+      "- [abeja](knowledge/x/que-00000001.md) — que-00000001 · status: open · b",
+      "- [Ábaco](knowledge/x/que-00000002.md) — que-00000002 · status: open · a second line · disputed",
       "",
     ].join("\n"),
   );

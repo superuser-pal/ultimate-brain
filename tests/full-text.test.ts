@@ -219,7 +219,7 @@ test("render: an area page gets its Brief section from the area Brief, with link
   const result = await run(dir, ["sync", "render", "--ids", "area-2m7c4h8n"]);
   const [item] = result.json.data.items;
   assert.equal(item.body, null);
-  assert.deepEqual(item.sections, { Brief: "## Projects\n- [Acme website](https://www.notion.so/2b3c4d5e6f7a4b9c8d1e2f3a4b5c6d7e) — Active\n\n## Recent decisions\n- Nothing reviewed yet: 1 note waiting in Review\n\n## Open questions\n- Nothing reviewed yet: 1 note waiting in Review\n\n## Documents\n- None" });
+  assert.deepEqual(item.sections, { Brief: "## Projects\n- [Acme website](https://www.notion.so/2b3c4d5e6f7a4b9c8d1e2f3a4b5c6d7e) — Active\n\n## Recent decisions\n- Nothing reviewed yet: 1 note waiting in Review\n\n## Open questions and risks\n- Nothing reviewed yet: 1 note waiting in Review\n\n## Documents\n- None" });
 });
 
 const REPORT_BODY = [
@@ -345,12 +345,10 @@ test("render: an attached source has no Inbox row; its notes go on the parent's 
   const plan = source("Launch plan", "document", DOCUMENT, { attached_to: parent.id });
   delete (plan.frontmatter as Record<string, unknown>).digest;
   const attached = await newSource(dir, plan);
-  const made = await run(dir, ["note", "new"], { notes: [{ type: "decision", title: "Launch in February", frontmatter: { summary: "Launch in February.", date: "2026-12-01", assessment: "accepted", projects: ["prj-9x4t1b7e"], sources: [attached.id] }, body: "Launch in February.\n" }] });
+  // A person the attached file names: published whatever its lifecycle, so the parent's Inbox row waits for its page (People, a Produced relation).
+  const made = await run(dir, ["note", "new"], { notes: [{ type: "person", title: "Ana Planner", frontmatter: { summary: "Wrote the launch plan.", sources: [attached.id] }, body: "Wrote the launch plan.\n" }] });
   assert.equal(made.code, 0, made.stdout);
-  const decision = made.json.data.created[0].id;
-  // Approved, so it gets a page and the Inbox row waits for it (0071).
-  const decisionPath = join(dir, made.json.data.created[0].path);
-  await writeFile(decisionPath, (await readFile(decisionPath, "utf8")).replace(/^lifecycle: draft$/m, "lifecycle: reviewed"));
+  const person = made.json.data.created[0].id;
 
   const byId = await run(dir, ["sync", "render", "--ids", attached.id]);
   assert.deepEqual(byId.json.data?.items, [], byId.stdout);
@@ -359,7 +357,7 @@ test("render: an attached source has no Inbox row; its notes go on the parent's 
   const items = all.json.data.items;
   assert.equal(items.some((item: { id: string }) => item.id === attached.id), false);
   const row = items.find((item: { id: string }) => item.id === parent.id);
-  assert.deepEqual(row.pending_relations.find((relation: { property: string }) => relation.property === "Decisions"), { property: "Decisions", ids: [decision] });
+  assert.deepEqual(row.pending_relations.find((relation: { property: string }) => relation.property === "People"), { property: "People", ids: [person] });
   await assertLintClean(dir);
 });
 

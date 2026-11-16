@@ -339,37 +339,31 @@ test("sync plan: Keep as document asks for a Document of the latest version or o
   assert.deepEqual(plan.json.data.conflicts.map((item: { code: string }) => item.code), ["UNKNOWN_BRAIN_ID"]);
 });
 
-test("sync plan: Promote asks for a promoted Document, or names the one there (0049)", async (context) => {
+test("sync plan: Promote asked on a Decisions row is read no more, since Promote to document is asked in the session (0099 §9)", async (context) => {
   const dir = await fixtureCopy(context);
   await approveFixtureKnowledge(dir);
-  const promoted = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Supabase auth (page)", frontmatter: { summary: "A page.", origin: "promoted", promoted_from: "dec-7k2m9q4x" }, body: "Supabase.\n" }] });
-  assert.equal(promoted.code, 0, promoted.stdout);
   const plan = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [
     { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { "Brain ID": "dec-7k2m9q4x", "Promote asked": true } },
-    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000002", last_edited: NOW, properties: { "Brain ID": "dec-2p9f6h1r", "Promote asked": true } },
-    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000003", last_edited: NOW, properties: { "Brain ID": "dec-7k2m9q4x", "Promote asked": false } },
   ] });
   assert.equal(plan.code, 0, plan.stdout);
-  assert.deepEqual(plan.json.data.promote_requests, [
-    { page_id: "d4000000-0000-4000-8000-000000000001", note: "dec-7k2m9q4x", existing: promoted.json.data.created[0].id },
-  ]);
-  // The archived decision isn't reviewed: its Promote asked is ignored as NOT_REVIEWED and waits (0071).
-  assert.deepEqual(plan.json.data.ignored.filter((item: { reason: string }) => item.reason === "NOT_REVIEWED").map((item: { page_id: string }) => item.page_id), ["d4000000-0000-4000-8000-000000000002"]);
+  assert.equal(plan.json.data.promote_requests, undefined);
+  assert.deepEqual(plan.json.data.ignored.map((item: { reason: string }) => item.reason), ["RETIRED_DATABASE"]);
   // The Concepts database is retired (0071): a snapshot naming it is refused.
   const concepts = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [{ database: "concepts", page_id: "d4000000-0000-4000-8000-000000000004", last_edited: NOW, properties: { "Brain ID": "con-1s6t8e2b", "Promote asked": true } }] });
   assert.equal(concepts.json.error?.code, "INPUT_INVALID");
-  const applied = await run(dir, ["sync", "apply", "--dry-run"], plan.json.data);
-  assert.deepEqual(applied.json.data.promote_requests, plan.json.data.promote_requests, "sync apply echoes the requests");
+  // Promote to document asked in the session: the skill writes the promoted Document with note new after the user's yes (cli §5.5).
+  const promoted = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Supabase auth (page)", frontmatter: { summary: "A page.", origin: "promoted", promoted_from: "dec-7k2m9q4x" }, body: "Supabase.\n" }] });
+  assert.equal(promoted.code, 0, promoted.stdout);
 });
 
 test("sync plan: rows of a module that is off are ignored as MODULE_OFF (0048)", async (context) => {
   const dir = await fixtureCopy(context);
   const configPath = join(dir, "brain.json");
   const config = JSON.parse(await readFile(configPath, "utf8"));
-  config.modules = { knowledge: false, orgs: true, documents: false, reports: false };
+  config.modules = { orgs: false, documents: false, reports: false };
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
   const plan = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [
-    { database: "decisions", page_id: "d5000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { "Brain ID": "dec-7k2m9q4x", Name: "Changed in Notion" } },
+    { database: "orgs", page_id: "d5000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { "Brain ID": "org-6d1f9z3k", Name: "Changed in Notion" } },
     { database: "goals", page_id: "d5000000-0000-4000-8000-000000000002", last_edited: NOW, properties: { "Brain ID": null, Name: "Write a book" } },
     INBOX_ROW("d5000000-0000-4000-8000-000000000003", "src-7w3c9k5m"),
   ] });
@@ -380,7 +374,7 @@ test("sync plan: rows of a module that is off are ignored as MODULE_OFF (0048)",
   assert.deepEqual([plan.json.data.create, plan.json.data.updates, plan.json.data.corrections, plan.json.data.document_requests], [[], [], [], []]);
 });
 
-test("render: a promoted Document links its note through From decision, and its body goes out on create only (0049)", async (context) => {
+test("render: a promoted Document has no relation to its decision, which has no page, and its body goes out on create only (0049, 0099)", async (context) => {
   const dir = await fixtureCopy(context);
   await configure(dir, "documents", "a1000000-0000-4000-8000-00000000000c");
   await approved(dir, "knowledge/decisions/2026-12-03-use-supabase-for-auth.md");
@@ -391,10 +385,11 @@ test("render: a promoted Document links its note through From decision, and its 
   const [item] = (await run(dir, ["sync", "render", "--ids", page.id])).json.data.items;
   assert.equal(item.action, "create");
   assert.equal(item.body.trimStart(), "## Why\nBecause.\n");
-  assert.deepEqual(item.properties["From decision"], { type: "relation", value: [] });
+  assert.equal(item.properties["From decision"], undefined, "From decision is retired with the Decisions database (0099)");
   assert.equal(item.properties["From concept"], undefined, "From concept is retired (0071)");
   assert.deepEqual(item.properties.Origin, { type: "select", value: "Promoted" });
-  assert.deepEqual(item.pending_relations, [{ property: "From decision", ids: ["dec-7k2m9q4x"] }]);
+  assert.deepEqual(item.pending_relations, []);
+  assert.match(await readFile(join(dir, page.path), "utf8"), /^promoted_from: dec-7k2m9q4x$/m, "promoted_from stays in Git");
   const recorded = await run(dir, ["sync", "record"], { records: [{ id: page.id, notion: "b3000000-0000-4000-8000-000000000001", synced_at: NOW, published: item.published }] });
   assert.equal(recorded.code, 0, recorded.stdout);
 

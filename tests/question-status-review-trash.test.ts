@@ -5,7 +5,7 @@ import { test } from "node:test";
 
 import { brain, fixtureCopy } from "./helpers.ts";
 
-// Decision 0045 (0.4.1): questions reach Notion as Open, and decided Review rows leave Notion after 30 days.
+// Decision 0045 (0.4.1): decided Review rows leave Notion after 30 days. Questions reached Notion as Open until 0.16.0, when they lost their database (0099).
 const QUESTION_FILE = "knowledge/questions/who-owns-the-acme-mobile-app.md";
 const QUESTION = "que-8n3v5x1d";
 const APPLIED = "prp-4n8c2w7t"; // applied, decided 2026-12-04T08:15:00Z
@@ -49,35 +49,20 @@ async function editQuestion(dir: string, { drop = [] as string[], status }: { dr
   await writeFile(path, kept.join("\n"));
 }
 
-test("render: a new question is created with Status Open (0045)", async (context) => {
+test("render: a question, new or published, gets no page and no Status since 0.16.0 (0099; Open, Answered and Dropped until 0.15.x)", async (context) => {
   const dir = await fixtureCopy(context);
+  for (const status of ["Open", "Dropped"]) {
+    await editQuestion(dir, { status });
+    const result = await run(dir, ["sync", "render", "--ids", QUESTION], "2026-12-10T09:00:00Z");
+    assert.equal(result.code, 0, result.stdout);
+    assert.deepEqual([result.json.data.items, result.json.data.skipped], [[], [{ id: QUESTION, reason: "NO_DATABASE" }]]);
+  }
   await editQuestion(dir, { drop: ["notion", "notion_fields"] });
-  // Only a reviewed question gets a page (0071).
   const path = join(dir, QUESTION_FILE);
   await writeFile(path, (await readFile(path, "utf8")).replace(/^lifecycle: draft$/m, "lifecycle: reviewed"));
-  const [item] = await rendered(dir, [QUESTION]);
-  assert.equal(item!.action, "create");
-  assert.deepEqual(item!.properties.Status, { type: "select", value: "Open" });
+  const changed = await run(dir, ["sync", "render", "--changed"], "2026-12-10T09:00:00Z");
+  assert.ok(!changed.json.data.items.some((item: { id: string }) => item.id === QUESTION), "a reviewed question is never created");
   assert.deepEqual(await lintErrors(dir), []);
-});
-
-test("render: a published question with no Status of yours gets Open once (0045)", async (context) => {
-  const dir = await fixtureCopy(context);
-  await editQuestion(dir, { drop: ["notion_fields"] });
-  const [first] = await rendered(dir, [QUESTION]);
-  assert.equal(first!.action, "update");
-  assert.deepEqual(first!.properties.Status, { type: "select", value: "Open" });
-  await record(dir, first!);
-  const [second] = await rendered(dir, [QUESTION]);
-  assert.equal(second?.properties.Status, undefined, "Open goes out once");
-  assert.deepEqual(await lintErrors(dir), []);
-});
-
-test("render: a Status you set is never overwritten (0045)", async (context) => {
-  const dir = await fixtureCopy(context);
-  await editQuestion(dir, { status: "Dropped" });
-  const [item] = await rendered(dir, [QUESTION]);
-  assert.equal(item?.properties.Status, undefined);
 });
 
 test("render: a Review row decided more than 30 days ago is trashed once (0045)", async (context) => {
