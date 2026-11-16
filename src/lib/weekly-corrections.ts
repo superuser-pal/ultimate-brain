@@ -187,7 +187,7 @@ export function computeClaims(input: { eligible: readonly Note[]; all: readonly 
     changes.set(entry.claim, { claim: entry.claim, kind: parts.kind, note: note.id, title, old: entry.old, new: entry.new, date: entry.date, source: entry.source, why: `${title}: ${String(entry.old[0] ?? "")} → ${String(entry.new)} (queued from an earlier week).` });
   }
 
-  // The correction groups for each claim: who already waits in Review, and what the user rejected (§8.4).
+  // The correction groups for each claim: who already waits for a decision, and what the user rejected (§8.4).
   const waiting = new Map<string, Map<string, string>>();
   const rejected = new Map<string, Set<string>>();
   for (const proposal of all) {

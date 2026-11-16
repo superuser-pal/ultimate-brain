@@ -275,6 +275,8 @@ A run that is **not** quiet because of a failure alone (Notion unreachable with 
 | `auto` | published as the week's Inbox row (Kind Weekly, §2), and the same row is updated on rerun |
 | `ask` | unattended: published at the next attended publish; attended: asked once |
 
+`brain weekly record` holds the rule for an unattended run: its input's `publish: true` is refused while `settings.publish` isn't `auto` (cli.md §5.34). A weekly review published as a Documents row in 0.15.x is history and is never published again, not even by a same-week rerun (cli.md §5.34, `HISTORY`).
+
 The Inbox is a core database, so the row needs neither the Documents nor the Reports module, and Reports' state changes nothing here. Its proposals are never published: they wait in `_proposals/` for the session (capture-and-review §7.4).
 
 - **The next attended session** (any skill that opens with `brain status`: catch-up, the assistant, this skill) shows `brain status`'s `unattended.weekly` (cli.md §5.2) in one line: `This week's review is ready: <n> decisions (reports/2026-11-09-weekly-review.md).`, plus `Last weekly run failed: <reason>.` or `Last weekly run did not finish (started <D Mon HH:MM>).` when they apply.

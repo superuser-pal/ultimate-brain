@@ -45,7 +45,7 @@ function localStamp(timestamp: string): string {
 }
 
 /** The checks of cli.md §5.34 and the shape check of weekly-review.md §3.4 that need no file: [] when the input may be recorded. */
-export function recordProblems(input: RecordInput, now: Date, current: WeeklyState | null, notes: ReadonlyMap<string, Note>, reportsOn: boolean): InputProblem[] {
+export function recordProblems(input: RecordInput, now: Date, current: WeeklyState | null, notes: ReadonlyMap<string, Note>, publishAuto: boolean): InputProblem[] {
   const problems: InputProblem[] = [];
   const { plan, selection } = input;
   if (selection.week !== plan.week) problems.push({ pointer: "/selection/week", message: `is ${selection.week}, but the plan's week is ${plan.week}` });
@@ -70,7 +70,8 @@ export function recordProblems(input: RecordInput, now: Date, current: WeeklySta
     const note = notes.get(item.proposal);
     if (note === undefined || note.type !== "proposal") problems.push({ pointer: `/selection/items/${index}/proposal`, message: `no proposal with id ${item.proposal}` });
   });
-  if (input.publish && !reportsOn) problems.push({ pointer: "/publish", message: "is true with the Reports module off: the weekly report is never published then (weekly-review.md §9.3)" });
+  // The report is the week's Inbox row, whatever the modules; an unattended run publishes it only with settings.publish auto (weekly-review.md §9.3).
+  if (input.publish && input.mode === "unattended" && !publishAuto) problems.push({ pointer: "/publish", message: "is true from an unattended run while settings.publish isn't auto: the report waits for the next attended publish (weekly-review.md §9.3)" });
   const thisWeek = current?.weeks[plan.week];
   const sameCounts = JSON.stringify(thisWeek?.counts ?? { decisions: 0, new_items: 0, targets: 0, queued: 0 }) === JSON.stringify(plan.week_state.counts);
   const sameItems = JSON.stringify(thisWeek?.items ?? []) === JSON.stringify(plan.week_state.items);
@@ -84,7 +85,7 @@ function itemLine(item: Item, proposalPath: (id: string) => string | undefined):
   const head = `${item.n}. ${item.kind} · ${item.subject} · ${item.decide}${shown}`;
   if (item.lives === "task") return item.url === null ? `${head} → ${item.subject} (brain only: no link)` : `${head} → [the task](${item.url})`;
   const path = proposalPath(item.proposal!);
-  return `${head} → [Review](${posix.relative("reports", path ?? "")})`;
+  return `${head} → [decide in the session](${posix.relative("reports", path ?? "")})`;
 }
 
 export interface Rendered { body: string; header: [string, string]; problems: InputProblem[]; words: number }
@@ -104,7 +105,7 @@ export function renderBody(input: RecordInput, proposalOf: (key: string) => stri
     plan.window.days > 14 ? `${plan.window.days} days since the last review.` : "",
     `Covered: ${total} change${total === 1 ? "" : "s"} from ${plan.inputs.meetings} meeting${plan.inputs.meetings === 1 ? "" : "s"} and ${plan.inputs.sources} source${plan.inputs.sources === 1 ? "" : "s"}.`,
     notShown.length > 0 ? `${notShown.length} not shown: ${byLabel.map(([label, n]) => `${n} ${label.toLowerCase()}`).join(", ")}.` : "",
-    selection.earlier_open > 0 ? `${selection.earlier_open} more decision${selection.earlier_open === 1 ? "" : "s"} wait in Review from earlier weeks.` : "",
+    selection.earlier_open > 0 ? `${selection.earlier_open} more decision${selection.earlier_open === 1 ? "" : "s"} wait from earlier weeks.` : "",
     partial > 0 ? `Partial: ${partial} check${partial === 1 ? "" : "s"} not done (budget); they come first next week.` : "",
   ].filter((part) => part !== "").join(" ");
 
@@ -166,7 +167,7 @@ export function renderBody(input: RecordInput, proposalOf: (key: string) => stri
   const decision = selection.items.length === 0 ? ["- Nothing needs your decision this week."] : selection.items.map((item) => itemLine({ ...item, proposal: item.proposal ?? proposalOf(item.key) }, proposalPath));
   const after = [
     selection.queued.length > 0 ? `${selection.queued.length} more finding${selection.queued.length === 1 ? "" : "s"} wait${selection.queued.length === 1 ? "s" : ""} for next week. Say "weekly review more" in a session for the rest.` : "",
-    selection.earlier_open > 0 ? `${selection.earlier_open} earlier finding${selection.earlier_open === 1 ? " is" : "s are"} still open in Review.` : "",
+    selection.earlier_open > 0 ? `${selection.earlier_open} earlier finding${selection.earlier_open === 1 ? " is" : "s are"} still waiting for your decision.` : "",
     clarify > 0 ? `${clarify} correction match${clarify === 1 ? " needs" : "es need"} clarification: say "weekly review corrections".` : "",
     partial > 0 ? `Partial: ${partial} check${partial === 1 ? "" : "s"} not done (budget); they come first next week.` : "",
   ].filter((line) => line !== "");

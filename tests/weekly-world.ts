@@ -85,7 +85,7 @@ export async function prepare(root: string, snap: any, now: string, options: { j
   const findings = judged.map((cluster: any) => options.judge?.(cluster) ?? null).filter((finding: any) => finding !== null);
   const strip = ({ field: _f, before: _b, after: _a, why: _w, proposal: _p, ...rest }: any) => rest;
   // The scheduled run's way: the plan by its input_hash, never copied into the input (cli.md §5.34).
-  // A target already in Review (pending) is not judged again (§8.2).
+  // A target already waiting for a decision (pending) is not judged again (§8.2).
   const corrections = planData.corrections.flatMap((claim: any) => claim.targets.filter((target: any) => target.pending === null)
     .map((target: any) => ({ claim: claim.claim, note: target.note, verdict: options.correct?.(claim, target) ?? null })).filter((judgment: any) => judgment.verdict !== null));
   const selectInput = { input_hash: planData.input_hash, judged: { clusters: judged.map((cluster: any) => cluster.key), findings: findings.map(strip), corrections } };
