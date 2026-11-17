@@ -17,7 +17,7 @@ Each operation has a skill; follow it end to end:
 | catch up: do everything that's waiting (decided reviews, reviewed meetings, the Inbox and its attachments, the drop folder, linked repos, reports asked for) | `brain-catch-up` |
 | ingest one input: reviewed minutes, a document, a web page, a pasted email or note, the Inbox, the drop folder, a linked repo | `brain-ingest` |
 | turn open questions that are really to-dos into tasks, or drop them (once, after a yes for each, 0071) | `brain-ingest` |
-| apply decisions from the Notion Review queue | `brain-apply` |
+| decide what the brain is waiting for (proposals, questions), in the session, and apply the answers | `brain-apply` |
 | pull Notion edits and new rows, republish notes | `brain-sync` |
 | answer a question from the brain, or write a report on a subject | `brain-query` |
 | link a repo with its kit, show, change or unlink a link, check its health, show its tasks, start a new repo | `brain-repos` |
@@ -50,7 +50,7 @@ They shape your own words; text a command returns that a skill shows exactly as 
 ## Write path
 
 - **New knowledge** (meeting summary, person, decision, question) → `brain note new`. It lands as `draft`; the user reviews it in Notion.
-- **A change to an existing note** (fact update, addition, supersession, contradiction, merge) → `brain proposal new`. The user approves it in the Notion Review queue or in chat; `brain apply` makes the change.
+- **A change to an existing note** (fact update, addition, supersession, contradiction, merge) → `brain proposal new`. The user decides it in the agent session (0096); `brain apply` makes the change.
 - **A new note that replaces an old one** (a decision reversing an earlier one): write the new note with `brain note new`, then a `supersede` proposal; the old note changes only when the user approves.
 - **A new decision or question for a meeting that already exists**: a `new_item` proposal, because the meeting note must change too.
 - **Generated files** (`index.md`, `log/`, the `@generated` blocks of `brief.md` and `decision-log.md`) and **source snapshots** in `sources/` are written by the CLI only. To change what a view shows, change the canonical note and regenerate.

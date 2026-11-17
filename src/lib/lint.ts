@@ -23,7 +23,7 @@ import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
 import { workflowRecordProblems } from "./workflow-store.ts";
 import { decodePath, linkTargets } from "./lint-links.ts";
-import { fingerprintProblem, heldFingerprints, holdsWholeText, mergeFingerprint, nearDuplicatePairs, reflectionNotes } from "./reflect.ts";
+import { fingerprintProblem, heldFingerprints, holdsWholeText, mergeFingerprint, nearDuplicatePairs, reflectedNotes } from "./reflect.ts";
 
 export type Severity = "error" | "warning" | "info";
 
@@ -458,7 +458,7 @@ function lintReflection(input: LintInput, byId: ReadonlyMap<string, Note>, add: 
   // near-duplicate: the near_duplicate signal of reflect --candidates, unless the pair's merge is held (waiting or skipped).
   const held = heldFingerprints(input.notes);
   const loaded = loadSuppressions(input.root);
-  for (const pair of nearDuplicatePairs(reflectionNotes(input.notes, loaded))) {
+  for (const pair of nearDuplicatePairs(reflectedNotes(input.notes, loaded))) {
     if (held.has(mergeFingerprint(pair.notes[0].id, pair.notes[1].id))) continue;
     const [first, other] = [...pair.notes].sort((a, b) => compareCodePoints(a.path, b.path)) as [Note, Note];
     add("warning", "near-duplicate", first.path, 1, first.id, `may be the same ${first.type} as "${String(other.attributes.title)}" (${other.path})`);

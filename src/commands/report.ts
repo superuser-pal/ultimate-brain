@@ -51,6 +51,8 @@ export const reportNewCommand: Command = {
     const { linked: linkedIds, broken: brokenTargets } = reportLinks(workspace, body);
     const linked = new Set(linkedIds);
     const broken: InputProblem[] = brokenTargets.map((target) => ({ pointer: "/body", message: `link ${target} doesn't resolve to a note` }));
+    // A report has no caller to judge a memory's reach by, and memories never reach Notion (0008): it cites knowledge notes (§5.18, CC-345).
+    for (const id of linkedIds) if (workspace.get(id)?.type === "memory") broken.push({ pointer: "/body", message: `link ${id} is a memory: a report cites knowledge notes, never a memory` });
     assertNoProblems(broken);
 
     const date = formatDate(now);
