@@ -43,7 +43,7 @@ Ship a Notion migration that adds the checklist and the Start here link to an ex
 
 CC-335 writes the contracts first. CC-336 implements the upgrade and its preservation tests; CC-337 writes the Notion checklist, migration and guides; CC-338 delivers the setup/how-to changes through the skills fork and vendors its released snapshot. Claude Code builds; each PR gets independent review, and the user merges. U-37 covers publishing the template and the fresh-duplicate checks that require the Notion UI. The normal release checks and native smoke gate still apply.
 
-This planning task changes only this decision, the release/task plan and the vision's release note. It operates on no personal brain or live Notion space, and does not release a package.
+This planning task changes only this decision, amendment pointers on 0038 and 0078, the release/task plan and the vision's release note. It operates on no personal brain or live Notion space, and does not release a package.
 
 ## Evidence
 

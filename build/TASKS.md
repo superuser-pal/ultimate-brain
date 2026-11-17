@@ -1263,7 +1263,7 @@ The author's two fixes from the scope review of 2026-11-17, accepted in [0103](.
 
 | Task | Work | Files | When | Status |
 |---|---|---|---|---|
-| CC-334 | Record 0103 and plan 0.16.1 | decision, this plan, vision | scope review accepted | `review` |
+| CC-334 | Record 0103 and plan 0.16.1 | decision and amendment pointers, this plan, vision | scope review accepted | `review` |
 | CC-335 | Contracts for the checklist and an upgrade around unrelated work | `spec/setup.md`, `spec/cli.md`, relevant contract pointers | after CC-334 is merged | `todo` |
 | CC-336 | Upgrade with unrelated work, and exact conflict output | upgrade, Git helpers, meaningful preservation tests | after CC-335 is merged | `todo` |
 | CC-337 | First things first, the migration and template guidance | Notion design, checklist, prompts, migration and setup guides | after CC-335 is merged | `todo` |
@@ -1273,8 +1273,8 @@ The author's two fixes from the scope review of 2026-11-17, accepted in [0103](.
 ### CC-334 · Plan 0.16.1: first things first and upgrades with unrelated work · `review`
 **Release:** 0.16.1
 **Changelog:** development only: 0.16.1 is scoped to visible Brain Assistant setup and upgrades that preserve unrelated uncommitted work.
-**Output:** accepted decision 0103, this release's roadmap line and task section (CC-335 to CC-338, U-37), and a bounded 0.16.1 note in `docs/vision.md`. Planning only: no CLI, spec, schema, skill, template, live Notion, personal brain or CHANGELOG change. The user accepted both recommendations in the opening grill and added the setup/population note; Codex records that agreement, with implementation left to Claude Code and no self-issued review verdict.
-**Acceptance:** 0103 records both agreed fixes and the Claude Code or Codex setup/population note; it explicitly amends 0038's blanket dirty-tree rule and keeps the feature cutoff and 1.0.0 scope; every planned implementation task has a release, changelog, output, acceptance and dependencies, including the fork delivery and manual template checks; only this decision, `build/TASKS.md` and `docs/vision.md` change, every existing task row is kept, and the leak and PR format checks pass.
+**Output:** accepted decision 0103 and amendment pointers on 0038 and 0078, this release's roadmap line and task section (CC-335 to CC-338, U-37), and a bounded 0.16.1 note in `docs/vision.md`. Planning only: no CLI, spec, schema, skill, template, live Notion, personal brain or CHANGELOG change. The user accepted both recommendations in the opening grill and added the setup/population note; implementation stays with Claude Code.
+**Acceptance:** 0103 records both agreed fixes and the Claude Code or Codex setup/population note; it explicitly amends 0038's blanket dirty-tree rule and keeps the feature cutoff and 1.0.0 scope; every planned implementation task has a release, changelog, output, acceptance and dependencies, including the fork delivery and manual template checks; only 0103, the amendment pointers on 0038 and 0078, `build/TASKS.md` and `docs/vision.md` change, every existing task row is kept, and the leak and PR format checks pass.
 
 ### CC-335 · Contracts for First things first and upgrades with unrelated work (0103) · `todo`
 **Release:** 0.16.1

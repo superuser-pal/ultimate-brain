@@ -15,6 +15,8 @@
 **§2 amended by:** [0099](0099-notion-without-decisions-and-questions.md) (2026-11-16; 0.16.0): a new brain no longer has a Knowledge module
 **§6 amended by:** [0101](0101-where-notion-ai-and-the-brain-each-write.md) (2026-11-16; 1.0.0): without Notion AI, a transcript gets its minutes from the agent and keeps selection, Brain Assistant's skills run in the agent, and setup asks two questions (§8)
 
+**§2 amended by:** [0103](0103-first-things-first-and-upgrades-with-unrelated-work.md) (2026-11-17; 0.16.1): First things first makes agent creation, page mentions and button bindings explicit, and asks Claude Code or Codex to set up and populate the brain; existing spaces get the checklist through a migration
+
 ## Context
 
 A new user today goes through four places in turn: the README's Install, what `brain init` prints, `notion/CHECKLIST.md` (about fifteen Notion AI prompts, each edited by hand for the chosen modules, then buttons and page layouts by hand) and the connect-notion skill. Three steps the meeting flow needs sit outside that path: the minutes prompt (only in `pasting-the-minutes-prompt.md`, written for upgrades), Brain Assistant (only in `notion/brain-assistant.md`) and the How it works page (only in migration 0004). The Notion connection surfaces only when the connect skill fails, after the space is built. Git identity and the remote are silent: a missing identity is a warning, and with no remote every push fails. The drop folder is asked the first time it's needed.

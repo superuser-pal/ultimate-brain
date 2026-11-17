@@ -2,6 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-10-18
+**Amended by:** [0103](0103-first-things-first-and-upgrades-with-unrelated-work.md) (2026-11-17; 0.16.1): an upgrade preserves unrelated uncommitted work and refuses only conflicting changes, naming the exact paths
 
 ## Context
 The user builds the product with two agents and uses it every day in their own brain. An audit on 2026-10-18, after 0.2.1, found the delivery process leaking:
