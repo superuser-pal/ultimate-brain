@@ -210,7 +210,7 @@ const exec = promisify(execFile);
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Wait up to 10 seconds for Git's index lock to go (§10.1), then BRAIN_BUSY. */
-async function waitForIndex(root: string): Promise<void> {
+export async function waitForIndex(root: string): Promise<void> {
   let lock: string;
   try { lock = (await exec("git", ["rev-parse", "--git-path", "index.lock"], { cwd: root })).stdout.trim(); } catch { return; }
   const path = isAbsolute(lock) ? lock : join(root, lock);

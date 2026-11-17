@@ -114,7 +114,7 @@ export async function runCommand(
       if (known && error.details !== undefined) body.details = error.details;
       writeJson(io, { ok: false, command: command.name, brain: brainRoot, error: body, warnings: [] });
     } else {
-      io.stderr.write(`error: ${message}\n`);
+      io.stderr.write(`error: ${known && error.human !== undefined ? error.human : message}\n`);
     }
     if (!known && error instanceof Error && error.stack !== undefined) io.stderr.write(`${error.stack}\n`);
     return exitCodeFor(code);
