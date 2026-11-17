@@ -7,10 +7,15 @@ import { test } from "node:test";
 const root = join(import.meta.dirname, "..");
 const read = (path: string) => readFile(join(root, path), "utf8");
 
-/** The shipped Notion text: everything under notion/ except the migrations, which are history by design. */
+/** The shipped Notion text: everything under notion/ except the migrations, which are history by design, and the brain and repo templates
+ *  (CC-345: the brain's AGENTS.md rules block still sent agents to the Review queue). */
 async function shippedNotionText(): Promise<string[]> {
   const entries = await readdir(join(root, "notion"), { recursive: true });
-  return entries.filter((f) => f.endsWith(".md") && !f.startsWith("migrations")).map((f) => `notion/${f}`).sort();
+  const templates = await readdir(join(root, "templates"), { recursive: true });
+  return [
+    ...entries.filter((f) => f.endsWith(".md") && !f.startsWith("migrations")).map((f) => `notion/${f}`),
+    ...templates.filter((f) => f.endsWith(".md")).map((f) => `templates/${f}`),
+  ].sort();
 }
 
 /** What a line says when it uses one of the retired databases or their parts as current. */
@@ -22,7 +27,7 @@ const CURRENT = [
 /** A line that names one of them only to say it is gone (or names a migration that archives it) is fine. */
 const RETIRED = /retired|0\.16\.0|0\.15\.x|archiv|there is no|no review|went with|were retired|history|0096|0099|migration 0027/i;
 
-test("no shipped Notion text outside the migrations names the Review, Decisions or Questions database as current", async () => {
+test("no shipped Notion or template text outside the migrations names the Review, Decisions or Questions database as current", async () => {
   const found: string[] = [];
   for (const file of await shippedNotionText()) {
     (await read(file)).split("\n").forEach((line, index) => {
