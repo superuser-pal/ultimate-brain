@@ -6,15 +6,16 @@ import { promisify } from "node:util";
 
 import type { Command, Warning } from "../lib/command.ts";
 import { planConceptConversion } from "../lib/concept-upgrade.ts";
-import { BrainError } from "../lib/errors.ts";
+import { IDENTITY_COMMANDS } from "./init.ts";
+import { BrainError, type ErrorCode } from "../lib/errors.ts";
 import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
 import { appendLog } from "../lib/log.ts";
 import { isRecord } from "../lib/input.ts";
 import { lintBrain } from "../lib/lint.ts";
 import { modulesOf, storedModules, withModules } from "../lib/modules.ts";
-import { scanNotes } from "../lib/notes.ts";
+import { compareCodePoints, NOTE_FOLDERS, parseNote, scanNotes, type Note } from "../lib/notes.ts";
 import { planStructureText, readAgentsMarkdown, structureBlock } from "../lib/structure.ts";
-import { indexNotes, loadSuppressions } from "../lib/suppressions.ts";
+import { indexNotes, loadSuppressions, type Loaded } from "../lib/suppressions.ts";
 import { assertPlainPath, installedProduct, SUB_AGENT } from "../lib/skills.ts";
 import { notionMigrations, notionMigrationsLine } from "../lib/notion-migrations.ts";
 import { competingCopies } from "../lib/skills-competing.ts";
@@ -23,6 +24,12 @@ import { homeOf, LOCK, readLock, serializeLock, snapshotInvalid, type Lock } fro
 import { comparePrecedence } from "../lib/skills-range.ts";
 import { packageProblem, packageSnapshot, serializeManifest, TREES, type Manifest } from "../lib/skills-snapshot.ts";
 import { planProjects, projectsHuman, projectWarnings, nextLines, skillsDiffer, writeProjects } from "../lib/upgrade-projects.ts";
+import {
+  commitOnly, compare, compareUncommitted, conflictLines, fingerprint, firstChange, gitContext, gitOperation, gitOperationMessage, GitFailure,
+  hasIdentity, headBytes, headCommit, ignoredPaths, indexEntries, leftAsTheyWere, readStatus, restoreIndex, type Footprint, type StatusRead,
+  type UncommittedReport,
+} from "../lib/upgrade-git.ts";
+import { waitForIndex } from "../lib/workflow-store.ts";
 
 const exec = promisify(execFile);
 const START = /^<!-- ultimate-brain:rules:start\b[^\n]*-->$/gm;
@@ -32,6 +39,21 @@ type Action = "created" | "updated" | "removed" | "skipped";
 const WEEKLY_IGNORE = "_weekly/attempt.json";
 const LF_ATTRIBUTE = "* text=auto eol=lf";
 interface Change { path: string; action: Action; content?: string | Buffer }
+/** A file the upgrade wrote: its bytes before (null when it created it) and after (null when it removed it), for undoing a refused commit. */
+interface Written { path: string; before: Buffer | null; after: Buffer | null }
+
+const IDENTITY_MESSAGE = [
+  "Git doesn't know your name and email yet, and the upgrade commits its changes with them. Run these two lines, with your own name and email:",
+  ...IDENTITY_COMMANDS,
+  "Then run brain upgrade again. Nothing was written.",
+].join("\n");
+
+/** Test seams (spec/cli.md §5.15, Uncommitted work items 6 and 8): run after planning, and right before the commit. */
+const hooks: { afterPlanning?: () => Promise<void>; beforeCommit?: () => Promise<void> } = {};
+export function setUpgradeHooksForTests(next: typeof hooks): void {
+  hooks.afterPlanning = next.afterPlanning;
+  hooks.beforeCommit = next.beforeCommit;
+}
 
 /** `brain upgrade` (spec/cli.md §5.15): bring the product-owned files of a brain up to the installed package. */
 export const upgradeCommand: Command = {
@@ -49,24 +71,34 @@ export const upgradeCommand: Command = {
     const warnings: Warning[] = [];
     const changes: Change[] = [];
     let unchanged = 0;
+    const dryRun = args.options["dry-run"] === true;
+
+    // Uncommitted work (spec/cli.md §5.15, decision 0103), item 1: Git's state, first of the Git checks. A dry run reports what it would refuse.
+    const context = await gitContext(root);
+    let status: StatusRead | null = null;
+    let wouldRefuse: ErrorCode | null = null;
+    let operation: string | null = null;
+    if (context !== null) {
+      if (!dryRun) await waitForIndex(root);
+      status = await readStatus(root, context);
+      operation = await gitOperation(root, status.unmerged);
+      if (operation !== null) {
+        if (!dryRun) throw new BrainError("GIT_OPERATION_IN_PROGRESS", gitOperationMessage(operation));
+        wouldRefuse = "GIT_OPERATION_IN_PROGRESS";
+      }
+    }
+    // Item 6: what the upgrade plans from, compared again just before the first write.
+    const plannedFrom = context !== null && !dryRun ? await fingerprint(root, []) : null;
 
     // Every check runs before the first write, so a refusal leaves the brain untouched.
     const template = await readFile(join(product.root, "templates/brain/AGENTS.md"), "utf8");
     await assertPlainPath(root, "AGENTS.md");
     const current = await readOptional(join(root, "AGENTS.md"));
-    // Step 1, the rules block from the template; step 1a, the style block from settings.style (§5.3.1), in the same file.
-    const own = current === null ? undefined : rulesBlock(current);
-    const rules = current === null ? template : own === undefined ? undefined : current.replace(own, () => rulesBlock(template)!);
     // A brain.json that isn't JSON (step 5) leaves the style block as it is: brain!.config is then {}, which would read as Standard.
     const readable = await parses(join(root, "brain.json"));
-    const styled = rules === undefined ? undefined : readable ? withStyleBlock(rules, styleLines(brain!.config)) : { text: rules };
-    // Step 1b, the structure block from the notes (§5.8.1, decision 0089), after the style block; unreadable brain.json leaves it as it is.
     const scanned = await scanNotes(root);
-    const structure = styled === undefined || !readable
-      ? undefined
-      : planStructureText(styled.text, structureBlock(indexNotes(scanned.notes, loadSuppressions(root)), brain!.config));
+    const { rules, styled, structure, text: agentsText } = planAgents(current, template, brain!.config, readable, scanned.notes, loadSuppressions(root));
     if (structure?.warn) warnings.push({ code: "AGENTS_BLOCK_NOT_FOUND", message: "AGENTS.md's structure markers are missing, out of order or duplicated; the structure block was left as it is." });
-    const agentsText = styled === undefined ? undefined : structure?.after ?? styled.text;
     if (rules === undefined) {
       changes.push({ path: "AGENTS.md", action: "skipped" });
       warnings.push({ code: "AGENTS_BLOCK_NOT_FOUND", message: "AGENTS.md has no single ultimate-brain rules block; left unchanged." });
@@ -265,18 +297,73 @@ export const upgradeCommand: Command = {
     changes.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
     const written = changes.filter((change) => change.action !== "skipped");
     const version = product.version;
-    const dryRun = args.options["dry-run"] === true;
-    if (!dryRun && await gitDirty(root)) throw new BrainError("BRAIN_DIRTY", "brain has uncommitted changes");
     if (refusal !== undefined) throw refusal;
+
+    // Items 2 to 5, after the pin: the footprint, its generated inputs, and every uncommitted path compared with them.
+    const logPath = `log/${now.toISOString().slice(0, 7)}.md`;
+    const footprint = footprintOf(root, written, written.length > 0 ? logPath : null, concepts.converted);
+    let uncommitted: UncommittedReport | null = null;
+    if (context !== null && status !== null && operation === null) {
+      const inputs = new Map<string, string[]>();
+      const agentsBuilt = footprint.files.has("AGENTS.md") && agentsText !== undefined;
+      const indexBuilt = concepts.index !== null;
+      for (const { path } of status.entries) {
+        if (footprint.files.has(path)) continue;
+        const note = isNotePath(path);
+        const suppression = /^_suppressions\/[^/]+\.json$/.test(path);
+        if (!(note || suppression || path === "brain.json") || !(agentsBuilt || (indexBuilt && path !== "brain.json"))) continue;
+        const committed = (await headBytes(root, context, path))?.toString("utf8") ?? null;
+        const notes = note ? withNote(scanned.notes, path, committed) : scanned.notes;
+        const records = suppression ? loadSuppressions(root, new Map([[path.slice("_suppressions/".length), committed]])) : loadSuppressions(root);
+        const affects: string[] = [];
+        if (agentsBuilt) {
+          const config = path === "brain.json" ? configOf(committed) : brain!.config;
+          const configReadable = path === "brain.json" ? committed !== null && parsesText(committed) : readable;
+          if (planAgents(current, template, config, configReadable, notes, records).text !== agentsText) affects.push("AGENTS.md");
+        }
+        if (indexBuilt && path !== "brain.json") {
+          const again = planConceptConversion(root, notes, (taken) => existsSync(join(root, taken)), indexBefore, records);
+          if ((again.index ?? indexBefore) !== concepts.index) affects.push("index.md");
+        }
+        if (affects.length > 0) inputs.set(path, affects);
+      }
+      // The old lock is an input of the retired skills' removals and of the new lock, but a lock that retires a skill is itself rewritten:
+      // an uncommitted lock then conflicts as `changed`, so it needs no input check of its own.
+      const ignorable = [...footprint.files].filter(([, action]) => action !== "removed").map(([path]) => path);
+      uncommitted = compareUncommitted(status.entries, footprint, inputs, await ignoredPaths(root, ignorable), context.ignoreCase);
+      if (uncommitted.conflicts.length > 0) {
+        const lines = conflictLines(uncommitted);
+        if (!dryRun) {
+          const message = `Upgrade stopped before writing anything: ${lines[0]}`;
+          throw new BrainError("BRAIN_DIRTY", message, uncommitted, [message, ...lines.slice(1)].join("\n"));
+        }
+        wouldRefuse ??= "BRAIN_DIRTY";
+      }
+    }
+    if (context !== null && written.length > 0 && !(await hasIdentity(root))) {
+      if (!dryRun) throw new BrainError("GIT_IDENTITY_MISSING", IDENTITY_MESSAGE);
+      wouldRefuse ??= "GIT_IDENTITY_MISSING";
+    }
     // Step 9: every registered linked project is judged and planned before the first write, and written after the brain.
     const home = homeOf(environment.env);
     const projects = await planProjects({ brainRoot: root, config: brain!.config, notes: scanned.notes, manifest: manifest!, folder: pkg.folder, homeDirectory: environment.homeDirectory, home });
+    let done: Written[] = [];
     if (!dryRun && written.length > 0) {
-      await writeChanges(root, written);
+      // Item 6: nothing the upgrade planned from changed since, else nothing is written.
+      await hooks.afterPlanning?.();
+      if (context !== null) {
+        const moved = (await headCommit(root)) !== context.head ? "HEAD" : null;
+        const again = moved === null ? await readStatus(root, context) : null;
+        const changed = moved ?? (again === null ? null : firstStatusChange(status!, again)) ?? firstChange(plannedFrom!, await fingerprint(root, [...footprint.files.keys()]));
+        if (changed !== null) throw new BrainError("BRAIN_CHANGED", `The brain changed while the upgrade was planning (${changed}). Nothing was written; run brain upgrade again.`);
+      }
+      done = await writeChanges(root, written);
       for (const [folder, self] of prune) await pruneEmpty(join(root, folder), self);
       // knowledge/concepts/ and every folder under it the conversion left empty (spec/cli.md §5.15 step 5a).
       if (concepts.converted.length > 0) await pruneEmpty(join(root, "knowledge/concepts"), true);
+      const logBefore = await readOptionalBuffer(join(root, logPath));
       await appendLog(root, now, [{ op: "upgrade", id: "-", title: version, pairs: [["files", written.length]] }]);
+      done.push({ path: logPath, before: logBefore, after: await readOptionalBuffer(join(root, logPath)) });
     }
     // A dry run lints the planned tree: the converted notes as step 5a would leave them (spec/cli.md §5.15 step 7).
     const { notes, problems } = dryRun ? { notes: concepts.notes, problems: scanned.problems } : await scanNotes(root);
@@ -289,14 +376,26 @@ export const upgradeCommand: Command = {
     if (competing.length > 0) warnings.push({ code: "SKILLS_COMPETING", message: `${competing.length} competing skill copies; see data.skills.competing and remove them.` });
     let commit: string | null = null;
     let pushed = false;
-    if (!dryRun && written.length > 0 && await gitRepository(root)) {
-      const staged = [...written.map((change) => change.path), `log/${now.toISOString().slice(0, 7)}.md`];
+    if (!dryRun && written.length > 0 && context !== null) {
+      // Item 7: the commit takes the footprint only; item 8: a refused commit undoes the upgrade and leaves the user's index as it was.
+      const files = [...footprint.files.keys()].sort(compare);
+      const before = await indexEntries(root, context, files);
+      // A removed file Git doesn't track (an ignored file in a skill folder) is deleted with nothing to commit for it.
+      const paths = files.filter((path) => before.has(path) || existsSync(join(root, path)));
       try {
-        await exec("git", ["add", "--", ...staged], { cwd: root });
-        await exec("git", ["commit", "-m", `upgrade: ultimate brain ${version}, skills ${manifest!.name} ${manifest!.version}`], { cwd: root });
+        await hooks.beforeCommit?.();
+        if ((await headCommit(root)) !== context.head) throw new Error("HEAD moved since the upgrade planned");
+        await waitForIndex(root);
+        await commitOnly(root, paths, `upgrade: ultimate brain ${version}, skills ${manifest!.name} ${manifest!.version}`);
         commit = (await exec("git", ["rev-parse", "--short", "HEAD"], { cwd: root })).stdout.trim();
-      } catch {
-        warnings.push({ code: "GIT_COMMIT_SKIPPED", message: "Git commit was skipped; files were kept." });
+      } catch (error) {
+        const reason = error instanceof GitFailure || error instanceof Error ? error.message : String(error);
+        const left = await undoWrites(root, done, [...footprint.folders]);
+        await restoreIndex(root, context, paths, before);
+        throw new BrainError("UPGRADE_NOT_COMMITTED", [
+          `Git didn't commit the upgrade (${reason}). Nothing of the upgrade was kept, and your own changes are untouched. Fix the cause, then run brain upgrade again.`,
+          ...(left.length > 0 ? [`These files were changed since the upgrade wrote them and were left as they are: ${left.join(", ")}.`] : []),
+        ].join(" "));
       }
       if (commit !== null) {
         try {
@@ -329,18 +428,24 @@ export const upgradeCommand: Command = {
     warnings.push(...projectWarnings(reports));
     return {
       warnings,
-      exitCode: definitionsDiffer || reports.some((report) => report.state === "unfinished") ? 1 : 0,
-      data: { dry_run: dryRun, dirty: dryRun ? await gitDirty(root) : undefined, version, files: changes.map(({ path, action }) => ({ path, action })), unchanged, converted: concepts.converted,
+      exitCode: definitionsDiffer || reports.some((report) => report.state === "unfinished") || wouldRefuse !== null ? 1 : 0,
+      data: { dry_run: dryRun, dirty: dryRun ? status !== null && status.entries.length > 0 : undefined, version, files: changes.map(({ path, action }) => ({ path, action })), unchanged, converted: concepts.converted,
         skills: { from, to: { name: manifest!.name, version: manifest!.version }, retired, previous_cli: previousCli, competing },
         lint: { errors: lint.filter((x) => x.severity === "error").length, warnings: lint.filter((x) => x.severity === "warning").length }, notion_migrations: migrations, commit, pushed,
+        uncommitted, would_refuse: dryRun ? wouldRefuse : undefined,
         projects: reports, next: nextLines(reports) },
-      human: `${written.length} files ${dryRun ? "would change" : "changed"}, ${unchanged} unchanged\n${notionMigrationsLine(product.root, migrations)}\n${projectsHuman(reports)}`,
+      human: [
+        `${written.length} files ${dryRun ? "would change" : "changed"}, ${unchanged} unchanged`,
+        ...(wouldRefuse !== null ? [`The upgrade would stop before writing: ${refusalText(wouldRefuse, operation, uncommitted)}`] : []),
+        ...(wouldRefuse === null && uncommitted !== null && uncommitted.unrelated.length > 0 ? [leftAsTheyWere(uncommitted.unrelated.length)] : []),
+        `${notionMigrationsLine(product.root, migrations)}\n${projectsHuman(reports)}`,
+      ].join("\n"),
     };
   },
 };
 
 /** Apply the planned changes; when one fails, restore every file already replaced or removed and delete the created ones (cli.md §3.6). */
-async function writeChanges(root: string, written: readonly Change[]): Promise<void> {
+async function writeChanges(root: string, written: readonly Change[]): Promise<Written[]> {
   const done: Array<{ change: Change; before: Buffer | null }> = [];
   try {
     for (const change of written) {
@@ -352,6 +457,7 @@ async function writeChanges(root: string, written: readonly Change[]): Promise<v
       }
       done.push({ change, before });
     }
+    return done.map(({ change, before }) => ({ path: change.path, before, after: change.action === "removed" ? null : Buffer.from(change.content!) }));
   } catch (error) {
     for (const { change, before } of done.reverse()) {
       if (before === null) await unlink(join(root, change.path)).catch(() => undefined);
@@ -416,13 +522,91 @@ async function readOptionalBuffer(path: string): Promise<Buffer | null> {
   }
 }
 
-async function gitRepository(root: string): Promise<boolean> {
-  try { return (await exec("git", ["rev-parse", "--is-inside-work-tree"], { cwd: root })).stdout.trim() === "true"; } catch { return false; }
+/**
+ * Item 8: undo the upgrade's writes after Git refused its commit. A file still holding what the upgrade wrote gets its bytes from before
+ * (a created one is deleted), then the folders the writes created go when empty. Returns the files someone changed since, left as they are.
+ */
+async function undoWrites(root: string, done: readonly Written[], folders: readonly string[]): Promise<string[]> {
+  const left: string[] = [];
+  for (const { path, before, after } of [...done].reverse()) {
+    const now = await readOptionalBuffer(join(root, path));
+    const ours = after === null ? now === null && !(await exists(join(root, path))) : now !== null && now.equals(after);
+    if (!ours) { left.push(path); continue; }
+    if (before === null) await unlink(join(root, path)).catch(() => undefined);
+    else {
+      await ensureDirectory(root, dirname(path));
+      await atomicWriteFile(root, path, before);
+    }
+  }
+  for (const folder of [...folders].sort((a, b) => b.length - a.length)) await rmdir(join(root, folder)).catch(() => undefined);
+  return left.sort(compare);
 }
 
-async function gitDirty(root: string): Promise<boolean> {
-  if (!await gitRepository(root)) return false;
-  return (await exec("git", ["status", "--porcelain"], { cwd: root })).stdout !== "";
+/** Steps 1 to 1b: AGENTS.md with the template's rules block, the style block and the structure block (undefined text when it is skipped). */
+function planAgents(current: string | null, template: string, config: Record<string, unknown>, readable: boolean, notes: readonly Note[], suppressions: Loaded) {
+  const own = current === null ? undefined : rulesBlock(current);
+  const rules = current === null ? template : own === undefined ? undefined : current.replace(own, () => rulesBlock(template)!);
+  const styled = rules === undefined ? undefined : readable ? withStyleBlock(rules, styleLines(config)) : { text: rules };
+  const structure = styled === undefined || !readable
+    ? undefined
+    : planStructureText(styled.text, structureBlock(indexNotes(notes, suppressions), config));
+  return { rules, styled, structure, text: styled === undefined ? undefined : structure?.after ?? styled.text };
+}
+
+/** Item 3: the files the upgrade changes, the monthly log, the folders its writes create and both endpoints of a moved concept. */
+function footprintOf(root: string, written: readonly Change[], log: string | null, converted: ReadonlyArray<{ from: string; to: string }>): Footprint {
+  const files: Footprint["files"] = new Map(written.map((change) => [change.path, change.action as "created" | "updated" | "removed"]));
+  if (log !== null) files.set(log, "log");
+  const folders = new Set<string>();
+  for (const [path, action] of files) {
+    if (action === "removed") continue;
+    const parts = path.split("/");
+    for (let index = 1; index < parts.length; index += 1) {
+      const folder = parts.slice(0, index).join("/");
+      if (!existsSync(join(root, folder))) folders.add(folder);
+    }
+  }
+  return { files, folders, moved: new Set(converted.flatMap(({ from, to }) => [from, to])), log };
+}
+
+/** A note path as `scanNotes` reads it: a `.md` file in a note folder, no part of its path hidden. */
+function isNotePath(path: string): boolean {
+  const parts = path.split("/");
+  return path.endsWith(".md") && (NOTE_FOLDERS as readonly string[]).includes(parts[0]!) && parts.length > 1 && parts.every((part) => !part.startsWith("."));
+}
+
+/** `notes` with the note at `path` read from `text` instead (absent when null or not a note). */
+function withNote(notes: readonly Note[], path: string, text: string | null): Note[] {
+  const others = notes.filter((note) => note.path !== path);
+  const parsed = text === null ? null : parseNote(path, text);
+  if (parsed !== null && !("code" in parsed)) others.push(parsed);
+  return others.sort((a, b) => compareCodePoints(a.path, b.path));
+}
+
+function configOf(text: string | null): Record<string, unknown> {
+  try {
+    const value = JSON.parse(text ?? "") as unknown;
+    return isRecord(value) ? value : {};
+  } catch {
+    return {};
+  }
+}
+
+function parsesText(text: string): boolean {
+  try { JSON.parse(text); return true; } catch { return false; }
+}
+
+/** The first uncommitted path whose status entry changed between two reads, or null. */
+function firstStatusChange(before: StatusRead, after: StatusRead): string | null {
+  const paths = [...new Set([...before.raw.keys(), ...after.raw.keys()])].sort(compare);
+  return paths.find((path) => before.raw.get(path) !== after.raw.get(path)) ?? null;
+}
+
+/** A dry run's reason for the refusal the real run would make (spec/cli.md §5.15, Uncommitted work item 5). */
+function refusalText(code: ErrorCode, operation: string | null, uncommitted: UncommittedReport | null): string {
+  if (code === "BRAIN_DIRTY" && uncommitted !== null) return conflictLines(uncommitted).join("\n");
+  if (code === "GIT_IDENTITY_MISSING") return IDENTITY_MESSAGE;
+  return gitOperationMessage(operation ?? "conflicts");
 }
 
 /** Rename `old` to `key` in place; when `key` already holds an id, just drop `old` (spec/cli.md §5.15 step 5). */

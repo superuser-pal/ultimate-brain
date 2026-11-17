@@ -212,7 +212,7 @@ cd ~/brain
 brain upgrade
 ```
 
-`brain upgrade` refreshes the brain's product-owned rules and skills, then commits and pushes. It never touches your notes, and it refuses to run on a brain with uncommitted changes.
+`brain upgrade` refreshes the brain's product-owned rules and skills, then commits and pushes. It never touches your notes. Your uncommitted work stays as it is and out of its commit; when a change of yours is in a file it must write, it stops before writing and lists each such file with what to do.
 
 To undo an upgrade, or to remove Ultimate Brain from your computer: [Going back to an earlier version](docs/setup.md#going-back-to-an-earlier-version) and [Uninstalling](docs/setup.md#uninstalling).
 
