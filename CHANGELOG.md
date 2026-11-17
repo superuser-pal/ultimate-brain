@@ -2,6 +2,21 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.16.1 — 2026-11-17
+
+- CC-334 (#435): development only: 0.16.1 is scoped to visible Brain Assistant setup and upgrades that preserve unrelated uncommitted work.
+- CC-335 (#440): development only: the setup and upgrade contracts define the checklist, button checks and preservation of unrelated work.
+- CC-336 (#444): Upgrades leave unrelated drafts and diagrams alone and list the exact conflicting files when they cannot proceed.
+- CC-337 (#445): First things first guides you through creating Brain Assistant, wiring its buttons and asking Claude Code or Codex to set up and populate your brain.
+- CC-338 (#446): Guided setup helps you create and check your own Brain Assistant and its three buttons before calling it ready.
+- CC-341 (#438): development only: 0.16.1 also plans a Domain rollup on Projects, Meetings and Documents, their lists on each Domain page, and Domains without Type.
+- CC-342 (#439): development only: the contracts define the Domain rollups, Domains without Type and how an ingest places a meeting or Document in its projects' Area.
+- CC-343 (#443): Projects, Meetings and Documents show their Domain, each Domain page lists its projects, meetings and documents, and Domains no longer have a Type.
+- CC-344 (#442): Sync no longer reads a Domain's Type; an old Type is dropped from your domain notes at the next sync.
+- CC-345 (#441): A report or Brief that rests on a memory, a deleted note or a proposal is now withheld in every brain, a report can no longer link a memory, reflection no longer shows memories, and the brain's AGENTS.md no longer points to the retired Review queue.
+
+Skills: ultimate-brain-skills 1.10.1 (sha256-540ee54d30a0ff2f2e2aa4a166366023e9f7bf7f11a53dc0ffbaac2dcd8a713a)
+
 ## 0.16.0 — 2026-11-17
 
 - CC-288 (#397): development only: decision 0096 records that conflicts are decided in the session and the Review database goes, with 0.16.0's plan.
