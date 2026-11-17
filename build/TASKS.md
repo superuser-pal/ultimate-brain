@@ -1263,14 +1263,14 @@ The author's two fixes from the scope review of 2026-11-17, accepted in [0103](.
 
 | Task | Work | Files | When | Status |
 |---|---|---|---|---|
-| CC-334 | Record 0103 and plan 0.16.1 | decision and amendment pointers, this plan, vision | scope review accepted | `review` |
+| CC-334 | Record 0103 and plan 0.16.1 | decision and amendment pointers, this plan, vision | scope review accepted | `done` (#435) |
 | CC-335 | Contracts for the checklist and an upgrade around unrelated work | `spec/setup.md`, `spec/cli.md`, relevant contract pointers | after CC-334 is merged | `todo` |
 | CC-336 | Upgrade with unrelated work, and exact conflict output | upgrade, Git helpers, meaningful preservation tests | after CC-335 is merged | `todo` |
 | CC-337 | First things first, the migration and template guidance | Notion design, checklist, prompts, migration and setup guides | after CC-335 is merged | `todo` |
 | CC-338 | Guided setup verifies the agent and buttons; skills release | fork's setup/how-to skills, vendored released snapshot | after CC-335 and CC-337 are merged | `todo` |
 | U-37 | Publish the template and check setup on a fresh duplicate | the published template, disposable sample pages | after CC-337 and CC-338 are merged | author's task |
 
-### CC-334 · Plan 0.16.1: first things first and upgrades with unrelated work · `review`
+### CC-334 · Plan 0.16.1: first things first and upgrades with unrelated work · `done` (#435)
 **Release:** 0.16.1
 **Changelog:** development only: 0.16.1 is scoped to visible Brain Assistant setup and upgrades that preserve unrelated uncommitted work.
 **Output:** accepted decision 0103 and amendment pointers on 0038 and 0078, this release's roadmap line and task section (CC-335 to CC-338, U-37), and a bounded 0.16.1 note in `docs/vision.md`. Planning only: no CLI, spec, schema, skill, template, live Notion, personal brain or CHANGELOG change. The user accepted both recommendations in the opening grill and added the setup/population note; implementation stays with Claude Code.
