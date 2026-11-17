@@ -396,7 +396,7 @@ A Node script with no build step and no new dependency. It imports the product's
 
 The message, for both: `.agents/skills is not a released ultimate-brain-skills snapshot (<reason>). Skills are written in the fork; restore with git checkout -- .agents/skills and git clean -fdx .agents/skills, or vendor a release: node scripts/vendor-skills.mjs <version>`. The reasons are checked in this order, and the first failing one is reported: the §2.3 reason (`manifest-missing`, `file-mismatch: brain-sync/SKILL.md`, …), then `name <name>`, `no source commit`, `no LICENSE`, `no NOTICE.md`, `not compatible with <v> (<cli>)`, `no release brain-v<version>`, `differs from brain-v<version>: <integrity|cli|commit>` or `status unknown (<error>)`.
 
-So an edited, added or removed file under `.agents/skills/` fails `npm test` and CI. Rule 6 of §2.3 applies in full: the check reads the working tree, so a hidden or Git-ignored file such as `.DS_Store` there is an `unlisted-entry` too, and `git clean -fdx` in the message removes it (`-x` includes ignored files). An edit that also rewrites `snapshot.json` to match passes the offline check but fails CI and the release gate. In a brain, an edited copy stays a `product-file` lint error (§6.4). The hook's test in `tests/release-scripts.test.mjs` becomes: staging an edited vendored file is refused with the message, and staging a whole vendored release is accepted.
+So an edited, added or removed file under `.agents/skills/` fails `npm test` and CI. Rule 6 of §2.3 applies in full: the check reads the working tree, so a hidden or Git-ignored file such as `.DS_Store` there is an `unlisted-entry` too, and `git clean -fdx` in the message removes it (`-x` includes ignored files). An edit that also rewrites `snapshot.json` to match passes the offline check but fails CI and the release gate. In a brain, an edited copy stays a `product-file` lint error (§6.4). The hook's test in `tests/scripts-hooks.test.mjs` becomes: staging an edited vendored file is refused with the message, and staging a whole vendored release is accepted.
 
 ### 9.4 The product version and the snapshot's range (CC-105; the user's choice, 2026-11-05)
 
@@ -762,7 +762,7 @@ Then:
 
 The update check against a compatible change, an incompatible change, an unreleased change and an unavailable source (migration plan step 7): one integration issue throughout, `unknown` on the unavailable source, and no change dropped before it is classified.
 
-Tests run the check against a mock GitHub API (`tests/fixtures/github-mock.mjs`: the product's issues, the fork's releases, history, PRs and vendored schema) and a synthetic package snapshot; the scripts' tests point every other run at a closed local port. `tests/skills-integration.test.mjs` covers §11.2 and §11.3's check; `tests/release-scripts.test.mjs` covers the release gate, the `Skills:` line and `task.mjs start`'s line.
+Tests run the check against a mock GitHub API (`tests/fixtures/github-mock.mjs`: the product's issues, the fork's releases, history, PRs and vendored schema) and a synthetic package snapshot; the scripts' tests point every other run at a closed local port. `tests/skills-integration.test.mjs` covers §11.2 and §11.3's check; `tests/scripts-release-gate.test.mjs` covers the release gate and the `Skills:` line, and `tests/scripts-task.test.mjs` `task.mjs start`'s line.
 
 ### 12.5 CC-105 (both repos; product tests with a mocked GitHub API, no network)
 
