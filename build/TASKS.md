@@ -1345,11 +1345,11 @@ After the feature cutoff, scope packaging/install/upgrade guidance, consistent N
 **Output:** rows U-30, U-31 and U-32 under Your tasks (GitHub Support's cleanup after the history rewrite, the attended run of setup steps 4a and 4b, the readiness recheck from `v0.15.1`) and CC-287's row (the 1.9.1 skills change in issue #394). Only `build/TASKS.md` changes.
 **Acceptance:** the three U rows and CC-287's row exist and each says what closes it; no other row changes; the leak and PR format checks pass.
 
-### CC-287 · Classify the 1.9.1 skills change in the skills-integration issue · `todo`
+### CC-287 · Classify the 1.9.1, 1.9.2 and 1.10.0 skills changes in the skills-integration issue · `done` (#432)
 **Release:** 1.0.0
-**Changelog:** development only: the skills-integration issue records 1.9.1 as assessed.
-**Output:** in a planning session, the open change of issue #394 (ultimate-brain-skills 1.9.1: one sentence in brain-setup's report question, vendored by CC-284 and shipped in 0.15.1) is classified in the issue's block and `assessed` moves to 1.9.1 (spec/skills-delivery.md §11.2). No file changes unless the classification names brain work.
-**Acceptance:** `node scripts/release.mjs <next version> --dry-run` no longer warns about an unclassified change in #394; the issue's block names 1.9.1 as assessed.
+**Changelog:** development only: the skills-integration issue records 1.10.0 as assessed.
+**Output:** in a planning session, the 1.9.1, 1.9.2 and 1.10.0 changes of issue #394 (widened by the author on 2026-11-17 from 1.9.1 alone) are classified in the issue's block and `assessed` moves to 1.10.0 (spec/skills-delivery.md §11.2): 1.9.1 (one sentence in brain-setup's report question, vendored by CC-284, shipped in 0.15.1) and 1.9.2 (vendored by CC-294, shipped in 0.15.2) `ready`; 1.10.0 (the cli range moves to `>=0.16.0-0 <0.17.0`) `brain-work`, linked to product PRs #428 and #429 (CC-298, CC-310; §9.5). No file changes besides this row.
+**Acceptance:** `node scripts/release.mjs 0.16.0 --dry-run` no longer warns or refuses on #394; the issue's block names 1.10.0 as assessed.
 
 ### CC-325 · Brain Assistant sets your operational fields after your yes (0101 §3) · `todo`
 **Release:** 1.0.0
