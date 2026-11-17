@@ -2,7 +2,7 @@
 
 Before: [Prompt 7](07-spaces-views.md) (or the optional [Prompt 8](08-navigation.md)). Afterwards: "After building" in [../CHECKLIST.md](../CHECKLIST.md).
 
-This puts on System what Brain Assistant reads: the database **Skills** (Brain Assistant's skills) with its ten skills, and the user guide on **How it works** (docs/notion-space-design.md §5, §10). The published template carries both. Brain Assistant itself (the Custom Agent, or personal Instructions) belongs to a workspace, not to a space: set it up afterwards, as "Setup" in [../brain-assistant.md](../brain-assistant.md) says.
+This puts on System what Brain Assistant reads: the database **Skills** (Brain Assistant's skills) with its ten skills, and the user guide on **How it works** (docs/notion-space-design.md §5, §10). The published template carries both. Brain Assistant itself (the Custom Agent, or personal Instructions) belongs to a workspace, not to a space, and no duplicate or build carries it: set it up afterwards, as "Setup" in [../brain-assistant.md](../brain-assistant.md) says and the page **First things first** lists (Prompt 1; docs/notion-space-design.md §10.1), selecting it in the three buttons that message it.
 
 ## 1 · The database (Notion AI)
 

@@ -36,7 +36,7 @@ On Windows, scheduled runs aren't available: you ask your agent for a catch-up o
 | 3 | Notion template and connection | Duplicate the template, connect your agent to Notion, restart the agent. | The brain needs a space to write to. |
 | 4 | Connect the brain to Notion | Say yes to moving the template's example rows to Notion's trash. | The brain stores each database's id and the template's version. The example rows go before anything reads your space, so none of them ever enters your brain. |
 | 4a | The minutes prompt | Paste a short invented meeting into a new Meetings page. Open the Notion AI chat on that page, paste the prompt followed by the line "Write the minutes on this page, below the transcript, and nothing else.", and send. Delete the test page afterwards. | Your meeting minutes come out in the shape the brain reads, and the transcript stays on the page. |
-| 4b | Brain Assistant | Set it up, giving it the Brain Data, How it works and Skills under your space's top page. Then ask it **Run Today** once (by name: a Custom Agent doesn't run `/` commands). | Today must list only the tasks of your space's Tasks database. |
+| 4b | Brain Assistant | Create your own: duplicating the template doesn't give you one. Follow **First things first**, the page linked from Start here: give it the Brain Data, How it works and Skills under your space's top page, paste its Instructions and replace the mentions, check the mentions in its skills, and select it in **Send message to** of the Tidy capture, Write up and Refresh report buttons. Then ask it **Run Today** once (by name: a Custom Agent doesn't run `/` commands), and click each button on the sample page setup creates for it. | Today must list only the tasks of your space's Tasks database, and each button must reach your own agent. Setup reads the sample pages; what only Notion's interface shows (the agent's access, a button's Send message to) you check and tell it. |
 | 5 | Identities | Say which names you appear under in meetings and in Notion. | The brain knows which tasks and commitments are yours. |
 | 6 | Seeding | Describe your work in a few sentences, answer one preview, then drop 3 to 5 key documents in your drop folder. | Your brain starts with your Areas, Projects, people and documents, so the first meeting doesn't create duplicates. Nothing is written before your yes. |
 | 7 | First value | Judge four checks (below). | It proves the brain works on your own material. |
@@ -243,6 +243,22 @@ Setup's check says which Tasks database Today should read: the one under your sp
 - **Brain Assistant can see more than your brain.** A Custom Agent: in Tools and access, keep only the Brain Data, How it works and Skills (in an older space, Brain Assistant Skills) under your top page, and remove any other. Personal Instructions: the instruction to stay inside Ultimate Brain is missing or was pasted in part. Paste the whole text again.
 
 Then say "check Brain Assistant again".
+
+### You have no Brain Assistant yet (`assistant-missing`)
+
+Duplicating the template copied its pages, not an agent. Create your own, as **First things first** says (the page linked from Start here): Agents → New Custom Agent, named Brain Assistant, with no triggers, then its access and Instructions. Then say "check Brain Assistant again". Already have one that answers in its chat? Keep it: setup checks it rather than asking for a second one.
+
+### A skill mentions a page outside your space (`mentions-outside`)
+
+Setup read your Skills pages and found a mention of Brain Data or How it works that opens a page elsewhere, such as the template author's, or one it can't open. It names the skill page and the mention. Replace the mention with one of the page of that name under your top page, then say "check Brain Assistant again".
+
+### A button didn't reach your agent (`button-unbound`)
+
+Setup clicked nothing itself: you clicked the button on a sample page, and setup read the page back and found it unchanged. Open the database as a full page → ••• → Properties → the button, and in **Send message to** select your own Brain Assistant. Keep the message as it is: its skill name, its "I confirm" and its **@This page**. Selecting the agent says who receives the message, and @This page says which page it is about. Then say "check Brain Assistant again". Setup can't read a button's settings: what you see there is your check, and setup says so.
+
+### A sample page is still there (`samples-left`)
+
+Each button check uses a page titled `Setup check: … (delete me)`, and setup moves it to Notion's trash after reading it. When it couldn't, the step stays unfinished until the page is gone. Delete it yourself, then say "check Brain Assistant again". Nothing in your brain is made from a sample.
 
 ### First value is unresolved (`first-value-unresolved`)
 
