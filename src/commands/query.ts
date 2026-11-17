@@ -39,10 +39,10 @@ export const queryCommand: Command = {
     const warnings = scanned.problems.map((problem) => ({ code: problem.code, message: `${problem.path}: ${problem.message}`, path: problem.path }));
     // A memory is returned only as `brain recall` would return it to this folder (memory.md §2): approval and reach, besides the evidence rule.
     const memories = async (superseded: boolean): Promise<Map<string, Note>> => shownMemories(scanned.notes, loaded, (await readCaller(repo)).caller, superseded);
-    // A view has no passage references: it is returned whole or withheld whole, judged with what it rests on to any depth, a memory as this
-    // command would return it to the caller (§5.13.1, "Views"; eligibility.md §8). Any other note in its answer form (§5.13).
+    // A view has no passage references: it is returned whole or withheld whole, judged with what it rests on to any depth; it never rests on
+    // a memory (§5.13.1, "Views"; eligibility.md §8). Any other note in its answer form (§5.13).
     const current = await memories(false);
-    const dependencies = viewDependencies(scanned.notes, (path) => existsSync(join(brain!.root, path)), (note) => current.has(note.id));
+    const dependencies = viewDependencies(scanned.notes, (path) => existsSync(join(brain!.root, path)));
     const viewWithheld = (note: Note) => withheldView(note, dependencies, eligibility);
     const eligibleOf = (note: Note): Note | null => note.type === "view" ? (viewWithheld(note) === null ? note : null) : answerNote(note, eligibility);
 

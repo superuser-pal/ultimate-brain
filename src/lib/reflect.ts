@@ -259,6 +259,11 @@ export function reflectionNotes(notes: readonly Note[], loaded: Pick<Loaded, "su
   return notes.flatMap((note) => { const kept = answerNote(note, context); return kept === null ? [] : [kept]; });
 }
 
+/** The notes reflection reads (§5.32 "No memories", CC-345): the eligible notes without any memory, which has no caller to judge reach by. */
+export function reflectedNotes(notes: readonly Note[], loaded: Pick<Loaded, "suppressions"> & Partial<Pick<Loaded, "restores">>): Note[] {
+  return reflectionNotes(notes, loaded).filter((note) => note.type !== "memory");
+}
+
 /** A note's `path` in the output, and its `cite` in the awaiting-cleanup form (eligibility.md §6 rules 3 and 4). Its path still matches links. */
 function shownPath(note: Note): { path: string | null; cite?: string } {
   return titleWithheld(note) ? { path: null, cite: citeLabel(note) } : { path: note.path };
@@ -301,7 +306,7 @@ export function heldFingerprints(notes: readonly Note[]): Map<string, Hold> {
 export function reflectCandidates(all: readonly Note[], loaded: Pick<Loaded, "suppressions"> & Partial<Pick<Loaded, "restores">>, now: Date, limit: number, offset: number): Candidates {
   const to = formatDate(now);
   const from = formatDate(new Date(Date.parse(`${to}T00:00:00Z`) - (WINDOW_DAYS - 1) * 86_400_000));
-  const notes = reflectionNotes(all, loaded);
+  const notes = reflectedNotes(all, loaded);
   const byId = new Map(notes.map((note) => [note.id, note]));
   const allById = new Map(all.map((note) => [note.id, note]));
   const byPath = new Map(notes.map((note) => [note.path, note]));

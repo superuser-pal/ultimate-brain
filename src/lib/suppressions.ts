@@ -333,36 +333,33 @@ function stamp(value: unknown): number {
 /** Why a view is withheld and what rebuilds it (cli §5.13.1, "Views"; eligibility.md §8 rule 6). */
 export interface WithheldView { readonly cause: "dependency" | "stale" | "unreadable"; readonly rebuild: "refresh" | "views" }
 
-/** What judging a view needs: the notes by id, the notes a view's body links (`gone` when a `.md` link names no note and no file), and,
- *  on an answer surface, whether a memory is one the caller may be shown. */
+/** What judging a view needs: the notes by id and the notes a view's body links (`gone` when a `.md` link names no note and no file). */
 export interface ViewDependencies {
   readonly byId: ReadonlyMap<string, Note>;
   readonly links: (view: Note) => { linked: readonly string[]; gone: boolean };
-  readonly memory?: (note: Note) => boolean;
 }
 
 /** The dependencies of the views of a brain read from `notes`, with `exists` saying whether a path from the brain's root is a file. */
-export function viewDependencies(notes: readonly Note[], exists: (path: string) => boolean, memory?: (note: Note) => boolean): ViewDependencies {
+export function viewDependencies(notes: readonly Note[], exists: (path: string) => boolean): ViewDependencies {
   const cache = new Map<string, { linked: readonly string[]; gone: boolean }>();
   return {
     byId: new Map(notes.map((note) => [note.id, note])),
     links: (view) => { let links = cache.get(view.id); if (links === undefined) { links = viewLinks(notes, view, exists); cache.set(view.id, links); } return links; },
-    ...(memory === undefined ? {} : { memory }),
   };
 }
 
 /**
  * Whether a view is withheld whole, and why (cli §5.13.1, "Views"; eligibility.md §8). A view is text written from notes (a Brief, a Decision log)
- * or by a skill (a report), with no passage references of its own, so it is one item, read whole or withheld whole. While the brain has a
- * suppression record it is withheld when, in this order:
- * - `dependency`: a note in its `generated_from` or linked from its body is restricted in any part, not eligible (a proposal; a memory not
- *   eligible), gone, or a view this rule withholds, followed to any depth and each view once (a cycle adds nothing);
+ * or by a skill (a report), with no passage references of its own, so it is one item, read whole or withheld whole. In every brain, with or
+ * without a suppression record (CC-345), it is withheld when, in this order:
+ * - `dependency`: a note in its `generated_from` or linked from its body is restricted in any part, not eligible (a proposal; any memory: a
+ *   view has no caller to judge reach by, and memories never reach Notion, 0008), gone, or a view this rule withholds, followed to any depth
+ *   and each view once (a cycle adds nothing);
  * - `stale`: it is a report not written after (a later second than) every extract version that carries a suppression record, active or
  *   reconciled: a cleanup never makes an older report fresh, only a refresh does;
  * - `unreadable`: its `generated_from` is not a list of ids, or, for a report, a time on either side can't be read (fail closed).
  */
 export function withheldView(view: Note, dependencies: ViewDependencies, context: Context): WithheldView | null {
-  if (context.suppressions.length === 0) return null;
   const rebuild = view.attributes.view_kind === "report" || view.attributes.view_kind === "weekly_review" ? "refresh" : "views";
   const verdict = judgeView(view, dependencies, context, new Set());
   return verdict === null ? null : { cause: verdict, rebuild };
@@ -397,20 +394,13 @@ function judgeView(view: Note, dependencies: ViewDependencies, context: Context,
   return unreadable ? "unreadable" : null;
 }
 
-/** Whether a note a view rests on leaves it safe to show: a view by this rule (each once), a memory as the surface would show it, any other
- *  note with no restricted part at all. A proposal is never evidence. */
+/** Whether a note a view rests on leaves it safe to show: a view by this rule (each once), any other note with no restricted part at all.
+ *  A proposal is never evidence, and a view never rests on a memory (CC-345). */
 function dependencyEligible(note: Note, dependencies: ViewDependencies, context: Context, judging: Set<string>): boolean {
-  if (note.type === "proposal") return false;
+  if (note.type === "proposal" || note.type === "memory") return false;
   if (note.type === "view") return judging.has(note.id) || judgeView(note, dependencies, context, judging) === null;
-  if (note.type === "memory" && !(dependencies.memory?.(note) ?? currentMemory(note))) return false;
   const restriction = restrictionOf(note, context);
   return !(restriction.whole || restriction.lines.size > 0 || restriction.timeline.size > 0 || restriction.facts.size > 0 || restriction.summary);
-}
-
-/** A memory a published surface may rest on, with no caller to judge reach by: reviewed and superseded by nothing (memory.md §2 rules 1, 2). */
-function currentMemory(note: Note): boolean {
-  const superseded = Array.isArray(note.attributes.relations) && note.attributes.relations.some((relation) => relation !== null && typeof relation === "object" && (relation as { type?: unknown }).type === "superseded_by");
-  return note.attributes.lifecycle === "reviewed" && !superseded;
 }
 
 /** A view the rule withholds, as a published surface lists it: no title, summary or aliases (cli §5.8). */
