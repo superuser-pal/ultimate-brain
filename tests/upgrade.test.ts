@@ -133,9 +133,10 @@ test("upgrade reports BRAIN_DIRTY and dry-run dirty", async (context) => {
   const { root, target } = await freshBrain(context); await gitBrain(target); const stale = join(target, ".agents/skills/brain-query/SKILL.md"); await writeFile(stale, "drift\n");
   const blocked = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
   assert.equal(blocked.json.error.code, "BRAIN_DIRTY");
+  assert.deepEqual(blocked.json.error.details.conflicts.map((conflict: { path: string; reason: string }) => [conflict.path, conflict.reason]), [[".agents/skills/brain-query/SKILL.md", "changed"]]);
   assert.equal(await readFile(stale, "utf8"), "drift\n");
   const dry = await brain(["upgrade", "--brain", target, "--dry-run", "--now", NOW, "--json"], root);
-  assert.equal(dry.json.data.dirty, true);
+  assert.equal(dry.json.data.dirty, true); assert.equal(dry.json.data.would_refuse, "BRAIN_DIRTY"); assert.equal(dry.code, 1);
 });
 
 test("upgrade cleans settings and warns for invalid settings", async (context) => {
@@ -220,12 +221,17 @@ test("upgrade keeps its commit when push fails", async (context) => {
   const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root); assert.equal(run.code, 0); assert.ok(run.json.data.commit); assert.ok(run.json.warnings.some((warning: { code: string }) => warning.code === "PUSH_FAILED"));
 });
 
-test("upgrade warns GIT_COMMIT_SKIPPED without identity", async (context) => {
+test("upgrade refuses GIT_IDENTITY_MISSING before writing when Git has no identity, and the dry run reports it (0103)", async (context) => {
   const oldGlobal = process.env.GIT_CONFIG_GLOBAL; const oldNoSystem = process.env.GIT_CONFIG_NOSYSTEM;
   process.env.GIT_CONFIG_GLOBAL = "/dev/null"; process.env.GIT_CONFIG_NOSYSTEM = "1";
   context.after(() => { if (oldGlobal === undefined) delete process.env.GIT_CONFIG_GLOBAL; else process.env.GIT_CONFIG_GLOBAL = oldGlobal; if (oldNoSystem === undefined) delete process.env.GIT_CONFIG_NOSYSTEM; else process.env.GIT_CONFIG_NOSYSTEM = oldNoSystem; });
   const { root, target } = await freshBrain(context); await git(target, ["init"]); await git(target, ["config", "user.useConfigOnly", "true"]); await git(target, ["add", "."]); await git(target, ["-c", "user.name=Bootstrap", "-c", "user.email=bootstrap@example.test", "commit", "-m", "init"]); await writeFile(join(target, ".agents/skills/brain-query/SKILL.md"), "drift\n"); await git(target, ["add", "."]); await git(target, ["-c", "user.name=Bootstrap", "-c", "user.email=bootstrap@example.test", "commit", "-m", "drift"]);
-  const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root); assert.ok(run.json.warnings.some((warning: { code: string }) => warning.code === "GIT_COMMIT_SKIPPED")); assert.notEqual(await readFile(join(target, ".agents/skills/brain-query/SKILL.md"), "utf8"), "drift\n");
+  const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
+  assert.equal(run.json.error.code, "GIT_IDENTITY_MISSING", run.stdout); assert.equal(run.code, 3);
+  assert.equal(await readFile(join(target, ".agents/skills/brain-query/SKILL.md"), "utf8"), "drift\n");
+  assert.equal(await git(target, ["status", "--porcelain"]), "");
+  const dry = await brain(["upgrade", "--brain", target, "--now", NOW, "--dry-run", "--json"], root);
+  assert.equal(dry.code, 1); assert.equal(dry.json.data.would_refuse, "GIT_IDENTITY_MISSING");
 });
 
 test("upgrade stages only its files and log", async (context) => {
