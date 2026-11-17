@@ -232,7 +232,7 @@ These amend the cli.md sections named. The task that implements a change rewrite
 
 ### 6.3 `brain upgrade` (cli.md §5.15, CC-100)
 
-**Before any write**, after today's checks (`UNRELEASED_BUILD`, `BRAIN_DIRTY` (since 0.16.1 the Git state check, and the uncommitted-work check after the pin: cli.md §5.15, 0103), the `OUTSIDE_ROOT` safety checks, which now also cover `skills.lock.json`), in this order. `--dry-run` applies the same checks and refusals.
+**Before any write**, after today's checks (`UNRELEASED_BUILD`, `BRAIN_DIRTY` (since 0.16.1 the Git state check, and the uncommitted-work check after the pin: cli.md §5.15, 0103), the `OUTSIDE_ROOT` safety checks, which now also cover `skills.lock.json`), in this order. `--dry-run` applies the same pin checks and refusals; since 0.16.1 it refuses nothing for Git state, uncommitted work or the identity, and reports them in `would_refuse` instead (cli.md §5.15).
 1. **Package snapshot.** It must be compatible with the running CLI version. Otherwise refuse with `SKILLS_SNAPSHOT_INVALID`.
 2. **Existing lock** (the brain's state doesn't matter here: upgrade is the repair path):
    - `unpinned`: `from` is `null`.
