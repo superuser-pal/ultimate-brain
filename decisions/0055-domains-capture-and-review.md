@@ -10,6 +10,7 @@
 **Refines:** 0003, 0007, 0018, 0021, 0032, 0050, 0051, 0054
 **Amended by:** [0096](0096-one-place-to-decide.md) (2026-11-15; 0.16.0): editable Review (the Review page, its tokens and Submit) is retired; the selection is unchanged
 **Amended by:** [0099](0099-notion-without-decisions-and-questions.md) (2026-11-16; 0.16.0): `Track: Waiting On —` also tracks a question or a risk as a task
+**Amended by:** [0105](0105-domains-on-projects-meetings-and-documents-and-domains-without-type.md) (2026-11-17; 0.16.1): a Domain page also lists its Projects, Meetings and Documents, through a Domain rollup from their Area; Domains lose Type
 
 ## Context
 

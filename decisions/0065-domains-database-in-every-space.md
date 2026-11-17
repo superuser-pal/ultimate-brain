@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-11-03
 **Amends:** 0055 (how Domains reach Notion)
+**Amended by:** [0105](0105-domains-on-projects-meetings-and-documents-and-domains-without-type.md) (2026-11-17; 0.16.1): every space also has a read-only Domain rollup on Projects, Meetings and Documents; the Domains database loses Type
 **Keeps:** 0048 (modules, nothing deleted when off), 0022 (structure changes in the repo first)
 
 ## Context
