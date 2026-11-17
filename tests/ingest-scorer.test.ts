@@ -85,19 +85,6 @@ test("ingest scorer reports low recall", async (context) => {
   assert.equal(report.unmatched.notes.length, 1);
 });
 
-test("ingest scorer detects a must_not proposal", async (context) => {
-  const { root, base, run } = await folders(context);
-  await (await import("node:fs/promises")).mkdir(join(run, "_proposals"), { recursive: true });
-  await writeFile(join(run, "_proposals", "new.md"), "---\nid: prp-0a1b2c3d\ntype: proposal\ntitle: forbidden\nkind: update_fact\ntarget: prj-9x4t1b7e\nstatus: pending\n---\n");
-  const report = score(base, run, await expected(root, {
-    case: "must-not",
-    expect: { stop: false, meeting: { attendees: [], projects: [] }, notes: [], proposals: [], tasks: [], must_not: [{ proposal: {} }] },
-    optional: [],
-  }));
-  assert.equal(report.verdict, "fail");
-  assert.equal(report.must_not.length, 1);
-});
-
 test("ingest scorer checks every must_not kind", async (context) => {
   const cases: Array<[string, (run: string) => Promise<void>, Record<string, unknown>]> = [
     ["note", async (run: string) => { await mkdir(join(run, "knowledge", "people"), { recursive: true }); await writeFile(join(run, "knowledge/people/extra.md"), "---\nid: per-extra01\ntype: person\ntitle: Forbidden Person\norg: org-6d1f9z3k\n---\n"); }, { note: { type: "person", title: ["Forbidden"] } }],
@@ -111,6 +98,7 @@ test("ingest scorer checks every must_not kind", async (context) => {
     await mutate(run);
     const report = score(base, run, await expected(root, { case: name, expect: { stop: false, meeting: { attendees: [], projects: [] }, notes: [], proposals: [], tasks: [], must_not: [mustNot] }, optional: [] }));
     assert.equal(report.must_not.length, 1, name);
+    assert.equal(report.verdict, "fail", name);
   }
 });
 

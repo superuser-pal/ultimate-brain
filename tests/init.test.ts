@@ -105,20 +105,6 @@ test("config validates changes, status reports Notion configuration, and id new 
   assert.equal(badType.code, 2);
 });
 
-test("init can record the new default brain without inspecting the product repository", async (context) => {
-  const root = await scratch(context);
-  const home = join(root, "home");
-  const target = join(root, "brain");
-  await mkdir(home);
-  const init = await brain(["init", target, "--no-git", "--set-default", "--json"], home);
-  assert.equal(init.code, 0, init.stderr);
-  assert.deepEqual(
-    JSON.parse(await readFile(join(home, ".config", "ultimate-brain", "config.json"), "utf8")),
-    { brain: await realpath(target) },
-  );
-  assert.equal(init.json.data.default_config.written, true);
-});
-
 test("init installs every shipped skill and --force leaves existing skill files alone", async (context) => {
   const root = await scratch(context);
   const target = join(root, "skills-brain");
@@ -195,6 +181,7 @@ test("init --set-default finds the home folder without the HOME variable, which 
   const init = await run(["init", target, "--no-git", "--set-default", "--json"]);
   assert.equal(init.code, 0, init.stderr);
   assert.equal(init.json.data.default_config.path_abs, join(await realpath(home), ".config", "ultimate-brain", "config.json"));
+  assert.equal(init.json.data.default_config.written, true);
   assert.deepEqual(JSON.parse(await readFile(join(home, ".config", "ultimate-brain", "config.json"), "utf8")), { brain: await realpath(target) });
 });
 

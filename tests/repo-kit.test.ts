@@ -203,7 +203,7 @@ test("repo kit check: a kit version other than 1 says it needs a newer brain", a
   assert.ok(result.json.data.problems.some((problem: { message: string }) => problem.message.includes("kit version 2 needs a newer brain")));
 });
 
-test("repo kit check: bytes that are not JSON give kit null and one problem at the root", async (context) => {
+test("repo kit check: bytes that are not JSON give kit null and one problem at the root; not a JSON object gives confirm_sha256 null and canonical false (CC-129)", async (context) => {
   const dir = await fixtureCopy(context);
   const bytes = "{ not json";
   const result = await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, bytes)]);
@@ -213,6 +213,12 @@ test("repo kit check: bytes that are not JSON give kit null and one problem at t
   assert.equal(result.json.data.problems.length, 1);
   assert.equal(result.json.data.problems[0].pointer, "");
   assert.ok(result.json.data.problems[0].message.startsWith("not JSON:"), result.json.data.problems[0].message);
+  for (const bytes of ["{ not json", "[1, 2]"]) {
+    const result = await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, bytes)]);
+    assert.equal(result.code, 0, result.stdout);
+    assert.equal(result.json.data.confirm_sha256, null, bytes);
+    assert.equal(result.json.data.canonical, false, bytes);
+  }
 });
 
 test("repo kit check --path reads <path>/brain-kit.json and hashes the bytes as they are on disk", async (context) => {
@@ -270,18 +276,11 @@ test("repo kit check: a project that belongs to another Area is a problem at /pl
   assert.ok(result.json.data.problems.some((problem: { pointer: string }) => problem.pointer === "/placement/project"), result.stdout);
 });
 
-test("repo kit check: a methodology file matched by never_read is a problem at /methodology/files/<n>", async (context) => {
+test("repo kit check: a methodology file or a task source path matched by never_read is a problem at /methodology/files/<n> or /tasks/source/path", async (context) => {
   const dir = await fixtureCopy(context);
-  const kit = makeKit({ methodology: { summary: "x", files: ["AGENTS.md", "secrets/plan.md"] } });
-  const result = await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, canon(kit))]);
-  assert.deepEqual(result.json.data.problems.map((problem: { pointer: string }) => problem.pointer), ["/methodology/files/1"]);
-});
-
-test("repo kit check: a task source path matched by never_read is a problem at /tasks/source/path", async (context) => {
-  const dir = await fixtureCopy(context);
-  const kit = makeKit({ tasks: tasksWith({ kind: "markdown", path: "secrets/TASKS.md", format: "checklist" }) });
-  const result = await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, canon(kit))]);
-  assert.deepEqual(result.json.data.problems.map((problem: { pointer: string }) => problem.pointer), ["/tasks/source/path"]);
+  const pointers = async (kit: any) => (await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, canon(kit))])).json.data.problems.map((problem: { pointer: string }) => problem.pointer);
+  assert.deepEqual(await pointers(makeKit({ methodology: { summary: "x", files: ["AGENTS.md", "secrets/plan.md"] } })), ["/methodology/files/1"]);
+  assert.deepEqual(await pointers(makeKit({ tasks: tasksWith({ kind: "markdown", path: "secrets/TASKS.md", format: "checklist" }) })), ["/tasks/source/path"]);
 });
 
 test("repo kit check: a pattern that does not compile, or has no title group, is a problem at /tasks/source/pattern", async (context) => {
@@ -324,30 +323,14 @@ test("repo kit check: a hand-formatted draft gives confirm_sha256 of the canonic
   assert.equal(again.json.data.sha256, again.json.data.confirm_sha256);
 });
 
-test("repo kit check: bytes that are not a JSON object give confirm_sha256 null and canonical false (CC-129)", async (context) => {
-  const dir = await fixtureCopy(context);
-  for (const bytes of ["{ not json", "[1, 2]"]) {
-    const result = await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, bytes)]);
-    assert.equal(result.code, 0, result.stdout);
-    assert.equal(result.json.data.confirm_sha256, null, bytes);
-    assert.equal(result.json.data.canonical, false, bytes);
+test("repo kit write: no --confirm is CONFIRMATION_REQUIRED, a wrong hash is CONFIRMATION_MISMATCH, and nothing is written", async (context) => {
+  const { write, file } = await writeCase(context);
+  for (const [extra, code] of [[[], "CONFIRMATION_REQUIRED"], [["--confirm", hash("something else")], "CONFIRMATION_MISMATCH"]] as const) {
+    const result = await write([...extra]);
+    assert.equal(result.code, 4, code);
+    assert.equal(result.json.error.code, code);
+    await assert.rejects(readFile(file));
   }
-});
-
-test("repo kit write: no --confirm is CONFIRMATION_REQUIRED and nothing is written", async (context) => {
-  const { write, file } = await writeCase(context);
-  const result = await write([]);
-  assert.equal(result.code, 4);
-  assert.equal(result.json.error.code, "CONFIRMATION_REQUIRED");
-  await assert.rejects(readFile(file));
-});
-
-test("repo kit write: a wrong hash is CONFIRMATION_MISMATCH and nothing is written", async (context) => {
-  const { write, file } = await writeCase(context);
-  const result = await write(["--confirm", hash("something else")]);
-  assert.equal(result.code, 4);
-  assert.equal(result.json.error.code, "CONFIRMATION_MISMATCH");
-  await assert.rejects(readFile(file));
 });
 
 test("repo kit write: writes the canonical bytes (2 spaces, §2.1 key order, trailing newline, non-ASCII as itself) and says what it wrote", async (context) => {
@@ -1024,23 +1007,17 @@ test("repo health: a repo folder that is gone gives PATH_MISSING alone and exit 
   assert.equal(result.checks[0].severity, "error");
 });
 
-test("repo health: a kit edited by hand is KIT_CHANGED (warning)", async (context) => {
-  const link = await linked(context);
-  await writeFile(join(link.repo.root, "brain-kit.json"), `${link.text}\n`);
-  const result = await healthOf(link);
-  const check = result.checks.find((entry) => entry.code === "KIT_CHANGED");
-  assert.equal(check?.severity, "warning");
-  assert.equal(result.code, 0, "warnings alone do not fail");
-});
-
-test("repo health: a kit that is not tracked, or differs from HEAD, is KIT_UNCOMMITTED (info)", async (context) => {
+test("repo health: a kit that is not tracked, or differs from HEAD, is KIT_UNCOMMITTED (info); edited by hand it is KIT_CHANGED (warning)", async (context) => {
   const untracked = await linked(context, { commitKit: false });
   const first = await healthOf(untracked);
   assert.equal(first.checks.find((entry) => entry.code === "KIT_UNCOMMITTED")?.severity, "info");
   const tracked = await linked(context);
   assert.ok(!codes((await healthOf(tracked)).checks).includes("KIT_UNCOMMITTED"));
   await writeFile(join(tracked.repo.root, "brain-kit.json"), `${tracked.text}\n`);
-  assert.ok(codes((await healthOf(tracked)).checks).includes("KIT_UNCOMMITTED"));
+  const edited = await healthOf(tracked);
+  assert.ok(codes(edited.checks).includes("KIT_UNCOMMITTED"));
+  assert.equal(edited.checks.find((entry) => entry.code === "KIT_CHANGED")?.severity, "warning");
+  assert.equal(edited.code, 0, "warnings alone do not fail");
 });
 
 test("repo health: KIT_MISSING and KIT_INVALID are errors and skip the checks that read the kit", async (context) => {
@@ -1235,9 +1212,9 @@ async function newCase(context: TestContext, kit: any = NEW_KIT()) {
 }
 const exists = (path: string) => readFile(path).then(() => true, () => false);
 
-test("repo new writes exactly the starter's files with the placeholders filled, and the kit with the starter set", async (context) => {
+test("repo new writes exactly the starter's files with the placeholders filled and the kit with the starter set, commits them once, and the repo can be linked", async (context) => {
   const kit = NEW_KIT();
-  const { create, target, confirm, expectedKit } = await newCase(context, kit);
+  const { create, target, confirm, expectedKit, dir } = await newCase(context, kit);
   const result = await create(["--confirm", confirm]);
   assert.equal(result.code, 0, result.stdout);
   const summary = kit.methodology.summary;
@@ -1256,12 +1233,7 @@ test("repo new writes exactly the starter's files with the placeholders filled, 
   assert.equal(result.json.data.sha256, confirm);
   assert.ok([target, await realpath(target)].includes(result.json.data.path_abs), result.json.data.path_abs);
   assert.equal(JSON.parse(await readFile(join(target, "brain-kit.json"), "utf8")).starter.version, VERSION);
-});
-
-test("repo new runs git init and makes one commit with the starter's message; the tree is clean", async (context) => {
-  const { create, target, confirm, dir } = await newCase(context);
-  const result = await create(["--confirm", confirm]);
-  assert.equal(result.code, 0, result.stdout);
+  // git init and one commit with the starter's message; the tree is clean; it doesn't link the repo.
   const git = async (...args: string[]) => (await exec("git", ["-C", target, ...args])).stdout.trim();
   assert.equal(await git("rev-list", "--count", "HEAD"), "1");
   assert.equal(await git("log", "-1", "--format=%s"), "Start from the Ultimate Brain generic starter");
@@ -1271,11 +1243,7 @@ test("repo new runs git init and makes one commit with the starter's message; th
   assert.deepEqual(result.json.warnings, []);
   assert.ok((await logOf(dir)).includes('repo-new - "acme-api"'));
   assert.equal((await readConfig(dir)).repos, undefined, "it doesn't link the repo");
-});
-
-test("repo new: the starter's kit passes repo kit check, and the repo can be linked with repo add --kit", async (context) => {
-  const { create, target, confirm, dir } = await newCase(context);
-  assert.equal((await create(["--confirm", confirm])).code, 0);
+  // The starter's kit passes repo kit check, and the repo can be linked with repo add --kit.
   const check = await run(dir, ["repo", "kit", "check", "--path", target]);
   assert.deepEqual(check.json.data.problems, []);
   assert.equal((await run(dir, ["repo", "add", "acme-api", "--path", target, "--kit"])).code, 0);

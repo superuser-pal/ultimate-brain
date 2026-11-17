@@ -301,10 +301,8 @@ test("--check passes on a vendored release and names the first failing reason; -
     assert.equal(result.code, 1, reason);
     assert.equal(result.stderr, `${MESSAGE(reason)}\n`);
   };
+  // One snapshot reason shows --check reports validateSnapshot's; skills-snapshot.test.ts covers each reason.
   await failing("file-mismatch: brain-apply/SKILL.md", (folder) => writeFile(join(folder, "brain-apply", "SKILL.md"), "edited\n"));
-  await failing("unlisted-entry: brain-apply/extra.md", (folder) => writeFile(join(folder, "brain-apply", "extra.md"), "added\n"));
-  await failing("unlisted-entry: .DS_Store", (folder) => writeFile(join(folder, ".DS_Store"), "x"));
-  await failing("manifest-missing", (folder) => rm(join(folder, "snapshot.json")));
   await failing("name ultimate-brain", async (folder) => {
     const manifest = buildManifest(folder, { name: "ultimate-brain", version: "0.9.1", cli: ">=0.9.1 <0.10.0", source: { repository: "https://www.npmjs.com/package/ultimate-brain" }, upstream: null });
     await writeFile(join(folder, "snapshot.json"), serializeManifest(manifest));

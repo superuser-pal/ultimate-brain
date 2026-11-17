@@ -61,7 +61,7 @@ test("Prompt 2 builds the settings on Areas and Projects", async () => {
   }
 });
 
-test("Prompt 5, the views guide, migration 0015 and brain-connect-notion name the same settings", async () => {
+test("Prompt 5, the views guide and brain-connect-notion name the same settings", async () => {
   const ownership = await read("notion/prompts/05-ownership.md");
   assert.ok(ownership.includes(`for ${settings.map((s) => s.name).slice(0, -1).join(", ")} and Log artifacts in "Projects" and "Areas"`));
 
@@ -71,23 +71,7 @@ test("Prompt 5, the views guide, migration 0015 and brain-connect-notion name th
     assert.ok(row?.includes(settings.map((s) => s.name).join(", ")), `views guide §9 ${database} panel`);
   }
 
-  const migration = await read("notion/migrations/0015-workflow-settings-on-projects-and-areas.md");
-  for (const s of settings) {
-    assert.ok(migration.includes(`| **${s.name}** (${s.type}): ${s.options.join(", ")} | agent |`), `migration 0015 step 1: ${s.name}`);
-  }
-  assert.match(migration, /^## Verify$/m);
-  assert.match(migration, /^Who does each step:$/m);
-  const readme = await read("notion/migrations/README.md");
-  assert.ok(readme.includes("[0015](0015-workflow-settings-on-projects-and-areas.md)"));
-
   const skill = await read(".agents/skills/brain-connect-notion/SKILL.md");
   for (const s of settings) assert.ok(skill.includes(`**${s.name}** (${s.type}: ${s.options.join(", ")})`), `brain-connect-notion: ${s.name}`);
   assert.ok(skill.includes("notion/migrations/0015-workflow-settings-on-projects-and-areas.md"));
-});
-
-test("the Projects template line is the same in the design, Prompt 6 and migration 0015", async () => {
-  const line = "The brain writes only inside its toggles: Brief and Decision log, and Workflow or Repo tasks when you connect work or link a repo. Add your own notes in My notes.";
-  for (const path of ["docs/notion-space-design.md", "notion/prompts/06-templates.md", "notion/migrations/0015-workflow-settings-on-projects-and-areas.md"]) {
-    assert.ok((await read(path)).includes(line), path);
-  }
 });

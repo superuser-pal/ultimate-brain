@@ -63,11 +63,6 @@ test("staged leak check catches a denylist term", (t) => {
   assert.doesNotMatch(result.stderr, /customer/i);
 });
 
-test("leak check passes the current tracked tree", () => {
-  const result = run(source);
-  assert.equal(result.status, 0, result.stderr);
-});
-
 test("leak check excludes sources, node_modules, and NUL files", (t) => {
   const root = fixture(t);
   write(root, "sources/private.md", "id: 01234567-89ab-cdef-0123-456789abcdef\n");

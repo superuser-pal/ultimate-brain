@@ -67,9 +67,11 @@ async function logSetup(target: string, now: string, pairs: string[]): Promise<v
   assert.equal(result.code, 0, result.stdout);
 }
 
-async function status(target: string, home: string): Promise<{ data: any; human: string }> {
+/** `brain status --json`, plus the human form only when a test reads it (`withHuman`): each run starts the CLI. */
+async function status(target: string, home: string, withHuman = false): Promise<{ data: any; human: string }> {
   const json = await brain(["status", "--brain", target, "--json"], home);
   assert.equal(json.code, 0, json.stdout);
+  if (!withHuman) return { data: json.json.data, human: "" };
   const human = await brain(["status", "--brain", target], home);
   assert.equal(human.code, 0, human.stderr);
   return { data: json.json.data, human: human.stdout };
@@ -139,6 +141,7 @@ test("config accepts notion.template_version as four digits and the three setup 
   }
   const config = JSON.parse(await readFile(join(target, "brain.json"), "utf8"));
   assert.equal(config.notion.template_version, "0024");
+  assert.equal((await status(target, home)).data.setup.template_version, "0024", "status reports a set template version as its value (setup.md §9)");
   assert.deepEqual([config.settings.markitdown, config.settings.gh, config.settings.schedule], ["off", "off", "off"]);
   const lint = await brain(["lint", "--brain", target, "--json"], home);
   assert.equal(lint.json.data.issues.filter((issue: { rule: string }) => issue.rule === "brain-config").length, 0, lint.stdout);
@@ -171,7 +174,7 @@ test("lint accepts an area's track list of 1 to 8 short lowercase phrases and re
 
 test("status on a fresh brain: no check passes, nothing recorded, template version unknown, next is the Git identity (cli.md §5.2)", async (context) => {
   const { home, target } = await freshBrain(context);
-  const { data, human } = await status(target, home);
+  const { data, human } = await status(target, home, true);
   assert.deepEqual(data.setup, {
     checks: { git_identity: false, remote: false, databases: false, drop_folder: false, language: false, owner_person: false },
     recorded: { "notion-mcp": null, "minutes-prompt": null, "brain-assistant": null, seeding: null, "first-value": null, schedule: null },
@@ -189,7 +192,7 @@ test("status on a fresh brain: no check passes, nothing recorded, template versi
 test("status counts each check and recorded step, and next walks setup's order (setup.md §2, §5)", async (context) => {
   const { home, target } = await freshBrain(context);
   const expectNext = async (next: string | null, done: number, what: string | null) => {
-    const { data, human } = await status(target, home);
+    const { data, human } = await status(target, home, true);
     assert.equal(data.setup.next, next);
     assert.deepEqual(data.setup.required, { done, total: 9 });
     assert.equal(human.split("\n")[0], `Setup: ${done} of 9 done · ${what === null ? "" : `next: ${what} · `}${SET_UP}`);
@@ -232,7 +235,7 @@ test("status counts each check and recorded step, and next walks setup's order (
   assert.equal(setup.finished, false);
 
   await logSetup(target, "2026-12-10T10:00:00Z", ["step=finished", "result=done"]);
-  const done = await status(target, home);
+  const done = await status(target, home, true);
   assert.equal(done.data.setup.finished, true);
   assert.deepEqual([done.data.setup.next, done.data.setup.required], [null, { done: 9, total: 9 }]);
   assert.equal(done.human.split("\n")[0], "Owner: Test Owner");
@@ -260,7 +263,7 @@ async function brainAtFirstValue(context: TestContext): Promise<{ home: string; 
 test("first value is recorded only by a passing line: a result=done line with a failed or missing check is unresolved (setup.md §5, §10; cli.md §5.2)", async (context) => {
   const { home, target } = await brainAtFirstValue(context);
   const expectUnresolved = async (firstValue: unknown) => {
-    const { data, human } = await status(target, home);
+    const { data, human } = await status(target, home, true);
     assert.equal(data.setup.recorded["first-value"], null);
     assert.equal(data.setup.next, "first-value");
     assert.deepEqual(data.setup.first_value, firstValue);
@@ -288,7 +291,7 @@ test("first value is recorded only by a passing line: a result=done line with a 
 
   // A later passing line resolves it, and next moves to the schedule.
   await logSetup(target, "2026-12-10T10:30:00Z", ["step=first-value", "result=done", "tasks=pass", "report=pass", "organised=pass", "answer=pass"]);
-  let { data, human } = await status(target, home);
+  let { data, human } = await status(target, home, true);
   assert.equal(data.setup.recorded["first-value"], "2026-12-10T10:30:00Z");
   assert.equal(data.setup.next, "schedule");
   assert.deepEqual(data.setup.first_value, { at: "2026-12-10T10:30:00Z", tasks: "pass", report: "pass", organised: "pass", answer: "pass" });
@@ -349,7 +352,7 @@ test("without Notion AI, status counts 7 required items and leaves the minutes p
   // The latest prerequisites line decides; a minutes-prompt or brain-assistant line then counts for nothing.
   await logSetup(target, "2026-12-10T09:11:00Z", ["step=prerequisites", "result=done", "notion_ai=no", "custom_agents=no"]);
   await logSetup(target, "2026-12-10T09:20:00Z", ["step=brain-assistant", "result=done"]);
-  ({ data, human } = await status(target, home));
+  ({ data, human } = await status(target, home, true));
   assert.deepEqual(data.setup.required, { done: 6, total: 7 });
   assert.equal(data.setup.next, "owner_person");
   assert.equal(human.split("\n")[0], `Setup: 6 of 7 done · next: set your identities · ${SET_UP}`);
@@ -503,7 +506,7 @@ test("a brain connected before 0.14.0, with no setup line, is finished: no setup
     config.notion.databases.inbox = DB(1);
     config.notion.databases.documents = DB(2);
   });
-  const { data, human } = await status(target, tmpdir());
+  const { data, human } = await status(target, tmpdir(), true);
   assert.equal(data.setup.finished, true);
   assert.equal(data.setup.template_version, null);
   assert.equal(data.setup.checks.databases, true);
@@ -513,15 +516,9 @@ test("a brain connected before 0.14.0, with no setup line, is finished: no setup
 
   // The same brain once "set up my brain" has run on it: its setup lines decide, until a finished line.
   await logSetup(target, "2026-12-10T09:00:00Z", ["step=started", "result=done"]);
-  const started = await status(target, tmpdir());
+  const started = await status(target, tmpdir(), true);
   assert.equal(started.data.setup.finished, false);
   assert.match(started.human.split("\n")[0]!, /^Setup: \d of 9 done · next: /);
-});
-
-test("status reports a set template version as its value (setup.md §9)", async (context) => {
-  const { home, target } = await freshBrain(context);
-  await editConfig(target, (config) => { config.notion.template_version = "0024"; });
-  assert.equal((await status(target, home)).data.setup.template_version, "0024");
 });
 
 // --- upgrade: the Notion migrations newer than the template (cli.md §5.15, setup.md §9) ---

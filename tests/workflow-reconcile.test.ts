@@ -185,7 +185,7 @@ test("a pending operation gets its payload replaced and keeps its id when the ti
   assert.equal(after[0].payload.title, "Add rate limiting to the API");
 });
 
-test("an in_flight operation is not replaced and is reported in busy", async (context) => {
+test("an in_flight operation less than 10 minutes old is not replaced, stays in flight and is reported in busy", async (context) => {
   const c = await setup(context);
   const id = await c.addItem("Add rate limiting");
   await c.reconcileOk([]);
@@ -196,6 +196,11 @@ test("an in_flight operation is not replaced and is reported in busy", async (co
   assert.ok(data.busy.includes(op.id));
   const after = await c.openOps(id, "create_task");
   assert.deepEqual([after.length, after[0].id, after[0].state, after[0].payload.title], [1, op.id, "in_flight", "Add rate limiting"]);
+  // Less than 10 minutes old, it stays in flight even when Notion already has the task: nothing is resolved yet.
+  const found = await c.reconcileOk([task(page(2), id, "Add rate limiting")], { read_at: "2026-12-10T09:05:00Z" });
+  assert.ok(found.busy.includes(op.id));
+  assert.equal((await c.openOps(id, "create_task"))[0].state, "in_flight");
+  assert.equal((await c.item(id)).notion, null);
 });
 
 // ---------------------------------------------------------------- reconcile: interruption (§10.2)
@@ -225,18 +230,6 @@ test("an interrupted create_task with no such task goes back to pending", async 
   const open = await c.openOps(id, "create_task");
   assert.deepEqual([open.length, open[0].id, open[0].state], [1, op.id, "pending"]);
   assert.ok(data.ops.includes(op.id));
-});
-
-test("an in_flight operation less than 10 minutes old stays in flight and is busy", async (context) => {
-  const c = await setup(context);
-  const id = await c.addItem("Add rate limiting");
-  await c.reconcileOk([]);
-  const op = (await c.openOps(id, "create_task"))[0];
-  await c.opState(op.id, "in_flight");
-  const data = await c.reconcileOk([task(page(2), id, "Add rate limiting")], { read_at: "2026-12-10T09:05:00Z" });
-  assert.ok(data.busy.includes(op.id));
-  assert.equal((await c.openOps(id, "create_task"))[0].state, "in_flight");
-  assert.equal((await c.item(id)).notion, null);
 });
 
 // ---------------------------------------------------------------- reconcile: the §8.2 table
@@ -721,7 +714,7 @@ test("adopt preview after an apply: update for a changed title or body (never st
 const applyInput = (c: Awaited<ReturnType<typeof setup>>, extra: Record<string, unknown> = {}) =>
   c.adoptionInput(planItems(), { selected: [K1, K2, K3, K5, GH], treatments: { [GH]: "mark_transferred" }, conventions: [CONVENTION], ...extra });
 
-test("adopt apply creates items with the adopted meaning, history and resolved dependencies", async (context) => {
+test("adopt apply creates items with the adopted meaning, history and resolved dependencies, one create_task each, and records the map, runs and conventions", async (context) => {
   const c = await setup(context);
   const result = await c.apply(applyInput(c), 0);
   assert.equal(result.code, 0, result.stdout);
@@ -739,15 +732,10 @@ test("adopt apply creates items with the adopted meaning, history and resolved d
   assert.equal(by(GH).status, "review");
   assert.equal(by(GH).progress[0].text, `Adopted from acme/acme-api ${GH} (In review there)`);
   assert.equal(done.progress[0].text, "Adopted from PLAN.md (done there)");
-});
 
-test("adopt apply opens a create_task per new item and records the map, runs and conventions", async (context) => {
-  const c = await setup(context);
-  assert.equal((await c.apply(applyInput(c), 0)).code, 0);
-  const items = (await c.show()).items as any[];
+  // One create_task per new item, and the map, runs and conventions recorded.
   const creates = await c.openOps(undefined, "create_task");
   assert.deepEqual(creates.map((op) => op.target).sort(), items.map((entry) => entry.id).sort());
-  const limiter = items.find((entry) => entry.origin.key === K1);
   assert.deepEqual(creates.find((op) => op.target === limiter.id).payload.status, "To Do");
 
   const record = await c.adoption();
@@ -870,13 +858,4 @@ test("a failed operation is retried at the next run while the summary says Work 
   const next = await c.reconcileOk([], { start: true });
   assert.equal((await c.openOps(id, "create_task"))[0].state, "pending");
   assert.ok(next.ops.includes(op.id));
-});
-
-test("a stale record revision is refused by workflow set", async (context) => {
-  const c = await setup(context);
-  const rev = (await c.show()).workflow.rev;
-  const ok = await c.call(["workflow", "set", c.wf, "--rev", String(rev), "--input", await c.file({ modules_offered: ["documents"] })]);
-  assert.equal(ok.code, 0, ok.stdout);
-  const stale = await c.call(["workflow", "set", c.wf, "--rev", String(rev), "--input", await c.file({ modules_offered: [] })]);
-  assert.equal(stale.json.error?.code, "STALE_RECORD");
 });

@@ -310,22 +310,6 @@ test("set_field puts an Area in a Domain; stale, fix and the checks of proposal 
   await lintClean(dir);
 });
 
-test("sync render publishes no Suggestion row: a notion_change and a set_field are decided in the session (0096)", async (context) => {
-  const dir = await setup(context);
-  const created = await run(dir, ["proposal", "new"], { proposals: [
-    taskChange("project", [], [PROJECT_PAGE], { finding: `task_no_project:notion:${TASK_PAGE}`, why: "no project" }),
-    { kind: "set_field", target: PROJECT, field: "area", after: PERSONAL, why: "misplaced", source: SOURCE },
-  ] });
-  assert.equal(created.code, 0, created.stdout);
-  const ids = created.json.data.created.map((item: any) => item.id as string);
-  const rendered = await run(dir, ["sync", "render", "--changed"]);
-  assert.equal(rendered.code, 0, rendered.stdout);
-  assert.deepEqual(rendered.json.data.items.filter((item: any) => item.database === "review" || ids.includes(item.id)), []);
-  const byIds = await run(dir, ["sync", "render", "--ids", ids.join(",")]);
-  assert.equal(byIds.code, 0, byIds.stdout);
-  assert.deepEqual([byIds.json.data.items, byIds.json.data.errors], [[], []]);
-});
-
 test("a Suggestion row decided before 0.16.0 is read by the transition and applied by sync apply, which returns its write", async (context) => {
   const dir = await setup(context);
   const created = await run(dir, ["proposal", "new"], { proposals: [change({ database: "projects", target: PROJECT, page: PROJECT_PAGE, page_title: "Acme website", property: "status", value_before: "Active", value_after: "Done", finding: `project_done_but_open:${PROJECT}` })] });

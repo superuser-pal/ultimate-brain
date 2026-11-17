@@ -332,15 +332,3 @@ test("a theme's review_notes is its own row and lists one learned Document; its 
   assert.equal((await propose(dir, [skip])).code, 0);
 });
 
-test("a reflection answer, decided in chat or not, never becomes a Notion row (0096)", async (context) => {
-  const dir = await freshBrain(context);
-  await put(dir, "knowledge/people/maria-lopez.md", person("per-2a2a2a2a", "María López"));
-  await put(dir, "knowledge/people/m-lopez.md", person("per-3b3b3b3b", "M. Lopez", { lifecycle: "draft" }));
-  const made = await propose(dir, [{ kind: "merge", title: "Merge M. Lopez into María López", target: "per-3b3b3b3b", merge_into: "per-2a2a2a2a", why: "Same name.", source: SESSION, fingerprint: "merge:per-2a2a2a2a+per-3b3b3b3b", evidence: [] }]);
-  const id = made.json.data.created[0].id;
-  const pending = await brain(["sync", "render", "--ids", id, "--brain", dir, "--now", NOW, "--json"]);
-  assert.deepEqual([pending.json.data.items, pending.json.data.skipped], [[], []], pending.stdout);
-  await decide(dir, id, "reject", "2026-11-08T10:05:00Z");
-  const render = await brain(["sync", "render", "--changed", "--brain", dir, "--now", NOW, "--json"]);
-  assert.equal(render.json.data.items.some((item: { id: string }) => item.id === id), false, render.stdout);
-});

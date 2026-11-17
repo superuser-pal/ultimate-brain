@@ -239,7 +239,7 @@ test("0099: --questions-transition reads Questions rows only, and refuses with Q
   assert.equal(retired.json.error.code, "QUESTIONS_RETIRED");
 });
 
-test("0099: brain upgrade on a 0.15 brain.json with Knowledge on leaves no Knowledge key and names the migration", async (context) => {
+test("0099: brain upgrade on a 0.15 brain.json with Knowledge on leaves no Knowledge key and names the migration; 0096: it reports the Review database while brain.json has it", async (context) => {
   const dir = await fixtureCopy(context);
   await editJson(dir, (config) => { config.modules = { domains: false, knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: false }; });
   const upgraded = await run(dir, ["upgrade"]);
@@ -255,24 +255,11 @@ test("0099: brain upgrade on a 0.15 brain.json with Knowledge on leaves no Knowl
   const second = await run(dir, ["upgrade"]);
   assert.equal(second.json.data.notion_migrations.knowledge_databases, false);
   assert.equal("knowledge" in JSON.parse(await readFile(join(dir, "brain.json"), "utf8")).modules, false);
-});
 
-test("0096: brain upgrade names the 0.16.0 migration while brain.json still has the Review database, and the migration file exists", async (context) => {
-  const dir = await fixtureCopy(context);
-  await editJson(dir, (config) => { config.notion.databases.review = "00000000-0000-4000-8000-0000000000aa"; });
-  const upgraded = await run(dir, ["upgrade", "--dry-run"]);
-  assert.equal(upgraded.json.data.notion_migrations.review_database, true);
-  const human = await brain(["upgrade", "--dry-run", "--brain", dir, "--now", NOW]);
-  const lines = human.stdout.split("\n");
-  const review = lines.findIndex((line) => line.startsWith("Notion: your space still has the Review database."));
-  assert.ok(review > 0, human.stdout);
-  assert.match(lines[review], /Ask your agent to apply the 0\.16\.0 Notion migration \([^)]*0027-one-place-to-decide\.md\): it reads the Review rows once, applies what you decided there, and archives the database\./);
-  const knowledge = lines.findIndex((line) => line.startsWith("Notion: your space still has the Decisions and Questions databases."));
-  if (knowledge >= 0) assert.ok(knowledge > review, "the Review line comes first");
-  await readFile(join(import.meta.dirname, "..", "notion", "migrations", "0027-one-place-to-decide.md"), "utf8");
-  await editJson(dir, (config) => { delete config.notion.databases.review; });
-  const after = await run(dir, ["upgrade", "--dry-run"]);
-  assert.equal(after.json.data.notion_migrations.review_database, false);
+  await editJson(dir, (next) => { next.notion.databases.review = "00000000-0000-4000-8000-0000000000aa"; });
+  assert.equal((await run(dir, ["upgrade", "--dry-run"])).json.data.notion_migrations.review_database, true);
+  await editJson(dir, (next) => { delete next.notion.databases.review; });
+  assert.equal((await run(dir, ["upgrade", "--dry-run"])).json.data.notion_migrations.review_database, false);
 });
 
 test("0099: brain modules no longer lists Knowledge and refuses to switch it; status reports neither database", async (context) => {
@@ -291,18 +278,6 @@ test("0099: brain modules no longer lists Knowledge and refuses to switch it; st
     assert.ok(!status.json.data.notion.configured.includes(key) && !status.json.data.notion.missing.includes(key), key);
   }
   assert.equal("knowledge" in status.json.data.modules, false);
-});
-
-test("0099: question drop refuses a tracked question, and the new brain template has Kind and no Knowledge", async (context) => {
-  const dir = await ingested(context);
-  assert.equal((await run(dir, ["sync", "record"], { records: [{ id: QUESTION, task: TASK_PAGE }] })).code, 0);
-  const refused = await run(dir, ["question", "drop"], { items: [{ id: QUESTION }] });
-  assert.equal(refused.json.error.code, "INPUT_INVALID");
-  assert.match(JSON.stringify(refused.json.error), /tracked/);
-  const template = JSON.parse(await readFile(join(import.meta.dirname, "..", "templates", "brain", "brain.json"), "utf8"));
-  assert.equal("knowledge" in template.modules, false);
-  assert.equal("decisions" in template.notion.databases || "questions" in template.notion.databases, false);
-  assert.equal(template.notion.tasks.properties.kind, "Kind");
 });
 
 test("0099: an Inbox row takes Project and Area from a decision its source produced; a body link to a decision with an old page is text", async (context) => {

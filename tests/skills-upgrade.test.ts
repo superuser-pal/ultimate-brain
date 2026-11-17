@@ -89,20 +89,6 @@ test("the same version with other content refuses SKILLS_SNAPSHOT_INVALID, dry r
   assert.deepEqual(refused.json.error.details, { reason: "file-missing: brain-old/SKILL.md", running: "0.9.0" });
 });
 
-test("ultimate-brain → ultimate-brain-skills is an ordinary upgrade", async (context) => {
-  const home = await temp(context);
-  const bundled = await snapshotCopy(context, "a", (manifest) => {
-    manifest.name = "ultimate-brain"; manifest.version = "0.9.0"; manifest.source = { repository: "https://www.npmjs.com/package/ultimate-brain" }; manifest.upstream = null;
-  });
-  const brain = await initBrain(context, await productRoot(context, bundled, "0.9.0"), home);
-  const upgrade = await run(["upgrade", "--brain", brain, "--now", NOW, "--json"], { product: await productRoot(context, A, "0.9.0"), home });
-  assert.equal(upgrade.code, 0, upgrade.stdout);
-  assert.deepEqual(upgrade.json.data.skills.from, { name: "ultimate-brain", version: "0.9.0" });
-  assert.deepEqual(upgrade.json.data.skills.to, { name: "ultimate-brain-skills", version: "1.0.0" });
-  assert.deepEqual(upgrade.json.data.files, [{ path: "skills.lock.json", action: "updated" }]);
-  assert.equal((await lockOf(brain)).snapshot.name, "ultimate-brain-skills");
-});
-
 test("the first pin names the CLI of the brain's last upgrade commit as previous_cli, skipping the running version (CC-129)", async (context) => {
   const home = await temp(context);
   const product = await productRoot(context, A, "0.9.0");

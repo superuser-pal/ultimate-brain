@@ -30,16 +30,6 @@ function captureIo(): { io: CliIo; stdout: string[]; stderr: string[] } {
   };
 }
 
-test("prints help from the executable entry point", () => {
-  const result = spawnSync(process.execPath, ["--experimental-strip-types", "src/cli.ts", "--help"], {
-    encoding: "utf8",
-  });
-
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, HELP_TEXT);
-  assert.equal(result.stderr, "");
-});
-
 test("prints help when invoked through a symlinked bin", async (context) => {
   const directory = await mkdtemp(join(tmpdir(), "brain-cli-"));
   context.after(() => rm(directory, { recursive: true, force: true }));
@@ -48,6 +38,7 @@ test("prints help when invoked through a symlinked bin", async (context) => {
   const result = spawnSync(process.execPath, ["--experimental-strip-types", bin, "--help"], { encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout, HELP_TEXT);
+  assert.equal(result.stderr, "");
 });
 
 test("routes a subcommand and its arguments", async () => {

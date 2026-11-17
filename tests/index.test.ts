@@ -7,14 +7,6 @@ import { buildIndex } from "../src/lib/index-builder.ts";
 import type { Note } from "../src/lib/notes.ts";
 import { brain, fixtureCopy, FIXTURE_BRAIN } from "./helpers.ts";
 
-test("the fixture brain's index.md is exactly what brain index produces", async () => {
-  const run = await brain(["index", "--check", "--brain", FIXTURE_BRAIN, "--json"]);
-  assert.equal(run.code, 0, run.stdout);
-  assert.equal(run.json.ok, true);
-  assert.equal(run.json.data.stale, false);
-  assert.equal(run.json.data.written, false);
-});
-
 test("brain index rewrites a stale index and is byte-stable on re-run", async (context) => {
   const dir = await fixtureCopy(context);
   const expected = await readFile(join(dir, "index.md"), "utf8");
@@ -33,6 +25,10 @@ test("brain index rewrites a stale index and is byte-stable on re-run", async (c
   const second = await brain(["index", "--brain", dir, "--json"]);
   assert.equal(second.json.data.written, false);
   assert.equal(await readFile(join(dir, "index.md"), "utf8"), expected);
+
+  const fresh = await brain(["index", "--check", "--brain", dir, "--json"]);
+  assert.equal(fresh.code, 0, fresh.stdout);
+  assert.deepEqual([fresh.json.ok, fresh.json.data.stale, fresh.json.data.written], [true, false, false]);
 });
 
 test("brain index --json lists every note and computed backlinks", async () => {

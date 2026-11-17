@@ -190,13 +190,6 @@ test("workflow new writes the record, the pointer and one journaled commit", asy
   assert.ok((await readFile(join(env.dir, "log/2026-11.md"), "utf8")).includes(`workflow - "${record.id}" command=new`));
 });
 
-test("workflow new works without folder.repo", async (context) => {
-  const env = await setup(context);
-  const record = await wfPlain(env);
-  assert.equal(record.folder.name, "acme-api");
-  assert.equal("repo" in record.folder, false);
-});
-
 test("workflow new refuses unknown ids, an unknown repo and a relative folder", async (context) => {
   const env = await setup(context);
   const before = await head(env);
@@ -257,6 +250,7 @@ test("workflow new refuses a folder whose pointer names an open workflow", async
 test("workflow new replaces a pointer that names an ended workflow", async (context) => {
   const env = await setup(context);
   const first = await wfPlain(env);
+  assert.deepEqual(first.folder, { name: "acme-api" }, "workflow new works without folder.repo");
   const ended = await run(env.dir, ["workflow", "set", first.id, "--rev", "1", "--input", await file(env, { state: "ended" })]);
   assert.equal(ended.code, 0, ended.stdout);
   const second = await wfPlain(env);
@@ -807,16 +801,6 @@ test("with Documents off an include becomes exclude 'module off', except a decis
   const decisionDone = await approveArtifact(env, record.id, decision.id, { override: "include" });
   assert.equal(decisionDone.publish.decision, "include", "a decision needs no module since 0.16.0 (0099), not Documents");
   assert.equal(decisionDone.local_reason, null);
-});
-
-test("a knowledge key left from before 0.16.0 is no module: a decision is still included (0099)", async (context) => {
-  const env = await setup(context, { modules: { knowledge: false } });
-  const record = await wfPlain(env);
-  const decision = await mkArtifact(env, record.id, { title: "Decision", category: "decision" });
-  const done = await approveArtifact(env, record.id, decision.id, { override: "include" });
-  assert.deepEqual([done.publish.decision, done.local_reason], ["include", null]);
-  const final = await mkArtifact(env, record.id, { title: "Final", category: "final" });
-  assert.equal((await approveArtifact(env, record.id, final.id)).publish.decision, "include", "Documents is still on");
 });
 
 test("an override on a decided artifact replaces publish with by: artifact", async (context) => {

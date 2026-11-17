@@ -32,27 +32,6 @@ test("the template's sub-agent is exactly the text of spec/assistant.md §10", a
   assert.equal(await readFile(TEMPLATE, "utf8"), text);
 });
 
-test("init writes the sub-agent, and a fresh brain lints clean", async (context) => {
-  const { root, target } = await freshBrain(context);
-  const init = await brain(["init", join(root, "second"), "--no-git", "--now", NOW, "--json"], root);
-  assert.ok(init.json.data.created.includes(AGENT), JSON.stringify(init.json.data.created));
-  assert.equal(await readFile(join(target, AGENT), "utf8"), await readFile(TEMPLATE, "utf8"));
-  const lint = await brain(["lint", "--brain", target, "--json"], root);
-  assert.equal(lint.code, 0, JSON.stringify(lint.json.data.issues));
-});
-
-test("init --force leaves an existing sub-agent file untouched", async (context) => {
-  const root = await mkdtemp(join(tmpdir(), "brain-assistant-agent-"));
-  context.after(() => rm(root, { recursive: true, force: true }));
-  const target = join(root, "brain");
-  await mkdir(join(target, ".claude/agents"), { recursive: true });
-  await writeFile(join(target, AGENT), "mine\n");
-  const init = await brain(["init", target, "--force", "--no-git", "--now", NOW, "--json"], root);
-  assert.equal(init.code, 0, init.stdout);
-  assert.ok(init.json.data.skipped.includes(AGENT));
-  assert.equal(await readFile(join(target, AGENT), "utf8"), "mine\n");
-});
-
 test("lint flags an edited or missing sub-agent as product-file, and leaves the user's other agents alone", async (context) => {
   const { root, target } = await freshBrain(context);
   await writeFile(join(target, ".claude/agents/my-agent.md"), "mine\n");

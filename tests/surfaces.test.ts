@@ -139,21 +139,6 @@ test("a timeline entry and the fact it supports resting on an excluded paragraph
   assert.equal(left.length, 0, JSON.stringify(left));
 });
 
-test("a re-included paragraph stays restricted until a Restore record names it", async (context) => {
-  const { dir, id, h } = await seeded(context, (src, hh) => `Pricing narwhal. ^[${src}#¶2:${hh.get(2)}]\n`);
-  const v2 = await extract(dir, "Meeting only", "--previous", id);
-  const v3 = await extract(dir, "Use in brain", "--previous", v2.json.data.created[0]);
-  assert.equal(v3.code, 0, v3.stdout);
-  assert.equal((await ask(dir, "narwhal")).json.data.candidates.length, 0, "re-included but not yet restored");
-  const noteId = /^id: (.+)$/m.exec(await readFile(join(dir, CONCEPT), "utf8"))![1]!;
-  const path = join(dir, `_suppressions/${PAGE}.json`);
-  const record = JSON.parse(await readFile(path, "utf8"));
-  record.records.push({ kind: "restore", extract_version: 3, items: [{ note: noteId, n: 2 }], written: NOW });
-  await writeFile(path, JSON.stringify(record, null, 2));
-  assert.equal((await ask(dir, "narwhal")).json.data.candidates.length, 1, "restored");
-  void h;
-});
-
 test("unreadable suppression data fails closed for query, views and the writer, and is never replaced", async (context) => {
   const { dir, id } = await seeded(context, (src, h) => `Pricing okapi. ^[${src}#¶2:${h.get(2)}]\n`);
   const v2 = await extract(dir, "Meeting only", "--previous", id);

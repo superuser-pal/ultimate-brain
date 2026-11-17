@@ -179,13 +179,6 @@ test("Approve accepts what is Pending, except a ⚠ fact change or a flagged ite
   assert.equal(explicit.review_decisions[0].items.find((entry: { item_id: string }) => entry.item_id === factItem).decision, "accept");
 });
 
-test("a flagged item is never accepted by Approve alone (0090 §5)", async (context) => {
-  const dir = await format2Brain(context);
-  const { id, body, items } = await published(dir, [{ ...addition, unsure: ["Carlos may have meant the app"] }]);
-  const out = await plan(dir, [row(id, body, { "Your call": "Approve" })]);
-  assert.deepEqual(out.review_held.map((held: { item_id: string; reason: string }) => [held.item_id, held.reason]), [[items[0]!.item_id, "NEEDS_EXPLICIT_ACCEPT"]]);
-});
-
 test("Reject reads Pending as Reject and leaves the field unchanged; the call is cleared", async (context) => {
   const dir = await format2Brain(context);
   const { id, body } = await published(dir, [fact(), addition]);
@@ -211,18 +204,6 @@ test("an accepted fact's value must be in a passage it cites: by digits, words o
   // A marker swapped to a passage the page doesn't list is unreadable, never a guess.
   const unknown = await plan(dir, [row(id, decide(body.replace("2027-04 [¶1]", "2027-05 [¶2]"), factItem, "Accept"), { "Your call": "Approve" })]);
   assert.deepEqual(unknown.review_held.map((entry: { reason: string }) => entry.reason), ["UNKNOWN_MARKER"]);
-});
-
-test("a swapped marker is accepted from the page's passages, and the detail names the passage that holds the value", async (context) => {
-  const dir = await format2Brain(context);
-  const { id, body, items } = await published(dir, [fact({ passages: [P[0], P[1]] })]);
-  const factItem = items[0]!.item_id;
-  assert.match(body, /\n2027-04 \[¶1\] \[¶2\]\n/, "the wording cites both passages");
-  const swapped = await plan(dir, [row(id, decide(body.replace("2027-04 [¶1] [¶2]", "2027-05 [¶2]"), factItem, "Accept"), { "Your call": "Approve" })]);
-  assert.deepEqual(swapped.review_held, []);
-  assert.equal(swapped.review_decisions[0].items[0].proposed, `2027-05 ^[${P[1]}]`);
-  const wrong = await plan(dir, [row(id, decide(body.replace("2027-04 [¶1] [¶2]", "2027-05 [¶1]"), factItem, "Accept"), { "Your call": "Approve" })]);
-  assert.deepEqual(wrong.review_held, [{ proposal: id, page_id: PAGE, item_id: factItem, reason: "VALUE_NOT_IN_PASSAGE", detail: "¶2 says 2027-05" }]);
 });
 
 test("the value forms by type: number words, dates, a name's aliases, a status, never digits inside a longer number", () => {

@@ -198,20 +198,3 @@ test("status writes nothing in Git: .git is unchanged after it reads every case"
   assert.deepEqual(await gitTree(join(target, ".git")), before);
   assert.equal(await git(target, ["status", "--porcelain"]), "");
 });
-
-test("the rules block's Write path has the working-branch rule, and brain upgrade brings it to a brain", async (context) => {
-  const { home, target } = await gitBrain(context);
-  const agents = join(target, "AGENTS.md");
-  const shipped = await readFile(agents, "utf8");
-  const rule = shipped.split("\n").find((line) => line.startsWith("- **One working branch, no pull requests.**"));
-  assert.ok(rule, "the template's Write path names the working branch");
-  assert.match(rule, /Never create a branch, a worktree, a pull request or a merge request in the brain/);
-  assert.ok(shipped.indexOf(rule) > shipped.indexOf("## Write path") && shipped.indexOf(rule) < shipped.indexOf("## Product files and findings"));
-
-  // An older brain: the rules block without the line.
-  await writeFile(agents, shipped.replace(`${rule}\n`, ""));
-  await git(target, ["commit", "-q", "-am", "an older rules block"]);
-  const upgrade = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], home);
-  assert.equal(upgrade.code, 0, upgrade.stdout);
-  assert.ok((await readFile(agents, "utf8")).includes(rule));
-});

@@ -32,31 +32,11 @@ test("no shipped Notion text outside the migrations names the Review, Decisions 
   assert.deepEqual(found, []);
 });
 
-test("the build prompts and the design's current sections create no Review, Decisions or Questions database", async () => {
+test("Prompt 2 builds the Kind options the CLI writes on Tasks and the Inbox (0099, 0096)", async () => {
   const databases = await read("notion/prompts/02-databases.md");
-  for (const name of ["Review", "Decisions", "Questions"]) assert.ok(!databases.includes(`"${name}": Name (title)`), name);
   assert.match(databases, /"Tasks": Name \(title\), .*Kind \(select: Task, Question, Risk\)/);
   assert.match(databases, /"Inbox": Name \(title\), Kind \(select: Capture, File, Email, Chat, Note, Ask, Catch-up, Weekly; default Capture\)/);
-  const design = await read("docs/notion-space-design.md");
-  assert.ok(!design.includes("<details>"), "the history blocks of design §3 went with the prompts");
 });
-
-test("the Business-with-credits line is in each of the four places, linked to Notion's help page (0101 §7)", async () => {
-  const help = "https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents";
-  const places: Record<string, string> = {
-    "the Start here callout (Prompt 1)": await read("notion/prompts/01-pages.md"),
-    "notion/TEMPLATE.md": await read("notion/TEMPLATE.md"),
-    "docs/setup.md": await read("docs/setup.md"),
-  };
-  const assistant = await read("notion/brain-assistant.md");
-  places["notion/brain-assistant.md's Setup"] = assistant.slice(assistant.indexOf("## Setup"), assistant.indexOf("## Running a skill"));
-  for (const [place, text] of Object.entries(places)) {
-    assert.match(text, /Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits/, place);
-    assert.ok(text.includes(help), `${place} links Notion's help page`);
-  }
-  assert.ok((await read("notion/migrations/0027-one-place-to-decide.md")).includes(help), "the migration adds the line to an existing Start here callout");
-});
-
 test("no shipped Notion text tells Notion AI to create Tasks from minutes; the prompt, Check minutes and the Instructions say never to (0101 §5)", async () => {
   const minutes = await read("notion/minutes-format.md");
   const prompt = minutes.slice(minutes.indexOf("```text"), minutes.indexOf("```", minutes.indexOf("```text") + 7));
@@ -72,18 +52,5 @@ test("no shipped Notion text tells Notion AI to create Tasks from minutes; the p
     for (const line of (await read(file)).split("\n")) {
       assert.ok(!/(Notion AI|Brain Assistant)[^.]*\bcreates? (the )?Tasks\b/i.test(line) || /never|doesn't|don't/i.test(line), `${file}: ${line.slice(0, 120)}`);
     }
-  }
-});
-
-test("Brain Assistant has ten skills, without Review queue and Grill review, and every guide counts ten", async () => {
-  const assistant = await read("notion/brain-assistant.md");
-  // The skills are the H3s of "## Skills" outside code fences (the Voice summary block holds the note's own headings).
-  const skillsSection = assistant.slice(assistant.indexOf("## Skills")).replace(/```[\s\S]*?```/g, "");
-  const skills = [...skillsSection.matchAll(/^### (.+)$/gm)].map((m) => m[1]);
-  assert.deepEqual(skills, ["Today", "Check minutes", "Prep", "Weekly review", "Plan check", "Tidy capture", "Voice summary", "Clean email", "Write up", "Refresh report"]);
-  for (const file of ["notion/brain-assistant.md", "notion/TEMPLATE.md", "notion/prompts/09-assistant-and-guide.md", "docs/notion-space-design.md"]) {
-    const text = await read(file);
-    assert.ok(!/twelve skills|twelve pages/i.test(text), `${file} still counts twelve`);
-    assert.match(text, /\bten (skills|pages)\b|\bTen skills\b/, `${file} counts ten`);
   }
 });

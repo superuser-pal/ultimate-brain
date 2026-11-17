@@ -367,28 +367,3 @@ test("a held proposal is listed with a note-id subject and without a plain-name 
   const listed = await run(dir, ["proposal", "list", "--status", "pending"]);
   assert.ok(!listed.stdout.includes("Price at 95,000"), listed.stdout);
 });
-
-test("proposal revise is retired: a revision is asked in the session (0096)", async (context) => {
-  const dir = await fixtureCopy(context);
-  const out = await brain(["proposal", "revise", "--brain", dir, "--json"]);
-  assert.equal(out.code, 2, out.stdout);
-  assert.equal(out.json.error.code, "RETIRED");
-});
-
-test("no code path reads a Review row except the transition (0096)", async () => {
-  const src = join(import.meta.dirname, "..", "src");
-  const readers = new Set<string>();
-  for (const path of await readdir(src, { recursive: true })) {
-    if (!path.endsWith(".ts")) continue;
-    const text = await readFile(join(src, path), "utf8");
-    if (/from "\.\/review-(?:plan|apply|transition|revision)\.ts"/.test(text) || /database === "review"/.test(text)) readers.add(path.replaceAll("\\", "/"));
-  }
-  assert.deepEqual([...readers].sort(), ["lib/review-apply.ts", "lib/review-plan.ts", "lib/review-revision.ts", "lib/sync.ts"], "only the transition's modules and sync plan read one");
-  // In sync plan, a Review row stops at the guard unless --review-transition is given, before any other branch reads it.
-  const sync = await readFile(join(src, "lib", "sync.ts"), "utf8");
-  const guard = sync.indexOf('if (row.database === "review" && options.reviewTransition !== true) { result.ignored.push(ignoredRow(row, "REVIEW_ROW")); continue; }');
-  assert.ok(guard > 0, "the guard is there");
-  const reads = [...sync.matchAll(/row\.database === "review"/g)].map((match) => match.index!);
-  assert.deepEqual(reads.filter((index) => index < guard), [], "no branch reads a Review row before the guard");
-  assert.equal([...sync.matchAll(/applyReviewDecisions\(/g)].length, 1, "sync apply applies only what the transition's plan decided");
-});

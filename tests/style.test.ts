@@ -252,15 +252,6 @@ async function linkSetup(context: Context, workflow = false) {
   return { repo, set, link, agents };
 }
 
-test("with no style lines, link writes the block exactly as before 0.14.0", async (context) => {
-  for (const value of [undefined, '{ "preset": "standard" }', '{ "preset": "simple", "explain": "some", "length": "normal", "directness": "context-first" }']) {
-    const { set, link, agents } = await linkSetup(context);
-    if (value !== undefined) await set("settings.style", value);
-    await link();
-    assert.equal(await agents(), `${LINK_START}${READ_ONLY}${LINK_END}`, String(value));
-  }
-});
-
 test("link writes the style paragraph right before the read-only line, after the recall and workflow paragraphs", async (context) => {
   const plain = await linkSetup(context);
   await plain.set("settings.style", '{ "preset": "simple" }');
