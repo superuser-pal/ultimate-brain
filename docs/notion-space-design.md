@@ -27,7 +27,7 @@ A space is a **core** plus the **modules** you chose at onboarding. You can turn
 | Module | Databases | What it adds to the Spaces and templates | Default |
 |---|---|---|---|
 | **Core** | Inbox, Meetings, Projects, Areas, People | Home, Meetings, Projects; the Inbox tab of Knowledge; area homes' Meetings and Inbox tabs | always on |
-| **Domains** | Domains (in every space, 0065) | group Areas by work or life context; Areas can have one Domain or none. The database and Areas · Domain exist with the module off; the module decides whether the brain uses them and whether pages show them | off |
+| **Domains** | Domains (in every space, 0065) | group Areas by work or life context; Areas can have one Domain or none. The database, Areas · Domain and the Domain rollups on Projects, Meetings and Documents (0.16.1, 0105) exist with the module off; the module decides whether the brain uses them and whether pages show them | off |
 | ~~Knowledge~~ | retired in 0.16.0 ([0099](../decisions/0099-notion-without-decisions-and-questions.md)): its Decisions and Questions databases are archived (Concepts went in 0.9.1, 0071). Decisions and questions are notes in Git, shown on project and area pages (the Brief and Decision log toggles) and in reports | — | — |
 | **Orgs** | Orgs | the Orgs tab of Knowledge; Client on Projects, Org on People; "Clients via projects" on area pages | on |
 | **Documents** | Documents (was References), learned ones included (0071) | the Documents tab of Knowledge and of "What do we know?"; Keep as document and Only keep on the Inbox; tasks kept as documents, with Documents · Task (0100) | off |
@@ -35,7 +35,7 @@ A space is a **core** plus the **modules** you chose at onboarding. You can turn
 | **Tasks** | Tasks, or your own tasks database (0018) | the Tasks Space, with its Questions and Risks tabs (Kind, 0099); Document asked and the Keep as document button on Tasks, acted on with Documents on (0100); "What's on my plate here?" on project and area pages; Home's "What's on today?" Tasks tab, its "due" counts and "Due across areas" | off |
 | **Planning** | Goals, Key Results | the Plan Space; Goal on Projects; "What am I working toward here?" on area pages | off |
 
-A part of a page that belongs to a module that is off is left out, and nothing replaces it (0050). The build prompts create only the chosen modules, except the Domains database and its relations, which every space has (0065); each module's own steps, for turning it on later, are in [notion/modules/](../notion/modules/).
+A part of a page that belongs to a module that is off is left out, and nothing replaces it (0050). The build prompts create only the chosen modules, except the Domains database, its relations and the Domain rollups, which every space has (0065, 0105); each module's own steps, for turning it on later, are in [notion/modules/](../notion/modules/).
 
 ### What we borrow from each template
 
@@ -133,7 +133,7 @@ Page body: a toggle heading **Brief** (brain-written, 0041: the area's projects,
 
 ### Domains database (0055; in every space, 0065)
 
-Every space has it, with the Domains module on or off: the module decides only whether the brain reads and publishes Domains and whether pages show them (migration 0014 adds it to an older space). Name (title) and Summary (text) are brain-owned after creation; Type (select: Personal, Entrepreneurship, Professional; 0.9.0, it replaced Areas · Type) and Archived (checkbox) are yours; no Lifecycle (0070). Brain ID (text) and Last Synced (date) are system fields. Areas is the inverse of Areas · Domain, limited on the Area side to one page by hand. Org is a correctable relation to Orgs, created when the space has an Orgs database; Orgs · Domains is its inverse. The Domain page shows Areas and, when enabled, Org.
+Every space has it, with the Domains module on or off: the module decides only whether the brain reads and publishes Domains and whether pages show them (migration 0014 adds it to an older space). Name (title) and Summary (text) are brain-owned after creation, and say what kind of context the Domain is; Archived (checkbox) is yours; no Lifecycle (0070) and no Type (0.16.1, [0105](../decisions/0105-domains-on-projects-meetings-and-documents-and-domains-without-type.md) §3: Type held Personal, Entrepreneurship or Professional from 0.9.0, when it replaced Areas · Type, to 0.16.0; migration 0028 removes it after your yes). Brain ID (text) and Last Synced (date) are system fields. Areas is the inverse of Areas · Domain, limited on the Area side to one page by hand. Org is a correctable relation to Orgs, created when the space has an Orgs database; Orgs · Domains is its inverse. The Domain page shows Areas and, when enabled, Org, then lists that Domain's **Projects**, **Meetings** and **Documents** in three linked views filtered by their Domain rollup (§3.4, §3.5, §3.14, §4; 0105 §1).
 
 ### 3.2 Goals
 | Property | Type | Owner |
@@ -187,6 +187,7 @@ Notion-owned entirely (0020). Not mirrored as brain notes; the brain snapshots t
 | Logging level | Select: Tasks only, Tasks + final outputs, Full durable record, Custom. Empty = Tasks + final outputs (§3.19) | You (as Workflow) |
 | Log artifacts | Multi-select: Briefs, Plans, Specifications, Decisions, Final deliverables. Read only with Custom (§3.19) | You (as Workflow) |
 | Last edited time | Last edited time | System (Notion fills it; "gone quiet" view) |
+| Domain | Rollup: Area → Domain, Show original (0.16.1, 0105 §1; in every space, hidden with the Domains module off) | Notion (derived from the Area; you never edit it, and the brain never writes or reads it) |
 
 
 Page body: toggle headings **Brief** and **Decision log** (brain-written, 0026), then the template's linked views and "My notes". Connected work adds **Workflow**, and a linked repo with tasks tracked in the repo adds **`Repo tasks · <repo>`** (§2).
@@ -204,6 +205,7 @@ The inbound source. Your Notion AI meeting notes live here (0012, 0007).
 | Brain Status | Select: Not Reviewed, Reviewed, Ingested, Skipped | You set Reviewed or Skipped; brain sets Ingested |
 | Ingested At | Date | System |
 | Tasks | Relation → Tasks (two-way with Meeting) | You |
+| Domain | Rollup: Area → Domain, Show original (0.16.1, 0105 §1; in every space, hidden with the Domains module off). Empty until the meeting has an Area: the ingest sets the projects' shared Area when it is empty (spec/schema.md §4 meeting) | Notion (derived from the Area; you never edit it, and the brain never writes or reads it) |
 | Brain ID | Text | System (the meeting record's id, `mtg-…`) |
 
 
@@ -326,6 +328,7 @@ A new version of a kept file proposes the changed lines to its Documents (an `up
 | What to fix | Text | You, on a report: what it gets wrong; the brain turns it into proposals, asked in the agent session ([0096](../decisions/0096-one-place-to-decide.md)), clears it, and refreshes the report once you accept them (0045) |
 | Created time | Created time | System (Notion fills it) |
 | Last edited time | Last edited time | System (Notion fills it; sorts "What did we keep?") |
+| Domain | Rollup: Area → Domain, Show original (0.16.1, 0105 §1; in every space with Documents, hidden with the Domains module off) | Notion (derived from the Area; you never edit it, and the brain never writes or reads it) |
 
 
 Plus the common properties (a report leaves Summary and Lifecycle empty). Page body: the kept text (brain-written), on a promoted Document yours after the first write, on a report the brain's six sections (Where it stands, Timeline, Decisions in force, Open questions and risks, People involved, Gaps). Accepted, Accepted at and the **Accept** button are in §3.17.
@@ -352,6 +355,9 @@ Archived and Done (on a milestone) stay checkboxes: they describe a state, not a
 | Documents | Write, Update, Accept, Refresh asked, What to fix, Lifecycle, Project, Area, Sources | Origin, Brain ID, Last Synced, Created time, Last edited time |
 | Areas | At a glance | Brain ID, Last Synced |
 | Goals, Projects, People, Orgs, Meetings, Tasks | the "You" properties of §3 | Brain ID, Last Synced, Ingested At |
+| Domains | Archived | Brain ID, Last Synced |
+
+**Domain on Projects, Meetings and Documents (0.16.1, 0105 §1).** The Domain rollup sits in the property group right after Area with the Domains module on, and is hidden with it off, as Domain is on area homes. It is never pinned: you change the Area, not the Domain. The Domains layout keeps Areas, Org and Summary in its property group, and shows no Type (0105 §3).
 
 **Workflow settings are not pinned** (§3.19): on Projects and Areas, Workflow, Work type, Logging level and Log artifacts sit at the end of the property group. You set them once per piece of work, usually through the setup chat.
 
@@ -440,7 +446,7 @@ Each template is the default for its database. Every linked view sits under an H
 | Database | Template body |
 |---|---|
 | Areas | **The area's home (0050).** Domain is visible when the Domains module is on. "Brief" toggle heading (brain-written, 0041) · "What needs me here?" with tabs Today (Tasks due today or earlier, neither Done nor Won't Do) · Meetings (to review, held today or earlier) · Inbox (where Area is this page and Brain Status is New or Ready) · "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What came in?" (Inbox where Area is this page, newest first) · "What do we know?" (Documents where Area is this page) · "Reports" (Documents where Area is this page and Origin is Report, 0045, 0071) · "My notes". People and Clients show as the "via projects" rollups in the page header (0034). Each part follows its module (§1, 0050): Today and "What's on my plate here?" with Tasks; "What am I working toward here?" with Planning; "What do we know?" with Documents; "Reports" with Reports; Clients via projects with Orgs. A new area is one page from this template |
-| Domains | Show Type, Areas and, when Orgs is on, Org; description and My notes. |
+| Domains | Areas and, when Orgs is on, Org in the page header; the description; three linked views, each filtered by **Domain contains This page** (0.16.1, 0105 §1): "Which projects?" (Projects), "Which meetings?" (Meetings, Date descending) and "What do we know?" (Documents, Documents module) · "My notes". No Type (0105 §3). A row with no Area, or whose Area has no Domain, is on no Domain page. The exact views are in [views-guide.md](../notion/views-guide.md) §9a |
 | Goals | "How are the key results moving?" (Key Results: Open, Done) · "Which projects serve it?" (Projects) · "My notes" |
 | Projects | A muted line "The brain writes only inside its toggles: Brief and Decision log, and Workflow or Repo tasks when you connect work or link a repo. Add your own notes in My notes." (0.9.0; before it: "Brief and Decision log are written by the brain. Add your own notes in My notes.") · "Brief" toggle heading (brain-written) · "Decision log" toggle heading (brain-written) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "Who's involved?" (People) · "What came in?" (Inbox where Project is this page, newest first) · "What do we know?" (Documents where Project is this page) · "Reports" (Documents where Project is this page and Origin is Report, sorted by Created time descending, 0045, #137, 0071) · "My notes". Parts follow their modules as on Areas. A project the brain publishes is created from this default template through the API (0068), so it must stay the Projects default; a space without one falls back to **New project** |
 | Meetings | Unchanged from the hand-reworked template (see notion/templates.md): "Before marking Reviewed" checklist callout, ending with the gray line "Check the minutes, fix them, then set Brain Status to Reviewed. Fixed them after the brain took them in? Set Reviewed again: it reads only what changed." (0045) · Notion AI meeting notes block · "My notes" · toggle Tasks (the Decisions and Questions toggles went in 0.16.0, 0099; the minutes still list both) |

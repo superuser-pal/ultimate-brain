@@ -43,14 +43,16 @@ Everything a space built from every prompt has (the build prompts include every 
 | Projects | `Example · Website refresh` | | the Area |
 | People | `Example · Sam Rivera` | | the Org |
 | Orgs | `Example · Northwind Studio` | | |
-| Meetings | `Example · Kickoff with Northwind` | Not Reviewed, with short lean minutes (decision 0079) | the Project, the Person |
+| Meetings | `Example · Kickoff with Northwind` | Not Reviewed, with short lean minutes (decision 0079) | the Project, the Area, the Person |
 | Tasks | `Example · Send the project plan` | not started (To Do) | the Project, the Meeting |
 | Tasks | `Example · Brand guidelines from Sam` | Waiting On | the Project, the Meeting |
 | Tasks | `Example · Can the site go live by the end of March?` | Waiting On, Kind Question (a question tracked as a task, 0099) | the Project, the Meeting |
 | Inbox | `Example · Notes from a call with Sam` | Brain Status Done, Kind Capture, a Summary | the Project, the Person |
-| Documents | `Example · Website refresh brief` | Origin Kept, Lifecycle Reviewed, Accepted unticked, nothing asked | the Project; Sources the Inbox row |
+| Documents | `Example · Website refresh brief` | Origin Kept, Lifecycle Reviewed, Accepted unticked, nothing asked | the Project, the Area; Sources the Inbox row |
 | Goals | `Example · Launch three client websites this year` | Status Active | Area the Area, Projects the Project |
 | Key Results | `Example · Sites launched` | Kind Number, Start 0, Target 3, Current 1 | Goal the Goal |
+
+The Project, the Meeting and the Document are all in the Area `Example · Clients`, whose Domain is `Example · Work`, so each shows Domain `Example · Work` through its Domain rollup, and the `Example · Work` page, made from the Domains template, lists all three (decision 0105). The Domain has no Type.
 
 **The Brain Data callout.** The first block of Brain Data is a callout: "These are examples. Every row titled "Example · " is a sample. When you say "set up my brain", it moves them all to Notion's trash after one yes. You can also delete them yourself." It is product text and stays after setup.
 

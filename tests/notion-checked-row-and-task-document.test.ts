@@ -30,6 +30,7 @@ test("0.16.0 has one Notion migration, and brain upgrade names it to a space at 
   assert.deepEqual(files.filter((f) => f > MIGRATION_0_16_0), ["0028-first-things-first-and-domains.md"]);
   const migrations = await notionMigrations(root, { notion: { template_version: "0026", databases: { review: "x" } } });
   assert.equal(migrations.newer?.[0], MIGRATION_0_16_0);
+  assert.deepEqual(migrations.newer, [MIGRATION_0_16_0, ...files.filter((f) => f > MIGRATION_0_16_0)]);
   const lines = notionMigrationsLine(root, migrations);
   assert.match(lines, /migrations? newer than your space: .*0027-one-place-to-decide\.md/);
   assert.match(lines, /Review database\. Ask your agent to apply the 0\.16\.0 Notion migration \(.*0027-one-place-to-decide\.md\)/);

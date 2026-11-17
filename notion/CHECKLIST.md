@@ -14,7 +14,7 @@ The prompts are generated from [docs/notion-space-design.md](../docs/notion-spac
 
 The space is a core (Inbox, Meetings, Projects, Areas, People) plus the modules you choose. There is no Review, Decisions or Questions database since 0.16.0: you decide what the brain proposes in your agent session, and a project's decisions and open questions are in its Brief and Decision log (decisions 0096, 0099). You can change this any time by asking your agent ("turn on documents"); each module's steps for later are in [modules/](modules/).
 
-- [ ] **Domains:** group Areas by the work or life context they belong to. The Domains database is built either way (decision 0065); this choice is whether the brain uses it
+- [ ] **Domains:** group Areas by the work or life context they belong to, and see each project's, meeting's and document's Domain. The Domains database and the Domain rollups on Projects, Meetings and Documents are built either way (decisions 0065, 0105); this choice is whether the brain uses them and your pages show them. A Domain has no Type: its name and summary say what kind of context it is
 - [x] **Orgs:** client and partner organizations
 - [ ] **Documents:** keep a document, or part of one, as a page, checked first when only part is kept; with Tasks, keep a task's page as one too
 - [ ] **Reports:** ask the brain in the Inbox, get a report you can refresh
@@ -34,7 +34,7 @@ The space is a core (Inbox, Meetings, Projects, Areas, People) plus the modules 
 - [ ] [7 · Spaces and views](prompts/07-spaces-views.md): one prompt per page (Home, Meetings, Tasks, Projects, Plan, Knowledge, Archive)
 - [ ] (optional) [8 · Navigation](prompts/08-navigation.md)
 - [ ] [9 · Brain Assistant's skills and the guide](prompts/09-assistant-and-guide.md): the Skills database (Brain Assistant's skills) on System, and How it works
-- [ ] **Buttons and page layouts, by hand** (the API and Notion AI can't create buttons or set page layouts): for each module you chose, do the "By hand" steps of its file in [modules/](modules/), then set each database's page layout as in [views-guide.md](views-guide.md) §9.
+- [ ] **Buttons and page layouts, by hand** (the API and Notion AI can't create buttons or set page layouts): for each module you chose, do the "By hand" steps of its file in [modules/](modules/), then set each database's page layout as in [views-guide.md](views-guide.md) §9, and the Domains page template's three views as in §9a.
 
 Prefer to build Spaces and views by hand? [views-guide.md](views-guide.md) spells out every view (filters, sorts, grouping, visible properties, use case), the database page layouts and the navigation. It replaces steps 7 and 8.
 

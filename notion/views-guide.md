@@ -4,7 +4,7 @@ A by-hand alternative to [Prompt 7](prompts/07-spaces-views.md) and [Prompt 8](p
 
 It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md) §3–§5. If the two ever disagree, the design document wins (decision 0022).
 
-**Before you start:** Prompts 1–6 are done. The databases of Core and your modules live on **Brain Data**, the relations exist, the formulas and rollups of Prompt 4 exist (Progress, Countdown, Task Progress, the Areas counts, the "via projects" rollups), and the templates are the database defaults.
+**Before you start:** Prompts 1–6 are done. The databases of Core and your modules live on **Brain Data**, the relations and the Domain rollups of Prompt 3 exist, the formulas and rollups of Prompt 4 exist (Progress, Countdown, Task Progress, the Areas counts, the "via projects" rollups), and the templates are the database defaults.
 
 **Modules** (decision 0048). A view, tab, column or button of a module you left off is skipped: the Tasks Space needs Tasks, Plan needs Planning, and each row below names its module when it has one (*(Documents)*, *(Tasks)* …). A column of a module you left off is simply not shown.
 
@@ -214,15 +214,32 @@ The name and the label differ, so the layout doesn't show the same text twice (#
 | Areas | At a glance | Panel · Meetings to review, Due, Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Documents, Inbox, Tasks, Archived, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced | Off | The area's home (0050): its counts as one line in the heading, everything else in its views |
 | Goals | Status, Progress, Countdown | Panel · Deadline, Why, Area, Key Results, Projects, Summary, Archived | Brain ID, Last Synced | Off | Progress and status at a glance |
 | Key Results | Progress, Current, Target | Main · Goal, Kind, Start, Unit, Done, Due | — | Off | No body; you edit Current in the heading |
-| Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Goal, People, Summary, Archived, Meetings, Documents, Inbox, Tasks, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel. The Workflow settings close the panel (decision 0059) |
-| Meetings | Brain Status, Date, Project | Panel · Attendees, Area, Tasks | Brain ID, Ingested At | Off | Brain Status is the one field you change per meeting |
+| Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Domain, Goal, People, Summary, Archived, Meetings, Documents, Inbox, Tasks, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel. The Workflow settings close the panel (decision 0059) |
+| Meetings | Brain Status, Date, Project | Panel · Attendees, Area, Domain, Tasks | Brain ID, Ingested At | Off | Brain Status is the one field you change per meeting |
 | People | Role, Org | Panel · Email, Projects, Meetings, Sources, Summary, Lifecycle | Brain ID, Last Synced | On hover | Who they are and where they work |
+| Domains | Archived | Panel · Areas, Org, Summary | Brain ID, Last Synced | Off | No Type (decision 0105): a Domain's Name and Summary say what kind of context it is. The body lists its projects, meetings and documents (§9a) |
 | Orgs | Relationship, Website | Panel · Meetings via projects, People, Projects, Summary, Archived | Brain ID, Last Synced | On hover | — |
 | Inbox | Keep, Tidy, Brain Status, Project, Area | Main · Document asked, Only keep, Kind, Changed from, What changed, Summary, Documents, People, Tasks, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043); on a changed version (Kind Changed), the text you check (0098 §4) |
-| Documents | Write, Update, Accept, Lifecycle, Project, Area, Sources | Panel · Accepted, Accepted at, Refresh asked, What to fix, Asked in, Task, Origin, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |
+| Documents | Write, Update, Accept, Lifecycle, Project, Area, Sources | Panel · Domain, Accepted, Accepted at, Refresh asked, What to fix, Asked in, Task, Origin, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |
 | Tasks | Keep, Status, Due, Kind | Panel · Document asked, Project, Area, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
 
+**Domain on Projects, Meetings and Documents** (decision 0105) is the rollup of Prompt 3: Notion computes it from the Area, and you never edit it. With the Domains module on, it sits in the panel right after Area (on Documents, first in the panel, since Area is pinned); with it off, hide it.
+
 **Hide system properties everywhere.** Brain ID, Last Synced, Created time and Last edited time are plumbing (owner "system"). Hide them in every view and layout, except where a view lists one to show (for example Last edited time in "Which projects have gone quiet?"). Don't delete them, because the brain matches records by Brain ID.
+
+## 9a. The Domains page template (decision 0105)
+
+A Domain page lists that Domain's projects, meetings and documents. The API can't build a page template's views, so this is by hand. Open **Domains** → the **New** arrow (▾) → the default template (create one if there is none, and set it as the default) → **Edit**. Under the title, the page shows **Areas** and, with Orgs, **Org**, and no Type. Then add three linked views, each under an H3 heading, with *Show database title* off:
+
+| Heading | View name | Database | Filter | Sort | Show | Module |
+|---|---|---|---|---|---|---|
+| Which projects? | Projects | Projects | **Domain** contains **This page** | Name | Name, Status, Area | core |
+| Which meetings? | Meetings | Meetings | **Domain** contains **This page** | Date descending | Name, Date, Area | core |
+| What do we know? | Documents | Documents | **Domain** contains **This page** | Last edited time descending | Name, Origin, Area | Documents |
+
+Then a toggle **My notes**. **Domain** here is the rollup on each database, not Areas · Domain. *This page* appears in the filter's value menu only while you edit a page template.
+
+A row is on a Domain page when its Area has that Domain. A row with no Area, or whose Area has no Domain, is on none: a meeting or Document gets its Area from its projects at the ingest, when they share one (decision 0105 §2). A Domain page made before the template changed keeps its old body: apply the template from the page, or add the three views by hand.
 
 ---
 
@@ -247,4 +264,5 @@ The name and the label differ, so the layout doesn't show the same text twice (#
 - [ ] Home has no Review list, and no page or view shows a Review, Decisions or Questions database; Tasks has the tabs Questions and Risks (Tasks module).
 - [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status Ready; New meeting and New project open a page with the default template.
 - [ ] Brain ID and Last Synced are hidden in every view and page layout.
+- [ ] A Domain made from the Domains template lists that Domain's projects, meetings and (Documents) documents, and no page or view shows a Domains · Type.
 - [ ] Editing Tier 1 nav on System updates every Space.
