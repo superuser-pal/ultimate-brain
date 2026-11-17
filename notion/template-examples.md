@@ -18,7 +18,7 @@ Every row is invented. They tell one story with synthetic names only: a kickoff 
 | 8 | Tasks | `Example · Brand guidelines from Sam` | Status Waiting On; Document asked unticked | Project → 5, Meeting → 6 |
 | 9 | Inbox | `Example · Notes from a call with Sam` | Kind Capture, Brain Status Done, Summary below; Document asked unticked, Only keep empty, Changed from and What changed empty, Brain ID empty | Project → 5, People → 4 |
 | 10 | Tasks | `Example · Can the site go live by the end of March?` | Status Waiting On, Kind Question; Document asked unticked, Brain ID empty | Project → 5, Meeting → 6 |
-| 11 | Documents | `Example · Website refresh brief` | Origin Kept, Lifecycle Reviewed, Summary below; Accepted unticked, Accepted at empty, Refresh asked unticked, What to fix empty, Task empty, Brain ID empty | Project → 5, Sources → 9 |
+| 11 | Documents | `Example · Website refresh brief` | Origin Kept, Lifecycle Reviewed, Summary below; Accepted unticked, Accepted at empty, Refresh asked unticked, What to fix empty, Task empty, Brain ID empty | Project → 5, Area → 2, Sources → 9 |
 | 12 | Goals | `Example · Launch three client websites this year` | Status Active, Why below | Area → 2, Projects → 5 |
 | 13 | Key Results | `Example · Sites launched` | Kind Number, Start 0, Current 1, Target 3 | Goal → 12 |
 
@@ -204,6 +204,7 @@ The relations of prompt 4's rows. Each relation points to the row with exactly t
 | Tasks `Example · Can the site go live by the end of March?` | Project | `Example · Website refresh` |
 | | Meeting | `Example · Kickoff with Northwind` |
 | Documents `Example · Website refresh brief` | Project | `Example · Website refresh` |
+| | Area | `Example · Clients` |
 | | Sources | `Example · Notes from a call with Sam` |
 | Goals `Example · Launch three client websites this year` | Area | `Example · Clients` |
 | | Projects | `Example · Website refresh` |
@@ -223,9 +224,9 @@ Then check prompt 2's other relations against "The story" (Domain on the Area, O
 ## Check by hand
 
 - Brain Data starts with the callout, word for word.
-- Each of the thirteen rows exists once, with its title exactly as in "The story" (the prefix `Example · ` with the middle dot), its state and every relation of step 7 and "The story"; every Brain ID is empty. Sam's Role is Marketing lead, Northwind's Relationship is Client, and the Meeting has its Date and Area.
+- Each of the thirteen rows exists once, with its title exactly as in "The story" (the prefix `Example · ` with the middle dot), its state and every relation of step 7 and "The story"; every Brain ID is empty. Sam's Role is Marketing lead, Northwind's Relationship is Client, and the Meeting has its Date and Area, and the Document its Area.
 - The Meeting is **Not Reviewed**, and its page still has the template's blocks (the "Before marking Reviewed" callout, the notice, the Meeting notes block and the toggles), with the minutes below them. The question's Task is **Waiting On** with Kind **Question**. The Inbox row is **Done**, and its Changed from and What changed are empty. Nothing on the Document is ticked, and its Task is empty. No task's Document asked is ticked: a ticked one would be kept as a Document by the next catch-up.
-- The pages link to each other: the Project page lists the Meeting, the three Tasks, the Inbox row and the Document; the Tasks page lists the question's Task under Questions; Plan shows the Goal at 33%.
+- The pages link to each other: the Project page lists the Meeting, the three Tasks, the Inbox row and the Document; the Project, the Meeting and the Document each show Domain `Example · Work`, and the `Example · Work` page lists all three in its views (decision 0105); the Tasks page lists the question's Task under Questions; Plan shows the Goal at 33%.
 - The coordinator's read-only scan (TEMPLATE.md, step 10) lists these thirteen rows as Example rows, and nothing else.
 
 ## Updating a copy to 0.16.0
@@ -234,3 +235,10 @@ A template copy built before 0.16.0 has the fifteen rows of 0.15.x. After migrat
 1. **The Meeting's minutes:** on `Example · Kickoff with Northwind`, change the line `Open: can the site go live by the end of March? [s2.i2]` to `Track: Waiting On — Waiting on Sam: can the site go live by the end of March? [s2.i2]`, by hand. Nothing else on the page changes.
 2. **Row 10:** run prompt 4 (it creates only the missing rows), then set row 10's relations as step 7 says.
 3. **Check by hand** as below: thirteen rows on Brain Data. If you clicked Keep as document on an Example task to check migration 0027's button (C4), untick its Document asked.
+
+## Updating a copy to 0.16.1
+
+After migration 0028 has added the Domain rollups and the Domains page template's views (part "Domains", D1 to D4):
+1. **Row 11:** set the Document's Area to `Example · Clients` if it is empty (migration 0028, D5; step 7 above).
+2. **Row 1:** `Example · Work` keeps its page. If it was made before the template's views, apply the Domains template to it, or add the three views by hand ([views-guide.md](views-guide.md) §9a).
+3. **Check by hand** as above: `Example · Work`'s page lists the Project, the Meeting and the Document, and shows no Type.
