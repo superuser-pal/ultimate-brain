@@ -172,7 +172,7 @@ test("Domains default off and retain notes and Area relations across switching",
   assert.equal(rendered.json.data.errors[0].reason, "MODULE_OFF");
 });
 
-test("sync reads Type from Domains and drops the Type Areas no longer has (CC-120)", async (context) => {
+test("sync reads no Type from Domains (0105) and drops the Type Areas no longer has (CC-120)", async (context) => {
   const dir = await fixtureCopy(context);
   assert.equal((await brain(["modules", "on", "domains", "--brain", dir, "--now", NOW, "--json"])).code, 0);
   const domainPage = "e2000000-0000-4000-8000-000000000002";
@@ -183,7 +183,7 @@ test("sync reads Type from Domains and drops the Type Areas no longer has (CC-12
   const plan = await brain(["sync", "plan", "--input", await writeInput(dir, { as_of: NOW, rows }), "--brain", dir, "--json"]);
   assert.equal(plan.code, 0, plan.stdout);
   const domain = plan.json.data.create.find((item: { type: string }) => item.type === "domain");
-  assert.equal(domain.frontmatter.notion_fields.type, "Entrepreneurship");
+  assert.deepEqual(domain.frontmatter.notion_fields, { as_of: NOW, archived: false });
   const area = plan.json.data.updates.find((item: { id: string }) => item.id === "area-2m7c4h8n");
   assert.deepEqual(area.notion_fields, { as_of: NOW, archived: false });
   const applied = await brain(["sync", "apply", "--input", await writeInput(dir, plan.json.data), "--brain", dir, "--now", NOW, "--json"]);

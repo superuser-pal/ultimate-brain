@@ -669,3 +669,43 @@ test("sync plan links neither a capture (its Inbox page is its key) nor minutes 
   const noRow = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "minutes-row.json", minutes), "--json"]);
   assert.deepEqual(noRow.json.data.updates, [], "minutes have no Inbox row, so none is linked");
 });
+
+test("sync reads no Domains · Type: an old type leaves the domain note at the next apply, and a Domain rollup is ignored (0105)", async (context) => {
+  const dir = await fixtureCopy(context);
+  assert.equal((await brain(["modules", "on", "domains", "--brain", dir, "--now", NOW, "--json"])).code, 0);
+  const domainPage = "e3000000-0000-4000-8000-000000000003";
+  const made = await brain(["note", "new", "--input", await input(dir, "domain.json", { notes: [{ type: "domain", id: "dom-4k8m2p6r", title: "Venture", frontmatter: { summary: "Own ventures.", notion: domainPage }, body: "" }] }), "--brain", dir, "--now", NOW, "--json"]);
+  assert.equal(made.code, 0, made.stdout);
+  const file = join(dir, made.json.data.created[0].path);
+  const document = parseFrontmatter(await readFile(file, "utf8"));
+  document.attributes.last_synced = "2026-12-01T08:00:00Z";
+  document.attributes.notion_fields = { as_of: "2026-12-01T08:00:00Z", type: "Entrepreneurship", archived: false };
+  await writeFile(file, serializeFrontmatter(document));
+  assert.equal((await brain(["lint", "--brain", dir, "--json"])).json.data.errors, 0);
+
+  const domainRow = { database: "domains", page_id: domainPage, last_edited: NOW, properties: { "Brain ID": "dom-4k8m2p6r", Name: "Venture", Summary: "Own ventures.", Type: "Entrepreneurship", Archived: false } };
+  const plan = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "snapshot.json", { as_of: NOW, rows: [domainRow] }), "--json"]);
+  assert.equal(plan.code, 0, plan.stdout);
+  assert.deepEqual(plan.json.data.updates, [{ id: "dom-4k8m2p6r", notion_fields: { as_of: NOW, archived: false } }]);
+  assert.deepEqual(plan.json.data.conflicts, []);
+  assert.deepEqual(plan.json.data.corrections, []);
+  const applied = await brain(["sync", "apply", "--brain", dir, "--input", await input(dir, "plan.json", plan.json.data), "--now", NOW, "--json"]);
+  assert.equal(applied.code, 0, applied.stdout);
+  const after = parseFrontmatter(await readFile(file, "utf8"));
+  assert.deepEqual(after.attributes.notion_fields, { as_of: NOW, archived: false });
+  assert.equal((await brain(["lint", "--brain", dir, "--json"])).json.data.errors, 0);
+
+  // The Domain rollup Notion shows on Projects, Meetings and Documents is Notion's: never read, no conflict.
+  // Meetings rows are not a snapshot database (cli §5.14.1), so Projects and Documents carry the check here.
+  const rows = [
+    { database: "projects", page_id: "2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e", last_edited: NOW, properties: { "Brain ID": "prj-9x4t1b7e", Status: "Active" } },
+    { database: "documents", page_id: "e4000000-0000-4000-8000-000000000004", last_edited: NOW, properties: { Name: "Venture plan" } },
+  ];
+  const without = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "without.json", { as_of: NOW, rows }), "--json"]);
+  const withRollup = await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, "with.json", { as_of: NOW, rows: rows.map((row) => ({ ...row, properties: { ...row.properties, Domain: [domainPage, domainPage] } })) }), "--json"]);
+  assert.equal(without.code, 0, without.stdout);
+  assert.equal(withRollup.code, 0, withRollup.stdout);
+  assert.deepEqual(withRollup.json.data, without.json.data);
+  assert.deepEqual(withRollup.json.data.conflicts, []);
+  assert.ok(!JSON.stringify(withRollup.json.data).includes('"domain"'), JSON.stringify(withRollup.json.data));
+});
