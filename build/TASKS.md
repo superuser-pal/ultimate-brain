@@ -1353,7 +1353,7 @@ Whichever of CC-337 and CC-343 merges second puts both sets of steps in the one 
 - The PR distinguishes API read-back from UI-only checks.
 - The leak and PR format checks pass, and any affected automated checks pass.
 
-### CC-344 · `sync plan` stops reading Domains · Type (0105) · `review`
+### CC-344 · `sync plan` stops reading Domains · Type (0105) · `done` (#442)
 **Release:** 0.16.1
 **Changelog:** Sync no longer reads a Domain's Type; an old Type is dropped from your domain notes at the next sync.
 **Output:** remove `Type` from the domains entry of `notionFields` in `src/lib/sync.ts`, so that only Archived is read, as CC-342's §5.14.2 says. Update `tests/modules.test.ts`, which asserts the old mapping, and add a test in the sync suite: a Domains row that still has Type gives no `notion_fields.type`; a domain note that holds an old `type` loses it at the next `sync apply`; lint passes before and after. A Projects, Meetings or Documents row with a Domain rollup (a list of relations) is ignored, with no conflict.
