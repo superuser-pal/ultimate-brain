@@ -1345,7 +1345,7 @@ After the feature cutoff, scope packaging/install/upgrade guidance, consistent N
 **Output:** rows U-30, U-31 and U-32 under Your tasks (GitHub Support's cleanup after the history rewrite, the attended run of setup steps 4a and 4b, the readiness recheck from `v0.15.1`) and CC-287's row (the 1.9.1 skills change in issue #394). Only `build/TASKS.md` changes.
 **Acceptance:** the three U rows and CC-287's row exist and each says what closes it; no other row changes; the leak and PR format checks pass.
 
-### CC-287 · Classify the 1.9.1 skills change in the skills-integration issue · `todo`
+### CC-287 · Classify the 1.9.1 skills change in the skills-integration issue · `in progress`
 **Release:** 1.0.0
 **Changelog:** development only: the skills-integration issue records 1.9.1 as assessed.
 **Output:** in a planning session, the open change of issue #394 (ultimate-brain-skills 1.9.1: one sentence in brain-setup's report question, vendored by CC-284 and shipped in 0.15.1) is classified in the issue's block and `assessed` moves to 1.9.1 (spec/skills-delivery.md §11.2). No file changes unless the classification names brain work.
