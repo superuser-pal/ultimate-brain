@@ -35,12 +35,19 @@ test("every property description the Notion steps set fits Notion's 280-characte
   assert.ok(seen > 20, `only ${seen} descriptions found: the pattern no longer matches the prompts`);
 });
 
-test("a new space and migration 0025 give Your call the same description", async () => {
-  const migration = descriptions(await read("notion/migrations/0025-review-with-me-and-your-call-decides.md"));
-  const set = migration.filter((d) => d.includes("Request revision"));
-  assert.equal(set.length, 1, "migration 0025 sets one Your call description");
-  const [yourCall] = set;
-  assert.ok((await read("notion/prompts/02-databases.md")).includes(`Your call, "${yourCall}"`));
-  assert.ok((await read("notion/prompts/05-ownership.md")).includes(`"${yourCall}" for Your call in "Review"`));
-  assert.ok((await read("docs/notion-space-design.md")).includes(`"${yourCall}"`));
+test("a new space and migration 0027 give the same descriptions: brain-owned values asked in the session, and Tasks · Kind (0101 §4, 0099 §4)", async () => {
+  const prompt = await read("notion/prompts/05-ownership.md");
+  const migration = await read("notion/migrations/0027-one-place-to-decide.md");
+  const tasks = await read("notion/modules/tasks.md");
+  for (const text of [
+    "Owner: brain. An edit here is asked in your agent session before it reaches the brain.",
+    "Owner: you when creating, then brain. A later edit is asked in your agent session before it reaches the brain.",
+  ]) {
+    assert.ok(prompt.includes(`"${text}"`), `Prompt 5 sets: ${text}`);
+    assert.ok(migration.includes(`\`${text}\``), `migration 0027 sets: ${text}`);
+  }
+  const kind = descriptions(migration).filter((d) => d.includes("question or risk you said to follow up"));
+  assert.equal(kind.length, 1, "migration 0027 sets one Tasks · Kind description");
+  assert.ok(prompt.includes(`"${kind[0]}" for Kind in "Tasks"`));
+  assert.ok(tasks.includes(`"${kind[0]}"`));
 });

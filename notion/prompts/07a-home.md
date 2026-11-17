@@ -11,8 +11,7 @@ First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md
 Ignore the module names in square brackets at the start of lines.
 On this page ("Home"):
 
-In the left column, under the navigation, add a heading 3 "Needs you", a gray paragraph "Start here: approving makes the brain's notes trusted.", and two linked views, List layout, at most 5 rows each:
-1. "What's waiting for you?" of "Review": filter Status starts with "Needs you"; group by Type, with group counts shown; sort Created time descending; show Status, Name.
+In the left column, under the navigation, add a heading 3 "Needs you" and one linked view, List layout, at most 5 rows:
 2. "Which minutes need review?" of "Meetings": filter Brain Status is Not Reviewed and Date is on or before today; sort Date descending; show Name.
 
 In the right column add, in one row:
@@ -41,10 +40,10 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 ```
 
 ## Verify
-- [ ] "Needs you" shows two short lists, the Review one grouped by Type (From source, Conflict, Answer, Suggestion), holding only rows whose Status starts with "Needs you" (a submitted row leaves it); a meeting dated tomorrow is not in "Which minutes need review?".
+- [ ] "Needs you" shows one short list, "Which minutes need review?", and a meeting dated tomorrow is not in it. There is no Review list: you decide what the brain proposes in your agent session, and the week's review is an Inbox row, Kind Weekly, in the Inbox tab (decision 0096).
 - [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status **Ready**; New meeting and New project open a page with the default template.
 - [ ] "What's on today?" has its tabs: Areas, Tasks (Tasks module), Meetings, Projects, Inbox; nothing sits above the two columns (#143).
-- [ ] The Areas tab's "How are my areas?" shows one line per area that reads on its own: "Agency · 4 to review · 1 meeting", or "all clear" (decisions 0050, #145).
+- [ ] The Areas tab's "How are my areas?" shows one line per area that reads on its own: "Agency · 1 meeting · 2 due", or "all clear" (decisions 0050, #145).
 - [ ] The Inbox tab's "What's in my inbox?" lists the New and Ready rows, oldest first, with Name, Kind and Brain Status only (#146).
 - [ ] (Reports) Ask the brain creates an Inbox row with Kind Ask and Brain Status New.
 - [ ] "What did the brain take in?" has two tabs, Came in and Meetings, each with the 10 latest rows.

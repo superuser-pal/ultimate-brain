@@ -17,7 +17,7 @@ The brain folder is where your knowledge is kept. Notion is where you read it, r
 | Git, with your name and email | Every change the brain makes is a commit. Without a name and email, Git saves nothing. | Yes. Set them before `brain init` (Get started, step 1); `init` stops and tells you how when they're missing. |
 | Claude Code or Codex | The agent does the work: it reads your material, writes notes and talks to Notion. | Yes |
 | Notion AI | It writes your meeting minutes and runs Brain Assistant. | Yes, for early access. See [Without Notion AI](#without-notion-ai). |
-| Custom Agents (Business and Enterprise plans) | Brain Assistant runs as a Custom Agent whose access you limit to your brain's pages. Without them, it runs from your personal Instructions. | No |
+| Business or Enterprise, with Notion credits | Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits. Brain Assistant runs as a Custom Agent whose access you limit to your brain's pages, and Custom Agents use Notion credits each time they run; Notion sells credits only on Business and Enterprise ([Notion's help on credits](https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents)). Without credits, Brain Assistant's skills run from your personal Instructions, asked by name, and its buttons don't work. | No |
 | The GitHub CLI (`gh`), signed in | Setup creates your backup with it, checks that the backup stays private, and sends your setup report if you say yes. | Yes, for early access. |
 | Python and MarkItDown | MarkItDown turns PDFs, Word files, slides, spreadsheets and saved web pages into exact text, so quotes are exact. It runs on Python. | Yes, for early access. |
 
@@ -40,6 +40,8 @@ On Windows, scheduled runs aren't available: you ask your agent for a catch-up o
 | 5 | Identities | Say which names you appear under in meetings and in Notion. | The brain knows which tasks and commitments are yours. |
 | 6 | Seeding | Describe your work in a few sentences, answer one preview, then drop 3 to 5 key documents in your drop folder. | Your brain starts with your Areas, Projects, people and documents, so the first meeting doesn't create duplicates. Nothing is written before your yes. |
 | 7 | First value | Judge four checks (below). | It proves the brain works on your own material. |
+
+**Only the brain creates a meeting's Tasks.** It creates them once, when it takes in a meeting you marked Reviewed. If a notetaker (Granola, Fireflies or another) or an automation exports tasks into Notion, turn off its export to your brain's Tasks database, or each of those tasks would arrive twice. Don't ask Notion AI to create Tasks from a meeting either. A task you create yourself stays yours.
 | 8 | Scheduled catch-up | Choose on or off. | It is offered only once first value passes. |
 | — | Setup report | Read it, and send it if you like. | It helps fix setup for the next person. |
 
@@ -51,7 +53,7 @@ On Windows, scheduled runs aren't available: you ask your agent for a catch-up o
 - **Correct tasks:** the tasks taken from one document are exactly your own commitments, with the right project and due date.
 - **A report:** "report on <your main project>" lands in Documents, linked from the project, and cites the document.
 - **Organised:** each new note sits under the Area and Project you expect, and nobody appears twice.
-- **A cited answer:** you accept one item from the document in Review, ask a question you would really ask, and the answer cites the passage it rests on.
+- **A cited answer:** you say yes to one item the brain read from the document, in your agent session, ask a question you would really ask, and the answer cites the passage it rests on.
 
 You judge the parts only you can ("are these your commitments?"). Setup never invents a task, an item or an answer to pass a check.
 
@@ -236,7 +238,7 @@ The same thing can happen to a real meeting. Catch-up then leaves it Reviewed an
 
 ### Today shows things from outside your brain (`assistant-reads-outside`)
 
-Setup's check says which Tasks database Today should read: the one under your space's top page › Brain Data. If Today lists a task, Review row or meeting from another space, one of two things happened:
+Setup's check says which Tasks database Today should read: the one under your space's top page › Brain Data. If Today lists a task or meeting from another space, one of two things happened:
 - **The run used another space's Today.** Picking "Today" from the `@` picker can pick another space's skill page, which reads that space. Ask Brain Assistant **Run Today** by name, or mention your Today page by its link (open it from your space's Skills database, ••• → Copy link).
 - **Brain Assistant can see more than your brain.** A Custom Agent: in Tools and access, keep only the Brain Data, How it works and Skills (in an older space, Brain Assistant Skills) under your top page, and remove any other. Personal Instructions: the instruction to stay inside Ultimate Brain is missing or was pasted in part. Paste the whole text again.
 
@@ -246,7 +248,7 @@ Then say "check Brain Assistant again".
 
 At least one of the four checks didn't pass. Setup shows one line for each, with the smallest fix:
 - **Failed:** something was wrong, such as a task that is someone else's, a note under the wrong Area or a person listed twice. Fix it, or tell your agent what's wrong.
-- **Couldn't be shown:** your material can't show it. For example, no document you seeded holds one of your own commitments, or you accepted nothing in Review. Drop a document that holds one of your commitments, or decide an item in Review.
+- **Couldn't be shown:** your material can't show it. For example, no document you seeded holds one of your own commitments, or you said yes to no item from your documents. Drop a document that holds one of your commitments, or say yes to an item when your agent asks.
 
 Then say "set up my brain": only the checks that didn't pass run again. The scheduled catch-up waits until all of them pass.
 

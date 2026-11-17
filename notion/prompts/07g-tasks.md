@@ -2,16 +2,18 @@
 
 Paste into Notion AI **while you are on the "Tasks" page**, after [Prompt 6](06-templates.md). Other Spaces: [index](07-spaces-views.md). Every view, with its use case, is in [../views-guide.md](../views-guide.md).
 
-**Tasks module only** (decision 0048): skip this prompt if you left Tasks off. Waiting On and Someday are Notion-only statuses (Prompt 2): the brain creates tasks as To Do and never reads Status back. Using your own Tasks database? Map the filters to your own properties.
+**Tasks module only** (decision 0048): skip this prompt if you left Tasks off. Waiting On and Someday are Notion-only statuses (Prompt 2): the brain creates tasks as To Do and reads Status back only on a task that tracks a question (decision 0101 §6). **Questions** and **Risks** list the questions and risks you follow up, by Kind (decision 0099 §4); on your own database without Kind, filter on a title that starts with "Question: " or "Risk: ". Using your own Tasks database? Map the filters to your own properties.
 
 ```text
-On this page ("Tasks") add six tabs, each a linked view of "Tasks", List layout:
+On this page ("Tasks") add eight tabs, each a linked view of "Tasks", List layout:
 1. Tab "Today", named "What's due today?": filter Status is To Do or Doing and Due is on or before today; sort Due ascending; show Name, Project, Due, Status.
 2. Tab "Upcoming", named "What's coming up?": filter Status is To Do or Doing and Due is after today; sort Due ascending; group by Due (by day); show Name, Project.
 3. Tab "No date", named "What has no date?": filter Status is To Do or Doing and Due is empty; group by Project; show Name, Meeting.
 4. Tab "Waiting On", named "What am I waiting on?": filter Status is Waiting On; sort Due ascending; show Name, Project, Due.
 5. Tab "Someday", named "What could I do someday?": filter Status is Someday; group by Project; show Name.
-6. Tab "Done", named "What did I finish?": filter Status is Done; sort Last edited time descending; group by Last edited time (by week); show Name, Project.
+6. Tab "Questions", named "Which questions am I following up?": filter Kind is Question and Status is not Done and Status is not Won't Do; sort Due ascending; show Name, Project, Status.
+7. Tab "Risks", named "Which risks am I following up?": filter Kind is Risk and Status is not Done and Status is not Won't Do; sort Due ascending; show Name, Project, Status.
+8. Tab "Done", named "What did I finish?": filter Status is Done; sort Last edited time descending; group by Last edited time (by week); show Name, Project.
 
 Put the views in a tabs block (one view per tab, tab labels as given). If you can't create tabs, add them as separate views of one linked view instead.
 
@@ -19,5 +21,6 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 ```
 
 ## Verify
-- [ ] Six tabs: Today, Upcoming, No date, Waiting On, Someday, Done.
+- [ ] Eight tabs: Today, Upcoming, No date, Waiting On, Someday, Questions, Risks, Done.
+- [ ] A task with Kind Question shows in Questions until it is Done.
 - [ ] A task with no Due shows only in "No date".

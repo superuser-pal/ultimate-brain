@@ -12,17 +12,16 @@ The prompts are generated from [docs/notion-space-design.md](../docs/notion-spac
 
 ### Choose your modules (decision 0048)
 
-The space is a core (Inbox, Meetings, Projects, Areas, People, Review) plus the modules you choose. You can change this any time by asking your agent ("turn on documents"); each module's steps for later are in [modules/](modules/).
+The space is a core (Inbox, Meetings, Projects, Areas, People) plus the modules you choose. There is no Review, Decisions or Questions database since 0.16.0: you decide what the brain proposes in your agent session, and a project's decisions and open questions are in its Brief and Decision log (decisions 0096, 0099). You can change this any time by asking your agent ("turn on documents"); each module's steps for later are in [modules/](modules/).
 
 - [ ] **Domains:** group Areas by the work or life context they belong to. The Domains database is built either way (decision 0065); this choice is whether the brain uses it
-- [x] **Knowledge:** Decisions, Questions
 - [x] **Orgs:** client and partner organizations
 - [ ] **Documents:** keep a document, or part of one, as a page
 - [ ] **Reports:** ask the brain in the Inbox, get a report you can refresh
-- [ ] **Tasks:** action items as Notion tasks (leave it off if you'll map your own tasks database: [modules/tasks.md](modules/tasks.md))
+- [ ] **Tasks:** action items as Notion tasks, and the questions and risks you follow up (leave it off if you'll map your own tasks database: [modules/tasks.md](modules/tasks.md))
 - [ ] **Planning:** Goals and Key Results
 
-**How the prompts follow your choice.** A line that starts with a module in brackets, such as `[Planning]`, belongs to that module. Before pasting a prompt, **delete every line tagged with a module you didn't choose**. Leave the tags on the other lines: each prompt tells Notion AI to ignore them. A line with two tags (`[Knowledge] [Documents]`) needs both modules. Untagged lines are Core: keep them all.
+**How the prompts follow your choice.** A line that starts with a module in brackets, such as `[Planning]`, belongs to that module. Before pasting a prompt, **delete every line tagged with a module you didn't choose**. Leave the tags on the other lines: each prompt tells Notion AI to ignore them. A line with two tags needs both modules. Untagged lines are Core: keep them all.
 
 ### Build
 
@@ -32,7 +31,7 @@ The space is a core (Inbox, Meetings, Projects, Areas, People, Review) plus the 
 - [ ] [4 · Formulas and rollups](prompts/04-formula-rollup.md)
 - [ ] [5 · Ownership descriptions](prompts/05-ownership.md)
 - [ ] [6 · Templates](prompts/06-templates.md)
-- [ ] [7 · Spaces and views](prompts/07-spaces-views.md): one prompt per page (Home, Review, Meetings, Tasks, Projects, Plan, Knowledge, Archive)
+- [ ] [7 · Spaces and views](prompts/07-spaces-views.md): one prompt per page (Home, Meetings, Tasks, Projects, Plan, Knowledge, Archive)
 - [ ] (optional) [8 · Navigation](prompts/08-navigation.md)
 - [ ] [9 · Brain Assistant's skills and the guide](prompts/09-assistant-and-guide.md): the Skills database (Brain Assistant's skills) on System, and How it works
 - [ ] **Buttons and page layouts, by hand** (the API and Notion AI can't create buttons or set page layouts): for each module you chose, do the "By hand" steps of its file in [modules/](modules/), then set each database's page layout as in [views-guide.md](views-guide.md) §9.
@@ -44,7 +43,7 @@ Prefer to build Spaces and views by hand? [views-guide.md](views-guide.md) spell
 - [ ] Tell your agent "connect the brain to Notion". The connect-notion skill records your modules (`brain modules`), finds the databases by name through the Notion MCP and writes their IDs into `brain.json` (decision 0015).
 - [ ] Using your own Tasks database? Tell the agent which one. It maps its property names into `brain.json` `notion.tasks` (decision 0018). The title property is required; a relation to Meetings is preferred for the backlink.
 - [ ] Ask the agent to verify the live space against the design. It reports any property, option or relation that differs (decision 0022).
-- [ ] Set up Brain Assistant: "Setup" in [brain-assistant.md](brain-assistant.md) (its skills are already in the Skills database), and paste the minutes prompt ([pasting-the-minutes-prompt.md](pasting-the-minutes-prompt.md)).
+- [ ] Set up Brain Assistant: "Setup" in [brain-assistant.md](brain-assistant.md) (its skills are already in the Skills database; it and its buttons need Notion's Business or Enterprise plan with Notion credits), and paste the minutes prompt ([pasting-the-minutes-prompt.md](pasting-the-minutes-prompt.md)).
 
 ## Changes for spaces built with the earlier prompts
 

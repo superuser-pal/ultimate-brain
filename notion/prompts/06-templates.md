@@ -2,7 +2,7 @@
 
 Paste into Notion AI. Before: [Prompt 5](05-ownership.md). Next: [Prompt 7](07-spaces-views.md).
 
-Each template is the database's default. Every linked view sits under an H3 heading named by the question it answers, has its database title hidden, and shows only rows related to the page (docs/notion-space-design.md §4). Where a block lists several views, they appear as view tabs on that one linked view. On project pages, the brain writes only inside the "Brief" and "Decision log" toggle headings (decision 0026), and on area pages inside "Brief" (decision 0041); for connected work and linked repos it also appends "Workflow" and "Repo tasks · <repo>" toggles itself, so no template holds them (decision 0059). First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md)); a tag can sit in front of an indented line, so keep the indent after it. Existing space? Use the migrations instead ([migration 0010](../migrations/0010-modules-documents-buttons-area-homes.md) for the area home).
+Each template is the database's default. Every linked view sits under an H3 heading named by the question it answers, has its database title hidden, and shows only rows related to the page (docs/notion-space-design.md §4). Where a block lists several views, they appear as view tabs on that one linked view. On project pages, the brain writes only inside the "Brief" and "Decision log" toggle headings (decision 0026), and on area pages inside "Brief" (decision 0041): a project's or area's decisions and its open questions and risks show there, since there is no Decisions or Questions database (decision 0099); for connected work and linked repos it also appends "Workflow" and "Repo tasks · <repo>" toggles itself, so no template holds them (decision 0059). First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md)); a tag can sit in front of an indented line, so keep the indent after it. Existing space? Use the migrations instead ([migration 0010](../migrations/0010-modules-documents-buttons-area-homes.md) for the area home).
 
 ```text
 [Tasks] When mapping your own Tasks database, substitute its mapped status property and Done and Won't Do option names in every Tasks filter below.
@@ -15,17 +15,13 @@ Create a default page template for each database below. Each item "Heading: data
   "What needs me here?": a tabs block with these tabs, each holding one linked view filtered to this area, with the database title hidden:
 [Tasks]     tab "Today": Tasks where Area is this page, Status is not Done and Status is not Won't Do and Due is on or before today, sorted Due ascending, showing Name, Project, Due.
     tab "Meetings": Meetings where Area is this page, Brain Status is Not Reviewed and Date is on or before today, sorted Date descending, showing Name, Date, Project.
-    tab "Review waiting": Review where Area is this page and State is Pending, grouped by Type, sorted Created time ascending, showing Status, Name.
     tab "Inbox": Inbox where Area is this page and Brain Status is New or Ready, sorted Created ascending, showing Name, Kind, Brain Status.
 [Planning]   "What am I working toward here?": Goals where Area is this page and Status is Active, showing Name, Progress, Countdown.
   "What's active here?": Projects where Area is this page (views: "Active" Status is Active; "Planned" Status is Planned; "Done" Status is Done), showing Name, Status, Countdown.
 [Tasks]   "What's on my plate here?": Tasks where Area is this page (views: "Open" Status is To Do or Doing; "Waiting On" Status is Waiting On; "Done" Status is Done), showing Name, Project, Due.
   "Which meetings?": Meetings where Area is this page (views: "Upcoming" Date on or after today, Date ascending; "Past" Date before today, Date descending), showing Name, Date, Project.
-[Knowledge]   "What have we decided here?": Decisions where Area is this page (views: "Current" Assessment is not Superseded, Date descending; "Superseded" Assessment is Superseded, Date descending), showing Name, Project, Date.
-[Knowledge]   "What's still open here?": Questions where Area is this page (views: "Open questions" Status is Open and Kind is Question; "Open risks" Status is Open and Kind is Risk; "Answered" Status is Answered), showing Name, Project, Kind.
   "What came in?": Inbox where Area is this page, sorted Created descending, showing Name, Kind, Summary.
-[Knowledge]   "What do we know?": views "Decisions" (Decisions where Area is this page, sorted Date descending, showing Name, Assessment, Date, Project).
-[Documents]   Under "What do we know?" (create the heading if it isn't there yet), a view "Documents" (Documents where Area is this page and Origin is not Report, sorted Last edited time descending, showing Name, Summary, Project).
+[Documents]   "What do we know?": a view "Documents" (Documents where Area is this page and Origin is not Report, sorted Last edited time descending, showing Name, Summary, Project).
 [Reports]   "Reports": Documents where Area is this page and Origin is Report, sorted Created time descending, showing Name, Refresh asked, What to fix.
   Then a toggle "My notes".
 [Planning] - Goals:
@@ -37,11 +33,9 @@ Create a default page template for each database below. Each item "Heading: data
   A toggle heading 2 "Brief" containing one empty paragraph; a toggle heading 2 "Decision log" containing one empty paragraph.
 [Tasks]   "What's on my plate here?": Tasks where Project is this page (views: "Open" Status is To Do or Doing; "Waiting On" Status is Waiting On; "Done" Status is Done), showing Name, Due, Status.
   "Which meetings?": Meetings where Project is this page (views: "Upcoming" Date on or after today, Date ascending; "Past" Date before today, Date descending), showing Name, Date, Brain Status.
-[Knowledge]   "What's still open here?": Questions where Project is this page and Status is Open, showing Name, Kind.
   "Who's involved?": People where Projects contains this page, showing Name, Role.
   "What came in?": Inbox where Project is this page, sorted Created descending, showing Name, Kind, Summary.
-[Knowledge]   "What do we know?": views "Decisions" (Decisions where Project is this page, sorted Date descending, showing Name, Assessment, Date).
-[Documents]   Under "What do we know?" (create the heading if it isn't there yet), a view "Documents" (Documents where Project is this page and Origin is not Report, sorted Last edited time descending, showing Name, Summary).
+[Documents]   "What do we know?": a view "Documents" (Documents where Project is this page and Origin is not Report, sorted Last edited time descending, showing Name, Summary).
 [Reports]   "Reports": Documents where Project is this page and Origin is Report, sorted Created time descending, showing Name, Refresh asked, What to fix.
   Then a toggle "My notes".
 - Meetings:
@@ -49,8 +43,6 @@ Create a default page template for each database below. Each item "Heading: data
   A gray callout (the notice, decision 0055): "All subjects included unless marked Meeting only. Mark Reviewed to confirm." followed by a gray line "Tick the quick follow-ups you've done: the ones left unticked become Tasks when you set Reviewed. To leave a subject out, open For the brain and change its line to Selection: Meeting only. To leave one item out, write Meeting only: at the start of its quote line there. Nothing is added to the brain until you set Reviewed."
   A Notion AI meeting notes block.
   A toggle "My notes".
-[Knowledge]   A toggle "Decisions" containing a linked view of Decisions where Decided In is this page.
-[Knowledge]   A toggle "Questions" containing a linked view of Questions where Raised In is this page.
 [Tasks]   A toggle "Tasks" containing a linked view of Tasks where Meeting is this page.
 - People:
   "Which meetings were they in?": Meetings where Attendees contains this page (views: "Upcoming" Date on or after today, Date ascending; "Past" Date before today, Date descending), showing Name, Date, Project.
@@ -64,7 +56,6 @@ Create a default page template for each database below. Each item "Heading: data
   A gray callout: "All subjects included unless marked Meeting only. Mark Ready to confirm. Creating the summary never creates a task." followed by a gray line "Record with your phone or Notion, paste the transcript into the Transcript toggle, then ask Brain Assistant: Voice summary."
   A heading 2 "[s1] Voice note", the line "Selection: Use in brain", and three heading 3s "Highlights", "Commitments", "Ideas to explore", each empty.
   A toggle "Transcript" containing one empty paragraph.
-- Review (the row's page, decision 0055): the template of a Review row created by hand only; rows written by the brain have their own body. A gray callout "Each change below is a section. Read them, or click Review with me to go through them with Brain Assistant. Correct a wording where it stands, or type Accept, Reject or Defer on its Decision line. Then set Your call: Approve, Request revision (say what in What to fix) or Reject." Put the button Review with me at the top of the page layout (by hand: see the buttons table in notion/views-guide.md; decision 0090).
 Set each of these templates as the database default, except the Inbox "Voice note", which stays a second template.
 ```
 

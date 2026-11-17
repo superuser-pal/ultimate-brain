@@ -1,16 +1,17 @@
 # Modules: turning one on or off later
 
-The space is a core (Inbox, Meetings, Projects, Areas, People, Review) plus optional modules (decision 0048; docs/notion-space-design.md §1). You choose them when you build the space ([CHECKLIST](../CHECKLIST.md)). To change them later, ask your agent: "turn on documents", "turn planning off". The `brain-connect-notion` skill runs `brain modules on|off <module>` and walks you through the module's file here.
+The space is a core (Inbox, Meetings, Projects, Areas, People) plus optional modules (decision 0048; docs/notion-space-design.md §1). You choose them when you build the space ([CHECKLIST](../CHECKLIST.md)). To change them later, ask your agent: "turn on documents", "turn planning off". The `brain-connect-notion` skill runs `brain modules on|off <module>` and walks you through the module's file here.
 
 | Module | File | Databases |
 |---|---|---|
 | Domains | [domains.md](domains.md) | Domains (in every space, 0065: turning it on builds nothing) |
-| Knowledge | [knowledge.md](knowledge.md) | Decisions, Questions |
 | Orgs | [orgs.md](orgs.md) | Orgs |
 | Documents | [documents.md](documents.md) | Documents |
 | Reports | [reports.md](reports.md) | Documents (Reports needs the Documents module): a report is a Documents row with Origin Report; Ask rows on the Inbox |
 | Tasks | [tasks.md](tasks.md) | Tasks, or your own tasks database |
 | Planning | [planning.md](planning.md) | Goals, Key Results |
+
+The Knowledge module (Decisions, Questions) is retired since 0.16.0: [knowledge.md](knowledge.md) says why and what replaces it.
 
 ## How a module file works
 

@@ -249,12 +249,30 @@ test("0099: brain upgrade on a 0.15 brain.json with Knowledge on leaves no Knowl
   assert.equal(typeof config.notion.databases.questions, "string", "the migration reads Questions once, so upgrade keeps the key");
   assert.equal(upgraded.json.data.notion_migrations.knowledge_databases, true);
   const human = await brain(["upgrade", "--dry-run", "--brain", dir, "--now", NOW]);
-  assert.match(human.stdout, /Notion: your space still has the Decisions and Questions databases\. Ask your agent to apply the 0\.16\.0 Notion migration: it reads back the Status you set on questions, then archives both databases\./);
+  assert.match(human.stdout, /Notion: your space still has the Decisions and Questions databases\. Ask your agent to apply the 0\.16\.0 Notion migration \([^)]*notion[\\/]migrations[\\/]0027-one-place-to-decide\.md\): it reads back the Status you set on questions, then archives both databases\./);
   // A brain with no modules block gets one without Knowledge.
   await editJson(dir, (next) => { delete next.modules; delete next.notion.databases.decisions; delete next.notion.databases.questions; });
   const second = await run(dir, ["upgrade"]);
   assert.equal(second.json.data.notion_migrations.knowledge_databases, false);
   assert.equal("knowledge" in JSON.parse(await readFile(join(dir, "brain.json"), "utf8")).modules, false);
+});
+
+test("0096: brain upgrade names the 0.16.0 migration while brain.json still has the Review database, and the migration file exists", async (context) => {
+  const dir = await fixtureCopy(context);
+  await editJson(dir, (config) => { config.notion.databases.review = "00000000-0000-4000-8000-0000000000aa"; });
+  const upgraded = await run(dir, ["upgrade", "--dry-run"]);
+  assert.equal(upgraded.json.data.notion_migrations.review_database, true);
+  const human = await brain(["upgrade", "--dry-run", "--brain", dir, "--now", NOW]);
+  const lines = human.stdout.split("\n");
+  const review = lines.findIndex((line) => line.startsWith("Notion: your space still has the Review database."));
+  assert.ok(review > 0, human.stdout);
+  assert.match(lines[review], /Ask your agent to apply the 0\.16\.0 Notion migration \([^)]*0027-one-place-to-decide\.md\): it reads the Review rows once, applies what you decided there, and archives the database\./);
+  const knowledge = lines.findIndex((line) => line.startsWith("Notion: your space still has the Decisions and Questions databases."));
+  if (knowledge >= 0) assert.ok(knowledge > review, "the Review line comes first");
+  await readFile(join(import.meta.dirname, "..", "notion", "migrations", "0027-one-place-to-decide.md"), "utf8");
+  await editJson(dir, (config) => { delete config.notion.databases.review; });
+  const after = await run(dir, ["upgrade", "--dry-run"]);
+  assert.equal(after.json.data.notion_migrations.review_database, false);
 });
 
 test("0099: brain modules no longer lists Knowledge and refuses to switch it; status reports neither database", async (context) => {

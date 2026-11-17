@@ -546,7 +546,7 @@ test("upgrade names the package's Notion migrations newer than the template vers
   for (const dry of [true, false]) {
     const json = await brain(["upgrade", "--brain", target, ...(dry ? ["--dry-run"] : []), "--now", NOW, "--json"], home, product);
     assert.equal(json.code, 0, json.stdout);
-    assert.deepEqual(json.json.data.notion_migrations, { template_version: "0023", newer: ["0024-second.md", "0025-third.md"], knowledge_databases: false });
+    assert.deepEqual(json.json.data.notion_migrations, { template_version: "0023", newer: ["0024-second.md", "0025-third.md"], review_database: false, knowledge_databases: false });
   }
   const human = await brain(["upgrade", "--brain", target, "--now", NOW], home, product);
   assert.equal(human.code, 0, human.stderr);
@@ -561,7 +561,7 @@ test("upgrade names the package's Notion migrations newer than the template vers
 
   await editConfig(target, (config) => { config.notion.template_version = "0025"; });
   const current = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], home, product);
-  assert.deepEqual(current.json.data.notion_migrations, { template_version: "0025", newer: [], knowledge_databases: false });
+  assert.deepEqual(current.json.data.notion_migrations, { template_version: "0025", newer: [], review_database: false, knowledge_databases: false });
   const currentHuman = await brain(["upgrade", "--brain", target, "--now", NOW], home, product);
   assert.equal(currentHuman.stdout.split("\n")[1], "Notion: your space has every migration (template 0025).");
 });
@@ -571,7 +571,7 @@ test("upgrade with no template version reports it unknown and names no migration
   const { home, target } = await freshBrain(context);
   const json = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], home, product);
   assert.equal(json.code, 0, json.stdout);
-  assert.deepEqual(json.json.data.notion_migrations, { template_version: null, newer: null, knowledge_databases: false });
+  assert.deepEqual(json.json.data.notion_migrations, { template_version: null, newer: null, review_database: false, knowledge_databases: false });
   const human = await brain(["upgrade", "--brain", target, "--now", NOW], home, product);
   assert.equal(human.stdout.split("\n")[1],
     `Notion: template version unknown, so upgrade can't tell which migrations your space needs; ask your agent which ones apply (${join(product, "notion", "migrations")}/).`);

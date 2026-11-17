@@ -1,6 +1,6 @@
 # Tasks
 
-Action items from meetings, and your own from documents, emails and captures, become Notion tasks linked to their meeting or source (decisions 0018, 0037, 0048; docs/notion-space-design.md §3.12). Off by default. Use the default Tasks database, or map your own.
+Action items from meetings, and your own from documents, emails and captures, become Notion tasks linked to their meeting or source (decisions 0018, 0037, 0048; docs/notion-space-design.md §3.12). A question or risk you say to follow up ("track it", or `Track: Waiting On —` on its line in the minutes) becomes a task too, with **Kind** Question or Risk, listed under the Tasks page's **Questions** and **Risks** tabs (decision 0099 §3 to §5). Off by default. Use the default Tasks database, or map your own.
 
 ## Turning it on
 
@@ -9,17 +9,17 @@ Action items from meetings, and your own from documents, emails and captures, be
 **Your own tasks database?** Skip to step 2 and say so: the skill maps its properties (brain-connect-notion, step 5) instead of creating one. It needs a title, and a relation to Meetings (or a URL property) for the backlink.
 
 **Notion AI**, on **Brain Data** (the API can't create databases):
-> In this page, create one full-page database "Tasks" with: Name (title), Status (status: To Do, Doing, Waiting On, Someday, Done; put Waiting On and Someday in any group except Complete), Due (date), Brain ID (text), Last edited time (last edited time). Don't change anything else.
+> In this page, create one full-page database "Tasks" with: Name (title), Status (status: To Do, Doing, Waiting On, Someday, Done; put Waiting On and Someday in any group except Complete), Due (date), Kind (select: Task, Question, Risk), Brain ID (text), Last edited time (last edited time). Don't change anything else.
 
 ### 2 · Relations and formulas
 
 | Change | Who |
 |---|---|
 | Two-way relations: Tasks "Project" ↔ Projects "Tasks"; Tasks "Area" ↔ Areas "Tasks"; Tasks "Meeting" ↔ Meetings "Tasks"; Tasks "Source" ↔ Inbox "Tasks" (on your own database: the ones it lacks, with your names) | agent |
-| Descriptions: every property of Tasks, and the "Tasks" relation in Projects, Areas, Meetings and Inbox, "Owner: you." | agent |
-| Map it: the default database sets `notion.tasks.database` and `status_type` `"status"`; your own gets a mapping you approve (brain-connect-notion, step 5) | agent |
+| Descriptions: Kind, "Owner: brain on a task it creates to track a question or risk you said to follow up (Question or Risk); empty or Task otherwise. You may set Task."; every other property of Tasks, and the "Tasks" relation in Projects, Areas, Meetings and Inbox, "Owner: you." | agent |
+| Map it: the default database sets `notion.tasks.database`, `status_type` `"status"` and `properties.kind` `"Kind"`; your own gets a mapping you approve (brain-connect-notion, step 5), and is offered Kind once (spec/setup.md §6.2.1): without it, a task that tracks a question or risk has a title starting `Question: ` or `Risk: ` | agent |
 
-**Notion AI**, on **Brain Data** (formulas over the new relation, [Prompt 4](../prompts/04-formula-rollup.md) items 5 and 12, with the hand-pasted Due formula there if Notion AI gets it wrong):
+**Notion AI**, on **Brain Data** (formulas over the new relation, [Prompt 4](../prompts/04-formula-rollup.md) items 5 and 10, with the hand-pasted Due formula there if Notion AI gets it wrong):
 Use the Task Progress and Due formulas in [Prompt 4](../prompts/04-formula-rollup.md), substituting your mapped relation, property and status names. Add the Won't Do status option by hand in Complete. Set `notion.tasks.wont_do_status` to its name (default `Won't Do`); do not rename unrelated statuses. Done and Won't Do are excluded from due views and reminders. Won't Do can be reopened.
 
 
@@ -34,9 +34,9 @@ Use the Task Progress and Due formulas in [Prompt 4](../prompts/04-formula-rollu
 
 ### Verify
 - [ ] `brain modules` shows `tasks` on with nothing missing; `brain status` shows `tasks_database: true`.
-- [ ] The Tasks page has its six tabs; a new project shows "What's on my plate here?".
+- [ ] The Tasks page has its eight tabs, Questions and Risks among them; a new project shows "What's on my plate here?".
 - [ ] After the next ingest of a meeting with an action item for you, the task appears in Tasks → Today or Upcoming, linked to the meeting.
 
 ## Turning it off
 
-The brain stops creating tasks and lists action items in its report instead. Your tasks stay where they are. You may hide: the Tasks page and its navigation link, Home's Tasks tab and "What's due across areas?" in its Areas tab, and the Tasks views on area, project and meeting pages.
+The brain stops creating tasks and lists action items in its report instead; nothing is tracked, and a question you would follow up stays in its project's Brief. Your tasks stay where they are. You may hide: the Tasks page and its navigation link, Home's Tasks tab and "What's due across areas?" in its Areas tab, and the Tasks views on area, project and meeting pages.
