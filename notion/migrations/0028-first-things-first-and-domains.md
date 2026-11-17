@@ -10,35 +10,39 @@ Run this migration after `brain upgrade` has put 0.16.1 in place, in an attended
 
 Who does each step:
 - **agent:** the `brain-notion-change` skill, through the API, with your yes;
-- **by hand:** you, in Notion. The API can't edit a Custom Agent or a button, and it can't put a block before the first one on a page or in a callout. It can ignore a write while still answering 200, so always read the result back.
+- **by hand:** you, in Notion. The API can't edit a Custom Agent or a button, and it can't put a block before the first child of a page or a callout: it appends at the end, or right after a block it names. It can ignore a write while still answering 200, so always read the result back.
+
+The top page is Brain Data's topmost parent page (spec/setup.md §6.4). In the template and its duplicates, the **Start here** and **System** callouts sit inside the top page's columns, not at its top level: read the columns' children to find them. Start here is the callout whose text begins "Start here"; System is the callout titled "System" that holds Brain Data.
 
 ## Part A · First things first (0103)
 
 ### A1 · The First things first page (agent)
 
-The top page is Brain Data's topmost parent page (spec/setup.md §6.4). Read its child pages.
+Read the top page's child pages.
 1. **Already there?** A child page titled **First things first** means this step ran: create nothing, and leave the page as it is, its ticks included. Go to A2. (Two such pages: say so, and ask the user which to keep; delete nothing without their yes for that page.)
 2. **Otherwise,** with the user's yes, create a page titled **First things first** under the top page holding the checklist of [docs/notion-space-design.md](../../docs/notion-space-design.md) §10.1 word for word: its first line as a paragraph, then the eight items as to-do blocks, unticked, their bold words in bold, and its three links ("Notion credits", "Brain Assistant's setup page", "Get started") as that section gives them. Name every place as the text does, by where it sits under the top page: add no page mention.
 3. **Read it back** through the API: one child page **First things first** under the top page, holding one paragraph and eight to-dos, none ticked, in §10.1's order, with the three links.
 
+The API puts the new page at the end of the top page. Leave it there or drag it where you like: Start here and System link to it (A2, A3).
+
 ### A2 · The link in Start here (agent, or by hand)
 
-Read the top page's first block. When it is the **Start here** callout, add this line right after the line that ends "Get started shows every step." (before the line on Notion credits), a plain line inside the callout:
+Find the **Start here** callout. Add this line right after the line that ends "Get started shows every step." (before the line on Notion credits), a plain line inside the callout:
 
 `Then open First things first: create your own Brain Assistant and select it in its buttons.`
 
 Link "First things first" to the page of A1.
 - **Already there?** A line in the callout that links to the First things first page means this step ran: change nothing.
-- **The agent** adds it when the callout's lines are blocks of their own: append a paragraph to the callout with `after` set to the "Get started" line's block id. Then read the callout's children back: the new line is right after that one, once, and its link opens the A1 page.
-- **By hand** when the callout's lines are one block's text: click at the end of "Get started shows every step.", press Shift+Enter, type the line, select "First things first" and link it to the page (type its name in the link box and pick the one under your top page).
+- **The agent** adds it when the "Get started" line is a block of its own inside the callout: append a paragraph to the callout with `after` set to that block's id, the words "First things first" linked to the A1 page's URL. Then read the callout's children back: the new line is right after that one, once, and its link opens the A1 page.
+- **By hand** when the "Get started" line is the callout's own text (the template's form: the new line is then the callout's first inner line, where the API can't write), or the lines are one block's text: click at the end of "Get started shows every step.", press Shift+Enter, type the line, select "First things first" and link it to the page (type its name in the link box and pick the one under your top page).
 - **No Start here callout** (a space built before 0.14.0 without it): nothing to change. A1's page is on your top page, and A3 links it from System.
 
-### A3 · The link in System (by hand)
+### A3 · The link in System (agent, or by hand)
 
-Add a line **First things first**, linked to the page of A1, as the first line of **System**: in the template's copy and spaces from it, the System callout on the top page (decision 0085); in a space built from the prompts, the top of the System page. The API can't add a block before the first one, so this one is by hand: click at the start of the first line, type `First things first`, press Enter (Shift+Enter inside a callout's text), then select the words and link them to the page under your top page.
-
-- **Already there?** A link to the First things first page in System means this step ran: change nothing.
-- **Then the agent reads System back:** its first line links to the A1 page, once.
+Add a link to the page of A1 as the first link in **System**: in the template's copy and spaces from it, the System callout (decision 0085), where its pages and links follow the callout's title and a divider; in a space built from the prompts, the top of the System page.
+- **Already there?** A link to the First things first page in System (a link to page, a page mention or a linked word) means this step ran: change nothing.
+- **The agent** adds it when System's first inner block is a divider: append a **link to page** block (`{"type": "link_to_page", "link_to_page": {"type": "page_id", "page_id": "<the A1 page>"}}`) with `after` set to the divider's id. Then read System back: right after the divider, one link to the A1 page, then its other pages as before.
+- **By hand** otherwise (the API can't add a block before the first one): at the start of System's first line, type `First things first`, press Enter, then select the words and link them to the page under your top page (or type `/link to page` and pick it).
 
 ### A4 · Your Brain Assistant: keep it, and check it (in the session)
 
