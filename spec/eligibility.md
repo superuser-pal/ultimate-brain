@@ -34,7 +34,7 @@ Evidence is **eligible** for a caller when all three hold, and an agent uses evi
 
 | Use | Where it is applied | Task |
 |---|---|---|
-| Supported search | `query --candidates` (knowledge notes, sources; memories with `--types memory`), `recall --search`, `recall --pack`, `reflect --candidates`. Terms, scores and snippets are computed from each note **as the rule leaves it**, so excluded text never raises a score or appears in a snippet | CC-176 (on `main`: memory rows, §13 rows 1 to 3) |
+| Supported search | `query --candidates` (knowledge notes, sources; memories with `--types memory`), `recall --search`, `recall --pack`, `reflect --candidates` (never memories, cli.md §5.32). Terms, scores and snippets are computed from each note **as the rule leaves it**, so excluded text never raises a score or appears in a snippet | CC-176 (on `main`: memory rows, §13 rows 1 to 3) |
 | Full read | `query --read` | CC-176 |
 | Summaries | a note's `summary` (dropped once any part is restricted); a summary an agent writes (an answer, a report, a proposal's `why`) rests only on evidence an answer surface returned | CC-176 (the field), CC-178 and CC-180 (the skills) |
 | Citations | a citation names a note an answer surface returned as eligible; its label and path follow §6 | CC-176, CC-178 |
@@ -109,7 +109,7 @@ Metadata is every part of a note other than its body lines: `title`, `summary`, 
 
 A report, a Brief, a Decision log, an area Brief, an index entry and a Notion page are derived: they restate notes. The rule (CC-176 ships the direct case on `main`; CC-183 the rest):
 
-1. **Direct and indirect dependencies.** A derived item rests on every note in its `generated_from` and every note its body links, and, through any view among them, on what that view rests on, to any depth (a report that links a Brief that rests on a note). If any of them is restricted in any part, not eligible, or gone, the item is withheld whole. A dependency cycle is followed once.
+1. **Direct and indirect dependencies.** A derived item rests on every note in its `generated_from` and every note its body links, and, through any view among them, on what that view rests on, to any depth (a report that links a Brief that rests on a note). If any of them is restricted in any part, not eligible, or gone, the item is withheld whole. A dependency cycle is followed once. This rule holds in every brain, whether or not it has a suppression record (CC-345). A memory is never a dependency a derived item may rest on: a derived item has no caller to judge reach by, and memories never reach Notion (0008); `report new` refuses a memory link (cli.md §5.18).
 2. **Freshness.** A report whose `generated_at` is not later than the `captured` of an extract version that carries a suppression record is withheld (cli.md §5.13.1, on `main`), **and stays withheld after the source's cleanup is reconciled**: a cleanup does not make an older report fresh (0077 plan 3, "a stale report does not become eligible merely because its source was cleaned"). Only a refresh that reads through `query --read` and writes a new `generated_at` brings it back.
 3. **Fail closed.** A derived item whose provenance (`generated_from`, its links) or freshness (`generated_at`, an extract's `captured`) can't be read is withheld whole.
 4. **No navigation exception.** A view is never shown in part, and "navigation only" is never a reason to show prose that rule 1 to 3 would withhold (0077 plan 3).
