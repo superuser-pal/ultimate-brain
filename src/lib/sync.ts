@@ -490,7 +490,7 @@ function sortPlan(plan: SyncPlan): void {
 }
 
 function notionFields(database: string, p: Record<string, unknown>, asOf: string): Record<string, unknown> {
-  const mapping: Record<string, Record<string, string>> = { domains: { Type: "type", Archived: "archived" }, areas: { Archived: "archived" }, goals: { Status: "status", Progress: "progress", Archived: "archived" }, projects: { Status: "status", Priority: "priority", Dates: "dates", Archived: "archived" }, people: { Email: "email" }, orgs: { Relationship: "relationship", Website: "website", Archived: "archived" } };
+  const mapping: Record<string, Record<string, string>> = { domains: { Archived: "archived" }, areas: { Archived: "archived" }, goals: { Status: "status", Progress: "progress", Archived: "archived" }, projects: { Status: "status", Priority: "priority", Dates: "dates", Archived: "archived" }, people: { Email: "email" }, orgs: { Relationship: "relationship", Website: "website", Archived: "archived" } };
   const fields: Record<string, unknown> = { as_of: asOf };
   for (const [name, key] of Object.entries(mapping[database] ?? {})) if (Object.hasOwn(p, name) && p[name] !== null) fields[key] = p[name];
   return fields;
