@@ -43,7 +43,7 @@ Prefer to build Spaces and views by hand? [views-guide.md](views-guide.md) spell
 - [ ] Tell your agent "connect the brain to Notion". The connect-notion skill records your modules (`brain modules`), finds the databases by name through the Notion MCP and writes their IDs into `brain.json` (decision 0015).
 - [ ] Using your own Tasks database? Tell the agent which one. It maps its property names into `brain.json` `notion.tasks` (decision 0018). The title property is required; a relation to Meetings is preferred for the backlink.
 - [ ] Ask the agent to verify the live space against the design. It reports any property, option or relation that differs (decision 0022).
-- [ ] Set up Brain Assistant: "Setup" in [brain-assistant.md](brain-assistant.md) (its skills are already in the Skills database; it and its buttons need Notion's Business or Enterprise plan with Notion credits), and paste the minutes prompt ([pasting-the-minutes-prompt.md](pasting-the-minutes-prompt.md)).
+- [ ] Set up your own Brain Assistant, ticking **First things first** as you go (Prompt 1): "Setup" in [brain-assistant.md](brain-assistant.md) (its skills are already in the Skills database; it and its buttons need Notion's Business or Enterprise plan with Notion credits), including selecting it in **Send message to** of the Tidy capture, Write up and Refresh report buttons; then paste the minutes prompt ([pasting-the-minutes-prompt.md](pasting-the-minutes-prompt.md)).
 
 ## Changes for spaces built with the earlier prompts
 

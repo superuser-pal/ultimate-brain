@@ -238,7 +238,7 @@ A template copy built before 0.16.0 has the fifteen rows of 0.15.x. After migrat
 
 ## Updating a copy to 0.16.1
 
-After migration 0028 has added the Domain rollups and the Domains page template's views (part "Domains", D1 to D4):
-1. **Row 11:** set the Document's Area to `Example · Clients` if it is empty (migration 0028, D5; step 7 above).
+After migration 0028 has added the Domain rollups and the Domains page template's views (part B, B1 to B4):
+1. **Row 11:** set the Document's Area to `Example · Clients` if it is empty (migration 0028, B5; step 7 above).
 2. **Row 1:** `Example · Work` keeps its page. If it was made before the template's views, apply the Domains template to it, or add the three views by hand ([views-guide.md](views-guide.md) §9a).
 3. **Check by hand** as above: `Example · Work`'s page lists the Project, the Meeting and the Document, and shows no Type.

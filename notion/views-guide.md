@@ -207,7 +207,7 @@ The name and the label differ, so the layout doesn't show the same text twice (#
 | Write up | `Run your Write up skill on this Documents page: @This page. I confirm: do it as the skill says. Do not change any property or any other page.` |
 | Refresh report | `Run your Refresh report skill on this report: @This page. I confirm: add or replace the Proposed refresh toggle as the skill says. Do not change the report's text outside it, or any property.` |
 
-The buttons that message Brain Assistant need Notion's Business or Enterprise plan with Notion credits, as Brain Assistant does (decision 0101 §7). A message without the page reference makes Brain Assistant stop and say so. The Accept button uses **Edit property** on **This page**: Accepted → checked and Accepted at → Now.
+**Select your own agent** (decision 0103 §1). In **Send message to**, select the Brain Assistant you created in your workspace: a duplicate of the template never carries a configured agent, so in a duplicate each of the three buttons is opened (database ••• → Properties → the button) and your agent selected, as **First things first** lists. Selecting the agent says who receives the message; the **@This page** in the message says which page it is about: keep the message as it is, one never replaces the other. The buttons that message Brain Assistant need Notion's Business or Enterprise plan with Notion credits, as Brain Assistant does (decision 0101 §7). A message without the page reference makes Brain Assistant stop and say so. The Accept button uses **Edit property** on **This page**: Accepted → checked and Accepted at → Now.
 
 | Database | Heading (in order) | Property group: where · order | Hidden | Backlinks | Why |
 |---|---|---|---|---|---|

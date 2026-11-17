@@ -53,7 +53,7 @@ test("a new space and migration 0028 build the same three rollups with the same 
 test("migration 0028's Domains part: rollups, Type after a yes, the template views, layouts, and a rerun adds nothing", async () => {
   const migration = await read(MIGRATION);
   assert.match(migration.split("\n")[0], /^# 0028 · First things first, and Domains/);
-  const order = ["## Domains (0105)", "### D1 · ", "### D2 · ", "### D3 · ", "### D4 · ", "### D5 · ", "## What this migration doesn't do", "## Verify"];
+  const order = ["## Part B · Domains (0105)", "### B1 · ", "### B2 · ", "### B3 · ", "### B4 · ", "### B5 · ", "## What this migration doesn't do", "## Verify"];
   const at = order.map((h) => migration.indexOf(h));
   at.forEach((i, n) => assert.ok(i >= 0, `${order[n]} is there`));
   assert.deepEqual([...at].sort((a, b) => a - b), at, "in order");
@@ -67,8 +67,8 @@ test("migration 0028's Domains part: rollups, Type after a yes, the template vie
   assert.match(d2, /With the user's yes, remove it: a data source update with `\{"Type": null\}`/);
   assert.match(migration.slice(at[3], at[4]), /Domain contains This page/);
   const verify = migration.slice(at[7]);
-  assert.match(verify, /\nPart "Domains":\n/);
-  for (const text of ["Running D1 again reports nothing to add", "running D2 again has nothing to do", "lists its projects, meetings and documents"]) assert.ok(verify.includes(text), `Verify says ${text}`);
+  assert.match(verify, /\nPart B, Domains \(decision 0105\):\n/);
+  for (const text of ["Running B1 again reports nothing to add", "running B2 again has nothing to do", "lists its projects, meetings and documents"]) assert.ok(verify.includes(text), `Verify says ${text}`);
   const readme = await read("notion/migrations/README.md");
   const row = readme.split("\n").find((l) => l.startsWith("| [0028](0028-first-things-first-and-domains.md)"));
   assert.ok(row, "the README lists 0028");
