@@ -55,6 +55,8 @@ JSON
 
 ## Each release
 
+Apply [the product design principles](design-principles.md) (0104), and record applicable [Windows acceptance follow-up](#windows-acceptance-follow-up) before closing the release. Pending manual testing is a warning; the existing release gates below remain in force.
+
 **First, the native smoke run** (decision [0082](../decisions/0082-native-smoke-run-per-release-full-native-acceptance-before-1-0.md) §1): from 0.13.0 on, a release (patches included) is cut only after 0082's 15 cases pass in Claude Code and in Codex on a package of the head you are about to release. In the main checkout, after `git pull` (the logins are the harness's, [eval/memory-0.12/native/README.md](../eval/memory-0.12/native/README.md)):
 
 ```sh
@@ -98,6 +100,21 @@ Then it sets the version, writes the CHANGELOG section from the task rows (`- <i
 - **patch:** fixes only. **minor:** new commands, skill changes, new template rules. Stay below 1.0.0 until v1 is declared stable.
 - **A candidate:** `node scripts/release.mjs 0.3.0-rc.1` publishes on the `next` tag, never `latest`.
 - **Flags:** `node scripts/release.mjs <version> [--dry-run] [--allow-partial "<reason>"]`, in any order. `--dry-run` runs every check and prints the CHANGELOG section, and changes nothing.
+
+## Windows acceptance follow-up
+
+Under [0104](../decisions/0104-product-design-principles.md), review the release's changed behavior and platform impact to identify manual Windows checks that still need a person. Reuse existing automated coverage and recorded acceptance evidence when sufficient. Record why no manual run is needed when none applies.
+
+When manual Windows acceptance is needed, the releasing agent creates or updates **one task for that release** in the existing mapped Notion Tasks database. Find the existing task by its release and purpose before creating one, so retries and later test additions update it. Its title identifies the version and Windows acceptance; its body contains:
+- the release or candidate version and package/commit being tested;
+- the test requirements and affected features;
+- prerequisites, including the Windows environment and agent needed;
+- numbered steps and an expected result for each;
+- a place for actual results, pass/fail, evidence and any linked defect follow-up.
+
+Publish the task through the existing Notion connection and include its link in the release handoff. Keep real workspace identifiers and personal testing evidence outside the product repo. If Notion is unavailable, retain the exact task content with the release work, report it as not yet published and retry through the existing connection; never claim a local draft was pushed to Notion.
+
+Outstanding manual Windows acceptance produces a visible warning in the release handoff identifying the untested version/features and linking the task (or identifying its pending publication). It does **not** block publication, change the existing automated/native smoke gates or close the follow-up. Record results on the same task and link any defect work; close the testing task when its requirements and findings are resolved. Publishing the release does not establish platform parity or close the separate parity epic.
 
 ## Vendoring the skills (spec/skills-delivery.md §9)
 

@@ -8,6 +8,8 @@
 
 ## 1. What this space is for
 
+**Design review (0104):** apply [the product principles](design-principles.md), especially database reuse and minimal user effort. Before adding a database, the agent reviews the use case against the existing inventory in the feature-planning session and records why none fits if an addition is essential. Define changed ownership and crossings in §2 and the existing lifecycle contracts before implementation.
+
 Notion is the **human side** of the brain. You use it to:
 
 1. **Review meeting minutes** and mark them ready for the brain.
@@ -40,7 +42,7 @@ A part of a page that belongs to a module that is off is left out, and nothing r
 | From | Pattern | Where it shows up |
 |---|---|---|
 | Easlo | Dedicated meeting records with action items | Meetings database and its template |
-| Easlo | Separate record types for separate concepts (no "everything is a note") | One database per brain note type |
+| Easlo | Separate record types where needed | Existing databases are reused first; additions follow the design review above |
 | Easlo | Goals + Key Results (numeric) | Goals, Key Results |
 | Easlo | Entity pages as contextual workspaces | Templates for Project, Goal, Area, Person, Org, Meeting |
 | Ultimate Brain | Milestones as tick-off steps | `Kind = Milestone` in Key Results |

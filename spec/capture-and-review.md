@@ -4,6 +4,8 @@
 
 How this file fits: [schema.md](schema.md) holds field definitions, [cli.md](cli.md) command behavior; this file holds the cross-cutting lifecycle from a capture's selection to a decision in the session (§7) and points into both. "CC-nn builds" names the implementing task. The accepted-wording rules of cli.md §5.14.7 (the hashes, the baselines SN/SG, `clear_accepted`, the re-read before apply, the click-minute limit of decision 0058) are **reused** here by analogy and named where used.
 
+**Feature design (0104):** apply [the information-lifecycle principle](../docs/design-principles.md#2-govern-the-whole-information-lifecycle) when extending this flow. Define the changed input, owner, review condition, transformations, provenance, context/output eligibility, Notion destination and correction/retry path in this contract and the relevant command specs before implementation; reuse an unchanged transition by reference.
+
 **Decisions taken in this contract that the user may veto** (each the simplest reading of 0055; none contradicts it). Since 0.16.0 (0096), calls 3, 6, 8 and 10 are history: their Review page, Submit, Accept all and legacy rows are retired (§7.10); call 5's Review item is a question in the session (§7.5).
 1. Domains are a new note type `domain` (`dom-`), not a config list; and **Domains is off when its key is absent, even in a brain with no `modules` block** (where every other module reads as on). (§1)
 2. A Won't Do status is mapped by name in `brain.json`, lives in Notion's Complete group, and the brain never sets it. (§2)

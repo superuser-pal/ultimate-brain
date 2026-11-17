@@ -24,6 +24,10 @@ The "wow" is that it maintains and synthesizes itself. Tasks and project managem
 - **Since 0.8.0 ([0055](../decisions/0055-domains-capture-and-review.md)):** optional Domains, off by default, group Areas around PARA; selected subjects and items determine what enters the brain, and editable Review shows the exact changes the user accepts. Reflection follows in 0.11.0 ([0064](../decisions/0064-brain-assistant-before-reflection-hermes-after-1-0.md)).
 - **Capture sources (priority):** 1) agent sessions, 2) Notion AI meeting notes, 3) URLs and docs, 4) Notion quick captures. Email, Slack, Teams later via MCP.
 
+## Design principles
+
+[Product design principles](design-principles.md), adopted in [0104](../decisions/0104-product-design-principles.md), govern features from ideation to release. They guide lean design, the information lifecycle, Notion and tool reuse, user effort, agent-first operation and identical macOS/Windows capabilities; the document names the evidence required at each development stage.
+
 ## Architecture decisions
 
 | Topic | Decision |
