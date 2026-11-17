@@ -5,7 +5,7 @@ import { buildIndex } from "./index-builder.ts";
 import { parseNote, type Note } from "./notes.ts";
 import { newNotePath, slugify } from "./paths.ts";
 import { bodyHash } from "./proposals.ts";
-import { indexNotes, loadSuppressions } from "./suppressions.ts";
+import { indexNotes, loadSuppressions, type Loaded } from "./suppressions.ts";
 
 /** One concept turned into a learned Document (spec/cli.md §5.15 step 5a, decision 0071). */
 export interface Conversion { id: string; from: string; to: string }
@@ -38,7 +38,7 @@ const OPEN = new Set(["pending", "approved", "edited"]);
  * every relative link to a moved file is rewritten (sources excepted: their bytes are hashed), in bodies and in the text fields of
  * proposals, and `index.md` is rebuilt. A dead link to `knowledge/concepts/` that an earlier conversion missed is repaired by file name.
  */
-export function planConceptConversion(root: string, notes: readonly Note[], taken: (path: string) => boolean, currentIndex: string | null): ConceptPlan {
+export function planConceptConversion(root: string, notes: readonly Note[], taken: (path: string) => boolean, currentIndex: string | null, suppressions?: Loaded): ConceptPlan {
   const concepts = notes.filter((note) => note.type === "concept");
   const moved = new Map<string, string>();
   const claimed = new Set<string>();
@@ -102,7 +102,7 @@ export function planConceptConversion(root: string, notes: readonly Note[], take
   unresolved.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 
   // index.md is rebuilt only when a note is converted: a repair alone changes no title, summary or path the index lists.
-  const index = concepts.length === 0 ? currentIndex : buildIndex(indexNotes(planned, loadSuppressions(root))).markdown;
+  const index = concepts.length === 0 ? currentIndex : buildIndex(indexNotes(planned, suppressions ?? loadSuppressions(root))).markdown;
   if (index !== currentIndex) changes.push({ path: "index.md", action: currentIndex === null ? "created" : "updated", content: index! });
   const converted = concepts.map((note) => ({ id: note.id, from: note.path, to: moved.get(note.path)! }));
   return { converted, changes, notes: planned, index: index === currentIndex ? null : index, unresolved };

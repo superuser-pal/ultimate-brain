@@ -47,6 +47,9 @@ export const EXIT_CODES = {
   ALREADY_A_BRAIN: 5,
   OUTSIDE_ROOT: 5,
   BRAIN_DIRTY: 5,
+  GIT_OPERATION_IN_PROGRESS: 5,
+  BRAIN_CHANGED: 5,
+  UPGRADE_NOT_COMMITTED: 5,
   WRITE_CONFLICT: 5,
   RECOVERY_NEEDED: 5,
   DIRTY_TREE: 5,
@@ -65,12 +68,15 @@ export type ErrorCode = keyof typeof EXIT_CODES;
 export class BrainError extends Error {
   readonly code: ErrorCode;
   readonly details: unknown;
+  /** The human output, when it says more than `message` (its first line): `brain upgrade`'s list of conflicts (spec/cli.md §5.15). */
+  readonly human: string | undefined;
 
-  constructor(code: ErrorCode, message: string, details?: unknown) {
+  constructor(code: ErrorCode, message: string, details?: unknown, human?: string) {
     super(message);
     this.name = "BrainError";
     this.code = code;
     this.details = details;
+    this.human = human;
   }
 }
 

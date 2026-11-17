@@ -12,18 +12,28 @@ export interface Restore { input: string; extract_version: number; items: { note
 export interface Loaded { suppressions: Suppression[]; restores: Restore[]; problems: string[] }
 
 /** Suppression records live in `_suppressions/<input id>.json`, an append-only list (capture-and-review §5.3, cli §5.23). */
-export function loadSuppressions(root: string): Loaded {
+/**
+ * The suppression records in `_suppressions/`. `overlay` (file name → text, or null for absent) reads some files other than as they are
+ * on disk: `brain upgrade` builds a generated file with one input read as committed (spec/cli.md §5.15, Uncommitted work item 4).
+ */
+export function loadSuppressions(root: string, overlay?: ReadonlyMap<string, string | null>): Loaded {
   const dir = join(root, "_suppressions");
   const loaded: Loaded = { suppressions: [], restores: [], problems: [] };
   let names: string[] = [];
   try { names = readdirSync(dir).filter((name) => name.endsWith(".json")).sort(); } catch (error) {
     // Only a genuinely absent directory means "no records"; any other failure must surface (fail closed).
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") loaded.problems.push(`_suppressions: unreadable directory (${(error as NodeJS.ErrnoException).code ?? "error"})`);
-    return loaded;
+    if (overlay === undefined) return loaded;
+  }
+  if (overlay !== undefined) {
+    const present = new Set(names);
+    for (const [name, text] of overlay) if (text === null) present.delete(name); else if (name.endsWith(".json")) present.add(name);
+    names = [...present].sort();
   }
   for (const name of names) {
     try {
-      const value = JSON.parse(readFileSync(join(dir, name), "utf8")) as { input?: unknown; records?: unknown };
+      const text = overlay?.get(name) ?? readFileSync(join(dir, name), "utf8");
+      const value = JSON.parse(text) as { input?: unknown; records?: unknown };
       const records = Array.isArray(value.records) ? (value.records as Record<string, unknown>[]) : null;
       const valid = typeof value.input === "string" && records !== null && records.every((record) => record.kind === "restore"
         ? Number.isInteger(record.extract_version) && Array.isArray(record.items) && (record.items as unknown[]).every((item) => item !== null && typeof item === "object" && typeof (item as { note?: unknown }).note === "string" && Number.isInteger((item as { n?: unknown }).n))

@@ -202,10 +202,15 @@ async function defaultOwner(): Promise<string> {
   }
 }
 
-const IDENTITY_MESSAGE = [
-  "Git doesn't know your name and email yet, and the brain saves every change with them. Run these two lines, with your own name and email:",
+/** The two lines that give Git an identity; `brain upgrade` shows them too (spec/cli.md §5.15). */
+export const IDENTITY_COMMANDS = [
   '  git config --global user.name "Your Name"',
   '  git config --global user.email "you@example.com"',
+] as const;
+
+const IDENTITY_MESSAGE = [
+  "Git doesn't know your name and email yet, and the brain saves every change with them. Run these two lines, with your own name and email:",
+  ...IDENTITY_COMMANDS,
   "Then run the same brain init command again. Nothing was written.",
 ].join("\n");
 
