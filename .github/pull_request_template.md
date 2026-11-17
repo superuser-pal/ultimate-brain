@@ -4,11 +4,15 @@
 
 ## What changed
 
+<!-- Apply docs/design-principles.md (0104). Include the applicable planning/design evidence: simplest approach, database/tool reuse, user effort, lifecycle/ownership and macOS/Windows capabilities. Cite unchanged flows or briefly explain inapplicable checks. -->
+
 ## Acceptance
 <!-- Copy each acceptance criterion from build/TASKS.md. The reviewing agent ticks each box and adds the evidence: a test name, or a command and its output. -->
 - [ ] …
 
 ## Checks
+- [ ] Applicable design principles have evidence in the task, specs and PR; departures are recorded and reconciled with accepted decisions
+- [ ] Manual Windows acceptance coverage is recorded, or not applicable; any outstanding release testing has a Notion follow-up and a visible warning (completion is not a publication gate)
 - [ ] `npm test`, `npm run typecheck`, `npm run test:package` pass
 - [ ] The task row has a non-empty `**Changelog:**` line
 - [ ] Leak check passes: no real names, client text, Notion ids or emails (fixtures are synthetic)
