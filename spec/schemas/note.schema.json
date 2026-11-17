@@ -492,7 +492,7 @@
       "allOf": [{ "$ref": "#/$defs/knowledge" }],
       "properties": {
         "org": { "$ref": "#/$defs/orgId" },
-        "notion_fields": { "properties": { "type": { "enum": ["Personal", "Entrepreneurship", "Professional"] }, "archived": { "type": "boolean" } } }
+        "notion_fields": { "properties": { "type": { "description": "Legacy since 0.16.1 (decision 0105 §3): Domains · Type from 0.9.0 to 0.16.0. Accepted by lint, never read or written, and dropped at the next sync apply (spec/schema.md §4 domain).", "enum": ["Personal", "Entrepreneurship", "Professional"] }, "archived": { "type": "boolean" } } }
       }
     },
     "area": {

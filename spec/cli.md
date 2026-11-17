@@ -1382,7 +1382,8 @@ Written by the skill, normalized from MCP results:
 | checkbox | boolean |
 | date | `{"start": "<date or timestamp>", "end": "<…>" or null}` or `null` |
 | relation | array of page ids, sorted |
-| formula, rollup | their scalar result |
+| formula, rollup | their scalar result, except a rollup of a relation |
+| rollup of a relation (Show original, e.g. Projects, Meetings and Documents · Domain, 0.16.1, [0105](../decisions/0105-domains-on-projects-meetings-and-documents-and-domains-without-type.md) §1) | a relation: array of page ids, sorted; empty → `[]`. Notion returns it as a list of relations, never one page id, so a reader expects a list even when the Area has one Domain |
 
 **Notion → brain:**
 - `null` values and `null` date ends are dropped: the key is left out of `notion_fields`, and a correction to `null` is only allowed for the optional references in the table below (it removes them).
@@ -1447,13 +1448,15 @@ Read-only. Compares each row with the brain and returns a plan. Notes are matche
 
 | Database | Notion-owned → `notion_fields` | Correctable brain-owned → correction `field` |
 |---|---|---|
-| domains | Type → `type`, Archived → `archived` | Name → `title`, Summary → `summary`, Org → `org` |
+| domains | Archived → `archived` (Type until 0.16.0) | Name → `title`, Summary → `summary`, Org → `org` |
 | areas | Archived → `archived` | Name → `title`, Summary → `summary`, Domain → `domain` |
 | goals | Status → `status`, Progress → `progress`, Archived → `archived`, Key Results → `key_results` | Name, Summary, Why → `why`, Deadline → `facts.deadline`, Area → `area` |
 | projects | Status → `status`, Priority → `priority`, Dates → `dates`, Archived → `archived` | Name, Summary, Key Facts → `facts.<key>` (§5.14.4), Area → `area`, Goal → `goal`, Client (first) → `client`, People → `people` |
 | people | Email → `email` | Name, Summary, Role → `facts.role`, Org (first) → `org` |
 | orgs | Relationship → `relationship`, Website → `website`, Archived → `archived` (0070) | Name, Summary |
 | documents | — | Name, Summary |
+
+**Not read (0.16.1, [0105](../decisions/0105-domains-on-projects-meetings-and-documents-and-domains-without-type.md)).** A property this table and the rules above don't name is not read: it gives no `notion_fields` key, no correction, no conflict and no `ignored` entry. That holds for Domains · **Type**, retired in 0.16.1 (0105 §3): a space that keeps it doesn't import it again, and since `notion_fields` is rebuilt from the mapped properties at each pull, a domain note's old `type` is dropped at the next `sync apply` (an `updates` item that sets `notion_fields` without it; the row's Archived, a checkbox, is always read, so the row has a mapped value to rebuild from; as an area's old `type` since 0.9.0); lint accepts the old value until then (schema §4 domain). It holds too for the **Domain** rollup on Projects, Meetings and Documents (0105 §1), which Notion owns: no note gets a `domain` from it.
 
 Other brain-owned properties (Project and Area on Documents) are not correctable in v1 (decision 0027): a change you make there is `ignored`, `NOT_CORRECTABLE`, so the skill can tell you to use a proposal instead.
 
@@ -1550,6 +1553,7 @@ A source with `attached_to` is never selected: it has no Inbox row (0042). Neith
 | meetings | Attendees *(add)*, Project *(if empty)*, Area *(if empty)*, Brain Status, Ingested At, Brain ID |
 | inbox | Name *(create only)*, Kind *(if empty)*, Summary, Documents, People, Project *(if empty)*, Area *(if empty; once after a move)*, Brain Status, Brain ID, Last Synced. No report since 0.9.1: reports are Documents rows (0071) |
 
+- Render never sends Domains · Type (retired in 0.16.1) or the Domain rollup of Projects, Meetings and Documents (Notion computes it, 0105 §1).
 - On `create`, every listed property is sent. On `update`, only properties whose B ≠ S are sent, plus Last Synced (= `--now`) for the databases that have it (not Meetings). So Lifecycle goes out on create (`Reviewed` or `Disputed` for knowledge since 0071, `Draft` for a new person) and when the brain changed it (`archived` by a supersession), and your own Lifecycle edits, already pulled into the brain, are never overwritten.
 - **Archived *(once)*** (0070): domains, areas, goals, projects and orgs send no Lifecycle. When the note's `lifecycle` is `archived` (a merge or supersession) and `notion_fields.archived` is not true, Archived goes out as a checked checkbox; once S holds it, it is not sent again, so unticking it in Notion is your edit and stays.
 - Project relations carry every id in `projects`.
@@ -2414,7 +2418,7 @@ Answer "yes 2, 3", "1a" for the value that holds, "later 4", "skip 5 because …
 
 ### Domains (0055)
 
-Domains use `dom-` ids and `domains/<slug>.md`. When Domains is off, sync ignores Domain rows and Area · Domain with `MODULE_OFF`, and render omits them. When on, Area · Domain is a correctable optional single relation: multiple values conflict as `MULTIPLE_DOMAINS` and hold the whole row. Domain · Org follows the Orgs module. Lint checks the types of both relations and reports `DOCUMENT_DOMAIN_MISMATCH` when a Document’s Area and a linked Project’s Area have different Domains.
+Domains use `dom-` ids and `domains/<slug>.md`. When Domains is off, sync ignores Domain rows and Area · Domain with `MODULE_OFF`, and render omits them. When on, Area · Domain is a correctable optional single relation: multiple values conflict as `MULTIPLE_DOMAINS` and hold the whole row. Domain · Org follows the Orgs module. Lint checks the types of both relations and reports `DOCUMENT_DOMAIN_MISMATCH` when a Document’s Area and a linked Project’s Area have different Domains. Since 0.16.1 (0105) sync reads no Domains · Type (§5.14.2) and never reads the Domain rollup that Notion shows on Projects, Meetings and Documents.
 
 ### 5.24 `brain recover` (0055, capture-and-review §7.11)
 

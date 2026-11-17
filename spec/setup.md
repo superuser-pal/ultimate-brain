@@ -342,9 +342,17 @@ The new style applies from the agent's next reply. A request made in a linked fo
 
 ### 8.1 Describe, then one preview
 
-1. The skill asks the user to describe their work in a few sentences: what they do, for whom, with whom, and any other life context they want in the brain. Optionally, a folder or a repo to adopt (§8.4).
+1. **A quick map first** (added by the author, 2026-11-17; with Type gone, 0105 §3, a Domain's name and summary carry its meaning, so this is where the user learns them). Before its question, the skill gives one short message of at most 4 lines:
+   - a **Domain** is a broad context of your life, such as your job, a side business or your personal life;
+   - an **Area** is an ongoing responsibility inside a Domain, with no end date, such as Clients, Finances, Family or Health;
+   - a **Project** has an outcome and an end, sits in an Area, such as "Website relaunch";
+   - one invitation: name your Domains and Areas if you know them; otherwise the brain proposes them from what you say.
+
+   The examples are generic and invented, never taken from a brain. The wording may vary; for example: "A quick map before you start: a Domain is a big part of your life, like your job, a side business or your personal life. An Area is something you look after inside it with no end date: Clients, Finances, Family, Health. A Project has a goal and an end, like 'Website relaunch', and sits in an Area. Name yours if you know them, or just tell me about your work and I'll propose them." Domains are still proposed only with two or more contexts (step 2): the map explains them, it doesn't add them.
+
+   Then the skill asks the user to describe their work in a few sentences: what they do, for whom, with whom, and any other life context they want in the brain. Optionally, a folder or a repo to adopt (§8.4).
 2. Through Ultimate Assistant's "tell it what's on your mind" flow ([assistant.md](assistant.md) §7, extended to Domains, Areas and People by CC-191), it proposes **one preview**, a numbered list in that flow's form:
-   - **Domains,** only when the description has **two or more contexts** (work and personal, two businesses): name and type. With one context, none, and the Domains module stays off; with two or more, the preview says the Domains module will be turned on.
+   - **Domains,** only when the description has **two or more contexts** (work and personal, two businesses): name and summary (a one-line description of the context); no type (0105 §3: Domains have no Type since 0.16.1). With one context, none, and the Domains module stays off; with two or more, the preview says the Domains module will be turned on.
    - **Areas:** name, its Domain (when there are Domains), and its **What to track** list (§11).
    - **Projects:** name, Area, Status, a one-line purpose, the client org if any.
    - **Orgs** that a project's client or a person's org names.

@@ -139,7 +139,7 @@ An ongoing responsibility (e.g. "Clients", "Health").
 ### domain · `domains/` · Notion: Domains (0055)
 A work or life context that groups Areas; distinct from an Org.
 - `org`: optional scalar `org-` ID, naming an Org.
-- `notion_fields`: `type` (`Personal`·`Entrepreneurship`·`Professional`, from Domains · Type, 0.9.0), `archived` (optional boolean).
+- `notion_fields`: `archived` (optional boolean). `type` (`Personal`·`Entrepreneurship`·`Professional`) is **legacy** since 0.16.1 ([0105](../decisions/0105-domains-on-projects-meetings-and-documents-and-domains-without-type.md) §3): it held Domains · Type from 0.9.0 to 0.16.0. Domains · Type is retired, `sync plan` no longer reads it, lint still accepts the old value, and the next `sync apply` drops it, as an area's old `type` since 0.9.0. Nothing is edited by hand. A Domain's name and summary say what kind of context it is.
 - Body: description. With Domains off, notes remain in Git and are still indexed and linted.
 
 ### goal · `goals/` · Notion: Goals (0020)
@@ -180,6 +180,12 @@ A work or life context that groups Areas; distinct from an Org.
 | `questions` | list of IDs (`que-`) | | brain |
 | `tasks` | list of Notion page ids | | system |
 - `notion` is the Notion **meeting** page id. Body: the brain's meeting summary (for agents), sections fixed by the ingest skill.
+- **`area` follows its projects (0.16.1, [0105](../decisions/0105-domains-on-projects-meetings-and-documents-and-domains-without-type.md) §2).** `area` and `projects` are the §3.2 fields. When an ingest writes a meeting that has `projects` and no `area` (the user set no Area on the row), it sets `area` from those projects' `area`:
+  - every project has the same `area` → that Area;
+  - the projects have different `area`s → no `area`, and the ingest's report says so in one line (`<meeting title>: its projects are in different Areas (<Area>, <Area>), so no Area was set.`);
+  - a project written in the same batch counts by its own `area`, which a project always has (§4 project).
+
+  An `area` the user set (on the row, or already in the note) is kept, whatever its projects' Areas. Render's modes don't change: Meetings · Area is sent *if empty* (cli.md §5.14.4), so an Area you set in Notion stands. A meeting not taken in (Not Reviewed, Skipped) has only the Area you set. There is no backfill: an older meeting gets this `area` only when it is ingested again, and the next render sends it only if the row's Area is empty. The Area is what Notion's read-only Domain rollup reads (§14).
 
 ### decision · `knowledge/decisions/YYYY-MM-DD-<slug>.md` · Notion: none (a project's Brief and Decision log; Decisions until 0.16.0)
 | Field | Type | Req | Owner |
@@ -221,7 +227,7 @@ A **Document** (0049): something the user wants to keep as a readable page and r
 | `workflow` | `{ id: wf-…, artifact: art-… }`: the workflow and artifact the Document publishes (connected-workflows.md §6.3) | ✔ with `origin: workflow`; refused otherwise |
 | `question` | ID (`que-`): the question the task tracks (0099 §3), on a Document kept from a task that tracks one (0.16.0, 0100 §2; capture-and-review §13.4) | only on a `whole` Document whose source is a `task` source; refused otherwise |
 
-`sources` is required (at least one) except on a `learned`, `promoted` or `workflow` Document (a learned one keeps the concept's rule: its `sources` say where it came from, and a former concept may have none). `area` and `projects` place it.
+`sources` is required (at least one) except on a `learned`, `promoted` or `workflow` Document (a learned one keeps the concept's rule: its `sources` say where it came from, and a former concept may have none). `area` and `projects` place it. **An ingest's Document follows its projects (0.16.1, [0105](../decisions/0105-domains-on-projects-meetings-and-documents-and-domains-without-type.md) §2):** when an ingest writes a Document that has `projects` and no `area` (none from the row or the source), it sets `area` by §4 meeting's rule (one shared Area, that Area; different Areas, none and a line in the report). An `area` given stays; nothing older is backfilled; render sends a Document's `area` as it is (cli.md §5.14.4).
 
 | `origin` | Made from | Body | Lifecycle at creation | Body owner |
 |---|---|---|---|---|
@@ -723,7 +729,9 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 |---|---|
 | all · Name / Summary / Lifecycle / Brain ID / Last Synced | `title` / `summary` / `lifecycle` / `id` / `last_synced`; no Lifecycle on Domains, Areas, Goals, Projects, Orgs (0070) |
 | Decisions, Questions (the databases, their properties, Promote and Promote asked, and the Decisions and Questions relations on Projects, Areas, Meetings and the Inbox) | **retired in 0.16.0** (0099): no note type maps to them (§4). The 0.16.0 Notion migration reads Questions · Status once (cli.md §5.14.9), then archives both databases and removes their relations, views and toggles. Documents · From decision goes with them: a promoted Document keeps its `promoted_from` in Git |
-| Domains · Type, Archived | `notion_fields.type`, `.archived` (0.9.0) |
+| Domains · Archived | `notion_fields.archived` (0.9.0) |
+| Domains · Type | **retired in 0.16.1** ([0105](../decisions/0105-domains-on-projects-meetings-and-documents-and-domains-without-type.md) §3): not read by `sync plan`; 0.16.1's migration removes it after your yes. A domain's old `notion_fields.type` is legacy (§4 domain) |
+| Projects, Meetings, Documents · Domain (0.16.1, [0105](../decisions/0105-domains-on-projects-meetings-and-documents-and-domains-without-type.md) §1) | Notion-owned, derived: a read-only rollup (Area → Domain, Show original). The brain never writes or reads it; it maps to no field, and a note has no `domain` from it (capture-and-review §1.3) |
 | Orgs · Archived | `notion_fields.archived` (0070) |
 | Areas · Archived | `notion_fields.archived` |
 | Goals · Why, Deadline | `why`, `facts.deadline` |
