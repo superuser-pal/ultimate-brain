@@ -25,7 +25,6 @@ else {
   if (comparePrecedence(version, held) < 0 && !(isPrerelease(version) && !isPrerelease(held) && version.split("-")[0] === held)) {
     failures.push(`package.json is already ${held}; release ${held} or later`);
   }
-  const rowChangelog = usesTaskRowChangelog(version);
   const entries = taskEntries();
   const tasks = entries.filter((entry) => entry.release === version && entry.status !== "dropped");
   // A prerelease ships the work of its release: 0.4.0-rc.1 counts the rows of 0.4.0 (#250: 0.10.1 was published with none).
@@ -40,15 +39,11 @@ else {
     failures.push(`done tasks of a later release are on main: ${ahead.map(described).join(", ")}; release ${lowest} or later, or pass --allow-partial "<reason>"`);
   }
   const partial = ahead.length > 0 ? partialReason : undefined;
-  if (!rowChangelog) {
-    const changelog = readFileSync(resolve(ROOT, "CHANGELOG.md"), "utf8");
-    if (!new RegExp(`^## ${version}(?: — |$)`, "m").test(changelog)) failures.push(`CHANGELOG.md has no ${version} entry`);
-  }
   for (const task of tasks) {
     if (task.status !== "done") failures.push(`${task.id} is ${task.status}, not done`);
-    if (rowChangelog && task.changelog?.trim() === "") failures.push(`${task.id} has an empty **Changelog:** line`);
-    if (rowChangelog && task.changelog === undefined) failures.push(`${task.id} has no **Changelog:** line`);
-    if (rowChangelog && donePrNumbers(task.suffix) === undefined) failures.push(`${task.id} has an invalid done suffix`);
+    if (task.changelog?.trim() === "") failures.push(`${task.id} has an empty **Changelog:** line`);
+    if (task.changelog === undefined) failures.push(`${task.id} has no **Changelog:** line`);
+    if (donePrNumbers(task.suffix) === undefined) failures.push(`${task.id} has an invalid done suffix`);
   }
   failures.push(...npmProblems(), ...existingRelease(version));
   const repo = tryCommand("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
@@ -75,15 +70,13 @@ else {
   failures.push(...skills.problems);
   if (failures.length > 0) fail(`Release refused: ${failures.join("; ")}`);
   else if (dryRun) {
-    if (rowChangelog) process.stdout.write(`${releaseSection(version, tasks, "YYYY-MM-DD", skills.line)}\n`);
+    process.stdout.write(`${releaseSection(version, tasks, "YYYY-MM-DD", skills.line)}\n`);
     process.stdout.write(`Would release ${version}${isPrerelease(version) ? " to npm@next" : ""}${partial === undefined ? "" : `, partial (${ahead.map(described).join(", ")} stays out): ${partial}`}\n`);
   }
   else {
     command("npm", ["version", version, "--no-git-tag-version", ...(version === held ? ["--allow-same-version"] : [])], { stdio: "inherit" });
     const date = new Date().toISOString().slice(0, 10);
-    const dated = rowChangelog
-      ? writeReleaseSection(readFileSync(resolve(ROOT, "CHANGELOG.md"), "utf8"), version, releaseSection(version, tasks, date, skills.line))
-      : readFileSync(resolve(ROOT, "CHANGELOG.md"), "utf8").replace(`## ${version} — unreleased`, `## ${version} — ${date}`);
+    const dated = writeReleaseSection(readFileSync(resolve(ROOT, "CHANGELOG.md"), "utf8"), version, releaseSection(version, tasks, date, skills.line));
     writeFileSync(resolve(ROOT, "CHANGELOG.md"), dated);
     const publishArgs = ["publish", ...(isPrerelease(version) ? ["--tag", "next"] : [])];
     const staged = tryCommand("git", ["add", "package.json", "package-lock.json", "CHANGELOG.md"]);
@@ -170,11 +163,6 @@ function npmProblems() {
   if (!owners.ok) return /E404|404 Not Found/.test(owners.message) ? [] : [`cannot read the npm owners of ${name}: ${owners.message.split("\n")[0]}`];
   const names = owners.stdout.split("\n").map((line) => line.split(" ")[0]);
   return names.includes(user.stdout) ? [] : [`npm user ${user.stdout} is not an owner of ${name} (owners: ${names.filter(Boolean).join(", ")}); npm logout, then npm login as an owner`];
-}
-
-function usesTaskRowChangelog(version) {
-  const [major, minor] = version.split(".").map(Number);
-  return major > 0 || minor >= 4;
 }
 
 /** From 0.9.0 on a release checks skill updates and records its tested skills (spec/skills-delivery.md §11); earlier ones have no package snapshot. */

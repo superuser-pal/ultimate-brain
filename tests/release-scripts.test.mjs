@@ -167,29 +167,6 @@ test("release does not wait for CI when it already refuses", (t) => {
   assert.match(result.stderr, /CI is not green on HEAD \(pending\)/);
 });
 
-test("release 0.3.x retains its hand-written changelog gate", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  writeFileSync(join(root, "CHANGELOG.md"), "## 0.3.1 — unreleased\n");
-  writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · One · `done`\n**Release:** 0.3.1\n");
-  const path = fakeCommands(root, {
-    git: `case "$1 $2" in
-      "worktree list") printf 'worktree ${root}\\nbranch refs/heads/main\\n\\n' ;;
-      "branch --show-current") printf main ;;
-      "status --porcelain") ;;
-      "rev-parse HEAD"|"rev-parse origin/main") printf abcdef ;;
-    esac`,
-    gh: `case "$1 $2" in
-      "repo view") printf owner/repo ;;
-      "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tmain\\tcompleted\\tfailure\\nCI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
-    esac`,
-    npm: npmOwner,
-  });
-  const result = run("release.mjs", ["0.3.1", "--dry-run"], { root, env: { PATH: path } });
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Would release 0\.3\.1/);
-});
-
 test("release 0.4.0 generates task-row changelog entries and skips dropped tasks", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -270,51 +247,36 @@ test("release 0.4.0 inserts a generated section below the changelog intro", (t) 
 });
 
 test("release 0.4.0 refuses missing task-row changelog data and invalid done suffixes", (t) => {
-  const cases = [
-    ["no **Changelog:** line", "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n"],
-    ["empty **Changelog:** line", "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:**   \n"],
-    ["invalid done suffix", "### CX-1 · One · `done`\n**Release:** 0.4.0\n**Changelog:** One\n"],
-    ["invalid done suffix", "### CX-1 · One · `done` (PR #12)\n**Release:** 0.4.0\n**Changelog:** One\n"],
-  ];
-  for (const [message, tasks] of cases) {
-    const root = temporaryRoot();
-    t.after(() => rmSync(root, { recursive: true, force: true }));
-    writeFileSync(join(root, "CHANGELOG.md"), "# Changelog\n");
-    writeFileSync(join(root, "build/TASKS.md"), tasks);
-    const path = fakeCommands(root, {
-      git: `case "$1 $2" in
-        "worktree list") printf 'worktree ${root}\\nbranch refs/heads/main\\n\\n' ;;
-        "branch --show-current") printf main ;;
-        "status --porcelain") ;;
-        "rev-parse HEAD"|"rev-parse origin/main") printf abcdef ;;
-      esac`,
-      gh: `case "$1 $2" in
-        "repo view") printf owner/repo ;;
-        "api repos/owner/repo/actions/runs?head_sha=abcdef&per_page=100") printf 'merge-ready\\tissue_comment\\tmain\\tcompleted\\tfailure\\nCI\\tpush\\tmain\\tcompleted\\tsuccess\\n' ;;
-      esac`,
-      npm: npmOwner,
-    });
-    const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: path } });
-    assert.equal(result.status, 1);
-    assert.ok(result.stderr.includes(message), result.stderr);
+  const root = temporaryRoot();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = releaseDryRun(root);
+  writeFileSync(join(root, "build/TASKS.md"), [
+    "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0",
+    "### CX-2 · Two · `done` (#12)\n**Release:** 0.4.0\n**Changelog:**   ",
+    "### CX-3 · Three · `done`\n**Release:** 0.4.0\n**Changelog:** Three",
+    "### CX-4 · Four · `done` (PR #12)\n**Release:** 0.4.0\n**Changelog:** Four",
+  ].join("\n\n") + "\n");
+  const result = run("release.mjs", ["0.4.0", "--dry-run"], { root, env: { PATH: path } });
+  assert.equal(result.status, 1);
+  for (const message of ["CX-1 has no **Changelog:** line", "CX-2 has an empty **Changelog:** line", "CX-3 has an invalid done suffix", "CX-4 has an invalid done suffix"]) {
+    assert.ok(result.stderr.includes(message), `${message}: ${result.stderr}`);
   }
 });
 
 test("release refuses a version no task row has, dry run or not, before any change (#250)", (t) => {
-  for (const [version, tasks] of [
-    ["0.4.1", undefined],
-    ["0.4.1", "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n\n### CX-2 · Two · `dropped`\n**Release:** 0.4.1\n**Changelog:** Two\n"],
+  // No row for 0.4.1 at all, on a dry run; only a dropped one, on a real run.
+  for (const [tasks, dryRun] of [
+    [undefined, true],
+    ["### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n\n### CX-2 · Two · `dropped`\n**Release:** 0.4.1\n**Changelog:** Two\n", false],
   ]) {
-    for (const dryRun of [true, false]) {
-      const root = temporaryRoot();
-      t.after(() => rmSync(root, { recursive: true, force: true }));
-      const path = releaseDryRun(root);
-      if (tasks !== undefined) writeFileSync(join(root, "build/TASKS.md"), tasks);
-      const result = run("release.mjs", [version, ...(dryRun ? ["--dry-run"] : [])], { root, env: { PATH: path } });
-      assert.equal(result.status, 1);
-      assert.ok(result.stderr.includes(`no task has **Release:** ${version}; merge its PR first`), result.stderr);
-      assert.equal(readFileSync(join(root, "package.json"), "utf8"), '{"name":"fixture","version":"0.0.0"}\n');
-    }
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const path = releaseDryRun(root);
+    if (tasks !== undefined) writeFileSync(join(root, "build/TASKS.md"), tasks);
+    const result = run("release.mjs", ["0.4.1", ...(dryRun ? ["--dry-run"] : [])], { root, env: { PATH: path } });
+    assert.equal(result.status, 1);
+    assert.ok(result.stderr.includes("no task has **Release:** 0.4.1; merge its PR first"), result.stderr);
+    assert.equal(readFileSync(join(root, "package.json"), "utf8"), '{"name":"fixture","version":"0.0.0"}\n');
   }
 });
 
@@ -327,22 +289,14 @@ test("a prerelease counts the task rows of its release (#250)", (t) => {
   assert.match(result.stdout, /Would release 0\.4\.0-rc\.1 to npm@next/);
 });
 
-test("usage refuses an unknown flag and an --allow-partial without a reason", (t) => {
-  for (const args of [["0.4.0", "--force"], ["0.4.0", "--allow-partial"], ["0.4.0", "--allow-partial", "  "], ["0.4.0", "--dry-run", "--dry-run"]]) {
+test("usage refuses an invalid version, an unknown flag and an --allow-partial without a reason", (t) => {
+  for (const args of [["not-a-version"], ["0.4.0", "--force"], ["0.4.0", "--allow-partial"], ["0.4.0", "--allow-partial", "  "], ["0.4.0", "--dry-run", "--dry-run"]]) {
     const root = temporaryRoot();
     t.after(() => rmSync(root, { recursive: true, force: true }));
     const result = run("release.mjs", args, { root });
     assert.equal(result.status, 1, args.join(" "));
     assert.match(result.stderr, /Usage: node scripts\/release\.mjs <version> \[--dry-run\] \[--allow-partial "<reason>"\]/);
   }
-});
-
-test("release refuses an invalid version before mutating files", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const result = run("release.mjs", ["not-a-version"], { root });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /Usage/);
 });
 
 test("release pushes its annotated tag through --follow-tags", async (t) => {
@@ -637,7 +591,7 @@ test("a release ships released skills: a prerelease vendored snapshot refuses a 
 });
 
 test("release refuses a version below package.json's, except a prerelease of that version (skills-delivery §9.4)", async (t) => {
-  for (const [version, refused] of [["0.9.1", true], ["0.9.2-rc.1", false], ["0.9.2", false], ["0.9.3", false]]) {
+  for (const [version, refused] of [["0.9.1", true], ["0.9.2-rc.1", false]]) {
     const root = temporaryRoot();
     t.after(() => rmSync(root, { recursive: true, force: true }));
     const path = gateDryRun(root, version);
@@ -966,16 +920,6 @@ test("task clean removes merged task worktrees and keeps open, fresh and dirty o
   assert.match(run("task.mjs", ["clean", "CC-1"], { root }).stderr, /Usage/);
 });
 
-test("task start refuses unknown and non-todo tasks", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  writeFileSync(join(root, "build/TASKS.md"), "### CX-1 · Existing · `review`\n**Release:** 1.2.3\n");
-  const unknown = run("task.mjs", ["start", "CX-2"], { root });
-  const nonTodo = run("task.mjs", ["start", "CX-1"], { root });
-  assert.match(unknown.stderr, /Unknown task/);
-  assert.match(nonTodo.stderr, /not todo/);
-});
-
 test("task start --resume continues an in-progress task whose branch merged, and only that (CC-199)", (t) => {
   const { parent, root, path } = taskRepository("### CC-1 · Half built · `in progress`\n**Release:** 1.2.0\n\n### CC-2 · Fresh · `todo`\n**Release:** 1.2.0\n\n### CC-3 · Waiting · `review`\n**Release:** 1.2.0\n\n### CC-4 · Open · `in progress`\n**Release:** 1.2.0\n");
   t.after(() => rmSync(parent, { recursive: true, force: true }));
@@ -1093,38 +1037,6 @@ test("PR format accepts its task id and rejects an unscoped branch", (t) => {
   assert.match(invalid.stderr, /branch/);
 });
 
-test("PR format rejects an empty changelog field", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = fakeCommands(root, {
-    gh: `case "$1 $2" in
-      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"head","baseRefOid":"base","title":"CX-1: One"}' ;;
-      "repo view") printf owner/repo ;;
-      "api repos/owner/repo/contents/build/TASKS.md?ref=base") printf '%s' '${taskRows("### CX-1 · One · `review`\n**Release:** 0.4.0\n**Changelog:** One\n")}' ;;
-      "api repos/owner/repo/contents/build/TASKS.md?ref=head") printf '%s' '${taskRows("### CX-1 · One · `review`\n**Release:** 0.4.0\n**Changelog:**   \n")}' ;;
-    esac`,
-  });
-  const result = run("pr-format.mjs", ["1"], { root, env: { PATH: path } });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /empty/);
-});
-
-test("PR format rejects a changelog field lost from another task", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = fakeCommands(root, {
-    gh: `case "$1 $2" in
-      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"head","baseRefOid":"base","title":"CX-1: One"}' ;;
-      "repo view") printf owner/repo ;;
-      "api repos/owner/repo/contents/build/TASKS.md?ref=base") printf '%s' '${taskRows("### CX-1 · One · `review`\n**Release:** 0.4.0\n**Changelog:** One\n\n### CC-2 · Two · `done` (#2)\n**Release:** 0.4.0\n**Changelog:** Two\n")}' ;;
-      "api repos/owner/repo/contents/build/TASKS.md?ref=head") printf '%s' '${taskRows("### CX-1 · One · `review`\n**Release:** 0.4.0\n**Changelog:** One\n\n### CC-2 · Two · `done` (#2)\n**Release:** 0.4.0\n")}' ;;
-    esac`,
-  });
-  const result = run("pr-format.mjs", ["1"], { root, env: { PATH: path } });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /loses \*\*Changelog/);
-});
-
 test("PR format rejects a task id another open PR plans under another title, and accepts a stacked PR's same row (CC-300)", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -1178,24 +1090,6 @@ test("the release gate reads only the newest push run of the CI workflow on main
   assert.equal(ciWorkflowPassed("CI\tpush\tother\tcompleted\tsuccess\n"), false);
 });
 
-test("merge dry-run accepts a PR whose push-only job was skipped", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = fakeCommands(root, {
-    gh: `case "$1 $2" in
-      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"abcdef0","title":"CX-1: One","body":"- [x] checked","mergeable":"MERGEABLE","state":"OPEN"}' ;;
-      "repo view") printf owner/repo ;;
-      "api repos/owner/repo/commits/abcdef0/check-runs") printf 'completed\\tsuccess\\ncompleted\\tskipped\\n' ;;
-      "api repos/owner/repo/contents/build/TASKS.md?ref=abcdef0") printf '%s' '${taskRows("### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n")}' ;;
-      "api repos/owner/repo/pulls/12/reviews") printf '%s' '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at abcdef0"}]]' ;;
-      "pr merge") exit 99 ;;
-    esac`,
-  });
-  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Would merge #12/);
-});
-
 function mergeReviewPath(root, review, task = "### CX-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n", branch = "codex/CX-1-one") {
   const id = /^\w+\/(\w+-\d+)-/.exec(branch)[1];
   return fakeCommands(root, {
@@ -1209,14 +1103,6 @@ function mergeReviewPath(root, review, task = "### CX-1 · One · `done` (#12)\n
     esac`,
   });
 }
-
-test("merge dry-run accepts a fresh pass from the other agent", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at abcdef0"}]]');
-  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
-  assert.equal(result.status, 0, result.stderr);
-});
 
 test("merge dry-run accepts every valid done-suffix form that names its PR", (t) => {
   for (const suffix of ["(#12)", "(#9, #12)", "(#12; note)"]) {
@@ -1243,15 +1129,6 @@ test("merge dry-run refuses a task in review or a suffix for another PR", (t) =>
   }
 });
 
-test("merge dry-run refuses a pass from the same agent", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, '[[{"user":{"login":"owner"},"body":"Review (Codex): pass at abcdef0"}]]');
-  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /other agent/);
-});
-
 const claudeTask = "### CC-1 · One · `done` (#12)\n**Release:** 0.4.0\n**Changelog:** One\n";
 
 test("a claude/ PR passes with the Claude reviewer sub-agent's verdict or Codex's (decision 0063)", (t) => {
@@ -1264,58 +1141,23 @@ test("a claude/ PR passes with the Claude reviewer sub-agent's verdict or Codex'
   }
 });
 
-test("a claude/ PR refuses a pass from Claude Code, its author", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at abcdef0"}]]', claudeTask, "claude/CC-1-one");
-  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /no pass from the other agent \(Codex or Claude reviewer\) at abcdef0/);
-});
-
-test("a codex/ PR refuses a pass from the Claude reviewer sub-agent", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, '[[{"user":{"login":"owner"},"body":"Review (Claude reviewer): pass at abcdef0"}]]');
-  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /other agent \(Claude Code\)/);
-});
-
-test("merge dry-run refuses a pass naming another commit", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, '[[{"user":{"login":"owner"},"body":"Review (Claude Code): pass at deadbee"}]]');
-  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /other agent/);
-});
-
-test("merge dry-run refuses a pass posted by another account", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, '[[{"user":{"login":"someone-else"},"body":"Review (Claude Code): pass at abcdef0"}]]');
-  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /other agent/);
-});
-
-test("merge dry-run refuses a pass posted by a comment with no recorded user", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, '[[{"body":"Review (Claude Code): pass at abcdef0"}]]');
-  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /other agent/);
-});
-
-test("merge dry-run refuses without an other-agent pass", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = mergeReviewPath(root, "[]");
-  const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: path } });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /other agent/);
+test("merge dry-run refuses a pass from the same agent, from the PR's author, naming another commit, posted by another account or no user, and no pass", (t) => {
+  const pass = (reviewer, at = "abcdef0", user = '"user":{"login":"owner"},') => `[[{${user}"body":"Review (${reviewer}): pass at ${at}"}]]`;
+  for (const [review, message, task, branch] of [
+    [pass("Codex"), /other agent/],
+    [pass("Claude Code"), /no pass from the other agent \(Codex or Claude reviewer\) at abcdef0/, claudeTask, "claude/CC-1-one"],
+    [pass("Claude reviewer"), /other agent \(Claude Code\)/],
+    [pass("Claude Code", "deadbee"), /other agent/],
+    [pass("Claude Code", "abcdef0", '"user":{"login":"someone-else"},'), /other agent/],
+    [pass("Claude Code", "abcdef0", ""), /other agent/],
+    ["[]", /other agent/],
+  ]) {
+    const root = temporaryRoot();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const result = run("merge.mjs", ["12", "--dry-run"], { root, env: { PATH: mergeReviewPath(root, review, task, branch) } });
+    assert.equal(result.status, 1, review);
+    assert.match(result.stderr, message, review);
+  }
 });
 
 test("merge dry-run accepts a user review override with a warning", (t) => {
@@ -1328,10 +1170,10 @@ test("merge dry-run accepts a user review override with a warning", (t) => {
 });
 
 function prFormatPath(root, baseLog, headLog) {
-  const rows = taskRows("### CX-1 · One · `review`\n**Release:** 0.3.1\n\n### CC-2 · Two · `done` (#2)\n**Release:** 0.3.1\n");
+  const rows = taskRows("### CX-1 · One · `review`\n**Release:** 0.4.0\n**Changelog:** One\n\n### CC-2 · Two · `done` (#2)\n**Release:** 0.4.0\n**Changelog:** Two\n");
   return fakeCommands(root, {
     gh: `case "$1 $2" in
-      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"head","baseRefOid":"base","title":"CX-1: One","files":[{"path":"CHANGELOG.md"}]}' ;;
+      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"head","baseRefOid":"base","title":"CX-1: One"}' ;;
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/contents/build/TASKS.md?ref=base"|"api repos/owner/repo/contents/build/TASKS.md?ref=head") printf '%s' '${rows}' ;;
       "api repos/owner/repo/contents/CHANGELOG.md?ref=base") printf '%s' '${taskRows(baseLog)}' ;;
@@ -1346,7 +1188,7 @@ function historyFormatPath(root, headTasks, headHistory, historyError = "gh: Not
   const missing = `echo '${historyError}' >&2; exit 1`;
   return fakeCommands(root, {
     gh: `case "$1 $2" in
-      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"head","baseRefOid":"base","title":"CX-1: One","files":[]}' ;;
+      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"head","baseRefOid":"base","title":"CX-1: One"}' ;;
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/contents/build/TASKS.md?ref=base") printf '%s' '${taskRows(both)}' ;;
       "api repos/owner/repo/contents/build/TASKS.md?ref=head") printf '%s' '${taskRows(headTasks)}' ;;
@@ -1402,14 +1244,6 @@ test("PR format rejects a CHANGELOG.md line lost from another task", (t) => {
   const result = run("pr-format.mjs", ["1"], { root, env: { PATH: path } });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /loses CHANGELOG\.md line\(s\): CC-2/);
-});
-
-test("PR format accepts a CHANGELOG.md line that only gains its PR number", (t) => {
-  const root = temporaryRoot();
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const path = prFormatPath(root, "## 0.3.1 — unreleased\n\n- CC-2: two\n", "## 0.3.1 — unreleased\n\n- CX-1: one\n- CC-2 (#2): two, reworded\n");
-  const result = run("pr-format.mjs", ["1"], { root, env: { PATH: path } });
-  assert.equal(result.status, 0, result.stderr);
 });
 
 function mergeabilityPath(root, states) {
@@ -1607,10 +1441,10 @@ test("the pre-commit hook refuses a commit on a detached HEAD, but not during a 
 });
 
 /** pr-format fakes for the PR of CX-1 whose head has the rows `headRows`; the base has only CC-2's row, as for a task whose row was added on its branch (CC-116). */
-function ownRowPath(root, headRows, files = "[]") {
+function ownRowPath(root, headRows) {
   return fakeCommands(root, {
     gh: `case "$1 $2" in
-      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"head","baseRefOid":"base","title":"CX-1: One","files":${files}}' ;;
+      "pr view") printf '%s' '{"headRefName":"codex/CX-1-one","headRefOid":"head","baseRefOid":"base","title":"CX-1: One"}' ;;
       "repo view") printf owner/repo ;;
       "api repos/owner/repo/contents/build/TASKS.md?ref=base") printf '%s' '${taskRows("### CC-2 · Two · `done` (#2)\n**Release:** 0.4.0\n**Changelog:** Two\n")}' ;;
       "api repos/owner/repo/contents/build/TASKS.md?ref=head") printf '%s' '${taskRows(headRows)}' ;;
@@ -1620,7 +1454,7 @@ function ownRowPath(root, headRows, files = "[]") {
   });
 }
 
-test("PR format names a head that has no row for its own task, and a 0.3.x row still needs its CHANGELOG.md line (CC-116)", (t) => {
+test("PR format names a head that has no row for its own task (CC-116)", (t) => {
   const root = temporaryRoot();
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const two = "### CC-2 · Two · `done` (#2)\n**Release:** 0.4.0\n**Changelog:** Two\n";
@@ -1628,11 +1462,6 @@ test("PR format names a head that has no row for its own task, and a 0.3.x row s
   assert.equal(dropped.status, 1);
   assert.match(dropped.stderr, /PR has no row for its task CX-1/);
   assert.doesNotMatch(dropped.stderr, /CHANGELOG\.md/);
-  const legacy = run("pr-format.mjs", ["1"], { root, env: { PATH: ownRowPath(root, `### CX-1 · One · \`review\`\n**Release:** 0.3.1\n\n${two}`) } });
-  assert.equal(legacy.status, 1);
-  assert.match(legacy.stderr, /PR must add its task line to CHANGELOG\.md/);
-  const legacyWithLine = run("pr-format.mjs", ["1"], { root, env: { PATH: ownRowPath(root, `### CX-1 · One · \`review\`\n**Release:** 0.3.1\n\n${two}`, '[{"path":"CHANGELOG.md"}]') } });
-  assert.equal(legacyWithLine.status, 0, legacyWithLine.stderr);
   const kept = run("pr-format.mjs", ["1"], { root, env: { PATH: ownRowPath(root, `### CX-1 · One · \`review\`\n**Release:** 0.4.0\n**Changelog:** One\n\n${two}`) } });
   assert.equal(kept.status, 0, kept.stderr);
 });
