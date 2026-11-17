@@ -35,8 +35,9 @@ test("no shipped Notion text outside the migrations names the Review, Decisions 
 test("Prompt 2 builds the Kind options the CLI writes on Tasks and the Inbox (0099, 0096)", async () => {
   const databases = await read("notion/prompts/02-databases.md");
   assert.match(databases, /"Tasks": Name \(title\), .*Kind \(select: Task, Question, Risk\)/);
-  assert.match(databases, /"Inbox": Name \(title\), Kind \(select: Capture, File, Email, Chat, Note, Ask, Catch-up, Weekly; default Capture\)/);
+  assert.match(databases, /"Inbox": Name \(title\), Kind \(select: Capture, File, Email, Chat, Note, Ask, Catch-up, Weekly, Changed; default Capture\)/);
 });
+
 test("no shipped Notion text tells Notion AI to create Tasks from minutes; the prompt, Check minutes and the Instructions say never to (0101 §5)", async () => {
   const minutes = await read("notion/minutes-format.md");
   const prompt = minutes.slice(minutes.indexOf("```text"), minutes.indexOf("```", minutes.indexOf("```text") + 7));

@@ -28,9 +28,9 @@ A space is a **core** plus the **modules** you chose at onboarding. You can turn
 | **Domains** | Domains (in every space, 0065) | group Areas by work or life context; Areas can have one Domain or none. The database and Areas · Domain exist with the module off; the module decides whether the brain uses them and whether pages show them | off |
 | ~~Knowledge~~ | retired in 0.16.0 ([0099](../decisions/0099-notion-without-decisions-and-questions.md)): its Decisions and Questions databases are archived (Concepts went in 0.9.1, 0071). Decisions and questions are notes in Git, shown on project and area pages (the Brief and Decision log toggles) and in reports | — | — |
 | **Orgs** | Orgs | the Orgs tab of Knowledge; Client on Projects, Org on People; "Clients via projects" on area pages | on |
-| **Documents** | Documents (was References), learned ones included (0071) | the Documents tab of Knowledge and of "What do we know?"; Keep as document and Only keep on the Inbox; Keep as document on Tasks (0100) | off |
+| **Documents** | Documents (was References), learned ones included (0071) | the Documents tab of Knowledge and of "What do we know?"; Keep as document and Only keep on the Inbox; tasks kept as documents, with Documents · Task (0100) | off |
 | **Reports** | Documents (shared; Reports needs the Documents module on, 0071): a report is a Documents row with Origin Report; Ask rows on the Inbox | the Ask the brain button on Home; the Refresh report button (a Brain Assistant message, §3.17), Refresh asked and What to fix on a report's Documents row; "Reports" on project and area pages | off |
-| **Tasks** | Tasks, or your own tasks database (0018) | the Tasks Space, with its Questions and Risks tabs (Kind, 0099); "What's on my plate here?" on project and area pages; Home's "What's on today?" Tasks tab, its "due" counts and "Due across areas" | off |
+| **Tasks** | Tasks, or your own tasks database (0018) | the Tasks Space, with its Questions and Risks tabs (Kind, 0099); Document asked and the Keep as document button on Tasks, acted on with Documents on (0100); "What's on my plate here?" on project and area pages; Home's "What's on today?" Tasks tab, its "due" counts and "Due across areas" | off |
 | **Planning** | Goals, Key Results | the Plan Space; Goal on Projects; "What am I working toward here?" on area pages | off |
 
 A part of a page that belongs to a module that is off is left out, and nothing replaces it (0050). The build prompts create only the chosen modules, except the Domains database and its relations, which every space has (0065); each module's own steps, for turning it on later, are in [notion/modules/](../notion/modules/).
@@ -292,7 +292,7 @@ Minimal, so the brain can send action items (0018). If you already have a tasks 
 | Source | Relation → Inbox | The backlink for your action items from documents, emails, chats, notes and captures (0037) |
 | Kind | Select: Task, Question, Risk | 0099 §4. The brain sets Question or Risk on a task it creates to track a question or risk you said to follow up (spec/capture-and-review.md §6.4), and sends no Kind on any other task; you may set Task. The Questions and Risks tabs filter on it. A database you map yourself is offered it at connect (spec/setup.md §6.2.1); without it, such a task's title starts with `Question: ` or `Risk: ` |
 | Brain ID | Text | Set when the brain created it; on a task that tracks a question, the question's id |
-| Keep | Button labelled **Keep as document**: ticks Document asked | You (Documents module, 0.16.0, [0100](../decisions/0100-keep-a-task-as-a-document.md)) |
+| Keep | Button labelled **Keep as document**: ticks Document asked | You (Tasks module, 0.16.0, [0100](../decisions/0100-keep-a-task-as-a-document.md); the connect step expects it on the default database, spec/setup.md §6.2.2). The brain acts on it with the Documents module on; with Documents off, a ticked box stays ticked |
 | Document asked | Checkbox | You, through the Keep as document button: "waiting for the brain". The next catch-up keeps the task's page as a Document, linked to its project or area, the question it tracks and the task, and clears it (0100; [spec/capture-and-review.md](../spec/capture-and-review.md) §13). A database you map yourself is offered both at connect (spec/setup.md §6.2.2); without them, ask in the session |
 | Last edited time | Last edited time | System (Notion fills it; groups the Done tab by week) |
 
@@ -335,7 +335,7 @@ Plus the common properties (a report leaves Summary and Lifecycle empty). Page b
 | Button property | Label | Database | Ticks | Also | Module |
 |---|---|---|---|---|---|
 | Keep | Keep as document | Inbox | Document asked | sets Brain Status to Ready | Documents |
-| Keep | Keep as document | Tasks (0.16.0, 0100) | Document asked | — | Documents, Tasks |
+| Keep | Keep as document | Tasks (0.16.0, 0100) | Document asked | — | Tasks (acted on with Documents) |
 | Update | Refresh report | Documents (reports; the Inbox's Report rows before 0.9.1, 0071) | none: Send message to Brain Assistant (0.8.0, §3.17) | — | Reports |
 
 **A button's property name and its label differ** (#144): the page layout shows the name on the left and the label on the button, so the same text would show twice. The names are short and clash with no other property (not Report, Documents or Refresh asked). The brain never reads a button, only the checkbox it ticks, so a space that names its buttons otherwise works the same. Each checkbox has its own name, because Notion can't give a button and another property the same name.

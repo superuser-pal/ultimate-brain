@@ -32,11 +32,16 @@ In the databases on "Brain Data", add these two-way relations. Use exactly these
 - Areas "Domain" ↔ Domains "Areas" (limit Areas' side to one page)
 [Orgs] - Domains "Org" ↔ Orgs "Domains"
 
+Then add these one-way relations: each is a property on the first database only, with no property on the other side (in the relation's settings, "Show on" the other database is off):
+- Inbox "Changed from" → Inbox (a relation from the Inbox to itself)
+[Documents] [Tasks] - Documents "Task" → Tasks
+
 Do not create any other relations.
 ```
 
 ## Verify
 - [ ] Open each database: both sides of every relation exist, with the names above.
 - [ ] Each relation is two-way: linking a Project to an Area in Projects shows the Project in that Area's "Projects".
+- [ ] The one-way relations have no other side: the Inbox has one "Changed from" and no second property for it, and (Documents, Tasks) Tasks has no property for Documents' "Task". If Notion AI made one two-way, open the relation's settings and turn off "Show on" the other database.
 - [ ] Areas "Domain" is limited to one page. Notion AI may skip the limit: set it by hand (the relation's settings → Limit: 1 page).
 - [ ] No other relations were created.
