@@ -2,6 +2,35 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.16.0 — 2026-11-17
+
+- CC-288 (#397): development only: decision 0096 records that conflicts are decided in the session and the Review database goes, with 0.16.0's plan.
+- CC-295 (#405): development only: the contracts for deciding in the session, the removed Review database and the weekly review's Inbox row.
+- CC-296 (#424): You decide what the brain takes in during your Claude Code or Codex session: only changes that replace what the brain holds are asked, and nothing waits for you in Notion.
+- CC-297 (#420): Each week's review is a row in your Inbox, and you decide its items in your next session.
+- CC-298 (#428): Your agent asks what the brain needs from you in short rounds, most important first, and you answer in the chat.
+- CC-299 (#431): The upgrade applies the decisions you already made on Review rows, then archives the Review database; nothing is deleted.
+- CC-306 (#411): development only: decision 0098 records that an attended ingest goes by subject and that a changed document is checked as an Inbox row before it goes in, with the plan for 0.16.0 and 0.17.0.
+- CC-307 (#419): development only: the contract for agreeing by subject, each part with what the brain has, what is added, its questions and then its yes.
+- CC-312 (#414): development only: decision 0099 records that the Decisions and Questions databases go in 0.16.0 and that the questions and risks you follow up become tasks, with the plan.
+- CC-320 (#413): development only: the memory evaluation's scorer reads a search narrated as `searches on "…"` or `searched … with "…"` as narration, not as a statement of the question it quotes, so 0.15.2's smoke runs no longer fail a correct answer.
+- CC-313 (#421): development only: the contracts for Notion without the Decisions and Questions databases, and for tracking a question or risk as a task.
+- CC-314 (#425): Decisions and open questions show on your project page instead of in two databases of their own, and the questions and risks you follow up are tasks you can filter by Kind.
+- CC-321 (#415): development only: decision 0100 records that any task can be kept as a document in 0.17.0, and CC-313 gains the Tasks Kind setting.
+- CC-322 (#416): development only: decision 0101 records where Notion AI and the brain each write, what 0.16.0 asks in the session instead, and the path without Notion AI for 1.0.0, with the plan.
+- CC-323 (#422): development only: the contracts for asking your Notion corrections and a tracked question's finished task in the session.
+- CC-324 (#426): An edit you make to the brain's values in Notion is asked in your agent session before the brain takes it, and a finished task that tracks a question asks whether the question is answered.
+- CC-330 (#417): development only: decision 0102 records that 0.17.0's two features ship in 0.16.0, one release before 1.0.0.
+- CC-308 (#423): development only: the contracts for checking a changed document as an Inbox row before it goes in.
+- CC-309 (#427): When you ask for a document to be changed before it goes in, the brain writes the changed version to your Inbox, and takes it in once you have checked it.
+- CC-310 (#429): Ask your agent to change a document before it goes in, and it shows you the changed version in your Inbox first.
+- CC-311 (#430): Your Inbox shows which rows are changed versions waiting for your check, and a Keep as document button on a task keeps it as a document.
+- CC-331 (#418): development only: 0.16.0's plan has one skills release and one Notion migration, so the template and each brain run one migration.
+- CC-332 (#433): development only: about a hundred tests that repeated another test, pinned one sentence of copy or guarded a finished one-off change are removed.
+- CC-333 (#434): development only: the test suite runs in less time, with the same tests.
+
+Skills: ultimate-brain-skills 1.10.0 (sha256-bf58cdc26442964736adf08ea658d258ae3f178c91aa57e10e911e21794bf1ca)
+
 ## 0.15.2 — 2026-11-16
 
 - CC-289 (#398): development only: decision 0097 and the 0.15.2 tasks for an easy setup on Windows and Mac are in the build plan.
