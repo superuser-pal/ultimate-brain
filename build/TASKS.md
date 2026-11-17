@@ -1440,6 +1440,12 @@ After the feature cutoff, scope packaging/install/upgrade guidance, consistent N
 **Output:** `docs/setup.md`'s path without Notion AI rewritten from 0078 §6's to 0101 §8's; a guide for bringing meetings from another tool (its Notion integration or an automation into Meetings, its own task export turned off, the minutes prompt usable in that tool); a ChatGPT guide (Notion's MCP, the skills' text), written after OpenAI's and Notion's current documents are checked, with the links; the plan table of 0101 §7 in the README's Get started and the template's Start here; `notion/pasting-the-minutes-prompt.md` for other tools. Every price or plan rule links the vendor page it was checked against.
 **Acceptance:** each guide's steps are followed once on a fresh Free workspace and recorded in the PR (no personal data); no shipped text says Notion AI is required except for Brain Assistant and its buttons; the vendor links are current on the day of the PR; the leak and PR format checks pass.
 
+### CC-339 · Record the macOS and Windows capability parity epic · `in progress`
+**Release:** 1.0.0
+**Changelog:** development only: the backlog records identical macOS and Windows capabilities as an epic, including scheduling and a complete capability audit.
+**Output:** a post-1.0 epic in `docs/v2-ideas.md`, linked from its disposition table, for identical macOS and Windows product capabilities. Include the known launchd-only scheduling gap under 0097, an audit of all other capability differences, contracts before implementation, delivery and equivalent end-to-end acceptance. Record the user's rule that required manual Windows checks become a task in the existing Notion Tasks database and outstanding acceptance is a release warning, not a publication blocker. The 1.0.0 release on this recording task does not assign implementation of the epic to 1.0.0. The broader design principles and their SDLC placement remain under discussion; no CLI, spec, skill, live Notion or release-gate implementation changes.
+**Acceptance:** the epic targets identical capabilities rather than manual fallback parity, includes scheduling and all other gaps found by an evidence-based audit, and has explicit completion criteria; it keeps the existing launch boundary, automated and native smoke gates, and distinguishes an open manual-test warning from completed parity; only this task row and `docs/v2-ideas.md` change, existing task rows are preserved, relative links resolve, and the leak check passes.
+
 ## Your tasks
 
 | Id | Task | When |
