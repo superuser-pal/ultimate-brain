@@ -24,11 +24,14 @@ function migrationDescription(migration: string, property: string): string | und
 
 test("0.16.0 has one Notion migration, and brain upgrade names it to a space at 0026", async () => {
   const files = (await readdir(join(root, "notion", "migrations"))).filter((f) => /^[0-9]{4}-.+\.md$/.test(f)).sort();
-  assert.equal(files.at(-1), MIGRATION_0_16_0, "0027 is the last migration: CC-311's part is in it, not in a 0028");
+  // 0.16.0's parts are all in 0027: the next migration is 0.16.1's 0028 (CC-337, CC-343), never a second 0.16.0 one.
+  const after = files.slice(files.indexOf(MIGRATION_0_16_0) + 1);
+  assert.ok(files.includes(MIGRATION_0_16_0));
+  assert.ok(after.every((f) => f >= "0028-first-things-first-and-domains.md"), "CC-311's part is in 0027, not in a later 0.16.0 migration");
   const migrations = await notionMigrations(root, { notion: { template_version: "0026", databases: { review: "x" } } });
-  assert.deepEqual(migrations.newer, [MIGRATION_0_16_0]);
+  assert.deepEqual(migrations.newer, [MIGRATION_0_16_0, ...after]);
   const lines = notionMigrationsLine(root, migrations);
-  assert.match(lines, /1 migration newer than your space: .*0027-one-place-to-decide\.md/);
+  assert.match(lines, /migrations? newer than your space: .*0027-one-place-to-decide\.md/);
   assert.match(lines, /Review database\. Ask your agent to apply the 0\.16\.0 Notion migration \(.*0027-one-place-to-decide\.md\)/);
 });
 
