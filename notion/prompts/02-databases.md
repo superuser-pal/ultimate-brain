@@ -21,12 +21,13 @@ On the page "Brain Data", create these full-page databases with exactly these pr
 [Documents] 10. "Documents": Name (title), Summary (text), Lifecycle (select: Draft, Reviewed, Disputed, Archived), Origin (select: Kept, Learned, Report, Promoted, Workflow), Brain ID (text), Last Synced (date), Created time (created time), Last edited time (last edited time).
 [Documents] Also in "Documents": Accepted (checkbox), Accepted at (date, with time).
 [Reports] Also in "Documents": Refresh asked (checkbox), What to fix (text).
-11. "Domains": Name (title), Summary (text), Type (select: Personal, Entrepreneurship, Professional), Archived (checkbox), Brain ID (text), Last Synced (date).
+11. "Domains": Name (title), Summary (text), Archived (checkbox), Brain ID (text), Last Synced (date).
 ```
 
 ## Verify
 - [ ] (Tasks) Add Won't Do by hand in the Complete status group.
 - [ ] "Brain Data" holds one database per numbered line you kept, and nothing else: 11 with every module, 6 with Core alone (Areas, Projects, Meetings, People, Inbox, and Domains, which every space has: decision 0065). There is no Review, Decisions or Questions database since 0.16.0 (decisions 0096, 0099): you decide in your agent session, and a question or risk you follow up is a task with its Kind.
+- [ ] "Domains" has no Type: a Domain's Name and Summary say what kind of context it is (decision 0105).
 - [ ] Every property name is spelled exactly as above, including capitals and spaces ("Brain ID", "Last Synced", "Document asked", "Only keep", "What changed"). The brain finds properties by name.
 - [ ] Select options match exactly, in that order. Brain Status in Meetings defaults to Not Reviewed; Kind in Inbox defaults to Capture; Brain Status in Inbox defaults to New.
 - [ ] Areas and Projects both have Workflow, Work type, Logging level (selects) and Log artifacts (multi-select) with the options above, and no option selected anywhere (decision 0059: every page starts as Standard).

@@ -16,6 +16,7 @@ Keep a document, or part of one, as a page you can read, linked to its source, p
 | Inbox: add **Document asked** (checkbox) and **Only keep** (text) | agent |
 | Documents: add **Accepted** (checkbox) and **Accepted at** (date, with time) (0054) | agent |
 | Two-way relations: Inbox "Documents" ↔ Documents "Sources"; Documents "Project" ↔ Projects "Documents"; Documents "Area" ↔ Areas "Documents" | agent |
+| The **Domain** rollup on Documents, after the Area relation exists: relation Area, property Domain, Show original, described "Owner: Notion. Derived from the Area's Domain; you never edit it." (decision 0105; every space has the Domains database). Read it back as [migration 0028](../migrations/0028-first-things-first-and-domains.md) B1 says | agent |
 | With the Tasks module on: a one-way relation Documents "Task" → Tasks (no property on Tasks), so a Document kept from a task links back to it (decision 0100). Tasks already has Document asked and the Keep as document button ([tasks.md](tasks.md)) | agent |
 | Descriptions per [Prompt 5](../prompts/05-ownership.md): Document asked "Owner: you, through the Keep as document button. Waiting for the brain; it clears it."; Only keep "Owner: you. Only this part goes in, as a changed version you check first ('the requirements table'); empty = the whole input."; Task "Owner: brain. On a Document kept from a task: that task. Written by the brain only."; Accepted and Accepted at "Owner: you, through the Accept button. The brain clears them once it has taken the accepted text in."; on Documents, Brain ID, Last Synced, Created time and Last edited time "Owner: system. Do not edit.", Lifecycle "Owner: you.", the rest "Owner: brain." | agent |
 | Record the database id: `brain config set notion.databases.documents '"<id>"'` | agent |
@@ -35,7 +36,8 @@ Keep a document, or part of one, as a page you can read, linked to its source, p
 **By hand** (the API can't create buttons or edit page layouts):
 1. **Inbox → Keep:** open Inbox as a full page → `•••` → Properties → **New property** → **Button**, named "Keep", with the label "Keep as document". Action **Edit property** on **This page**: Document asked → checked; Brain Status → Ready.
 2. **Documents → Write and Accept** (0054): a Button property named "Write" with the label "Write up", action **Send message to** Brain Assistant, with the Write up message in [views-guide.md](../views-guide.md) §9; and a Button property named "Accept" with the label "Accept" (0071; "Accept write-up" before 0.9.1), action **Edit property** on **This page**: Accepted → checked, Accepted at → Now. Brain Assistant needs its Write up skill and edit access to Documents ([brain-assistant.md](../brain-assistant.md)).
-3. **Page layouts** (open any row → **Customize layout**): Inbox pins Keep next to Brain Status, Project and Area, and puts Document asked and Only keep at the top of the property group; Documents pins Write, Accept, Lifecycle, Project, Area, Sources and puts Accepted and Accepted at at the top of the property group, and collapses Brain ID, Last Synced, Created time and Last edited time ([views-guide.md](../views-guide.md) §9).
+3. **Page layouts** (open any row → **Customize layout**): Inbox pins Keep next to Brain Status, Project and Area, and puts Document asked and Only keep at the top of the property group; Documents pins Write, Accept, Lifecycle, Project, Area, Sources and puts Accepted and Accepted at at the top of the property group, and collapses Brain ID, Last Synced, Created time and Last edited time ([views-guide.md](../views-guide.md) §9). With the Domains module on, Documents shows Domain right after Area in the property group.
+4. **Domains template** (decision 0105): add the "What do we know?" view of Documents filtered by Domain contains This page, as [views-guide.md](../views-guide.md) §9a says.
 
 ### Verify
 - [ ] Brain Data holds a Documents database with its relations; `brain modules` shows `documents` on with nothing missing.
@@ -43,6 +45,7 @@ Keep a document, or part of one, as a page you can read, linked to its source, p
 - [ ] Knowledge has a Documents tab; a new project has a Documents view under "What do we know?".
 - [ ] After the next catch-up, the row's Document asked is cleared and its Documents relation lists the new page. With Only keep filled, the brain first writes the kept part to the Inbox as a changed version (Kind Changed) for you to check, and only that part goes in (decision 0098 §4).
 - [ ] (Tasks) Documents has Task, and Tasks has no new property for it.
+- [ ] Documents has the Domain rollup (Area → Domain, Show original); a Document whose Area has a Domain shows it, and that Domain's page lists it.
 - [ ] (Brain Assistant) **Write up** on a promoted Document gives Purpose, Main content, Open questions and Sources and changes no property; a second click keeps your edit and adds a toggle "Proposed revision". **Accept** ticks Accepted and sets Accepted at; after the next catch-up shows the text and you confirm, the Git Document holds the text and the box is cleared.
 
 ## Turning it off
