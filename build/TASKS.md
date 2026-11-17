@@ -1330,7 +1330,7 @@ Since [0105](../decisions/0105-domains-on-projects-meetings-and-documents-and-do
 Update only the pointers other specs need.
 **Acceptance:** CC-343, CC-344 and CC-338's 0105 lines have no undefined behavior left: what sync reads and ignores, what lint accepts, what the migration may delete and when, what the ingest sets on a meeting or Document with projects and no Area (one shared Area, several, none); no product spec still lists Domains · Type outside history and migration 0016; the leak and PR format checks pass.
 
-### CC-343 · The Domain rollups, Domain page views and no Type, in the Notion design and 0.16.1's migration (0105) · `in progress`
+### CC-343 · The Domain rollups, Domain page views and no Type, in the Notion design and 0.16.1's migration (0105) · `review`
 **Release:** 0.16.1
 **Changelog:** Projects, Meetings and Documents show their Domain, each Domain page lists its projects, meetings and documents, and Domains no longer have a Type.
 **Output:** CC-342's Notion side in the product files:
