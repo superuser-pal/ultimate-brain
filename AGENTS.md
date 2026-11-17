@@ -5,6 +5,7 @@
 Product repo for an AI-assisted second brain: Markdown + Git canonical knowledge operated by coding agents (Claude Code, Codex), with Notion as the human interface. This repo holds the **product** (CLI, skills, schema spec, templates, Notion space design); each user's brain lives in a separate private repo (decision 0014). Never write personal knowledge into this repo: no names, client text, Notion ids or emails from a real brain, even in a finding or a commit message. A leak check runs in CI and in a local pre-commit hook (decision 0038).
 
 Read for the work in front of you:
+- **Ideation, planning, design, development, review or release:** apply [docs/design-principles.md](docs/design-principles.md) (0104); keep applicable evidence in the existing task, specs and PR, including database/tool reuse, user effort, information lifecycle and macOS/Windows capabilities.
 - **Any task:** its row in [build/TASKS.md](build/TASKS.md), found by its id (the file is long), and the decisions it cites in [decisions/](decisions/). Decisions are binding; to change one, propose a new decision instead of editing code around it.
 - **Planning or a scope review:** the release's section in `build/TASKS.md`, and [docs/vision.md](docs/vision.md) for product intent and the roadmap.
 - **A design question the decisions don't answer:** [synthesis/synthesis.md](synthesis/synthesis.md), the v1 design.

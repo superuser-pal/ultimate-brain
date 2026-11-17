@@ -5,6 +5,7 @@
 **Release:** 0.15.2
 **Amends:** [0078](0078-onboarding-and-early-access-in-0-14-0.md) §2, as already amended by [0086](0086-the-brain-works-on-main-and-early-access-requires-gh.md) §3: "MarkItDown and the schedule stay optional" becomes "the schedule stays optional"; MarkItDown, with the Python it needs, is a required prerequisite for early access, like `gh`
 **Keeps:** every other rule of 0078 and 0086; 0016 (TypeScript on Node, minimal dependencies: MarkItDown stays an external tool the agent runs, never a dependency of the CLI); 0075's weekly review and `brain schedule`'s launchd support on macOS
+**Amended by:** [0104](0104-product-design-principles.md) (2026-11-17): identical macOS and Windows capabilities, including scheduling, are the target of a post-1.0 parity epic; §4's current limitation remains until scoped implementation delivers it
 
 ## Context
 

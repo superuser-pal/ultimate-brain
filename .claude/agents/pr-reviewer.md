@@ -23,6 +23,7 @@ Read `AGENTS.md`, the task's row in `build/TASKS.md` (Output, Acceptance), the d
 3. Data loss, a write the user did not accept, excluded text leaking, non-atomic or non-idempotent writes, a broken migration step.
 4. Tests that pass for the wrong reason: try a mutation in a `/tmp` copy of the repo and see whether a test fails.
 5. The checks: `npm test`, `npm run typecheck`, `npm run test:package`, `node scripts/leak-check.mjs`, and `node --experimental-strip-types scripts/vendor-skills.mjs --check --online` (the vendored skills match their fork release; `npm test` checks them offline). Skills are written in the fork: an edit under `.agents/skills/` in a product PR is a finding.
+6. Apply [the design principles](../../docs/design-principles.md) (0104) to the change's evidence: simplest sufficient design, database/tool reuse considered during feature planning, user effort, information lifecycle and ownership, agent-first operation, and macOS/Windows capabilities. Check the task and specs for applicable acceptance criteria; accept a brief explanation when a check is inapplicable. A pending manual Windows run is a release warning under [the release procedure](../../docs/releasing.md#windows-acceptance-follow-up), not grounds to fail the PR or block publication; verify its required follow-up is recorded when applicable. Existing automated and native smoke gates remain.
 
 ## Report
 Post one PR comment headed `Review (Claude reviewer) at <short sha>`, then return the same text to the builder:
