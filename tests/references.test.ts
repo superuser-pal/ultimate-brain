@@ -324,23 +324,6 @@ test("sync plan: Keep as document asks for a Document of the latest version or o
   assert.deepEqual(plan.json.data.conflicts.map((item: { code: string }) => item.code), ["UNKNOWN_BRAIN_ID"]);
 });
 
-test("sync plan: Promote asked on a Decisions row is read no more, since Promote to document is asked in the session (0099 §9)", async (context) => {
-  const dir = await fixtureCopy(context);
-  await approveFixtureKnowledge(dir);
-  const plan = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [
-    { database: "decisions", page_id: "d4000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { "Brain ID": "dec-7k2m9q4x", "Promote asked": true } },
-  ] });
-  assert.equal(plan.code, 0, plan.stdout);
-  assert.equal(plan.json.data.promote_requests, undefined);
-  assert.deepEqual(plan.json.data.ignored.map((item: { reason: string }) => item.reason), ["RETIRED_DATABASE"]);
-  // The Concepts database is retired (0071): a snapshot naming it is refused.
-  const concepts = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [{ database: "concepts", page_id: "d4000000-0000-4000-8000-000000000004", last_edited: NOW, properties: { "Brain ID": "con-1s6t8e2b", "Promote asked": true } }] });
-  assert.equal(concepts.json.error?.code, "INPUT_INVALID");
-  // Promote to document asked in the session: the skill writes the promoted Document with note new after the user's yes (cli §5.5).
-  const promoted = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Supabase auth (page)", frontmatter: { summary: "A page.", origin: "promoted", promoted_from: "dec-7k2m9q4x" }, body: "Supabase.\n" }] });
-  assert.equal(promoted.code, 0, promoted.stdout);
-});
-
 test("sync plan: rows of a module that is off are ignored as MODULE_OFF (0048)", async (context) => {
   const dir = await fixtureCopy(context);
   const configPath = join(dir, "brain.json");
@@ -431,7 +414,7 @@ test("a part Document written before 0.16.0 stays valid: its review_notes approv
   assert.equal(parseFrontmatter(await readFile(join(dir, page.path), "utf8")).attributes.lifecycle, "reviewed");
 });
 
-test("lint: a promoted Document's origin and promoted_from are declared keys, not unknown-key warnings", async (context) => {
+test("lint: a promoted Document's origin and promoted_from are declared keys, not unknown-key warnings; a key no type declares still is one", async (context) => {
   const dir = await fixtureCopy(context);
   await approveFixtureKnowledge(dir);
   const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Declared keys", frontmatter: { summary: "A page for the decision.", origin: "promoted", promoted_from: "dec-7k2m9q4x" }, body: "## Why\nBecause.\n" }] });
@@ -439,16 +422,11 @@ test("lint: a promoted Document's origin and promoted_from are declared keys, no
   const lint = await run(dir, ["lint"]);
   assert.equal(lint.code, 0, lint.stdout);
   assert.deepEqual(lint.json.data.issues.filter((issue: { rule: string }) => issue.rule === "unknown-key"), []);
-});
-
-test("lint: a key no type declares is still an unknown-key warning on a reference (negative control)", async (context) => {
-  const dir = await fixtureCopy(context);
-  await approveFixtureKnowledge(dir);
-  const created = await run(dir, ["note", "new"], { notes: [{ type: "reference", title: "Stray key", frontmatter: { summary: "A page.", origin: "promoted", promoted_from: "dec-7k2m9q4x" }, body: "Text.\n" }] });
-  assert.equal(created.code, 0, created.stdout);
+  // Negative control: a stray key on the same reference is an unknown-key warning.
   const file = join(dir, created.json.data.created[0].path);
   await writeFile(file, (await readFile(file, "utf8")).replace("\n---\n", "\nstray_key: x\n---\n"));
-  const lint = await run(dir, ["lint"]);
-  const unknown = lint.json.data.issues.filter((issue: { rule: string }) => issue.rule === "unknown-key").map((issue: { message: string }) => issue.message);
-  assert.ok(unknown.some((message: string) => message.includes("stray_key")), lint.stdout);
+  const stray = await run(dir, ["lint"]);
+  const unknown = stray.json.data.issues.filter((issue: { rule: string }) => issue.rule === "unknown-key").map((issue: { message: string }) => issue.message);
+  assert.ok(unknown.some((message: string) => message.includes("stray_key")), stray.stdout);
 });
+

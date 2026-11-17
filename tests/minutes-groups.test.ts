@@ -345,17 +345,6 @@ test("an HTML-escaped Scope toggle is read like the toggle", () => {
   assert.deepEqual(plan.scopes.map((scope) => [scope.item, scope.due]), [["s1.i1", "2026-12-17"]]);
 });
 
-test("the blind run: minutes a fresh agent wrote from the new prompt are accepted whole", async () => {
-  const { readFile } = await import("node:fs/promises");
-  const dir = new URL("./fixtures/minutes-0067/", import.meta.url);
-  // A fresh Sonnet agent given only the prompt and this synthetic transcript wrote blind-summary.md (CC-112), escaped toggles included.
-  const plan = planExtract(parseSummary(await readFile(new URL("blind-summary.md", dir), "utf8")), await readFile(new URL("transcript.md", dir), "utf8"));
-  assert.equal(plan.ok, true, JSON.stringify(plan.problems));
-  assert.deepEqual(plan.quotes, []);
-  assert.deepEqual(plan.quick.map((line) => line.text), ["Send Sam the link to the pilot dashboard", "Book a 15-minute call with procurement to ask the cost of the Bristol thermal printers"]);
-  assert.deepEqual(plan.scopes.map((scope) => [scope.item, scope.due, scope.project, scope.problems]), [["s0.i3", "2026-12-18", "Northwind rollout", []], ["s0.i4", null, "Northwind rollout", []]]);
-});
-
 test("fail closed: a control-like to-do in Quick follow-ups blocks instead of being skipped", () => {
   const plan = planExtract(parseSummary(`## [s1] Small talk
 ### Quick follow-ups

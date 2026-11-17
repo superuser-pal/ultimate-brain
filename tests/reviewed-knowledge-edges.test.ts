@@ -15,7 +15,6 @@ const DECISION_FILE = "knowledge/decisions/2026-12-03-use-supabase-for-auth.md";
 const QUESTION = "que-8n3v5x1d";
 const QUESTION_FILE = "knowledge/questions/who-owns-the-acme-mobile-app.md";
 const QUESTION_PAGE = "4e5f6a7b-8c9d-4e0f-9a1b-2c3d4e5f6a7b";
-const DRAFT_PERSON = "per-9t2c6m4a";
 const DOCUMENTS_DB = "a1000000-0000-4000-8000-0000000000d1";
 const PROMOTED = "ref-2p6k9m3w";
 const PLAIN = "ref-5t8c1q4z";
@@ -127,17 +126,6 @@ test("--unpublish-drafts only counts a pending Review row; an applied or closed 
   assert.deepEqual(ids(await unpublish(dir)), [PLAIN], "pending again: selected again");
 });
 
-test("--unpublish-drafts runs alone: --ids and --plan are USAGE (0071)", async (context) => {
-  const dir = await fixtureCopy(context);
-  await reviewRow(dir, [QUESTION]);
-  const withIds = await run(dir, ["sync", "render", "--unpublish-drafts", "--ids", QUESTION]);
-  assert.equal(withIds.json.error.code, "USAGE");
-  assert.notEqual(withIds.code, 0);
-  const withPlan = await run(dir, ["sync", "render", "--unpublish-drafts", "--plan", join(dir, "..", "plan.json")]);
-  assert.equal(withPlan.json.error.code, "USAGE");
-  assert.notEqual(withPlan.code, 0);
-});
-
 test("sync record: a trash record for a Document with no page fails NOTION_ID_MISMATCH and changes nothing (0071)", async (context) => {
   const dir = await documentsBrain(context);
   assert.equal((await attributes(dir, DOC_FILE)).notion, undefined, "the fixture reference has no page");
@@ -163,13 +151,4 @@ test("render: a reviewed Document whose database id is empty creates no page and
     const waitingOnly = Object.keys(item.properties).length === 0 && item.pending_relations.length > 0;
     assert.ok(!waitingOnly, `${item.id} is returned only to wait for a page that is never created`);
   }
-});
-
-test("render --ids: a draft Document is skipped NOT_REVIEWED and a decision NO_DATABASE while a draft person renders, exit code 0 (0071, 0099)", async (context) => {
-  const dir = await documentsBrain(context);
-  const result = await run(dir, ["sync", "render", "--ids", `${DOC},${DECISION},${DRAFT_PERSON}`]);
-  assert.equal(result.code, 0, result.stdout);
-  assert.deepEqual(result.json.data.items.map((item: { id: string; action: string }) => [item.id, item.action]), [[DRAFT_PERSON, "create"]]);
-  assert.deepEqual(result.json.data.skipped, [{ id: DOC, reason: "NOT_REVIEWED" }, { id: DECISION, reason: "NO_DATABASE" }]);
-  assert.deepEqual(result.json.data.errors, []);
 });

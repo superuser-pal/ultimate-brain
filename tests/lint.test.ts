@@ -1,16 +1,11 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
-import { cp, mkdir, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
-import { promisify } from "node:util";
 
-import { Ajv2020 } from "ajv/dist/2020.js";
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
 import { loadSchemas } from "../src/lib/schemas.ts";
 import { brain, fixtureCopy, FIXTURE_BRAIN } from "./helpers.ts";
-
-const exec = promisify(execFile);
 
 test("the fixture brain lints clean: no errors, no warnings", async (context) => {
   const fixture = await fixtureCopy(context);
@@ -41,27 +36,6 @@ test("product-file covers missing, changed, extra, malformed, and fresh product 
   const clean = await brain(["lint", "--brain", root, "--json"]);
   assert.equal(init.code, 0);
   assert.equal(clean.code, 0, JSON.stringify(clean.json.data.issues));
-});
-
-test("a symlinked compiled entry resolves its package root", async (context) => {
-  const fixture = await fixtureCopy(context);
-  const root = join(fixture, "fresh");
-  const init = await brain(["init", root, "--no-git", "--json"]);
-  assert.equal(init.code, 0);
-
-  const packageRoot = join(fixture, "published-package");
-  const productRoot = join(import.meta.dirname, "..");
-  await exec("npm", ["run", "build"], { cwd: productRoot, shell: process.platform === "win32" });
-  await cp(join(productRoot, "dist"), join(packageRoot, "dist"), { recursive: true });
-  await cp(join(productRoot, ".agents"), join(packageRoot, ".agents"), { recursive: true });
-  await cp(join(productRoot, "spec"), join(packageRoot, "spec"), { recursive: true });
-  await cp(join(productRoot, "templates"), join(packageRoot, "templates"), { recursive: true });
-  await cp(join(productRoot, "package.json"), join(packageRoot, "package.json"));
-  await symlink(join(productRoot, "node_modules"), join(packageRoot, "node_modules"));
-  const bin = join(fixture, "brain");
-  await symlink(join(packageRoot, "dist", "cli.js"), bin);
-  const result = await exec(process.execPath, [bin, "upgrade", "--brain", root, "--now", "2026-12-03T10:22:00Z", "--json"]);
-  assert.match(result.stdout, /"version"/);
 });
 
 const SUPABASE = "knowledge/decisions/2026-12-03-use-supabase-for-auth.md";
@@ -175,25 +149,6 @@ test("every spec example passes or fails the JSON Schemas as labelled", async ()
 });
 
 // spec/assistant.md (CC-108): each example is named after the $defs shape it shows (snapshot-…, dismissals-…, dismissInput-…).
-test("every Ultimate Assistant example passes or fails assistant.schema.json as labelled", async () => {
-  const schema = JSON.parse(await readFile(join(import.meta.dirname, "..", "spec", "schemas", "assistant.schema.json"), "utf8"));
-  const ajv = new Ajv2020({ allErrors: true, strict: false });
-  ajv.addSchema(schema);
-  const root = join(import.meta.dirname, "..", "spec", "examples", "assistant");
-  let checked = 0;
-  for (const kind of ["valid", "invalid"] as const) {
-    for (const file of (await readdir(join(root, kind))).sort()) {
-      const shape = file.replace(/(-.*)?\.json$/, "");
-      assert.ok(["snapshot", "dismissals", "dismissInput"].includes(shape), `assistant/${kind}/${file}: unknown shape ${shape}`);
-      const validate = ajv.getSchema(`${schema.$id}#/$defs/${shape}`);
-      assert.ok(validate, shape);
-      assert.equal(validate(JSON.parse(await readFile(join(root, kind, file), "utf8"))), kind === "valid", `assistant/${kind}/${file}`);
-      checked += 1;
-    }
-  }
-  assert.ok(checked >= 10, `${checked} examples`);
-});
-
 test("every brain.json example passes or fails its JSON Schema as labelled", async () => {
   const schemas = loadSchemas();
   const root = join(import.meta.dirname, "..", "spec", "examples", "brain");

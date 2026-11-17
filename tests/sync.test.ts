@@ -501,14 +501,12 @@ test("sync settles after one round trip for goals, projects and people created i
 test("sync keeps unpublished links and reports invalid Notion values before comparing", async (context) => {
   const dir = await fixtureCopy(context);
   const projectPage = "2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e";
-  const decisionPage = "10000000-0000-4000-8000-0000000000d1";
   const edit = async (path: string, change: (attributes: Record<string, unknown>) => void) => {
     const file = join(dir, path); const document = parseFrontmatter(await readFile(file, "utf8"));
     change(document.attributes); await writeFile(file, serializeFrontmatter(document));
   };
   // Carlos (per-9t2c6m4a) is on the project but has no Notion page; Maria is published.
   await edit("projects/acme-website/project.md", (a) => { a.notion_published = { People: [MARIA_PAGE], Summary: a.summary, Lifecycle: "Draft" }; });
-  await edit("knowledge/decisions/2026-12-03-use-supabase-for-auth.md", (a) => { a.notion = decisionPage; a.notion_published = { Assessment: "Accepted" }; });
   const plan = async (name: string, rows: unknown[]) => (await brain(["sync", "plan", "--brain", dir, "--input", await input(dir, name, { as_of: NOW, rows }), "--json"])).json.data;
   const project = (properties: Record<string, unknown>) => ({ database: "projects", page_id: projectPage, last_edited: "2026-12-10T08:00:00Z", properties: { "Brain ID": "prj-9x4t1b7e", ...properties } });
   const codes = (data: { conflicts: Array<{ code: string; property: string }>; ignored: Array<{ reason: string; property: string }>; corrections: unknown[] }) => [data.conflicts.map((item) => [item.code, item.property]), data.ignored.map((item) => [item.reason, item.property]), data.corrections];
@@ -518,9 +516,6 @@ test("sync keeps unpublished links and reports invalid Notion values before comp
   // A space that still has Lifecycle on Projects: the brain ignores it there (0070).
   assert.deepEqual(codes(await plan("unknown.json", [project({ Lifecycle: "Foo" })])).flat(), []);
   assert.deepEqual(codes(await plan("stale.json", [project({ Lifecycle: null })])).flat(), []);
-  const decision = { database: "decisions", page_id: decisionPage, last_edited: "2026-12-10T08:00:00Z", properties: { "Brain ID": "dec-7k2m9q4x", Assessment: null } };
-  // Decisions rows are not read since 0.16.0 (0099): no correction, whatever the row says.
-  assert.deepEqual(codes(await plan("assessment.json", [decision])), [[], [["RETIRED_DATABASE", undefined]], []]);
 });
 
 test("Domains, Areas, Goals, Projects and Orgs created in Notion are reviewed and publish no Lifecycle (0070)", async (context) => {

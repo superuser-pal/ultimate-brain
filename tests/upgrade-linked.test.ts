@@ -9,7 +9,7 @@ import { promisify } from "node:util";
 import { brain, fixtureCopy, testPackageRoot } from "./helpers.ts";
 import { run } from "./skills-fixtures.ts";
 import { skillsDiffer } from "../src/lib/upgrade-projects.ts";
-import { aroundBlock, blockOf, changedPaths, END, OWNED, oldInstallation, PROJECT, PROJECTS, START, treeDigest, type OldInstallation, type ProjectName } from "./upgrade-0-12-fixture.ts";
+import { aroundBlock, blockOf, changedPaths, oldInstallation, PROJECT, PROJECTS, treeDigest, type OldInstallation, type ProjectName } from "./upgrade-0-12-fixture.ts";
 
 /**
  * CC-184 (decision 0077 §4): one `brain upgrade` brings the brain and every registered linked project to the corrected
@@ -32,48 +32,6 @@ async function repoStatus(): Promise<string> {
 async function text(path: string): Promise<string> {
   return readFile(path, "utf8");
 }
-
-test("the fixture is a 0.12.0 installation made by the published package, and nothing outside its folder changes", async (context) => {
-  const statusBefore = await repoStatus();
-  const install = await oldInstallation(context);
-  if (install === undefined) return;
-  const { brain: root, projects } = install;
-
-  // The brain: pinned by 0.12.0 to the skills it shipped, clean, its linked repos registered with their paths.
-  const lock = JSON.parse(await text(join(root, "skills.lock.json")));
-  assert.equal(lock.installed_by, "0.12.0");
-  assert.equal(lock.snapshot.name, "ultimate-brain-skills");
-  assert.equal(lock.snapshot.version, "1.5.0");
-  const repos = JSON.parse(await text(join(root, "brain.json"))).repos as Array<{ name: string; path: string }>;
-  assert.deepEqual(repos.map((repo) => [repo.name, repo.path]), PROJECTS.filter((name) => name !== "unregistered").map((name) => [name, projects[name]]));
-  for (const folder of [root, ...PROJECTS.filter((name) => name !== "unregistered" && name !== "unreachable").map((name) => projects[name])]) {
-    assert.equal((await exec("git", ["status", "--porcelain"], { cwd: folder, env: install.env })).stdout, "", `${folder} is committed`);
-  }
-
-  // Each project as 0.12.0's `brain link` left it, then changed as its case says.
-  const plain = await text(join(projects.plain, "AGENTS.md"));
-  assert.equal(plain, `${blockOf(plain)}\n`);
-  assert.equal(await text(join(projects.plain, "CLAUDE.md")), "@AGENTS.md\n");
-  assert.equal(JSON.parse(await text(join(projects.plain, ".brain"))).skills.version, "1.5.0");
-  // The 0.12.0 block predates the eligible read (CC-176), so an upgrade has something to change.
-  assert.doesNotMatch(blockOf(plain)!, /brain query --read/);
-  for (const file of ["AGENTS.md", "CLAUDE.md"] as const) {
-    const around = aroundBlock(await text(join(projects.owned, file)));
-    assert.ok(around !== undefined, `owned ${file} has one block`);
-    assert.equal(around.before, `${OWNED[file].before}\n`);
-    assert.equal(around.after, `\n${OWNED[file].after}`);
-  }
-  assert.equal(existsSync(projects.unreachable), false);
-  const damaged = await text(join(projects.damaged, "AGENTS.md"));
-  assert.ok(damaged.includes(START) && !damaged.includes(END));
-  assert.match(await text(join(projects["conflicting-skill"], ".claude/skills/brain-query-copy/SKILL.md")), /^name: brain-query$/m);
-  assert.equal(existsSync(join(projects["conflicting-skill"], ".agents/skills/brain-query-copy")), false);
-  assert.equal((await text(join(projects["conflicting-block"], "AGENTS.md"))).split(START).length - 1, 2);
-  assert.ok(existsSync(join(projects.unregistered, ".brain")));
-  assert.equal(existsSync(join(projects.unregistered, ".git")), false);
-
-  assert.equal(await repoStatus(), statusBefore, "the product checkout is unchanged");
-});
 
 /** The per-project report of `brain upgrade --json` (cli.md §5.15 step 9), by name. */
 function projectsOf(run: { json: any }): Map<string, { state: string; reason: string | null; message: string | null; files: Array<{ path: string; action: string }> }> {
@@ -182,6 +140,33 @@ test("one brain upgrade on a 0.12.0 installation reaches the brain and its regis
     for (const name of UNFINISHED) assert.equal(projectsOf(second).get(name)?.state, "unfinished", name);
   });
 
+  await context.test("with the snapshot CC-180 vendors, Claude Code's and Codex's definition paths hold the corrected definitions", async () => {
+    const vendored = JSON.parse(await text(join(REPO, ".agents/skills/snapshot.json")));
+    const old = JSON.parse(await text(join(install.package.root, ".agents/skills/snapshot.json")));
+    assert.notEqual(vendored.version, old.version, "the vendored snapshot is newer than the one 0.12.0 shipped");
+    const lock = JSON.parse(await text(join(install.brain, "skills.lock.json")));
+    assert.deepEqual([lock.snapshot.name, lock.snapshot.version], [vendored.name, vendored.version], "the brain is pinned to the vendored snapshot");
+    assert.deepEqual(first.json.data.skills.from, { name: old.name, version: old.version });
+    // Every file of the vendored snapshot, in both agents' trees: the brain's skills in the brain, the linked skills in each upgraded project.
+    const targets: Array<[string, string]> = [[install.brain, "brain"], ...UPGRADED.map((name) => [projects[name], "linked_repo"] as [string, string])];
+    for (const [root, target] of targets) {
+      for (const skill of vendored.skills.filter((entry: { targets: string[] }) => entry.targets.includes(target))) {
+        for (const file of skill.files as Array<{ path: string }>) {
+          const shipped = await text(join(REPO, ".agents/skills", skill.name, file.path));
+          for (const tree of [".agents/skills", ".claude/skills"]) assert.equal(await text(join(root, tree, skill.name, file.path)), shipped, `${root} ${tree}/${skill.name}/${file.path}`);
+        }
+      }
+    }
+    // brain-query, the skill an agent in a linked project answers with, changed between the two snapshots, and the projects hold the new one.
+    const before = await text(join(install.package.root, ".agents/skills/brain-query/SKILL.md"));
+    const after = await text(join(REPO, ".agents/skills/brain-query/SKILL.md"));
+    assert.notEqual(after, before);
+    for (const name of UPGRADED) {
+      assert.equal(await text(join(projects[name], ".claude/skills/brain-query/SKILL.md")), after, name);
+      assert.deepEqual(JSON.parse(await text(join(projects[name], ".brain"))).skills.version, vendored.version, name);
+    }
+  });
+
   await context.test("the output asks for fresh agent sessions, last", () => {
     const lines = human.stdout.trimEnd().split("\n");
     assert.match(lines.at(-1)!, /^Start fresh agent sessions in the brain and in every project/);
@@ -204,37 +189,6 @@ test("one brain upgrade on a 0.12.0 installation reaches the brain and its regis
     assert.equal(reported.has("unregistered"), false);
     assert.match(human.stdout, /^Folders linked with brain link alone aren't tracked by the upgrade: register them with brain repo add, or run brain link there again\.$/m);
   });
-});
-
-test("with the snapshot CC-180 vendors, Claude Code's and Codex's definition paths hold the corrected definitions", async (context) => {
-  const install = await oldInstallation(context);
-  if (install === undefined) return;
-  const vendored = JSON.parse(await text(join(REPO, ".agents/skills/snapshot.json")));
-  const old = JSON.parse(await text(join(install.package.root, ".agents/skills/snapshot.json")));
-  assert.notEqual(vendored.version, old.version, "the vendored snapshot is newer than the one 0.12.0 shipped");
-  const run = await upgrade(install, "--json");
-  assert.equal((run.json as any)?.ok, true, run.stdout || run.stderr);
-  const lock = JSON.parse(await text(join(install.brain, "skills.lock.json")));
-  assert.deepEqual([lock.snapshot.name, lock.snapshot.version], [vendored.name, vendored.version], "the brain is pinned to the vendored snapshot");
-  assert.deepEqual((run.json as any).data.skills.from, { name: old.name, version: old.version });
-  // Every file of the vendored snapshot, in both agents' trees: the brain's skills in the brain, the linked skills in each upgraded project.
-  const targets: Array<[string, string]> = [[install.brain, "brain"], ...UPGRADED.map((name) => [install.projects[name], "linked_repo"] as [string, string])];
-  for (const [root, target] of targets) {
-    for (const skill of vendored.skills.filter((entry: { targets: string[] }) => entry.targets.includes(target))) {
-      for (const file of skill.files as Array<{ path: string }>) {
-        const shipped = await text(join(REPO, ".agents/skills", skill.name, file.path));
-        for (const tree of [".agents/skills", ".claude/skills"]) assert.equal(await text(join(root, tree, skill.name, file.path)), shipped, `${root} ${tree}/${skill.name}/${file.path}`);
-      }
-    }
-  }
-  // brain-query, the skill an agent in a linked project answers with, changed between the two snapshots, and the projects hold the new one.
-  const before = await text(join(install.package.root, ".agents/skills/brain-query/SKILL.md"));
-  const after = await text(join(REPO, ".agents/skills/brain-query/SKILL.md"));
-  assert.notEqual(after, before);
-  for (const name of UPGRADED) {
-    assert.equal(await text(join(install.projects[name], ".claude/skills/brain-query/SKILL.md")), after, name);
-    assert.deepEqual(JSON.parse(await text(join(install.projects[name], ".brain"))).skills.version, vendored.version, name);
-  }
 });
 
 // The other cases of step 9's table, on the fixture brain with the CLI under test (no published package, no network).

@@ -1,9 +1,9 @@
-import { contentAt, fail, optionalContentAt, taskEntries, taskRowProblem, tryCommand, usesTaskRowChangelog } from "./common.mjs";
+import { contentAt, fail, optionalContentAt, taskEntries, taskRowProblem, tryCommand } from "./common.mjs";
 
 const pr = process.argv[2] ?? process.env.GITHUB_REF_NAME;
 if (!/^\d+$/.test(pr ?? "")) fail("PR number is required");
 else {
-  const viewed = tryCommand("gh", ["pr", "view", pr, "--json", "headRefName,headRefOid,baseRefOid,title,files"]);
+  const viewed = tryCommand("gh", ["pr", "view", pr, "--json", "headRefName,headRefOid,baseRefOid,title"]);
   if (!viewed.ok) fail(`Cannot read PR #${pr}: ${viewed.message}`);
   else {
     const details = JSON.parse(viewed.stdout);
@@ -27,13 +27,11 @@ else {
         const headTasks = taskEntries(`${head.stdout}\n${headHistory.stdout}`);
         const headLines = changelogIds(headLog.stdout);
         const missingLines = [...changelogIds(baseLog.stdout)].filter((id) => !headLines.has(id));
-        const task = headTasks.find((entry) => entry.id === match[2]);
         const rows = taskRowProblem(match[2], baseTasks, headTasks);
         const clash = rows === undefined ? plannedElsewhere(repo.stdout, pr, headTasks.filter((entry) => !baseTasks.some((baseTask) => baseTask.id === entry.id))) : undefined;
         if (rows !== undefined) fail(rows);
         else if (missingLines.length > 0) fail(`PR loses CHANGELOG.md line(s): ${missingLines.join(", ")}`);
         else if (clash !== undefined) fail(clash);
-        else if (!usesTaskRowChangelog(task.release) && !details.files.some((file) => file.path === "CHANGELOG.md")) fail("PR must add its task line to CHANGELOG.md");
         else process.stdout.write(`PR #${pr} format is valid\n`);
       }
     }

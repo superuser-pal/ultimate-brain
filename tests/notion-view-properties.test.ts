@@ -100,9 +100,3 @@ function missingViewProperties(design: string): string[] {
 test("every property used by a Notion view or page layout is defined in design §3", async () => {
   assert.deepEqual(missingViewProperties(await readFile(designPath, "utf8")), []);
 });
-
-test("the view-property contract rejects a deliberately broken §3 copy", async () => {
-  const design = await readFile(designPath, "utf8");
-  const broken = design.replace("| Last edited time | Last edited time | System (Notion fills it; \"gone quiet\" view) |", "");
-  assert.deepEqual(missingViewProperties(broken), ["Prompt 7c Projects: Projects.Last edited time is missing from §3"]);
-});

@@ -101,16 +101,6 @@ test("a body edited after acceptance gives no import, even when the edit made No
   assert.equal(sameMinute.accepted_wording.length, 1);
 });
 
-test("a pending revision blocks the import, accepted or not", async (context) => {
-  const dir = await fixtureCopy(context);
-  const document = await promotedDocument(dir);
-  const accepted = await plan(dir, [documentRow(wording({ pending_revision: true }))]);
-  assert.deepEqual(accepted.accepted_wording, []);
-  assert.deepEqual(accepted.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "REVISION_PENDING", accepted: true }]);
-  const drafted = await plan(dir, [documentRow(wording({ accepted: false, accepted_at: null, pending_revision: true }))]);
-  assert.deepEqual(drafted.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "REVISION_PENDING", accepted: false }]);
-});
-
 test("fail closed: no acceptance time, no baseline, an unconvertible block, an unaccepted draft", async (context) => {
   const dir = await fixtureCopy(context);
   const document = await promotedDocument(dir);
@@ -324,7 +314,8 @@ test("a promoted Document with a pending revision gets its properties; an accept
 
   // Accepted with a pending revision (row 5): any write would make the acceptance look stale, so nothing is rendered.
   const accepted = await plan(dir, [documentRow(wording({ pending_revision: true }))]);
-  assert.equal(accepted.wording_waiting[0].accepted, true);
+  assert.deepEqual(accepted.accepted_wording, [], "a pending revision blocks the import, accepted or not");
+  assert.deepEqual(accepted.wording_waiting, [{ page_id: PAGE, note: document.id, reason: "REVISION_PENDING", accepted: true }]);
   const whole = await renderWith(dir, document.id, accepted);
   assert.deepEqual(whole.items, []);
   assert.deepEqual(whole.skipped, [{ id: document.id, reason: "WORDING_PENDING" }]);

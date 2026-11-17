@@ -274,7 +274,10 @@ test("a whole Document of a file whose v2 is ingested: the update_body leaves it
   assert.equal(lint.errors, 0, JSON.stringify(lint.issues));
 });
 
-test("a new brain maps Tasks' Document asked (templates/brain/brain.json, schema §12)", async () => {
+test("a new brain maps Tasks' Document asked and Kind, with no Knowledge module or Decisions and Questions databases (templates/brain/brain.json, schema §12, 0099)", async () => {
   const template = JSON.parse(await readFile(join(import.meta.dirname, "..", "templates", "brain", "brain.json"), "utf8"));
   assert.equal(template.notion.tasks.properties.document_asked, "Document asked");
+  assert.equal(template.notion.tasks.properties.kind, "Kind");
+  assert.equal("knowledge" in template.modules, false);
+  assert.equal("decisions" in template.notion.databases || "questions" in template.notion.databases, false);
 });

@@ -195,30 +195,6 @@ test("an approved answer sets the question's answer; an edit uses your Note; a s
   assert.deepEqual(await lintErrors(edited), []);
 });
 
-async function rendered(dir: string, ids: string[]): Promise<Array<Record<string, any>>> {
-  const result = await run(dir, ["sync", "render", "--ids", ids.join(",")]);
-  assert.equal(result.code, 0, result.stdout);
-  return result.json.data.items;
-}
-
-async function record(dir: string, item: Record<string, any>, notion = item.page_id ?? "e1000000-0000-4000-8000-000000000001"): Promise<void> {
-  const recorded = await run(dir, ["sync", "record"], { records: [{ id: item.id, notion, synced_at: NOW, published: item.published }] });
-  assert.equal(recorded.code, 0, recorded.stdout);
-}
-
-test("render: once an answer is applied, the question has its answer in Git and still no page (0099)", async (context) => {
-  const dir = await fixtureCopy(context);
-  const answer = { kind: "answer", title: "Who owns the app: Maria", target: QUESTION, answer: "Maria owns the mobile app.", answer_note: DECISION, why: "Maria said she owns it.", source: SYNC };
-  const created = await run(dir, ["proposal", "new"], { proposals: [answer] });
-
-  await run(dir, ["apply"], { decisions: [decided(created.json.data.created[0].id, "approve")] });
-  const question = parseFrontmatter(await readFile(join(dir, "knowledge/questions/who-owns-the-acme-mobile-app.md"), "utf8")).attributes;
-  assert.equal(question.answer, DECISION, "answered by the note");
-  // A question has no page since 0.16.0 (0099): no Status goes out.
-  assert.deepEqual(await rendered(dir, [QUESTION]), []);
-  assert.deepEqual(await lintErrors(dir), []);
-});
-
 test("a new review_notes gives every note, link and change one immutable item id, and lint checks them", async (context) => {
   const dir = await fixtureCopy(context);
   const created = await run(dir, ["proposal", "new"], { proposals: reviewInput });

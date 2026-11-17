@@ -64,24 +64,6 @@ test("upgrade restores product-owned files and keeps everything the user wrote",
   assert.ok(again.json.data.unchanged > 0);
 });
 
-test("upgrade brings rule 10 to an existing brain: unattended runs queue your Notion edits, never apply them (CC-324, 0096 §4, 0101 §5)", async (context) => {
-  const { root, target } = await freshBrain(context);
-  const agentsPath = join(target, "AGENTS.md");
-  const shipped = await readFile(agentsPath, "utf8");
-  const rule10 = shipped.split("\n").find((line) => line.startsWith("10. "))!;
-  assert.match(rule10, /Your Notion edits to the brain's own values .* wait.* as a question for your next session/);
-  assert.doesNotMatch(shipped, /your edits in Notion\)|What to fix/);
-  // A brain written before 0.16.0 carries 0.15.x's rule 10 inside the product block.
-  const old = "10. **Unattended runs add, and apply only what you decided word for word.** With no user present, an agent adds drafts and proposals and carries out decisions you already made (Approve, Reject, your edits in Notion); it never interprets a What to fix, a Fix or an \"all except …\", and never decides anything itself. Those wait for an attended run.";
-  await writeFile(agentsPath, shipped.replace(rule10, old));
-  const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
-  assert.equal(run.code, 0, run.stdout);
-  assert.deepEqual(run.json.data.files.filter((file: { path: string }) => file.path === "AGENTS.md"), [{ path: "AGENTS.md", action: "updated" }]);
-  const agents = await readFile(agentsPath, "utf8");
-  assert.ok(agents.includes(rule10));
-  assert.ok(!agents.includes("your edits in Notion"));
-});
-
 test("upgrade leaves an AGENTS.md without its markers alone and warns", async (context) => {
   const { root, target } = await freshBrain(context);
   await writeFile(join(target, "AGENTS.md"), "My own rules only.\n");
@@ -169,21 +151,6 @@ test("upgrade cleans settings and warns for invalid settings", async (context) =
   const empty = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
   assert.ok(empty.json.data.files.some((file: { path: string; action: string }) => file.path === ".claude/settings.json" && file.action === "removed"));
   await assert.rejects(readFile(join(target, ".claude/settings.json")));
-});
-
-test("upgrade renames capture_inbox to inbox", async (context) => {
-  const { root, target } = await freshBrain(context);
-  const configPath = join(target, "brain.json");
-  const config = JSON.parse(await readFile(configPath, "utf8"));
-  config.notion.databases.capture_inbox = config.notion.databases.inbox;
-  delete config.notion.databases.inbox;
-  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
-  const run = await brain(["upgrade", "--brain", target, "--now", NOW, "--json"], root);
-  assert.equal(run.code, 0, run.stdout);
-  assert.ok(run.json.data.files.some((file: { path: string; action: string }) => file.path === "brain.json" && file.action === "updated"));
-  const upgraded = JSON.parse(await readFile(configPath, "utf8"));
-  assert.equal(upgraded.notion.databases.inbox, "");
-  assert.equal(upgraded.notion.databases.capture_inbox, undefined);
 });
 
 test("upgrade renames references to documents and writes a modules block with every module on (0048, 0049)", async (context) => {

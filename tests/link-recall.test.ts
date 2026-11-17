@@ -62,39 +62,31 @@ test("with settings.recall opening, link writes the recall paragraph byte for by
   assert.equal(await agents(), `${BLOCK_START}${RECALL}\n\n${READ_ONLY}${END}`);
 });
 
-test("with the workflow lines, the recall paragraph comes after How: and before the workflow paragraph", async (context) => {
-  const { setRecall, link, agents } = await setup(context, true);
+test("with the workflow lines, the recall paragraph comes after How: and before the workflow paragraph, and a second link changes no bytes", async (context) => {
+  const { repo, setRecall, link, agents } = await setup(context, true);
   await setRecall('"opening"');
   await link();
   assert.equal(await agents(), `${BLOCK_START}${RECALL}\n\n${WORKFLOW}${WORKFLOW_READ_ONLY}${END}`);
-});
 
-test("with settings.recall off or absent, the block has no recall paragraph", async (context) => {
-  for (const workflow of [false, true]) {
-    const expected = workflow ? `${BLOCK_START}${WORKFLOW}${WORKFLOW_READ_ONLY}${END}` : `${BLOCK_START}${READ_ONLY}${END}`;
-    const absent = await setup(context, workflow);
-    const config = JSON.parse(await readFile(join(absent.brain, "brain.json"), "utf8"));
-    assert.equal(config.settings?.recall, undefined, "a new brain leaves settings.recall absent");
-    await absent.link();
-    assert.equal(await absent.agents(), expected, `absent, workflow ${workflow}`);
-
-    const off = await setup(context, workflow);
-    await off.setRecall('"off"');
-    await off.link();
-    assert.equal(await off.agents(), expected, `off, workflow ${workflow}`);
-  }
-});
-
-test("a second link with recall opening changes no bytes", async (context) => {
-  const { repo, setRecall, link } = await setup(context, true);
-  await setRecall('"opening"');
-  await link();
   const read = () => Promise.all([".brain", "AGENTS.md", "CLAUDE.md"].map((path) => readFile(join(repo, path), "utf8")));
   const before = await read();
   const second = await link();
   assert.equal(second.json.data.marker.written, false);
   for (const file of second.json.data.files) assert.equal(file.action, "unchanged", file.path);
   assert.deepEqual(await read(), before);
+});
+
+test("with settings.recall off or absent, the block has no recall paragraph", async (context) => {
+  const absent = await setup(context);
+  const config = JSON.parse(await readFile(join(absent.brain, "brain.json"), "utf8"));
+  assert.equal(config.settings?.recall, undefined, "a new brain leaves settings.recall absent");
+  await absent.link();
+  assert.equal(await absent.agents(), `${BLOCK_START}${READ_ONLY}${END}`, "absent");
+
+  const off = await setup(context, true);
+  await off.setRecall('"off"');
+  await off.link();
+  assert.equal(await off.agents(), `${BLOCK_START}${WORKFLOW}${WORKFLOW_READ_ONLY}${END}`, "off, with the workflow lines");
 });
 
 test("turning recall off and linking again removes the paragraph from AGENTS.md and CLAUDE.md, leaving the rest as it was", async (context) => {

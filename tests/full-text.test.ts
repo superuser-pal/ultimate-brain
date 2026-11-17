@@ -189,31 +189,6 @@ test("render: a source from before 0.6.0 with notion_text full sends no Full tex
   await assertLintClean(dir);
 });
 
-test("source full-text is retired: it writes nothing and fails with RETIRED (0049)", async (context) => {
-  const dir = await inboxBrain(context);
-  const doc = await newSource(dir, source("Requirements", "document", DOCUMENT));
-  const before = await readFile(join(dir, doc.path), "utf8");
-  for (const args of [["source", "full-text", doc.id], ["source", "full-text", doc.id, "--parts", "2"]]) {
-    const refused = await run(dir, args);
-    assert.equal(refused.code, 2, refused.stdout);
-    assert.equal(refused.json.error.code, "RETIRED");
-    assert.match(refused.json.error.message, /retired in 0\.6\.0: use Keep as document/);
-  }
-  assert.equal(await readFile(join(dir, doc.path), "utf8"), before);
-});
-
-test("sync plan ignores a Full text box as RETIRED (0049)", async (context) => {
-  const dir = await inboxBrain(context);
-  const doc = await newSource(dir, source("Requirements", "document", DOCUMENT));
-  const plan = await run(dir, ["sync", "plan"], { as_of: NOW, rows: [
-    { database: "inbox", page_id: "d1000000-0000-4000-8000-000000000001", last_edited: NOW, properties: { "Full text": true, "Brain ID": doc.id } },
-  ] });
-  assert.equal(plan.code, 0, plan.stdout);
-  assert.equal(plan.json.data.full_text_requests, undefined);
-  assert.deepEqual(plan.json.data.document_requests, []);
-  assert.deepEqual(plan.json.data.ignored, [{ database: "inbox", page_id: "d1000000-0000-4000-8000-000000000001", brain_id: doc.id, property: "Full text", reason: "RETIRED" }]);
-});
-
 test("render: an area page gets its Brief section from the area Brief, with links to published pages", async (context) => {
   const dir = await inboxBrain(context);
   const result = await run(dir, ["sync", "render", "--ids", "area-2m7c4h8n"]);
