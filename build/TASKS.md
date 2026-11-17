@@ -1300,6 +1300,12 @@ The author's two fixes from the scope review of 2026-11-17, accepted in [0103](.
 **Output:** a fork PR for `brain-setup` and its references, `brain-howto` and the Everyday guide as needed by CC-335 and CC-337. Walk the user through the First things first checklist, reuse a working agent in an existing space, ensure mentions/access target their copy, and require the Today scope check plus the three disposable-page button checks before recording Brain Assistant done. Report a UI check as the user's observation, never as API verification. Preserve the existing setup/population/seeding flow and its consent. Release the fork change and vendor its snapshot here with `scripts/vendor-skills.mjs`; never edit the vendored skills directly.
 **Acceptance:** on a synthetic setup scenario a missing agent or unverified button leaves Brain Assistant unfinished with a concrete next step, and a successful scope check plus all three button checks completes it; resuming reuses valid setup and an existing agent; setup still connects and populates through the existing seeding preview rather than a parallel flow; `vendor-skills.mjs --check --online` passes and the full suite, typecheck, package, leak and PR format checks pass. U-37 supplies the fresh-template UI evidence.
 
+### CC-341 · Plan Domains on Projects, Meetings and Documents, and Domains without Type (0105) · `in progress`
+**Release:** 0.16.1
+**Changelog:**
+**Output:**
+**Acceptance:**
+
 ## 1.0.0 — Productisation, translation, funnel and launch (decision 0061)
 
 After the feature cutoff, scope packaging/install/upgrade guidance, consistent Notion templates/terminology, user-facing translations, positioning/demo/landing-page and acquisition/onboarding funnel, release candidates and launch acceptance. Confirm languages, offer and publication choices during the opening grill. Allow launch-blocking fixes, not unapproved features. The release gate includes a fresh user's end-to-end path and common-failure recovery; publishing/releasing follows existing user approval and release-script rules.
