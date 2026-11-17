@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 import { promisify } from "node:util";
 
-import { brain, fixtureCopy, testPackageRoot } from "./helpers.ts";
+import { brain, fixtureCopy, initCopy, testPackageRoot } from "./helpers.ts";
 
 // The CLI reads `git config` in the brain folder (spec/setup.md §5): every test here sees only the brain's own Git
 // configuration, never the machine's global or system identity. Each test file runs in its own process.
@@ -29,7 +29,7 @@ async function freshBrain(context: TestContext): Promise<{ home: string; target:
   const home = await realpath(await mkdtemp(join(tmpdir(), "brain-setup-")));
   context.after(() => rm(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 }));
   const target = join(home, "brain");
-  const init = await brain(["init", target, "--owner", "Test Owner", "--no-git", "--now", NOW, "--json"], home);
+  const init = await initCopy(target, { now: NOW });
   assert.equal(init.code, 0, init.stderr);
   return { home, target };
 }
@@ -392,7 +392,7 @@ function pick(checks: Record<string, boolean>): [boolean, boolean] {
 /** A second synthetic brain made by `brain init` next to the first, in the same home. */
 async function secondBrain(home: string, name: string): Promise<string> {
   const target = join(home, name);
-  const init = await brain(["init", target, "--owner", "Second Owner", "--no-git", "--now", NOW, "--json"], home);
+  const init = await initCopy(target, { owner: "Second Owner", now: NOW });
   assert.equal(init.code, 0, init.stderr);
   return target;
 }

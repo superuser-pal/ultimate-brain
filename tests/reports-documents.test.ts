@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 
 import { parseFrontmatter } from "../src/lib/frontmatter.ts";
-import { approveNote, brain, fixtureCopy, withPassages } from "./helpers.ts";
+import { approveNote, brain, fixtureCopy, initCopy, withPassages } from "./helpers.ts";
 
 // CC-124, decision 0071: a report is a Documents row with Origin = Report; its Ask rows stay on the Inbox.
 
@@ -214,7 +214,7 @@ test("upgrade turns Documents on in a brain that has Reports on, and warns DOCUM
   const root = await mkdtemp(join(tmpdir(), "brain-upgrade-"));
   context.after(() => rm(root, { recursive: true, force: true }));
   const target = join(root, "brain");
-  assert.equal((await brain(["init", target, "--owner", "Test Owner", "--no-git", "--now", NOW, "--json"], root)).code, 0);
+  assert.equal((await initCopy(target, { now: NOW })).code, 0);
   const configPath = join(target, "brain.json");
   const config = JSON.parse(await readFile(configPath, "utf8"));
   config.modules = { ...config.modules, documents: false, reports: true };

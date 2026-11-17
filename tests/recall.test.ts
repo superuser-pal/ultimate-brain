@@ -6,7 +6,7 @@ import { test, type TestContext } from "node:test";
 
 import { serializeNewFile } from "../src/lib/frontmatter.ts";
 import { passageHash } from "../src/lib/selection.ts";
-import { brain } from "./helpers.ts";
+import { brain, initCopy } from "./helpers.ts";
 
 // `brain recall --pack` and `--search` (spec/cli.md §5.33, spec/memory.md §2, §5, §6.1). Synthetic brains and folders only.
 
@@ -26,7 +26,7 @@ async function world(context: TestContext): Promise<World> {
   const parent = await mkdtemp(join(tmpdir(), "brain-recall-"));
   context.after(() => rm(parent, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 }));
   const dir = join(parent, "brain");
-  const made = await brain(["init", dir, "--owner", "Test Owner", "--no-git", "--now", NOW, "--json"]);
+  const made = await initCopy(dir, { now: NOW });
   assert.equal(made.code, 0, made.stdout);
   await put(dir, "areas/consulting.md", { id: AREA, type: "area", title: "Consulting", summary: "Client work.", lifecycle: "reviewed", created: "2026-09-01", updated: "2026-09-01" });
   await put(dir, "areas/research.md", { id: OTHER_AREA, type: "area", title: "Research", summary: "Reading.", lifecycle: "reviewed", created: "2026-09-01", updated: "2026-09-01" });

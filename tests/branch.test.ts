@@ -8,7 +8,7 @@ import { test, type TestContext } from "node:test";
 import { promisify } from "node:util";
 
 import { disableGitAutoMaintenance } from "./git-env.ts";
-import { brain } from "./helpers.ts";
+import { brain, initCopy } from "./helpers.ts";
 
 // `brain status`'s `branch` block and the warning BRAIN_OFF_WORKING_BRANCH (spec/cli.md §5.2, 0086 §1, §2), on synthetic
 // brains only. Every git here sees only the brain's own configuration, never the machine's.
@@ -31,7 +31,7 @@ async function gitBrain(context: TestContext, commit = true): Promise<{ home: st
   const home = await realpath(await mkdtemp(join(tmpdir(), "brain-branch-")));
   context.after(() => rm(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 }));
   const target = join(home, "brain");
-  const init = await brain(["init", target, "--owner", "Test Owner", "--no-git", "--now", NOW, "--json"], home);
+  const init = await initCopy(target, { now: NOW });
   assert.equal(init.code, 0, init.stderr);
   await git(target, ["init", "-q", "-b", "main"]);
   await git(target, ["config", "user.name", "Test Owner"]);
@@ -78,7 +78,7 @@ test("a brain that is not itself a Git repository has a null branch and no warni
   const home = await realpath(await mkdtemp(join(tmpdir(), "brain-branch-")));
   context.after(() => rm(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 }));
   const target = join(home, "brain");
-  assert.equal((await brain(["init", target, "--owner", "Test Owner", "--no-git", "--now", NOW, "--json"], home)).code, 0);
+  assert.equal((await initCopy(target, { now: NOW })).code, 0);
   const result = await status(target, home);
   assert.equal(result.branch, null);
   assert.deepEqual(offWarnings(result.warnings), []);

@@ -6,7 +6,7 @@ import { test, type TestContext } from "node:test";
 
 import { serializeNewFile } from "../src/lib/frontmatter.ts";
 import { passageHash } from "../src/lib/selection.ts";
-import { brain } from "./helpers.ts";
+import { brain, initCopy } from "./helpers.ts";
 
 // The awaiting-cleanup form (spec/eligibility.md §6 rules 1 to 4; cli.md §5.13, §5.13.1, §5.32; memory.md §5.3): a note with a restricted
 // claim keeps its eligible lines and loses its title, path, tags, aliases, summary, free-text fields, headings and comments on every answer
@@ -32,7 +32,7 @@ async function freshBrain(context: TestContext): Promise<{ dir: string; bare: st
   const parent = await mkdtemp(join(tmpdir(), "brain-answer-"));
   context.after(() => rm(parent, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 }));
   const dir = join(parent, "brain");
-  const made = await brain(["init", dir, "--owner", "Test Owner", "--no-git", "--now", NOW, "--json"]);
+  const made = await initCopy(dir, { now: NOW });
   assert.equal(made.code, 0, made.stdout);
   // A folder with no .brain: no context boost, so a note scores only from its own terms.
   const bare = join(parent, "bare");

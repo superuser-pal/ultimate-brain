@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 
-import { brain, fixtureCopy } from "./helpers.ts";
+import { brain, fixtureCopy, initCopy } from "./helpers.ts";
 
 const NOW = "2026-12-03T10:22:00Z";
 
@@ -12,7 +12,7 @@ async function freshBrain(context: TestContext): Promise<{ root: string; target:
   const root = await mkdtemp(join(tmpdir(), "brain-modules-"));
   context.after(() => rm(root, { recursive: true, force: true }));
   const target = join(root, "brain");
-  const init = await brain(["init", target, "--owner", "Test Owner", "--no-git", "--now", NOW, "--json"], root);
+  const init = await initCopy(target, { now: NOW });
   assert.equal(init.code, 0, init.stderr);
   return { root, target };
 }

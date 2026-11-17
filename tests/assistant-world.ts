@@ -6,7 +6,7 @@ import type { TestContext } from "node:test";
 
 import { stringify } from "yaml";
 
-import { brain, type CliRun } from "./helpers.ts";
+import { brain, type CliRun, initCopy } from "./helpers.ts";
 
 export const AS_OF = "2026-11-06T10:00:00Z";
 
@@ -68,7 +68,7 @@ export async function world(context: TestContext, notes: readonly NoteSpec[], op
   const parent = await mkdtemp(join(tmpdir(), "brain-assistant-"));
   context.after(() => rm(parent, { recursive: true, force: true }));
   const root = join(parent, "brain");
-  const init = await brain(["init", root, "--owner", "Sam Example", "--no-git", "--now", "2026-01-01T09:00:00Z", "--json"], parent);
+  const init = await initCopy(root, { owner: "Sam Example", now: "2026-01-01T09:00:00Z" });
   if (init.code !== 0) throw new Error(`init failed: ${init.stdout}${init.stderr}`);
   const config = JSON.parse(await readFile(join(root, "brain.json"), "utf8"));
   config.modules = { ...config.modules, tasks: true, domains: true, ...options.modules };

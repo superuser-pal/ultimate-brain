@@ -7,7 +7,7 @@ import { test, type TestContext } from "node:test";
 import type { Note } from "../src/lib/notes.ts";
 import { STRUCTURE_END, STRUCTURE_START, structureBlock, withStructureBlock } from "../src/lib/structure.ts";
 import { deriveView } from "../src/lib/views.ts";
-import { brain } from "./helpers.ts";
+import { brain, initCopy } from "./helpers.ts";
 import { initBrain, productRoot, run, SNAPSHOTS, temp } from "./skills-fixtures.ts";
 
 // The structure block of the brain's AGENTS.md (decision 0089, spec/cli.md §5.8.1). Every name here is synthetic.
@@ -144,7 +144,7 @@ async function freshBrain(context: TestContext) {
   const root = await mkdtemp(join(tmpdir(), "brain-structure-"));
   context.after(() => rm(root, { recursive: true, force: true }));
   const target = join(root, "brain");
-  const init = await brain(["init", target, "--owner", "Test Owner", "--no-git", "--now", NOW, "--json"], root);
+  const init = await initCopy(target, { now: NOW });
   assert.equal(init.code, 0, init.stderr);
   const cli = (...args: string[]) => brain([...args, "--brain", target, "--now", NOW, "--json"], root);
   const agents = () => readFile(join(target, "AGENTS.md"), "utf8");

@@ -8,7 +8,7 @@ import { serializeNewFile } from "../src/lib/frontmatter.ts";
 import { scanNotes } from "../src/lib/notes.ts";
 import { contextFor, eligibleNote, requireSuppressions } from "../src/lib/suppressions.ts";
 import { passageHash } from "../src/lib/selection.ts";
-import { brain } from "./helpers.ts";
+import { brain, initCopy } from "./helpers.ts";
 
 // Restricted evidence (capture-and-review §5.1, CC-174): provenance that names no input is live, and a note with nothing eligible left is left
 // out whole. One active suppression sits in another project; every note here is synthetic.
@@ -52,7 +52,7 @@ async function world(context: TestContext): Promise<World> {
   const parent = await mkdtemp(join(tmpdir(), "brain-lineage-"));
   context.after(() => rm(parent, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 }));
   const dir = join(parent, "brain");
-  const made = await brain(["init", dir, "--owner", "Test Owner", "--no-git", "--now", NOW, "--json"]);
+  const made = await initCopy(dir, { now: NOW });
   assert.equal(made.code, 0, made.stdout);
   await put(dir, "areas/consulting.md", { id: AREA, type: "area", title: "Consulting", summary: "Client work.", lifecycle: "reviewed", created: "2026-09-01", updated: "2026-09-01" });
   // The project's facts come from your edit in Notion and from a corrected Review item: neither names an input.
