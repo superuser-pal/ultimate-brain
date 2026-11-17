@@ -50,7 +50,7 @@ Nothing sits above the two columns (#143, decision 0053).
 | 3 | Tasks *(Tasks)* | What's due today? | Tasks | List | Status is To Do or Doing · Due is on or before today | Due, ascending | Name, Project, Due | Today's work, overdue first |
 | 4 | Meetings | Which meetings are today? | Meetings | List | Date is today | Date, ascending | Name, Date, Project | Today's meetings, with time and project |
 | 5 | Projects | What's active? | Projects | Gallery (small cards) | Status is Active · Archived is unchecked | Priority (High→Low), then Name | Name, Countdown, *(Orgs)* Client, *(Tasks)* Task Progress | What you're working on, and how far along each is |
-| 5b | Inbox | What's in my inbox? | Inbox | List | Brain Status is New or Ready | Created, ascending | Name, Kind, Brain Status | Rows waiting for the brain, oldest first: set one Ready when it can be taken in. The week's review (Kind Weekly) and a catch-up's summary (Kind Catch-up) show here until they are Done; they are never taken in. The last tab; the buttons and the boxes they tick are on each row's page (#146) |
+| 5b | Inbox | What's in my inbox? | Inbox | List | Brain Status is New or Ready | Created, ascending | Name, Kind, Brain Status | Rows waiting for the brain, oldest first: set one Ready when it can be taken in. The week's review (Kind Weekly) and a catch-up's summary (Kind Catch-up) show here until they are Done; they are never taken in. A changed version of a document waiting for your check (Kind Changed) shows here too: read it, edit it if you want, then say *go* in your agent session or set it Ready (decision 0098 §4). The last tab; the buttons and the boxes they tick are on each row's page (#146) |
 | 6 | Came in | What came in lately? | Inbox | List, 10 rows | Brain Status is Done | Created, descending | Name, Kind, Project | The Brain feed (0043): every document, email and capture the brain took in, newest first (reports are in Documents since 0.9.1) |
 | 7 | Meetings | Which meetings did it take in? | Meetings | List, 10 rows | Brain Status is Ingested | Ingested At, descending | Name, Date, Project | The meetings the brain ingested, newest first. Together with view 6, everything the brain did |
 
@@ -191,6 +191,7 @@ Notion lets you shape how each database page opens. Set it once per database: op
 | Property name | Button label | Database | Action | Module |
 |---|---|---|---|---|
 | Keep | Keep as document | Inbox | Document asked → checked; Brain Status → Ready | Documents |
+| Keep | Keep as document | Tasks | Document asked → checked (nothing else: decision 0100) | Tasks (the brain acts on it with Documents on) |
 | Update | Refresh report | Documents (on the Inbox before 0.9.1, 0071) | Send message to Brain Assistant (0054; before 0.8.0: Refresh asked → checked). Refresh asked is now ticked by hand to queue a full refresh | Reports |
 | Tidy | Tidy capture | Inbox | Send message to Brain Assistant | core |
 | Write | Write up | Documents | Send message to Brain Assistant | Documents |
@@ -217,9 +218,9 @@ The buttons that message Brain Assistant need Notion's Business or Enterprise pl
 | Meetings | Brain Status, Date, Project | Panel · Attendees, Area, Tasks | Brain ID, Ingested At | Off | Brain Status is the one field you change per meeting |
 | People | Role, Org | Panel · Email, Projects, Meetings, Sources, Summary, Lifecycle | Brain ID, Last Synced | On hover | Who they are and where they work |
 | Orgs | Relationship, Website | Panel · Meetings via projects, People, Projects, Summary, Archived | Brain ID, Last Synced | On hover | — |
-| Inbox | Keep, Tidy, Brain Status, Project, Area | Main · Document asked, Only keep, Kind, Summary, Documents, People, Tasks, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043) |
-| Documents | Write, Update, Accept, Lifecycle, Project, Area, Sources | Panel · Accepted, Accepted at, Refresh asked, What to fix, Asked in, Origin, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |
-| Tasks | Status, Due, Kind | Panel · Project, Area, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
+| Inbox | Keep, Tidy, Brain Status, Project, Area | Main · Document asked, Only keep, Kind, Changed from, What changed, Summary, Documents, People, Tasks, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043); on a changed version (Kind Changed), the text you check (0098 §4) |
+| Documents | Write, Update, Accept, Lifecycle, Project, Area, Sources | Panel · Accepted, Accepted at, Refresh asked, What to fix, Asked in, Task, Origin, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |
+| Tasks | Keep, Status, Due, Kind | Panel · Document asked, Project, Area, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
 
 **Hide system properties everywhere.** Brain ID, Last Synced, Created time and Last edited time are plumbing (owner "system"). Hide them in every view and layout, except where a view lists one to show (for example Last edited time in "Which projects have gone quiet?"). Don't delete them, because the brain matches records by Brain ID.
 

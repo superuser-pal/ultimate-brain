@@ -1,6 +1,6 @@
-# 0027 · One place to decide: Review, Decisions and Questions archived, Tasks gain Kind
+# 0027 · One place to decide: Review, Decisions and Questions archived, Tasks gain Kind and Keep as document, the Inbox holds changed versions
 
-**Design change:** decisions [0096](../../decisions/0096-one-place-to-decide.md) §6 and §7, [0099](../../decisions/0099-notion-without-decisions-and-questions.md) §4, §8 and §9, [0101](../../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §4, §5 and §7; CC-299 (release 0.16.0; spec/capture-and-review.md §6.2, §7.9; spec/cli.md §5.14.8, §5.14.9; docs/notion-space-design.md §3, §4, §5, §10). It is 0.16.0's one Notion migration (CC-331): CC-311 adds its part for the checked row and Keep as document on Tasks (0098 §4, 0100) before the release. **Applies to:** every space built or migrated before 0.16.0, the template's copy included. Needs migration 0026. A step already done changes nothing, so running this again is safe.
+**Design change:** decisions [0096](../../decisions/0096-one-place-to-decide.md) §6 and §7, [0099](../../decisions/0099-notion-without-decisions-and-questions.md) §4, §8 and §9, [0101](../../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §4, §5 and §7; CC-299 (release 0.16.0; spec/capture-and-review.md §6.2, §7.9; spec/cli.md §5.14.8, §5.14.9; docs/notion-space-design.md §3, §4, §5, §10). Part C: decisions [0098](../../decisions/0098-agree-by-subject-and-check-a-changed-document.md) §4 and [0100](../../decisions/0100-keep-a-task-as-a-document.md), in 0.16.0 by [0102](../../decisions/0102-one-release-for-0-16-0-and-0-17-0.md); CC-311 (spec/capture-and-review.md §12, §13; spec/cli.md §5.35; spec/setup.md §6.2.2; docs/notion-space-design.md §3.11, §3.12, §3.14, §3.15). It is 0.16.0's one Notion migration (CC-331). **Applies to:** every space built or migrated before 0.16.0, the template's copy included. Needs migration 0026. A step already done changes nothing, so running this again is safe.
 
 **What changes:**
 - **You decide in Claude Code or Codex, not in Notion** (0096). The Review database goes: this migration first applies the decisions you already made on its rows (a row set to Approve or Reject, an item with its `Decision:` line), then archives the database. A row you hadn't decided needs nothing: its proposal is in your brain, and your next session asks it ("what needs my decision"). Home's "What's waiting for you?", the Review page, Review with me, Your call and the Review queue and Grill review skills go with it.
@@ -9,10 +9,12 @@
 - **Only the ingest creates a meeting's Tasks** (0101 §5): the minutes prompt, Check minutes and Brain Assistant say so.
 - **An edit to a brain-owned value is asked in your agent session** before it reaches the brain (0101 §4): the property descriptions say so.
 - **Brain Assistant and its buttons need Business or Enterprise with Notion credits** (0101 §7): the Start here callout says so.
+- **A changed document is checked before it goes in** (0098 §4). When you ask in the session for a document to be changed before it goes in, or click Keep as document with Only keep filled, the brain writes the changed text to a new Inbox row: Kind **Changed**, **Changed from** the original's row, and **What changed** listing what was dropped or altered. Home's Inbox tab lists it until it goes in: read it, edit it if you want, then say *go* in the session or set it Ready. With Only keep, only the kept part goes in; the original is recorded as a source only.
+- **Any task can be kept as a document** (0100). Tasks gain **Document asked** and a **Keep as document** button; the next catch-up keeps the task's page as a Document, whose new **Task** relation points back to the task.
 
 **Nothing is deleted.** An archived database keeps every row and page: it moves to **Archive** (on System), out of Brain Data, so Brain Assistant and the brain no longer read it. The relations to it and the views of it are removed; what they showed stays in your brain, in Git.
 
-Run this migration after `brain upgrade` has put 0.16.0 in place, in an attended session (never from a schedule), in the order below: part A, then part B, then the last steps. Part A's and part B's brain steps run only in a space connected to a brain; **the template's copy** (no brain) skips them and does the Notion steps alone, its Example rows of Review, Decisions and Questions archived with their databases.
+Run this migration after `brain upgrade` has put 0.16.0 in place, in an attended session (never from a schedule), in the order below: part A, then part B, then part C, then the last steps. Part A's, part B's and part C's brain steps run only in a space connected to a brain; **the template's copy** (no brain) skips them and does the Notion steps alone, its Example rows of Review, Decisions and Questions archived with their databases.
 
 Who does each step:
 - **agent:** the `brain-notion-change` skill, through the CLI and the API, with your yes;
@@ -172,7 +174,42 @@ On a mapped database, use your own status names.
 
 Offer it once, now: "Your open questions no longer have a list of their own in Notion. Shall I go through them, so each one you follow up becomes a task?" On a yes, run the to-do tidy (spec/capture-and-review.md §6.2): each open question that is a to-do is offered as Convert or Drop, and each real question as Track, one at a time. A no leaves every question open, in its project's Brief; the user can ask later ("turn my to-do questions into tasks").
 
-<!-- CC-311 (0098 §4, 0100) adds its part here, as "Part C", before "The last steps". -->
+## Part C · The checked row and Keep as document on Tasks (0098 §4, 0100)
+
+### C1 · Inbox: Kind Changed, Changed from and What changed (agent)
+
+Every space has them: a changed version of a document needs no module (spec/capture-and-review.md §12).
+1. Add the option **Changed** to Inbox · **Kind**, after Weekly (A5), sending every existing option with its id first so none is dropped, then read it back. An option already there changes nothing.
+2. Add **Changed from**, a relation from the Inbox to the Inbox itself, one-way: through the API, `{"relation": {"data_source_id": "<the Inbox's data source id>", "type": "single_property", "single_property": {}}}`. Read the Inbox back: Changed from is a relation to the Inbox's own data source, of type `single_property`, and no other property was added.
+3. Add **What changed**, a text property.
+4. Set these descriptions, sending each property with its type as L1 says, then read them back:
+   - Changed from: `Owner: brain. On a changed version of a document: the row it was changed from. Written once.`
+   - What changed: `Owner: brain. On a changed version: what it dropped or altered, one line each. Written once; kept with the row when it goes in.`
+   - Only keep: `Owner: you. Only this part goes in, as a changed version you check first ('the requirements table'); empty = the whole input.` (Documents module; Only keep was there since migration 0010).
+
+A property already there with that name and type changes nothing but its description. Nothing is written on any row: the brain fills these only on a row it writes from now on (spec/cli.md §5.35).
+
+### C2 · Tasks: Document asked (agent; Tasks module)
+
+**The default Tasks database** (the one on Brain Data): add **Document asked**, a checkbox, described `Owner: you, through the Keep as document button. Waiting for the brain; it clears it.`, and read it back. A checkbox already there with that name changes nothing. Then, in a space with a brain, `brain config set notion.tasks.properties.document_asked '"Document asked"'` and commit in the brain: `config: Tasks Document asked (migration 0027)`. The connect step expects it on the default database (spec/setup.md §6.2.2).
+
+**A tasks database you mapped yourself** (0018): offer it once, as the connect step does (spec/setup.md §6.2.2): "Add a Keep as document button to your tasks, so the brain keeps a task's page as a document at the next catch-up? a) yes, add it (recommended) b) no: ask me in the session instead". On a), add the checkbox, read it back and set `notion.tasks.properties.document_asked` to its name; a checkbox already named Document asked is mapped without the question. On b), set nothing, and skip C4's button.
+
+Without the Tasks module, skip C2, C3 and C4's button: you ask in the session ("keep the go-live task as a document").
+
+### C3 · Documents: Task (agent; Documents and Tasks modules)
+
+Add **Task** to Documents, a relation to the Tasks database (your own, if you mapped one), one-way: `{"relation": {"data_source_id": "<the tasks data source id>", "type": "single_property", "single_property": {}}}`, described `Owner: brain. On a Document kept from a task: that task. Written by the brain only.` Read Documents back: Task is a relation to the tasks data source, of type `single_property`, and the tasks database has no new property. Without the Documents module, skip it: no task is kept as a document until Documents is on ([../modules/documents.md](../modules/documents.md) adds it then).
+
+### C4 · The Keep as document button on Tasks, and the page layouts (by hand)
+
+The API can't create a button or edit a page layout ([../views-guide.md](../views-guide.md) §9).
+1. **Tasks → Keep:** open the Tasks database as a full page → **⋯** → **Properties** → **New property** → **Button**, named `Keep`, with the label `Keep as document`. Action **Edit property** on **This page**: Document asked → checked. Nothing else: unlike the Inbox's button, it sets no status. On a mapped database, tick the checkbox you mapped.
+2. **Tasks layout** (open any task → **Customize layout**): pin **Keep** first in the heading, before Status, Due and Kind, and put **Document asked** at the top of the property group.
+3. **Inbox layout:** put **Changed from** and **What changed** in the property group, right after Kind.
+4. **Documents layout** (Documents and Tasks modules): put **Task** in the property group, after Asked in.
+
+Then check it: on a task, click **Keep as document**. Document asked is ticked, and nothing else on the task changes. If you clicked it only to check, untick Document asked, or the next catch-up keeps that task as a Document. Without a brain (the template's copy), check it on an Example task and untick it: no Example row is left in a state a skill acts on.
 
 ## The last steps
 
@@ -238,7 +275,11 @@ Part B:
 - [ ] (Tasks) Tasks has Kind (Task, Question, Risk), `brain config get notion.tasks.properties.kind` is `Kind` (or empty, on a mapped database you kept without it), and the Tasks page has the tabs Questions and Risks between Someday and Done.
 - [ ] (Tasks) "track it" on an open question in the session creates one task with Kind Question, listed under Questions.
 
-<!-- CC-311 (0098 §4, 0100) adds its Verify items here, under "Part C:". -->
+Part C:
+- [ ] Inbox · Kind has Changed, after Weekly; the Inbox has Changed from (a one-way relation to the Inbox) and What changed (text), with their descriptions, and no other new property.
+- [ ] (Tasks) Tasks has Document asked and the Keep as document button, pinned first; clicking it on a task ticks Document asked and changes nothing else. `brain config get notion.tasks.properties.document_asked` is `Document asked` (or empty, on a mapped database you kept without it).
+- [ ] (Documents, Tasks) Documents has Task, a one-way relation to the tasks database, which has no new property.
+- [ ] (With a brain) "keep the … task as a document" in the session, or the button and the next catch-up, writes a Document linked to the task by Task; a document asked with Only keep filled first comes back as an Inbox row of Kind Changed, with Changed from and What changed.
 
 The last steps:
 - [ ] A brain-owned property's description ends with "An edit here is asked in your agent session before it reaches the brain."

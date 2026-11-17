@@ -36,7 +36,7 @@ test("the build prompts and the design's current sections create no Review, Deci
   const databases = await read("notion/prompts/02-databases.md");
   for (const name of ["Review", "Decisions", "Questions"]) assert.ok(!databases.includes(`"${name}": Name (title)`), name);
   assert.match(databases, /"Tasks": Name \(title\), .*Kind \(select: Task, Question, Risk\)/);
-  assert.match(databases, /"Inbox": Name \(title\), Kind \(select: Capture, File, Email, Chat, Note, Ask, Catch-up, Weekly; default Capture\)/);
+  assert.match(databases, /"Inbox": Name \(title\), Kind \(select: Capture, File, Email, Chat, Note, Ask, Catch-up, Weekly, Changed; default Capture\)/);
   const design = await read("docs/notion-space-design.md");
   assert.ok(!design.includes("<details>"), "the history blocks of design §3 went with the prompts");
 });
