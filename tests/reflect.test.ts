@@ -6,7 +6,7 @@ import { test, type TestContext } from "node:test";
 
 import { serializeNewFile } from "../src/lib/frontmatter.ts";
 import { excludableDecision } from "./exclusion-fixture.ts";
-import { brain, fixtureCopy, withPassages } from "./helpers.ts";
+import { brain, fixtureCopy, initCopy, withPassages } from "./helpers.ts";
 
 const NOW = "2026-11-08T10:00:00Z";
 const SESSION = "agent:brain-reflect/20261108T100000Z";
@@ -16,7 +16,7 @@ async function freshBrain(context: TestContext): Promise<string> {
   const parent = await mkdtemp(join(tmpdir(), "brain-reflect-"));
   context.after(() => rm(parent, { recursive: true, force: true }));
   const dir = join(parent, "brain");
-  const made = await brain(["init", dir, "--owner", "Test Owner", "--no-git", "--now", NOW, "--json"], parent);
+  const made = await initCopy(dir, { now: NOW });
   assert.equal(made.code, 0, made.stdout);
   return dir;
 }

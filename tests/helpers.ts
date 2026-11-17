@@ -1,5 +1,5 @@
 import { cpSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import type { TestContext } from "node:test";
@@ -44,24 +44,70 @@ export async function testPackageRoot(): Promise<string> {
   return root;
 }
 
-/** Copy the fixture brain to a temp dir that is removed after the test. */
+let preparedFixture: Promise<string> | undefined;
+
+/**
+ * The fixture brain as each test receives it, built once per test process (CC-333): the fixture, the shipped skill folders, the brain
+ * template's AGENTS.md and agents, and the structure block. Nothing in it depends on the folder it is built in.
+ */
+function prepareFixture(): Promise<string> {
+  preparedFixture ??= (async () => {
+    const parent = mkdtempSync(join(tmpdir(), "brain-fixture-template-"));
+    process.on("exit", () => rmSync(parent, REMOVE));
+    const brain = join(parent, "brain-acme");
+    cpSync(FIXTURE_BRAIN, brain, { recursive: true });
+    // Fixtures stay product-neutral; whole-brain lint tests receive the shipped skill folders at runtime.
+    const shipped = join(REPO, ".agents", "skills");
+    rmSync(join(brain, ".agents", "skills"), { recursive: true, force: true });
+    cpSync(shipped, join(brain, ".agents", "skills"), { recursive: true, filter: skillFolder(shipped) });
+    cpSync(shipped, join(brain, ".claude", "skills"), { recursive: true, filter: skillFolder(shipped) });
+    cpSync(join(REPO, "templates", "brain", "AGENTS.md"), join(brain, "AGENTS.md"));
+    cpSync(join(REPO, "templates", "brain", ".claude", "agents"), join(brain, ".claude", "agents"), { recursive: true });
+    // The structure block, as `brain index` writes it after the fixture's notes (cli.md §5.8.1), so the copy is current.
+    const config = JSON.parse(await readFile(join(brain, "brain.json"), "utf8")) as Record<string, unknown>;
+    const structure = await planStructure(brain, indexNotes((await scanNotes(brain)).notes, loadSuppressions(brain)), config);
+    if (structure.after !== undefined) await writeFile(join(brain, "AGENTS.md"), structure.after);
+    return brain;
+  })();
+  return preparedFixture;
+}
+
+/** Copy the fixture brain, as prepareFixture builds it, to a temp dir that is removed after the test. */
 export async function fixtureCopy(context: TestContext): Promise<string> {
+  const prepared = await prepareFixture();
   const parent = await mkdtemp(join(tmpdir(), "brain-test-"));
   context.after(() => rm(parent, REMOVE));
   const brain = join(parent, "brain-acme");
-  await cp(FIXTURE_BRAIN, brain, { recursive: true });
-  // Fixtures stay product-neutral; whole-brain lint tests receive the shipped skill folders at runtime.
-  const shipped = join(REPO, ".agents", "skills");
-  await rm(join(brain, ".agents", "skills"), { recursive: true, force: true });
-  await cp(shipped, join(brain, ".agents", "skills"), { recursive: true, filter: skillFolder(shipped) });
-  await cp(shipped, join(brain, ".claude", "skills"), { recursive: true, filter: skillFolder(shipped) });
-  await cp(join(REPO, "templates", "brain", "AGENTS.md"), join(brain, "AGENTS.md"));
-  await cp(join(REPO, "templates", "brain", ".claude", "agents"), join(brain, ".claude", "agents"), { recursive: true });
-  // The structure block, as `brain index` writes it after the fixture's notes (cli.md §5.8.1), so the copy is current.
-  const config = JSON.parse(await readFile(join(brain, "brain.json"), "utf8")) as Record<string, unknown>;
-  const structure = await planStructure(brain, indexNotes((await scanNotes(brain)).notes, loadSuppressions(brain)), config);
-  if (structure.after !== undefined) await writeFile(join(brain, "AGENTS.md"), structure.after);
+  // cpSync: several times faster than fs.promises.cp for a tree of small files.
+  cpSync(prepared, brain, { recursive: true });
   return brain;
+}
+
+const initTemplates = new Map<string, Promise<{ folder: string; run: CliRun }>>();
+
+/**
+ * What `brain init <target> --owner <owner> --no-git --now <now> --json` writes, without running init per test (CC-333): init runs once per
+ * test process for each owner and date, into a template folder, and each call copies that folder to `target`. Nothing init writes there
+ * depends on the target's path (template files, the skill trees, the lock, the index and the log), and `--no-git` writes no `.git`. A test
+ * of init itself (its output, `--set-default`, the home folder, Git) runs the real command. Returns the template's run: its code and
+ * output, with the template's path in `path_abs`.
+ */
+export async function initCopy(target: string, { owner = "Test Owner", now }: { owner?: string; now: string }): Promise<CliRun> {
+  const key = JSON.stringify([owner, now]);
+  let template = initTemplates.get(key);
+  if (template === undefined) {
+    template = (async () => {
+      const root = mkdtempSync(join(tmpdir(), "brain-init-template-"));
+      process.on("exit", () => rmSync(root, REMOVE));
+      const folder = join(root, "brain");
+      const run = await brain(["init", folder, "--owner", owner, "--no-git", "--now", now, "--json"], root);
+      return { folder, run };
+    })();
+    initTemplates.set(key, template);
+  }
+  const { folder, run } = await template;
+  if (run.code === 0) cpSync(folder, target, { recursive: true, errorOnExist: true, force: false });
+  return run;
 }
 
 export interface CliRun {

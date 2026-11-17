@@ -8,7 +8,8 @@ import { test, type TestContext } from "node:test";
 import { promisify } from "node:util";
 
 import { isAbsoluteOrHome } from "../src/lib/repos.ts";
-import { brain, fixtureCopy } from "./helpers.ts";
+import { fixtureClone, tempRepo } from "./fixture-templates.ts";
+import { brain } from "./helpers.ts";
 
 const exec = promisify(execFile);
 const NOW = "2026-12-10T09:00:00Z";
@@ -18,33 +19,11 @@ async function run(dir: string, args: string[]) {
   return brain([...args, "--brain", dir, "--now", NOW, "--json"]);
 }
 
-/** A temporary Git repo; `commit` writes files (null deletes) and commits them at a fixed time. */
-async function tempRepo(context: TestContext) {
-  const root = await mkdtemp(join(tmpdir(), "brain-repo-"));
-  context.after(() => rm(root, { recursive: true, force: true }));
-  const git = async (...args: string[]) => (await exec("git", ["-C", root, ...args], { env: { ...process.env, ...dates } })).stdout.trim();
-  let dates: Record<string, string> = {};
-  await git("init", "-q", "-b", "main");
-  await git("config", "user.email", "test@example.com");
-  await git("config", "user.name", "Test");
-  const commit = async (when: string, files: Record<string, string | null>) => {
-    for (const [file, text] of Object.entries(files)) {
-      if (text === null) { await git("rm", "-q", file); continue; }
-      await mkdir(dirname(join(root, file)), { recursive: true });
-      await writeFile(join(root, file), text);
-      await git("add", file);
-    }
-    dates = { GIT_AUTHOR_DATE: when, GIT_COMMITTER_DATE: when };
-    await git("commit", "-q", "-m", `change at ${when}`);
-    return git("rev-parse", "HEAD");
-  };
-  return { root, git, commit };
-}
 
 const sha = (text: string) => createHash("sha256").update(text).digest("hex");
 
 test("repo add links a repo to an area; status lists it; bad input is refused", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   await repo.commit("2026-11-01T10:00:00Z", { "decisions/0001-one.md": "# One\n" });
 
@@ -70,7 +49,7 @@ test("repo add links a repo to an area; status lists it; bad input is refused", 
 });
 
 test("repo add refuses the brain itself, also through a symbolic link", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   await exec("git", ["-C", dir, "init", "-q"]);
   assert.equal((await run(dir, ["repo", "add", "self", "--path", dir, "--area", AREA, "--pattern", "*.md"])).json.error?.code, "REPO_IS_BRAIN");
   const link = join(dirname(dir), "brain-link");
@@ -79,7 +58,7 @@ test("repo add refuses the brain itself, also through a symbolic link", async (c
 });
 
 test("repo changes lists matching files since the recorded commit; record makes the next listing empty", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   const first = await repo.commit("2026-11-01T10:00:00Z", { "decisions/0001-one.md": "# One\n", "decisions/0002-two.md": "# Two\n", "src/app.ts": "code\n" });
   await run(dir, ["repo", "add", "product", "--path", repo.root, "--area", AREA, "--pattern", "decisions/*.md"]);
@@ -125,7 +104,7 @@ test("repo changes lists matching files since the recorded commit; record makes 
 });
 
 test("repo record and changes refuse unknown commits, non-ancestors and unknown repos", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   const first = await repo.commit("2026-11-01T10:00:00Z", { "a.md": "a\n" });
   const second = await repo.commit("2026-11-02T10:00:00Z", { "a.md": "b\n" });
@@ -147,7 +126,7 @@ test("repo record and changes refuse unknown commits, non-ancestors and unknown 
 });
 
 test("note new: a repo file names a linked repo", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   const first = await repo.commit("2026-11-01T10:00:00Z", { "decisions/0001-one.md": "# One\n" });
   await run(dir, ["repo", "add", "product", "--path", repo.root, "--area", AREA, "--pattern", "decisions/*.md"]);

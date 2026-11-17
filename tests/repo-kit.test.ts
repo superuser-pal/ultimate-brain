@@ -11,7 +11,8 @@ import { test, type TestContext } from "node:test";
 import { promisify } from "node:util";
 
 import { globMatch } from "../src/lib/link-kit.ts";
-import { brain, fixtureCopy } from "./helpers.ts";
+import { fixtureClone, tempRepo } from "./fixture-templates.ts";
+import { brain } from "./helpers.ts";
 
 const exec = promisify(execFile);
 const NOW = "2026-12-10T09:00:00Z";
@@ -26,28 +27,6 @@ async function run(dir: string, args: string[], now = NOW) {
   return brain([...args, "--brain", dir, "--now", now, "--json"]);
 }
 
-/** A temporary Git repo; `commit` writes files (null deletes) and commits them at a fixed time. */
-async function tempRepo(context: TestContext) {
-  const root = await mkdtemp(join(tmpdir(), "brain-repo-"));
-  context.after(() => rm(root, { recursive: true, force: true }));
-  const git = async (...args: string[]) => (await exec("git", ["-C", root, ...args], { env: { ...process.env, ...dates } })).stdout.trim();
-  let dates: Record<string, string> = {};
-  await git("init", "-q", "-b", "main");
-  await git("config", "user.email", "test@example.com");
-  await git("config", "user.name", "Test");
-  const commit = async (when: string, files: Record<string, string | null>) => {
-    for (const [file, text] of Object.entries(files)) {
-      if (text === null) { await git("rm", "-q", file); continue; }
-      await mkdir(dirname(join(root, file)), { recursive: true });
-      await writeFile(join(root, file), text);
-      await git("add", file);
-    }
-    dates = { GIT_AUTHOR_DATE: when, GIT_COMMITTER_DATE: when };
-    await git("commit", "-q", "-m", `change at ${when}`);
-    return git("rev-parse", "HEAD");
-  };
-  return { root, git, commit };
-}
 type Repo = Awaited<ReturnType<typeof tempRepo>>;
 
 const sha = (text: string | Uint8Array) => createHash("sha256").update(text).digest("hex");
@@ -113,7 +92,7 @@ const BASE_FILES: Record<string, string> = { "decisions/0001-one.md": "# One\n",
 interface Linked { dir: string; repo: Repo; name: string; text: string; hash: string; head: string }
 /** A repo with its kit committed and linked with `repo add --kit` (the kit is left untracked with `commitKit: false`). */
 async function linked(context: TestContext, options: { dir?: string; kit?: any; files?: Record<string, string>; commitKit?: boolean } = {}): Promise<Linked> {
-  const dir = options.dir ?? (await fixtureCopy(context));
+  const dir = options.dir ?? (await fixtureClone(context));
   const repo = await tempRepo(context);
   const kit = options.kit ?? makeKit();
   const text = canon(kit);
@@ -171,7 +150,7 @@ async function addSource(dir: string, name: string, repoPath: string, commit: st
 // ---- repo kit check --------------------------------------------------------------------------------------------
 
 test("repo kit check: every valid example has no problems and the hash of the bytes it read", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   for (const name of await readdir(join(EXAMPLES, "valid"))) {
     const file = join(EXAMPLES, "valid", name);
     const bytes = await readFile(file);
@@ -184,7 +163,7 @@ test("repo kit check: every valid example has no problems and the hash of the by
 });
 
 test("repo kit check: every invalid example has at least one problem with a pointer and a message, and exits 0", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   for (const name of await readdir(join(EXAMPLES, "invalid"))) {
     const result = await run(dir, ["repo", "kit", "check", "--input", join(EXAMPLES, "invalid", name)]);
     assert.equal(result.code, 0, `${name}: ${result.stdout}`);
@@ -198,13 +177,13 @@ test("repo kit check: every invalid example has at least one problem with a poin
 });
 
 test("repo kit check: a kit version other than 1 says it needs a newer brain", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const result = await run(dir, ["repo", "kit", "check", "--input", join(EXAMPLES, "invalid", "kit-version-2.json")]);
   assert.ok(result.json.data.problems.some((problem: { message: string }) => problem.message.includes("kit version 2 needs a newer brain")));
 });
 
 test("repo kit check: bytes that are not JSON give kit null and one problem at the root; not a JSON object gives confirm_sha256 null and canonical false (CC-129)", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const bytes = "{ not json";
   const result = await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, bytes)]);
   assert.equal(result.code, 0, result.stdout);
@@ -222,7 +201,7 @@ test("repo kit check: bytes that are not JSON give kit null and one problem at t
 });
 
 test("repo kit check --path reads <path>/brain-kit.json and hashes the bytes as they are on disk", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   await repo.commit("2026-11-01T10:00:00Z", { "a.md": "a\n" });
   const bytes = `${JSON.stringify(makeKit(), null, 4)}\r\n\r\n`; // hand-formatted: never re-serialised before hashing
@@ -234,7 +213,7 @@ test("repo kit check --path reads <path>/brain-kit.json and hashes the bytes as 
 });
 
 test("repo kit check: a missing kit file is KIT_MISSING", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   await repo.commit("2026-11-01T10:00:00Z", { "a.md": "a\n" });
   const result = await run(dir, ["repo", "kit", "check", "--path", repo.root]);
@@ -243,7 +222,7 @@ test("repo kit check: a missing kit file is KIT_MISSING", async (context) => {
 });
 
 test("repo kit check: exactly one of --path and --input is required", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   await repo.commit("2026-11-01T10:00:00Z", { "a.md": "a\n" });
   const input = await inputFile(dir, canon(makeKit()));
@@ -252,7 +231,7 @@ test("repo kit check: exactly one of --path and --input is required", async (con
 });
 
 test("repo kit check --name: a different name is a problem at /name", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const input = await inputFile(dir, canon(makeKit()));
   const same = await run(dir, ["repo", "kit", "check", "--input", input, "--name", "acme-api"]);
   assert.deepEqual(same.json.data.problems, []);
@@ -262,7 +241,7 @@ test("repo kit check --name: a different name is a problem at /name", async (con
 });
 
 test("repo kit check: the area and project must exist in the brain", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const pointers = async (kit: object) =>
     (await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, canon(kit))])).json.data.problems.map((problem: { pointer: string }) => problem.pointer);
   assert.ok((await pointers(makeKit({ placement: { area: "area-00000000" } }))).includes("/placement/area"));
@@ -270,21 +249,21 @@ test("repo kit check: the area and project must exist in the brain", async (cont
 });
 
 test("repo kit check: a project that belongs to another Area is a problem at /placement/project", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   await addSecondArea(dir);
   const result = await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, canon(makeKit({ placement: { area: OTHER_AREA, project: PROJECT } })))]);
   assert.ok(result.json.data.problems.some((problem: { pointer: string }) => problem.pointer === "/placement/project"), result.stdout);
 });
 
 test("repo kit check: a methodology file or a task source path matched by never_read is a problem at /methodology/files/<n> or /tasks/source/path", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const pointers = async (kit: any) => (await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, canon(kit))])).json.data.problems.map((problem: { pointer: string }) => problem.pointer);
   assert.deepEqual(await pointers(makeKit({ methodology: { summary: "x", files: ["AGENTS.md", "secrets/plan.md"] } })), ["/methodology/files/1"]);
   assert.deepEqual(await pointers(makeKit({ tasks: tasksWith({ kind: "markdown", path: "secrets/TASKS.md", format: "checklist" }) })), ["/tasks/source/path"]);
 });
 
 test("repo kit check: a pattern that does not compile, or has no title group, is a problem at /tasks/source/pattern", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const pointers = async (pattern: string) => {
     const kit = makeKit({ tasks: tasksWith({ kind: "markdown", path: "PLAN.md", format: "pattern", pattern }, { "": "todo" }) });
     return (await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, canon(kit))])).json.data.problems.map((problem: { pointer: string }) => problem.pointer);
@@ -297,7 +276,7 @@ test("repo kit check: a pattern that does not compile, or has no title group, is
 // ---- repo kit write --------------------------------------------------------------------------------------------
 
 async function writeCase(context: TestContext, kit: any = makeKit()) {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   await repo.commit("2026-11-01T10:00:00Z", { "a.md": "a\n" });
   const input = await inputFile(dir, scrambled(kit));
@@ -447,7 +426,7 @@ test("repo add --kit records the kit's values and its hash", async (context) => 
 });
 
 test("repo add --kit returns the new entry; a kit without project or never_read leaves those keys out", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   const kit = makeKit({ placement: { area: AREA }, knowledge: { patterns: ["docs/**"] } });
   await repo.commit("2026-11-01T10:00:00Z", { "brain-kit.json": canon(kit) });
@@ -457,7 +436,7 @@ test("repo add --kit returns the new entry; a kit without project or never_read 
 });
 
 test("repo add --kit: a kit whose name differs from <name> is KIT_INVALID at /name", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   await repo.commit("2026-11-01T10:00:00Z", { "brain-kit.json": canon(makeKit()) });
   const result = await run(dir, ["repo", "add", "another-name", "--path", repo.root, "--kit"]);
@@ -468,7 +447,7 @@ test("repo add --kit: a kit whose name differs from <name> is KIT_INVALID at /na
 });
 
 test("repo add --kit cannot be combined with --area or --pattern", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   await repo.commit("2026-11-01T10:00:00Z", { "brain-kit.json": canon(makeKit()) });
   assert.equal((await run(dir, ["repo", "add", "acme-api", "--path", repo.root, "--kit", "--area", AREA])).json.error?.code, "USAGE");
@@ -476,7 +455,7 @@ test("repo add --kit cannot be combined with --area or --pattern", async (contex
 });
 
 test("repo add --kit with no kit file is KIT_MISSING; a legacy repo add --pattern still works as under 0042", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   await repo.commit("2026-11-01T10:00:00Z", { "decisions/0001-one.md": "# One\n" });
   assert.equal((await run(dir, ["repo", "add", "acme-api", "--path", repo.root, "--kit"])).json.error?.code, "KIT_MISSING");
@@ -498,7 +477,7 @@ test("repo changes leaves out never_read matches and always brain-kit.json, even
 });
 
 test("repo changes: brain-kit.json is left out of a legacy entry too, and a hand-written never_read applies", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   await repo.commit("2026-11-01T10:00:00Z", { "brain-kit.json": canon(makeKit()), "package.json": "{}\n", "private.json": "{}\n" });
   await run(dir, ["repo", "add", "legacy", "--path", repo.root, "--area", AREA, "--pattern", "*.json"]);
@@ -512,7 +491,7 @@ test("repo changes: brain-kit.json is left out of a legacy entry too, and a hand
 // ---- repo refresh ----------------------------------------------------------------------------------------------
 
 test("repo refresh: a legacy entry is NO_KIT", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   await repo.commit("2026-11-01T10:00:00Z", { "decisions/0001-one.md": "# One\n" });
   await run(dir, ["repo", "add", "legacy", "--path", repo.root, "--area", AREA, "--pattern", "decisions/*.md"]);
@@ -569,7 +548,7 @@ test("repo refresh: adding a never-read path does not ask for a re-ingest", asyn
 
 /** A legacy link (`repo add --pattern`) ingested up to HEAD, its repo holding `files`. */
 async function legacyLinked(context: TestContext, files: Record<string, string> = {}) {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   const head = await repo.commit("2026-11-01T10:00:00Z", { ...BASE_FILES, ...files });
   assert.equal((await run(dir, ["repo", "add", "acme-api", "--path", repo.root, "--area", AREA, "--pattern", "decisions/**"])).code, 0);
@@ -758,7 +737,7 @@ test("repo show: current, changed, missing, invalid and none", async (context) =
 });
 
 test("repo show: a legacy entry has kit_status none and no kit", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   await repo.commit("2026-11-01T10:00:00Z", { "decisions/0001-one.md": "# One\n" });
   await run(dir, ["repo", "add", "legacy", "--path", repo.root, "--area", AREA, "--pattern", "decisions/*.md"]);
@@ -971,7 +950,7 @@ test("repo tasks: a GitHub source without --input is USAGE", async (context) => 
 });
 
 test("repo tasks: refuses a legacy entry (NO_KIT), a connected kit (MODE_CONNECTED) and a kit without tasks (NO_TASKS), all exit 4", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const legacyRepo = await tempRepo(context);
   await legacyRepo.commit("2026-11-01T10:00:00Z", { "decisions/0001-one.md": "# One\n" });
   await run(dir, ["repo", "add", "legacy", "--path", legacyRepo.root, "--area", AREA, "--pattern", "decisions/*.md"]);
@@ -1035,7 +1014,7 @@ test("repo health: KIT_MISSING and KIT_INVALID are errors and skip the checks th
 });
 
 test("repo health: a legacy entry gets NO_KIT (info) and exits 0", async (context) => {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const repo = await tempRepo(context);
   const head = await repo.commit("2026-11-01T10:00:00Z", { "decisions/0001-one.md": "# One\n" });
   await run(dir, ["repo", "add", "legacy", "--path", repo.root, "--area", AREA, "--pattern", "decisions/*.md"]);
@@ -1191,7 +1170,7 @@ const NEW_KIT = (over: Record<string, unknown> = {}) => makeKit({
 const withStarter = (kit: any) => ({ ...kit, starter: { name: "generic", version: VERSION } });
 
 async function newCase(context: TestContext, kit: any = NEW_KIT()) {
-  const dir = await fixtureCopy(context);
+  const dir = await fixtureClone(context);
   const parent = await mkdtemp(join(tmpdir(), "brain-new-"));
   context.after(() => rm(parent, { recursive: true, force: true }));
   const target = join(parent, "acme-api");

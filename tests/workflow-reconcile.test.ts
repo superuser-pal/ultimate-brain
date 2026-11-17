@@ -9,7 +9,8 @@ import { dirname, join } from "node:path";
 import { test, type TestContext } from "node:test";
 import { promisify } from "node:util";
 
-import { brain, fixtureCopy } from "./helpers.ts";
+import { committedFixture } from "./fixture-templates.ts";
+import { brain } from "./helpers.ts";
 
 const exec = promisify(execFile);
 const NOW = "2026-12-10T09:00:00Z";
@@ -32,18 +33,9 @@ interface Options { start?: boolean; read_at?: string; now?: string; destination
 
 /** A brain with the Tasks (and Documents) module on, a clean Git history, and one connected workflow on a temp folder. */
 async function setup(context: TestContext) {
-  const dir = await fixtureCopy(context);
+  const dir = await committedFixture(context, { message: "base", edit: (config) => { config.modules = { tasks: true, documents: true }; } });
   const scratch = dirname(dir);
-  const configPath = join(dir, "brain.json");
-  const config = JSON.parse(await readFile(configPath, "utf8"));
-  config.modules = { tasks: true, documents: true };
-  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
   const git = (...args: string[]) => exec("git", ["-C", dir, ...args]);
-  await git("init", "-q");
-  await git("config", "user.email", "test@example.com");
-  await git("config", "user.name", "Test");
-  await git("add", "-A");
-  await git("commit", "-q", "-m", "base");
   const folder = await mkdtemp(join(tmpdir(), "brain-workflow-folder-"));
   context.after(() => rm(folder, { recursive: true, force: true }));
 

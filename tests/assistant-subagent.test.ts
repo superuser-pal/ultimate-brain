@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 
-import { brain } from "./helpers.ts";
+import { brain, initCopy } from "./helpers.ts";
 
 // The Ultimate Assistant sub-agent (spec/assistant.md §10): a product-owned file that init and upgrade write and lint checks.
 const NOW = "2026-12-03T10:22:00Z";
@@ -16,7 +16,7 @@ async function freshBrain(context: TestContext): Promise<{ root: string; target:
   const root = await mkdtemp(join(tmpdir(), "brain-assistant-agent-"));
   context.after(() => rm(root, { recursive: true, force: true }));
   const target = join(root, "brain");
-  const init = await brain(["init", target, "--owner", "Test Owner", "--no-git", "--now", NOW, "--json"], root);
+  const init = await initCopy(target, { now: NOW });
   assert.equal(init.code, 0, init.stderr);
   return { root, target };
 }

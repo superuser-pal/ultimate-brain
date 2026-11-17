@@ -8,7 +8,8 @@ import { basename, dirname, join } from "node:path";
 import { test, type TestContext } from "node:test";
 import { promisify } from "node:util";
 
-import { brain, fixtureCopy } from "./helpers.ts";
+import { committedFixture } from "./fixture-templates.ts";
+import { brain } from "./helpers.ts";
 
 const exec = promisify(execFile);
 const NOW = "2026-11-03T14:20:00Z";
@@ -34,21 +35,14 @@ async function git(dir: string, ...args: string[]) {
 
 /** A fixture brain with the Tasks module on, one linked repo, committed as a clean Git repo, plus an empty working folder. */
 async function setup(context: TestContext, options: { modules?: Record<string, boolean>; brainId?: string } = {}): Promise<Env> {
-  const dir = await fixtureCopy(context);
+  const dir = await committedFixture(context, { message: "init", branch: "main", edit: (config, copy) => {
+    config.modules = { domains: false, knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: true, ...options.modules };
+    config.repos = [{ name: "acme-api", path: join(dirname(copy), "acme-api"), area: AREA, patterns: ["*.md"], commit: "" }];
+    if (options.brainId !== undefined) config.notion.tasks.properties.brain_id = options.brainId;
+  } });
   const parent = dirname(dir);
   const folder = join(parent, "acme-api");
   await mkdir(folder, { recursive: true });
-  const path = join(dir, "brain.json");
-  const config = JSON.parse(await readFile(path, "utf8"));
-  config.modules = { domains: false, knowledge: true, orgs: true, documents: true, reports: true, tasks: true, planning: true, ...options.modules };
-  config.repos = [{ name: "acme-api", path: folder, area: AREA, patterns: ["*.md"], commit: "" }];
-  if (options.brainId !== undefined) config.notion.tasks.properties.brain_id = options.brainId;
-  await writeFile(path, `${JSON.stringify(config, null, 2)}\n`);
-  await git(dir, "init", "-q", "-b", "main");
-  await git(dir, "config", "user.email", "test@example.com");
-  await git(dir, "config", "user.name", "Test");
-  await git(dir, "add", "-A");
-  await git(dir, "commit", "-q", "-m", "init");
   return { dir, folder, parent };
 }
 
