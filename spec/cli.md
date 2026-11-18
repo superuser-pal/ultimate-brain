@@ -31,7 +31,7 @@ Decision 0024 lists user-facing commands. Some are skills that call the CLI; som
 | `brain connect-notion` | skill (CC-08) | `config set`, `modules` (the onboarding checklist, 0048) |
 | `brain ingest` | skill (CC-06) | `status`, `index`, `id new`, `note new`, `proposal new`, `views`, `lint`, `log`, `sync tasks`, `sync render`, `sync record`; the to-do tidy: `question drop` (0071); tracking a question or risk: `sync tasks --question`, `sync record` (0099, capture-and-review §6.4); a changed document checked before it goes in: `source check` (0098 §4, capture-and-review §12) |
 | `brain apply`, "what needs my decision" (0096) | skill (CC-09) | `proposal list --waiting`, `apply` (decisions given in chat, capture-and-review §7), `index`, `views`, `lint`, `sync render`, `sync record`; once, the 0.16.0 migration's `sync plan --review-transition` and `sync apply` (§5.14.8), then `sync plan --questions-transition` and `sync apply` (§5.14.9) |
-| `brain sync` | skill (CC-08) | `sync tracked` (the tracked tasks to read, 0101 §6), `sync plan`, `sync apply`, `index`, `views`, `sync render`, `sync record` |
+| `brain sync` | skill (CC-08) | `sync tracked` (the tracked tasks to read, 0101 §6), `sync snapshot` (the snapshot from the saved query replies, §5.14.10), `sync plan`, `sync apply`, `index`, `views`, `sync render`, `sync record` |
 | `brain query` | skill (CC-10) | `query --candidates`, `query --read`, `index`; report mode (0043, 0045): `report new` (with `refresh`), `report fix`, `sync render`, `sync record` |
 | catch up | skill (0037) | the calls of ingest, apply and sync, plus `proposal backlog` (once, 0041), `repo changes` and `repo record` (0042), `source diff` (re-reads, 0045). (`source full-text`, 0043, is retired in 0.6.0, 0049) |
 | turn a module on or off (0048) | skill | `modules`, `config set` |
@@ -1306,7 +1306,8 @@ The sync, apply and ingest skills read and write Notion through the MCP. These c
 
 ```text
 brain sync tracked                      → the tasks that track open questions (§5.14.1)
-skill reads Notion rows (MCP) → snapshot.json
+skill reads Notion rows (MCP)           → each query reply saved as a file
+brain sync snapshot --input <files> --output snapshot.json   (§5.14.10)
 brain sync plan --input snapshot.json   → plan.json   (read-only)
 brain sync apply --input plan.json      → creates notes, applies Notion-owned fields, queues your corrections and finished tracked tasks as questions
 brain index; brain views; brain lint; git commit
@@ -1331,7 +1332,7 @@ N, S and B are compared in the normalized Notion form of §5.14.1 (B is the brai
 
 #### 5.14.1 Snapshot (input to `sync plan`) and value conversion
 
-Written by the skill, normalized from MCP results:
+Written by `brain sync snapshot` (§5.14.10) from the query replies the skill saved, with the rows that are no query reply (tracked tasks, `wording` objects) passed beside them in this same row format; normalized from MCP results:
 
 ```json
 {
@@ -1875,6 +1876,46 @@ The plan has `question_status`, `conflicts` and `ignored` (sorted by `page_id`),
 | `NOT_CREATED_IN_NOTION` on a Decisions or Questions row | `RETIRED_DATABASE`; this transition keeps it for a Questions row with no Brain ID |
 | The Brief's `## Open questions` | `## Open questions and risks` (schema §16.1, §16.3) |
 | A connected workflow's decision page | its destination's Decision log or Brief (connected-workflows.md §6.3) |
+
+#### 5.14.10 `brain sync snapshot` (0.16.2, CC-269)
+
+```text
+brain sync snapshot --input <file|dir> [--input <file|dir> …] --output <snapshot.json> [--json]
+```
+
+Writes the snapshot of §5.14.1 from the Notion replies the skill saved, so the agent never copies a row by hand. It reads the brain's `brain.json` and the input files, writes only `--output` (replaced when it exists), and changes nothing in the brain. `--input` is repeated, one per file; a directory stands for every `.json` file directly in it, in name order. `as_of` is `--now`.
+
+**Input files.** Each file is one of two shapes, told apart as below; any other JSON → `INPUT_INVALID` naming the file:
+- **A query reply:** an object with `"object": "list"` and a `results` list: one page of a Notion data source query, saved as the MCP returned it, each result an object with `"object": "page"`. The skill saves every page of every query (each `next_cursor` page its own file).
+- **Rows:** an object whose only key is `rows`, a list of rows in exactly §5.14.1's row format (no other key, no new field), checked as `sync plan` checks them. These are the rows that are no query reply: the tracked tasks read by page id (`status_group` is not in a page's reply) and a Documents or Report row carrying its `wording` object.
+
+**The database of a row** is its page's `parent.database_id` (compared without dashes, in lower case) matched against `notion.databases` and `notion.tasks.database` (key `tasks`). A page whose database is not configured, or whose key is not a snapshot database (§5.14.1: `meetings`, `capture_inbox`) → `INPUT_INVALID`. A `references` key is written as `documents` (0049). A database whose saved replies all have `has_more: true` → `INPUT_INVALID` (`INCOMPLETE_READ` in the message): its last page wasn't saved, and a database read in part is never sent as read (U-18). The CLI can't see the cursor chain, so following `next_cursor` to the end stays the skill's job. A result in the trash (`in_trash` or `archived` true) is left out.
+
+**Each page becomes a row** `{ database, page_id, last_edited, properties }` (`page_id` = `id`, `last_edited` = `last_edited_time`), with these rules, which are the skill's (§5.14.1):
+- **Example rows (0084):** a page whose title (its property of type `title`) starts with `Example · ` is left out and counted in `examples_left_out`, for the report.
+- **Inbox:** a row with an empty Brain ID is left out. A Report row (Brain ID `vw-`, a space before migration 0019) asking for something is passed as under Report rows below. A row whose Document asked is ticked has `Brain ID`, `Document asked` and `Only keep`; every other row has `Brain ID` only.
+- **Documents:** a Report row (Brain ID `vw-`) is passed only when its Refresh asked (or Refresh) is ticked or its What to fix isn't empty, with `Brain ID`, `Refresh asked` (or `Refresh`, whichever the page has) and `What to fix`. Every other row has every property.
+- **Tasks:** with `notion.tasks.properties.document_asked` mapped, a row whose Document asked is ticked has the mapped title, Document asked, Project and Area properties (an unmapped one is left out); every other Tasks result is left out.
+- **Every other database:** every property.
+
+**Property values** are §5.14.1's normalized values: title and text are their segments' `plain_text` joined (empty → `null`); select and status their option's name or `null`; url and email the string or `null` (empty → `null`); number; checkbox; date `{start, end}` (`end` `null` when absent) or `null`; relation its page ids, sorted. A formula is its result by its type (a date result as a date). A rollup is its number or date; an `array` rollup whose items are all relations is a relation (their page ids, sorted, without repeats; an empty one → `[]`); any other array rollup is left out. A relation with `has_more: true` (Notion returned only part of it) is left out, with a warning `{ "code": "RELATION_TRUNCATED", "message": "…" }` naming the page and property: a property left out is not compared. Every other property type (people, files, multi-select, phone, created and edited times and people, buttons, unique ids, verification) is left out.
+
+A page in two replies is passed once: the reply with the later `last_edited`, and with the same one, the two must give the same row (otherwise `INPUT_INVALID`).
+
+**Joining the rows files.** A row of a rows file whose page has no row from a query reply is passed as it is. One whose page has a row from a query reply joins it only in these two cases:
+- a `tasks` row (a tracked task) joins that page's Tasks row (its Document asked read): `properties` are joined, `status_group` and `gone` added;
+- a `documents` or `inbox` row with a `wording` object joins that page's row: its `wording` is added and `properties` are joined.
+
+In both, a property in both rows must have the same value; `last_edited` is the later of the two. A different value for the same property, a different `database` for the same page, an `unreadable` row joining a read one, a page twice in the rows files, or any other row whose page also came from a query reply → `INPUT_INVALID`: nothing is overridden in silence.
+
+**Output.** `snapshot.json` is `{ "as_of": "<--now>", "rows": [...] }`, rows sorted by `database` then `page_id`; `sync plan` takes it as it is. The reply:
+
+```json
+{ "ok": true, "command": "sync snapshot", "warnings": [],
+  "data": { "output": "/tmp/run/snapshot.json", "rows": 42, "examples_left_out": 2, "databases": { "areas": 5, "inbox": 12, "people": 25 } } }
+```
+
+`databases` counts the rows written per database. Nothing is written on an error.
 
 ### 5.15 `brain upgrade`
 
