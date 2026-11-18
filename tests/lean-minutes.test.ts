@@ -234,6 +234,19 @@ test("the gate's reference minutes give the same plan in the divided layout as i
   assert.deepEqual(plan(read("reference-output-divided.md"), read("transcript.md")), before);
 });
 
+test("the gate's run 3, Notion AI's own output in the divided layout, reads with no problem (CC-356)", () => {
+  const gate = join(import.meta.dirname, "..", "eval", "minutes-0.14");
+  const data = plan(readFileSync(join(gate, "run-3", "output.md"), "utf8"), readFileSync(join(gate, "transcript.md"), "utf8"));
+  assert.equal(data.ok, true, JSON.stringify(data.problems));
+  assert.equal(data.shape, "lean");
+  assert.deepEqual(data.problems, []);
+  assert.deepEqual(data.unnumbered, []);
+  assert.equal(data.items!.length, 13);
+  assert.deepEqual(data.items!.map((item) => item.prefix).filter((prefix) => prefix !== null), ["decided", "concern", "waiting_on", "decided", "open", "decided", "waiting_on", "idea"]);
+  assert.equal(data.items!.find((item) => item.id === "s1.i2")?.text, "Decided: Move the public launch from 10 February to 3 March 2027.");
+  assert.deepEqual(data.quick.map((entry) => [entry.follow_up, entry.task]), [["q1", true], ["q2", true], ["q3", true]]);
+});
+
 test("a bare In one line heading and its sentence are not items and never imported, a list line included", () => {
   const bulleted = plan(swap(DIVIDED, "\nThe planting day moves to April", "\n- The planting day moves to April"));
   assert.deepEqual(bulleted, plan(DIVIDED), "a bulleted sentence is the sentence, not an unnumbered line");
