@@ -1,5 +1,21 @@
 # Results: the lean minutes prompt gate (CC-197, decision 0079 §6)
 
+## Run 3: 0.16.2's divided layout (CC-356, decision 0106 §13)
+
+**Verdict: the bar is met (run 3, 2026-11-18).** The prompt in the divided layout (`notion/minutes-format.md` at CC-356's f07e0f42) was run once by Notion AI in the author's test space, read back once with the Notion API's markdown, kept unchanged in `run-3/output.md` and scored with `score.mjs` (`run-3/score.txt`).
+
+| Bar (0079 §6) | Run 3 |
+|---|---|
+| The For the brain toggle is a real toggle, `<details><summary>For the brain</summary>` | **pass** |
+| At least 9 of 10 items carry an id and quotes that occur in the transcript | **13 of 13** (22 quotes, none over 12 words) |
+| Every quick follow-up carries a `q` id | **3 of 3** |
+
+What else run 3 shows:
+- **The layout is as asked.** `## In one line`, a divider and one sentence. Each heading has a divider under it. Each subject's lines are bullets, the gist first and unprefixed, then `**Decided:**`, `**Open:**`, `**Concern:**`, `**Waiting on <name>:**` and `**Idea:**` in bold. Quick follow-ups stay checkboxes, and each task is one line with its Scope toggle.
+- **The CLI reads it:** `extract-plan` (CC-356's head) on `run-3/output.md` with `transcript.md` returns `ok`, the lean shape, 13 items with their prefixes, no problem and no unnumbered line. All 3 follow-ups are Task inputs, and both Scopes are read with no problem.
+- **Two observations** (`run-3/NOTE.md`), with no prompt change: Notion AI asked which speaker the author was before writing, and it left both Scope Due lines empty because the dates were said without a year. It put the dates in Notes.
+
+
 **Verdict: the bar is met (run 2, 2026-11-12).** The prompt of `notion/minutes-format.md` at commit 2d7e247 was run once by Notion AI in the user's test space. It was read back by the coordinator with the Notion API's `retrieve-page-markdown` and kept unchanged in `run-2/output.md`, then scored with `score.mjs` (`run-2/score.txt`).
 
 | Bar (0079 §6) | Run 2 |
@@ -22,6 +38,7 @@ What else run 2 shows:
 |---|---|---|
 | [run-1](run-1/NOTE.md) | A partial copy of the transcript (22 of 35 paragraphs) | Not the gate. On what it saw: a real toggle, 8 of 8 items, 1 of 1 follow-up |
 | [run-2](run-2/output.md) | The full transcript, on its own page | **The gate: pass** (above) |
+| [run-3](run-3/NOTE.md) | The full transcript, 0.16.2's prompt (the divided layout) | **The rerun: pass** (above) |
 
 ## Limits
 

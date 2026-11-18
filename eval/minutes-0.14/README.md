@@ -6,14 +6,17 @@ Before the lean minutes ship in 0.14.0, the prompt of [notion/minutes-format.md]
 - every quick follow-up carries a `q` id, and
 - the **For the brain** toggle is a real toggle block, which the Notion API's markdown returns as `<details><summary>For the brain</summary> … </details>`. The contract reads only that form (§4.1, "Shapes", rule 1), so the gate records the form Notion AI writes: a toggle heading (`## For the brain {toggle="true"}`) or a plain line fails it, and reading another form would be a contract change first.
 
+**Rerun for 0.16.2 (decision 0106 §13, CC-356).** The prompt now writes the divided layout (each section a heading and a divider, `## In one line` with its sentence below, prefixes in bold). The bar is the same; the run is `run-3/`, taken exactly as below with the prompt at CC-356's head. The scorer counts both layouts the same: `reference-output-divided.md` is the reference in the divided layout and scores exactly as `reference-output.md` (`tests/minutes-gate-score.test.mjs`). If run 3 doesn't meet the bar, the layout goes back to the author before 0.16.2 is released.
+
 Notion AI can't be run through the API, so the run needs the user, in a test space, never their brain.
 
 | File | What |
 |---|---|
 | `transcript.md` | The synthetic meeting: the Rider App 2.0 sync of an invented bike-rental company. Four invented people (the owner is Ines Varga), three subjects, small talk to leave out, 13 expected items (4 + 3 + 4 subject lines, 2 tasks) and 3 quick follow-ups of the owner. |
+| `reference-output-divided.md` | The same reference in 0.16.2's divided layout (0106 §13). It scores exactly as `reference-output.md`. |
 | `reference-output.md` | What a perfect run looks like, written by hand in the Notion API's markdown form. Never shown to Notion AI. It scores 13 of 13 and proves the scorer (`tests/minutes-gate-score.test.mjs`). |
 | `score.mjs` | The count: `node eval/minutes-0.14/score.mjs <output.md>` prints the counts, each miss and the verdict; `--json` gives everything. |
-| `run-1/`, `run-2/` | Each run: `output.md` (as returned by the API) and `score.txt`. Run 1 had a partial transcript (`run-1/NOTE.md`); run 2 is the gate. |
+| `run-1/`, `run-2/`, `run-3/` | Each run: `output.md` (as returned by the API) and `score.txt`. Run 1 had a partial transcript (`run-1/NOTE.md`); run 2 is 0.14.0's gate, run 3 the rerun on 0.16.2's prompt. |
 | `RESULTS.md` | The counts against the bar and what the run showed. |
 
 ## Running the gate

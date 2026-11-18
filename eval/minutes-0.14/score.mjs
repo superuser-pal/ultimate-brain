@@ -12,6 +12,10 @@ const ITEM = /\[s(\d+)\.i(\d+)\]/gi;
 const SUBJECT = /\[s(\d+)\]/gi;
 const FOLLOW_UP = /\[q(\d+)\]/i;
 const PREFIX = /^(?:track:\s*waiting on\s*[—–-]\s*)?(decided|open|concern|waiting on [^:]+|idea):/i;
+// Since 0.16.2 (decision 0106 §13) the prompt writes the divided layout: a divider under each heading, `## In one line` with its sentence
+// below, and prefixes in bold. Both layouts are counted the same (spec/capture-and-review.md §3.3, §4.1).
+const DIVIDER = /^([-*_])(?:\s*\1){2,}$/;
+const EMPHASISED_PREFIX = /^((?:track:\s*waiting on\s*[—–-]\s*)?)([*_]+)(decided|open|concern|idea|waiting on\b[^:*_]*)(?:\2\s*:|\s*:\2)\s*/i;
 
 export function fold(text) {
   return text
@@ -130,11 +134,18 @@ export function score(outputText, transcriptText) {
       continue;
     }
     if (/^<\/?(summary|details)/i.test(t)) continue;
+    if (DIVIDER.test(t)) continue;
     const text = bare(t);
     const plain = text.replace(/[*_]/g, "").replace(/:$/, "").replace(/\s*\(.*\)$/, "").trim().toLowerCase();
-    if (/^in one line\s*:/i.test(text.replace(/[*_]/g, ""))) {
+    if (/^in one line\s*:/i.test(text.replace(/[*_]/g, "")) && plain !== "in one line") {
       oneLine = true;
       group = null;
+      continue;
+    }
+    if (plain === "in one line") {
+      // The divided layout's heading: the sentence follows on its own line.
+      oneLine = true;
+      group = "oneline";
       continue;
     }
     if (plain === "quick follow-ups" || plain === "quick follow ups") {
@@ -147,6 +158,10 @@ export function score(outputText, transcriptText) {
     }
     const { items: itemTags, subjects: subjectTags } = tagsOf(text);
     const isHeading = /^#{1,6}\s/.test(t);
+    if (group === "oneline") {
+      if (!isHeading && itemTags.length === 0 && subjectTags.length === 0) continue; // the In one line sentence
+      group = null;
+    }
     if (group === "quick") {
       const todo = t.match(/^[-*+]\s+\[([ xX])\]\s+(.*)$/);
       if (todo) {
@@ -176,7 +191,7 @@ export function score(outputText, transcriptText) {
       const id = itemTags[0];
       const place = tagPlace(text, id);
       if (place === "middle") problems.push(`a tag in the middle of a line: ${text}`);
-      const body = squash(text.replace(`[${id}]`, "").replace(/\[s\d+\.i\d+\]/i, ""));
+      const body = squash(text.replace(`[${id}]`, "").replace(/\[s\d+\.i\d+\]/i, "")).replace(EMPHASISED_PREFIX, "$1$3: ");
       const where = group === "tasks" ? "tasks" : group.subject;
       if (where !== "tasks" && !id.startsWith(`${where}.`)) problems.push(`${id} sits under ${where}`);
       if (/^(meeting only|use in brain)\s*:/i.test(body.replace(/^track:\s*waiting on\s*[—–-]\s*/i, ""))) problems.push(`a selection token on a readable line: ${id}`);

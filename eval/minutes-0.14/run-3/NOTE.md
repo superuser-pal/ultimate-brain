@@ -1,0 +1,5 @@
+# Run 3: the rerun on 0.16.2's prompt (CC-356, decision 0106 §13)
+
+- **Prompt:** the text block of `notion/minutes-format.md` at CC-356's f07e0f42 (unchanged at 6312d8f7), sent in the author's test space with the two lines of README.md step 3, on the full `transcript.md`. Read back once with the Notion API's markdown and kept unchanged in `output.md`. It holds no page id.
+- **Before writing,** Notion AI asked "Which speaker are you: Ines, Tomas, Priya or Dario?" even though the message said "For this test, I am Ines Varga." The author answered "I am Ines Varga." The author may have missed the last two lines; that is unconfirmed. Recorded with no change to the prompt.
+- **Due:** both Scope toggles have an empty Due, although dates were said ("by the twelfth of December", "by the seventeenth of December", with no year). Notion AI put the dates in Notes. This is within the prompt's rule (never invent a date, leave Due empty unless a date was said), because the year was not said. Run 2 wrote 2026-12-12 and 2026-12-17. The brain then creates both Tasks with no due date, and the user can set Due in the Scope before Reviewed. Recorded with no change to the prompt.
