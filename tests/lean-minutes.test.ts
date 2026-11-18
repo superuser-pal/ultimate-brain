@@ -214,6 +214,84 @@ test("the inline-quote and legacy shapes read exactly as before 0.14.0", () => {
   assert.equal(JSON.stringify(plan(fixture("inline-summary.md"))), JSON.stringify(golden("inline-plan.json")), "key for key, in order");
 });
 
+// ---- CC-356 (decision 0106 §13): the divided layout, each section a heading and a divider, prefixes in bold (capture-and-review §3.3, §4.1). ----
+
+const DIVIDED = fixture("divided-summary.md");
+
+test("the divided layout gives the same items, ids, groups and selection as the same minutes in 0.14.0's layout", () => {
+  const divided = plan(DIVIDED);
+  assert.equal(divided.ok, true, JSON.stringify(divided.problems));
+  assert.equal(divided.shape, "lean");
+  assert.deepEqual(divided, plan(LEAN), "the whole plan, key for key");
+  assert.equal(divided.items!.find((item) => item.id === "s1.i1")?.text, "The planting day moves to the second Saturday of April because the soil came late.", "the gist bullet, unprefixed");
+});
+
+test("the gate's reference minutes give the same plan in the divided layout as in 0.14.0's", () => {
+  const gate = join(import.meta.dirname, "..", "eval", "minutes-0.14");
+  const read = (name: string): string => readFileSync(join(gate, name), "utf8");
+  const before = plan(read("reference-output.md"), read("transcript.md"));
+  assert.equal(before.ok, true, JSON.stringify(before.problems));
+  assert.deepEqual(plan(read("reference-output-divided.md"), read("transcript.md")), before);
+});
+
+test("the gate's run 3, Notion AI's own output in the divided layout, reads with no problem (CC-356)", () => {
+  const gate = join(import.meta.dirname, "..", "eval", "minutes-0.14");
+  const data = plan(readFileSync(join(gate, "run-3", "output.md"), "utf8"), readFileSync(join(gate, "transcript.md"), "utf8"));
+  assert.equal(data.ok, true, JSON.stringify(data.problems));
+  assert.equal(data.shape, "lean");
+  assert.deepEqual(data.problems, []);
+  assert.deepEqual(data.unnumbered, []);
+  assert.equal(data.items!.length, 13);
+  assert.deepEqual(data.items!.map((item) => item.prefix).filter((prefix) => prefix !== null), ["decided", "concern", "waiting_on", "decided", "open", "decided", "waiting_on", "idea"]);
+  assert.equal(data.items!.find((item) => item.id === "s1.i2")?.text, "Decided: Move the public launch from 10 February to 3 March 2027.");
+  assert.deepEqual(data.quick.map((entry) => [entry.follow_up, entry.task]), [["q1", true], ["q2", true], ["q3", true]]);
+});
+
+test("a bare In one line heading and its sentence are not items and never imported, a list line included", () => {
+  const bulleted = plan(swap(DIVIDED, "\nThe planting day moves to April", "\n- The planting day moves to April"));
+  assert.deepEqual(bulleted, plan(DIVIDED), "a bulleted sentence is the sentence, not an unnumbered line");
+  for (const heading of ["**In one line**", "In one line:", "### *In one line*"]) {
+    assert.deepEqual(plan(swap(DIVIDED, "## In one line", heading)), plan(DIVIDED), heading);
+  }
+  const tagged = plan(swap(DIVIDED, "The planting day moves to April", "[s9.i9] The planting day moves to April"));
+  assert.deepEqual(codes(tagged), ["SELECTION_UNREADABLE"], "a tag in the sentence fails closed, as outside every group");
+  const late = DIVIDED.replace("<details>\n<summary>For the brain", "## In one line\n---\n- Planting moved, and the rota is mine.\n\n<details>\n<summary>For the brain");
+  assert.deepEqual(plan(late).items, plan(DIVIDED).items, "after a subject, the heading ends its block: the sentence is not one of its lines");
+  assert.deepEqual(plan(late).problems, []);
+});
+
+test("a divider is ignored in the readable part and in the toggle, in any of its forms", () => {
+  for (const rule of ["***", "___", "- - -", "-----", "* * *"]) {
+    const data = plan(DIVIDED.replaceAll("\n---\n", `\n${rule}\n`).replace("[s1] Selection: Use in brain", `${rule}\n[s1] Selection: Use in brain`));
+    assert.deepEqual(data, plan(DIVIDED), rule);
+  }
+  const inBlock = plan(swap(DIVIDED, "- **Open:** whether", "---\n- **Open:** whether"));
+  assert.deepEqual(inBlock, plan(DIVIDED), "a divider inside a block is no unnumbered line and ends nothing");
+});
+
+test("each prefix reads in bold, the bold around it stripped from the text", () => {
+  for (const [written, prefix, text] of [
+    ["**Decided:** the beds stay", "decided", "Decided: the beds stay"],
+    ["**Decided**: the beds stay", "decided", "Decided: the beds stay"],
+    ["*Open:* who waters in May", "open", "Open: who waters in May"],
+    ["__Concern:__ the soil is wet", "concern", "Concern: the soil is wet"],
+    ["**Idea:** a compost corner", "idea", "Idea: a compost corner"],
+    ["**Waiting on Ben:** the delivery date", "waiting_on", "Waiting on Ben: the delivery date"],
+    ["Track: Waiting On — **Waiting on Ben:** the delivery date", "waiting_on", "Waiting on Ben: the delivery date"],
+  ] as const) {
+    const data = plan(swap(DIVIDED, "- **Open:** whether the school group can join [s1.i5]", `- ${written} [s1.i5]`));
+    assert.equal(data.ok, true, `${written}: ${JSON.stringify(data.problems)}`);
+    const item = data.items!.find((entry) => entry.id === "s1.i5")!;
+    assert.equal(item.prefix, prefix, written);
+    assert.equal(item.text, text, written);
+    if (prefix === "waiting_on") assert.equal(item.name, "Ben", written);
+  }
+  const plain = plan(swap(DIVIDED, "- **Open:** whether the school group can join [s1.i5]", "- **Note:** whether the school group can join [s1.i5]"));
+  assert.equal(plain.items!.find((entry) => entry.id === "s1.i5")?.prefix, null, "another bold word is text");
+  const token = plan(swap(DIVIDED, "- **Open:** whether the school group can join [s1.i5]", "- **Meeting only:** whether the school group can join [s1.i5]"));
+  assert.deepEqual(codes(token), ["SELECTION_UNREADABLE"], "a token in bold on a readable line still fails closed");
+});
+
 // ---- CC-229: Markdown escapes (capture-and-review §4.3). The Notion API's markdown export writes `\[s1.i1\]`; the reader reads `[s1.i1]`. ----
 
 /** Every ASCII punctuation character escaped, as a Markdown writer may: the text Markdown reads is unchanged. */

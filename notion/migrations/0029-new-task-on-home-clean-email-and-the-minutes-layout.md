@@ -1,10 +1,11 @@
 # 0029 · 0.16.2: New task on Home, Clean email on New, the minutes layout
 
-**Design change:** decision [0106](../../decisions/0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md) §12; CC-355 (release 0.16.2; docs/notion-space-design.md §5 Home, [../views-guide.md](../views-guide.md) §1, [Prompt 7a](../prompts/07a-home.md)). Decision 0106 §3; CC-350 (release 0.16.2; assessment finding F-0010; [../brain-assistant.md](../brain-assistant.md), Clean email). It is 0.16.2's one Notion migration: CC-356 (the minutes layout, 0106 §13) adds its part to it before 0.16.2 is released, after part B and before the last steps. **Applies to:** every space built or migrated before 0.16.2, the template's copy included. Needs migration 0028. A step already done changes nothing, so running this again is safe.
+**Design change:** decision [0106](../../decisions/0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md) §12; CC-355 (release 0.16.2; docs/notion-space-design.md §5 Home, [../views-guide.md](../views-guide.md) §1, [Prompt 7a](../prompts/07a-home.md)). Decision 0106 §3; CC-350 (release 0.16.2; assessment finding F-0010; [../brain-assistant.md](../brain-assistant.md), Clean email). Decision 0106 §13; CC-356 (release 0.16.2; spec/capture-and-review.md §3.3 "The divided layout"; [../minutes-format.md](../minutes-format.md), [../brain-assistant.md](../brain-assistant.md) Check minutes, [../template-examples.md](../template-examples.md)). It is 0.16.2's one Notion migration. **Applies to:** every space built or migrated before 0.16.2, the template's copy included. Needs migration 0028. A step already done changes nothing, so running this again is safe.
 
 **What changes:**
 - **New task on Home** (0106 §12). Home's right column gets a **New task** button right after **New project**: it adds a Tasks row with Kind Task and the database's default Status, and opens it. It sets no project and no due date: it adds the row you would add by hand in Tasks. Polish, not a new capability (0106 §1): the brain reads nothing new and writes nothing new.
 - **Clean email on New captures only** (0106 §3, finding F-0010). Brain Assistant's **Clean email** skill accepted a capture with Brain Status New or Ready. A Ready row may already be taken in by the brain, so the skill now works only on a capture still New, as Tidy capture does: on a Ready or Done row it stops and says why. Its text changes on its Skills page; nothing else does.
+- **The minutes layout** (0106 §13). The minutes prompt writes each section as a heading with a divider under it (`## In one line` with its sentence below, `## Quick follow-ups`, `## Tasks for the brain`, `## <Subject> [s1]`), and a subject's lines as bullets with a bold prefix (`- **Decided:** … [s1.i2]`). The items, tags, quotes and the For the brain toggle don't change, and the brain reads both layouts. You replace the prompt where you keep it, and Check minutes' text, which now checks the new layout and accepts the old. Meetings already summarised are never rewritten.
 
 Run this migration after `brain upgrade` has put 0.16.2 in place, in an attended session (never from a schedule). **The template's copy** (no brain) does the same steps.
 
@@ -59,6 +60,35 @@ Open **Skills** (on System; "Brain Assistant Skills" in a space built before 0.1
 
 The agent can confirm the text from its side, with your yes, where Skills is shared with the integration (spec/setup.md §6.4 reads it for the mentions): read the Clean email page and its Description, and check the Source line above and that "New or Ready" is absent. It can't run the skill.
 
+## Part C · The minutes layout (0106 §13)
+
+Every space takes part C, whatever its modules: the minutes prompt is used on every meeting page.
+
+### C1 · The minutes prompt where you keep it (by hand)
+
+The prompt is the text block of [../minutes-format.md](../minutes-format.md), as 0.16.2 ships it. You keep it in one or both of these places:
+1. **Write minutes** in **Skills** (since 0.16.2's CC-283). **Already done?** Its body's first section reads "1. ONE LINE" followed by `The heading "## In one line", then a divider`. Then change nothing. **Otherwise,** replace the whole body of the page with the new text block, and nothing else on the page: keep its Description.
+2. **A copy you keep elsewhere** (a page, a note, a text snippet; [../pasting-the-minutes-prompt.md](../pasting-the-minutes-prompt.md) step 1): replace it with the same text block.
+
+With neither, there is nothing to replace: copy the block from minutes-format.md when you next write minutes. A personal Notion AI skill holding the prompt (no Custom Agent) is replaced the same way.
+
+### C2 · Check minutes' text (by hand)
+
+Open **Skills** and the page **Check minutes**. [../brain-assistant.md](../brain-assistant.md) has the new text, under "Check minutes".
+1. **Already done?** Step 1's "Lean (current)" line contains "each section a heading followed by a divider". Then change nothing.
+2. **Otherwise,** replace the whole body with the new one. Re-link *[@Brain Data]* with a real @mention of Brain Data under your top page. The Description doesn't change. **Without a Custom Agent:** make the same replacement in your personal Check minutes skill.
+
+### C3 · Read the layout back (by hand)
+
+On a test page in **Meetings** (title `Layout check: delete me`), paste a short made-up transcript, such as "Ana: Let's keep the blog as it is. Ben: Agreed, and I'll send the plan on Friday." Open the Notion AI chat on the page, paste the prompt from C1 followed by the line "Write the minutes on this page, below the transcript, and nothing else.", and send.
+1. The minutes start with the heading **In one line**, a divider and one sentence. Every section's heading has a divider under it. Every line of a subject is a bullet, the prefixed ones in bold (**Decided:** …), each ending with a tag like `[s1.i2]`. The page ends with the collapsed toggle **For the brain**.
+2. Ask Brain Assistant **check minutes** on it: it names the minutes Lean and reports no line that blocks the meeting.
+3. Then move the test page to the trash (••• → Delete), before you mark it Reviewed: the brain never took it in.
+
+### C4 · The template's example meeting (the template's copy only)
+
+On the template's copy, `Example · Kickoff with Northwind` takes the new layout, so a new duplicate shows minutes as the user's own will look: [../template-examples.md](../template-examples.md), "Updating a copy to 0.16.2" (U-41, before republishing). A user's space skips C4: its meetings, the example one included, are never rewritten, and the brain reads them as they are.
+
 ## The last steps
 
 ### L1 · Template version (by hand, or the agent)
@@ -71,7 +101,8 @@ If the System callout on your top page reads `Template version: …` with a lowe
 - **The brain does nothing new.** A task you add with New task is yours, as one added by hand in Tasks: the brain sets no Status on it and reads none back (decision 0101 §6).
 - **Nothing for a space without Tasks.** No button is added where the Tasks module is off and no tasks database is mapped.
 - **Part B changes no database, property, view, button or row**, and no other skill. Tidy capture and Voice summary already worked on New captures only. A Ready capture is not lost: the brain takes it in as it is, and to clean it first you set it back to New.
-- **The guides come with the skills release.** brain-howto's Everyday guide says Clean email works only while a capture is New; republish your **Everyday guide** page from the skills release that ships with 0.16.2, as for any guide change.
+- **Part C rewrites no meeting.** Minutes written with an earlier prompt keep their layout and are read exactly as before (decision 0007: the brain never edits a meeting page's body). It changes no database, property, view, button or template: the Meetings template's gray line already says where Meeting only goes.
+- **The guides come with the skills release.** brain-howto's Everyday guide says Clean email works only while a capture is New, and describes the new minutes layout; republish your **Everyday guide** and **How it works** pages from the skills release that ships with 0.16.2, as for any guide change.
 
 ## Verify
 
@@ -87,6 +118,12 @@ Part B, Clean email on New captures only (decision 0106 §3):
 - [ ] *(you)* The Clean email page in Skills has the new Description ("Kind Capture, Brain Status New,") and the Source line ending "Brain Status New; otherwise stop and tell me (a Ready row may already be taken in by the brain, …)"; "New or Ready" is nowhere on it.
 - [ ] *(API)* Where Skills is shared with the integration: the Clean email page reads back with that Source line, and without "New or Ready".
 - [ ] *(you)* Run Clean email on a Ready test capture stops and says why; on the same row set to New it cleans the page; the test row is then in the trash.
+
+Part C, the minutes layout (decision 0106 §13):
+- [ ] *(you)* Write minutes (and any copy you keep) holds the new prompt: its "1. ONE LINE" section starts `The heading "## In one line", then a divider`.
+- [ ] *(API)* Where Skills is shared with the integration: the Write minutes page reads back with that line, and Check minutes with "each section a heading followed by a divider".
+- [ ] *(you)* The test minutes of C3 are in the new layout, Check minutes reports nothing that blocks them, and the test page is in the trash.
+- [ ] *(you)* The template's copy only: `Example · Kickoff with Northwind` shows its minutes in the new layout, and is still Not Reviewed.
 
 The last steps:
 - [ ] *(API)* The System callout reads `Template version: 0029`.
