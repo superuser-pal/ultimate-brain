@@ -102,7 +102,7 @@ The first patch of the beta, from the author's 1.0.0 opening scope review of 202
 | CC-351 | The wishlist page's words and PRIVACY.md's waitlist paragraph | `docs/wishlist-page.md`, `PRIVACY.md` | dropped by 0107 | `dropped` |
 | CC-355 | A New task button on Home | Notion design, views guide, prompt 07a, TEMPLATE.md, migration 0029 | any order | `todo` |
 | CC-356 | The minutes layout: headings with dividers, bold-prefixed bullets (amends 0079's layout) | `spec/capture-and-review.md`, `notion/minutes-format.md`, `src/lib/lean-minutes.ts`, Check minutes, the paste guide, migration 0029, the fork | contract first; the gate rerun before the release | `todo` |
-| CC-358 | Record decision 0108: beta invitations wait for 0.16.2 | decision 0108, 0106's pointer, U-28, U-31 and U-32, this plan, vision | the author's answer of 2026-11-18 | `in progress` |
+| CC-358 | Record decision 0108: beta invitations wait for 0.16.2 | decision 0108, 0106's pointer, U-28, U-31 and U-32, this plan, vision | the author's answer of 2026-11-18 | `review` |
 | CC-357 | Record decision 0107: the landing page and wishlist are built outside this repo | decision 0107, 0106's pointer, this plan, vision, v2-ideas | the author's answer of 2026-11-18 | `done` (#459) |
 | U-39 | Build and host the wishlist page in GoHighLevel | the page, the list, the email | dropped by 0107 | `dropped` |
 | U-41 | Publish the 0.16.2 template: migration 0029 on the template copy | the published template | after CC-350, CC-355 and CC-356 are merged | author's task |
@@ -179,7 +179,7 @@ The first patch of the beta, from the author's 1.0.0 opening scope review of 202
 **Output:** planning only, from the author's answer of 2026-11-18 on CC-351's PR (#450, closed unmerged). Decision 0107 (amends 0106 §3, §7 and §8; keeps the rest of 0106), and an "Amended by 0107" line in 0106. CC-351, CC-353 and U-39 marked dropped by 0107, their text kept. The release sequence table's 0.16.2 and 1.0.0 rows, the 0.17.0 and 1.0.0 intros, a status line, docs/vision.md's roadmap and docs/v2-ideas.md's launch-readiness row say the landing page is the author's, outside this repo. No PRIVACY.md, CLI, spec, skill, template or Notion change.
 **Acceptance:** 0107 records the answer, what it amends and what it keeps; no planning or product text outside decisions 0106 and 0107, history and the dropped rows says this repo builds the landing page, the wishlist, waitlist text or the demo (a grep listed in the PR); `node scripts/task.mjs check`, `npm run test:scripts`, the leak and PR format checks pass.
 
-### CC-358 · Beta invitations wait for 0.16.2 · `in progress`
+### CC-358 · Beta invitations wait for 0.16.2 · `review`
 **Release:** 0.16.2
 **Changelog:** development only: planning, decision 0108 (beta invitations wait for 0.16.2).
 **Output:** planning only, from the author's answer of 2026-11-18. Decision 0108 (amends 0106 §2 only: the beta starts on 0.16.2, not 0.16.1, because migration 0029 changes what a tester meets first, the minutes layout of setup step 4a and the New task button on Home), and an "Amended by 0108" line in 0106. U-31 runs after 0.16.2 is released and U-41 applied its template migration, U-32 rechecks from `v0.16.2`, U-28 invites after both on 0.16.2, each When keeping its earlier condition in brackets; the 0.16.2 intro, its table, a status line and docs/vision.md's roadmap say so. The rest of 0106 §2 is unchanged. No CLI, spec, skill, template or Notion change.
