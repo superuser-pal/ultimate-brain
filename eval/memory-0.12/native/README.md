@@ -21,7 +21,7 @@ Tests: `tests/native-run.test.mjs` (in `npm test`) covers the classifier, both t
 npm ci --prefix eval/memory-0.12/adapters                      # the tokenizer for retrieval costs, once
 npm pack --pack-destination /tmp/pkg                           # the package under test, from the head being accepted
 node eval/memory-0.12/native/run.mjs --package /tmp/pkg/ultimate-brain-<version>.tgz --commit "$(git rev-parse HEAD)" \
-  --out /tmp/native-run --claude-config ~/agent-logins/claude --codex-home ~/agent-logins/codex
+  --out /tmp/native-run --claude-config ~/ub-assess-agents/claude --codex-home ~/ub-assess-agents/codex
 ```
 
 | Option | Meaning |
@@ -42,8 +42,8 @@ The run refuses to start when the package's vendored skills differ from this che
 
 Each agent needs a login of its own that loads nothing global. Make one folder per agent once, and never point the harness at `~/.claude` or `~/.codex` (it refuses them):
 
-- Claude Code: `CLAUDE_CONFIG_DIR=~/agent-logins/claude claude`, then `/login` and `/exit`.
-- Codex: `CODEX_HOME=~/agent-logins/codex codex login`.
+- Claude Code: `CLAUDE_CONFIG_DIR=~/ub-assess-agents/claude claude`, then `/login` and `/exit`.
+- Codex: `CODEX_HOME=~/ub-assess-agents/codex codex login`.
 
 ## Method choices (the user's, 2026-11-11)
 
