@@ -92,7 +92,7 @@ The first patch of the beta, from the author's 1.0.0 opening scope review of 202
 |---|---|---|---|---|
 | CC-267 | The catch-up's publish runs in a sub-agent (moved from 1.0.0) | brain-catch-up through a fork PR, the unattended eval | any order | `todo` |
 | CC-269 | The CLI turns Notion's query replies into the snapshot (moved from 1.0.0) | `spec/cli.md` §5.14, sync, brain-sync through a fork PR | any order | `todo` |
-| CC-283 | Write minutes as Brain Assistant's eleventh skill (moved from 1.0.0, rewritten) | brain-assistant.md, Notion design, TEMPLATE.md, prompt 09, brain-howto through a fork PR | any order | `review` |
+| CC-283 | Write minutes as Brain Assistant's eleventh skill (moved from 1.0.0, rewritten) | brain-assistant.md, Notion design, TEMPLATE.md, prompt 09, brain-howto through a fork PR | any order | `done` (#451) |
 | CC-346 | Bookkeeping after 0.16.1 (moved from 1.0.0) | your task rows, HISTORY.md, migration 0027, releasing.md | merged | `done` (#448) |
 | CC-348 | Record 0106 and plan 0.16.2, 0.17.0 and 0.18.0 | decision and amendment pointers, this plan, vision, v2-ideas, AGENTS.md, issue #447 | the author's answers of 2026-11-18 | `done` (#449) |
 | CC-349 | The scorer reads a "Neither … records" abstention | `eval/memory-0.12/score.mjs`, its tests and README | before 0.16.2's smoke run | `todo` |
@@ -118,7 +118,7 @@ The first patch of the beta, from the author's 1.0.0 opening scope review of 202
 **Acceptance:** tests on synthetic query replies of each database (every property type of formats.md's table, a relation, an empty value, an example row, a paged reply) give the snapshot the skill writes today; `sync plan` takes it unchanged; `npm test`, `npm run typecheck`, `npm run test:scripts`, `npm run test:package` and the leak check pass.
 **Moved by [0106](../decisions/0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md) (2026-11-18):** from 1.0.0 to 0.16.2 (its `**Release:**` was 1.0.0; the rest of the row is as recorded). A beta fix for the cost of a sync (0106 §3); its fork change may share 0.16.2's one skills release.
 
-### CC-283 · Brain Assistant has eleven skills: Write minutes is one of them · `review`
+### CC-283 · Brain Assistant has eleven skills: Write minutes is one of them · `done` (#451)
 **Release:** 0.16.2
 **Changelog:** The guides count Write minutes among Brain Assistant's skills, as the template does.
 **Output:** the user's answer of 2026-11-15, counted again by 0106 §3: the Skills database holds the ten skills of `notion/brain-assistant.md` (Today, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report), and "Write minutes" (the minutes prompt as a skill page) is the eleventh, from one source: eleven, the ten and Write minutes. `notion/brain-assistant.md` (the skills row and a Write minutes entry whose text is the minutes prompt's, from one source), `docs/notion-space-design.md` (the two places that count ten), `notion/TEMPLATE.md` step 4, `notion/prompts/09-assistant-and-guide.md` (where it counts the skills), whatever publishes the skills pages, and through a fork PR brain-howto's everyday guide, which says the minutes prompt "is separate from Brain Assistant's skills". Migrations stay as written.
