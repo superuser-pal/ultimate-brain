@@ -90,7 +90,7 @@ export function selectionOf(raw: string): Selection | null {
 }
 
 const TOKENS = ["meeting only", "use in brain"];
-const NOTICE_TEXT = /all\s+subjects\s+included\s+unless\s+marked\s+meeting\s+only\.?\s*mark\s+(?:reviewed|ready)(?:\s*\(\s*inbox:\s*ready\s*\))?\s+to\s+confirm\.?/gi;
+const NOTICE_TEXT = /all\s+subjects\s+included\s+unless\s+marked\s+meeting\s+only\.?\s*(?:mark|set)\s+(?:reviewed|ready)(?:\s*\(\s*inbox:\s*ready\s*\))?\s+to\s+confirm\.?/gi;
 const LEAD = /^[\s[({"'“”‘’*_>•–—-]+/;
 const PHRASE_START = /^(?:meeting[\s-]*only|use[\s-]+in[\s-]+(?:the[\s-]+)?brain)/i;
 const PHRASE_BRACKETED = /[[({][^\])}]*(?:meeting[\s-]*only|use[\s-]+in[\s-]+(?:the[\s-]+)?brain)[^\])}]*[\])}]/i;
