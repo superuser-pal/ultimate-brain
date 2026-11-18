@@ -14,7 +14,7 @@ Ignore the module names in square brackets at the start of lines.
 6. In "Areas", add a rollup property "People via projects" over the relation "Projects", property People, calculated as Show original.
 [Orgs] 7. In "Areas", add a rollup property "Clients via projects" over the relation "Projects", property Client, calculated as Show original.
 [Orgs] 8. In "Orgs", add a rollup property "Meetings via projects" over the relation "Projects", property "Meetings", calculated as Show original.
-9. In "Areas", add a formula property "Meetings to review" that returns the number of pages in the relation "Meetings" whose Brain Status is Not Reviewed and whose Date is today or earlier.
+9. In "Areas", add a formula property "Meetings to review" that returns the number of pages in the relation "Meetings" whose Brain Status is New and whose Date is today or earlier.
 [Tasks] 10. In "Areas", add a formula property "Due" that returns the number of pages in the relation "Tasks" whose Status is neither Done nor Won't Do and whose Due is today or earlier.
 11. In "Areas", add a formula property "At a glance" that returns text: "<n> meeting" (or "<n> meetings") from Meetings to review, or "all clear" when it is 0.
 [Tasks] In "At a glance", also join "<n> due" from Due, after the meetings part, with " · ", left out when 0; "all clear" when both are 0.
@@ -40,7 +40,7 @@ if(empty(prop("Dates")) or prop("Status") == "Done", "",
 Areas Meetings to review and, with Tasks, Due (0050), in that order:
 
 ```text
-prop("Meetings").filter(current.prop("Brain Status") == "Not Reviewed" and !empty(current.prop("Date")) and dateBetween(current.prop("Date"), today(), "days") <= 0).length()
+prop("Meetings").filter(current.prop("Brain Status") == "New" and !empty(current.prop("Date")) and dateBetween(current.prop("Date"), today(), "days") <= 0).length()
 ```
 
 ```text
@@ -74,5 +74,5 @@ Mapping your own tasks database? Build Task Progress and Due over your own Tasks
 - [ ] (Planning) Create a test goal with two key results: a Number one (Start 4, Current 6, Target 10) shows 33%; a Milestone one with Done checked shows 100%. The goal's Progress shows 67%.
 - [ ] (Planning) Give the test goal a Deadline 10 days from today: Countdown shows "10 days left". Set Status to Achieved: Countdown is empty.
 - [ ] (Tasks) Create a project with eight Done and two Won't Do: Task Progress shows 8 completed · 2 dropped · 100%. With three dropped and no other tasks it shows 0 completed · 3 dropped; with no tasks it shows no active tasks.
-- [ ] In Areas, a test area with no meeting shows At a glance "all clear"; link a test meeting dated yesterday, Brain Status Not Reviewed: it shows "1 meeting".
+- [ ] In Areas, a test area with no meeting shows At a glance "all clear"; link a test meeting dated yesterday, Brain Status New: it shows "1 meeting".
 - [ ] Delete the test goal, key results, project, tasks, meeting and area.

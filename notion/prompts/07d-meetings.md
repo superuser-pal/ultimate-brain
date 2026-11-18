@@ -10,9 +10,9 @@ First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md
 Ignore the module names in square brackets at the start of lines.
 On this page ("Meetings") add five tabs, each a linked view of "Meetings":
 1. Tab "Upcoming": List, named "What's coming up?": filter Date is on or after today; sort Date ascending; show Name, Date, Project, Attendees.
-2. Tab "To review": Table, named "Which minutes need review?": filter Brain Status is Not Reviewed and Date is on or before today; sort Date descending; show Name, Date, Project, Brain Status.
-3. Tab "Ready": List, named "What's waiting for the brain?": filter Brain Status is Reviewed; sort Date ascending; show Name, Date, Project.
-4. Tab "Ingested": Table, named "What did the brain take in this week?": filter Brain Status is Ingested and Ingested At is within the past week (relative date); sort Ingested At descending; show Name, Ingested At.
+2. Tab "To review": Table, named "Which minutes need review?": filter Brain Status is New and Date is on or before today; sort Date descending; show Name, Date, Project, Brain Status.
+3. Tab "Ready": List, named "What's waiting for the brain?": filter Brain Status is Ready; sort Date ascending; show Name, Date, Project.
+4. Tab "Ingested": Table, named "What did the brain take in this week?": filter Brain Status is Done and Ingested At is within the past week (relative date); sort Ingested At descending; show Name, Ingested At.
 5. Tab "Calendar": Calendar by Date, named "When did we meet?": show Name, Brain Status.
 
 Put the views in a tabs block (one view per tab, tab labels as given). If you can't create tabs, add them as separate views of one linked view instead.

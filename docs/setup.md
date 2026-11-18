@@ -41,7 +41,7 @@ On Windows, scheduled runs aren't available: you ask your agent for a catch-up o
 | 6 | Seeding | Describe your work in a few sentences, answer one preview, then drop 3 to 5 key documents in your drop folder. | Your brain starts with your Areas, Projects, people and documents, so the first meeting doesn't create duplicates. Nothing is written before your yes. |
 | 7 | First value | Judge four checks (below). | It proves the brain works on your own material. |
 
-**Only the brain creates a meeting's Tasks.** It creates them once, when it takes in a meeting you marked Reviewed. If a notetaker (Granola, Fireflies or another) or an automation exports tasks into Notion, turn off its export to your brain's Tasks database, or each of those tasks would arrive twice. Don't ask Notion AI to create Tasks from a meeting either. A task you create yourself stays yours.
+**Only the brain creates a meeting's Tasks.** It creates them once, when it takes in a meeting you set Ready. If a notetaker (Granola, Fireflies or another) or an automation exports tasks into Notion, turn off its export to your brain's Tasks database, or each of those tasks would arrive twice. Don't ask Notion AI to create Tasks from a meeting either. A task you create yourself stays yours.
 | 8 | Scheduled catch-up | Choose on or off. | It is offered only once first value passes. |
 | — | Setup report | Read it, and send it if you like. | It helps fix setup for the next person. |
 
@@ -57,7 +57,7 @@ On Windows, scheduled runs aren't available: you ask your agent for a catch-up o
 
 You judge the parts only you can ("are these your commitments?"). Setup never invents a task, an item or an answer to pass a check.
 
-**Your first meeting** is checked later. The first catch-up after you mark a meeting Reviewed adds one line saying what came in. Say "that's wrong: …" if something did.
+**Your first meeting** is checked later. The first catch-up after you set a meeting Ready adds one line saying what came in. Say "that's wrong: …" if something did.
 
 ## The settings
 
@@ -234,7 +234,7 @@ The prompt was pasted only in part, or run outside the page's Notion AI chat. Se
 
 Notion AI wrote the minutes but replaced the transcript. The brain needs both, because the minutes quote the transcript. Put the transcript back on the page above the minutes: restore an earlier version from Notion's version history (••• at the top right), or paste it again. Keep the minutes. Then say "check the minutes prompt again". Next time, run the prompt in the Notion AI chat on the page, with the line "Write the minutes on this page, below the transcript, and nothing else."
 
-The same thing can happen to a real meeting. Catch-up then leaves it Reviewed and says so under Needs you, with this fix. Once the transcript is back, run catch-up again.
+The same thing can happen to a real meeting. Catch-up then leaves it Ready and says so under Needs you, with this fix. Once the transcript is back, run catch-up again.
 
 ### Today shows things from outside your brain (`assistant-reads-outside`)
 
