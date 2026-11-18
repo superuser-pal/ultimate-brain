@@ -32,7 +32,7 @@ Everything a space built from every prompt has (the build prompts include every 
 | Documents | Brain Data | Documents, and Reports (a report is a Documents row) |
 | Tasks | Brain Data | Tasks |
 | Goals, Key Results | Brain Data | Planning |
-| Skills (Brain Assistant's skills; one page per skill: Today, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report) | linked from the System callout | Brain Assistant; the brain never reads it |
+| Skills (Brain Assistant's skills; one page per skill: Today, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report, and Write minutes, the minutes prompt) | linked from the System callout | Brain Assistant; the brain never reads it |
 
 **Example rows** (decisions 0084 §3, 0087 §1, 0099). Thirteen invented rows show what a filled space looks like, at least one in every database on Brain Data, all from one story (a kickoff with Northwind Studio about refreshing its website) and related to each other, so each page links to the next. Each is titled with the prefix `Example · ` (the word, a space, the middle dot `·`, a space), and each is in a state no skill acts on. Their exact content, the Notion AI prompts that create them and the step that sets their relations are in [template-examples.md](template-examples.md).
 
@@ -79,7 +79,7 @@ The template is a **copy of the author's own Ultimate Brain space, emptied**, ma
 1. **Bring your own space up to date first.** Every migration in [migrations/](migrations/) is applied (`brain upgrade` in your brain names none), and CC-197 is merged and applied, so Check minutes and Voice summary in Skills are the 0079 versions.
 2. **Copy.** Duplicate your top page **Ultimate Brain** inside your workspace, and name the copy **Ultimate Brain**. From here on, work only in the copy: check each page you edit is under it.
 3. **Point everything at the copy.** Every linked view (Home, Tasks, Meetings, Projects, Plan, Knowledge), every relation, every button that adds or edits a page, and every synced block must use the copy's own databases and blocks, never your space's. Re-point or rebuild any that doesn't.
-4. **Empty every database.** Delete every row of the eleven databases on Brain Data, and every page under Archive. In Skills, keep the ten skills and check each against [brain-assistant.md](brain-assistant.md): a skill you changed for yourself goes back to the product's text. How it works holds the user guide only.
+4. **Empty every database.** Delete every row of the eleven databases on Brain Data, and every page under Archive. In Skills, keep the eleven skills and check each against [brain-assistant.md](brain-assistant.md): a skill you changed for yourself goes back to the product's text, and Write minutes' body is the text block of [minutes-format.md](minutes-format.md). How it works holds the user guide only.
 5. **Scrub where personal data hides,** ticking each:
    - **Database templates:** each database's templates, their default property values (a person, a project, an area, an org) and their body text.
    - **Select and multi-select options:** only the options of [docs/notion-space-design.md](../docs/notion-space-design.md) §3 stay; delete any other (a client, a tag, a person's name).
